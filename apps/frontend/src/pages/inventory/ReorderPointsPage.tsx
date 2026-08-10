@@ -246,8 +246,15 @@ const ReorderPointsPage: React.FC = () => {
   }, [summary, t, formatPrice]);
 
   const rowKey = (item: ReorderItem) => item.inventoryId || item.productId;
+  const hasInventory = (item: ReorderItem) =>
+    Boolean(item.inventoryId) ||
+    (Array.isArray(item.warehouses) && item.warehouses.length > 0);
 
-  const toggleSelection = (id: string) => {
+  const toggleSelection = (id: string, item?: ReorderItem) => {
+    if (item && !hasInventory(item)) {
+      toast.error(t("reorderPoints.noInventoryBlock", "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون") as string);
+      return;
+    }
     setSelectedIds((previous) => {
       const next = new Set(previous);
       if (next.has(id)) {
@@ -268,11 +275,19 @@ const ReorderPointsPage: React.FC = () => {
   };
 
   const startEdit = (item: ReorderItem) => {
+    if (!hasInventory(item)) {
+      toast.error(t("reorderPoints.noInventoryBlock", "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون") as string);
+      return;
+    }
     setEditingId(rowKey(item));
     setEditValue(String(item.reorderPoint || "0"));
   };
 
   const saveSingle = async (item: ReorderItem) => {
+    if (!hasInventory(item)) {
+      toast.error(t("reorderPoints.noInventoryBlock", "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون") as string);
+      return;
+    }
     const parsed = Math.max(0, Number(editValue) || 0);
     setSavingId(rowKey(item));
     try {
@@ -298,7 +313,13 @@ const ReorderPointsPage: React.FC = () => {
     }
     setBulkBusy(true);
     try {
-      const selectedItems = items.filter((item) => selectedIds.has(rowKey(item)));
+      const selectedItems = items.filter(
+        (item) => selectedIds.has(rowKey(item)) && hasInventory(item),
+      );
+      if (selectedItems.length === 0) {
+        toast.error(t("reorderPoints.noInventoryBlock", "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون") as string);
+        return;
+      }
       await companyAwareApi.post("/inventory/reorder-points/bulk", {
         items: selectedItems.map((item) =>
           item.inventoryId
@@ -557,6 +578,7 @@ const ReorderPointsPage: React.FC = () => {
                       const isSaving = savingId === key;
                       const urgency = urgencyMeta(item.urgency);
                       const imageUrl = item.image ? getImageUrl(item.image) : null;
+                      const canEditPoint = hasInventory(item);
 
                       return (
                         <TableRow key={key}>
@@ -564,8 +586,9 @@ const ReorderPointsPage: React.FC = () => {
                             <input
                               type="checkbox"
                               checked={selectedIds.has(key)}
-                              onChange={() => toggleSelection(key)}
-                              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+                              disabled={!canEditPoint}
+                              onChange={() => toggleSelection(key, item)}
+                              className="h-4 w-4 rounded border-gray-300 text-indigo-600 disabled:opacity-30"
                             />
                           </TableCell>
                           <TableCell>
@@ -616,7 +639,16 @@ const ReorderPointsPage: React.FC = () => {
                             ) : null}
                           </TableCell>
                           <TableCell>
-                            {isEditing ? (
+                            {!canEditPoint ? (
+                              <div className="flex flex-col">
+                                <span className="text-sm text-gray-400 dark:text-gray-500">
+                                  {t("reorderPoints.noInventory", "بلا سجلات مخزون")}
+                                </span>
+                                <span className="text-[11px] text-gray-400/70">
+                                  {t("reorderPoints.noInventoryHint", "أضف مخزوناً أولاً من صفحة إدارة المخزون")}
+                                </span>
+                              </div>
+                            ) : isEditing ? (
                               <div className="flex items-center gap-1">
                                 <Input
                                   type="number"
@@ -702,8 +734,9 @@ const ReorderPointsPage: React.FC = () => {
                           <TableCell>
                             <button
                               type="button"
+                              disabled={!canEditPoint}
                               onClick={() => startEdit(item)}
-                              className="p-2 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                              className="p-2 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
                               title={t("reorderPoints.edit", "تعديل النقطة") as string}
                             >
                               <PencilSquareIcon className="h-4 w-4" />

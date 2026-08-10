@@ -4069,6 +4069,7 @@ declare module 'react-i18next' {
           activeJourneys: string;
           totalSent: string;
           completionRate: string;
+          satisfaction: string;
           deliveryStatus: string;
         };
         flows: {
@@ -13460,6 +13461,9 @@ declare module 'react-i18next' {
         refresh: string;
         empty: string;
         loadError: string;
+        noInventory: string;
+        noInventoryHint: string;
+        noInventoryBlock: string;
       };
       reports: {
         title: string;

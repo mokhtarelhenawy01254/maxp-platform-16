@@ -39,5 +39,8 @@
   "export": "Export CSV",
   "refresh": "Refresh",
   "empty": "No matching data",
-  "loadError": "Failed to load data"
+  "loadError": "Failed to load data",
+  "noInventory": "No inventory records",
+  "noInventoryHint": "Add stock first from the inventory page",
+  "noInventoryBlock": "Cannot edit the reorder point of a product without inventory records"
 }
