@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { tokenManager } from "../../utils/tokenManager";
+import { getCompanyId } from "../../utils/storefrontApi";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 
 const CustomerRegister: React.FC = () => {
@@ -41,10 +42,12 @@ const CustomerRegister: React.FC = () => {
       const companyIdFromPath =
         typeof params.companyId === "string" ? params.companyId : null;
       const companyIdFromStorage = localStorage.getItem("storefront_companyId");
+      const companyIdFromScope = getCompanyId();
       const companyId = (
         companyIdFromQuery ||
         companyIdFromPath ||
         companyIdFromStorage ||
+        companyIdFromScope ||
         ""
       ).trim();
 
