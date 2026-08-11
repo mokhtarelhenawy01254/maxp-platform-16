@@ -1187,7 +1187,13 @@ class OrderService {
           }
 
           if (shouldCreateReturn) {
-            await this.autoCreateReturnRequest(order, userId, status);
+            // 🚨 PRODUCTION-FIX (return-notification-gap): autoCreateReturnRequest لازم يفضل
+            // جانبي تماماً — أي فشل فيه (زي FK على userId بتاعة SYSTEM من سينك تربو) كان بيكسر
+            // الـ background block كله وقبل وصول الإشعار للعميل. دلوقتي أي خطأ بيتسجل بس
+            // والإشعار يكمل.
+            await this.autoCreateReturnRequest(order, userId, status).catch(returnErr => {
+              console.error(`❌ [RETURNS-AUTO-BG] autoCreateReturnRequest failed for ${orderNumber}:`, returnErr.message);
+            });
           }
 
           // 💰 Affiliate & Commission & Cashback
@@ -1200,11 +1206,15 @@ class OrderService {
               reason:
                 notes ||
                 `تم تغيير حالة الطلب ${orderNumber} إلى ${status}، لذلك أُلغيت عمولات المسوق غير المصروفة`,
+            }).catch(commErr => {
+              console.error(`❌ [COMMISSION-BG] cancelAffiliateCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
             });
             await commissionService.cancelMerchantCommissionsForOrder(order.id, {
               reason:
                 notes ||
                 `تم تغيير حالة الطلب ${orderNumber} إلى ${status}، لذلك أُلغيت مستحقات التاجر غير المصروفة`,
+            }).catch(commErr => {
+              console.error(`❌ [COMMISSION-BG] cancelMerchantCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
             });
           }
 
@@ -1591,7 +1601,10 @@ class OrderService {
       await prisma.returnActivityLog.create({
         data: {
           returnRequestId: request.id,
-          userId: userId || undefined,
+          // 🚨 PRODUCTION-FIX (return-notification-gap): سينك تربو بيمرر userId='SYSTEM'
+          // (مش id مستخدم حقيقي) → كان بيكسر FK return_activity_logs_userId_fkey →
+          // فكان بيمنع إشعار المرتجع. بنمرر userId بس لو هو id حقيقي.
+          userId: (userId && typeof userId === 'string' && !['SYSTEM', 'System', 'system', 'SYSTEM_SYNC', 'AUTO', 'Turbo Sync'].includes(String(userId))) ? userId : undefined,
           action: 'AUTO_CREATED',
           details: `تم إنشاء الطلب تلقائياً بسبب تحديث حالة الطلب لـ ${status}`
         }
