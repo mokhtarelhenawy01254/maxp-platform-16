@@ -75,8 +75,17 @@ export function WhatsAppPageShell({
           className,
         )}
       >
-        <div className="overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-soft sm:rounded-3xl sm:shadow-raised">
-          <div className="flex flex-col gap-space-4 px-space-4 py-space-4 sm:gap-space-5 sm:px-space-6 sm:py-space-5 lg:px-space-7">
+        <div
+          className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-soft sm:rounded-3xl sm:shadow-raised"
+          style={{ backgroundImage: "var(--journey-header-gradient)", backgroundSize: "200% 200%" }}
+        >
+          {/* Accent glow orb */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-32 opacity-60"
+            style={{ background: "var(--journey-hero-glow)" }}
+            aria-hidden
+          />
+          <div className="relative flex flex-col gap-space-4 px-space-4 py-space-4 sm:gap-space-5 sm:px-space-6 sm:py-space-5 lg:px-space-7">
           <div className="flex flex-col gap-space-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 items-start gap-space-2 sm:gap-space-3">
               {backHref ? (
@@ -95,7 +104,7 @@ export function WhatsAppPageShell({
               ) : null}
 
               <div className="flex min-w-0 gap-2 sm:gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-[color:var(--color-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] sm:size-12 sm:rounded-2xl">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--journey-accent-soft)] text-[color:var(--journey-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] sm:size-12 sm:rounded-2xl">
                   <Icon className="size-5 sm:size-6" />
                 </div>
                 <div className="min-w-0 space-y-1 sm:space-y-2">

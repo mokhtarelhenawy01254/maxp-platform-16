@@ -9,6 +9,7 @@
     "activeJourneys": "العملاء النشطين",
     "totalSent": "إجمالي الرسائل",
     "completionRate": "معدل الإتمام",
+    "satisfaction": "مستوى الرضا",
     "deliveryStatus": "حالة الإرسال"
   },
   "flows": {

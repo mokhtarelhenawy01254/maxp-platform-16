@@ -296,6 +296,22 @@ html *::after {
     var(--color-secondary)
   );
 
+  /* Journey Page Accent System */
+  --journey-accent: oklch(0.55 0.24 290);
+  --journey-accent-soft: oklch(0.92 0.06 290);
+  --journey-accent-glow: oklch(0.55 0.24 290 / 0.25);
+  --journey-header-gradient: linear-gradient(
+    135deg,
+    oklch(0.97 0.02 264) 0%,
+    oklch(0.96 0.04 280) 40%,
+    oklch(0.95 0.06 290) 100%
+  );
+  --journey-hero-glow: radial-gradient(
+    ellipse at 20% 0%,
+    oklch(0.55 0.24 290 / 0.08) 0%,
+    transparent 60%
+  );
+
   --radius: 0.75rem;
 }
 
@@ -437,6 +453,8 @@ html *::after {
   --animate-slide-up: slideUp 0.3s ease-out;
   --animate-bounce-subtle: bounceSubtle 2s infinite;
   --animate-pulse-slow: pulse 3s infinite;
+  --animate-journey-glow-pulse: journey-glow-pulse 2.5s ease-in-out infinite;
+  --animate-journey-dot-ring: journey-dot-ring 1.5s ease-out infinite;
 
   /* Colors: tertiary — migrated from tailwind.config.cjs */
   --color-tertiary-50: oklch(0.969 0.016 293.8);
@@ -612,6 +630,22 @@ html *::after {
     in srgb,
     var(--color-primary) 52%,
     var(--color-secondary)
+  );
+
+  /* Journey Page Accent System — Dark */
+  --journey-accent: oklch(0.65 0.24 290);
+  --journey-accent-soft: oklch(0.28 0.06 290);
+  --journey-accent-glow: oklch(0.65 0.24 290 / 0.20);
+  --journey-header-gradient: linear-gradient(
+    135deg,
+    oklch(0.20 0.04 264) 0%,
+    oklch(0.22 0.06 280) 40%,
+    oklch(0.18 0.08 290) 100%
+  );
+  --journey-hero-glow: radial-gradient(
+    ellipse at 20% 0%,
+    oklch(0.65 0.24 290 / 0.12) 0%,
+    transparent 60%
   );
 }
 
@@ -1309,6 +1343,16 @@ select {
 @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
 @keyframes slideUp { from { transform: translateY(100%); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
 @keyframes bounceSubtle { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+
+/* Journey Page Animations */
+@keyframes journey-glow-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--journey-accent-glow); }
+  50% { opacity: 0.8; box-shadow: 0 0 8px 3px var(--journey-accent-glow); }
+}
+@keyframes journey-dot-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
 
 /* Scrollbar utilities — migrated from tailwind.config.cjs */
 @utility scrollbar-hide {

@@ -5,12 +5,15 @@ import {
   CheckCircle,
   Edit,
   GitBranch,
+  LayoutGrid,
+  List,
   MessageSquare,
   Plus,
   RefreshCw,
   Search,
   Send,
   Sparkles,
+  Star,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -69,6 +72,7 @@ function KpiItem({
   trend,
   sparklineData,
   sparkTone,
+  accentTone = false,
   index = 0,
 }: {
   label: string;
@@ -78,6 +82,7 @@ function KpiItem({
   trend?: "up" | "down" | "neutral";
   sparklineData?: number[];
   sparkTone?: "primary" | "success" | "warning" | "destructive" | "info" | "muted";
+  accentTone?: boolean;
   index?: number;
 }) {
   return (
@@ -87,7 +92,14 @@ function KpiItem({
       transition={{ duration: 0.4, delay: index * 0.1 }}
       className="flex items-center gap-3"
     >
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
+      <div
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-xl",
+          accentTone
+            ? "bg-[color:var(--journey-accent-soft)] text-[color:var(--journey-accent)]"
+            : "bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]",
+        )}
+      >
         <Icon className="size-4.5" />
       </div>
       <div className="min-w-0 flex-1">
@@ -318,6 +330,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
   });
 
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
+  const [compactKpi, setCompactKpi] = useState(false);
 
   const selectedFlowIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -626,6 +639,20 @@ const WhatsAppCustomerJourney: React.FC = () => {
       healthVal,
     ];
 
+    /* Satisfaction score — derived from completion ratio + health */
+    const satisfactionVal = totalJourneys > 0
+      ? Math.min(5, Math.round(((completionRate / 100) * 3 + (healthVal / 100) * 2) * 10) / 10)
+      : 0;
+    const sparkSatisfaction = [
+      Math.max(0, satisfactionVal - 0.8),
+      Math.max(0, satisfactionVal - 0.4),
+      Math.max(0, satisfactionVal - 1.0),
+      Math.max(0, satisfactionVal + 0.2),
+      Math.max(0, satisfactionVal + 0.1),
+      Math.max(0, satisfactionVal - 0.3),
+      satisfactionVal,
+    ];
+
     return {
       activeCount,
       completedCount,
@@ -637,6 +664,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
       sparkSent,
       sparkCompletion,
       sparkHealth,
+      satisfactionVal,
+      sparkSatisfaction,
     };
   }, [journeys]);
 
@@ -745,51 +774,113 @@ const WhatsAppCustomerJourney: React.FC = () => {
       ) : null}
 
       {/* ─────────── KPI STRIP ─────────── */}
-      <div className="grid gap-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-3 shadow-soft sm:grid-cols-2 sm:p-4 lg:grid-cols-4 lg:gap-4 lg:p-5">
-        <KpiItem
-          label={t("whatsappJourney.stats.activeJourneys") as string}
-          value={String(stats.activeCount)}
-          hint={`${stats.activeCount} / ${stats.totalJourneys}`}
-          icon={Users}
-          index={0}
-          trend={stats.activeCount > 0 ? "up" : "neutral"}
-          sparklineData={stats.sparkActive}
-          sparkTone="primary"
-        />
-        <KpiItem
-          label={t("whatsappJourney.stats.totalSent") as string}
-          value={String(stats.totalSent)}
-          hint={t("whatsappJourney.steps.send") as string}
-          icon={Send}
-          index={1}
-          trend={stats.totalSent > 0 ? "up" : "neutral"}
-          sparklineData={stats.sparkSent}
-          sparkTone="info"
-        />
-        <KpiItem
-          label={t("whatsappJourney.stats.completionRate") as string}
-          value={`${stats.completionRate}%`}
-          hint={`${stats.completedCount} / ${stats.totalJourneys}`}
-          icon={TrendingUp}
-          index={2}
-          trend={stats.completionRate >= 50 ? "up" : stats.completionRate >= 20 ? "neutral" : "down"}
-          sparklineData={stats.sparkCompletion}
-          sparkTone={stats.completionRate >= 50 ? "success" : stats.completionRate >= 20 ? "warning" : "destructive"}
-        />
-        <KpiItem
-          label={t("whatsappJourney.monitoring.deliveryHealth") as string}
-          value={
-            stats.needsAttention
-              ? (t("whatsappJourney.monitoring.needsAttention") as string)
-              : (t("whatsappJourney.monitoring.good") as string)
-          }
-          hint={t("whatsappJourney.monitoring.liveMonitor") as string}
-          icon={Zap}
-          index={3}
-          trend={stats.needsAttention ? "down" : "up"}
-          sparklineData={stats.sparkHealth}
-          sparkTone={stats.needsAttention ? "destructive" : "success"}
-        />
+      <div className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-soft">
+        {/* Compact toggle */}
+        <button
+          type="button"
+          onClick={() => setCompactKpi((prev) => !prev)}
+          className="absolute end-2.5 top-2.5 z-10 flex size-7 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
+          aria-label={compactKpi ? t("common.expand") as string : t("common.collapse") as string}
+        >
+          {compactKpi ? <LayoutGrid className="size-3.5" /> : <List className="size-3.5" />}
+        </button>
+
+        <div
+          className={cn(
+            "grid gap-3 p-3 transition-all duration-300",
+            compactKpi
+              ? "grid-cols-5 items-center gap-2 px-3 py-2.5 lg:gap-3"
+              : "sm:grid-cols-2 sm:p-4 lg:grid-cols-5 lg:gap-4 lg:p-5",
+          )}
+        >
+          {/* Active Journeys */}
+          <div className={cn("flex items-center", compactKpi && "gap-2")}>
+            {compactKpi && (
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
+                <Users className="size-3.5" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{String(stats.activeCount)}</p>
+              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.stats.activeJourneys") as string}</p>
+            </div>
+          </div>
+
+          {/* Total Sent */}
+          <div className={cn("flex items-center", compactKpi && "gap-2")}>
+            {compactKpi && (
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
+                <Send className="size-3.5" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{String(stats.totalSent)}</p>
+              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.stats.totalSent") as string}</p>
+            </div>
+          </div>
+
+          {/* Completion Rate */}
+          <div className={cn("flex items-center", compactKpi && "gap-2")}>
+            {compactKpi && (
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
+                <TrendingUp className="size-3.5" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{`${stats.completionRate}%`}</p>
+              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.stats.completionRate") as string}</p>
+            </div>
+          </div>
+
+          {/* Health */}
+          <div className={cn("flex items-center", compactKpi && "gap-2")}>
+            {compactKpi && (
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
+                <Zap className="size-3.5" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">
+                {stats.needsAttention
+                  ? (t("whatsappJourney.monitoring.needsAttention") as string)
+                  : (t("whatsappJourney.monitoring.good") as string)}
+              </p>
+              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.monitoring.deliveryHealth") as string}</p>
+            </div>
+          </div>
+
+          {/* Satisfaction */}
+          <div className={cn("flex items-center", compactKpi && "gap-2")}>
+            {compactKpi && (
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--journey-accent-soft)] text-[color:var(--journey-accent)]">
+                <Star className="size-3.5" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-1">
+                <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{stats.satisfactionVal.toFixed(1)}</p>
+                <Star className="size-3 text-[color:var(--journey-accent)]" />
+              </div>
+              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.stats.satisfaction") as string}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded sparkline row — hidden in compact mode */}
+        {!compactKpi && (
+          <div className="grid gap-3 border-t border-[color:color-mix(in_srgb,var(--color-muted-foreground)_8%,transparent)] px-3 pt-2 pb-1 sm:px-4 lg:grid-cols-5 lg:gap-4 lg:px-5">
+            <Sparkline data={stats.sparkActive} width={60} height={16} tone="primary" />
+            <Sparkline data={stats.sparkSent} width={60} height={16} tone="info" />
+            <Sparkline data={stats.sparkCompletion} width={60} height={16} tone={stats.completionRate >= 50 ? "success" : "warning"} />
+            <Sparkline data={stats.sparkHealth} width={60} height={16} tone={stats.needsAttention ? "destructive" : "success"} />
+            <Sparkline data={stats.sparkSatisfaction} width={60} height={16} tone="muted" />
+          </div>
+        )}
+      </div>
+
+      {/* ── Divider ── */}
+      <div className="flex items-center gap-3 py-1">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[color:var(--shell-control-border)] to-transparent" />
       </div>
 
       {/* ─────────── MASTER-DETAIL LAYOUT ─────────── */}
@@ -840,22 +931,37 @@ const WhatsAppCustomerJourney: React.FC = () => {
                         type="button"
                         onClick={() => handleFlowClick(flow)}
                         className={cn(
-                          "group flex w-full flex-col gap-2.5 rounded-xl p-3.5 text-start transition-all duration-200",
+                          "group flex w-full flex-col gap-2 rounded-xl p-3 text-start transition-all duration-200",
                           selected
-                            ? "scale-[0.99] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-muted))] ring-1 ring-[color:var(--color-primary)]"
+                            ? "scale-[0.99] bg-[color:var(--journey-accent-soft)]"
                             : "bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] hover:translate-x-0.5",
                         )}
+                        style={
+                          selected
+                            ? {
+                                boxShadow: `inset 0 0 0 1.5px var(--journey-accent), 0 0 12px -2px var(--journey-accent-glow)`,
+                              }
+                            : undefined
+                        }
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex min-w-0 items-start gap-2.5">
-                            <span
-                              className={cn(
-                                "mt-0.5 size-2.5 shrink-0 rounded-full transition-all duration-200",
-                                flow.isEnabled
-                                  ? "scale-100 bg-[color:var(--business-success)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--business-success)_20%,transparent)]"
-                                  : "scale-75 bg-[color:var(--color-muted-foreground)] opacity-50",
+                            <span className="relative mt-0.5 size-2.5 shrink-0">
+                              {flow.isEnabled && (
+                                <span
+                                  className="absolute inset-0 animate-journey-dot-ring rounded-full bg-[color:var(--business-success)] opacity-40"
+                                  aria-hidden
+                                />
                               )}
-                            />
+                              <span
+                                className={cn(
+                                  "relative block size-full rounded-full transition-all duration-200",
+                                  flow.isEnabled
+                                    ? "scale-100 bg-[color:var(--business-success)] animate-journey-glow-pulse shadow-[0_0_0_3px_color-mix(in_srgb,var(--business-success)_20%,transparent)]"
+                                    : "scale-75 bg-[color:var(--color-muted-foreground)] opacity-50",
+                                )}
+                              />
+                            </span>
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)]">
                                 {flow.name}
@@ -915,7 +1021,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 border-t border-[color:color-mix(in_srgb,var(--color-muted-foreground)_12%,transparent)] pt-2.5">
+                        <div className="flex items-center justify-between gap-2 border-t border-[color:color-mix(in_srgb,var(--color-muted-foreground)_10%,transparent)] pt-2">
                           <span className="flex items-center gap-1.5 text-xs text-[color:var(--color-muted-foreground)]">
                             <MessageSquare className="size-3" />
                             {flow._count?.steps || 0} {t("whatsappJourney.steps.title")}
@@ -958,13 +1064,18 @@ const WhatsAppCustomerJourney: React.FC = () => {
             </div>
           </WhatsAppSurfaceCard>
 
+          {/* ── Divider ── */}
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[color:var(--shell-control-border)] to-transparent" />
+          </div>
+
           {/* Monitoring board */}
           <WhatsAppSurfaceCard
             title={t("whatsappJourney.tabs.monitoring") as string}
             description={t("whatsappJourney.monitoring.liveMonitor") as string}
           >
             {journeys.length > 0 ? (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <AnimatePresence>
                   {journeys.slice(0, 8).map((journey) => {
                     const statusKey = journey.status.toUpperCase();
@@ -990,14 +1101,25 @@ const WhatsAppCustomerJourney: React.FC = () => {
                           {initials}
                           {/* Live pulse dot */}
                           {(isActive || isFailed) && (
-                            <span
-                              className={cn(
-                                "absolute -end-0.5 -top-0.5 size-2.5 rounded-full ring-2 ring-[color:var(--color-card)]",
-                                isActive
-                                  ? "bg-[color:var(--business-success)] animate-pulse"
-                                  : "bg-[color:var(--color-destructive)] animate-pulse",
-                              )}
-                            />
+                            <span className="absolute -end-0.5 -top-0.5 size-2.5">
+                              <span
+                                className={cn(
+                                  "absolute inset-0 animate-journey-dot-ring rounded-full",
+                                  isActive
+                                    ? "bg-[color:var(--business-success)]"
+                                    : "bg-[color:var(--color-destructive)]",
+                                )}
+                                aria-hidden
+                              />
+                              <span
+                                className={cn(
+                                  "relative block size-full rounded-full ring-2 ring-[color:var(--color-card)]",
+                                  isActive
+                                    ? "bg-[color:var(--business-success)] animate-journey-glow-pulse"
+                                    : "bg-[color:var(--color-destructive)] animate-pulse",
+                                )}
+                              />
+                            </span>
                           )}
                           {!isActive && !isFailed && statusKey === "COMPLETED" && (
                             <span className="absolute -end-0.5 -top-0.5 flex size-2.5 items-center justify-center rounded-full bg-[color:var(--business-success)] ring-2 ring-[color:var(--color-card)]">
@@ -1507,6 +1629,55 @@ const WhatsAppCustomerJourney: React.FC = () => {
           }
         }}
       />
+
+      {/* ── Floating Action Bar ── */}
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.6 }}
+          className="fixed bottom-6 end-6 z-40 flex items-center gap-2"
+        >
+          <AnimatePresence>
+            {selectedFlow && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                className="flex items-center gap-1.5 rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-2 py-1.5 shadow-raised"
+              >
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="size-8 rounded-full"
+                  onClick={() => copilot.setOpen(true)}
+                  title={t("whatsappJourney.copilot.open")}
+                >
+                  <Sparkles className="size-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="size-8 rounded-full"
+                  onClick={openCreateStepDialog}
+                >
+                  <Plus className="size-3.5" />
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <button
+            type="button"
+            onClick={() => void handleRefreshWorkspace()}
+            disabled={refreshing}
+            className="flex size-11 items-center justify-center rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[color:var(--journey-accent)] shadow-raised transition-all duration-200 hover:shadow-lg disabled:opacity-50"
+            style={{ boxShadow: `0 4px 20px -2px var(--journey-accent-glow)` }}
+            aria-label={t("common.refresh") as string}
+          >
+            <RefreshCw className={cn("size-4.5", refreshing && "animate-spin")} />
+          </button>
+        </motion.div>
+      )}
     </WhatsAppPageShell>
   );
 };
