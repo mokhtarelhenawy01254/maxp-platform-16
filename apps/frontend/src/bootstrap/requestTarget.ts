@@ -52,17 +52,6 @@ export const shouldBootstrapStorefront = (
     return false;
   }
 
-  // بوابة العميل (حسابي / تسجيل دخول العملاء) تُعرض من تطبيق المنصة حتى على
-  // subdomain المتجر — حتى لا تُستورد مكونات البوابة جوه محرك المتجر (اعتماد دائري)
-  if (
-    pathname === "/account" ||
-    pathname.startsWith("/account/") ||
-    pathname === "/auth/customer-register" ||
-    pathname.startsWith("/auth/customer-register/")
-  ) {
-    return false;
-  }
-
   if (
     pathname === "/store" ||
     pathname.startsWith("/store/") ||

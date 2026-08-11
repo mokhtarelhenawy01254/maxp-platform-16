@@ -4,6 +4,7 @@ import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { tokenManager } from "../../utils/tokenManager";
 import { useCompanyBranding } from "../../hooks/useCompanyBranding";
+import { getCompanyId } from "../../utils/storefrontApi";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 
 const CustomerRegister: React.FC = () => {
@@ -56,17 +57,12 @@ const CustomerRegister: React.FC = () => {
       const companyIdFromPath =
         typeof params.companyId === "string" ? params.companyId : null;
       const companyIdFromStorage = localStorage.getItem("storefront_companyId");
-      // على subdomain المتجر (مثل swan.maxp.online) بيبقى أول جزء من الـ hostname هو slug الشركة
-      const subdomainCompany = (() => {
-        const host = window.location.hostname.split(".");
-        if (host.length >= 3 && host[0] !== "www") return host[0];
-        return null;
-      })();
+      const companyIdFromScope = getCompanyId();
       const companyId = (
         companyIdFromQuery ||
         companyIdFromPath ||
         companyIdFromStorage ||
-        subdomainCompany ||
+        companyIdFromScope ||
         ""
       ).trim();
 

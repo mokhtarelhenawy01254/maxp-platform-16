@@ -19,6 +19,7 @@ import ScheduleTab from "./ScheduleTab";
 import ReferringPhysiciansTab from "./ReferringPhysiciansTab";
 import ExamAdditionsTab from "./ExamAdditionsTab";
 import StatisticsTab from "./StatisticsTab";
+import CashierShiftsTab from "./CashierShiftsTab";
 import SettingsTab from "./SettingsTab";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
@@ -68,6 +69,7 @@ export default function RadiologyManagementPage() {
       {activeTab === "referring-physicians" && <TabErrorBoundary tabLabel="الأطباء المحوّلون"><ReferringPhysiciansTab /></TabErrorBoundary>}
       {activeTab === "exam-additions" && <TabErrorBoundary tabLabel="إضافات الفحوصات"><ExamAdditionsTab /></TabErrorBoundary>}
       {activeTab === "statistics" && <TabErrorBoundary tabLabel="الإحصائيات"><StatisticsTab /></TabErrorBoundary>}
+      {activeTab === "cashier-shifts" && <TabErrorBoundary tabLabel="الورديات"><CashierShiftsTab /></TabErrorBoundary>}
       {activeTab === "settings" && <TabErrorBoundary tabLabel="الإعدادات"><SettingsTab /></TabErrorBoundary>}
     </div>
   );

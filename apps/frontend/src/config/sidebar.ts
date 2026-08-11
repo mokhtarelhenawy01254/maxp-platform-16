@@ -1012,6 +1012,7 @@ export const getSidebarConfig = (
                 { to: '/radiology/price-quote', icon: Tag, label: t('sidebar.radiologyPriceQuote') },
                 { to: '/radiology/radiologists', icon: Users, label: t('sidebar.radiologyRadiologists') },
                 { to: '/radiology/statistics', icon: BarChart3, label: t('sidebar.radiologyStatistics') },
+                { to: '/radiology/cashier-shifts', icon: Banknote, label: t('sidebar.radiologyCashierShifts') },
                 { to: '/radiology/settings', icon: Settings, label: t('sidebar.radiologySettings') },
             ]
         },

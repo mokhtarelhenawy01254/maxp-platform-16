@@ -214,6 +214,33 @@ model RadiologyStudyPayment {
   createdAt DateTime @default(now())
 }
 
+model RadiologyShift {
+  id          String   @id @default(cuid())
+  companyId   String?
+  branchId    String?
+  cashierName String
+  status      String   @default("OPEN") // OPEN | CLOSED
+  openedBy    String?
+  openedAt    DateTime @default(now())
+  closedBy    String?
+  closedAt    DateTime?
+  createdAt   DateTime @default(now())
+  payments    RadiologyShiftPayment[]
+}
+
+model RadiologyShiftPayment {
+  id        String   @id @default(cuid())
+  companyId String?
+  shiftId   String
+  studyId   String?
+  type      String   // PAYMENT | REFUND
+  amount    Float    @default(0)
+  method    String?  // CASH | CARD | VODAFONE_CASH | BANK
+  note      String?
+  createdAt DateTime @default(now())
+  shift     RadiologyShift @relation(fields: [shiftId], references: [id])
+}
+
 model RadiologyContract {
   id              String   @id @default(cuid())
   companyId       String?

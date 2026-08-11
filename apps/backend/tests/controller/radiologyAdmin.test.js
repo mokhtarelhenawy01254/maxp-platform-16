@@ -8,6 +8,7 @@ const physicians = require('../../controller/radiologyReferringPhysiciansControl
 const additions = require('../../controller/radiologyExamAdditionsController');
 const statistics = require('../../controller/radiologyStatisticsController');
 const payments = require('../../controller/radiologyPaymentsController');
+const shifts = require('../../controller/radiologyShiftsController');
 
 const createResponse = () => {
   const response = {
@@ -29,6 +30,8 @@ const createPrisma = () => ({
   radiologyInsuranceInvoice: { findMany: jest.fn() },
   radiologyInsuranceLedgerEntry: { findMany: jest.fn() },
   priceListItem: { findFirst: jest.fn() },
+  radiologyShift: { findFirst: jest.fn(), findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
+  radiologyShiftPayment: { findMany: jest.fn(), create: jest.fn() },
 });
 
 const req = (overrides = {}) => ({
@@ -308,5 +311,76 @@ describe('radiologyAppointmentsController convertToStudy', () => {
 
     expect(res.statusCode).toBe(400);
     expect(prisma.radiologyStudy.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('radiologyShiftsController', () => {
+  test('opens a shift when none is open', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyShift.findFirst.mockResolvedValue(null);
+    prisma.radiologyShift.create.mockImplementation(({ data }) => Promise.resolve({ id: 'shift-1', ...data }));
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await shifts.openShift(req({ body: { cashierName: 'شروق' } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.radiologyShift.create).toHaveBeenCalledWith({ data: expect.objectContaining({ cashierName: 'شروق', status: 'OPEN' }) });
+  });
+
+  test('rejects opening a shift when one is already open', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyShift.findFirst.mockResolvedValue({ id: 'shift-1', status: 'OPEN' });
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await shifts.openShift(req({ body: { cashierName: 'شروق' } }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(prisma.radiologyShift.create).not.toHaveBeenCalled();
+  });
+
+  test('getActiveShift summarizes payments and refunds by method', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyShift.findFirst.mockResolvedValue({ id: 'shift-1', status: 'OPEN', cashierName: 'شروق' });
+    prisma.radiologyShiftPayment.findMany.mockResolvedValue([
+      { type: 'PAYMENT', amount: 500, method: 'CASH' },
+      { type: 'PAYMENT', amount: 300, method: 'CARD' },
+      { type: 'REFUND', amount: 100, method: 'CASH' },
+    ]);
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await shifts.getActiveShift(req(), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.data.summary.collected).toBe(800);
+    expect(res.payload.data.summary.refunded).toBe(100);
+    expect(res.payload.data.summary.net).toBe(700);
+    expect(res.payload.data.summary.byMethod.CASH).toBe(500);
+    expect(res.payload.data.summary.byMethod.CARD).toBe(300);
+  });
+
+  test('closes an open shift', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyShift.findFirst.mockResolvedValue({ id: 'shift-1', status: 'OPEN', cashierName: 'شروق' });
+    prisma.radiologyShiftPayment.findMany.mockResolvedValue([{ type: 'PAYMENT', amount: 500, method: 'CASH' }]);
+    prisma.radiologyShift.update.mockResolvedValue({ id: 'shift-1', status: 'CLOSED', closedAt: new Date() });
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await shifts.closeShift(req({ params: { id: 'shift-1' } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.radiologyShift.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'CLOSED' }) }));
+    expect(res.payload.data.summary.collected).toBe(500);
+  });
+
+  test('returns 403 when companyId missing', async () => {
+    const prisma = createPrisma();
+    getSharedPrismaClient.mockReturnValue(prisma);
+    const res = createResponse();
+    await shifts.openShift(req({ user: {}, body: {} }), res);
+    expect(res.statusCode).toBe(403);
   });
 });

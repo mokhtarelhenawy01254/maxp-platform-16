@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { attachToActiveShift } = require('./radiologyShiftsController');
 
 const PAYMENT_METHODS = ['CASH', 'CARD', 'BANK', 'VODAFONE_CASH', 'OTHER'];
 
@@ -75,6 +76,7 @@ const recordStudyPayment = async (req, res) => {
         paidBy: req.user?.id || req.user?.email || null,
       },
     });
+    await attachToActiveShift(prisma, companyId, id, 'PAYMENT', amt, m, note ? String(note) : null);
 
     const total = getStudyTotal(study);
     const { paid, status, updated } = await recomputePaid(prisma, id, total);
@@ -113,6 +115,7 @@ const refundStudyPayment = async (req, res) => {
         paidBy: req.user?.id || req.user?.email || null,
       },
     });
+    await attachToActiveShift(prisma, companyId, id, 'REFUND', amt, 'CASH', note ? String(note) : null);
 
     const total = getStudyTotal(study);
     const { paid: newPaid, status, updated } = await recomputePaid(prisma, id, total);

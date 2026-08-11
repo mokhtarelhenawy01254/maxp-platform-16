@@ -5,11 +5,18 @@ const physicians = require('../controller/radiologyReferringPhysiciansController
 const additions = require('../controller/radiologyExamAdditionsController');
 const statistics = require('../controller/radiologyStatisticsController');
 const payments = require('../controller/radiologyPaymentsController');
+const shifts = require('../controller/radiologyShiftsController');
 const verifyToken = require('../utils/verifyToken');
 
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
 
 router.use(verifyToken.authenticateToken);
+
+// Cashier shifts
+router.get('/shifts', shifts.listShifts);
+router.get('/shifts/active', shifts.getActiveShift);
+router.post('/shifts', verifyToken.requireRole(MANAGER_ROLES), shifts.openShift);
+router.post('/shifts/:id/close', verifyToken.requireRole(MANAGER_ROLES), shifts.closeShift);
 
 // Study payments
 router.get('/studies/:id/payment', payments.getStudyPayment);

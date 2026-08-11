@@ -1,12 +1,12 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import { LayoutDashboard, Inbox, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Plus } from "lucide-react";
+import { LayoutDashboard, Inbox, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Plus, Banknote } from "lucide-react";
 
 export type TabId =
   | "dashboard" | "reception" | "patients" | "studies" | "reports"
   | "exam-types" | "price-lists" | "contracts" | "branches" | "invoices"
   | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "price-quote" | "radiologists"
-  | "schedule" | "referring-physicians" | "exam-additions" | "statistics" | "settings";
+  | "schedule" | "referring-physicians" | "exam-additions" | "statistics" | "cashier-shifts" | "settings";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "لوحة الأشعة", icon: LayoutDashboard },
@@ -28,6 +28,7 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "price-quote", label: "عرض سعر", icon: Tag },
   { id: "radiologists", label: "أخصائيو الأشعة", icon: Users },
   { id: "statistics", label: "الإحصائيات", icon: BarChart3 },
+  { id: "cashier-shifts", label: "الورديات", icon: Banknote },
   { id: "settings", label: "الإعدادات", icon: Settings },
 ];
 
