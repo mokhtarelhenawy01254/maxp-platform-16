@@ -2,7 +2,15 @@
 // Run after catalog:sync-target to clean up deprecated entries.
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
 
-const DEPRECATED_SLUGS = ['ecommerce-basic', 'store-basic', 'store-pro'];
+// Deactivated 2026-08: standalone calculators are free marketing tools, not sellable apps.
+const DEPRECATED_SLUGS = [
+  'ecommerce-basic', 'store-basic', 'store-pro',
+  'product-presentations',
+  'break-even', 'product-break-even', 'pricing-strategy',
+  'profitability-engine', 'campaign-calculator', 'ad-budget-planner',
+  'discount-impact', 'shipping-optimizer', 'monthly-pnl',
+  'clv-calculator', 'upsell-planner', 'refund-rate',
+];
 
 async function main() {
   const prisma = await getSharedPrismaClientAsync();

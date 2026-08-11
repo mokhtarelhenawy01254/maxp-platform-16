@@ -168,6 +168,18 @@
   padding-bottom: 0.5rem;
 }
 
+/* Hide native scrollbar arrows (up/down) on the sidebar and main content so no
+   arrow buttons sit next to the main menu */
+.app-shell-sidebar-content::-webkit-scrollbar-button,
+.app-shell-content::-webkit-scrollbar-button {
+  display: none;
+}
+.app-shell-sidebar-content,
+.app-shell-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
 .app-shell-sidebar-item {
   display: flex;
   align-items: center;

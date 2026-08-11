@@ -192,7 +192,7 @@ export const categoryGroups: CategoryGroupDef[] = [
   {
     id: "operations",
     labelKey: "marketplace.categories.groups.operations",
-    categories: ["PRODUCTIVITY", "HR", "FINANCE", "ACCOUNTING", "PAYMENTS", "PROCUREMENT", "WAREHOUSE", "SHIPPING"],
+    categories: ["PRODUCTIVITY", "HR", "FINANCE", "ACCOUNTING", "PAYMENTS", "PROCUREMENT", "WAREHOUSE", "SHIPPING", "AUTOMATION"],
   },
   {
     id: "communication",

@@ -857,3 +857,9 @@ body.sidebar-mobile-open {
   background: var(--sb-border);
   border-radius: 10px;
 }
+
+/* Hide native scrollbar arrow buttons so no up/down arrows sit next to the main menu */
+.business-sidebar-links::-webkit-scrollbar-button,
+.business-sidebar-rail-scroll::-webkit-scrollbar-button {
+  display: none;
+}

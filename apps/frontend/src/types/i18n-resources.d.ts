@@ -11205,6 +11205,9 @@ declare module 'react-i18next' {
         changedAt: string;
         duplicateTitle: string;
         duplicateOrder: string;
+        duplicateBlockedNote: string;
+        duplicateAcknowledge: string;
+        orderBlocked: string;
         noResults: string;
       };
       returns: {

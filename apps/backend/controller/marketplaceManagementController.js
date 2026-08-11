@@ -626,7 +626,7 @@ exports.deleteApp = async (req, res) => {
     if (app._count.installations > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete app: installed by ${app._count.installations} company(ies). Uninstall it first.`
+        message: `لا يمكن حذف الأداة: مثبتة لدى ${app._count.installations} شركة. قم بإلغاء التثبيت أولاً.`
       });
     }
 

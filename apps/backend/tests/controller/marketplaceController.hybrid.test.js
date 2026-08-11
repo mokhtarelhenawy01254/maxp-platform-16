@@ -575,7 +575,12 @@ describe("Marketplace Controller Hybrid", () => {
         update: jest.fn().mockResolvedValue({})
       },
       companyWallet: {
-        upsert: jest.fn().mockResolvedValue({})
+        findUnique: jest.fn().mockResolvedValue({ id: "wallet-1", balance: 5000, currency: "EGP" }),
+        create: jest.fn(),
+        update: jest.fn().mockResolvedValue({})
+      },
+      transaction: {
+        create: jest.fn().mockResolvedValue({})
       }
     };
 
@@ -714,7 +719,12 @@ describe("Marketplace Controller Hybrid", () => {
         update: jest.fn().mockResolvedValue({})
       },
       companyWallet: {
-        upsert: jest.fn().mockResolvedValue({})
+        findUnique: jest.fn().mockResolvedValue({ id: "wallet-1", balance: 5000, currency: "EGP" }),
+        create: jest.fn(),
+        update: jest.fn().mockResolvedValue({})
+      },
+      transaction: {
+        create: jest.fn().mockResolvedValue({})
       }
     };
 

@@ -1031,6 +1031,15 @@ h6 {
   scrollbar-color: var(--shell-scrollbar-thumb) var(--shell-scrollbar-track);
 }
 
+/* Hide native scrollbar arrow buttons (up/down) across the app & business shells
+   so no arrow sits on the right side next to the main menu */
+.business-shell-root::-webkit-scrollbar-button,
+.business-shell-main::-webkit-scrollbar-button,
+.business-sidebar-panel::-webkit-scrollbar-button,
+.app-shell-body::-webkit-scrollbar-button {
+  display: none;
+}
+
 [data-slot="select-trigger"],
 [data-slot="dropdown-menu-trigger"] {
   color: var(--shell-overlay-foreground);

@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, Gift, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, Gift, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -811,18 +811,6 @@ export const getSidebarConfig = (
                 { to: '/advertising/facebook-ads/tests', icon: FlaskConical, label: t('sidebar.abTests') },
                 { to: '/advertising/facebook-ads/audiences', icon: Users, label: t('sidebar.audiences') },
                 { to: '/advertising/facebook-ads/catalogs', icon: ShoppingBag, label: t('sidebar.productCatalogs') },
-                { to: '/tools/break-even', icon: Calculator, label: t('sidebar.projectBreakEven') },
-                { to: '/tools/product-break-even', icon: DollarSign, label: t('sidebar.productBreakEven') },
-                { to: '/tools/pricing-strategy', icon: Tag, label: t('sidebar.pricingStrategy') },
-                { to: '/tools/profitability-engine', icon: Calculator, label: t('sidebar.profitabilityEngine') },
-                { to: '/campaign-calculator', icon: Calculator, label: t('sidebar.campaignCalculator') },
-                { to: '/tools/ad-budget-planner', icon: DollarSign, label: t('sidebar.adBudgetPlanner') },
-                { to: '/tools/discount-impact', icon: Tag, label: t('sidebar.discountImpact') },
-                { to: '/tools/shipping-optimizer', icon: Truck, label: t('sidebar.shippingOptimizer') },
-                { to: '/tools/monthly-pnl', icon: BarChart3, label: t('sidebar.monthlyPnL') },
-                { to: '/tools/clv-calculator', icon: Users, label: t('sidebar.clvCalculator') },
-                { to: '/tools/upsell-planner', icon: TrendingUp, label: t('sidebar.upsellPlanner') },
-                { to: '/tools/refund-rate', icon: ShieldAlert, label: t('sidebar.refundRateCalculator') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])

@@ -99,6 +99,7 @@
   "plans": "Plans",
   "faq": "FAQ",
   "installed": "Installed",
+  "notInstalled": "Not Installed",
   "active": "Active",
   "trial": "Trial",
   "cancelled": "Cancelled",

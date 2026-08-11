@@ -877,11 +877,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 ? getPreviewWithoutOrderCode(lastMessageContent, orderCode)
                 : getLastMessagePreview(contact);
 
-              // اسم مرسل آخر رسالة — لو رد موظف (fromMe + اسم) بنعرض "اسم الموظف: النص"
-              // الرسايل الأوتوماتيكية (القوالب) اللي مالهاش مرسل محدّد مبتعرضش اسم
+              // مرسل آخر رسالة زي واتساب الأصلي:
+              // - لو الرسالة صادرة من رقم البيزنس → "أنت: النص"
+              // - لو واردة من العميل → النص عادي (اسم العميل هو عنوان الصف)
               const lastMsgFromMe = Boolean(contact.lastMessage?.fromMe);
-              const lastMsgSenderName = contact.lastMessage?.senderName?.trim();
-              const senderPrefix = lastMsgFromMe && lastMsgSenderName ? lastMsgSenderName : null;
+              const senderPrefix = lastMsgFromMe ? t("whatsapp.window.you") : null;
 
               return (
                 <div key={contact.id} className="relative overflow-hidden rounded-2xl">

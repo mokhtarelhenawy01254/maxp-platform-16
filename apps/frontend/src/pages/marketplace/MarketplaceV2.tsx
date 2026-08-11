@@ -5,9 +5,9 @@ import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import {
   Package, Loader2,
-  Layers3, Sparkles, CheckCircle2, X, Zap,
+  Layers3, Sparkles, PackageX, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3, Star, Heart,
+  DollarSign, Grid3X3, Heart,
   ShoppingBag, Brain,
   LayoutGrid,
   Truck,
@@ -110,6 +110,25 @@ function matchesFilters(app: MarketplaceApp, filters: MarketplaceFilters) {
   return true;
 }
 
+function matchesSearch(app: MarketplaceApp, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack = [
+    app.name,
+    app.nameEn,
+    app.description,
+    app.descriptionEn,
+    app.category,
+    app.slug,
+    ...(app.tags || []),
+    app.developer?.name,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
+}
+
 interface AppGroupSection {
   id: string;
   labelKey: string;
@@ -188,9 +207,7 @@ export default function MarketplaceV2() {
   const [uninstallingApp, setUninstallingApp] = useState<string | null>(null);
   const [showPricingDialog, setShowPricingDialog] = useState<MarketplaceApp | null>(null);
   const [confirmUninstallApp, setConfirmUninstallApp] = useState<MarketplaceApp | null>(null);
-  const [activeSpecialty, setActiveSpecialty] = useState<MarketplaceSpecialty | null>(null);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [showInstalled, setShowInstalled] = useState(false);
+  const [showNotInstalled, setShowNotInstalled] = useState(false);
   const [isInstallingAll, setIsInstallingAll] = useState(false);
   const [confirmBulkInstall, setConfirmBulkInstall] = useState(false);
   const [filters, setFilters] = useState<MarketplaceFilters>({});
@@ -213,17 +230,11 @@ export default function MarketplaceV2() {
     setSearchParams(p, { replace: true });
   }, [selectedCategory, searchQuery, sortBy, setSearchParams]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const params: Record<string, string | number> = {};
       if (selectedCategory) params.category = selectedCategory;
-      if (debouncedSearch) params.search = debouncedSearch;
       if (sortBy) params.sort = sortBy;
       params.page = 1;
       params.limit = MARKETPLACE_APPS_FETCH_LIMIT;
@@ -235,21 +246,20 @@ export default function MarketplaceV2() {
 
       setApps(appsRes.data.data);
       setCategories(categoriesRes.data.data);
-      setActiveSpecialty(appsRes.data.specialty || categoriesRes.data.specialty || null);
     } catch {
       toast.error(t('marketplace.fetchError'));
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, selectedCategory, sortBy, t]);
+  }, [selectedCategory, sortBy, t]);
 
   useEffect(() => { fetchData(); setDisplayCount(DISPLAY_INCREMENT); }, [fetchData]);
 
   const collectionFiltered = apps.filter(a => matchesCollection(a, collection));
-  const filterFiltered = collectionFiltered.filter(a => matchesFilters(a, filters));
-  const filteredApps = showInstalled ? filterFiltered.filter(a => a.isInstalled) : filterFiltered;
+  const searchFiltered = collectionFiltered.filter(a => matchesSearch(a, searchQuery));
+  const filterFiltered = searchFiltered.filter(a => matchesFilters(a, filters));
+  const filteredApps = showNotInstalled ? filterFiltered.filter(a => !a.isInstalled) : filterFiltered;
   const displayedApps = filteredApps.slice(0, displayCount);
-  const installedCount = apps.filter(a => a.isInstalled).length;
 
   const hasMoreApps = filteredApps.length > displayCount;
   useEffect(() => {
@@ -379,39 +389,6 @@ export default function MarketplaceV2() {
                   <p className="text-lg font-extrabold text-foreground">{apps.length}</p>
                 </div>
               </div>
-              <div className="mp-stat-item">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-success/10 text-success shrink-0">
-                  <CheckCircle2 size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.installedApps')}</p>
-                  <p className="text-lg font-extrabold text-foreground">{installedCount}</p>
-                </div>
-              </div>
-              <div className="mp-stat-item">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 shrink-0">
-                  <Star size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.averageRating')}</p>
-                  <p className="text-lg font-extrabold text-foreground">
-                    {apps.filter(a => a.rating).length > 0
-                      ? (apps.reduce((s, a) => s + (a.rating || 0), 0) / apps.filter(a => a.rating).length).toFixed(1)
-                      : '--'}
-                  </p>
-                </div>
-              </div>
-              {activeSpecialty && (
-                <div className="mp-stat-item">
-                  <div className="flex size-9 items-center justify-center rounded-xl bg-fuchsia-500/10 text-fuchsia-600 shrink-0">
-                    <Layers3 size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.specialtyLabel')}</p>
-                    <p className="text-sm font-extrabold text-foreground truncate">{activeSpecialty.nameAr}</p>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="mt-4 flex items-start gap-5">
@@ -449,13 +426,13 @@ export default function MarketplaceV2() {
                     className="lg:hidden"
                   />
                   <Button
-                    variant={showInstalled ? "default" : "outline"}
+                    variant={showNotInstalled ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setShowInstalled(!showInstalled)}
+                    onClick={() => setShowNotInstalled(!showNotInstalled)}
                     className="h-9 gap-1.5 rounded-xl text-xs font-bold"
                   >
-                    <CheckCircle2 size={13} />
-                    {t('marketplace.installed')}
+                    <PackageX size={13} />
+                    {t('marketplace.notInstalled')}
                   </Button>
                   <FilterSidebar
                     isMobile
@@ -511,7 +488,7 @@ export default function MarketplaceV2() {
                         setSearchQuery("");
                         setSelectedCategory("");
                         setCollection("ALL");
-                        setShowInstalled(false);
+                        setShowNotInstalled(false);
                         setFilters({});
                         setDisplayCount(DISPLAY_INCREMENT);
                       }}
@@ -529,8 +506,8 @@ export default function MarketplaceV2() {
                       <h2 className="text-base font-extrabold text-foreground tracking-tight">
                         {selectedCategory
                           ? categories.find(c => c.category === selectedCategory)?.name
-                          : debouncedSearch
-                            ? t('marketplace.noSearchResults', { query: debouncedSearch })
+                          : searchQuery
+                            ? t('marketplace.noSearchResults', { query: searchQuery })
                             : t('marketplace.allTools')}
                       </h2>
                       <span className="mp-section-count-v2">{filteredApps.length}</span>
