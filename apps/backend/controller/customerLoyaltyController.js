@@ -975,15 +975,13 @@ async function getSystemAnalytics(req, res) {
     res.json({ success: true, data });
   } catch (error) {
     console.error('❌ Error getting loyalty system analytics:', error);
-    // 🛡️ لو فشل جلب التحليلات (جدول ناقص في DB قديم، انقطاع اتصال، pool exhausted…)
-    // نرجّع بيانات فاضية بدل 500 عشان نمنع ظهور رسالة "خطأ في جلب البيانات"
-    // للمستخدم. الـ UI بيعرض "لا توجد بيانات تحليل بعد" بأمان.
+    // 🐛 مؤقتاً: نرجّع تفاصيل الخطأ عشان نشخّص ليه التحليلات بترجع فاضية
     res.json({
       success: true,
       data: {
-        system: 'TIERS',
-        totalEnrolled: 0,
-        tiers: []
+        system: 'ERROR',
+        error: error?.message || String(error),
+        stack: error?.stack?.split('\n').slice(0, 3).join(' | ')
       }
     });
   }
