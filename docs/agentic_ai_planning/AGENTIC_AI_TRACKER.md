@@ -288,3 +288,10 @@
 - `backend_client.py` أضيفت: `confirm_order`, `update_order_details`, `get_shipping_company_governorates`, `get_shipping_company_areas`.
 - **ملاحظة**: بذرة القالب/المهارة بتتحمل في DB عند إعادة تشغيل ai-service (أو `POST /admin/agents/templates/seed` + `/admin/agents/skills/seed`).
 
+## ✅ تحديث 2026-08-11 — تحليلات حركة حالات الطلبات (order movement analytics)
+
+ميزة تحليلات (غير agentic) في قسم تحليلات الطلبات:
+
+- **Backend**: `services/orderMovementCore.js` + 8 كونترولرز في `controller/orderMovement/` (مصفوفة انتقالات، سانكي، مسارات، زمن مكوث، نتائج نهائية، أداء فريق، طلبات معلّقة، موافقات) معلّقة على `/api/v1/analytics/order-movement/*` مع تمييز يدوي/تلقائي. اختبارات 44/44.
+- **Frontend**: صفحة `/analytics/orders/status-movement` (OrderMovementPage) بـ 8 تابات + فلتر تاريخ + فلتر يدوي/تلقائي + تنبيه truncation. اختبارات frontend 24/24.
+
