@@ -12,6 +12,7 @@ import {
 
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";
+import { useCompanyBranding } from "../../hooks/useCompanyBranding";
 
 interface CustomerPortalLayoutProps {
   children: React.ReactNode;
@@ -42,6 +43,20 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
   const location = useLocation();
   const { isLoading, isAuthenticated, logout } = useAuth();
 
+  // هوية الشركة (لوجو + اسم + لون) — من الـ token أو subdomain المتجر
+  const tokenCompanyId = (() => {
+    try {
+      const token = tokenManager.getAccessToken();
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload?.companyId || null;
+    } catch {
+      return null;
+    }
+  })();
+  const branding = useCompanyBranding(tokenCompanyId);
+  const accentColor = branding.accent || "#6366f1";
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -70,7 +85,7 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-50">
+    <div dir="rtl" className="min-h-screen bg-gray-50" style={{ "--auth-accent": accentColor } as React.CSSProperties}>
       {/* Mobile header */}
       <header className="border-b bg-white shadow-sm lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
@@ -83,10 +98,15 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
           </button>
           <Link
             to="/account"
-            className="flex items-center gap-2 text-lg font-bold text-indigo-600"
+            className="flex items-center gap-2 text-lg font-bold"
+            style={{ color: accentColor }}
           >
-            <ShieldCheck size={20} />
-            حسابي
+            {branding.logo ? (
+              <img src={branding.logo} alt={branding.name || "logo"} className="h-6 w-6 rounded-full object-cover" />
+            ) : (
+              <ShieldCheck size={20} />
+            )}
+            {branding.name || "حسابي"}
           </Link>
           <div className="w-10" />
         </div>
@@ -100,9 +120,31 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
           } fixed right-0 top-0 z-40 h-screen w-64 border-l bg-white shadow-lg lg:sticky lg:block`}
         >
           <div className="border-b p-6">
+            {branding.name && (
+              <div className="mb-3 flex items-center gap-2">
+                {branding.logo ? (
+                  <img
+                    src={branding.logo}
+                    alt={branding.name}
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-white"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    {branding.name.charAt(0)}
+                  </div>
+                )}
+                <span className="text-sm font-bold" style={{ color: accentColor }}>
+                  {branding.name}
+                </span>
+              </div>
+            )}
             <Link
               to="/account"
-              className="mb-1 flex items-center gap-2 text-xl font-bold text-indigo-600"
+              className="mb-1 flex items-center gap-2 text-xl font-bold"
+              style={{ color: accentColor }}
             >
               <ShieldCheck size={22} />
               حسابي

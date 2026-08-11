@@ -30,6 +30,10 @@ interface AuthSurfaceProps {
   visualBadge?: string;
   visualStats?: Array<{ label: string; value: string }>;
   dir?: "rtl" | "ltr";
+  // هوية الشركة — لو متوفرة تُعرض بدل هوية المنصة (لوجو/اسم/لون)
+  companyLogo?: string | null;
+  companyName?: string | null;
+  companyAccent?: string;
 }
 
 interface AuthNoticeProps {
@@ -53,9 +57,23 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
   visualBadge,
   visualStats,
   dir = "rtl",
+  companyLogo,
+  companyName,
+  companyAccent,
 }) => {
   const { t } = useTranslation();
-  const themeStyle = theme ? THEME_OVERRIDES[theme] : undefined;
+  const themeStyle = {
+    ...(theme ? THEME_OVERRIDES[theme] : undefined),
+    ...(companyAccent
+      ? {
+          "--auth-accent": companyAccent,
+          "--auth-accent-dark": companyAccent,
+          "--auth-accent-glow": `${companyAccent}40`,
+          "--auth-accent-soft": `${companyAccent}1A`,
+          "--auth-accent-border": `${companyAccent}33`,
+        }
+      : {}),
+  } as React.CSSProperties;
   return (
     <div className={cn("elite-auth-container", wide && "elite-auth-container--wide")} dir={dir} style={themeStyle as React.CSSProperties}>
       {/* Visual Side */}
@@ -105,8 +123,20 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
       <div className="elite-auth-form-side">
         <div className={cn("elite-form-container animate-fade-up", wide && "elite-form-container--wide")}>
           <Link to="/" className="elite-brand-logo">
-            <div className="logo-icon">M</div>
-            <span className="logo-text">{t("auth.brandName")}</span>
+            {companyLogo ? (
+              <img
+                src={companyLogo}
+                alt={companyName || "logo"}
+                className="logo-img"
+              />
+            ) : (
+              <div className="logo-icon">
+                {(companyName || t("auth.brandName")).charAt(0)}
+              </div>
+            )}
+            <span className="logo-text">
+              {companyName || t("auth.brandName")}
+            </span>
           </Link>
 
           <div className="form-header">
