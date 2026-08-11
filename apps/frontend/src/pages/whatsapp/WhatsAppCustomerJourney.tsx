@@ -1,24 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   CheckCircle,
+  ChevronLeft,
   Edit,
   GitBranch,
-  LayoutGrid,
-  List,
   MessageSquare,
   Plus,
   RefreshCw,
   Search,
   Send,
   Sparkles,
-  Star,
   Trash2,
-  TrendingDown,
-  TrendingUp,
   Users,
-  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -35,7 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -50,83 +46,54 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Sparkline } from "@/components/common/Sparkline";
 
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
-import {
-  WhatsAppPageShell,
-  WhatsAppSurfaceCard,
-} from "./components/WhatsAppPageShell";
+import { WhatsAppSurfaceCard } from "./components/WhatsAppPageShell";
 import { FlowCanvas, type FlowStep } from "./components/journey/FlowCanvas";
 import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotDrawer";
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
 
-/* ── Lightweight KPI item with sparkline + trend (no border — sits inside a shared strip) ── */
-function KpiItem({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  trend,
-  sparklineData,
-  sparkTone,
-  accentTone = false,
-  index = 0,
+/**
+ * Slim top bar used in place of the gradient WhatsAppPageShell header.
+ * Keeps navigation (back) and primary actions accessible without the
+ * eyebrow / title / subtitle that the shell renders by default.
+ */
+function PageTopBar({
+  backHref,
+  backLabel,
+  isRtl,
+  actions,
 }: {
-  label: string;
-  value: string;
-  hint?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  trend?: "up" | "down" | "neutral";
-  sparklineData?: number[];
-  sparkTone?: "primary" | "success" | "warning" | "destructive" | "info" | "muted";
-  accentTone?: boolean;
-  index?: number;
+  backHref: string;
+  backLabel: string;
+  isRtl: boolean;
+  actions?: React.ReactNode;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
-      className="flex items-center gap-3"
-    >
-      <div
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-3 py-2 shadow-soft sm:rounded-3xl sm:px-4 sm:py-2.5">
+      <Link
+        to={backHref}
+        aria-label={backLabel}
         className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-xl",
-          accentTone
-            ? "bg-[color:var(--journey-accent-soft)] text-[color:var(--journey-accent)]"
-            : "bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]",
+          buttonVariants({ variant: "outline", size: "icon-sm" }),
+          "shrink-0 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-background)] text-[color:var(--color-foreground)] hover:bg-[color:var(--color-muted)]",
         )}
       >
-        <Icon className="size-4.5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-1.5">
-          <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{value}</p>
-          {trend === "up" && (
-            <span className="flex items-center gap-0.5 text-[10px] font-medium text-[color:var(--color-success)]">
-              <TrendingUp className="size-3" />
-            </span>
-          )}
-          {trend === "down" && (
-            <span className="flex items-center gap-0.5 text-[10px] font-medium text-[color:var(--color-destructive)]">
-              <TrendingDown className="size-3" />
-            </span>
-          )}
+        <ChevronLeft
+          className={cn("size-4", isRtl && "rotate-180")}
+        />
+      </Link>
+
+      {actions ? (
+        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+          {actions}
         </div>
-        <p className="text-xs text-[color:var(--color-muted-foreground)]">{label}</p>
-        {sparklineData && sparklineData.length >= 2 && (
-          <div className="mt-1">
-            <Sparkline data={sparklineData} width={80} height={20} tone={sparkTone || "primary"} />
-          </div>
-        )}
-        {hint && !sparklineData ? (
-          <p className="truncate text-[11px] text-[color:var(--color-muted-foreground)] opacity-70">{hint}</p>
-        ) : null}
-      </div>
-    </motion.div>
+      ) : (
+        <span />
+      )}
+    </div>
   );
 }
 
@@ -330,7 +297,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
   });
 
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
-  const [compactKpi, setCompactKpi] = useState(false);
 
   const selectedFlowIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -581,94 +547,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
     return flows.filter((flow) => flow.name.toLowerCase().includes(query));
   }, [flows, searchTerm]);
 
-  const stats = useMemo(() => {
-    const activeCount = journeys.filter((journey) => journey.status === "ACTIVE")
-      .length;
-    const completedCount = journeys.filter(
-      (journey) => journey.status === "COMPLETED",
-    ).length;
-    const totalJourneys = journeys.length;
-    const completionRate =
-      totalJourneys > 0
-        ? Math.round((completedCount / totalJourneys) * 100)
-        : 0;
-    const totalSent = journeys.reduce(
-      (sum, journey) => sum + (journey.currentStep || 0),
-      0,
-    );
-
-    const needsAttention =
-      totalJourneys > 0 && completionRate < 20 && activeCount > 10;
-
-    /* Sparkline data derived from actual stats — simulates 7-day trend */
-    const sparkActive = [
-      Math.max(0, activeCount - 4),
-      Math.max(0, activeCount - 3),
-      Math.max(0, activeCount - 5),
-      Math.max(0, activeCount - 2),
-      Math.max(0, activeCount - 1),
-      Math.max(0, activeCount + 1),
-      activeCount,
-    ];
-    const sparkSent = [
-      Math.max(0, totalSent - 8),
-      Math.max(0, totalSent - 5),
-      Math.max(0, totalSent - 10),
-      Math.max(0, totalSent - 4),
-      Math.max(0, totalSent - 2),
-      Math.max(0, totalSent + 2),
-      totalSent,
-    ];
-    const sparkCompletion = [
-      Math.max(0, completionRate - 12),
-      Math.max(0, completionRate - 8),
-      Math.max(0, completionRate - 15),
-      Math.max(0, completionRate - 5),
-      Math.max(0, completionRate - 3),
-      Math.max(0, completionRate + 2),
-      completionRate,
-    ];
-    const healthVal = needsAttention ? 20 : 85;
-    const sparkHealth = [
-      Math.max(0, healthVal - 10),
-      Math.max(0, healthVal - 5),
-      Math.max(0, healthVal - 15),
-      Math.max(0, healthVal + 3),
-      Math.max(0, healthVal + 1),
-      Math.max(0, healthVal - 2),
-      healthVal,
-    ];
-
-    /* Satisfaction score — derived from completion ratio + health */
-    const satisfactionVal = totalJourneys > 0
-      ? Math.min(5, Math.round(((completionRate / 100) * 3 + (healthVal / 100) * 2) * 10) / 10)
-      : 0;
-    const sparkSatisfaction = [
-      Math.max(0, satisfactionVal - 0.8),
-      Math.max(0, satisfactionVal - 0.4),
-      Math.max(0, satisfactionVal - 1.0),
-      Math.max(0, satisfactionVal + 0.2),
-      Math.max(0, satisfactionVal + 0.1),
-      Math.max(0, satisfactionVal - 0.3),
-      satisfactionVal,
-    ];
-
-    return {
-      activeCount,
-      completedCount,
-      totalJourneys,
-      completionRate,
-      totalSent,
-      needsAttention,
-      sparkActive,
-      sparkSent,
-      sparkCompletion,
-      sparkHealth,
-      satisfactionVal,
-      sparkSatisfaction,
-    };
-  }, [journeys]);
-
   const formatDate = (value?: string) => {
     if (!value) {
       return "-";
@@ -692,65 +570,63 @@ const WhatsAppCustomerJourney: React.FC = () => {
 
   if (loading) {
     return (
-      <WhatsAppPageShell
-        title={t("whatsappJourney.title")}
-        description={t("whatsappJourney.subtitle")}
-        icon={Sparkles}
-        backHref="/whatsapp/notifications"
-        backLabel={t("common.back") as string}
+      <section
+        dir={i18n.dir()}
+        className="min-h-full space-y-space-4 overflow-x-hidden px-space-1 py-space-2 pb-[calc(var(--space-4)+env(safe-area-inset-bottom))] sm:space-y-space-6 sm:px-space-6 sm:py-space-4 lg:px-space-8"
       >
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-28 rounded-2xl sm:rounded-3xl" />
-          ))}
+        <PageTopBar
+          backHref="/whatsapp/notifications"
+          backLabel={t("common.back") as string}
+          isRtl={isRtl}
+        />
+        <div className="space-y-4">
+          <Skeleton className="h-[26rem] rounded-2xl sm:rounded-3xl" />
+          <Skeleton className="h-[22rem] rounded-2xl sm:rounded-3xl" />
+          <Skeleton className="h-56 rounded-2xl sm:rounded-3xl" />
         </div>
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.6fr)]">
-          <div className="space-y-4">
-            <Skeleton className="h-[26rem] rounded-2xl sm:rounded-3xl" />
-            <Skeleton className="h-56 rounded-2xl sm:rounded-3xl" />
-          </div>
-          <Skeleton className="h-[34rem] rounded-2xl sm:rounded-3xl" />
-        </div>
-      </WhatsAppPageShell>
+      </section>
     );
   }
 
   return (
-    <WhatsAppPageShell
-      title={t("whatsappJourney.title")}
-      description={t("whatsappJourney.subtitle")}
-      icon={Sparkles}
-      backHref="/whatsapp/notifications"
-      backLabel={t("common.back") as string}
-      actions={
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={refreshing}
-            onClick={() => void handleRefreshWorkspace()}
-          >
-            <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
-            {t("common.refresh")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => copilot.setOpen(true)}
-            title={t("whatsappJourney.copilot.open") + " (⌘K)"}
-          >
-            <Sparkles className="size-4" />
-            {t("whatsappJourney.copilot.title")}
-          </Button>
-          {isAdmin && (
-            <Button size="sm" onClick={openCreateFlowDialog}>
-              <Plus className="size-4" />
-              {t("whatsappJourney.flows.addNew")}
-            </Button>
-          )}
-        </>
-      }
+    <section
+      dir={i18n.dir()}
+      className="min-h-full space-y-space-4 overflow-x-hidden px-space-1 py-space-2 pb-[calc(var(--space-4)+env(safe-area-inset-bottom))] sm:space-y-space-6 sm:px-space-6 sm:py-space-4 lg:px-space-8"
     >
+      <PageTopBar
+        backHref="/whatsapp/notifications"
+        backLabel={t("common.back") as string}
+        isRtl={isRtl}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={refreshing}
+              onClick={() => void handleRefreshWorkspace()}
+            >
+              <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
+              {t("common.refresh")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => copilot.setOpen(true)}
+              title={t("whatsappJourney.copilot.open") + " (⌘K)"}
+            >
+              <Sparkles className="size-4" />
+              {t("whatsappJourney.copilot.title")}
+            </Button>
+            {isAdmin && (
+              <Button size="sm" onClick={openCreateFlowDialog}>
+                <Plus className="size-4" />
+                {t("whatsappJourney.flows.addNew")}
+              </Button>
+            )}
+          </>
+        }
+      />
+
       {notice ? (
         <div className="fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
           <Alert
@@ -773,134 +649,22 @@ const WhatsAppCustomerJourney: React.FC = () => {
         </div>
       ) : null}
 
-      {/* ─────────── KPI STRIP ─────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-soft">
-        {/* Compact toggle */}
-        <button
-          type="button"
-          onClick={() => setCompactKpi((prev) => !prev)}
-          className="absolute end-2.5 top-2.5 z-10 flex size-7 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
-          aria-label={compactKpi ? t("common.expand") as string : t("common.collapse") as string}
+      {/* ─────────── VERTICAL LAYOUT ─────────── */}
+      <div className="space-y-4">
+        {/* Flows list */}
+        <WhatsAppSurfaceCard
+          title={t("whatsappJourney.tabs.flows") as string}
+          description={t("whatsappJourney.flows.count", { count: flows.length }) as string}
+          action={
+            <Badge
+              variant="outline"
+              className="gap-1.5 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2.5 py-1 text-xs"
+            >
+              <GitBranch className="size-3.5 text-[color:var(--color-muted-foreground)]" />
+              {flows.length}
+            </Badge>
+          }
         >
-          {compactKpi ? <LayoutGrid className="size-3.5" /> : <List className="size-3.5" />}
-        </button>
-
-        <div
-          className={cn(
-            "grid gap-3 p-3 transition-all duration-300",
-            compactKpi
-              ? "grid-cols-5 items-center gap-2 px-3 py-2.5 lg:gap-3"
-              : "sm:grid-cols-2 sm:p-4 lg:grid-cols-5 lg:gap-4 lg:p-5",
-          )}
-        >
-          {/* Active Journeys */}
-          <div className={cn("flex items-center", compactKpi && "gap-2")}>
-            {compactKpi && (
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
-                <Users className="size-3.5" />
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{String(stats.activeCount)}</p>
-              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.stats.activeJourneys") as string}</p>
-            </div>
-          </div>
-
-          {/* Total Sent */}
-          <div className={cn("flex items-center", compactKpi && "gap-2")}>
-            {compactKpi && (
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
-                <Send className="size-3.5" />
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{String(stats.totalSent)}</p>
-              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.stats.totalSent") as string}</p>
-            </div>
-          </div>
-
-          {/* Completion Rate */}
-          <div className={cn("flex items-center", compactKpi && "gap-2")}>
-            {compactKpi && (
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
-                <TrendingUp className="size-3.5" />
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{`${stats.completionRate}%`}</p>
-              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.stats.completionRate") as string}</p>
-            </div>
-          </div>
-
-          {/* Health */}
-          <div className={cn("flex items-center", compactKpi && "gap-2")}>
-            {compactKpi && (
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
-                <Zap className="size-3.5" />
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">
-                {stats.needsAttention
-                  ? (t("whatsappJourney.monitoring.needsAttention") as string)
-                  : (t("whatsappJourney.monitoring.good") as string)}
-              </p>
-              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.monitoring.deliveryHealth") as string}</p>
-            </div>
-          </div>
-
-          {/* Satisfaction */}
-          <div className={cn("flex items-center", compactKpi && "gap-2")}>
-            {compactKpi && (
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--journey-accent-soft)] text-[color:var(--journey-accent)]">
-                <Star className="size-3.5" />
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-1">
-                <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{stats.satisfactionVal.toFixed(1)}</p>
-                <Star className="size-3 text-[color:var(--journey-accent)]" />
-              </div>
-              <p className="text-xs text-[color:var(--color-muted-foreground)]">{t("whatsappJourney.stats.satisfaction") as string}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Expanded sparkline row — hidden in compact mode */}
-        {!compactKpi && (
-          <div className="grid gap-3 border-t border-[color:color-mix(in_srgb,var(--color-muted-foreground)_8%,transparent)] px-3 pt-2 pb-1 sm:px-4 lg:grid-cols-5 lg:gap-4 lg:px-5">
-            <Sparkline data={stats.sparkActive} width={60} height={16} tone="primary" />
-            <Sparkline data={stats.sparkSent} width={60} height={16} tone="info" />
-            <Sparkline data={stats.sparkCompletion} width={60} height={16} tone={stats.completionRate >= 50 ? "success" : "warning"} />
-            <Sparkline data={stats.sparkHealth} width={60} height={16} tone={stats.needsAttention ? "destructive" : "success"} />
-            <Sparkline data={stats.sparkSatisfaction} width={60} height={16} tone="muted" />
-          </div>
-        )}
-      </div>
-
-      {/* ── Divider ── */}
-      <div className="flex items-center gap-3 py-1">
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[color:var(--shell-control-border)] to-transparent" />
-      </div>
-
-      {/* ─────────── MASTER-DETAIL LAYOUT ─────────── */}
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.6fr)]">
-        {/* LEFT COLUMN: Flows list + Monitoring */}
-        <div className="space-y-4">
-          {/* Flows list */}
-          <WhatsAppSurfaceCard
-            title={t("whatsappJourney.tabs.flows") as string}
-            description={t("whatsappJourney.flows.count", { count: flows.length }) as string}
-            action={
-              <Badge
-                variant="outline"
-                className="gap-1.5 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2.5 py-1 text-xs"
-              >
-                <GitBranch className="size-3.5 text-[color:var(--color-muted-foreground)]" />
-                {flows.length}
-              </Badge>
-            }
-          >
             <div className="space-y-3">
               <div className="relative">
                 <Search
@@ -1064,10 +828,91 @@ const WhatsAppCustomerJourney: React.FC = () => {
             </div>
           </WhatsAppSurfaceCard>
 
-          {/* ── Divider ── */}
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[color:var(--shell-control-border)] to-transparent" />
-          </div>
+          {/* Steps editor */}
+          <WhatsAppSurfaceCard
+            title={
+              selectedFlow
+                ? selectedFlow.name
+                : (t("whatsappJourney.steps.title") as string)
+            }
+            description={
+              selectedFlow
+                ? (t("whatsappJourney.flows.editing") as string)
+                : (t("whatsappJourney.flows.selectPrompt") as string)
+            }
+            action={
+              selectedFlow ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "gap-1.5 rounded-full px-2.5 py-1 text-xs",
+                      selectedFlow.isEnabled
+                        ? "border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,var(--color-foreground))]"
+                        : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "size-1.5 rounded-full",
+                        selectedFlow.isEnabled
+                          ? "bg-[color:var(--business-success)]"
+                          : "bg-[color:var(--color-muted-foreground)] opacity-50",
+                      )}
+                    />
+                    {selectedFlow.isEnabled
+                      ? t("whatsappJourney.flows.enabled")
+                      : t("whatsappJourney.flows.disabled")}
+                  </Badge>
+                  {isAdmin && (
+                    <Button size="sm" onClick={openCreateStepDialog}>
+                      <Plus className="size-4" />
+                      {t("whatsappJourney.steps.add")}
+                    </Button>
+                  )}
+                </div>
+              ) : undefined
+            }
+          >
+            {!selectedFlow ? (
+              <EmptyState
+                icon={Sparkles}
+                title={t("whatsappJourney.flows.empty")}
+                description={t("whatsappJourney.flows.selectPrompt")}
+                action={
+                  isAdmin ? (
+                    <Button size="sm" onClick={openCreateFlowDialog}>
+                      <Plus className="size-4" />
+                      {t("whatsappJourney.flows.addNew")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : stepsLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton
+                    key={index}
+                    className="h-40 rounded-2xl border border-[color:var(--shell-control-border)]"
+                  />
+                ))}
+              </div>
+            ) : (
+              <FlowCanvas
+                steps={steps}
+                isAdmin={isAdmin}
+                onOpenCopilot={() => copilot.setOpen(true)}
+                onReorder={(next) => {
+                  setSteps(next as Step[]);
+                }}
+                onEdit={openEditStepDialog as (step: FlowStep) => void}
+                onAdd={openCreateStepDialog}
+                onDelete={(step) =>
+                  setDeleteTarget({ type: "step", id: step.id || "" })
+                }
+              />
+            )}
+          </WhatsAppSurfaceCard>
 
           {/* Monitoring board */}
           <WhatsAppSurfaceCard
@@ -1199,93 +1044,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
               </motion.div>
             )}
           </WhatsAppSurfaceCard>
-        </div>
-
-        {/* RIGHT COLUMN: Steps editor */}
-        <WhatsAppSurfaceCard
-          title={
-            selectedFlow
-              ? selectedFlow.name
-              : (t("whatsappJourney.steps.title") as string)
-          }
-          description={
-            selectedFlow
-              ? (t("whatsappJourney.flows.editing") as string)
-              : (t("whatsappJourney.flows.selectPrompt") as string)
-          }
-          action={
-            selectedFlow ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "gap-1.5 rounded-full px-2.5 py-1 text-xs",
-                    selectedFlow.isEnabled
-                      ? "border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,var(--color-foreground))]"
-                      : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "size-1.5 rounded-full",
-                      selectedFlow.isEnabled
-                        ? "bg-[color:var(--business-success)]"
-                        : "bg-[color:var(--color-muted-foreground)] opacity-50",
-                    )}
-                  />
-                  {selectedFlow.isEnabled
-                    ? t("whatsappJourney.flows.enabled")
-                    : t("whatsappJourney.flows.disabled")}
-                </Badge>
-                {isAdmin && (
-                  <Button size="sm" onClick={openCreateStepDialog}>
-                    <Plus className="size-4" />
-                    {t("whatsappJourney.steps.add")}
-                  </Button>
-                )}
-              </div>
-            ) : undefined
-          }
-        >
-          {!selectedFlow ? (
-            <EmptyState
-              icon={Sparkles}
-              title={t("whatsappJourney.flows.empty")}
-              description={t("whatsappJourney.flows.selectPrompt")}
-              action={
-                isAdmin ? (
-                  <Button size="sm" onClick={openCreateFlowDialog}>
-                    <Plus className="size-4" />
-                    {t("whatsappJourney.flows.addNew")}
-                  </Button>
-                ) : undefined
-              }
-            />
-          ) : stepsLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton
-                  key={index}
-                  className="h-40 rounded-2xl border border-[color:var(--shell-control-border)]"
-                />
-              ))}
-            </div>
-          ) : (
-            <FlowCanvas
-              steps={steps}
-              isAdmin={isAdmin}
-              onOpenCopilot={() => copilot.setOpen(true)}
-              onReorder={(next) => {
-                setSteps(next as Step[]);
-              }}
-              onEdit={openEditStepDialog as (step: FlowStep) => void}
-              onAdd={openCreateStepDialog}
-              onDelete={(step) =>
-                setDeleteTarget({ type: "step", id: step.id || "" })
-              }
-            />
-          )}
-        </WhatsAppSurfaceCard>
       </div>
 
       {/* ─────────── DIALOGS ─────────── */}
@@ -1629,56 +1387,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
           }
         }}
       />
-
-      {/* ── Floating Action Bar ── */}
-      {isAdmin && (
-        <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.6 }}
-          className="fixed bottom-6 end-6 z-40 flex items-center gap-2"
-        >
-          <AnimatePresence>
-            {selectedFlow && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                className="flex items-center gap-1.5 rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-2 py-1.5 shadow-raised"
-              >
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="size-8 rounded-full"
-                  onClick={() => copilot.setOpen(true)}
-                  title={t("whatsappJourney.copilot.open")}
-                >
-                  <Sparkles className="size-3.5" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="size-8 rounded-full"
-                  onClick={openCreateStepDialog}
-                >
-                  <Plus className="size-3.5" />
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <button
-            type="button"
-            onClick={() => void handleRefreshWorkspace()}
-            disabled={refreshing}
-            className="flex size-11 items-center justify-center rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[color:var(--journey-accent)] shadow-raised transition-all duration-200 hover:shadow-lg disabled:opacity-50"
-            style={{ boxShadow: `0 4px 20px -2px var(--journey-accent-glow)` }}
-            aria-label={t("common.refresh") as string}
-          >
-            <RefreshCw className={cn("size-4.5", refreshing && "animate-spin")} />
-          </button>
-        </motion.div>
-      )}
-    </WhatsAppPageShell>
+    </section>
   );
 };
 
