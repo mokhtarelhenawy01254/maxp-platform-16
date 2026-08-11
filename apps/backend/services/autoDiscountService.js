@@ -103,11 +103,9 @@ async function updateSettings(companyId, data) {
   const next = { ...current, ...data };
   delete next.loyaltySystem;
   next.system = system;
-  // 🟢 منطق التفعيل: لو اتغير النظام (اخترنا النظام التاني)، نشيل تفعيل الأول
-  //    إلا لو الطلب ده نفسه بيفعّل (activated: true)
-  if (current.loyaltySystem && current.loyaltySystem !== system) {
-    next.activated = data.activated === true;
-  } else if (data.activated !== undefined) {
+  // 🟢 التفعيل بيتغير فقط لما الـ activated يتوصَّل صراحة في الطلب
+  //    (مش بيتلغى بمجرد اختيار النظام التاني في الواجهة)
+  if (data.activated !== undefined) {
     next.activated = data.activated === true;
   }
   // 🕐 عند تفعيل الخصم التلقائي لأول مرة (أو الرجوع إليه بعد المستويات) نحفظ تاريخ التفعيل

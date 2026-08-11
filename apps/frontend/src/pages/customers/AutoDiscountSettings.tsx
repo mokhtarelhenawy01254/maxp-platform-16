@@ -4,6 +4,8 @@ import { Loader2, Zap, CheckCircle } from "lucide-react";
 
 interface AutoDiscountSettingsProps {
   onSaved?: (data?: any) => void;
+  activeSystem?: string | null;
+  activated?: boolean;
 }
 
 /**
@@ -11,7 +13,7 @@ interface AutoDiscountSettingsProps {
  * كوبون خصم % على الأوردر الجاي، صلاحيته أيام، ويتحول لكاش باك عند الانتهاء،
  * + معدل النقاط وقيمة الاستبدال.
  */
-const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) => {
+const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved, activeSystem, activated: parentActivated }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
@@ -44,8 +46,40 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
     load();
   }, []);
 
-  // تفعيل نظام الخصم التلقائي: بيحفظ كل الإعدادات + بيفعّل النظام
+  // تفعيل/إيقاف نظام الخصم التلقائي: بيحفظ كل الإعدادات + بيفعّل النظام (Toggle)
   const activate = async () => {
+    const isActivatedNow = parentActivated === true || cfg.activated === true;
+
+    // لو الخصم التلقائي مفعّل → الضغط مرة تانية معناه إيقاف
+    if (isActivatedNow) {
+      if (!window.confirm("هل تريد إيقاف تفعيل نظام الخصم التلقائي؟")) return;
+      setSaving(true);
+      setSavedMsg("");
+      setErrorMsg("");
+      try {
+        const res = await apiClient.put("/hr/customer-loyalty/system-settings", {
+          ...cfg,
+          system: "AUTO_DISCOUNT",
+          activated: false,
+        });
+        const updated = { ...(res.data?.data || {}), activated: false, loyaltySystem: "AUTO_DISCOUNT" };
+        setCfg((prev) => ({ ...prev, ...updated }));
+        setSavedMsg("تم إيقاف تفعيل نظام الخصم التلقائي ✓");
+        onSaved?.(updated);
+      } catch (e: any) {
+        setErrorMsg(e?.response?.data?.error || "فشل إيقاف التفعيل");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    // لو نظام المستويات مفعّل → سؤال تحويل
+    if (activeSystem === "TIERS" && parentActivated) {
+      const ok = window.confirm("هل تريد إيقاف تفعيل نظام المستويات وتفعيل نظام الخصم التلقائي؟");
+      if (!ok) return;
+    }
+
     setSaving(true);
     setSavedMsg("");
     setErrorMsg("");
@@ -71,7 +105,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
   const inputCls =
     "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100";
 
-  const isActivated = cfg.activated === true;
+  const isActivated = parentActivated === true || cfg.activated === true;
 
   return (
     <div className="space-y-6">
@@ -153,12 +187,13 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
               {errorMsg && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{errorMsg}</span>}
               <button
                 onClick={activate}
-                disabled={saving || isActivated}
+                disabled={saving}
+                title={isActivated ? "اضغط لإيقاف تفعيل نظام الخصم التلقائي" : "تفعيل نظام الخصم التلقائي"}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
                   isActivated
-                    ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 cursor-not-allowed"
-                    : "bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
-                }`}
+                    ? "bg-amber-500 text-white hover:bg-amber-600"
+                    : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/60"
+                } disabled:opacity-50`}
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : isActivated ? <CheckCircle className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
                 {isActivated ? "تم التفعيل" : "تفعيل النظام"}

@@ -278,32 +278,46 @@ const TierConfigTab: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // تبديل نظام الولاء + حفظه فوراً + تحديث البار من غير ريفريش
-  const switchSystem = async (s: string) => {
+  // تبديل عرض النظام في الواجهة (من غير ما نلغي التفعيل الحالي)
+  const switchSystem = (s: string) => {
     if (s === system) return;
-    setSaving(true);
-    setErrorMsg("");
+    setSystem(s);
     setSavedMsg("");
-    try {
-      // لو اخترنا النظام التاني، شيل تفعيل النظام الحالي (activated: false)
-      const res = await apiClient.put("/hr/customer-loyalty/system-settings", { system: s, activated: false });
-      setSystem(s);
-      setActiveSystem(s);
-      setActivated(res.data?.data?.activated === true);
-      setSavedMsg(`تم اختيار ${s === "AUTO_DISCOUNT" ? "نظام الخصم التلقائي" : "نظام المستويات"} — اضغط "تفعيل النظام" لبدء العمل ✓`);
-    } catch (e: any) {
-      setErrorMsg(e.response?.data?.error || "فشل تبديل النظام");
-    } finally {
-      setSaving(false);
-    }
+    setErrorMsg("");
   };
 
   // تفعيل نظام المستويات: يحفظ طريقة الحساب + كل المستويات + يفعل النظام + يطبقه على كل العملاء فوراً
+  // (Toggle: لو مفعّل ونضغط تاني → سؤال إيقاف، ولو الخصم التلقائي مفعّل → سؤال تحويل)
   const activateTiers = async () => {
     if (!programId) {
       setErrorMsg("اختر برنامج الولاء أولاً");
       return;
     }
+
+    // لو المستويات مفعّلة حالياً → الضغط مرة تانية معناه إيقاف
+    if (activated && activeSystem === "TIERS") {
+      if (!window.confirm("هل تريد إيقاف تفعيل نظام المستويات؟")) return;
+      setSaving(true);
+      setErrorMsg("");
+      setSavedMsg("");
+      try {
+        const res = await apiClient.put("/hr/customer-loyalty/system-settings", { system: "TIERS", activated: false });
+        setActivated(res.data?.data?.activated === true);
+        setSavedMsg("تم إيقاف تفعيل نظام المستويات ✓");
+      } catch (e: any) {
+        setErrorMsg(e.response?.data?.error || "فشل إيقاف التفعيل");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    // لو الخصم التلقائي مفعّل → سؤال تحويل
+    if (activated && activeSystem === "AUTO_DISCOUNT") {
+      const ok = window.confirm("هل تريد إيقاف تفعيل نظام الخصم التلقائي وتفعيل نظام المستويات؟");
+      if (!ok) return;
+    }
+
     setSaving(true);
     setErrorMsg("");
     setSavedMsg("");
@@ -617,7 +631,7 @@ const TierConfigTab: React.FC = () => {
       {systemLoading ? (
         <div className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-indigo-500" /></div>
       ) : system === "AUTO_DISCOUNT" ? (
-        <AutoDiscountSettings onSaved={handleAutoDiscountSaved} />
+        <AutoDiscountSettings onSaved={handleAutoDiscountSaved} activeSystem={activeSystem} activated={activated} />
       ) : (
       <>
       {/* طريقة الحساب الافتراضية + تفعيل النظام */}
@@ -632,12 +646,13 @@ const TierConfigTab: React.FC = () => {
           </div>
           <button
             onClick={activateTiers}
-            disabled={saving || activated}
+            disabled={saving}
             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
               activated
-                ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 cursor-not-allowed"
-                : "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-            }`}
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800/60"
+            } disabled:opacity-50`}
+            title={activated ? "اضغط لإيقاف تفعيل نظام المستويات" : "تفعيل نظام المستويات"}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : activated ? <CheckCircle className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
             {activated ? "تم التفعيل" : "تفعيل النظام"}
