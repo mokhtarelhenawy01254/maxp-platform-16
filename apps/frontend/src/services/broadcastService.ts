@@ -1,7 +1,14 @@
 import { authService } from "./authService";
 import { buildApiUrl } from "../utils/urlHelper";
 
-const API_BASE_URL = buildApiUrl("");
+// 🔒 Lazy: don't call buildApiUrl at module scope. The bundled chunk hosting
+// buildApiUrl can end up in a circular chunk graph; a module-scope call there
+// throws "Cannot access 'X' before initialization" (TDZ) depending on load order.
+let _apiBaseUrl: string | null = null;
+const getApiBaseUrl = (): string => {
+  if (_apiBaseUrl === null) _apiBaseUrl = buildApiUrl("");
+  return _apiBaseUrl;
+};
 
 interface CampaignData {
   name: string;
@@ -122,7 +129,7 @@ class BroadcastService {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const token = authService.getAccessToken();
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -150,7 +157,7 @@ class BroadcastService {
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds
 
     try {
-      const response = await fetch(`${API_BASE_URL}/broadcast/campaigns`, {
+      const response = await fetch(`${getApiBaseUrl()}/broadcast/campaigns`, {
         method: "POST",
         body: campaignData,
         headers: {
@@ -264,7 +271,7 @@ class BroadcastService {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/broadcast/campaigns/${campaignId}/send`,
+        `${getApiBaseUrl()}/broadcast/campaigns/${campaignId}/send`,
         {
           method: "POST",
           headers: {
@@ -397,7 +404,7 @@ class BroadcastService {
 
     const token = authService.getAccessToken();
 
-    const response = await fetch(`${API_BASE_URL}/upload/image`, {
+    const response = await fetch(`${getApiBaseUrl()}/upload/image`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
