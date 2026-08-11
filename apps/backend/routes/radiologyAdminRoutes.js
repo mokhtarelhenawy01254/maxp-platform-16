@@ -14,6 +14,10 @@ router.use(verifyToken.authenticateToken);
 // Study payments
 router.get('/studies/:id/payment', payments.getStudyPayment);
 router.post('/studies/:id/payment', verifyToken.requireRole(MANAGER_ROLES), payments.recordStudyPayment);
+router.post('/studies/:id/payment/refund', verifyToken.requireRole(MANAGER_ROLES), payments.refundStudyPayment);
+
+// Financial summary
+router.get('/financial-summary', payments.financialSummary);
 
 // Appointments
 router.get('/appointments', appointments.listAppointments);

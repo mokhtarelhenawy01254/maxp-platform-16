@@ -213,11 +213,17 @@ const listStudies = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { patientName, status, dateFrom, dateTo, page, limit } = req.query;
+    const { patientName, nationalId, insuranceNumber, status, dateFrom, dateTo, page, limit } = req.query;
     const where = { companyId };
 
     if (patientName && String(patientName).trim()) {
       where.patientName = { contains: String(patientName).trim(), mode: 'insensitive' };
+    }
+    if (nationalId && String(nationalId).trim()) {
+      where.nationalId = { contains: String(nationalId).trim(), mode: 'insensitive' };
+    }
+    if (insuranceNumber && String(insuranceNumber).trim()) {
+      where.insuranceNumber = { contains: String(insuranceNumber).trim(), mode: 'insensitive' };
     }
     if (status) {
       const s = String(status).toUpperCase();
@@ -330,6 +336,8 @@ const createStudy = async (req, res) => {
             examTypeId: examType ? examType.id : null,
             examTypeName: examType ? examType.name : null,
             modality: examType ? resolveModality(examType.category) : null,
+            priceSnapshot: examType ? examType.price : 0,
+            billingType: body.insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
             status: 'PENDING_IMAGING',
             emergency: body.emergency === true || body.emergency === 'true',
             withContrast: body.withContrast === true || body.withContrast === 'true',

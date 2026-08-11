@@ -41,6 +41,8 @@ export default function StudiesTab() {
   const [studies, setStudies] = useState<StudyWithRadiologist[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [nationalSearch, setNationalSearch] = useState("");
+  const [insuranceSearch, setInsuranceSearch] = useState("");
   const [status, setStatus] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -53,10 +55,11 @@ export default function StudiesTab() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [radiologists, setRadiologists] = useState<RadiologyRadiologist[]>([]);
   const [assigningId, setAssigningId] = useState<string | null>(null);
-  const [payModal, setPayModal] = useState<{ studyId: string; total: number; paidAmount: number; remaining: number; payments: RadiologyStudyPayment[] } | null>(null);
+  const [payModal, setPayModal] = useState<{ studyId: string; total: number; paidAmount: number; remaining: number; billingType: string; payments: RadiologyStudyPayment[] } | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState("CASH");
   const [savingPay, setSavingPay] = useState(false);
+  const [refundAmount, setRefundAmount] = useState("");
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const uploadImages = async (id: string, files: FileList | null) => {
@@ -102,10 +105,11 @@ export default function StudiesTab() {
 
   const openPayment = async (id: string) => {
     try {
-      const data = await fetchJson<{ total: number; paidAmount: number; remaining: number; paymentStatus: string; payments: RadiologyStudyPayment[] }>(api(`studies/${id}/payment`));
-      setPayModal({ studyId: id, total: data.total, paidAmount: data.paidAmount, remaining: data.remaining, payments: data.payments || [] });
+      const data = await fetchJson<{ total: number; paidAmount: number; remaining: number; paymentStatus: string; billingType: string; payments: RadiologyStudyPayment[] }>(api(`studies/${id}/payment`));
+      setPayModal({ studyId: id, total: data.total, paidAmount: data.paidAmount, remaining: data.remaining, billingType: data.billingType || "PATIENT", payments: data.payments || [] });
       setPayAmount("");
       setPayMethod("CASH");
+      setRefundAmount("");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل تحميل بيانات الدفع");
     }
@@ -122,11 +126,32 @@ export default function StudiesTab() {
         body: JSON.stringify({ amount, method: payMethod }),
       });
       toast.success(`تم تسجيل دفعة ${amount} ج`);
-      setPayModal({ studyId: payModal.studyId, total: data.total, paidAmount: data.total - data.remaining, remaining: data.remaining, payments: [...payModal.payments, data.payment] });
+      setPayModal({ ...payModal, paidAmount: data.total - data.remaining, remaining: data.remaining, payments: [...payModal.payments, data.payment] });
       setPayAmount("");
       await refresh({ silent: true });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل تسجيل الدفعة");
+    } finally {
+      setSavingPay(false);
+    }
+  };
+
+  const saveRefund = async () => {
+    if (!payModal || savingPay) return;
+    const amount = Number(refundAmount);
+    if (!Number.isFinite(amount) || amount <= 0) { toast.error("المبلغ غير صحيح"); return; }
+    setSavingPay(true);
+    try {
+      const data = await fetchJson<{ total: number; remaining: number; paymentStatus: string }>(api(`studies/${payModal.studyId}/payment/refund`), {
+        method: "POST",
+        body: JSON.stringify({ amount }),
+      });
+      toast.success(`تم استرجاع ${amount} ج`);
+      setPayModal({ ...payModal, paidAmount: data.total - data.remaining, remaining: data.remaining });
+      setRefundAmount("");
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل الاسترجاع");
     } finally {
       setSavingPay(false);
     }
@@ -138,6 +163,8 @@ export default function StudiesTab() {
       url.searchParams.set("limit", "200");
       if (status) url.searchParams.set("status", status);
       if (search.trim()) url.searchParams.set("patientName", search.trim());
+      if (nationalSearch.trim()) url.searchParams.set("nationalId", nationalSearch.trim());
+      if (insuranceSearch.trim()) url.searchParams.set("insuranceNumber", insuranceSearch.trim());
       if (dateFrom) url.searchParams.set("dateFrom", dateFrom);
       if (dateTo) url.searchParams.set("dateTo", dateTo);
       const res = await fetchJson<{ items?: StudyWithRadiologist[]; total?: number }>(url.toString());
@@ -145,7 +172,7 @@ export default function StudiesTab() {
     } catch (e) {
       if (!opts?.silent) toast.error(e instanceof Error ? e.message : "فشل تحميل الدراسات");
     }
-  }, [status, search, dateFrom, dateTo]);
+  }, [status, search, nationalSearch, insuranceSearch, dateFrom, dateTo]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -276,6 +303,8 @@ export default function StudiesTab() {
           <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
           <input className={`${filterCls} pr-9 w-48`} placeholder="بحث باسم المريض..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <input className={filterCls} dir="ltr" placeholder="رقم قومي" value={nationalSearch} onChange={e => setNationalSearch(e.target.value)} />
+        <input className={filterCls} dir="ltr" placeholder="رقم تأمين" value={insuranceSearch} onChange={e => setInsuranceSearch(e.target.value)} />
         <input type="date" className={filterCls} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
         <input type="date" className={filterCls} value={dateTo} onChange={e => setDateTo(e.target.value)} />
       </div>
@@ -401,6 +430,11 @@ export default function StudiesTab() {
               <h3 className="text-lg font-bold">الدفع</h3>
               <button onClick={() => setPayModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
             </div>
+            <div className="flex items-center gap-2 mb-4">
+              <span className={`px-2 py-0.5 rounded-full text-xs ${payModal.billingType === "INSURANCE" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"}`}>
+                {payModal.billingType === "INSURANCE" ? "فوترة للجهة (تأمين)" : "دفع مباشر من المريض"}
+              </span>
+            </div>
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="bg-gray-50 dark:bg-gray-700/40 rounded-lg p-3 text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400">الإجمالي</p>
@@ -433,6 +467,12 @@ export default function StudiesTab() {
                 <option value="VODAFONE_CASH">فودافون كاش</option>
                 <option value="BANK">تحويل بنكي</option>
               </select>
+            </div>
+            <div className="flex gap-3 mt-3">
+              <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" placeholder="استرجاع (اختياري)" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} />
+              <button onClick={saveRefund} disabled={savingPay || !refundAmount} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 text-sm">
+                استرجاع
+              </button>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setPayModal(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إغلاق</button>

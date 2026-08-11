@@ -68,13 +68,24 @@ const assignStudyInsurance = async (req, res) => {
     if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
 
     let insuranceCompanyName = null;
+    let priceSnapshot = study.priceSnapshot || 0;
     if (insuranceCompanyId) {
       const entity = await prisma.insuranceCompany.findFirst({
         where: { id: insuranceCompanyId, companyId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, priceListId: true },
       });
       if (!entity) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
       insuranceCompanyName = entity.name;
+      // Resolve entity-specific price from its booking PriceList (serviceId = radiology examType id) when present
+      if (entity.priceListId && study.examTypeId) {
+        try {
+          const item = await prisma.priceListItem.findFirst({
+            where: { priceListId: entity.priceListId, serviceId: study.examTypeId, isActive: true },
+            select: { price: true },
+          });
+          if (item && Number.isFinite(item.price)) priceSnapshot = item.price;
+        } catch { /* graceful fallback to exam price */ }
+      }
     }
 
     const updated = await prisma.radiologyStudy.update({
@@ -82,6 +93,8 @@ const assignStudyInsurance = async (req, res) => {
       data: {
         insuranceCompanyId: insuranceCompanyId || null,
         insuranceCompanyName,
+        billingType: insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
+        priceSnapshot,
       },
     });
 

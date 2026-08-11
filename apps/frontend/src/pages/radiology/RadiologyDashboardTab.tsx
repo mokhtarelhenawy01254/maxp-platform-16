@@ -3,12 +3,20 @@ import { api, bookingApi, fetchJson, RadiologyStatusMap } from "./shared";
 
 interface StudyItem { status?: string; reportStatus?: string; emergency?: boolean; createdAt?: string; }
 
+interface FinancialSummary {
+  patient: { total: number; collected: number; outstanding: number };
+  insurance: { billed: number; collected: number; outstanding: number };
+  totalCollected: number; totalOutstanding: number;
+  byEntity?: { insuranceCompanyId: string; name: string; total: number; paid: number; remaining: number }[];
+}
+
 const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function RadiologyDashboardTab() {
   const [stats, setStats] = useState<{
     studiesToday?: number; awaiting?: number; ready?: number; emergency?: number; revenue?: number;
   } | null>(null);
+  const [fin, setFin] = useState<FinancialSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,7 +38,13 @@ export default function RadiologyDashboardTab() {
           revenue = rep.totals?.billed;
         } catch { }
 
+        let finData: FinancialSummary | undefined;
+        try {
+          finData = await fetchJson<FinancialSummary>(api("financial-summary"));
+        } catch { }
+
         setStats({ studiesToday, awaiting, ready, emergency, revenue });
+        setFin(finData || null);
       } catch (e) {
         setError(e instanceof Error ? e.message : "خطأ");
       }
@@ -65,6 +79,45 @@ export default function RadiologyDashboardTab() {
           ))}
         </div>
       </div>
+
+      {fin ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+          <h3 className="font-semibold mb-3">الملخص المالي</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            <div className="rounded-lg p-4 border dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
+              <p className="text-xs text-gray-500 dark:text-gray-400">محصّل من المرضى</p>
+              <p className="text-xl font-bold text-green-600">{Number(fin.patient.collected).toFixed(0)} ج</p>
+            </div>
+            <div className="rounded-lg p-4 border dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
+              <p className="text-xs text-gray-500 dark:text-gray-400">مستحق من المرضى</p>
+              <p className="text-xl font-bold text-red-600">{Number(fin.patient.outstanding).toFixed(0)} ج</p>
+            </div>
+            <div className="rounded-lg p-4 border dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
+              <p className="text-xs text-gray-500 dark:text-gray-400">محصّل من التأمين</p>
+              <p className="text-xl font-bold text-green-600">{Number(fin.insurance.collected).toFixed(0)} ج</p>
+            </div>
+            <div className="rounded-lg p-4 border dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
+              <p className="text-xs text-gray-500 dark:text-gray-400">مستحق من التأمين</p>
+              <p className="text-xl font-bold text-red-600">{Number(fin.insurance.outstanding).toFixed(0)} ج</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <span className="text-gray-500 dark:text-gray-400">إجمالي المحصّل: <b className="text-green-600">{Number(fin.totalCollected).toFixed(0)} ج</b></span>
+            <span className="text-gray-500 dark:text-gray-400">إجمالي المستحق: <b className="text-red-600">{Number(fin.totalOutstanding).toFixed(0)} ج</b></span>
+          </div>
+          {fin.byEntity && fin.byEntity.length > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              {fin.byEntity.map(e => (
+                <div key={e.insuranceCompanyId} className="flex justify-between text-sm border-b dark:border-gray-700/50 pb-1.5">
+                  <span>{e.name}</span>
+                  <span><b className="text-green-600">{Number(e.paid).toFixed(0)}</b> / <b className="text-red-600">{Number(e.remaining).toFixed(0)}</b> ج</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <p className="text-sm text-gray-500 dark:text-gray-400">لوحة الأشعة — بيانات الدراسات والفواتير.</p>
     </div>
   );

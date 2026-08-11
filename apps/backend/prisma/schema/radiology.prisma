@@ -32,6 +32,8 @@ model RadiologyStudy {
   referringPhysicianId String?  // RadiologyReferringPhysician id
   additionIds       Json?    // array of RadiologyExamAddition ids
   additionAmount    Float    @default(0) // extra charges (contrast, etc.)
+  priceSnapshot     Float    @default(0) // exam price at study creation (entity-resolved)
+  billingType       String   @default("PATIENT") // PATIENT pays directly | INSURANCE billed via entity invoice
   paidAmount        Float    @default(0)
   paymentStatus     String   @default("UNPAID") // UNPAID | PARTIAL | PAID
   notes             String?

@@ -26,6 +26,9 @@ const createPrisma = () => ({
   radiologyExamType: { findMany: jest.fn(), findFirst: jest.fn() },
   radiologyStudy: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   radiologyStudyPayment: { findMany: jest.fn(), create: jest.fn() },
+  radiologyInsuranceInvoice: { findMany: jest.fn() },
+  radiologyInsuranceLedgerEntry: { findMany: jest.fn() },
+  priceListItem: { findFirst: jest.fn() },
 });
 
 const req = (overrides = {}) => ({
@@ -184,11 +187,11 @@ describe('radiologyStatisticsController', () => {
 });
 
 describe('radiologyPaymentsController', () => {
-  test('records a payment and computes status', async () => {
+  test('records a payment and computes status from priceSnapshot', async () => {
     const prisma = createPrisma();
-    prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', examTypeId: 'et-1', additionAmount: 100, paidAmount: 0 });
-    prisma.radiologyExamType.findFirst.mockResolvedValue({ price: 1000 });
+    prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', priceSnapshot: 1000, additionAmount: 100, billingType: 'PATIENT' });
     prisma.radiologyStudyPayment.create.mockResolvedValue({ id: 'pay-1', amount: 500 });
+    prisma.radiologyStudyPayment.findMany.mockResolvedValue([{ amount: 500 }]);
     prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
     getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -202,15 +205,42 @@ describe('radiologyPaymentsController', () => {
     expect(prisma.radiologyStudyPayment.create).toHaveBeenCalled();
   });
 
-  test('marks PAID when full amount received', async () => {
+  test('rejects a zero amount', async () => {
     const prisma = createPrisma();
-    prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', examTypeId: null, additionAmount: 0, paidAmount: 0 });
-    prisma.radiologyStudyPayment.create.mockResolvedValue({ id: 'pay-1', amount: 100 });
-    prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+    prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', priceSnapshot: 1000, additionAmount: 0 });
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
     await payments.recordStudyPayment(req({ params: { id: 'study-1' }, body: { amount: 0 } }), res);
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('refunds a payment and lowers paid amount', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', priceSnapshot: 1000, additionAmount: 0, billingType: 'PATIENT' });
+    prisma.radiologyStudyPayment.findMany.mockResolvedValue([{ amount: 500 }, { amount: -200 }]);
+    prisma.radiologyStudyPayment.create.mockResolvedValue({ id: 'ref-1', amount: -200 });
+    prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await payments.refundStudyPayment(req({ params: { id: 'study-1' }, body: { amount: 200 } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.data.paidAmount).toBe(300);
+    expect(res.payload.data.paymentStatus).toBe('PARTIAL');
+    expect(prisma.radiologyStudyPayment.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amount: -200, method: 'REFUND' }) }));
+  });
+
+  test('rejects refund larger than paid', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', priceSnapshot: 1000, additionAmount: 0 });
+    prisma.radiologyStudyPayment.findMany.mockResolvedValue([{ amount: 100 }]);
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await payments.refundStudyPayment(req({ params: { id: 'study-1' }, body: { amount: 500 } }), res);
 
     expect(res.statusCode).toBe(400);
   });
@@ -221,6 +251,32 @@ describe('radiologyPaymentsController', () => {
     const res = createResponse();
     await payments.recordStudyPayment(req({ user: {}, params: { id: 'study-1' }, body: { amount: 100 } }), res);
     expect(res.statusCode).toBe(403);
+  });
+});
+
+describe('radiologyPaymentsController financialSummary', () => {
+  test('aggregates patient vs insurance money', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyStudy.findMany.mockResolvedValue([
+      { billingType: 'PATIENT', priceSnapshot: 500, additionAmount: 0, paidAmount: 200 },
+      { billingType: 'INSURANCE', priceSnapshot: 1000, additionAmount: 0, paidAmount: 0 },
+    ]);
+    prisma.radiologyInsuranceInvoice.findMany.mockResolvedValue([
+      { insuranceCompanyId: 'c1', insuranceCompanyName: 'الأهرام', totalAmount: 1000, paidAmount: 400, remainingAmount: 600, status: 'PARTIAL' },
+    ]);
+    prisma.radiologyInsuranceLedgerEntry.findMany.mockResolvedValue([{ amount: 400 }]);
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await payments.financialSummary(req(), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.data.patient.collected).toBe(200);
+    expect(res.payload.data.patient.outstanding).toBe(300);
+    expect(res.payload.data.insurance.billed).toBe(1000);
+    expect(res.payload.data.insurance.collected).toBe(400);
+    expect(res.payload.data.totalCollected).toBe(600);
+    expect(res.payload.data.byEntity).toHaveLength(1);
   });
 });
 

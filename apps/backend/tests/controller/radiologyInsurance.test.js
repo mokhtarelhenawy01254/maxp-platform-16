@@ -145,11 +145,11 @@ describe('radiologyInsuranceController', () => {
       });
       expect(prisma.insuranceCompany.findFirst).toHaveBeenCalledWith({
         where: { id: 'ins-1', companyId: 'company-1' },
-        select: { id: true, name: true },
+        select: { id: true, name: true, priceListId: true },
       });
       expect(prisma.radiologyStudy.update).toHaveBeenCalledWith({
         where: { id: 'study-1' },
-        data: { insuranceCompanyId: 'ins-1', insuranceCompanyName: 'شركة الأهلية للتأمين' },
+        data: expect.objectContaining({ insuranceCompanyId: 'ins-1', insuranceCompanyName: 'شركة الأهلية للتأمين', billingType: 'INSURANCE' }),
       });
       expect(res.payload.data.insuranceCompanyId).toBe('ins-1');
       expect(res.payload.data.insuranceCompanyName).toBe('شركة الأهلية للتأمين');
@@ -168,7 +168,7 @@ describe('radiologyInsuranceController', () => {
       expect(prisma.insuranceCompany.findFirst).not.toHaveBeenCalled();
       expect(prisma.radiologyStudy.update).toHaveBeenCalledWith({
         where: { id: 'study-1' },
-        data: { insuranceCompanyId: null, insuranceCompanyName: null },
+        data: expect.objectContaining({ insuranceCompanyId: null, insuranceCompanyName: null, billingType: 'PATIENT' }),
       });
     });
 
