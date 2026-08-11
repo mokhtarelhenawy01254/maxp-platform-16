@@ -88,7 +88,7 @@ const PostponeOrderModal: React.FC<PostponeOrderModalProps> = ({
             {[1, 2, 3, 4, 5, 6, 7].map((days) => {
               const target = new Date();
               target.setDate(target.getDate() + days);
-              const iso = target.toISOString().split("T")[0];
+              const iso = target.toISOString().slice(0, 10);
               const selected = scheduledDeliveryDate === iso;
               return (
                 <button
