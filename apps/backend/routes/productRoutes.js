@@ -3,6 +3,7 @@ const router = express.Router();
 const productController = require('../controller/productController');
 const volumeDiscountController = require('../controller/volumeDiscountController');
 const presentationController = require('../controller/productPresentationController');
+const productConversionController = require('../controller/productConversionController');
 const verifyToken = require("../utils/verifyToken")
 const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const multer = require('multer');
@@ -102,5 +103,8 @@ router.get('/:id/presentations', verifyToken.authenticateToken, requireDbPermiss
 router.get('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.getSinglePresentation);
 router.put('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.edit'), presentationController.updatePresentation);
 router.delete('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.delete'), presentationController.deletePresentation);
+
+// تحويل منتج مستقل (مكرر) إلى عرض تقديمي تابع لمنتج أصلي
+router.post('/:id/convert-to-presentation', verifyToken.authenticateToken, requireDbPermission('products.edit'), productConversionController.convertProductToPresentation);
 
 module.exports = router;

@@ -225,14 +225,63 @@ describe('companyConnectionController internal product sync', () => {
         }),
       }),
     );
+  });
+
+  test('importInternalProducts clamps illogical stock to 0 instead of storing it', async () => {
+    const req = {
+      user: { companyId: 'consumer-1' },
+      params: { providerId: 'provider-1' },
+      body: {
+        products: [
+          {
+            internalId: 'provider-product-fake',
+            name: 'Fake Stock Product',
+            price: 100,
+            sku: 'FAKE-999',
+            stock: 99914,
+          },
+        ],
+      },
+    };
+    const res = createMockResponse();
+
+    await importInternalProducts(req, res);
+
+    expect(mockPrisma.product.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ stock: 0, sku: 'FAKE-999' }),
+      }),
+    );
+  });
+
+  test('importInternalProducts skips a product whose SKU already exists in the consumer company', async () => {
+    mockPrisma.product.findFirst
+      .mockResolvedValueOnce(null) // externalId lookup miss
+      .mockResolvedValueOnce({ id: 'existing-by-sku' }); // SKU lookup hit
+
+    const req = {
+      user: { companyId: 'consumer-1' },
+      params: { providerId: 'provider-1' },
+      body: {
+        products: [
+          {
+            internalId: 'provider-product-new',
+            name: 'Duplicate SKU Product',
+            price: 100,
+            sku: 'DUP-SKU-1',
+            stock: 3,
+          },
+        ],
+      },
+    };
+    const res = createMockResponse();
+
+    await importInternalProducts(req, res);
+
+    expect(mockPrisma.product.create).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          imported: 1,
-          skipped: 0,
-          failed: 0,
-        }),
+        data: expect.objectContaining({ imported: 0, skipped: 1 }),
       }),
     );
   });

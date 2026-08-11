@@ -19,6 +19,9 @@ import {
   MegaphoneIcon,
   XMarkIcon,
   MagnifyingGlassIcon,
+  ArrowPathIcon,
+  CheckCircleIcon,
+  ClipboardDocumentIcon,
 } from "@heroicons/react/24/outline";
 
 // Hooks
@@ -43,6 +46,8 @@ import { SeoTab } from "./components/tabs/SeoTab";
 import { AdvancedTab } from "./components/tabs/AdvancedTab";
 import { QuantityOffersTab } from "./components/tabs/QuantityOffersTab";
 import { PresentationsTab } from "./components/tabs/PresentationsTab";
+import { ConvertToPresentationModal } from "./components/ConvertToPresentationModal";
+import type { ConvertPresentationResult } from "./hooks/useProductPresentations";
 import {
   hydrateVariantSettings,
   normalizeVariantSettingsForSave,
@@ -353,6 +358,12 @@ export const ProductNewFinal: React.FC = () => {
   const [isFetchingProduct, setIsFetchingProduct] = useState(Boolean(id));
   const [showVariants, setShowVariants] = useState(false);
 
+  // Convert-to-presentation State
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [convertSuccess, setConvertSuccess] =
+    useState<ConvertPresentationResult | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
   // Categories State
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -449,6 +460,7 @@ export const ProductNewFinal: React.FC = () => {
     addPresentation,
     updatePresentation,
     deletePresentation,
+    convertToPresentation,
   } = useProductPresentations(effectiveProductId);
 
   useEffect(() => {
@@ -1248,6 +1260,27 @@ export const ProductNewFinal: React.FC = () => {
     }
   }, [buildPreviewUrl, effectiveProductId, persistProduct, setError, workflow]);
 
+  const handleConverted = useCallback(
+    (result: ConvertPresentationResult) => {
+      setShowConvertModal(false);
+      setConvertSuccess(result);
+      setLinkCopied(false);
+      fetchPresentations();
+    },
+    [fetchPresentations],
+  );
+
+  const handleCopyConvertLink = useCallback(async () => {
+    if (!convertSuccess) return;
+    try {
+      await navigator.clipboard.writeText(convertSuccess.presentationSlug);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable; ignore.
+    }
+  }, [convertSuccess]);
+
   // Tab Definitions
   const tabs = [
     { id: "basic", name: t("products.tabs.basic"), icon: DocumentTextIcon },
@@ -1353,6 +1386,23 @@ export const ProductNewFinal: React.FC = () => {
             >
               <EyeIcon className="ml-2 h-4 w-4" />
               معاينة
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowConvertModal(true)}
+              disabled={!effectiveProductId}
+              title={
+                effectiveProductId
+                  ? undefined
+                  : "احفظ المنتج أولاً قبل تحويله إلى عرض تقديمي"
+              }
+              className={`inline-flex items-center rounded-md border border-purple-200 bg-white px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 dark:border-purple-900/40 dark:bg-slate-800 dark:text-purple-300 dark:hover:bg-purple-900/20 ${
+                effectiveProductId ? "" : "cursor-not-allowed opacity-50"
+              }`}
+            >
+              <ArrowPathIcon className="ml-2 h-4 w-4" />
+              حوّل إلى عرض تقديمي
             </button>
 
             <button
@@ -1496,6 +1546,50 @@ export const ProductNewFinal: React.FC = () => {
                   {successMessage || t("products.messages.productCreated")}
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {convertSuccess && (
+          <div className="mb-6 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 rounded-r-md">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <CheckCircleIcon
+                  className="h-5 w-5 text-green-500 shrink-0"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                    تم تحويل المنتج إلى عرض تقديمي بنجاح
+                  </p>
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-green-700 dark:text-green-400">
+                    <span>الرابط الجديد:</span>
+                    <span dir="ltr" className="font-mono text-xs">
+                      {convertSuccess.presentationSlug}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyConvertLink}
+                      className="inline-flex items-center gap-1 rounded-md border border-green-300 dark:border-green-800 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30"
+                    >
+                      {linkCopied ? (
+                        <CheckCircleIcon className="h-3.5 w-3.5" />
+                      ) : (
+                        <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                      )}
+                      {linkCopied ? "تم النسخ" : "نسخ الرابط"}
+                    </button>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConvertSuccess(null)}
+                className="text-green-500 hover:text-green-700 shrink-0"
+                aria-label="إغلاق الإشعار"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
             </div>
           </div>
         )}
@@ -1743,6 +1837,17 @@ export const ProductNewFinal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showConvertModal && effectiveProductId && (
+        <ConvertToPresentationModal
+          open={showConvertModal}
+          currentProductId={effectiveProductId}
+          displayCurrency={displayCurrency}
+          onClose={() => setShowConvertModal(false)}
+          onConvert={convertToPresentation}
+          onSuccess={handleConverted}
+        />
+      )}
     </div>
   );
 };

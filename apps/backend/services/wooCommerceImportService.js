@@ -18,6 +18,22 @@ delete require.cache[statusServicePath];
 const { mapWooStatusToLocal, cleanLocationName } = require('./wooCommerceStatusService');
 
 /**
+ * Normalizes a SKU for case-insensitive, whitespace-insensitive matching.
+ * Products can be stored untrimmed (import paths) or trimmed (productController),
+ * and Postgres collation is case-sensitive — so we index both raw and normalized keys.
+ */
+function normalizeSku(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+/** Builds the set of lookup variants for a SKU (raw, lower, upper). */
+function skuLookupVariants(value) {
+    const trimmed = String(value || '').trim();
+    if (!trimmed) return [];
+    return Array.from(new Set([trimmed, trimmed.toLowerCase(), trimmed.toUpperCase()].filter(Boolean)));
+}
+
+/**
  * Main function to import a single WooCommerce order.
  * Works with both raw WooCommerce objects and partially mapped objects.
  */
@@ -147,12 +163,18 @@ async function importOrdersBatchOptimized(prisma, companyId, orders, options = {
     });
 
     existingProducts.forEach(p => {
-        if (p.sku) lookups.products.set(`SKU-${p.sku}`, p);
+        if (p.sku) {
+            lookups.products.set(`SKU-${p.sku}`, p);
+            lookups.products.set(`SKU-NORM-${normalizeSku(p.sku)}`, p);
+        }
         if (p.wooCommerceId) lookups.products.set(`WOO-${p.wooCommerceId}`, p);
     });
 
     existingVariants.forEach(v => {
-        if (v.sku) lookups.variants.set(`SKU-${v.sku}`, v);
+        if (v.sku) {
+            lookups.variants.set(`SKU-${v.sku}`, v);
+            lookups.variants.set(`SKU-NORM-${normalizeSku(v.sku)}`, v);
+        }
     });
 
     // 4. Process orders
@@ -244,8 +266,11 @@ async function createNewOrderOptimized(prisma, companyId, orderData, statusMappi
         const sku = (item.sku || item.productSku || '').trim();
         const wooPId = String(item.product_id || item.wooCommerceProductId || '');
 
-        let product = lookups.products.get(`SKU-${sku}`) || lookups.products.get(`WOO-${wooPId}`);
-        let variant = lookups.variants.get(`SKU-${sku}`);
+        let product = lookups.products.get(`SKU-NORM-${normalizeSku(sku)}`)
+            || lookups.products.get(`SKU-${sku}`)
+            || lookups.products.get(`WOO-${wooPId}`);
+        let variant = lookups.variants.get(`SKU-NORM-${normalizeSku(sku)}`)
+            || lookups.variants.get(`SKU-${sku}`);
 
         const metaData = item.meta_data || [];
         let color = null;
@@ -425,11 +450,13 @@ async function createOrderItems(prisma, companyId, orderId, lineItems) {
 
         if (sku) {
             variant = await prisma.productVariant.findFirst({
-                where: { sku: sku, product: { companyId } },
+                where: { sku: { in: skuLookupVariants(sku) }, product: { companyId } },
                 include: { product: true }
             });
             if (variant) product = variant.product;
-            else product = await prisma.product.findFirst({ where: { companyId, sku } });
+            else product = await prisma.product.findFirst({
+                where: { companyId, sku: { in: skuLookupVariants(sku) } }
+            });
         }
 
         if (!product && wooProductId) {

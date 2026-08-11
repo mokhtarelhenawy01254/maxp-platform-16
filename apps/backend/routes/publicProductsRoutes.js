@@ -11,6 +11,10 @@ const {
   extractSubdomainMiddleware,
   requireCompany,
 } = require('../middleware/subdomainMiddleware');
+const {
+  resolveConvertedPresentationRedirect,
+  resolveConvertedProductRedirect,
+} = require('../utils/presentationConversion');
 
 const router = express.Router();
 const ALLOWED_SORT_FIELDS = new Set(['createdAt', 'updatedAt', 'name', 'price']);
@@ -1724,6 +1728,15 @@ router.get('/:id/:presentationSlug', async (req, res) => {
     });
 
     if (!product) {
+      // منتج محوّل (تحويل منتج مكرر إلى عرض تقديمي) — إعادة توجيه دائمة للرابط القديم
+      const redirectUrl = await resolveConvertedPresentationRedirect(
+        prisma,
+        req.companyId,
+        presentationSlug,
+      );
+      if (redirectUrl) {
+        return res.redirect(301, redirectUrl);
+      }
       return res.status(404).json({
         success: false,
         error: 'المنتج غير موجود',
@@ -1732,6 +1745,15 @@ router.get('/:id/:presentationSlug', async (req, res) => {
 
     const presentation = product.productPresentations?.[0];
     if (!presentation) {
+      // الرابط القديم لمنتج تم تحويله إلى عرض تقديمي — إعادة توجيه دائمة
+      const redirectUrl = await resolveConvertedPresentationRedirect(
+        prisma,
+        req.companyId,
+        presentationSlug,
+      );
+      if (redirectUrl) {
+        return res.redirect(301, redirectUrl);
+      }
       return res.status(404).json({
         success: false,
         error: 'العرض التقديمي غير موجود',
@@ -1795,6 +1817,15 @@ router.get('/:id', async (req, res) => {
     });
 
     if (!product) {
+      // منتج محذوف/محوّل (تحويل منتج مكرر إلى عرض تقديمي) — إعادة توجيه دائمة
+      const redirectUrl = await resolveConvertedProductRedirect(
+        prisma,
+        req.companyId,
+        id,
+      );
+      if (redirectUrl) {
+        return res.redirect(301, redirectUrl);
+      }
       return res.status(404).json({
         success: false,
         error: 'المنتج غير موجود',

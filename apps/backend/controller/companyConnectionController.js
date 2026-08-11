@@ -1,6 +1,7 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 const { resolveProductMediaState } = require('../utils/productMediaUtils');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
+const { validateStock } = require('../utils/stockValidation');
 
 const parseDecimalOrNull = (value) => {
     if (value === null || value === undefined || value === '') {
@@ -509,6 +510,30 @@ exports.importInternalProducts = async (req, res) => {
                     continue;
                 }
 
+                // منع التكرار عبر الـ SKU أيضاً (لو نفس الـ internalId اختلف شوية)
+                if (item.sku) {
+                    const existingBySku = await prisma.product.findFirst({
+                        where: {
+                            companyId: consumerId,
+                            sku: item.sku,
+                            deletedAt: null
+                        }
+                    });
+                    if (existingBySku) {
+                        results.skipped++;
+                        continue;
+                    }
+                }
+
+                // قصّ المخزون غير المنطقي بدلاً من تخزينه
+                const normalizedStock = (() => {
+                    const result = validateStock(item.stock);
+                    if (result.ok) {
+                        return Number(item.stock) || 0;
+                    }
+                    return 0;
+                })();
+
                 const resolvedMedia = resolveProductMediaState({
                     currentImages: [],
                     currentMainImage: null,
@@ -528,7 +553,7 @@ exports.importInternalProducts = async (req, res) => {
                         price: item.price,
                         comparePrice: item.comparePrice,
                         sku: item.sku,
-                        stock: item.stock,
+                        stock: normalizedStock,
                         images: resolvedMedia.images.length > 0 ? JSON.stringify(resolvedMedia.images) : null,
                         mainImage: resolvedMedia.mainImage,
                         companyId: consumerId,
@@ -552,7 +577,10 @@ exports.importInternalProducts = async (req, res) => {
                                 comparePrice: parseDecimalOrNull(variant.comparePrice),
                                 cost: parseDecimalOrNull(variant.cost),
                                 images: variantImages.length > 0 ? JSON.stringify(variantImages) : null,
-                                stock: Number(variant.stock || 0),
+                                stock: (() => {
+                                    const variantStock = validateStock(variant.stock);
+                                    return variantStock.ok ? (Number(variant.stock) || 0) : 0;
+                                })(),
                                 trackInventory: variant.trackInventory !== false,
                                 isActive: variant.isActive !== false,
                                 sortOrder: Number(variant.sortOrder || 0),

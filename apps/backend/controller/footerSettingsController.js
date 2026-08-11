@@ -2,6 +2,10 @@ const {
   getSharedPrismaClientAsync,
   safeQuery,
 } = require('../services/sharedDatabase');
+const {
+  isPlaceholderPhone,
+  isPlaceholderEmail,
+} = require('../utils/placeholderContact');
 
 /**
  * Footer Settings Controller
@@ -110,6 +114,20 @@ exports.updateFooterSettings = async (req, res) => {
       if (key in req.body) {
         updateData[key] = req.body[key];
       }
+    }
+
+    if (updateData.phone !== undefined && isPlaceholderPhone(updateData.phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'رقم الهاتف غير صالح — يرجى إدخال رقم حقيقي'
+      });
+    }
+
+    if (updateData.email !== undefined && isPlaceholderEmail(updateData.email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'البريد الإلكتروني غير صالح — يرجى إدخال بريد حقيقي'
+      });
     }
 
     // Check if settings exist

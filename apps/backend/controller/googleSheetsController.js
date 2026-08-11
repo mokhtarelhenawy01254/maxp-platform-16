@@ -4,6 +4,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const orderService = require('../services/orderService');
 const { resolveProductMediaState } = require('../utils/productMediaUtils');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
+const { validateStock } = require('../utils/stockValidation');
 const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone } = require('../utils/customerIdentity');
 
@@ -426,15 +427,24 @@ const importProductsFromSheet = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const [existingBySku, existingByName] = await Promise.all([
       skus.length
-        ? prisma.product.findMany({ where: { companyId, sku: { in: skus } }, select: { sku: true } })
+        ? prisma.product.findMany({
+            where: { companyId, sku: { in: skus, mode: 'insensitive' }, deletedAt: null },
+            select: { sku: true }
+          })
         : [],
       names.length
-        ? prisma.product.findMany({ where: { companyId, name: { in: names } }, select: { name: true } })
+        ? prisma.product.findMany({
+            where: { companyId, name: { in: names, mode: 'insensitive' }, deletedAt: null },
+            select: { name: true }
+          })
         : []
     ]);
 
-    const existingSkus = new Set(existingBySku.map((p) => p.sku));
-    const existingNames = new Set(existingByName.map((p) => p.name));
+    // مطابقة غير حساسة لحالة الأحرف (Postgres collation case-sensitive) + كشف التكرار داخل نفس الملف
+    const existingSkus = new Set(existingBySku.map((p) => p.sku.trim().toLowerCase()));
+    const existingNames = new Set(existingByName.map((p) => p.name.toLowerCase()));
+    const seenSkus = new Set();
+    const seenNames = new Set();
 
     const categoryNames = [...new Set(validProducts.map((p) => p.category).filter(Boolean))];
     const existingCategories = categoryNames.length
@@ -447,17 +457,35 @@ const importProductsFromSheet = async (req, res) => {
 
     for (const product of validProducts) {
       try {
-        if (product.sku && existingSkus.has(product.sku)) {
+        const normalizedSkuKey = product.sku ? product.sku.trim().toLowerCase() : null;
+        const normalizedNameKey = product.name.toLowerCase();
+
+        // مكرر داخل نفس الملف — تخطي حتى لا يتكرر الإنشاء
+        if (normalizedSkuKey && seenSkus.has(normalizedSkuKey)) {
+          results.skipped += 1;
+          results.details.skipped.push({ name: product.name, reason: 'SKU مكرر داخل الملف نفسه' });
+          continue;
+        }
+        if (!normalizedSkuKey && seenNames.has(normalizedNameKey)) {
+          results.skipped += 1;
+          results.details.skipped.push({ name: product.name, reason: 'منتج مكرر داخل الملف نفسه' });
+          continue;
+        }
+
+        if (normalizedSkuKey && existingSkus.has(normalizedSkuKey)) {
           results.skipped += 1;
           results.details.skipped.push({ name: product.name, reason: 'SKU موجود بالفعل' });
           continue;
         }
 
-        if (!product.sku && existingNames.has(product.name)) {
+        if (!normalizedSkuKey && existingNames.has(normalizedNameKey)) {
           results.skipped += 1;
           results.details.skipped.push({ name: product.name, reason: 'المنتج موجود بالفعل' });
           continue;
         }
+
+        if (normalizedSkuKey) seenSkus.add(normalizedSkuKey);
+        else seenNames.add(normalizedNameKey);
 
         let categoryId = null;
         if (product.category) {
@@ -498,7 +526,7 @@ const importProductsFromSheet = async (req, res) => {
             cost: product.cost,
             sku: product.sku,
             barcode: product.barcode,
-            stock: product.stock || 0,
+            stock: validateStock(product.stock).ok ? (product.stock || 0) : 0,
             trackInventory: product.trackInventory !== null ? product.trackInventory : true,
             isActive: product.isActive !== null ? product.isActive : true,
             categoryId,
