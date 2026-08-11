@@ -821,13 +821,17 @@ async function updateSystemSettings(req, res) {
     const settings = await autoDiscountService.updateSettings(companyId, req.body);
 
     // 🚀 لما الضغط على "تفعيل النظام" للمستويات، نطبق المستويات على جميع العملاء فوراً
+    //    من غير ما نحبس الـ request (fire-and-forget) عشان الـ backfill ياخد وقته في الخلفية
     let activationResult = null;
     if (req.body.system === 'TIERS' && settings.activated === true) {
-      try {
-        activationResult = await customerLoyaltyService.activateTiersForAllCustomers(companyId);
-      } catch (activateError) {
-        console.error('❌ [LOYALTY-ACTIVATE] Tier backfill failed:', activateError.message);
-      }
+      activationResult = { enrolled: 0, updated: 0, background: true };
+      customerLoyaltyService.activateTiersForAllCustomers(companyId)
+        .then((result) => {
+          console.log('✅ [LOYALTY-ACTIVATE] Background tier backfill done:', result);
+        })
+        .catch((activateError) => {
+          console.error('❌ [LOYALTY-ACTIVATE] Tier backfill failed:', activateError.message);
+        });
     }
 
     res.json({
