@@ -55,9 +55,10 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         system: "AUTO_DISCOUNT",
         activated: true,
       });
-      setCfg((prev) => ({ ...prev, ...(res.data?.data || {}), activated: true }));
+      const updated = { ...(res.data?.data || {}), activated: true, loyaltySystem: "AUTO_DISCOUNT" };
+      setCfg((prev) => ({ ...prev, ...updated }));
       setSavedMsg("تم تفعيل نظام الخصم التلقائي وحفظ الإعدادات ✓");
-      onSaved?.(res.data?.data);
+      onSaved?.(updated);
     } catch (e: any) {
       setErrorMsg(e?.response?.data?.error || "فشل التفعيل");
     } finally {

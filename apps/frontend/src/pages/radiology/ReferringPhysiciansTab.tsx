@@ -1,0 +1,194 @@
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, BadgePercent } from "lucide-react";
+import { api, fetchJson, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+
+interface Physician {
+  id: string; name: string; phone?: string; specialty?: string;
+  commissionType: string; commissionValue: number; isActive: boolean;
+}
+
+interface CommissionRow { physicianId: string; name?: string; count: number; amount: number; commission: number; commissionType?: string; commissionValue?: number; }
+
+const COMMISSION_LABEL: Record<string, string> = { NONE: "بدون", PERCENTAGE: "نسبة", FIXED: "مبلغ ثابت" };
+
+export default function ReferringPhysiciansTab() {
+  const [items, setItems] = useState<Physician[]>([]);
+  const [commissions, setCommissions] = useState<CommissionRow[]>([]);
+  const [totalCommission, setTotalCommission] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [modal, setModal] = useState<{ id?: string; name: string; phone: string; specialty: string; commissionType: string; commissionValue: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const refresh = useCallback(async (opts?: { silent?: boolean }) => {
+    try {
+      const url = new URL(api("referring-physicians"));
+      if (search.trim()) url.searchParams.set("search", search.trim());
+      const data = await fetchJson<Physician[]>(url.toString());
+      setItems(data || []);
+      const c = await fetchJson<{ rows?: CommissionRow[]; totalCommission?: number }>(api("referring-physicians/commissions"));
+      setCommissions(c.rows || []);
+      setTotalCommission(c.totalCommission || 0);
+    } catch (e) {
+      if (!opts?.silent) toast.error(e instanceof Error ? e.message : "فشل تحميل الأطباء");
+    }
+  }, [search]);
+
+  useEffect(() => {
+    const t = setTimeout(() => { setLoading(true); refresh().finally(() => setLoading(false)); }, 350);
+    return () => clearTimeout(t);
+  }, [refresh]);
+
+  const save = async () => {
+    if (!modal || saving) return;
+    if (!modal.name.trim()) { toast.error("اسم الطبيب مطلوب"); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        name: modal.name.trim(),
+        phone: modal.phone.trim() || undefined,
+        specialty: modal.specialty.trim() || undefined,
+        commissionType: modal.commissionType,
+        commissionValue: Number(modal.commissionValue) || 0,
+      };
+      if (modal.id) await fetchJson(api(`referring-physicians/${modal.id}`), { method: "PUT", body: JSON.stringify(payload) });
+      else await fetchJson(api("referring-physicians"), { method: "POST", body: JSON.stringify(payload) });
+      toast.success(modal.id ? "تم تحديث الطبيب" : "تم إضافة الطبيب");
+      setModal(null);
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل الحفظ");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (p: Physician) => {
+    if (!window.confirm(`حذف الطبيب "${p.name}"؟`)) return;
+    try {
+      await fetchJson(api(`referring-physicians/${p.id}`), { method: "DELETE" });
+      toast.success("تم الحذف");
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل الحذف");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold">الأطباء المحوّلون</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">متابعة الأطباء المحوّلين وعمولاتهم</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
+            <input className={`${MODAL_INPUT_CLS} pr-9 w-44`} placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <RefreshCw className="w-4 h-4" />تحديث
+          </button>
+          <button onClick={() => setModal({ name: "", phone: "", specialty: "", commissionType: "NONE", commissionValue: "0" })} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+            <Plus className="w-4 h-4" />طبيب جديد
+          </button>
+        </div>
+      </div>
+
+      {commissions.length > 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
+          <h3 className="font-semibold mb-3 flex items-center gap-2"><BadgePercent className="w-4 h-4" />العمولات المستحقة</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {commissions.map(c => (
+              <div key={c.physicianId} className="flex justify-between items-center border dark:border-gray-700 rounded-lg px-3 py-2 text-sm">
+                <span className="font-medium">{c.name || "—"}</span>
+                <span className="text-green-600 font-bold">{Number(c.commission).toFixed(0)} ج</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm mt-3 text-gray-500 dark:text-gray-400">إجمالي العمولات المستحقة: <b className="text-green-600">{Number(totalCommission).toFixed(0)} ج</b></p>
+        </div>
+      ) : null}
+
+      {loading && !items.length ? (
+        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+      ) : items.length === 0 ? (
+        <p className="text-center py-16 text-gray-400 dark:text-gray-500">لا يوجد أطباء محوّلون بعد</p>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px]">
+              <thead>
+                <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
+                  {["الاسم", "التخصص", "الهاتف", "العمولة", "إجراءات"].map(h => (
+                    <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(p => (
+                  <tr key={p.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+                    <td className="py-3 px-4 font-medium">{p.name}</td>
+                    <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.specialty || "—"}</td>
+                    <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>
+                    <td className="py-3 px-4">{COMMISSION_LABEL[p.commissionType] || p.commissionType}{p.commissionType === "PERCENTAGE" ? ` ${p.commissionValue}%` : p.commissionType === "FIXED" ? ` ${p.commissionValue} ج` : ""}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => setModal({ id: p.id, name: p.name, phone: p.phone || "", specialty: p.specialty || "", commissionType: p.commissionType, commissionValue: String(p.commissionValue) })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => remove(p)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {modal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setModal(null)}>
+          <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">{modal.id ? "تعديل الطبيب" : "طبيب جديد"}</h3>
+              <button onClick={() => setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">اسم الطبيب *</label>
+                <input className={MODAL_INPUT_CLS} value={modal.name} onChange={e => setModal({ ...modal, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">التخصص</label>
+                <input className={MODAL_INPUT_CLS} value={modal.specialty} onChange={e => setModal({ ...modal, specialty: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">الهاتف</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.phone} onChange={e => setModal({ ...modal, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">نوع العمولة</label>
+                <select className={MODAL_INPUT_CLS} value={modal.commissionType} onChange={e => setModal({ ...modal, commissionType: e.target.value })}>
+                  <option value="NONE">بدون</option>
+                  <option value="PERCENTAGE">نسبة %</option>
+                  <option value="FIXED">مبلغ ثابت</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">قيمة العمولة</label>
+                <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" value={modal.commissionValue} onChange={e => setModal({ ...modal, commissionValue: e.target.value })} disabled={modal.commissionType === "NONE"} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setModal(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
+              <button onClick={save} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}حفظ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

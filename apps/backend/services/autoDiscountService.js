@@ -121,7 +121,8 @@ async function updateSettings(companyId, data) {
       loyaltySettings: JSON.stringify(next)
     }
   });
-  return next;
+  // ✅ نرجّع loyaltySystem في الـ response عشان الواجهة تعرف النظام الفعلي المفعّل
+  return { ...next, loyaltySystem: system };
 }
 
 /**

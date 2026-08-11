@@ -2031,6 +2031,22 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
 
   if (statusEventMap[newStatus]) {
     statusConfig = statusEventMap[newStatus];
+    // 🛡️ PRODUCTION-FIX (status-notify-flag): احترم notifyCustomer من إعداد الحالة حتى
+    // للقياسية الست — كان الإعداد العام (orderProcessingEnabled... إلخ) بيغلب على القرار
+    // ويبعت رسايل لحالات التاجر معطّلها من صفحة حالات الطلبات (مثل PROCESSING
+    // notifyCustomer=false) — التناقض ده كان بيولّد محاولات إرسال فاشلة 131047.
+    try {
+      const dbNotify = await prisma.orderStatusConfig.findFirst({
+        where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping'] }, isActive: true },
+        select: { notifyCustomer: true }
+      });
+      if (dbNotify && dbNotify.notifyCustomer === false) {
+        console.log(`[WHATSAPP-STATUS] ⏭️ ${newStatus} notifyCustomer=false في إعداد الحالة — تخطي الإرسال`);
+        return { success: false, reason: 'status_notification_disabled' };
+      }
+    } catch (notifyFlagErr) {
+      console.warn(`[WHATSAPP-STATUS] ⚠️ Failed to check notifyCustomer for ${newStatus}:`, notifyFlagErr.message);
+    }
   } else {
     // التحقق من الحالات المخصصة في قاعدة البيانات
     // (statusType ممكن يكون order أو shipping — الحالات المخصصة بتاعة التاجر زي DELAYED-WITH-CAPTAIN)

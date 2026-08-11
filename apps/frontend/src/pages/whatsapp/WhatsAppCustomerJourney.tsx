@@ -685,7 +685,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
               </div>
 
               {filteredFlows.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {filteredFlows.map((flow) => {
                     const selected = selectedFlow?.id === flow.id;
 
@@ -695,7 +695,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                         type="button"
                         onClick={() => handleFlowClick(flow)}
                         className={cn(
-                          "group flex w-full flex-col gap-2 rounded-xl p-3 text-start transition-all duration-200",
+                          "group flex w-full flex-col gap-1.5 rounded-xl px-3 py-2.5 text-start transition-all duration-200",
                           selected
                             ? "scale-[0.99] bg-[color:var(--journey-accent-soft)]"
                             : "bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] hover:translate-x-0.5",
@@ -785,7 +785,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 border-t border-[color:color-mix(in_srgb,var(--color-muted-foreground)_10%,transparent)] pt-2">
+                        <div className="flex items-center justify-between gap-2 border-t border-[color:color-mix(in_srgb,var(--color-muted-foreground)_10%,transparent)] pt-1.5">
                           <span className="flex items-center gap-1.5 text-xs text-[color:var(--color-muted-foreground)]">
                             <MessageSquare className="size-3" />
                             {flow._count?.steps || 0} {t("whatsappJourney.steps.title")}
@@ -842,35 +842,27 @@ const WhatsAppCustomerJourney: React.FC = () => {
             }
             action={
               selectedFlow ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "gap-1.5 rounded-full px-2.5 py-1 text-xs",
-                      selectedFlow.isEnabled
-                        ? "border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,var(--color-foreground))]"
-                        : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "size-1.5 rounded-full",
-                        selectedFlow.isEnabled
-                          ? "bg-[color:var(--business-success)]"
-                          : "bg-[color:var(--color-muted-foreground)] opacity-50",
-                      )}
-                    />
-                    {selectedFlow.isEnabled
-                      ? t("whatsappJourney.flows.enabled")
-                      : t("whatsappJourney.flows.disabled")}
-                  </Badge>
-                  {isAdmin && (
-                    <Button size="sm" onClick={openCreateStepDialog}>
-                      <Plus className="size-4" />
-                      {t("whatsappJourney.steps.add")}
-                    </Button>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "gap-1.5 rounded-full px-2.5 py-1 text-xs",
+                    selectedFlow.isEnabled
+                      ? "border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,var(--color-foreground))]"
+                      : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]",
                   )}
-                </div>
+                >
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      selectedFlow.isEnabled
+                        ? "bg-[color:var(--business-success)]"
+                        : "bg-[color:var(--color-muted-foreground)] opacity-50",
+                    )}
+                  />
+                  {selectedFlow.isEnabled
+                    ? t("whatsappJourney.flows.enabled")
+                    : t("whatsappJourney.flows.disabled")}
+                </Badge>
               ) : undefined
             }
           >

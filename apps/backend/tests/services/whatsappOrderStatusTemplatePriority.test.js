@@ -25,6 +25,7 @@ const mockSettings = {
   whatsAppSession: { findFirst: jest.fn(), findUnique: jest.fn() },
   whatsAppNotificationTemplate: { findFirst: jest.fn() },
   whatsAppNotificationLog: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+  orderStatusConfig: { findFirst: jest.fn() },
   company: { findUnique: jest.fn() },
 };
 
@@ -66,6 +67,7 @@ describe('whatsapp order status template priority', () => {
     mockSettings.whatsAppNotificationLog.findFirst.mockResolvedValue(null);
     mockSettings.whatsAppNotificationLog.create.mockResolvedValue({ id: 'log-1' });
     mockSettings.whatsAppNotificationLog.update.mockResolvedValue({});
+    mockSettings.orderStatusConfig.findFirst.mockResolvedValue({ notifyCustomer: true });
   });
 
   it('queries the raw status-code template before the legacy ORDER_* one', async () => {
@@ -141,6 +143,30 @@ describe('whatsapp order status template priority', () => {
       eventTypesQueried.indexOf('ORDER_CONFIRMED')
     );
     expect(result).toBeDefined();
+  });
+
+  it('skips the send when the status config has notifyCustomer=false (PROCESSING etc.)', async () => {
+    // Per-status flag wins over the global settings flag (orderProcessingEnabled).
+    mockSettings.orderStatusConfig.findFirst.mockResolvedValue({ notifyCustomer: false });
+
+    const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+
+    const order = {
+      id: 'order-3',
+      orderNumber: 'ORD-3',
+      companyId: 'company-1',
+      customerPhone: '+201000000000',
+      customer: { firstName: 'Ali', phone: '+201000000000' },
+      items: [],
+      total: '100',
+      currency: 'EGP',
+    };
+
+    const result = await sendOrderStatusNotification(order, 'PROCESSING', 'CONFIRMED');
+
+    expect(result).toEqual({ success: false, reason: 'status_notification_disabled' });
+    // No notification log should be created (nothing was attempted)
+    expect(mockSettings.whatsAppNotificationLog.create).not.toHaveBeenCalled();
   });
 
   it('returns no_template when no DB template exists for an order event (no code fallback)', async () => {

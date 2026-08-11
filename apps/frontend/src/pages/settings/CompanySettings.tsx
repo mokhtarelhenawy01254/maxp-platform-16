@@ -215,9 +215,34 @@ const CompanySettings: React.FC = () => {
   // Tabs state
   const [activeTab, setActiveTab] = useState<CompanyTab>("general");
 
-  const customerRegisterUrl = user?.companyId
-    ? `${window.location.origin}/auth/customer-register?companyId=${encodeURIComponent(user.companyId)}`
-    : null;
+  // رابط تسجيل العملاء — على دومين متجر الشركة (subdomain أو دومين مخصص) مش على المنصة
+  const customerRegisterUrl = (() => {
+    const companyId = user?.companyId;
+    if (!companyId) return null;
+    let origin: string;
+    if (customDomain) {
+      origin = `https://${customDomain}`;
+    } else if (slug) {
+      try {
+        const url = new URL(window.location.origin);
+        const host = url.hostname;
+        const port = url.port ? `:${url.port}` : "";
+        if (host.startsWith("localhost") || host.startsWith("127.")) {
+          origin = `${url.protocol}//${slug}.${host}${port}`;
+        } else {
+          const parts = host.split(".");
+          if (parts[0] === "www") parts.shift();
+          if (parts.length >= 2) parts[0] = slug;
+          origin = `${url.protocol}//${parts.join(".")}${port}`;
+        }
+      } catch {
+        origin = window.location.origin;
+      }
+    } else {
+      origin = window.location.origin;
+    }
+    return `${origin}/auth/customer-register?companyId=${encodeURIComponent(companyId)}`;
+  })();
 
   // Ownership Transfer State
   const [users, setUsers] = useState<CompanyUser[]>([]);

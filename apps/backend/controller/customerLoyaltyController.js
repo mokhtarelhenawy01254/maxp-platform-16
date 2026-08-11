@@ -821,13 +821,17 @@ async function updateSystemSettings(req, res) {
     const settings = await autoDiscountService.updateSettings(companyId, req.body);
 
     // 🚀 لما الضغط على "تفعيل النظام" للمستويات، نطبق المستويات على جميع العملاء فوراً
+    //    من غير ما نحبس الـ request (fire-and-forget) عشان الـ backfill ياخد وقته في الخلفية
     let activationResult = null;
     if (req.body.system === 'TIERS' && settings.activated === true) {
-      try {
-        activationResult = await customerLoyaltyService.activateTiersForAllCustomers(companyId);
-      } catch (activateError) {
-        console.error('❌ [LOYALTY-ACTIVATE] Tier backfill failed:', activateError.message);
-      }
+      activationResult = { enrolled: 0, updated: 0, background: true };
+      customerLoyaltyService.activateTiersForAllCustomers(companyId)
+        .then((result) => {
+          console.log('✅ [LOYALTY-ACTIVATE] Background tier backfill done:', result);
+        })
+        .catch((activateError) => {
+          console.error('❌ [LOYALTY-ACTIVATE] Tier backfill failed:', activateError.message);
+        });
     }
 
     res.json({
@@ -893,12 +897,13 @@ async function getSystemAnalytics(req, res) {
       const appliedCustomers = customersWithVouchers.length;
 
       // الأوردرات المسلّمة اللي لسه مأخدتش كوبون خصم (في انتظار تفعيل الخصم)
+      // 🐛 نفلتر sourceOrderId في الذاكرة لأن بعض نسخ Prisma بترفض `not: null`
       const ordersWithVoucher = await prisma.customerLoyaltyVoucher.findMany({
-        where: { companyId, sourceOrderId: { not: null } },
+        where: { companyId },
         select: { sourceOrderId: true },
         distinct: ['sourceOrderId']
       });
-      const orderIdsWithVoucher = new Set(ordersWithVoucher.map((v) => v.sourceOrderId));
+      const orderIdsWithVoucher = new Set(ordersWithVoucher.map((v) => v.sourceOrderId).filter(Boolean));
       const deliveredOrders = await prisma.order.findMany({
         where: { companyId, status: 'DELIVERED' },
         select: { id: true, customerId: true, createdAt: true }
@@ -977,7 +982,15 @@ async function getSystemAnalytics(req, res) {
     res.json({
       success: true,
       data: {
-        system: 'TIERS',
+        system: loyaltySystem === 'AUTO_DISCOUNT' ? 'AUTO_DISCOUNT' : 'TIERS',
+        totalDeliveredOrders: 0,
+        appliedCustomers: 0,
+        waitingForDelivery: 0,
+        activeVouchers: 0,
+        usedVouchers: 0,
+        convertedVouchers: 0,
+        expiredVouchers: 0,
+        preActivationCustomers: 0,
         totalEnrolled: 0,
         tiers: []
       }
