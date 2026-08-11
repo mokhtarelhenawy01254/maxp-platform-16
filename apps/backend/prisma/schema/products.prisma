@@ -712,6 +712,9 @@ model Shipment {
   serviceLevel           String?
   cost                   Decimal?         @db.Decimal(10, 2)
   currency               String           @default("EGP")
+  settlementStatus       String?          @default("PENDING")
+  settledAt              DateTime?
+  settledBy              String?
   destinationGovernorate String?
   destinationCity        String?
   destinationAddress     String?

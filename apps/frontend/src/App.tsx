@@ -374,6 +374,9 @@ const ShippingCompanies = React.lazy(
 const ShippingCompanyDetail = React.lazy(
   () => import("./pages/shipping/ShippingCompanyDetail"),
 );
+const ShippingSettlement = React.lazy(
+  () => import("./pages/shipping/SettlementPage"),
+);
 const DeliveryOptions = React.lazy(
   () => import("./pages/settings/DeliveryOptions"),
 );
@@ -5735,6 +5738,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ShippingCompanyDetail />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-settlement"
+                  element={
+                    <Layout>
+                      <ShippingSettlement />
                     </Layout>
                   }
                 />

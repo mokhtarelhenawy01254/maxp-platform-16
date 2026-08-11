@@ -559,6 +559,7 @@ export const getSidebarConfig = (
                 { to: '/orders/turbo-captains', icon: Users, label: t('sidebar.turboCaptains'), requiredPermissions: ['orders.turbo.view'] },
                 { to: '/tickets', icon: Ticket, label: t('sidebar.turboTickets'), requiredPermissions: ['orders.tickets.view'] },
                 { to: '/shipping-companies', icon: Truck, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-settlement', icon: Banknote, label: t('sidebar.shippingSettlement', 'تسويات شركات الشحن'), requiredPermissions: ['orders.shipping.view'] },
                 { to: '/returns', icon: CheckCircle2, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'] },
                 { to: '/orders/bulk', icon: ListOrdered, label: t('sidebar.bulkOrders'), requiredPermissions: ['bulkOrders.view', 'orders.bulk.create'] },
                 { to: '/orders/quick-status', icon: RefreshCcw, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'] },
