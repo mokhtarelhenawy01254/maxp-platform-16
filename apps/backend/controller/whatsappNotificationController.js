@@ -503,6 +503,151 @@ async function getNotificationLogs(req, res) {
   }
 }
 
+async function getStatusReport(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { startDate, endDate, eventType, status, type, page = 1, limit = 50 } = req.query;
+
+    const now = new Date();
+    const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const end = endDate ? new Date(endDate) : now;
+    const endOfDay = new Date(end);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const where = {
+      companyId,
+      createdAt: { gte: start, lte: endOfDay },
+      OR: [
+        { category: 'ORDERS' },
+        { category: 'ORDER' },
+        { category: 'ABANDONED_CART' },
+        { eventType: { startsWith: 'ORDER_' } },
+      ],
+    };
+
+    if (eventType) where.eventType = eventType;
+    if (status) where.status = status;
+
+    const prisma = getSharedPrismaClient();
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(500, Math.max(1, parseInt(limit) || 50));
+
+    try {
+      const [logs, total] = await Promise.all([
+        safeQuery(() => prisma.whatsAppNotificationLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
+          include: {
+            whatsapp_notification_templates: {
+              select: { name: true, metaTemplateName: true, channel: true, headerUsesOrderProduct: true },
+            },
+            order: { select: { orderNumber: true } },
+            customer: { select: { firstName: true, lastName: true } },
+          },
+        })),
+        safeQuery(() => prisma.whatsAppNotificationLog.count({ where })),
+      ]);
+
+      const items = (logs || []).map((log) => {
+        const customerName = log.recipientName
+          || [log.customer?.firstName, log.customer?.lastName].filter(Boolean).join(' ')
+          || null;
+        return {
+          id: log.id,
+          eventType: log.eventType,
+          orderId: log.orderId,
+          orderNumber: log.order?.orderNumber || null,
+          customerName,
+          recipientPhone: log.recipientPhone,
+          templateId: log.templateId,
+          templateName: log.whatsapp_notification_templates?.name || null,
+          metaTemplateName: log.whatsapp_notification_templates?.metaTemplateName || null,
+          templateChannel: log.whatsapp_notification_templates?.channel || null,
+          headerUsesOrderProduct: log.whatsapp_notification_templates?.headerUsesOrderProduct ?? null,
+          messageType: log.messageType || 'TEXT',
+          status: log.status,
+          sentAt: log.sentAt,
+          createdAt: log.createdAt,
+          failureReason: log.failureReason,
+          errorCode: log.errorCode,
+        };
+      });
+
+      const summary = { total: 0, meta: 0, regular: 0, delivered: 0, sent: 0, read: 0, failed: 0, pending: 0 };
+      const byEventMap = new Map();
+      for (const log of logs || []) {
+        const ev = log.eventType || 'OTHER';
+        if (!byEventMap.has(ev)) {
+          byEventMap.set(ev, { eventType: ev, total: 0, meta: 0, regular: 0, delivered: 0, sent: 0, read: 0, failed: 0, pending: 0 });
+        }
+        const agg = byEventMap.get(ev);
+        const isMeta = String(log.messageType || 'TEXT').toUpperCase() === 'TEMPLATE';
+        const st = String(log.status || '').toUpperCase();
+
+        agg.total += 1;
+        if (isMeta) agg.meta += 1; else agg.regular += 1;
+        if (st === 'DELIVERED') agg.delivered += 1;
+        if (st === 'SENT') agg.sent += 1;
+        if (st === 'READ') agg.read += 1;
+        if (st === 'FAILED') agg.failed += 1;
+        if (st === 'PENDING') agg.pending += 1;
+
+        summary.total += 1;
+        if (isMeta) summary.meta += 1; else summary.regular += 1;
+        if (st === 'DELIVERED') summary.delivered += 1;
+        if (st === 'SENT') summary.sent += 1;
+        if (st === 'READ') summary.read += 1;
+        if (st === 'FAILED') summary.failed += 1;
+        if (st === 'PENDING') summary.pending += 1;
+      }
+
+      // فلترة التجميع حسب نوع الإرسال (meta/regular) لو اترسلت في الـ query
+      const typeFilter = String(type || '').toUpperCase();
+      let byStatus = Array.from(byEventMap.values()).sort((a, b) => b.total - a.total);
+      if (typeFilter === 'META' || typeFilter === 'REGULAR') {
+        byStatus = byStatus.map((row) => ({
+          ...row,
+          total: typeFilter === 'META' ? row.meta : row.regular,
+          meta: typeFilter === 'META' ? row.meta : 0,
+          regular: typeFilter === 'REGULAR' ? row.regular : 0,
+        }));
+      }
+
+      res.json({
+        success: true,
+        range: { startDate: start, endDate: endOfDay },
+        summary,
+        byStatus,
+        items,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: total || 0,
+          pages: Math.ceil((total || 0) / limitNum),
+        },
+      });
+    } catch (dbError) {
+      if (dbError.message?.includes('does not exist') || dbError.code === 'P2021') {
+        return res.json({
+          success: true,
+          range: { startDate: start, endDate: endOfDay },
+          summary: { total: 0, meta: 0, regular: 0, delivered: 0, sent: 0, read: 0, failed: 0, pending: 0 },
+          byStatus: [],
+          items: [],
+          pagination: { page: pageNum, limit: limitNum, total: 0, pages: 0 },
+          warning: 'جدول السجلات غير موجود بعد',
+        });
+      }
+      throw dbError;
+    }
+  } catch (error) {
+    console.error('❌ [STATUS-REPORT] Error getting status report:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ أثناء جلب تقرير الحالات' });
+  }
+}
+
 async function getNotificationStats(req, res) {
   try {
     const { companyId } = req.user;
@@ -1532,6 +1677,7 @@ module.exports = {
   updateTemplate,
   deleteTemplate,
   getNotificationLogs,
+  getStatusReport,
   getNotificationStats,
   getNotificationQueueStats,
   sendManualNotification,

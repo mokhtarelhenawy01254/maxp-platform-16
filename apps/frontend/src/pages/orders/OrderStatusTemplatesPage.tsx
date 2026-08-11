@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -179,6 +179,7 @@ const TABS = [
   { key: "preparation", labelKey: "orders.statusTabs.preparation", label: "التجهيز" },
   { key: "shipping", labelKey: "orders.statusTabs.shipping", label: "الشحن" },
   { key: "incomplete", labelKey: "orders.statusTabs.incomplete", label: "رسائل الأوردر غير المكتمل" },
+  { key: "reports", labelKey: "orders.statusTabs.reports", label: "تقارير الحالات" },
 ];
 
 const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
@@ -1236,9 +1237,12 @@ export default function OrderStatusTemplatesPage() {
       {/* Tabs */}
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
         {TABS.map((tab) => {
-          const count = tab.key === "all"
-            ? notifiableCount
-            : statuses.filter((s) => s.statusType === tab.key && !s.isNonNotifiable).length;
+          const isReports = tab.key === "reports";
+          const count = isReports
+            ? 0
+            : tab.key === "all"
+              ? notifiableCount
+              : statuses.filter((s) => s.statusType === tab.key && !s.isNonNotifiable).length;
           return (
             <button
               key={tab.key}
@@ -1249,10 +1253,13 @@ export default function OrderStatusTemplatesPage() {
                   : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
               }`}
             >
+              {isReports ? <DocumentTextIcon className="ml-1.5 inline h-4 w-4" /> : null}
               {t(tab.labelKey, tab.label)}
-              <span className="mr-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] dark:bg-slate-800">
-                {count}
-              </span>
+              {!isReports && (
+                <span className="mr-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] dark:bg-slate-800">
+                  {count}
+                </span>
+              )}
             </button>
           );
         })}
@@ -1269,7 +1276,9 @@ export default function OrderStatusTemplatesPage() {
         </button>
       </div>
 
-      {activeTab === "settings" ? (
+      {activeTab === "reports" ? (
+        <StatusReportTab statuses={statuses} />
+      ) : activeTab === "settings" ? (
         /* ⚙️ Settings Panel */
         <div data-testid="settings-panel" className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
           <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
@@ -2709,6 +2718,532 @@ function GroupHeader({ members, isNoTemplate, onExpand }: GroupHeaderProps) {
         <p className="mt-2 line-clamp-1 text-xs italic text-slate-500 dark:text-slate-500">
           "{(members[0].template?.content || members[0].metaTemplate?.content || "").substring(0, 80)}…"
         </p>
+      )}
+    </div>
+  );
+}
+
+type ReportRange = "today" | "yesterday" | "7d" | "custom";
+
+interface StatusReportSummary {
+  total: number;
+  meta: number;
+  regular: number;
+  delivered: number;
+  sent: number;
+  read: number;
+  failed: number;
+  pending: number;
+}
+
+interface StatusReportRow {
+  eventType: string;
+  total: number;
+  meta: number;
+  regular: number;
+  delivered: number;
+  sent: number;
+  read: number;
+  failed: number;
+  pending: number;
+}
+
+interface StatusReportItem {
+  id: string;
+  eventType: string;
+  orderId: string | null;
+  orderNumber: string | null;
+  customerName: string | null;
+  recipientPhone: string | null;
+  templateId: string | null;
+  templateName: string | null;
+  metaTemplateName: string | null;
+  templateChannel: string | null;
+  headerUsesOrderProduct: boolean | null;
+  messageType: string;
+  status: string;
+  sentAt: string | null;
+  createdAt: string | null;
+  failureReason: string | null;
+  errorCode: string | null;
+}
+
+interface StatusReportData {
+  success: boolean;
+  range: { startDate: string; endDate: string };
+  summary: StatusReportSummary;
+  byStatus: StatusReportRow[];
+  items: StatusReportItem[];
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
+
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function reportRangeParams(range: ReportRange, startDate: string, endDate: string) {
+  const today = new Date();
+  if (range === "today") {
+    const s = localDateStr(today);
+    return { startDate: s, endDate: s };
+  }
+  if (range === "yesterday") {
+    const y = new Date(today);
+    y.setDate(y.getDate() - 1);
+    const s = localDateStr(y);
+    return { startDate: s, endDate: s };
+  }
+  if (range === "7d") {
+    const s = new Date(today);
+    s.setDate(s.getDate() - 6);
+    return { startDate: localDateStr(s), endDate: localDateStr(today) };
+  }
+  return { startDate, endDate };
+}
+
+// نفس خريطة التحويل في backend/utils (ORDER_STATUS_TO_EVENT_TYPE) —
+// عشان نطابق حالة معيّنة في الصفحة مع الـ eventType المتخزّن فعلًا في السجل.
+function persistedEventTypeForCode(code: string): string {
+  const map: Record<string, string> = {
+    CONFIRMED: "ORDER_CONFIRMED",
+    PROCESSING: "ORDER_PROCESSING",
+    SHIPPED: "ORDER_SHIPPED",
+    OUT_FOR_DELIVERY: "ORDER_OUT_FOR_DELIVERY",
+    DELIVERED: "ORDER_DELIVERED",
+    CANCELLED: "ORDER_CANCELLED",
+    RETURNED: "ORDER_RETURNED",
+    PARTIALLY_RETURNED: "ORDER_RETURNED",
+    REFUNDED: "ORDER_REFUNDED",
+    PARTIALLY_REFUNDED: "PARTIAL_REFUND",
+    EXCHANGED: "ORDER_RETURNED",
+  };
+  return map[code] || code;
+}
+
+function humanizeEventType(ev: string): string {
+  const cleaned = ev.replace(/^ORDER_/, "").replace(/_/g, " ");
+  return cleaned || ev;
+}
+
+function escapeCsvCell(value: unknown): string {
+  const raw = value == null ? "" : String(value);
+  return `"${raw.replace(/"/g, '""')}"`;
+}
+
+function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
+  const { t } = useTranslation();
+  const [range, setRange] = useState<ReportRange>("today");
+  const [startDate, setStartDate] = useState(() => localDateStr(new Date()));
+  const [endDate, setEndDate] = useState(() => localDateStr(new Date()));
+  const [data, setData] = useState<StatusReportData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<"all" | "meta" | "regular">("all");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [detailByEvent, setDetailByEvent] = useState<Record<string, { items: StatusReportItem[]; loading: boolean }>>({});
+
+  const statusNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of statuses) {
+      m.set(s.code, s.name);
+      m.set(persistedEventTypeForCode(s.code), s.name);
+    }
+    return m;
+  }, [statuses]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = reportRangeParams(range, startDate, endDate);
+      const res = await apiClient.get("/whatsapp/notifications/status-report", { params: { ...params, limit: 200 } });
+      const body = res.data as StatusReportData | undefined;
+      setData(body?.success ? body : null);
+    } catch {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [range, startDate, endDate]);
+
+  useEffect(() => {
+    load();
+    setExpanded(new Set());
+    setDetailByEvent({});
+  }, [load]);
+
+  const toggleExpand = useCallback(async (eventType: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(eventType)) next.delete(eventType);
+      else next.add(eventType);
+      return next;
+    });
+    const cached = detailByEvent[eventType];
+    if (cached?.items?.length || cached?.loading) return;
+    const params = reportRangeParams(range, startDate, endDate);
+    setDetailByEvent((prev) => ({ ...prev, [eventType]: { items: [], loading: true } }));
+    try {
+      const res = await apiClient.get("/whatsapp/notifications/status-report", {
+        params: { ...params, eventType, limit: 500 },
+      });
+      const detailBody = res.data as StatusReportData | undefined;
+      const items = detailBody?.items || [];
+      setDetailByEvent((prev) => ({ ...prev, [eventType]: { items, loading: false } }));
+    } catch {
+      setDetailByEvent((prev) => ({ ...prev, [eventType]: { items: [], loading: false } }));
+    }
+  }, [detailByEvent, range, startDate, endDate]);
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const params = reportRangeParams(range, startDate, endDate);
+      const res = await apiClient.get("/whatsapp/notifications/status-report", {
+        params: { ...params, limit: 5000 },
+      });
+      const exportBody = res.data as StatusReportData | undefined;
+      const items: StatusReportItem[] = (exportBody?.items || []).filter((it) =>
+        typeFilter === "all"
+          ? true
+          : typeFilter === "meta"
+            ? String(it.messageType).toUpperCase() === "TEMPLATE"
+            : String(it.messageType).toUpperCase() !== "TEMPLATE"
+      );
+      const header = [
+        "رقم الطلب", "العميل", "الهاتف", "الحالة", "اسم القالب", "قالب ميتا",
+        "النوع", "حالة التوصيل", "الوقت", "السبب",
+      ];
+      const rows = items.map((it) => [
+        it.orderNumber,
+        it.customerName,
+        it.recipientPhone,
+        statusNameMap.get(it.eventType) || it.eventType,
+        it.templateName,
+        it.metaTemplateName,
+        String(it.messageType).toUpperCase() === "TEMPLATE" ? "ميتا" : "عادي",
+        it.status,
+        it.sentAt ? new Date(it.sentAt).toLocaleString("ar-EG") : it.createdAt ? new Date(it.createdAt).toLocaleString("ar-EG") : "",
+        it.errorCode ? `[${it.errorCode}] ${it.failureReason || ""}` : (it.failureReason || ""),
+      ].map(escapeCsvCell));
+      const csv = "\uFEFF" + [header.map(escapeCsvCell).join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `status-report-${range}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t("orders.reportExportError", "فشل تصدير التقرير"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const visibleRows = useMemo(() => {
+    if (!data) return [];
+    let rows = data.byStatus;
+    if (typeFilter === "meta") rows = rows.filter((r) => r.meta > 0);
+    if (typeFilter === "regular") rows = rows.filter((r) => r.regular > 0);
+    return rows;
+  }, [data, typeFilter]);
+
+  // حالات مفعّلة للإشعار لكن مفيش ليها أي إرسال في الفترة — مؤشر إن القالب مش شغال
+  const enabledWithoutSends = useMemo(() => {
+    if (!data) return [];
+    const reported = new Set(data.byStatus.map((r) => r.eventType));
+    return statuses.filter((s) => s.notifyCustomer && !s.isNonNotifiable && !reported.has(persistedEventTypeForCode(s.code)));
+  }, [data, statuses]);
+
+  const summary = data?.summary;
+  const kpis = summary
+    ? [
+        { label: "إجمالي الإرسالات", value: summary.total, color: "text-slate-900 dark:text-white", bg: "bg-slate-100 dark:bg-slate-800" },
+        { label: "قالب ميتا", value: summary.meta, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-900/30" },
+        { label: "واتساب عادي", value: summary.regular, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-900/30" },
+        { label: "تم التسليم", value: summary.delivered, color: "text-green-600 dark:text-green-400", bg: "bg-green-100 dark:bg-green-900/30" },
+        { label: "فشل", value: summary.failed, color: "text-red-600 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/30" },
+      ]
+    : [];
+
+  const statusColors: Record<string, string> = {
+    DELIVERED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    READ: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
+    SENT: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
+    FAILED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+    PENDING: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  };
+  const statusLabel: Record<string, string> = {
+    DELIVERED: "تم التسليم",
+    READ: "مقروءة",
+    SENT: "مرسلة",
+    FAILED: "فشل",
+    PENDING: "قيد الإرسال",
+  };
+
+  return (
+    <div className="space-y-4" data-testid="status-report-tab">
+      {/* Toolbar: نطاق التاريخ + الفلترة + تصدير */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900/50">
+          {([
+            { key: "today", label: "اليوم" },
+            { key: "yesterday", label: "أمس" },
+            { key: "7d", label: "آخر 7 أيام" },
+            { key: "custom", label: "فترة مخصصة" },
+          ] as const).map((r) => (
+            <button
+              key={r.key}
+              onClick={() => setRange(r.key)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                range === r.key
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
+        {range === "custom" && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value || localDateStr(new Date()))}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              aria-label="من تاريخ"
+            />
+            <span className="text-xs text-slate-400">→</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value || localDateStr(new Date()))}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              aria-label="إلى تاريخ"
+            />
+          </div>
+        )}
+
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+          className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          aria-label="فلترة نوع الإرسال"
+        >
+          <option value="all">كل الأنواع</option>
+          <option value="meta">قالب ميتا</option>
+          <option value="regular">واتساب عادي</option>
+        </select>
+
+        <button
+          onClick={() => load()}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+        >
+          <ArrowPathIcon className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          تحديث
+        </button>
+
+        <button
+          onClick={exportCsv}
+          disabled={exporting || !data?.items?.length}
+          className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+        >
+          {exporting ? (
+            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <DocumentTextIcon className="h-3.5 w-3.5" />
+          )}
+          تصدير CSV
+        </button>
+      </div>
+
+      {loading && !data ? (
+        <div className="flex justify-center py-12">
+          <span className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
+        </div>
+      ) : !summary ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/70 py-16 text-center dark:border-white/10">
+          <DocumentTextIcon className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">لا توجد بيانات لهذه الفترة</p>
+        </div>
+      ) : (
+        <>
+          {/* KPI cards */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {kpis.map((k) => (
+              <div key={k.label} className="rounded-xl border border-slate-200/70 bg-white p-3.5 dark:border-white/10 dark:bg-slate-900/50">
+                <p className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${k.bg} ${k.color}`}>{k.label}</p>
+                <p className={`mt-2 text-2xl font-bold tabular-nums ${k.color}`}>{k.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {enabledWithoutSends.length > 0 && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
+              <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0" />
+              <div>
+                <span className="font-semibold">حالات مفعّلة بدون إرسالات في هذه الفترة:</span>{" "}
+                {enabledWithoutSends.map((s) => s.name).join("، ")}
+                <span className="block text-xs opacity-80">لو الحالة دي كان المفروض تتبعت فيها رسايل، راجع قالبها من تبويب «الكل».</span>
+              </div>
+            </div>
+          )}
+
+          {/* Per-status summary table */}
+          <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white dark:border-white/10 dark:bg-slate-900/50">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200/70 bg-slate-50 text-[11px] text-slate-500 dark:border-white/10 dark:bg-slate-800/50 dark:text-slate-400">
+                    <th className="px-3 py-2.5 font-medium">الحالة</th>
+                    <th className="px-3 py-2.5 text-center font-medium">إجمالي</th>
+                    <th className="px-3 py-2.5 text-center font-medium">ميتا</th>
+                    <th className="px-3 py-2.5 text-center font-medium">عادي</th>
+                    <th className="px-3 py-2.5 text-center font-medium">تم التسليم</th>
+                    <th className="px-3 py-2.5 text-center font-medium">فشل</th>
+                    <th className="px-3 py-2.5 text-center font-medium" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {visibleRows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
+                        لا توجد إرسالات لهذه الفترة
+                      </td>
+                    </tr>
+                  )}
+                  {visibleRows.map((row) => {
+                    const isOpen = expanded.has(row.eventType);
+                    const detail = detailByEvent[row.eventType];
+                    return (
+                      <Fragment key={row.eventType}>
+                        <tr
+                          className="cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                          onClick={() => toggleExpand(row.eventType)}
+                        >
+                          <td className="px-3 py-2.5">
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                              {statusNameMap.get(row.eventType) || humanizeEventType(row.eventType)}
+                            </span>
+                            {!statusNameMap.has(row.eventType) && (
+                              <span className="mr-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                {row.eventType}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 text-center font-bold tabular-nums text-slate-900 dark:text-white">{row.total}</td>
+                          <td className="px-3 py-2.5 text-center tabular-nums text-blue-600 dark:text-blue-400">{row.meta}</td>
+                          <td className="px-3 py-2.5 text-center tabular-nums text-emerald-600 dark:text-emerald-400">{row.regular}</td>
+                          <td className="px-3 py-2.5 text-center tabular-nums text-green-600 dark:text-green-400">{row.delivered}</td>
+                          <td className="px-3 py-2.5 text-center tabular-nums text-red-600 dark:text-red-400">{row.failed}</td>
+                          <td className="px-3 py-2.5 text-center">
+                            <ChevronDownIcon className={`inline h-4 w-4 text-slate-400 transition ${isOpen ? "rotate-180" : ""}`} />
+                          </td>
+                        </tr>
+                        {isOpen && (
+                          <tr>
+                            <td colSpan={7} className="bg-slate-50/60 px-3 pb-3 dark:bg-slate-800/30">
+                              {detail?.loading ? (
+                                <div className="flex justify-center py-4">
+                                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-indigo-500/20 border-t-indigo-500" />
+                                </div>
+                              ) : !detail || detail.items.length === 0 ? (
+                                <p className="py-4 text-center text-xs text-slate-400">لا توجد رسائل تفصيلية في هذه الفترة</p>
+                              ) : (
+                                <div className="overflow-x-auto rounded-lg border border-slate-200/70 bg-white dark:border-white/10 dark:bg-slate-900/50">
+                                  <table className="w-full text-right text-[11px]">
+                                    <thead>
+                                      <tr className="border-b border-slate-200/70 bg-slate-50 text-[10px] text-slate-500 dark:border-white/10 dark:bg-slate-800/50 dark:text-slate-400">
+                                        <th className="px-3 py-2 font-medium">رقم الطلب</th>
+                                        <th className="px-3 py-2 font-medium">العميل</th>
+                                        <th className="px-3 py-2 font-medium">الهاتف</th>
+                                        <th className="px-3 py-2 font-medium">القالب</th>
+                                        <th className="px-3 py-2 font-medium">النوع</th>
+                                        <th className="px-3 py-2 font-medium">الحالة</th>
+                                        <th className="px-3 py-2 font-medium">الوقت</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                      {detail.items
+                                        .filter((it) =>
+                                          typeFilter === "all"
+                                            ? true
+                                            : typeFilter === "meta"
+                                              ? String(it.messageType).toUpperCase() === "TEMPLATE"
+                                              : String(it.messageType).toUpperCase() !== "TEMPLATE"
+                                        )
+                                        .map((it) => (
+                                          <tr key={it.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                            <td className="px-3 py-2 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                                              {it.orderNumber || "—"}
+                                            </td>
+                                            <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{it.customerName || "—"}</td>
+                                            <td className="px-3 py-2 font-mono text-slate-500 dark:text-slate-400" dir="ltr">
+                                              {it.recipientPhone || "—"}
+                                            </td>
+                                            <td className="px-3 py-2">
+                                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                {it.templateName || "بدون قالب"}
+                                              </span>
+                                              {it.metaTemplateName && (
+                                                <span className="block truncate font-mono text-[10px] text-blue-500 dark:text-blue-400" dir="ltr">
+                                                  {it.metaTemplateName}
+                                                </span>
+                                              )}
+                                            </td>
+                                            <td className="px-3 py-2">
+                                              {String(it.messageType).toUpperCase() === "TEMPLATE" ? (
+                                                <span className="rounded-full bg-blue-100 px-2 py-0.5 font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                  ☁️ ميتا
+                                                </span>
+                                              ) : (
+                                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                                  📱 عادي
+                                                </span>
+                                              )}
+                                            </td>
+                                            <td className="px-3 py-2">
+                                              <span className={`rounded-full px-2 py-0.5 font-medium ${statusColors[it.status] || statusColors["PENDING"]}`}>
+                                                {statusLabel[it.status] || it.status}
+                                              </span>
+                                              {it.status === "FAILED" && it.failureReason && (
+                                                <span className="block max-w-[200px] truncate text-[10px] text-red-500" title={it.failureReason}>
+                                                  {it.errorCode ? `[${it.errorCode}] ` : ""}{it.failureReason}
+                                                </span>
+                                              )}
+                                            </td>
+                                            <td className="whitespace-nowrap px-3 py-2 text-slate-500 dark:text-slate-400">
+                                              {(it.sentAt || it.createdAt)
+                                                ? new Date((it.sentAt || it.createdAt) as string).toLocaleString("ar-EG", {
+                                                    dateStyle: "short",
+                                                    timeStyle: "short",
+                                                  })
+                                                : "—"}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

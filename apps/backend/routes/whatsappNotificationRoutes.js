@@ -53,6 +53,9 @@ router.delete('/templates/:id', verifyToken.authenticateToken, whatsappNotificat
 // جلب سجل الإشعارات
 router.get('/logs', verifyToken.authenticateToken, whatsappNotificationController.getNotificationLogs);
 
+// 📊 تقرير يومي لحالات الطلبات: من اتإشعر، بأي قالب (ميتا/عادي)، وأي حالة التوصيل
+router.get('/status-report', verifyToken.authenticateToken, whatsappNotificationController.getStatusReport);
+
 // جلب إحصائيات الإشعارات
 router.get('/stats', verifyToken.authenticateToken, whatsappNotificationController.getNotificationStats);
 
