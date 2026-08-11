@@ -222,7 +222,7 @@ const TURBO_STATUS_DEFINITIONS = {
   turbo_saved: { labelAr: 'تم الحفظ (بانتظار الإرسال)', labelEn: 'Saved (Pending Send)' },
   turbo_sent: { labelAr: 'مرسلة لتربو', labelEn: 'Sent to Turbo' },
   processing: { labelAr: 'قيد التنفيذ بالفرع', labelEn: 'Branch Processing' },
-  out_for_delivery: { labelAr: 'خرجت للتوصيل', labelEn: 'Out for Delivery' },
+  out_for_delivery: { labelAr: 'مسلمة للمندوب', labelEn: 'Out for Delivery' },
   delivered: { labelAr: 'تم التسليم', labelEn: 'Delivered' },
   remitted: { labelAr: 'تم التوريد والتحصيل', labelEn: 'Remitted' },
   returned_to_company: { labelAr: 'مرتجعات بالشركة', labelEn: 'Returned to Company' },

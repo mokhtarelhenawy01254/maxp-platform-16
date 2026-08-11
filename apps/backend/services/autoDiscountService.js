@@ -2,6 +2,7 @@ const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const DEFAULT_SETTINGS = {
   system: 'AUTO_DISCOUNT',
+  activated: false,
   enabled: true,
   discountPercent: 10,
   validityDays: 3,
@@ -26,12 +27,18 @@ async function getSettings(companyId) {
     select: { loyaltySystem: true, loyaltySettings: true }
   });
   let cfg = { ...DEFAULT_SETTINGS };
+  let storedSettings = {};
   try {
     if (company?.loyaltySettings) {
-      cfg = { ...cfg, ...JSON.parse(company.loyaltySettings) };
+      storedSettings = JSON.parse(company.loyaltySettings);
+      cfg = { ...cfg, ...storedSettings };
     }
   } catch (e) { /* ignore malformed */ }
   const result = { ...cfg, loyaltySystem: company?.loyaltySystem || 'TIERS' };
+  // 🟢 backfill: الشركات اللي كانت شغالة قبل إضافة فلاج التفعيل تفضل مفعّلة (السلوك القديم)
+  if (storedSettings.activated === undefined) {
+    result.activated = Boolean(company?.loyaltySystem);
+  }
   // 🕐 backfill: لو الخصم التلقائي مفعّل وملوش تاريخ تفعيل محفوظ (بيانات قديمة)،
   // نستدل من أول كوبون صدر ونحفظه مرة واحدة عشان التاريخ يبقى ثابت
   if (result.loyaltySystem === 'AUTO_DISCOUNT' && !result.loyaltyActivatedAt) {
@@ -56,15 +63,34 @@ async function getSettings(companyId) {
 
 /**
  * هل نظام الخصم التلقائي هو المفعل للشركة؟
+ * activated لازم يبقى true (تم الضغط على "تفعيل النظام")
  */
 async function isAutoDiscountActive(companyId) {
   const s = await getSettings(companyId);
-  return s.loyaltySystem === 'AUTO_DISCOUNT' && s.enabled !== false;
+  return s.loyaltySystem === 'AUTO_DISCOUNT' && s.activated === true && s.enabled !== false;
+}
+
+/**
+ * هل نظام المستويات (Tiers) هو المفعل للشركة؟
+ * لازم loyaltySystem === 'TIERS' و activated === true (تم الضغط على "تفعيل النظام")
+ */
+async function isTiersActive(companyId) {
+  const s = await getSettings(companyId);
+  return s.loyaltySystem === 'TIERS' && s.activated === true;
+}
+
+/**
+ * هل نظام الولاء (أياً كان: مستويات أو خصم تلقائي) مفعّل فعلاً للشركة؟
+ */
+async function isLoyaltySystemActivated(companyId) {
+  const s = await getSettings(companyId);
+  return s.activated === true;
 }
 
 /**
  * تحديث إعدادات نظام الولاء للشركة
  * data.system: 'TIERS' | 'AUTO_DISCOUNT' (تفعيل أحدهما يعطّل الآخر)
+ * data.activated: true = تم الضغط على "تفعيل النظام" → النظام يشتغل فعلياً
  */
 async function updateSettings(companyId, data) {
   const prisma = getSharedPrismaClient();
@@ -77,8 +103,15 @@ async function updateSettings(companyId, data) {
   const next = { ...current, ...data };
   delete next.loyaltySystem;
   next.system = system;
+  // 🟢 منطق التفعيل: لو اتغير النظام (اخترنا النظام التاني)، نشيل تفعيل الأول
+  //    إلا لو الطلب ده نفسه بيفعّل (activated: true)
+  if (current.loyaltySystem && current.loyaltySystem !== system) {
+    next.activated = data.activated === true;
+  } else if (data.activated !== undefined) {
+    next.activated = data.activated === true;
+  }
   // 🕐 عند تفعيل الخصم التلقائي لأول مرة (أو الرجوع إليه بعد المستويات) نحفظ تاريخ التفعيل
-  if (system === 'AUTO_DISCOUNT' && current.loyaltySystem !== 'AUTO_DISCOUNT') {
+  if (system === 'AUTO_DISCOUNT' && next.activated === true && current.loyaltySystem !== 'AUTO_DISCOUNT') {
     next.loyaltyActivatedAt = new Date().toISOString();
   }
   await prisma.company.update({
@@ -399,7 +432,7 @@ async function getCustomerAutoDiscountSummary({ customerId, companyId, settings 
  */async function enrichCustomersWithAutoDiscountStatus(companyId, customers) {
   if (!Array.isArray(customers) || customers.length === 0) return customers;
   const settings = await getSettings(companyId);
-  if (settings.loyaltySystem !== 'AUTO_DISCOUNT' || settings.enabled === false) {
+  if (settings.loyaltySystem !== 'AUTO_DISCOUNT' || settings.activated !== true || settings.enabled === false) {
     return customers;
   }
   const prisma = getSharedPrismaClient();
@@ -514,6 +547,8 @@ module.exports = {
   DEFAULT_SETTINGS,
   getSettings,
   isAutoDiscountActive,
+  isTiersActive,
+  isLoyaltySystemActivated,
   updateSettings,
   issueVoucherForDeliveredOrder,
   getActiveVoucher,

@@ -4076,6 +4076,7 @@
       "activeJourneys": "العملاء النشطين",
       "totalSent": "إجمالي الرسائل",
       "completionRate": "معدل الإتمام",
+      "satisfaction": "مستوى الرضا",
       "deliveryStatus": "حالة الإرسال"
     },
     "flows": {
@@ -13470,7 +13471,10 @@
     "export": "تصدير CSV",
     "refresh": "تحديث",
     "empty": "لا توجد بيانات مطابقة",
-    "loadError": "فشل في جلب البيانات"
+    "loadError": "فشل في جلب البيانات",
+    "noInventory": "بلا سجلات مخزون",
+    "noInventoryHint": "أضف مخزوناً أولاً من صفحة إدارة المخزون",
+    "noInventoryBlock": "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون"
   },
   "reports": {
     "title": "التقارير",

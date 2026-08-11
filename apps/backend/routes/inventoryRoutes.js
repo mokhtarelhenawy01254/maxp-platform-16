@@ -26,6 +26,16 @@ router.get('/product/:productId', checkAppAccess('inventory-pro'), inventoryCont
 // Update stock quantity
 router.post('/update-stock', checkAppAccess('inventory-pro'), inventoryController.updateStock);
 
+// Get reorder points (aggregated / per warehouse / pre-order view)
+router.get('/reorder-points', checkAppAccess('inventory-pro'), inventoryController.getReorderPoints);
+
+// Update reorder point for a whole product or a single inventory record
+router.put('/reorder-points/product/:productId', checkAppAccess('inventory-pro'), inventoryController.updateReorderPoint);
+router.put('/reorder-points/:inventoryId', checkAppAccess('inventory-pro'), inventoryController.updateReorderPoint);
+
+// Bulk update reorder points
+router.post('/reorder-points/bulk', checkAppAccess('inventory-pro'), inventoryController.bulkUpdateReorderPoints);
+
 // Approve a pending stock movement
 router.post('/approve-movement', checkAppAccess('inventory-pro'), inventoryController.approveMovement);
 

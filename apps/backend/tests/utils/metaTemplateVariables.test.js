@@ -91,6 +91,29 @@ describe('buildMetaBodyParams', () => {
     expect(result[1]).toEqual({ type: 'text', text: '' });
   });
 
+  test('🚨 131008: عدد params دايمًا يساوي متغيرات القالب حتى لو القيم فاضية (لا حذف للـ params)', () => {
+    // أوردر من غير منتجات → orderItems فاضي — بس لازم نبعث param لكل متغير في القالب
+    // وإلا Meta بترفض بـ 131008 "Required parameter is missing".
+    const variablesOrder = [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' },
+      { position: 4, name: 'total' },
+    ];
+    const values = { customerName: 'عميلنا العزيز', orderNumber: 'ORD-9', orderItems: 'لا يوجد', total: '0' };
+    const result = buildMetaBodyParams(variablesOrder, null, values);
+    expect(result).toHaveLength(4);
+    expect(result[2]).toEqual({ type: 'text', text: 'لا يوجد' });
+    expect(result[3]).toEqual({ type: 'text', text: '0' });
+  });
+
+  test('🚨 131008: أوردر بدون أي variables قيم → لكل متغير param (وليس حذفه)', () => {
+    const variablesOrder = [{ position: 1, name: 'a' }, { position: 2, name: 'b' }];
+    const result = buildMetaBodyParams(variablesOrder, null, {});
+    expect(result).toHaveLength(2);
+    expect(result).toEqual([{ type: 'text', text: '' }, { type: 'text', text: '' }]);
+  });
+
   test('يرجّع مصفوفة فارغة لو مفيش ترتيب ولا نص', () => {
     expect(buildMetaBodyParams(null, null, {})).toEqual([]);
   });

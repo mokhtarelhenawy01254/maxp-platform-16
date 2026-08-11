@@ -25,6 +25,7 @@ const {
   resolveShippingClass
 } = require('../utils/shippingClassUtils');
 const { safeJsonParse } = require('../utils/jsonUtils');
+const { isPreOrderEligible } = require('../utils/preOrderUtils');
 const {
   getConversionSuiteFreeShippingPromotion,
 } = require('../utils/storefrontFreeShipping');
@@ -993,6 +994,7 @@ router.post('/', async (req, res) => {
       : null;
 
     const shippingClassCounts = {};
+    const preOrderItems = [];
 
     // Verify stock again
     for (const item of cartItems) {
@@ -1015,6 +1017,10 @@ router.post('/', async (req, res) => {
           error: `المنتج غير موجود: ${item.name || 'Unknown'}`
         });
       }
+
+      // الطلب المسبق: إذا كان المنتج pre-order وتاريخ التوفر مستقبلي (أو غير محدد)،
+      // يُسمح بالطلب حتى لو المخزون صفر — لا يتم رفض فحص المخزون.
+      const preOrderEligible = isPreOrderEligible(product);
 
       if (product.isDropshipped) {
         const availability = await dropshippingService.checkMerchantAvailability(
@@ -1052,7 +1058,7 @@ router.post('/', async (req, res) => {
           });
         }
 
-        if (variant.trackInventory !== false && variant.stock < item.quantity && !req.headers['x-admin-convert']) {
+        if (variant.trackInventory !== false && variant.stock < item.quantity && !req.headers['x-admin-convert'] && !preOrderEligible) {
           console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
@@ -1161,13 +1167,22 @@ router.post('/', async (req, res) => {
         console.log(`✅ [CREATE-ORDER] Enriched item ${item.productId}: Color=${item.productColor}, Size=${item.productSize}, Image=${image ? 'Yes' : 'No'}`);
       } else {
         // Check main product stock if no variant and tracking is enabled
-        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert']) {
+        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert'] && !preOrderEligible) {
           console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
             error: `المخزون غير كافي للمنتج: ${item.name || product.name}. المتوفر: ${product.stock}`
           });
         }
+      }
+
+      if (preOrderEligible) {
+        preOrderItems.push({
+          productId: product.id,
+          name: product.name,
+          quantity: item.quantity,
+          preOrderDate: product.preOrderDate || null,
+        });
       }
 
       const itemShippingClass = resolveShippingClass(selectedVariant?.metadata, product?.metadata);
@@ -1439,7 +1454,8 @@ router.post('/', async (req, res) => {
             autoDiscountVoucherId = voucherRes.voucher.id;
             await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
           }
-        } else {
+        } else if (await autoDiscountService.isTiersActive(company.id)) {
+          // نظام "المستويات": مزايا المستوى (شحن مجاني + خصم %) — بس لو النظام مفعّل
           loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
           const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
           loyaltyTierInfo = progress?.tier || null;
@@ -1767,6 +1783,13 @@ router.post('/', async (req, res) => {
       if (quantityOfferSummaries.length > 0) {
         orderMetadata.quantityOffers = quantityOfferSummaries;
         orderMetadata.quantityOfferFreeShipping = quantityOfferFreeShipping;
+      }
+
+      if (preOrderItems.length > 0) {
+        orderMetadata.preOrder = {
+          items: preOrderItems,
+          orderedAt: new Date().toISOString(),
+        };
       }
 
       if (freeShippingAdjustment) {
@@ -2336,6 +2359,20 @@ router.post('/', async (req, res) => {
 
         if (!dropshippingRoutingError) {
           console.log('✅ [ORDER-CREATE] Order created successfully:', createdOrder.id, createdOrder.orderNumber);
+
+          // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط لأي طلب جديد من المتجر
+          try {
+            const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+            await customerLoyaltyService.applyLoyaltyPointsForOrder({
+              orderId: createdOrder.id,
+              companyId: company.id,
+              changedBy: null
+            }).catch((loyaltyError) => {
+              console.error(`❌ [LOYALTY-AUTO] Failed to award points for storefront order ${createdOrder.orderNumber}:`, loyaltyError.message);
+            });
+          } catch (loyaltyError) {
+            console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+          }
 
           // تصدير Order إلى WooCommerce
           wooExportService.exportOrderAsync(createdOrder.id);

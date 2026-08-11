@@ -286,6 +286,32 @@ class OrderService {
         finalSubtotal = subtotal - appliedDiscount;
       }
 
+      // 🎁 الخصم التلقائي: لو نظام الخصم التلقائي مفعّل والعميل عنده كوبون خصم فعّال،
+      // نطبقه على الطلب (من المحادثة) — مش بس طلبات المتجر.
+      let autoDiscountVoucherId = null;
+      let autoDiscountAppliedValue = 0;
+      try {
+        const autoDiscountService = require('./autoDiscountService');
+        const autoActive = await autoDiscountService.isAutoDiscountActive(companyId);
+        if (autoActive && resolvedCustomerId) {
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId,
+            customerId: resolvedCustomerId,
+            cartTotal: finalSubtotal
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            appliedDiscount += voucherRes.discount;
+            finalSubtotal = subtotal - appliedDiscount;
+            autoDiscountVoucherId = voucherRes.voucher.id;
+            autoDiscountAppliedValue = voucherRes.discount;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+            console.log(`✅ [AUTO-DISCOUNT] Applied ${voucherRes.discount} EGP discount to conversation order for customer ${resolvedCustomerId}`);
+          }
+        }
+      } catch (autoDiscountError) {
+        console.error('❌ [AUTO-DISCOUNT] Failed to apply auto discount on conversation order:', autoDiscountError.message);
+      }
+
       const explicitShipping = toFiniteNumberOrNull(data.shippingAmount ?? data.shippingCost ?? data.shipping);
       const shipping = explicitShipping !== null
         ? explicitShipping
@@ -379,6 +405,11 @@ class OrderService {
             shippingAddress: data.shippingAddress || data.address || null,
             sourceType: data.sourceType || 'ai_conversation',
             extractionMethod: data.extractionMethod || 'ai_tool',
+            metadata: JSON.stringify({
+              ...(autoDiscountVoucherId && { autoDiscountVoucherId }),
+              ...(autoDiscountVoucherId && { autoDiscountApplied: autoDiscountAppliedValue }),
+              ...(conversationId && { conversationId }),
+            }),
             orderItems: {
               create: [orderItem],
             },
@@ -415,6 +446,20 @@ class OrderService {
         await confirmationService.autoAssignOnCreation(companyId, order.id, 'regular');
       } catch (distError) {
         console.error('❌ [ORDER-SERVICE] Error in auto-distribution:', distError.message);
+      }
+
+      // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط لأي طلب جديد من المحادثة
+      try {
+        const customerLoyaltyService = require('./hr/customerLoyaltyService');
+        await customerLoyaltyService.applyLoyaltyPointsForOrder({
+          orderId: order.id,
+          companyId,
+          changedBy: data.createdBy
+        }).catch((loyaltyError) => {
+          console.error(`❌ [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
+        });
+      } catch (loyaltyError) {
+        console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
       }
 
       //console.log('✅ Order created successfully:', order.orderNumber);
@@ -952,6 +997,22 @@ class OrderService {
         }
       }
       
+      // 🛡️ PRODUCTION-FIX (custom-status-enum): عمود order.status enum مقفول في الداتابيز،
+      // والحالات المخصصة (مثل DELAYED-WITH-CAPTAIN) مش جزء منه. بنحلّها عبر mapsToSystem:
+      // - storedStatus = القيمة الصالحة اللي تتخزّن فعلاً على order.status.
+      // - originalRequestedStatus = الكود اللي المستخدم طلبه (مخصص أو نظامي) — نستخدمه
+      //   في statusHistory + إشعار WhatsApp (قالب الحالة المخصصة).
+      // لو الحالة مش enum ومالهاش mapsToSystem صالح → نرفض بخطأ عربي واضح بدل 500 Prisma.
+      const { resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
+      const { stored: storedStatus, notify: originalRequestedStatus } = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
+      if (!storedStatus) {
+        throw createOrderStatusError(`الحالة "${status}" غير صالحة ولا يمكن تطبيقها على الطلب`, 400);
+      }
+      if (currentStatus === storedStatus) {
+        return order;
+      }
+      status = storedStatus;
+
       // 🚫 Block Scanner / Shipping Progression for PENDING_CANCELLATION
       if (currentStatus === 'PENDING_CANCELLATION' && ['PREPARING', 'QUALITY_CHECK', 'PACKAGED', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED'].includes(status)) {
         if (!isOverride) {
@@ -1052,7 +1113,7 @@ class OrderService {
             updatedAt: new Date(),
             statusHistory: {
               create: {
-                status: status,
+                status: originalRequestedStatus,
                 oldStatus: order.status,
                 changedBy: userId,
                 userName: userName,
@@ -1126,7 +1187,13 @@ class OrderService {
           }
 
           if (shouldCreateReturn) {
-            await this.autoCreateReturnRequest(order, userId, status);
+            // 🚨 PRODUCTION-FIX (return-notification-gap): autoCreateReturnRequest لازم يفضل
+            // جانبي تماماً — أي فشل فيه (زي FK على userId بتاعة SYSTEM من سينك تربو) كان بيكسر
+            // الـ background block كله وقبل وصول الإشعار للعميل. دلوقتي أي خطأ بيتسجل بس
+            // والإشعار يكمل.
+            await this.autoCreateReturnRequest(order, userId, status).catch(returnErr => {
+              console.error(`❌ [RETURNS-AUTO-BG] autoCreateReturnRequest failed for ${orderNumber}:`, returnErr.message);
+            });
           }
 
           // 💰 Affiliate & Commission & Cashback
@@ -1139,11 +1206,15 @@ class OrderService {
               reason:
                 notes ||
                 `تم تغيير حالة الطلب ${orderNumber} إلى ${status}، لذلك أُلغيت عمولات المسوق غير المصروفة`,
+            }).catch(commErr => {
+              console.error(`❌ [COMMISSION-BG] cancelAffiliateCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
             });
             await commissionService.cancelMerchantCommissionsForOrder(order.id, {
               reason:
                 notes ||
                 `تم تغيير حالة الطلب ${orderNumber} إلى ${status}، لذلك أُلغيت مستحقات التاجر غير المصروفة`,
+            }).catch(commErr => {
+              console.error(`❌ [COMMISSION-BG] cancelMerchantCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
             });
           }
 
@@ -1234,13 +1305,20 @@ class OrderService {
             // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
             // لا تحجب الحالات غير المرسومة هنا — دع sendOrderStatusNotification يقرر عبر
             // DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback isFallback.
-            const notificationStatus = normalizeWhatsAppOrderStatus(status) || status;
+            // 🛡️ PRODUCTION-FIX (custom-status-enum): نستخدم الكود الأصلي (originalRequestedStatus)
+            // — مش الـ stored enum — عشان قالب الحالة المخصصة (مثل DELAYED-WITH-CAPTAIN) يشتغل.
+            const notificationStatus = normalizeWhatsAppOrderStatus(originalRequestedStatus) || originalRequestedStatus;
 
             // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
+            // 🛡️ PRODUCTION-FIX (custom-status-enum-dedup): الـ dedup لازم يستخدم نفس القيمة اللي
+            // هتتخزن فعلاً في whatsAppNotificationLog.eventType — للحالات المخصصة دي `mapsToSystem`
+            // (مثل ON_HOLD) مش الكود المخصص — وإلا الرسالة المكررة متتعرفش (قد تسبب سبام للعميل).
+            const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
+            const persistedEventForDedup = getPersistedNotificationEventType(storedStatus || notificationStatus);
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
               companyId: order.companyId,
               orderId: order.id,
-              eventType: notificationStatus,
+              eventType: persistedEventForDedup,
             });
 
             if (recentNotification) {
@@ -1523,7 +1601,10 @@ class OrderService {
       await prisma.returnActivityLog.create({
         data: {
           returnRequestId: request.id,
-          userId: userId || undefined,
+          // 🚨 PRODUCTION-FIX (return-notification-gap): سينك تربو بيمرر userId='SYSTEM'
+          // (مش id مستخدم حقيقي) → كان بيكسر FK return_activity_logs_userId_fkey →
+          // فكان بيمنع إشعار المرتجع. بنمرر userId بس لو هو id حقيقي.
+          userId: (userId && typeof userId === 'string' && !['SYSTEM', 'System', 'system', 'SYSTEM_SYNC', 'AUTO', 'Turbo Sync'].includes(String(userId))) ? userId : undefined,
           action: 'AUTO_CREATED',
           details: `تم إنشاء الطلب تلقائياً بسبب تحديث حالة الطلب لـ ${status}`
         }

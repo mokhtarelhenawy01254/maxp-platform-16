@@ -9,6 +9,7 @@
     "activeJourneys": "Active Customers",
     "totalSent": "Total Messages Sent",
     "completionRate": "Completion Rate",
+    "satisfaction": "Satisfaction",
     "deliveryStatus": "Delivery Status"
   },
   "flows": {

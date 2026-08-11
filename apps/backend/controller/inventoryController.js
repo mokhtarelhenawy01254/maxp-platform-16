@@ -43,9 +43,26 @@ const parseOptionalNumber = (value) => {
 };
 
 const parseNonNegativeInteger = (value, fallback = 0) => {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return fallback;
+  }
+
+  return Math.max(0, Math.floor(parsed));
+};
+
+const parseOptionalNonNegativeInteger = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return undefined;
   }
 
   return Math.max(0, Math.floor(parsed));
@@ -1456,6 +1473,486 @@ exports.transferStock = async (req, res) => {
       success: false,
       message: error.statusCode ? error.message : 'فشل في نقل المخزون',
       error: error.message
+    });
+  }
+};
+
+const normalizeReorderView = (value) => {
+  const normalized = normalizeString(value).toLowerCase();
+  if (['warehouse', 'preorder'].includes(normalized)) return normalized;
+  return 'product';
+};
+
+const normalizeReorderSortBy = (value) => {
+  const normalized = normalizeString(value).toLowerCase();
+  const allowed = new Set(['name', 'available', 'reserved', 'reorderPoint', 'daysUntilStockout', 'suggestedReorder']);
+  return allowed.has(normalized) ? normalized : 'available';
+};
+
+const resolveProductImage = (product) => {
+  const candidates = [];
+  if (typeof product.mainImage === 'string' && product.mainImage.trim()) {
+    candidates.push(product.mainImage.trim());
+  }
+  if (typeof product.images === 'string' && product.images.trim()) {
+    try {
+      const parsed = JSON.parse(product.images);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item) => {
+          const value = typeof item === 'string' ? item : item?.fullUrl || item?.url || '';
+          if (value) candidates.push(value);
+        });
+      } else if (typeof parsed === 'string' && parsed.trim()) {
+        candidates.push(parsed.trim());
+      }
+    } catch {
+      product.images.split(',').forEach((part) => {
+        const trimmed = part.trim();
+        if (trimmed) candidates.push(trimmed);
+      });
+    }
+  }
+  return candidates[0] || null;
+};
+
+const resolveReorderStatus = ({ available, reorderPoint, trackInventory }) => {
+  if (trackInventory === false) return 'untracked';
+  if (available === 0) return 'out';
+  if (reorderPoint > 0 && available <= reorderPoint) return 'low';
+  return 'safe';
+};
+
+const resolveReorderDays = ({ available, dailyAvgSales, status }) => {
+  if (status === 'out') return 0;
+  if (dailyAvgSales > 0) return Math.floor(available / dailyAvgSales);
+  return 999;
+};
+
+const resolveReorderUrgency = (daysUntilStockout) => {
+  if (daysUntilStockout <= 7) return 'critical';
+  if (daysUntilStockout <= 14) return 'warning';
+  if (daysUntilStockout <= 30) return 'moderate';
+  return 'safe';
+};
+
+const buildReorderSummaryRow = (product, inventoryRecords, salesStats) => {
+  const totalAvailable = inventoryRecords.reduce((sum, record) => sum + Number(record.available || 0), 0);
+  const totalReserved = inventoryRecords.reduce((sum, record) => sum + Number(record.reserved || 0), 0);
+  const totalQuantity = inventoryRecords.reduce((sum, record) => sum + Number(record.quantity || 0), 0);
+  const effectiveReorderPoint = Math.max(0, ...inventoryRecords.map((record) => Number(record.reorderPoint || 0)));
+  const effectiveMinStock = Math.max(0, ...inventoryRecords.map((record) => Number(record.minStock || 0)));
+
+  const sales = salesStats?.get(String(product.id)) || { totalSold: 0 };
+  const dailyAvgSales = sales.totalSold > 0 ? sales.totalSold / 30 : 0;
+  const status = resolveReorderStatus({
+    available: totalAvailable,
+    reorderPoint: effectiveReorderPoint,
+    trackInventory: product.trackInventory !== false,
+  });
+  const daysUntilStockout = resolveReorderDays({
+    available: totalAvailable,
+    dailyAvgSales,
+    status,
+  });
+  const suggestedReorder = Math.ceil(dailyAvgSales * 30);
+
+  return {
+    productId: product.id,
+    name: product.name,
+    sku: product.sku || '',
+    price: Number(product.price || 0),
+    cost: Number(product.cost || 0),
+    image: resolveProductImage(product),
+    categoryName: product.category?.name || '',
+    trackInventory: product.trackInventory !== false,
+    isPreOrder: Boolean(product.isPreOrder),
+    preOrderDate: product.preOrderDate || null,
+    preOrderMessage: product.preOrderMessage || '',
+    status,
+    urgency: resolveReorderUrgency(daysUntilStockout),
+    available: totalAvailable,
+    reserved: totalReserved,
+    quantity: totalQuantity,
+    reorderPoint: effectiveReorderPoint,
+    minStock: effectiveMinStock,
+    dailyAvgSales: Number(dailyAvgSales.toFixed(2)),
+    daysUntilStockout,
+    suggestedReorder,
+    warehouses: inventoryRecords.map((record) => ({
+      inventoryId: record.id,
+      warehouseId: record.warehouseId,
+      warehouseName: record.warehouse?.name || '',
+      available: Number(record.available || 0),
+      reserved: Number(record.reserved || 0),
+      quantity: Number(record.quantity || 0),
+      reorderPoint: Number(record.reorderPoint || 0),
+      minStock: Number(record.minStock || 0),
+      batchNumber: record.batchNumber || null,
+    })),
+  };
+};
+
+const buildReorderWarehouseRow = (record, product, salesStats) => {
+  const available = Number(record.available || 0);
+  const reorderPoint = Number(record.reorderPoint || 0);
+  const sales = salesStats?.get(String(product.id)) || { totalSold: 0 };
+  const dailyAvgSales = sales.totalSold > 0 ? sales.totalSold / 30 : 0;
+  const status = resolveReorderStatus({
+    available,
+    reorderPoint,
+    trackInventory: product.trackInventory !== false,
+  });
+  const daysUntilStockout = resolveReorderDays({
+    available,
+    dailyAvgSales,
+    status,
+  });
+
+  return {
+    inventoryId: record.id,
+    productId: product.id,
+    name: product.name,
+    sku: product.sku || '',
+    price: Number(product.price || 0),
+    cost: Number(product.cost || 0),
+    image: resolveProductImage(product),
+    categoryName: product.category?.name || '',
+    trackInventory: product.trackInventory !== false,
+    isPreOrder: Boolean(product.isPreOrder),
+    preOrderDate: product.preOrderDate || null,
+    status,
+    urgency: resolveReorderUrgency(daysUntilStockout),
+    warehouseId: record.warehouseId,
+    warehouseName: record.warehouse?.name || '',
+    batchNumber: record.batchNumber || null,
+    available,
+    reserved: Number(record.reserved || 0),
+    quantity: Number(record.quantity || 0),
+    reorderPoint,
+    minStock: Number(record.minStock || 0),
+    dailyAvgSales: Number(dailyAvgSales.toFixed(2)),
+    daysUntilStockout,
+  };
+};
+
+const buildReorderSalesStats = async (prisma, companyId, productIds) => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const orderIds = await prisma.order.findMany({
+    where: {
+      companyId,
+      createdAt: { gte: thirtyDaysAgo },
+      status: { in: ['DELIVERED', 'SHIPPED', 'CONFIRMED', 'PROCESSING'] },
+    },
+    select: { id: true },
+  });
+
+  if (orderIds.length === 0) return new Map();
+
+  const orderItems = await prisma.orderItem.findMany({
+    where: {
+      orderId: { in: orderIds.map((order) => order.id) },
+      productId: { in: productIds },
+    },
+    select: { productId: true, quantity: true },
+  });
+
+  const statsByProduct = new Map();
+  orderItems.forEach((item) => {
+    const key = String(item.productId);
+    const current = statsByProduct.get(key) || { totalSold: 0 };
+    current.totalSold += Number(item.quantity || 0);
+    statsByProduct.set(key, current);
+  });
+
+  return statsByProduct;
+};
+
+// إدارة نقاط إعادة الطلب / عجز المخزون (مجمع أو بالمخزن أو للطلب المسبق)
+exports.getReorderPoints = async (req, res) => {
+  try {
+    const scope = await resolveInventoryScope(req);
+    const view = normalizeReorderView(req.query.view);
+    const search = normalizeString(req.query.search).toLowerCase();
+    const categoryId = normalizeString(req.query.categoryId);
+    const stockFilter = normalizeString(req.query.stockFilter).toLowerCase();
+    const warehouseId = normalizeString(req.query.warehouseId);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 25));
+    const sortBy = normalizeReorderSortBy(req.query.sortBy);
+    const sortDir = normalizeString(req.query.sortDir).toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+    const inventoryWhere = {
+      warehouse: {
+        ...scope.warehouseWhere,
+        ...(warehouseId ? { id: warehouseId } : {}),
+      },
+    };
+
+    const productWhere = {
+      ...scope.productWhere,
+      deletedAt: null,
+      ...(search ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { sku: { contains: search, mode: 'insensitive' } },
+        ],
+      } : {}),
+      ...(categoryId ? { categoryId } : {}),
+    };
+
+    const products = await getSharedPrismaClient().product.findMany({
+      where: productWhere,
+      include: {
+        inventories: {
+          where: inventoryWhere,
+          include: {
+            warehouse: { select: { id: true, name: true } },
+          },
+        },
+        category: { select: { id: true, name: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    // فقط المنتجات ذات سجلات مخزون تظهر في عرض المخزن؛ باقي العروض تعرض كل المنتجات
+    // (المنتجات بلا سجلات تظهر بكمية صفر مثل صفحة المخزون الحالية).
+    const inventoryRecords = products.flatMap((product) =>
+      product.inventories.map((record) => ({
+        ...record,
+        product,
+      })),
+    );
+
+    const groupedByProduct = new Map();
+    products.forEach((product) => {
+      groupedByProduct.set(String(product.id), {
+        product,
+        records: product.inventories,
+      });
+    });
+
+    const productIds = products.map((product) => String(product.id));
+    const salesStats = await buildReorderSalesStats(
+      getSharedPrismaClient(),
+      scope.companyId,
+      productIds,
+    );
+
+    let rows = [];
+    if (view === 'warehouse') {
+      rows = inventoryRecords.map((record) =>
+        buildReorderWarehouseRow(record, record.product, salesStats),
+      );
+    } else if (view === 'preorder') {
+      rows = Array.from(groupedByProduct.entries())
+        .map(([productId, entry]) => buildReorderSummaryRow(entry.product, entry.records, salesStats))
+        .filter((row) => row.isPreOrder);
+    } else {
+      rows = Array.from(groupedByProduct.entries()).map(([productId, entry]) =>
+        buildReorderSummaryRow(entry.product, entry.records, salesStats),
+      );
+    }
+
+    const summaryTotal = rows.length;
+    const lowStockCount = rows.filter((row) => row.status === 'low').length;
+    const outOfStockCount = rows.filter((row) => row.status === 'out').length;
+    const preOrderCount = rows.filter((row) => row.isPreOrder).length;
+    const untrackedCount = rows.filter((row) => row.status === 'untracked').length;
+    const atRiskRows = rows.filter((row) => row.status === 'low' || row.status === 'out');
+    const atRiskValue = atRiskRows.reduce((sum, row) => {
+      const unitPrice = Number(row.price || 0);
+      const gap = Math.max(0, (row.reorderPoint || 0) - row.available);
+      return sum + gap * unitPrice;
+    }, 0);
+
+    if (stockFilter && stockFilter !== 'all') {
+      if (stockFilter === 'low') rows = rows.filter((row) => row.status === 'low');
+      else if (stockFilter === 'out') rows = rows.filter((row) => row.status === 'out');
+      else if (stockFilter === 'safe') rows = rows.filter((row) => row.status === 'safe');
+      else if (stockFilter === 'untracked') rows = rows.filter((row) => row.status === 'untracked');
+      else if (stockFilter === 'preorder') rows = rows.filter((row) => row.isPreOrder);
+    }
+
+    const sortAccessors = {
+      name: (row) => String(row.name || '').toLowerCase(),
+      available: (row) => Number(row.available || 0),
+      reserved: (row) => Number(row.reserved || 0),
+      reorderPoint: (row) => Number(row.reorderPoint || 0),
+      daysUntilStockout: (row) => Number(row.daysUntilStockout ?? 999),
+      suggestedReorder: (row) => Number(row.suggestedReorder || 0),
+    };
+    const accessor = sortAccessors[sortBy] || sortAccessors.available;
+    rows.sort((left, right) => {
+      const leftValue = accessor(left);
+      const rightValue = accessor(right);
+      const comparison =
+        typeof leftValue === 'number' ? leftValue - rightValue : String(leftValue).localeCompare(String(rightValue));
+      return sortDir === 'asc' ? comparison : -comparison;
+    });
+
+    const total = rows.length;
+    const pages = Math.max(1, Math.ceil(total / limit));
+    const safePage = Math.min(page, pages);
+    const startIndex = (safePage - 1) * limit;
+    const paginatedRows = rows.slice(startIndex, startIndex + limit);
+
+    res.json({
+      success: true,
+      data: {
+        items: paginatedRows,
+        pagination: { total, page: safePage, limit, pages },
+        summary: {
+          totalProducts: summaryTotal,
+          lowStockCount,
+          outOfStockCount,
+          preOrderCount,
+          untrackedCount,
+          safeCount: summaryTotal - lowStockCount - outOfStockCount - untrackedCount,
+          atRiskValue: Number(atRiskValue.toFixed(2)),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('❌ [INVENTORY] Error fetching reorder points:', error);
+    res.status(500).json({
+      success: false,
+      message: 'فشل في جلب نقاط إعادة الطلب',
+      error: error.message,
+    });
+  }
+};
+
+// تحديث نقطة إعادة الطلب لمنتج كامل (كل المخازن) أو لسجل مخزن واحد
+exports.updateReorderPoint = async (req, res) => {
+  try {
+    const scope = await resolveInventoryScope(req);
+    const prisma = getSharedPrismaClient();
+    const { reorderPoint, minStock } = req.body || {};
+    const { inventoryId, productId } = req.params;
+    const parsedReorderPoint = parseOptionalNonNegativeInteger(reorderPoint);
+    const parsedMinStock = parseOptionalNonNegativeInteger(minStock);
+
+    if (parsedReorderPoint === undefined && parsedMinStock === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'حدد نقطة إعادة الطلب أو الحد الأدنى للمخزون',
+      });
+    }
+
+    const inventoryWhere = {
+      ...(inventoryId
+        ? { id: inventoryId }
+        : { productId }),
+      warehouse: scope.warehouseWhere,
+      product: {
+        ...scope.productWhere,
+        deletedAt: null,
+      },
+    };
+
+    const updateData = {};
+    if (parsedReorderPoint !== undefined) updateData.reorderPoint = parsedReorderPoint;
+    if (parsedMinStock !== undefined) updateData.minStock = parsedMinStock;
+    updateData.updatedAt = new Date();
+
+    const result = await prisma.inventory.updateMany({
+      where: inventoryWhere,
+      data: updateData,
+    });
+
+    if (result.count === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'لا يوجد مخزون مطابق للتحديث',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'تم تحديث نقطة إعادة الطلب بنجاح',
+      data: { count: result.count },
+    });
+  } catch (error) {
+    console.error('❌ [INVENTORY] Error updating reorder point:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.statusCode && error.statusCode < 500 ? error.message : 'فشل في تحديث نقطة إعادة الطلب',
+      error: error.message,
+    });
+  }
+};
+
+// تحديث جماعي لنقاط إعادة الطلب
+exports.bulkUpdateReorderPoints = async (req, res) => {
+  try {
+    const scope = await resolveInventoryScope(req);
+    const prisma = getSharedPrismaClient();
+    const { items } = req.body || {};
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'أرسل قائمة عناصر على الأقل',
+      });
+    }
+
+    if (items.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: 'الحد الأقصى للتحديث الجماعي هو 500 عنصر',
+      });
+    }
+
+    let updatedCount = 0;
+    const failures = [];
+
+    for (const item of items) {
+      const { inventoryId, productId, reorderPoint, minStock } = item || {};
+      const parsedReorderPoint = parseOptionalNonNegativeInteger(reorderPoint);
+      const parsedMinStock = parseOptionalNonNegativeInteger(minStock);
+
+      if (parsedReorderPoint === undefined && parsedMinStock === undefined) {
+        failures.push({ inventoryId, productId, reason: 'no-values' });
+        continue;
+      }
+
+      if (!inventoryId && !productId) {
+        failures.push({ inventoryId, productId, reason: 'no-target' });
+        continue;
+      }
+
+      const updateData = {};
+      if (parsedReorderPoint !== undefined) updateData.reorderPoint = parsedReorderPoint;
+      if (parsedMinStock !== undefined) updateData.minStock = parsedMinStock;
+      updateData.updatedAt = new Date();
+
+      const where = {
+        ...(inventoryId ? { id: inventoryId } : { productId }),
+        warehouse: scope.warehouseWhere,
+        product: { ...scope.productWhere, deletedAt: null },
+      };
+
+      try {
+        const result = await prisma.inventory.updateMany({ where, data: updateData });
+        updatedCount += result.count;
+      } catch (error) {
+        failures.push({ inventoryId, productId, reason: error.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `تم تحديث ${updatedCount} سجل مخزون`,
+      data: { updatedCount, failures },
+    });
+  } catch (error) {
+    console.error('❌ [INVENTORY] Error in bulk reorder update:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.statusCode && error.statusCode < 500 ? error.message : 'فشل في التحديث الجماعي لنقاط إعادة الطلب',
+      error: error.message,
     });
   }
 };

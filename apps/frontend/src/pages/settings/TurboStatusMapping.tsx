@@ -30,7 +30,7 @@ const TURBO_STATUS_LIST: { key: string; labelAr: string; labelEn: string }[] = [
   { key: "turbo_saved", labelAr: "تم الحفظ (بانتظار الإرسال)", labelEn: "Saved (Pending Send)" },
   { key: "turbo_sent", labelAr: "مرسلة لتربو", labelEn: "Sent to Turbo" },
   { key: "processing", labelAr: "قيد التنفيذ بالفرع", labelEn: "Branch Processing" },
-  { key: "out_for_delivery", labelAr: "خرجت للتوصيل", labelEn: "Out for Delivery" },
+  { key: "out_for_delivery", labelAr: "مسلمة للمندوب", labelEn: "Out for Delivery" },
   { key: "delivered", labelAr: "تم التسليم", labelEn: "Delivered" },
   { key: "remitted", labelAr: "تم التوريد والتحصيل", labelEn: "Remitted" },
   { key: "returned_to_company", labelAr: "مرتجعات بالشركة", labelEn: "Returned to Company" },
