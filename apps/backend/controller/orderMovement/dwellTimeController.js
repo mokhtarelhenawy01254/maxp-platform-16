@@ -40,7 +40,7 @@ const handler = async (req, res) => {
       startDate,
       endDate,
       historyFilter: 'full',
-      maxOrders: 30000
+      maxOrders: 200000
     });
 
     const statusMap = new Map();

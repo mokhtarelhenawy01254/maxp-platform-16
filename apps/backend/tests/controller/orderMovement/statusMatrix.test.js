@@ -1,55 +1,17 @@
-const AUTO_MARKERS = ['SYSTEM_AUTO', 'SYSTEM', 'AUTO', 'CRON'];
-
 jest.mock('../../../services/orderMovementCore', () => ({
-  fetchOrderMovementData: jest.fn(),
-  buildTransitions: jest.fn((order, { filterRange = true, start, end } = {}) => {
-    const rows = order.statusHistory || [];
-    return rows
-      .filter((h) => {
-        if (!filterRange) return true;
-        const t = new Date(h.createdAt).getTime();
-        if (start && t < start.getTime()) return false;
-        if (end && t > end.getTime()) return false;
-        return true;
-      })
-      .map((h) => ({
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        status: String(h.status || '').trim().toUpperCase(),
-        oldStatus: h.oldStatus ? String(h.oldStatus).trim().toUpperCase() : null,
-        changedBy: h.changedBy || null,
-        userName: h.userName || null,
-        reason: h.reason || null,
-        createdAt: h.createdAt,
-        auto: (() => {
-          const who = String(h.changedBy || h.userName || '');
-          const up = who.toUpperCase();
-          return AUTO_MARKERS.some((m) => up.includes(m));
-        })(),
-        orderTotal: Number(order.total ?? 0),
-        orderStatus: order.status,
-        customerName: order.customerName || null,
-        governorate: order.governorate || null,
-        paymentMethod: order.paymentMethod || null,
-        sourceType: order.sourceType || null
-      }));
-  }),
-  normalizeDateRange: jest.fn(({ startDate, endDate }) => {
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-    return { start, end };
-  }),
-  normalizeStatus: jest.fn((s) => String(s || '').trim().toUpperCase()),
-  calcPercentile: jest.fn(),
-  calcMean: jest.fn((a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0)),
-  hoursBetween: jest.fn(),
-  TERMINAL_STATUSES: new Set(['DELIVERED', 'CANCELLED', 'RETURNED', 'PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'EXCHANGED', 'LOST', 'DUPLICATE_ORDER', 'TRASH', 'SHORTAGE_FAILED', 'NOT_SHIPPED', 'REFUNDED_PARTIALLY', 'PENDING_CANCELLATION']),
-  SUCCESS_STATUSES: new Set(['DELIVERED', 'PARTIALLY_DELIVERED']),
-  FAILURE_STATUSES: new Set(['CANCELLED', 'RETURNED', 'PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'LOST', 'SHORTAGE_FAILED', 'TRASH', 'DUPLICATE_ORDER', 'NOT_SHIPPED']),
+  normalizeDateRange: jest.fn(({ startDate, endDate } = {}) => ({
+    start: startDate ? new Date(startDate) : null,
+    end: endDate ? new Date(endDate) : null
+  })),
   getSharedPrismaClient: jest.fn()
 }));
 
-const { fetchOrderMovementData, getSharedPrismaClient } = require('../../../services/orderMovementCore');
+jest.mock('../../../services/orderMovementSql', () => ({
+  fetchTransitionAggregates: jest.fn()
+}));
+
+const { getSharedPrismaClient } = require('../../../services/orderMovementCore');
+const sql = require('../../../services/orderMovementSql');
 const statusMatrixController = require('../../../controller/orderMovement/statusMatrixController');
 
 const createResponse = () => {
@@ -68,48 +30,24 @@ const createResponse = () => {
   return response;
 };
 
-const orderA = {
-  id: 'o1',
-  orderNumber: 'ORD-1',
-  status: 'DELIVERED',
-  total: '500',
-  statusHistory: [
-    { status: 'CONFIRMED', oldStatus: 'PENDING', changedBy: 'user-1', userName: 'Ahmed', createdAt: new Date('2026-05-01T08:00:00.000Z') },
-    { status: 'READY', oldStatus: 'PREPARING', changedBy: 'user-1', userName: 'Ahmed', createdAt: new Date('2026-05-02T09:00:00.000Z') },
-    { status: 'DELIVERED', oldStatus: 'PACKAGED', changedBy: 'SYSTEM_AUTO', userName: 'SYSTEM', createdAt: new Date('2026-05-03T10:00:00.000Z') }
-  ]
-};
+const EMPTY_TOTALS = { transitions: 0, orders: 0, manualOrders: 0, autoOrders: 0 };
 
-const orderB = {
-  id: 'o2',
-  orderNumber: 'ORD-2',
-  status: 'CANCELLED',
-  total: '250',
-  statusHistory: [
-    { status: 'CONFIRMED', oldStatus: 'PENDING', changedBy: 'user-2', userName: 'Sara', createdAt: new Date('2026-05-01T09:00:00.000Z') },
-    { status: 'CANCELLED', oldStatus: 'DELIVERED', changedBy: 'user-2', userName: 'Sara', createdAt: new Date('2026-05-04T11:00:00.000Z') }
-  ]
-};
-
-const orderC = {
-  id: 'o3',
-  orderNumber: 'ORD-3',
-  status: 'DELIVERED',
-  total: '100',
-  statusHistory: [
-    { status: 'CONFIRMED', oldStatus: null, changedBy: 'user-3', userName: 'Omar', createdAt: new Date('2026-05-01T10:00:00.000Z') },
-    { status: 'UNKNOWN_STUFF', oldStatus: 'CONFIRMED', changedBy: 'user-3', userName: 'Omar', createdAt: new Date('2026-05-02T10:00:00.000Z') }
-  ]
+const happyResult = {
+  rows: [
+    { fromStatus: 'PENDING', toStatus: 'CONFIRMED', count: 2, revenue: 750, autoRevenue: 0, autoCount: 0 },
+    { fromStatus: 'PREPARING', toStatus: 'READY', count: 1, revenue: 500, autoRevenue: 0, autoCount: 0 },
+    { fromStatus: 'PACKAGED', toStatus: 'DELIVERED', count: 1, revenue: 500, autoRevenue: 500, autoCount: 1 },
+    { fromStatus: 'DELIVERED', toStatus: 'CANCELLED', count: 1, revenue: 250, autoRevenue: 0, autoCount: 0 },
+    { fromStatus: '__start__', toStatus: 'CONFIRMED', count: 1, revenue: 250, autoRevenue: 0, autoCount: 0 },
+    { fromStatus: 'CONFIRMED', toStatus: 'UNKNOWN_STUFF', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 }
+  ],
+  totals: { transitions: 7, orders: 3, manualOrders: 3, autoOrders: 1 }
 };
 
 const baseQuery = { startDate: '2026-05-01', endDate: '2026-05-05' };
 
-process.on('unhandledRejection', (reason) => {
-  console.log('UNHANDLED_REJECTION:', reason);
-});
-
 const invoke = async (req, res) => {
-  await statusMatrixController({ method: 'GET', url: '/', ...req }, res, () => {});
+  await statusMatrixController({ ...req }, res, () => {});
 };
 
 describe('statusMatrixController', () => {
@@ -123,7 +61,7 @@ describe('statusMatrixController', () => {
   });
 
   test('aggregates transitions into a classified matrix on the happy path', async () => {
-    fetchOrderMovementData.mockResolvedValue({ orders: [orderA, orderB, orderC], start: new Date('2026-05-01'), end: new Date('2026-05-05') });
+    sql.fetchTransitionAggregates.mockResolvedValue(happyResult);
 
     const res = createResponse();
     await invoke({ user: { id: 'u1', companyId: 'company-1' }, query: baseQuery }, res);
@@ -172,13 +110,14 @@ describe('statusMatrixController', () => {
   });
 
   test('returns empty shape when there is no data', async () => {
-    fetchOrderMovementData.mockResolvedValue({ orders: [], start: null, end: null });
+    sql.fetchTransitionAggregates.mockResolvedValue({ rows: [], totals: EMPTY_TOTALS });
 
     const res = createResponse();
     await invoke({ user: { id: 'u1', companyId: 'company-1' }, query: baseQuery }, res);
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.data).toEqual({
+      truncated: false,
       totalTransitions: 0,
       totalOrders: 0,
       forwardCount: 0,
@@ -201,11 +140,11 @@ describe('statusMatrixController', () => {
 
     expect(res.statusCode).toBe(403);
     expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
-    expect(fetchOrderMovementData).not.toHaveBeenCalled();
+    expect(sql.fetchTransitionAggregates).not.toHaveBeenCalled();
   });
 
   test('filters transitions by mode', async () => {
-    fetchOrderMovementData.mockResolvedValue({ orders: [orderA, orderB, orderC], start: new Date('2026-05-01'), end: new Date('2026-05-05') });
+    sql.fetchTransitionAggregates.mockResolvedValue(happyResult);
 
     const autoRes = createResponse();
     await invoke({ user: { id: 'u1', companyId: 'company-1' }, query: { ...baseQuery, mode: 'auto' } }, autoRes);
@@ -224,19 +163,15 @@ describe('statusMatrixController', () => {
   });
 
   test('classifies forward, backward and skip transitions by canonical index', async () => {
-    const order = {
-      id: 'o4',
-      orderNumber: 'ORD-4',
-      status: 'CANCELLED',
-      total: '300',
-      statusHistory: [
-        { status: 'READY', oldStatus: 'PREPARING', changedBy: 'user-4', userName: 'Nada', createdAt: new Date('2026-05-01T08:00:00.000Z') },
-        { status: 'CANCELLED', oldStatus: 'DELIVERED', changedBy: 'user-4', userName: 'Nada', createdAt: new Date('2026-05-02T08:00:00.000Z') },
-        { status: 'PENDING', oldStatus: 'CANCELLED', changedBy: 'user-4', userName: 'Nada', createdAt: new Date('2026-05-03T08:00:00.000Z') },
-        { status: 'CONFIRMED', oldStatus: 'PENDING', changedBy: 'user-4', userName: 'Nada', createdAt: new Date('2026-05-04T08:00:00.000Z') }
-      ]
-    };
-    fetchOrderMovementData.mockResolvedValue({ orders: [order], start: new Date('2026-05-01'), end: new Date('2026-05-05') });
+    sql.fetchTransitionAggregates.mockResolvedValue({
+      rows: [
+        { fromStatus: 'PREPARING', toStatus: 'READY', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 },
+        { fromStatus: 'DELIVERED', toStatus: 'CANCELLED', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 },
+        { fromStatus: 'CANCELLED', toStatus: 'PENDING', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 },
+        { fromStatus: 'PENDING', toStatus: 'CONFIRMED', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 }
+      ],
+      totals: { transitions: 4, orders: 4, manualOrders: 4, autoOrders: 0 }
+    });
 
     const res = createResponse();
     await invoke({ user: { id: 'u1', companyId: 'company-1' }, query: baseQuery }, res);
@@ -249,18 +184,14 @@ describe('statusMatrixController', () => {
   });
 
   test('flags transitions as invalid when the from-status config disallows the target', async () => {
-    const order = {
-      id: 'o5',
-      orderNumber: 'ORD-5',
-      status: 'DELIVERED',
-      total: '400',
-      statusHistory: [
-        { status: 'PREPARING', oldStatus: 'CONFIRMED', changedBy: 'user-5', userName: 'Ali', createdAt: new Date('2026-05-01T08:00:00.000Z') },
-        { status: 'DELIVERED', oldStatus: 'CONFIRMED', changedBy: 'user-5', userName: 'Ali', createdAt: new Date('2026-05-02T08:00:00.000Z') },
-        { status: 'CANCELLED', oldStatus: 'DELIVERED', changedBy: 'user-5', userName: 'Ali', createdAt: new Date('2026-05-03T08:00:00.000Z') }
-      ]
-    };
-    fetchOrderMovementData.mockResolvedValue({ orders: [order], start: new Date('2026-05-01'), end: new Date('2026-05-05') });
+    sql.fetchTransitionAggregates.mockResolvedValue({
+      rows: [
+        { fromStatus: 'CONFIRMED', toStatus: 'PREPARING', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 },
+        { fromStatus: 'CONFIRMED', toStatus: 'DELIVERED', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 },
+        { fromStatus: 'DELIVERED', toStatus: 'CANCELLED', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 }
+      ],
+      totals: { transitions: 3, orders: 3, manualOrders: 3, autoOrders: 0 }
+    });
 
     getSharedPrismaClient.mockReturnValue({
       orderStatusConfig: {

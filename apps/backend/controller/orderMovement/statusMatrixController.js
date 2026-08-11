@@ -1,4 +1,5 @@
 const core = require('../../services/orderMovementCore');
+const sql = require('../../services/orderMovementSql');
 
 const CANONICAL = ['PENDING', 'DRAFT', 'CONFIRMED', 'SCHEDULED', 'PENDING_PREPARATION', 'PREPARING', 'READY', 'QUALITY_CHECK', 'PACKAGED', 'READY_TO_SHIP', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'PARTIALLY_DELIVERED', 'DELIVERED', 'REFUNDED', 'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'CANCELLED', 'DUPLICATE_ORDER', 'LOST', 'TRASH', 'NOT_SHIPPED', 'ON_HOLD', 'ON_HOLD_PREP', 'STOCK_SHORTAGE', 'SHORTAGE_FAILED', 'PENDING_CANCELLATION'];
 
@@ -14,8 +15,6 @@ const EXIT_STATUSES = new Set([
 ]);
 
 const POST_DELIVERY_ORIGINS = new Set(['DELIVERED', 'PARTIALLY_DELIVERED', 'SHIPPED', 'OUT_FOR_DELIVERY']);
-
-const filterByMode = (transitions, mode) => mode === 'manual' ? transitions.filter((t) => !t.auto) : mode === 'auto' ? transitions.filter((t) => t.auto) : transitions;
 
 const parseAllowedList = (raw) => {
   if (!raw) return [];
@@ -59,20 +58,14 @@ const handler = async (req, res) => {
 
     const { startDate, endDate, mode = 'all' } = req.query;
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
-    const { orders, truncated } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
 
-    let transitions = [];
-    for (const order of orders) {
-      const rows = core.buildTransitions(order, { start, end });
-      if (rows) transitions.push(...rows);
-    }
-    transitions = filterByMode(transitions, mode);
+    const { rows: aggRows, totals } = await sql.fetchTransitionAggregates({ companyId, start, end });
 
-    if (transitions.length === 0) {
+    if (aggRows.length === 0) {
       return res.json({
         success: true,
         data: {
-        truncated,
+          truncated: false,
           totalTransitions: 0,
           totalOrders: 0,
           forwardCount: 0,
@@ -106,17 +99,35 @@ const handler = async (req, res) => {
     let manualTotal = 0;
     let autoTotal = 0;
 
-    for (const t of transitions) {
-      const from = t.oldStatus ? String(t.oldStatus).trim().toUpperCase() : null;
-      const to = String(t.status || '').trim().toUpperCase();
+    for (const t of aggRows) {
+      const from = t.fromStatus === '__start__' ? null : t.fromStatus;
+      const to = t.toStatus;
       let kind = classifyKind(from, to);
       if (from && allowedMap[from] && allowedMap[from].length > 0 && !allowedMap[from].includes(to)) {
         kind = 'invalid';
       }
 
-      counts[kind] += 1;
-      if (t.auto) autoTotal += 1;
-      else manualTotal += 1;
+      const manualCount = Math.max(0, t.count - t.autoCount);
+      let rowCount = t.count;
+      let rowManual = manualCount;
+      let rowAuto = t.autoCount;
+      let rowRevenue = t.revenue;
+
+      if (mode === 'manual') {
+        rowCount = manualCount;
+        rowAuto = 0;
+        rowRevenue = t.autoRevenue === 0 && t.autoCount > 0 ? 0 : t.revenue - t.autoRevenue;
+        if (rowCount <= 0) continue;
+      } else if (mode === 'auto') {
+        rowCount = t.autoCount;
+        rowManual = 0;
+        rowRevenue = t.autoRevenue;
+        if (rowCount <= 0) continue;
+      }
+
+      counts[kind] += rowCount;
+      manualTotal += rowManual;
+      autoTotal += rowAuto;
 
       const fromKey = from || '__start__';
       const key = `${fromKey}|${to}`;
@@ -125,10 +136,10 @@ const handler = async (req, res) => {
         row = { fromStatus: fromKey, toStatus: to, count: 0, revenue: 0, manualCount: 0, autoCount: 0, kind };
         rowMap.set(key, row);
       }
-      row.count += 1;
-      row.revenue += Number(t.orderTotal || 0);
-      if (t.auto) row.autoCount += 1;
-      else row.manualCount += 1;
+      row.count += rowCount;
+      row.revenue += rowRevenue;
+      row.manualCount += rowManual;
+      row.autoCount += rowAuto;
     }
 
     const rows = Array.from(rowMap.values());
@@ -150,12 +161,15 @@ const handler = async (req, res) => {
     otherStatuses.sort();
     const statuses = [...inCanonical, ...otherStatuses];
 
+    const totalTransitions = rows.reduce((sum, r) => sum + r.count, 0);
+    const totalOrders = mode === 'manual' ? totals.manualOrders : mode === 'auto' ? totals.autoOrders : totals.orders;
+
     res.json({
       success: true,
       data: {
-        truncated,
-        totalTransitions: transitions.length,
-        totalOrders: new Set(transitions.map((t) => t.orderId)).size,
+        truncated: false,
+        totalTransitions,
+        totalOrders,
         forwardCount: counts.forward,
         backwardCount: counts.backward,
         skipCount: counts.skip,

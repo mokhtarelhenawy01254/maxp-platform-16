@@ -49,7 +49,7 @@ const handler = async (req, res) => {
         statusHistory: { some: rangeWhere }
       },
       orderBy: { updatedAt: 'desc' },
-      take: 50000,
+      take: 500000,
       select: {
         id: true,
         orderNumber: true,

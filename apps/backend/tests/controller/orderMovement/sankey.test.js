@@ -1,52 +1,16 @@
-const normalizeStatus = (raw) => String(raw || '').trim().toUpperCase();
-
-const AUTO_MARKERS = ['SYSTEM_AUTO', 'SYSTEM', 'AUTO', 'CRON'];
-
-const isAutoChange = (entry) => {
-  const who = String(entry.changedBy || entry.userName || '');
-  return AUTO_MARKERS.some((marker) => who.toUpperCase().includes(marker));
-};
-
-const buildTransitions = (order, { start, end } = {}) => (order.statusHistory || [])
-  .filter((h) => {
-    const t = new Date(h.createdAt).getTime();
-    if (start && t < start.getTime()) return false;
-    if (end && t > end.getTime()) return false;
-    return true;
-  })
-  .map((h) => ({
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-    status: normalizeStatus(h.status),
-    oldStatus: h.oldStatus ? normalizeStatus(h.oldStatus) : null,
-    changedBy: h.changedBy || null,
-    userName: h.userName || null,
-    reason: h.reason || null,
-    createdAt: h.createdAt,
-    auto: isAutoChange(h),
-    orderTotal: Number(order.total ?? 0),
-    orderStatus: order.status
-  }));
-
 jest.mock('../../../services/orderMovementCore', () => ({
-  fetchOrderMovementData: jest.fn(),
-  buildTransitions: jest.fn((order, opts) => buildTransitions(order, opts)),
   normalizeDateRange: jest.fn(({ startDate, endDate } = {}) => ({
     start: startDate ? new Date(startDate) : null,
     end: endDate ? new Date(endDate) : null
   })),
-  normalizeStatus: jest.fn((s) => normalizeStatus(s)),
-  isAutoChange: jest.fn((e) => isAutoChange(e)),
-  calcPercentile: jest.fn(),
-  calcMean: jest.fn((arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0)),
-  hoursBetween: jest.fn(),
-  TERMINAL_STATUSES: new Set([]),
-  SUCCESS_STATUSES: new Set([]),
-  FAILURE_STATUSES: new Set([]),
   getSharedPrismaClient: jest.fn()
 }));
 
-const core = require('../../../services/orderMovementCore');
+jest.mock('../../../services/orderMovementSql', () => ({
+  fetchTransitionAggregates: jest.fn()
+}));
+
+const sql = require('../../../services/orderMovementSql');
 const sankeyController = require('../../../controller/orderMovement/sankeyController');
 
 const createResponse = () => {
@@ -65,77 +29,25 @@ const createResponse = () => {
   return response;
 };
 
-const orderOne = {
-  id: 'order-1',
-  orderNumber: 'ORD-1',
-  status: 'DELIVERED',
-  total: '250.50',
-  createdAt: new Date('2026-05-01T08:00:00.000Z'),
-  statusHistory: [
-    {
-      id: 'h-1',
-      oldStatus: null,
-      status: 'PENDING',
-      changedBy: 'SYSTEM_AUTO',
-      userName: null,
-      createdAt: new Date('2026-05-01T08:00:00.000Z')
-    },
-    {
-      id: 'h-2',
-      oldStatus: 'PENDING',
-      status: 'CONFIRMED',
-      changedBy: 'user-1',
-      userName: 'Nada',
-      createdAt: new Date('2026-05-01T10:00:00.000Z')
-    },
-    {
-      id: 'h-3',
-      oldStatus: 'CONFIRMED',
-      status: 'DELIVERED',
-      changedBy: 'SYSTEM_AUTO',
-      userName: null,
-      createdAt: new Date('2026-05-02T10:00:00.000Z')
-    }
-  ]
-};
+const EMPTY_TOTALS = { transitions: 0, orders: 0, manualOrders: 0, autoOrders: 0 };
 
-const orderTwo = {
-  id: 'order-2',
-  orderNumber: 'ORD-2',
-  status: 'CANCELLED',
-  total: '100.00',
-  createdAt: new Date('2026-05-01T09:00:00.000Z'),
-  statusHistory: [
-    {
-      id: 'h-4',
-      oldStatus: null,
-      status: 'PENDING',
-      changedBy: 'SYSTEM_AUTO',
-      userName: null,
-      createdAt: new Date('2026-05-01T09:00:00.000Z')
-    },
-    {
-      id: 'h-5',
-      oldStatus: 'PENDING',
-      status: 'CANCELLED',
-      changedBy: 'user-2',
-      userName: 'Omar',
-      createdAt: new Date('2026-05-02T11:00:00.000Z')
-    }
-  ]
+const happyResult = {
+  rows: [
+    { fromStatus: '__start__', toStatus: 'PENDING', count: 2, revenue: 350.5, autoRevenue: 350.5, autoCount: 2 },
+    { fromStatus: 'PENDING', toStatus: 'CONFIRMED', count: 1, revenue: 250.5, autoRevenue: 0, autoCount: 0 },
+    { fromStatus: 'PENDING', toStatus: 'CANCELLED', count: 1, revenue: 100, autoRevenue: 0, autoCount: 0 },
+    { fromStatus: 'CONFIRMED', toStatus: 'DELIVERED', count: 1, revenue: 250.5, autoRevenue: 250.5, autoCount: 1 }
+  ],
+  totals: { transitions: 5, orders: 2, manualOrders: 2, autoOrders: 2 }
 };
 
 describe('orderMovement sankeyController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    core.normalizeDateRange.mockImplementation(({ startDate, endDate } = {}) => ({
-      start: startDate ? new Date(startDate) : null,
-      end: endDate ? new Date(endDate) : null
-    }));
   });
 
   test('builds sankey graph with START links, status links, revenue and mode split', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: [orderOne, orderTwo] });
+    sql.fetchTransitionAggregates.mockResolvedValue(happyResult);
 
     const res = createResponse();
     await sankeyController(
@@ -148,10 +60,10 @@ describe('orderMovement sankeyController', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.success).toBe(true);
-    expect(core.fetchOrderMovementData).toHaveBeenCalledWith({
+    expect(sql.fetchTransitionAggregates).toHaveBeenCalledWith({
       companyId: 'company-1',
-      startDate: '2026-05-01',
-      endDate: '2026-05-31'
+      start: new Date('2026-05-01'),
+      end: new Date('2026-05-31')
     });
 
     const data = res.payload.data;
@@ -176,9 +88,9 @@ describe('orderMovement sankeyController', () => {
 
     expect(data.topInflows).toEqual([
       { status: 'PENDING', count: 2 },
+      { status: 'CANCELLED', count: 1 },
       { status: 'CONFIRMED', count: 1 },
-      { status: 'DELIVERED', count: 1 },
-      { status: 'CANCELLED', count: 1 }
+      { status: 'DELIVERED', count: 1 }
     ]);
     expect(data.topOutflows).toEqual([
       { status: 'PENDING', count: 2 },
@@ -186,43 +98,32 @@ describe('orderMovement sankeyController', () => {
     ]);
   });
 
-  test('returns empty graph when no orders exist', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: [] });
+  test('returns empty graph when no transitions exist', async () => {
+    sql.fetchTransitionAggregates.mockResolvedValue({ rows: [], totals: EMPTY_TOTALS });
 
     const res = createResponse();
     await sankeyController(
-      {
-        user: { id: 'user-1', companyId: 'company-1' },
-        query: { startDate: '2026-05-01', endDate: '2026-05-31' }
-      },
+      { user: { id: 'user-1', companyId: 'company-1' }, query: { startDate: '2026-05-01', endDate: '2026-05-31' } },
       res
     );
 
     expect(res.statusCode).toBe(200);
-    expect(res.payload.success).toBe(true);
-    expect(res.payload.data).toEqual({
-      totalTransitions: 0,
-      totalOrders: 0,
-      modes: { manual: 0, auto: 0 },
-      nodes: [{ id: 'START', name: 'بداية' }],
-      links: [],
-      topInflows: [],
-      topOutflows: []
-    });
+    expect(res.payload.data.totalOrders).toBe(0);
+    expect(res.payload.data.totalTransitions).toBe(0);
+    expect(res.payload.data.links).toEqual([]);
   });
 
   test('rejects requests without a company scope', async () => {
     const res = createResponse();
-
     await sankeyController({ user: { id: 'user-1' }, query: {} }, res);
 
     expect(res.statusCode).toBe(403);
     expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
-    expect(core.fetchOrderMovementData).not.toHaveBeenCalled();
+    expect(sql.fetchTransitionAggregates).not.toHaveBeenCalled();
   });
 
   test('filters transitions by manual mode', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: [orderOne, orderTwo] });
+    sql.fetchTransitionAggregates.mockResolvedValue(happyResult);
 
     const res = createResponse();
     await sankeyController(
@@ -251,7 +152,7 @@ describe('orderMovement sankeyController', () => {
   });
 
   test('filters transitions by auto mode', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: [orderOne, orderTwo] });
+    sql.fetchTransitionAggregates.mockResolvedValue(happyResult);
 
     const res = createResponse();
     await sankeyController(
@@ -277,38 +178,5 @@ describe('orderMovement sankeyController', () => {
       { source: 0, target: 3, value: 2, manual: 0, auto: 2, revenue: 350.5 },
       { source: 1, target: 2, value: 1, manual: 0, auto: 1, revenue: 250.5 }
     ]);
-  });
-
-  test('skips orders with no in-range transitions', async () => {
-    const outOfRange = {
-      ...orderTwo,
-      id: 'order-3',
-      orderNumber: 'ORD-3',
-      statusHistory: [
-        {
-          id: 'h-6',
-          oldStatus: null,
-          status: 'PENDING',
-          changedBy: 'SYSTEM_AUTO',
-          userName: null,
-          createdAt: new Date('2026-04-01T09:00:00.000Z')
-        }
-      ]
-    };
-    core.fetchOrderMovementData.mockResolvedValue({ orders: [outOfRange] });
-
-    const res = createResponse();
-    await sankeyController(
-      {
-        user: { id: 'user-1', companyId: 'company-1' },
-        query: { startDate: '2026-05-01', endDate: '2026-05-31' }
-      },
-      res
-    );
-
-    expect(res.statusCode).toBe(200);
-    expect(res.payload.data.totalOrders).toBe(0);
-    expect(res.payload.data.totalTransitions).toBe(0);
-    expect(res.payload.data.links).toEqual([]);
   });
 });

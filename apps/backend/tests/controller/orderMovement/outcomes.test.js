@@ -1,16 +1,6 @@
 jest.mock('../../../services/orderMovementCore', () => ({
-  fetchOrderMovementData: jest.fn(),
-  buildTransitions: jest.fn(),
   normalizeDateRange: jest.fn(() => ({ start: null, end: null })),
   normalizeStatus: jest.fn((s) => String(s || '').trim().toUpperCase()),
-  calcPercentile: jest.fn(),
-  calcMean: jest.fn(),
-  hoursBetween: jest.fn(),
-  isAutoChange: jest.fn((entry) =>
-    ['SYSTEM_AUTO', 'SYSTEM', 'AUTO', 'CRON'].some((marker) =>
-      String(entry.changedBy || entry.userName || '').toUpperCase().includes(marker)
-    )
-  ),
   TERMINAL_STATUSES: new Set([
     'DELIVERED', 'CANCELLED', 'RETURNED', 'PARTIALLY_RETURNED', 'REFUNDED',
     'PARTIALLY_REFUNDED', 'EXCHANGED', 'LOST', 'DUPLICATE_ORDER', 'TRASH',
@@ -24,7 +14,11 @@ jest.mock('../../../services/orderMovementCore', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
-const core = require('../../../services/orderMovementCore');
+jest.mock('../../../services/orderMovementSql', () => ({
+  fetchOutcomeRows: jest.fn()
+}));
+
+const sql = require('../../../services/orderMovementSql');
 const router = require('../../../controller/orderMovement/outcomesController');
 
 const createResponse = () => {
@@ -49,38 +43,22 @@ const callRouter = async (req, res) => {
   await new Promise((resolve) => setImmediate(resolve));
 };
 
-const buildOrder = (id, orderNumber, status, total, changedBy, userName, reason) => ({
-  id,
-  orderNumber,
+const AUTO_MARKERS = ['SYSTEM_AUTO', 'SYSTEM', 'AUTO', 'CRON'];
+
+const buildRow = (status, total, changedBy, reason) => ({
   status,
-  total: String(total),
-  statusHistory: [
-    {
-      status: 'CONFIRMED',
-      oldStatus: 'PENDING',
-      changedBy,
-      userName,
-      reason: null,
-      createdAt: new Date('2026-05-01T08:00:00.000Z')
-    },
-    {
-      status,
-      oldStatus: 'CONFIRMED',
-      changedBy,
-      userName,
-      reason,
-      createdAt: new Date('2026-05-02T10:00:00.000Z')
-    }
-  ]
+  reason: String(reason || '').replace(/\s+/g, ' ').trim(),
+  auto: AUTO_MARKERS.some((m) => String(changedBy || '').toUpperCase().includes(m)),
+  total
 });
 
-const happyOrders = [
-  buildOrder('order-1', 'ORD-1', 'DELIVERED', 500, 'user-1', 'Ahmed', 'تم التسليم'),
-  buildOrder('order-2', 'ORD-2', 'CANCELLED', 300, 'user-2', 'Sara', 'العميل رفض الاستلام'),
-  buildOrder('order-3', 'ORD-3', 'RETURNED', 200, 'SYSTEM_AUTO', null, 'طلب غير مطابق'),
-  buildOrder('order-4', 'ORD-4', 'CANCELLED', 150, 'user-3', 'Omar', '  العميل    رفض  الاستلام  '),
-  buildOrder('order-5', 'ORD-5', 'DELIVERED', 400, 'SYSTEM_AUTO', null, null),
-  buildOrder('order-6', 'ORD-6', 'PENDING', 100, 'user-4', 'Mona', null)
+const happyRows = [
+  buildRow('DELIVERED', 500, 'user-1', 'تم التسليم'),
+  buildRow('CANCELLED', 300, 'user-2', 'العميل رفض الاستلام'),
+  buildRow('RETURNED', 200, 'SYSTEM_AUTO', 'طلب غير مطابق'),
+  buildRow('CANCELLED', 150, 'user-3', '  العميل    رفض  الاستلام  '),
+  buildRow('DELIVERED', 400, 'SYSTEM_AUTO', null),
+  buildRow('PENDING', 100, 'user-4', null)
 ];
 
 describe('orderMovement outcomesController', () => {
@@ -89,7 +67,7 @@ describe('orderMovement outcomesController', () => {
   });
 
   test('computes terminal outcomes summary, reasons and mode split', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: happyOrders, start: null, end: null });
+    sql.fetchOutcomeRows.mockResolvedValue(happyRows);
 
     const res = createResponse();
     await callRouter(
@@ -114,10 +92,10 @@ describe('orderMovement outcomesController', () => {
       lostRevenue: 650,
       failedRevenue: 650
     });
-    expect(core.fetchOrderMovementData).toHaveBeenCalledWith({
+    expect(sql.fetchOutcomeRows).toHaveBeenCalledWith({
       companyId: 'company-1',
-      startDate: '2026-05-01',
-      endDate: '2026-05-31'
+      start: null,
+      end: null
     });
 
     const outcomes = res.payload.data.outcomes;
@@ -174,7 +152,7 @@ describe('orderMovement outcomesController', () => {
   });
 
   test('returns empty aggregates when no orders match', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: [], start: null, end: null });
+    sql.fetchOutcomeRows.mockResolvedValue([]);
 
     const res = createResponse();
     await callRouter({ user: { id: 'user-1', companyId: 'company-1' }, query: {} }, res);
@@ -202,11 +180,11 @@ describe('orderMovement outcomesController', () => {
 
     expect(res.statusCode).toBe(403);
     expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
-    expect(core.fetchOrderMovementData).not.toHaveBeenCalled();
+    expect(sql.fetchOutcomeRows).not.toHaveBeenCalled();
   });
 
   test('filters orders by manual last movement', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: happyOrders, start: null, end: null });
+    sql.fetchOutcomeRows.mockResolvedValue(happyRows);
 
     const res = createResponse();
     await callRouter(
@@ -229,7 +207,7 @@ describe('orderMovement outcomesController', () => {
   });
 
   test('filters orders by automatic last movement', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: happyOrders, start: null, end: null });
+    sql.fetchOutcomeRows.mockResolvedValue(happyRows);
 
     const res = createResponse();
     await callRouter(
@@ -252,14 +230,10 @@ describe('orderMovement outcomesController', () => {
   });
 
   test('skips failure orders with empty reasons', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({
-      orders: [
-        buildOrder('order-7', 'ORD-7', 'CANCELLED', 100, 'user-5', 'Ali', '   '),
-        buildOrder('order-8', 'ORD-8', 'CANCELLED', 250, 'user-6', 'Huda', 'طلب مكرر')
-      ],
-      start: null,
-      end: null
-    });
+    sql.fetchOutcomeRows.mockResolvedValue([
+      buildRow('CANCELLED', 100, 'user-5', '   '),
+      buildRow('CANCELLED', 250, 'user-6', 'طلب مكرر')
+    ]);
 
     const res = createResponse();
     await callRouter({ user: { id: 'user-1', companyId: 'company-1' }, query: {} }, res);

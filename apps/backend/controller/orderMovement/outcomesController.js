@@ -1,9 +1,7 @@
-
 const core = require('../../services/orderMovementCore');
+const sql = require('../../services/orderMovementSql');
 
 const round2 = (n) => Math.round(n * 100) / 100;
-
-const normalizeReason = (reason) => String(reason || '').replace(/\s+/g, ' ').trim();
 
 const handler = async (req, res) => {
   try {
@@ -13,18 +11,15 @@ const handler = async (req, res) => {
     }
 
     const { startDate, endDate, mode = 'all' } = req.query;
+    const { start, end } = core.normalizeDateRange({ startDate, endDate });
 
-    const { orders, truncated } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
+    const rows = await sql.fetchOutcomeRows({ companyId, start, end });
 
-    const scoped = [];
-    for (const order of orders) {
-      const history = order.statusHistory || [];
-      const last = history.length ? history[history.length - 1] : null;
-      const lastAuto = last ? core.isAutoChange(last) : false;
-      if (mode === 'manual' && lastAuto) continue;
-      if (mode === 'auto' && !lastAuto) continue;
-      scoped.push({ order, last, lastAuto });
-    }
+    const scoped = rows.filter((r) => {
+      if (mode === 'manual' && r.auto) return false;
+      if (mode === 'auto' && !r.auto) return false;
+      return true;
+    });
 
     const totalOrders = scoped.length;
     const statusMap = new Map();
@@ -36,16 +31,16 @@ const handler = async (req, res) => {
     let manual = 0;
     let auto = 0;
 
-    for (const { order, last, lastAuto } of scoped) {
-      const status = core.normalizeStatus(last ? last.status : order.status);
-      const total = Number(order.total ?? 0);
+    for (const row of scoped) {
+      const status = row.status;
+      const total = row.total;
 
       const statusRow = statusMap.get(status) || { status, count: 0, revenue: 0 };
       statusRow.count += 1;
       statusRow.revenue += total;
       statusMap.set(status, statusRow);
 
-      if (lastAuto) auto += 1;
+      if (row.auto) auto += 1;
       else manual += 1;
 
       if (core.SUCCESS_STATUSES.has(status)) {
@@ -56,14 +51,11 @@ const handler = async (req, res) => {
         failedRevenue += total;
       }
 
-      if (core.FAILURE_STATUSES.has(status)) {
-        const reason = last ? normalizeReason(last.reason) : '';
-        if (reason) {
-          const reasonRow = reasonMap.get(reason) || { reason, count: 0, revenue: 0, status };
-          reasonRow.count += 1;
-          reasonRow.revenue += total;
-          reasonMap.set(reason, reasonRow);
-        }
+      if (core.FAILURE_STATUSES.has(status) && row.reason) {
+        const reasonRow = reasonMap.get(row.reason) || { reason: row.reason, count: 0, revenue: 0, status };
+        reasonRow.count += 1;
+        reasonRow.revenue += total;
+        reasonMap.set(row.reason, reasonRow);
       }
     }
 
@@ -83,7 +75,7 @@ const handler = async (req, res) => {
     res.json({
       success: true,
       data: {
-        truncated,
+        truncated: false,
         summary: {
           totalOrders,
           delivered,

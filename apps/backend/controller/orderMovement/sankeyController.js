@@ -1,8 +1,7 @@
 const core = require('../../services/orderMovementCore');
+const sql = require('../../services/orderMovementSql');
 
 const START_KEY = 'START';
-
-const filterByMode = (transitions, mode) => mode === 'manual' ? transitions.filter((t) => !t.auto) : mode === 'auto' ? transitions.filter((t) => t.auto) : transitions;
 
 const handler = async (req, res) => {
   try {
@@ -12,35 +11,48 @@ const handler = async (req, res) => {
     const { startDate, endDate } = req.query;
     const mode = req.query.mode === 'manual' ? 'manual' : req.query.mode === 'auto' ? 'auto' : 'all';
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
-    const { orders, truncated } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
+
+    const { rows, totals } = await sql.fetchTransitionAggregates({ companyId, start, end });
 
     const edges = new Map();
     const inflow = new Map();
     const outflow = new Map();
-    let totalTransitions = 0;
-    let totalOrders = 0;
     let manualTransitions = 0;
     let autoTransitions = 0;
 
-    for (const order of orders) {
-      const list = filterByMode(core.buildTransitions(order, { start, end }), mode);
-      if (list.length === 0) continue;
-      totalOrders += 1;
-      for (const t of list) {
-        totalTransitions += 1;
-        if (t.auto) autoTransitions += 1;
-        else manualTransitions += 1;
-        const from = t.oldStatus ? t.oldStatus : START_KEY;
-        const to = t.status;
-        if (from === to) continue;
-        const key = `${from}\u0000${to}`;
-        const agg = edges.get(key) || { from, to, count: 0, manual: 0, auto: 0, revenue: 0 };
-        agg.count += 1;
-        agg.manual += t.auto ? 0 : 1;
-        agg.auto += t.auto ? 1 : 0;
-        agg.revenue += Number(t.orderTotal || 0);
-        edges.set(key, agg);
+    for (const r of rows) {
+      const from = r.fromStatus === '__start__' ? START_KEY : r.fromStatus;
+      const to = r.toStatus;
+      if (from === to) continue;
+
+      const manualCount = Math.max(0, r.count - r.autoCount);
+      let value = r.count;
+      let manual = manualCount;
+      let auto = r.autoCount;
+      let revenue = r.revenue;
+
+      if (mode === 'manual') {
+        value = manualCount;
+        auto = 0;
+        revenue = r.revenue - r.autoRevenue;
+        if (value <= 0) continue;
+      } else if (mode === 'auto') {
+        value = r.autoCount;
+        manual = 0;
+        revenue = r.autoRevenue;
+        if (value <= 0) continue;
       }
+
+      manualTransitions += manual;
+      autoTransitions += auto;
+
+      const key = `${from}\u0000${to}`;
+      const agg = edges.get(key) || { from, to, count: 0, manual: 0, auto: 0, revenue: 0 };
+      agg.count += value;
+      agg.manual += manual;
+      agg.auto += auto;
+      agg.revenue += revenue;
+      edges.set(key, agg);
     }
 
     for (const agg of edges.values()) {
@@ -62,7 +74,7 @@ const handler = async (req, res) => {
     }
     statuses.sort((a, b) => (outflow.get(b) || 0) - (outflow.get(a) || 0) || a.localeCompare(b));
 
-    const nodes = [{ id: 'START', name: 'بداية' }, ...statuses.map((s) => ({ id: s, name: s }))];
+    const nodes = [{ id: START_KEY, name: 'بداية' }, ...statuses.map((s) => ({ id: s, name: s }))];
     const indexMap = new Map(nodes.map((n, i) => [n.id, i]));
 
     const links = [];
@@ -80,17 +92,20 @@ const handler = async (req, res) => {
 
     const topInflows = [...inflow.entries()]
       .map(([status, count]) => ({ status, count }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => b.count - a.count || a.status.localeCompare(b.status));
 
     const topOutflows = [...outflow.entries()]
       .filter(([s]) => s !== START_KEY)
       .map(([status, count]) => ({ status, count }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => b.count - a.count || a.status.localeCompare(b.status));
+
+    const totalTransitions = mode === 'manual' ? manualTransitions : mode === 'auto' ? autoTransitions : totals.transitions;
+    const totalOrders = mode === 'manual' ? totals.manualOrders : mode === 'auto' ? totals.autoOrders : totals.orders;
 
     return res.json({
       success: true,
       data: {
-        truncated,
+        truncated: false,
         totalTransitions,
         totalOrders,
         modes: { manual: manualTransitions, auto: autoTransitions },

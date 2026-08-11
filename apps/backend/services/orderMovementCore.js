@@ -1,6 +1,6 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 
-const MAX_ORDERS_DEFAULT = 50000;
+const MAX_ORDERS_DEFAULT = 200000;
 const BATCH_SIZE = 1000;
 
 const AUTO_ACTOR_MARKERS = ['SYSTEM_AUTO', 'SYSTEM', 'AUTO', 'CRON'];
