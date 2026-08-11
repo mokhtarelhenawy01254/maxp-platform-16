@@ -1905,13 +1905,18 @@ async function sendOrderCreatedNotification(order) {
   if (!phone) return { success: false, reason: 'no_phone' };
 
   // Format order items with color and size
+  // 🚨 PRODUCTION-FIX (131008): نقرأ order.orderItems (Prisma relation) أو order.items —
+  // مش items بس — وإلا رسالة "طلب جديد" تطلع بمتغير orderItems فاضي والقالب يفشل بـ 131008.
+  const createdItemsSource = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
   let orderItemsText = '';
-  if (order.items && order.items.length > 0) {
+  if (createdItemsSource.length > 0) {
     orderItemsText = '\n📋 تفاصيل الطلب:\n';
-    order.items.forEach((item, index) => {
+    createdItemsSource.forEach((item, index) => {
       const color = item.productColor || item.color || item.attributes?.color;
       const size = item.productSize || item.size || item.attributes?.size;
-      let itemDetails = `${index + 1}. ${item.productName || item.name}`;
+      let itemDetails = `${index + 1}. ${item.productName || item.name || item.product?.name || 'منتج'}`;
       if (color) itemDetails += ` | اللون: ${color}`;
       if (size) itemDetails += ` | المقاس: ${size}`;
       itemDetails += ` | الكمية: ${item.quantity || 1}`;
@@ -1919,6 +1924,10 @@ async function sendOrderCreatedNotification(order) {
     });
     // Add separator line after items
     orderItemsText += '------------------------------\n';
+  } else {
+    // 🚨 PRODUCTION-FIX (131008): قيمة غير فاضية لمتغير orderItems في قالب "طلب جديد"
+    // — وإلا Meta Cloud بترفض بـ 131008 "Required parameter is missing".
+    orderItemsText = 'لا يوجد';
   }
 
   // Build tracking link
@@ -2092,6 +2101,11 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     });
     // Add separator line after items
     orderItemsText += '------------------------------\n';
+  } else {
+    // 🚨 PRODUCTION-FIX (131008): لو الأوردر مفيش فيه منتجات (أو items مش متعمّرة)،
+    // لازم نبعث قيمة غير فاضية لمتغير orderItems — وإلا Meta Cloud بترفض القالب
+    // بـ 131008 "Required parameter is missing" (القالب بيطلب orderItems إلزامي).
+    orderItemsText = 'لا يوجد';
   }
 
   console.log(`[WHATSAPP-STATUS] Phone: ${phone}`);
@@ -2114,7 +2128,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
         orderNumber: order.orderNumber,
         orderItems: orderItemsText,
         status: statusConfig.statusName || newStatus, // 🔥 Added status name for templates
-        total: order.total?.toString(),
+        total: order.total != null ? String(order.total) : '0',
         currency: order.currency || 'EGP',
         trackingNumber: order.turboTrackingNumber || '',
         estimatedDays: '2-3',
