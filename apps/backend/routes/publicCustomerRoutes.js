@@ -758,6 +758,86 @@ router.post('/verify-otp', getCompanyFromSubdomain, async (req, res) => {
   }
 });
 
+/**
+ * تسجيل دخول العميل برقم الهاتف مباشرة (بدون OTP)
+ * بيخلّي العميل يدخل على طول بمجرد إدخال رقمه
+ */
+router.post('/login-phone', getCompanyFromSubdomain, async (req, res) => {
+  try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب تحديد الشركة. يرجى الوصول من subdomain الشركة أو تحديد companyId'
+      });
+    }
+
+    const phone = String(req.body.phone || '').trim();
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    let customer = await prisma.customer.findFirst({
+      where: {
+        companyId,
+        OR: [{ phoneNormalized: toCanonicalE164(phone) }, { phone: { in: getPhoneVariants(phone) } }]
+      },
+      select: { id: true, firstName: true, lastName: true, companyId: true }
+    });
+
+    if (!customer) {
+      const last4 = phone.replace(/\D/g, '').slice(-4);
+      customer = await prisma.customer.create({
+        data: {
+          companyId,
+          phone,
+          phoneNormalized: toCanonicalE164(phone),
+          firstName: 'عميل',
+          lastName: last4 ? `#${last4}` : 'جديد'
+        },
+        select: { id: true, firstName: true, lastName: true, companyId: true }
+      });
+      await ensureWallet(customer.id, companyId);
+    }
+
+    const token = jwt.sign(
+      {
+        userId: customer.id,
+        customerId: customer.id,
+        role: 'CUSTOMER',
+        companyId: customer.companyId,
+        phone
+      },
+      getJwtSecret(),
+      { expiresIn: '24h' }
+    );
+
+    return res.json({
+      success: true,
+      message: 'تم تسجيل الدخول بنجاح',
+      data: {
+        customer: {
+          id: customer.id,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone,
+          companyId: customer.companyId
+        },
+        token,
+        expiresIn: '24h'
+      }
+    });
+  } catch (error) {
+    console.error('❌ [PUBLIC-CUSTOMER] Error logging in by phone:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'حدث خطأ أثناء تسجيل الدخول'
+    });
+  }
+});
+
 router.get('/me', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (req.user?.role !== 'CUSTOMER') {

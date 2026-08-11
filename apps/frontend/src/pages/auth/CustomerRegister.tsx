@@ -9,11 +9,9 @@ const CustomerRegister: React.FC = () => {
   const navigate = useNavigate();
   const params = useParams();
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [step, setStep] = useState<"PHONE" | "OTP">("PHONE");
 
   // Already-logged-in customers should not see the login form again.
   useEffect(() => {
@@ -69,33 +67,9 @@ const CustomerRegister: React.FC = () => {
         );
       }
 
-      if (step === "PHONE") {
-        const response = await apiClient.post(
-          `/public/customers/request-otp?companyId=${encodeURIComponent(companyId)}`,
-          { phone: normalizedPhone },
-        );
-
-        if (response.data?.success) {
-          setSuccessMessage("تم إرسال كود التحقق على واتساب");
-          setStep("OTP");
-          return;
-        }
-
-        setError(response.data?.message || "تعذر إرسال كود التحقق");
-        return;
-      }
-
-      const normalizedCode = code.trim();
-      if (!normalizedCode || normalizedCode.length !== 4) {
-        throw new Error("يرجى إدخال كود مكوّن من 4 أرقام");
-      }
-
       const response = await apiClient.post(
-        `/public/customers/verify-otp?companyId=${encodeURIComponent(companyId)}`,
-        {
-          phone: normalizedPhone,
-          code: normalizedCode,
-        },
+        `/public/customers/login-phone?companyId=${encodeURIComponent(companyId)}`,
+        { phone: normalizedPhone },
       );
 
       if (response.data?.success && response.data?.data?.token) {
@@ -122,7 +96,7 @@ const CustomerRegister: React.FC = () => {
   return (
     <AuthSurface
       title="دخول العملاء"
-      description="سجّل دخولك برقم واتساب المرتبط بالحساب للوصول السريع والآمن إلى تفاعلاتك وخدماتك."
+      description="سجّل دخولك برقم الهاتف للوصول السريع والآمن إلى تفاعلاتك وخدماتك."
       eyebrow="Customer Access"
       footer={
         <div className="business-auth-footer-stack">
@@ -131,7 +105,7 @@ const CustomerRegister: React.FC = () => {
             <Link to="/auth/login">تسجيل الدخول للمنصة</Link>
           </div>
           <p className="business-auth-legal">
-            تسجيل دخول العملاء يعتمد على أرقام واتساب الموثقة داخل النظام.
+            تسجيل دخول العملاء يعتمد على أرقام الهواتف الموثقة داخل النظام.
           </p>
         </div>
       }
@@ -151,7 +125,7 @@ const CustomerRegister: React.FC = () => {
       <form onSubmit={handleSubmit} className="business-auth-form">
         <div className="business-auth-field">
           <label htmlFor="phone" className="business-auth-label">
-            رقم الهاتف المرتبط بواتساب
+            رقم الهاتف
           </label>
           <input
             id="phone"
@@ -165,33 +139,9 @@ const CustomerRegister: React.FC = () => {
             required
             className="business-auth-input business-auth-input--ltr"
             placeholder="01xxxxxxxxx"
-            disabled={isLoading || step === "OTP"}
+            disabled={isLoading}
           />
         </div>
-
-        {step === "OTP" ? (
-          <div className="business-auth-field">
-            <label htmlFor="code" className="business-auth-label">
-              كود التحقق
-            </label>
-            <input
-              id="code"
-              name="code"
-              type="text"
-              inputMode="numeric"
-              value={code}
-              onChange={(event) => {
-                setCode(event.target.value);
-                if (error) setError("");
-              }}
-              required
-              className="business-auth-input business-auth-code-input"
-              placeholder="1234"
-              maxLength={4}
-              disabled={isLoading}
-            />
-          </div>
-        ) : null}
 
         <button
           type="submit"
@@ -201,12 +151,10 @@ const CustomerRegister: React.FC = () => {
           {isLoading ? (
             <span className="business-inline-loader">
               <LoadingSpinner size="sm" color="white" />
-              <span>جاري التحقق...</span>
+              <span>جاري الدخول...</span>
             </span>
-          ) : step === "PHONE" ? (
-            "إرسال كود واتساب"
           ) : (
-            "تأكيد الدخول"
+            "دخول"
           )}
         </button>
       </form>
