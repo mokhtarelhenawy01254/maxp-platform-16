@@ -32,6 +32,7 @@ import OrderPreparationSettings from "./OrderPreparationSettings";
 import MinimumOrderSettings from "./MinimumOrderSettings";
 import LateCancellationSettings from "./LateCancellationSettings";
 import CancellationSettingsPage from "../cancellations/CancellationSettingsPage";
+import EasyWarehouseSettings from "./EasyWarehouseSettings";
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Order Settings Page with Sidebar Tabs
@@ -51,7 +52,8 @@ type TabId =
   | "confirmation"
   | "preparation"
   | "late_cancellation"
-  | "cancellation_reasons";
+  | "cancellation_reasons"
+  | "easy_warehouse";
 
 const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "status",
@@ -68,6 +70,7 @@ const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "preparation",
   "late_cancellation",
   "cancellation_reasons",
+  "easy_warehouse",
 ];
 
 const isOrderSettingsTabId = (value: string): value is TabId =>
@@ -210,6 +213,12 @@ const OrderSettings: React.FC = () => {
       icon: XCircle,
       description: t('orderSettings.k_164'),
     },
+    {
+      id: "easy_warehouse",
+      label: "وضع المستودع السهل",
+      icon: Package,
+      description: "استيراد المنتجات تلقائيًا",
+    },
   ];
 
   return (
@@ -295,6 +304,7 @@ const OrderSettings: React.FC = () => {
             {activeTab === "preparation" && <OrderPreparationSettings />}
             {activeTab === "late_cancellation" && <LateCancellationSettings />}
             {activeTab === "cancellation_reasons" && <CancellationSettingsPage isEmbedded={true} />}
+            {activeTab === "easy_warehouse" && <EasyWarehouseSettings />}
           </div>
         </div>
       </div>

@@ -1118,7 +1118,7 @@ class EnhancedOrderService {
       });
 
       // إنشاء عناصر الطلب باستخدام البيانات المحفوظة
-      await this.createOrderItems(order.id, { ...productData, companyId: orderData.companyId });
+      await this.createOrderItems(order.id, { ...productData, companyId: orderData.companyId, easyWarehouseMode: orderData.easyWarehouseMode });
 
       // إعادة جلب الطلب مع العناصر
       const completeOrder = await this.safeQuery(() =>
@@ -1184,6 +1184,17 @@ class EnhancedOrderService {
             );
           } else if (productItem.productName) {
             product = await this.findProductByName(productItem.productName, orderData.companyId);
+          }
+
+          // ✨ الوضع السهل: استيراد المنتج تلقائيًا إذا لم يكن موجودًا في الكتالوج
+          if (!product && orderData.easyWarehouseMode && productItem.productName) {
+            const easyWarehouseService = require('./easyWarehouseService');
+            product = await easyWarehouseService.ensureProductsForItems(orderData.companyId, [productItem])
+              .then((result) => {
+                const created = result.created[0];
+                return created ? this.getPrisma().product.findUnique({ where: { id: created.productId }, include: { productVariants: true } }) : null;
+              })
+              .catch(() => null);
           }
 
           // ✨ جلب بيانات الـ variant إذا كان موجود

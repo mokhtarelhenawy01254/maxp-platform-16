@@ -377,6 +377,12 @@ const ShippingCompanyDetail = React.lazy(
 const ShippingSettlement = React.lazy(
   () => import("./pages/shipping/SettlementPage"),
 );
+const BulkStatusUpdate = React.lazy(
+  () => import("./pages/orders/BulkStatusUpdatePage"),
+);
+const StockMovements = React.lazy(
+  () => import("./pages/inventory/StockMovementsPage"),
+);
 const DeliveryOptions = React.lazy(
   () => import("./pages/settings/DeliveryOptions"),
 );
@@ -5746,6 +5752,22 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ShippingSettlement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/bulk-status"
+                  element={
+                    <Layout>
+                      <BulkStatusUpdate />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/inventory/movements"
+                  element={
+                    <Layout>
+                      <StockMovements />
                     </Layout>
                   }
                 />

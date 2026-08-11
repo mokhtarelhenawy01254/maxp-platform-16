@@ -622,6 +622,7 @@ model StorefrontSettings {
   codDepositValue                  Decimal               @default(30.00) @db.Decimal(5, 2)
   codDepositMinAmount              Decimal?              @db.Decimal(10, 2)
   codDepositMaxAmount              Decimal?              @db.Decimal(10, 2)
+  easyWarehouseMode                Boolean               @default(false)
   designTokens                     Json?
   enabledPaymentMethods            String                @default("[\"cod\"]")
   paymentGatewayConfig             Json?

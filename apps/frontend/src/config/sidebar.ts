@@ -352,7 +352,8 @@ export const getSidebarConfig = (
                 icon: ShoppingBag,
                 items: [
                     { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
-                    { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
+                { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
+                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements', 'حركات المخزون') },
                     { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
                     { to: '/shipping-companies', icon: Truck, label: t('sidebar.shippingCompanies') },
                 ],
@@ -562,6 +563,7 @@ export const getSidebarConfig = (
                 { to: '/shipping-settlement', icon: Banknote, label: t('sidebar.shippingSettlement', 'تسويات شركات الشحن'), requiredPermissions: ['orders.shipping.view'] },
                 { to: '/returns', icon: CheckCircle2, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'] },
                 { to: '/orders/bulk', icon: ListOrdered, label: t('sidebar.bulkOrders'), requiredPermissions: ['bulkOrders.view', 'orders.bulk.create'] },
+                { to: '/orders/bulk-status', icon: ArrowLeftRight, label: t('sidebar.bulkStatusUpdate', 'تحديث جماعي للحالات'), requiredPermissions: ['orders.status.change'] },
                 { to: '/orders/quick-status', icon: RefreshCcw, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'] },
                 { to: '/orders/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'] },
                 { to: '/orders/status-summary', icon: FileBarChart, label: t('sidebar.orderStatusSummary'), requiredPermissions: ['orders.status-summary.view'] },

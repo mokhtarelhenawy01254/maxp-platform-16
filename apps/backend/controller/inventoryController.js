@@ -1119,6 +1119,17 @@ exports.getStockMovements = async (req, res) => {
     if (warehouseId) where.warehouseId = warehouseId;
     if (type) where.type = type;
 
+    if (req.query.search) {
+      const search = String(req.query.search).trim();
+      where.product = {
+        ...(where.product || {}),
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { sku: { contains: search, mode: 'insensitive' } }
+        ]
+      };
+    }
+
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = new Date(startDate);

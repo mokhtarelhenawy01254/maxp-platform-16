@@ -5337,6 +5337,19 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       });
     }
 
+    // الوضع السهل: قراءة إعداد استيراد المنتجات التلقائي
+    let easyWarehouseMode = false;
+    try {
+      const { getSharedPrismaClient: getPrisma } = require('../services/sharedDatabase');
+      const storeSettings = await getPrisma().storefrontSettings.findUnique({
+        where: { companyId },
+        select: { easyWarehouseMode: true }
+      });
+      easyWarehouseMode = storeSettings?.easyWarehouseMode === true;
+    } catch (settingsError) {
+      easyWarehouseMode = false;
+    }
+
     // ✨ Logging للبيانات المستلمة من Frontend
     console.log('🔍 [ORDER-DEBUG] Received items from Frontend:', JSON.stringify(items, null, 2));
 
@@ -5392,6 +5405,9 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
 
       // الحالة
       status: status || undefined,
+
+      // الوضع السهل: استيراد المنتجات تلقائيًا
+      easyWarehouseMode,
 
       // معلومات الاستخراج
       extractionMethod: 'manual_order_modal',

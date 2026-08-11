@@ -361,6 +361,8 @@ const turboRoutes = require("./routes/turboRoutes");
 const bostaRoutes = require("./routes/bostaRoutes");
 const shippingCompaniesRoutes = require("./routes/shippingCompaniesRoutes");
 const shippingSettlementRoutes = require("./routes/shippingSettlementRoutes");
+const bulkStatusUpdateRoutes = require("./routes/bulkStatusUpdateRoutes");
+const easyWarehouseRoutes = require("./routes/easyWarehouseRoutes");
 const turboWebhookRoutes = require("./routes/turboWebhook");
 const bostaWebhookRoutes = require("./routes/bostaWebhook");
 const walletPaymentRoutes = require("./routes/walletPayment");
@@ -897,6 +899,8 @@ app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/notifications", notificationSettingsRoutes);
 app.use("/api/v1/shipping-companies", shippingCompaniesRoutes);
 app.use("/api/v1/shipping-settlement", shippingSettlementRoutes);
+app.use("/api/v1/orders/bulk-status", bulkStatusUpdateRoutes);
+app.use("/api/v1/easy-warehouse", easyWarehouseRoutes);
 
 // Log all deduction requests
 app.use("/api/v1/hr/deductions", (req, res, next) => {
