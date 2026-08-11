@@ -416,9 +416,16 @@ if [ ! -x "$PRISMA_BIN" ]; then
   exit 1
 fi
 
-# Ensure sharp is correctly installed for Linux x64 to prevent crashes
-echo "🖼️ Fixing sharp dependency for Linux..."
-npm install --os=linux --cpu=x64 sharp --no-save || echo "⚠️ Sharp fix failed, continuing..."
+# Ensure sharp is correctly installed for Linux x64 to prevent crashes.
+# sharp is a regular dependency so `npm ci` already installs the right
+# binary; only re-install when the loaded binary is actually broken.
+echo "🖼️ Checking sharp dependency for Linux..."
+if node -e "require('sharp'); console.log('sharp ok')" 2>/dev/null | grep -q "sharp ok"; then
+  echo "✅ sharp is loadable — skipping reinstall"
+else
+  echo "⚠️ sharp failed to load — installing linux x64 binary..."
+  npm install --os=linux --cpu=x64 sharp --no-save || echo "⚠️ Sharp fix failed, continuing..."
+fi
  
 # Run generate with the specific schema folder
 # Keep the existing generated clients in place until the new client

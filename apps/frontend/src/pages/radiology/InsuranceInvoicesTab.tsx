@@ -153,8 +153,8 @@ export default function InsuranceInvoicesTab() {
         studyIds: createForm.studyIds,
         notes: createForm.notes.trim() || undefined,
       };
-      if (createForm.periodFrom) payload.periodFrom = createForm.periodFrom;
-      if (createForm.periodTo) payload.periodTo = createForm.periodTo;
+      if (createForm.periodFrom) payload["periodFrom"] = createForm.periodFrom;
+      if (createForm.periodTo) payload["periodTo"] = createForm.periodTo;
       await fetchJson(api("insurance-invoices"), { method: "POST", body: JSON.stringify(payload) });
       toast.success("تم إنشاء فاتورة التأمين");
       setCreateOpen(false);
