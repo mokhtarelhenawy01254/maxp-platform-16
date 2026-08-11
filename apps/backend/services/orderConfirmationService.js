@@ -25,10 +25,14 @@ const DEFAULT_SETTINGS = {
   orderValueRules: '[]',
   workloadMaxOpen: null,
   workloadStatuses: '["PENDING","CONFIRMED","PROCESSING"]',
+  maxCallsNoAnswer: 3,
+  intervalMinutes: 30,
   lastAssignedUserId: null,
   notifyOnNew: true,
   autoAssignOnConfirm: true
 };
+
+const ALLOWED_CALL_RESULTS = ['unreached', 'reached', 'busy', 'wrong_number', 'callback'];
 
 const safeJsonParse = (value, fallback) => {
   if (value === null || value === undefined || value === '') return fallback;
@@ -105,6 +109,12 @@ const normalizeMatchMode = (value) => {
   return mode === 'all' ? 'all' : 'any';
 };
 
+const normalizeNonNegativeInt = (value, fallback) => {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return fallback;
+  return Math.max(0, Math.floor(numberValue));
+};
+
 const toJson = (value, fallback) => {
   if (value === undefined) return fallback;
   if (typeof value === 'string') return value;
@@ -154,6 +164,8 @@ class OrderConfirmationService {
       orderValueRules: toJson(data.orderValueRules, DEFAULT_SETTINGS.orderValueRules),
       workloadMaxOpen: data.workloadMaxOpen,
       workloadStatuses: toJson(data.workloadStatuses, DEFAULT_SETTINGS.workloadStatuses),
+      maxCallsNoAnswer: data.maxCallsNoAnswer,
+      intervalMinutes: data.intervalMinutes,
       lastAssignedUserId: data.lastAssignedUserId,
       notifyOnNew: data.notifyOnNew,
       autoAssignOnConfirm: data.autoAssignOnConfirm
@@ -200,7 +212,9 @@ class OrderConfirmationService {
       regionRules: normalizeObject(settings.regionRules),
       specialtyRules: normalizeObject(settings.specialtyRules),
       orderValueRules: normalizeOrderValueRules(settings.orderValueRules),
-      workloadStatuses: normalizeArray(settings.workloadStatuses)
+      workloadStatuses: normalizeArray(settings.workloadStatuses),
+      maxCallsNoAnswer: normalizeNonNegativeInt(settings.maxCallsNoAnswer, DEFAULT_SETTINGS.maxCallsNoAnswer),
+      intervalMinutes: normalizeNonNegativeInt(settings.intervalMinutes, DEFAULT_SETTINGS.intervalMinutes)
     };
   }
 
@@ -640,6 +654,10 @@ class OrderConfirmationService {
           assignedAt: true,
           confirmedAt: true,
           assignmentStrategy: true,
+          callAttempts: true,
+          lastCallAttemptAt: true,
+          shipping: true,
+          codDepositAmount: true,
           customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } }
         }
       })
@@ -657,7 +675,9 @@ class OrderConfirmationService {
           total: true,
           status: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
+          callAttempts: true,
+          lastCallAt: true
         }
       })
       : [];
@@ -716,6 +736,10 @@ class OrderConfirmationService {
         assignedAt: order.assignedAt,
         confirmedAt: order.confirmedAt,
         assignmentStrategy: order.assignmentStrategy || null,
+        callAttempts: order.callAttempts || 0,
+        lastCallAttemptAt: order.lastCallAttemptAt || null,
+        shipping: order.shipping || 0,
+        codDepositAmount: order.codDepositAmount || 0,
         isGuestOrder: false
       };
     });
@@ -739,6 +763,10 @@ class OrderConfirmationService {
         assignedAt: assignment?.assignedAt || null,
         confirmedAt: null,
         assignmentStrategy: assignment?.strategy || null,
+        callAttempts: order.callAttempts || 0,
+        lastCallAttemptAt: order.lastCallAt || null,
+        shipping: 0,
+        codDepositAmount: 0,
         isGuestOrder: true
       };
     });
@@ -1354,6 +1382,104 @@ class OrderConfirmationService {
     }
 
     return { orderType: 'regular', order: confirmed, assignment };
+  }
+
+  async logCallResult(companyId, orderIdOrNumber, userId, result = 'unreached', notes = null) {
+    const settings = this.normalizeSettings(await this.getSettings(companyId));
+    const callResult = ALLOWED_CALL_RESULTS.includes(result) ? result : 'unreached';
+    const now = new Date();
+    const intervalMs = (settings.intervalMinutes || 0) * 60 * 1000;
+    const maxCalls = settings.maxCallsNoAnswer ?? DEFAULT_SETTINGS.maxCallsNoAnswer;
+
+    const assertInterval = (lastCallAt) => {
+      if (!lastCallAt || intervalMs <= 0) return;
+      const nextAllowed = new Date(new Date(lastCallAt).getTime() + intervalMs);
+      if (now < nextAllowed) {
+        const waitMinutes = Math.ceil((nextAllowed.getTime() - now.getTime()) / 60000);
+        throw new Error(`يرجى الانتظار ${waitMinutes} دقيقة قبل محاولة الاتصال التالية`);
+      }
+    };
+
+    const assertMaxCalls = (callAttempts) => {
+      if (callResult === 'unreached' && (callAttempts || 0) >= maxCalls) {
+        throw new Error('تم الوصول لأقصى عدد محاولات الاتصال بدون رد');
+      }
+    };
+
+    const order = await this.prisma.order.findFirst({
+      where: {
+        companyId,
+        OR: [{ id: orderIdOrNumber }, { orderNumber: orderIdOrNumber }]
+      }
+    });
+
+    if (order) {
+      assertInterval(order.lastCallAttemptAt);
+      assertMaxCalls(order.callAttempts);
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: order.id },
+          data: {
+            callAttempts: { increment: 1 },
+            lastCallAttemptAt: now
+          }
+        });
+        await tx.callAttemptLog.create({
+          data: {
+            orderId: order.id,
+            userId,
+            result: callResult,
+            notes: notes || null,
+            createdAt: now
+          }
+        });
+      });
+
+      const updatedOrder = await this.prisma.order.findUnique({ where: { id: order.id } });
+      return {
+        orderType: 'regular',
+        order: updatedOrder,
+        callAttempts: updatedOrder.callAttempts || 0,
+        nextCallAllowedAt: intervalMs > 0 ? new Date(now.getTime() + intervalMs) : null
+      };
+    }
+
+    const guestOrder = await this.prisma.guestOrder.findFirst({
+      where: { companyId, OR: [{ id: orderIdOrNumber }, { orderNumber: orderIdOrNumber }] }
+    });
+
+    if (!guestOrder) throw new Error('الطلب غير موجود');
+
+    assertInterval(guestOrder.lastCallAt);
+    assertMaxCalls(guestOrder.callAttempts);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.guestOrder.update({
+        where: { id: guestOrder.id },
+        data: {
+          callAttempts: { increment: 1 },
+          lastCallAt: now
+        }
+      });
+      await tx.callAttemptLog.create({
+        data: {
+          guestOrderId: guestOrder.id,
+          userId,
+          result: callResult,
+          notes: notes || null,
+          createdAt: now
+        }
+      });
+    });
+
+    const updatedGuest = await this.prisma.guestOrder.findUnique({ where: { id: guestOrder.id } });
+    return {
+      orderType: 'guest',
+      order: updatedGuest,
+      callAttempts: updatedGuest.callAttempts || 0,
+      nextCallAllowedAt: intervalMs > 0 ? new Date(now.getTime() + intervalMs) : null
+    };
   }
 }
 

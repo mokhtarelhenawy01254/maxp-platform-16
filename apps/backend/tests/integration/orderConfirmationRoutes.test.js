@@ -39,6 +39,16 @@ const ensureOrderConfirmationSettingsTable = async (prisma) => {
   `);
 
   await prisma.$executeRawUnsafe(`
+    ALTER TABLE "order_confirmation_settings"
+    ADD COLUMN IF NOT EXISTS "maxCallsNoAnswer" INTEGER NOT NULL DEFAULT 3;
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "order_confirmation_settings"
+    ADD COLUMN IF NOT EXISTS "intervalMinutes" INTEGER NOT NULL DEFAULT 30;
+  `);
+
+  await prisma.$executeRawUnsafe(`
     CREATE UNIQUE INDEX IF NOT EXISTS "order_confirmation_settings_companyId_key"
     ON "order_confirmation_settings"("companyId");
   `);
@@ -318,6 +328,110 @@ describe('Order Confirmation Routes', () => {
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.data.requireStatuses)).toBe(true);
     expect(Array.isArray(res.body.data.requireSourceTypes)).toBe(true);
+    expect(res.body.data.maxCallsNoAnswer).toBe(3);
+    expect(res.body.data.intervalMinutes).toBe(30);
+  });
+
+  test('PUT /settings persists call cycle settings', async () => {
+    const res = await request(app)
+      .put('/api/v1/order-confirmation/settings')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ maxCallsNoAnswer: 5, intervalMinutes: 15 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.maxCallsNoAnswer).toBe(5);
+    expect(res.body.data.intervalMinutes).toBe(15);
+
+    await prisma.orderConfirmationSettings.updateMany({
+      where: { companyId: company.id },
+      data: { maxCallsNoAnswer: 3, intervalMinutes: 30 }
+    });
+  });
+
+  test('POST /log-call increments callAttempts and creates a log', async () => {
+    const before = await prisma.order.findUnique({
+      where: { id: order.id },
+      select: { callAttempts: true }
+    });
+    const beforeAttempts = before.callAttempts || 0;
+
+    const res = await request(app)
+      .post('/api/v1/order-confirmation/log-call')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ orderId: order.orderNumber, result: 'unreached', notes: 'No answer test' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.callAttempts).toBe(beforeAttempts + 1);
+
+    const log = await prisma.callAttemptLog.findFirst({
+      where: { orderId: order.id },
+      orderBy: { createdAt: 'desc' }
+    });
+    expect(log).not.toBeNull();
+    expect(log.result).toBe('unreached');
+    expect(log.notes).toBe('No answer test');
+  });
+
+  test('POST /log-call enforces interval between attempts', async () => {
+    await prisma.orderConfirmationSettings.updateMany({
+      where: { companyId: company.id },
+      data: { intervalMinutes: 60 }
+    });
+
+    try {
+      const res = await request(app)
+        .post('/api/v1/order-confirmation/log-call')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ orderId: order.orderNumber, result: 'unreached' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('يرجى الانتظار');
+    } finally {
+      await prisma.orderConfirmationSettings.updateMany({
+        where: { companyId: company.id },
+        data: { intervalMinutes: 30 }
+      });
+    }
+  });
+
+  test('POST /log-call enforces max calls without answer', async () => {
+    await prisma.orderConfirmationSettings.updateMany({
+      where: { companyId: company.id },
+      data: { intervalMinutes: 0, maxCallsNoAnswer: 1 }
+    });
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { callAttempts: 0, lastCallAttemptAt: null }
+    });
+
+    try {
+      const first = await request(app)
+        .post('/api/v1/order-confirmation/log-call')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ orderId: order.orderNumber, result: 'unreached' });
+
+      expect(first.status).toBe(200);
+
+      const second = await request(app)
+        .post('/api/v1/order-confirmation/log-call')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ orderId: order.orderNumber, result: 'unreached' });
+
+      expect(second.status).toBe(400);
+      expect(second.body.message).toContain('أقصى عدد محاولات');
+    } finally {
+      await prisma.orderConfirmationSettings.updateMany({
+        where: { companyId: company.id },
+        data: { intervalMinutes: 30, maxCallsNoAnswer: 3 }
+      });
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { callAttempts: 0, lastCallAttemptAt: null }
+      });
+    }
   });
 
   test('GET /settings returns normalized order value rules', async () => {

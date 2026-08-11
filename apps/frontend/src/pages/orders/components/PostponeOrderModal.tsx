@@ -80,6 +80,36 @@ const PostponeOrderModal: React.FC<PostponeOrderModalProps> = ({
       }}
     >
       <div className="space-y-4">
+        <div>
+          <span className="mb-1.5 block text-sm font-medium text-foreground">
+            {t("orders.postponeOrderQuick", "تأجيل سريع")}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3, 4, 5, 6, 7].map((days) => {
+              const target = new Date();
+              target.setDate(target.getDate() + days);
+              const iso = target.toISOString().split("T")[0];
+              const selected = scheduledDeliveryDate === iso;
+              return (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => {
+                    setScheduledDeliveryDate(iso);
+                  }}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
+                    selected
+                      ? "border-warning bg-warning/20 text-warning"
+                      : "border-border bg-background text-muted-foreground hover:border-warning/50 hover:text-warning"
+                  }`}
+                >
+                  {t("orders.postponeOrderDays", "{{days}} أيام", { days })}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-foreground">
             {t("orders.postponeOrderDeliveryDate")} *

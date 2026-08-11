@@ -265,7 +265,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isRtl = i18n.dir() === "rtl";
-  const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
   const isAdmin = user?.role ? adminRoles.has(user.role) : false;
 
   const copilot = useCopilotShortcut();
@@ -547,18 +546,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
     return flows.filter((flow) => flow.name.toLowerCase().includes(query));
   }, [flows, searchTerm]);
 
-  const formatDate = (value?: string) => {
-    if (!value) {
-      return "-";
-    }
-
-    return new Date(value).toLocaleDateString(locale, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
   const flowDeleteTitle =
     deleteTarget?.type === "flow"
       ? t("whatsappJourney.dialogs.deleteFlowTitle")
@@ -649,28 +636,30 @@ const WhatsAppCustomerJourney: React.FC = () => {
         </div>
       ) : null}
 
-      {/* ─────────── VERTICAL LAYOUT ─────────── */}
-      <div className="space-y-4">
-        {/* Flows list */}
-        <WhatsAppSurfaceCard
-          title={t("whatsappJourney.tabs.flows") as string}
-          description={t("whatsappJourney.flows.count", { count: flows.length }) as string}
-          action={
-            <Badge
-              variant="outline"
-              className="gap-1.5 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2.5 py-1 text-xs"
-            >
-              <GitBranch className="size-3.5 text-[color:var(--color-muted-foreground)]" />
-              {flows.length}
-            </Badge>
-          }
-        >
-            <div className="space-y-3">
+      {/* ─────────── MASTER-DETAIL: flows + steps editor side by side ─────────── */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.55fr)]">
+        {/* LEFT: Flows list — compact */}
+        <div className="space-y-4">
+          <WhatsAppSurfaceCard
+            title={t("whatsappJourney.tabs.flows") as string}
+            description={t("whatsappJourney.flows.count", { count: flows.length }) as string}
+            action={
+              <Badge
+                variant="outline"
+                className="gap-1.5 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2.5 py-1 text-xs"
+              >
+                <GitBranch className="size-3.5 text-[color:var(--color-muted-foreground)]" />
+                {flows.length}
+              </Badge>
+            }
+            contentClassName="px-3 pb-3 sm:px-4 sm:pb-4"
+          >
+            <div className="space-y-2">
               <div className="relative">
                 <Search
                   className={cn(
-                    "pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]",
-                    isRtl ? "right-3" : "left-3",
+                    "pointer-events-none absolute top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]",
+                    isRtl ? "right-2.5" : "left-2.5",
                   )}
                 />
                 <Input
@@ -678,14 +667,14 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder={t("common.search") as string}
                   className={cn(
-                    "h-10 bg-[color:var(--color-card)]/75",
-                    isRtl ? "pr-10 pl-3" : "pl-10 pr-3",
+                    "h-8 bg-[color:var(--color-card)]/75 text-xs",
+                    isRtl ? "pr-8 pl-3" : "pl-8 pr-3",
                   )}
                 />
               </div>
 
               {filteredFlows.length > 0 ? (
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {filteredFlows.map((flow) => {
                     const selected = selectedFlow?.id === flow.id;
 
@@ -695,10 +684,10 @@ const WhatsAppCustomerJourney: React.FC = () => {
                         type="button"
                         onClick={() => handleFlowClick(flow)}
                         className={cn(
-                          "group flex w-full flex-col gap-1.5 rounded-xl px-3 py-2.5 text-start transition-all duration-200",
+                          "group relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-start transition-all duration-200",
                           selected
-                            ? "scale-[0.99] bg-[color:var(--journey-accent-soft)]"
-                            : "bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] hover:translate-x-0.5",
+                            ? "bg-[color:var(--journey-accent-soft)]"
+                            : "bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)]",
                         )}
                         style={
                           selected
@@ -708,100 +697,65 @@ const WhatsAppCustomerJourney: React.FC = () => {
                             : undefined
                         }
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex min-w-0 items-start gap-2.5">
-                            <span className="relative mt-0.5 size-2.5 shrink-0">
-                              {flow.isEnabled && (
-                                <span
-                                  className="absolute inset-0 animate-journey-dot-ring rounded-full bg-[color:var(--business-success)] opacity-40"
-                                  aria-hidden
-                                />
-                              )}
-                              <span
-                                className={cn(
-                                  "relative block size-full rounded-full transition-all duration-200",
-                                  flow.isEnabled
-                                    ? "scale-100 bg-[color:var(--business-success)] animate-journey-glow-pulse shadow-[0_0_0_3px_color-mix(in_srgb,var(--business-success)_20%,transparent)]"
-                                    : "scale-75 bg-[color:var(--color-muted-foreground)] opacity-50",
-                                )}
-                              />
+                        {/* Status dot — left rail accent */}
+                        <span
+                          className={cn(
+                            "size-1.5 shrink-0 rounded-full transition-all",
+                            flow.isEnabled
+                              ? "bg-[color:var(--business-success)] shadow-[0_0_0_2.5px_color-mix(in_srgb,var(--business-success)_22%,transparent)]"
+                              : "bg-[color:var(--color-muted-foreground)] opacity-50",
+                          )}
+                          aria-hidden
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-[color:var(--color-foreground)]">
+                            {flow.name}
+                          </p>
+                          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[color:var(--color-muted-foreground)]">
+                            <span className="flex items-center gap-0.5">
+                              <MessageSquare className="size-2.5" />
+                              {flow._count?.steps || 0}
                             </span>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)]">
-                                {flow.name}
-                              </p>
-                              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    "gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                                    flow.isEnabled
-                                      ? "border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,var(--color-foreground))]"
-                                      : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]",
-                                  )}
-                                >
-                                  {flow.isEnabled
-                                    ? t("whatsappJourney.flows.enabled")
-                                    : t("whatsappJourney.flows.disabled")}
-                                </Badge>
-                                {flow._count?.categories ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="gap-1 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2 py-0.5 text-[10px] text-[color:var(--color-muted-foreground)]"
-                                  >
-                                    <Sparkles className="size-2.5" />
-                                    {flow._count.categories}
-                                  </Badge>
-                                ) : null}
-                              </div>
-                            </div>
+                            {flow._count?.journeys ? (
+                              <>
+                                <span aria-hidden>·</span>
+                                <span>
+                                  {t("whatsappJourney.flows.activeCustomers", {
+                                    count: flow._count.journeys,
+                                  })}
+                                </span>
+                              </>
+                            ) : null}
                           </div>
-
-                          {isAdmin && (
-                            <div className="flex shrink-0 items-center gap-0.5">
-                              <button
-                                type="button"
-                                className="flex size-7 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openEditFlowDialog(flow);
-                                }}
-                                aria-label={t("common.edit") as string}
-                              >
-                                <Edit className="size-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                className="flex size-7 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-destructive)_12%,transparent)] hover:text-[color:var(--color-destructive)]"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setDeleteTarget({ type: "flow", id: flow.id });
-                                }}
-                                aria-label={t("common.delete") as string}
-                              >
-                                <Trash2 className="size-3.5" />
-                              </button>
-                            </div>
-                          )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 border-t border-[color:color-mix(in_srgb,var(--color-muted-foreground)_10%,transparent)] pt-1.5">
-                          <span className="flex items-center gap-1.5 text-xs text-[color:var(--color-muted-foreground)]">
-                            <MessageSquare className="size-3" />
-                            {flow._count?.steps || 0} {t("whatsappJourney.steps.title")}
-                          </span>
-                          {flow._count?.journeys ? (
-                            <span className="text-xs text-[color:var(--color-muted-foreground)]">
-                              {t("whatsappJourney.flows.activeCustomers", {
-                                count: flow._count.journeys,
-                              })}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-[color:var(--color-muted-foreground)]">
-                              {formatDate(flow.createdAt)}
-                            </span>
-                          )}
-                        </div>
+                        {isAdmin && (
+                          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                            <button
+                              type="button"
+                              className="flex size-6 items-center justify-center rounded-md text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openEditFlowDialog(flow);
+                              }}
+                              aria-label={t("common.edit") as string}
+                            >
+                              <Edit className="size-3" />
+                            </button>
+                            <button
+                              type="button"
+                              className="flex size-6 items-center justify-center rounded-md text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-destructive)_12%,transparent)] hover:text-[color:var(--color-destructive)]"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setDeleteTarget({ type: "flow", id: flow.id });
+                              }}
+                              aria-label={t("common.delete") as string}
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -827,8 +781,10 @@ const WhatsAppCustomerJourney: React.FC = () => {
               )}
             </div>
           </WhatsAppSurfaceCard>
+        </div>
 
-          {/* Steps editor */}
+        {/* RIGHT: Steps editor */}
+        <div className="space-y-4">
           <WhatsAppSurfaceCard
             title={
               selectedFlow
@@ -905,34 +861,36 @@ const WhatsAppCustomerJourney: React.FC = () => {
               />
             )}
           </WhatsAppSurfaceCard>
+        </div>
+      </div>
 
-          {/* Monitoring board */}
-          <WhatsAppSurfaceCard
-            title={t("whatsappJourney.tabs.monitoring") as string}
-            description={t("whatsappJourney.monitoring.liveMonitor") as string}
-          >
-            {journeys.length > 0 ? (
-              <div className="space-y-1">
-                <AnimatePresence>
-                  {journeys.slice(0, 8).map((journey) => {
-                    const statusKey = journey.status.toUpperCase();
-                    const totalSteps = journey.flow.steps?.length || 0;
-                    const initials = `${journey.customer.firstName[0] || ""}${journey.customer.lastName[0] || ""}`.toUpperCase();
-                    const progressPct = totalSteps > 0 ? Math.min(100, Math.round((journey.currentStep / totalSteps) * 100)) : 0;
-                    const isActive = statusKey === "ACTIVE";
-                    const isFailed = statusKey === "FAILED";
+      {/* ─────────── MONITORING — full width below ─────────── */}
+      <WhatsAppSurfaceCard
+        title={t("whatsappJourney.tabs.monitoring") as string}
+        description={t("whatsappJourney.monitoring.liveMonitor") as string}
+      >
+        {journeys.length > 0 ? (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <AnimatePresence>
+              {journeys.slice(0, 9).map((journey) => {
+                const statusKey = journey.status.toUpperCase();
+                const totalSteps = journey.flow.steps?.length || 0;
+                const initials = `${journey.customer.firstName[0] || ""}${journey.customer.lastName[0] || ""}`.toUpperCase();
+                const progressPct = totalSteps > 0 ? Math.min(100, Math.round((journey.currentStep / totalSteps) * 100)) : 0;
+                const isActive = statusKey === "ACTIVE";
+                const isFailed = statusKey === "FAILED";
 
-                    return (
-                      <motion.button
-                        key={journey.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.25 }}
-                        type="button"
-                        onClick={() => setSelectedJourney(journey)}
-                        className="flex w-full items-center gap-3 rounded-xl bg-[color:var(--color-card)] p-3 text-start transition-all duration-200 hover:bg-[color:var(--color-muted)]"
-                      >
+                return (
+                  <motion.button
+                    key={journey.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25 }}
+                    type="button"
+                    onClick={() => setSelectedJourney(journey)}
+                    className="flex items-center gap-3 rounded-xl bg-[color:var(--color-card)] p-3 text-start transition-all duration-200 hover:bg-[color:var(--color-muted)]"
+                  >
                         {/* Avatar with status indicator */}
                         <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-xs font-semibold text-[color:var(--color-primary)]">
                           {initials}
@@ -1017,9 +975,9 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     );
                   })}
                 </AnimatePresence>
-                {journeys.length > 8 && (
-                  <p className="pt-1 text-center text-xs text-[color:var(--color-muted-foreground)]">
-                    {journeys.length - 8}+
+                {journeys.length > 9 && (
+                  <p className="col-span-full pt-1 text-center text-xs text-[color:var(--color-muted-foreground)]">
+                    {journeys.length - 9}+
                   </p>
                 )}
               </div>
@@ -1027,16 +985,15 @@ const WhatsAppCustomerJourney: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center gap-2 py-8 text-center"
+                className="flex flex-col items-center justify-center gap-2 py-6 text-center"
               >
-                <Users className="size-8 text-[color:var(--color-muted-foreground)] opacity-40" />
+                <Users className="size-7 text-[color:var(--color-muted-foreground)] opacity-40" />
                 <p className="text-sm text-[color:var(--color-muted-foreground)]">
                   {t("common.no_data")}
                 </p>
               </motion.div>
             )}
           </WhatsAppSurfaceCard>
-      </div>
 
       {/* ─────────── DIALOGS ─────────── */}
 
