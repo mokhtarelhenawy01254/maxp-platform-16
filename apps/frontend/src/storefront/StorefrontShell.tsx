@@ -85,23 +85,6 @@ const LegacyCollectionProductGrid = React.lazy(
   () => import("./sections/ProductGrid"),
 );
 
-// ── Customer portal (تسجيل/دخول العميل وحسابه) يُعرض على دومين المتجر نفسه ──
-const CustomerRegister = React.lazy(
-  () => import("../pages/auth/CustomerRegister"),
-);
-const CustomerPortalLayout = React.lazy(
-  () => import("../pages/account/CustomerPortalLayout"),
-);
-const CustomerAccountHome = React.lazy(
-  () => import("../pages/account/CustomerAccountHome"),
-);
-const CustomerWalletPage = React.lazy(
-  () => import("../pages/account/CustomerWalletPage"),
-);
-const CustomerProfilePage = React.lazy(
-  () => import("../pages/account/CustomerProfilePage"),
-);
-
 const STOREFRONT_CART_DRAWER_IDLE_DELAY_MS = 2500;
 const STOREFRONT_CART_DRAWER_INTENT_EVENTS = [
   "click",
@@ -7396,12 +7379,6 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     isProductImageLandingPage ||
     normalizedPath.endsWith("/checkout") ||
     normalizedPath.endsWith("/thank-you");
-  // بوابة العميل (حسابي + تسجيل الدخول) تُعرض على دومين المتجر بدون هيدر/فوتر المتجر
-  const isCustomerPortalRoute =
-    normalizedPath === "/account" ||
-    normalizedPath.startsWith("/account/") ||
-    normalizedPath === "/auth/customer-register" ||
-    normalizedPath.startsWith("/auth/customer-register/");
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isKhemetLuxeInnerRoute =
     isKhemetLuxe &&
@@ -8564,7 +8541,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         </div>
       )}
 
-      {!isProductImageLandingPage && !isCustomerPortalRoute ? (
+      {!isProductImageLandingPage ? (
         <MemoStorefrontHeader isMinimal={isMinimal} search={search} />
       ) : null}
       {isProductPreview ? (
@@ -8573,8 +8550,8 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       {showPreviewThemeBanner && previewThemeId ? (
         <StorefrontPreviewBanner previewThemeId={previewThemeId} />
       ) : null}
-      {!isProductImageLandingPage && !isFastlyTheme && !isElessiPackTheme && !isCustomerPortalRoute ? <StorePromotionBar /> : null}
-      {!isProductImageLandingPage && !isFastlyTheme && canRenderConversionHosts && !isCustomerPortalRoute ? (
+      {!isProductImageLandingPage && !isFastlyTheme && !isElessiPackTheme ? <StorePromotionBar /> : null}
+      {!isProductImageLandingPage && !isFastlyTheme && canRenderConversionHosts ? (
         <>
           <React.Suspense fallback={null}>
             {!isElessiPackTheme ? <GlobalConversionHost /> : null}
@@ -8587,19 +8564,14 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         <Routes>
           {renderScopedRoutes("store")}
           {renderScopedRoutes()}
-          <Route path="/account" element={<CustomerPortalLayout><CustomerAccountHome /></CustomerPortalLayout>} />
-          <Route path="/account/cashback" element={<CustomerPortalLayout><CustomerWalletPage /></CustomerPortalLayout>} />
-          <Route path="/account/profile" element={<CustomerPortalLayout><CustomerProfilePage /></CustomerPortalLayout>} />
-          <Route path="/auth/customer-register" element={<CustomerRegister />} />
-          <Route path="/auth/customer-register/:companyId" element={<CustomerRegister />} />
           <Route path="*" element={notFoundElement} />
         </Routes>
       </main>
 
-      {showFooter && !isCustomerPortalRoute ? <StorefrontFooter isMinimal={isMinimal} /> : null}
-      {!isProductImageLandingPage && theme.id !== "intruder-nft" && !isCustomerPortalRoute && <DeferredCartDrawerHost />}
+      {showFooter ? <StorefrontFooter isMinimal={isMinimal} /> : null}
+      {!isProductImageLandingPage && theme.id !== "intruder-nft" && <DeferredCartDrawerHost />}
 
-      {showMobileBottomNav && !isCustomerPortalRoute && (
+      {showMobileBottomNav && (
         <MobileBottomNav onSearchOpen={() => search.setIsOpen(true)} />
       )}
       {/* Safe-area spacer for mobile bottom nav */}
