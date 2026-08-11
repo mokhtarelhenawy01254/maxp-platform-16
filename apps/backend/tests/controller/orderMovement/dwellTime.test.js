@@ -142,7 +142,7 @@ describe('dwellTimeController', () => {
       startDate: '2026-05-01',
       endDate: '2026-05-31',
       historyFilter: 'full',
-      maxOrders: 15000
+      maxOrders: 30000
     });
 
     const statuses = res.payload.data.statuses;

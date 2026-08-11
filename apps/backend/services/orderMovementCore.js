@@ -1,6 +1,6 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 
-const MAX_ORDERS_DEFAULT = 20000;
+const MAX_ORDERS_DEFAULT = 50000;
 const BATCH_SIZE = 1000;
 
 const AUTO_ACTOR_MARKERS = ['SYSTEM_AUTO', 'SYSTEM', 'AUTO', 'CRON'];
@@ -59,7 +59,7 @@ async function fetchOrderMovementData({
 
   const where = {
     companyId: String(companyId),
-    ...(historyFilter === 'range' ? { statusHistory: { some: rangeWhere } } : {})
+    statusHistory: { some: rangeWhere }
   };
 
   const orders = [];
