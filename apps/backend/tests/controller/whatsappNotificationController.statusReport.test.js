@@ -134,6 +134,20 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(where.createdAt.lte).toBeInstanceOf(Date);
   });
 
+  test('الفلترة الافتراضية بتستخدم category فقط (ممنوع startsWith على enum eventType)', async () => {
+    const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
+    const { req, res } = makeReqRes(prisma);
+    await getStatusReport(req, res);
+
+    const where = prisma.whatsAppNotificationLog.findMany.mock.calls[0][0].where;
+    expect(Array.isArray(where.OR)).toBe(true);
+    expect(where.OR).toContainEqual({ category: 'ORDER' });
+    expect(where.OR).toContainEqual({ category: 'ORDERS' });
+    expect(where.OR).toContainEqual({ category: 'ABANDONED_CART' });
+    const usesEnumStartsWith = JSON.stringify(where).includes('startsWith');
+    expect(usesEnumStartsWith).toBe(false);
+  });
+
   test('بيرجع نتيجة فارغة لو جدول السجلات مش موجود (P2021) بدل 500', async () => {
     const prisma = {
       whatsAppNotificationLog: {

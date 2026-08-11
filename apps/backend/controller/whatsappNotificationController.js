@@ -517,11 +517,13 @@ async function getStatusReport(req, res) {
     const where = {
       companyId,
       createdAt: { gte: start, lte: endOfDay },
+      // category بس مش startsWith — eventType حقل enum في Prisma و enum مابيدعمش startsWith
+      // (بيدي 500 "Unknown argument"). كل إشعارات حالات الطلبات بتتخزن بـ category
+      // ORDER / ORDERS / ABANDONED_CART فعلاً.
       OR: [
         { category: 'ORDERS' },
         { category: 'ORDER' },
         { category: 'ABANDONED_CART' },
-        { eventType: { startsWith: 'ORDER_' } },
       ],
     };
 
