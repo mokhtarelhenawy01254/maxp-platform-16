@@ -21,4 +21,9 @@ router.get('/insurance-ledger', controller.listLedger);
 router.post('/insurance-ledger', verifyToken.requireRole(MANAGER_ROLES), controller.createLedgerEntry);
 router.get('/insurance-summary', controller.insuranceSummary);
 
+// Entity prices (per-entity exam prices)
+router.get('/entity-prices', controller.listEntityPrices);
+router.post('/entity-prices', verifyToken.requireRole(MANAGER_ROLES), controller.setEntityPrice);
+router.get('/entity-prices/summary', controller.listEntityPricesSummary);
+
 module.exports = router;

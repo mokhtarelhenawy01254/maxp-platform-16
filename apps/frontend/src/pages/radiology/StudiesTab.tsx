@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowUpCircle, Banknote, ExternalLink, FileText, FolderOpen, Loader2, Plus, Printer, RefreshCw, Save, Search, Upload, X as XMarkIcon } from "lucide-react";
+import { ArrowUpCircle, Banknote, Copy, ExternalLink, FileText, FolderOpen, Loader2, Plus, Printer, RefreshCw, Save, Search, Upload, X as XMarkIcon } from "lucide-react";
 import tokenManager from "../../utils/tokenManager";
 import {
   api, fetchJson, getCompanyId, RadiologyStudy, RadiologyStudyPayment, RadiologyStatusMap, RadiologySubmissionStatusMap,
@@ -154,6 +154,17 @@ export default function StudiesTab() {
       toast.error(e instanceof Error ? e.message : "فشل الاسترجاع");
     } finally {
       setSavingPay(false);
+    }
+  };
+
+  const duplicateStudy = async (s: StudyWithRadiologist) => {
+    if (!window.confirm(`تكرار دراسة "${s.patientName}" (نفس المريض والفحص)؟`)) return;
+    try {
+      await fetchJson(api(`studies/${s.id}/duplicate`), { method: "POST" });
+      toast.success("تم إنشاء دراسة مكررة");
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل التكرار");
     }
   };
 
@@ -373,6 +384,7 @@ export default function StudiesTab() {
                           <button onClick={() => setReportStudyId(s.id)} className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded" title="إدخال التقرير"><FileText className="w-4 h-4" /></button>
                           <button onClick={() => printLabel(s.id)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 rounded" title="طباعة لاصقة"><Printer className="w-4 h-4" /></button>
                           <button onClick={() => openPayment(s.id)} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title="الدفع"><Banknote className="w-4 h-4" /></button>
+                          <button onClick={() => duplicateStudy(s)} className="p-1.5 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/30 rounded" title="تكرار دراسة"><Copy className="w-4 h-4" /></button>
                           {s.rologyStudyLink ? (
                             <a href={s.rologyStudyLink} target="_blank" rel="noreferrer" className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="فتح في Rology"><ExternalLink className="w-4 h-4" /></a>
                           ) : null}

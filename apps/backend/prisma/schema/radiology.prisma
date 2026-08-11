@@ -191,6 +191,18 @@ model RadiologyExamAddition {
   updatedAt DateTime @updatedAt
 }
 
+model RadiologyEntityPrice {
+  id                 String   @id @default(cuid())
+  companyId          String?
+  insuranceCompanyId String
+  examTypeId         String
+  price              Float    @default(0)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  @@unique([insuranceCompanyId, examTypeId])
+}
+
 model RadiologyStudyPayment {
   id        String   @id @default(cuid())
   companyId String?

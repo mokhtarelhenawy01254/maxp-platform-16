@@ -76,15 +76,23 @@ const assignStudyInsurance = async (req, res) => {
       });
       if (!entity) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
       insuranceCompanyName = entity.name;
-      // Resolve entity-specific price from its booking PriceList (serviceId = radiology examType id) when present
-      if (entity.priceListId && study.examTypeId) {
-        try {
-          const item = await prisma.priceListItem.findFirst({
-            where: { priceListId: entity.priceListId, serviceId: study.examTypeId, isActive: true },
-            select: { price: true },
-          });
-          if (item && Number.isFinite(item.price)) priceSnapshot = item.price;
-        } catch { /* graceful fallback to exam price */ }
+      // Resolve entity-specific price (RadiologyEntityPrice first, then booking PriceListItem, else exam price)
+      if (study.examTypeId) {
+        const entityPrice = await prisma.radiologyEntityPrice.findFirst({
+          where: { insuranceCompanyId, examTypeId: study.examTypeId, isActive: true },
+          select: { price: true },
+        }).catch(() => null);
+        if (entityPrice && Number.isFinite(entityPrice.price)) {
+          priceSnapshot = entityPrice.price;
+        } else if (entity.priceListId) {
+          try {
+            const item = await prisma.priceListItem.findFirst({
+              where: { priceListId: entity.priceListId, serviceId: study.examTypeId, isActive: true },
+              select: { price: true },
+            });
+            if (item && Number.isFinite(item.price)) priceSnapshot = item.price;
+          } catch { /* graceful fallback */ }
+        }
       }
     }
 
@@ -387,6 +395,80 @@ const insuranceSummary = async (req, res) => {
   }
 };
 
+const setEntityPrice = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { insuranceCompanyId, examTypeId, price } = req.body || {};
+    if (!insuranceCompanyId || !examTypeId) return res.status(400).json({ success: false, error: 'الجهة ونوع الفحص مطلوبان' });
+    const amt = Number(price);
+    if (!Number.isFinite(amt) || amt < 0) return res.status(400).json({ success: false, error: 'السعر غير صحيح' });
+
+    const prisma = getSharedPrismaClient();
+    const [entity, examType] = await Promise.all([
+      prisma.insuranceCompany.findFirst({ where: { id: insuranceCompanyId, companyId }, select: { id: true } }),
+      prisma.radiologyExamType.findFirst({ where: { id: examTypeId, companyId }, select: { id: true } }),
+    ]);
+    if (!entity || !examType) return res.status(400).json({ success: false, error: 'الجهة أو نوع الفحص غير موجود' });
+
+    const existing = await prisma.radiologyEntityPrice.findUnique({
+      where: { insuranceCompanyId_examTypeId: { insuranceCompanyId, examTypeId } },
+    });
+
+    const data = existing
+      ? await prisma.radiologyEntityPrice.update({ where: { id: existing.id }, data: { price: amt, isActive: true } })
+      : await prisma.radiologyEntityPrice.create({ data: { companyId, insuranceCompanyId, examTypeId, price: amt } });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error setting radiology entity price:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حفظ سعر الجهة' });
+  }
+};
+
+const listEntityPrices = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { insuranceCompanyId, examTypeId } = req.query;
+    const where = { companyId };
+    if (insuranceCompanyId) where.insuranceCompanyId = String(insuranceCompanyId);
+    if (examTypeId) where.examTypeId = String(examTypeId);
+
+    const items = await getSharedPrismaClient().radiologyEntityPrice.findMany({ where, orderBy: { createdAt: 'desc' } });
+    res.json({ success: true, data: items });
+  } catch (error) {
+    console.error('Error listing radiology entity prices:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب أسعار الجهات' });
+  }
+};
+
+const listEntityPricesSummary = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const prisma = getSharedPrismaClient();
+    const prices = await prisma.radiologyEntityPrice.findMany({ where: { companyId } });
+    const byEntity = {};
+    for (const p of prices) {
+      if (!byEntity[p.insuranceCompanyId]) byEntity[p.insuranceCompanyId] = { insuranceCompanyId: p.insuranceCompanyId, count: 0 };
+      byEntity[p.insuranceCompanyId].count += 1;
+    }
+    const entities = await prisma.insuranceCompany.findMany({ where: { companyId }, select: { id: true, name: true } });
+    const rows = Object.values(byEntity).map(r => {
+      const e = entities.find(x => x.id === r.insuranceCompanyId);
+      return { insuranceCompanyId: r.insuranceCompanyId, name: e ? e.name : '—', count: r.count };
+    });
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Error listing radiology entity price summary:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب ملخص أسعار الجهات' });
+  }
+};
+
 module.exports = {
   assignStudyInsurance,
   createInvoice,
@@ -396,4 +478,7 @@ module.exports = {
   listLedger,
   createLedgerEntry,
   insuranceSummary,
+  setEntityPrice,
+  listEntityPrices,
+  listEntityPricesSummary,
 };

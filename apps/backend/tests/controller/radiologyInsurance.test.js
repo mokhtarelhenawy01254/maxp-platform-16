@@ -55,6 +55,16 @@ const createPrisma = (overrides = {}) => {
       findMany: jest.fn(),
       count: jest.fn(),
     },
+    radiologyEntityPrice: {
+      findFirst: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    priceListItem: {
+      findFirst: jest.fn(),
+    },
     $transaction: jest.fn((fn) => fn(prisma)),
     ...overrides,
   };

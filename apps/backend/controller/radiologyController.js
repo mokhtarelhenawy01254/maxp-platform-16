@@ -371,6 +371,65 @@ const createStudy = async (req, res) => {
   }
 };
 
+const duplicateStudy = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+
+    let study;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        study = await prisma.radiologyStudy.create({
+          data: {
+            companyId,
+            studyNumber: generateStudyNumber(),
+            patientId: existing.patientId,
+            patientName: existing.patientName,
+            patientPhone: existing.patientPhone,
+            patientGender: existing.patientGender,
+            patientAge: existing.patientAge,
+            nationalId: existing.nationalId,
+            insuranceNumber: existing.insuranceNumber,
+            examTypeId: existing.examTypeId,
+            examTypeName: existing.examTypeName,
+            modality: existing.modality,
+            priceSnapshot: existing.priceSnapshot,
+            billingType: existing.billingType || 'PATIENT',
+            status: 'PENDING_IMAGING',
+            emergency: existing.emergency,
+            withContrast: existing.withContrast,
+            referralDoctor: existing.referralDoctor,
+            referringPhysicianId: existing.referringPhysicianId,
+            insuranceCompanyId: existing.insuranceCompanyId,
+            insuranceCompanyName: existing.insuranceCompanyName,
+            additionIds: existing.additionIds,
+            additionAmount: existing.additionAmount,
+            notes: existing.notes ? `تكرار دراسة ${existing.studyNumber || ''}: ${existing.notes}` : null,
+            submissionStatus: 'NOT_SUBMITTED',
+            createdBy: req.user?.id || req.user?.email || null,
+          },
+        });
+        break;
+      } catch (error) {
+        if (error?.code === 'P2002' && attempt < 3) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    res.json({ success: true, data: study });
+  } catch (error) {
+    console.error('Error duplicating radiology study:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تكرار الدراسة' });
+  }
+};
+
 const updateStudy = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -998,6 +1057,7 @@ module.exports = {
   listStudies,
   getStudy,
   createStudy,
+  duplicateStudy,
   updateStudy,
   uploadStudyImages,
   getStudyImageFile,

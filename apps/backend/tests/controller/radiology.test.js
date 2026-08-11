@@ -1089,6 +1089,40 @@ describe('radiologyController', () => {
       expect(res.statusCode).toBe(403);
       expect(prisma.radiologyStudy.create).not.toHaveBeenCalled();
     });
+
+    test('duplicates a study copying patient/exam/insurance and resetting status', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({
+        patientName: 'مريض', examTypeId: 'et-1', examTypeName: 'أشعة CT', insuranceCompanyId: 'ins-1', insuranceCompanyName: 'جهة', nationalId: '123', priceSnapshot: 500, billingType: 'INSURANCE', additionAmount: 100, studyNumber: 'RAD-OLD', notes: 'ملاحظة',
+      }));
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'new-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.duplicateStudy(req({ params: { id: 'study-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      const call = prisma.radiologyStudy.create.mock.calls[0][0].data;
+      expect(call.patientName).toBe('مريض');
+      expect(call.examTypeName).toBe('أشعة CT');
+      expect(call.insuranceCompanyId).toBe('ins-1');
+      expect(call.status).toBe('PENDING_IMAGING');
+      expect(call.submissionStatus).toBe('NOT_SUBMITTED');
+      expect(call.studyNumber).toMatch(/^RAD-/);
+      expect(call.notes).toContain('تكرار');
+    });
+
+    test('returns 404 when duplicating a foreign study', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.duplicateStudy(req({ params: { id: 'study-1' } }), res);
+
+      expect(res.statusCode).toBe(404);
+      expect(prisma.radiologyStudy.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('contracts', () => {

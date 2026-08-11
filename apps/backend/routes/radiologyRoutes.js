@@ -31,6 +31,7 @@ router.delete('/exam-types/:id', verifyToken.requireRole(MANAGER_ROLES), control
 // Studies
 router.get('/studies', controller.listStudies);
 router.post('/studies', controller.createStudy);
+router.post('/studies/:id/duplicate', verifyToken.requireRole(MANAGER_ROLES), controller.duplicateStudy);
 router.get('/studies/:id/report', controller.getStudyReport);
 router.put('/studies/:id/report', controller.upsertStudyReport);
 router.put('/studies/:id/report/:kind', controller.advanceReport);
