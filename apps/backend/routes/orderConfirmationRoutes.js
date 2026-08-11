@@ -425,4 +425,36 @@ router.post('/assign/bulk', verifyToken.requireRole(QUEUE_ROLES), async (req, re
   }
 });
 
+router.post('/log-call', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const { orderId, result, notes } = req.body || {};
+    if (!orderId) return res.status(400).json({ success: false, message: 'رقم الطلب مطلوب' });
+
+    const data = await orderConfirmationService.logCallResult(
+      companyId,
+      orderId,
+      req.user?.id,
+      result || 'unreached',
+      notes || null
+    );
+
+    await logActivity({
+      companyId,
+      userId: req.user?.id,
+      action: 'CALL_ATTEMPT',
+      description: `تم تسجيل محاولة اتصال (${result || 'unreached'}) للطلب ${orderId}`,
+      targetId: data.order?.id || null,
+      metadata: { orderNumber: data.order?.orderNumber || orderId, result: result || 'unreached', callAttempts: data.callAttempts }
+    });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    const status = error.message === 'الطلب غير موجود' ? 404 : 400;
+    res.status(status).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

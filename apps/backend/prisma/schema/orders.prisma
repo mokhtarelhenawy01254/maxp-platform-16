@@ -723,6 +723,8 @@ model OrderConfirmationSettings {
   orderValueRules        String?  // JSON array
   workloadMaxOpen        Int?
   workloadStatuses       String?  // JSON array
+  maxCallsNoAnswer       Int      @default(3)
+  intervalMinutes        Int      @default(30)
   lastAssignedUserId     String?
   notifyOnNew            Boolean  @default(true)
   autoAssignOnConfirm    Boolean  @default(true)
