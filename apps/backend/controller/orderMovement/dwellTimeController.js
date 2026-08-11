@@ -34,6 +34,7 @@ const handler = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح' });
 
     const { startDate, endDate, mode } = req.query;
+    const { start, end } = core.normalizeDateRange({ startDate, endDate });
     const { orders, truncated } = await core.fetchOrderMovementData({
       companyId,
       startDate,
@@ -52,11 +53,18 @@ const handler = async (req, res) => {
       for (let i = 0; i < history.length - 1; i += 1) {
         const current = history[i];
         const next = history[i + 1];
-        const hours = core.hoursBetween(current.createdAt, next.createdAt);
-        if (hours > DWELL_OUTLIER_HOURS) continue;
         const auto = core.isAutoChange(next);
         if (mode === 'manual' && auto) continue;
         if (mode === 'auto' && !auto) continue;
+
+        let from = new Date(current.createdAt).getTime();
+        let to = new Date(next.createdAt).getTime();
+        if (start && from < start.getTime()) from = start.getTime();
+        if (end && to > end.getTime()) to = end.getTime();
+        if (to <= from) continue;
+
+        const hours = (to - from) / (1000 * 60 * 60);
+        if (hours > DWELL_OUTLIER_HOURS) continue;
 
         const status = core.normalizeStatus(current.status);
         let row = statusMap.get(status);
@@ -70,9 +78,12 @@ const handler = async (req, res) => {
       }
 
       if (last && core.TERMINAL_STATUSES.has(core.normalizeStatus(last.status))) {
+        const lastAuto = core.isAutoChange(last);
+        if (mode === 'manual' && lastAuto) continue;
+        if (mode === 'auto' && !lastAuto) continue;
         const hours = core.hoursBetween(order.createdAt, last.createdAt);
         cycleValues.all.push(hours);
-        if (core.isAutoChange(last)) cycleValues.auto.push(hours);
+        if (lastAuto) cycleValues.auto.push(hours);
         else cycleValues.manual.push(hours);
       }
     }

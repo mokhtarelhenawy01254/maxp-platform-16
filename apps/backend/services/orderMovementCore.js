@@ -90,6 +90,7 @@ async function fetchOrderMovementData({
         createdByName: true,
         turboShipmentId: true,
         statusHistory: {
+          ...(historyFilter === 'full' ? {} : { where: historyWhere }),
           ...(historyTake ? { take: historyTake } : {}),
           orderBy: { createdAt: 'asc' },
           select: {
@@ -109,7 +110,7 @@ async function fetchOrderMovementData({
     if (page.length < BATCH_SIZE) break;
   }
 
-  return { orders, start, end };
+  return { orders, start, end, truncated: orders.length >= maxOrders };
 }
 
 const buildTransitions = (order, { filterRange = true, start, end } = {}) => {

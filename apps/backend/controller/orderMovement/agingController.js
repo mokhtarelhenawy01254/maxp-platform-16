@@ -13,12 +13,12 @@ const bucketKeyFor = (ageHours) => {
   return bucket ? bucket.key : BUCKETS[BUCKETS.length - 1].key;
 };
 
-const filterByMode = (transitions, mode) =>
-  mode === 'manual'
-    ? transitions.filter((t) => !t.auto)
-    : mode === 'auto'
-      ? transitions.filter((t) => t.auto)
-      : transitions;
+const toAsc = (history) => {
+  if (!history || history.length < 2) return history || [];
+  const first = new Date(history[0].createdAt).getTime();
+  const last = new Date(history[history.length - 1].createdAt).getTime();
+  return first <= last ? history : history.slice().reverse();
+};
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -60,7 +60,7 @@ const handler = async (req, res) => {
         customerName: true,
         governorate: true,
         statusHistory: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: 'desc' },
           take: 60,
           select: {
             status: true,
@@ -81,8 +81,12 @@ const handler = async (req, res) => {
     for (const order of orders) {
       if (core.TERMINAL_STATUSES.has(core.normalizeStatus(order.status))) continue;
 
-      const transitions = filterByMode(core.buildTransitions(order, { filterRange: false }), mode);
+      const transitions = core.buildTransitions({ ...order, statusHistory: toAsc(order.statusHistory) }, { filterRange: false });
       if (!transitions.length) continue;
+
+      const last = transitions[transitions.length - 1];
+      if (mode === 'manual' && last.auto) continue;
+      if (mode === 'auto' && !last.auto) continue;
 
       const hasMovementInRange = transitions.some((t) => {
         const time = new Date(t.createdAt).getTime();
@@ -92,7 +96,6 @@ const handler = async (req, res) => {
       });
       if (!hasMovementInRange) continue;
 
-      const last = transitions[transitions.length - 1];
       const ageHours = core.hoursBetween(last.createdAt, now);
       if (ageHours < minAgeHours) continue;
 

@@ -221,9 +221,9 @@ describe('dwellTimeController', () => {
     expect(findByStatus(statuses, 'SHIPPED')).toEqual(
       expect.objectContaining({ entries: 1, avgHours: 36, manualEntries: 1 })
     );
-    expect(res.payload.data.cycleTime.sampleSize).toBe(2);
+    expect(res.payload.data.cycleTime.sampleSize).toBe(1);
     expect(res.payload.data.cycleTime.manualAvgHours).toBe(48);
-    expect(res.payload.data.cycleTime.autoAvgHours).toBe(12);
+    expect(res.payload.data.cycleTime.autoAvgHours).toBe(0);
   });
 
   test('filters dwell samples by auto mode', async () => {
@@ -246,7 +246,7 @@ describe('dwellTimeController', () => {
       expect.objectContaining({ entries: 2, avgHours: 7, manualEntries: 0, autoEntries: 2 })
     );
     expect(findByStatus(statuses, 'SHIPPED')).toBeUndefined();
-    expect(res.payload.data.cycleTime.sampleSize).toBe(2);
+    expect(res.payload.data.cycleTime.sampleSize).toBe(1);
   });
 
   test('returns empty result when no orders exist', async () => {
