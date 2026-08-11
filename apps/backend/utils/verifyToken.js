@@ -4,9 +4,7 @@ const {
   getSharedPrismaClientAsync,
   executeWithRetry,
 } = require('../services/sharedDatabase');
-const tenantContext = require('../services/tenantContext');
 const { getJwtSecret, isMissingAuthSecretError } = require('./jwtSecret');
-
 /**
  * Load user permissions from the new Role-based permission system
  * Falls back gracefully if the Permission table doesn't exist yet
@@ -125,7 +123,7 @@ const hasLegacyPrimaryCompanyAccess = async (prisma, userId, targetCompanyId, pr
 };
 
 const runWithoutTenantContext = (operation) =>
-  tenantContext.run(null, operation);
+  require('../services/tenantContext').run(null, operation);
 
 function getAiServiceToken() {
   return process.env.AI_SERVICE_TOKEN || process.env.MAXP_SERVICE_TOKEN || '';
@@ -180,7 +178,7 @@ const authenticateToken = async (req, res, next) => {
       service: true
     };
 
-    return tenantContext.run(companyId, () => next());
+    return require('../services/tenantContext').run(companyId, () => next());
   }
 
   try {
@@ -252,7 +250,7 @@ const authenticateToken = async (req, res, next) => {
         userPermissions: []
       };
 
-      return tenantContext.run(customerCompanyId, () => next());
+      return require('../services/tenantContext').run(customerCompanyId, () => next());
     }
 
     // 🛡️ [SAAS] Secure Company Context Resolution

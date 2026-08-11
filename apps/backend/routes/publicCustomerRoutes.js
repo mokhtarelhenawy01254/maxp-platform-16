@@ -950,7 +950,7 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
 
     const company = await prisma.company.findUnique({
       where: { id: companyId },
-      select: { id: true, name: true, nameAr: true, currency: true, logo: true, loyaltySystem: true }
+      select: { id: true, name: true, currency: true, logo: true }
     });
 
     const loyaltyRecord = await prisma.customerLoyaltyRecord.findFirst({
@@ -996,7 +996,7 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
         company: {
           id: company?.id,
           name: company?.name,
-          nameAr: company?.nameAr,
+          nameAr: company?.name || null,
           currency: company?.currency || 'EGP',
           logo: company?.logo,
           loyaltySystem
