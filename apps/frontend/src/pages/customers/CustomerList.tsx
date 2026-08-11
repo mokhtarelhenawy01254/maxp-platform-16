@@ -246,6 +246,21 @@ const CustomerList: React.FC = () => {
     return null;
   };
 
+  const getTierBadge = (tier: { name?: string; nameAr?: string; color?: string } | null | undefined) => {
+    if (!tier) return null;
+    const label = tier.nameAr || tier.name || "عميل";
+    const color = tier.color || "#6366f1";
+    return (
+      <span
+        className="mr-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+        style={{ backgroundColor: color + "1A", color, border: `1px solid ${color}40` }}
+        title={`مستوى الولاء: ${label}`}
+      >
+        {label}
+      </span>
+    );
+  };
+
   if (isLoading && customers.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -442,6 +457,7 @@ const CustomerList: React.FC = () => {
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
                             {customer.firstName || ""} {customer.lastName || ""}
                             {getRatingBadge(customer.customerRating)}
+                            {getTierBadge(customer.loyaltyTier)}
                             {getAutoDiscountBadge(customer.autoDiscountStatus)}
                           </div>
                           {parseTags(customer.tags).length > 0 && (

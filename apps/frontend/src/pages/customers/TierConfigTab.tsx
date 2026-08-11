@@ -205,6 +205,7 @@ const TierConfigTab: React.FC = () => {
   const [system, setSystem] = useState<string>("TIERS");
   const [activeSystem, setActiveSystem] = useState<string | null>(null);
   const [systemLoading, setSystemLoading] = useState(true);
+  const [activated, setActivated] = useState<boolean>(false);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [programId, setProgramId] = useState<string>("");
   const [defaultMethod, setDefaultMethod] = useState<string>("POINTS");
@@ -263,11 +264,13 @@ const TierConfigTab: React.FC = () => {
         const s = res.data?.data?.loyaltySystem || "TIERS";
         setSystem(s);
         setActiveSystem(s);
+        setActivated(res.data?.data?.activated === true);
       })
       .catch(() => {
         if (cancelled) return;
         setSystem("TIERS");
         setActiveSystem("TIERS");
+        setActivated(false);
       })
       .finally(() => {
         if (!cancelled) setSystemLoading(false);
@@ -282,12 +285,62 @@ const TierConfigTab: React.FC = () => {
     setErrorMsg("");
     setSavedMsg("");
     try {
-      await apiClient.put("/hr/customer-loyalty/system-settings", { system: s });
+      // لو اخترنا النظام التاني، شيل تفعيل النظام الحالي (activated: false)
+      const res = await apiClient.put("/hr/customer-loyalty/system-settings", { system: s, activated: false });
       setSystem(s);
       setActiveSystem(s);
-      setSavedMsg(`تم تفعيل ${s === "AUTO_DISCOUNT" ? "نظام الخصم التلقائي" : "نظام المستويات"} ✓`);
+      setActivated(res.data?.data?.activated === true);
+      setSavedMsg(`تم اختيار ${s === "AUTO_DISCOUNT" ? "نظام الخصم التلقائي" : "نظام المستويات"} — اضغط "تفعيل النظام" لبدء العمل ✓`);
     } catch (e: any) {
       setErrorMsg(e.response?.data?.error || "فشل تبديل النظام");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // تفعيل نظام المستويات: يحفظ طريقة الحساب + كل المستويات + يفعل النظام + يطبقه على كل العملاء فوراً
+  const activateTiers = async () => {
+    if (!programId) {
+      setErrorMsg("اختر برنامج الولاء أولاً");
+      return;
+    }
+    setSaving(true);
+    setErrorMsg("");
+    setSavedMsg("");
+    try {
+      // 1) حفظ طريقة الحساب الافتراضية
+      await apiClient.put("/hr/customer-loyalty/tier-config", { programId, defaultTierMethod: defaultMethod });
+
+      // 2) حفظ كل المستويات (تعديلات مفتوحة + الموجودين) تلقائياً
+      for (const tier of tiers) {
+        await apiClient.put(`/hr/customer-loyalty/tiers/${tier.id}`, {
+          name: tier.name,
+          nameAr: tier.nameAr,
+          calculationType: tier.calculationType,
+          minPoints: tier.calculationType === "POINTS" ? tier.minPoints : null,
+          maxPoints: tier.calculationType === "POINTS" ? tier.maxPoints : null,
+          minSpent: tier.calculationType === "SPENT" ? tier.minSpent : null,
+          maxSpent: tier.calculationType === "SPENT" ? tier.maxSpent : null,
+          minItems: tier.calculationType === "ITEMS" || tier.calculationType === "ORDER_COUNT" ? tier.minItems : null,
+          maxItems: tier.calculationType === "ITEMS" || tier.calculationType === "ORDER_COUNT" ? tier.maxItems : null,
+          benefits: tier.benefits,
+          color: tier.color,
+          priority: tier.priority,
+        });
+      }
+
+      // 3) تفعيل نظام المستويات (الضغط على "تفعيل النظام") → باك إند بيطبقه على كل العملاء
+      const res = await apiClient.put("/hr/customer-loyalty/system-settings", { system: "TIERS", activated: true });
+      setSystem("TIERS");
+      setActiveSystem("TIERS");
+      setActivated(true);
+      const activation = res.data?.activation;
+      const appliedTxt = activation ? ` — اتطبق على ${activation.enrolled || 0} عميل جديد + ${activation.updated || 0} عميل` : "";
+      setSavedMsg(`تم تفعيل نظام المستويات ✓${appliedTxt}`);
+      await loadConfig(programId);
+      await loadAnalytics();
+    } catch (e: any) {
+      setErrorMsg(e.response?.data?.error || "فشل تفعيل نظام المستويات");
     } finally {
       setSaving(false);
     }
@@ -299,6 +352,7 @@ const TierConfigTab: React.FC = () => {
       setActiveSystem(data.loyaltySystem);
       setSystem(data.loyaltySystem);
     }
+    setActivated(data?.activated === true);
   };  // ── تحليلات نظام الولاء الحالي (خصم تلقائي أو مستويات) ──
   const [analytics, setAnalytics] = useState<SystemAnalytics>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -323,61 +377,12 @@ const TierConfigTab: React.FC = () => {
   }, [activeSystem, loadAnalytics]);
 
 
-  const saveDefaultMethod = async () => {
-    if (!programId) return;
-    setSaving(true);
-    setErrorMsg("");
-    setSavedMsg("");
-    try {
-      await apiClient.put("/hr/customer-loyalty/tier-config", { programId, defaultTierMethod: defaultMethod });
-      setSavedMsg("تم حفظ طريقة الحساب الافتراضية ✓");
-      loadConfig(programId);
-    } catch (e: any) {
-      setErrorMsg(e.response?.data?.error || "فشل الحفظ");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const updateTierField = (id: string, field: keyof TierItem, value: any) => {
     setTiers(prev => prev.map(t => (t.id === id ? { ...t, [field]: value } : t)));
   };
 
   const updateTierBenefits = (id: string, field: string, value: any) => {
     setTiers(prev => prev.map(t => (t.id === id ? { ...t, benefits: { ...t.benefits, [field]: value } } : t)));
-  };
-
-  const saveTier = async (tier: TierItem) => {
-    const conflict = validateRangeConflicts(tier, tiers);
-    if (conflict) {
-      setErrorMsg(conflict);
-      return;
-    }
-    setSaving(true);
-    setSavedMsg("");
-    setErrorMsg("");
-    try {
-      await apiClient.put(`/hr/customer-loyalty/tiers/${tier.id}`, {
-        name: tier.name,
-        nameAr: tier.nameAr,
-        calculationType: tier.calculationType,
-        minPoints: tier.calculationType === "POINTS" ? tier.minPoints : null,
-        maxPoints: tier.calculationType === "POINTS" ? tier.maxPoints : null,
-        minSpent: tier.calculationType === "SPENT" ? tier.minSpent : null,
-        maxSpent: tier.calculationType === "SPENT" ? tier.maxSpent : null,
-        minItems: tier.calculationType === "ITEMS" || tier.calculationType === "ORDER_COUNT" ? tier.minItems : null,
-        maxItems: tier.calculationType === "ITEMS" || tier.calculationType === "ORDER_COUNT" ? tier.maxItems : null,
-        benefits: tier.benefits,
-        color: tier.color,
-        priority: tier.priority,
-      });
-      setSavedMsg(`تم حفظ مستوى "${tier.nameAr || tier.name}" ✓`);
-      loadConfig(programId);
-    } catch (e: any) {
-      setErrorMsg(e.response?.data?.error || "فشل حفظ المستوى");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const createTier = async () => {
@@ -643,18 +648,34 @@ const TierConfigTab: React.FC = () => {
         <AutoDiscountSettings onSaved={handleAutoDiscountSaved} />
       ) : (
       <>
-      {/* طريقة الحساب الافتراضية */}
+      {/* طريقة الحساب الافتراضية + تفعيل النظام */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">طريقة الحساب الافتراضية للشركة</label>
-        <div className="flex gap-2 mt-2">
-          <select value={defaultMethod} onChange={(e) => setDefaultMethod(e.target.value)} className={inputCls}>
-            {METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-          </select>
-          <button onClick={saveDefaultMethod} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[220px]">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">طريقة الحساب الافتراضية للشركة</label>
+            <select value={defaultMethod} onChange={(e) => setDefaultMethod(e.target.value)} className={inputCls + " mt-1"}>
+              {METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">لو العميل ملوش طريقة مخصصة، بيتم حسابه بالطريقة دي — وبتتحفظ تلقائياً عند التفعيل.</p>
+          </div>
+          <button
+            onClick={activateTiers}
+            disabled={saving || activated}
+            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+              activated
+                ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 cursor-not-allowed"
+                : "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+            }`}
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : activated ? <CheckCircle className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+            {activated ? "تم التفعيل" : "تفعيل النظام"}
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2">لو العميل ملوش طريقة مخصصة، بيتم حسابه بالطريقة دي</p>
+        {activated && (
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+            نظام المستويات مفعّل — الإعدادات بتتحفظ أوتوماتيكياً مع أي تعديل، والمستويات مطبّقة على العملاء.
+          </p>
+        )}
       </div>
 
       {/* Tiers list */}
@@ -759,11 +780,11 @@ const TierConfigTab: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button onClick={() => saveTier(tier)} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50">
-                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ المستوى
-                        </button>
                         {validateRangeConflicts(tier, tiers) && (
                           <span className="text-xs text-red-600 dark:text-red-400 font-medium">{validateRangeConflicts(tier, tiers)}</span>
+                        )}
+                        {!validateRangeConflicts(tier, tiers) && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500">التعديلات دي بتتحفظ تلقائياً عند الضغط على "تفعيل النظام".</span>
                         )}
                       </div>
                     </div>
@@ -828,6 +849,11 @@ const TierConfigTab: React.FC = () => {
               <button onClick={saveOverride} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ مزايا العميل
               </button>
+              {activated && (
+                <button onClick={activateTiers} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />} إعادة تطبيق المستويات على كل العملاء
+                </button>
+              )}
             </div>
           )}
         </div>

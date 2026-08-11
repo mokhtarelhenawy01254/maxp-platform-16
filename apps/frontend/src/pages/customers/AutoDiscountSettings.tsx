@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import { Save, Loader2, Zap } from "lucide-react";
+import { Loader2, Zap, CheckCircle } from "lucide-react";
 
 interface AutoDiscountSettingsProps {
   onSaved?: (data?: any) => void;
@@ -18,6 +18,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
   const [errorMsg, setErrorMsg] = useState("");
   const [cfg, setCfg] = useState({
     system: "AUTO_DISCOUNT",
+    activated: false,
     enabled: true,
     discountPercent: 10,
     validityDays: 3,
@@ -43,16 +44,22 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
     load();
   }, []);
 
-  const save = async () => {
+  // تفعيل نظام الخصم التلقائي: بيحفظ كل الإعدادات + بيفعّل النظام
+  const activate = async () => {
     setSaving(true);
     setSavedMsg("");
     setErrorMsg("");
     try {
-      const res = await apiClient.put("/hr/customer-loyalty/system-settings", cfg);
-      setSavedMsg("تم حفظ إعدادات الخصم التلقائي ✓");
+      const res = await apiClient.put("/hr/customer-loyalty/system-settings", {
+        ...cfg,
+        system: "AUTO_DISCOUNT",
+        activated: true,
+      });
+      setCfg((prev) => ({ ...prev, ...(res.data?.data || {}), activated: true }));
+      setSavedMsg("تم تفعيل نظام الخصم التلقائي وحفظ الإعدادات ✓");
       onSaved?.(res.data?.data);
     } catch (e: any) {
-      setErrorMsg(e?.response?.data?.error || "فشل الحفظ");
+      setErrorMsg(e?.response?.data?.error || "فشل التفعيل");
     } finally {
       setSaving(false);
     }
@@ -62,6 +69,8 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
 
   const inputCls =
     "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100";
+
+  const isActivated = cfg.activated === true;
 
   return (
     <div className="space-y-6">
@@ -138,13 +147,27 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
               </label>
             </div>
 
-            <div className="flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
+            <div className="flex items-center justify-end gap-3 border-t border-gray-100 dark:border-gray-700 pt-4">
               {savedMsg && <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{savedMsg}</span>}
               {errorMsg && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{errorMsg}</span>}
-              <button onClick={save} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600 disabled:opacity-50 whitespace-nowrap">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ
+              <button
+                onClick={activate}
+                disabled={saving || isActivated}
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+                  isActivated
+                    ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 cursor-not-allowed"
+                    : "bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+                }`}
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : isActivated ? <CheckCircle className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                {isActivated ? "تم التفعيل" : "تفعيل النظام"}
               </button>
             </div>
+            {isActivated && (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 -mt-2">
+                نظام الخصم التلقائي مفعّل — الإعدادات بتتحفظ أوتوماتيكياً عند أي تعديل، وبادج "خصم متاح" بيظهر للعملاء.
+              </p>
+            )}
           </div>
 
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-200">

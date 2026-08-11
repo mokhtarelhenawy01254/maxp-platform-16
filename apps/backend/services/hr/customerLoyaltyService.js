@@ -788,6 +788,71 @@ class CustomerLoyaltyService {
   }
 
   /**
+   * 🚀 تفعيل نظام المستويات على جميع عملاء الشركة:
+   *  - يتأكد أن كل عميل عنده سجل ولاء (تسجيل تلقائي لو مش مسجل)
+   *  - يعيد حساب مستوى كل عميل بناءً على طريقة حسابه وحدود المستويات
+   *  - بيخلي البادجات (المستوى) تظهر في قائمة العملاء والبوابة
+   */
+  async activateTiersForAllCustomers(companyId, { programId: fixedProgramId } = {}) {
+    const prisma = getSharedPrismaClient();
+    try {
+      // نجيب أول برنامج نقاط نشط (أو البرنامج المحدد)
+      const programs = fixedProgramId
+        ? [await prisma.customerLoyaltyProgram.findFirst({ where: { id: fixedProgramId, companyId, status: 'ACTIVE' } })]
+        : await prisma.customerLoyaltyProgram.findMany({
+            where: { companyId, type: 'POINTS', status: 'ACTIVE' },
+            orderBy: { createdAt: 'asc' }
+          });
+
+      const activeProgram = (programs || []).find(Boolean);
+      if (!activeProgram) {
+        console.warn('⚠️ [LOYALTY] No active POINTS program found for activation backfill');
+        return { enrolled: 0, updated: 0, reason: 'no_active_program' };
+      }
+
+      // كل عملاء الشركة
+      const customers = await prisma.customer.findMany({
+        where: { companyId },
+        select: { id: true }
+      });
+
+      let enrolled = 0;
+      let updated = 0;
+
+      for (const customer of customers) {
+        try {
+          const existing = await prisma.customerLoyaltyRecord.findUnique({
+            where: {
+              customerId_programId: {
+                customerId: customer.id,
+                programId: activeProgram.id
+              }
+            }
+          });
+
+          if (!existing) {
+            await this.enrollCustomer(companyId, customer.id, activeProgram.id, 0);
+            enrolled++;
+          }
+
+          // إعادة حساب المستوى (بيحدد الـ tierId وبيخلي البادج يظهر)
+          await this.updateCustomerTier(companyId, customer.id, activeProgram.id);
+          updated++;
+        } catch (customerError) {
+          // نكمل لباقي العملاء لو حصل خطأ لواحد
+          console.warn(`⚠️ [LOYALTY-ACTIVATE] Failed for customer ${customer.id}:`, customerError?.message);
+        }
+      }
+
+      console.log(`✅ [LOYALTY-ACTIVATE] Tiers applied: ${enrolled} enrolled, ${updated} updated`);
+      return { enrolled, updated };
+    } catch (error) {
+      console.error('❌ Error activating tiers for all customers:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 🔔 إرسال إشعار تغيير المستوى (ترقية/انخفاض) عبر جدول إشعارات العملاء
    */
   async _notifyTierChange(companyId, customerId, oldTier, newTier) {
@@ -1782,6 +1847,65 @@ class CustomerLoyaltyService {
     } catch (error) {
       console.error('❌ Error adjusting points:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 🏷️ إثراء قائمة العملاء بمستوى الولاء (badge) لكل عميل — بتعرض في صفحة العملاء
+   * بترجع نفس الـ customers مع إضافة حقل loyaltyTier لكل واحد
+   */
+  async enrichCustomersWithTier(companyId, customers) {
+    const prisma = getSharedPrismaClient();
+    try {
+      if (!Array.isArray(customers) || customers.length === 0) return customers;
+
+      const ids = customers.map((c) => c.id);
+      const program = await prisma.customerLoyaltyProgram.findFirst({
+        where: { companyId, type: 'POINTS', status: 'ACTIVE' },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true }
+      });
+      if (!program) return customers;
+
+      const records = await prisma.customerLoyaltyRecord.findMany({
+        where: {
+          companyId,
+          programId: program.id,
+          customerId: { in: ids },
+          status: 'ACTIVE'
+        },
+        include: {
+          customerLoyaltyTier: {
+            select: { id: true, name: true, nameAr: true, color: true, icon: true }
+          }
+        }
+      });
+
+      const tierByCustomer = new Map();
+      for (const r of records) {
+        if (r.tierId && r.customerLoyaltyTier) {
+          tierByCustomer.set(r.customerId, r.customerLoyaltyTier);
+        }
+      }
+
+      return customers.map((c) => {
+        const tier = tierByCustomer.get(c.id) || null;
+        return {
+          ...c,
+          loyaltyTier: tier
+            ? {
+                id: tier.id,
+                name: tier.name,
+                nameAr: tier.nameAr,
+                color: tier.color,
+                icon: tier.icon
+              }
+            : null
+        };
+      });
+    } catch (error) {
+      console.error('❌ Error enriching customers with tier:', error);
+      return customers;
     }
   }
 }

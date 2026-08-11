@@ -1454,7 +1454,8 @@ router.post('/', async (req, res) => {
             autoDiscountVoucherId = voucherRes.voucher.id;
             await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
           }
-        } else {
+        } else if (await autoDiscountService.isTiersActive(company.id)) {
+          // نظام "المستويات": مزايا المستوى (شحن مجاني + خصم %) — بس لو النظام مفعّل
           loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
           const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
           loyaltyTierInfo = progress?.tier || null;

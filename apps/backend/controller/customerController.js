@@ -128,6 +128,16 @@ const getAllCustomer = async (req, res) => {
         });
     }
 
+    // 🏷️ إضافة مستوى الولاء (badge المستويات) لكل عميل — بس لو نظام المستويات مفعّل
+    try {
+      const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+      if (await autoDiscountService.isTiersActive(companyId)) {
+        data = await customerLoyaltyService.enrichCustomersWithTier(companyId, data);
+      }
+    } catch (e) {
+      console.error('❌ [LOYALTY-TIER] Enrich customer list failed:', e.message);
+    }
+
     res.json({
       success: true,
       data,
