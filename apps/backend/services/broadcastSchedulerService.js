@@ -232,7 +232,7 @@ class BroadcastSchedulerService {
     const socketService = require('./socketService');
     const WhatsAppMessageHandler = require('./whatsapp').WhatsAppMessageHandler;
     const MetaCloudProvider = require('./whatsapp/providers/MetaCloudProvider');
-    const { buildBroadcastBodyParams, getTemplateHeaderFormat, buildBroadcastHeaderParams } = require('../utils/broadcastTemplateParams');
+    const { buildBroadcastBodyParams, hasOrderVariables, getTemplateHeaderFormat, buildBroadcastHeaderParams } = require('../utils/broadcastTemplateParams');
     console.log(`📊 [BroadcastScheduler] Starting to send campaign ${campaign.id}`);
 
     // تحديث حالة الحملة إلى "sending"
@@ -451,6 +451,8 @@ class BroadcastSchedulerService {
     // expected variable count (Meta rejects mismatches with #132000).
     let templateBodyText = '';
     let templateHeaderFormat = null;
+    let boundLocalVariables = null;
+    let needOrderForCustomer = false;
     if (isWhatsApp) {
       try {
         const metaTemplates = await MetaCloudProvider.listTemplates(waSessionId);
@@ -462,6 +464,23 @@ class BroadcastSchedulerService {
       } catch (tmplErr) {
         console.warn(`⚠️ [BroadcastScheduler] Could not fetch template body text: ${tmplErr.message}`);
       }
+
+      // 🚨 PRODUCTION-FIX (broadcast semantics): ترتيب متغيرات القالب المحلي المربوط
+      // ({position, name}) حتى لا يُرسل firstName/lastName في خانة رقم الطلب
+      // (مشكلة قالب deliveredmsj72rwc وقت البث الجماعي).
+      try {
+        const boundLocal = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+          where: { companyId: campaign.companyId, metaTemplateName: campaign.waTemplateName },
+          select: { variables: true }
+        });
+        if (boundLocal?.variables) {
+          const parsed = JSON.parse(boundLocal.variables);
+          if (Array.isArray(parsed)) boundLocalVariables = parsed;
+        }
+      } catch (e) {
+        console.warn(`⚠️ [BroadcastScheduler] Could not load bound local template variables: ${e?.message || e}`);
+      }
+      needOrderForCustomer = hasOrderVariables(boundLocalVariables);
     }
 
     // إرسال الرسائل
@@ -536,7 +555,23 @@ class BroadcastSchedulerService {
 
           // Build template body parameters to MATCH the template's expected variable count.
           // Meta rejects with (#132000) if the count differs.
-          const bodyParams = buildBroadcastBodyParams(templateBodyText, conv.customer);
+          // 🆕 لو القالب فيه متغيرات طلب → نجلب أحدث طلب للعميل لملء قيمها الصحيحة.
+          let orderForCustomer = null;
+          if (needOrderForCustomer) {
+            try {
+              orderForCustomer = await getSharedPrismaClient().order.findFirst({
+                where: { companyId: campaign.companyId, customerId: conv.customer.id },
+                orderBy: { createdAt: 'desc' },
+                select: {
+                  orderNumber: true, total: true, subtotal: true, shipping: true,
+                  currency: true, turboTrackingNumber: true, status: true
+                }
+              });
+            } catch (orderErr) {
+              console.warn(`⚠️ [BroadcastScheduler] Could not fetch latest order for ${conv.customer.firstName}: ${orderErr?.message || orderErr}`);
+            }
+          }
+          const bodyParams = buildBroadcastBodyParams(templateBodyText, conv.customer, boundLocalVariables, orderForCustomer);
 
           // header يأتي أولاً في components (إن كان قالب الحملة هيدره وسائط ولها وسيط)
           const components = [];

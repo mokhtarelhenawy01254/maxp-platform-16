@@ -11,6 +11,10 @@ import RadiologyContractsTab from "./RadiologyContractsTab";
 import RadiologyBranchesTab from "./RadiologyBranchesTab";
 import RadiologyInvoicesTab from "./RadiologyInvoicesTab";
 import RadiologyReportsOverviewTab from "./RadiologyReportsOverviewTab";
+import InsuranceInvoicesTab from "./InsuranceInvoicesTab";
+import InsuranceLedgerTab from "./InsuranceLedgerTab";
+import PriceQuoteTab from "./PriceQuoteTab";
+import RadiologistsTab from "./RadiologistsTab";
 import SettingsTab from "./SettingsTab";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
@@ -52,6 +56,10 @@ export default function RadiologyManagementPage() {
       {activeTab === "branches" && <TabErrorBoundary tabLabel="الفروع"><RadiologyBranchesTab /></TabErrorBoundary>}
       {activeTab === "invoices" && <TabErrorBoundary tabLabel="المدفوعات"><RadiologyInvoicesTab /></TabErrorBoundary>}
       {activeTab === "reports-overview" && <TabErrorBoundary tabLabel="التقارير"><RadiologyReportsOverviewTab /></TabErrorBoundary>}
+      {activeTab === "insurance-invoices" && <TabErrorBoundary tabLabel="فواتير التأمين"><InsuranceInvoicesTab /></TabErrorBoundary>}
+      {activeTab === "insurance-ledger" && <TabErrorBoundary tabLabel="دفتر التأمين"><InsuranceLedgerTab /></TabErrorBoundary>}
+      {activeTab === "price-quote" && <TabErrorBoundary tabLabel="عرض سعر"><PriceQuoteTab /></TabErrorBoundary>}
+      {activeTab === "radiologists" && <TabErrorBoundary tabLabel="أخصائيو الأشعة"><RadiologistsTab /></TabErrorBoundary>}
       {activeTab === "settings" && <TabErrorBoundary tabLabel="الإعدادات"><SettingsTab /></TabErrorBoundary>}
     </div>
   );

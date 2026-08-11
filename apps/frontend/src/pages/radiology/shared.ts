@@ -5,7 +5,7 @@ import { LayoutDashboard, Inbox, Users, FolderOpen, FileText, ScanLine, Tag, Bui
 export type TabId =
   | "dashboard" | "reception" | "patients" | "studies" | "reports"
   | "exam-types" | "price-lists" | "contracts" | "branches" | "invoices"
-  | "reports-overview" | "settings";
+  | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "price-quote" | "radiologists" | "settings";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "لوحة الأشعة", icon: LayoutDashboard },
@@ -19,6 +19,10 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "branches", label: "الفروع", icon: Building2 },
   { id: "invoices", label: "المدفوعات", icon: CreditCard },
   { id: "reports-overview", label: "التقارير", icon: BarChart3 },
+  { id: "insurance-invoices", label: "فواتير التأمين", icon: FileText },
+  { id: "insurance-ledger", label: "دفتر التأمين", icon: CreditCard },
+  { id: "price-quote", label: "عرض سعر", icon: Tag },
+  { id: "radiologists", label: "أخصائيو الأشعة", icon: Users },
   { id: "settings", label: "الإعدادات", icon: Settings },
 ];
 
@@ -65,6 +69,9 @@ export interface RadiologyStudyImage {
 export interface RadiologyReport {
   id: string; studyId: string; reportText: string;
   reportStatus: string; signedBy?: string; signedAt?: string;
+  typedBy?: string; typedAt?: string;
+  reviewedBy?: string; reviewedAt?: string;
+  finalizedBy?: string; finalizedAt?: string;
   createdAt: string; updatedAt: string;
 }
 

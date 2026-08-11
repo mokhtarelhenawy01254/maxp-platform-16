@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, Gift, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -607,6 +607,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
                 { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss') },
                 { to: '/analytics/orders/status-analysis', icon: BarChart3, label: t('sidebar.statusAnalysis') },
+                { to: '/analytics/orders/status-movement', icon: GitBranch, label: t('sidebar.orderMovement', 'حركة الحالات') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
@@ -1000,6 +1001,10 @@ export const getSidebarConfig = (
                 { to: '/radiology/branches', icon: Building2, label: t('sidebar.radiologyBranches') },
                 { to: '/radiology/invoices', icon: CreditCard, label: t('sidebar.radiologyInvoices') },
                 { to: '/radiology/reports-overview', icon: BarChart3, label: t('sidebar.radiologyReportsOverview') },
+                { to: '/radiology/insurance-invoices', icon: FileText, label: t('sidebar.radiologyInsuranceInvoices') },
+                { to: '/radiology/insurance-ledger', icon: CreditCard, label: t('sidebar.radiologyInsuranceLedger') },
+                { to: '/radiology/price-quote', icon: Tag, label: t('sidebar.radiologyPriceQuote') },
+                { to: '/radiology/radiologists', icon: Users, label: t('sidebar.radiologyRadiologists') },
                 { to: '/radiology/settings', icon: Settings, label: t('sidebar.radiologySettings') },
             ]
         },

@@ -667,6 +667,9 @@ const TodayOps = React.lazy(
 const OrderStatusAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/OrderStatusAnalytics"),
 );
+const OrderMovementPage = React.lazy(
+  () => import("./pages/Analytics/orders/orderMovement/OrderMovementPage"),
+);
 const AbandonedCartAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/AbandonedCartAnalytics"),
 );
@@ -4662,6 +4665,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <OrderStatusAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/status-movement"
+                  element={
+                    <Layout>
+                      <OrderMovementPage />
                     </Layout>
                   }
                 />

@@ -14181,6 +14181,10 @@ declare module 'react-i18next' {
         radiologyBranches: string;
         radiologyInvoices: string;
         radiologyReportsOverview: string;
+        radiologyInsuranceInvoices: string;
+        radiologyInsuranceLedger: string;
+        radiologyPriceQuote: string;
+        radiologyRadiologists: string;
         radiologySettings: string;
         marketplace: string;
         marketplaceManagement: string;

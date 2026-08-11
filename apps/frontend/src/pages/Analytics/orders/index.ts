@@ -32,3 +32,6 @@ export { default as AbandonedCartAnalytics } from "./AbandonedCartAnalytics";
 // Today Operations
 export { default as TodayOps } from "./TodayOps";
 
+// Order Movement Analytics
+export { default as OrderMovementPage } from "./orderMovement/OrderMovementPage";
+

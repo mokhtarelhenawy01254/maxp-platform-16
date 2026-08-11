@@ -207,6 +207,28 @@ export default function RadiologyReportsTab() {
     return <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "—"}</span>;
   };
 
+  const ROLES = [
+    { key: "typed", label: "كاتب", field: "typedBy" },
+    { key: "reviewed", label: "مراجع", field: "reviewedBy" },
+    { key: "finalized", label: "مُنْهِ", field: "finalizedBy" },
+  ] as const;
+
+  const recordRole = async (studyId: string, role: string, label: string) => {
+    const by = window.prompt(`اسم الـ ${label} لهذا التقرير:`, "");
+    if (by === null) return;
+    if (!by.trim()) { toast.error("الاسم مطلوب"); return; }
+    try {
+      await fetchJson(api(`studies/${studyId}/report/roles`), {
+        method: "PUT",
+        body: JSON.stringify({ role, by: by.trim() }),
+      });
+      toast.success(`تم تسجيل ${label}`);
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تسجيل الدور");
+    }
+  };
+
   const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "—");
 
   return (
@@ -234,7 +256,7 @@ export default function RadiologyReportsTab() {
             <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
-                  {["المريض", "رقم الدراسة", "نوع الفحص", "حالة التقرير", "التاريخ", "إجراءات"].map(h => (
+                  {["المريض", "رقم الدراسة", "نوع الفحص", "حالة التقرير", "الأدوار", "التاريخ", "إجراءات"].map(h => (
                     <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -249,6 +271,18 @@ export default function RadiologyReportsTab() {
                       <td className="py-3 px-4 font-medium" dir="ltr">{s.studyNumber || s.id.slice(0, 8)}</td>
                       <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "—"}</td>
                       <td className="py-3 px-4">{reportBadge(reportStatus)}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col gap-1 min-w-[120px]">
+                          {ROLES.map(r => {
+                            const name = s.report?.[r.field];
+                            return (
+                              <button key={r.key} onClick={() => recordRole(s.id, r.key, r.label)} className="text-xs text-right px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                {r.label}: <b>{name || "—"}</b>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </td>
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtDate(s.createdAt)}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5 flex-wrap">
