@@ -7,7 +7,7 @@ import {
   Package, Loader2,
   Layers3, Sparkles, PackageX, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3, Heart,
+  DollarSign, Heart,
   ShoppingBag, Brain,
   LayoutGrid,
   Truck,
@@ -36,7 +36,6 @@ import {
 import {
   AppCard,
   SearchBar,
-  FilterSidebar,
   CategorySidebar,
   CategoryBar,
   SectionSkeleton,
@@ -69,21 +68,6 @@ interface MarketplaceApiError {
 
 const MARKETPLACE_APPS_FETCH_LIMIT = 200;
 const DISPLAY_INCREMENT = 20;
-
-const collections = [
-  { id: "ALL" as ToolCollectionId, labelKey: "marketplace.allTools", icon: Grid3X3 },
-  { id: "FEATURED" as ToolCollectionId, labelKey: "marketplace.featured", icon: Sparkles },
-];
-
-const sortOptions: Array<{ value: SortOption; labelKey: string }> = [
-  { value: "featured", labelKey: "marketplace.sortFeatured" },
-  { value: "newest", labelKey: "marketplace.sortNewest" },
-  { value: "price_low", labelKey: "marketplace.sortPriceLow" },
-  { value: "price_high", labelKey: "marketplace.sortPriceHigh" },
-  { value: "rating", labelKey: "marketplace.sortRating" },
-  { value: "installs", labelKey: "marketplace.sortInstalls" },
-  { value: "updated", labelKey: "marketplace.sortUpdated" },
-];
 
 function getDefaultPricingModel(app: MarketplaceApp) {
   if (app.pricingModel === "FREE") return "FREE";
@@ -360,7 +344,6 @@ export default function MarketplaceV2() {
   };
 
   const categoryDisplay = getCategoryDisplayCategories(categories);
-  const currentSortLabel = sortOptions.find(o => o.value === sortBy)?.labelKey || "marketplace.sortFeatured";
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category === selectedCategory ? "" : category);
@@ -379,18 +362,6 @@ export default function MarketplaceV2() {
       ) : (
         <>
           <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16">
-            <div className="mp-stats-bar">
-              <div className="mp-stat-item">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                  <Package size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.totalApps')}</p>
-                  <p className="text-lg font-extrabold text-foreground">{apps.length}</p>
-                </div>
-              </div>
-            </div>
-
             <div className="mt-4 flex items-start gap-5">
               <CategorySidebar
                 categories={categories}
@@ -401,6 +372,13 @@ export default function MarketplaceV2() {
               <div className="flex-1 min-w-0">
             <div className="sticky top-0 z-40 py-3 bg-background/80 backdrop-blur-xl border-b border-border/10 mb-4">
               <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/30 bg-muted/30 px-3 py-1.5 text-[11px] font-bold text-foreground whitespace-nowrap">
+                    <Package size={13} className="text-primary" />
+                    <span className="tabular-nums">{apps.length}</span>
+                    <span className="text-muted-foreground">{t('marketplace.totalApps')}</span>
+                  </span>
+                </div>
                 <div className="flex-1 min-w-[200px]">
                   <SearchBar
                     value={searchQuery}
@@ -409,15 +387,6 @@ export default function MarketplaceV2() {
                   />
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <select
-                    value={sortBy}
-                    onChange={e => setSortBy(e.target.value as SortOption)}
-                    className="h-9 rounded-xl border border-border/30 bg-muted/30 px-3 text-xs font-bold text-foreground focus:outline-none focus:border-primary/40 cursor-pointer"
-                  >
-                    {sortOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
-                    ))}
-                  </select>
                   <CategorySidebar
                     isMobile
                     categories={categories}
@@ -434,32 +403,18 @@ export default function MarketplaceV2() {
                     <PackageX size={13} />
                     {t('marketplace.notInstalled')}
                   </Button>
-                  <FilterSidebar
-                    isMobile
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                  />
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-2.5 overflow-x-auto scrollbar-none pb-0.5">
-                {collections.map(c => {
-                  const ColIcon = c.icon;
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => { setCollection(c.id); setDisplayCount(DISPLAY_INCREMENT); }}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold whitespace-nowrap transition-all duration-200 shrink-0",
-                        collection === c.id
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <ColIcon size={12} />
-                      {t(c.labelKey)}
-                    </button>
-                  );
-                })}
+                {compareList.size > 0 && (
+                  <button
+                    onClick={() => navigate(`/marketplace/compare?apps=${[...compareList].join(',')}`)}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary whitespace-nowrap hover:bg-primary/20 transition-all duration-200"
+                  >
+                    <BarChart3 size={12} />
+                    {t('marketplace.compareApps')} ({compareList.size})
+                  </button>
+                )}
               </div>
             </div>
 
@@ -500,31 +455,6 @@ export default function MarketplaceV2() {
                 </div>
               ) : (
                 <>
-                  <div className="mp-section-header-v2 mt-2">
-                    <div className="flex items-center gap-2">
-                      <LayoutGrid size={17} className="text-primary" />
-                      <h2 className="text-base font-extrabold text-foreground tracking-tight">
-                        {selectedCategory
-                          ? categories.find(c => c.category === selectedCategory)?.name
-                          : searchQuery
-                            ? t('marketplace.noSearchResults', { query: searchQuery })
-                            : t('marketplace.allTools')}
-                      </h2>
-                      <span className="mp-section-count-v2">{filteredApps.length}</span>
-                    </div>
-                    {compareList.size > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 gap-1 rounded-lg text-xs font-bold"
-                        onClick={() => navigate(`/marketplace/compare?apps=${[...compareList].join(',')}`)}
-                      >
-                        <BarChart3 size={12} />
-                        {t('marketplace.compareApps')} ({compareList.size})
-                      </Button>
-                    )}
-                  </div>
-
                   {groupAppsBySidebarSections(displayedApps).map((section) => (
                     <div key={section.id} className="mt-6">
                       <div className="mp-section-header-v2 mb-3">

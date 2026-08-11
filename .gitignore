@@ -368,3 +368,6 @@ apps/backend/data/facebook-oauth-config.json
 
 # Browser-automation / dogfooding output (transient)
 dogfood-output/
+
+# Playwright MCP snapshots (transient)
+.playwright-mcp/

@@ -1129,6 +1129,7 @@ export const getSidebarConfig = (
                 { to: '/settings/security', icon: ShieldCheck, label: t('sidebar.securitySettings') },
                 { to: '/settings/appearance', icon: Paintbrush, label: t('sidebar.appearanceSettings') },
                 { to: '/settings/sidebar', icon: ListOrdered, label: t('sidebar.sidebarSettings') },
+                { to: '/notification-settings', icon: Bell, label: t('sidebar.notificationSettings') },
             ]
         },
 

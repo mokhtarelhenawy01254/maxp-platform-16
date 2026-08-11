@@ -378,6 +378,32 @@ async function seedMarketplace() {
         "icon": "💬"
       },
       {
+        "slug": "unified-inbox",
+        "name": "Unified Inbox",
+        "description": "صندوق وارد موحد يجمع محادثاتك من كل المنصات في مكان واحد مع إمكانية الرد المباشر.",
+        "logo": null,
+        "images": null,
+        "monthlyPrice": 299,
+        "yearlyPrice": 2999,
+        "pricingModel": "SUBSCRIPTION",
+        "unitPrice": null,
+        "unitName": null,
+        "features": "[\"دعم المنصات المتعددة\",\"الرد الموحد\",\"سجل المحادثات\",\"فريق العمل المشترك\"]",
+        "isActive": true,
+        "isPublic": true,
+        "isFeatured": false,
+        "mainRoute": null,
+        "adminRoute": null,
+        "category": "COMMUNICATION",
+        "rating": 0,
+        "reviewCount": 0,
+        "installCount": 1,
+        "isPopular": true,
+        "requiredApps": null,
+        "trialDays": 0,
+        "icon": "📬"
+      },
+      {
         "slug": "woocommerce-sync",
         "name": "WooCommerce Sync",
         "description": "مزامنة كاملة مع WooCommerce: استيراد/تصدير المنتجات والطلبات.",
@@ -1442,7 +1468,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "MARKETING",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"facebook-pages-connect\"]",
         "trialDays": 14,
         "icon": "📝"
       },
@@ -1479,6 +1505,18 @@ async function seedMarketplace() {
         "monthlyPrice": 999,
         "yearlyPrice": 9990,
         "discount": 69,
+        "isActive": true,
+        "isFeatured": true
+      },
+      {
+        "slug": "facebook-complete-bundle",
+        "name": "باقة فيسبوك الشاملة",
+        "nameEn": "Facebook Complete Bundle",
+        "description": "كل أدوات فيسبوك: ربط الصفحات + إعلانات + Pixel + كتالوج متجر + نشر المنشورات في باقة واحدة بتوفير.",
+        "appIds": ["facebook-pages-connect", "facebook-ads-pro", "facebook-pixel-capi", "facebook-catalog-shop", "facebook-post"],
+        "monthlyPrice": 399,
+        "yearlyPrice": 3990,
+        "discount": 27,
         "isActive": true,
         "isFeatured": true
       },
@@ -1537,6 +1575,8 @@ async function seedMarketplace() {
       'whatsapp-settings',
       'whatsapp-templates',
       'whatsapp-analytics',
+      'facebook-catalog',
+      'facebook-integration',
     ];
     const { count } = await prisma.marketplaceApp.updateMany({
       where: { slug: { in: slugsToHide }, isActive: true },

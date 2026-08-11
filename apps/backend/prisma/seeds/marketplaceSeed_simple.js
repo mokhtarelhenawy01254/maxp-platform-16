@@ -138,6 +138,17 @@ async function seedMarketplace() {
         discount: 37,
         isActive: true,
         isFeatured: true
+      },
+      {
+        slug: 'facebook-complete-bundle',
+        name: 'باقة فيسبوك الشاملة',
+        description: 'كل أدوات فيسبوك: ربط الصفحات + إعلانات + Pixel + كتالوج متجر + نشر المنشورات في باقة واحدة بتوفير.',
+        appIds: JSON.stringify(['facebook-pages-connect', 'facebook-ads-pro', 'facebook-pixel-capi', 'facebook-catalog-shop', 'facebook-post']),
+        monthlyPrice: 399,
+        yearlyPrice: 3990,
+        discount: 27,
+        isActive: true,
+        isFeatured: true
       }
     ];
 

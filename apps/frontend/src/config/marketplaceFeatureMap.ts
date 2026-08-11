@@ -333,6 +333,21 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تطبيق مستقل بعد توسيع نطاق Catalog Sync ليشمل Shops والمخزون.",
   },
   {
+    id: "facebook-post",
+    area: "marketing",
+    label: "منشورات فيسبوك",
+    description: "إنشاء ونشر منشورات فيسبوك، إضافة الصور، وجدولة النشر على الصفحات.",
+    status: "covered",
+    appSlug: "facebook-post",
+    appLabel: "إنشاء منشور فيسبوك",
+    currentGate: "facebook-post",
+    legacyGate: "facebook-pages-connect",
+    routes: [
+      { path: "/facebook/create-post", label: "إنشاء منشور" },
+    ],
+    action: "تطبيق مستقل لنشر المحتوى على الصفحات بعد ربطها بـ facebook-pages-connect.",
+  },
+  {
     id: "broadcast",
     area: "marketing",
     label: "البث والحملات",

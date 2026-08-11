@@ -477,6 +477,25 @@ async function seedMarketplace() {
       ]),
       isActive: true,
       isFeatured: false
+    },
+    {
+      slug: 'unified-inbox',
+      name: 'Unified Inbox',
+      category: 'COMMUNICATION',
+      description: 'صندوق وارد موحد يجمع محادثاتك من كل المنصات في مكان واحد مع إمكانية الرد المباشر.',
+      icon: '📬',
+      monthlyPrice: 299,
+      yearlyPrice: 2999,
+      trialDays: 0,
+      features: JSON.stringify([
+        'دعم المنصات المتعددة',
+        'الرد الموحد',
+        'سجل المحادثات',
+        'فريق العمل المشترك'
+      ]),
+      isActive: true,
+      isFeatured: false,
+      isPopular: true
     }
   ];
 
@@ -828,7 +847,26 @@ async function seedMarketplace() {
         'تحديث آلي'
       ]),
       isActive: true,
-      isPopular: false
+      isPopular: false,
+      requiredApps: ['facebook-pages-connect']
+    },
+    {
+      slug: 'facebook-post',
+      name: 'إنشاء منشور فيسبوك',
+      category: 'MARKETING',
+      description: 'إنشاء ونشر منشورات فيسبوك مباشرة من المنصة — نصوص، صور، وجدولة النشر على صفحاتك.',
+      icon: '📝',
+      monthlyPrice: 49,
+      yearlyPrice: 490,
+      trialDays: 14,
+      features: JSON.stringify([
+        'منشئ المنشورات',
+        'جدولة النشر'
+      ]),
+      isActive: true,
+      isFeatured: false,
+      isPopular: false,
+      requiredApps: ['facebook-pages-connect']
     }
   ];
 
@@ -1090,6 +1128,17 @@ async function seedMarketplace() {
       monthlyPrice: 999,
       yearlyPrice: null,
       discount: 37,
+      isActive: true,
+      isFeatured: true
+    },
+    {
+      slug: 'facebook-complete-bundle',
+      name: 'باقة فيسبوك الشاملة',
+      description: 'كل أدوات فيسبوك: ربط الصفحات + إعلانات + Pixel + كتالوج متجر + نشر المنشورات في باقة واحدة بتوفير.',
+      apps: ['facebook-pages-connect', 'facebook-ads-pro', 'facebook-pixel-capi', 'facebook-catalog-shop', 'facebook-post'],
+      monthlyPrice: 399,
+      yearlyPrice: 3990,
+      discount: 27,
       isActive: true,
       isFeatured: true
     }

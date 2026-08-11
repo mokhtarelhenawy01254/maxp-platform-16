@@ -98,6 +98,59 @@ interface SocketEmitEvents {
   join_company_room: (data: { companyId: string }) => void;
 }
 
+export type OrderSoundPattern = "alarm" | "urgent" | "classic" | "digital" | "smooth";
+
+interface OrderSoundPatternNote {
+  freq: number;
+  duration: number;
+  gap: number;
+}
+
+// نغمات صوت الطلبات — كل نغمة بتكوين نوتات مختلف
+const ORDER_SOUND_PATTERN_NOTES: Record<
+  OrderSoundPattern,
+  OrderSoundPatternNote[]
+> = {
+  alarm: [
+    { freq: 1150, duration: 0.19, gap: 0.16 },
+    { freq: 800, duration: 0.19, gap: 0.16 },
+  ],
+  urgent: [
+    { freq: 1200, duration: 0.08, gap: 0.04 },
+    { freq: 1200, duration: 0.08, gap: 0.04 },
+    { freq: 1200, duration: 0.08, gap: 0.16 },
+  ],
+  classic: [
+    { freq: 880, duration: 0.35, gap: 0.05 },
+    { freq: 660, duration: 0.45, gap: 0.1 },
+  ],
+  digital: [
+    { freq: 660, duration: 0.09, gap: 0.01 },
+    { freq: 880, duration: 0.09, gap: 0.01 },
+    { freq: 1100, duration: 0.09, gap: 0.01 },
+    { freq: 1320, duration: 0.12, gap: 0.08 },
+  ],
+  smooth: [
+    { freq: 523.25, duration: 0.2, gap: 0.05 },
+    { freq: 659.25, duration: 0.2, gap: 0.05 },
+    { freq: 783.99, duration: 0.2, gap: 0.05 },
+    { freq: 1046.5, duration: 0.35, gap: 0.15 },
+  ],
+};
+
+// قائمة النغمات المعروضة في الإعدادات
+export const ORDER_SOUND_PATTERNS: Array<{
+  id: OrderSoundPattern;
+  label: string;
+  description: string;
+}> = [
+  { id: "alarm", label: "صفّارة إنذار", description: "صفّارة قوية متقطعة" },
+  { id: "urgent", label: "عاجل", description: "صفّقات سريعة متتالية" },
+  { id: "classic", label: "كلاسيكي", description: "جرس دينج دونج" },
+  { id: "digital", label: "رقمي", description: "نغمة رنين رقمية صاعدة" },
+  { id: "smooth", label: "ناعم", description: "نغمة مريحة هادئة" },
+];
+
 class SocketService {
   private socket: Socket<SocketEvents, SocketEmitEvents> | null = null;
   private baseURL = buildWsUrl();
@@ -244,8 +297,12 @@ class SocketService {
     return this.audioContext;
   }
 
-  // إنذار صفّارة عالي لتنبيه أي حد في المكان بأن طلباً جديداً وصل
-  playOrderAlarm(options?: { volume?: number; durationMs?: number }) {
+  // إنذار عالي لتنبيه أي حد في المكان بأن طلباً جديداً وصل
+  playOrderAlarm(options?: {
+    volume?: number;
+    durationMs?: number;
+    pattern?: OrderSoundPattern;
+  }) {
     const audioContext = this.getAudioContext();
     if (!audioContext) {
       console.warn("⚠️ [SOUND] Audio context not available");
@@ -257,71 +314,78 @@ class SocketService {
 
       const volume = Math.min(1, Math.max(0, options?.volume ?? 1));
       const durationMs = options?.durationMs ?? 7000;
+      const pattern = options?.pattern ?? "alarm";
 
       const masterGain = audioContext.createGain();
-      masterGain.gain.setValueAtTime(
-        0.001,
-        audioContext.currentTime,
-      );
+      masterGain.gain.setValueAtTime(0.001, audioContext.currentTime);
       masterGain.gain.exponentialRampToValueAtTime(
         0.9 * volume,
         audioContext.currentTime + 0.15,
       );
       masterGain.connect(audioContext.destination);
 
-      // نغمة إنذار متقطعة (ألارم): تردد متذبذب + نبضات
-      const oscillator = audioContext.createOscillator();
-      oscillator.type = "square";
-      oscillator.frequency.setValueAtTime(1100, audioContext.currentTime);
-      const filter = audioContext.createBiquadFilter();
-      filter.type = "bandpass";
-      filter.frequency.setValueAtTime(1400, audioContext.currentTime);
-      filter.Q.value = 1.2;
-
-      oscillator.connect(filter);
-      filter.connect(masterGain);
-      oscillator.start();
+      const oscillators: OscillatorNode[] = [];
 
       const stopAll = () => {
+        for (const oscillator of oscillators) {
+          try {
+            oscillator.stop();
+            oscillator.disconnect();
+          } catch (error) {
+            // تجاهل أخطاء الإيقاف
+          }
+        }
         try {
-          oscillator.stop();
-          oscillator.disconnect();
-          filter.disconnect();
           masterGain.disconnect();
         } catch (error) {
-          // تجاهل أخطاء الإيقاف
+          // تجاهل
         }
       };
 
       this.alarmSources.push({ stop: stopAll });
 
-      // تشغيل النبضات (صفق / صفق) مع انقطاعات
-      const now = audioContext.currentTime;
-      const cycleMs = 350;
-      const cycles = Math.max(1, Math.floor(durationMs / cycleMs));
-
-      for (let index = 0; index < cycles; index += 1) {
-        const cycleStart = now + index * (cycleMs / 1000);
-        const onGain = cycleMs * 0.55;
-        masterGain.gain.setValueAtTime(0.9 * volume, cycleStart);
-        masterGain.gain.setValueAtTime(
-          0.001,
-          cycleStart + onGain / 1000,
-        );
-        // صفّارة: تغيير التردد صعود وهبوط
-        const wobble = index % 2 === 0 ? 1150 : 800;
-        oscillator.frequency.setValueAtTime(wobble, cycleStart);
-      }
-
-      masterGain.gain.setValueAtTime(
-        0.001,
-        now + cycles * (cycleMs / 1000),
+      // بناء نوتات النغمة المختارة وجدولة تشغيلها
+      const events = this.buildPatternEvents(
+        pattern,
+        audioContext.currentTime,
+        durationMs / 1000,
       );
+
+      for (const event of events) {
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = event.waveform;
+        oscillator.frequency.setValueAtTime(event.freq, event.start);
+
+        const noteGain = audioContext.createGain();
+        const attack = 0.02;
+        const release = Math.min(0.12, event.duration / 3);
+        noteGain.gain.setValueAtTime(0.0001, event.start);
+        noteGain.gain.exponentialRampToValueAtTime(
+          0.9 * volume,
+          event.start + attack,
+        );
+        noteGain.gain.setValueAtTime(
+          0.9 * volume,
+          event.start + Math.max(attack, event.duration - release),
+        );
+        noteGain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          event.start + event.duration,
+        );
+
+        oscillator.connect(noteGain);
+        noteGain.connect(masterGain);
+        oscillator.start(event.start);
+        oscillator.stop(event.start + event.duration + 0.02);
+        oscillators.push(oscillator);
+      }
 
       this.alarmStopTimer = setTimeout(stopAll, durationMs + 300);
       console.log("🚨 [SOUND] Order alarm played (loud)", {
+        pattern,
         volume,
         durationMs,
+        notes: events.length,
       });
     };
 
@@ -335,6 +399,54 @@ class SocketService {
     } else {
       runAlarm();
     }
+  }
+
+  // توليد نوتات النغمة المختارة حتى نهاية المدة
+  private buildPatternEvents(
+    pattern: OrderSoundPattern,
+    startTime: number,
+    durationSeconds: number,
+  ): Array<{
+    freq: number;
+    start: number;
+    duration: number;
+    waveform: OscillatorType;
+  }> {
+    const seq = ORDER_SOUND_PATTERN_NOTES[pattern] || ORDER_SOUND_PATTERN_NOTES.alarm;
+    const waveform: OscillatorType =
+      pattern === "smooth"
+        ? "sine"
+        : pattern === "classic"
+          ? "triangle"
+          : "square";
+
+    const events: Array<{
+      freq: number;
+      start: number;
+      duration: number;
+      waveform: OscillatorType;
+    }> = [];
+
+    const end = startTime + durationSeconds;
+    let cursor = startTime;
+
+    while (cursor < end) {
+      for (const note of seq) {
+        const start = cursor;
+        if (start >= end) {
+          break;
+        }
+        events.push({
+          freq: note.freq,
+          start,
+          duration: Math.min(note.duration, end - start),
+          waveform,
+        });
+        cursor += note.duration + note.gap;
+      }
+    }
+
+    return events;
   }
 
   // إيقاف الإنذار فوراً
@@ -354,8 +466,8 @@ class SocketService {
   }
 
   // اختبار سريع لصوت الطلبات من صفحة الإعدادات
-  testOrderSound(volume = 1) {
-    this.playOrderAlarm({ volume, durationMs: 1800 });
+  testOrderSound(volume = 1, pattern: OrderSoundPattern = "alarm") {
+    this.playOrderAlarm({ volume, durationMs: 1800, pattern });
   }
 
   connect() {

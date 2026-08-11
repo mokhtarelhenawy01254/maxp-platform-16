@@ -8586,6 +8586,7 @@ declare module 'react-i18next' {
         plans: string;
         faq: string;
         installed: string;
+        notInstalled: string;
         active: string;
         trial: string;
         cancelled: string;

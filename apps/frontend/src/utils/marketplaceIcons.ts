@@ -50,6 +50,8 @@ export const appIcons: Record<string, React.ElementType> = {
   "arrow-left-right": ArrowLeftRight,
   "square-pen": SquarePen,
   "volume-2": Volume2,
+  activity: Activity,
+  "shopping-bag": ShoppingBag,
 };
 
 export const appIconsBySlug: Record<string, React.ElementType> = {
@@ -107,4 +109,16 @@ export const appIconsBySlug: Record<string, React.ElementType> = {
   "order-workflow": ArrowLeftRight,
   "facebook-post": SquarePen,
   "google-tag-manager": BarChart3,
+  "break-even": Calculator,
+  "product-break-even": DollarSign,
+  "pricing-strategy": Tag,
+  "profitability-engine": TrendingUp,
+  "campaign-calculator": Megaphone,
+  "ad-budget-planner": Wallet,
+  "discount-impact": Percent,
+  "shipping-optimizer": Truck,
+  "monthly-pnl": BarChart3,
+  "clv-calculator": Users,
+  "upsell-planner": ShoppingCart,
+  "refund-rate": RefreshCcw,
 };

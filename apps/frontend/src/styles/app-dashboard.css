@@ -168,16 +168,19 @@
   padding-bottom: 0.5rem;
 }
 
-/* Hide native scrollbar arrows (up/down) on the sidebar and main content so no
-   arrow buttons sit next to the main menu */
-.app-shell-sidebar-content::-webkit-scrollbar-button,
+/* Hide the sidebar scrollbar (and its up/down arrows) so no arrow sits next to
+   the main menu */
+.app-shell-sidebar-content {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.app-shell-sidebar-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
 .app-shell-content::-webkit-scrollbar-button {
   display: none;
-}
-.app-shell-sidebar-content,
-.app-shell-content {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
 }
 
 .app-shell-sidebar-item {

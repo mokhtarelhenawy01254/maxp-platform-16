@@ -439,7 +439,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: proxyTarget,
-          changeOrigin: false,
+          changeOrigin: true,
           timeout: 120000,
           proxyTimeout: 120000,
           configure: (proxy) => {
