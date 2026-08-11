@@ -933,7 +933,10 @@ async function sendNotification(options) {
     fallbackEventType = null,
     // 🎁 دعم إشعارات العملاء: إرسال قالب محدد + فرض قناة (BAILEYS/META_CLOUD/AUTO)
     preferredTemplateId = null,
-    channel = null
+    channel = null,
+    // 🛡️ PRODUCTION-FIX (custom-status-enum): قيمة enum صالحة تُخزّن في whatsAppNotificationLog
+    // للحالات المخصصة (مثل mapsToSystem بتاعها) — لأن eventType في السجل enum مقفول.
+    persistedEventType = null
   } = options;
 
   const prisma = getSharedPrismaClient();
@@ -946,7 +949,7 @@ async function sendNotification(options) {
   try {
     // 1. جلب إعدادات الإشعارات
     const settings = await ensureNotificationSettings(companyId);
-    const persistedEventType = getPersistedNotificationEventType(eventType);
+    const persistedEventType = options.persistedEventType || getPersistedNotificationEventType(eventType);
     const persistedCategory = getPersistedNotificationCategory(category, eventType);
     const persistedRecipientType =
       getPersistedNotificationRecipientType(recipientType);
@@ -2021,8 +2024,9 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     statusConfig = statusEventMap[newStatus];
   } else {
     // التحقق من الحالات المخصصة في قاعدة البيانات
+    // (statusType ممكن يكون order أو shipping — الحالات المخصصة بتاعة التاجر زي DELAYED-WITH-CAPTAIN)
     const dbStatus = await prisma.orderStatusConfig.findFirst({
-      where: { companyId: order.companyId, code: newStatus, statusType: 'order', isActive: true }
+      where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping'] }, isActive: true }
     });
 
     if (dbStatus) {
@@ -2030,7 +2034,10 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
         event: dbStatus.code,
         enabled: dbStatus.notifyCustomer,
         isCustom: true,
-        statusName: dbStatus.name
+        statusName: dbStatus.name,
+        // 🛡️ PRODUCTION-FIX (custom-status-enum): نخزّن في السجل قيمة enum صالحة —
+        // نستخدم mapsToSystem بتاعة الحالة المخصصة (مثل ON_HOLD) إن وجدت.
+        persistedEventType: getPersistedNotificationEventType(dbStatus.mapsToSystem || dbStatus.code)
       };
     } else {
       // 🚀 [FALLBACK] If not in map or DB, allow the notification but let sendNotification decide
@@ -2100,6 +2107,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
       category: 'ORDER',
       eventType: statusConfig.event,
       fallbackEventType: newStatus,
+      persistedEventType: statusConfig.persistedEventType || null,
       variables: {
         customerName: order.customerName || order.customer?.firstName || 'عميلنا العزيز',
         customerPhone: phone,

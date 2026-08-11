@@ -7,6 +7,7 @@ const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const { getSystemStatusFromTurbo, getSystemStatusFromTurboWithCustomMapping } = require('../utils/statusNormalizer');
 const { GUEST_ORDER_STATUS_MAP } = require('../utils/turbo/constants');
 const { ensureReturnOrder } = require('./partialReturnService');
+const { isValidOrderStatusEnum, resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
 
 /**
  * Fetch per-company turboStatusMapping from company settings.
@@ -368,8 +369,20 @@ async function syncTurboStatusToOrder({
     updateData.turboShipmentId = String(payload.order_number);
   }
 
+  // 🛡️ PRODUCTION-FIX (custom-status-enum): حالة التعيين ممكن تكون حالة مخصصة مش في الـ enum
+  // (مثال حقيقي: تعيين swan `delayed → DELAYED-WITH-CAPTAIN`). بنحلّها عبر mapsToSystem:
+  // نخزّن القيمة الصالحة في order.status، ونحتفظ بالكود المخصص (orderStatus) للإشعار.
+  let storedOrderStatus = null;
+  let statusChanged = false;
   if (orderStatus) {
-    updateData.status = orderStatus;
+    const resolved = await resolveOrderStatusForStorage(prisma, companyId, orderStatus);
+    storedOrderStatus = resolved.stored;
+    if (storedOrderStatus) {
+      updateData.status = storedOrderStatus;
+    } else {
+      console.warn(`⚠️ [TURBO-SYNC] Skipping un-storable OrderStatus "${orderStatus}" for ${existingOrder.orderNumber} (not in enum and no valid mapsToSystem) — turbo fields updated, order status unchanged.`);
+    }
+    statusChanged = Boolean(storedOrderStatus) && storedOrderStatus !== existingOrder.status;
   }
 
   if (paymentStatus) {
@@ -384,7 +397,7 @@ async function syncTurboStatusToOrder({
   // من تربو (webhook / sync-status / refresh) كانت بتفضل من غير رسالة للعميل.
   // ملاحظة: updateOrderStatus بيجيب الطلب تاني بكل العلاقات (customer/orderItems) وبيشغّل
   // الإشعار في الخلفية (fire-and-forget) + بيخصم الـ dedup — فيتماشى مع مسار الزرار اليدوي.
-  const statusChanged = Boolean(orderStatus) && orderStatus !== existingOrder.status;
+  // نمرّر له الكود الأصلي (orderStatus) — وهو هيحلّ mapsToSystem ويتأكد إن storage صالح.
   if (statusChanged) {
     try {
       const orderService = require('./orderService');
@@ -399,7 +412,7 @@ async function syncTurboStatusToOrder({
         true,
         { skipCallAttemptGuard: true, skipTransitionValidation: true }
       );
-      console.log(`✅ [TURBO-SYNC] Order ${existingOrder.orderNumber} status -> ${orderStatus} via orderService (notification + history).`);
+      console.log(`✅ [TURBO-SYNC] Order ${existingOrder.orderNumber} status -> ${storedOrderStatus} (custom "${orderStatus}") via orderService (notification + history).`);
     } catch (statusErr) {
       console.warn(`⚠️ [TURBO-SYNC] Status update via orderService failed for ${existingOrder.orderNumber}:`, statusErr.message);
     }

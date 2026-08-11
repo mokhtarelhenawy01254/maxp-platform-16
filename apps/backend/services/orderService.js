@@ -997,6 +997,22 @@ class OrderService {
         }
       }
       
+      // 🛡️ PRODUCTION-FIX (custom-status-enum): عمود order.status enum مقفول في الداتابيز،
+      // والحالات المخصصة (مثل DELAYED-WITH-CAPTAIN) مش جزء منه. بنحلّها عبر mapsToSystem:
+      // - storedStatus = القيمة الصالحة اللي تتخزّن فعلاً على order.status.
+      // - originalRequestedStatus = الكود اللي المستخدم طلبه (مخصص أو نظامي) — نستخدمه
+      //   في statusHistory + إشعار WhatsApp (قالب الحالة المخصصة).
+      // لو الحالة مش enum ومالهاش mapsToSystem صالح → نرفض بخطأ عربي واضح بدل 500 Prisma.
+      const { resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
+      const { stored: storedStatus, notify: originalRequestedStatus } = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
+      if (!storedStatus) {
+        throw createOrderStatusError(`الحالة "${status}" غير صالحة ولا يمكن تطبيقها على الطلب`, 400);
+      }
+      if (currentStatus === storedStatus) {
+        return order;
+      }
+      status = storedStatus;
+
       // 🚫 Block Scanner / Shipping Progression for PENDING_CANCELLATION
       if (currentStatus === 'PENDING_CANCELLATION' && ['PREPARING', 'QUALITY_CHECK', 'PACKAGED', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED'].includes(status)) {
         if (!isOverride) {
@@ -1097,7 +1113,7 @@ class OrderService {
             updatedAt: new Date(),
             statusHistory: {
               create: {
-                status: status,
+                status: originalRequestedStatus,
                 oldStatus: order.status,
                 changedBy: userId,
                 userName: userName,
@@ -1279,7 +1295,9 @@ class OrderService {
             // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
             // لا تحجب الحالات غير المرسومة هنا — دع sendOrderStatusNotification يقرر عبر
             // DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback isFallback.
-            const notificationStatus = normalizeWhatsAppOrderStatus(status) || status;
+            // 🛡️ PRODUCTION-FIX (custom-status-enum): نستخدم الكود الأصلي (originalRequestedStatus)
+            // — مش الـ stored enum — عشان قالب الحالة المخصصة (مثل DELAYED-WITH-CAPTAIN) يشتغل.
+            const notificationStatus = normalizeWhatsAppOrderStatus(originalRequestedStatus) || originalRequestedStatus;
 
             // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
