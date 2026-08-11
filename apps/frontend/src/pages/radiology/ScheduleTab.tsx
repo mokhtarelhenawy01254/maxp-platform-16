@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft } from "lucide-react";
 import { api, fetchJson, RadiologyExamType, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface Appointment {
@@ -109,6 +109,18 @@ export default function ScheduleTab() {
     }
   };
 
+  const convert = async (a: Appointment) => {
+    if (!window.confirm(`تحويل حجز "${a.patientName}" إلى دراسة؟`)) return;
+    try {
+      const r = await fetchJson<{ study: { id: string } }>(api(`appointments/${a.id}/convert`), { method: "POST" });
+      toast.success("تم إنشاء الدراسة — افتحها من تبويب الدراسات");
+      await refresh({ silent: true });
+      if (r?.study?.id) window.location.href = "/radiology/studies";
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل التحويل");
+    }
+  };
+
   const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
 
   return (
@@ -165,6 +177,9 @@ export default function ScheduleTab() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
                           <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", examTypeId: a.examTypeId || "", appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
+                          {a.status !== "CANCELLED" ? (
+                            <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="تحويل لدراسة"><ArrowRightLeft className="w-4 h-4" /></button>
+                          ) : null}
                           {STATUS_CHAIN[a.status] ? (
                             <button onClick={() => advance(a)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title="تقدم الحالة"><RefreshCw className="w-4 h-4" /></button>
                           ) : null}

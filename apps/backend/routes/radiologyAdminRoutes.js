@@ -4,17 +4,23 @@ const appointments = require('../controller/radiologyAppointmentsController');
 const physicians = require('../controller/radiologyReferringPhysiciansController');
 const additions = require('../controller/radiologyExamAdditionsController');
 const statistics = require('../controller/radiologyStatisticsController');
+const payments = require('../controller/radiologyPaymentsController');
 const verifyToken = require('../utils/verifyToken');
 
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
 
 router.use(verifyToken.authenticateToken);
 
+// Study payments
+router.get('/studies/:id/payment', payments.getStudyPayment);
+router.post('/studies/:id/payment', verifyToken.requireRole(MANAGER_ROLES), payments.recordStudyPayment);
+
 // Appointments
 router.get('/appointments', appointments.listAppointments);
 router.post('/appointments', verifyToken.requireRole(MANAGER_ROLES), appointments.createAppointment);
 router.put('/appointments/:id', verifyToken.requireRole(MANAGER_ROLES), appointments.updateAppointment);
 router.delete('/appointments/:id', verifyToken.requireRole(MANAGER_ROLES), appointments.deleteAppointment);
+router.post('/appointments/:id/convert', verifyToken.requireRole(MANAGER_ROLES), appointments.convertToStudy);
 
 // Referring physicians
 router.get('/referring-physicians', physicians.listPhysicians);

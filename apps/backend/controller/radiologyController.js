@@ -297,6 +297,18 @@ const createStudy = async (req, res) => {
       if (physician) physicianName = physician.name;
     }
 
+    let additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;
+    let additionIds = null;
+    if (Array.isArray(body.additionIds) && body.additionIds.length) {
+      const additions = await prisma.radiologyExamAddition.findMany({
+        where: { id: { in: body.additionIds }, companyId, isActive: true },
+      });
+      if (additions.length) {
+        additionIds = additions.map(a => a.id);
+        additionAmount = additions.reduce((s, a) => s + a.price, 0);
+      }
+    }
+
     const clientProvidedNumber =
       typeof body.studyNumber === 'string' && body.studyNumber.trim() ? body.studyNumber.trim() : null;
     let studyNumber = clientProvidedNumber || generateStudyNumber();
@@ -313,6 +325,8 @@ const createStudy = async (req, res) => {
             patientPhone: body.patientPhone ? String(body.patientPhone) : null,
             patientGender: body.patientGender || null,
             patientAge: body.patientAge ? String(body.patientAge) : null,
+            nationalId: body.nationalId ? String(body.nationalId) : null,
+            insuranceNumber: body.insuranceNumber ? String(body.insuranceNumber) : null,
             examTypeId: examType ? examType.id : null,
             examTypeName: examType ? examType.name : null,
             modality: examType ? resolveModality(examType.category) : null,
@@ -321,7 +335,8 @@ const createStudy = async (req, res) => {
             withContrast: body.withContrast === true || body.withContrast === 'true',
             referralDoctor: physicianName || (body.referralDoctor ? String(body.referralDoctor) : null),
             referringPhysicianId: body.referringPhysicianId || null,
-            additionAmount: Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0,
+            additionIds: additionIds ? JSON.stringify(additionIds) : null,
+            additionAmount,
             notes: body.notes ? String(body.notes) : null,
             accessionNumber: body.accessionNumber ? String(body.accessionNumber) : null,
             submissionStatus: 'NOT_SUBMITTED',
@@ -369,6 +384,8 @@ const updateStudy = async (req, res) => {
     if (body.patientPhone !== undefined) data.patientPhone = body.patientPhone ? String(body.patientPhone) : null;
     if (body.patientGender !== undefined) data.patientGender = body.patientGender ? String(body.patientGender) : null;
     if (body.patientAge !== undefined) data.patientAge = body.patientAge ? String(body.patientAge) : null;
+    if (body.nationalId !== undefined) data.nationalId = body.nationalId ? String(body.nationalId) : null;
+    if (body.insuranceNumber !== undefined) data.insuranceNumber = body.insuranceNumber ? String(body.insuranceNumber) : null;
     if (body.patientId !== undefined) data.patientId = body.patientId || null;
     if (body.emergency !== undefined) data.emergency = normalizeBool(body.emergency, existing.emergency);
     if (body.withContrast !== undefined) data.withContrast = normalizeBool(body.withContrast, existing.withContrast);
@@ -386,6 +403,17 @@ const updateStudy = async (req, res) => {
     }
     if (body.additionAmount !== undefined) {
       data.additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;
+    }
+    if (body.additionIds !== undefined) {
+      if (Array.isArray(body.additionIds) && body.additionIds.length) {
+        const additions = await prisma.radiologyExamAddition.findMany({
+          where: { id: { in: body.additionIds }, companyId, isActive: true },
+        });
+        data.additionIds = JSON.stringify(additions.map(a => a.id));
+        data.additionAmount = additions.reduce((s, a) => s + a.price, 0);
+      } else {
+        data.additionIds = null;
+      }
     }
     if (body.notes !== undefined) data.notes = body.notes ? String(body.notes) : null;
     if (body.accessionNumber !== undefined) data.accessionNumber = body.accessionNumber ? String(body.accessionNumber) : null;

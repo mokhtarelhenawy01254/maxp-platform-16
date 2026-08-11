@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { api, fetchJson, RadiologyExamType, MODAL_INPUT_CLS } from "./shared";
+import { api, fetchJson, RadiologyExamType, RadiologyExamAddition, MODAL_INPUT_CLS } from "./shared";
 
 const GENDER_OPTIONS = [
   { value: "male", label: "ذكر" },
@@ -14,13 +14,17 @@ const cardCls = "bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:bord
 
 export default function ReceptionTab() {
   const [examTypes, setExamTypes] = useState<RadiologyExamType[]>([]);
+  const [additions, setAdditions] = useState<RadiologyExamAddition[]>([]);
   const [loadingExamTypes, setLoadingExamTypes] = useState(true);
 
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [patientGender, setPatientGender] = useState("");
   const [patientAge, setPatientAge] = useState("");
+  const [nationalId, setNationalId] = useState("");
+  const [insuranceNumber, setInsuranceNumber] = useState("");
   const [examTypeId, setExamTypeId] = useState("");
+  const [selectedAdditions, setSelectedAdditions] = useState<string[]>([]);
   const [emergency, setEmergency] = useState(false);
   const [withContrast, setWithContrast] = useState(false);
   const [referralDoctor, setReferralDoctor] = useState("");
@@ -31,8 +35,12 @@ export default function ReceptionTab() {
     (async () => {
       setLoadingExamTypes(true);
       try {
-        const data = await fetchJson<RadiologyExamType[]>(api("exam-types"));
-        setExamTypes(Array.isArray(data) ? data : []);
+        const [ets, adds] = await Promise.all([
+          fetchJson<RadiologyExamType[]>(api("exam-types")),
+          fetchJson<RadiologyExamAddition[]>(api("exam-additions")).catch(() => []),
+        ]);
+        setExamTypes(Array.isArray(ets) ? ets : []);
+        setAdditions(Array.isArray(adds) ? adds : []);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "فشل تحميل أنواع الفحوصات");
       } finally {
@@ -43,8 +51,13 @@ export default function ReceptionTab() {
 
   const resetForm = () => {
     setPatientName(""); setPatientPhone(""); setPatientGender(""); setPatientAge("");
-    setExamTypeId(""); setEmergency(false); setWithContrast(false);
+    setNationalId(""); setInsuranceNumber("");
+    setExamTypeId(""); setSelectedAdditions([]); setEmergency(false); setWithContrast(false);
     setReferralDoctor(""); setNotes("");
+  };
+
+  const toggleAddition = (id: string) => {
+    setSelectedAdditions(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   const handleSubmit = async () => {
@@ -60,7 +73,10 @@ export default function ReceptionTab() {
           patientPhone: patientPhone.trim() || undefined,
           patientGender: patientGender || undefined,
           patientAge: patientAge.trim() || undefined,
+          nationalId: nationalId.trim() || undefined,
+          insuranceNumber: insuranceNumber.trim() || undefined,
           examTypeId,
+          additionIds: selectedAdditions,
           emergency,
           withContrast,
           referralDoctor: referralDoctor.trim() || undefined,
@@ -106,6 +122,14 @@ export default function ReceptionTab() {
               <label className={labelCls}>العمر</label>
               <input className={inputCls} value={patientAge} onChange={e => setPatientAge(e.target.value)} placeholder="مثال: 45 سنة" />
             </div>
+            <div>
+              <label className={labelCls}>الرقم القومي</label>
+              <input className={inputCls} dir="ltr" value={nationalId} onChange={e => setNationalId(e.target.value)} placeholder="14 رقم" />
+            </div>
+            <div>
+              <label className={labelCls}>رقم التأمين</label>
+              <input className={inputCls} dir="ltr" value={insuranceNumber} onChange={e => setInsuranceNumber(e.target.value)} />
+            </div>
           </div>
         </div>
 
@@ -125,6 +149,19 @@ export default function ReceptionTab() {
               <label className={labelCls}>الطبيب المحيل</label>
               <input className={inputCls} value={referralDoctor} onChange={e => setReferralDoctor(e.target.value)} placeholder="اسم الطبيب" />
             </div>
+            {additions.length > 0 ? (
+              <div className="sm:col-span-2">
+                <label className={labelCls}>إضافات الفحص</label>
+                <div className="flex flex-wrap gap-2">
+                  {additions.map(a => (
+                    <label key={a.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <input type="checkbox" checked={selectedAdditions.includes(a.id)} onChange={() => toggleAddition(a.id)} className="rounded border-gray-300 dark:border-gray-600" />
+                      {a.name} ({Number(a.price).toFixed(0)} ج)
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="sm:col-span-2 flex items-center gap-6">
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                 <input type="checkbox" checked={emergency} onChange={e => setEmergency(e.target.checked)} className="rounded border-gray-300 dark:border-gray-600" />

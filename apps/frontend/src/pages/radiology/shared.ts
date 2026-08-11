@@ -85,6 +85,15 @@ export interface RadiologyReportTemplate {
   isActive: boolean; createdAt: string; updatedAt: string;
 }
 
+export interface RadiologyStudyPayment {
+  id: string; studyId: string; amount: number; method?: string;
+  note?: string; paidBy?: string; createdAt: string;
+}
+
+export interface RadiologyExamAddition {
+  id: string; name: string; price: number; isActive: boolean; createdAt: string;
+}
+
 export interface RadiologyContract {
   id: string; name: string; region?: string; governorate?: string;
   discountType: string; discountPercent: number; externalSample: boolean;
@@ -93,7 +102,13 @@ export interface RadiologyContract {
 
 export interface RadiologyStudy {
   id: string; studyNumber?: string;
-  patientName: string; patientPhone?: string; patientGender?: string; patientAge?: string;
+  patientName: string; patientPhone?: string; patientGender?: string;   patientAge?: string;
+  nationalId?: string;
+  insuranceNumber?: string;
+  additionIds?: string[] | string;
+  additionAmount?: number;
+  paidAmount?: number;
+  paymentStatus?: string;
   examTypeId?: string; examTypeName?: string; examType?: RadiologyExamType;
   referralDoctor?: string; notes?: string;
   emergency: boolean; withContrast: boolean;

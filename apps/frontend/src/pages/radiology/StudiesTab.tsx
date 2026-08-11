@@ -1,10 +1,10 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowUpCircle, ExternalLink, FileText, FolderOpen, Loader2, Plus, Printer, RefreshCw, Save, Search, Upload } from "lucide-react";
+import { ArrowUpCircle, Banknote, ExternalLink, FileText, FolderOpen, Loader2, Plus, Printer, RefreshCw, Save, Search, Upload, X as XMarkIcon } from "lucide-react";
 import tokenManager from "../../utils/tokenManager";
 import {
-  api, fetchJson, getCompanyId, RadiologyStudy, RadiologyStatusMap, RadiologySubmissionStatusMap,
-  STUDY_STATUS, MODAL_INPUT_CLS,
+  api, fetchJson, getCompanyId, RadiologyStudy, RadiologyStudyPayment, RadiologyStatusMap, RadiologySubmissionStatusMap,
+  STUDY_STATUS, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
 import RadiologyViewerModal from "./RadiologyViewerModal";
 import { RadiologyReportModal } from "./RadiologyReportsTab";
@@ -53,6 +53,10 @@ export default function StudiesTab() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [radiologists, setRadiologists] = useState<RadiologyRadiologist[]>([]);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [payModal, setPayModal] = useState<{ studyId: string; total: number; paidAmount: number; remaining: number; payments: RadiologyStudyPayment[] } | null>(null);
+  const [payAmount, setPayAmount] = useState("");
+  const [payMethod, setPayMethod] = useState("CASH");
+  const [savingPay, setSavingPay] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const uploadImages = async (id: string, files: FileList | null) => {
@@ -93,6 +97,38 @@ export default function StudiesTab() {
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل إنشاء اللاصقة");
+    }
+  };
+
+  const openPayment = async (id: string) => {
+    try {
+      const data = await fetchJson<{ total: number; paidAmount: number; remaining: number; paymentStatus: string; payments: RadiologyStudyPayment[] }>(api(`studies/${id}/payment`));
+      setPayModal({ studyId: id, total: data.total, paidAmount: data.paidAmount, remaining: data.remaining, payments: data.payments || [] });
+      setPayAmount("");
+      setPayMethod("CASH");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تحميل بيانات الدفع");
+    }
+  };
+
+  const savePayment = async () => {
+    if (!payModal || savingPay) return;
+    const amount = Number(payAmount);
+    if (!Number.isFinite(amount) || amount <= 0) { toast.error("المبلغ غير صحيح"); return; }
+    setSavingPay(true);
+    try {
+      const data = await fetchJson<{ payment: RadiologyStudyPayment; total: number; remaining: number; paymentStatus: string }>(api(`studies/${payModal.studyId}/payment`), {
+        method: "POST",
+        body: JSON.stringify({ amount, method: payMethod }),
+      });
+      toast.success(`تم تسجيل دفعة ${amount} ج`);
+      setPayModal({ studyId: payModal.studyId, total: data.total, paidAmount: data.total - data.remaining, remaining: data.remaining, payments: [...payModal.payments, data.payment] });
+      setPayAmount("");
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تسجيل الدفعة");
+    } finally {
+      setSavingPay(false);
     }
   };
 
@@ -307,6 +343,7 @@ export default function StudiesTab() {
                           <button onClick={() => setViewerStudyId(s.id)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="عرض الصور"><FolderOpen className="w-4 h-4" /></button>
                           <button onClick={() => setReportStudyId(s.id)} className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded" title="إدخال التقرير"><FileText className="w-4 h-4" /></button>
                           <button onClick={() => printLabel(s.id)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 rounded" title="طباعة لاصقة"><Printer className="w-4 h-4" /></button>
+                          <button onClick={() => openPayment(s.id)} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title="الدفع"><Banknote className="w-4 h-4" /></button>
                           {s.rologyStudyLink ? (
                             <a href={s.rologyStudyLink} target="_blank" rel="noreferrer" className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="فتح في Rology"><ExternalLink className="w-4 h-4" /></a>
                           ) : null}
@@ -356,6 +393,56 @@ export default function StudiesTab() {
 
       {viewerStudyId && <RadiologyViewerModal studyId={viewerStudyId} onClose={() => setViewerStudyId(null)} />}
       {reportStudyId && <RadiologyReportModal studyId={reportStudyId} onClose={() => setReportStudyId(null)} onSaved={() => refresh({ silent: true })} />}
+
+      {payModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setPayModal(null)}>
+          <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">الدفع</h3>
+              <button onClick={() => setPayModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-gray-50 dark:bg-gray-700/40 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">الإجمالي</p>
+                <p className="text-lg font-bold">{payModal.total.toFixed(0)} ج</p>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">المدفوع</p>
+                <p className="text-lg font-bold text-green-600">{payModal.paidAmount.toFixed(0)} ج</p>
+              </div>
+              <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">المتبقي</p>
+                <p className="text-lg font-bold text-red-600">{payModal.remaining.toFixed(0)} ج</p>
+              </div>
+            </div>
+            {payModal.payments.length > 0 ? (
+              <div className="mb-4 max-h-32 overflow-y-auto">
+                {payModal.payments.map(p => (
+                  <div key={p.id} className="flex justify-between text-sm border-b dark:border-gray-700/50 py-1.5">
+                    <span>{p.method || "CASH"} {p.note ? `— ${p.note}` : ""}</span>
+                    <b className="text-green-600">{p.amount.toFixed(0)} ج</b>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div className="flex gap-3">
+              <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" placeholder="المبلغ" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
+              <select className={MODAL_INPUT_CLS} value={payMethod} onChange={e => setPayMethod(e.target.value)}>
+                <option value="CASH">كاش</option>
+                <option value="CARD">كارت</option>
+                <option value="VODAFONE_CASH">فودافون كاش</option>
+                <option value="BANK">تحويل بنكي</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setPayModal(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إغلاق</button>
+              <button onClick={savePayment} disabled={savingPay} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
+                {savingPay && <Loader2 className="w-4 h-4 animate-spin" />}تسجيل دفعة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

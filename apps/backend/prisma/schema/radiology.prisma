@@ -20,6 +20,8 @@ model RadiologyStudy {
   patientPhone      String?
   patientGender     String?
   patientAge        String?
+  nationalId        String?    // الرقم القومي
+  insuranceNumber   String?    // رقم التأمين
   examTypeId        String?
   examTypeName      String?
   modality          String?
@@ -28,7 +30,10 @@ model RadiologyStudy {
   withContrast      Boolean  @default(false)
   referralDoctor    String?
   referringPhysicianId String?  // RadiologyReferringPhysician id
+  additionIds       Json?    // array of RadiologyExamAddition ids
   additionAmount    Float    @default(0) // extra charges (contrast, etc.)
+  paidAmount        Float    @default(0)
+  paymentStatus     String   @default("UNPAID") // UNPAID | PARTIAL | PAID
   notes             String?
   accessionNumber   String?
   submissionStatus  String   @default("NOT_SUBMITTED") // NOT_SUBMITTED | SUBMITTED | REPORT_READY  (Rology tracking)
@@ -182,6 +187,17 @@ model RadiologyExamAddition {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model RadiologyStudyPayment {
+  id        String   @id @default(cuid())
+  companyId String?
+  studyId   String
+  amount    Float    @default(0)
+  method    String?  // CASH | CARD | BANK | OTHER
+  note      String?
+  paidBy    String?
+  createdAt DateTime @default(now())
 }
 
 model RadiologyContract {

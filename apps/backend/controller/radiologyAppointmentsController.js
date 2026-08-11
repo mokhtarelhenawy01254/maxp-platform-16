@@ -148,4 +148,43 @@ const deleteAppointment = async (req, res) => {
   }
 };
 
-module.exports = { listAppointments, createAppointment, updateAppointment, deleteAppointment };
+const convertToStudy = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+    if (appointment.status === 'CANCELLED') return res.status(400).json({ success: false, error: 'لا يمكن تحويل حجز ملغي' });
+
+    const { generateStudyNumber } = require('../utils/dicomUtil');
+    const study = await prisma.radiologyStudy.create({
+      data: {
+        companyId,
+        studyNumber: generateStudyNumber(),
+        patientName: appointment.patientName,
+        patientPhone: appointment.patientPhone,
+        patientGender: appointment.patientGender,
+        patientAge: appointment.patientAge,
+        examTypeId: appointment.examTypeId,
+        examTypeName: appointment.examTypeName,
+        status: 'PENDING_IMAGING',
+        submissionStatus: 'NOT_SUBMITTED',
+        createdBy: req.user?.id || req.user?.email || null,
+      },
+    });
+
+    if (appointment.status !== 'DONE') {
+      await prisma.radiologyAppointment.update({ where: { id }, data: { status: 'DONE' } });
+    }
+
+    res.json({ success: true, data: { study, appointment } });
+  } catch (error) {
+    console.error('Error converting radiology appointment to study:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحويل الحجز لدراسة' });
+  }
+};
+
+module.exports = { listAppointments, createAppointment, updateAppointment, deleteAppointment, convertToStudy };
