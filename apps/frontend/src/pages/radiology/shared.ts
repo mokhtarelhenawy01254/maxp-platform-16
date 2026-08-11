@@ -1,28 +1,33 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import { LayoutDashboard, Inbox, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings } from "lucide-react";
+import { LayoutDashboard, Inbox, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Plus } from "lucide-react";
 
 export type TabId =
   | "dashboard" | "reception" | "patients" | "studies" | "reports"
   | "exam-types" | "price-lists" | "contracts" | "branches" | "invoices"
-  | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "price-quote" | "radiologists" | "settings";
+  | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "price-quote" | "radiologists"
+  | "schedule" | "referring-physicians" | "exam-additions" | "statistics" | "settings";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "لوحة الأشعة", icon: LayoutDashboard },
   { id: "reception", label: "الاستقبال", icon: Inbox },
   { id: "patients", label: "المرضى", icon: Users },
+  { id: "schedule", label: "الحجوزات", icon: CalendarDays },
   { id: "studies", label: "الدراسات", icon: FolderOpen },
   { id: "reports", label: "التقارير الطبية", icon: FileText },
   { id: "exam-types", label: "أنواع الفحوصات", icon: ScanLine },
+  { id: "exam-additions", label: "إضافات الفحوصات", icon: Plus },
   { id: "price-lists", label: "قوائم الأسعار", icon: Tag },
   { id: "contracts", label: "التعاقدات", icon: FileText },
   { id: "branches", label: "الفروع", icon: Building2 },
   { id: "invoices", label: "المدفوعات", icon: CreditCard },
   { id: "reports-overview", label: "التقارير", icon: BarChart3 },
+  { id: "referring-physicians", label: "الأطباء المحوّلون", icon: Users },
   { id: "insurance-invoices", label: "فواتير التأمين", icon: FileText },
   { id: "insurance-ledger", label: "دفتر التأمين", icon: CreditCard },
   { id: "price-quote", label: "عرض سعر", icon: Tag },
   { id: "radiologists", label: "أخصائيو الأشعة", icon: Users },
+  { id: "statistics", label: "الإحصائيات", icon: BarChart3 },
   { id: "settings", label: "الإعدادات", icon: Settings },
 ];
 

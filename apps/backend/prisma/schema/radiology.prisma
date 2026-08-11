@@ -27,6 +27,8 @@ model RadiologyStudy {
   emergency         Boolean  @default(false)
   withContrast      Boolean  @default(false)
   referralDoctor    String?
+  referringPhysicianId String?  // RadiologyReferringPhysician id
+  additionAmount    Float    @default(0) // extra charges (contrast, etc.)
   notes             String?
   accessionNumber   String?
   submissionStatus  String   @default("NOT_SUBMITTED") // NOT_SUBMITTED | SUBMITTED | REPORT_READY  (Rology tracking)
@@ -135,6 +137,48 @@ model RadiologyExamTag {
   id        String   @id @default(cuid())
   companyId String?
   name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RadiologyAppointment {
+  id              String   @id @default(cuid())
+  companyId       String?
+  patientName     String
+  patientPhone    String?
+  patientGender    String?
+  patientAge       String?
+  examTypeId       String?
+  examTypeName     String?
+  appointmentDate  DateTime?
+  appointmentTime  String? // HH:MM
+  branchId         String?
+  status           String   @default("SCHEDULED") // SCHEDULED|CHECKED_IN|DONE|CANCELLED
+  notes            String?
+  createdBy        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model RadiologyReferringPhysician {
+  id              String   @id @default(cuid())
+  companyId       String?
+  name            String
+  phone           String?
+  specialty       String?
+  commissionType  String   @default("NONE") // NONE|PERCENTAGE|FIXED
+  commissionValue Float    @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model RadiologyExamAddition {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  price     Float    @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

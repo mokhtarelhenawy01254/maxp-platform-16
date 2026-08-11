@@ -289,6 +289,14 @@ const createStudy = async (req, res) => {
       if (!examType) return res.status(400).json({ success: false, error: 'نوع الفحص لا ينتمي لهذه الشركة' });
     }
 
+    let physicianName = null;
+    if (body.referringPhysicianId) {
+      const physician = await prisma.radiologyReferringPhysician.findFirst({
+        where: { id: body.referringPhysicianId, companyId, isActive: true },
+      });
+      if (physician) physicianName = physician.name;
+    }
+
     const clientProvidedNumber =
       typeof body.studyNumber === 'string' && body.studyNumber.trim() ? body.studyNumber.trim() : null;
     let studyNumber = clientProvidedNumber || generateStudyNumber();
@@ -311,7 +319,9 @@ const createStudy = async (req, res) => {
             status: 'PENDING_IMAGING',
             emergency: body.emergency === true || body.emergency === 'true',
             withContrast: body.withContrast === true || body.withContrast === 'true',
-            referralDoctor: body.referralDoctor ? String(body.referralDoctor) : null,
+            referralDoctor: physicianName || (body.referralDoctor ? String(body.referralDoctor) : null),
+            referringPhysicianId: body.referringPhysicianId || null,
+            additionAmount: Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0,
             notes: body.notes ? String(body.notes) : null,
             accessionNumber: body.accessionNumber ? String(body.accessionNumber) : null,
             submissionStatus: 'NOT_SUBMITTED',
@@ -363,6 +373,20 @@ const updateStudy = async (req, res) => {
     if (body.emergency !== undefined) data.emergency = normalizeBool(body.emergency, existing.emergency);
     if (body.withContrast !== undefined) data.withContrast = normalizeBool(body.withContrast, existing.withContrast);
     if (body.referralDoctor !== undefined) data.referralDoctor = body.referralDoctor ? String(body.referralDoctor) : null;
+    if (body.referringPhysicianId !== undefined) {
+      const pid = body.referringPhysicianId || null;
+      if (pid) {
+        const physician = await prisma.radiologyReferringPhysician.findFirst({ where: { id: pid, companyId } });
+        if (!physician) return res.status(400).json({ success: false, error: 'الطبيب المحوّل غير موجود' });
+        data.referringPhysicianId = physician.id;
+        if (!body.referralDoctor) data.referralDoctor = physician.name;
+      } else {
+        data.referringPhysicianId = null;
+      }
+    }
+    if (body.additionAmount !== undefined) {
+      data.additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;
+    }
     if (body.notes !== undefined) data.notes = body.notes ? String(body.notes) : null;
     if (body.accessionNumber !== undefined) data.accessionNumber = body.accessionNumber ? String(body.accessionNumber) : null;
 

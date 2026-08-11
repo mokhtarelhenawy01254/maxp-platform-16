@@ -15,6 +15,10 @@ import InsuranceInvoicesTab from "./InsuranceInvoicesTab";
 import InsuranceLedgerTab from "./InsuranceLedgerTab";
 import PriceQuoteTab from "./PriceQuoteTab";
 import RadiologistsTab from "./RadiologistsTab";
+import ScheduleTab from "./ScheduleTab";
+import ReferringPhysiciansTab from "./ReferringPhysiciansTab";
+import ExamAdditionsTab from "./ExamAdditionsTab";
+import StatisticsTab from "./StatisticsTab";
 import SettingsTab from "./SettingsTab";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
@@ -60,6 +64,10 @@ export default function RadiologyManagementPage() {
       {activeTab === "insurance-ledger" && <TabErrorBoundary tabLabel="دفتر التأمين"><InsuranceLedgerTab /></TabErrorBoundary>}
       {activeTab === "price-quote" && <TabErrorBoundary tabLabel="عرض سعر"><PriceQuoteTab /></TabErrorBoundary>}
       {activeTab === "radiologists" && <TabErrorBoundary tabLabel="أخصائيو الأشعة"><RadiologistsTab /></TabErrorBoundary>}
+      {activeTab === "schedule" && <TabErrorBoundary tabLabel="الحجوزات"><ScheduleTab /></TabErrorBoundary>}
+      {activeTab === "referring-physicians" && <TabErrorBoundary tabLabel="الأطباء المحوّلون"><ReferringPhysiciansTab /></TabErrorBoundary>}
+      {activeTab === "exam-additions" && <TabErrorBoundary tabLabel="إضافات الفحوصات"><ExamAdditionsTab /></TabErrorBoundary>}
+      {activeTab === "statistics" && <TabErrorBoundary tabLabel="الإحصائيات"><StatisticsTab /></TabErrorBoundary>}
       {activeTab === "settings" && <TabErrorBoundary tabLabel="الإعدادات"><SettingsTab /></TabErrorBoundary>}
     </div>
   );
