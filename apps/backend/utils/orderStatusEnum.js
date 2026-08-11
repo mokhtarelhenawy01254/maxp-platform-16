@@ -41,7 +41,7 @@ async function resolveOrderStatusForStorage(prisma, companyId, requestedStatus) 
   let mapped = null;
   try {
     const config = await prisma.orderStatusConfig.findFirst({
-      where: { companyId, code: requested, isActive: true },
+      where: { companyId, code: { equals: requested, mode: 'insensitive' }, isActive: true },
       select: { mapsToSystem: true },
     });
     mapped = String(config?.mapsToSystem || '').trim().toUpperCase();

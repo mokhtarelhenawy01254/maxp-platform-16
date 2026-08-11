@@ -27,7 +27,7 @@ describe('orderStatusEnum util', () => {
 
     const res = await resolveOrderStatusForStorage(prismaMock, 'comp_1', 'DELAYED-WITH-CAPTAIN');
     expect(prismaMock.orderStatusConfig.findFirst).toHaveBeenCalledWith({
-      where: { companyId: 'comp_1', code: 'DELAYED-WITH-CAPTAIN', isActive: true },
+      where: { companyId: 'comp_1', code: { equals: 'DELAYED-WITH-CAPTAIN', mode: 'insensitive' }, isActive: true },
       select: { mapsToSystem: true },
     });
     expect(res).toEqual({ stored: 'ON_HOLD', notify: 'DELAYED-WITH-CAPTAIN' });
