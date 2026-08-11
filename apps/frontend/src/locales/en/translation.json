@@ -10716,6 +10716,8 @@
     "postponeOrderNotes": "Postpone notes",
     "postponeOrderNotesPlaceholder": "Reason for postponing...",
     "postponeOrderAutoTransition": "Auto-confirm when the scheduled time arrives",
+    "postponeOrderQuick": "Quick postpone",
+    "postponeOrderDays": "{{days}} days",
     "partialDeliveryTitle": "Partial delivery",
     "partialDeliveryDescription": "Select the delivered quantity for each product. The remainder will be turned into a return and a new order will be created automatically.",
     "partialDeliveryDelivered": "Delivered",
