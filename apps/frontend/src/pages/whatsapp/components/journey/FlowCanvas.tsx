@@ -166,7 +166,7 @@ export function FlowCanvas({
   onOpenCopilot,
 }: FlowCanvasProps) {
   const { t } = useTranslation();
-  const [previewOpen, setPreviewOpen] = useState(showPreviewProp);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [hoveredStepId, setHoveredStepId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -221,21 +221,9 @@ export function FlowCanvas({
   }, [orderedSteps, hoveredStepId]);
 
   return (
-    <div
-      className="grid gap-0 overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]"
-      style={{
-        gridTemplateColumns: previewOpen ? "minmax(0,1.4fr) minmax(0,1fr)" : "1fr",
-      }}
-    >
-      {/* LEFT: Step nodes */}
-      <div
-        className="p-4 sm:p-5"
-        style={{
-          borderInlineEnd: previewOpen
-            ? "1px solid color-mix(in srgb, var(--shell-control-border) 60%, transparent)"
-            : "0",
-        }}
-      >
+    <div className="space-y-4">
+      {/* Step nodes (full width) */}
+      <div className="overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-4 sm:p-5">
         {/* Header */}
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -301,7 +289,7 @@ export function FlowCanvas({
               items={orderedSteps.map((s) => s.id || `idx-${s.stepOrder}`)}
               strategy={verticalListSortingStrategy}
             >
-              <ol className="m-0 flex list-none flex-col gap-0 p-0">
+              <ol className="m-0 flex list-none flex-col gap-2 p-0">
                 {orderedSteps.map((step, index) => {
                   const stepKey = step.id || `idx-${step.stepOrder}`;
                   return (
@@ -329,9 +317,9 @@ export function FlowCanvas({
         )}
       </div>
 
-      {/* RIGHT: Live WhatsApp preview */}
+      {/* Live WhatsApp preview (below, collapsible) */}
       {previewOpen && (
-        <div className="bg-[color:color-mix(in_srgb,var(--color-muted)_50%,var(--color-background))] p-4 sm:p-5">
+        <div className="overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-muted)_50%,var(--color-background))] p-4 sm:p-5">
           <WhatsAppPreviewPane step={activePreviewStep} totalSteps={orderedSteps.length} />
         </div>
       )}

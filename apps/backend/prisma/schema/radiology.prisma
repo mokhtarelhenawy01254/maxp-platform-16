@@ -34,6 +34,13 @@ model RadiologyStudy {
   rologyReportLink  String?
   rologyRadiologist String?
   reportReceivedAt  DateTime?
+  insuranceCompanyId   String?   // entity that sent the patient (booking InsuranceCompany)
+  insuranceCompanyName String?
+  assignedRadiologistId   String?  // RadiologyRadiologist id
+  assignedRadiologistName String?
+  radiologistLocation     String?  // ON_SITE | OFF_SITE
+  reportAssignedAt        DateTime?
+  tagIds                  Json?    // array of RadiologyExamTag ids
   createdBy         String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -63,9 +70,74 @@ model RadiologyReport {
   reportStatus String   @default("DRAFT") // DRAFT | REVIEWED | SIGNED | DELIVERED
   signedBy     String?
   signedAt     DateTime?
+  typedBy      String?
+  typedAt      DateTime?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  finalizedBy  String?
+  finalizedAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   study        RadiologyStudy @relation(fields: [studyId], references: [id])
+}
+
+model RadiologyInsuranceInvoice {
+  id                   String   @id @default(cuid())
+  companyId            String?
+  invoiceNumber        String?  @unique // INS-YYYYMMDD-XXXX
+  insuranceCompanyId   String
+  insuranceCompanyName String?
+  totalAmount          Float    @default(0)
+  paidAmount           Float    @default(0)
+  remainingAmount      Float    @default(0)
+  status               String   @default("OPEN") // OPEN | PARTIAL | PAID
+  periodFrom           DateTime?
+  periodTo             DateTime?
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  items                RadiologyInsuranceInvoiceItem[]
+}
+
+model RadiologyInsuranceInvoiceItem {
+  id           String   @id @default(cuid())
+  invoiceId    String
+  studyId      String
+  patientName  String
+  examTypeName String?
+  amount       Float    @default(0)
+  createdAt    DateTime @default(now())
+  invoice      RadiologyInsuranceInvoice @relation(fields: [invoiceId], references: [id])
+}
+
+model RadiologyInsuranceLedgerEntry {
+  id                   String   @id @default(cuid())
+  companyId            String?
+  insuranceCompanyId   String
+  insuranceCompanyName String?
+  type                 String   // PAYMENT | ADJUSTMENT
+  amount               Float    @default(0)
+  note                 String?
+  createdAt            DateTime @default(now())
+}
+
+model RadiologyRadiologist {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  location  String   @default("ON_SITE") // ON_SITE | OFF_SITE
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RadiologyExamTag {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model RadiologyContract {

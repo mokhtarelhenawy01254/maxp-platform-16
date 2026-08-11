@@ -8,6 +8,8 @@
 const {
   countTemplateParams,
   buildBroadcastBodyParams,
+  hasOrderVariables,
+  resolveBroadcastVariableValue,
   getTemplateHeaderFormat,
   buildBroadcastHeaderParams,
 } = require('../../utils/broadcastTemplateParams');
@@ -62,6 +64,56 @@ describe('buildBroadcastBodyParams', () => {
     const body = '{{1}}';
     const params = buildBroadcastBodyParams(body, { firstName: 'محمد\nأحمد' });
     expect(params[0].text).toBe('محمد أحمد');
+  });
+});
+
+describe('buildBroadcastBodyParams — semantic binding via localVariables (🔴 regression: deliveredmsj72rwc)', () => {
+  const deliveredBody = 'مساء الخير \n{{1}}\nشركة الشحن بلغت ان حضرتك استلمتي الاوردر الي رقمة \n{{2}}\nمبروك';
+  const localVariables = [
+    { position: 1, name: 'customerName' },
+    { position: 2, name: 'orderNumber' },
+  ];
+  const customer = { firstName: 'Amany', lastName: 'Fahmy', phone: '201000000000' };
+
+  test('يرسل رقم الطلب في خانة رقم الطلب بدل اللقب', () => {
+    const order = { orderNumber: 'ORD-118418-674', total: '795', currency: 'EGP' };
+    const params = buildBroadcastBodyParams(deliveredBody, customer, localVariables, order);
+    expect(params.map(p => p.text)).toEqual(['Amany Fahmy', 'ORD-118418-674']);
+  });
+
+  test('لو مفيش طلب، متسيبش اسم العميل في خانة رقم الطلب', () => {
+    const params = buildBroadcastBodyParams(deliveredBody, customer, localVariables, null);
+    expect(params[0].text).toBe('Amany Fahmy');
+    expect(params[1].text).not.toBe('Fahmy');
+    expect(params[1].text).not.toBe('Amany');
+  });
+
+  test('يُحل متغيرات العميل بالاسم الصحيح', () => {
+    expect(resolveBroadcastVariableValue('customerName', customer)).toBe('Amany Fahmy');
+    expect(resolveBroadcastVariableValue('customerPhone', customer)).toBe('201000000000');
+    expect(resolveBroadcastVariableValue('customerFirstName', customer)).toBe('Amany');
+    expect(resolveBroadcastVariableValue('customerLastName', customer)).toBe('Fahmy');
+  });
+
+  test('يُحل متغيرات الطلب من كائن الطلب', () => {
+    const order = { orderNumber: 'ORD-1', total: '500', subtotal: '400', shipping: '100', currency: 'EGP', status: 'DELIVERED' };
+    expect(resolveBroadcastVariableValue('orderNumber', customer, order)).toBe('ORD-1');
+    expect(resolveBroadcastVariableValue('total', customer, order)).toBe('500');
+    expect(resolveBroadcastVariableValue('currency', customer, order)).toBe('EGP');
+    expect(resolveBroadcastVariableValue('status', customer, order)).toBe('DELIVERED');
+    expect(resolveBroadcastVariableValue('orderNumber', customer, null)).toBe('');
+  });
+
+  test('hasOrderVariables يكتشف قالباً فيه متغيرات طلب', () => {
+    expect(hasOrderVariables(localVariables)).toBe(true);
+    expect(hasOrderVariables([{ position: 1, name: 'customerName' }])).toBe(false);
+    expect(hasOrderVariables(null)).toBe(false);
+  });
+
+  test('سلوك التوافق القديم: بدون localVariables يبني firstName/lastName/phone', () => {
+    const body = '{{1}} {{2}}';
+    const params = buildBroadcastBodyParams(body, customer);
+    expect(params.map(p => p.text)).toEqual(['Amany', 'Fahmy']);
   });
 });
 

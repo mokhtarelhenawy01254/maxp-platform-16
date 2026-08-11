@@ -189,8 +189,19 @@ const sendOtpViaWhatsApp = async ({ companyId, phone, code }) => {
     return { success: false, reason: 'no_session' };
   }
 
+  // جلب نوع الجلسة من القاعدة (META_CLOUD / BAILEYS)
+  const dbSession = await prisma.whatsAppSession.findUnique({
+    where: { id: sessionId },
+    select: { id: true, provider: true, status: true, companyId: true }
+  });
+
   let session = WhatsAppManager.getSession(sessionId);
-  if (!session || session.status !== 'connected') {
+
+  // جلسات Meta Cloud API لا تحتاج socket في الذاكرة — تُعتبر متصلة حسب حالة القاعدة (مثل sendNotification)
+  if (dbSession?.provider === 'META_CLOUD' && dbSession.status === 'CONNECTED') {
+    session = { status: 'connected', provider: 'META_CLOUD', sessionId };
+    console.log(`ℹ️ [PUBLIC-CUSTOMER] META_CLOUD session ${sessionId} treated as connected (DB status=CONNECTED)`);
+  } else if (!session || session.status !== 'connected') {
     try {
       await WhatsAppManager.createSession(sessionId, companyId);
       await delay(1500);
@@ -199,33 +210,39 @@ const sendOtpViaWhatsApp = async ({ companyId, phone, code }) => {
       // ignore and continue fallbacks
     }
 
-    // Try one more fallback: pick any CONNECTED session from DB and see if runtime is connected
+    // Try one more fallback: pick any CONNECTED session from DB (META_CLOUD أو Baileys)
     const connected = await prisma.whatsAppSession.findFirst({
       where: {
         companyId,
         status: 'CONNECTED',
         id: { not: sessionId }
       },
-      select: { id: true },
+      select: { id: true, provider: true },
       orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
     });
 
     if (connected?.id) {
       const fallbackId = connected.id;
-      let fallbackSession = WhatsAppManager.getSession(fallbackId);
-      if (!fallbackSession || fallbackSession.status !== 'connected') {
-        try {
-          await WhatsAppManager.createSession(fallbackId, companyId);
-          await delay(1500);
-          fallbackSession = WhatsAppManager.getSession(fallbackId);
-        } catch (e) {
-          // ignore
-        }
-      }
-      if (fallbackSession && fallbackSession.status === 'connected') {
+      if (connected.provider === 'META_CLOUD') {
         sessionId = fallbackId;
-        session = fallbackSession;
-        console.log(`ℹ️ [PUBLIC-CUSTOMER] Using fallback runtime-connected session for company ${companyId}: ${sessionId}`);
+        session = { status: 'connected', provider: 'META_CLOUD', sessionId };
+        console.log(`ℹ️ [PUBLIC-CUSTOMER] Using fallback META_CLOUD session for company ${companyId}: ${sessionId}`);
+      } else {
+        let fallbackSession = WhatsAppManager.getSession(fallbackId);
+        if (!fallbackSession || fallbackSession.status !== 'connected') {
+          try {
+            await WhatsAppManager.createSession(fallbackId, companyId);
+            await delay(1500);
+            fallbackSession = WhatsAppManager.getSession(fallbackId);
+          } catch (e) {
+            // ignore
+          }
+        }
+        if (fallbackSession && fallbackSession.status === 'connected') {
+          sessionId = fallbackId;
+          session = fallbackSession;
+          console.log(`ℹ️ [PUBLIC-CUSTOMER] Using fallback runtime-connected session for company ${companyId}: ${sessionId}`);
+        }
       }
     }
   }
