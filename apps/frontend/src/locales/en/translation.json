@@ -11212,6 +11212,9 @@
     "changedAt": "Changed At",
     "duplicateTitle": "Warning: Duplicate Order",
     "duplicateOrder": "Code {{code}} was entered before — this order is repeated (entered {{count}} times)",
+    "duplicateBlockedNote": "This order is duplicated and blocked — you cannot enter it or change its status again in this session",
+    "duplicateAcknowledge": "I understand, Close",
+    "orderBlocked": "This order is duplicated and blocked: {{code}} — re-entering it is not allowed",
     "noResults": "No Results Found"
   },
   "returns": {
