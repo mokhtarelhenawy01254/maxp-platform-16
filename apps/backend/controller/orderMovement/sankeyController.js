@@ -12,7 +12,7 @@ const handler = async (req, res) => {
     const { startDate, endDate } = req.query;
     const mode = req.query.mode === 'manual' ? 'manual' : req.query.mode === 'auto' ? 'auto' : 'all';
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
-    const { orders } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
+    const { orders, truncated } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
 
     const edges = new Map();
     const inflow = new Map();
@@ -90,6 +90,7 @@ const handler = async (req, res) => {
     return res.json({
       success: true,
       data: {
+        truncated,
         totalTransitions,
         totalOrders,
         modes: { manual: manualTransitions, auto: autoTransitions },

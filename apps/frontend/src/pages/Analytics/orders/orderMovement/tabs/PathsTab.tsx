@@ -14,6 +14,7 @@ import {
   formatPercent,
   CHART_TOOLTIP_STYLE,
   type MovementFilterProps,
+  TruncatedNotice,
 } from "../orderMovementShared";
 import {
   PieChart,
@@ -38,11 +39,13 @@ interface PathRow {
 }
 
 interface PathsData {
+  truncated?: boolean;
   totalOrders: number;
   uniquePaths: number;
   stats: {
     maxPathLength: number;
     avgPathLength: number;
+    avgPathHours: number;
     successPathCount: number;
     failedPathCount: number;
     pendingPathCount: number;
@@ -88,9 +91,11 @@ export default function PathsTab({ startDate, endDate, mode }: MovementFilterPro
   const weightedAvgHours = totalPathOrders
     ? paths.reduce((acc, p) => acc + p.avgHours * p.orderCount, 0) / totalPathOrders
     : 0;
+  const avgPathHours = stats?.avgPathHours ?? weightedAvgHours;
 
   return (
     <div className="space-y-6">
+      <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="إجمالي الطلبات المحركة" value={formatNumber(data?.totalOrders)} icon={Package} gradient="from-indigo-500 to-violet-600" hint={`${formatNumber(data?.uniquePaths)} مسار مختلف`} />
         <KpiCard label="عدد المسارات" value={formatNumber(data?.uniquePaths)} icon={GitFork} gradient="from-violet-500 to-purple-600" hint={`${mode === "all" ? "كل الحركات" : mode === "manual" ? "حركات يدوية فقط" : "حركات تلقائية فقط"}`} />
@@ -124,7 +129,7 @@ export default function PathsTab({ startDate, endDate, mode }: MovementFilterPro
             <StatBox label="مسارات ناجحة" value={formatNumber(stats?.successPathCount)} color="text-emerald-600 dark:text-emerald-400" />
             <StatBox label="مسارات فاشلة" value={formatNumber(stats?.failedPathCount)} color="text-red-600 dark:text-red-400" />
             <StatBox label="مسارات معلقة" value={formatNumber(stats?.pendingPathCount)} color="text-amber-600 dark:text-amber-400" />
-            <StatBox label="متوسط زمن المسارات" value={formatDuration(weightedAvgHours)} color="text-indigo-600 dark:text-indigo-400" />
+            <StatBox label="متوسط زمن المسارات" value={formatDuration(avgPathHours)} color="text-indigo-600 dark:text-indigo-400" />
           </div>
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
             المسار = تسلسل الحالات التي مر بها الطلب. تُحتسب المسارات الأكثر تكراراً مع متوسط زمنها وقيمتها.

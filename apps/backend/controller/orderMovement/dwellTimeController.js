@@ -34,7 +34,7 @@ const handler = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح' });
 
     const { startDate, endDate, mode } = req.query;
-    const { orders } = await core.fetchOrderMovementData({
+    const { orders, truncated } = await core.fetchOrderMovementData({
       companyId,
       startDate,
       endDate,
@@ -84,6 +84,7 @@ const handler = async (req, res) => {
     res.json({
       success: true,
       data: {
+        truncated,
         totalOrders: orders.length,
         statuses,
         cycleTime: buildCycleTime(cycleValues)

@@ -58,7 +58,7 @@ const daysAgoStr = (n: number) => {
 
 export default function OrderMovementPage() {
   const [period, setPeriod] = useState("30");
-  const [startDate, setStartDate] = useState(daysAgoStr(30));
+  const [startDate, setStartDate] = useState(daysAgoStr(29));
   const [endDate, setEndDate] = useState(todayStr());
   const [mode, setMode] = useState<MovementMode>("all");
   const [activeTab, setActiveTab] = useState<TabId>("matrix");

@@ -15,6 +15,7 @@ import {
   formatNumber,
   formatCurrency,
   formatPercent,
+  TruncatedNotice,
 } from "../orderMovementShared";
 
 type MatrixKind = "invalid" | "backward" | "skip" | "forward" | "start" | "same" | "other";
@@ -30,6 +31,7 @@ interface MatrixRow {
 }
 
 interface MatrixData {
+  truncated?: boolean;
   totalTransitions: number;
   totalOrders: number;
   forwardCount: number;
@@ -161,6 +163,7 @@ export default function StatusMatrixTab({ startDate, endDate, mode }: MovementFi
 
   return (
     <div className="space-y-6">
+      <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard
           label="إجمالي الحركات"

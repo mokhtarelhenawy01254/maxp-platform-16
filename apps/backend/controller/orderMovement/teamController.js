@@ -33,7 +33,7 @@ const handler = async (req, res) => {
     const { startDate, endDate, mode } = req.query;
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
 
-    const { orders } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
+    const { orders, truncated } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
 
     const ordersById = new Map();
     const orderTotals = new Map();
@@ -169,6 +169,7 @@ const handler = async (req, res) => {
     res.json({
       success: true,
       data: {
+        truncated,
         summary: {
           totalTransitions: transitions.length,
           manualTransitions: manualTransitions.length,

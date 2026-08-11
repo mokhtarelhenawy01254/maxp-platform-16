@@ -293,3 +293,15 @@ export function ModeToggle({ mode, onChange }: { mode: MovementMode; onChange: (
     </div>
   );
 }
+
+export function TruncatedNotice({ truncated }: { truncated?: boolean }) {
+  if (!truncated) return null;
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-amber-200/70 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/20 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>
+        الفترة كبيرة جداً والنتيجة مبنية على أول 50,000 طلب فقط — صغّر فترة التاريخ للحصول على نتائج كاملة.
+      </span>
+    </div>
+  );
+}

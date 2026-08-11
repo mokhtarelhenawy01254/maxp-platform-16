@@ -11,22 +11,27 @@ const handler = async (req, res) => {
     const rangeWhere = core.buildHistoryRangeWhere({ start, end });
     const prisma = core.getSharedPrismaClient();
 
-    const rows = await prisma.orderStatusChangeRequest.findMany({
-      where: { companyId: String(companyId), createdAt: rangeWhere.createdAt },
-      include: {
-        order: { select: { orderNumber: true } },
-        fromStatus: { select: { name: true, code: true } },
-        toStatus: { select: { name: true, code: true } },
-        requestor: { select: { firstName: true, lastName: true } },
-        reviewer: { select: { firstName: true, lastName: true } }
-      },
-      orderBy: { createdAt: 'asc' },
-      take: 200
-    });
+    const where = { companyId: String(companyId), createdAt: rangeWhere.createdAt };
 
-    const totalOverrides = await prisma.orderWorkflowAuditLog.count({
-      where: { companyId: String(companyId), ...rangeWhere, changeType: 'override' }
-    });
+    const [rows, totalRequests, statusGroups, totalOverrides] = await Promise.all([
+      prisma.orderStatusChangeRequest.findMany({
+        where,
+        include: {
+          order: { select: { orderNumber: true } },
+          fromStatus: { select: { name: true, code: true } },
+          toStatus: { select: { name: true, code: true } },
+          requestor: { select: { firstName: true, lastName: true } },
+          reviewer: { select: { firstName: true, lastName: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 200
+      }),
+      prisma.orderStatusChangeRequest.count({ where }),
+      prisma.orderStatusChangeRequest.groupBy({ by: ['status'], where, _count: true }),
+      prisma.orderWorkflowAuditLog.count({
+        where: { companyId: String(companyId), ...rangeWhere, changeType: 'override' }
+      })
+    ]);
 
     const fullName = (person) => {
       if (!person) return '';
@@ -50,10 +55,10 @@ const handler = async (req, res) => {
     }));
 
     const reviewed = requests.filter((r) => r.reviewedAt);
-    const totalRequests = requests.length;
-    const pending = requests.filter((r) => r.status === 'pending').length;
-    const approved = requests.filter((r) => r.status === 'approved').length;
-    const rejected = requests.filter((r) => r.status === 'rejected').length;
+    const countByStatus = new Map(statusGroups.map((g) => [g.status, g._count]));
+    const pending = countByStatus.get('pending') || 0;
+    const approved = countByStatus.get('approved') || 0;
+    const rejected = countByStatus.get('rejected') || 0;
 
     const reviewHours = reviewed.map((r) => core.hoursBetween(r.createdAt, r.reviewedAt));
     const avgReviewHours = reviewHours.length ? Math.round(core.calcMean(reviewHours) * 100) / 100 : 0;

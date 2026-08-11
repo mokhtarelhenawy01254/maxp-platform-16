@@ -117,8 +117,7 @@ describe('orderMovement outcomesController', () => {
     expect(core.fetchOrderMovementData).toHaveBeenCalledWith({
       companyId: 'company-1',
       startDate: '2026-05-01',
-      endDate: '2026-05-31',
-      historyFilter: 'full'
+      endDate: '2026-05-31'
     });
 
     const outcomes = res.payload.data.outcomes;
