@@ -38,6 +38,9 @@ jest.mock("../OrderPreparationSettings", () => () => (
 jest.mock("../MinimumOrderSettings", () => () => (
   <div>Minimum Order Mock</div>
 ));
+jest.mock("../EasyWarehouseSettings", () => () => (
+  <div>Easy Warehouse Mock</div>
+));
 
 describe("OrderSettings", () => {
   it("does not list customer block settings inside the order settings tabs", async () => {

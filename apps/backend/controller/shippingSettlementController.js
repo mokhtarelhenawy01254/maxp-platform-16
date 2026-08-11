@@ -71,6 +71,7 @@ const getSummary = async (req, res) => {
         id: true,
         shippingCompanyId: true,
         status: true,
+        settlementStatus: true,
         order: { select: { total: true, status: true } }
       }
     });
@@ -197,6 +198,7 @@ const settle = async (req, res) => {
       return res.status(400).json({ success: false, message: 'حدد شركة الشحن أو قائمة الشحنات' });
     }
     where.settlementStatus = { not: 'SETTLED' };
+    where.order = { status: { in: ['DELIVERED', 'COMPLETED', 'REMITTED'] } };
 
     const result = await prisma.shipment.updateMany({
       where,
