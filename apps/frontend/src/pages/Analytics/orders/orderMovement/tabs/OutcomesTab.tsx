@@ -34,6 +34,7 @@ import {
   getStatusLabel,
   statusChartColor,
   type MovementFilterProps,
+  TruncatedNotice,
 } from "../orderMovementShared";
 
 interface OutcomesSummary {
@@ -64,6 +65,7 @@ interface ReasonRow {
 }
 
 interface OutcomesData {
+  truncated?: boolean;
   summary: OutcomesSummary;
   outcomes: OutcomeRow[];
   reasons: ReasonRow[];
@@ -127,6 +129,7 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
 
   return (
     <div className="space-y-6">
+      <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard
           label="إجمالي الطلبات"

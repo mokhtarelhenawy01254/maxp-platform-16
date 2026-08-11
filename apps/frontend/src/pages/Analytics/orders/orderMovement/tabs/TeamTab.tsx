@@ -25,7 +25,8 @@ import {
   formatCurrency,
   formatDuration,
   formatNumber,
-  type MovementFilterProps
+  type MovementFilterProps,
+  TruncatedNotice,
 } from "../orderMovementShared";
 
 interface TeamMember {
@@ -45,6 +46,7 @@ interface TeamMember {
 }
 
 interface TeamData {
+  truncated?: boolean;
   summary: {
     totalTransitions: number;
     manualTransitions: number;

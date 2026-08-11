@@ -25,6 +25,7 @@ import {
   getStatusLabel,
   statusChartColor,
   type MovementFilterProps,
+  TruncatedNotice,
 } from "../orderMovementShared";
 
 interface DwellStatusRow {
@@ -48,6 +49,7 @@ interface CycleTimeData {
 }
 
 interface DwellResponse {
+  truncated?: boolean;
   totalOrders: number;
   statuses: DwellStatusRow[];
   cycleTime: CycleTimeData;
@@ -99,6 +101,7 @@ export default function DwellTimeTab({ startDate, endDate, mode }: MovementFilte
 
   return (
     <div className="space-y-6">
+      <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           label="أبطأ حالة"
@@ -139,7 +142,7 @@ export default function DwellTimeTab({ startDate, endDate, mode }: MovementFilte
           <div className="space-y-4">
             {statuses.map((row) => {
               const width = maxAvg > 0 ? (row.avgHours / maxAvg) * 100 : 0;
-              const p90Pos = maxAvg > 0 ? (row.p90Hours / maxAvg) * 100 : 0;
+              const p90Pos = maxAvg > 0 ? Math.min(100, (row.p90Hours / maxAvg) * 100) : 0;
               const highP90 = row.p90Hours > 48;
               return (
                 <div key={row.status}>

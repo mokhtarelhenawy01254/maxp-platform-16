@@ -14,6 +14,7 @@ import {
   getStatusLabel,
   statusChartColor,
   type MovementFilterProps,
+  TruncatedNotice,
 } from "../orderMovementShared";
 
 interface SankeyNodeData {
@@ -31,6 +32,7 @@ interface SankeyLinkData {
 }
 
 interface SankeyData {
+  truncated?: boolean;
   totalTransitions: number;
   totalOrders: number;
   modes: { manual: number; auto: number };
@@ -83,7 +85,7 @@ function SankeyLinkComponent(props: any) {
         d={path}
         fill="none"
         stroke={color}
-        strokeOpacity={0.28 + (payload?.value ?? 1) * 0.0005}
+        strokeOpacity={Math.min(1, 0.28 + (payload?.value ?? 1) * 0.0005)}
         strokeWidth={Math.max(2, linkWidth)}
         strokeLinecap="round"
       />
@@ -151,6 +153,7 @@ export default function SankeyTab({ startDate, endDate, mode }: MovementFilterPr
 
   return (
     <div className="space-y-6">
+      <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="إجمالي الحركات" value={formatNumber(data.totalTransitions)} icon={GitBranch} hint={`من ${formatNumber(data.totalOrders)} طلب`} />
         <KpiCard label="حركات يدوية" value={formatNumber(data.modes.manual)} icon={MousePointerClick} gradient="from-sky-500 to-blue-600" hint={`${manualShare.toFixed(1)}%`} />

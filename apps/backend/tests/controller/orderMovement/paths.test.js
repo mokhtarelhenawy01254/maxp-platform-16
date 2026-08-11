@@ -132,6 +132,7 @@ describe('orderMovement pathsController', () => {
     expect(data.stats).toEqual({
       maxPathLength: 3,
       avgPathLength: 2.33,
+      avgPathHours: 48,
       successPathCount: 1,
       failedPathCount: 1,
       pendingPathCount: 1
@@ -166,7 +167,7 @@ describe('orderMovement pathsController', () => {
     expect(res.payload.data).toEqual({
       totalOrders: 0,
       uniquePaths: 0,
-      stats: { maxPathLength: 0, avgPathLength: 0, successPathCount: 0, failedPathCount: 0, pendingPathCount: 0 },
+      stats: { maxPathLength: 0, avgPathLength: 0, avgPathHours: 0, successPathCount: 0, failedPathCount: 0, pendingPathCount: 0 },
       topPaths: []
     });
   });

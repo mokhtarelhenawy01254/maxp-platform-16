@@ -10,7 +10,7 @@ const handler = async (req, res) => {
     const { startDate, endDate } = req.query;
     const mode = req.query.mode === 'manual' ? 'manual' : req.query.mode === 'auto' ? 'auto' : 'all';
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
-    const { orders } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
+    const { orders, truncated } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
 
     const pathMap = new Map();
     const hoursByOrder = [];
@@ -82,11 +82,13 @@ const handler = async (req, res) => {
     res.json({
       success: true,
       data: {
+        truncated,
         totalOrders,
         uniquePaths: pathMap.size,
         stats: {
           maxPathLength,
           avgPathLength: totalOrders ? Math.round((pathLengthSum / totalOrders) * 100) / 100 : 0,
+          avgPathHours: totalOrders ? Math.round(core.calcMean(hoursByOrder) * 100) / 100 : 0,
           successPathCount,
           failedPathCount,
           pendingPathCount: totalOrders - successPathCount - failedPathCount

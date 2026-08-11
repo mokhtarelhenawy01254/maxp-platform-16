@@ -76,6 +76,7 @@ const handler = async (req, res) => {
 
     const now = new Date();
     const rows = [];
+    const truncated = orders.length >= 50000;
 
     for (const order of orders) {
       if (core.TERMINAL_STATUSES.has(core.normalizeStatus(order.status))) continue;
@@ -129,6 +130,7 @@ const handler = async (req, res) => {
     res.json({
       success: true,
       data: {
+        truncated,
         summary: {
           totalAged: rows.length,
           oldestHours,

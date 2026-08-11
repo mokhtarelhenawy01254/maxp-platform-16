@@ -18,6 +18,7 @@ import {
   formatDuration,
   formatNumber,
   type MovementFilterProps,
+  TruncatedNotice,
 } from "../orderMovementShared";
 
 interface AgingBucket {
@@ -42,6 +43,7 @@ interface AgingOrder {
 }
 
 interface AgingData {
+  truncated?: boolean;
   summary: {
     totalAged: number;
     oldestHours: number;
@@ -87,6 +89,7 @@ export default function AgingTab({ startDate, endDate, mode }: MovementFilterPro
 
   return (
     <div className="space-y-6">
+      <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="إجمالي المعلّق"

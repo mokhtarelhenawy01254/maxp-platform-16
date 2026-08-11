@@ -24,6 +24,7 @@ import {
   formatDuration,
   formatDateTime,
   type MovementFilterProps,
+  TruncatedNotice,
 } from "../orderMovementShared";
 
 interface StatusInfo {
@@ -56,6 +57,7 @@ interface ReviewerRow {
 }
 
 interface ApprovalsData {
+  truncated?: boolean;
   summary: {
     totalRequests: number;
     pending: number;
@@ -121,6 +123,7 @@ export default function ApprovalsTab({ startDate, endDate, mode }: MovementFilte
 
   return (
     <div className="space-y-6">
+      <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-7">
         <KpiCard label="إجمالي الطلبات" value={formatNumber(summary.totalRequests)} icon={ClipboardCheck} />
         <KpiCard label="بانتظار الموافقة" value={formatNumber(summary.pending)} icon={Clock3} gradient="from-amber-500 to-orange-600" />

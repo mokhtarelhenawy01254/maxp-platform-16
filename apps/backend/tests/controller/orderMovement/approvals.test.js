@@ -128,7 +128,15 @@ describe('approvalsController', () => {
     ];
 
     const prisma = {
-      orderStatusChangeRequest: { findMany: jest.fn().mockResolvedValue(rows) },
+      orderStatusChangeRequest: {
+        findMany: jest.fn().mockResolvedValue(rows),
+        count: jest.fn().mockResolvedValue(4),
+        groupBy: jest.fn().mockResolvedValue([
+          { status: 'approved', _count: 2 },
+          { status: 'pending', _count: 1 },
+          { status: 'rejected', _count: 1 }
+        ])
+      },
       orderWorkflowAuditLog: { count: jest.fn().mockResolvedValue(3) }
     };
     core.getSharedPrismaClient.mockReturnValue(prisma);
@@ -200,7 +208,7 @@ describe('approvalsController', () => {
           requestor: { select: { firstName: true, lastName: true } },
           reviewer: { select: { firstName: true, lastName: true } }
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: 'desc' },
         take: 200
       })
     );
@@ -218,7 +226,7 @@ describe('approvalsController', () => {
 
   test('returns empty analytics when there are no requests or overrides', async () => {
     const prisma = {
-      orderStatusChangeRequest: { findMany: jest.fn().mockResolvedValue([]) },
+      orderStatusChangeRequest: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0), groupBy: jest.fn().mockResolvedValue([]) },
       orderWorkflowAuditLog: { count: jest.fn().mockResolvedValue(0) }
     };
     core.getSharedPrismaClient.mockReturnValue(prisma);
@@ -262,7 +270,7 @@ describe('approvalsController', () => {
 
   test('counts workflow overrides scoped to the company and range', async () => {
     const prisma = {
-      orderStatusChangeRequest: { findMany: jest.fn().mockResolvedValue([]) },
+      orderStatusChangeRequest: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0), groupBy: jest.fn().mockResolvedValue([]) },
       orderWorkflowAuditLog: { count: jest.fn().mockResolvedValue(7) }
     };
     core.getSharedPrismaClient.mockReturnValue(prisma);

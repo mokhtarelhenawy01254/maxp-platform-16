@@ -14,7 +14,7 @@ const handler = async (req, res) => {
 
     const { startDate, endDate, mode = 'all' } = req.query;
 
-    const { orders } = await core.fetchOrderMovementData({ companyId, startDate, endDate, historyFilter: 'full' });
+    const { orders, truncated } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
 
     const scoped = [];
     for (const order of orders) {
@@ -37,7 +37,7 @@ const handler = async (req, res) => {
     let auto = 0;
 
     for (const { order, last, lastAuto } of scoped) {
-      const status = core.normalizeStatus(order.status);
+      const status = core.normalizeStatus(last ? last.status : order.status);
       const total = Number(order.total ?? 0);
 
       const statusRow = statusMap.get(status) || { status, count: 0, revenue: 0 };
@@ -83,6 +83,7 @@ const handler = async (req, res) => {
     res.json({
       success: true,
       data: {
+        truncated,
         summary: {
           totalOrders,
           delivered,

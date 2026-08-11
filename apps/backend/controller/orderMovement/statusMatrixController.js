@@ -59,7 +59,7 @@ const handler = async (req, res) => {
 
     const { startDate, endDate, mode = 'all' } = req.query;
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
-    const { orders } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
+    const { orders, truncated } = await core.fetchOrderMovementData({ companyId, startDate, endDate });
 
     let transitions = [];
     for (const order of orders) {
@@ -72,6 +72,7 @@ const handler = async (req, res) => {
       return res.json({
         success: true,
         data: {
+        truncated,
           totalTransitions: 0,
           totalOrders: 0,
           forwardCount: 0,
@@ -152,6 +153,7 @@ const handler = async (req, res) => {
     res.json({
       success: true,
       data: {
+        truncated,
         totalTransitions: transitions.length,
         totalOrders: new Set(transitions.map((t) => t.orderId)).size,
         forwardCount: counts.forward,
