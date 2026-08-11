@@ -952,14 +952,5 @@
   "refreshOrders": "تحديث الطلبات",
   "lastUpdatedAt": "آخر تحديث: {{time}}",
   "liveUpdates": "مباشر — تحديث تلقائي مفعّل",
-  "offlineUpdates": "غير متصل — البيانات قد تكون قديمة",
-  "noAnswer": "لا رد",
-  "amountDue": "المستحق",
-  "shippingShort": "شحن",
-  "depositShort": "عربون",
-  "callAttemptsCount": "محاولات الاتصال",
-  "nextCallAfter": "اتصل بعد",
-  "callsLimitReached": "وصلت لأقصى محاولات الاتصال",
-  "postponeOrderQuick": "تأجيل سريع",
-  "postponeOrderDays": "{{days}} أيام"
+  "offlineUpdates": "غير متصل — البيانات قد تكون قديمة"
 }

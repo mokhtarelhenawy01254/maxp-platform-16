@@ -993,14 +993,5 @@
   "refreshOrders": "Refresh orders",
   "lastUpdatedAt": "Updated: {{time}}",
   "liveUpdates": "Live — auto updates enabled",
-  "offlineUpdates": "Offline — data may be stale",
-  "noAnswer": "No answer",
-  "amountDue": "Amount due",
-  "shippingShort": "shipping",
-  "depositShort": "deposit",
-  "callAttemptsCount": "Call attempts",
-  "nextCallAfter": "Call after",
-  "callsLimitReached": "Reached max call attempts",
-  "postponeOrderQuick": "Quick postpone",
-  "postponeOrderDays": "{{days}} days"
+  "offlineUpdates": "Offline — data may be stale"
 }
