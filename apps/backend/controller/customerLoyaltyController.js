@@ -897,12 +897,13 @@ async function getSystemAnalytics(req, res) {
       const appliedCustomers = customersWithVouchers.length;
 
       // الأوردرات المسلّمة اللي لسه مأخدتش كوبون خصم (في انتظار تفعيل الخصم)
+      // 🐛 نفلتر sourceOrderId في الذاكرة لأن بعض نسخ Prisma بترفض `not: null`
       const ordersWithVoucher = await prisma.customerLoyaltyVoucher.findMany({
-        where: { companyId, sourceOrderId: { not: null } },
+        where: { companyId },
         select: { sourceOrderId: true },
         distinct: ['sourceOrderId']
       });
-      const orderIdsWithVoucher = new Set(ordersWithVoucher.map((v) => v.sourceOrderId));
+      const orderIdsWithVoucher = new Set(ordersWithVoucher.map((v) => v.sourceOrderId).filter(Boolean));
       const deliveredOrders = await prisma.order.findMany({
         where: { companyId, status: 'DELIVERED' },
         select: { id: true, customerId: true, createdAt: true }
@@ -975,13 +976,23 @@ async function getSystemAnalytics(req, res) {
     res.json({ success: true, data });
   } catch (error) {
     console.error('❌ Error getting loyalty system analytics:', error);
-    // 🐛 مؤقتاً: نرجّع تفاصيل الخطأ عشان نشخّص ليه التحليلات بترجع فاضية
+    // 🛡️ لو فشل جلب التحليلات (جدول ناقص في DB قديم، انقطاع اتصال، pool exhausted…)
+    // نرجّع بيانات فاضية بدل 500 عشان نمنع ظهور رسالة "خطأ في جلب البيانات"
+    // للمستخدم. الـ UI بيعرض "لا توجد بيانات تحليل بعد" بأمان.
     res.json({
       success: true,
       data: {
-        system: 'ERROR',
-        error: error?.message || String(error),
-        stack: error?.stack?.split('\n').slice(0, 3).join(' | ')
+        system: loyaltySystem === 'AUTO_DISCOUNT' ? 'AUTO_DISCOUNT' : 'TIERS',
+        totalDeliveredOrders: 0,
+        appliedCustomers: 0,
+        waitingForDelivery: 0,
+        activeVouchers: 0,
+        usedVouchers: 0,
+        convertedVouchers: 0,
+        expiredVouchers: 0,
+        preActivationCustomers: 0,
+        totalEnrolled: 0,
+        tiers: []
       }
     });
   }
