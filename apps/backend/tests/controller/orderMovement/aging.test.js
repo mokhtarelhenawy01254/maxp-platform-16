@@ -15,6 +15,12 @@ jest.mock('../../../services/orderMovementCore', () => ({
       String(entry.changedBy || entry.userName || '').toUpperCase().includes(marker)
     )
   ),
+  buildHistoryRangeWhere: jest.fn(({ start, end }) => {
+    const where = { createdAt: {} };
+    if (start) where.createdAt.gte = start;
+    if (end) where.createdAt.lte = end;
+    return where;
+  }),
   TERMINAL_STATUSES: new Set([
     'DELIVERED', 'CANCELLED', 'RETURNED', 'PARTIALLY_RETURNED', 'REFUNDED',
     'PARTIALLY_REFUNDED', 'EXCHANGED', 'LOST', 'DUPLICATE_ORDER', 'TRASH',
@@ -25,6 +31,11 @@ jest.mock('../../../services/orderMovementCore', () => ({
 
 const core = require('../../../services/orderMovementCore');
 const router = require('../../../controller/orderMovement/agingController');
+
+let prismaMock;
+const mockOrders = (orders) => {
+  prismaMock.order.findMany.mockResolvedValue(orders);
+};
 
 const NOW = new Date('2026-06-30T00:00:00.000Z');
 
@@ -156,6 +167,8 @@ describe('orderMovement agingController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers({ now: NOW, doNotFake: ['setImmediate', 'nextTick'] });
+    prismaMock = { order: { findMany: jest.fn() } };
+    core.getSharedPrismaClient.mockReturnValue(prismaMock);
     core.buildTransitions.mockImplementation(fakeBuildTransitions);
     core.hoursBetween.mockImplementation(realHoursBetween);
   });
@@ -165,7 +178,7 @@ describe('orderMovement agingController', () => {
   });
 
   test('computes aged orders, buckets, summary and order rows', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: happyOrders, start: null, end: null });
+    mockOrders(happyOrders);
 
     const res = createResponse();
     await callRouter(
@@ -180,12 +193,17 @@ describe('orderMovement agingController', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.success).toBe(true);
-    expect(core.fetchOrderMovementData).toHaveBeenCalledWith({
-      companyId: 'company-1',
-      startDate: '2026-05-01',
-      endDate: '2026-05-31',
-      historyFilter: 'full'
-    });
+    expect(prismaMock.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          companyId: 'company-1',
+          status: { notIn: expect.any(Array) },
+          statusHistory: { some: expect.any(Object) }
+        }),
+        orderBy: { updatedAt: 'desc' },
+        take: 50000
+      })
+    );
 
     expect(res.payload.data.summary).toEqual({
       totalAged: 5,
@@ -231,7 +249,7 @@ describe('orderMovement agingController', () => {
   });
 
   test('returns empty aggregates when no orders match', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: [], start: null, end: null });
+    mockOrders([]);
 
     const res = createResponse();
     await callRouter({ user: { id: 'user-1', companyId: 'company-1' }, query: {} }, res);
@@ -260,11 +278,11 @@ describe('orderMovement agingController', () => {
 
     expect(res.statusCode).toBe(403);
     expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
-    expect(core.fetchOrderMovementData).not.toHaveBeenCalled();
+    expect(core.getSharedPrismaClient).not.toHaveBeenCalled();
   });
 
   test('filters out orders younger than the minAgeHours threshold', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: happyOrders, start: null, end: null });
+    mockOrders(happyOrders);
 
     const res = createResponse();
     await callRouter(
@@ -290,7 +308,7 @@ describe('orderMovement agingController', () => {
   });
 
   test('filters stuck orders by automatic last movement', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: modeOrders, start: null, end: null });
+    mockOrders(modeOrders);
 
     const res = createResponse();
     await callRouter(
@@ -309,7 +327,7 @@ describe('orderMovement agingController', () => {
   });
 
   test('filters stuck orders by manual last movement', async () => {
-    core.fetchOrderMovementData.mockResolvedValue({ orders: modeOrders, start: null, end: null });
+    mockOrders(modeOrders);
 
     const res = createResponse();
     await callRouter(
@@ -338,7 +356,7 @@ describe('orderMovement agingController', () => {
         ])
       );
     }
-    core.fetchOrderMovementData.mockResolvedValue({ orders: manyOrders, start: null, end: null });
+    mockOrders(manyOrders);
 
     const res = createResponse();
     await callRouter(

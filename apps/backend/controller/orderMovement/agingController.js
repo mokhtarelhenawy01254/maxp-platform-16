@@ -1,12 +1,4 @@
-
 const core = require('../../services/orderMovementCore');
-
-const filterByMode = (transitions, mode) =>
-  mode === 'manual'
-    ? transitions.filter((t) => !t.auto)
-    : mode === 'auto'
-      ? transitions.filter((t) => t.auto)
-      : transitions;
 
 const BUCKETS = [
   { key: '<1d', label: 'أقل من يوم', max: 24 },
@@ -21,6 +13,13 @@ const bucketKeyFor = (ageHours) => {
   return bucket ? bucket.key : BUCKETS[BUCKETS.length - 1].key;
 };
 
+const filterByMode = (transitions, mode) =>
+  mode === 'manual'
+    ? transitions.filter((t) => !t.auto)
+    : mode === 'auto'
+      ? transitions.filter((t) => t.auto)
+      : transitions;
+
 const round2 = (n) => Math.round(n * 100) / 100;
 
 const handler = async (req, res) => {
@@ -30,7 +29,8 @@ const handler = async (req, res) => {
       return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
 
-    const { startDate, endDate, mode } = req.query;
+    const { startDate, endDate } = req.query;
+    const mode = req.query.mode === 'manual' ? 'manual' : req.query.mode === 'auto' ? 'auto' : 'all';
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
 
     const rawMin = req.query.minAgeHours;
@@ -39,17 +39,47 @@ const handler = async (req, res) => {
         ? Math.max(0, Number(rawMin))
         : 24;
 
-    const { orders = [] } = await core.fetchOrderMovementData({
-      companyId,
-      startDate,
-      endDate,
-      historyFilter: 'full'
+    const prisma = core.getSharedPrismaClient();
+    const rangeWhere = core.buildHistoryRangeWhere({ start, end });
+
+    const orders = await prisma.order.findMany({
+      where: {
+        companyId,
+        status: { notIn: [...core.TERMINAL_STATUSES] },
+        statusHistory: { some: rangeWhere }
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 50000,
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        total: true,
+        createdAt: true,
+        updatedAt: true,
+        customerName: true,
+        governorate: true,
+        statusHistory: {
+          orderBy: { createdAt: 'asc' },
+          take: 60,
+          select: {
+            status: true,
+            oldStatus: true,
+            changedBy: true,
+            userName: true,
+            reason: true,
+            createdAt: true
+          }
+        }
+      }
     });
 
     const now = new Date();
     const rows = [];
 
     for (const order of orders) {
+      if (core.TERMINAL_STATUSES.has(core.normalizeStatus(order.status))) continue;
+
       const transitions = filterByMode(core.buildTransitions(order, { filterRange: false }), mode);
       if (!transitions.length) continue;
 
@@ -60,9 +90,6 @@ const handler = async (req, res) => {
         return true;
       });
       if (!hasMovementInRange) continue;
-
-      const currentStatus = core.normalizeStatus(order.status);
-      if (core.TERMINAL_STATUSES.has(currentStatus)) continue;
 
       const last = transitions[transitions.length - 1];
       const ageHours = core.hoursBetween(last.createdAt, now);
