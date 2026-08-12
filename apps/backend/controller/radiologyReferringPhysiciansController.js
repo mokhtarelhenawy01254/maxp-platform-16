@@ -134,7 +134,7 @@ const physicianCommissions = async (req, res) => {
     }
     if (physicianId) where.referringPhysicianId = String(physicianId);
 
-    const studies = await prisma.radiologyStudy.findMany({ where, select: { referringPhysicianId: true, examTypeId: true, additionAmount: true, examTypeName: true } });
+    const studies = await prisma.radiologyStudy.findMany({ where, select: { referringPhysicianId: true, examTypeId: true, additionAmount: true, priceSnapshot: true, examTypeName: true } });
     const examTypePrices = new Map();
     const examTypes = await prisma.radiologyExamType.findMany({ where: { companyId }, select: { id: true, price: true } });
     examTypes.forEach(et => examTypePrices.set(et.id, et.price));
@@ -142,7 +142,9 @@ const physicianCommissions = async (req, res) => {
     const byPhysician = new Map();
     for (const s of studies) {
       if (!s.referringPhysicianId) continue;
-      const base = examTypePrices.get(s.examTypeId || '') || 0;
+      const base = Number.isFinite(s.priceSnapshot) && s.priceSnapshot > 0
+        ? s.priceSnapshot
+        : (examTypePrices.get(s.examTypeId || '') || 0);
       const amount = base + (s.additionAmount || 0);
       const row = byPhysician.get(s.referringPhysicianId) || { physicianId: s.referringPhysicianId, name: '', count: 0, amount: 0, commission: 0 };
       row.count += 1;

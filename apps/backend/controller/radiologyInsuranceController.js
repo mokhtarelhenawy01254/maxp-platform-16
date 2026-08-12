@@ -37,21 +37,30 @@ const applyDateFilter = (where, dateFrom, dateTo) => {
 };
 
 const resolveStudyAmounts = async (prisma, companyId, studies) => {
-  const examTypeIds = [...new Set(studies.map(s => s.examTypeId).filter(Boolean))];
+  const fallbackIds = [...new Set(
+    studies.filter((s) => !Number.isFinite(s.priceSnapshot) || s.priceSnapshot <= 0)
+      .map((s) => s.examTypeId).filter(Boolean)
+  )];
   let priceMap = new Map();
-  if (examTypeIds.length) {
+  if (fallbackIds.length) {
     const examTypes = await prisma.radiologyExamType.findMany({
-      where: { id: { in: examTypeIds }, companyId },
+      where: { id: { in: fallbackIds }, companyId },
       select: { id: true, price: true },
     });
-    priceMap = new Map(examTypes.map(e => [e.id, e.price]));
+    priceMap = new Map(examTypes.map((e) => [e.id, e.price]));
   }
-  return studies.map(study => ({
-    studyId: study.id,
-    patientName: study.patientName,
-    examTypeName: study.examTypeName || null,
-    amount: Number.isFinite(priceMap.get(study.examTypeId)) ? priceMap.get(study.examTypeId) : 0,
-  }));
+  return studies.map((study) => {
+    const snapshot = Number.isFinite(study.priceSnapshot) && study.priceSnapshot > 0
+      ? study.priceSnapshot
+      : (Number.isFinite(priceMap.get(study.examTypeId)) ? priceMap.get(study.examTypeId) : 0);
+    const additions = Number.isFinite(study.additionAmount) ? study.additionAmount : 0;
+    return {
+      studyId: study.id,
+      patientName: study.patientName,
+      examTypeName: study.examTypeName || null,
+      amount: snapshot + additions,
+    };
+  });
 };
 
 const assignStudyInsurance = async (req, res) => {
@@ -136,7 +145,7 @@ const createInvoice = async (req, res) => {
 
     const studies = await prisma.radiologyStudy.findMany({
       where,
-      select: { id: true, patientName: true, examTypeId: true, examTypeName: true },
+      select: { id: true, patientName: true, examTypeId: true, examTypeName: true, priceSnapshot: true, additionAmount: true },
     });
     if (!studies.length) return res.status(400).json({ success: false, error: 'لا توجد دراسات لإنشاء الفاتورة' });
 
