@@ -3644,15 +3644,7 @@
       "orderStatus": {
         "completed": "Completed",
         "pending": "Pending",
-        "cancelled": "Cancelled",
-        "paymentPending": "Pending",
-        "paymentCompleted": "Paid",
-        "paymentPartiallyPaid": "Partially Paid",
-        "paymentFailed": "Failed",
-        "paymentOnHold": "On Hold",
-        "paymentRefunded": "Refunded",
-        "paymentPartiallyRefunded": "Partially Refunded",
-        "paymentNotSpecified": "Not Specified"
+        "cancelled": "Cancelled"
       },
       "tags": "Tags",
       "notes": "Notes",
@@ -14183,6 +14175,7 @@
     "customerStatusInactive": "Inactive Customer",
     "customerStatusLead": "Potential Customer",
     "customerLoyalty": "Customer Loyalty",
+    "customerLoyaltySettings": "Loyalty Settings",
     "customerPointsCenter": "Customer Points Center",
     "customerSegments": "Segmentation Hub",
     "customerLists": "Customer Lists",

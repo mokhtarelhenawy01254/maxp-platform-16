@@ -3644,15 +3644,7 @@
       "orderStatus": {
         "completed": "مكتمل",
         "pending": "معلق",
-        "cancelled": "ملغي",
-        "paymentPending": "قيد الانتظار",
-        "paymentCompleted": "تم الدفع",
-        "paymentPartiallyPaid": "مدفوع جزئياً",
-        "paymentFailed": "فشل الدفع",
-        "paymentOnHold": "معلق الدفع",
-        "paymentRefunded": "مسترد",
-        "paymentPartiallyRefunded": "مسترد جزئياً",
-        "paymentNotSpecified": "غير محدد"
+        "cancelled": "ملغي"
       },
       "tags": "التصنيفات",
       "notes": "ملاحظات",
@@ -14184,6 +14176,7 @@
     "customerStatusInactive": "عميل غير نشط",
     "customerStatusLead": "عميل محتمل",
     "customerLoyalty": "ولاء العملاء",
+    "customerLoyaltySettings": "إعدادات",
     "customerPointsCenter": "مركز نقاط العملاء",
     "customerSegments": "مركز التقسيم",
     "customerLists": "قوائم العملاء",
