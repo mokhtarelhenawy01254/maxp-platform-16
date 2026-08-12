@@ -4,6 +4,9 @@ import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { config } from "../../config";
 import { apiClient } from "../../services/apiClient";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../components/common/PeriodSelector";
 import {
   ChartBarIcon,
   ShoppingBagIcon,
@@ -31,75 +34,30 @@ interface OrderStats {
   }>;
 }
 
-type DateRange = "all" | "today" | "week" | "month" | "year" | "custom";
-
 const OrderStats: React.FC = () => {
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>("all");
-  const [customDateFrom, setCustomDateFrom] = useState<string>("");
-  const [customDateTo, setCustomDateTo] = useState<string>("");
+  const [range, setRange] = useState<PeriodRange | null>(null);
+  const [allTime, setAllTime] = useState(true);
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
 
   useEffect(() => {
     fetchStats();
-  }, [dateRange, customDateFrom, customDateTo]);
-
-  const getDateRange = (
-    range: DateRange,
-  ): { dateFrom: string | null; dateTo: string | null } => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    switch (range) {
-      case "today":
-        return {
-          dateFrom: today.toISOString().split("T")[0],
-          dateTo: today.toISOString().split("T")[0],
-        };
-      case "week":
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - 7);
-        return {
-          dateFrom: weekStart.toISOString().split("T")[0],
-          dateTo: today.toISOString().split("T")[0],
-        };
-      case "month":
-        const monthStart = new Date(today);
-        monthStart.setDate(1);
-        return {
-          dateFrom: monthStart.toISOString().split("T")[0],
-          dateTo: today.toISOString().split("T")[0],
-        };
-      case "year":
-        const yearStart = new Date(today);
-        yearStart.setMonth(0, 1);
-        return {
-          dateFrom: yearStart.toISOString().split("T")[0],
-          dateTo: today.toISOString().split("T")[0],
-        };
-      case "custom":
-        return {
-          dateFrom: customDateFrom || null,
-          dateTo: customDateTo || null,
-        };
-      default:
-        return { dateFrom: null, dateTo: null };
-    }
-  };
+  }, [range, allTime]);
 
   const fetchStats = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const { dateFrom, dateTo } = getDateRange(dateRange);
       const params: any = {};
 
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo) params.dateTo = dateTo;
+      if (!allTime && range) {
+        params.dateFrom = range.startDate;
+        params.dateTo = range.endDate;
+      }
 
       const response = await apiClient.get("/orders-enhanced/stats", {
         params,
@@ -229,75 +187,29 @@ const OrderStats: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Preset Date Range Buttons */}
-            {(["all", "today", "week", "month", "year"] as DateRange[]).map(
-              (range) => (
-                <button
-                  key={range}
-                  onClick={() => {
-                    setDateRange(range);
-                    if (range !== "custom") {
-                      setCustomDateFrom("");
-                      setCustomDateTo("");
-                    }
-                  }}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    dateRange === range
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  {range === "all" && t("orderStats.all")}
-                  {range === "today" && t("orderStats.today")}
-                  {range === "week" && t("orderStats.last7Days")}
-                  {range === "month" && t("orderStats.thisMonth")}
-                  {range === "year" && t("orderStats.thisYear")}
-                </button>
-              ),
-            )}
-
-            {/* Custom Date Range Button */}
+            {/* All-time toggle */}
             <button
-              onClick={() => setDateRange("custom")}
+              onClick={() => {
+                setAllTime(true);
+                setRange(null);
+              }}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                dateRange === "custom"
+                allTime
                   ? "bg-indigo-600 text-white"
                   : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
               }`}
             >
-              {t("orderStats.customPeriod")}
+              {t("orderStats.all")}
             </button>
+
+            <PeriodSelector
+              onRangeChange={(next) => {
+                setRange(next);
+                setAllTime(false);
+              }}
+            />
           </div>
         </div>
-
-        {/* Custom Date Range Inputs */}
-        {dateRange === "custom" && (
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t("orderStats.fromDate")}
-              </label>
-              <input
-                type="date"
-                value={customDateFrom}
-                onChange={(e) => setCustomDateFrom(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t("orderStats.toDate")}
-              </label>
-              <input
-                type="date"
-                value={customDateTo}
-                onChange={(e) => setCustomDateTo(e.target.value)}
-                max={new Date().toISOString().split("T")[0]}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Stats Cards */}
