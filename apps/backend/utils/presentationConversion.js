@@ -129,7 +129,8 @@ async function resolveConvertedProductRedirect(prisma, companyId, slugOrId) {
     return null;
   }
 
-  return `/products/${resolved.targetProduct.slug}`;
+  // مسار API مطلق — الـ fetch اللي بيتبع الـ redirect يوصل لـ JSON مش HTML
+  return `/api/v1/public/products/${resolved.targetProduct.slug}`;
 }
 
 async function resolveConvertedPresentationRedirect(prisma, companyId, slugOrId) {
@@ -138,7 +139,7 @@ async function resolveConvertedPresentationRedirect(prisma, companyId, slugOrId)
     return null;
   }
 
-  return `/products/${resolved.targetProduct.slug}/${resolved.presentation.slug}`;
+  return `/api/v1/public/products/${resolved.targetProduct.slug}/${resolved.presentation.slug}`;
 }
 
 module.exports = {

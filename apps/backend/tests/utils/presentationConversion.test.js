@@ -140,7 +140,7 @@ describe('presentationConversion resolveConvertedPresentationRedirect', () => {
 
     const result = await resolveConvertedPresentationRedirect(prisma, 'company-1', 'old-slug');
 
-    expect(result).toBe('/products/tgt-slug/pres-slug');
+    expect(result).toBe('/api/v1/public/products/tgt-slug/pres-slug');
   });
 
   test('matches the convertedFromSku directly when the slug is a legacy SKU', async () => {
@@ -158,7 +158,7 @@ describe('presentationConversion resolveConvertedPresentationRedirect', () => {
 
     const result = await resolveConvertedPresentationRedirect(prisma, 'company-1', 'sw33-1');
 
-    expect(result).toBe('/products/tgt-2-slug/p2');
+    expect(result).toBe('/api/v1/public/products/tgt-2-slug/p2');
   });
 
   test('returns null when the target product is gone or deleted', async () => {
@@ -208,7 +208,7 @@ describe('presentationConversion resolveConvertedProductRedirect', () => {
 
     const result = await resolveConvertedProductRedirect(prisma, 'company-1', 'old-slug');
 
-    expect(result).toBe('/products/tgt-slug');
+    expect(result).toBe('/api/v1/public/products/tgt-slug');
   });
 
   test('returns null when nothing was converted', async () => {
