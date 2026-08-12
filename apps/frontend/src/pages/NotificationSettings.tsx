@@ -190,6 +190,14 @@ const createNormalizedSettings = ({
             : 100,
         pattern: rawSettings?.channels?.sound?.pattern || "cash",
       },
+      incompleteSound: {
+        enabled: rawSettings?.channels?.incompleteSound?.enabled ?? true,
+        volume:
+          typeof rawSettings?.channels?.incompleteSound?.volume === "number"
+            ? rawSettings.channels.incompleteSound.volume
+            : 100,
+        pattern: rawSettings?.channels?.incompleteSound?.pattern || "coins",
+      },
     },
     typeSettings: baseTypeSettings,
   };

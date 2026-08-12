@@ -266,6 +266,11 @@ const buildDefaultSettings = ({
       volume: 100,
       pattern: "cash",
     },
+    incompleteSound: {
+      enabled: true,
+      volume: 100,
+      pattern: "coins",
+    },
   },
   typeSettings: buildDefaultTypeSettings(),
 });
@@ -325,6 +330,10 @@ const mergeSettingsWithDefaults = (incomingSettings = {}, defaults) => {
       sound: {
         ...defaults.channels.sound,
         ...(incomingSettings.channels?.sound || {}),
+      },
+      incompleteSound: {
+        ...defaults.channels.incompleteSound,
+        ...(incomingSettings.channels?.incompleteSound || {}),
       },
     },
     typeSettings: nextTypeSettings,

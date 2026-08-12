@@ -164,6 +164,25 @@ router.post('/checkout-draft', async (req, res) => {
       } catch (triggerError) {
         console.warn('⚠️ [PUBLIC-ORDERS] Incomplete cart messaging trigger failed:', triggerError.message);
       }
+
+      // 📡 بث إيفنت لحظي لتنبيه إدارة المتجر بطلب غير مكتمل جديد (يعمل صوت + إشعار)
+      try {
+        if (socketService && socketService.getIO()) {
+          const cartItems = coerceCartItemsToArray(savedCart.items);
+          socketService.getIO().to(`company_${companyId}`).emit('order:incomplete:new', {
+            cartId: savedCart.cartId,
+            companyId,
+            customerName: checkoutData?.customerName || '',
+            customerPhone: checkoutData?.phone || '',
+            total: Number(savedCart.total || 0),
+            itemCount: Array.isArray(cartItems) ? cartItems.length : 0,
+            createdAt: new Date(),
+          });
+          console.log(`📡 [SOCKET] Emitted order:incomplete:new for cart ${savedCart.cartId}`);
+        }
+      } catch (socketError) {
+        console.warn('⚠️ [PUBLIC-ORDERS] Failed to emit incomplete-cart socket event:', socketError.message);
+      }
     }
 
     if (typeof res.cookie === 'function') {

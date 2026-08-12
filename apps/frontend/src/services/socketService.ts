@@ -67,6 +67,7 @@ interface SocketEvents {
   }) => void;
   turbo_shipment_update: (data: any) => void;
   "order:updated": (data: any) => void;
+  "order:incomplete:new": (data: any) => void;
   "campaign:progress": (data: any) => void;
   // WhatsApp real-time events
   "whatsapp:qr": (data: { sessionId: string; qr: string; companyId?: string; refreshed?: boolean }) => void;

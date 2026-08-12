@@ -20,13 +20,17 @@ import {
 } from "../../utils/browserNotifications";
 import {
   cacheNotificationSettings,
+  getIncompleteOrderSoundPattern,
+  getIncompleteOrderSoundVolume,
   getOrderSoundVolume,
   isQuietHoursActive,
   readCachedNotificationSettings,
+  shouldPlayIncompleteOrderSound,
   shouldPlayOrderSound,
   shouldShowBrowserNotificationForType,
   type NotificationSettingsData,
 } from "../../utils/notificationSettings";
+import type { OrderSoundPattern } from "../../services/orderSoundPatterns";
 
 export interface NotificationItem {
   id: string;
@@ -81,6 +85,16 @@ interface OrderCreatedEventPayload {
   };
 }
 
+interface IncompleteOrderEventPayload {
+  cartId?: string;
+  companyId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  total?: number;
+  itemCount?: number;
+  createdAt?: string | Date;
+}
+
 const normalizeNotificationItem = (
   notification: RealtimeNotificationPayload,
 ): NotificationItem => ({
@@ -121,6 +135,30 @@ const buildOrderNotificationItem = (
       kind: "order_created",
       orderId: order.id,
       orderNumber,
+    },
+  };
+};
+
+const buildIncompleteOrderNotificationItem = (
+  cart: IncompleteOrderEventPayload,
+): NotificationItem => {
+  const customerName = cart.customerName || "عميل";
+  const amount = typeof cart.total === "number" ? cart.total : null;
+  const itemCount = cart.itemCount || 0;
+
+  return {
+    id: `incomplete-${cart.cartId || Date.now()}`,
+    type: "warning",
+    title: "طلب غير مكتمل",
+    message:
+      amount && amount > 0
+        ? `${customerName} • ${amount} ج.م (${itemCount} منتج)`
+        : `${customerName} بدأ طلب ولم يكمله`,
+    timestamp: new Date(cart.createdAt || new Date()),
+    isRead: false,
+    metadata: {
+      kind: "order_incomplete",
+      cartId: cart.cartId,
     },
   };
 };
@@ -355,6 +393,47 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
     socketService.on("notification:new", handleNewNotification);
     socketService.on("order:created", handleNewOrder);
+
+    const handleNewIncompleteOrder = (cart: IncompleteOrderEventPayload) => {
+      const incompleteItem = buildIncompleteOrderNotificationItem(cart);
+
+      setNotifications((prev) => {
+        const deduped = prev.filter((n) => n.id !== incompleteItem.id);
+        return [incompleteItem, ...deduped];
+      });
+
+      window.dispatchEvent(
+        new CustomEvent("show-toast", {
+          detail: {
+            message: incompleteItem.title,
+            type: "warning",
+          },
+        }),
+      );
+
+      // 🔊 صوت مخصص للطلب غير المكتمل (لو مفعل في الإعدادات)
+      const currentPreferences = notificationPreferencesRef.current;
+      if (!shouldPlayIncompleteOrderSound(currentPreferences)) {
+        return;
+      }
+
+      try {
+        socketService.playOrderAlarm({
+          volume: getIncompleteOrderSoundVolume(currentPreferences),
+          pattern: getIncompleteOrderSoundPattern(
+            currentPreferences,
+          ) as OrderSoundPattern,
+          durationMs: 3500,
+        });
+      } catch (soundError) {
+        console.error(
+          "❌ [SOUND] Error playing incomplete-order sound:",
+          soundError,
+        );
+      }
+    };
+    socketService.on("order:incomplete:new", handleNewIncompleteOrder);
+
     window.addEventListener(
       "notification-settings:updated",
       handleSettingsUpdated,
@@ -363,6 +442,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     return () => {
       socketService.off("notification:new", handleNewNotification);
       socketService.off("order:created", handleNewOrder);
+      socketService.off("order:incomplete:new", handleNewIncompleteOrder);
       window.removeEventListener(
         "notification-settings:updated",
         handleSettingsUpdated,

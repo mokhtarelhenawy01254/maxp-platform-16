@@ -62,6 +62,11 @@ const createLocalSettings = (
       volume: 100,
       pattern: "cash",
     },
+    incompleteSound: raw?.channels?.incompleteSound || {
+      enabled: true,
+      volume: 100,
+      pattern: "coins",
+    },
   },
   typeSettings: raw?.typeSettings || {},
 });
@@ -125,6 +130,24 @@ const OrderSoundSettings: React.FC = () => {
     setFeedback(null);
   };
 
+  const updateIncompleteSound = (
+    path: "enabled" | "volume" | "pattern",
+    value: unknown,
+  ) => {
+    setSettings((previous) => {
+      if (!previous) {
+        return previous;
+      }
+      const next = JSON.parse(JSON.stringify(previous)) as NotificationSettingsData;
+      next.channels.incompleteSound = {
+        ...next.channels.incompleteSound,
+        [path]: value,
+      };
+      return next;
+    });
+    setFeedback(null);
+  };
+
   const handleSave = async () => {
     if (!settings || !userId) {
       return;
@@ -170,148 +193,232 @@ const OrderSoundSettings: React.FC = () => {
     pattern: "cash",
   };
 
-  return (
-    <div className="rounded-2xl border border-amber-200 bg-white p-6 dark:border-amber-900/40 dark:bg-gray-800">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start">
-          <Volume2 className="ml-3 h-6 w-6 text-amber-600 dark:text-amber-400" />
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              صوت الطلبات (إنذار عالي)
-            </h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              صفّارة عالية تُطلق تلقائياً بمجرد وصول أي طلب جديد من المتجر
-              لتنبيه الموظفين في المكان — وليس مجرد إشعار صامت.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => updateSound("enabled", !sound.enabled)}
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
-            sound.enabled ? "bg-amber-600" : "bg-gray-300 dark:bg-gray-600"
+  const incompleteSound = settings?.channels.incompleteSound || {
+    enabled: true,
+    volume: 100,
+    pattern: "coins",
+  };
+
+  const renderSaveBar = () => (
+    <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4 dark:border-gray-700">
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving}
+        className="inline-flex items-center rounded-lg bg-amber-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {saved ? (
+          <Check className="ml-2 h-4 w-4" />
+        ) : (
+          <Save className="ml-2 h-4 w-4" />
+        )}
+        {saved ? "تم الحفظ" : saving ? "جاري الحفظ..." : "حفظ الإعدادات"}
+      </button>
+
+      {feedback ? (
+        <span
+          className={`text-sm ${
+            feedback.type === "error"
+              ? "text-red-600 dark:text-red-400"
+              : "text-green-600 dark:text-green-400"
           }`}
-          aria-pressed={sound.enabled}
-          aria-label="تفعيل صوت الطلبات"
         >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-              sound.enabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0.5 rtl:-translate-x-0.5"
-            }`}
-          />
-        </button>
-      </div>
+          {feedback.message}
+        </span>
+      ) : null}
+    </div>
+  );
 
-      {sound.enabled ? (
-        <div className="mt-5 space-y-4 border-t border-amber-100 pt-4 dark:border-amber-900/20">
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                مستوى الصوت
-              </span>
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                {sound.volume}%
-              </span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={sound.volume}
-              onChange={(event) =>
-                updateSound("volume", Number(event.target.value))
-              }
-              className="w-full accent-amber-600"
-              aria-label="مستوى صوت الطلبات"
-            />
-          </div>
+  const renderSoundBody = (
+    current: { enabled: boolean; volume: number; pattern: string },
+    onUpdate: (path: "enabled" | "volume" | "pattern", value: unknown) => void,
+    accent: "amber" | "teal",
+  ) => {
+    const accentClass = {
+      amber: {
+        icon: "text-amber-600 dark:text-amber-400",
+        range: "accent-amber-600",
+        selected:
+          "border-amber-500 bg-amber-50 text-amber-900 dark:border-amber-400 dark:bg-amber-950/40 dark:text-amber-100",
+        hover:
+          "hover:border-amber-300 hover:bg-amber-50/50 dark:hover:border-amber-800",
+        borderTop: "border-amber-100 dark:border-amber-900/20",
+        button:
+          "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-900/40",
+      },
+      teal: {
+        icon: "text-teal-600 dark:text-teal-400",
+        range: "accent-teal-600",
+        selected:
+          "border-teal-500 bg-teal-50 text-teal-900 dark:border-teal-400 dark:bg-teal-950/40 dark:text-teal-100",
+        hover: "hover:border-teal-300 hover:bg-teal-50/50 dark:hover:border-teal-800",
+        borderTop: "border-teal-100 dark:border-teal-900/20",
+        button:
+          "border-teal-300 bg-teal-50 text-teal-800 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-100 dark:hover:bg-teal-900/40",
+      },
+    }[accent];
 
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <BellRing className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                النغمة
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {ORDER_SOUND_PATTERNS.map((pattern) => {
-                const isSelected = sound.pattern === pattern.id;
-                return (
-                  <button
-                    key={pattern.id}
-                    type="button"
-                    onClick={() =>
-                      updateSound("pattern", pattern.id as OrderSoundPattern)
-                    }
-                    className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm transition ${
-                      isSelected
-                        ? "border-amber-500 bg-amber-50 text-amber-900 dark:border-amber-400 dark:bg-amber-950/40 dark:text-amber-100"
-                        : "border-gray-200 bg-white text-gray-700 hover:border-amber-300 hover:bg-amber-50/50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-amber-800"
-                    }`}
-                  >
-                    <span className="flex flex-col items-start">
-                      <span className="font-medium">{pattern.label}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {pattern.description}
-                      </span>
-                    </span>
-                    {isSelected ? (
-                      <Check className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                socketService.testOrderSound(
-                  (sound.volume ?? 100) / 100,
-                  (sound.pattern || "cash") as OrderSoundPattern,
-                );
-              }}
-              className="inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-900/40"
-            >
-              <Play className="ml-2 h-4 w-4" />
-              تجربة الصوت
-            </button>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              اضغط للاستماع إلى النغمة المختارة قبل الحفظ.
+    return (
+      <div className={`mt-5 space-y-4 border-t pt-4 ${accentClass.borderTop}`}>
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              مستوى الصوت
+            </span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">
+              {current.volume}%
             </span>
           </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={current.volume}
+            onChange={(event) =>
+              onUpdate("volume", Number(event.target.value))
+            }
+            className={`w-full ${accentClass.range}`}
+            aria-label="مستوى الصوت"
+          />
         </div>
-      ) : null}
 
-      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="inline-flex items-center rounded-lg bg-amber-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saved ? (
-            <Check className="ml-2 h-4 w-4" />
-          ) : (
-            <Save className="ml-2 h-4 w-4" />
-          )}
-          {saved ? "تم الحفظ" : saving ? "جاري الحفظ..." : "حفظ الإعدادات"}
-        </button>
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <BellRing className={`h-4 w-4 ${accentClass.icon}`} />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              النغمة
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {ORDER_SOUND_PATTERNS.map((pattern) => {
+              const isSelected = current.pattern === pattern.id;
+              return (
+                <button
+                  key={pattern.id}
+                  type="button"
+                  onClick={() =>
+                    onUpdate("pattern", pattern.id as OrderSoundPattern)
+                  }
+                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm transition ${
+                    isSelected
+                      ? accentClass.selected
+                      : `border-gray-200 bg-white text-gray-700 ${accentClass.hover} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300`
+                  }`}
+                >
+                  <span className="flex flex-col items-start">
+                    <span className="font-medium">{pattern.label}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {pattern.description}
+                    </span>
+                  </span>
+                  {isSelected ? (
+                    <Check
+                      className={`h-5 w-5 shrink-0 ${accentClass.icon}`}
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        {feedback ? (
-          <span
-            className={`text-sm ${
-              feedback.type === "error"
-                ? "text-red-600 dark:text-red-400"
-                : "text-green-600 dark:text-green-400"
-            }`}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              socketService.testOrderSound(
+                (current.volume ?? 100) / 100,
+                (current.pattern || "cash") as OrderSoundPattern,
+              );
+            }}
+            className={`inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition ${accentClass.button}`}
           >
-            {feedback.message}
+            <Play className="ml-2 h-4 w-4" />
+            تجربة الصوت
+          </button>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            اضغط للاستماع إلى النغمة المختارة قبل الحفظ.
           </span>
-        ) : null}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-amber-200 bg-white p-6 dark:border-amber-900/40 dark:bg-gray-800">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start">
+            <Volume2 className="ml-3 h-6 w-6 text-amber-600 dark:text-amber-400" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                صوت الطلبات (إنذار عالي)
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                صفّارة عالية تُطلق تلقائياً بمجرد وصول أي طلب جديد من المتجر
+                لتنبيه الموظفين في المكان — وليس مجرد إشعار صامت.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => updateSound("enabled", !sound.enabled)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+              sound.enabled ? "bg-amber-600" : "bg-gray-300 dark:bg-gray-600"
+            }`}
+            aria-pressed={sound.enabled}
+            aria-label="تفعيل صوت الطلبات"
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                sound.enabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0.5 rtl:-translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
+
+        {sound.enabled ? renderSoundBody(sound, updateSound, "amber") : null}
+
+        {renderSaveBar()}
+      </div>
+
+      <div className="rounded-2xl border border-teal-200 bg-white p-6 dark:border-teal-900/40 dark:bg-gray-800">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start">
+            <BellRing className="ml-3 h-6 w-6 text-teal-600 dark:text-teal-400" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                صوت الطلبات غير المكتملة
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                صوت هادئ يشغّل تلقائياً لما عميل يبدأ طلب في المتجر ويسيب بياناته
+                من غير ما يكمّل (سلة ناقصة) — لتنبيه فريق المتابعة بسرعة.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => updateIncompleteSound("enabled", !incompleteSound.enabled)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+              incompleteSound.enabled ? "bg-teal-600" : "bg-gray-300 dark:bg-gray-600"
+            }`}
+            aria-pressed={incompleteSound.enabled}
+            aria-label="تفعيل صوت الطلبات غير المكتملة"
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                incompleteSound.enabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0.5 rtl:-translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
+
+        {incompleteSound.enabled
+          ? renderSoundBody(incompleteSound, updateIncompleteSound, "teal")
+          : null}
+
+        {renderSaveBar()}
       </div>
     </div>
   );
