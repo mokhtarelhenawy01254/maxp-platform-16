@@ -1477,6 +1477,9 @@ const CustomerPointsCenter = React.lazy(
 const CustomerSegments = React.lazy(
   () => import("./pages/customers/CustomerSegments"),
 );
+const CustomerAutoDiscount = React.lazy(
+  () => import("./pages/customers/CustomerAutoDiscount"),
+);
 const CustomerNotifications = React.lazy(
   () => import("./pages/customers/CustomerNotifications"),
 );
@@ -1535,6 +1538,7 @@ if (typeof window !== "undefined") {
 
   p["/customers"] = () => import("./pages/customers/CustomerList");
   p["/customers/segments"] = () => import("./pages/customers/CustomerSegments");
+  p["/customers/auto-discount"] = () => import("./pages/customers/CustomerAutoDiscount");
   p["/customers/lists"] = () => import("./pages/customers/CustomerLists");
   p["/customers/customer-notifications"] = () => import("./pages/customers/CustomerNotifications");
   p["/orders"] = () => import("./pages/orders/Orders");
@@ -6404,6 +6408,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CustomerSegments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/auto-discount"
+                  element={
+                    <Layout>
+                      <CustomerAutoDiscount />
                     </Layout>
                   }
                 />
