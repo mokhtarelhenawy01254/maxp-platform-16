@@ -6,6 +6,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   LinkIcon,
+  ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import { getImageUrl } from "../../../../utils/imageUrl";
 import type { ProductPresentation } from "../../hooks/useProductPresentations";
@@ -15,6 +16,7 @@ interface PresentationsTabProps {
   loading: boolean;
   productId: string | null;
   productSlug?: string;
+  storefrontOrigin?: string;
   onAdd: (data: Partial<ProductPresentation>) => Promise<any>;
   onUpdate: (id: string, data: Partial<ProductPresentation>) => Promise<any>;
   onDelete: (id: string) => Promise<void>;
@@ -26,6 +28,7 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
   loading,
   productId,
   productSlug,
+  storefrontOrigin,
   onAdd,
   onUpdate,
   onDelete,
@@ -170,6 +173,20 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
     return `/products/${productKey}/${presSlug}`;
   };
 
+  // الرابط الكامل على المتجر (لو معروفين الـ origin بنستخدمه وإلا نسبي)
+  const buildFullPresentationUrl = (pres: ProductPresentation) => {
+    const relative = buildPresentationUrl(pres);
+    if (!storefrontOrigin) {
+      return relative;
+    }
+    return `${storefrontOrigin.replace(/\/$/, "")}${relative}`;
+  };
+
+  const openPresentationPage = (pres: ProductPresentation) => {
+    const url = buildFullPresentationUrl(pres);
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   if (!productId) {
     return (
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-fade-in">
@@ -243,6 +260,18 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openPresentationPage(pres);
+                        }}
+                        title="فتح صفحة العرض في المتجر"
+                        className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/30"
+                      >
+                        <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+                        فتح الصفحة
+                      </button>
                       {presEdit.isActive ?? pres.isActive ? (
                         <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
                           نشط
@@ -422,17 +451,27 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
 
                       {/* Actions */}
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm("هل أنت متأكد من حذف هذا العرض التقديمي؟")) {
-                              onDelete(pres.id!);
-                            }
-                          }}
-                          className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                        >
-                          حذف
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => openPresentationPage(pres)}
+                            className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                          >
+                            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                            فتح الصفحة
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm("هل أنت متأكد من حذف هذا العرض التقديمي؟")) {
+                                onDelete(pres.id!);
+                              }
+                            }}
+                            className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                          >
+                            حذف
+                          </button>
+                        </div>
                         <div className="flex gap-2">
                           <button
                             type="button"
