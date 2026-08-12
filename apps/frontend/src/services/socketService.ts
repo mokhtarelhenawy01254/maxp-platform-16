@@ -332,6 +332,39 @@ class SocketService {
         oscillator.start(event.start);
         oscillator.stop(event.start + event.duration + 0.02);
         oscillators.push(oscillator);
+
+        // أصداء الجرس المعدنية لنغمة الكاش / العملات
+        // (هارمونيكات غير توافقية بتضعف بسرعة = طابع معدني لامع)
+        for (const harmonic of event.harmonics ?? []) {
+          const harmonicOscillator = audioContext.createOscillator();
+          const harmonicGain = audioContext.createGain();
+          const harmonicDuration = Math.min(
+            event.duration,
+            event.duration / harmonic.ratio + 0.05,
+          );
+
+          harmonicOscillator.type = "sine";
+          harmonicOscillator.frequency.setValueAtTime(
+            event.freq * harmonic.ratio,
+            event.start,
+          );
+
+          harmonicGain.gain.setValueAtTime(0.0001, event.start);
+          harmonicGain.gain.exponentialRampToValueAtTime(
+            harmonic.gain * 0.9 * volume,
+            event.start + 0.005,
+          );
+          harmonicGain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            event.start + harmonicDuration,
+          );
+
+          harmonicOscillator.connect(harmonicGain);
+          harmonicGain.connect(masterGain);
+          harmonicOscillator.start(event.start);
+          harmonicOscillator.stop(event.start + harmonicDuration + 0.02);
+          oscillators.push(harmonicOscillator);
+        }
       }
 
       this.alarmStopTimer = setTimeout(stopAll, durationMs + 300);
