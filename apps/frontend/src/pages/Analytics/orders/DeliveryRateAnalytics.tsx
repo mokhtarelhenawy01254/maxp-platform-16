@@ -18,6 +18,9 @@ import {
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface DeliveryStats {
   totalDeliveries: number;
@@ -47,19 +50,25 @@ const DeliveryRateAnalytics: React.FC = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<DeliveryStats | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [period]);
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await analyticsService.getDeliveryRateAnalytics(period);
+      const response = await analyticsService.getDeliveryRateAnalytics(
+        range?.period,
+        range?.startDate,
+        range?.endDate,
+      );
 
       if (response.success && response.data) {
         setStats(response.data);
@@ -117,19 +126,7 @@ const DeliveryRateAnalytics: React.FC = () => {
             {t("deliveryRateAnalytics.subtitle")}
           </p>
         </div>
-        <select
-          id="delivery-rate-period"
-          name="deliveryRatePeriod"
-          aria-label={t("deliveryRateAnalytics.title")}
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("deliveryRateAnalytics.last7Days")}</option>
-          <option value="30">{t("deliveryRateAnalytics.last30Days")}</option>
-          <option value="90">{t("deliveryRateAnalytics.last90Days")}</option>
-          <option value="365">{t("deliveryRateAnalytics.lastYear")}</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

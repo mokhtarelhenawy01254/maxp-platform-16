@@ -14,6 +14,9 @@ import {
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface VariationStats {
   sizes: Array<{ name: string; sales: number; revenue: number }>;
@@ -36,19 +39,24 @@ const VariationsAnalytics: React.FC = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<VariationStats | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [period]);
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await analyticsService.getVariationsAnalytics(period);
+      const response = await analyticsService.getVariationsAnalytics(
+        range?.startDate,
+        range?.endDate,
+      );
 
       if (response.success) {
         const data = response.data || {};
@@ -100,16 +108,7 @@ const VariationsAnalytics: React.FC = () => {
             {t("variationsAnalytics.subtitle")}
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("variationsAnalytics.last7Days")}</option>
-          <option value="30">{t("variationsAnalytics.last30Days")}</option>
-          <option value="90">{t("variationsAnalytics.last90Days")}</option>
-          <option value="365">{t("variationsAnalytics.lastYear")}</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

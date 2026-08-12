@@ -207,7 +207,15 @@
     "orderStatus": {
       "completed": "Completed",
       "pending": "Pending",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "paymentPending": "Pending",
+      "paymentCompleted": "Paid",
+      "paymentPartiallyPaid": "Partially Paid",
+      "paymentFailed": "Failed",
+      "paymentOnHold": "On Hold",
+      "paymentRefunded": "Refunded",
+      "paymentPartiallyRefunded": "Partially Refunded",
+      "paymentNotSpecified": "Not Specified"
     },
     "tags": "Tags",
     "notes": "Notes",

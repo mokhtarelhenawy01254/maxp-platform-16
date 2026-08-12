@@ -14,6 +14,9 @@ import {
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
 
 interface RegionStats {
@@ -40,18 +43,23 @@ const RegionAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<RegionStats | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [period]);
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await analyticsService.getRegionAnalytics(period);
+      const response = await analyticsService.getRegionAnalytics(
+        range?.startDate,
+        range?.endDate,
+      );
       if (response.success && response.data) {
         setStats(response.data);
       } else {
@@ -99,16 +107,7 @@ const RegionAnalytics: React.FC = () => {
             {t("regionAnalytics.subtitle")}
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("regionAnalytics.last7Days")}</option>
-          <option value="30">{t("regionAnalytics.last30Days")}</option>
-          <option value="90">{t("regionAnalytics.last90Days")}</option>
-          <option value="365">{t("regionAnalytics.lastYear")}</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

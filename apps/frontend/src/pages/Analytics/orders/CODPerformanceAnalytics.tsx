@@ -10,6 +10,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface CODStats {
   totalOrders: number;
@@ -38,20 +41,25 @@ const CODPerformanceAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<CODStats | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [period]);
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response =
-        await analyticsService.getCODPerformanceAnalytics(period);
+      const response = await analyticsService.getCODPerformanceAnalytics(
+        range?.period,
+        range?.startDate,
+        range?.endDate,
+      );
 
       if (response.success && response.data) {
         setStats(response.data);
@@ -113,16 +121,7 @@ const CODPerformanceAnalytics: React.FC = () => {
             {t("codPerformance.subtitle")}
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("codPerformance.last7Days")}</option>
-          <option value="30">{t("codPerformance.last30Days")}</option>
-          <option value="90">{t("codPerformance.last90Days")}</option>
-          <option value="365">{t("codPerformance.lastYear")}</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       {/* Summary Cards */}

@@ -4,6 +4,9 @@ import { FunnelIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface FunnelStats {
   funnelSteps: Array<{
@@ -27,14 +30,18 @@ const FunnelAnalytics: React.FC = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<FunnelStats | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await analyticsService.getFunnelAnalytics(period);
+      const response = await analyticsService.getFunnelAnalytics(
+        range?.period,
+        range?.startDate,
+        range?.endDate,
+      );
       if (response.success && response.data) {
         setStats(response.data);
       } else {
@@ -52,7 +59,7 @@ const FunnelAnalytics: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [period, t]);
+  }, [range, t]);
 
   useEffect(() => {
     void fetchData();
@@ -92,16 +99,7 @@ const FunnelAnalytics: React.FC = () => {
             {t("funnelAnalytics.subtitle")}
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("funnelAnalytics.last7Days")}</option>
-          <option value="30">{t("funnelAnalytics.last30Days")}</option>
-          <option value="90">{t("funnelAnalytics.last90Days")}</option>
-          <option value="365">{t("funnelAnalytics.lastYear")}</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">

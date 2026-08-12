@@ -23,6 +23,9 @@ import {
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
 
 interface PaymentStats {
@@ -56,19 +59,23 @@ const PaymentMethodAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<PaymentStats | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [period]);
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response =
-        await analyticsService.getPaymentMethodsAnalytics(period);
+      const response = await analyticsService.getPaymentMethodsAnalytics(
+        range?.startDate,
+        range?.endDate,
+      );
       if (response.success && response.data) {
         const data = response.data || {};
         const methodsData = Array.isArray(data) ? data : data.methods || [];
@@ -168,16 +175,7 @@ const PaymentMethodAnalytics: React.FC = () => {
             {t("paymentAnalytics.subtitle")}
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("paymentAnalytics.last7Days")}</option>
-          <option value="30">{t("paymentAnalytics.last30Days")}</option>
-          <option value="90">{t("paymentAnalytics.last90Days")}</option>
-          <option value="365">{t("paymentAnalytics.lastYear")}</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       {/* Basic Analytics Notice */}

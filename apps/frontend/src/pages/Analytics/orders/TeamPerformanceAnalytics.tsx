@@ -8,6 +8,9 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface TeamStats {
   teamMembers: Array<{
@@ -32,19 +35,24 @@ const TeamPerformanceAnalytics: React.FC = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<TeamStats | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [period]);
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response =
-        await analyticsService.getTeamPerformanceAnalytics(period);
+      const response = await analyticsService.getTeamPerformanceAnalytics(
+        range?.period,
+        range?.startDate,
+        range?.endDate,
+      );
       if (response.success && response.data) {
         setStats(response.data);
       } else {
@@ -97,16 +105,7 @@ const TeamPerformanceAnalytics: React.FC = () => {
             {t("teamPerformance.subtitle")}
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("teamPerformance.last7Days")}</option>
-          <option value="30">{t("teamPerformance.last30Days")}</option>
-          <option value="90">{t("teamPerformance.last90Days")}</option>
-          <option value="365">{t("teamPerformance.lastYear")}</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

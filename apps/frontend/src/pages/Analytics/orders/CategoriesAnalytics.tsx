@@ -15,6 +15,9 @@ import {
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface CategoryStats {
   categories: Array<{ name: string; orders: number; revenue: number }>;
@@ -36,18 +39,23 @@ const CategoriesAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<CategoryStats | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [period]);
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await analyticsService.getCategoriesAnalytics(period);
+      const response = await analyticsService.getCategoriesAnalytics(
+        range?.startDate,
+        range?.endDate,
+      );
       if (response.success && response.data) {
         // Handle both array and object responses
         let categoriesData = [];
@@ -111,16 +119,7 @@ const CategoriesAnalytics: React.FC = () => {
             {t("categoriesAnalytics.subtitle")}
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("categoriesAnalytics.last7Days")}</option>
-          <option value="30">{t("categoriesAnalytics.last30Days")}</option>
-          <option value="90">{t("categoriesAnalytics.last90Days")}</option>
-          <option value="365">{t("categoriesAnalytics.lastYear")}</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
