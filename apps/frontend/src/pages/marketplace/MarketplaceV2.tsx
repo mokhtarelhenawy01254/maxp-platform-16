@@ -5,7 +5,7 @@ import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import {
   Package, Loader2,
-  Layers3, Sparkles, PackageX, X, Zap,
+  Layers3, Sparkles, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
   DollarSign, Heart,
   ShoppingBag, Brain,
@@ -14,15 +14,7 @@ import {
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,8 +34,6 @@ import {
 } from "@/components/marketplace";
 import type { MarketplaceApp, Category, MarketplaceSpecialty, MarketplaceFilters, SortOption, ToolCollectionId } from "@/types/marketplace";
 import {
-  appIconsBySlug, categoryIcons, appIcons,
-  normalizeRequiredApps,
   categoryGroups,
   OTHER_CATEGORY_GROUP_ID,
 } from "@/utils/marketplace";
@@ -55,10 +45,6 @@ interface ApiEnvelope<T> {
   message?: string;
 }
 
-interface InstallResponseData {
-  autoInstalledRequiredApps?: Array<{ slug: string; name?: string }>;
-}
-
 interface MarketplaceApiError {
   response?: {
     status?: number;
@@ -68,12 +54,6 @@ interface MarketplaceApiError {
 
 const MARKETPLACE_APPS_FETCH_LIMIT = 200;
 const DISPLAY_INCREMENT = 20;
-
-function getDefaultPricingModel(app: MarketplaceApp) {
-  if (app.pricingModel === "FREE") return "FREE";
-  if (app.pricingModel === "PAY_PER_USE") return "PAY_PER_USE";
-  return "SUBSCRIPTION";
-}
 
 function matchesCollection(app: MarketplaceApp, col: ToolCollectionId) {
   if (col === "ALL") return true;
@@ -161,21 +141,6 @@ function getCategoryDisplayCategories(categories: Category[]) {
   }));
 }
 
-function sortAppsByDependencies(apps: MarketplaceApp[]) {
-  const bySlug = new Map(apps.map(a => [a.slug, a]));
-  const ordered: MarketplaceApp[] = [];
-  const visiting = new Set<string>(), visited = new Set<string>();
-  const visit = (app: MarketplaceApp) => {
-    if (visited.has(app.slug)) return;
-    if (visiting.has(app.slug)) { ordered.push(app); visited.add(app.slug); return; }
-    visiting.add(app.slug);
-    normalizeRequiredApps(app.requiredApps).forEach(slug => { const d = bySlug.get(slug); if (d) visit(d); });
-    visiting.delete(app.slug); visited.add(app.slug); ordered.push(app);
-  };
-  apps.forEach(visit);
-  return ordered.filter((a, i, c) => c.findIndex(x => x.slug === a.slug) === i);
-}
-
 export default function MarketplaceV2() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -187,13 +152,8 @@ export default function MarketplaceV2() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [collection, setCollection] = useState<ToolCollectionId>("ALL");
-  const [installingApp, setInstallingApp] = useState<string | null>(null);
   const [uninstallingApp, setUninstallingApp] = useState<string | null>(null);
-  const [showPricingDialog, setShowPricingDialog] = useState<MarketplaceApp | null>(null);
   const [confirmUninstallApp, setConfirmUninstallApp] = useState<MarketplaceApp | null>(null);
-  const [showNotInstalled, setShowNotInstalled] = useState(false);
-  const [isInstallingAll, setIsInstallingAll] = useState(false);
-  const [confirmBulkInstall, setConfirmBulkInstall] = useState(false);
   const [filters, setFilters] = useState<MarketplaceFilters>({});
   const [displayCount, setDisplayCount] = useState(DISPLAY_INCREMENT);
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
@@ -242,7 +202,7 @@ export default function MarketplaceV2() {
   const collectionFiltered = apps.filter(a => matchesCollection(a, collection));
   const searchFiltered = collectionFiltered.filter(a => matchesSearch(a, searchQuery));
   const filterFiltered = searchFiltered.filter(a => matchesFilters(a, filters));
-  const filteredApps = showNotInstalled ? filterFiltered.filter(a => !a.isInstalled) : filterFiltered;
+  const filteredApps = filterFiltered;
   const displayedApps = filteredApps.slice(0, displayCount);
 
   const hasMoreApps = filteredApps.length > displayCount;
@@ -257,27 +217,6 @@ export default function MarketplaceV2() {
     return () => observer.disconnect();
   }, [hasMoreApps]);
 
-  const markInstalled = (slugs: string[]) => {
-    if (!slugs.length) return;
-    const s = new Set(slugs);
-    setApps(prev => prev.map(a => s.has(a.slug) ? { ...a, isInstalled: true, installCount: a.isInstalled ? a.installCount : a.installCount + 1 } : a));
-  };
-
-  const executeInstall = async (app: MarketplaceApp, pricingModel: string) => {
-    try {
-      setInstallingApp(app.slug);
-      const res = await apiClient.post<ApiEnvelope<InstallResponseData>>(`/marketplace/apps/${app.slug}/install`, { pricingModel });
-      const auto = res.data.data?.autoInstalledRequiredApps ?? [];
-      const names = auto.map((a: { name?: string; slug: string }) => a.name || a.slug);
-      toast.success(names.length > 0 ? t('marketplace.activatedWithReqs', { name: app.name, reqs: names.join(", ") }) : t('marketplace.activatedSingle', { name: app.name }));
-      markInstalled([app.slug, ...auto.map((a: { slug: string }) => a.slug)]);
-    } catch (error: unknown) {
-      const e = error as MarketplaceApiError;
-      if (e.response?.status === 401) { toast.error(t('marketplace.pleaseLogin')); navigate("/auth/login"); return; }
-      toast.error(e.response?.data?.message || t('marketplace.activationError'));
-    } finally { setInstallingApp(null); }
-  };
-
   const handleUninstall = async (app: MarketplaceApp) => {
     try {
       setUninstallingApp(app.slug);
@@ -290,38 +229,6 @@ export default function MarketplaceV2() {
       if (e.response?.status === 401) { toast.error(t('marketplace.pleaseLogin')); return; }
       toast.error(e.response?.data?.message || t('marketplace.deactivationError'));
     } finally { setUninstallingApp(null); }
-  };
-
-  const handleQuickInstall = (e: React.MouseEvent, app: MarketplaceApp) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (app.isInstalled && app.pricingModel !== "PAY_PER_USE") return;
-    if (app.pricingModel === "FREE" || (app.pricingModel === "SUBSCRIPTION" && app.monthlyPrice === 0)) {
-      executeInstall(app, app.pricingModel);
-    } else {
-      setShowPricingDialog(app);
-    }
-  };
-
-  const handleInstallAll = async () => {
-    const uninstalled = sortAppsByDependencies(collectionFiltered).filter(a => !a.isInstalled);
-    if (!uninstalled.length) { toast.success(t('marketplace.allActivated')); setConfirmBulkInstall(false); return; }
-    setIsInstallingAll(true);
-    let ok = 0, fail = 0;
-    const tid = toast.loading(t('marketplace.activatingProgress', { name: "", progress: 0 }));
-    for (let i = 0; i < uninstalled.length; i++) {
-      const app = uninstalled[i];
-      try {
-        toast.loading(t('marketplace.activatingProgress', { name: app?.name, progress: Math.round(((i + 1) / uninstalled.length) * 100) }), { id: tid });
-        const res = await apiClient.post<ApiEnvelope<InstallResponseData>>(`/marketplace/apps/${app.slug}/install`, { pricingModel: getDefaultPricingModel(app) });
-        const auto = res.data.data?.autoInstalledRequiredApps ?? [];
-        markInstalled([app.slug, ...auto.map((a: { slug: string }) => a.slug)]);
-        ok++;
-      } catch { fail++; }
-    }
-    toast.success(fail === 0 ? t('marketplace.activatedSuccess', { count: ok }) : t('marketplace.activatedWithErrors', { count: ok, fail }), { id: tid });
-    setIsInstallingAll(false);
-    setConfirmBulkInstall(false);
   };
 
   const toggleWishlist = (app: MarketplaceApp) => {
@@ -394,15 +301,6 @@ export default function MarketplaceV2() {
                     onSelect={handleCategorySelect}
                     className="lg:hidden"
                   />
-                  <Button
-                    variant={showNotInstalled ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setShowNotInstalled(!showNotInstalled)}
-                    className="h-9 gap-1.5 rounded-xl text-xs font-bold"
-                  >
-                    <PackageX size={13} />
-                    {t('marketplace.notInstalled')}
-                  </Button>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-2.5 overflow-x-auto scrollbar-none pb-0.5">
@@ -443,7 +341,6 @@ export default function MarketplaceV2() {
                         setSearchQuery("");
                         setSelectedCategory("");
                         setCollection("ALL");
-                        setShowNotInstalled(false);
                         setFilters({});
                         setDisplayCount(DISPLAY_INCREMENT);
                       }}
@@ -474,9 +371,6 @@ export default function MarketplaceV2() {
                             <AppCard
                               app={app}
                               variant="default"
-                              installingApp={installingApp}
-                              uninstallingApp={uninstallingApp}
-                              onQuickInstall={handleQuickInstall}
                               onUninstall={(a) => setConfirmUninstallApp(a)}
                               onAddToWishlist={toggleWishlist}
                               onCompare={toggleCompare}
@@ -508,54 +402,6 @@ export default function MarketplaceV2() {
         </>
       )}
 
-      <Dialog open={!!showPricingDialog} onOpenChange={(o) => !o && setShowPricingDialog(null)}>
-        {showPricingDialog && (() => {
-          const PricingBrandIcon = showPricingDialog.slug ? appIconsBySlug[showPricingDialog.slug] : undefined;
-          const pricingIconKey = showPricingDialog.icon?.trim().toLowerCase();
-          const PricingIcon = pricingIconKey ? appIcons[pricingIconKey] : undefined;
-          const Icon = PricingIcon || categoryIcons[showPricingDialog.category] || Package;
-          return (
-            <DialogContent className="max-w-md rounded-2xl">
-              <DialogHeader>
-                <div className="flex items-center gap-4">
-                  <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border bg-primary/10 text-primary shadow-sm">
-                    {showPricingDialog.logo ? (
-                      <img src={showPricingDialog.logo} alt={showPricingDialog.name} className="size-full object-cover" loading="lazy" />
-                    ) : PricingBrandIcon ? <PricingBrandIcon className="size-7" /> : <Icon size={26} />}
-                  </div>
-                  <div>
-                    <DialogTitle className="text-lg">{showPricingDialog.name}</DialogTitle>
-                    <DialogDescription>{t('marketplace.choosePricing')}</DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
-              <div className="space-y-3">
-                <Button
-                  variant="outline"
-                  className={cn("relative w-full justify-between rounded-xl p-4 text-right h-auto border-border/60", showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION" && "border-primary bg-primary/5")}
-                  onClick={() => { executeInstall(showPricingDialog, "SUBSCRIPTION"); setShowPricingDialog(null); }}
-                  disabled={showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION"}
-                >
-                  <span className="font-bold text-sm">{t('marketplace.monthlySubscription')}</span>
-                  <span className="font-bold text-primary">{(showPricingDialog.monthlyPrice ?? 0) > 0 ? t('marketplace.monthlyPrice', { price: showPricingDialog.monthlyPrice }) : t('marketplace.freePrice')}</span>
-                </Button>
-                {showPricingDialog.pricingModel === "PAY_PER_USE" && (
-                  <Button
-                    variant="outline"
-                    className={cn("relative w-full justify-between rounded-xl p-4 text-right h-auto border-border/60", showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE" && "border-warning bg-warning/5")}
-                    onClick={() => { executeInstall(showPricingDialog, "PAY_PER_USE"); setShowPricingDialog(null); }}
-                    disabled={showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE"}
-                  >
-                    <span className="flex items-center gap-1 font-bold text-sm">{t('marketplace.payPerUseLabel')}<Zap size={14} className="fill-current text-warning" /></span>
-                    <span className="font-bold text-warning">{showPricingDialog.unitPrice ?? 0} {t('marketplace.currencyUnit')} / {showPricingDialog.unitName || t('marketplace.perUnit')}</span>
-                  </Button>
-                )}
-              </div>
-            </DialogContent>
-          );
-        })()}
-      </Dialog>
-
       <AlertDialog open={!!confirmUninstallApp} onOpenChange={(o) => !o && setConfirmUninstallApp(null)}>
         {confirmUninstallApp && (
           <AlertDialogContent className="rounded-2xl">
@@ -576,34 +422,6 @@ export default function MarketplaceV2() {
             </AlertDialogFooter>
           </AlertDialogContent>
         )}
-      </AlertDialog>
-
-      <AlertDialog open={confirmBulkInstall} onOpenChange={setConfirmBulkInstall}>
-        <AlertDialogContent className="rounded-2xl">
-          <AlertDialogHeader>
-            <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-primary/10">
-              <Zap className="size-7 text-primary" />
-            </div>
-            <AlertDialogTitle className="text-center">
-              {t('marketplace.bulkActivateTitle', { count: collectionFiltered.filter(a => !a.isInstalled).length })}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              {t('marketplace.bulkActivateConfirm', { count: collectionFiltered.filter(a => !a.isInstalled).length })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-3">
-            <AlertDialogCancel className="rounded-xl" disabled={isInstallingAll}>{t('marketplace.goBack')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => { e.preventDefault(); handleInstallAll(); }}
-              disabled={isInstallingAll}
-              className="rounded-xl"
-            >
-              {isInstallingAll ? (
-                <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" />{t('marketplace.activatingNow')}</span>
-              ) : t('marketplace.activateAll')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
       </AlertDialog>
     </div>
   );

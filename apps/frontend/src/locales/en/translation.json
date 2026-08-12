@@ -11680,6 +11680,7 @@
     "pendingAmount": "Amount due from companies",
     "deliveredCount": "Delivered shipments",
     "settledAmount": "Settled amount",
+    "turbo": "Turbo Express",
     "noCompanies": "No shipping companies",
     "settleCompany": "Settle all",
     "settleSelected": "Settle selected",

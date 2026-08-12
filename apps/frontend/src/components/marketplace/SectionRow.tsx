@@ -17,9 +17,7 @@ interface SectionRowProps {
   icon?: LucideIcon;
   viewAllUrl?: string;
   className?: string;
-  installingApp?: string | null;
   uninstallingApp?: string | null;
-  onQuickInstall?: (e: React.MouseEvent, app: MarketplaceApp) => void;
   onUninstall?: (app: MarketplaceApp) => void;
 }
 
@@ -29,9 +27,7 @@ export function SectionRow({
   apps,
   viewAllUrl,
   className,
-  installingApp,
   uninstallingApp,
-  onQuickInstall,
   onUninstall,
 }: SectionRowProps) {
   const { t } = useTranslation();
@@ -100,9 +96,7 @@ export function SectionRow({
             <AppCard
               app={app}
               variant="featured"
-              installingApp={installingApp}
               uninstallingApp={uninstallingApp}
-              onQuickInstall={onQuickInstall}
               onUninstall={onUninstall}
               showInstalls
               showFeatures

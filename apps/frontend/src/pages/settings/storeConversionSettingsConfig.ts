@@ -52,10 +52,10 @@ export const STORE_CONVERSION_APP_LABELS: Record<
   ManagedMarketplaceAppSlug,
   string
 > = {
-  "conversion-suite": "Conversion Suite",
+  "conversion-suite": "أدوات رفع التحويل",
   "quantity-offers-pro": "عروض الكميات",
   "commerce-advanced": "المبيعات المتقدمة",
-  "ugc-reviews-pro": "UGC Reviews Pro",
+  "ugc-reviews-pro": "تقييمات العملاء",
 };
 
 const buildModuleToggle = (

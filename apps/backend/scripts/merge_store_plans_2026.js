@@ -25,8 +25,8 @@ const DRY_RUN = process.argv.includes('--dry-run');
 
 const RENAMES = {
   'store-basic': {
-    name: 'متجر بلس',
-    nameEn: 'Store Plus',
+    name: 'المتجر',
+    nameEn: 'Store',
     description: 'متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.',
     features: [
       'إدارة الطلبات',
@@ -44,8 +44,8 @@ const RENAMES = {
     yearlyPrice: 2490,
   },
   'store-pro': {
-    name: 'متجر برو',
-    nameEn: 'Store Pro',
+    name: 'متجر ماكس',
+    nameEn: 'Store Max',
     description: 'متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.',
     features: [
       'منتجات غير محدودة',
@@ -83,6 +83,21 @@ const RENAMES = {
     ],
     monthlyPrice: 179,
     yearlyPrice: 1790,
+  },
+  'conversion-suite': {
+    name: 'أدوات رفع التحويل',
+    nameEn: 'Conversion Suite',
+    description: 'أدوات رفع التحويل: عروض، مؤقتات، شحن مجاني، وطبقات إقناع داخل المتجر.',
+  },
+  'ugc-reviews-pro': {
+    name: 'تقييمات العملاء',
+    nameEn: 'UGC Reviews Pro',
+    description: 'تقييمات العملاء بالصور والفيديو مع شارات الثقة.',
+  },
+  'product-presentations': {
+    name: 'عرض المنتج المتعدد',
+    nameEn: 'MultiView - Product Gallery',
+    description: 'عرض المنتج بزوايا وصور متعددة داخل صفحة المنتج.',
   },
 };
 

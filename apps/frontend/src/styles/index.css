@@ -1074,6 +1074,13 @@ h6 {
   display: none;
 }
 
+/* Keep absolutely-positioned descendants (e.g. sr-only labels) clipped inside the
+   business shell main scroll container so they cannot extend the document and
+   create a page-level scrollbar (with arrows) next to the main menu */
+.business-shell-main {
+  position: relative;
+}
+
 [data-slot="select-trigger"],
 [data-slot="dropdown-menu-trigger"] {
   color: var(--shell-overlay-foreground);

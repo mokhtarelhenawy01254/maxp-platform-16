@@ -166,6 +166,8 @@
   overflow-y: auto;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+  /* Keep absolutely-positioned descendants inside this scroll container */
+  position: relative;
 }
 
 /* Hide the sidebar scrollbar (and its up/down arrows) so no arrow sits next to
@@ -282,6 +284,10 @@
   min-width: 0;
   overflow-y: auto;
   padding: 1.5rem;
+  /* Anchor absolutely-positioned descendants (e.g. sr-only labels) so they are
+     clipped by this scroll container instead of escaping to the document and
+     creating a page-level scrollbar (with arrows) next to the main menu */
+  position: relative;
 }
 
 /* Full-height scrollable apps (WhatsApp, etc.): make the intermediate

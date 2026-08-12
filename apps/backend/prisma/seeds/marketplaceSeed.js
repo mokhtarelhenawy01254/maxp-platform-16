@@ -197,7 +197,7 @@ async function seedMarketplace() {
       },
       {
         "slug": "store-pro",
-        "name": "متجر برو",
+        "name": "متجر ماكس",
         "description": "متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.",
         "logo": null,
         "images": null,
@@ -327,7 +327,7 @@ async function seedMarketplace() {
       },
       {
         "slug": "store-basic",
-        "name": "متجر بلس",
+        "name": "المتجر",
         "description": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
         "logo": null,
         "images": null,

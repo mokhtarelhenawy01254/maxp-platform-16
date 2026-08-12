@@ -360,8 +360,8 @@
   {
     "id": "cat-app-store-basic",
     "slug": "store-basic",
-    "name": "متجر بلس",
-    "nameEn": "Store Plus",
+    "name": "المتجر",
+    "nameEn": "Store",
     "description": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
@@ -472,7 +472,7 @@
   {
     "id": "cat-app-conversion-suite",
     "slug": "conversion-suite",
-    "name": "Conversion Suite",
+    "name": "أدوات رفع التحويل",
     "nameEn": "Conversion Suite",
     "description": "Urgency bars, PDP conversion components, popups, and theme-ready growth modules for storefronts.",
     "category": "ECOMMERCE",
@@ -576,7 +576,7 @@
   {
     "id": "cat-app-ugc-reviews-pro",
     "slug": "ugc-reviews-pro",
-    "name": "UGC Reviews Pro",
+    "name": "تقييمات العملاء",
     "nameEn": "UGC Reviews Pro",
     "description": "Photo and video review blocks designed for product pages and trust-building templates.",
     "category": "ECOMMERCE",
@@ -1502,7 +1502,7 @@
   {
     "id": "cat-app-product-presentations",
     "slug": "product-presentations",
-    "name": "MultiView - عروض متعددة للمنتج",
+    "name": "عرض المنتج المتعدد",
     "nameEn": "MultiView - Product Gallery",
     "description": "أنشئ نسخ متعددة لنفس المنتج بصور وعناوين مختلفة — كل نسخة لها رابط تتبع مستقل لاختبار أي صورة تحقق أعلى مبيعات.",
     "descriptionEn": "Create multiple versions of the same product with different images and titles — each with its own trackable URL to test which images drive the most sales.",
@@ -2983,8 +2983,8 @@
   {
     "id": "cat-app-store-pro",
     "slug": "store-pro",
-    "name": "متجر برو",
-    "nameEn": "Store Pro",
+    "name": "متجر ماكس",
+    "nameEn": "Store Max",
     "description": "متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",

@@ -26,9 +26,7 @@ import { getMarketplaceFeatureItems } from "@/pages/marketplace/featureCatalog";
 interface AppCardProps {
   app: MarketplaceApp;
   variant?: "default" | "compact" | "featured" | "horizontal";
-  installingApp?: string | null;
   uninstallingApp?: string | null;
-  onQuickInstall?: (e: React.MouseEvent, app: MarketplaceApp) => void;
   onUninstall?: (app: MarketplaceApp) => void;
   onAddToWishlist?: (app: MarketplaceApp) => void;
   onRemoveFromWishlist?: (app: MarketplaceApp) => void;
@@ -60,9 +58,7 @@ const badgeConfig: Record<string, { label: string; className: string; icon: type
 export function AppCard({
   app,
   variant = "default",
-  installingApp,
   uninstallingApp,
-  onQuickInstall,
   onUninstall,
   onAddToWishlist,
   onRemoveFromWishlist,
@@ -181,7 +177,7 @@ export function AppCard({
               >
                 {app.name}
               </h3>
-              {showRating && app.rating && (
+              {showRating && app.rating != null && app.rating > 0 && (
                 <span className="mp-rating-inline shrink-0">
                   <Star size={isCompact ? 9 : 10} className="fill-current" />
                   {app.rating.toFixed(1)}
@@ -256,17 +252,6 @@ export function AppCard({
                 </>
               ) : (
                 <>
-                  {onQuickInstall && (
-                    <Button
-                      size="sm"
-                      className={cn("h-7 shrink-0 gap-1 rounded-lg text-xs font-bold", isFeatured && "flex-1")}
-                      onClick={(e) => onQuickInstall(e, app)}
-                      disabled={installingApp === app.slug}
-                    >
-                      {installingApp === app.slug ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
-                      {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-                    </Button>
-                  )}
                   {isFeatured && onCompare && (
                     <Button
                       variant="outline"
@@ -329,7 +314,7 @@ export function AppCard({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h4 dir="auto" className="text-sm font-bold" style={{ unicodeBidi: 'plaintext' }}>{app.name}</h4>
-                  {app.rating && (
+                  {app.rating != null && app.rating > 0 && (
                     <span className="flex shrink-0 items-center gap-0.5 text-xs text-amber-500">
                       <Star size={11} className="fill-current" />{app.rating.toFixed(1)}
                     </span>
@@ -366,21 +351,11 @@ export function AppCard({
                 <span className="mr-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">{t('marketplace.trialDays', { count: app.trialDays })}</span>
               )}
             </div>
-            {app.isInstalled ? (
+            {app.isInstalled && (
               <Badge variant="secondary" className="gap-1 text-xs">
                 <CheckCircle2 size={10} />
                 {t('marketplace.installed')}
               </Badge>
-            ) : (
-              <Button
-                size="sm"
-                className="h-8 gap-1 rounded-lg text-xs font-bold"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickInstall?.(e, app); }}
-                disabled={installingApp === app.slug}
-              >
-                {installingApp === app.slug ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
-                {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-              </Button>
             )}
           </div>
         </PopoverContent>

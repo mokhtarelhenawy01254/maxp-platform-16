@@ -11673,6 +11673,7 @@ declare module 'react-i18next' {
         pendingAmount: string;
         deliveredCount: string;
         settledAmount: string;
+        turbo: string;
         noCompanies: string;
         settleCompany: string;
         settleSelected: string;

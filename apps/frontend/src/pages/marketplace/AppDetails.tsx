@@ -3,15 +3,13 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import {
-  AlertCircle, AlertTriangle, BarChart3, Calendar,
+  AlertCircle,
   Check, CheckCircle2, ChevronRight, Download, Loader2, MessageSquare,
-  Package, Shield, ShoppingBag, Sparkles, Star,
-  Store, Users, X, Zap, ChevronLeft, ChevronRight,
-  Play, ExternalLink, FileText, Clock, Globe,
-  ThumbsUp, MessageCircle, HelpCircle, Headphones,
-  Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
-  ClipboardList, Route, ClipboardCheck, Inbox, Bell,
-  Truck, Percent, Heart, TrendingUp,
+  Package, Shield, Sparkles, Star,
+  Users,
+  ChevronLeft,
+  FileText, Clock,
+  HelpCircle, Headphones,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -21,23 +19,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   Accordion,
   AccordionContent,
@@ -92,10 +73,6 @@ export default function AppDetails() {
   const { t } = useTranslation();
   const [app, setApp] = useState<MPA | null>(null);
   const [loading, setLoading] = useState(true);
-  const [installing, setInstalling] = useState(false);
-  const [uninstalling, setUninstalling] = useState(false);
-  const [showPricingDialog, setShowPricingDialog] = useState(false);
-  const [confirmUninstall, setConfirmUninstall] = useState(false);
   const [screenshotIndex, setScreenshotIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("features");
   const [userRating, setUserRating] = useState(0);
@@ -114,48 +91,6 @@ export default function AppDetails() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleInstall = async () => {
-    if (!app) return;
-    if (app.isInstalled && app.activePricingModel !== "PAY_PER_USE") {
-      toast.error("Already installed");
-      return;
-    }
-    if (app.pricingModel === "FREE") {
-      executeInstall("FREE");
-    } else {
-      setShowPricingDialog(true);
-    }
-  };
-
-  const executeInstall = async (model: string) => {
-    if (!app) return;
-    try {
-      setInstalling(true);
-      const response = await apiClient.post(`/marketplace/apps/${app.slug}/install`, { pricingModel: model });
-      const autoInstalled = response.data?.data?.autoInstalledRequiredApps ?? [];
-      const names = autoInstalled.map((a: { name?: string; slug: string }) => a.name || a.slug);
-      toast.success(names.length > 0 ? `Activated ${app.name} with requirements: ${names.join(", ")}` : `Activated ${app.name} successfully`);
-      await fetchAppDetails();
-      navigate("/marketplace");
-    } catch (error: unknown) {
-      const e = error as { response?: { status?: number; data?: { message?: string } } };
-      if (e.response?.status === 401) { toast.error("Please log in first"); navigate("/auth/login"); return; }
-      toast.error(e.response?.data?.message || "Error activating app");
-    } finally { setInstalling(false); setShowPricingDialog(false); }
-  };
-
-  const handleUninstall = async () => {
-    if (!app) return;
-    try {
-      setUninstalling(true);
-      const response = await apiClient.post(`/marketplace/apps/${app.slug}/uninstall`);
-      toast.success(response.data.message || `Deactivated ${app.name}`);
-      await fetchAppDetails();
-      setConfirmUninstall(false);
-    } catch { toast.error("Error deactivating app"); }
-    finally { setUninstalling(false); }
   };
 
   const handleSubmitReview = async () => {
@@ -264,7 +199,7 @@ export default function AppDetails() {
                   <h1 className="text-3xl font-extrabold text-foreground leading-tight sm:text-4xl">{app.name}</h1>
                   <p className="text-muted-foreground mt-3 max-w-3xl text-sm font-semibold leading-7 sm:text-base">{app.description}</p>
                   <div className="mt-4 flex flex-wrap items-center justify-end gap-2 text-xs font-bold">
-                    {app.rating && (
+                    {app.rating > 0 && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-3 py-1 text-xs font-bold">
                         <Star size={14} className="fill-amber-400 text-amber-400" />
                         {app.rating.toFixed(1)}
@@ -292,20 +227,6 @@ export default function AppDetails() {
                   </div>
                 </div>
               </div>
-              {app.isInstalled ? (
-                <div className="mt-4 flex flex-col gap-2">
-                  <Button onClick={handleInstall} disabled={installing} className="h-12 w-full gap-2 text-sm font-bold" variant="outline">
-                    <Zap size={18} />تحديث الاشتراك
-                  </Button>
-                  <Button variant="destructive" onClick={() => setConfirmUninstall(true)} disabled={uninstalling} className="h-12 w-full gap-2 text-sm font-bold">
-                    <X size={18} />إلغاء التفعيل
-                  </Button>
-                </div>
-              ) : (
-                <Button onClick={handleInstall} disabled={installing} className="mt-4 h-12 w-full gap-2 text-sm font-bold">
-                  <Zap size={18} />تفعيل الأداة الآن
-                </Button>
-              )}
             </aside>
           </div>
         </section>
@@ -680,69 +601,6 @@ export default function AppDetails() {
           )}
         </div>
       </div>
-
-      <Dialog open={showPricingDialog && !!app} onOpenChange={(o) => !o && setShowPricingDialog(false)}>
-        {app && (
-          <DialogContent className="max-w-md rounded-2xl">
-            <DialogHeader>
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary text-2xl border">
-                  {textIcon || <IconComp size={24} />}
-                </div>
-                <div>
-                  <DialogTitle>{app.name}</DialogTitle>
-                  <DialogDescription>اختر نظام الدفع المناسب لك</DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Button
-                variant="outline"
-                className={cn("relative w-full justify-between p-4 text-right", app.isInstalled && app.activePricingModel === "SUBSCRIPTION" && "border-primary bg-primary/5")}
-                onClick={() => executeInstall("SUBSCRIPTION")}
-                disabled={app.isInstalled && app.activePricingModel === "SUBSCRIPTION"}
-              >
-                <span className="font-bold text-primary">{(app.monthlyPrice ?? 0) > 0 ? `${formatMoney(app.monthlyPrice)} / شهر` : "مجاني"}</span>
-                <span className="text-foreground font-bold">اشتراك شهري كامل</span>
-              </Button>
-              {app.pricingModel === "PAY_PER_USE" && (
-                <Button
-                  variant="outline"
-                  className={cn("relative w-full justify-between p-4 text-right", app.isInstalled && app.activePricingModel === "PAY_PER_USE" && "border-warning bg-warning/5")}
-                  onClick={() => executeInstall("PAY_PER_USE")}
-                  disabled={app.isInstalled && app.activePricingModel === "PAY_PER_USE"}
-                >
-                  <span className="font-bold text-warning">{formatMoney(app.unitPrice)} / {app.unitName || "وحدة"}</span>
-                  <span className="text-foreground flex items-center gap-1 font-bold">حسب الاستخدام <Zap size={14} className="fill-current text-warning" /></span>
-                </Button>
-              )}
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
-
-      <AlertDialog open={confirmUninstall && !!app} onOpenChange={(o) => !o && setConfirmUninstall(false)}>
-        {app && (
-          <AlertDialogContent className="rounded-2xl">
-            <AlertDialogHeader>
-              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
-                <AlertTriangle size={28} className="text-destructive" />
-              </div>
-              <AlertDialogTitle className="text-center">إلغاء تفعيل {app.name}</AlertDialogTitle>
-              <AlertDialogDescription className="text-center">
-                هل أنت متأكد من إلغاء تفعيل هذه الأداة؟
-                <br />سيتم إلغاء الخدمة وقد تفقد بعض الإعدادات المرتبطة بها.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="gap-3">
-              <AlertDialogCancel disabled={uninstalling} className="rounded-xl">تراجع</AlertDialogCancel>
-              <AlertDialogAction onClick={handleUninstall} disabled={uninstalling} className="rounded-xl bg-destructive hover:bg-destructive/90">
-                {uninstalling ? <Loader2 size={16} className="animate-spin" /> : "تأكيد الإلغاء"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        )}
-      </AlertDialog>
     </div>
   );
 }
