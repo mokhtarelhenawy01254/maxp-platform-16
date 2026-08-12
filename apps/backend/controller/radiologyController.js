@@ -303,6 +303,16 @@ const createStudy = async (req, res) => {
       if (physician) physicianName = physician.name;
     }
 
+    let insuranceCompanyName = null;
+    if (body.insuranceCompanyId) {
+      const entity = await prisma.insuranceCompany.findFirst({
+        where: { id: body.insuranceCompanyId, companyId },
+        select: { id: true, name: true },
+      });
+      if (!entity) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
+      insuranceCompanyName = entity.name;
+    }
+
     let additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;
     let additionIds = null;
     if (Array.isArray(body.additionIds) && body.additionIds.length) {
@@ -313,6 +323,16 @@ const createStudy = async (req, res) => {
         additionIds = additions.map(a => a.id);
         additionAmount = additions.reduce((s, a) => s + a.price, 0);
       }
+    }
+
+    // Resolve price: entity price > exam price
+    let priceSnapshot = examType ? examType.price : 0;
+    if (body.insuranceCompanyId && examType && insuranceCompanyName) {
+      const entityPrice = await prisma.radiologyEntityPrice.findFirst({
+        where: { insuranceCompanyId: body.insuranceCompanyId, examTypeId: examType.id, isActive: true },
+        select: { price: true },
+      }).catch(() => null);
+      if (entityPrice && Number.isFinite(entityPrice.price)) priceSnapshot = entityPrice.price;
     }
 
     const clientProvidedNumber =
@@ -343,9 +363,11 @@ const createStudy = async (req, res) => {
             withContrast: body.withContrast === true || body.withContrast === 'true',
             referralDoctor: physicianName || (body.referralDoctor ? String(body.referralDoctor) : null),
             referringPhysicianId: body.referringPhysicianId || null,
+            insuranceCompanyId: body.insuranceCompanyId || null,
+            insuranceCompanyName,
             additionIds: additionIds ? JSON.stringify(additionIds) : null,
             additionAmount,
-            notes: body.notes ? String(body.notes) : null,
+            priceSnapshot,
             accessionNumber: body.accessionNumber ? String(body.accessionNumber) : null,
             submissionStatus: 'NOT_SUBMITTED',
             createdBy: req.user?.id || req.user?.email || null,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import { api, fetchJson, RadiologyExamType, RadiologyExamAddition, MODAL_INPUT_CLS } from "./shared";
+import { Loader2, Search } from "lucide-react";
+import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, MODAL_INPUT_CLS } from "./shared";
 
 const GENDER_OPTIONS = [
   { value: "male", label: "ذكر" },
@@ -15,8 +15,10 @@ const cardCls = "bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:bord
 export default function ReceptionTab() {
   const [examTypes, setExamTypes] = useState<RadiologyExamType[]>([]);
   const [additions, setAdditions] = useState<RadiologyExamAddition[]>([]);
+  const [insuranceCompanies, setInsuranceCompanies] = useState<{ id: string; name: string }[]>([]);
   const [loadingExamTypes, setLoadingExamTypes] = useState(true);
 
+  const [patientId, setPatientId] = useState("");
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [patientGender, setPatientGender] = useState("");
@@ -24,6 +26,7 @@ export default function ReceptionTab() {
   const [nationalId, setNationalId] = useState("");
   const [insuranceNumber, setInsuranceNumber] = useState("");
   const [examTypeId, setExamTypeId] = useState("");
+  const [insuranceCompanyId, setInsuranceCompanyId] = useState("");
   const [selectedAdditions, setSelectedAdditions] = useState<string[]>([]);
   const [emergency, setEmergency] = useState(false);
   const [withContrast, setWithContrast] = useState(false);
@@ -31,16 +34,30 @@ export default function ReceptionTab() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [patientSearch, setPatientSearch] = useState("");
+  const [patientResults, setPatientResults] = useState<{ id: string; firstName: string; lastName?: string; phone?: string; gender?: string }[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [entityPrice, setEntityPrice] = useState<number | null>(null);
+
+  const examPrice = (() => {
+    const et = examTypes.find(t => t.id === examTypeId);
+    return et ? Number(et.price) || 0 : 0;
+  })();
+  const additionsTotal = additions.filter(a => selectedAdditions.includes(a.id)).reduce((s, a) => s + a.price, 0);
+  const displayPrice = entityPrice !== null ? entityPrice : examPrice;
+
   useEffect(() => {
     (async () => {
       setLoadingExamTypes(true);
       try {
-        const [ets, adds] = await Promise.all([
+        const [ets, adds, ins] = await Promise.all([
           fetchJson<RadiologyExamType[]>(api("exam-types")),
           fetchJson<RadiologyExamAddition[]>(api("exam-additions")).catch(() => []),
+          fetchJson<{ id: string; name: string }[]>(bookingApi("insurance-companies")).catch(() => []),
         ]);
         setExamTypes(Array.isArray(ets) ? ets : []);
         setAdditions(Array.isArray(adds) ? adds : []);
+        setInsuranceCompanies(Array.isArray(ins) ? ins : []);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "فشل تحميل أنواع الفحوصات");
       } finally {
@@ -49,11 +66,51 @@ export default function ReceptionTab() {
     })();
   }, []);
 
+  // Entity price lookup when exam + insurance selected
+  useEffect(() => {
+    if (!examTypeId || !insuranceCompanyId) { setEntityPrice(null); return; }
+    (async () => {
+      try {
+        const url = new URL(api("entity-prices"));
+        url.searchParams.set("insuranceCompanyId", insuranceCompanyId);
+        url.searchParams.set("examTypeId", examTypeId);
+        const rows = await fetchJson<{ price: number }[]>(url.toString());
+        setEntityPrice(rows && rows.length ? Number(rows[0]?.price) : null);
+      } catch { setEntityPrice(null); }
+    })();
+  }, [examTypeId, insuranceCompanyId]);
+
+  // Patient search
+  useEffect(() => {
+    if (!patientSearch.trim()) { setPatientResults([]); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const url = new URL(bookingApi("patients"));
+        url.searchParams.set("search", patientSearch.trim());
+        url.searchParams.set("limit", "10");
+        const rows = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string; gender?: string }[]>(url.toString());
+        setPatientResults(Array.isArray(rows) ? rows : []);
+      } catch { setPatientResults([]); }
+      finally { setSearching(false); }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [patientSearch]);
+
+  const pickPatient = (p: { id: string; firstName: string; lastName?: string; phone?: string; gender?: string }) => {
+    setPatientId(p.id);
+    setPatientName(`${p.firstName}${p.lastName ? ' ' + p.lastName : ''}`);
+    setPatientPhone(p.phone || "");
+    if (p.gender) setPatientGender(p.gender === "male" || p.gender === "M" ? "male" : "female");
+    setPatientSearch("");
+    setPatientResults([]);
+  };
+
   const resetForm = () => {
-    setPatientName(""); setPatientPhone(""); setPatientGender(""); setPatientAge("");
+    setPatientId(""); setPatientName(""); setPatientPhone(""); setPatientGender(""); setPatientAge("");
     setNationalId(""); setInsuranceNumber("");
-    setExamTypeId(""); setSelectedAdditions([]); setEmergency(false); setWithContrast(false);
-    setReferralDoctor(""); setNotes("");
+    setExamTypeId(""); setInsuranceCompanyId(""); setSelectedAdditions([]); setEmergency(false); setWithContrast(false);
+    setReferralDoctor(""); setNotes(""); setEntityPrice(null);
   };
 
   const toggleAddition = (id: string) => {
@@ -69,6 +126,7 @@ export default function ReceptionTab() {
       await fetchJson(api("studies"), {
         method: "POST",
         body: JSON.stringify({
+          patientId: patientId || undefined,
           patientName: patientName.trim(),
           patientPhone: patientPhone.trim() || undefined,
           patientGender: patientGender || undefined,
@@ -76,6 +134,7 @@ export default function ReceptionTab() {
           nationalId: nationalId.trim() || undefined,
           insuranceNumber: insuranceNumber.trim() || undefined,
           examTypeId,
+          insuranceCompanyId: insuranceCompanyId || undefined,
           additionIds: selectedAdditions,
           emergency,
           withContrast,
@@ -102,6 +161,24 @@ export default function ReceptionTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className={cardCls}>
           <h3 className="font-bold mb-4 text-gray-800 dark:text-gray-100">بيانات المريض</h3>
+          <div className="relative mb-4">
+            <Search className="w-4 h-4 absolute right-3 top-3 text-gray-400 dark:text-gray-500" />
+            <input className={`${inputCls} pr-9`} placeholder="بحث عن مريض موجود (اسم أو هاتف)..." value={patientSearch} onChange={e => setPatientSearch(e.target.value)} />
+            {searching && <Loader2 className="w-4 h-4 absolute left-3 top-3 animate-spin text-gray-400" />}
+            {patientResults.length > 0 ? (
+              <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                {patientResults.map(p => (
+                  <button key={p.id} type="button" onClick={() => pickPatient(p)} className="w-full text-right px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm flex justify-between">
+                    <span>{p.firstName}{p.lastName ? ' ' + p.lastName : ''}</span>
+                    <span className="text-gray-400 dark:text-gray-500" dir="ltr">{p.phone}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          {patientId ? (
+            <p className="text-xs text-green-600 mb-3">تم الربط بمريض موجود ✓</p>
+          ) : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>اسم المريض *</label>
@@ -145,6 +222,21 @@ export default function ReceptionTab() {
                 ))}
               </select>
             </div>
+            {insuranceCompanies.length > 0 ? (
+              <div className="sm:col-span-2">
+                <label className={labelCls}>جهة التأمين (اختياري)</label>
+                <select className={inputCls} value={insuranceCompanyId} onChange={e => setInsuranceCompanyId(e.target.value)}>
+                  <option value="">دفع مباشر من المريض</option>
+                  {insuranceCompanies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            ) : null}
+            {examTypeId ? (
+              <div className="sm:col-span-2 rounded-lg border dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">الإجمالي (فحص + إضافات)</span>
+                <b className="text-lg text-blue-600">{(displayPrice + additionsTotal).toFixed(0)} ج</b>
+              </div>
+            ) : null}
             <div className="sm:col-span-2">
               <label className={labelCls}>الطبيب المحيل</label>
               <input className={inputCls} value={referralDoctor} onChange={e => setReferralDoctor(e.target.value)} placeholder="اسم الطبيب" />
