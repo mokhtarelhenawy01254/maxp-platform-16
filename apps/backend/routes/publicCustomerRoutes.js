@@ -760,6 +760,30 @@ router.post('/verify-otp', getCompanyFromSubdomain, async (req, res) => {
 });
 
 /**
+ * هل العميل عامل باسورد؟ — عشان صفحة الدخول تعرض حقل الباسورد فقط لو في باسورد
+ */
+router.get('/has-password', getCompanyFromSubdomain, async (req, res) => {
+  try {
+    const companyId = await resolveCompanyId(req);
+    const phone = String(req.query.phone || req.body?.phone || '').trim();
+    if (!companyId || !phone) {
+      return res.json({ success: true, data: { hasPassword: false } });
+    }
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findFirst({
+      where: {
+        companyId,
+        OR: [{ phoneNormalized: toCanonicalE164(phone) }, { phone: { in: getPhoneVariants(phone) } }]
+      },
+      select: { id: true, password: true }
+    });
+    return res.json({ success: true, data: { hasPassword: Boolean(customer?.password) } });
+  } catch (error) {
+    return res.json({ success: true, data: { hasPassword: false } });
+  }
+});
+
+/**
  * تسجيل دخول العميل برقم الهاتف مباشرة (بدون OTP)
  * بيخلّي العميل يدخل على طول بمجرد إدخال رقمه
  */

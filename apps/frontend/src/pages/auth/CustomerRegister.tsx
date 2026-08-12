@@ -11,6 +11,7 @@ const CustomerRegister: React.FC = () => {
   const params = useParams();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -28,6 +29,27 @@ const CustomerRegister: React.FC = () => {
     return (fromQuery || fromPath || fromStorage || subdomain || "").trim() || null;
   })();
   const branding = useCompanyBranding(brandingCompanyId);
+
+  // فحص هل الرقم عنده باسورد — حقل الباسورد يظهر فقط لو في باسورد
+  useEffect(() => {
+    const p = phone.trim();
+    if (p.length < 10) {
+      setHasPassword(null);
+      setPassword("");
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get("/public/customers/has-password", {
+          params: { phone: p, companyId: brandingCompanyId || undefined },
+        });
+        setHasPassword(!!res.data?.data?.hasPassword);
+      } catch {
+        setHasPassword(null);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [phone, brandingCompanyId]);
 
   // Already-logged-in customers should not see the login form again.
   useEffect(() => {
@@ -169,24 +191,27 @@ const CustomerRegister: React.FC = () => {
           />
         </div>
 
-        <div className="business-auth-field">
-          <label htmlFor="password" className="business-auth-label">
-            كلمة المرور (اختياري — لو متظبط لك باسورد)
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(event) => {
-              setPassword(event.target.value);
-              if (error) setError("");
-            }}
-            className="business-auth-input"
-            placeholder="••••••"
-            disabled={isLoading}
-          />
-        </div>
+        {hasPassword === true ? (
+          <div className="business-auth-field">
+            <label htmlFor="password" className="business-auth-label">
+              كلمة المرور
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (error) setError("");
+              }}
+              required
+              className="business-auth-input"
+              placeholder="••••••"
+              disabled={isLoading}
+            />
+          </div>
+        ) : null}
 
         <button
           type="submit"
