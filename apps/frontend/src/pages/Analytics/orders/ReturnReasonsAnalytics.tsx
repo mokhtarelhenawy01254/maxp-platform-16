@@ -472,7 +472,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
     [data.statusBreakdown],
   );
 
-  if (loading) {
+  if (loading && data === emptyData) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
