@@ -14,6 +14,7 @@ interface PresentationsTabProps {
   presentations: ProductPresentation[];
   loading: boolean;
   productId: string | null;
+  productSlug?: string;
   onAdd: (data: Partial<ProductPresentation>) => Promise<any>;
   onUpdate: (id: string, data: Partial<ProductPresentation>) => Promise<any>;
   onDelete: (id: string) => Promise<void>;
@@ -24,6 +25,7 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
   presentations,
   loading,
   productId,
+  productSlug,
   onAdd,
   onUpdate,
   onDelete,
@@ -156,6 +158,18 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
   const getMainImage = (pres: ProductPresentation) =>
     editState[pres.id!]?.mainImage ?? pres.mainImage;
 
+  // اللينك الكامل للعرض التقديمي: /products/{productSlug|productId}/{presentationSlug}
+  // (نفضّل الـ slug لأنه أنضف للإعلانات، والـ id fallback دايماً بيشتغل على الستورفرونت)
+  const buildPresentationUrl = (pres: ProductPresentation) => {
+    const presSlug = encodeURIComponent(editState[pres.id!]?.slug ?? pres.slug);
+    const productKey = productSlug
+      ? encodeURIComponent(productSlug)
+      : productId
+        ? encodeURIComponent(productId)
+        : "";
+    return `/products/${productKey}/${presSlug}`;
+  };
+
   if (!productId) {
     return (
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-fade-in">
@@ -224,7 +238,7 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
                           {presEdit.name ?? pres.name}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 dir-ltr text-left">
-                          /products/{presEdit.slug ?? pres.slug}
+                          {buildPresentationUrl(pres)}
                         </div>
                       </div>
                     </div>
@@ -403,7 +417,7 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
                       {/* Description preview */}
                       <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
                         <LinkIcon className="h-3 w-3" />
-                        الرابط: /products/{pres.slug} (رابط فريد قابل للتتبع)
+                        الرابط: {buildPresentationUrl(pres)} (رابط فريد قابل للتتبع)
                       </div>
 
                       {/* Actions */}
@@ -481,7 +495,9 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
                   الرابط
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400 shrink-0">/products/</span>
+                  <span className="text-xs text-gray-400 shrink-0">
+                    /products/{productId || productSlug || "..."}/
+                  </span>
                   <input
                     type="text"
                     value={editState._newSlug ?? ""}

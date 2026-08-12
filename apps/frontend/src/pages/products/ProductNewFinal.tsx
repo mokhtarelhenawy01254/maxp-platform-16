@@ -1273,7 +1273,9 @@ export const ProductNewFinal: React.FC = () => {
   const handleCopyConvertLink = useCallback(async () => {
     if (!convertSuccess) return;
     try {
-      await navigator.clipboard.writeText(convertSuccess.presentationSlug);
+      await navigator.clipboard.writeText(
+        `/products/${convertSuccess.presentationSlug}`,
+      );
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     } catch {
@@ -1565,7 +1567,7 @@ export const ProductNewFinal: React.FC = () => {
                   <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-green-700 dark:text-green-400">
                     <span>الرابط الجديد:</span>
                     <span dir="ltr" className="font-mono text-xs">
-                      {convertSuccess.presentationSlug}
+                      /products/{convertSuccess.presentationSlug}
                     </span>
                     <button
                       type="button"
@@ -1761,6 +1763,7 @@ export const ProductNewFinal: React.FC = () => {
                 presentations={presentations}
                 loading={presentationsLoading}
                 productId={effectiveProductId}
+                productSlug={formData.slug}
                 onAdd={addPresentation}
                 onUpdate={updatePresentation}
                 onDelete={deletePresentation}
