@@ -335,6 +335,17 @@ const createStudy = async (req, res) => {
       if (entityPrice && Number.isFinite(entityPrice.price)) priceSnapshot = entityPrice.price;
     }
 
+    // Guard: never allow creating an unpriced (free) study by accident
+    if (examType) {
+      const resolvedTotal = (Number.isFinite(priceSnapshot) ? priceSnapshot : 0) + additionAmount;
+      if (resolvedTotal <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: `نوع الفحص "${examType.name}" غير مسعّر — حدد سعراً للفحص أولاً أو اختر فحصاً آخر`,
+        });
+      }
+    }
+
     const clientProvidedNumber =
       typeof body.studyNumber === 'string' && body.studyNumber.trim() ? body.studyNumber.trim() : null;
     let studyNumber = clientProvidedNumber || generateStudyNumber();

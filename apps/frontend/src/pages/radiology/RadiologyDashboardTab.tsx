@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, bookingApi, fetchJson, RadiologyStatusMap } from "./shared";
+import { api, fetchJson, RadiologyStatusMap } from "./shared";
 
 interface StudyItem { status?: string; reportStatus?: string; emergency?: boolean; createdAt?: string; }
 
@@ -33,14 +33,10 @@ export default function RadiologyDashboardTab() {
         const emergency = items.filter(s => s.emergency === true).length;
 
         let revenue: number | undefined;
-        try {
-          const rep = await fetchJson<{ totals?: { collected?: number; billed?: number } }>(bookingApi("reports/revenue"));
-          revenue = rep.totals?.billed;
-        } catch { }
-
         let finData: FinancialSummary | undefined;
         try {
           finData = await fetchJson<FinancialSummary>(api("financial-summary"));
+          revenue = finData?.totalCollected;
         } catch { }
 
         setStats({ studiesToday, awaiting, ready, emergency, revenue });
@@ -58,7 +54,7 @@ export default function RadiologyDashboardTab() {
     { label: "بانتظار التقرير", value: stats?.awaiting ?? "—" },
     { label: "تقارير جاهزة", value: stats?.ready ?? "—" },
     { label: "حالات طارئة", value: stats?.emergency ?? "—" },
-    { label: "إيرادات اليوم", value: stats?.revenue != null ? `${Number(stats.revenue).toFixed(0)} ج` : "—" },
+    { label: "إجمالي المحصل", value: stats?.revenue != null ? `${Number(stats.revenue).toFixed(0)} ج` : "—" },
   ];
 
   return (

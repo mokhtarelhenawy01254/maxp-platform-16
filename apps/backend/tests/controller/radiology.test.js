@@ -345,6 +345,33 @@ describe('radiologyController', () => {
       expect(prisma.radiologyStudy.create).not.toHaveBeenCalled();
     });
 
+    test('rejects creating an unpriced (free) study', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyExamType.findFirst.mockResolvedValue(makeExamType({ price: 0 }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createStudy(req({ body: { patientName: 'مريض', examTypeId: 'et-1' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toContain('غير مسعّر');
+      expect(prisma.radiologyStudy.create).not.toHaveBeenCalled();
+    });
+
+    test('allows a study when an exam addition covers the cost even if the exam price is 0', async () => {
+      const prisma = createPrisma({ radiologyExamAddition: { findMany: jest.fn() } });
+      prisma.radiologyExamType.findFirst.mockResolvedValue(makeExamType({ price: 0 }));
+      prisma.radiologyExamAddition.findMany.mockResolvedValue([{ id: 'ad1', price: 150 }]);
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createStudy(req({ body: { patientName: 'مريض', examTypeId: 'et-1', additionIds: ['ad1'] } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.additionAmount).toBe(150);
+    });
+
     test('rejects a missing patientName', async () => {
       const prisma = createPrisma();
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -1244,5 +1271,27 @@ describe('radiologyController', () => {
       expect(res.statusCode).toBe(404);
       expect(res.sent).toBeNull();
     });
+  });
+});
+
+const stats = require('../../controller/radiologyStatisticsController');
+describe('radiologyStatisticsController', () => {
+  test('groups studies without a modality under غير محدد instead of the exam name', async () => {
+    jest.clearAllMocks();
+    const prisma = createPrisma();
+    prisma.radiologyStudy.findMany.mockResolvedValue([
+      { status: 'DELIVERED', modality: 'CT', examTypeName: 'أشعة مقطعية', assignedRadiologistName: null, referralDoctor: null },
+      { status: 'PENDING_IMAGING', modality: null, examTypeName: 'أشعة الصدر', assignedRadiologistName: null, referralDoctor: null },
+    ]);
+    prisma.radiologyExamType.findMany.mockResolvedValue([{ category: 'CT' }]);
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await stats.getStatistics(req(), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.data.byModality).toEqual({ CT: 1, 'غير محدد': 1 });
+    expect(res.payload.data.byModality['أشعة الصدر']).toBeUndefined();
+    expect(res.payload.data.total).toBe(2);
   });
 });

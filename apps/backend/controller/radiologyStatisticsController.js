@@ -27,7 +27,7 @@ const getStatistics = async (req, res) => {
     const byDoctor = {};
     for (const s of studies) {
       byStatus[s.status || 'UNKNOWN'] = (byStatus[s.status || 'UNKNOWN'] || 0) + 1;
-      const mod = s.modality || s.examTypeName || 'أخرى';
+      const mod = s.modality || 'غير محدد';
       byModality[mod] = (byModality[mod] || 0) + 1;
       if (s.assignedRadiologistName) byRadiologist[s.assignedRadiologistName] = (byRadiologist[s.assignedRadiologistName] || 0) + 1;
       if (s.referralDoctor) byDoctor[s.referralDoctor] = (byDoctor[s.referralDoctor] || 0) + 1;
