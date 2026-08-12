@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   AlertCircle,
   Award,
@@ -393,6 +394,51 @@ export default function CustomerAccountDashboard({
           </div>
         </div>
       </div>
+
+      {/* عروض المتجر الترويجية — محفز للطلب */}
+      {data.storePromotion ? (
+        <div className="mt-6 rounded-3xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-6 shadow-sm dark:border-orange-900 dark:from-orange-950/40 dark:to-amber-950/40">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white">
+              <BadgePercent size={22} />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-orange-600">عروض المتجر</div>
+              <div className="text-lg font-black text-gray-900 dark:text-white">
+                {data.storePromotion.title || "عرض لفترة محدودة"}
+              </div>
+            </div>
+          </div>
+          {data.storePromotion.tiers && data.storePromotion.tiers.length > 0 ? (
+            <div className="mt-4 space-y-2">
+              {data.storePromotion.tiers.map((tier, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 rounded-2xl bg-white/70 px-4 py-3 text-sm text-gray-700 dark:bg-gray-900/50 dark:text-gray-200"
+                >
+                  <Sparkles size={15} className="text-orange-500" />
+                  {tier.label ||
+                    `اشترِ ${tier.items || tier.minQuantity || 2} قطع واستفد من العرض`}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {data.storePromotion.endDate ? (
+            <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <Clock3 size={14} />
+              العرض صالح حتى {formatDate(data.storePromotion.endDate)}
+            </div>
+          ) : null}
+          <div className="mt-4">
+            <Link
+              to="/shop"
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-700"
+            >
+              اطلب الآن واستفد من العرض
+            </Link>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

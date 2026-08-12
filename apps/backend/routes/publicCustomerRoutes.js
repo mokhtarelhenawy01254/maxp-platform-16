@@ -1054,7 +1054,7 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
 
     const prisma = getSharedPrismaClient();
 
-    const [customer, wallet, progress, autoSettings] = await Promise.all([
+    const [customer, wallet, progress, autoSettings, storePromotion] = await Promise.all([
       prisma.customer.findFirst({
         where: { id: customerId, companyId },
         select: {
@@ -1071,7 +1071,17 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
       }),
       prisma.customerWallet.findFirst({ where: { customerId, companyId, isActive: true } }),
       customerLoyaltyService.getCustomerTierProgress(companyId, customerId),
-      autoDiscountService.getSettings(companyId)
+      autoDiscountService.getSettings(companyId),
+      prisma.storePromotion.findFirst({
+        where: {
+          companyId,
+          isActive: true,
+          AND: [
+            { OR: [{ startDate: null }, { startDate: { lte: new Date() } }] },
+            { OR: [{ endDate: null }, { endDate: { gte: new Date() } }] }
+          ]
+        }
+      })
     ]);
 
     if (!customer) {
@@ -1164,7 +1174,20 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
           totalSpent: wallet ? parseFloat(wallet.totalSpent) : 0,
           totalCashback,
           currency: wallet?.currency || company?.currency || 'EGP'
-        }
+        },
+        storePromotion: storePromotion
+          ? {
+              id: storePromotion.id,
+              title: storePromotion.title,
+              tiers: storePromotion.tiers ? JSON.parse(storePromotion.tiers) : [],
+              startDate: storePromotion.startDate,
+              endDate: storePromotion.endDate,
+              barVisible: storePromotion.barVisible,
+              barSticky: storePromotion.barSticky,
+              barPages: storePromotion.barPages,
+              disableOtherDiscounts: storePromotion.disableOtherDiscounts
+            }
+          : null
       }
     });
   } catch (error) {

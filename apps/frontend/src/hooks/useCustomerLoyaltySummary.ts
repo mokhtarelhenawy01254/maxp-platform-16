@@ -72,6 +72,23 @@ export interface CustomerLoyaltySummary {
     totalCashback: number;
     currency: string;
   };
+  storePromotion?: {
+    id: string;
+    title: string;
+    tiers?: Array<{
+      minQuantity: number;
+      items: number;
+      type: string;
+      value: number;
+      label?: string;
+    }>;
+    startDate?: string | null;
+    endDate?: string | null;
+    barVisible?: boolean;
+    barSticky?: boolean;
+    barPages?: string;
+    disableOtherDiscounts?: boolean;
+  } | null;
 }
 
 export function useCustomerLoyaltySummary(customerId?: string) {
