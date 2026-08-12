@@ -54,6 +54,7 @@ const CHECKOUT_HIDDEN_KEYS = new Set([
   "guestName", "name", "customerName", "customerFullName", "fullName",
   "guestPhone", "phone", "customerPhone", "phoneNumber", "mobileNumber", "mobile",
   "guestEmail", "email", "customerEmail", "emailAddress",
+  "attribution", "campaignAttribution", "orderAttribution",
 ]);
 
 const humanizeKey = (key: string) => {
