@@ -639,12 +639,12 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                             <div className="text-xs text-muted-foreground mt-1 flex gap-3">
                               {(item.productColor || item.metadata?.color) && (
                                 <span>
-                                  ðŸŽ¨ {item.productColor || item.metadata?.color}
+                                  🎨 {item.productColor || item.metadata?.color}
                                 </span>
                               )}
                               {(item.productSize || item.metadata?.size) && (
                                 <span>
-                                  ðŸ“ {item.productSize || item.metadata?.size}
+                                  📏 {item.productSize || item.metadata?.size}
                                 </span>
                               )}
                             </div>
@@ -953,7 +953,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           </>
           )}
 
-          {/* Action Buttons removed â€” moved to sticky footer below */}
+          {/* Action Buttons removed — moved to sticky footer below */}
         </div>
       </div>
         {/* Sticky Bottom Action Bar */}
