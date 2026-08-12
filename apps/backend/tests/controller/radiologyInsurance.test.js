@@ -2,7 +2,12 @@ jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
+jest.mock('../../controller/radiologyShiftsController', () => ({
+  attachToActiveShift: jest.fn().mockResolvedValue({ id: 'shift-payment-1' }),
+}));
+
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
+const { attachToActiveShift } = require('../../controller/radiologyShiftsController');
 const controller = require('../../controller/radiologyInsuranceController');
 
 const createResponse = () => {
@@ -468,6 +473,54 @@ describe('radiologyInsuranceController', () => {
         where: { id: 'inv-1' },
         data: { paidAmount: 300, remainingAmount: 500, status: 'PARTIAL' },
       });
+    });
+
+    test('attaches the payment to the active shift as INSURANCE with method and invoice id', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyInsuranceInvoice.findFirst.mockResolvedValue(
+        makeInvoice({ paidAmount: 0, remainingAmount: 800, status: 'OPEN' })
+      );
+      prisma.radiologyInsuranceInvoice.update.mockImplementation(({ data }) =>
+        Promise.resolve({ ...makeInvoice(), ...data }));
+      prisma.radiologyInsuranceLedgerEntry.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'ledger-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.recordPayment(
+        req({ params: { id: 'inv-1' }, body: { amount: 800, method: 'bank', note: 'تحصيل شهري' } }),
+        res
+      );
+
+      expect(attachToActiveShift).toHaveBeenCalledWith(
+        prisma,
+        'company-1',
+        null,
+        'PAYMENT',
+        800,
+        'BANK',
+        'تحصيل شهري',
+        'INSURANCE',
+        'inv-1'
+      );
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('defaults the shift payment method to BANK and passes a null note', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyInsuranceInvoice.findFirst.mockResolvedValue(
+        makeInvoice({ paidAmount: 0, remainingAmount: 800, status: 'OPEN' })
+      );
+      prisma.radiologyInsuranceInvoice.update.mockImplementation(({ data }) =>
+        Promise.resolve({ ...makeInvoice(), ...data }));
+      prisma.radiologyInsuranceLedgerEntry.create.mockResolvedValue({ id: 'ledger-1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.recordPayment(req({ params: { id: 'inv-1' }, body: { amount: 800 } }), res);
+
+      expect(attachToActiveShift).toHaveBeenCalledWith(prisma, 'company-1', null, 'PAYMENT', 800, 'BANK', null, 'INSURANCE', 'inv-1');
+      expect(res.statusCode).toBe(200);
     });
 
     test('rejects a non-positive amount', async () => {

@@ -233,6 +233,8 @@ model RadiologyShiftPayment {
   companyId String?
   shiftId   String
   studyId   String?
+  invoiceId String?   // RadiologyInsuranceInvoice id when source = INSURANCE
+  source    String   @default("STUDY") // STUDY (patient direct) | INSURANCE (insurance invoice collection)
   type      String   // PAYMENT | REFUND
   amount    Float    @default(0)
   method    String?  // CASH | CARD | VODAFONE_CASH | BANK

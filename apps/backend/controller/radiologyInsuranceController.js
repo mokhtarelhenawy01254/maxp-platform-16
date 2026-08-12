@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getStartOfDayInTimezone, getEndOfDayInTimezone, getDateStringInTimezone } = require('../utils/dateUtils');
+const { attachToActiveShift } = require('./radiologyShiftsController');
 
 const INVOICE_STATUSES = new Set(['OPEN', 'PARTIAL', 'PAID']);
 const LEDGER_TYPES = new Set(['PAYMENT', 'ADJUSTMENT']);
@@ -250,6 +251,7 @@ const recordPayment = async (req, res) => {
     const body = req.body || {};
     const amount = Number(body.amount);
     if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: 'المبلغ غير صحيح' });
+    const method = typeof body.method === 'string' && body.method.trim() ? String(body.method).toUpperCase() : 'BANK';
 
     const prisma = getSharedPrismaClient();
     const invoice = await prisma.radiologyInsuranceInvoice.findFirst({ where: { id, companyId } });
@@ -276,6 +278,8 @@ const recordPayment = async (req, res) => {
       });
       return result;
     });
+
+    await attachToActiveShift(prisma, companyId, null, 'PAYMENT', amount, method, body.note ? String(body.note).trim() : null, 'INSURANCE', invoice.id);
 
     res.json({ success: true, data: updated });
   } catch (error) {

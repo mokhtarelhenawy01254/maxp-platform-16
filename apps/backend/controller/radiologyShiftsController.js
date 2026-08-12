@@ -6,6 +6,8 @@ const summarize = (payments) => {
   const byMethod = {};
   for (const m of METHODS) byMethod[m] = 0;
   let collected = 0;
+  let patientCollected = 0;
+  let insuranceCollected = 0;
   let refunded = 0;
   let count = 0;
   for (const p of payments) {
@@ -13,19 +15,34 @@ const summarize = (payments) => {
       refunded += p.amount;
     } else {
       collected += p.amount;
-      byMethod[p.method || 'CASH'] = (byMethod[p.method || 'CASH'] || 0) + p.amount;
+      if (p.source === 'INSURANCE') {
+        insuranceCollected += p.amount;
+      } else {
+        patientCollected += p.amount;
+        byMethod[p.method || 'CASH'] = (byMethod[p.method || 'CASH'] || 0) + p.amount;
+      }
     }
     count += 1;
   }
-  return { collected, refunded, net: collected - refunded, byMethod, count };
+  return { collected, patientCollected, insuranceCollected, refunded, net: collected - refunded, byMethod, count };
 };
 
-const attachToActiveShift = async (prisma, companyId, studyId, type, amount, method, note) => {
+const attachToActiveShift = async (prisma, companyId, studyId, type, amount, method, note, source, invoiceId) => {
   try {
     const shift = await prisma.radiologyShift.findFirst({ where: { companyId, status: 'OPEN' }, select: { id: true } });
     if (!shift) return null;
     return prisma.radiologyShiftPayment.create({
-      data: { companyId, shiftId: shift.id, studyId: studyId || null, type, amount, method: method || 'CASH', note: note || null },
+      data: {
+        companyId,
+        shiftId: shift.id,
+        studyId: studyId || null,
+        invoiceId: invoiceId || null,
+        source: source === 'INSURANCE' ? 'INSURANCE' : 'STUDY',
+        type,
+        amount,
+        method: method || 'CASH',
+        note: note || null,
+      },
     });
   } catch (e) {
     console.error('Error attaching payment to active shift:', e);

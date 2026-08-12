@@ -75,7 +75,7 @@ export default function InsuranceInvoicesTab() {
   const [studiesLoading, setStudiesLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState<InsuranceInvoice | null>(null);
-  const [paymentForm, setPaymentForm] = useState({ amount: "", note: "" });
+  const [paymentForm, setPaymentForm] = useState({ amount: "", note: "", method: "BANK" });
   const [paying, setPaying] = useState(false);
 
   const load = useCallback(async (silent = false) => {
@@ -168,7 +168,7 @@ export default function InsuranceInvoicesTab() {
 
   const openPayment = (inv: InsuranceInvoice) => {
     setPaymentTarget(inv);
-    setPaymentForm({ amount: "", note: "" });
+    setPaymentForm({ amount: "", note: "", method: "BANK" });
   };
 
   const submitPayment = async () => {
@@ -182,7 +182,7 @@ export default function InsuranceInvoicesTab() {
     try {
       await fetchJson(api(`insurance-invoices/${paymentTarget.id}/payment`), {
         method: "POST",
-        body: JSON.stringify({ amount, note: paymentForm.note.trim() || undefined }),
+        body: JSON.stringify({ amount, note: paymentForm.note.trim() || undefined, method: paymentForm.method }),
       });
       toast.success("تم تسجيل الدفعة");
       setPaymentTarget(null);
@@ -345,6 +345,15 @@ export default function InsuranceInvoicesTab() {
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">المبلغ *</label>
                 <input type="number" min={0} className={MODAL_INPUT_CLS} value={paymentForm.amount} onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">طريقة الدفع</label>
+                <select className={MODAL_INPUT_CLS} value={paymentForm.method} onChange={e => setPaymentForm({ ...paymentForm, method: e.target.value })}>
+                  <option value="BANK">تحويل بنكي</option>
+                  <option value="CASH">كاش</option>
+                  <option value="CARD">كارت</option>
+                  <option value="VODAFONE_CASH">فودافون كاش</option>
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">ملاحظة</label>

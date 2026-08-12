@@ -3,7 +3,15 @@ import { toast } from "sonner";
 import { RefreshCw, Loader2, Play, StopCircle, Banknote } from "lucide-react";
 import { api, fetchJson, MODAL_INPUT_CLS } from "./shared";
 
-interface ShiftSummary { collected: number; refunded: number; net: number; byMethod: Record<string, number>; count: number; }
+interface ShiftSummary {
+  collected: number;
+  patientCollected: number;
+  insuranceCollected: number;
+  refunded: number;
+  net: number;
+  byMethod: Record<string, number>;
+  count: number;
+}
 
 interface Shift { id: string; cashierName: string; status: string; openedAt: string; closedAt?: string; summary?: ShiftSummary; }
 
@@ -59,7 +67,7 @@ export default function CashierShiftsTab() {
       toast.success("تم إغلاق الوردية");
       await refresh({ silent: true });
       if (data?.summary) {
-        toast.info(`المحصّل: ${fmtMoney(data.summary.collected)} — الاسترجاع: ${fmtMoney(data.summary.refunded)} — الصافي: ${fmtMoney(data.summary.net)}`);
+        toast.info(`من المرضى: ${fmtMoney(data.summary.patientCollected)} — من التأمين: ${fmtMoney(data.summary.insuranceCollected)} — الاسترجاع: ${fmtMoney(data.summary.refunded)} — الصافي: ${fmtMoney(data.summary.net)}`);
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل إغلاق الوردية");
@@ -71,8 +79,12 @@ export default function CashierShiftsTab() {
   const summaryRow = (s: ShiftSummary) => (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-sm">
       <div className="rounded-lg border dark:border-gray-700 px-3 py-2">
-        <p className="text-xs text-gray-500 dark:text-gray-400">محصّل</p>
-        <b className="text-green-600">{fmtMoney(s.collected)}</b>
+        <p className="text-xs text-gray-500 dark:text-gray-400">محصّل من المرضى</p>
+        <b className="text-green-600">{fmtMoney(s.patientCollected)}</b>
+      </div>
+      <div className="rounded-lg border dark:border-gray-700 px-3 py-2">
+        <p className="text-xs text-gray-500 dark:text-gray-400">تحصيل التأمين (من والي)</p>
+        <b className="text-blue-600">{fmtMoney(s.insuranceCollected)}</b>
       </div>
       <div className="rounded-lg border dark:border-gray-700 px-3 py-2">
         <p className="text-xs text-gray-500 dark:text-gray-400">استرجاع</p>
@@ -83,7 +95,7 @@ export default function CashierShiftsTab() {
         <b className="text-blue-600">{fmtMoney(s.net)}</b>
       </div>
       <div className="rounded-lg border dark:border-gray-700 px-3 py-2">
-        <p className="text-xs text-gray-500 dark:text-gray-400">كاش</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">كاش المرضى</p>
         <b>{fmtMoney(s.byMethod?.["CASH"])}</b>
       </div>
     </div>
@@ -135,7 +147,7 @@ export default function CashierShiftsTab() {
             <table className="w-full min-w-[700px] text-sm">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
-                  {["الصراف", "الحالة", "الفتح", "الإغلاق", "المحصّل", "الاسترجاع", "الصافي"].map(h => (
+                  {["الصراف", "الحالة", "الفتح", "الإغلاق", "من المرضى", "من التأمين", "الاسترجاع", "الصافي"].map(h => (
                     <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -151,7 +163,8 @@ export default function CashierShiftsTab() {
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">{fmtDate(s.openedAt)}</td>
                     <td className="py-3 px-4 whitespace-nowrap">{s.closedAt ? fmtDate(s.closedAt) : "—"}</td>
-                    <td className="py-3 px-4 text-green-600 font-medium">{fmtMoney(s.summary?.collected)}</td>
+                    <td className="py-3 px-4 text-green-600 font-medium">{fmtMoney(s.summary?.patientCollected)}</td>
+                    <td className="py-3 px-4 text-blue-600 font-medium">{fmtMoney(s.summary?.insuranceCollected)}</td>
                     <td className="py-3 px-4 text-red-600">{fmtMoney(s.summary?.refunded)}</td>
                     <td className="py-3 px-4 font-bold">{fmtMoney(s.summary?.net)}</td>
                   </tr>
