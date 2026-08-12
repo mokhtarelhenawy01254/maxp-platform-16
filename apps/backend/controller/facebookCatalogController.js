@@ -70,10 +70,11 @@ async function syncProductsToFacebook(catalog, companyId, productIds = null, syn
     };
   }
 
-  // جلب المنتجات من النظام
+  // جلب المنتجات من النظام — نستبعد المحذوفة والمخفية (المنتجات المحوّلة لعروض تقديمية)
+  // حتى لا تظهر في كتالوج الفيسبوك بعد اختفائها من المتجر
   const where = syncAll
-    ? { companyId, isActive: true }
-    : { companyId, id: { in: productIds || [] }, isActive: true };
+    ? { companyId, isActive: true, deletedAt: null, isHidden: false }
+    : { companyId, id: { in: productIds || [] }, isActive: true, deletedAt: null, isHidden: false };
 
   const products = await getSharedPrismaClient().product.findMany({
     where,
