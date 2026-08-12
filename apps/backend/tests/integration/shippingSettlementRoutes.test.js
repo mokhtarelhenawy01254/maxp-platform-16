@@ -11,6 +11,8 @@ describe('Shipping Settlement Routes', () => {
   let adminUser;
   let customer;
   let order;
+  let turboOrder;
+  let turboOrderPending;
   let shippingCompany;
   let shipment;
   let token;
@@ -124,6 +126,62 @@ describe('Shipping Settlement Routes', () => {
       }
     });
 
+    // Turbo shipments live on the Order table (turboShipmentId / turboShipmentStatus),
+    // not on Shipment rows — they must surface in settlement as a virtual "TURBO" company.
+    turboOrder = await prisma.order.create({
+      data: {
+        orderNumber: `ORD-TURBO-${unique}`,
+        customerId: customer.id,
+        companyId: company.id,
+        status: 'DELIVERED',
+        paymentStatus: 'PAID',
+        paymentMethod: 'CASH',
+        subtotal: 120,
+        tax: 0,
+        shipping: 30,
+        discount: 0,
+        total: 150,
+        currency: 'EGP',
+        customerName: 'Turbo Customer',
+        customerPhone: '01000000008',
+        customerEmail: customer.email,
+        city: 'القاهرة',
+        governorate: 'القاهرة',
+        sourceType: 'manual',
+        turboShipmentId: `TB-${unique}-01`,
+        turboTrackingNumber: `TB-${unique}-01`,
+        turboShipmentStatus: 'delivered',
+        turboMetadata: JSON.stringify({})
+      }
+    });
+
+    turboOrderPending = await prisma.order.create({
+      data: {
+        orderNumber: `ORD-TURBO-P-${unique}`,
+        customerId: customer.id,
+        companyId: company.id,
+        status: 'PROCESSING',
+        paymentStatus: 'PENDING',
+        paymentMethod: 'CASH',
+        subtotal: 80,
+        tax: 0,
+        shipping: 20,
+        discount: 0,
+        total: 100,
+        currency: 'EGP',
+        customerName: 'Turbo Pending',
+        customerPhone: '01000000009',
+        customerEmail: customer.email,
+        city: 'الجيزة',
+        governorate: 'الجيزة',
+        sourceType: 'manual',
+        turboShipmentId: `TB-${unique}-02`,
+        turboTrackingNumber: `TB-${unique}-02`,
+        turboShipmentStatus: 'processing',
+        turboMetadata: JSON.stringify({})
+      }
+    });
+
     const JWT_SECRET = process.env.JWT_SECRET || 'maxp-super-secret-jwt-key-2026';
     process.env.JWT_SECRET = JWT_SECRET;
 
@@ -150,6 +208,12 @@ describe('Shipping Settlement Routes', () => {
       if (order) {
         await prisma.orderStatusHistory.deleteMany({ where: { orderId: order.id } }).catch(() => {});
         await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
+      }
+      if (turboOrderPending) {
+        await prisma.order.deleteMany({ where: { id: turboOrderPending.id } }).catch(() => {});
+      }
+      if (turboOrder) {
+        await prisma.order.deleteMany({ where: { id: turboOrder.id } }).catch(() => {});
       }
       if (customer) {
         await prisma.customer.delete({ where: { id: customer.id } }).catch(() => {});
@@ -255,5 +319,91 @@ describe('Shipping Settlement Routes', () => {
       .post('/api/v1/shipping-settlement/unsettle')
       .set('Authorization', `Bearer ${token}`)
       .send({ shipmentIds: [shipment.id] });
+  });
+
+  test('GET /summary includes virtual Turbo company from order-level shipments', async () => {
+    const res = await request(app)
+      .get('/api/v1/shipping-settlement/summary')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const turbo = res.body.data.find((item) => item.company.id === 'TURBO');
+    expect(turbo).toBeDefined();
+    expect(turbo.company.providerKey).toBe('TURBO');
+    expect(turbo.totalShipments).toBe(2);
+    expect(turbo.deliveredShipments).toBe(1);
+    expect(turbo.pendingAmount).toBe(150);
+    expect(turbo.settledShipments).toBe(0);
+  });
+
+  test('GET /orders?shippingCompanyId=TURBO returns only turbo shipments', async () => {
+    const res = await request(app)
+      .get('/api/v1/shipping-settlement/orders?shippingCompanyId=TURBO')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBe(2);
+    const delivered = res.body.data.find((item) => item.order.orderNumber === turboOrder.orderNumber);
+    expect(delivered).toBeDefined();
+    expect(delivered.sourceType).toBe('TURBO');
+    expect(delivered.delivered).toBe(true);
+    expect(delivered.trackingNumber).toBe(turboOrder.turboTrackingNumber);
+    expect(delivered.order.total).toBe(150);
+  });
+
+  test('POST /settle with shippingCompanyId=TURBO settles only delivered turbo orders', async () => {
+    const res = await request(app)
+      .post('/api/v1/shipping-settlement/settle')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ shippingCompanyId: 'TURBO' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.updated).toBe(1);
+
+    const settled = await prisma.order.findUnique({ where: { id: turboOrder.id } });
+    const settledMeta = JSON.parse(settled.turboMetadata);
+    expect(settledMeta.settlementStatus).toBe('SETTLED');
+    expect(settledMeta.settledAt).toBeTruthy();
+
+    const pending = await prisma.order.findUnique({ where: { id: turboOrderPending.id } });
+    expect(JSON.parse(pending.turboMetadata).settlementStatus).toBeUndefined();
+  });
+
+  test('POST /unsettle with turboOrderIds reverts turbo settlement', async () => {
+    const res = await request(app)
+      .post('/api/v1/shipping-settlement/unsettle')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ turboOrderIds: [turboOrder.id] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.updated).toBe(1);
+
+    const updated = await prisma.order.findUnique({ where: { id: turboOrder.id } });
+    const meta = JSON.parse(updated.turboMetadata);
+    expect(meta.settlementStatus).toBe('PENDING');
+    expect(meta.settledAt).toBeUndefined();
+  });
+
+  test('GET /orders?shippingCompanyId=TURBO&settlementStatus=SETTLED filters turbo rows', async () => {
+    await request(app)
+      .post('/api/v1/shipping-settlement/settle')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ shippingCompanyId: 'TURBO' });
+
+    const res = await request(app)
+      .get('/api/v1/shipping-settlement/orders?shippingCompanyId=TURBO&settlementStatus=SETTLED')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBe(1);
+    expect(res.body.data[0].order.orderNumber).toBe(turboOrder.orderNumber);
+    expect(res.body.data[0].settlementStatus).toBe('SETTLED');
+
+    await request(app)
+      .post('/api/v1/shipping-settlement/unsettle')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ turboOrderIds: [turboOrder.id] });
   });
 });

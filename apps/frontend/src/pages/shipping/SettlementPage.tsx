@@ -88,8 +88,11 @@ const SettlementPage: React.FC = () => {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      setPage(1);
-      loadOrders();
+      if (page !== 1) {
+        setPage(1);
+      } else {
+        loadOrders();
+      }
     }, 400);
     return () => clearTimeout(timeout);
   }, [search, dateFrom, dateTo]);
@@ -109,6 +112,12 @@ const SettlementPage: React.FC = () => {
 
   const allSelected = orders.length > 0 && selectedIds.length === orders.length;
 
+  const sourceTypeOf = useMemo(() => {
+    const map = new Map<string, string>();
+    orders.forEach((o) => map.set(o.id, o.sourceType));
+    return map;
+  }, [orders]);
+
   const toggleSelectAll = () => {
     setSelectedIds((prev) => (prev.length === orders.length ? [] : orders.map((o) => o.id)));
   };
@@ -118,16 +127,30 @@ const SettlementPage: React.FC = () => {
   };
 
   const handleBulkSettle = async (shippingCompanyId?: string) => {
-    const ids = shippingCompanyId ? [] : selectedIds;
-    if (!shippingCompanyId && ids.length === 0) {
+    if (shippingCompanyId) {
+      try {
+        setProcessing(true);
+        const res = await shippingSettlementService.settle({ shippingCompanyId });
+        toast.success(`تمت تسوية ${res.data.updated} شحنة`);
+        setSelectedIds([]);
+        await Promise.all([loadSummary(), loadOrders()]);
+      } catch (error: any) {
+        toast.error(error?.message || "تعذر تنفيذ التسوية");
+      } finally {
+        setProcessing(false);
+      }
+      return;
+    }
+
+    if (selectedIds.length === 0) {
       toast.error("حدد شحنات للتسوية أولاً");
       return;
     }
+    const shipmentIds = selectedIds.filter((id) => sourceTypeOf.get(id) !== "TURBO");
+    const turboOrderIds = selectedIds.filter((id) => sourceTypeOf.get(id) === "TURBO");
     try {
       setProcessing(true);
-      const res = await shippingSettlementService.settle(
-        shippingCompanyId ? { shippingCompanyId } : { shipmentIds: ids }
-      );
+      const res = await shippingSettlementService.settle({ shipmentIds, turboOrderIds });
       toast.success(`تمت تسوية ${res.data.updated} شحنة`);
       setSelectedIds([]);
       await Promise.all([loadSummary(), loadOrders()]);
@@ -141,7 +164,10 @@ const SettlementPage: React.FC = () => {
   const handleUnsettle = async (id: string) => {
     try {
       setProcessing(true);
-      const res = await shippingSettlementService.unsettle([id]);
+      const isTurbo = sourceTypeOf.get(id) === "TURBO";
+      const res = isTurbo
+        ? await shippingSettlementService.unsettle([], [id])
+        : await shippingSettlementService.unsettle([id]);
       toast.success(`تم التراجع عن تسوية ${res.data.updated} شحنة`);
       await Promise.all([loadSummary(), loadOrders()]);
     } catch (error: any) {
@@ -152,6 +178,9 @@ const SettlementPage: React.FC = () => {
   };
 
   const selectedCompany = summary.find((item) => item.company.id === selectedCompanyId);
+
+  const getCompanyName = (item: SettlementCompanySummary) =>
+    item.company.id === "TURBO" ? t("shippingSettlement.turbo", "Turbo Express") : item.company.name;
 
   const getStatusBadge = (order: SettlementOrder) => {
     if (order.settlementStatus === "SETTLED") {
@@ -211,7 +240,7 @@ const SettlementPage: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-900 dark:text-white">{item.company.name}</span>
+                <span className="font-bold text-gray-900 dark:text-white">{getCompanyName(item)}</span>
                 <TruckIcon className="h-5 w-5 text-gray-400" />
               </div>
               <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
@@ -281,7 +310,7 @@ const SettlementPage: React.FC = () => {
         {selectedCompany && (
           <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-sm dark:border-indigo-900/60 dark:bg-indigo-950/20">
             <span className="font-bold text-indigo-700 dark:text-indigo-300">
-              {selectedCompany.company.name}
+              {getCompanyName(selectedCompany)}
             </span>
             <button
               onClick={() => setSelectedCompanyId("")}

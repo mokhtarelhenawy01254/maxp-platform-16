@@ -19,6 +19,7 @@ export interface SettlementOrder {
   settlementStatus: string;
   settledAt: string | null;
   delivered: boolean;
+  sourceType: 'SHIPMENT' | 'TURBO';
   order: {
     orderNumber: string;
     customerName: string;
@@ -40,10 +41,10 @@ const shippingSettlementService = {
     api.get<{ success: boolean; data: SettlementCompanySummary[] }>('/shipping-settlement/summary').then((res) => res.data),
   getOrders: (params?: Record<string, any>): Promise<SettlementListResponse> =>
     api.get<SettlementListResponse>('/shipping-settlement/orders', { params }).then((res) => res.data),
-  settle: (payload: { shippingCompanyId?: string; shipmentIds?: string[]; settlementDate?: string }): Promise<{ success: boolean; data: { updated: number } }> =>
+  settle: (payload: { shippingCompanyId?: string; shipmentIds?: string[]; turboOrderIds?: string[]; settlementDate?: string }): Promise<{ success: boolean; data: { updated: number } }> =>
     api.post<{ success: boolean; data: { updated: number } }>('/shipping-settlement/settle', payload).then((res) => res.data),
-  unsettle: (shipmentIds: string[]): Promise<{ success: boolean; data: { updated: number } }> =>
-    api.post<{ success: boolean; data: { updated: number } }>('/shipping-settlement/unsettle', { shipmentIds }).then((res) => res.data)
+  unsettle: (shipmentIds: string[] = [], turboOrderIds: string[] = []): Promise<{ success: boolean; data: { updated: number } }> =>
+    api.post<{ success: boolean; data: { updated: number } }>('/shipping-settlement/unsettle', { shipmentIds, turboOrderIds }).then((res) => res.data)
 };
 
 export default shippingSettlementService;
