@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft } from "lucide-react";
-import { api, fetchJson, RadiologyExamType, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { api, bookingApi, fetchJson, RadiologyExamType, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface Appointment {
   id: string; patientName: string; patientPhone?: string;
@@ -20,9 +20,9 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 
 const STATUS_CHAIN: Record<string, string> = { SCHEDULED: "CHECKED_IN", CHECKED_IN: "DONE", DONE: "", CANCELLED: "" };
 
-interface Form { id?: string; patientName: string; patientPhone: string; patientGender: string; patientAge: string; examTypeId: string; appointmentDate: string; appointmentTime: string; notes: string; }
+interface Form { id?: string; patientId?: string; patientName: string; patientPhone: string; patientGender: string; patientAge: string; examTypeId: string; appointmentDate: string; appointmentTime: string; notes: string; }
 
-const emptyForm = (): Form => ({ patientName: "", patientPhone: "", patientGender: "", patientAge: "", examTypeId: "", appointmentDate: "", appointmentTime: "", notes: "" });
+const emptyForm = (): Form => ({ patientId: "", patientName: "", patientPhone: "", patientGender: "", patientAge: "", examTypeId: "", appointmentDate: "", appointmentTime: "", notes: "" });
 
 export default function ScheduleTab() {
   const [items, setItems] = useState<Appointment[]>([]);
@@ -32,6 +32,22 @@ export default function ScheduleTab() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<Form | null>(null);
   const [saving, setSaving] = useState(false);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [patientResults, setPatientResults] = useState<{ id: string; firstName: string; lastName?: string; phone?: string }[]>([]);
+
+  useEffect(() => {
+    if (!patientSearch.trim()) { setPatientResults([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const url = new URL(bookingApi("patients"));
+        url.searchParams.set("search", patientSearch.trim());
+        url.searchParams.set("limit", "8");
+        const rows = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string }[]>(url.toString());
+        setPatientResults(Array.isArray(rows) ? rows : []);
+      } catch { setPatientResults([]); }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [patientSearch]);
 
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     try {
@@ -63,6 +79,7 @@ export default function ScheduleTab() {
     setSaving(true);
     try {
       const payload = {
+        patientId: modal.patientId || undefined,
         patientName: modal.patientName.trim(),
         patientPhone: modal.patientPhone.trim() || undefined,
         patientGender: modal.patientGender || undefined,
@@ -176,7 +193,7 @@ export default function ScheduleTab() {
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 max-w-[160px] truncate">{a.notes || "—"}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
-                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", examTypeId: a.examTypeId || "", appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as Form)?.patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", examTypeId: a.examTypeId || "", appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
                           {a.status !== "CANCELLED" ? (
                             <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="تحويل لدراسة"><ArrowRightLeft className="w-4 h-4" /></button>
                           ) : null}
@@ -203,9 +220,28 @@ export default function ScheduleTab() {
               <button onClick={() => setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">اسم المريض *</label>
-                <input className={MODAL_INPUT_CLS} value={modal.patientName} onChange={e => setModal({ ...modal, patientName: e.target.value })} />
+              <div className="sm:col-span-2 relative">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">المريض *</label>
+                <input
+                  className={MODAL_INPUT_CLS}
+                  value={patientSearch || modal.patientName}
+                  onChange={e => { setPatientSearch(e.target.value); if (!e.target.value) { setModal({ ...modal, patientId: "", patientName: "", patientPhone: "" }); } }}
+                  placeholder="ابحث عن مريض موجود..."
+                />
+                {patientSearch.trim() && (
+                  <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
+                    {patientResults.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">لا توجد نتائج</div>
+                    ) : (
+                      patientResults.map(p => (
+                        <button key={p.id} type="button" onClick={() => { setModal({ ...modal, patientId: p.id, patientName: `${p.firstName}${p.lastName ? " " + p.lastName : ""}`, patientPhone: p.phone || "" }); setPatientSearch(""); setPatientResults([]); }} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <span className="font-medium">{p.firstName} {p.lastName || ""}</span>
+                          {p.phone ? <span className="text-xs text-gray-500 dark:text-gray-400"> — {p.phone}</span> : null}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">الهاتف</label>

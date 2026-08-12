@@ -72,6 +72,7 @@ const createAppointment = async (req, res) => {
     const appointment = await prisma.radiologyAppointment.create({
       data: {
         companyId,
+        patientId: body.patientId || null,
         patientName,
         patientPhone: body.patientPhone ? String(body.patientPhone) : null,
         patientGender: body.patientGender || null,
@@ -105,6 +106,7 @@ const updateAppointment = async (req, res) => {
     if (!existing) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
 
     const data = {};
+    if (body.patientId !== undefined) data.patientId = body.patientId || null;
     if (body.patientName !== undefined) {
       if (!String(body.patientName).trim()) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
       data.patientName = String(body.patientName).trim();

@@ -152,6 +152,7 @@ model RadiologyExamTag {
 model RadiologyAppointment {
   id              String   @id @default(cuid())
   companyId       String?
+  patientId       String?   // external ref to booking Patient
   patientName     String
   patientPhone    String?
   patientGender    String?

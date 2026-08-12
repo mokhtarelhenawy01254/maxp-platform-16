@@ -94,6 +94,18 @@ describe('radiologyAppointmentsController', () => {
     expect(res.statusCode).toBe(403);
   });
 
+  test('createAppointment stores patientId when a patient is linked', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyAppointment.create.mockImplementation(({ data }) => Promise.resolve({ id: 'ap-1', ...data }));
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await appointments.createAppointment(req({ body: { patientId: 'pat-1', patientName: 'مريض', examTypeId: 'et-1' } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.radiologyAppointment.create).toHaveBeenCalledWith({ data: expect.objectContaining({ patientId: 'pat-1', status: 'SCHEDULED' }) });
+  });
+
   test('convertToStudy sets priceSnapshot, modality and billingType from the exam type', async () => {
     const prisma = createPrisma();
     prisma.radiologyAppointment.findFirst.mockResolvedValue({
