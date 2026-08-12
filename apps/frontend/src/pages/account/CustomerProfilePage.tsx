@@ -1,13 +1,20 @@
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   CalendarDays,
   Mail,
+  MapPin,
   Phone,
+  KeyRound,
   ShieldCheck,
   UserRound,
   CreditCard,
+  Save,
+  Loader2,
+  Lock,
 } from "lucide-react";
 
+import { apiClient } from "../../services/apiClient";
 import { useCustomerLoyaltySummary } from "../../hooks/useCustomerLoyaltySummary";
 
 const toNumber = (value: unknown): number => {
@@ -30,7 +37,24 @@ const formatDate = (value?: string | null) => {
 };
 
 export default function CustomerProfilePage() {
-  const { data, loading, error } = useCustomerLoyaltySummary();
+  const { data, loading, error, reload } = useCustomerLoyaltySummary();
+
+  // ── العنوان بالتفصيل ──
+  const [address, setAddress] = useState("");
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [addressMsg, setAddressMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // ── كلمة المرور ──
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // تعبئة العنوان من بيانات العميل لما تحمّل
+  useEffect(() => {
+    if (data?.customer?.address) setAddress(data.customer.address);
+  }, [data]);
 
   if (loading) {
     return (
@@ -56,6 +80,51 @@ export default function CustomerProfilePage() {
 
   const currency = data.wallet?.currency || data.company?.currency || "EGP";
   const fullName = `${data.customer.firstName} ${data.customer.lastName}`.trim();
+
+  const saveAddress = async () => {
+    setSavingAddress(true);
+    setAddressMsg(null);
+    try {
+      await apiClient.put("/public/customers/profile", { address });
+      setAddressMsg({ ok: true, text: "تم حفظ العنوان بنجاح" });
+    } catch (err) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setAddressMsg({ ok: false, text: e.response?.data?.message || "فشل حفظ العنوان" });
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const savePassword = async () => {
+    setSavingPassword(true);
+    setPasswordMsg(null);
+    if (newPassword.length < 4) {
+      setPasswordMsg({ ok: false, text: "كلمة المرور يجب ألا تقل عن 4 أحرف" });
+      setSavingPassword(false);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ ok: false, text: "كلمتا المرور غير متطابقتين" });
+      setSavingPassword(false);
+      return;
+    }
+    try {
+      await apiClient.put("/public/customers/password", {
+        currentPassword: currentPassword || undefined,
+        newPassword,
+      });
+      setPasswordMsg({ ok: true, text: "تم حفظ كلمة المرور بنجاح" });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      void reload();
+    } catch (err) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setPasswordMsg({ ok: false, text: e.response?.data?.message || "فشل حفظ كلمة المرور" });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -122,6 +191,119 @@ export default function CustomerProfilePage() {
               {formatDate(data.customer.joinedAt)}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* العنوان بالتفصيل */}
+      <div className="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex items-center gap-3 border-b border-gray-100 pb-4 dark:border-gray-700">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+            <MapPin size={20} />
+          </div>
+          <div className="text-right">
+            <div className="font-bold text-gray-900 dark:text-white">العنوان بالتفصيل</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              عنوانك للشحن والتوصيل
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 space-y-3">
+          <textarea
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            rows={3}
+            placeholder="مثال: شارع 9، حي المعادي، القاهرة — بجوار محطة المترو"
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+          />
+          {addressMsg && (
+            <div
+              className={`rounded-xl px-4 py-2 text-sm ${
+                addressMsg.ok
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+              }`}
+            >
+              {addressMsg.text}
+            </div>
+          )}
+          <button
+            onClick={saveAddress}
+            disabled={savingAddress}
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {savingAddress ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            حفظ العنوان
+          </button>
+        </div>
+      </div>
+
+      {/* إدارة كلمة المرور */}
+      <div className="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex items-center gap-3 border-b border-gray-100 pb-4 dark:border-gray-700">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+            <KeyRound size={20} />
+          </div>
+          <div className="text-right">
+            <div className="font-bold text-gray-900 dark:text-white">كلمة المرور</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              سجّل الدخول برقم الموبايل + كلمة مرور بدل دخول الموبايل فقط
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3">
+          <div>
+            <label className="mb-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <Lock size={12} /> كلمة المرور الحالية (لو عندك واحدة)
+            </label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="••••••"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-violet-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">كلمة المرور الجديدة</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-violet-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">تأكيد كلمة المرور</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-violet-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
+          </div>
+          {passwordMsg && (
+            <div
+              className={`rounded-xl px-4 py-2 text-sm ${
+                passwordMsg.ok
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+              }`}
+            >
+              {passwordMsg.text}
+            </div>
+          )}
+          <button
+            onClick={savePassword}
+            disabled={savingPassword}
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50"
+          >
+            {savingPassword ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            حفظ كلمة المرور
+          </button>
         </div>
       </div>
 

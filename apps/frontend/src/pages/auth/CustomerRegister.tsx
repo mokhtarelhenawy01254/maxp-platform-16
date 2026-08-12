@@ -10,6 +10,7 @@ const CustomerRegister: React.FC = () => {
   const navigate = useNavigate();
   const params = useParams();
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -91,7 +92,7 @@ const CustomerRegister: React.FC = () => {
 
       const response = await apiClient.post(
         `/public/customers/login-phone?companyId=${encodeURIComponent(companyId)}`,
-        { phone: normalizedPhone },
+        { phone: normalizedPhone, password: password.trim() || undefined },
       );
 
       if (response.data?.success && response.data?.data?.token) {
@@ -164,6 +165,25 @@ const CustomerRegister: React.FC = () => {
             required
             className="business-auth-input business-auth-input--ltr"
             placeholder="01xxxxxxxxx"
+            disabled={isLoading}
+          />
+        </div>
+
+        <div className="business-auth-field">
+          <label htmlFor="password" className="business-auth-label">
+            كلمة المرور (اختياري — لو متظبط لك باسورد)
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              if (error) setError("");
+            }}
+            className="business-auth-input"
+            placeholder="••••••"
             disabled={isLoading}
           />
         </div>

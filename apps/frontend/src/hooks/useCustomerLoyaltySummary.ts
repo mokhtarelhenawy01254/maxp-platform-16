@@ -28,6 +28,7 @@ export interface CustomerLoyaltySummary {
     phone?: string | null;
     avatar?: string | null;
     joinedAt?: string | null;
+    address?: string | null;
   };
   company: {
     id: string;

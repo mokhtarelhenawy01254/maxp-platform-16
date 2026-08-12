@@ -5,6 +5,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const WalletService = require('../services/walletService');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
 const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
@@ -784,8 +785,28 @@ router.post('/login-phone', getCompanyFromSubdomain, async (req, res) => {
         companyId,
         OR: [{ phoneNormalized: toCanonicalE164(phone) }, { phone: { in: getPhoneVariants(phone) } }]
       },
-      select: { id: true, firstName: true, lastName: true, companyId: true }
+      select: { id: true, firstName: true, lastName: true, companyId: true, password: true }
     });
+
+    // لو العميل متظبط له باسورد → الدخول يتطلب كلمة المرور
+    if (customer && customer.password) {
+      const providedPassword = String(req.body.password || '');
+      if (!providedPassword) {
+        return res.status(400).json({
+          success: false,
+          code: 'PASSWORD_REQUIRED',
+          message: 'يرجى إدخال كلمة المرور'
+        });
+      }
+      const valid = bcrypt.compareSync(providedPassword, customer.password);
+      if (!valid) {
+        return res.status(400).json({
+          success: false,
+          code: 'WRONG_PASSWORD',
+          message: 'كلمة المرور غير صحيحة'
+        });
+      }
+    }
 
     if (!customer) {
       const last4 = phone.replace(/\D/g, '').slice(-4);
@@ -901,6 +922,117 @@ router.get('/me', verifyToken.authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * تحديث بيانات العميل (الاسم، البريد، العنوان بالتفصيل)
+ */
+router.put('/profile', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'CUSTOMER') {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+    const customerId = req.user.customerId || req.user.userId || req.user.id;
+    const companyId = req.user.companyId;
+    if (!customerId || !companyId) {
+      return res.status(401).json({ success: false, message: 'رمز المصادقة غير صحيح' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, companyId },
+      select: { id: true, metadata: true }
+    });
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+    }
+
+    const updateData = {};
+    if (req.body.firstName !== undefined) updateData.firstName = String(req.body.firstName).trim();
+    if (req.body.lastName !== undefined) updateData.lastName = String(req.body.lastName).trim();
+    if (req.body.email !== undefined) updateData.email = String(req.body.email).trim() || null;
+
+    // العنوان بالتفصيل بيتحفظ في metadata.address
+    if (req.body.address !== undefined) {
+      const meta = safeParseJson(customer.metadata);
+      meta.address = typeof req.body.address === 'string' ? req.body.address.trim() : '';
+      updateData.metadata = JSON.stringify(meta);
+    }
+
+    const updated = await prisma.customer.update({
+      where: { id: customerId },
+      data: updateData,
+      select: { id: true, firstName: true, lastName: true, email: true, phone: true, metadata: true }
+    });
+
+    const meta = safeParseJson(updated.metadata);
+    return res.json({
+      success: true,
+      message: 'تم تحديث بياناتك',
+      data: {
+        id: updated.id,
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        email: updated.email,
+        phone: updated.phone,
+        address: meta.address || ''
+      }
+    });
+  } catch (error) {
+    console.error('❌ [PUBLIC-CUSTOMER] Error updating profile:', error);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحديث بياناتك' });
+  }
+});
+
+/**
+ * حفظ / تغيير كلمة مرور العميل (تسجيل دخول برقم الموبايل + باسورد)
+ */
+router.put('/password', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'CUSTOMER') {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+    const customerId = req.user.customerId || req.user.userId || req.user.id;
+    const companyId = req.user.companyId;
+    if (!customerId || !companyId) {
+      return res.status(401).json({ success: false, message: 'رمز المصادقة غير صحيح' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, companyId },
+      select: { id: true, password: true }
+    });
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+    }
+
+    const newPassword = String(req.body.newPassword || '');
+    if (newPassword.length < 4) {
+      return res.status(400).json({ success: false, message: 'كلمة المرور يجب ألا تقل عن 4 أحرف' });
+    }
+
+    // لو فيه باسورد قديم → لازم العميل يكتبه صح الأول
+    if (customer.password) {
+      const currentPassword = String(req.body.currentPassword || '');
+      const valid = bcrypt.compareSync(currentPassword, customer.password);
+      if (!valid) {
+        return res.status(400).json({
+          success: false,
+          code: 'WRONG_CURRENT_PASSWORD',
+          message: 'كلمة المرور الحالية غير صحيحة'
+        });
+      }
+    }
+
+    const hashed = bcrypt.hashSync(newPassword, 10);
+    await prisma.customer.update({ where: { id: customerId }, data: { password: hashed } });
+
+    return res.json({ success: true, message: 'تم حفظ كلمة المرور بنجاح' });
+  } catch (error) {
+    console.error('❌ [PUBLIC-CUSTOMER] Error updating password:', error);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء حفظ كلمة المرور' });
+  }
+});
+
 router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (req.user?.role !== 'CUSTOMER') {
@@ -933,6 +1065,7 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
           phone: true,
           phoneNormalized: true,
           avatar: true,
+          metadata: true,
           createdAt: true
         }
       }),
@@ -991,7 +1124,8 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
           email: customer.email,
           phone: customer.phone,
           avatar: customer.avatar,
-          joinedAt: customer.createdAt
+          joinedAt: customer.createdAt,
+          address: (safeParseJson(customer.metadata)?.address) || ''
         },
         company: {
           id: company?.id,
