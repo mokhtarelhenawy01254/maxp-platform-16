@@ -2852,6 +2852,278 @@ const getReturnAnalytics = async (req, res) => {
   }
 };
 
+// تحليل أسباب المرتجعات (التوزيع حسب السبب والتصنيف والحالة والمنتج مع اتجاه يومي)
+const createEmptyReturnReasonsAnalytics = () => ({
+  summary: {
+    totalReturns: 0,
+    totalOrders: 0,
+    returnRate: 0,
+    totalRefundValue: 0,
+    avgReturnValue: 0,
+    withReasonCount: 0,
+    withoutReasonCount: 0,
+    resolvedCount: 0,
+    resolutionRate: 0,
+    topReason: null,
+    topCategory: null,
+  },
+  reasonBreakdown: [],
+  categoryBreakdown: [],
+  statusBreakdown: [],
+  dailyTrend: [],
+  byProduct: [],
+  recentReturns: [],
+});
+
+const aggregateReturnReasonsAnalytics = (requests, start, end, limit) => {
+  const totalReturns = requests.length;
+  const totalRefundValue = requests.reduce(
+    (sum, request) => sum + toAnalyticsAmount(request.refundAmount ?? request.order?.total ?? 0),
+    0,
+  );
+
+  const reasonMap = new Map();
+  const categoryMap = new Map();
+  const statusMap = new Map();
+  const productMap = new Map();
+  const dailyMap = new Map();
+
+  for (let current = new Date(start); current <= end; current = new Date(current.getTime() + ANALYTICS_DAY_MS)) {
+    const key = current.toISOString().slice(0, 10);
+    dailyMap.set(key, { date: key, count: 0, refundAmount: 0 });
+  }
+
+  const resolvedStatuses = new Set(['COMPLETED', 'APPROVED']);
+
+  requests.forEach((request) => {
+    const reasonId = request.returnReason?.id || 'without-reason';
+    const reasonName = request.returnReason?.reason?.trim() || 'بدون سبب محدد';
+    const categoryName = request.returnReason?.returnReasonCategory?.name?.trim() || 'غير مصنف';
+    const status = request.status || 'PENDING';
+    const refund = toAnalyticsAmount(request.refundAmount ?? request.order?.total ?? 0);
+    const dateKey = toAnalyticsDateKey(request.createdAt) || new Date(start).toISOString().slice(0, 10);
+
+    if (!reasonMap.has(reasonId)) {
+      reasonMap.set(reasonId, {
+        id: reasonId,
+        reason: reasonName,
+        category: categoryName,
+        count: 0,
+        refundAmount: 0,
+        latestAt: null,
+      });
+    }
+    const reasonRow = reasonMap.get(reasonId);
+    reasonRow.count += 1;
+    reasonRow.refundAmount += refund;
+    if (!reasonRow.latestAt || new Date(request.createdAt) > new Date(reasonRow.latestAt)) {
+      reasonRow.latestAt = toIsoDateTime(request.createdAt);
+    }
+
+    if (!categoryMap.has(categoryName)) {
+      categoryMap.set(categoryName, { category: categoryName, count: 0, refundAmount: 0 });
+    }
+    const categoryRow = categoryMap.get(categoryName);
+    categoryRow.count += 1;
+    categoryRow.refundAmount += refund;
+
+    statusMap.set(status, (statusMap.get(status) || 0) + 1);
+
+    const dailyRow = dailyMap.get(dateKey);
+    if (dailyRow) {
+      dailyRow.count += 1;
+      dailyRow.refundAmount += refund;
+    }
+
+    const items = request.order?.orderItems || [];
+    items.forEach((item) => {
+      const productName = item.product?.name || item.productName || 'منتج غير معروف';
+      if (!productMap.has(productName)) {
+        productMap.set(productName, { product: productName, count: 0, refundAmount: 0 });
+      }
+      const productRow = productMap.get(productName);
+      productRow.count += item.quantity || 1;
+      productRow.refundAmount += (refund * (item.quantity || 1)) / Math.max(items.length, 1);
+    });
+  });
+
+  const withoutReasonCount = reasonMap.get('without-reason')?.count || 0;
+  const withReasonCount = Math.max(totalReturns - withoutReasonCount, 0);
+  const resolvedCount = requests.filter((request) => resolvedStatuses.has(request.status)).length;
+
+  const reasonBreakdown = Array.from(reasonMap.values())
+    .map((row) => ({
+      ...row,
+      percentage: totalReturns > 0 ? roundAnalyticsNumber((row.count / totalReturns) * 100) : 0,
+      refundAmount: roundAnalyticsNumber(row.refundAmount),
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+
+  const categoryBreakdown = Array.from(categoryMap.values())
+    .map((row) => ({
+      ...row,
+      percentage: totalReturns > 0 ? roundAnalyticsNumber((row.count / totalReturns) * 100) : 0,
+      refundAmount: roundAnalyticsNumber(row.refundAmount),
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+
+  const statusBreakdown = Array.from(statusMap.entries())
+    .map(([status, count]) => ({
+      status,
+      count,
+      percentage: totalReturns > 0 ? roundAnalyticsNumber((count / totalReturns) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const dailyTrend = Array.from(dailyMap.values()).map((row) => ({
+    ...row,
+    refundAmount: roundAnalyticsNumber(row.refundAmount),
+  }));
+
+  const byProduct = Array.from(productMap.values())
+    .map((row) => ({ ...row, refundAmount: roundAnalyticsNumber(row.refundAmount) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  const topReasonRow = reasonBreakdown[0] || null;
+  const topCategoryRow = categoryBreakdown[0] || null;
+
+  return {
+    summary: {
+      totalReturns,
+      totalOrders: 0,
+      returnRate: 0,
+      totalRefundValue: roundAnalyticsNumber(totalRefundValue),
+      avgReturnValue: totalReturns > 0 ? roundAnalyticsNumber(totalRefundValue / totalReturns) : 0,
+      withReasonCount,
+      withoutReasonCount,
+      resolvedCount,
+      resolutionRate: totalReturns > 0 ? roundAnalyticsNumber((resolvedCount / totalReturns) * 100) : 0,
+      topReason: topReasonRow
+        ? { reason: topReasonRow.reason, count: topReasonRow.count, percentage: topReasonRow.percentage }
+        : null,
+      topCategory: topCategoryRow
+        ? { category: topCategoryRow.category, count: topCategoryRow.count, percentage: topCategoryRow.percentage }
+        : null,
+    },
+    reasonBreakdown,
+    categoryBreakdown,
+    statusBreakdown,
+    dailyTrend,
+    byProduct,
+    recentReturns: [],
+  };
+};
+
+const getReturnReasonsAnalytics = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { start, end } = parseAnalyticsDateRange(req.query || {});
+    const requestedLimit = Number.parseInt(req.query?.limit, 10);
+    const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 12, 1), 50);
+    const prisma = getSharedPrismaClient();
+    const companyScope = String(companyId);
+
+    const whereClause = {
+      companyId: companyScope,
+      createdAt: { gte: start, lte: end },
+    };
+
+    const categoryFilter = String(req.query?.categoryId || '').trim();
+    const categoryNameFilter = String(req.query?.category || '').trim();
+    const statusFilter = String(req.query?.status || '').trim();
+    if (categoryFilter) {
+      whereClause.returnReason = { is: { categoryId: categoryFilter } };
+    } else if (categoryNameFilter) {
+      whereClause.returnReason = {
+        is: { returnReasonCategory: { is: { name: categoryNameFilter } } },
+      };
+    }
+    if (statusFilter) {
+      whereClause.status = statusFilter;
+    }
+
+    const [requests, totalOrders] = await Promise.all([
+      prisma.returnRequest.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: 2000,
+        include: {
+          returnReason: {
+            include: {
+              returnReasonCategory: true,
+            },
+          },
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              total: true,
+              governorate: true,
+              city: true,
+              orderItems: {
+                select: {
+                  quantity: true,
+                  price: true,
+                  productName: true,
+                  product: { select: { name: true } },
+                },
+              },
+            },
+          },
+          customer: {
+            select: {
+              firstName: true,
+              lastName: true,
+              phone: true,
+              governorate: true,
+              city: true,
+            },
+          },
+        },
+      }),
+      prisma.order.count({
+        where: { companyId: companyScope, createdAt: { gte: start, lte: end } },
+      }),
+    ]);
+
+    const data = aggregateReturnReasonsAnalytics(requests, start, end, limit);
+    data.summary.totalOrders = totalOrders;
+    data.summary.returnRate = totalOrders > 0 ? roundAnalyticsNumber((requests.length / totalOrders) * 100) : 0;
+
+    data.recentReturns = requests.slice(0, 20).map((request) => ({
+      id: request.id,
+      orderNumber: request.order?.orderNumber || request.orderId,
+      customerName: [request.customer?.firstName, request.customer?.lastName].filter(Boolean).join(' ') || 'عميل غير محدد',
+      customerPhone: request.customer?.phone || '',
+      region: request.order?.governorate || request.order?.city || request.customer?.governorate || request.customer?.city || 'غير محدد',
+      total: roundAnalyticsNumber(request.order?.total ?? 0),
+      refundAmount: roundAnalyticsNumber(request.refundAmount ?? request.order?.total ?? 0),
+      reason: request.returnReason?.reason?.trim() || 'بدون سبب محدد',
+      category: request.returnReason?.returnReasonCategory?.name?.trim() || 'غير مصنف',
+      status: request.status,
+      receivedStatus: request.receivedStatus,
+      createdAt: toIsoDateTime(request.createdAt),
+      reviewUrl: `/returns?highlight=${encodeURIComponent(request.id)}`,
+    }));
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error in getReturnReasonsAnalytics:', error);
+    res.status(200).json({
+      success: true,
+      data: createEmptyReturnReasonsAnalytics(),
+      error: error.message,
+    });
+  }
+};
+
 // تحليل تنفيذ المنتجات (تسليم / إلغاء / مرتجع) لكل منتج اتطلب في الفترة
 const getProductFulfillmentAnalytics = async (req, res) => {
   try {
@@ -4625,6 +4897,7 @@ module.exports = {
   getOrderStatusTimeAnalytics,
   getProductHealthScore,
   getReturnAnalytics,
+  getReturnReasonsAnalytics,
   getProductFulfillmentAnalytics,
   getProductSalesPerformance,
   getTeamPerformanceAnalytics,

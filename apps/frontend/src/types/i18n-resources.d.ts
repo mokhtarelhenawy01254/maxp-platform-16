@@ -14374,6 +14374,7 @@ declare module 'react-i18next' {
         reports: string;
         resignations: string;
         returnAnalytics: string;
+        returnReasonsAnalytics: string;
         returnReviews: string;
         returnSettings: string;
         cancellationSettings: string;

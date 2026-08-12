@@ -1131,6 +1131,27 @@ class AnalyticsService {
     }
   }
 
+  async getReturnReasonsAnalytics(
+    period?: string,
+    startDate?: string,
+    endDate?: string,
+    category?: string,
+    status?: string,
+  ) {
+    try {
+      const params = this.buildRelativeDateRangeParams(period, startDate, endDate);
+      if (category) params.category = category;
+      if (status) params.status = status;
+      const response = await apiClient.get("/analytics/returns/reasons", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching return reasons analytics:", error);
+      throw error;
+    }
+  }
+
   async getConversionRateAnalytics(startDate?: string, endDate?: string) {
     try {
       const params: AnalyticsQueryParams = {};

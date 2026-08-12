@@ -661,6 +661,9 @@ const RegionAnalytics = React.lazy(
 const ReturnsAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/ReturnsAnalytics"),
 );
+const ReturnReasonsAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/ReturnReasonsAnalytics"),
+);
 const FunnelAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/FunnelAnalytics"),
 );
@@ -4730,6 +4733,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ReturnsAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/returns-reasons"
+                  element={
+                    <Layout>
+                      <ReturnReasonsAnalytics />
                     </Layout>
                   }
                 />

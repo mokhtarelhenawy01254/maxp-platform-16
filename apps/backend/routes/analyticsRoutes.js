@@ -73,6 +73,9 @@ router.get('/product-health', authenticateToken, analyticsController.getProductH
 // تحليل المرتجعات
 router.get('/returns', authenticateToken, analyticsController.getReturnAnalytics);
 
+// تحليل أسباب المرتجعات (توزيع الأسباب والتصنيفات والحالات والمنتجات والاتجاه اليومي)
+router.get('/returns/reasons', authenticateToken, analyticsController.getReturnReasonsAnalytics);
+
 // تحليل تنفيذ المنتجات (تسليم / إلغاء / مرتجع) لكل منتج
 router.get('/product-fulfillment', authenticateToken, analyticsController.getProductFulfillmentAnalytics);
 

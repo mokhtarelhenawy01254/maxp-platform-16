@@ -24,6 +24,7 @@ export { default as ProductFulfillmentAnalytics } from "./ProductFulfillmentAnal
 export { default as DeliveryReturnsAnalytics } from "./DeliveryReturnsAnalytics";
 export { default as RegionAnalytics } from "./RegionAnalytics";
 export { default as ReturnsAnalytics } from "./ReturnsAnalytics";
+export { default as ReturnReasonsAnalytics } from "./ReturnReasonsAnalytics";
 export { default as FunnelAnalytics } from "./FunnelAnalytics";
 export { default as ConversionRateAnalytics } from "./ConversionRateAnalytics";
 export { default as TeamPerformanceAnalytics } from "./TeamPerformanceAnalytics";

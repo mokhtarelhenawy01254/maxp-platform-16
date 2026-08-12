@@ -603,6 +603,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/delivery-returns', icon: Undo2, label: t('sidebar.deliveryReturnsAnalytics') },
                 { to: '/analytics/orders/regions', icon: MapPin, label: t('sidebar.regionAnalytics') },
                 { to: '/analytics/orders/returns', icon: Undo2, label: t('sidebar.returnAnalytics') },
+                { to: '/analytics/orders/returns-reasons', icon: ListChecks, label: t('sidebar.returnReasonsAnalytics') },
                 { to: '/analytics/orders/funnel', icon: Filter, label: t('sidebar.conversionFunnel') },
                 { to: '/analytics/orders/conversion', icon: BarChart3, label: t('sidebar.conversionRate') },
                 { to: '/analytics/orders/team-performance', icon: Users, label: t('sidebar.teamPerformance') },
