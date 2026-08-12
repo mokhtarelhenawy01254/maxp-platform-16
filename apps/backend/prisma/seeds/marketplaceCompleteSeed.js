@@ -20,15 +20,17 @@ async function seedMarketplace() {
   const ecommerceApps = [
     {
       slug: 'store-basic',
-      name: 'المتجر الأساسي',
+      name: 'متجر بلس',
       category: 'ECOMMERCE',
-      description: 'متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة.',
+      description: 'متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.',
       icon: '🛒',
       monthlyPrice: 249,
       yearlyPrice: 2490,
       trialDays: 14,
       features: JSON.stringify([
-        'منتجات غير محدودة',
+        'إدارة الطلبات',
+        'إدارة المنتجات',
+        'المتجر الإلكتروني',
         'سلة تسوق ذكية',
         'معالجة الطلبات',
         'تقارير المبيعات الأساسية',
@@ -43,15 +45,15 @@ async function seedMarketplace() {
     },
     {
       slug: 'store-pro',
-      name: 'المتجر الاحترافي',
+      name: 'متجر برو',
       category: 'ECOMMERCE',
-      description: 'متجر متقدم مع POS، إدارة مخزون متعدد، وميزات احترافية للشركات المتوسطة والكبيرة.',
+      description: 'متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.',
       icon: '🏪',
       monthlyPrice: 499,
       yearlyPrice: 4990,
       trialDays: 14,
       features: JSON.stringify([
-        'نظام POS متكامل',
+        'منتجات غير محدودة',
         'مخازن متعددة',
         'تتبع المخزون Real-time',
         'تقارير متقدمة',
@@ -77,7 +79,8 @@ async function seedMarketplace() {
         'بيع سريع',
         'فاتورة بيع فورية'
       ]),
-      isActive: true,
+      isActive: false,
+      isPublic: false,
       isFeatured: false
     },
     {

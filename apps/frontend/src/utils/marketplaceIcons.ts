@@ -57,6 +57,9 @@ export const appIcons: Record<string, React.ElementType> = {
 export const appIconsBySlug: Record<string, React.ElementType> = {
   "store-basic": Store,
   "store-pro": Store,
+  "quantity-offers-pro": Tag,
+  "commerce-advanced": Zap,
+  "pos-pro": Monitor,
   "inventory-pro": Package,
   "woocommerce-sync": ShoppingBag,
   "order-core": ShoppingCart,

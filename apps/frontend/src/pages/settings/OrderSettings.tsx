@@ -16,6 +16,7 @@ import {
   CircleDollarSign,
   AlertOctagon,
   XCircle,
+  Volume2,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OrderStatusManager from "./OrderStatusManager";
@@ -33,6 +34,7 @@ import MinimumOrderSettings from "./MinimumOrderSettings";
 import LateCancellationSettings from "./LateCancellationSettings";
 import CancellationSettingsPage from "../cancellations/CancellationSettingsPage";
 import EasyWarehouseSettings from "./EasyWarehouseSettings";
+import OrderSoundSettings from "./OrderSoundSettings";
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Order Settings Page with Sidebar Tabs
@@ -53,7 +55,8 @@ type TabId =
   | "preparation"
   | "late_cancellation"
   | "cancellation_reasons"
-  | "easy_warehouse";
+  | "easy_warehouse"
+  | "sound";
 
 const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "status",
@@ -71,6 +74,7 @@ const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "late_cancellation",
   "cancellation_reasons",
   "easy_warehouse",
+  "sound",
 ];
 
 const isOrderSettingsTabId = (value: string): value is TabId =>
@@ -219,6 +223,12 @@ const OrderSettings: React.FC = () => {
       icon: Package,
       description: "استيراد المنتجات تلقائيًا",
     },
+    {
+      id: "sound",
+      label: "صوت الطلبات",
+      icon: Volume2,
+      description: "إنذار عالي عند وصول طلب جديد",
+    },
   ];
 
   return (
@@ -305,6 +315,7 @@ const OrderSettings: React.FC = () => {
             {activeTab === "late_cancellation" && <LateCancellationSettings />}
             {activeTab === "cancellation_reasons" && <CancellationSettingsPage isEmbedded={true} />}
             {activeTab === "easy_warehouse" && <EasyWarehouseSettings />}
+            {activeTab === "sound" && <OrderSoundSettings />}
           </div>
         </div>
       </div>

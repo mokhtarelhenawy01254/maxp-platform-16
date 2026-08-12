@@ -1,12 +1,12 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 
 const LEGACY_APP_SLUG_ALIASES = {
-  'order-core': ['ecommerce-basic'],
-  'order-invoicing': ['ecommerce-basic'],
+  'order-core': ['ecommerce-basic', 'store-basic', 'store'],
+  'order-invoicing': ['ecommerce-basic', 'store-basic', 'store'],
   // Grandfathering: companies with old monolithic store apps keep access to new granular apps
-  'pos-pro': ['store-pro', 'ecommerce-basic', 'store-basic'],
-  'coupons-pro': ['store-pro', 'ecommerce-basic', 'store-basic'],
-  'woocommerce-pro': ['store-pro', 'ecommerce-basic', 'store-basic'],
+  'pos-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
+  'coupons-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
+  'woocommerce-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
   'multi-warehouse-pro': ['store-pro', 'inventory-pro'],
   'order-accounting-sources': ['store-pro', 'order-source-tracking'],
   // Grandfathering only for monolithic apps that historically included manual orders.

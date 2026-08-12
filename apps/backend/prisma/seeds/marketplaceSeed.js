@@ -197,8 +197,8 @@ async function seedMarketplace() {
       },
       {
         "slug": "store-pro",
-        "name": "المتجر الاحترافي",
-        "description": "متجر متقدم مع POS، إدارة مخزون متعدد، وميزات احترافية للشركات المتوسطة والكبيرة.",
+        "name": "متجر برو",
+        "description": "متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.",
         "logo": null,
         "images": null,
         "monthlyPrice": 499,
@@ -206,7 +206,7 @@ async function seedMarketplace() {
         "pricingModel": "SUBSCRIPTION",
         "unitPrice": null,
         "unitName": null,
-        "features": "[\"نظام POS متكامل\",\"مخازن متعددة\",\"تتبع المخزون Real-time\",\"تقارير متقدمة\",\"تكامل مع WooCommerce\",\"إدارة الموردين\",\"طلبات الشراء\",\"إشعارات نفاد المخزون\"]",
+        "features": "[\"منتجات غير محدودة\",\"مخازن متعددة\",\"تتبع المخزون Real-time\",\"تقارير متقدمة\",\"تكامل مع WooCommerce\",\"إدارة الموردين\",\"طلبات الشراء\",\"إشعارات نفاد المخزون\"]",
         "isActive": true,
         "isPublic": true,
         "isFeatured": true,
@@ -327,8 +327,8 @@ async function seedMarketplace() {
       },
       {
         "slug": "store-basic",
-        "name": "المتجر الأساسي",
-        "description": "متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة.",
+        "name": "متجر بلس",
+        "description": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
         "logo": null,
         "images": null,
         "monthlyPrice": 249,
@@ -336,7 +336,7 @@ async function seedMarketplace() {
         "pricingModel": "SUBSCRIPTION",
         "unitPrice": null,
         "unitName": null,
-        "features": "[\"منتجات غير محدودة\",\"سلة تسوق ذكية\",\"معالجة الطلبات\",\"تقارير المبيعات الأساسية\",\"إدارة الفئات\",\"صفحات المنتجات\",\"كوبونات وعروض\",\"إدارة الشحن\"]",
+        "features": "[\"إدارة الطلبات\",\"إدارة المنتجات\",\"المتجر الإلكتروني\",\"سلة تسوق ذكية\",\"معالجة الطلبات\",\"تقارير المبيعات الأساسية\",\"إدارة الفئات\",\"صفحات المنتجات\",\"كوبونات وعروض\",\"إدارة الشحن\"]",
         "isActive": true,
         "isPublic": true,
         "isFeatured": true,
@@ -441,16 +441,16 @@ async function seedMarketplace() {
         "unitPrice": null,
         "unitName": null,
         "features": "[\"إدارة المنتجات (حتى 100 منتج)\",\"سلة تسوق ذكية\",\"معالجة الطلبات\",\"تقارير المبيعات الأساسية\",\"إدارة الفئات\",\"صفحات المنتجات\"]",
-        "isActive": true,
-        "isPublic": true,
-        "isFeatured": true,
+        "isActive": false,
+        "isPublic": false,
+        "isFeatured": false,
         "mainRoute": null,
         "adminRoute": null,
         "category": "ECOMMERCE",
         "rating": 0,
         "reviewCount": 0,
         "installCount": 1,
-        "isPopular": true,
+        "isPopular": false,
         "requiredApps": null,
         "trialDays": 0,
         "icon": "🛒"
@@ -1169,12 +1169,12 @@ async function seedMarketplace() {
         "unitPrice": null,
         "unitName": null,
         "features": "[\"كاشير POS\",\"بيع سريع\",\"فاتورة بيع فورية\"]",
-        "isActive": true,
-        "isPublic": true,
+        "isActive": false,
+        "isPublic": false,
         "isFeatured": false,
         "isPopular": false,
         "category": "ECOMMERCE",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🖥️"
       },
@@ -1195,7 +1195,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "MARKETING",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🎟️"
       },
@@ -1216,7 +1216,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "INTEGRATION",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🛒"
       },
@@ -1258,7 +1258,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🔀"
       },
@@ -1279,7 +1279,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "✍️"
       },
@@ -1300,7 +1300,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "⚡"
       },
@@ -1321,7 +1321,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🔍"
       },
@@ -1342,7 +1342,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🛡️"
       },
@@ -1363,7 +1363,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "📋"
       },
@@ -1384,7 +1384,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🔁"
       },
@@ -1405,7 +1405,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ANALYTICS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "📊"
       },
@@ -1426,7 +1426,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "⚙️"
       },
@@ -1447,7 +1447,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🔀"
       },
@@ -1489,7 +1489,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "MARKETING",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[\"store-basic\"]",
         "trialDays": 14,
         "icon": "🏷️"
       }
@@ -1577,6 +1577,9 @@ async function seedMarketplace() {
       'whatsapp-analytics',
       'facebook-catalog',
       'facebook-integration',
+      // Store plan merge (2026): legacy overlapping store apps replaced by متجر بلس / متجر برو
+      'store',
+      'ecommerce-pro',
     ];
     const { count } = await prisma.marketplaceApp.updateMany({
       where: { slug: { in: slugsToHide }, isActive: true },

@@ -53,8 +53,8 @@ export const STORE_CONVERSION_APP_LABELS: Record<
   string
 > = {
   "conversion-suite": "Conversion Suite",
-  "quantity-offers-pro": "Quantity Offers Pro",
-  "commerce-advanced": "Commerce Advanced",
+  "quantity-offers-pro": "عروض الكميات",
+  "commerce-advanced": "المبيعات المتقدمة",
   "ugc-reviews-pro": "UGC Reviews Pro",
 };
 

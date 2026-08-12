@@ -62,9 +62,11 @@ describe("checkAppAccess middleware", () => {
     expect(getCandidateAppSlugs("order-core")).toEqual([
       "order-core",
       "ecommerce-basic",
+      "store-basic",
+      "store",
     ]);
     expect(mockPrisma.marketplaceApp.findMany).toHaveBeenNthCalledWith(1, {
-      where: { slug: { in: ["order-core", "ecommerce-basic"] } },
+      where: { slug: { in: ["order-core", "ecommerce-basic", "store-basic", "store"] } },
     });
     expect(mockPrisma.companyApp.findUnique).toHaveBeenCalledWith({
       where: {

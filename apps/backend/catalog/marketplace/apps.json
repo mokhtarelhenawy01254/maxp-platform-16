@@ -325,7 +325,7 @@
     "unitName": "message",
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق المبيعات والدعم التي تستقبل محادثات كثيرة.",
@@ -358,18 +358,18 @@
     "updatedAt": "2026-03-06T00:00:00Z"
   },
   {
-    "id": "cat-app-store",
-    "slug": "store",
-    "name": "المتجر",
-    "nameEn": "Store",
-    "description": "إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد.",
+    "id": "cat-app-store-basic",
+    "slug": "store-basic",
+    "name": "متجر بلس",
+    "nameEn": "Store Plus",
+    "description": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 299,
-    "yearlyPrice": 2990,
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "trialDays": 14,
     "requiredApps": [],
     "positioning": {
       "audience": "أي متجر عايز يدير منتجاته وطلباته وواجهة بيعه من مكان واحد.",
@@ -394,6 +394,24 @@
         "name": "المتجر الإلكتروني",
         "description": "تشغيل صفحات العرض والشراء أمام العميل.",
         "access": "PAID"
+      },
+      "smartCart": {
+        "enabled": true,
+        "name": "سلة تسوق ذكية",
+        "description": "سلة تسوق سريعة وتجربة شراء مريحة.",
+        "access": "PAID"
+      },
+      "coupons": {
+        "enabled": true,
+        "name": "كوبونات وعروض",
+        "description": "كوبونات خصم وعروض ترويجية داخل المتجر.",
+        "access": "PAID"
+      },
+      "shipping": {
+        "enabled": true,
+        "name": "إدارة الشحن",
+        "description": "إدارة الشحن والتوصيل وأسعاره.",
+        "access": "PAID"
       }
     },
     "isActive": true,
@@ -405,7 +423,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "updatedAt": "2026-08-12T00:00:00.000Z"
   },
   {
     "id": "cat-app-crm-lite",
@@ -465,7 +483,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي عندها زيارات وتريد رفع التحويل.",
@@ -506,9 +524,9 @@
   {
     "id": "cat-app-quantity-offers-pro",
     "slug": "quantity-offers-pro",
-    "name": "Quantity Offers Pro",
+    "name": "عروض الكميات",
     "nameEn": "Quantity Offers Pro",
-    "description": "Create multi-pack quantity offers with mix-and-match variant selection directly on product pages.",
+    "description": "أنشئ عروض كميات متعددة القطع مع اختيار مقاس أو لون مختلف لكل قطعة مباشرة على صفحة المنتج.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
@@ -517,7 +535,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تبيع باقات أو ترغب في تكبير السلة.",
@@ -569,7 +587,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تحتاج ثقة اجتماعية أقوى قبل الشراء.",
@@ -610,9 +628,9 @@
   {
     "id": "cat-app-commerce-advanced",
     "slug": "commerce-advanced",
-    "name": "Commerce Advanced",
+    "name": "المبيعات المتقدمة",
     "nameEn": "Commerce Advanced",
-    "description": "Advanced commerce controls for pre-orders, extended inventory signals, and special selling flows.",
+    "description": "تحكم متقدم في المبيعات: الطلب المسبق، إشارات المخزون، ومسارات التنفيذ الخاصة.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 179,
@@ -621,7 +639,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تحتاج سيناريوهات بيع أكثر مرونة.",
@@ -673,7 +691,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق التشغيل التي تدير موردين ومشتريات بشكل يومي.",
@@ -731,7 +749,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تريد تشغيل أفليت أو دروب شيبنج من داخل المنصة.",
@@ -789,7 +807,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "الشركات التي تحتاج معرفة مصدر كل طلب داخل التشغيل اليومي.",
@@ -835,7 +853,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق التسويق التي تحتاج ربط الطلبات بالحملات الإعلانية.",
@@ -881,7 +899,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق التأكيد والتوزيع التي تدير الطلبات داخلياً.",
@@ -1269,7 +1287,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر اللي عندها مخزون كبير وتحتاج تتبعه بدقة.",
@@ -1327,7 +1345,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر اللي بتشحن طلبات بشكل يومي.",
@@ -1379,7 +1397,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر اللي تحتاج فواتير ضريبية محترفة.",
@@ -1431,7 +1449,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "شركات الجملة والتوزيع التي تبيع لتجار جملة وموزعين بأسعار خاصة وحدود ائتمانية.",
@@ -1552,7 +1570,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر اللي بتعاني من المرتجعات العالية في طلبات COD.",
@@ -1610,7 +1628,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق التأكيد والمتابعة الداخلية التي تدير الطلبات الواردة.",
@@ -1662,7 +1680,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تبيع من نقطة البيع أو المعرض مباشرة.",
@@ -1689,8 +1707,8 @@
         "access": "PAID"
       }
     },
-    "isActive": true,
-    "isPublic": true,
+    "isActive": false,
+    "isPublic": false,
     "isFeatured": false,
     "isPopular": false,
     "icon": "monitor",
@@ -1714,7 +1732,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تعتمد على الكوبونات والعروض لزيادة المبيعات.",
@@ -1766,7 +1784,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تستخدم WooCommerce وتريد مزامنة بياناتها مع MaxP.",
@@ -1870,7 +1888,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "الشركات التي تتلقى طلبات من عدة قنوات وتريد معرفة أداء كل قناة مالياً.",
@@ -1922,7 +1940,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "الفرق التي تنشئ الطلبات يدوياً للعملاء عبر الهاتف أو واتساب أو في المعرض.",
@@ -1974,7 +1992,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تعالج أعداد كبيرة من الطلبات وتريد تقليل العمل اليدوي.",
@@ -2020,7 +2038,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق خدمة العملاء والمتابعة التي تحتاج فحص عدة طلبات في نفس الوقت.",
@@ -2066,7 +2084,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تواجه عملاء مرتجعين أو مزعجين وتريد منعهم من الطلب.",
@@ -2112,7 +2130,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق المعالجة التي تتعامل مع مئات الطلبات يومياً وترغب في تسريع العمليات.",
@@ -2158,7 +2176,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق الشحن والمعالجة التي تريد تسريع تغيير الحالات اليومي.",
@@ -2198,7 +2216,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المدراء وفرق المتابعة التي تحتاج رؤية فورية لأحجام الطلبات حسب الحالة.",
@@ -2238,7 +2256,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق المرتجعات التي تريد توحيد أسباب الإرجاع وسياسات القبول.",
@@ -2278,7 +2296,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تريد تخصيص تسلسل معالجة طلباتها ليتناسب مع عمليتها.",
@@ -2364,7 +2382,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تستخدم GTM لإدارة أكواد التتبع والتحويلات.",
@@ -2961,5 +2979,85 @@
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00.000Z",
     "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-store-pro",
+    "slug": "store-pro",
+    "name": "متجر برو",
+    "nameEn": "Store Pro",
+    "description": "متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 499,
+    "yearlyPrice": 4990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "store",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-03-06T00:00:00.000Z",
+    "updatedAt": "2026-08-12T00:00:00.000Z",
+    "positioning": {
+      "audience": "الشركات المتوسطة والكبيرة التي تحتاج مخازن متعددة وتقارير متقدمة.",
+      "surface": "داخل إدارة المخزون والتقارير وتكاملات المتجر.",
+      "outcome": "إدارة أوسع للمخزون والتقارير مع ميزات احترافية."
+    },
+    "features": {
+      "unlimitedProducts": {
+        "enabled": true,
+        "name": "منتجات غير محدودة",
+        "description": "منتجات غير محدودة بدون أي سقف.",
+        "access": "PAID"
+      },
+      "multiWarehouse": {
+        "enabled": true,
+        "name": "مخازن متعددة",
+        "description": "إدارة مخزون عبر مستودعات متعددة.",
+        "access": "PAID"
+      },
+      "realtimeInventory": {
+        "enabled": true,
+        "name": "تتبع المخزون Real-time",
+        "description": "تتبع لحظي لحالة المخزون.",
+        "access": "PAID"
+      },
+      "advancedReports": {
+        "enabled": true,
+        "name": "تقارير متقدمة",
+        "description": "تقارير تحليلية متقدمة للمبيعات والمخزون.",
+        "access": "PAID"
+      },
+      "woocommerce": {
+        "enabled": true,
+        "name": "تكامل مع WooCommerce",
+        "description": "مزامنة المنتجات والطلبات مع WooCommerce.",
+        "access": "PAID"
+      },
+      "suppliers": {
+        "enabled": true,
+        "name": "إدارة الموردين",
+        "description": "إدارة الموردين وعلاقات التوريد.",
+        "access": "PAID"
+      },
+      "purchaseOrders": {
+        "enabled": true,
+        "name": "طلبات الشراء",
+        "description": "إنشاء ومتابعة طلبات الشراء.",
+        "access": "PAID"
+      },
+      "lowStockAlerts": {
+        "enabled": true,
+        "name": "إشعارات نفاد المخزون",
+        "description": "تنبيهات عند نفاد أو اقتراب نفاد المخزون.",
+        "access": "PAID"
+      }
+    }
   }
 ]

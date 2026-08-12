@@ -16,7 +16,6 @@ const DEFAULT_SPECIALTIES = [
     icon: 'ShoppingBag',
     sortOrder: 10,
     appSlugs: [
-      'ecommerce-basic',
       'store-basic',
       'quantity-offers-pro',
       'commerce-advanced',
@@ -61,7 +60,7 @@ const DEFAULT_SPECIALTIES = [
     icon: 'Workflow',
     sortOrder: 30,
     appSlugs: [
-      'ecommerce-basic',
+      'store-basic',
       'procurement-pro',
       'order-confirmation-distribution',
       'notification-automation',
@@ -85,7 +84,7 @@ const DEFAULT_SPECIALTIES = [
       'notification-automation',
       'order-confirmation-distribution',
       'analytics-basic',
-      'ecommerce-basic',
+      'store-basic',
     ],
   },
 ];

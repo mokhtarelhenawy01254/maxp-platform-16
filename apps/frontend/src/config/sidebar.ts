@@ -546,7 +546,7 @@ export const getSidebarConfig = (
                 { to: '/orders/preparation', icon: FlaskConical, label: t('sidebar.orderPreparation'), requiredPermissions: ['orders.preparation.view'] },
                 { to: '/orders/automation', icon: Zap, label: t('sidebar.orderAutomation'), requiredPermissions: ['orders.automation.view'] },
                 { to: '/orders/incomplete', icon: AlertTriangle, label: t('sidebar.incompleteOrders'), requiredPermissions: ['orders.incomplete.view'] },
-                { to: '/pos', icon: CreditCard, label: t('sidebar.pos'), requiredPermissions: ['orders.pos.view'], hidden: !isAnyAppActive(['pos-pro', 'store-pro']) },
+                { to: '/pos', icon: CreditCard, label: t('sidebar.pos'), requiredPermissions: ['orders.pos.view'], hidden: !isAppActive('pos-pro') },
                 { to: '/orders/invoices', icon: FileText, label: t('sidebar.orderInvoices'), requiredPermissions: ['orders.invoices.view'] },
                 { to: '/settings/order-invoice', icon: Cog, label: t('sidebar.orderInvoiceSettings'), requiredPermissions: ['orders.invoices.view'] },
                 { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), requiredPermissions: ['orders.manual.create'], hidden: !isAnyAppActive(['manual-orders-pro', 'store-pro']) },
@@ -574,7 +574,7 @@ export const getSidebarConfig = (
                 { to: '/orders/status-templates', icon: FileText, label: t('sidebar.orderStatusTemplates', 'قوالب الواتساب للحالات'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
         // 3️⃣.5 إحصائيات الطلبات
@@ -628,7 +628,7 @@ export const getSidebarConfig = (
                 { to: '/settings/upsell', icon: TrendingUp, label: t('sidebar.upsellManagement') },
                 { to: '/analytics/store', icon: TrendingUp, label: t('sidebar.storeAnalytics') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
         // 4️⃣.1 تصميم وتنسيق المتجر (Storefront Design)
@@ -680,7 +680,7 @@ export const getSidebarConfig = (
                 { to: '/settings/store-pages', icon: FileText, label: t('sidebar.storePages') },
             ],
             // 🔒 متاح للمالك والأدمن فقط لتغيير تصميم المتجر
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'conversion-suite'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro', 'conversion-suite'])
         },
 
         // 4️⃣.2 العملاء
@@ -795,7 +795,7 @@ export const getSidebarConfig = (
                 { to: '/inventory/reports', icon: BarChart3, label: t('sidebar.inventoryReports') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
         // 5️⃣ التسويق والإعلانات
@@ -878,9 +878,9 @@ export const getSidebarConfig = (
             title: t('sidebar.companyManagementSection'),
             icon: Building,
             items: [
-                { to: '/my-companies/hr', icon: BarChart3, label: t('sidebar.companiesDashboard'), hidden: !isAppActive('store') },
+                { to: '/my-companies/hr', icon: BarChart3, label: t('sidebar.companiesDashboard'), hidden: !isAnyAppActive(['store', 'store-basic', 'store-pro']) },
                 { to: '/my-companies/links', icon: Building, label: t('sidebar.companyLinks') },
-                { to: '/my-companies/reports', icon: LineChart, label: t('sidebar.unifiedReports'), hidden: !isAppActive('store') },
+                { to: '/my-companies/reports', icon: LineChart, label: t('sidebar.unifiedReports'), hidden: !isAnyAppActive(['store', 'store-basic', 'store-pro']) },
                 { to: '/my-companies/attendance', icon: CheckCircle2, label: t('sidebar.attendanceReport'), hidden: !isAppActive('hr-basic') },
                 { to: '/users', icon: Users, label: t('sidebar.usersManagement') },
                 { to: '/settings/company', icon: Settings, label: t('sidebar.companySettings') },

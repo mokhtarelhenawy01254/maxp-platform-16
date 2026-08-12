@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "catalogVersion": "2026-06-26-store-merge",
-  "generatedAt": "2026-06-26T00:00:00.000Z",
+  "catalogVersion": "2026-08-12-store-plans-v2",
+  "generatedAt": "2026-08-12T10:04:36.862Z",
   "appsFile": "apps.json",
   "bundlesFile": "bundles.json",
   "categoriesFile": "categories.json"
