@@ -19,7 +19,7 @@ const listPhysicians = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { search, includeInactive } = req.query;
+    const { search, includeInactive, limit } = req.query;
     const where = { companyId };
     if (includeInactive !== 'true') where.isActive = true;
     if (search && String(search).trim()) {
@@ -29,7 +29,8 @@ const listPhysicians = async (req, res) => {
         { specialty: { contains: term, mode: 'insensitive' } },
       ];
     }
-    const items = await getSharedPrismaClient().radiologyReferringPhysician.findMany({ where, orderBy: { name: 'asc' } });
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+    const items = await getSharedPrismaClient().radiologyReferringPhysician.findMany({ where, orderBy: { name: 'asc' }, take: limitNum });
     res.json({ success: true, data: items });
   } catch (error) {
     console.error('Error listing radiology referring physicians:', error);

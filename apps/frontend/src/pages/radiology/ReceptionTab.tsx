@@ -35,9 +35,14 @@ export default function ReceptionTab() {
   const [submitting, setSubmitting] = useState(false);
 
   const [patientSearch, setPatientSearch] = useState("");
-  const [patientResults, setPatientResults] = useState<{ id: string; firstName: string; lastName?: string; phone?: string; gender?: string }[]>([]);
+  const [patientResults, setPatientResults] = useState<{ id: string; firstName: string; lastName?: string; phone?: string; gender?: string; nationalId?: string; insuranceNumber?: string; birthDate?: string }[]>([]);
   const [searching, setSearching] = useState(false);
   const [entityPrice, setEntityPrice] = useState<number | null>(null);
+
+  const [referringPhysicianId, setReferringPhysicianId] = useState("");
+  const [physicianSearch, setPhysicianSearch] = useState("");
+  const [physicianResults, setPhysicianResults] = useState<{ id: string; name: string; specialty?: string }[]>([]);
+  const [searchingPhysicians, setSearchingPhysicians] = useState(false);
 
   const examPrice = (() => {
     const et = examTypes.find(t => t.id === examTypeId);
@@ -89,7 +94,7 @@ export default function ReceptionTab() {
         const url = new URL(bookingApi("patients"));
         url.searchParams.set("search", patientSearch.trim());
         url.searchParams.set("limit", "10");
-        const rows = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string; gender?: string }[]>(url.toString());
+        const rows = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string; gender?: string; nationalId?: string; insuranceNumber?: string; birthDate?: string }[]>(url.toString());
         setPatientResults(Array.isArray(rows) ? rows : []);
       } catch { setPatientResults([]); }
       finally { setSearching(false); }
@@ -97,20 +102,53 @@ export default function ReceptionTab() {
     return () => clearTimeout(t);
   }, [patientSearch]);
 
-  const pickPatient = (p: { id: string; firstName: string; lastName?: string; phone?: string; gender?: string }) => {
+  // Referring-physician search (searchable dropdown)
+  useEffect(() => {
+    if (!physicianSearch.trim()) { setPhysicianResults([]); return; }
+    const t = setTimeout(async () => {
+      setSearchingPhysicians(true);
+      try {
+        const url = new URL(api("referring-physicians"));
+        url.searchParams.set("search", physicianSearch.trim());
+        url.searchParams.set("limit", "20");
+        const rows = await fetchJson<{ id: string; name: string; specialty?: string }[]>(url.toString());
+        setPhysicianResults(Array.isArray(rows) ? rows : []);
+      } catch { setPhysicianResults([]); }
+      finally { setSearchingPhysicians(false); }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [physicianSearch]);
+
+  const pickPatient = (p: { id: string; firstName: string; lastName?: string; phone?: string; gender?: string; nationalId?: string; insuranceNumber?: string; birthDate?: string }) => {
     setPatientId(p.id);
     setPatientName(`${p.firstName}${p.lastName ? ' ' + p.lastName : ''}`);
     setPatientPhone(p.phone || "");
     if (p.gender) setPatientGender(p.gender === "male" || p.gender === "M" ? "male" : "female");
+    if (p.nationalId) setNationalId(p.nationalId);
+    if (p.insuranceNumber) setInsuranceNumber(p.insuranceNumber);
+    if (p.birthDate) {
+      const dob = new Date(p.birthDate);
+      if (!Number.isNaN(dob.getTime())) {
+        const age = Math.max(0, Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 3600 * 1000)));
+        if (age > 0) setPatientAge(String(age));
+      }
+    }
     setPatientSearch("");
     setPatientResults([]);
+  };
+
+  const pickPhysician = (p: { id: string; name: string }) => {
+    setReferringPhysicianId(p.id);
+    setReferralDoctor(p.name);
+    setPhysicianSearch("");
+    setPhysicianResults([]);
   };
 
   const resetForm = () => {
     setPatientId(""); setPatientName(""); setPatientPhone(""); setPatientGender(""); setPatientAge("");
     setNationalId(""); setInsuranceNumber("");
     setExamTypeId(""); setInsuranceCompanyId(""); setSelectedAdditions([]); setEmergency(false); setWithContrast(false);
-    setReferralDoctor(""); setNotes(""); setEntityPrice(null);
+    setReferralDoctor(""); setReferringPhysicianId(""); setPhysicianSearch(""); setPhysicianResults([]); setNotes(""); setEntityPrice(null);
   };
 
   const toggleAddition = (id: string) => {
@@ -138,6 +176,7 @@ export default function ReceptionTab() {
           additionIds: selectedAdditions,
           emergency,
           withContrast,
+          referringPhysicianId: referringPhysicianId || undefined,
           referralDoctor: referralDoctor.trim() || undefined,
           notes: notes.trim() || undefined,
         }),
@@ -237,9 +276,30 @@ export default function ReceptionTab() {
                 <b className="text-lg text-blue-600">{(displayPrice + additionsTotal).toFixed(0)} ج</b>
               </div>
             ) : null}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 relative">
               <label className={labelCls}>الطبيب المحيل</label>
-              <input className={inputCls} value={referralDoctor} onChange={e => setReferralDoctor(e.target.value)} placeholder="اسم الطبيب" />
+              <input
+                className={inputCls}
+                value={physicianSearch || referralDoctor}
+                onChange={e => { setPhysicianSearch(e.target.value); if (!e.target.value) { setReferringPhysicianId(""); setReferralDoctor(""); } }}
+                placeholder="ابحث عن طبيب محيل..."
+              />
+              {physicianSearch.trim() && (
+                <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
+                  {searchingPhysicians ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">جارٍ البحث...</div>
+                  ) : physicianResults.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">لا توجد نتائج</div>
+                  ) : (
+                    physicianResults.map(p => (
+                      <button key={p.id} type="button" onClick={() => pickPhysician(p)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <span className="font-medium">{p.name}</span>
+                        {p.specialty ? <span className="text-xs text-gray-500 dark:text-gray-400"> — {p.specialty}</span> : null}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
             {additions.length > 0 ? (
               <div className="sm:col-span-2">
