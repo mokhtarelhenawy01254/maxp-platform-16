@@ -264,7 +264,7 @@ const buildDefaultSettings = ({
     sound: {
       enabled: true,
       volume: 100,
-      pattern: "alarm",
+      pattern: "cash",
     },
   },
   typeSettings: buildDefaultTypeSettings(),

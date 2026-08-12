@@ -46,6 +46,7 @@ const FRONTEND_STATIC_PREFIXES = [
   "/landing-pages/",
   "/placeholders/",
   "/previews/",
+  "/sounds/",
 ];
 
 const FRONTEND_STATIC_EXACT_PATHS = new Set([

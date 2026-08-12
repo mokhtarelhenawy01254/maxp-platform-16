@@ -5,20 +5,16 @@ export type OrderSoundPattern =
   | "digital"
   | "smooth"
   | "cash"
+  | "kaching"
   | "coins"
-  | "happy";
-
-interface OrderSoundHarmonic {
-  ratio: number;
-  gain: number;
-}
+  | "coinwin"
+  | "magiccoins"
+  | "goldcoin";
 
 interface OrderSoundPatternNote {
   freq: number;
   duration: number;
   gap: number;
-  waveform?: OscillatorType;
-  harmonics?: OrderSoundHarmonic[];
 }
 
 export interface OrderSoundEvent {
@@ -26,18 +22,10 @@ export interface OrderSoundEvent {
   start: number;
   duration: number;
   waveform: OscillatorType;
-  harmonics?: OrderSoundHarmonic[];
 }
 
-// البارتيلات المعدنية لنغمة الكاش — بتدّي الطابع المعدني اللامع
-// لجرس الكاشير ورنين العملات بدل الصفّارة الحادة
-const CASH_BELL_HARMONICS: OrderSoundHarmonic[] = [
-  { ratio: 2.0, gain: 0.55 },
-  { ratio: 2.98, gain: 0.3 },
-  { ratio: 4.32, gain: 0.14 },
-];
-
-// نغمات صوت الطلبات — كل نغمة بتكوين نوتات مختلف
+// نغمات صوت الطلبات المولّدة بـ Web Audio (الأنماط القديمة)
+// الأنماط الجديدة (الكاش/العملات) بتشتغل من ملفات صوت حقيقية في public/sounds
 const ORDER_SOUND_PATTERN_NOTES: Record<
   OrderSoundPattern,
   OrderSoundPatternNote[]
@@ -67,70 +55,12 @@ const ORDER_SOUND_PATTERN_NOTES: Record<
     { freq: 783.99, duration: 0.2, gap: 0.05 },
     { freq: 1046.5, duration: 0.35, gap: 0.15 },
   ],
-  // "كا-تشينق" لامعة صاعدة زي نغمة الكاشير بتاعة المحافظ المصرية
-  // (فودافون كاش / إنستاباي / أورنج كاش)
-  cash: [
-    {
-      freq: 1046.5,
-      duration: 0.12,
-      gap: 0.03,
-      waveform: "triangle",
-      harmonics: CASH_BELL_HARMONICS,
-    },
-    {
-      freq: 1567.98,
-      duration: 0.18,
-      gap: 0.04,
-      waveform: "triangle",
-      harmonics: CASH_BELL_HARMONICS,
-    },
-    {
-      freq: 2093,
-      duration: 0.24,
-      gap: 0.38,
-      waveform: "triangle",
-      harmonics: CASH_BELL_HARMONICS,
-    },
-  ],
-  // رنين عملات نازلة (فلوس بتقع) — أجراس معدنية صغيرة متساقطة
-  coins: [
-    {
-      freq: 2637,
-      duration: 0.09,
-      gap: 0.03,
-      waveform: "triangle",
-      harmonics: CASH_BELL_HARMONICS,
-    },
-    {
-      freq: 2093,
-      duration: 0.09,
-      gap: 0.03,
-      waveform: "triangle",
-      harmonics: CASH_BELL_HARMONICS,
-    },
-    {
-      freq: 1661.2,
-      duration: 0.09,
-      gap: 0.03,
-      waveform: "triangle",
-      harmonics: CASH_BELL_HARMONICS,
-    },
-    {
-      freq: 1318.5,
-      duration: 0.12,
-      gap: 0.32,
-      waveform: "triangle",
-      harmonics: CASH_BELL_HARMONICS,
-    },
-  ],
-  // لحن مبهج صاعد (زي أجراس الريحة الحلوة) — قصير وفرحان
-  happy: [
-    { freq: 659.25, duration: 0.12, gap: 0.05, waveform: "triangle" },
-    { freq: 783.99, duration: 0.12, gap: 0.05, waveform: "triangle" },
-    { freq: 1046.5, duration: 0.12, gap: 0.05, waveform: "triangle" },
-    { freq: 783.99, duration: 0.12, gap: 0.05, waveform: "triangle" },
-    { freq: 1046.5, duration: 0.3, gap: 0.25, waveform: "triangle" },
-  ],
+  cash: [],
+  kaching: [],
+  coins: [],
+  coinwin: [],
+  magiccoins: [],
+  goldcoin: [],
 };
 
 // قائمة النغمات المعروضة في الإعدادات
@@ -138,10 +68,44 @@ export const ORDER_SOUND_PATTERNS: Array<{
   id: OrderSoundPattern;
   label: string;
   description: string;
+  audioUrl?: string;
 }> = [
-  { id: "cash", label: "نغمة الكاش", description: "كاشير المحافظ — كا تشينق تفرّح" },
-  { id: "coins", label: "عملات", description: "رنين عملات نازلة (فلوس)" },
-  { id: "happy", label: "مبهج", description: "لحن مرحة صاعد قصير" },
+  {
+    id: "cash",
+    label: "نغمة الكاش",
+    description: "كاشير المحافظ — كا تشينق حقيقية تفرّح",
+    audioUrl: "/sounds/register-cha-ching.mp3",
+  },
+  {
+    id: "kaching",
+    label: "كاش ريجيستر",
+    description: "رنة الكاشير الكلاسيكية الواضحة",
+    audioUrl: "/sounds/cash-register-kaching.mp3",
+  },
+  {
+    id: "coins",
+    label: "عملات",
+    description: "رنين عملات معدنية نازلة",
+    audioUrl: "/sounds/clinking-coins.mp3",
+  },
+  {
+    id: "coinwin",
+    label: "فوز عملات",
+    description: "إشعار فوز بعملات مرحة",
+    audioUrl: "/sounds/coin-win-notification.mp3",
+  },
+  {
+    id: "magiccoins",
+    label: "عملات سحرية",
+    description: "عملات متألقة بحس سحري",
+    audioUrl: "/sounds/magical-coin-win.mp3",
+  },
+  {
+    id: "goldcoin",
+    label: "جائزة ذهبية",
+    description: "قطعة ذهبية تفوز بجائزة",
+    audioUrl: "/sounds/gold-coin-prize.mp3",
+  },
   { id: "alarm", label: "صفّارة إنذار", description: "صفّارة قوية متقطعة" },
   { id: "urgent", label: "عاجل", description: "صفّقات سريعة متتالية" },
   { id: "classic", label: "كلاسيكي", description: "جرس دينج دونج" },
@@ -149,7 +113,15 @@ export const ORDER_SOUND_PATTERNS: Array<{
   { id: "smooth", label: "ناعم", description: "نغمة مريحة هادئة" },
 ];
 
-// توليد نوتات النغمة المختارة حتى نهاية المدة
+// إرجاع رابط ملف الصوت للنغمات المبنية على ملفات حقيقية
+export const getOrderSoundAudioUrl = (
+  pattern: OrderSoundPattern,
+): string | null => {
+  const entry = ORDER_SOUND_PATTERNS.find((item) => item.id === pattern);
+  return entry?.audioUrl ?? null;
+};
+
+// توليد نوتات النغمة المولّدة حتى نهاية المدة
 export const buildPatternEvents = (
   pattern: OrderSoundPattern,
   startTime: number,
@@ -179,8 +151,7 @@ export const buildPatternEvents = (
         freq: note.freq,
         start,
         duration: Math.min(note.duration, end - start),
-        waveform: note.waveform ?? defaultWaveform,
-        harmonics: note.harmonics,
+        waveform: defaultWaveform,
       });
       cursor += note.duration + note.gap;
     }

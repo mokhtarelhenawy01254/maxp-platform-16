@@ -3,6 +3,7 @@ import { buildWsUrl } from "../utils/urlHelper";
 import { tokenManager } from "../utils/tokenManager";
 import {
   buildPatternEvents,
+  getOrderSoundAudioUrl,
   type OrderSoundPattern,
 } from "./orderSoundPatterns";
 
@@ -113,6 +114,7 @@ class SocketService {
   private isConnecting: boolean = false;
   private alarmStopTimer: ReturnType<typeof setTimeout> | null = null;
   private alarmSources: Array<{ stop: () => void }> = [];
+  private audioBufferCache: Map<string, AudioBuffer> = new Map();
 
   constructor() {
     // تهيئة Audio Context (سيتم تفعيله بعد أول user interaction)
@@ -269,6 +271,7 @@ class SocketService {
       const volume = Math.min(1, Math.max(0, options?.volume ?? 1));
       const durationMs = options?.durationMs ?? 7000;
       const pattern = options?.pattern ?? "alarm";
+      const audioUrl = getOrderSoundAudioUrl(pattern);
 
       const masterGain = audioContext.createGain();
       masterGain.gain.setValueAtTime(0.001, audioContext.currentTime);
@@ -278,13 +281,12 @@ class SocketService {
       );
       masterGain.connect(audioContext.destination);
 
-      const oscillators: OscillatorNode[] = [];
+      const activeSources: Array<{ stop: () => void }> = [];
 
       const stopAll = () => {
-        for (const oscillator of oscillators) {
+        for (const source of activeSources) {
           try {
-            oscillator.stop();
-            oscillator.disconnect();
+            source.stop();
           } catch (error) {
             // تجاهل أخطاء الإيقاف
           }
@@ -298,73 +300,24 @@ class SocketService {
 
       this.alarmSources.push({ stop: stopAll });
 
-      // بناء نوتات النغمة المختارة وجدولة تشغيلها
-      const events = buildPatternEvents(
-        pattern,
-        audioContext.currentTime,
-        durationMs / 1000,
-      );
-
-      for (const event of events) {
-        const oscillator = audioContext.createOscillator();
-        oscillator.type = event.waveform;
-        oscillator.frequency.setValueAtTime(event.freq, event.start);
-
-        const noteGain = audioContext.createGain();
-        const attack = 0.02;
-        const release = Math.min(0.12, event.duration / 3);
-        noteGain.gain.setValueAtTime(0.0001, event.start);
-        noteGain.gain.exponentialRampToValueAtTime(
-          0.9 * volume,
-          event.start + attack,
-        );
-        noteGain.gain.setValueAtTime(
-          0.9 * volume,
-          event.start + Math.max(attack, event.duration - release),
-        );
-        noteGain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          event.start + event.duration,
-        );
-
-        oscillator.connect(noteGain);
-        noteGain.connect(masterGain);
-        oscillator.start(event.start);
-        oscillator.stop(event.start + event.duration + 0.02);
-        oscillators.push(oscillator);
-
-        // أصداء الجرس المعدنية لنغمة الكاش / العملات
-        // (هارمونيكات غير توافقية بتضعف بسرعة = طابع معدني لامع)
-        for (const harmonic of event.harmonics ?? []) {
-          const harmonicOscillator = audioContext.createOscillator();
-          const harmonicGain = audioContext.createGain();
-          const harmonicDuration = Math.min(
-            event.duration,
-            event.duration / harmonic.ratio + 0.05,
-          );
-
-          harmonicOscillator.type = "sine";
-          harmonicOscillator.frequency.setValueAtTime(
-            event.freq * harmonic.ratio,
-            event.start,
-          );
-
-          harmonicGain.gain.setValueAtTime(0.0001, event.start);
-          harmonicGain.gain.exponentialRampToValueAtTime(
-            harmonic.gain * 0.9 * volume,
-            event.start + 0.005,
-          );
-          harmonicGain.gain.exponentialRampToValueAtTime(
-            0.0001,
-            event.start + harmonicDuration,
-          );
-
-          harmonicOscillator.connect(harmonicGain);
-          harmonicGain.connect(masterGain);
-          harmonicOscillator.start(event.start);
-          harmonicOscillator.stop(event.start + harmonicDuration + 0.02);
-          oscillators.push(harmonicOscillator);
-        }
+      if (audioUrl) {
+        // نغمة مبنية على ملف صوت حقيقي (كاشير / عملات) — بتلعب بحلقة
+        this.playOrderSoundFile(audioUrl, {
+          audioContext,
+          masterGain,
+          durationMs,
+          registerSource: (stop) => activeSources.push({ stop }),
+        });
+      } else {
+        // نغمة مولّدة بـ Web Audio (الأنماط القديمة)
+        this.playSynthesizedOrderSound({
+          audioContext,
+          masterGain,
+          volume,
+          durationMs,
+          pattern,
+          registerSource: (stop) => activeSources.push({ stop }),
+        });
       }
 
       this.alarmStopTimer = setTimeout(stopAll, durationMs + 300);
@@ -372,7 +325,7 @@ class SocketService {
         pattern,
         volume,
         durationMs,
-        notes: events.length,
+        audioFile: audioUrl ?? null,
       });
     };
 
@@ -385,6 +338,149 @@ class SocketService {
         });
     } else {
       runAlarm();
+    }
+  }
+
+  // تشغيل نغمة من ملف صوتي حقيقي بحلقة مع Fade-in/Fade-out
+  private playOrderSoundFile(
+    url: string,
+    options: {
+      audioContext: AudioContext;
+      masterGain: GainNode;
+      durationMs: number;
+      registerSource: (stop: () => void) => void;
+    },
+  ) {
+    const { audioContext, masterGain, durationMs, registerSource } = options;
+    const startTime = audioContext.currentTime;
+
+    const sourceGain = audioContext.createGain();
+    sourceGain.gain.setValueAtTime(0.0001, startTime);
+    sourceGain.gain.exponentialRampToValueAtTime(1, startTime + 0.15);
+    const fadeOutAt = startTime + Math.max(0.2, durationMs / 1000 - 0.3);
+    sourceGain.gain.setValueAtTime(1, fadeOutAt);
+    sourceGain.gain.exponentialRampToValueAtTime(0.0001, fadeOutAt + 0.3);
+    sourceGain.connect(masterGain);
+
+    const source = audioContext.createBufferSource();
+    source.loop = true;
+    source.connect(sourceGain);
+
+    const stopSource = () => {
+      try {
+        source.stop();
+      } catch (error) {
+        // تجاهل
+      }
+      try {
+        source.disconnect();
+      } catch (error) {
+        // تجاهل
+      }
+      try {
+        sourceGain.disconnect();
+      } catch (error) {
+        // تجاهل
+      }
+    };
+    registerSource(stopSource);
+
+    const startBuffer = (buffer: AudioBuffer) => {
+      source.buffer = buffer;
+      source.start(audioContext.currentTime);
+    };
+
+    const cached = this.audioBufferCache.get(url);
+    if (cached) {
+      startBuffer(cached);
+      return;
+    }
+
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.arrayBuffer();
+      })
+      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
+      .then((buffer) => {
+        this.audioBufferCache.set(url, buffer);
+        startBuffer(buffer);
+      })
+      .catch((error) => {
+        console.error(
+          "❌ [SOUND] Failed to load order sound file:",
+          url,
+          error,
+        );
+      });
+  }
+
+  // توليد نغمة الطلب عبر Web Audio (الأنماط القديمة: إنذار/عاجل/كلاسيكي...)
+  private playSynthesizedOrderSound(options: {
+    audioContext: AudioContext;
+    masterGain: GainNode;
+    volume: number;
+    durationMs: number;
+    pattern: OrderSoundPattern;
+    registerSource: (stop: () => void) => void;
+  }) {
+    const {
+      audioContext,
+      masterGain,
+      volume,
+      durationMs,
+      pattern,
+      registerSource,
+    } = options;
+
+    const oscillators: OscillatorNode[] = [];
+    registerSource(() => {
+      for (const oscillator of oscillators) {
+        try {
+          oscillator.stop();
+          oscillator.disconnect();
+        } catch (error) {
+          // تجاهل أخطاء الإيقاف
+        }
+      }
+    });
+
+    // بناء نوتات النغمة المختارة وجدولة تشغيلها
+    const events = buildPatternEvents(
+      pattern,
+      audioContext.currentTime,
+      durationMs / 1000,
+    );
+
+    for (const event of events) {
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = event.waveform;
+      oscillator.frequency.setValueAtTime(event.freq, event.start);
+
+      const noteGain = audioContext.createGain();
+      const attack = 0.02;
+      const release = Math.min(0.12, event.duration / 3);
+      noteGain.gain.setValueAtTime(0.0001, event.start);
+      noteGain.gain.exponentialRampToValueAtTime(
+        0.9 * volume,
+        event.start + attack,
+      );
+      noteGain.gain.setValueAtTime(
+        0.9 * volume,
+        event.start + Math.max(attack, event.duration - release),
+      );
+      noteGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        event.start + event.duration,
+      );
+
+      oscillator.connect(noteGain);
+      noteGain.connect(masterGain);
+      oscillator.start(event.start);
+      oscillator.stop(event.start + event.duration + 0.02);
+      oscillators.push(oscillator);
     }
   }
 

@@ -188,7 +188,7 @@ const createNormalizedSettings = ({
           typeof rawSettings?.channels?.sound?.volume === "number"
             ? rawSettings.channels.sound.volume
             : 100,
-        pattern: rawSettings?.channels?.sound?.pattern || "alarm",
+        pattern: rawSettings?.channels?.sound?.pattern || "cash",
       },
     },
     typeSettings: baseTypeSettings,

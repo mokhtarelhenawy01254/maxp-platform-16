@@ -60,7 +60,7 @@ const createLocalSettings = (
     sound: raw?.channels?.sound || {
       enabled: true,
       volume: 100,
-      pattern: "alarm",
+      pattern: "cash",
     },
   },
   typeSettings: raw?.typeSettings || {},
@@ -167,7 +167,7 @@ const OrderSoundSettings: React.FC = () => {
   const sound = settings?.channels.sound || {
     enabled: true,
     volume: 100,
-    pattern: "alarm",
+    pattern: "cash",
   };
 
   return (
@@ -271,7 +271,7 @@ const OrderSoundSettings: React.FC = () => {
               onClick={() => {
                 socketService.testOrderSound(
                   (sound.volume ?? 100) / 100,
-                  (sound.pattern || "alarm") as OrderSoundPattern,
+                  (sound.pattern || "cash") as OrderSoundPattern,
                 );
               }}
               className="inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-900/40"
