@@ -80,6 +80,12 @@ jobs:
         run: |
           node scripts/check-file-sizes.js --max-kb=150
 
+      # 🛡️ Customer Portal Routing Guard — يمنع أي merge من agents تانية يرجّع
+      # بوابة العميل على الـ subdomain (اعتماد دائري بيكسر المتجر). أي مخالفة => block.
+      - name: Guard Customer Portal Routing
+        run: node scripts/check-customer-portal-routing.js
+        continue-on-error: false
+
       - name: Check for Facebook Ads Changes
         id: fb-check
         shell: bash
