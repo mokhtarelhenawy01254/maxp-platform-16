@@ -1717,6 +1717,25 @@ router.post('/', async (req, res) => {
       timeout: 30000  // Maximum time the transaction can run
     });
 
+    // حفظ عنوان العميل تلقائياً من الشيك آوت (يظهر في "بياناتي" من غير ما يكتبه بنفسه)
+    try {
+      const rawAddr = shippingAddress || null;
+      if (rawAddr) {
+        if (customerAuth?.customerId) {
+          await orderService._saveCustomerAddress(customerAuth.customerId, company.id, rawAddr);
+        } else if (guestPhone) {
+          const db = await getSharedPrismaClientAsync();
+          const matched = await db.customer.findFirst({
+            where: { companyId: company.id, phone: guestPhone },
+            select: { id: true }
+          });
+          if (matched) await orderService._saveCustomerAddress(matched.id, company.id, rawAddr);
+        }
+      }
+    } catch (addrErr) {
+      console.error('⚠️ [CHECKOUT] Failed to save customer address:', addrErr?.message || addrErr);
+    }
+
     // Delete cart (only if using cart mode)
     if (shouldDeleteCart && cartId) {
       try {

@@ -199,6 +199,53 @@ class OrderService {
     );
   }
 
+  /**
+   * حفظ عنوان العميل من الطلب (بيتحفظ تلقائياً في metadata.address عشان يظهر في "بياناتي")
+   */
+  async _saveCustomerAddress(customerId, companyId, rawAddress) {
+    if (!customerId || !companyId || !rawAddress) return;
+    let address = '';
+    if (typeof rawAddress === 'string') {
+      address = rawAddress.trim();
+    } else if (typeof rawAddress === 'object') {
+      try {
+        address = [
+          rawAddress.street || rawAddress.address || rawAddress.details || '',
+          rawAddress.city || rawAddress.governorate || rawAddress.state || '',
+          rawAddress.country || '',
+        ].filter(Boolean).join('، ').trim();
+        if (!address) address = JSON.stringify(rawAddress);
+      } catch (e) {
+        address = '';
+      }
+    }
+    if (!address) return;
+
+    try {
+      const prisma = this.getPrisma();
+      const customer = await prisma.customer.findFirst({
+        where: { id: customerId, companyId },
+        select: { id: true, metadata: true }
+      });
+      if (!customer) return;
+      let meta = {};
+      try {
+        meta = customer.metadata ? JSON.parse(customer.metadata) : {};
+      } catch (e) {
+        meta = {};
+      }
+      if (meta.address === address) return;
+      meta.address = address;
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: { metadata: JSON.stringify(meta) }
+      });
+      console.log(`✅ [ORDER-SERVICE] Saved customer address (${customer.id})`);
+    } catch (e) {
+      console.error('⚠️ [ORDER-SERVICE] Failed to save customer address:', e?.message || e);
+    }
+  }
+
   // إنشاء طلب جديد من المحادثة (نسخة مبسطة)
   async createOrderFromConversation(data) {
     try {
@@ -417,6 +464,13 @@ class OrderService {
           }
         });
       }, 5);
+
+      // حفظ عنوان العميل تلقائياً من الطلب (يظهر في "بياناتي")
+      await this._saveCustomerAddress(
+        resolvedCustomerId,
+        companyId,
+        data.shippingAddress || data.address || data.customerAddress || null
+      );
 
       // تحديث إحصائيات العميل
       await this.updateCustomerStats(resolvedCustomerId, parseFloat(total));
