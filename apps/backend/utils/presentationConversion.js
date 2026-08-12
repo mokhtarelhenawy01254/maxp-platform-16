@@ -123,30 +123,9 @@ async function findConvertedPresentationBySlug(prisma, companyId, slugOrId) {
   return { presentation: matchedPresentation, targetProduct };
 }
 
-async function resolveConvertedProductRedirect(prisma, companyId, slugOrId) {
-  const resolved = await findConvertedPresentationBySlug(prisma, companyId, slugOrId);
-  if (!resolved) {
-    return null;
-  }
-
-  // مسار API مطلق — الـ fetch اللي بيتبع الـ redirect يوصل لـ JSON مش HTML
-  return `/api/v1/public/products/${resolved.targetProduct.slug}`;
-}
-
-async function resolveConvertedPresentationRedirect(prisma, companyId, slugOrId) {
-  const resolved = await findConvertedPresentationBySlug(prisma, companyId, slugOrId);
-  if (!resolved) {
-    return null;
-  }
-
-  return `/api/v1/public/products/${resolved.targetProduct.slug}/${resolved.presentation.slug}`;
-}
-
 module.exports = {
   buildPresentationResponse,
   findConvertedPresentationBySlug,
   findUniquePresentationSlug,
-  resolveConvertedPresentationRedirect,
-  resolveConvertedProductRedirect,
   slugify,
 };
