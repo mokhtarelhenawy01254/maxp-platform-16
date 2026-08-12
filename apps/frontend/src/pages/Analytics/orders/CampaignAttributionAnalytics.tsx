@@ -14,9 +14,61 @@ import { ChevronDownIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
+
+interface PeriodRange {
+  period: string;
+  startDate: string;
+  endDate: string;
+}
+
+const PERIOD_PRESETS = [
+  { value: "7", label: "٧" },
+  { value: "30", label: "٣٠" },
+  { value: "90", label: "٩٠" },
+  { value: "365", label: "سنة" },
+];
+
+const toISODate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+
+const CompactPeriodSelector: React.FC<{
+  onRangeChange: (range: PeriodRange) => void;
+}> = ({ onRangeChange }) => {
+  const [period, setPeriod] = useState("30");
+
+  useEffect(() => {
+    const days = Number.parseInt(period, 10) || 30;
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - (days - 1));
+    onRangeChange({
+      period,
+      startDate: toISODate(start),
+      endDate: toISODate(end),
+    });
+  }, [period, onRangeChange]);
+
+  return (
+    <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      {PERIOD_PRESETS.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => setPeriod(option.value)}
+          className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
+            period === option.value
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 interface CampaignAttributionSummary {
   totalOrders: number;
@@ -405,7 +457,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
             الأوردر
           </p>
         </div>
-        <PeriodSelector onRangeChange={setRange} />
+        <CompactPeriodSelector onRangeChange={setRange} />
       </div>
 
       {/* Compact filters */}
