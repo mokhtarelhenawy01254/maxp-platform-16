@@ -106,10 +106,10 @@ describe('radiologyAppointmentsController', () => {
     expect(prisma.radiologyAppointment.create).toHaveBeenCalledWith({ data: expect.objectContaining({ patientId: 'pat-1', status: 'SCHEDULED' }) });
   });
 
-  test('convertToStudy sets priceSnapshot, modality and billingType from the exam type', async () => {
+  test('convertToStudy sets priceSnapshot, modality, billingType and carries patientId', async () => {
     const prisma = createPrisma();
     prisma.radiologyAppointment.findFirst.mockResolvedValue({
-      id: 'ap-1', companyId: 'company-1', patientName: 'مريض', patientPhone: '011', patientGender: 'F',
+      id: 'ap-1', companyId: 'company-1', patientId: 'pat-1', patientName: 'مريض', patientPhone: '011', patientGender: 'F',
       patientAge: '30', examTypeId: 'et-1', examTypeName: 'أشعة مقطعية على الصدر', status: 'SCHEDULED',
     });
     prisma.radiologyExamType.findFirst.mockResolvedValue({ id: 'et-1', name: 'أشعة مقطعية على الصدر', category: 'CT', price: 500, isActive: true });
@@ -122,6 +122,7 @@ describe('radiologyAppointmentsController', () => {
 
     expect(res.statusCode).toBe(200);
     const data = prisma.radiologyStudy.create.mock.calls[0][0].data;
+    expect(data.patientId).toBe('pat-1');
     expect(data.priceSnapshot).toBe(500);
     expect(data.modality).toBe('CT');
     expect(data.billingType).toBe('PATIENT');

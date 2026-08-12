@@ -178,6 +178,7 @@ const convertToStudy = async (req, res) => {
       data: {
         companyId,
         studyNumber: generateStudyNumber(),
+        patientId: appointment.patientId || null,
         patientName: appointment.patientName,
         patientPhone: appointment.patientPhone,
         patientGender: appointment.patientGender,
