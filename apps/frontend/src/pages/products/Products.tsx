@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import {
@@ -18,6 +18,7 @@ import ProductsFilters from "./components/ProductsFilters";
 import ProductsPagination from "./components/ProductsPagination";
 import ProductsTable from "./components/ProductsTable";
 import ProductsEmptyState from "./components/ProductsEmptyState";
+import { BulkConvertModal } from "./components/BulkConvertModal";
 
 // Hooks & Types
 import { useProducts } from "./hooks/useProducts";
@@ -114,6 +115,42 @@ const Products: React.FC = () => {
       if (count) toast.success(`تم حذف ${count} منتج بنجاح`);
     } catch (err) {
       tToast.error("products.error_error_1879");
+    }
+  };
+
+  // تحويل جماعي: المنتجات المحددة → عروض تقديمية لمنتج أصلي واحد
+  const [showBulkConvertModal, setShowBulkConvertModal] = useState(false);
+
+  const bulkConvertSourceIds = useMemo(
+    () => Array.from(selectedProducts),
+    [selectedProducts],
+  );
+
+  const bulkConvertSourceProducts = useMemo(() => {
+    const byId = new Map(products.map((p: any) => [p.id, p]));
+    return bulkConvertSourceIds
+      .map((id) => {
+        const p = byId.get(id);
+        return { id, name: p?.name || id };
+      })
+      .filter(Boolean);
+  }, [bulkConvertSourceIds, products]);
+
+  const handleBulkConvertSuccess = async (result: {
+    convertedCount: number;
+    skippedCount: number;
+  }) => {
+    setShowBulkConvertModal(false);
+    clearSelection();
+    await loadProducts();
+    if (result.convertedCount > 0) {
+      toast.success(
+        `تم تحويل ${result.convertedCount} منتج إلى عروض تقديمية${
+          result.skippedCount > 0 ? `، وتم تخطي ${result.skippedCount}` : ""
+        }`,
+      );
+    } else {
+      toast.error("لم يتم تحويل أي منتج — راجع المنتجات المحددة");
     }
   };
 
@@ -259,6 +296,7 @@ const Products: React.FC = () => {
           onClear={clearSelection}
           onHide={() => onBulkVisibility(true)}
           onUnhide={() => onBulkVisibility(false)}
+          onConvertToPresentations={() => setShowBulkConvertModal(true)}
         />
       )}
 
@@ -437,6 +475,16 @@ const Products: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showBulkConvertModal && bulkConvertSourceIds.length > 0 && (
+        <BulkConvertModal
+          open={showBulkConvertModal}
+          sourceProductIds={bulkConvertSourceIds}
+          sourceProducts={bulkConvertSourceProducts}
+          onClose={() => setShowBulkConvertModal(false)}
+          onSuccess={handleBulkConvertSuccess}
+        />
       )}
     </div>
   );

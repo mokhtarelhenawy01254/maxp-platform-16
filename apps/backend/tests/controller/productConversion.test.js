@@ -35,7 +35,10 @@ jest.mock('../../utils/merchantAccountScope', () => ({
   syncMerchantProductStock: jest.fn(() => Promise.resolve()),
 }));
 
-const { convertProductToPresentation } = require('../../controller/productConversionController');
+const {
+  convertProductToPresentation,
+  convertBulkProductsToPresentations,
+} = require('../../controller/productConversionController');
 
 const createMockResponse = () => ({
   status: jest.fn().mockReturnThis(),
@@ -134,7 +137,7 @@ describe('productConversionController.convertProductToPresentation', () => {
     await convertProductToPresentation(req, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ success: false, message: 'المنتج غير موجود' });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: 'المنتج الهدف غير موجود' });
     expect(mockPrisma.productPresentation.create).not.toHaveBeenCalled();
   });
 
@@ -306,5 +309,121 @@ describe('productConversionController.convertProductToPresentation', () => {
         data: expect.objectContaining({ slug: 'sparkle-sneakers-duplicate-2' }),
       }),
     );
+  });
+});
+
+describe('productConversionController.convertBulkProductsToPresentations', () => {
+  const createBulkReq = (body) => ({
+    user: { id: 'user-1', companyId: 'company-1', role: 'OWNER' },
+    body,
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockPrisma.product.findFirst.mockImplementation(({ where }) => {
+      if (where.id === 'tgt-1' || where.id === 'tgt-2') {
+        return Promise.resolve({ id: where.id, slug: `tgt-${where.id === 'tgt-1' ? '1' : '2'}`, stock: 2 });
+      }
+      return Promise.resolve(sourceProduct);
+    });
+    mockPrisma.productPresentation.findFirst.mockResolvedValue(null);
+    mockPrisma.productPresentation.count.mockResolvedValue(0);
+    mockPrisma.productPresentation.create.mockImplementation(async ({ data }) => ({
+      id: 'pres-bulk',
+      productId: data.productId,
+      ...data,
+    }));
+    mockPrisma.orderItem.updateMany.mockResolvedValue({ count: 0 });
+    mockPrisma.product.update.mockImplementation(async ({ where, data }) => ({
+      id: where.id,
+      companyId: 'company-1',
+      ...data,
+    }));
+    mockPrisma.inventory.findMany.mockResolvedValue([]);
+  });
+
+  test('returns 400 when no source products are provided', async () => {
+    const req = createBulkReq({ sourceProductIds: [], targetProductId: 'tgt-1' });
+    const res = createMockResponse();
+
+    await convertBulkProductsToPresentations(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'اختر منتجاً واحداً على الأقل للتحويل',
+    });
+  });
+
+  test('returns 400 when target is missing', async () => {
+    const req = createBulkReq({ sourceProductIds: ['src-1'], targetProductId: '' });
+    const res = createMockResponse();
+
+    await convertBulkProductsToPresentations(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'معرف المنتج الهدف مطلوب',
+    });
+  });
+
+  test('returns 404 when the target product does not exist', async () => {
+    mockPrisma.product.findFirst.mockResolvedValue(null); // target lookup misses
+
+    const req = createBulkReq({
+      sourceProductIds: ['src-1'],
+      targetProductId: 'no-such-target',
+    });
+    const res = createMockResponse();
+
+    await convertBulkProductsToPresentations(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'المنتج الهدف غير موجود',
+    });
+  });
+
+  test('converts multiple sources and skips invalid ones without stopping the rest', async () => {
+    mockPrisma.product.findFirst.mockImplementation(({ where }) => {
+      if (where.id === 'tgt-1') {
+        return Promise.resolve({ id: 'tgt-1', slug: 'tgt-1', stock: 2 });
+      }
+      if (where.id === 'src-1' || where.id === 'src-2') {
+        return Promise.resolve({ ...sourceProduct, id: where.id });
+      }
+      return Promise.resolve(null); // src-3 missing -> skipped
+    });
+
+    const req = createBulkReq({
+      sourceProductIds: ['src-1', 'src-2', 'src-3'],
+      targetProductId: 'tgt-1',
+    });
+    const res = createMockResponse();
+
+    await convertBulkProductsToPresentations(req, res);
+
+    expect(mockPrisma.productPresentation.create).toHaveBeenCalledTimes(2);
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.data.convertedCount).toBe(2);
+    expect(payload.data.skippedCount).toBe(1);
+    expect(payload.data.skipped[0].reason).toBe('المنتج غير موجود');
+  });
+
+  test('skips converting a product onto itself', async () => {
+    const req = createBulkReq({
+      sourceProductIds: ['tgt-1', 'src-1'],
+      targetProductId: 'tgt-1',
+    });
+    const res = createMockResponse();
+
+    await convertBulkProductsToPresentations(req, res);
+
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.data.convertedCount).toBe(1);
+    expect(payload.data.skippedCount).toBe(1);
+    expect(payload.data.skipped[0].reason).toBe('لا يمكن تحويل المنتج إلى نفسه');
   });
 });

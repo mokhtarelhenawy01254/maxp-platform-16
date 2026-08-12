@@ -107,4 +107,7 @@ router.delete('/:id/presentations/:presentationId', verifyToken.authenticateToke
 // تحويل منتج مستقل (مكرر) إلى عرض تقديمي تابع لمنتج أصلي
 router.post('/:id/convert-to-presentation', verifyToken.authenticateToken, requireDbPermission('products.edit'), productConversionController.convertProductToPresentation);
 
+// تحويل جماعي: عدة منتجات مكررة إلى عروض تقديمية تابعين لمنتج أصلي واحد
+router.post('/convert-bulk-to-presentations', verifyToken.authenticateToken, requireDbPermission('products.edit'), productConversionController.convertBulkProductsToPresentations);
+
 module.exports = router;
