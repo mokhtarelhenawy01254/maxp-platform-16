@@ -7,7 +7,6 @@ import {
   TrashIcon,
   ChatBubbleLeftRightIcon,
   ShoppingBagIcon,
-  ClockIcon,
   DocumentTextIcon,
   UserIcon,
   PhoneIcon,
@@ -483,14 +482,11 @@ const CustomerDetails: React.FC = () => {
   const recentOrders = data.recentOrders || [];
   const recentConversations = data.recentConversations || [];
   const notes = data.notes || [];
-  const activities = data.activities || [];
   const activeBlockRule = data.customerBlock?.rule || null;
   const isCustomerBlocked = Boolean(data.customerBlock?.isBlocked && activeBlockRule);
   const loyaltyPoints = (data.loyalty || []).reduce((sum, r) => sum + r.points, 0);
   const cashbackAmount = data.cashbackTotal || 0;
   const walletBalance = data.wallet?.balance || 0;
-  const loyalty = data.loyalty || [];
-  const wallet = data.wallet;
 
   return (
     <div className="space-y-6">
@@ -684,7 +680,6 @@ const CustomerDetails: React.FC = () => {
                 icon: ChatBubbleLeftRightIcon,
               },
               { key: "notes", label: t("customers.tabs.notes"), icon: DocumentTextIcon },
-              { key: "activity", label: t("customers.tabs.activity"), icon: ClockIcon },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -822,64 +817,6 @@ const CustomerDetails: React.FC = () => {
                     <PlusIcon className="h-4 w-4" />
                   </button>
                 </div>
-              </div>
-            </div>
-
-            {/* Loyalty & Wallet */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  الولاء والنقاط
-                </h3>
-                {loyalty.length > 0 ? (
-                  <div className="space-y-3">
-                    {loyalty.map((r) => (
-                      <div
-                        key={r.programId}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {r.programName || "برنامج الولاء"}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {r.tierName || "بدون مستوى"}
-                          </p>
-                        </div>
-                        <div className="text-left">
-                          <p className="text-lg font-bold text-amber-600">
-                            {r.points} نقطة
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">لا توجد نقاط ولاء</p>
-                )}
-              </div>
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  المحفظة والكاش باك
-                </h3>
-                {wallet ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <span className="text-sm text-gray-500">رصيد المحفظة</span>
-                      <span className="text-lg font-bold text-emerald-600">
-                        {formatCurrency(wallet.balance)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <span className="text-sm text-gray-500">إجمالي الكاش باك</span>
-                      <span className="text-lg font-bold text-emerald-600">
-                        {formatCurrency(cashbackAmount)}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">لا توجد محفظة مسجلة</p>
-                )}
               </div>
             </div>
             </>
@@ -1027,55 +964,6 @@ const CustomerDetails: React.FC = () => {
                 <p className="text-center text-gray-500 py-8">
                   {t("customers.noNotes")}
                 </p>
-              )}
-            </div>
-          )}
-
-          {/* Activity Tab */}
-          {activeTab === "activity" && (
-            <div>
-              {activities.length > 0 ? (
-                <div className="relative">
-                  <div className="absolute right-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
-                  <div className="space-y-4">
-                    {activities.map((activity, i) => (
-                      <div key={i} className="relative pr-10">
-                        <div
-                          className={`absolute right-2 w-4 h-4 rounded-full ${activity.type === "order"
-                            ? "bg-indigo-500"
-                            : activity.type === "conversation"
-                              ? "bg-green-500"
-                              : "bg-yellow-500"
-                            }`}
-                        />
-                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">
-                                {activity.title}
-                              </p>
-                              {activity.status && (
-                                <span className="text-sm text-gray-500">
-                                  {activity.status}
-                                </span>
-                              )}
-                              {activity.content && (
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                                  {activity.content}
-                                </p>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(activity.timestamp)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-center text-gray-500 py-8">{t("customers.noActivities")}</p>
               )}
             </div>
           )}
