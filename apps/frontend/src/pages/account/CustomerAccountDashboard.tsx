@@ -159,6 +159,10 @@ const AutoDiscountCard = ({ data }: { data: CustomerLoyaltySummary }) => {
     ? toNumber(voucher.percent)
     : toNumber(autoDiscount?.discountPercent || 0);
 
+  // الكارت ميظهرش غير لما العميل يكون عنده خصم فعلي (كوبون/فاتورة جاهزة).
+  // لو مفيش خصم → مخفي تماماً بدل ما يكتب "غير مفعّل".
+  if (!voucher) return null;
+
   return (
     <div className="rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-6 shadow-sm dark:border-violet-900 dark:from-violet-950/40 dark:to-fuchsia-950/40">
       <div className="flex items-center justify-between gap-4">
