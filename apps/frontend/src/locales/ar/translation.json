@@ -3632,7 +3632,15 @@
       "orderStatus": {
         "completed": "مكتمل",
         "pending": "معلق",
-        "cancelled": "ملغي"
+        "cancelled": "ملغي",
+        "paymentPending": "قيد الانتظار",
+        "paymentCompleted": "تم الدفع",
+        "paymentPartiallyPaid": "مدفوع جزئياً",
+        "paymentFailed": "فشل الدفع",
+        "paymentOnHold": "معلق الدفع",
+        "paymentRefunded": "مسترد",
+        "paymentPartiallyRefunded": "مسترد جزئياً",
+        "paymentNotSpecified": "غير محدد"
       },
       "tags": "التصنيفات",
       "notes": "ملاحظات",
@@ -14096,6 +14104,7 @@
     "attendanceReport": "تقرير الحضور",
     "audiences": "إدارة الجماهير",
     "auditLogs": "سجلات التدقيق",
+    "autoDiscount": "الخصم بعد البيع",
     "autoReply": "الرد التلقائي",
     "backToCompanies": "العودة لإدارة الشركات",
     "benefits": "المزايا",

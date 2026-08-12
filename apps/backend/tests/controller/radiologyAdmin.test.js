@@ -130,6 +130,22 @@ describe('radiologyReferringPhysiciansController', () => {
     expect(res.payload.data.rows[0].commission).toBeCloseTo(110);
     expect(res.payload.data.totalCommission).toBeCloseTo(110);
   });
+
+  test('uses the entity-resolved priceSnapshot for commissions when present', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'p1', name: 'د. محول', commissionType: 'PERCENTAGE', commissionValue: 10 }]);
+    prisma.radiologyStudy.findMany.mockResolvedValue([{ referringPhysicianId: 'p1', examTypeId: 'et-1', priceSnapshot: 850, additionAmount: 150 }]);
+    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', price: 1000 }]);
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await physicians.physicianCommissions(req(), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.data.rows[0].amount).toBeCloseTo(1000);
+    expect(res.payload.data.rows[0].commission).toBeCloseTo(100);
+    expect(res.payload.data.totalCommission).toBeCloseTo(100);
+  });
 });
 
 describe('radiologyExamAdditionsController', () => {

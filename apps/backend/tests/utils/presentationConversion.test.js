@@ -1,8 +1,7 @@
 const {
   buildPresentationResponse,
+  findConvertedPresentationBySlug,
   findUniquePresentationSlug,
-  resolveConvertedPresentationRedirect,
-  resolveConvertedProductRedirect,
   slugify,
 } = require('../../utils/presentationConversion');
 
@@ -96,7 +95,7 @@ describe('presentationConversion buildPresentationResponse', () => {
   });
 });
 
-describe('presentationConversion resolveConvertedPresentationRedirect', () => {
+describe('presentationConversion findConvertedPresentationBySlug', () => {
   const buildMetadata = (overrides = {}) =>
     JSON.stringify({
       convertedFromProductId: 'src-1',
@@ -115,7 +114,7 @@ describe('presentationConversion resolveConvertedPresentationRedirect', () => {
     prisma.product.findFirst.mockResolvedValue(null);
     prisma.productPresentation.findMany.mockResolvedValue([]);
 
-    const result = await resolveConvertedPresentationRedirect(prisma, 'company-1', 'old-slug');
+    const result = await findConvertedPresentationBySlug(prisma, 'company-1', 'old-slug');
 
     expect(result).toBeNull();
     expect(prisma.productPresentation.findMany).toHaveBeenCalledWith(
@@ -129,7 +128,7 @@ describe('presentationConversion resolveConvertedPresentationRedirect', () => {
     );
   });
 
-  test('returns the target presentation URL when the source is found by slug', async () => {
+  test('returns the presentation + target product when the source is found by slug', async () => {
     const prisma = mockPrisma();
     prisma.product.findFirst
       .mockResolvedValueOnce({ id: 'src-1', slug: 'old-slug', sku: 'SKU-1' })
@@ -138,9 +137,11 @@ describe('presentationConversion resolveConvertedPresentationRedirect', () => {
       { id: 'pres-1', slug: 'pres-slug', productId: 'tgt-1', metadata: buildMetadata() },
     ]);
 
-    const result = await resolveConvertedPresentationRedirect(prisma, 'company-1', 'old-slug');
+    const result = await findConvertedPresentationBySlug(prisma, 'company-1', 'old-slug');
 
-    expect(result).toBe('/api/v1/public/products/tgt-slug/pres-slug');
+    expect(result).not.toBeNull();
+    expect(result.targetProduct.slug).toBe('tgt-slug');
+    expect(result.presentation.slug).toBe('pres-slug');
   });
 
   test('matches the convertedFromSku directly when the slug is a legacy SKU', async () => {
@@ -156,9 +157,11 @@ describe('presentationConversion resolveConvertedPresentationRedirect', () => {
     ]);
     prisma.product.findFirst.mockResolvedValueOnce({ id: 'tgt-2', slug: 'tgt-2-slug' });
 
-    const result = await resolveConvertedPresentationRedirect(prisma, 'company-1', 'sw33-1');
+    const result = await findConvertedPresentationBySlug(prisma, 'company-1', 'sw33-1');
 
-    expect(result).toBe('/api/v1/public/products/tgt-2-slug/p2');
+    expect(result).not.toBeNull();
+    expect(result.targetProduct.slug).toBe('tgt-2-slug');
+    expect(result.presentation.slug).toBe('p2');
   });
 
   test('returns null when the target product is gone or deleted', async () => {
@@ -175,50 +178,15 @@ describe('presentationConversion resolveConvertedPresentationRedirect', () => {
       },
     ]);
 
-    const result = await resolveConvertedPresentationRedirect(prisma, 'company-1', 'old-slug');
+    const result = await findConvertedPresentationBySlug(prisma, 'company-1', 'old-slug');
 
     expect(result).toBeNull();
   });
 
   test('returns null for missing arguments', async () => {
     const prisma = mockPrisma();
-    expect(await resolveConvertedPresentationRedirect(prisma, null, 'old-slug')).toBeNull();
-    expect(await resolveConvertedPresentationRedirect(prisma, 'company-1', '')).toBeNull();
-    expect(await resolveConvertedPresentationRedirect(null, 'company-1', 'old-slug')).toBeNull();
-  });
-});
-
-describe('presentationConversion resolveConvertedProductRedirect', () => {
-  test('returns the target product URL', async () => {
-    const prisma = {
-      product: { findFirst: jest.fn() },
-      productPresentation: { findMany: jest.fn() },
-    };
-    prisma.product.findFirst
-      .mockResolvedValueOnce({ id: 'src-1', slug: 'old-slug', sku: 'SKU-1' })
-      .mockResolvedValueOnce({ id: 'tgt-1', slug: 'tgt-slug' });
-    prisma.productPresentation.findMany.mockResolvedValue([
-      {
-        id: 'pres-1',
-        slug: 'pres-slug',
-        productId: 'tgt-1',
-        metadata: JSON.stringify({ convertedFromProductId: 'src-1', convertedFromSku: 'SKU-1' }),
-      },
-    ]);
-
-    const result = await resolveConvertedProductRedirect(prisma, 'company-1', 'old-slug');
-
-    expect(result).toBe('/api/v1/public/products/tgt-slug');
-  });
-
-  test('returns null when nothing was converted', async () => {
-    const prisma = {
-      product: { findFirst: jest.fn() },
-      productPresentation: { findMany: jest.fn() },
-    };
-    prisma.product.findFirst.mockResolvedValue(null);
-    prisma.productPresentation.findMany.mockResolvedValue([]);
-
-    expect(await resolveConvertedProductRedirect(prisma, 'company-1', 'old-slug')).toBeNull();
+    expect(await findConvertedPresentationBySlug(prisma, null, 'old-slug')).toBeNull();
+    expect(await findConvertedPresentationBySlug(prisma, 'company-1', '')).toBeNull();
+    expect(await findConvertedPresentationBySlug(null, 'company-1', 'old-slug')).toBeNull();
   });
 });

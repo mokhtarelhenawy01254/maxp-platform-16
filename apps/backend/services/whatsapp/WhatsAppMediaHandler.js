@@ -34,6 +34,7 @@ try {
 const { getSharedPrismaClient } = require('../sharedDatabase');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 const WhatsAppManager = require('./WhatsAppManager');
+const { normalizeImageForWhatsApp } = require('../../utils/whatsAppImageCompat');
 
 // مسار حفظ الوسائط
 const MEDIA_DIR = path.join(__dirname, '../../uploads/whatsapp');
@@ -233,6 +234,16 @@ async function uploadMedia(source, mimetype, originalName = '') {
         if (mediaType === 'audio' && !META_AUDIO_MIMES.includes(cleanMime)) {
             buffer = await convertWebmToOgg(buffer, cleanMime);
             outputMime = 'audio/ogg';
+        }
+
+        // 🖼️ تحويل صور WEBP/BMP/SVG إلى JPEG ليتوافق مع WhatsApp Cloud API
+        // (يدعم Cloud API صور JPEG/PNG/GIF فقط — أي صورة بصيغة تانية (زي WEBP اللي
+        // بتيجي من أجهزة أندرويد/كرووم) بتفشل في التوصيل). صورة الـ GIF بتنضغط لكن
+        // مش بيتغيّر mimetype عشان يفضل متحرّك.
+        if (mediaType === 'image') {
+            const normalized = await normalizeImageForWhatsApp(buffer, outputMime);
+            buffer = normalized.buffer;
+            outputMime = normalized.mimetype;
         }
 
         // التحقق من الحجم

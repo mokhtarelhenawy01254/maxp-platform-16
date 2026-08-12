@@ -158,12 +158,6 @@ const fetchPublicStorefrontProduct = async (
   const response = await storefrontFetch(endpoint);
   if (response.success) {
     const product = normalizeStorefrontProduct(response.data);
-    if (response.data?.canonicalSlug) {
-      (product as any)._canonicalSlug = response.data.canonicalSlug;
-    }
-    if (response.data?.presentation) {
-      (product as any)._presentation = response.data.presentation;
-    }
 
     // اللينك القديم لمنتج محوّل (تحويل مكرر لعرض تقديمي): نوجّه المتصفح
     // للينك الكنسوني عشان الـ reviews/المشاركة/السلة تشتغل على الـ slug الصحيح.
@@ -186,8 +180,8 @@ const fetchPublicStorefrontProduct = async (
         : `${pathPrefix}/products/${encodeURIComponent(canonicalSlug)}`;
       const currentPath = window.location.pathname;
       if (currentPath !== targetPath) {
-        window.history.replaceState({}, '', targetPath);
-        window.location.reload();
+        // replace يعمل update للـ URL + تحميل من غير ما يضيف entry في الـ history
+        window.location.replace(targetPath);
       }
     }
 

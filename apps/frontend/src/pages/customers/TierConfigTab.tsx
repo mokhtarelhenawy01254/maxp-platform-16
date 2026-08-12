@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../services/apiClient";
-import AutoDiscountSettings from "./AutoDiscountSettings";
 import {
   Settings,
   Save,
@@ -15,48 +14,8 @@ import {
   ChevronUp,
   Zap,
   BarChart3,
-  Users,
-  Clock,
-  Coins,
   CheckCircle,
-  Info,
 } from "lucide-react";
-
-// بطاقة إحصائية صغيرة لقسم تحليل بيانات النظام
-function AnalyticsStat({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  color,
-}: {
-  label: string;
-  value: number;
-  sub?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: "amber" | "indigo" | "emerald" | "purple" | "sky" | "gray";
-}) {
-  const colorCls: Record<string, string> = {
-    amber: "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400",
-    indigo: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400",
-    emerald: "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400",
-    purple: "bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400",
-    sky: "bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400",
-    gray: "bg-gray-100 dark:bg-gray-700/40 text-gray-600 dark:text-gray-400",
-  };
-  return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800/60">
-      <div className="flex items-center justify-between mb-2">
-        <span className={`h-8 w-8 rounded-lg inline-flex items-center justify-center shrink-0 ${colorCls[color]}`}>
-          <Icon className="h-4 w-4" />
-        </span>
-        <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</span>
-      </div>
-      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-snug">{label}</p>
-      {sub && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">{sub}</p>}
-    </div>
-  );
-}
 
 interface TierItem {
   id: string;
@@ -94,18 +53,6 @@ interface CustomerOverride {
   tierBenefits?: any;
 }
 
-interface AutoDiscountAnalytics {
-  system: "AUTO_DISCOUNT";
-  totalDeliveredOrders: number;
-  appliedCustomers: number;
-  waitingForDelivery: number;
-  activeVouchers: number;
-  usedVouchers: number;
-  convertedVouchers: number;
-  expiredVouchers: number;
-  preActivationCustomers: number;
-}
-
 interface TierAnalytics {
   id: string;
   name: string;
@@ -121,7 +68,7 @@ interface TiersAnalytics {
   tiers: TierAnalytics[];
 }
 
-type SystemAnalytics = AutoDiscountAnalytics | TiersAnalytics | null;
+type SystemAnalytics = TiersAnalytics | null;
 
 const METHODS = [
   { value: "POINTS", label: "بالنقاط", hint: "الحدود بالنقاط" },
@@ -202,9 +149,7 @@ const validateRangeConflicts = (tier: TierItem, allTiers: TierItem[]): string =>
 };
 
 const TierConfigTab: React.FC = () => {
-  const [system, setSystem] = useState<string>("TIERS");
   const [activeSystem, setActiveSystem] = useState<string | null>(null);
-  const [systemLoading, setSystemLoading] = useState(true);
   const [activated, setActivated] = useState<boolean>(false);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [programId, setProgramId] = useState<string>("");
@@ -255,39 +200,26 @@ const TierConfigTab: React.FC = () => {
   useEffect(() => { loadPrograms(); }, [loadPrograms]);
   useEffect(() => { if (programId) loadConfig(programId); }, [programId, loadConfig]);
 
-  // تحميل نظام الولاء الحالي (المستويات أو الخصم التلقائي)
+  // تحميل نظام الولاء الحالي (المستويات)
   useEffect(() => {
     let cancelled = false;
     apiClient.get("/hr/customer-loyalty/system-settings")
       .then((res) => {
         if (cancelled) return;
         const s = res.data?.data?.loyaltySystem || "TIERS";
-        setSystem(s);
         setActiveSystem(s);
         setActivated(res.data?.data?.activated === true);
       })
       .catch(() => {
         if (cancelled) return;
-        setSystem("TIERS");
         setActiveSystem("TIERS");
         setActivated(false);
-      })
-      .finally(() => {
-        if (!cancelled) setSystemLoading(false);
       });
     return () => { cancelled = true; };
   }, []);
 
-  // تبديل عرض النظام في الواجهة (من غير ما نلغي التفعيل الحالي)
-  const switchSystem = (s: string) => {
-    if (s === system) return;
-    setSystem(s);
-    setSavedMsg("");
-    setErrorMsg("");
-  };
-
   // تفعيل نظام المستويات: يحفظ طريقة الحساب + كل المستويات + يفعل النظام + يطبقه على كل العملاء فوراً
-  // (Toggle: لو مفعّل ونضغط تاني → سؤال إيقاف، ولو الخصم التلقائي مفعّل → سؤال تحويل)
+  // (Toggle: لو مفعّل ونضغط تاني → سؤال إيقاف)
   const activateTiers = async () => {
     if (!programId) {
       setErrorMsg("اختر برنامج الولاء أولاً");
@@ -310,12 +242,6 @@ const TierConfigTab: React.FC = () => {
         setSaving(false);
       }
       return;
-    }
-
-    // لو الخصم التلقائي مفعّل → سؤال تحويل
-    if (activated && activeSystem === "AUTO_DISCOUNT") {
-      const ok = window.confirm("هل تريد إيقاف تفعيل نظام الخصم التلقائي وتفعيل نظام المستويات؟");
-      if (!ok) return;
     }
 
     setSaving(true);
@@ -345,7 +271,6 @@ const TierConfigTab: React.FC = () => {
 
       // 3) تفعيل نظام المستويات (الضغط على "تفعيل النظام") → باك إند بيطبقه على كل العملاء
       const res = await apiClient.put("/hr/customer-loyalty/system-settings", { system: "TIERS", activated: true });
-      setSystem("TIERS");
       setActiveSystem("TIERS");
       setActivated(true);
       const activation = res.data?.activation;
@@ -360,14 +285,7 @@ const TierConfigTab: React.FC = () => {
     }
   };
 
-  // بعد حفظ إعدادات الخصم التلقائي من جواه، حدّث النظام المفعّل في البار فوراً
-  const handleAutoDiscountSaved = (data?: any) => {
-    if (data?.loyaltySystem) {
-      setActiveSystem(data.loyaltySystem);
-      setSystem(data.loyaltySystem);
-    }
-    setActivated(data?.activated === true);
-  };  // ── تحليلات نظام الولاء الحالي (خصم تلقائي أو مستويات) ──
+  // ── تحليلات نظام المستويات ──
   const [analytics, setAnalytics] = useState<SystemAnalytics>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
@@ -515,63 +433,20 @@ const TierConfigTab: React.FC = () => {
 
       {/* تحليلات النظام المفعّل */}
       {activeSystem && (
-        <div className={`rounded-lg border p-4 ${activeSystem === "AUTO_DISCOUNT" ? "border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-900/10" : "border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-900/10"}`}>
+        <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-900/10 p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-gray-500" />
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">تحليل بيانات {activeSystem === "AUTO_DISCOUNT" ? "نظام الخصم التلقائي" : "المستويات"}</h4>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">تحليل بيانات المستويات</h4>
             </div>
             {analyticsLoading && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
           </div>
 
           {analyticsLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {Array.from({ length: activeSystem === "AUTO_DISCOUNT" ? 6 : 3 }).map((_, i) => (
+              {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="h-20 rounded-lg bg-gray-100 dark:bg-gray-700/40 animate-pulse" />
               ))}
-            </div>
-          ) : analytics?.system === "AUTO_DISCOUNT" ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              <AnalyticsStat
-                label="العملاء اللي اتطبق عليهم النظام"
-                value={analytics.appliedCustomers ?? 0}
-                sub={`${analytics.totalDeliveredOrders ?? 0} أوردر مسلّم`}
-                icon={Users}
-                color="amber"
-              />
-              <AnalyticsStat
-                label="في انتظار استلام الأوردر"
-                value={analytics.waitingForDelivery ?? 0}
-                sub="الخصم هيتفعل بعد التسليم"
-                icon={Clock}
-                color="indigo"
-              />
-              <AnalyticsStat
-                label="في مرحلة الخصم (كوبون فعّال)"
-                value={analytics.activeVouchers ?? 0}
-                icon={Zap}
-                color="emerald"
-              />
-              <AnalyticsStat
-                label="اتحوّل لكاش باك"
-                value={analytics.convertedVouchers ?? 0}
-                sub="كوبون انتهى من غير استخدام"
-                icon={Coins}
-                color="purple"
-              />
-              <AnalyticsStat
-                label="كوبونات مستخدمة فعلياً"
-                value={analytics.usedVouchers ?? 0}
-                icon={CheckCircle}
-                color="sky"
-              />
-              <AnalyticsStat
-                label="طلبات قبل التفعيل (متفعّلش النظام عليهم)"
-                value={analytics.preActivationCustomers ?? 0}
-                sub="عملوا أوردر مسلّم قبل تفعيل النظام"
-                icon={Info}
-                color="gray"
-              />
             </div>
           ) : analytics?.system === "TIERS" ? (
             <div>
@@ -606,34 +481,6 @@ const TierConfigTab: React.FC = () => {
         </div>
       )}
 
-      {/* محدد نظام الولاء */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">نظام الولاء</label>
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={() => switchSystem("TIERS")}
-            disabled={saving}
-            className={`px-4 py-2 rounded-lg text-sm border transition-colors ${system === "TIERS" ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"}`}
-          >
-            نظام المستويات
-          </button>
-          <button
-            onClick={() => switchSystem("AUTO_DISCOUNT")}
-            disabled={saving}
-            className={`px-4 py-2 rounded-lg text-sm border transition-colors ${system === "AUTO_DISCOUNT" ? "bg-amber-500 text-white border-amber-500" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"}`}
-          >
-            الخصم التلقائي
-          </button>
-        </div>
-        <p className="text-xs text-gray-400 mt-2">تفعيل أحد النظامين يوقف الآخر تلقائياً</p>
-      </div>
-
-      {systemLoading ? (
-        <div className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-indigo-500" /></div>
-      ) : system === "AUTO_DISCOUNT" ? (
-        <AutoDiscountSettings onSaved={handleAutoDiscountSaved} activeSystem={activeSystem} activated={activated} />
-      ) : (
-      <>
       {/* طريقة الحساب الافتراضية + تفعيل النظام */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <div className="flex flex-wrap items-end gap-3">
@@ -845,8 +692,6 @@ const TierConfigTab: React.FC = () => {
           )}
         </div>
       </div>
-      </>
-      )}
     </div>
   );
 };

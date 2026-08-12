@@ -296,7 +296,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         if (shouldPlayOrderSound(currentPreferences)) {
           socketService.playOrderAlarm({
             volume: getOrderSoundVolume(currentPreferences),
-            pattern: currentPreferences?.channels?.sound?.pattern || "alarm",
+            pattern: currentPreferences?.channels?.sound?.pattern || "cash",
           });
         }
       } catch (soundError) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -334,6 +334,18 @@ export const ProductNewFinal: React.FC = () => {
 
   const currencyInfo = getCurrencyByCode(currency || "EGP");
   const displayCurrency = currencyInfo?.symbol || "ج.م";
+
+  // أصل المتجر العمومي لفتح صفحة العروض التقديمية في تاب جديد
+  const storefrontOrigin = useMemo(() => {
+    const company = user?.company;
+    if (company?.customDomain?.trim()) {
+      return `https://${company.customDomain.trim()}`;
+    }
+    if (company?.slug?.trim()) {
+      return `https://${company.slug.trim()}.maxp.online`;
+    }
+    return "";
+  }, [user?.company]);
 
   // General State – sync tab with URL search param for deep-link support
   const tabFromUrl = searchParams.get("tab") || "basic";
@@ -1764,6 +1776,7 @@ export const ProductNewFinal: React.FC = () => {
                 loading={presentationsLoading}
                 productId={effectiveProductId}
                 productSlug={formData.slug}
+                storefrontOrigin={storefrontOrigin}
                 onAdd={addPresentation}
                 onUpdate={updatePresentation}
                 onDelete={deletePresentation}

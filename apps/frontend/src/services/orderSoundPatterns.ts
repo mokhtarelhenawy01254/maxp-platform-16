@@ -3,7 +3,13 @@ export type OrderSoundPattern =
   | "urgent"
   | "classic"
   | "digital"
-  | "smooth";
+  | "smooth"
+  | "cash"
+  | "kaching"
+  | "coins"
+  | "coinwin"
+  | "magiccoins"
+  | "goldcoin";
 
 interface OrderSoundPatternNote {
   freq: number;
@@ -11,7 +17,15 @@ interface OrderSoundPatternNote {
   gap: number;
 }
 
-// نغمات صوت الطلبات — كل نغمة بتكوين نوتات مختلف
+export interface OrderSoundEvent {
+  freq: number;
+  start: number;
+  duration: number;
+  waveform: OscillatorType;
+}
+
+// نغمات صوت الطلبات المولّدة بـ Web Audio (الأنماط القديمة)
+// الأنماط الجديدة (الكاش/العملات) بتشتغل من ملفات صوت حقيقية في public/sounds
 const ORDER_SOUND_PATTERN_NOTES: Record<
   OrderSoundPattern,
   OrderSoundPatternNote[]
@@ -41,6 +55,12 @@ const ORDER_SOUND_PATTERN_NOTES: Record<
     { freq: 783.99, duration: 0.2, gap: 0.05 },
     { freq: 1046.5, duration: 0.35, gap: 0.15 },
   ],
+  cash: [],
+  kaching: [],
+  coins: [],
+  coinwin: [],
+  magiccoins: [],
+  goldcoin: [],
 };
 
 // قائمة النغمات المعروضة في الإعدادات
@@ -48,7 +68,44 @@ export const ORDER_SOUND_PATTERNS: Array<{
   id: OrderSoundPattern;
   label: string;
   description: string;
+  audioUrl?: string;
 }> = [
+  {
+    id: "cash",
+    label: "نغمة الكاش",
+    description: "كاشير المحافظ — كا تشينق حقيقية تفرّح",
+    audioUrl: "/sounds/register-cha-ching.mp3",
+  },
+  {
+    id: "kaching",
+    label: "كاش ريجيستر",
+    description: "رنة الكاشير الكلاسيكية الواضحة",
+    audioUrl: "/sounds/cash-register-kaching.mp3",
+  },
+  {
+    id: "coins",
+    label: "عملات",
+    description: "رنين عملات معدنية نازلة",
+    audioUrl: "/sounds/clinking-coins.mp3",
+  },
+  {
+    id: "coinwin",
+    label: "فوز عملات",
+    description: "إشعار فوز بعملات مرحة",
+    audioUrl: "/sounds/coin-win-notification.mp3",
+  },
+  {
+    id: "magiccoins",
+    label: "عملات سحرية",
+    description: "عملات متألقة بحس سحري",
+    audioUrl: "/sounds/magical-coin-win.mp3",
+  },
+  {
+    id: "goldcoin",
+    label: "جائزة ذهبية",
+    description: "قطعة ذهبية تفوز بجائزة",
+    audioUrl: "/sounds/gold-coin-prize.mp3",
+  },
   { id: "alarm", label: "صفّارة إنذار", description: "صفّارة قوية متقطعة" },
   { id: "urgent", label: "عاجل", description: "صفّقات سريعة متتالية" },
   { id: "classic", label: "كلاسيكي", description: "جرس دينج دونج" },
@@ -56,32 +113,30 @@ export const ORDER_SOUND_PATTERNS: Array<{
   { id: "smooth", label: "ناعم", description: "نغمة مريحة هادئة" },
 ];
 
-// توليد نوتات النغمة المختارة حتى نهاية المدة
+// إرجاع رابط ملف الصوت للنغمات المبنية على ملفات حقيقية
+export const getOrderSoundAudioUrl = (
+  pattern: OrderSoundPattern,
+): string | null => {
+  const entry = ORDER_SOUND_PATTERNS.find((item) => item.id === pattern);
+  return entry?.audioUrl ?? null;
+};
+
+// توليد نوتات النغمة المولّدة حتى نهاية المدة
 export const buildPatternEvents = (
   pattern: OrderSoundPattern,
   startTime: number,
   durationSeconds: number,
-): Array<{
-  freq: number;
-  start: number;
-  duration: number;
-  waveform: OscillatorType;
-}> => {
+): OrderSoundEvent[] => {
   const seq =
     ORDER_SOUND_PATTERN_NOTES[pattern] || ORDER_SOUND_PATTERN_NOTES.alarm;
-  const waveform: OscillatorType =
+  const defaultWaveform: OscillatorType =
     pattern === "smooth"
       ? "sine"
       : pattern === "classic"
         ? "triangle"
         : "square";
 
-  const events: Array<{
-    freq: number;
-    start: number;
-    duration: number;
-    waveform: OscillatorType;
-  }> = [];
+  const events: OrderSoundEvent[] = [];
 
   const end = startTime + durationSeconds;
   let cursor = startTime;
@@ -96,7 +151,7 @@ export const buildPatternEvents = (
         freq: note.freq,
         start,
         duration: Math.min(note.duration, end - start),
-        waveform,
+        waveform: defaultWaveform,
       });
       cursor += note.duration + note.gap;
     }
