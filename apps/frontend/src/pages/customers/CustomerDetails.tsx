@@ -772,6 +772,31 @@ const CustomerDetails: React.FC = () => {
                       </div>
                     )}
                   </div>
+                  {customer.customerRating &&
+                    customer.customerRating !== "UNKNOWN" && (
+                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                        <StarIcon className="h-5 w-5" />
+                        <span>التقييم: {customer.customerRating}</span>
+                      </div>
+                    )}
+                  {customer.createdAt && (
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                      <CalendarIcon className="h-5 w-5" />
+                      <span>عميل منذ {formatDate(customer.createdAt)}</span>
+                    </div>
+                  )}
+                  {customer.updatedAt && (
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                      <CalendarIcon className="h-5 w-5" />
+                      <span>آخر تحديث {formatDate(customer.updatedAt)}</span>
+                    </div>
+                  )}
+                  {customer.notes ? (
+                    <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                      <DocumentTextIcon className="h-5 w-5 mt-0.5" />
+                      <span>{customer.notes}</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div className="space-y-4">
