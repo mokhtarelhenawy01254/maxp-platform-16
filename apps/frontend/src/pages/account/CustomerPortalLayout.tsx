@@ -149,9 +149,6 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
               <ShieldCheck size={22} />
               حسابي
             </Link>
-            <p className="mt-3 text-sm text-gray-500">
-              بوابة عملاء المتجر — نقاطك وخصوماتك وكاش باكك في مكان واحد
-            </p>
           </div>
 
           <nav className="space-y-1 p-4">
