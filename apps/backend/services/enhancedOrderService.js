@@ -9,6 +9,7 @@ const { normalizeOrderPaymentMethod } = require('../utils/paymentMethodNormaliza
 const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone } = require('../utils/customerIdentity');
 const { splitCustomerName } = require('../utils/customerName');
+const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
 
 const buildSourceCondition = (source) => {
   switch (String(source).toLowerCase()) {
@@ -394,7 +395,7 @@ class EnhancedOrderService {
                     turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
                     turboShipmentStatus: shipmentResult.status,
                     turboLabelUrl: shipmentResult.labelUrl,
-                    turboMetadata: JSON.stringify(shipmentResult.data)
+                    turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
                   }
                 });
               }, 3);

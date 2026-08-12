@@ -8,6 +8,7 @@ const {
   ensureWithinPlanLimit,
   createLimitExceededError,
 } = require('../utils/planLimitPayloads');
+const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
 
 const normalizeWhatsAppOrderStatus = (status) => {
   const normalizedStatus = String(status || '').trim().toUpperCase();
@@ -1162,7 +1163,7 @@ class OrderService {
                   turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
                   turboShipmentStatus: shipmentResult.status,
                   turboLabelUrl: shipmentResult.labelUrl,
-                  turboMetadata: JSON.stringify(shipmentResult.data)
+                  turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
                 }
               });
             }
@@ -1696,7 +1697,7 @@ class OrderService {
                 turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
                 turboShipmentStatus: shipmentResult.status,
                 turboLabelUrl: shipmentResult.labelUrl,
-                turboMetadata: JSON.stringify(shipmentResult.data)
+                turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
               }
             });
           }, 3);

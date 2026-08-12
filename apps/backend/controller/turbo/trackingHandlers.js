@@ -1,6 +1,7 @@
 const TurboService = require('../../services/turboService');
 const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
 const { findOrderByNumber } = require('./helpers');
+const { serializeTurboMetadata } = require('../../utils/turbo/turboMetadata');
 
 const trackShipment = async (req, res) => {
   try {
@@ -20,7 +21,7 @@ const trackShipment = async (req, res) => {
     const matched = statusResult.shipments.find(s => s.code === key || s.barCode === key);
     if (!matched) return res.status(404).json({ success: false, error: 'Shipment not found in Turbo', message: 'لم يتم العثور على الشحنة في نظام Turbo خلال آخر 30 يوم' });
     if (matched.internalStatus !== order.turboShipmentStatus) {
-      const upd = { turboShipmentStatus: matched.internalStatus, turboMetadata: JSON.stringify(matched.raw || matched), updatedAt: new Date() };
+      const upd = { turboShipmentStatus: matched.internalStatus, turboMetadata: serializeTurboMetadata(order.turboMetadata, matched.raw || matched), updatedAt: new Date() };
       let trackedStatus = null;
       if (matched.internalStatus === 'delivered') { upd.status = 'DELIVERED'; upd.paymentStatus = 'COMPLETED'; trackedStatus = 'DELIVERED'; }
       else if (matched.internalStatus === 'cancelled') { upd.status = 'CANCELLED'; trackedStatus = 'CANCELLED'; }

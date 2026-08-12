@@ -104,6 +104,8 @@ describe('turboController.cancelShipment', () => {
       data: {
         turboShipmentStatus: 'cancelled',
         turboMetadata: JSON.stringify({
+          code: 'CODE-123',
+          bar_code: 'BAR-999',
           success: 1,
           message: 'Cancelled successfully',
         }),

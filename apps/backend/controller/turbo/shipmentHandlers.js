@@ -3,6 +3,7 @@ const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatab
 const orderService = require('../../services/orderService');
 const { validateOrderForTurbo } = require('../../utils/turbo/shipmentValidator');
 const { findOrderByNumber, parseTurboMetadata, buildTurboShipmentSearchKeys, buildTurboUnlinkUpdateData, hasTurboLink, findOrderForTurboLocalAction } = require('./helpers');
+const { serializeTurboMetadata } = require('../../utils/turbo/turboMetadata');
 
 const createShipment = async (req, res) => {
   try {
@@ -29,7 +30,7 @@ const createShipment = async (req, res) => {
     const result = await turboService.createShipment(orderData);
     const baseTurboMetadata = result.data && typeof result.data === 'object' ? { ...result.data } : (result.data ? { result: result.data } : {});
     if (previousTurboShipment) { baseTurboMetadata.previousTurboShipment = previousTurboShipment; baseTurboMetadata.replacedExistingTurboShipment = true; }
-    const updateData = { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: Object.keys(baseTurboMetadata).length > 0 ? JSON.stringify(baseTurboMetadata) : null };
+    const updateData = { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: Object.keys(baseTurboMetadata).length > 0 ? serializeTurboMetadata(order.turboMetadata, baseTurboMetadata) : serializeTurboMetadata(order.turboMetadata, {}) };
     if (order.tableType === 'GuestOrder') { await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3); }
     else if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3); }
     else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: updateData }), 3); }
@@ -62,8 +63,8 @@ const bulkCreateShipments = async (req, res) => {
         if (order.turboShipmentId) { results.skipped.push({ orderNumber: order.orderNumber, reason: 'يوجد شحنة تربو مسجلة بالفعل' }); continue; }
         const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
         const result = await turboService.createShipment(orderData);
-        if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: JSON.stringify(result.data) } }), 3); }
-        else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: JSON.stringify(result.data) } }), 3); }
+        if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
+        else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
         results.success.push({ orderNumber: order.orderNumber, shipmentId: result.shipmentId, trackingNumber: result.trackingNumber });
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
@@ -94,9 +95,9 @@ const cancelShipment = async (req, res) => {
     if (!order.company?.turboApiKey) return res.status(400).json({ success: false, error: 'Turbo API key is not configured for this company' });
     const turboService = new TurboService(order.company.turboApiKey, companyId);
     const result = await turboService.cancelShipment(shipmentSearchKeys, reason);
-    if (order.tableType === 'GuestOrder') { await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: JSON.stringify(result.data) } }), 3); }
-    else if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: JSON.stringify(result.data) } }), 3); }
-    else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: { turboShipmentStatus: 'cancelled', turboMetadata: JSON.stringify(result.data) } }), 3); }
+    if (order.tableType === 'GuestOrder') { await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
+    else if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
+    else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
     res.json({ success: true, data: result });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error cancelling shipment:', error);
