@@ -27,9 +27,6 @@ import {
   YAxis,
 } from "recharts";
 import analyticsService from "../../../services/analyticsService";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
 
 type HeroIcon = React.ForwardRefExoticComponent<
@@ -136,6 +133,13 @@ const emptyData: ReturnReasonsAnalyticsData = {
   byProduct: [],
   recentReturns: [],
 };
+
+const periodOptions = [
+  { value: "7", label: "٧" },
+  { value: "30", label: "٣٠" },
+  { value: "90", label: "٩٠" },
+  { value: "365", label: "سنة" },
+];
 
 const STATUS_META: Record<
   string,
@@ -389,7 +393,7 @@ const StatsBar: React.FC<{ summary: ReturnReasonAnalyticsSummary }> = ({
 
 const ReturnReasonsAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
-  const [range, setRange] = useState<PeriodRange | null>(null);
+  const [period, setPeriod] = useState("30");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [tab, setTab] = useState<"status" | "trend" | "products">("status");
@@ -402,9 +406,9 @@ const ReturnReasonsAnalytics: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await analyticsService.getReturnReasonsAnalytics(
-        range?.period,
-        range?.startDate,
-        range?.endDate,
+        period,
+        undefined,
+        undefined,
         category || undefined,
         status || undefined,
       );
@@ -420,7 +424,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [range, category, status]);
+  }, [period, category, status]);
 
   useEffect(() => {
     void fetchData();
@@ -514,7 +518,22 @@ const ReturnReasonsAnalytics: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <PeriodSelector onRangeChange={setRange} />
+          <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            {periodOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setPeriod(option.value)}
+                className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
+                  period === option.value
+                    ? "bg-rose-600 text-white shadow-sm"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
 
           <select
             value={status}
