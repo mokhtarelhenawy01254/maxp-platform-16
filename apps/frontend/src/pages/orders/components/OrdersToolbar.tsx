@@ -370,7 +370,12 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                     <option value="today">{t("orders.today")}</option>
                     <option value="yesterday">{t("orders.yesterday")}</option>
                     <option value="last7">{t("orders.last7Days")}</option>
+                    <option value="last30">{t("orders.last30Days")}</option>
+                    <option value="last90">{t("orders.last90Days")}</option>
+                    <option value="last180">{t("orders.last6Months")}</option>
+                    <option value="last365">{t("orders.lastYear")}</option>
                     <option value="thisMonth">{t("orders.thisMonth")}</option>
+                    <option value="thisYear">{t("orders.thisYear")}</option>
                     <option value="custom">{t("orders.customPeriod")}</option>
                   </select>
                 </div>

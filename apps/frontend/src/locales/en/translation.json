@@ -2825,6 +2825,18 @@
     "previous": "Previous",
     "next": "Next"
   },
+  "periodSelector": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "last6Months": "Last 6 Months",
+    "lastYear": "Last Year",
+    "custom": "Custom Period",
+    "from": "From",
+    "to": "To"
+  },
   "broadcast": {
     "title": "Broadcast",
     "newBroadcast": "New Broadcast",
@@ -9892,7 +9904,12 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "last6Months": "Last 6 Months",
+    "lastYear": "Last Year",
     "thisMonth": "This Month",
+    "thisYear": "This Year",
     "customPeriod": "Custom Period",
     "unseen": "Unseen",
     "showAll": "Show All",

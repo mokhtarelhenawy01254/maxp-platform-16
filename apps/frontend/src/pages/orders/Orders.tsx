@@ -1879,6 +1879,22 @@ const Orders: React.FC = () => {
         startDate = format(subDays(now, 30), "yyyy-MM-dd");
         endDate = format(now, "yyyy-MM-dd");
         break;
+      case "last90":
+        startDate = format(subDays(now, 90), "yyyy-MM-dd");
+        endDate = format(now, "yyyy-MM-dd");
+        break;
+      case "last180":
+        startDate = format(subDays(now, 180), "yyyy-MM-dd");
+        endDate = format(now, "yyyy-MM-dd");
+        break;
+      case "last365":
+        startDate = format(subDays(now, 365), "yyyy-MM-dd");
+        endDate = format(now, "yyyy-MM-dd");
+        break;
+      case "thisYear":
+        startDate = format(new Date(now.getFullYear(), 0, 1), "yyyy-MM-dd");
+        endDate = format(now, "yyyy-MM-dd");
+        break;
       case "thisMonth":
         startDate = format(
           new Date(now.getFullYear(), now.getMonth(), 1),

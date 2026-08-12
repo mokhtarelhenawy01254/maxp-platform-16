@@ -20,6 +20,9 @@ import {
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface RevenueStats {
   grossRevenue: number;
@@ -34,12 +37,14 @@ const RevenueAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<RevenueStats | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [period]);
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   const fetchData = async () => {
     try {
@@ -47,8 +52,16 @@ const RevenueAnalytics: React.FC = () => {
       setError(null);
 
       const [storeData, dailyData] = await Promise.all([
-        analyticsService.getStoreAnalytics(period),
-        analyticsService.getDailyAnalytics(period),
+        analyticsService.getStoreAnalytics(
+          range?.period,
+          range?.startDate,
+          range?.endDate,
+        ),
+        analyticsService.getDailyAnalytics(
+          range?.period,
+          range?.startDate,
+          range?.endDate,
+        ),
       ]);
 
       if (storeData.success) {
@@ -104,16 +117,7 @@ const RevenueAnalytics: React.FC = () => {
             تتبع الإيرادات والأرباح
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">آخر 7 أيام</option>
-          <option value="30">آخر 30 يوم</option>
-          <option value="90">آخر 90 يوم</option>
-          <option value="365">آخر سنة</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       {/* Summary Cards */}

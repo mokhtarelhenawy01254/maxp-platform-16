@@ -21,6 +21,9 @@ import {
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import { useCurrency } from "../../../hooks/useCurrency";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 type HeroIcon = React.ForwardRefExoticComponent<
   React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> &
@@ -109,13 +112,6 @@ const emptyData: CancellationAnalyticsData = {
   orders: [],
 };
 
-const periodOptions = [
-  { value: "7", label: "آخر 7 أيام" },
-  { value: "30", label: "آخر 30 يوم" },
-  { value: "90", label: "آخر 90 يوم" },
-  { value: "365", label: "آخر سنة" },
-];
-
 const categoryColors: Record<string, string> = {
   "تعذر التواصل":
     "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:ring-amber-700",
@@ -190,7 +186,7 @@ const SummaryCard: React.FC<{
 
 const CancellationAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [data, setData] = useState<CancellationAnalyticsData>(emptyData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -209,7 +205,11 @@ const CancellationAnalytics: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response = await analyticsService.getCancellationAnalytics(period);
+      const response = await analyticsService.getCancellationAnalytics(
+        range?.period,
+        range?.startDate,
+        range?.endDate,
+      );
       setData(response?.success && response?.data ? response.data : emptyData);
     } catch (err) {
       console.error("CancellationAnalytics error:", err);
@@ -218,7 +218,7 @@ const CancellationAnalytics: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, [range]);
 
   useEffect(() => {
     void fetchData();
@@ -263,17 +263,7 @@ const CancellationAnalytics: React.FC = () => {
           </p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto md:items-center">
-          <select
-            value={period}
-            onChange={(event) => setPeriod(event.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-600 dark:bg-gray-800 sm:w-48"
-          >
-            {periodOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <PeriodSelector onRangeChange={setRange} />
         </div>
       </div>
 

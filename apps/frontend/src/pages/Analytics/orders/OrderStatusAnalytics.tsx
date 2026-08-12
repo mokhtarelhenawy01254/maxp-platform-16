@@ -34,6 +34,7 @@ import {
   Area,
 } from "recharts";
 import { apiClient } from "../../../services/apiClient";
+import PeriodSelector from "../../../components/common/PeriodSelector";
 
 interface Summary {
   totalOrders: number;
@@ -274,6 +275,15 @@ export default function OrderStatusAnalytics() {
         {/* Date Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
           <div className="flex flex-wrap items-center gap-4">
+            <PeriodSelector
+              initialPeriod="90"
+              onRangeChange={(range) => {
+                setStartDate(range.startDate);
+                setEndDate(range.endDate);
+              }}
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-gray-400" />
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">من:</span>

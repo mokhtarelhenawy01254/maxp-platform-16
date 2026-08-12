@@ -2818,6 +2818,18 @@ declare module 'react-i18next' {
         previous: string;
         next: string;
       };
+      periodSelector: {
+        today: string;
+        yesterday: string;
+        last7Days: string;
+        last30Days: string;
+        last90Days: string;
+        last6Months: string;
+        lastYear: string;
+        custom: string;
+        from: string;
+        to: string;
+      };
       broadcast: {
         title: string;
         newBroadcast: string;
@@ -9885,7 +9897,12 @@ declare module 'react-i18next' {
         today: string;
         yesterday: string;
         last7Days: string;
+        last30Days: string;
+        last90Days: string;
+        last6Months: string;
+        lastYear: string;
         thisMonth: string;
+        thisYear: string;
         customPeriod: string;
         unseen: string;
         showAll: string;

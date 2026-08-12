@@ -102,7 +102,12 @@ const timeRangeLabels: Record<string, string> = {
   today: "orders.today",
   yesterday: "orders.yesterday",
   last7: "orders.last7Days",
+  last30: "orders.last30Days",
+  last90: "orders.last90Days",
+  last180: "orders.last6Months",
+  last365: "orders.lastYear",
   thisMonth: "orders.thisMonth",
+  thisYear: "orders.thisYear",
   custom: "orders.customPeriod",
 };
 

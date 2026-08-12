@@ -24,19 +24,15 @@ import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import PeriodSelector, {
+  PeriodKey,
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 const DELIVERED_COLOR = "#10B981";
 const CANCELLED_COLOR = "#EF4444";
 const RETURNED_COLOR = "#F59E0B";
 const PENDING_COLOR = "#94A3B8";
-
-const PERIOD_OPTIONS = [
-  { value: "7", labelKey: "last7Days" },
-  { value: "30", labelKey: "last30Days" },
-  { value: "90", labelKey: "last90Days" },
-  { value: "365", labelKey: "lastYear" },
-  { value: "custom", labelKey: "custom" },
-];
 
 type SortKey =
   | "productName"
@@ -253,42 +249,41 @@ const ProductFulfillmentAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [period, setPeriod] = useState(searchParams.get("period") || "30");
-  const [startDate, setStartDate] = useState(
-    searchParams.get("startDate") || "",
-  );
-  const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("totalItems");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const isCustom = period === "custom";
-
   useEffect(() => {
+    if (!range) {
+      return;
+    }
     const params: Record<string, string> = {
-      period,
-      ...(isCustom && startDate ? { startDate } : {}),
-      ...(isCustom && endDate ? { endDate } : {}),
+      period: range.period,
+      ...(range.startDate ? { startDate: range.startDate } : {}),
+      ...(range.endDate ? { endDate: range.endDate } : {}),
     };
     setSearchParams(params, { replace: true });
-  }, [period, startDate, endDate, isCustom, setSearchParams]);
-
-  const dates = useMemo<{ startDate?: string; endDate?: string } | undefined>(() => {
-    if (isCustom) return { startDate: startDate || undefined, endDate: endDate || undefined };
-    return undefined;
-  }, [isCustom, startDate, endDate]);
+  }, [range, setSearchParams]);
 
   const query = useQuery({
-    queryKey: ["analytics", "product-fulfillment", period, dates?.startDate, dates?.endDate],
+    queryKey: [
+      "analytics",
+      "product-fulfillment",
+      range?.period,
+      range?.startDate,
+      range?.endDate,
+    ],
     queryFn: (): Promise<FulfillmentApiResponse> =>
       analyticsService.getProductFulfillmentAnalytics(
-        isCustom ? undefined : period,
-        dates?.startDate,
-        dates?.endDate,
+        range?.period,
+        range?.startDate,
+        range?.endDate,
       ) as Promise<FulfillmentApiResponse>,
     select: (data): FulfillmentData | null =>
       data?.success && data?.data ? data.data : null,
     staleTime: 60_000,
+    enabled: Boolean(range),
   });
 
   const data = query.data;
@@ -341,14 +336,6 @@ const ProductFulfillmentAnalytics: React.FC = () => {
     const top = [...products].sort((a, b) => b.returnedItems - a.returnedItems).find((p) => p.returnedItems > 0);
     return top ? { name: top.productName, count: top.returnedItems } : null;
   }, [products]);
-
-  const handlePeriodChange = (value: string) => {
-    setPeriod(value);
-    if (value !== "custom") {
-      setStartDate("");
-      setEndDate("");
-    }
-  };
 
   const handleExport = () => {
     exportToCsv(
@@ -437,42 +424,12 @@ const ProductFulfillmentAnalytics: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <select
-            aria-label={t("fulfillmentReport.title") as string}
-            name="fulfillmentPeriod"
-            value={period}
-            onChange={(e) => handlePeriodChange(e.target.value)}
-            className="px-3.5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
-          >
-            {PERIOD_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {t(`fulfillmentReport.${opt.labelKey}`)}
-              </option>
-            ))}
-          </select>
-          {isCustom && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <input
-                type="date"
-                name="fulfillmentStartDate"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
-                aria-label={t("fulfillmentReport.from") as string}
-              />
-              <span className="text-gray-400 text-sm">
-                {t("fulfillmentReport.to")}
-              </span>
-              <input
-                type="date"
-                name="fulfillmentEndDate"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
-                aria-label={t("fulfillmentReport.to") as string}
-              />
-            </div>
-          )}
+          <PeriodSelector
+            initialPeriod={(searchParams.get("period") as PeriodKey) || "30"}
+            initialStartDate={searchParams.get("startDate") || ""}
+            initialEndDate={searchParams.get("endDate") || ""}
+            onRangeChange={setRange}
+          />
           <button
             onClick={handleExport}
             disabled={filteredProducts.length === 0}

@@ -27,11 +27,38 @@ interface OrderStats {
   paymentStats: Record<string, number>;
 }
 
+type PeriodKey =
+  | "today"
+  | "yesterday"
+  | "7"
+  | "30"
+  | "90"
+  | "180"
+  | "365"
+  | "custom";
+
+const PERIOD_OPTIONS: { key: PeriodKey; labelKey: string }[] = [
+  { key: "today", labelKey: "orders.today" },
+  { key: "yesterday", labelKey: "orders.yesterday" },
+  { key: "7", labelKey: "orders.last7Days" },
+  { key: "30", labelKey: "orders.last30Days" },
+  { key: "90", labelKey: "orders.last90Days" },
+  { key: "180", labelKey: "orders.last6Months" },
+  { key: "365", labelKey: "orders.lastYear" },
+  { key: "custom", labelKey: "orders.customPeriod" },
+];
+
+const toISODate = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+
 const OrdersAnalytics: React.FC = () => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<PeriodKey>("30");
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       .toISOString()
@@ -42,6 +69,56 @@ const OrdersAnalytics: React.FC = () => {
   useEffect(() => {
     fetchStats();
   }, [dateRange]);
+
+  const applyPeriod = (key: PeriodKey) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (key === "custom") {
+      setPeriod("custom");
+      return;
+    }
+
+    let start: Date;
+    let end: Date = new Date();
+
+    switch (key) {
+      case "today":
+        start = today;
+        break;
+      case "yesterday": {
+        start = new Date(today);
+        start.setDate(start.getDate() - 1);
+        end = new Date(start);
+        break;
+      }
+      case "7":
+        start = new Date(today);
+        start.setDate(start.getDate() - 6);
+        break;
+      case "30":
+        start = new Date(today);
+        start.setDate(start.getDate() - 29);
+        break;
+      case "90":
+        start = new Date(today);
+        start.setDate(start.getDate() - 89);
+        break;
+      case "180":
+        start = new Date(today);
+        start.setMonth(start.getMonth() - 6);
+        break;
+      case "365":
+        start = new Date(today);
+        start.setDate(start.getDate() - 364);
+        break;
+      default:
+        return;
+    }
+
+    setPeriod(key);
+    setDateRange({ start: toISODate(start), end: toISODate(end) });
+  };
 
   const fetchStats = async () => {
     try {
@@ -93,29 +170,51 @@ const OrdersAnalytics: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={dateRange.start}
-            onChange={(e) =>
-              setDateRange((prev) => ({ ...prev, start: e.target.value }))
-            }
-            className="p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-          />
-          <span className="text-gray-500">{t("orders.to")}</span>
-          <input
-            type="date"
-            value={dateRange.end}
-            onChange={(e) =>
-              setDateRange((prev) => ({ ...prev, end: e.target.value }))
-            }
-            className="p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-          />
-          <Button variant="outline" onClick={fetchStats} disabled={loading}>
-            <ArrowPathIcon
-              className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-            />
-          </Button>
+        <div className="flex flex-col items-stretch gap-3">
+          <div className="flex flex-wrap gap-2">
+            {PERIOD_OPTIONS.map(({ key, labelKey }) => (
+              <button
+                key={key}
+                onClick={() => applyPeriod(key)}
+                className={`px-3 py-1.5 text-sm rounded-md border transition ${
+                  period === key
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                {t(labelKey)}
+              </button>
+            ))}
+          </div>
+
+          {period === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => {
+                  setPeriod("custom");
+                  setDateRange((prev) => ({ ...prev, start: e.target.value }));
+                }}
+                className="p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+              />
+              <span className="text-gray-500">{t("orders.to")}</span>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => {
+                  setPeriod("custom");
+                  setDateRange((prev) => ({ ...prev, end: e.target.value }));
+                }}
+                className="p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+              />
+              <Button variant="outline" onClick={fetchStats} disabled={loading}>
+                <ArrowPathIcon
+                  className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+                />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
