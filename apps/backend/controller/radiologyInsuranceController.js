@@ -265,6 +265,9 @@ const recordPayment = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const invoice = await prisma.radiologyInsuranceInvoice.findFirst({ where: { id, companyId } });
     if (!invoice) return res.status(404).json({ success: false, error: 'الفاتورة غير موجودة' });
+    if (invoice.paidAmount + amount > invoice.totalAmount) {
+      return res.status(400).json({ success: false, error: `المبلغ يتجاوز المتبقي (${Math.max(0, invoice.totalAmount - invoice.paidAmount).toFixed(0)} ج)` });
+    }
 
     const paidAmount = invoice.paidAmount + amount;
     const remainingAmount = Math.max(0, invoice.totalAmount - paidAmount);

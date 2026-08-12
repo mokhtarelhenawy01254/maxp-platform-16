@@ -26,7 +26,7 @@ const createPrisma = () => ({
   radiologyExamAddition: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   radiologyExamType: { findMany: jest.fn(), findFirst: jest.fn() },
   radiologyStudy: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
-  radiologyStudyPayment: { findMany: jest.fn(), create: jest.fn() },
+  radiologyStudyPayment: { findMany: jest.fn(), create: jest.fn(), aggregate: jest.fn() },
   radiologyInsuranceInvoice: { findMany: jest.fn() },
   radiologyInsuranceLedgerEntry: { findMany: jest.fn() },
   priceListItem: { findFirst: jest.fn() },
@@ -92,6 +92,41 @@ describe('radiologyAppointmentsController', () => {
     const res = createResponse();
     await appointments.createAppointment(req({ user: {}, body: { patientName: 'م' } }), res);
     expect(res.statusCode).toBe(403);
+  });
+
+  test('convertToStudy sets priceSnapshot, modality and billingType from the exam type', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyAppointment.findFirst.mockResolvedValue({
+      id: 'ap-1', companyId: 'company-1', patientName: 'مريض', patientPhone: '011', patientGender: 'F',
+      patientAge: '30', examTypeId: 'et-1', examTypeName: 'أشعة مقطعية على الصدر', status: 'SCHEDULED',
+    });
+    prisma.radiologyExamType.findFirst.mockResolvedValue({ id: 'et-1', name: 'أشعة مقطعية على الصدر', category: 'CT', price: 500, isActive: true });
+    prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+    prisma.radiologyAppointment.update.mockResolvedValue({});
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await appointments.convertToStudy(req({ params: { id: 'ap-1' } }), res);
+
+    expect(res.statusCode).toBe(200);
+    const data = prisma.radiologyStudy.create.mock.calls[0][0].data;
+    expect(data.priceSnapshot).toBe(500);
+    expect(data.modality).toBe('CT');
+    expect(data.billingType).toBe('PATIENT');
+  });
+
+  test('convertToStudy rejects an unpriced exam', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyAppointment.findFirst.mockResolvedValue({ id: 'ap-1', companyId: 'company-1', patientName: 'م', examTypeId: 'et-1', examTypeName: 'رنين', status: 'SCHEDULED' });
+    prisma.radiologyExamType.findFirst.mockResolvedValue({ id: 'et-1', name: 'رنين', category: 'MRI', price: 0, isActive: true });
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await appointments.convertToStudy(req({ params: { id: 'ap-1' } }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload.error).toContain('غير مسعّر');
+    expect(prisma.radiologyStudy.create).not.toHaveBeenCalled();
   });
 });
 
@@ -209,6 +244,7 @@ describe('radiologyPaymentsController', () => {
   test('records a payment and computes status from priceSnapshot', async () => {
     const prisma = createPrisma();
     prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', priceSnapshot: 1000, additionAmount: 100, billingType: 'PATIENT' });
+    prisma.radiologyStudyPayment.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
     prisma.radiologyStudyPayment.create.mockResolvedValue({ id: 'pay-1', amount: 500 });
     prisma.radiologyStudyPayment.findMany.mockResolvedValue([{ amount: 500 }]);
     prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
@@ -222,6 +258,20 @@ describe('radiologyPaymentsController', () => {
     expect(res.payload.data.remaining).toBe(600);
     expect(res.payload.data.paymentStatus).toBe('PARTIAL');
     expect(prisma.radiologyStudyPayment.create).toHaveBeenCalled();
+  });
+
+  test('rejects an amount exceeding the remaining balance', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', priceSnapshot: 1000, additionAmount: 0, billingType: 'PATIENT' });
+    prisma.radiologyStudyPayment.aggregate.mockResolvedValue({ _sum: { amount: 900 } });
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await payments.recordStudyPayment(req({ params: { id: 'study-1' }, body: { amount: 200 } }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload.error).toContain('يتجاوز المتبقي');
+    expect(prisma.radiologyStudyPayment.create).not.toHaveBeenCalled();
   });
 
   test('rejects a zero amount', async () => {

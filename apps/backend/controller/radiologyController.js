@@ -526,10 +526,21 @@ const updateStudy = async (req, res) => {
         data.examTypeId = examType.id;
         data.examTypeName = examType.name;
         data.modality = resolveModality(examType.category);
+        // Re-resolve the price snapshot for the new exam (entity price if the study is insured)
+        let newPrice = examType.price;
+        if (existing.insuranceCompanyId) {
+          const entityPrice = await prisma.radiologyEntityPrice.findFirst({
+            where: { insuranceCompanyId: existing.insuranceCompanyId, examTypeId: examType.id, isActive: true },
+            select: { price: true },
+          }).catch(() => null);
+          if (entityPrice && Number.isFinite(entityPrice.price)) newPrice = entityPrice.price;
+        }
+        data.priceSnapshot = newPrice;
       } else {
         data.examTypeId = null;
         data.examTypeName = null;
         data.modality = null;
+        data.priceSnapshot = 0;
       }
     }
 
@@ -830,6 +841,16 @@ const markDelivered = async (req, res) => {
     }
     if (report.reportStatus !== 'SIGNED') {
       return res.status(400).json({ success: false, error: 'يجب توقيع التقرير قبل التسليم' });
+    }
+
+    // Chain integrity: a study must have images (or an external Rology report) before delivery
+    const [imageCount] = await Promise.all([
+      prisma.radiologyStudyImage.count({ where: { studyId: id } }),
+    ]);
+    const hasLocalImages = imageCount > 0;
+    const hasExternalReport = !!(study.rologyReportLink || study.submissionStatus === 'SUBMITTED');
+    if (!hasLocalImages && !hasExternalReport) {
+      return res.status(400).json({ success: false, error: 'لا يمكن تسليم الدراسة قبل رفع الصور أو استلام تقرير خارجي' });
     }
 
     const [deliveredReport, deliveredStudy] = await Promise.all([

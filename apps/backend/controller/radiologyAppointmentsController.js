@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { MODALITY_BY_CATEGORY } = require('./radiologyController');
 
 const APPOINTMENT_STATUSES = ['SCHEDULED', 'CHECKED_IN', 'DONE', 'CANCELLED'];
 
@@ -160,6 +161,17 @@ const convertToStudy = async (req, res) => {
     if (appointment.status === 'CANCELLED') return res.status(400).json({ success: false, error: 'لا يمكن تحويل حجز ملغي' });
 
     const { generateStudyNumber } = require('../utils/dicomUtil');
+    let examType = null;
+    if (appointment.examTypeId) {
+      examType = await prisma.radiologyExamType.findFirst({ where: { id: appointment.examTypeId, companyId, isActive: true } });
+    }
+    const priceSnapshot = examType ? examType.price : 0;
+    if (examType && priceSnapshot <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: `نوع الفحص "${examType.name}" غير مسعّر — حدد سعراً للفحص أولاً أو اختر فحصاً آخر`,
+      });
+    }
     const study = await prisma.radiologyStudy.create({
       data: {
         companyId,
@@ -170,6 +182,9 @@ const convertToStudy = async (req, res) => {
         patientAge: appointment.patientAge,
         examTypeId: appointment.examTypeId,
         examTypeName: appointment.examTypeName,
+        modality: examType ? (MODALITY_BY_CATEGORY[examType.category] || examType.category || null) : null,
+        priceSnapshot,
+        billingType: 'PATIENT',
         status: 'PENDING_IMAGING',
         submissionStatus: 'NOT_SUBMITTED',
         createdBy: req.user?.id || req.user?.email || null,

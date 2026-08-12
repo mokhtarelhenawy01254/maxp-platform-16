@@ -54,6 +54,7 @@ const createPrisma = (overrides = {}) => {
       findFirst: jest.fn(),
       create: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
     radiologyReport: {
       findUnique: jest.fn(),
@@ -536,6 +537,39 @@ describe('radiologyController', () => {
       );
     });
 
+    test('recomputes priceSnapshot when the exam type changes on an insured study', async () => {
+      const prisma = createPrisma({ radiologyEntityPrice: { findFirst: jest.fn() } });
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({ status: 'IMAGED', priceSnapshot: 300, insuranceCompanyId: 'ins-1' }));
+      prisma.radiologyExamType.findFirst.mockResolvedValue(makeExamType({ id: 'et-2', name: 'أشعة مقطعية على الصدر', price: 500, category: 'CT' }));
+      prisma.radiologyEntityPrice.findFirst.mockResolvedValue({ price: 850 });
+      prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ ...makeStudy(), ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateStudy(req({ params: { id: 'study-1' }, body: { examTypeId: 'et-2' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.update.mock.calls[0][0].data;
+      expect(data.examTypeId).toBe('et-2');
+      expect(data.modality).toBe('CT');
+      expect(data.priceSnapshot).toBe(850); // entity price for the new exam
+    });
+
+    test('recomputes priceSnapshot to the new exam base price for a non-insured study', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({ status: 'IMAGED', priceSnapshot: 300 }));
+      prisma.radiologyExamType.findFirst.mockResolvedValue(makeExamType({ id: 'et-2', name: 'أشعة مقطعية على الصدر', price: 500, category: 'CT' }));
+      prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ ...makeStudy(), ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateStudy(req({ params: { id: 'study-1' }, body: { examTypeId: 'et-2' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.update.mock.calls[0][0].data;
+      expect(data.priceSnapshot).toBe(500);
+    });
+
     test('updates rology fields and normalizes submissionStatus', async () => {
       const prisma = createPrisma();
       prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy());
@@ -987,6 +1021,7 @@ describe('radiologyController', () => {
       prisma.radiologyReport.findUnique.mockResolvedValue({
         id: 'rep-1', studyId: 'study-1', reportText: 'x', reportStatus: 'SIGNED',
       });
+      prisma.radiologyStudyImage.count.mockResolvedValue(1);
       prisma.radiologyReport.update.mockResolvedValue({ id: 'rep-1', studyId: 'study-1', reportStatus: 'DELIVERED' });
       prisma.radiologyStudy.update.mockResolvedValue(makeStudy({ status: 'DELIVERED' }));
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -1010,6 +1045,7 @@ describe('radiologyController', () => {
         reportText: 'x',
         reportStatus: 'SIGNED',
       });
+      prisma.radiologyStudyImage.count.mockResolvedValue(1);
       prisma.radiologyReport.update.mockResolvedValue({ id: 'rep-1', studyId: 'study-1', reportStatus: 'DELIVERED' });
       prisma.radiologyStudy.update.mockResolvedValue(makeStudy({ status: 'DELIVERED' }));
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -1028,6 +1064,37 @@ describe('radiologyController', () => {
       });
       expect(res.payload.data.study.status).toBe('DELIVERED');
       expect(res.payload.data.report.reportStatus).toBe('DELIVERED');
+    });
+
+    test('rejects delivering a signed report when the study has no images and no external report', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({ status: 'PENDING_IMAGING' }));
+      prisma.radiologyReport.findUnique.mockResolvedValue({ id: 'rep-1', studyId: 'study-1', reportText: 'x', reportStatus: 'SIGNED' });
+      prisma.radiologyStudyImage.count.mockResolvedValue(0);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.markDelivered(req({ params: { id: 'study-1' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('لا يمكن تسليم الدراسة قبل رفع الصور أو استلام تقرير خارجي');
+      expect(prisma.radiologyReport.update).not.toHaveBeenCalled();
+      expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
+    });
+
+    test('allows delivery when the study has images', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({ status: 'REPORTED' }));
+      prisma.radiologyReport.findUnique.mockResolvedValue({ id: 'rep-1', studyId: 'study-1', reportText: 'x', reportStatus: 'SIGNED' });
+      prisma.radiologyStudyImage.count.mockResolvedValue(2);
+      prisma.radiologyReport.update.mockResolvedValue({ id: 'rep-1', reportStatus: 'DELIVERED' });
+      prisma.radiologyStudy.update.mockResolvedValue(makeStudy({ status: 'DELIVERED' }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.markDelivered(req({ params: { id: 'study-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
     });
 
     test('rejects delivering a report that is not signed', async () => {

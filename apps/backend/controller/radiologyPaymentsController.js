@@ -65,6 +65,12 @@ const recordStudyPayment = async (req, res) => {
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
     if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
 
+    const total = getStudyTotal(study);
+    const paidSoFar = (await prisma.radiologyStudyPayment.aggregate({ where: { studyId: id }, _sum: { amount: true } }))._sum?.amount || 0;
+    if (paidSoFar + amt > total) {
+      return res.status(400).json({ success: false, error: `المبلغ يتجاوز المتبقي (${Math.max(0, total - paidSoFar).toFixed(0)} ج)` });
+    }
+
     const m = String(method || 'CASH').toUpperCase();
     const payment = await prisma.radiologyStudyPayment.create({
       data: {
@@ -78,7 +84,6 @@ const recordStudyPayment = async (req, res) => {
     });
     await attachToActiveShift(prisma, companyId, id, 'PAYMENT', amt, m, note ? String(note) : null);
 
-    const total = getStudyTotal(study);
     const { paid, status, updated } = await recomputePaid(prisma, id, total);
     res.json({ success: true, data: { payment, study: updated, total, paidAmount: paid, remaining: Math.max(0, total - paid), paymentStatus: status } });
   } catch (error) {

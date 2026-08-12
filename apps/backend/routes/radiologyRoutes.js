@@ -34,9 +34,9 @@ router.post('/studies', controller.createStudy);
 router.post('/studies/:id/duplicate', verifyToken.requireRole(MANAGER_ROLES), controller.duplicateStudy);
 router.get('/studies/:id/report', controller.getStudyReport);
 router.put('/studies/:id/report', controller.upsertStudyReport);
-router.put('/studies/:id/report/:kind', controller.advanceReport);
+router.put('/studies/:id/report/:kind', verifyToken.requireRole(MANAGER_ROLES), controller.advanceReport);
 router.get('/studies/:id/report/pdf', controller.getStudyReportPdf);
-router.put('/studies/:id/deliver', controller.markDelivered);
+router.put('/studies/:id/deliver', verifyToken.requireRole(MANAGER_ROLES), controller.markDelivered);
 router.get('/studies/:id', controller.getStudy);
 router.put('/studies/:id', controller.updateStudy);
 

@@ -234,7 +234,7 @@ export default function StudiesTab() {
     setSavingId(id);
     try {
       await fetchJson(api(`studies/${id}`), {
-        method: "PATCH",
+        method: "PUT",
         body: JSON.stringify({
           submissionStatus: draft.submissionStatus,
           rologyStudyLink: draft.rologyStudyLink.trim() || undefined,
@@ -257,7 +257,7 @@ export default function StudiesTab() {
     if (!next) { toast.error("لا توجد حالة تالية"); return; }
     setAdvancingId(s.id);
     try {
-      await fetchJson(api(`studies/${s.id}`), { method: "PATCH", body: JSON.stringify({ status: next }) });
+      await fetchJson(api(`studies/${s.id}`), { method: "PUT", body: JSON.stringify({ status: next }) });
       toast.success(`تم تحديث الحالة إلى ${RadiologyStatusMap[next]?.label ?? next}`);
       await refresh({ silent: true });
     } catch (e) {
