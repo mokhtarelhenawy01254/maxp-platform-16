@@ -8,6 +8,7 @@ require('dotenv').config({
 });
 
 let mockCompanyId = null;
+let attributionNoAppCartId = null;
 
 jest.mock('../../utils/verifyToken', () => ({
   authenticateToken: (req, res, next) => {
@@ -89,6 +90,37 @@ describe('Incomplete orders route', () => {
         }),
       },
     });
+
+    attributionNoAppCartId = `attribution-no-app-${unique}`;
+
+    await prisma.guestCart.create({
+      data: {
+        cartId: attributionNoAppCartId,
+        companyId: company.id,
+        items: JSON.stringify([
+          {
+            productId: 'product-route-test-2',
+            name: 'Attribution No App Product',
+            quantity: 1,
+            price: 300,
+          },
+        ]),
+        total: 300,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        checkoutData: JSON.stringify({
+          guestName: 'Attribution User',
+          guestPhone: '01088888888',
+          attribution: {
+            source: 'facebook',
+            medium: 'paid_social',
+            platform: 'facebook',
+            campaignName: 'سوان صيف',
+            campaignId: '238475612',
+            fbclid: 'abc123',
+          },
+        }),
+      },
+    });
   });
 
   afterAll(async () => {
@@ -103,6 +135,7 @@ describe('Incomplete orders route', () => {
       });
     } finally {
       mockCompanyId = null;
+      attributionNoAppCartId = null;
       await closeSharedDatabase();
     }
   });
@@ -122,6 +155,18 @@ describe('Incomplete orders route', () => {
         }),
       ]),
     );
+  });
+
+  test('GET /api/v1/orders-new/incomplete hides attribution when the campaign-attribution app is not active', async () => {
+    const response = await request(app).get('/api/v1/orders-new/incomplete');
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+
+    const cart = response.body.data.find((c) => c.cartId === attributionNoAppCartId);
+    expect(cart).toBeTruthy();
+    expect(cart.attribution).toBeUndefined();
+    expect(cart.checkoutData.attribution).toBeUndefined();
   });
 
   test('GET /api/v1/orders-new/incomplete returns server-side stats scoped to the company', async () => {
@@ -183,6 +228,29 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     withPhoneCartId = `with-phone-${unique}`;
     emptyPhoneCartId = `empty-phone-${unique}`;
 
+    const appRecord = await prisma.marketplaceApp.upsert({
+      where: { slug: 'campaign-attribution' },
+      update: { isActive: true },
+      create: {
+        slug: 'campaign-attribution',
+        name: 'Campaign Attribution',
+        description: 'Order campaign attribution',
+        category: 'orders',
+        monthlyPrice: 0,
+        yearlyPrice: 0,
+      },
+    });
+
+    await prisma.companyApp.upsert({
+      where: { companyId_appId: { companyId: company.id, appId: appRecord.id } },
+      update: { status: 'ACTIVE' },
+      create: {
+        companyId: company.id,
+        appId: appRecord.id,
+        status: 'ACTIVE',
+      },
+    });
+
     await prisma.guestCart.create({
       data: {
         cartId: withPhoneCartId,
@@ -194,6 +262,14 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
           customerName: 'With Phone User',
           phone: '01012345678',
           governorate: 'Cairo',
+          attribution: {
+            source: 'instagram',
+            medium: 'paid_social',
+            platform: 'instagram',
+            campaignName: 'كامبين تست',
+            campaignId: '987654321',
+            adId: 'ad-111',
+          },
         }),
       },
     });
@@ -224,11 +300,17 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
       await prisma.cartContactLog.deleteMany({
         where: { companyId: company?.id },
       });
+      await prisma.companyApp.deleteMany({
+        where: { companyId: company?.id },
+      });
       await prisma.guestCart.deleteMany({
         where: { companyId: company?.id },
       });
       await prisma.company.deleteMany({
         where: { id: company?.id },
+      });
+      await prisma.marketplaceApp.deleteMany({
+        where: { slug: 'campaign-attribution' },
       });
     } finally {
       mockCompanyId = null;
@@ -275,6 +357,70 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     expect(log.employeeId).toBe('test-admin-user');
     expect(log.orderNumber).toBe('ORD-1001');
     expect(Number(log.cartValue)).toBe(500);
+  });
+
+  test('GET /incomplete returns cart attribution when the campaign-attribution app is active', async () => {
+    const response = await request(app).get('/api/v1/orders-new/incomplete');
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+
+    const cart = response.body.data.find((c) => c.cartId === withPhoneCartId);
+    expect(cart).toBeTruthy();
+    expect(cart.attribution).toEqual(
+      expect.objectContaining({
+        source: 'instagram',
+        medium: 'paid_social',
+        platform: 'instagram',
+        campaignName: 'كامبين تست',
+        campaignId: '987654321',
+      }),
+    );
+  });
+
+  test('GET /incomplete/:cartId returns cart attribution when the campaign-attribution app is active', async () => {
+    const response = await request(app).get(`/api/v1/orders-new/incomplete/${withPhoneCartId}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.attribution).toEqual(
+      expect.objectContaining({
+        source: 'instagram',
+        campaignName: 'كامبين تست',
+        campaignId: '987654321',
+        adId: 'ad-111',
+      }),
+    );
+  });
+
+  test('POST /incomplete/:cartId/convert forwards the saved attribution to the created order', async () => {
+    axios.post.mockResolvedValue({
+      data: {
+        success: true,
+        data: { id: 'order-id-attribution', orderNumber: 'ORD-2001' },
+      },
+    });
+
+    const response = await request(app).post(`/api/v1/orders-new/incomplete/${withPhoneCartId}/convert`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+
+    const [url, payload] = axios.post.mock.calls[axios.post.mock.calls.length - 1];
+    expect(url).toContain('/api/v1/public/orders');
+    expect(payload).toEqual(
+      expect.objectContaining({
+        guestName: 'With Phone User',
+        guestPhone: '01012345678',
+      }),
+    );
+    expect(payload.attribution).toEqual(
+      expect.objectContaining({
+        source: 'instagram',
+        campaignName: 'كامبين تست',
+        campaignId: '987654321',
+      }),
+    );
   });
 
   test('GET /incomplete/reports returns recovery pipeline, trend and team rows', async () => {

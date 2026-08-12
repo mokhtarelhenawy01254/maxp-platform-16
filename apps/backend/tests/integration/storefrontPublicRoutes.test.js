@@ -1119,6 +1119,14 @@ describe('Storefront public routes', () => {
         subtotal: 990,
         shippingCost: 75,
         total: 1065,
+        attribution: {
+          source: 'tiktok',
+          medium: 'paid_social',
+          platform: 'tiktok',
+          campaignName: 'تيك توك صيف',
+          campaignId: 'tt-777',
+          ttclid: 'ttclid_xyz',
+        },
         items: [
           {
             productId: alphaProduct.id,
@@ -1153,6 +1161,13 @@ describe('Storefront public routes', () => {
       phone: '01044444444',
       governorate: 'Cairo',
     });
+    expect(JSON.parse(firstSavedCart.checkoutData || '{}').attribution).toEqual(
+      expect.objectContaining({
+        source: 'tiktok',
+        campaignName: 'تيك توك صيف',
+        campaignId: 'tt-777',
+      }),
+    );
 
     const firstStartedAt = firstSavedCart.checkoutStartedAt.toISOString();
 

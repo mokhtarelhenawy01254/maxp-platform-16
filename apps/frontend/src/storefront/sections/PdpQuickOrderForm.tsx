@@ -14,6 +14,7 @@ import { useMinimumOrderSettings } from "../hooks/useMinimumOrderSettings";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { buildStorefrontPath } from "../utils/paths";
 import { trackConversionSuiteUsage } from "../utils/conversionSuiteTracking";
+import { getOrderAttributionPayload } from "../utils/orderAttribution";
 import { buildQuantityOfferCartItems } from "../utils/quantityOfferCartItems";
 import {
   calculateVolumeDiscountPricing,
@@ -607,6 +608,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         shippingCost,
         subtotal: resolvedSubtotal,
         total,
+        attribution: getOrderAttributionPayload() || undefined,
         items: draftItems.map((item) => ({
           productId: item.productId,
           variantId: item.variantId || undefined,

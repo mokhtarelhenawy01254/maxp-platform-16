@@ -170,6 +170,40 @@ const inferMedium = (input: {
   return 'unknown';
 };
 
+const AUDIENCE_NETWORK_SOURCE_VALUES = new Set([
+  'audience_network',
+  'audience-network',
+  'audience network',
+  'audience',
+  'an',
+]);
+
+const isAudienceNetworkReferrer = (referrer?: string): boolean => {
+  if (!referrer) return false;
+  try {
+    const host = new URL(referrer).hostname.replace(/^www\./i, '').toLowerCase();
+    return (
+      host.includes('an.facebook') ||
+      host === 'audience.network' ||
+      host.includes('audience')
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isAudienceNetworkSignal = (input: {
+  source?: string;
+  medium?: string;
+  referrer?: string;
+}): boolean => {
+  const source = normalizeToken(input.source, 120);
+  const medium = normalizeToken(input.medium, 120);
+  if (source && AUDIENCE_NETWORK_SOURCE_VALUES.has(source)) return true;
+  if (medium && AUDIENCE_NETWORK_SOURCE_VALUES.has(medium)) return true;
+  return isAudienceNetworkReferrer(input.referrer);
+};
+
 const extractMarketingParams = (searchParams: URLSearchParams): Record<string, string> => {
   const params: Record<string, string> = {};
 
@@ -316,17 +350,22 @@ export const captureStorefrontAttribution =
         fbc,
         fbp,
       });
-    const source =
+    const rawSource =
       normalizeToken(currentMarketingParams.utm_source || existing?.source, 120) ||
       inferSource(platform, referrer);
     const medium =
       normalizeToken(currentMarketingParams.utm_medium || existing?.medium, 120) ||
       inferMedium({
-        source,
+        source: rawSource,
         platform,
         referrer,
         gclid,
       });
+    const source =
+      isAudienceNetworkSignal({ source: rawSource, medium, referrer }) &&
+      rawSource !== 'direct'
+        ? 'audience_network'
+        : rawSource;
     const snapshot = buildSnapshot({
       platform,
       source,

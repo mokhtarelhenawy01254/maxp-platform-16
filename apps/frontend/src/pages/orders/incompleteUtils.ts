@@ -1,4 +1,5 @@
 import type { TFunction } from "i18next";
+import type { OrderAttributionData } from "./types";
 
 export interface IncompleteOrderItem {
   name?: string;
@@ -29,6 +30,7 @@ export interface CheckoutData {
   governorate?: string;
   city?: string;
   gov?: string;
+  attribution?: OrderAttributionData;
   [key: string]: unknown;
 }
 
@@ -37,6 +39,7 @@ export interface IncompleteOrder {
   itemsCount: number;
   total: number;
   checkoutData?: CheckoutData;
+  attribution?: OrderAttributionData | null;
   checkoutStartedAt?: string;
   checkoutUpdatedAt?: string;
   updatedAt?: string;
@@ -72,6 +75,7 @@ export interface IncompleteOrderDetailsData {
   itemsCount: number;
   total: number;
   checkoutData?: CheckoutData;
+  attribution?: OrderAttributionData | null;
   checkoutStartedAt?: string;
   checkoutUpdatedAt?: string;
   updatedAt?: string;
@@ -242,4 +246,31 @@ export const getStatusLabel = (status: string | undefined, t: TFunction) => {
   return status === "lost"
     ? t("orders.incompleteStatusLost")
     : t("orders.incompleteStatusActive");
+};
+
+export const parseIncompleteAttribution = (
+  value: unknown,
+): OrderAttributionData | null => {
+  if (!value) return null;
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object"
+        ? (parsed as OrderAttributionData)
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return typeof value === "object"
+    ? (value as OrderAttributionData)
+    : null;
+};
+
+export const getOrderAttribution = (
+  order: { attribution?: OrderAttributionData | null },
+): OrderAttributionData | null => {
+  return parseIncompleteAttribution(order?.attribution);
 };

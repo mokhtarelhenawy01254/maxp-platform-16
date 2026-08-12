@@ -211,6 +211,8 @@
   "incompleteExport": "تصدير",
   "incompleteExporting": "جارٍ التصدير...",
   "incompleteExportFailed": "فشل التصدير",
+  "incompleteAdSource": "المصدر الإعلاني",
+  "incompleteCampaign": "الحملة",
   "incompleteSort": "ترتيب حسب",
   "incompleteSortLastUpdated": "أحدث نشاط",
   "incompleteSortValueDesc": "الأعلى قيمة",

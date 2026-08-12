@@ -24,8 +24,16 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCurrency } from "../../hooks/useCurrency";
+import { useAuth } from "../../hooks/useAuthSimple";
+import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import {
+  ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
+  getCurrentCompanyActiveApps,
+  hasAnyCompanyAppSlug,
+  normalizeCompanyAppSlug,
+} from "../../utils/companyApps";
 import {
   IncompleteConvertResponse,
   IncompleteListResponse,
@@ -37,12 +45,14 @@ import {
   getExpiryStatus,
   getGovernorate,
   getLastUpdated,
+  getOrderAttribution,
   getRelativeTime,
   getStatusLabel,
   getValueColor,
   getValueLabel,
   getValueTier,
 } from "./incompleteUtils";
+import type { OrderAttributionData } from "./types";
 
 type SortValue = "recent" | "value_desc" | "value_asc" | "priority";
 
@@ -65,10 +75,72 @@ const escapeCsv = (value: unknown) => {
   return `"${str.replace(/"/g, '""')}"`;
 };
 
+const AttributionCell: React.FC<{ attribution?: OrderAttributionData | null }> = ({
+  attribution,
+}) => {
+  if (!attribution) {
+    return (
+      <span className="text-sm text-gray-300 dark:text-gray-600">—</span>
+    );
+  }
+
+  const sourceLabel = (value?: string) =>
+    value === "audience_network" || value === "audience-network"
+      ? "Audience Network"
+      : value;
+  const sourceMedium = [sourceLabel(attribution.source), attribution.medium]
+    .filter(Boolean)
+    .join(" / ");
+  const campaignLabel = attribution.campaignName || attribution.campaignId;
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <div className="flex flex-wrap items-center gap-1">
+        {attribution.platform && (
+          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+            {attribution.platform}
+          </span>
+        )}
+        {sourceMedium && (
+          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-200">
+            {sourceMedium}
+          </span>
+        )}
+      </div>
+      {campaignLabel && (
+        <span
+          className="inline-flex max-w-[170px] items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+          title={campaignLabel}
+        >
+          <span className="truncate">{campaignLabel}</span>
+        </span>
+      )}
+    </div>
+  );
+};
+
 const IncompleteOrders: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { formatPrice } = useCurrency();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { company } = useCompany();
+
+  const isMerchant = user?.role === "MERCHANT";
+  const activeCompanyAppSlugSet = useMemo(
+    () =>
+      new Set(
+        getCurrentCompanyActiveApps(user, company)
+          .map(normalizeCompanyAppSlug)
+          .filter(Boolean),
+      ),
+    [company, user],
+  );
+  const hasCampaignAttributionApp = hasAnyCompanyAppSlug(
+    activeCompanyAppSlugSet,
+    ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
+  );
+  const canShowAttribution = !isMerchant && hasCampaignAttributionApp;
 
   const [orders, setOrders] = useState<IncompleteOrder[]>([]);
   const [serverStats, setServerStats] = useState<IncompleteStats | null>(null);
@@ -302,10 +374,19 @@ const IncompleteOrders: React.FC = () => {
         t("orders.total"),
         t("orders.status"),
         t("orders.lastUpdated"),
+        t("orders.incompleteAdSource"),
+        t("orders.incompleteCampaign"),
       ];
       const rows = all.map((o) => {
         const contact = getCustomerContact(o.checkoutData);
         const name = getCustomerName(o.checkoutData);
+        const attribution = getOrderAttribution(o);
+        const sourceMedium = attribution
+          ? [attribution.source, attribution.medium].filter(Boolean).join(" / ")
+          : "";
+        const campaign = attribution
+          ? attribution.campaignName || attribution.campaignId || ""
+          : "";
         return [
           o.cartId,
           name || "",
@@ -316,6 +397,8 @@ const IncompleteOrders: React.FC = () => {
           o.total || 0,
           getStatusLabel(o.status, t),
           getLastUpdated(o),
+          sourceMedium,
+          campaign,
         ];
       });
       const csv = "\uFEFF" + [headers, ...rows]
@@ -573,7 +656,7 @@ const IncompleteOrders: React.FC = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-start min-w-[1100px]">
+          <table className="w-full text-start min-w-[1250px]">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
                 <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -588,6 +671,11 @@ const IncompleteOrders: React.FC = () => {
                 <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("orders.amount")}
                 </th>
+                {canShowAttribution && (
+                  <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {t("orders.incompleteAdSource")}
+                  </th>
+                )}
                 <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("orders.lastUpdated")}
                 </th>
@@ -615,7 +703,7 @@ const IncompleteOrders: React.FC = () => {
                 ))
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center">
+                  <td colSpan={canShowAttribution ? 8 : 7} className="px-5 py-16 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="p-3 rounded-full bg-red-50 dark:bg-red-900/20">
                         <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />
@@ -634,7 +722,7 @@ const IncompleteOrders: React.FC = () => {
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center">
+                  <td colSpan={canShowAttribution ? 8 : 7} className="px-5 py-16 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-700">
                         <ShoppingCartIcon className="h-6 w-6 text-gray-400" />
@@ -722,6 +810,11 @@ const IncompleteOrders: React.FC = () => {
                           <span>{formatPrice(order.total || 0)}</span>
                         </div>
                       </td>
+                      {canShowAttribution && (
+                        <td className="px-5 py-4">
+                          <AttributionCell attribution={getOrderAttribution(order)} />
+                        </td>
+                      )}
                       <td className="px-5 py-4">
                         <div className="text-sm text-gray-600 dark:text-gray-300" title={lastUpdated ? formatDateTimeCompact(lastUpdated, lang) : ""}>
                           {lastUpdated ? getRelativeTime(lastUpdated, t) || formatDateTimeCompact(lastUpdated, lang) : "-"}

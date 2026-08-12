@@ -10043,6 +10043,8 @@ declare module 'react-i18next' {
         incompleteExport: string;
         incompleteExporting: string;
         incompleteExportFailed: string;
+        incompleteAdSource: string;
+        incompleteCampaign: string;
         incompleteSort: string;
         incompleteSortLastUpdated: string;
         incompleteSortValueDesc: string;

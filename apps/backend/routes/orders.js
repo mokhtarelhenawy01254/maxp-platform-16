@@ -19,6 +19,9 @@ const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { VALID_ORDER_STATUSES } = require('../utils/constants');
 const preparationQueueService = require('../services/preparationQueueService');
+const {
+  extractAttributionFromCheckoutData
+} = require('../utils/orderAttribution');
 
 // ── Dynamic Status Code Cache ──────────────────────────────────────────
 // Loads ALL known status codes (system + custom) from orderStatusConfig
@@ -516,6 +519,18 @@ const getOrderDetailFeatureAccess = async (companyId) => {
     campaignAttribution: hasAnyAppSlug(activeSlugs, ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS),
     confirmationDistribution: hasAnyAppSlug(activeSlugs, ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS)
   };
+};
+
+const stripAttributionFromCheckoutData = (checkoutData) => {
+  if (!checkoutData || typeof checkoutData !== 'object' || Array.isArray(checkoutData)) {
+    return checkoutData;
+  }
+
+  const sanitized = { ...checkoutData };
+  delete sanitized.attribution;
+  delete sanitized.campaignAttribution;
+  delete sanitized.orderAttribution;
+  return sanitized;
 };
 
 const sanitizeMerchantOrderScopeForMerchant = (merchantOrderScope) => {
@@ -1335,6 +1350,9 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
+    const featureAccess = await getOrderDetailFeatureAccess(companyId);
+    const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const status = (req.query.status || 'all').toString().toLowerCase();
@@ -1489,12 +1507,22 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt;
       const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
 
+      const cartAttribution = hideCartAttribution
+        ? null
+        : extractAttributionFromCheckoutData(checkoutData);
+
+      const safeCheckoutData =
+        hideCartAttribution && checkoutData && typeof checkoutData === 'object'
+          ? stripAttributionFromCheckoutData(checkoutData)
+          : checkoutData;
+
       return {
         cartId: cart.cartId,
         items,
         itemsCount: Array.isArray(items) ? items.length : 0,
         total,
-        checkoutData,
+        checkoutData: safeCheckoutData,
+        ...(cartAttribution ? { attribution: cartAttribution } : {}),
         checkoutStartedAt: cart.checkoutStartedAt,
         checkoutUpdatedAt: cart.checkoutUpdatedAt,
         updatedAt: cart.updatedAt,
@@ -1780,6 +1808,9 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
       });
     }
 
+    const featureAccess = await getOrderDetailFeatureAccess(companyId);
+    const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
+
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
       return res.status(400).json({
@@ -1841,6 +1872,15 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt;
     const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
 
+    const cartAttribution = hideCartAttribution
+      ? null
+      : extractAttributionFromCheckoutData(checkoutData);
+
+    const safeCheckoutData =
+      hideCartAttribution && checkoutData && typeof checkoutData === 'object'
+        ? stripAttributionFromCheckoutData(checkoutData)
+        : checkoutData;
+
     res.json({
       success: true,
       data: {
@@ -1848,7 +1888,8 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
         items,
         itemsCount: Array.isArray(items) ? items.length : 0,
         total,
-        checkoutData,
+        checkoutData: safeCheckoutData,
+        ...(cartAttribution ? { attribution: cartAttribution } : {}),
         checkoutStartedAt: cart.checkoutStartedAt,
         checkoutUpdatedAt: cart.checkoutUpdatedAt,
         updatedAt: cart.updatedAt,
@@ -1925,6 +1966,8 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
 
     const total = typeof cart.total === 'string' ? parseFloat(cart.total) || 0 : Number(cart.total || 0);
 
+    const cartAttribution = extractAttributionFromCheckoutData(checkoutData);
+
     const orderPayload = {
       guestName,
       guestPhone,
@@ -1938,6 +1981,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
         address,
         addressLine1: address,
       },
+      ...(cartAttribution ? { attribution: cartAttribution } : {}),
       _skipPixel: true,
     };
 

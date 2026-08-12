@@ -11,6 +11,7 @@ import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 import { storefrontApi } from '../../utils/storefrontApi';
 import { useStorefrontFacebookTracking } from '../hooks/useStorefrontFacebookTracking';
 import { trackConversionSuiteUsage } from '../utils/conversionSuiteTracking';
+import { getOrderAttributionPayload } from '../utils/orderAttribution';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { useCheckoutShippingQuote } from '../hooks/useCheckoutShippingQuote';
 import TierProgressBanner from '../components/TierProgressBanner';
@@ -629,6 +630,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
         shippingCost: shipping,
         subtotal,
         total,
+        attribution: getOrderAttributionPayload() || undefined,
         items: items.map((item) => ({
           productId: item.productId,
           variantId: item.variantId || undefined,

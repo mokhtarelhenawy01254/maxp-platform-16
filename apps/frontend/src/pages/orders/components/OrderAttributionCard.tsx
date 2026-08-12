@@ -10,7 +10,7 @@ import { useDateFormat } from "../../../hooks/useDateFormat";
 import { OrderAttributionData, OrderDetailsType } from "../types";
 
 interface OrderAttributionCardProps {
-  order: OrderDetailsType;
+  order: Pick<OrderDetailsType, "metadata">;
 }
 
 const parseAttribution = (value: unknown): OrderAttributionData | null => {
@@ -72,7 +72,15 @@ const DetailRow: React.FC<{
 const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) => {
   const { formatDateTime } = useDateFormat();
   const attribution = parseAttribution(order.metadata?.attribution);
-  const sourceMedium = [attribution?.source, attribution?.medium].filter(Boolean).join(" / ");
+  const sourceLabel = (value?: string) => {
+    if (!value) return undefined;
+    return value === "audience_network" || value === "audience-network"
+      ? "Audience Network"
+      : value;
+  };
+  const sourceMedium = [sourceLabel(attribution?.source), attribution?.medium]
+    .filter(Boolean)
+    .join(" / ");
   const campaignLabel = attribution?.campaignName || attribution?.campaignId;
 
   return (

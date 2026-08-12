@@ -14,8 +14,17 @@ import { toast } from "sonner";
 import type { TFunction } from "i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
+import { useAuth } from "../../hooks/useAuthSimple";
+import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import OrderAttributionCard from "./components/OrderAttributionCard";
+import {
+  ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
+  getCurrentCompanyActiveApps,
+  hasAnyCompanyAppSlug,
+  normalizeCompanyAppSlug,
+} from "../../utils/companyApps";
 import {
   IncompleteConvertResponse,
   IncompleteDetailsResponse,
@@ -70,6 +79,8 @@ const IncompleteOrderDetails: React.FC = () => {
   const { formatDate } = useDateFormat();
   const { cartId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { company } = useCompany();
   const decodedCartId = cartId ? decodeURIComponent(cartId) : "";
 
   const [order, setOrder] = useState<IncompleteOrderDetailsData | null>(null);
@@ -81,6 +92,22 @@ const IncompleteOrderDetails: React.FC = () => {
 
   const isRTL = getDirection() === "rtl";
   const lang = i18n.language;
+
+  const isMerchant = user?.role === "MERCHANT";
+  const activeCompanyAppSlugSet = useMemo(
+    () =>
+      new Set(
+        getCurrentCompanyActiveApps(user, company)
+          .map(normalizeCompanyAppSlug)
+          .filter(Boolean),
+      ),
+    [company, user],
+  );
+  const hasCampaignAttributionApp = hasAnyCompanyAppSlug(
+    activeCompanyAppSlugSet,
+    ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
+  );
+  const canShowAttribution = !isMerchant && hasCampaignAttributionApp;
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -383,6 +410,14 @@ const IncompleteOrderDetails: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {canShowAttribution && order.attribution && (
+            <div className="lg:max-w-3xl">
+              <OrderAttributionCard
+                order={{ metadata: { attribution: order.attribution } }}
+              />
+            </div>
+          )}
 
           <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">

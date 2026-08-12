@@ -211,6 +211,8 @@
   "incompleteExport": "Export",
   "incompleteExporting": "Exporting...",
   "incompleteExportFailed": "Failed to export",
+  "incompleteAdSource": "Ad source",
+  "incompleteCampaign": "Campaign",
   "incompleteSort": "Sort by",
   "incompleteSortLastUpdated": "Latest activity",
   "incompleteSortValueDesc": "Highest value",

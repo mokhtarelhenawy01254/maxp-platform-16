@@ -25,6 +25,7 @@ const {
   resolveShippingClass
 } = require('../utils/shippingClassUtils');
 const { safeJsonParse } = require('../utils/jsonUtils');
+const { sanitizeOrderAttribution } = require('../utils/orderAttribution');
 const { isPreOrderEligible } = require('../utils/preOrderUtils');
 const {
   getConversionSuiteFreeShippingPromotion,
@@ -84,6 +85,8 @@ router.post('/checkout-draft', async (req, res) => {
         ? coerceCartItemsToArray(existingCart.items)
         : [];
 
+    const attribution = sanitizeOrderAttribution(req.body?.attribution);
+
     const checkoutData = {
       customerName: normalizeCheckoutDraftText(req.body?.customerName, 120),
       email: normalizeCheckoutDraftText(req.body?.email, 160).toLowerCase(),
@@ -98,6 +101,7 @@ router.post('/checkout-draft', async (req, res) => {
       subtotal: toCheckoutDraftAmount(req.body?.subtotal, 0),
       shippingCost: toCheckoutDraftAmount(req.body?.shippingCost, 0),
       total: toCheckoutDraftAmount(req.body?.total, 0),
+      ...(attribution ? { attribution } : {}),
     };
 
     const hasCheckoutSignal = Boolean(
@@ -420,203 +424,6 @@ function extractCookieValue(cookieHeader, key) {
     new RegExp(`(?:^|;\\s*)${escapedKey}=([^;]*)`),
   );
   return match?.[1] ? decodeURIComponent(match[1]) : null;
-}
-
-function normalizeAttributionText(value, maxLength = 320) {
-  if (value === undefined || value === null) return null;
-
-  const normalized = String(value).trim().replace(/\s+/g, ' ');
-  if (!normalized) return null;
-
-  return normalized.slice(0, maxLength);
-}
-
-function sanitizeAttributionRawParams(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-
-  const entries = Object.entries(value)
-    .slice(0, 24)
-    .map(([key, rawValue]) => {
-      const normalizedKey = normalizeAttributionText(key, 80)?.toLowerCase();
-      const normalizedValue = normalizeAttributionText(rawValue, 320);
-      return normalizedKey && normalizedValue ? [normalizedKey, normalizedValue] : null;
-    })
-    .filter(Boolean);
-
-  return entries.length > 0 ? Object.fromEntries(entries) : null;
-}
-
-function sanitizeLandingPageAttribution(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-
-  const sanitized = {
-    source: normalizeAttributionText(value.source, 120),
-    landingPageId: normalizeAttributionText(value.landingPageId, 160),
-    landingPageSlug: normalizeAttributionText(value.landingPageSlug, 160),
-    generationMode: normalizeAttributionText(value.generationMode, 80),
-    productId: normalizeAttributionText(value.productId, 160),
-  };
-
-  return Object.entries(sanitized).reduce((acc, [key, rawValue]) => {
-    if (rawValue !== null && rawValue !== undefined) {
-      acc[key] = rawValue;
-    }
-    return acc;
-  }, {});
-}
-
-function inferAttributionPlatform(source, referrer, clickIds = {}) {
-  const haystack = [
-    source,
-    referrer,
-    clickIds.fbclid ? 'facebook' : '',
-    clickIds.fbc ? 'facebook' : '',
-    clickIds.fbp ? 'facebook' : '',
-    clickIds.gclid ? 'google' : '',
-    clickIds.ttclid ? 'tiktok' : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  if (haystack.includes('instagram')) return 'instagram';
-  if (
-    haystack.includes('facebook') ||
-    haystack.includes('meta') ||
-    haystack.includes('l.facebook.com')
-  ) {
-    return 'facebook';
-  }
-  if (haystack.includes('google')) return 'google';
-  if (haystack.includes('tiktok')) return 'tiktok';
-  if (haystack.includes('youtube')) return 'youtube';
-
-  return null;
-}
-
-function sanitizeOrderAttribution(rawAttribution, fallbacks = {}) {
-  const attribution =
-    typeof rawAttribution === 'string'
-      ? safeJsonParse(rawAttribution, null)
-      : rawAttribution;
-
-  if (!attribution || typeof attribution !== 'object' || Array.isArray(attribution)) {
-    return null;
-  }
-
-  const rawParams = sanitizeAttributionRawParams(attribution.rawParams);
-  const landingPage =
-    sanitizeLandingPageAttribution(attribution.landingPage) ||
-    sanitizeLandingPageAttribution({
-      source: attribution.landingPageSource,
-      landingPageId: attribution.landingPageId,
-      landingPageSlug: attribution.landingPageSlug,
-      generationMode: attribution.generationMode,
-      productId: attribution.productId,
-    });
-  const referrer = normalizeAttributionText(attribution.referrer, 1024);
-  const clickIds = {
-    fbclid: normalizeAttributionText(attribution.fbclid, 255),
-    gclid: normalizeAttributionText(attribution.gclid, 255),
-    ttclid: normalizeAttributionText(attribution.ttclid, 255),
-    fbc: normalizeAttributionText(attribution.fbc || fallbacks.fbc, 255),
-    fbp: normalizeAttributionText(attribution.fbp || fallbacks.fbp, 255),
-  };
-  const platform =
-    normalizeAttributionText(attribution.platform, 80)?.toLowerCase() ||
-    inferAttributionPlatform(attribution.source, referrer, clickIds);
-
-  let source = normalizeAttributionText(attribution.source, 120)?.toLowerCase();
-  if (!source) {
-    if (platform) {
-      source = platform;
-    } else if (referrer) {
-      try {
-        source = new URL(referrer).hostname.replace(/^www\./i, '').slice(0, 120);
-      } catch (_) {
-        source = null;
-      }
-    }
-  }
-
-  if (!source) {
-    source = 'direct';
-  }
-
-  let medium = normalizeAttributionText(attribution.medium, 120)?.toLowerCase();
-  if (!medium) {
-    if (source === 'direct') {
-      medium = 'none';
-    } else if (clickIds.gclid) {
-      medium = 'cpc';
-    } else if (platform && ['facebook', 'instagram', 'tiktok'].includes(platform)) {
-      medium = 'paid_social';
-    } else if (referrer) {
-      medium = 'referral';
-    }
-  }
-
-  const sanitized = {
-    platform,
-    source,
-    medium,
-    campaignName: normalizeAttributionText(
-      attribution.campaignName || attribution.campaign || attribution.utm_campaign,
-      160,
-    ),
-    campaignId: normalizeAttributionText(
-      attribution.campaignId ||
-        attribution.campaign_id ||
-        attribution.utm_id,
-      160,
-    ),
-    adSetId: normalizeAttributionText(
-      attribution.adSetId ||
-        attribution.adset_id ||
-        attribution.ad_set_id,
-      160,
-    ),
-    adId: normalizeAttributionText(
-      attribution.adId ||
-        attribution.ad_id,
-      160,
-    ),
-    content: normalizeAttributionText(
-      attribution.content || attribution.utm_content,
-      160,
-    ),
-    term: normalizeAttributionText(
-      attribution.term || attribution.utm_term,
-      160,
-    ),
-    landingPath: normalizeAttributionText(attribution.landingPath, 1024),
-    referrer,
-    fbclid: clickIds.fbclid,
-    gclid: clickIds.gclid,
-    ttclid: clickIds.ttclid,
-    fbc: clickIds.fbc,
-    fbp: clickIds.fbp,
-    capturedAt:
-      normalizeAttributionText(attribution.capturedAt, 80) || new Date().toISOString(),
-    rawParams,
-    landingPage:
-      landingPage && Object.keys(landingPage).length > 0 ? landingPage : null,
-  };
-
-  return Object.entries(sanitized).reduce((acc, [key, value]) => {
-    if (
-      value !== null &&
-      value !== undefined &&
-      (!(typeof value === 'object' && !Array.isArray(value)) || Object.keys(value).length > 0)
-    ) {
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
 }
 
 function normalizeItemAttributes(rawAttributes) {
