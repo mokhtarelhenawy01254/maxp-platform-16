@@ -277,13 +277,23 @@ async function sendMedia(sessionId, to, media, kind, options = {}) {
   } else {
     const rawUrl = mediaObj?.url || mediaObj?.link;
     if (rawUrl) {
-      // 🚨 ميتا تتحمّل الـ link من خوادمها — الـ URLs الداخلية (localhost/خاصة)
+      const guessedMime = mediaObj?.mimetype || guessMediaMime(rawUrl, kind === 'image' ? 'image/jpeg' : 'application/octet-stream');
+      // 🚨 ميتا بتتحمّل الـ link من خوادمها — الـ URLs الداخلية (localhost/خاصة)
       // مش متاحة لها، فبننزّل الملف ونرفعه لخوادم ميتا ونبعت بـ media id.
-      if (isInternalUrl(rawUrl)) {
+      // وكمان صور WEBP/BMP/SVG (صيغ مش مدعومة لرسائل الصور في Cloud API)
+      // لازم تتحوّل لـ JPEG محلياً — حتى لو الرابط عام، ميتا مش هتعرف تعرضه.
+      const needsLocalUpload = isInternalUrl(rawUrl) || (kind === 'image' && !['image/jpeg', 'image/png', 'image/gif'].includes(guessedMime));
+      if (needsLocalUpload) {
         try {
-          const buffer = await downloadMediaBuffer(rawUrl);
-          const mime = mediaObj?.mimetype || guessMediaMime(rawUrl, kind === 'image' ? 'image/jpeg' : 'application/octet-stream');
-          const fileName = mediaObj?.fileName || guessMediaFileName(rawUrl, `media_${Date.now()}`);
+          let buffer = await downloadMediaBuffer(makeUrlAbsolute(rawUrl));
+          let mime = guessedMime;
+          let fileName = mediaObj?.fileName || guessMediaFileName(rawUrl, `media_${Date.now()}`);
+          if (kind === 'image') {
+            const { normalizeImageForWhatsApp } = require('../../../utils/whatsAppImageCompat');
+            const normalized = await normalizeImageForWhatsApp(buffer, mime);
+            buffer = normalized.buffer;
+            mime = normalized.mimetype;
+          }
           const mediaId = await uploadMediaFile(sessionId, buffer, mime, fileName);
           if (mediaId) {
             mediaPayload.id = mediaId;

@@ -354,9 +354,9 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
                 type: 'IMAGE',
                 content: caption,
-                mediaUrl: imageSource.url || imageSource.filePath,
+                mediaUrl: (imageSource && imageSource.url) || (imageSource && imageSource.filePath) || (typeof imageSource === 'string' ? imageSource : null),
                 mediaType: 'image',
-                mediaMimeType: imageSource.mimetype,
+                mediaMimeType: imageSource && imageSource.mimetype,
                 isAIResponse: options.isAIResponse || false
             }, { companyId: dbSession?.companyId });
 
@@ -364,14 +364,34 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
             return savedMessage;
         }
 
+        // توحيد شكل مصدر الصورة (كائن/سلسلة نصية) عشان نتعامل معه بشكل ثابت
+        let source = imageSource;
+        if (typeof imageSource === 'string') {
+            source = { url: imageSource };
+        } else {
+            source = imageSource || {};
+        }
+
+        // 🖼️ تحويل صور WEBP/BMP/SVG لـ JPEG قبل الإرسال عبر Baileys برضه
+        // (واتساب نفسه بيكتشف نوع الملف، والصيغ غير JPEG/PNG/GIF ممكن تطلع شاشة
+        // "غير مدعومة" عند العميل). لو معانا buffer أو ملف محلي نحوله مباشرة.
+        let image = source.buffer || { url: source.filePath || source.url };
+        let mimetype = source.mimetype || 'image/jpeg';
+        if (source.buffer && typeof source.buffer !== 'undefined') {
+            const { normalizeImageForWhatsApp } = require('../../utils/whatsAppImageCompat');
+            const normalized = await normalizeImageForWhatsApp(source.buffer, mimetype);
+            image = normalized.buffer;
+            mimetype = normalized.mimetype;
+        }
+
         let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
         const messageOptions = {
-            image: imageSource.buffer || { url: imageSource.filePath || imageSource.url },
+            image,
             caption,
-            mimetype: imageSource.mimetype || 'image/jpeg'
+            mimetype
         };
 
         if (options.quotedMessageId) {
@@ -387,9 +407,9 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
             messageId: result.key.id,
             type: 'IMAGE',
             content: caption,
-            mediaUrl: imageSource.url,
+            mediaUrl: source.url,
             mediaType: 'image',
-            mediaMimeType: imageSource.mimetype,
+            mediaMimeType: mimetype,
             isAIResponse: options.isAIResponse || false
         }, { companyId: session.companyId });
 
