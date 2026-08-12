@@ -13,6 +13,7 @@ import RadiologyInvoicesTab from "./RadiologyInvoicesTab";
 import RadiologyReportsOverviewTab from "./RadiologyReportsOverviewTab";
 import InsuranceInvoicesTab from "./InsuranceInvoicesTab";
 import InsuranceLedgerTab from "./InsuranceLedgerTab";
+import InsuranceCompaniesTab from "./InsuranceCompaniesTab";
 import PriceQuoteTab from "./PriceQuoteTab";
 import RadiologistsTab from "./RadiologistsTab";
 import ScheduleTab from "./ScheduleTab";
@@ -63,6 +64,7 @@ export default function RadiologyManagementPage() {
       {activeTab === "reports-overview" && <TabErrorBoundary tabLabel="التقارير"><RadiologyReportsOverviewTab /></TabErrorBoundary>}
       {activeTab === "insurance-invoices" && <TabErrorBoundary tabLabel="فواتير التأمين"><InsuranceInvoicesTab /></TabErrorBoundary>}
       {activeTab === "insurance-ledger" && <TabErrorBoundary tabLabel="دفتر التأمين"><InsuranceLedgerTab /></TabErrorBoundary>}
+      {activeTab === "insurance-companies" && <TabErrorBoundary tabLabel="شركات التأمين"><InsuranceCompaniesTab /></TabErrorBoundary>}
       {activeTab === "price-quote" && <TabErrorBoundary tabLabel="عرض سعر"><PriceQuoteTab /></TabErrorBoundary>}
       {activeTab === "radiologists" && <TabErrorBoundary tabLabel="أخصائيو الأشعة"><RadiologistsTab /></TabErrorBoundary>}
       {activeTab === "schedule" && <TabErrorBoundary tabLabel="الحجوزات"><ScheduleTab /></TabErrorBoundary>}

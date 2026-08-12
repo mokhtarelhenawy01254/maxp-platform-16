@@ -213,9 +213,12 @@ const listStudies = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { patientName, nationalId, insuranceNumber, status, dateFrom, dateTo, page, limit } = req.query;
+    const { patientName, patientId, nationalId, insuranceNumber, status, dateFrom, dateTo, page, limit } = req.query;
     const where = { companyId };
 
+    if (patientId && String(patientId).trim()) {
+      where.patientId = String(patientId).trim();
+    }
     if (patientName && String(patientName).trim()) {
       where.patientName = { contains: String(patientName).trim(), mode: 'insensitive' };
     }

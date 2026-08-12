@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, RefreshCw, Search } from "lucide-react";
-import { bookingApi, fetchJson, MODAL_INPUT_CLS, MODAL_CONTENT_CLS } from "./shared";
+import { Plus, RefreshCw, Search, FileText, X as XMarkIcon } from "lucide-react";
+import { api, bookingApi, fetchJson, MODAL_INPUT_CLS, MODAL_CONTENT_CLS } from "./shared";
 
 interface RadiologyPatient {
   id: string; firstName: string; lastName?: string; phone?: string;
   gender?: string; status?: string; isActive: boolean; createdAt: string;
+}
+
+interface PatientStudy {
+  id: string; studyNumber?: string; examTypeName?: string;
+  status?: string; report?: { reportStatus?: string }; priceSnapshot?: number;
+  billingType?: string; createdAt?: string;
 }
 
 const STATUS_LABEL: Record<string, string> = { ACTIVE: "نشط", INACTIVE: "غير نشط", REVIEW: "قيد المراجعة" };
@@ -18,6 +24,9 @@ export default function RadiologyPatientsTab() {
   const [saving, setSaving] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [phone, setPhone] = useState("");
+  const [record, setRecord] = useState<RadiologyPatient | null>(null);
+  const [recordStudies, setRecordStudies] = useState<PatientStudy[]>([]);
+  const [recordLoading, setRecordLoading] = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -67,6 +76,24 @@ export default function RadiologyPatientsTab() {
     }
   };
 
+  const viewRecord = async (p: RadiologyPatient) => {
+    setRecord(p);
+    setRecordStudies([]);
+    setRecordLoading(true);
+    try {
+      const fullName = `${p.firstName}${p.lastName ? " " + p.lastName : ""}`.trim();
+      let rows = await fetchJson<{ items?: PatientStudy[] }>(`${api("studies")}&patientId=${p.id}&limit=100`);
+      if (!rows.items?.length && fullName) {
+        rows = await fetchJson<{ items?: PatientStudy[] }>(`${api("studies")}&patientName=${encodeURIComponent(fullName)}&limit=100`);
+      }
+      setRecordStudies(rows.items || []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل جلب دراسات المريض");
+    } finally {
+      setRecordLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -110,9 +137,14 @@ export default function RadiologyPatientsTab() {
                   <td className="py-3 px-4">{p.gender || "—"}</td>
                   <td className="py-3 px-4">{STATUS_LABEL[p.status || ""] || (p.isActive ? "نشط" : "غير نشط")}</td>
                   <td className="py-3 px-4">
-                    <button onClick={() => toggle(p)} className="text-xs px-2 py-1 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                      {p.isActive ? "تعطيل" : "تفعيل"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => viewRecord(p)} className="text-xs px-2 py-1 border rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-1">
+                        <FileText className="w-3.5 h-3.5" />الدراسات
+                      </button>
+                      <button onClick={() => toggle(p)} className="text-xs px-2 py-1 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                        {p.isActive ? "تعطيل" : "تفعيل"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -145,6 +177,47 @@ export default function RadiologyPatientsTab() {
                 {saving ? "جاري الحفظ..." : "حفظ"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {record && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setRecord(null)}>
+          <div className={`${MODAL_CONTENT_CLS} max-h-[85vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">دراسات المريض — {record.firstName} {record.lastName || ""}</h3>
+              <button onClick={() => setRecord(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            {recordLoading ? (
+              <p className="text-center py-10 text-gray-400">جارٍ التحميل...</p>
+            ) : recordStudies.length === 0 ? (
+              <p className="text-center py-10 text-gray-400">لا توجد دراسات لهذا المريض</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b dark:border-gray-700 text-gray-500 dark:text-gray-400">
+                    <th className="py-2 px-3 text-right font-medium">رقم الدراسة</th>
+                    <th className="py-2 px-3 text-right font-medium">الفحص</th>
+                    <th className="py-2 px-3 text-right font-medium">الحالة</th>
+                    <th className="py-2 px-3 text-right font-medium">التقرير</th>
+                    <th className="py-2 px-3 text-right font-medium">السعر</th>
+                    <th className="py-2 px-3 text-right font-medium">التاريخ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recordStudies.map(s => (
+                    <tr key={s.id} className="border-b dark:border-gray-700/50 last:border-0">
+                      <td className="py-2 px-3" dir="ltr">{s.studyNumber || "—"}</td>
+                      <td className="py-2 px-3">{s.examTypeName || "—"}</td>
+                      <td className="py-2 px-3">{s.status || "—"}</td>
+                      <td className="py-2 px-3">{s.report?.reportStatus || "—"}</td>
+                      <td className="py-2 px-3">{Number(s.priceSnapshot || 0).toFixed(0)} ج</td>
+                      <td className="py-2 px-3">{s.createdAt ? new Date(s.createdAt).toLocaleDateString("ar-EG") : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
