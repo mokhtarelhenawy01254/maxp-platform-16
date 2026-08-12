@@ -29,7 +29,7 @@ export default function PriceQuoteTab() {
   const loadExamTypes = async (quiet = false) => {
     setLoading(true);
     try {
-      const data = await fetchJson<QuoteExamType[]>(`${api("exam-types")}&limit=200`);
+      const data = await fetchJson<QuoteExamType[]>(`${api("exam-types")}&limit=500`);
       setExamTypes(data || []);
     } catch (e: unknown) {
       if (!quiet) setError(e instanceof Error ? e.message : "حدث خطأ في جلب أنواع الفحوصات");

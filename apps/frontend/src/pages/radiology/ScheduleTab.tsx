@@ -50,7 +50,7 @@ export default function ScheduleTab() {
     (async () => {
       setLoading(true);
       try {
-        const ets = await fetchJson<RadiologyExamType[]>(api("exam-types"));
+        const ets = await fetchJson<RadiologyExamType[]>(`${api("exam-types")}&limit=500`);
         setExamTypes(Array.isArray(ets) ? ets : []);
       } catch { setExamTypes([]); }
       await refresh().finally(() => setLoading(false));

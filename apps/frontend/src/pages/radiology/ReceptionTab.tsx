@@ -51,7 +51,7 @@ export default function ReceptionTab() {
       setLoadingExamTypes(true);
       try {
         const [ets, adds, ins] = await Promise.all([
-          fetchJson<RadiologyExamType[]>(api("exam-types")),
+          fetchJson<RadiologyExamType[]>(`${api("exam-types")}&limit=500`),
           fetchJson<RadiologyExamAddition[]>(api("exam-additions")).catch(() => []),
           fetchJson<{ id: string; name: string }[]>(bookingApi("insurance-companies")).catch(() => []),
         ]);

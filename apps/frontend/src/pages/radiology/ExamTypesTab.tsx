@@ -32,7 +32,7 @@ export default function ExamTypesTab() {
 
   const loadCategories = useCallback(async () => {
     try {
-      const data = await fetchJson<RadiologyExamType[]>(`${api("exam-types")}&limit=200&includeInactive=true`);
+      const data = await fetchJson<RadiologyExamType[]>(`${api("exam-types")}&limit=500&includeInactive=true`);
       const seen = new Map<string, boolean>();
       for (const t of data || []) {
         if (t.category) seen.set(t.category, true);
