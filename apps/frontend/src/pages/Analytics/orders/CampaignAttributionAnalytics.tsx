@@ -33,6 +33,13 @@ const toISODate = (date: Date) =>
     date.getDate(),
   ).padStart(2, "0")}`;
 
+const DEFAULT_RANGE: PeriodRange = (() => {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 29);
+  return { period: "30", startDate: toISODate(start), endDate: toISODate(end) };
+})();
+
 const CompactPeriodSelector: React.FC<{
   onRangeChange: (range: PeriodRange) => void;
 }> = ({ onRangeChange }) => {
@@ -331,7 +338,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [range, setRange] = useState<PeriodRange | null>(null);
+  const [range, setRange] = useState<PeriodRange>(DEFAULT_RANGE);
   const [source, setSource] = useState("all");
   const [platform, setPlatform] = useState("all");
   const [trackingType, setTrackingType] = useState("all");
