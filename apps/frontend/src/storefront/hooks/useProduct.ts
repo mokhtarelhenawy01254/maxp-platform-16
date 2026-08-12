@@ -167,14 +167,14 @@ const fetchPublicStorefrontProduct = async (
 
     // اللينك القديم لمنتج محوّل (تحويل مكرر لعرض تقديمي): نوجّه المتصفح
     // للينك الكنسوني عشان الـ reviews/المشاركة/السلة تشتغل على الـ slug الصحيح.
+    const redirectedFrom = response.data?.redirectedFrom;
     const canonicalSlug = response.data?.canonicalSlug || response.data?.slug;
     const canonicalPresentation = response.data?.presentation?.slug;
     if (
+      redirectedFrom &&
       canonicalSlug &&
       typeof window !== 'undefined' &&
-      !resolveStorefrontProductPreviewMode() &&
-      (canonicalSlug !== idOrSlug ||
-        (canonicalPresentation && canonicalPresentation !== presentationSlug))
+      !resolveStorefrontProductPreviewMode()
     ) {
       const pathPrefix = window.location.pathname.includes('/store/')
         ? '/store'
