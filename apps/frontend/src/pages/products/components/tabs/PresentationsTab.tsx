@@ -161,6 +161,14 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
   const getMainImage = (pres: ProductPresentation) =>
     editState[pres.id!]?.mainImage ?? pres.mainImage;
 
+  // صورة مصغّرة للعرض: الأساسية → أول صورة → افتار بحرف الاسم
+  const getThumbnail = (pres: ProductPresentation): string => {
+    const main = getMainImage(pres);
+    if (main) return main;
+    const images = getImages(pres);
+    return images[0] || "";
+  };
+
   // اللينك الكامل للعرض التقديمي: /products/{productSlug|productId}/{presentationSlug}
   // (نفضّل الـ slug لأنه أنضف للإعلانات، والـ id fallback دايماً بيشتغل على الستورفرونت)
   const buildPresentationUrl = (pres: ProductPresentation) => {
@@ -247,8 +255,16 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
                     className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold shrink-0">
-                        {pres.name.charAt(0)}
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold shrink-0">
+                        {getThumbnail(pres) ? (
+                          <img
+                            src={getImageUrl(getThumbnail(pres)) || ""}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          pres.name.charAt(0)
+                        )}
                       </div>
                       <div className="min-w-0 text-right">
                         <div className="font-medium text-gray-900 dark:text-white truncate">
