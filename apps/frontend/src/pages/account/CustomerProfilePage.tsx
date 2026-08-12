@@ -8,7 +8,6 @@ import {
   KeyRound,
   ShieldCheck,
   UserRound,
-  CreditCard,
   Save,
   Loader2,
   Lock,
@@ -16,14 +15,6 @@ import {
 
 import { apiClient } from "../../services/apiClient";
 import { useCustomerLoyaltySummary } from "../../hooks/useCustomerLoyaltySummary";
-
-const toNumber = (value: unknown): number => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const formatMoney = (value: number, currency = "EGP") =>
-  `${value.toFixed(2)} ${currency}`;
 
 const formatDate = (value?: string | null) => {
   if (!value) return "—";
@@ -78,7 +69,6 @@ export default function CustomerProfilePage() {
     );
   }
 
-  const currency = data.wallet?.currency || data.company?.currency || "EGP";
   const fullName = `${data.customer.firstName} ${data.customer.lastName}`.trim();
 
   const saveAddress = async () => {
@@ -304,42 +294,6 @@ export default function CustomerProfilePage() {
             {savingPassword ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             حفظ كلمة المرور
           </button>
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300">
-            <CreditCard size={18} />
-          </div>
-          <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            رصيد المحفظة
-          </div>
-          <div className="mt-1 text-xl font-black text-gray-900 dark:text-white">
-            {formatMoney(toNumber(data.wallet?.balance), currency)}
-          </div>
-        </div>
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300">
-            <UserRound size={18} />
-          </div>
-          <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            نقاطي
-          </div>
-          <div className="mt-1 text-xl font-black text-gray-900 dark:text-white">
-            {data.loyalty.points.current.toLocaleString("ar-EG")} نقطة
-          </div>
-        </div>
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
-            <CreditCard size={18} />
-          </div>
-          <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            إجمالي الكاش باك
-          </div>
-          <div className="mt-1 text-xl font-black text-gray-900 dark:text-white">
-            {formatMoney(toNumber(data.wallet?.totalCashback), currency)}
-          </div>
         </div>
       </div>
     </div>
