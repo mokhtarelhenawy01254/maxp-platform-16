@@ -14,68 +14,9 @@ import { ChevronDownIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
-
-interface PeriodRange {
-  period: string;
-  startDate: string;
-  endDate: string;
-}
-
-const PERIOD_PRESETS = [
-  { value: "7", label: "٧" },
-  { value: "30", label: "٣٠" },
-  { value: "90", label: "٩٠" },
-  { value: "365", label: "سنة" },
-];
-
-const toISODate = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-    date.getDate(),
-  ).padStart(2, "0")}`;
-
-const DEFAULT_RANGE: PeriodRange = (() => {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 29);
-  return { period: "30", startDate: toISODate(start), endDate: toISODate(end) };
-})();
-
-const CompactPeriodSelector: React.FC<{
-  onRangeChange: (range: PeriodRange) => void;
-}> = ({ onRangeChange }) => {
-  const [period, setPeriod] = useState("30");
-
-  useEffect(() => {
-    const days = Number.parseInt(period, 10) || 30;
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - (days - 1));
-    onRangeChange({
-      period,
-      startDate: toISODate(start),
-      endDate: toISODate(end),
-    });
-  }, [period, onRangeChange]);
-
-  return (
-    <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-      {PERIOD_PRESETS.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => setPeriod(option.value)}
-          className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
-            period === option.value
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-};
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface CampaignAttributionSummary {
   totalOrders: number;
@@ -338,7 +279,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [range, setRange] = useState<PeriodRange>(DEFAULT_RANGE);
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [source, setSource] = useState("all");
   const [platform, setPlatform] = useState("all");
   const [trackingType, setTrackingType] = useState("all");
@@ -464,7 +405,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
             الأوردر
           </p>
         </div>
-        <CompactPeriodSelector onRangeChange={setRange} />
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       {/* Compact filters */}
@@ -535,10 +476,12 @@ const CampaignAttributionAnalytics: React.FC = () => {
         .
       </div>
 
-      {/* Charts: tabs trend / sources */}
+      {/* Charts + platforms side panel */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
       <SectionCard
         title="تطور الطلبات والحملات"
         subtitle="مقارنة إجمالي الطلبات بالمرتبطة بحملات خلال الفترة"
+        className="xl:col-span-2"
         action={
           <div className="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700">
             <button
@@ -627,14 +570,85 @@ const CampaignAttributionAnalytics: React.FC = () => {
         )}
       </SectionCard>
 
-      {/* Table + side panel */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <SectionCard
-          title="جدول الحملات والمصادر"
-          subtitle="كل صف تجميع حسب المصدر والمنصة والحملة ومعرفات الإعلان"
-          className="xl:col-span-2"
-          collapsible
-        >
+      <SectionCard
+        title="المنصات والأدلة"
+        action={
+          <div className="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700">
+            <button
+              type="button"
+              className={tabButtonClass(sideTab === "platforms")}
+              onClick={() => setSideTab("platforms")}
+            >
+              المنصات
+            </button>
+            <button
+              type="button"
+              className={tabButtonClass(sideTab === "guide")}
+              onClick={() => setSideTab("guide")}
+            >
+              كيف تقرأ؟
+            </button>
+          </div>
+        }
+        collapsible
+      >
+        {sideTab === "platforms" ? (
+          <div className="space-y-2">
+            {platformCards.map((row, index) => (
+              <div
+                key={row.platform || `platform-${index}`}
+                className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 ring-1 ring-gray-100 dark:ring-gray-700"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-xs font-semibold text-gray-900 dark:text-white">
+                    {formatAttributionValue(row.platform)}
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    {row.orders.toLocaleString()} طلب
+                  </div>
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-gray-900 dark:text-white">
+                    {row.share.toFixed(1)}%
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    {formatPrice(row.revenue)}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {platformCards.length === 0 && (
+              <p className="py-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                لا توجد بيانات منصات في الفترة الحالية.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+            <p>
+              إذا كان <span className="font-semibold">Campaign ID</span> فارغًا
+              لكن المصدر موجود، فالطلب متتبع لكن الرابط لم يحمل رقم الحملة.
+            </p>
+            <p>
+              ارتفاع <span className="font-semibold">غير منسوبة</span> يعني
+              غالبًا طلبات قديمة أو روابط بدون UTM / campaign params.
+            </p>
+            <p>
+              قارن <span className="font-semibold">الإيراد</span> بـ{" "}
+              <span className="font-semibold">نسبة التسليم</span> لتعرف الحملة
+              التي تجلب مبيعات فعلية لا مجرد طلبات.
+            </p>
+          </div>
+        )}
+      </SectionCard>
+      </div>
+
+      {/* Table full width */}
+      <SectionCard
+        title="جدول الحملات والمصادر"
+        subtitle="كل صف تجميع حسب المصدر والمنصة والحملة ومعرفات الإعلان"
+        collapsible
+      >
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1050px] text-xs">
               <thead>
@@ -730,79 +744,6 @@ const CampaignAttributionAnalytics: React.FC = () => {
             </div>
           )}
         </SectionCard>
-
-        <SectionCard
-          title="المنصات والأدلة"
-          action={
-            <div className="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700">
-              <button
-                type="button"
-                className={tabButtonClass(sideTab === "platforms")}
-                onClick={() => setSideTab("platforms")}
-              >
-                المنصات
-              </button>
-              <button
-                type="button"
-                className={tabButtonClass(sideTab === "guide")}
-                onClick={() => setSideTab("guide")}
-              >
-                كيف تقرأ؟
-              </button>
-            </div>
-          }
-          collapsible
-        >
-          {sideTab === "platforms" ? (
-            <div className="space-y-2">
-              {platformCards.map((row, index) => (
-                <div
-                  key={row.platform || `platform-${index}`}
-                  className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 ring-1 ring-gray-100 dark:ring-gray-700"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-xs font-semibold text-gray-900 dark:text-white">
-                      {formatAttributionValue(row.platform)}
-                    </div>
-                    <div className="text-[10px] text-gray-400">
-                      {row.orders.toLocaleString()} طلب
-                    </div>
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs font-bold text-gray-900 dark:text-white">
-                      {row.share.toFixed(1)}%
-                    </div>
-                    <div className="text-[10px] text-gray-400">
-                      {formatPrice(row.revenue)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {platformCards.length === 0 && (
-                <p className="py-4 text-center text-xs text-gray-500 dark:text-gray-400">
-                  لا توجد بيانات منصات في الفترة الحالية.
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-              <p>
-                إذا كان <span className="font-semibold">Campaign ID</span> فارغًا
-                لكن المصدر موجود، فالطلب متتبع لكن الرابط لم يحمل رقم الحملة.
-              </p>
-              <p>
-                ارتفاع <span className="font-semibold">غير منسوبة</span> يعني
-                غالبًا طلبات قديمة أو روابط بدون UTM / campaign params.
-              </p>
-              <p>
-                قارن <span className="font-semibold">الإيراد</span> بـ{" "}
-                <span className="font-semibold">نسبة التسليم</span> لتعرف الحملة
-                التي تجلب مبيعات فعلية لا مجرد طلبات.
-              </p>
-            </div>
-          )}
-        </SectionCard>
-      </div>
 
       {error && data && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
