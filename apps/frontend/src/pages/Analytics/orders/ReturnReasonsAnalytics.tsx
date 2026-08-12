@@ -32,6 +32,18 @@ import PeriodSelector, {
 } from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
 
+const toISODate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+
+const DEFAULT_RANGE: PeriodRange = (() => {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 29);
+  return { period: "30", startDate: toISODate(start), endDate: toISODate(end) };
+})();
+
 type HeroIcon = React.ForwardRefExoticComponent<
   React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> &
     { title?: string; titleId?: string } &
@@ -389,7 +401,7 @@ const StatsBar: React.FC<{ summary: ReturnReasonAnalyticsSummary }> = ({
 
 const ReturnReasonsAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
-  const [range, setRange] = useState<PeriodRange | null>(null);
+  const [range, setRange] = useState<PeriodRange>(DEFAULT_RANGE);
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [tab, setTab] = useState<"status" | "trend" | "products">("status");
