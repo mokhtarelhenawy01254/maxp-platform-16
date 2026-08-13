@@ -6,7 +6,7 @@
   "error_create_9567": "Error creating status",
   "success_update_dfad": "Status updated successfully",
   "error_update_f3e8": "Error updating status",
-  "success_delete_f86e": "تم حذف الحالة بنجاح",
+  "success_delete_f86e": "Status deleted successfully",
   "error_delete_e809": "Error deleting status",
   "error_save_9d9b": "Error saving order",
   "msg_8149": "Default statuses initialized successfully",

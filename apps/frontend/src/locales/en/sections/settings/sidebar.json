@@ -648,5 +648,8 @@
   "priceLists": "Price Lists",
   "customerStatements": "Customer Statements",
   "debtTracking": "Debt Tracking",
-  "homepageTemplates": "Platform Homepage Templates"
+  "homepageTemplates": "Platform Homepage Templates",
+  "orderAutomation": "Order Automation",
+  "codDeposit": "COD Deposit",
+  "orderStatusTemplates": "WhatsApp Status Templates"
 }

@@ -637,5 +637,8 @@
   "affiliateProductVisibility": "إدارة ظهور المنتجات للمسوقين",
   "relatedCompanies": "الشركات المرتبطة",
   "storeThemePricing": "تسعير قوالب المتجر",
-  "homepageTemplates": "قوالب لاندنج المنصة"
+  "homepageTemplates": "قوالب لاندنج المنصة",
+  "orderAutomation": "أتمتة الطلبات",
+  "codDeposit": "الدفعة المقدمة COD",
+  "orderStatusTemplates": "قوالب الواتساب للحالات"
 }
