@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, fetchJson, RadiologyStatusMap } from "./shared";
+import { api, fetchJson, RadiologyStatusMap, RadiologyOrderStatusMap } from "./shared";
 
-interface StudyItem { status?: string; reportStatus?: string; emergency?: boolean; createdAt?: string; }
+interface StudyItem { status?: string; reportStatus?: string; emergency?: boolean; createdAt?: string; orderStatus?: string; }
 
 interface FinancialSummary {
   patient: { total: number; collected: number; outstanding: number };
@@ -10,6 +10,16 @@ interface FinancialSummary {
   totalCollected: number; totalOutstanding: number;
   byEntity?: { insuranceCompanyId: string; name: string; total: number; paid: number; remaining: number }[];
 }
+
+const ORDER_STATUS_KEYS = ["PENDING", "CHECKED_IN", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
+
+const STATUS_BAR_COLORS: Record<string, string> = {
+  PENDING: "#9ca3af",
+  CHECKED_IN: "#3b82f6",
+  IN_PROGRESS: "#f59e0b",
+  COMPLETED: "#14b8a6",
+  CANCELLED: "#ef4444",
+};
 
 const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -19,6 +29,7 @@ export default function RadiologyDashboardTab() {
     studiesToday?: number; awaiting?: number; ready?: number; emergency?: number; revenue?: number;
   } | null>(null);
   const [todayAppointments, setTodayAppointments] = useState<number>(0);
+  const [orderBreakdown, setOrderBreakdown] = useState<Record<string, number> | null>(null);
   const [fin, setFin] = useState<FinancialSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,9 +62,16 @@ export default function RadiologyDashboardTab() {
           todayAppointments = list.filter(a => a.status === "SCHEDULED" || a.status === "CHECKED_IN").length;
         } catch { }
 
+        let orderBreakdown: Record<string, number> | null = null;
+        try {
+          const st = await fetchJson<{ orderStatusBreakdown?: Record<string, number> }>(api("statistics"));
+          orderBreakdown = st?.orderStatusBreakdown || null;
+        } catch { }
+
         setStats({ studiesToday, awaiting, ready, emergency, revenue });
         setFin(finData || null);
         setTodayAppointments(todayAppointments);
+        setOrderBreakdown(orderBreakdown);
       } catch (e) {
         setError(e instanceof Error ? e.message : t("radiology.dashboard.error"));
       }
@@ -93,6 +111,32 @@ export default function RadiologyDashboardTab() {
           ))}
         </div>
       </div>
+
+      {orderBreakdown ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+          <h3 className="font-semibold mb-3">{t("radiology.dashboard.orderStatusFunnel")}</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+            {ORDER_STATUS_KEYS.map(k => {
+              const meta = RadiologyOrderStatusMap[k];
+              const count = orderBreakdown[k] || 0;
+              return (
+                <div key={k} className={`rounded-lg p-3 border dark:border-gray-700 ${meta?.color || ""}`}>
+                  <p className="text-xs opacity-80">{t(meta?.label || "")}</p>
+                  <p className="text-xl font-bold mt-0.5">{count}</p>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex h-2 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+            {ORDER_STATUS_KEYS.map(k => {
+              const total = ORDER_STATUS_KEYS.reduce((s, x) => s + (orderBreakdown[x] || 0), 0);
+              const pct = total ? ((orderBreakdown[k] || 0) / total) * 100 : 0;
+              if (pct <= 0) return null;
+              return <div key={k} className="h-full" style={{ width: `${pct}%`, backgroundColor: STATUS_BAR_COLORS[k] || "#94a3b8" }} />;
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {fin ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">

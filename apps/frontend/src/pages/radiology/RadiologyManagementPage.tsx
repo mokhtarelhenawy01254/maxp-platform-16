@@ -23,6 +23,7 @@ import StatisticsTab from "./StatisticsTab";
 import CashierShiftsTab from "./CashierShiftsTab";
 import SettingsTab from "./SettingsTab";
 import StudyDetails from "./StudyDetails";
+import AppointmentDetails from "./AppointmentDetails";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function RadiologyManagementPage() {
@@ -38,6 +39,15 @@ export default function RadiologyManagementPage() {
     return (
       <div dir="rtl">
         <StudyDetails studyId={studyId} />
+      </div>
+    );
+  }
+
+  const appointmentId = urlTab === "appointment" ? segments[1] : undefined;
+  if (appointmentId) {
+    return (
+      <div dir="rtl">
+        <AppointmentDetails appointmentId={appointmentId} />
       </div>
     );
   }

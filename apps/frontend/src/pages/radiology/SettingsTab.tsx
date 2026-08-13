@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Boxes, FileText, Hash, Loader2, Pencil, Plus, RefreshCw, Tag, Trash2, X as XMarkIcon } from "lucide-react";
+import { Boxes, FileText, Hash, Loader2, Pencil, Plus, RefreshCw, Shield, Tag, Trash2, X as XMarkIcon } from "lucide-react";
 import { api, fetchJson, RadiologyReportTemplate, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface TemplateForm {
@@ -40,6 +40,13 @@ const emptyTagForm = (): TagForm => ({ name: "" });
 
 const DEFAULT_ID_SETTINGS: IdSettings = { bookingPrefix: "B", patientPrefix: "P", digits: 4, enabled: true };
 
+interface GuardSettings {
+  requirePaymentBeforeDelivery: boolean;
+  blockCancelAfterDelivery: boolean;
+}
+
+const DEFAULT_GUARDS: GuardSettings = { requirePaymentBeforeDelivery: false, blockCancelAfterDelivery: true };
+
 export default function SettingsTab() {
   const { t } = useTranslation();
   const [templates, setTemplates] = useState<RadiologyReportTemplate[] | null>(null);
@@ -58,6 +65,41 @@ export default function SettingsTab() {
   const [idSettings, setIdSettings] = useState<IdSettings>(DEFAULT_ID_SETTINGS);
   const [idSettingsLoaded, setIdSettingsLoaded] = useState(false);
   const [savingIdSettings, setSavingIdSettings] = useState(false);
+
+  const [guards, setGuards] = useState<GuardSettings>(DEFAULT_GUARDS);
+  const [guardsLoaded, setGuardsLoaded] = useState(false);
+  const [savingGuards, setSavingGuards] = useState(false);
+
+  const refreshGuards = useCallback(async () => {
+    try {
+      const data = await fetchJson<Partial<GuardSettings>>(api("guards"));
+      setGuards({ ...DEFAULT_GUARDS, ...data });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.settings.loadIdSettingsFailed"));
+    } finally {
+      setGuardsLoaded(true);
+    }
+  }, [t]);
+
+  const saveGuards = async () => {
+    if (savingGuards) return;
+    setSavingGuards(true);
+    try {
+      await fetchJson(api("guards"), {
+        method: "PUT",
+        body: JSON.stringify({
+          requirePaymentBeforeDelivery: guards.requirePaymentBeforeDelivery,
+          blockCancelAfterDelivery: guards.blockCancelAfterDelivery,
+        }),
+      });
+      toast.success(t("radiology.settings.guardsSaved"));
+      await refreshGuards();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.settings.saveFailed"));
+    } finally {
+      setSavingGuards(false);
+    }
+  };
 
   const refreshIdSettings = useCallback(async () => {
     try {
@@ -105,7 +147,8 @@ export default function SettingsTab() {
     setModalitiesLoading(true);
     refreshModalities().finally(() => setModalitiesLoading(false));
     refreshIdSettings();
-  }, [refresh, refreshTags, refreshModalities, refreshIdSettings]);
+    refreshGuards();
+  }, [refresh, refreshTags, refreshModalities, refreshIdSettings, refreshGuards]);
 
   const save = async () => {
     if (!modal || saving) return;
@@ -258,6 +301,38 @@ export default function SettingsTab() {
                   {savingIdSettings && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-lg font-bold flex items-center gap-2"><Shield className="w-5 h-5" />{t("radiology.settings.guardsTitle")}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.settings.guardsSubtitle")}</p>
+          </div>
+          <button onClick={() => refreshGuards()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <RefreshCw className="w-4 h-4" />{t("radiology.refresh")}
+          </button>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+          {!guardsLoaded ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          ) : (
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={guards.requirePaymentBeforeDelivery} onChange={e => setGuards(g => ({ ...g, requirePaymentBeforeDelivery: e.target.checked }))} className="w-4 h-4" />
+                {t("radiology.settings.requirePaymentBeforeDelivery")}
+              </label>
+              <label className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={guards.blockCancelAfterDelivery} onChange={e => setGuards(g => ({ ...g, blockCancelAfterDelivery: e.target.checked }))} className="w-4 h-4" />
+                {t("radiology.settings.blockCancelAfterDelivery")}
+              </label>
+              <button onClick={saveGuards} disabled={savingGuards} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
+                {savingGuards && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
+              </button>
             </div>
           )}
         </div>

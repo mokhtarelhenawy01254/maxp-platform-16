@@ -13638,6 +13638,7 @@ declare module 'react-i18next' {
           studies: string;
           reports: string;
           'exam-types': string;
+          'exam-categories': string;
           'price-lists': string;
           contracts: string;
           branches: string;
@@ -13725,6 +13726,28 @@ declare module 'react-i18next' {
           turnaround: string;
           draftReport: string;
         };
+        appointmentDetails: {
+          title: string;
+          loadFailed: string;
+          convert: string;
+          convertConfirm: string;
+          converted: string;
+          convertFailed: string;
+          examType: string;
+          device: string;
+          appointmentDate: string;
+          appointmentTime: string;
+          additions: string;
+          referringDoctor: string;
+          insuranceCompany: string;
+          insuranceProvided: string;
+          studies: string;
+          noStudies: string;
+          openStudy: string;
+          branch: string;
+          timeline: string;
+          created: string;
+        };
         appointmentStatus: {
           SCHEDULED: string;
           CHECKED_IN: string;
@@ -13768,6 +13791,7 @@ declare module 'react-i18next' {
           outstandingFromInsurance: string;
           totalCollectedLabel: string;
           totalOutstandingLabel: string;
+          orderStatusFunnel: string;
           error: string;
         };
         patients: {
@@ -14142,6 +14166,10 @@ declare module 'react-i18next' {
           newExamType: string;
           examTypeName: string;
           namePlaceholder: string;
+          selectCategory: string;
+          newCategoryPlaceholder: string;
+          addCategory: string;
+          manageCategories: string;
           categoryPlaceholder: string;
           abbreviationPlaceholder: string;
           priceLabel: string;
@@ -14155,6 +14183,45 @@ declare module 'react-i18next' {
           deleteFailed: string;
           operationFailed: string;
           operationFailedAlt: string;
+        };
+        examCategories: {
+          title: string;
+          subtitle: string;
+          newCategory: string;
+          searchPlaceholder: string;
+          showInactive: string;
+          viewList: string;
+          viewTree: string;
+          noResults: string;
+          noCategories: string;
+          name: string;
+          nameEn: string;
+          modality: string;
+          parent: string;
+          exams: string;
+          examTypeCount: string;
+          status: string;
+          actions: string;
+          active: string;
+          inactive: string;
+          editCategory: string;
+          newCategoryModal: string;
+          namePlaceholder: string;
+          nameEnPlaceholder: string;
+          abbreviationPlaceholder: string;
+          modalityPlaceholder: string;
+          modalityHint: string;
+          none: string;
+          selectParent: string;
+          sortOrder: string;
+          enabled: string;
+          nameRequired: string;
+          loadFailed: string;
+          saveFailed: string;
+          updateFailed: string;
+          deleteFailed: string;
+          deleteConfirm: string;
+          deleted: string;
         };
         examAdditions: {
           title: string;
@@ -14477,6 +14544,11 @@ declare module 'react-i18next' {
           modalities: string;
           modalitiesSubtitle: string;
           noModalities: string;
+          guardsTitle: string;
+          guardsSubtitle: string;
+          requirePaymentBeforeDelivery: string;
+          blockCancelAfterDelivery: string;
+          guardsSaved: string;
           examTypeCount: string;
           editTemplate: string;
           newReportTemplate: string;
@@ -15327,6 +15399,7 @@ declare module 'react-i18next' {
         radiologySchedule: string;
         radiologyReports: string;
         radiologyExamTypes: string;
+        radiologyExamCategories: string;
         radiologyExamAdditions: string;
         radiologyReferringPhysicians: string;
         radiologyStatistics: string;

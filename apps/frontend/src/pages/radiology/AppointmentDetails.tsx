@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowRightLeft, ArrowRight, Loader2, User, CalendarDays, FileText, Stethoscope, Building2, Notes as NotesIcon, History } from "lucide-react";
+import { ArrowRightLeft, ArrowRight, Loader2, User, CalendarDays, FileText, Stethoscope, Building2, ClipboardList, History } from "lucide-react";
 import { api, fetchJson, RadiologyOrderStatusMap, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_INPUT_CLS } from "./shared";
 
 interface RadiologyAppointmentView {
@@ -203,7 +203,7 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
           </div>
 
           <div className="space-y-5">
-            <Card title={t("radiology.details.notes")} icon={<NotesIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />}>
+            <Card title={t("radiology.details.notes")} icon={<ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />}>
               <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{a.notes || "—"}</p>
             </Card>
             <Card title={t("radiology.appointmentDetails.branch")} icon={<Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />}>
