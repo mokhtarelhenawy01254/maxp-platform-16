@@ -1013,6 +1013,44 @@ const DEFAULT_TEMPLATES = {
 
 تم تسجيل الإنجاز في سجل المهمة.`,
     variables: ['userName', 'itemContent', 'taskTitle', 'completedBy']
+  },
+
+  // الخصم التلقائي
+  AUTO_DISCOUNT_COUPON_GRANTED: {
+    name: 'منح كوبون الخصم التلقائي',
+    content: `مبروك {customerName}! 🎁
+
+شكراً لتسوقك معنا! هديتنا لك: كوبون خصم {discountPercent}% على طلبك القادم!
+
+💰 قيمة الكوبون: {voucherAmount} {currency}
+📅 صالح حتى: {expiryDate}
+
+استخدم الكوبون في طلبك القادم قبل انتهاء صلاحيته!
+شكراً لثقتك بنا 💙`,
+    variables: ['customerName', 'discountPercent', 'voucherAmount', 'currency', 'expiryDate']
+  },
+
+  AUTO_DISCOUNT_COUPON_EXPIRING: {
+    name: 'تنبيه قرب انتهاء كوبون الخصم',
+    content: `عزيزنا {customerName} ⏰
+
+نذكّرك أن كوبون الخصم التلقائي الخاص بك (خصم {discountPercent}%) ينتهي بتاريخ {expiryDate}.
+
+استخدمه في طلبك القادم قبل انتهاء صلاحيته حتى لا يضيع!
+شكراً لثقتك بنا 💙`,
+    variables: ['customerName', 'discountPercent', 'expiryDate']
+  },
+
+  AUTO_DISCOUNT_CASHBACK_CONVERTED: {
+    name: 'تحويل الكوبون المنتهي إلى كاش باك',
+    content: `عزيزنا {customerName} 💰
+
+انتهت صلاحية كوبون الخصم التلقائي الخاص بك، لذلك حوّلنا قيمته إلى كاش باك!
+
+💵 تم إيداع: {voucherAmount} {currency} في محفظتك
+
+يمكنك استخدام رصيدك في طلبك القادم 💙`,
+    variables: ['customerName', 'voucherAmount', 'currency']
   }
 }
 
