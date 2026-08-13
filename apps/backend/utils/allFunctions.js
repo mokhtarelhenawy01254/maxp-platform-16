@@ -2004,6 +2004,94 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
       console.log(`⏱️ [TIMING-${messageId.slice(-8)}] [${Date.now() - handleStartTime}ms] ✅ [HANDLE] Total handleFacebookMessage time - Message should be visible now!`);
 
+      // ── 🤖 Bot automation for Facebook Messenger (no-AI rules: welcome / keyword / default) ──
+      let botHandledFb = false;
+      const fbBotText = (messageText || (messageType === 'TEXT' ? content : '') || '').trim();
+      if (fbBotText && customer.companyId && pageData?.pageAccessToken) {
+        try {
+          const { evaluateInboundBotReply } = require('../services/botRuleEngine');
+          const firstContact = (await prisma.message.count({
+            where: { conversationId: conversation.id }
+          })) <= 1;
+
+          const evaluation = await evaluateInboundBotReply({
+            companyId: customer.companyId,
+            text: fbBotText,
+            channel: 'FACEBOOK',
+            customer: {
+              firstName: customer.firstName,
+              lastName: customer.lastName,
+            },
+            isFirstMessage: firstContact,
+          });
+
+          if (evaluation?.kind && evaluation.replyText) {
+            const fbResult = await sendProductionFacebookMessage(
+              senderId,
+              evaluation.replyText,
+              'TEXT',
+              messagePageId,
+              pageData.pageAccessToken
+            );
+            if (fbResult?.success) {
+              await prisma.message.create({
+                data: {
+                  conversationId: conversation.id,
+                  content: evaluation.replyText,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  senderId: null,
+                  metadata: JSON.stringify({
+                    platform: 'facebook',
+                    source: evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'),
+                    ruleId: evaluation.ruleId || null,
+                  }),
+                },
+              }).catch((e) => console.error('[BOT-RULES] Failed to save FB bot reply:', e.message));
+              botHandledFb = true;
+            }
+          }
+        } catch (e) {
+          console.error('❌ [BOT-RULES] Error in Facebook bot automation:', e.message);
+        }
+      }
+
+      if (!botHandledFb && customer?.id) {
+        try {
+          const { onCustomerReply } = require('../services/botFlowRuntime');
+          const flowResult = await onCustomerReply({
+            companyId: customer.companyId,
+            customerId: customer.id,
+            channel: 'FACEBOOK',
+            text: fbBotText,
+            sendStep: async (step) => {
+              await sendProductionFacebookMessage(
+                senderId,
+                step.content,
+                'TEXT',
+                messagePageId,
+                pageData.pageAccessToken
+              );
+              await prisma.message.create({
+                data: {
+                  conversationId: conversation.id,
+                  content: step.content,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  senderId: null,
+                  metadata: JSON.stringify({ platform: 'facebook', source: 'flow_step' }),
+                },
+              }).catch(() => {});
+            },
+          });
+          if (flowResult?.handled) {
+            botHandledFb = true;
+          }
+        } catch (e) {
+          console.error('❌ [BOT-FLOW] Error in Facebook flow handling:', e.message);
+        }
+      }
+
       // ── 🤖 AI Auto-Reply for Facebook Messenger (fire-and-forget, never blocks the webhook) ──
       const hasCustomerTextForAi = isValidMessageContent(messageText || content);
       const hasCustomerAttachmentsForAi = Array.isArray(attachmentsData) && attachmentsData.length > 0;
@@ -2011,6 +2099,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         messageText || (messageType === 'TEXT' ? content : '')
       ).trim();
       const shouldRunFacebookAiAutoReply = Boolean(
+        !botHandledFb &&
         customer.companyId &&
         (hasCustomerTextForAi || hasCustomerAttachmentsForAi) &&
         (aiCustomerContent || hasCustomerAttachmentsForAi)

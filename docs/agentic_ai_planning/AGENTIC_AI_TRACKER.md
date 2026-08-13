@@ -295,3 +295,13 @@
 - **Backend**: `services/orderMovementCore.js` + 8 كونترولرز في `controller/orderMovement/` (مصفوفة انتقالات، سانكي، مسارات، زمن مكوث، نتائج نهائية، أداء فريق، طلبات معلّقة، موافقات) معلّقة على `/api/v1/analytics/order-movement/*` مع تمييز يدوي/تلقائي. اختبارات 44/44.
 - **Frontend**: صفحة `/analytics/orders/status-movement` (OrderMovementPage) بـ 8 تابات + فلتر تاريخ + فلتر يدوي/تلقائي + تنبيه truncation. اختبارات frontend 24/24.
 
+
+## 2026-08-13 - TikTok integrations (5 parallel agents + orchestrator)
+
+- Publish (Content Posting API): services/tiktok/tiktokPublishService.js + controller/routes, frontend /tiktok/publish.
+- Shop: services/tiktok/tiktokShopService.js (HMAC-signed TikTok Shop Partner API) + controller/routes, frontend /tiktok/shop.
+- Login Kit: controller/tiktokAuthController.js (storefront OAuth customer login) + storefront/components/TikTokLoginButton.tsx.
+- Display/Embed: services/tiktok/tiktokDisplayService.js + components/TikTokEmbed.tsx + storefront/sections/TikTokFeedSection.tsx.
+- Events: services/tiktok/tiktokEventsManager.js + controller/routes + components/tiktok/TikTokEventsSettingsCard.tsx, frontend /tiktok/settings.
+- Shared foundation: prisma/schema/tiktok.prisma (TikTokAccount/TikTokSettings/TikTokPost/TikTokShopAccount/TikTokPixelConfig) + services/tiktok/tiktokOAuthService.js + Customer.tiktokId.
+- Mounted in server.js at /api/v1/tiktok/{publish,shop,auth,display,events}. Backend 1156 files syntax OK, prisma validate OK, vite build OK, check-icon-imports OK.

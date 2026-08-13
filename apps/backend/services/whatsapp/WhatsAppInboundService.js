@@ -273,8 +273,84 @@ async function saveIncomingMessage(payload) {
     console.error('❌ Error sending WhatsApp notification:', error.message);
   }
 
-  // ── AI auto-reply with debounce ────────────────────────────────────────────
+  // ── Bot automation (no-AI rules: welcome / keyword / default) ──────────────
+  let botHandled = false;
   if (content && messageType === 'TEXT' && syncedCustomer?.companyId) {
+    try {
+      const { evaluateInboundBotReply } = require('../botRuleEngine');
+      const prisma = getSharedPrismaClient();
+      const firstContact = (await prisma.whatsAppMessage.count({
+        where: { sessionId, remoteJid: normalizedJid }
+      })) <= 1;
+
+      const evaluation = await evaluateInboundBotReply({
+        companyId: syncedCustomer.companyId,
+        text: content,
+        channel: 'WHATSAPP',
+        customer: {
+          firstName: syncedCustomer.firstName,
+          lastName: syncedCustomer.lastName,
+        },
+        isFirstMessage: firstContact,
+      });
+
+      if (evaluation?.kind && evaluation.replyText) {
+        await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, evaluation.replyText, {
+          isAIResponse: false,
+        });
+        if (syncedConversation?.id) {
+          prisma.message.create({
+            data: {
+              conversationId: syncedConversation.id,
+              content: evaluation.replyText,
+              type: 'TEXT',
+              isFromCustomer: false,
+              metadata: JSON.stringify({
+                platform: 'whatsapp',
+                source: evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'),
+                ruleId: evaluation.ruleId || null,
+              }),
+            },
+          }).catch((e) => console.error('[BOT-RULES] Failed to save bot reply:', e.message));
+        }
+        botHandled = true;
+      }
+
+      if (!botHandled && syncedCustomer?.id) {
+        const { onCustomerReply } = require('../botFlowRuntime');
+        const flowResult = await onCustomerReply({
+          companyId: syncedCustomer.companyId,
+          customerId: syncedCustomer.id,
+          channel: 'WHATSAPP',
+          text: content,
+          sendStep: async (step) => {
+            await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, step.content, {
+              isAIResponse: false,
+            });
+            if (syncedConversation?.id) {
+              prisma.message.create({
+                data: {
+                  conversationId: syncedConversation.id,
+                  content: step.content,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  metadata: JSON.stringify({ platform: 'whatsapp', source: 'flow_step' }),
+                },
+              }).catch(() => {});
+            }
+          },
+        });
+        if (flowResult?.handled) {
+          botHandled = true;
+        }
+      }
+    } catch (e) {
+      console.error('❌ [BOT-RULES] Error in WhatsApp bot automation:', e.message);
+    }
+  }
+
+  // ── AI auto-reply with debounce ────────────────────────────────────────────
+  if (content && messageType === 'TEXT' && syncedCustomer?.companyId && !botHandled) {
     setImmediate(async () => {
       try {
         const { getSharedPrismaClient } = require('../sharedDatabase');

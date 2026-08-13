@@ -18,6 +18,7 @@ const createResponse = () => {
 
 const createPrisma = () => ({
   radiologyStudy: { findFirst: jest.fn() },
+  radiologyStudyImage: { count: jest.fn().mockResolvedValue(0) },
   aiKey: { findMany: jest.fn() },
 });
 
@@ -78,6 +79,7 @@ describe('radiologyAiReportController', () => {
   test('happy path returns draft via OpenAI-compatible endpoint', async () => {
     const prisma = createPrisma();
     prisma.radiologyStudy.findFirst.mockResolvedValue(createStudy());
+    prisma.radiologyStudyImage.count.mockResolvedValue(12);
     prisma.aiKey.findMany.mockResolvedValue([
       { id: 'key-1', provider: 'OPENAI', apiKey: 'sk-test', baseUrl: null, priority: 1 },
     ]);
@@ -98,6 +100,8 @@ describe('radiologyAiReportController', () => {
     expect(res.payload.data.provider).toBe('OPENAI');
     const url = global.fetch.mock.calls[0][0];
     expect(String(url).endsWith('/chat/completions')).toBe(true);
+    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(body.messages[1].content).toContain('عدد الصور: 12');
   });
 
   test('returns AI_NOT_CONFIGURED when no AI key exists', async () => {

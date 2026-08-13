@@ -189,6 +189,8 @@ class WhatsAppJourneyService {
     async processPendingJourneys() {
         try {
             const now = new Date();
+            const { processInteractiveTimeouts } = require('../botFlowRuntime');
+            await processInteractiveTimeouts(now);
             const journeys = await this.prisma.customerJourney.findMany({
                 where: {
                     status: 'ACTIVE',

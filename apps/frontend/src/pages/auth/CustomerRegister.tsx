@@ -5,6 +5,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { tokenManager } from "../../utils/tokenManager";
 import { useCompanyBranding } from "../../hooks/useCompanyBranding";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
+import TikTokLoginButton from "../../storefront/components/TikTokLoginButton";
 
 const CustomerRegister: React.FC = () => {
   const navigate = useNavigate();
@@ -228,6 +229,18 @@ const CustomerRegister: React.FC = () => {
           )}
         </button>
       </form>
+
+      <div className="my-4 flex items-center gap-3 text-sm text-gray-500">
+        <span className="h-px flex-1 bg-gray-200" />
+        <span>أو</span>
+        <span className="h-px flex-1 bg-gray-200" />
+      </div>
+
+      <TikTokLoginButton
+        companyId={brandingCompanyId || undefined}
+        redirectPath="/account"
+        className="w-full"
+      />
     </AuthSurface>
   );
 };

@@ -38,6 +38,7 @@ const OfferBento = React.lazy(() => import('../sections/OfferBento'));
 const InfoContentSection = React.lazy(() => import('../sections/InfoContentSection'));
 const JournalStrip = React.lazy(() => import('../sections/JournalStrip'));
 const ShoeFitFinder = React.lazy(() => import('../sections/ShoeFitFinder'));
+const TikTokFeedSection = React.lazy(() => import('../sections/TikTokFeedSection'));
 
 const baseComponentRegistry: Record<
   string,
@@ -78,6 +79,7 @@ const baseComponentRegistry: Record<
   'journal-strip': JournalStrip,
   'info-content': InfoContentSection,
   'member-registration': MemberRegistration,
+  'tiktok-feed': TikTokFeedSection,
 };
 
 /**

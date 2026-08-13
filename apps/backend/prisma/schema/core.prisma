@@ -255,6 +255,10 @@ model Company {
   whatsappFollowUpFlows           WhatsAppFollowUpFlow[]
   customerJourneys                CustomerJourney[]
   leadCategories                  LeadCategory[]
+  botAutomationSettings           BotAutomationSettings?
+  botAutomationRules              BotAutomationRule[]
+  botConversationStarters         BotConversationStarter[]
+  botPersistentMenus              BotPersistentMenu[]
   leadFollowUpSettings            LeadFollowUpSettings?
   leadFollowUpEnrollments         LeadFollowUpEnrollment[]
   wishlists                       Wishlist[]

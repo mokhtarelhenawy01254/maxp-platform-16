@@ -27,6 +27,7 @@ model WhatsAppFollowUpFlow {
   name        String
   isEnabled   Boolean                @default(true)
   isGeneral   Boolean                @default(false)  // عام: يشتغل لكل العملاء ما لم يخصص لهم تدفق خاص
+  channels    String?                @db.Text // JSON array: ["WHATSAPP","FACEBOOK"] — القنوات المدعومة
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
   company     Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -38,17 +39,22 @@ model WhatsAppFollowUpFlow {
 }
 
 model WhatsAppFollowUpStep {
-  id          String               @id @default(cuid())
-  flowId      String
-  delayDays   Int                  @default(1)
-  delayHours  Int?                                       // NEW: تأخير بالساعات (لـ category flows)
-  delayUnit   String               @default("DAYS")      // NEW: "HOURS" | "DAYS"
-  content     String               @db.Text
-  mediaUrl    String?
-  stepOrder   Int                  @default(1)
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  flow        WhatsAppFollowUpFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  id                String               @id @default(cuid())
+  flowId            String
+  delayDays         Int                  @default(1)
+  delayHours        Int?                                       // NEW: تأخير بالساعات (لـ category flows)
+  delayUnit         String               @default("DAYS")      // NEW: "HOURS" | "DAYS"
+  content           String               @db.Text
+  mediaUrl          String?
+  stepOrder         Int                  @default(1)
+  expectReply       Boolean              @default(false)       // الخطوة بتستنى رد العميل
+  replyKeywords     String?              @db.Text              // JSON array — كلمات الفرع
+  nextStepId        String?                                     // الخطوة اللي نروح لها لو رد بمطابقة
+  timeoutHours      Int?                                       // لو مع ردش خلال المدة
+  timeoutNextStepId String?                                     // الخطوة اللي نروح لها بعد المهلة
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  flow              WhatsAppFollowUpFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
 
   @@map("whatsapp_follow_up_steps")
 }
@@ -96,23 +102,25 @@ model LeadFollowUpEnrollment {
 }
 
 model CustomerJourney {
-  id          String               @id @default(cuid())
-  companyId   String
-  customerId  String
-  orderId     String?
-  flowId      String
-  currentStep Int                  @default(0) // 0 means not started, 1 means step 1 sent, etc.
-  status      String               @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
-  nextSendAt  DateTime
-  lastSentAt  DateTime?
-  logs        String?              @db.Text
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customer    Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  order       Order?               @relation(fields: [orderId], references: [id])
-  flow        WhatsAppFollowUpFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  id                String               @id @default(cuid())
+  companyId         String
+  customerId        String
+  orderId           String?
+  flowId            String
+  currentStep       Int                  @default(0) // 0 means not started, 1 means step 1 sent, etc.
+  status            String               @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  interactiveState  String?              @db.Text // JSON: {waitingForStepId, channel, startedAt}
+  nextSendAt        DateTime
+  lastSentAt        DateTime?
+  logs              String?              @db.Text
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  company           Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer          Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order             Order?               @relation(fields: [orderId], references: [id])
+  flow              WhatsAppFollowUpFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
 
   @@index([companyId, status, nextSendAt])
+  @@index([customerId])
   @@map("customer_journeys")
 }

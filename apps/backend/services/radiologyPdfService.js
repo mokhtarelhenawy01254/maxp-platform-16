@@ -27,7 +27,7 @@ function generateStudyReportPdf(study, company) {
 
     doc.fontSize(20).fillColor('#2563eb').text(AR(company?.name || 'مركز الأشعة'), 40, 40, { align: 'right', width: pageWidth });
     doc.fontSize(10).fillColor('#4b5563').text(
-      `${AR('رقم الدراسة:')} ${AR(study.studyNumber || '')}   ${AR('التاريخ:')} ${AR(fmtDate(study.createdAt))}`,
+      `${AR('رقم الحالة:')} ${AR(study.studyNumber || '')}   ${AR('التاريخ:')} ${AR(fmtDate(study.createdAt))}`,
       40, 70, { align: 'right', width: pageWidth }
     );
     doc.moveTo(40, 92).lineTo(555, 92).strokeColor('#2563eb').lineWidth(2).stroke();
@@ -60,6 +60,41 @@ function generateStudyReportPdf(study, company) {
     }
 
     y = 220;
+    const criticalCategory = study.report?.criticalCategory;
+    if (criticalCategory && criticalCategory !== 'NONE') {
+      const LABELS = {
+        CAT1: 'عثور حرج — فئة 1 (تواصل فوري)',
+        CAT2: 'عثور حرج — فئة 2 (تواصل خلال ساعات)',
+        CAT3: 'عثور حرج — فئة 3 (عرضة — متابعة)',
+      };
+      const isCat1 = criticalCategory === 'CAT1';
+      const labelColor = isCat1 ? '#dc2626' : '#ea580c';
+      const fillColor = isCat1 ? '#fef2f2' : '#fff7ed';
+      const strokeColor = isCat1 ? '#dc2626' : '#ea580c';
+      const textW = pageWidth - 20;
+      const labelText = AR(LABELS[criticalCategory] || LABELS.CAT3);
+      const findingText = AR(study.report.criticalFindingText || '');
+      let ackText = '';
+      if (study.report.criticalAcknowledgedAt) {
+        ackText = AR(`تم الإبلاغ عنه بواسطة ${study.report.criticalAcknowledgedBy || '—'} في ${fmtDate(study.report.criticalAcknowledgedAt)}`);
+      }
+      const startY = y;
+      let totalH = doc.heightOfString(labelText, { width: textW });
+      if (findingText) totalH += doc.heightOfString(findingText, { width: textW });
+      if (ackText) totalH += doc.heightOfString(ackText, { width: textW });
+      const boxH = totalH + 20;
+      doc.rect(40, startY - 10, pageWidth, boxH).fill(fillColor).stroke(strokeColor);
+      doc.fontSize(11).fillColor(labelColor).text(labelText, 50, startY, { width: textW, align: 'right' });
+      let ty = startY + doc.heightOfString(labelText, { width: textW });
+      if (findingText) {
+        doc.fontSize(10).fillColor('#111827').text(findingText, 50, ty, { width: textW, align: 'right' });
+        ty += doc.heightOfString(findingText, { width: textW });
+      }
+      if (ackText) {
+        doc.fontSize(9).fillColor('#6b7280').text(ackText, 50, ty, { width: textW, align: 'right' });
+      }
+      y = startY + totalH + 20;
+    }
     doc.fontSize(11).fillColor('#374151').text(AR('التقرير الطبي'), 40, y, { align: 'right', width: pageWidth });
     y += 22;
     const body = study.report?.reportText || 'لا يوجد تقرير بعد';

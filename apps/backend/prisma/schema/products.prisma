@@ -13,6 +13,7 @@ model Customer {
   instagramId                    String?
   whatsappId                     String?
   telegramId                     String?
+  tiktokId                       String?
   status                         CustomersStatus                 @default(LEAD)
   tags                           String?
   notes                          String?
@@ -57,10 +58,12 @@ model Customer {
   @@unique([instagramId, companyId])
   @@unique([telegramId, companyId])
   @@unique([whatsappId, companyId])
+  @@unique([tiktokId, companyId])
   @@index([companyId])
   @@index([companyId, status])
   @@index([facebookId])
   @@index([instagramId])
+  @@index([tiktokId])
   @@index([phoneNormalized])
   @@index([status])
   @@map("customers")

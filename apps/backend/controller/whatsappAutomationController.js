@@ -63,7 +63,7 @@ class WhatsAppAutomationController {
             const companyId = this._getCompanyId(req, res);
             if (!companyId) return;
 
-            const { name, isGeneral } = req.body;
+            const { name, isGeneral, channels } = req.body;
 
             // Only one general flow allowed per company
             if (isGeneral) {
@@ -80,7 +80,8 @@ class WhatsAppAutomationController {
                     companyId,
                     name,
                     isEnabled: true,
-                    isGeneral: isGeneral || false
+                    isGeneral: isGeneral || false,
+                    channels: channels && Array.isArray(channels) ? JSON.stringify(channels) : null
                 }
             });
 
@@ -100,11 +101,12 @@ class WhatsAppAutomationController {
             if (!companyId) return;
 
             const { id } = req.params;
-            const { name, isEnabled, isGeneral } = req.body;
+            const { name, isEnabled, isGeneral, channels } = req.body;
 
             const data = {};
             if (name !== undefined) data.name = name;
             if (isEnabled !== undefined) data.isEnabled = isEnabled;
+            if (channels !== undefined) data.channels = channels && Array.isArray(channels) ? JSON.stringify(channels) : null;
             if (isGeneral !== undefined) {
                 // Only one general flow allowed
                 if (isGeneral) {
@@ -185,7 +187,7 @@ class WhatsAppAutomationController {
             if (!companyId) return;
 
             const { flowId } = req.params;
-            const { id, delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder } = req.body;
+            const { id, delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder, expectReply, replyKeywords, nextStepId, timeoutHours, timeoutNextStepId } = req.body;
 
             // Verify flow ownership
             const flow = await this.prisma.whatsAppFollowUpFlow.findUnique({
@@ -194,15 +196,23 @@ class WhatsAppAutomationController {
 
             if (!flow) return res.status(404).json({ success: false, message: 'Flow not found' });
 
+            const interactiveData = {
+                expectReply: expectReply === true,
+                replyKeywords: replyKeywords && Array.isArray(replyKeywords) ? JSON.stringify(replyKeywords) : null,
+                nextStepId: nextStepId || null,
+                timeoutHours: Number.isInteger(Number(timeoutHours)) ? Number(timeoutHours) : null,
+                timeoutNextStepId: timeoutNextStepId || null,
+            };
+
             let step;
             if (id) {
                 step = await this.prisma.whatsAppFollowUpStep.update({
                     where: { id },
-                    data: { delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder }
+                    data: { delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder, ...interactiveData }
                 });
             } else {
                 step = await this.prisma.whatsAppFollowUpStep.create({
-                    data: { flowId, delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder }
+                    data: { flowId, delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder, ...interactiveData }
                 });
             }
 

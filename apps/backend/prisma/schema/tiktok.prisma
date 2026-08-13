@@ -1,0 +1,113 @@
+// TikTok integrations core schema.
+// Shared by: Content Posting, TikTok Shop, Login Kit, Embed/Display, Events API.
+// NOTE: scalar companyId references (no @relation) to avoid coupling to shared models.
+
+/// حساب TikTok مرتبط بشركة (OAuth أو يدوي)
+model TikTokAccount {
+  id             String    @id @default(cuid())
+  companyId      String
+  openId         String
+  displayName    String?
+  avatarUrl      String?
+  accessToken    String?   @db.Text
+  refreshToken   String?   @db.Text
+  tokenExpiresAt DateTime?
+  scopes         String?
+  source         String    @default("oauth")
+  status         String    @default("connected")
+  lastSyncedAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([companyId, openId])
+  @@index([companyId])
+  @@index([openId])
+  @@map("tiktok_accounts")
+}
+
+/// إعدادات TikTok لكل شركة
+model TikTokSettings {
+  id                 String   @id @default(cuid())
+  companyId          String   @unique
+  clientKey          String?
+  clientSecret       String?  @db.Text
+  eventsApiEndpoint  String?
+  eventsAccessToken  String?  @db.Text
+  pixelId            String?
+  storefrontUsername String?
+  storefrontEnabled  Boolean  @default(false)
+  isEnabled          Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("tiktok_settings")
+}
+
+/// منشور تم نشره أو جدولته عبر Content Posting API
+model TikTokPost {
+  id            String    @id @default(cuid())
+  companyId     String
+  accountId     String
+  videoUrl      String?   @db.Text
+  caption       String?   @db.Text
+  publishId     String?
+  status        String    @default("PENDING")
+  errorMessage  String?   @db.Text
+  scheduledAt   DateTime?
+  publishedAt   DateTime?
+  metadata      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([accountId])
+  @@index([status])
+  @@map("tiktok_posts")
+}
+
+/// حساب متجر TikTok Shop مرتبط بشركة
+model TikTokShopAccount {
+  id              String    @id @default(cuid())
+  companyId       String
+  shopId          String?
+  shopName        String?
+  region          String?
+  appKey          String?
+  appSecret       String?   @db.Text
+  accessToken     String?   @db.Text
+  refreshToken    String?   @db.Text
+  tokenExpiresAt  DateTime?
+  status          String    @default("connected")
+  lastSyncedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([companyId, shopId])
+  @@index([companyId])
+  @@map("tiktok_shop_accounts")
+}
+
+/// إعدادات TikTok Events (Pixel) لكل شركة
+model TikTokPixelConfig {
+  id                 String    @id @default(cuid())
+  companyId          String
+  pixelId            String
+  pixelName          String?
+  accessToken        String?   @db.Text
+  apiEndpoint        String?
+  testEventCode      String?
+  isActive           Boolean   @default(true)
+  trackPageView      Boolean   @default(true)
+  trackViewContent   Boolean   @default(true)
+  trackAddToCart     Boolean   @default(true)
+  trackInitiateCheckout Boolean @default(true)
+  trackPurchase      Boolean   @default(true)
+  trackSearch        Boolean   @default(true)
+  lastTestAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([companyId])
+  @@map("tiktok_pixel_configs")
+}

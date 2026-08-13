@@ -25,7 +25,9 @@
     "activeCustomers": "{{count}} Active",
     "count": "{{count}} flows",
     "selectPrompt": "Select a flow to view its steps",
-    "editing": "Editing flow"
+    "editing": "Editing flow",
+    "channels": "Channels",
+    "channelsHint": "The channels this flow runs on"
   },
   "steps": {
     "title": "Flow Steps",
@@ -91,7 +93,15 @@
     "deleteFlowTitle": "Delete Flow",
     "deleteFlowContent": "Are you sure you want to delete this flow? It will stop for all enrolled customers.",
     "deleteStepTitle": "Delete Step",
-    "deleteStepContent": "Are you sure you want to delete this step?"
+    "deleteStepContent": "Are you sure you want to delete this step?",
+    "expectReply": "Wait for customer reply",
+    "expectReplyHint": "This step waits for the customer's reply and branches by keyword",
+    "replyKeywords": "Reply keywords (comma separated)",
+    "replyKeywordsPlaceholder": "e.g. price, prices, quote",
+    "nextStep": "Next step on match",
+    "nextStepAuto": "Automatic (next step)",
+    "timeout": "Timeout in hours (optional)",
+    "timeoutHint": "If the customer does not reply in time, the next step runs"
   },
   "actions": {
     "saveSuccess": "Saved successfully",

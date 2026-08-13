@@ -47,6 +47,11 @@ export interface FlowStep {
   content: string;
   mediaUrl?: string;
   stepOrder: number;
+  expectReply?: boolean;
+  replyKeywords?: string[];
+  nextStepId?: string;
+  timeoutHours?: number;
+  timeoutNextStepId?: string;
 }
 
 interface FlowCanvasProps {

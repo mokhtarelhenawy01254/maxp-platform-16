@@ -20,10 +20,13 @@ const generateDraft = async (req, res) => {
     }
 
     const prisma = getSharedPrismaClient();
-    const study = await prisma.radiologyStudy.findFirst({
-      where: { id, companyId },
-      include: { report: true, examType: true },
-    });
+    const [study, imageCount] = await Promise.all([
+      prisma.radiologyStudy.findFirst({
+        where: { id, companyId },
+        include: { report: true, examType: true },
+      }),
+      prisma.radiologyStudyImage.count({ where: { studyId: id } }),
+    ]);
     if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const key = await resolveAiKey(prisma, companyId);
@@ -40,7 +43,7 @@ const generateDraft = async (req, res) => {
       patientAge: study.patientAge || '',
       patientGender: study.patientGender || '',
       patientFlags: study.patientFlags,
-      imagesCount: Array.isArray(study.images) ? study.images.length : null,
+      imagesCount: imageCount,
       existingReportText: study.report?.reportText || '',
       focus,
       additionalContext: typeof additionalContext === 'string' ? additionalContext : '',

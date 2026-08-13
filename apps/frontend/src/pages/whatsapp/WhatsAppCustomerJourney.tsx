@@ -102,6 +102,7 @@ interface Flow {
   name: string;
   isEnabled: boolean;
   createdAt: string;
+  channels?: string[];
   _count?: {
     steps: number;
     journeys: number;
@@ -286,6 +287,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const [currentFlow, setCurrentFlow] = useState<Partial<Flow>>({
     name: "",
     isEnabled: true,
+    channels: ["WHATSAPP", "FACEBOOK"],
   });
 
   const [stepDialogOpen, setStepDialogOpen] = useState(false);
@@ -1142,6 +1144,46 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 />
               </div>
             </div>
+
+            <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 px-4 py-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                  {t("whatsappJourney.flows.channels")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(["WHATSAPP", "FACEBOOK"] as const).map((channel) => {
+                    const active = (currentFlow.channels ?? ["WHATSAPP", "FACEBOOK"]).includes(channel);
+                    return (
+                      <button
+                        key={channel}
+                        type="button"
+                        onClick={() =>
+                          setCurrentFlow((previous) => {
+                            const current = previous.channels ?? ["WHATSAPP", "FACEBOOK"];
+                            return {
+                              ...previous,
+                              channels: active
+                                ? current.filter((c) => c !== channel)
+                                : [...current, channel],
+                            };
+                          })
+                        }
+                        className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
+                          active
+                            ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[color:var(--color-primary)]"
+                            : "border-[color:var(--shell-control-border)] text-[color:var(--color-muted-foreground)]"
+                        }`}
+                      >
+                        {channel === "WHATSAPP" ? "WhatsApp" : "Messenger"}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                  {t("whatsappJourney.flows.channelsHint")}
+                </p>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="px-6">
@@ -1230,6 +1272,91 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     </Button>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                      {t("whatsappJourney.steps.expectReply")}
+                    </p>
+                    <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                      {t("whatsappJourney.steps.expectReplyHint")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={Boolean(currentStep.expectReply)}
+                    onCheckedChange={(checked) =>
+                      setCurrentStep((previous) => ({
+                        ...previous,
+                        expectReply: checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                {currentStep.expectReply && (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label>{t("whatsappJourney.steps.replyKeywords")}</Label>
+                      <Input
+                        type="text"
+                        value={(currentStep.replyKeywords ?? []).join("، ")}
+                        onChange={(event) =>
+                          setCurrentStep((previous) => ({
+                            ...previous,
+                            replyKeywords: event.target.value
+                              .split(/[،,]/)
+                              .map((k) => k.trim())
+                              .filter(Boolean),
+                          }))
+                        }
+                        placeholder={t("whatsappJourney.steps.replyKeywordsPlaceholder") as string}
+                        className="h-10 bg-[color:var(--color-card)]/75"
+                      />
+                    </div>
+                    {steps.length > 0 && (
+                      <div className="space-y-1">
+                        <Label>{t("whatsappJourney.steps.nextStep")}</Label>
+                        <select
+                          value={currentStep.nextStepId ?? ""}
+                          onChange={(event) =>
+                            setCurrentStep((previous) => ({
+                              ...previous,
+                              nextStepId: event.target.value || undefined,
+                            }))
+                          }
+                          className="h-10 w-full rounded-lg border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75 px-3 text-sm text-[color:var(--color-foreground)]"
+                        >
+                          <option value="">{t("whatsappJourney.steps.nextStepAuto")}</option>
+                          {steps
+                            .filter((s) => s.id !== currentStep.id)
+                            .map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.stepOrder} — {s.content.slice(0, 40)}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <Label>{t("whatsappJourney.steps.timeout")}</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={currentStep.timeoutHours ?? ""}
+                        onChange={(event) =>
+                          setCurrentStep((previous) => ({
+                            ...previous,
+                            timeoutHours: event.target.value ? Math.max(1, Number(event.target.value)) : undefined,
+                          }))
+                        }
+                        placeholder="24"
+                        className="h-10 bg-[color:var(--color-card)]/75"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

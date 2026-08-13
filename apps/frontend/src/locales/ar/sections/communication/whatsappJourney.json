@@ -25,7 +25,9 @@
     "activeCustomers": "{{count}} عميل نشط",
     "count": "{{count}} سلسلة",
     "selectPrompt": "اختر سلسلة لعرض خطواتها",
-    "editing": "تحرير السلسلة"
+    "editing": "تحرير السلسلة",
+    "channels": "القنوات",
+    "channelsHint": "القنوات اللي الفلو هيشتغل عليها"
   },
   "steps": {
     "title": "خطوات السلسلة",
@@ -91,7 +93,15 @@
     "deleteFlowTitle": "حذف السلسلة",
     "deleteFlowContent": "هل أنت متأكد من حذف هذه السلسلة؟ سيؤدي ذلك لإيقافها لجميع العملاء المسجلين فيها.",
     "deleteStepTitle": "حذف الخطوة",
-    "deleteStepContent": "هل أنت متأكد من حذف هذه الخطوة من السلسلة؟"
+    "deleteStepContent": "هل أنت متأكد من حذف هذه الخطوة من السلسلة؟",
+    "expectReply": "انتظار رد العميل",
+    "expectReplyHint": "الخطوة تستنى رد العميل وتتفرع حسب الكلمات",
+    "replyKeywords": "كلمات الرد (مفصولة بفاصلة)",
+    "replyKeywordsPlaceholder": "مثال: سعر، السعر، تسعير",
+    "nextStep": "الخطوة التالية عند المطابقة",
+    "nextStepAuto": "تلقائي (الخطوة اللي بعدها)",
+    "timeout": "المدة القصوى بالساعات (اختياري)",
+    "timeoutHint": "لو مع ردش خلال المدة هيكمل الخطوة اللي بعدها"
   },
   "actions": {
     "saveSuccess": "تم الحفظ بنجاح",

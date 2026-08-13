@@ -398,6 +398,12 @@ const RecommendationSettings = React.lazy(
 const SmartRepliesSettings = React.lazy(
   () => import("./pages/settings/SmartRepliesSettings"),
 );
+const BotStudioPage = React.lazy(
+  () => import("./pages/automation/BotStudioPage"),
+);
+const BotWidgetPage = React.lazy(
+  () => import("./pages/public/BotWidgetPage"),
+);
 // Unused legacy components removed for deep cleanup.
 const OrderWorkflow = React.lazy(() => import("./pages/admin/OrderWorkflow"));
 const OrderInvoiceSettings = React.lazy(
@@ -735,6 +741,11 @@ const PosPage = React.lazy(() => import("./pages/pos/PosPage"));
 const PlatformIntegrations = React.lazy(
   () => import("./pages/platform-integrations/PlatformIntegrations"),
 );
+const TikTokPublish = React.lazy(
+  () => import("./pages/tiktok-publish/TikTokPublish"),
+);
+const TikTokShop = React.lazy(() => import("./pages/tiktok-shop/TikTokShop"));
+const TikTokSettings = React.lazy(() => import("./pages/tiktok-settings/TikTokSettings"));
 
 const TestPublic = React.lazy(() => import("./pages/TestPublic"));
 const TestMinimal = React.lazy(() => import("./pages/TestMinimal"));
@@ -3867,6 +3878,30 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/tiktok/publish"
+                  element={
+                    <Layout>
+                      <TikTokPublish />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tiktok/shop"
+                  element={
+                    <Layout>
+                      <TikTokShop />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tiktok/settings"
+                  element={
+                    <Layout>
+                      <TikTokSettings />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/categories"
                   element={
                     <Layout>
@@ -5799,6 +5834,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/automation/bot-studio"
+                  element={
+                    <Layout>
+                      <BotStudioPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/settings/promotion"
                   element={
                     <Layout>
@@ -7150,6 +7193,7 @@ const AppContent = () => {
                   element={<Navigate to="/auth/login" replace />}
                 />
                 <Route path="/" element={<PlatformLandingPage />} />
+                <Route path="/bot-widget/:companyId" element={<BotWidgetPage />} />
                 <Route
                   path="/store-settings"
                   element={<Navigate to="/auth/login" replace />}

@@ -1907,6 +1907,34 @@ router.post('/', async (req, res) => {
       console.error('❌ [Facebook CAPI] Error tracking Purchase event:', capiError);
     }
 
+    // TikTok Events (best-effort, never throws)
+    try {
+      const tiktokEventsManager = require('../services/tiktok/tiktokEventsManager');
+      const tiktokEventId = pixelEventId || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await tiktokEventsManager.trackPurchaseForCompany(
+        company.id,
+        {
+          email: guestEmail,
+          phone: guestPhone,
+          ip: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+          userAgent: req.headers['user-agent'],
+          pageUrl: req.headers['referer'] || `${req.protocol}://${req.get('host')}${req.originalUrl}`,
+        },
+        {
+          orderNumber: order.orderNumber,
+          items: cartItems.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total: finalTotal,
+        },
+        tiktokEventId,
+      );
+    } catch (tiktokTrackErr) {
+      console.error('❌ [TikTok Events] Error tracking Purchase event:', tiktokTrackErr);
+    }
+
     }
 
     // Emit socket event for real-time updates
