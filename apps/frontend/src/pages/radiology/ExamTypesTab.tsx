@@ -8,6 +8,7 @@ interface ExamTypeForm {
   category: string;
   abbreviation: string;
   price: string;
+  isAddition: boolean;
   isActive: boolean;
 }
 
@@ -96,7 +97,7 @@ export default function ExamTypesTab() {
 
   const openCreate = () => {
     setError(null);
-    setModal({ name: "", category: "", abbreviation: "", price: "", isActive: true });
+    setModal({ name: "", category: "", abbreviation: "", price: "", isAddition: false, isActive: true });
   };
 
   const openEdit = (t: RadiologyExamType) => {
@@ -107,6 +108,7 @@ export default function ExamTypesTab() {
       category: t.category || "",
       abbreviation: t.abbreviation || "",
       price: String(t.price ?? 0),
+      isAddition: !!t.isAddition,
       isActive: t.isActive,
     });
   };
@@ -125,6 +127,7 @@ export default function ExamTypesTab() {
         category: modal.category.trim() || undefined,
         abbreviation: modal.abbreviation.trim() || undefined,
         price,
+        isAddition: modal.isAddition,
       };
       if (modal.id) {
         await mutate(`exam-types/${modal.id}`, "PUT", { ...payload, isActive: modal.isActive });
@@ -224,7 +227,10 @@ export default function ExamTypesTab() {
               <tbody>
                 {examTypes.map(t => (
                   <tr key={t.id} className="border-b dark:border-gray-700 last:border-b-0">
-                    <td className="py-3 px-4 font-medium">{t.name}</td>
+                    <td className="py-3 px-4 font-medium">
+                      {t.name}
+                      {t.isAddition ? <span className="mr-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">إضافة</span> : null}
+                    </td>
                     <td className="py-3 px-4">{t.category || "—"}</td>
                     <td className="py-3 px-4">{t.abbreviation || "—"}</td>
                     <td className="py-3 px-4 whitespace-nowrap">{t.price ?? 0} ج.م</td>
@@ -308,6 +314,10 @@ export default function ExamTypesTab() {
                   مفعّل
                 </label>
               )}
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={modal.isAddition} onChange={e => setModal({ ...modal, isAddition: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />
+                إضافة فحص (تظهر في إضافات الاستقبال/الحجز)
+              </label>
             </div>
 
             <div className="flex justify-end gap-3 mt-6">

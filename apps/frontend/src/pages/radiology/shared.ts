@@ -1,12 +1,12 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Plus, Banknote, Landmark } from "lucide-react";
+import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark } from "lucide-react";
 
 export type TabId =
   | "dashboard" | "patients" | "studies" | "reports"
   | "exam-types" | "price-lists" | "contracts" | "branches" | "invoices"
   | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "insurance-companies" | "price-quote" | "radiologists"
-  | "schedule" | "referring-physicians" | "exam-additions" | "statistics" | "cashier-shifts" | "settings";
+  | "schedule" | "referring-physicians" | "statistics" | "cashier-shifts" | "settings";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "لوحة الأشعة", icon: LayoutDashboard },
@@ -14,8 +14,7 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "schedule", label: "الحجوزات", icon: CalendarDays },
   { id: "studies", label: "الدراسات", icon: FolderOpen },
   { id: "reports", label: "التقارير الطبية", icon: FileText },
-  { id: "exam-types", label: "أنواع الفحوصات", icon: ScanLine },
-  { id: "exam-additions", label: "إضافات الفحوصات", icon: Plus },
+  { id: "exam-types", label: "الفحوصات والإضافات", icon: ScanLine },
   { id: "price-lists", label: "قوائم الأسعار", icon: Tag },
   { id: "contracts", label: "التعاقدات", icon: FileText },
   { id: "branches", label: "الفروع", icon: Building2 },

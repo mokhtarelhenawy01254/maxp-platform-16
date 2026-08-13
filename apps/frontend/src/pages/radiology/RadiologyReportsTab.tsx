@@ -210,24 +210,8 @@ export default function RadiologyReportsTab() {
   const ROLES = [
     { key: "typed", label: "كاتب", field: "typedBy" },
     { key: "reviewed", label: "مراجع", field: "reviewedBy" },
-    { key: "finalized", label: "مُنْهِ", field: "finalizedBy" },
+    { key: "signed", label: "مُوقّع", field: "signedBy" },
   ] as const;
-
-  const recordRole = async (studyId: string, role: string, label: string) => {
-    const by = window.prompt(`اسم الـ ${label} لهذا التقرير:`, "");
-    if (by === null) return;
-    if (!by.trim()) { toast.error("الاسم مطلوب"); return; }
-    try {
-      await fetchJson(api(`studies/${studyId}/report/roles`), {
-        method: "PUT",
-        body: JSON.stringify({ role, by: by.trim() }),
-      });
-      toast.success(`تم تسجيل ${label}`);
-      await refresh({ silent: true });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل تسجيل الدور");
-    }
-  };
 
   const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "—");
 
@@ -272,13 +256,13 @@ export default function RadiologyReportsTab() {
                       <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "—"}</td>
                       <td className="py-3 px-4">{reportBadge(reportStatus)}</td>
                       <td className="py-3 px-4">
-                        <div className="flex flex-col gap-1 min-w-[120px]">
+                        <div className="flex flex-col gap-1 min-w-[140px]">
                           {ROLES.map(r => {
                             const name = s.report?.[r.field];
                             return (
-                              <button key={r.key} onClick={() => recordRole(s.id, r.key, r.label)} className="text-xs text-right px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <span key={r.key} className="text-xs text-right px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700">
                                 {r.label}: <b>{name || "—"}</b>
-                              </button>
+                              </span>
                             );
                           })}
                         </div>

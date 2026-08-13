@@ -360,9 +360,9 @@ describe('radiologyController', () => {
     });
 
     test('allows a study when an exam addition covers the cost even if the exam price is 0', async () => {
-      const prisma = createPrisma({ radiologyExamAddition: { findMany: jest.fn() } });
+      const prisma = createPrisma();
       prisma.radiologyExamType.findFirst.mockResolvedValue(makeExamType({ price: 0 }));
-      prisma.radiologyExamAddition.findMany.mockResolvedValue([{ id: 'ad1', price: 150 }]);
+      prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'ad1', price: 150, isAddition: true }]);
       prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
       getSharedPrismaClient.mockReturnValue(prisma);
 

@@ -97,9 +97,12 @@ const listExamTypes = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { search, category, page, limit, includeInactive } = req.query;
+    const { search, category, page, limit, includeInactive, isAddition } = req.query;
     const where = { companyId };
     if (includeInactive !== 'true') where.isActive = true;
+    if (isAddition !== undefined && isAddition !== '') {
+      where.isAddition = isAddition === 'true' || isAddition === '1';
+    }
     if (category) where.category = String(category);
     if (search && String(search).trim()) {
       const term = String(search).trim();
@@ -132,7 +135,7 @@ const createExamType = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { name, category, abbreviation, price } = req.body || {};
+    const { name, category, abbreviation, price, isAddition } = req.body || {};
     if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم نوع الفحص مطلوب' });
 
     const priceCheck = normalizePrice(price);
@@ -145,6 +148,7 @@ const createExamType = async (req, res) => {
         category: normalizeText(category),
         abbreviation: normalizeText(abbreviation),
         price: priceCheck.value ?? 0,
+        isAddition: normalizeBool(isAddition, false),
       },
     });
 
@@ -178,6 +182,7 @@ const updateExamType = async (req, res) => {
       if (priceCheck.error) return res.status(400).json({ success: false, error: priceCheck.error });
       data.price = priceCheck.value;
     }
+    if (body.isAddition !== undefined) data.isAddition = normalizeBool(body.isAddition, false);
     if (body.isActive !== undefined) data.isActive = normalizeBool(body.isActive, true);
 
     const examType = await prisma.radiologyExamType.update({ where: { id }, data });
@@ -319,8 +324,8 @@ const createStudy = async (req, res) => {
     let additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;
     let additionIds = null;
     if (Array.isArray(body.additionIds) && body.additionIds.length) {
-      const additions = await prisma.radiologyExamAddition.findMany({
-        where: { id: { in: body.additionIds }, companyId, isActive: true },
+      const additions = await prisma.radiologyExamType.findMany({
+        where: { id: { in: body.additionIds }, companyId, isActive: true, isAddition: true },
       });
       if (additions.length) {
         additionIds = additions.map(a => a.id);
@@ -509,8 +514,8 @@ const updateStudy = async (req, res) => {
     }
     if (body.additionIds !== undefined) {
       if (Array.isArray(body.additionIds) && body.additionIds.length) {
-        const additions = await prisma.radiologyExamAddition.findMany({
-          where: { id: { in: body.additionIds }, companyId, isActive: true },
+        const additions = await prisma.radiologyExamType.findMany({
+          where: { id: { in: body.additionIds }, companyId, isActive: true, isAddition: true },
         });
         data.additionIds = JSON.stringify(additions.map(a => a.id));
         data.additionAmount = additions.reduce((s, a) => s + a.price, 0);
@@ -761,6 +766,8 @@ const upsertStudyReport = async (req, res) => {
       studyId: id,
       reportText,
       reportStatus,
+      typedBy: signerName(req),
+      typedAt: new Date(),
     };
     if (reportStatus === 'SIGNED') {
       createData.signedBy = signerName(req);
@@ -810,6 +817,10 @@ const advanceReportStatus = async (req, res) => {
     if (target === 'SIGNED' && !report.signedBy) {
       data.signedBy = signerName(req);
       data.signedAt = new Date();
+    }
+    if (target === 'REVIEWED' && !report.reviewedBy) {
+      data.reviewedBy = signerName(req);
+      data.reviewedAt = new Date();
     }
 
     const updated = await prisma.radiologyReport.update({ where: { id: report.id }, data });

@@ -6,6 +6,7 @@ model RadiologyExamType {
   category     String?    // CT, MRI, X-Ray, US, DEXA, NM, PET, Fluoroscopy, Other
   abbreviation String?
   price        Float    @default(0)
+  isAddition   Boolean  @default(false) // إضافة فحص (صبغة/مشروبات تباين...) — تظهر في إضافات الدراسة
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

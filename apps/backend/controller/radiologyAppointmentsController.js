@@ -73,8 +73,8 @@ const createAppointment = async (req, res) => {
     let additionAmount = 0;
     let additionIds = null;
     if (Array.isArray(body.additionIds) && body.additionIds.length) {
-      const additions = await prisma.radiologyExamAddition.findMany({
-        where: { id: { in: body.additionIds }, companyId, isActive: true },
+      const additions = await prisma.radiologyExamType.findMany({
+        where: { id: { in: body.additionIds }, companyId, isActive: true, isAddition: true },
       });
       if (additions.length) {
         additionIds = JSON.stringify(additions.map(a => a.id));
@@ -161,7 +161,7 @@ const updateAppointment = async (req, res) => {
     if (body.insuranceCompanyId !== undefined) data.insuranceCompanyId = body.insuranceCompanyId || null;
     if (body.additionIds !== undefined) {
       if (Array.isArray(body.additionIds) && body.additionIds.length) {
-        const additions = await prisma.radiologyExamAddition.findMany({ where: { id: { in: body.additionIds }, companyId, isActive: true } });
+        const additions = await prisma.radiologyExamType.findMany({ where: { id: { in: body.additionIds }, companyId, isActive: true, isAddition: true } });
         data.additionIds = JSON.stringify(additions.map(a => a.id));
         data.additionAmount = additions.reduce((s, a) => s + a.price, 0);
       } else {
