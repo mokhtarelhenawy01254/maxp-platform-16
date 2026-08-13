@@ -91,6 +91,7 @@ model Company {
   conversion_events               ConversionEvent[]
   coupons                         Coupon[]
   customerLists                   CustomerList[]
+  occasions                       Occasion[]
   customerLoyaltyPrograms         CustomerLoyaltyProgram[]
   customerLoyaltyRecords          CustomerLoyaltyRecord[]
   customerLoyaltyTiers            CustomerLoyaltyTier[]
