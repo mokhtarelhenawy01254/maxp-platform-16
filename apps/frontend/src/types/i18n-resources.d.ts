@@ -13643,8 +13643,8 @@ declare module 'react-i18next' {
           patient: string;
           exam: string;
           appointment: string;
-          timeline: string;
-          'timeline.empty': string;
+          timelineTitle: string;
+          timelineEmpty: string;
           report: string;
           images: string;
           payment: string;
@@ -13658,6 +13658,7 @@ declare module 'react-i18next' {
           refund: string;
           emptyReport: string;
           noImages: string;
+          noPayments: string;
           notes: string;
           viewDetails: string;
         };
@@ -13910,6 +13911,10 @@ declare module 'react-i18next' {
           cardScanHint: string;
           cardScanConfirm: string;
           cardDataExtracted: string;
+          cardOcrReading: string;
+          cardOcrFound: string;
+          cardOcrNotFound: string;
+          cardOcrFailed: string;
         };
         scheduleCalendar: {
           viewList: string;
