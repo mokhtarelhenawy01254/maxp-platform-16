@@ -53,7 +53,6 @@ export default function ScheduleTab() {
   const [examTypes, setExamTypes] = useState<RadiologyExamType[]>([]);
   const [additions, setAdditions] = useState<RadiologyExamAddition[]>([]);
   const [insuranceCompanies, setInsuranceCompanies] = useState<{ id: string; name: string }[]>([]);
-  const [loading] = useState(true);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(todayKey());
@@ -155,17 +154,20 @@ export default function ScheduleTab() {
   }, [examSearch, examTypes]);
 
   useEffect(() => {
-    if (!modal?.examTypeId) { setEntityPrice(null); return; }
-    if (!modal.insuranceCompanyId) { setEntityPrice(null); return; }
+    if (!modal?.examTypeId || !modal.insuranceCompanyId) { setEntityPrice(null); return; }
+    let cancelled = false;
     (async () => {
       try {
         const url = new URL(api("entity-prices"));
         url.searchParams.set("insuranceCompanyId", modal.insuranceCompanyId);
         url.searchParams.set("examTypeId", modal.examTypeId);
         const rows = await fetchJson<{ price: number }[]>(url.toString());
-        setEntityPrice(rows && rows.length ? Number(rows[0]?.price) : null);
-      } catch { setEntityPrice(null); }
+        if (!cancelled) setEntityPrice(rows && rows.length ? Number(rows[0]?.price) : null);
+      } catch {
+        if (!cancelled) setEntityPrice(null);
+      }
     })();
+    return () => { cancelled = true; };
   }, [modal?.examTypeId, modal?.insuranceCompanyId]);
 
   const parseEgyptianNationalId = (raw: string) => {
@@ -207,10 +209,23 @@ export default function ScheduleTab() {
     if (!newPatient.firstName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
     setSavingNewPatient(true);
     try {
+      const nationalId = newPatient.nationalId.replace(/\D/g, "");
+      const existing = await findExistingPatient(
+        { nationalId, patientPhone: newPatient.phone.trim(), patientName: newPatient.firstName.trim(), patientId: "" } as Form,
+        newPatient.firstName.trim(),
+      );
+      if (existing) {
+        setModal(m => m ? { ...m, patientId: existing.id, patientName: existing.name, patientPhone: newPatient.phone.trim(), nationalId } : m);
+        toast.info(t("radiology.schedule.duplicatePatientLinked", { name: existing.name }));
+        setNewPatientOpen(false);
+        setPatientSearch("");
+        setPatientResults([]);
+        return;
+      }
       const body: Record<string, string | undefined> = {
         firstName: newPatient.firstName.trim(),
         phone: newPatient.phone.trim() || undefined,
-        nationalId: newPatient.nationalId.replace(/\D/g, "") || undefined,
+        nationalId: nationalId || undefined,
         gender: newPatient.gender || undefined,
         birthDate: newPatient.birthDate || undefined,
       };
@@ -268,16 +283,46 @@ export default function ScheduleTab() {
       }
       return f.patientId;
     }
-    if (f.patientName.trim() || patientSearch.trim()) {
-      const name = f.patientName.trim() || patientSearch.trim();
-      const parts = name.split(/\s+/);
-      const created = await fetchJson<{ id: string }>(bookingApi("patients"), {
-        method: "POST",
-        body: JSON.stringify({ firstName: parts[0], lastName: parts.length > 1 ? parts.slice(1).join(" ") : undefined, ...fields }),
-      });
-      return created.id;
+    const name = f.patientName.trim() || patientSearch.trim();
+    if (!name) return null;
+    const existing = await findExistingPatient(f, name);
+    if (existing) {
+      if (Object.keys(fields).length) {
+        await fetchJson(bookingApi(`patients/${existing.id}`), { method: "PUT", body: JSON.stringify(fields) });
+      }
+      toast.info(t("radiology.schedule.duplicatePatientLinked", { name: existing.name }));
+      return existing.id;
     }
-    return null;
+    const parts = name.split(/\s+/);
+    const created = await fetchJson<{ id: string }>(bookingApi("patients"), {
+      method: "POST",
+      body: JSON.stringify({ firstName: parts[0], lastName: parts.length > 1 ? parts.slice(1).join(" ") : undefined, ...fields }),
+    });
+    return created.id;
+  };
+
+  const findExistingPatient = async (f: Form, _name: string): Promise<{ id: string; name: string } | null> => {
+    const queries: string[] = [];
+    if (f.nationalId.trim()) queries.push(f.nationalId.trim());
+    if (f.patientPhone.trim()) queries.push(f.patientPhone.trim());
+    if (!queries.length) return null;
+    try {
+      const url = new URL(bookingApi("patients"));
+      url.searchParams.set("search", queries[0] || "");
+      url.searchParams.set("limit", "10");
+      const rows = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string }[]>(url.toString());
+      const list = Array.isArray(rows) ? rows : [];
+      const nationalId = f.nationalId.trim();
+      const phone = f.patientPhone.trim();
+      const match = list.find(p =>
+        (nationalId && p.nationalId === nationalId) ||
+        (phone && p.phone === phone)
+      );
+      if (!match) return null;
+      return { id: match.id, name: `${match.firstName}${match.lastName ? " " + match.lastName : ""}` };
+    } catch {
+      return null;
+    }
   };
 
   const buildPayload = (f: Form) => ({
@@ -448,8 +493,6 @@ export default function ScheduleTab() {
           onToday={gotoToday}
           onSelectDay={selectDay}
         />
-      ) : loading && !items.length ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
       ) : items.length === 0 ? (
         <p className="text-center py-16 text-gray-400 dark:text-gray-500">{t("radiology.schedule.noBookings")}</p>
       ) : (
@@ -458,7 +501,7 @@ export default function ScheduleTab() {
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
-                  {[t("radiology.schedule.patient"), t("radiology.schedule.exam"), t("radiology.schedule.date"), t("radiology.schedule.time"), t("radiology.schedule.status"), t("radiology.schedule.notes"), t("radiology.actions")].map(h => (
+                  {[t("radiology.schedule.bookingId"), t("radiology.schedule.patient"), t("radiology.schedule.exam"), t("radiology.schedule.date"), t("radiology.schedule.time"), t("radiology.schedule.status"), t("radiology.schedule.notes"), t("radiology.actions")].map(h => (
                     <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -468,6 +511,9 @@ export default function ScheduleTab() {
                   const meta = STATUS_META[a.status] || STATUS_META["SCHEDULED"];
                   return (
                     <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+                      <td className="py-3 px-4 text-gray-400 dark:text-gray-500" dir="ltr">
+                        <span className="text-xs font-mono">{a.id}</span>
+                      </td>
                       <td className="py-3 px-4 font-medium">
                         {a.patientName}{a.emergency ? <span className="mr-2 text-xs text-red-500">{t("radiology.schedule.emergency")}</span> : null}
                         {parsePatientFlags(a.patientFlags).map(f => {
@@ -585,13 +631,20 @@ export default function ScheduleTab() {
                 <input
                   className={`${MODAL_INPUT_CLS} pl-8`}
                   value={examSearch || (examTypes.find(t => t.id === modal.examTypeId)?.name || "")}
-                  onChange={e => { setExamSearch(e.target.value); setExamOpen(true); if (!e.target.value) setModal({ ...modal, examTypeId: "" }); }}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setExamSearch(v);
+                    setExamOpen(true);
+                    const selected = examTypes.find(t => t.id === modal.examTypeId);
+                    if (!selected || selected.name !== v) setModal({ ...modal, examTypeId: "" });
+                  }}
                   onFocus={() => setExamOpen(true)}
+                  onBlur={() => setExamOpen(false)}
                   placeholder={t("radiology.schedule.searchExam")}
                 />
                 <ChevronDown className="w-4 h-4 absolute left-3 top-8 text-gray-400 dark:text-gray-500 pointer-events-none" />
                 {examOpen ? (
-                  <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
+                  <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl" onMouseDown={e => e.preventDefault()}>
                     {examFiltered.length === 0 ? (
                       <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noExams")}</div>
                     ) : examFiltered.slice(0, 60).map(et => (
