@@ -53,6 +53,13 @@ const STOREFRONT_RUNTIME_THEME_MODULE_PATTERN =
 const APP_UI_PRIMITIVES_MODULE_PATTERN =
   /\/src\/(?:components\/ui\/|lib\/utils\.ts$)/;
 
+// Tiny admin bootstrap utilities. These are statically imported by the entry
+// chunk (main.tsx) and must never be absorbed into a big route chunk — doing
+// so forces the whole route chunk (e.g. route-hr, route-dashboard) to be
+// executed on every page load.
+const APP_BOOTSTRAP_CORE_MODULE_PATTERN =
+  /\/src\/(?:bootstrap\/requestTarget|utils\/(?:chunkLoadRecovery|swCacheFlush))\.ts$/;
+
 const shouldFilterStorefrontPreloads = (
   filename: string,
   deps: string[] = [],
@@ -68,6 +75,22 @@ const filterStorefrontDeferredPreloads = (deps: string[]): string[] =>
     return !STOREFRONT_DEFERRED_PRELOAD_CHUNKS.some((pattern) =>
       pattern.test(normalizedDep),
     );
+  });
+
+// Route chunks that are statically imported by the admin entry/App chunk and
+// therefore MUST execute during startup. All other route chunks are loaded
+// lazily on navigation, so we do not preload them (saves bandwidth + parse).
+const ADMIN_STARTUP_ROUTE_CHUNK_PATTERN =
+  /^route-(?:storefront|dashboard|auth|inbox|super-admin|public)-/;
+
+const filterLazyRoutePreloads = (deps: string[]): string[] =>
+  deps.filter((dep) => {
+    const normalizedDep = dep.replace(/\\/g, '/');
+    const basename = normalizedDep.split('/').pop() || '';
+    if (!/^route-[^/]+\.js$/.test(basename)) {
+      return true;
+    }
+    return ADMIN_STARTUP_ROUTE_CHUNK_PATTERN.test(basename);
   });
 
 const getPackageName = (normalizedId: string): string | null => {
@@ -507,9 +530,10 @@ export default defineConfig(({ mode }) => {
     build: {
       modulePreload: {
         resolveDependencies(filename, deps) {
-          return shouldFilterStorefrontPreloads(filename, deps)
+          const storefrontFiltered = shouldFilterStorefrontPreloads(filename, deps)
             ? filterStorefrontDeferredPreloads(deps)
             : deps;
+          return filterLazyRoutePreloads(storefrontFiltered);
         },
       },
       minify: buildMinifier,
@@ -552,11 +576,19 @@ export default defineConfig(({ mode }) => {
           warn(warning);
         },
         output: {
+          // Avoid hoisting every transitively-imported chunk into the entry
+          // chunk. This stops the entry from eagerly importing all route
+          // chunks (and executing them) on every page load.
+          hoistTransitiveImports: false,
           manualChunks(id) {
             const normalizedId = id.replace(/\\/g, '/');
 
             if (APP_UI_PRIMITIVES_MODULE_PATTERN.test(normalizedId)) {
               return 'app-ui-primitives';
+            }
+
+            if (APP_BOOTSTRAP_CORE_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-bootstrap-core';
             }
 
             if (normalizedId.includes('@cornerstonejs') || normalizedId.includes(NODE_MODULES_SEGMENT + 'dicom-parser/')) return 'cornerstone';

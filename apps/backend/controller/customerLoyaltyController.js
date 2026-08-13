@@ -368,12 +368,15 @@ async function deleteTier(req, res) {
 async function getCustomerRecords(req, res) {
   try {
     const { companyId } = req.user;
-    const { customerId, programId, status } = req.query;
+    const { customerId, programId, status, search, page, pageSize } = req.query;
 
     const records = await customerLoyaltyService.getCustomerRecords(companyId, {
       customerId,
       programId,
-      status
+      status,
+      search,
+      page,
+      pageSize
     });
 
     res.json({

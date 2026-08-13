@@ -453,8 +453,26 @@ class CustomerLoyaltyService {
         companyId,
         ...(filters.customerId && { customerId: filters.customerId }),
         ...(filters.programId && { programId: filters.programId }),
-        ...(filters.status && { status: filters.status })
+        ...(filters.status && { status: filters.status }),
+        ...(filters.search && {
+          customer: {
+            OR: [
+              { firstName: { contains: filters.search } },
+              { lastName: { contains: filters.search } },
+              { email: { contains: filters.search } },
+              { phone: { contains: filters.search } }
+            ]
+          }
+        })
       };
+
+      // Pagination is opt-in: when page/pageSize are passed we return a
+      // paginated object, otherwise we keep the legacy array behavior so
+      // existing callers (CustomerSegments, CustomerPointsCenter, ...) are
+      // not affected.
+      const paginated = filters.page !== undefined || filters.pageSize !== undefined;
+      const page = Math.max(1, parseInt(filters.page, 10) || 1);
+      const pageSize = Math.min(200, Math.max(1, parseInt(filters.pageSize, 10) || 50));
 
       const records = await prisma.customerLoyaltyRecord.findMany({
         where,
@@ -474,15 +492,29 @@ class CustomerLoyaltyService {
         },
         orderBy: {
           lastActivity: 'desc'
-        }
+        },
+        ...(paginated ? { skip: (page - 1) * pageSize, take: pageSize } : {})
       });
 
-      return records.map(record => ({
+      const mapped = records.map(record => ({
         ...record,
         program: record.customerLoyaltyProgram,
         tier: record.customerLoyaltyTier,
         metadata: record.metadata ? JSON.parse(record.metadata) : null
       }));
+
+      if (paginated) {
+        const total = await prisma.customerLoyaltyRecord.count({ where });
+        return {
+          records: mapped,
+          total,
+          page,
+          pageSize,
+          totalPages: Math.ceil(total / pageSize)
+        };
+      }
+
+      return mapped;
     } catch (error) {
       console.error('❌ Error getting customer loyalty records:', error);
       throw error;
