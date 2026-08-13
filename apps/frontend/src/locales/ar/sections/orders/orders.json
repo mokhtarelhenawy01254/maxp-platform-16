@@ -971,11 +971,13 @@
   "lastUpdatedAt": "آخر تحديث: {{time}}",
   "liveUpdates": "مباشر — تحديث تلقائي مفعّل",
   "offlineUpdates": "غير متصل — البيانات قد تكون قديمة",
-  "orderStatus.paymentPending": "في انتظار الدفع",
-  "orderStatus.paymentCompleted": "مدفوع",
-  "orderStatus.paymentPartiallyPaid": "مدفوع جزئياً",
-  "orderStatus.paymentFailed": "فشل الدفع",
-  "orderStatus.paymentOnHold": "معلق",
-  "orderStatus.paymentRefunded": "مسترد",
-  "orderStatus.paymentPartiallyRefunded": "مسترد جزئياً"
+  "paymentStatuses": {
+    "pending": "في انتظار الدفع",
+    "completed": "مدفوع",
+    "partiallyPaid": "مدفوع جزئياً",
+    "failed": "فشل الدفع",
+    "onHold": "معلق",
+    "refunded": "مسترد",
+    "partiallyRefunded": "مسترد جزئياً"
+  }
 }

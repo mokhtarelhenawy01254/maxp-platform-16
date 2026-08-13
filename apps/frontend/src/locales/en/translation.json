@@ -10825,13 +10825,15 @@
     "lastUpdatedAt": "Updated: {{time}}",
     "liveUpdates": "Live — auto updates enabled",
     "offlineUpdates": "Offline — data may be stale",
-    "orderStatus.paymentPending": "Payment Pending",
-    "orderStatus.paymentCompleted": "Paid",
-    "orderStatus.paymentPartiallyPaid": "Partially Paid",
-    "orderStatus.paymentFailed": "Payment Failed",
-    "orderStatus.paymentOnHold": "On Hold",
-    "orderStatus.paymentRefunded": "Refunded",
-    "orderStatus.paymentPartiallyRefunded": "Partially Refunded"
+    "paymentStatuses": {
+      "pending": "Payment Pending",
+      "completed": "Paid",
+      "partiallyPaid": "Partially Paid",
+      "failed": "Payment Failed",
+      "onHold": "On Hold",
+      "refunded": "Refunded",
+      "partiallyRefunded": "Partially Refunded"
+    }
   },
   "preparation": {
     "page": {
