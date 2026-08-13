@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -13,7 +13,6 @@ import {
   Truck,
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
 } from "lucide-react";
-import { useAuth } from "../../hooks/useAuthSimple";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -143,8 +142,6 @@ function getCategoryDisplayCategories(categories: Category[]) {
 
 export default function MarketplaceV2() {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const navigate = useNavigate();
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,8 +153,6 @@ export default function MarketplaceV2() {
   const [confirmUninstallApp, setConfirmUninstallApp] = useState<MarketplaceApp | null>(null);
   const [filters, setFilters] = useState<MarketplaceFilters>({});
   const [displayCount, setDisplayCount] = useState(DISPLAY_INCREMENT);
-  const [wishlist, setWishlist] = useState<Set<string>>(new Set());
-  const [compareList, setCompareList] = useState<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -231,25 +226,6 @@ export default function MarketplaceV2() {
     } finally { setUninstallingApp(null); }
   };
 
-  const toggleWishlist = (app: MarketplaceApp) => {
-    setWishlist(prev => {
-      const next = new Set(prev);
-      if (next.has(app.slug)) next.delete(app.slug);
-      else next.add(app.slug);
-      return next;
-    });
-  };
-
-  const toggleCompare = (app: MarketplaceApp) => {
-    setCompareList(prev => {
-      const next = new Set(prev);
-      if (next.has(app.slug)) next.delete(app.slug);
-      else if (next.size >= 4) { toast.error(t('marketplace.maxCompareReached')); return prev; }
-      else next.add(app.slug);
-      return next;
-    });
-  };
-
   const categoryDisplay = getCategoryDisplayCategories(categories);
 
   const handleCategorySelect = (category: string) => {
@@ -302,17 +278,6 @@ export default function MarketplaceV2() {
                     className="lg:hidden"
                   />
                 </div>
-              </div>
-              <div className="flex items-center gap-2 mt-2.5 overflow-x-auto scrollbar-none pb-0.5">
-                {compareList.size > 0 && (
-                  <button
-                    onClick={() => navigate(`/marketplace/compare?apps=${[...compareList].join(',')}`)}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary whitespace-nowrap hover:bg-primary/20 transition-all duration-200"
-                  >
-                    <BarChart3 size={12} />
-                    {t('marketplace.compareApps')} ({compareList.size})
-                  </button>
-                )}
               </div>
             </div>
 
@@ -371,11 +336,6 @@ export default function MarketplaceV2() {
                             <AppCard
                               app={app}
                               variant="default"
-                              onUninstall={(a) => setConfirmUninstallApp(a)}
-                              onAddToWishlist={toggleWishlist}
-                              onCompare={toggleCompare}
-                              isInWishlist={wishlist.has(app.slug)}
-                              isInCompare={compareList.has(app.slug)}
                               showBadges
                           showRating
                           showInstalls

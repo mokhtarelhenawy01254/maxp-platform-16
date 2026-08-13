@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import {
   AlertCircle,
-  Check, CheckCircle2, ChevronRight, Download, Loader2, MessageSquare,
+  Check, CheckCircle2, ChevronRight, Loader2, MessageSquare,
   Package, Shield, Sparkles, Star,
   Users,
   ChevronLeft,
@@ -206,10 +206,6 @@ export default function AppDetails() {
                         <span className="text-muted-foreground">({formatNumber(app.reviewCount)} {t('marketplace.reviews')})</span>
                       </span>
                     )}
-                    <span className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-3 py-1 text-xs font-bold">
-                      <Download size={14} />
-                      {formatInstallCount(app.installCount)} {t('marketplace.installs')}
-                    </span>
                   </div>
                 </div>
               </div>

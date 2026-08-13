@@ -306,7 +306,9 @@ class SocketService {
         this.playOrderSoundFile(audioUrl, {
           audioContext,
           masterGain,
+          volume,
           durationMs,
+          pattern,
           registerSource: (stop) => activeSources.push({ stop }),
         });
       } else {
@@ -348,11 +350,20 @@ class SocketService {
     options: {
       audioContext: AudioContext;
       masterGain: GainNode;
+      volume: number;
       durationMs: number;
+      pattern: OrderSoundPattern;
       registerSource: (stop: () => void) => void;
     },
   ) {
-    const { audioContext, masterGain, durationMs, registerSource } = options;
+    const {
+      audioContext,
+      masterGain,
+      volume,
+      durationMs,
+      pattern,
+      registerSource,
+    } = options;
     const startTime = audioContext.currentTime;
 
     const sourceGain = audioContext.createGain();
@@ -411,10 +422,20 @@ class SocketService {
       })
       .catch((error) => {
         console.error(
-          "❌ [SOUND] Failed to load order sound file:",
+          "❌ [SOUND] Failed to load order sound file, falling back to synthesized tone:",
           url,
           error,
         );
+        // الرجوع للنغمة المولّدة حتى لو فشل تحميل الملف يفضل في صوت
+        stopSource();
+        this.playSynthesizedOrderSound({
+          audioContext,
+          masterGain,
+          volume,
+          durationMs,
+          pattern: "alarm",
+          registerSource,
+        });
       });
   }
 

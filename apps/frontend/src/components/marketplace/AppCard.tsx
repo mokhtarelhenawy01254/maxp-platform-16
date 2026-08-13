@@ -1,13 +1,10 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
 import {
-  Star, CheckCircle2, Download, Zap, X, Loader2, Heart,
-  BarChart3, Clock, Shield, BadgeCheck, Brain, Package,
+  Star, CheckCircle2, Clock, Shield, BadgeCheck, Brain, Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -18,21 +15,13 @@ import {
 import type { MarketplaceApp } from "@/types/marketplace";
 import {
   categoryIcons, appIcons, appIconsBySlug, categoryCssClass,
-  shouldUseTextIcon, getPrice, getAvailableBadges, normalizeRequiredApps,
-  formatInstallCount,
+  shouldUseTextIcon, getPrice, getAvailableBadges,
 } from "@/utils/marketplace";
 import { getMarketplaceFeatureItems } from "@/pages/marketplace/featureCatalog";
 
 interface AppCardProps {
   app: MarketplaceApp;
   variant?: "default" | "compact" | "featured" | "horizontal";
-  uninstallingApp?: string | null;
-  onUninstall?: (app: MarketplaceApp) => void;
-  onAddToWishlist?: (app: MarketplaceApp) => void;
-  onRemoveFromWishlist?: (app: MarketplaceApp) => void;
-  onCompare?: (app: MarketplaceApp) => void;
-  isInWishlist?: boolean;
-  isInCompare?: boolean;
   showBadges?: boolean;
   showRating?: boolean;
   showInstalls?: boolean;
@@ -47,10 +36,10 @@ const badgeConfig: Record<string, { label: string; className: string; icon: type
   OFFICIAL: { label: "Official", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", icon: BadgeCheck },
   VERIFIED: { label: "Verified", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300", icon: Shield },
   AI_POWERED: { label: "AI", className: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300", icon: Brain },
-  NEW: { label: "New", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", icon: Zap },
+  NEW: { label: "New", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", icon: Clock },
   UPDATED: { label: "Updated", className: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300", icon: Clock },
   BEST_SELLER: { label: "Best Seller", className: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300", icon: Star },
-  TRENDING: { label: "Trending", className: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300", icon: BarChart3 },
+  TRENDING: { label: "Trending", className: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300", icon: Star },
   ENTERPRISE_READY: { label: "Enterprise", className: "bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300", icon: Shield },
   EDITOR_CHOICE: { label: "Editor's Choice", className: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300", icon: Star },
 };
@@ -58,13 +47,6 @@ const badgeConfig: Record<string, { label: string; className: string; icon: type
 export function AppCard({
   app,
   variant = "default",
-  uninstallingApp,
-  onUninstall,
-  onAddToWishlist,
-  onRemoveFromWishlist,
-  onCompare,
-  isInWishlist = false,
-  isInCompare = false,
   showBadges = true,
   showRating = true,
   showInstalls = true,
@@ -99,22 +81,6 @@ export function AppCard({
   const isCompact = variant === "compact";
   const isFeatured = variant === "featured";
   const isHorizontal = variant === "horizontal";
-
-  const handleWishlist = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isInWishlist) {
-      onRemoveFromWishlist?.(app);
-    } else {
-      onAddToWishlist?.(app);
-    }
-  };
-
-  const handleCompare = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onCompare?.(app);
-  };
 
   const card = (
     <div className="relative h-full group/card">
@@ -225,56 +191,6 @@ export function AppCard({
 
             <div className={cn("flex items-center justify-between gap-1", isFeatured ? "mt-auto pt-2" : "mt-2")}>
               <span className="mp-price-tag-v2">{getPrice(app, t)}</span>
-              {showInstalls && !isCompact && (
-                <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5 shrink-0">
-                  <Download size={9} />
-                  {formatInstallCount(app.installCount)}
-                </span>
-              )}
-            </div>
-
-            <div className={cn("flex items-center gap-1 mt-2", isFeatured && "mt-3")}>
-              {app.isInstalled ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 shrink-0 rounded-lg p-0 text-destructive hover:bg-destructive/10"
-                    onClick={(e) => { e.preventDefault(); onUninstall?.(app); }}
-                    disabled={uninstallingApp === app.slug}
-                  >
-                    {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                  </Button>
-                  <span className="text-[10px] font-bold text-success flex items-center gap-0.5 ml-auto">
-                    <CheckCircle2 size={10} />
-                    {t('marketplace.installed')}
-                  </span>
-                </>
-              ) : (
-                <>
-                  {isFeatured && onCompare && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn("h-7 shrink-0 gap-1 rounded-lg text-xs", isInCompare && "border-primary bg-primary/10")}
-                      onClick={handleCompare}
-                    >
-                      {isInCompare ? <CheckCircle2 size={11} /> : <BarChart3 size={11} />}
-                      {t('marketplace.compareApps')}
-                    </Button>
-                  )}
-                  {isFeatured && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn("h-7 w-7 shrink-0 rounded-lg p-0", isInWishlist && "text-red-500")}
-                      onClick={handleWishlist}
-                    >
-                      <Heart size={13} className={isInWishlist ? "fill-current" : ""} />
-                    </Button>
-                  )}
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -351,12 +267,6 @@ export function AppCard({
                 <span className="mr-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">{t('marketplace.trialDays', { count: app.trialDays })}</span>
               )}
             </div>
-            {app.isInstalled && (
-              <Badge variant="secondary" className="gap-1 text-xs">
-                <CheckCircle2 size={10} />
-                {t('marketplace.installed')}
-              </Badge>
-            )}
           </div>
         </PopoverContent>
       </div>

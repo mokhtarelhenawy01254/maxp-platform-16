@@ -17,8 +17,6 @@ interface SectionRowProps {
   icon?: LucideIcon;
   viewAllUrl?: string;
   className?: string;
-  uninstallingApp?: string | null;
-  onUninstall?: (app: MarketplaceApp) => void;
 }
 
 export function SectionRow({
@@ -27,8 +25,6 @@ export function SectionRow({
   apps,
   viewAllUrl,
   className,
-  uninstallingApp,
-  onUninstall,
 }: SectionRowProps) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -96,8 +92,6 @@ export function SectionRow({
             <AppCard
               app={app}
               variant="featured"
-              uninstallingApp={uninstallingApp}
-              onUninstall={onUninstall}
               showInstalls
               showFeatures
               animationDelay={i * 50}
