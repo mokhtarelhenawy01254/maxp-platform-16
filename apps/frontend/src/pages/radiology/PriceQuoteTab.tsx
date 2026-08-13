@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Search, Trash2, MessageCircle, ClipboardList } from "lucide-react";
 import { api, fetchJson, MODAL_INPUT_CLS } from "./shared";
 
@@ -17,9 +18,10 @@ interface QuoteItem {
   price: number;
 }
 
-const formatPrice = (value: number) => `${value} ج`;
+const formatPrice = (value: number, currency = "") => `${value} ${currency}`;
 
 export default function PriceQuoteTab() {
+  const { t } = useTranslation();
   const [examTypes, setExamTypes] = useState<QuoteExamType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function PriceQuoteTab() {
       const data = await fetchJson<QuoteExamType[]>(`${api("exam-types")}&limit=500`);
       setExamTypes(data || []);
     } catch (e: unknown) {
-      if (!quiet) setError(e instanceof Error ? e.message : "حدث خطأ في جلب أنواع الفحوصات");
+      if (!quiet) setError(e instanceof Error ? e.message : t("radiology.priceQuote.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -53,12 +55,12 @@ export default function PriceQuoteTab() {
     );
   }, [examTypes, search]);
 
-  const addItem = (t: QuoteExamType) => {
+  const addItem = (et: QuoteExamType) => {
     setError(null);
     setItems((prev) =>
-      prev.some((it) => it.examTypeId === t.id)
+      prev.some((it) => it.examTypeId === et.id)
         ? prev
-        : [...prev, { examTypeId: t.id, name: t.name, category: t.category, price: t.price }]
+        : [...prev, { examTypeId: et.id, name: et.name, category: et.category, price: et.price }]
     );
     setSearch("");
   };
@@ -70,8 +72,8 @@ export default function PriceQuoteTab() {
   const total = useMemo(() => items.reduce((sum, it) => sum + Number(it.price || 0), 0), [items]);
 
   const buildWhatsAppText = () => {
-    const lines = items.map((it) => `• ${it.name}: ${formatPrice(it.price)}`);
-    return [`عرض سعر فحوصات الأشعة:`, ...lines, `الإجمالي: ${formatPrice(total)}`].join("\n");
+    const lines = items.map((it) => `• ${it.name}: ${formatPrice(it.price, t("radiology.currency"))}`);
+    return [`${t("radiology.priceQuote.whatsappHeader")}`, ...lines, `${t("radiology.priceQuote.total")} ${formatPrice(total, t("radiology.currency"))}`].join("\n");
   };
 
   const shareWhatsApp = () => {
@@ -82,8 +84,8 @@ export default function PriceQuoteTab() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold">عرض سعر سريع</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">اختر نوع فحص أو أكثر لعرض السعر فوراً ومشاركته عبر واتساب</p>
+        <h2 className="text-xl font-bold">{t("radiology.priceQuote.title")}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.priceQuote.subtitle")}</p>
       </div>
 
       {error && (
@@ -99,23 +101,23 @@ export default function PriceQuoteTab() {
           className={`${MODAL_INPUT_CLS} pr-9`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="بحث بالاسم أو الفئة أو الاختصار..."
+          placeholder={t("radiology.priceQuote.searchPlaceholder")}
         />
         {search.trim() && filtered.length > 0 && (
           <div className="absolute z-10 mt-1 w-full max-h-64 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-xl">
-            {filtered.map((t) => {
-              const added = items.some((it) => it.examTypeId === t.id);
+            {filtered.map((et) => {
+              const added = items.some((it) => it.examTypeId === et.id);
               return (
                 <button
-                  key={t.id}
-                  onClick={() => addItem(t)}
+                  key={et.id}
+                  onClick={() => addItem(et)}
                   disabled={added}
                   className="flex items-center justify-between w-full text-right px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <span className="font-medium">{t.name}</span>
+                  <span className="font-medium">{et.name}</span>
                   <span className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
-                    <span className="whitespace-nowrap">{formatPrice(t.price)}</span>
-                    {added ? <span className="text-xs text-green-600 dark:text-green-400">مضاف</span> : <Plus className="w-4 h-4" />}
+                    <span className="whitespace-nowrap">{formatPrice(et.price, t("radiology.currency"))}</span>
+                    {added ? <span className="text-xs text-green-600 dark:text-green-400">{t("radiology.priceQuote.added")}</span> : <Plus className="w-4 h-4" />}
                   </span>
                 </button>
               );
@@ -125,16 +127,16 @@ export default function PriceQuoteTab() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">جارٍ التحميل...</div>
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">{t("radiology.loadingEllipsis")}</div>
       ) : items.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-12 text-center text-gray-400 dark:text-gray-500">
           <ClipboardList className="w-10 h-10 mx-auto mb-3" />
-          لم يتم اختيار فحوصات بعد — ابحث وأضف نوع الفحص من القائمة
+          {t("radiology.priceQuote.noSelection")}
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
           <div className="px-4 py-3 border-b dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-300">
-            الفحوصات المختارة ({items.length})
+            {t("radiology.priceQuote.selectedExams", { count: items.length })}
           </div>
           <ul className="divide-y dark:divide-gray-700">
             {items.map((it) => (
@@ -144,11 +146,11 @@ export default function PriceQuoteTab() {
                   {it.category && <div className="text-xs text-gray-500 dark:text-gray-400">{it.category}</div>}
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="whitespace-nowrap text-sm">{formatPrice(it.price)}</span>
+                  <span className="whitespace-nowrap text-sm">{formatPrice(it.price, t("radiology.currency"))}</span>
                   <button
                     onClick={() => removeItem(it.examTypeId)}
                     className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
-                    title="إزالة"
+                    title={t("radiology.priceQuote.remove")}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -158,13 +160,13 @@ export default function PriceQuoteTab() {
           </ul>
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t dark:border-gray-700">
             <div className="text-lg font-bold">
-              الإجمالي: <span className="text-blue-600 dark:text-blue-400">{formatPrice(total)}</span>
+              {t("radiology.priceQuote.total")} <span className="text-blue-600 dark:text-blue-400">{formatPrice(total, t("radiology.currency"))}</span>
             </div>
             <button
               onClick={shareWhatsApp}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
-              <MessageCircle className="w-4 h-4" />مشاركة عبر واتساب
+              <MessageCircle className="w-4 h-4" />{t("radiology.priceQuote.shareWhatsApp")}
             </button>
           </div>
         </div>

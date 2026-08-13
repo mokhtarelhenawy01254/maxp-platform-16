@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Enums,
   RenderingEngine,
@@ -36,11 +37,11 @@ export interface RadiologyDicomViewerProps {
 }
 
 const WL_PRESETS: Record<string, { label: string; ww?: number; wc?: number }> = {
-  auto: { label: "تلقائي" },
-  bone: { label: "عظام", ww: 400, wc: 1000 },
-  lung: { label: "رئة", ww: 1500, wc: -500 },
-  brain: { label: "مخ", ww: 80, wc: 40 },
-  soft: { label: "أنسجة ناعمة", ww: 400, wc: 50 },
+  auto: { label: "radiology.dicomViewer.presets.auto" },
+  bone: { label: "radiology.dicomViewer.presets.bone", ww: 400, wc: 1000 },
+  lung: { label: "radiology.dicomViewer.presets.lung", ww: 1500, wc: -500 },
+  brain: { label: "radiology.dicomViewer.presets.brain", ww: 80, wc: 40 },
+  soft: { label: "radiology.dicomViewer.presets.soft", ww: 400, wc: 50 },
 };
 
 type ActiveTool = "wl" | "zoom" | "pan";
@@ -90,6 +91,7 @@ export function RadiologyDicomViewer({
   studyId,
   images,
 }: RadiologyDicomViewerProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<RenderingEngine | null>(null);
   const toolGroupRef = useRef<ToolsTypes.IToolGroup | null>(null);
@@ -179,7 +181,7 @@ export function RadiologyDicomViewer({
       } catch (err) {
         if (disposed) return;
         setLoading(false);
-        setError(err instanceof Error ? err.message : "تعذر تحميل صور الدراسة");
+        setError(err instanceof Error ? err.message : t("radiology.dicomViewer.loadFailed"));
       }
     };
 
@@ -284,7 +286,7 @@ export function RadiologyDicomViewer({
         dir="rtl"
         className="flex min-h-[360px] w-full items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400"
       >
-        لا توجد صور مرفوعة
+        {t("radiology.dicomViewer.noImages")}
       </div>
     );
   }
@@ -304,10 +306,10 @@ export function RadiologyDicomViewer({
             onClick={() => goToSlice(currentSlice - 1)}
             disabled={totalSlices === 0 || currentSlice <= 0}
           >
-            السابق
+            {t("radiology.dicomViewer.previous")}
           </button>
           <span className="min-w-[96px] text-center text-sm font-medium text-gray-700 dark:text-gray-200">
-            شريحة {totalSlices > 0 ? currentSlice + 1 : 0} / {totalSlices}
+            {t("radiology.dicomViewer.slice", { current: totalSlices > 0 ? currentSlice + 1 : 0, total: totalSlices })}
           </span>
           <button
             type="button"
@@ -315,7 +317,7 @@ export function RadiologyDicomViewer({
             onClick={() => goToSlice(currentSlice + 1)}
             disabled={totalSlices === 0 || currentSlice >= totalSlices - 1}
           >
-            التالي
+            {t("radiology.dicomViewer.next")}
           </button>
         </div>
 
@@ -328,7 +330,7 @@ export function RadiologyDicomViewer({
         >
           {Object.entries(WL_PRESETS).map(([key, preset]) => (
             <option key={key} value={key}>
-              {preset.label}
+              {t(preset.label)}
             </option>
           ))}
         </select>
@@ -340,17 +342,17 @@ export function RadiologyDicomViewer({
           className={activeTool === "zoom" ? buttonActive : buttonBase}
           onClick={handleZoomToggle}
         >
-          تكبير
+          {t("radiology.dicomViewer.zoom")}
         </button>
         <button
           type="button"
           className={activeTool === "pan" ? buttonActive : buttonBase}
           onClick={handlePanToggle}
         >
-          تحريك
+          {t("radiology.dicomViewer.pan")}
         </button>
         <button type="button" className={buttonBase} onClick={handleInvert}>
-          عكس الألوان
+          {t("radiology.dicomViewer.invert")}
         </button>
 
         <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
@@ -360,17 +362,17 @@ export function RadiologyDicomViewer({
           className={buttonBase}
           onClick={() => handleRotate(90)}
         >
-          تدوير 90°
+          {t("radiology.dicomViewer.rotate90")}
         </button>
         <button
           type="button"
           className={buttonBase}
           onClick={() => handleRotate(-90)}
         >
-          تدوير -90°
+          {t("radiology.dicomViewer.rotateMinus90")}
         </button>
         <button type="button" className={buttonBase} onClick={handleFit}>
-          ملاءمة
+          {t("radiology.dicomViewer.fit")}
         </button>
       </div>
 
@@ -379,7 +381,7 @@ export function RadiologyDicomViewer({
 
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white">
-            <span className="text-sm font-medium">جاري تحميل الصور...</span>
+            <span className="text-sm font-medium">{t("radiology.dicomViewer.loading")}</span>
           </div>
         )}
 

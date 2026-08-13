@@ -10825,7 +10825,14 @@
     "refreshOrders": "تحديث الطلبات",
     "lastUpdatedAt": "آخر تحديث: {{time}}",
     "liveUpdates": "مباشر — تحديث تلقائي مفعّل",
-    "offlineUpdates": "غير متصل — البيانات قد تكون قديمة"
+    "offlineUpdates": "غير متصل — البيانات قد تكون قديمة",
+    "orderStatus.paymentPending": "في انتظار الدفع",
+    "orderStatus.paymentCompleted": "مدفوع",
+    "orderStatus.paymentPartiallyPaid": "مدفوع جزئياً",
+    "orderStatus.paymentFailed": "فشل الدفع",
+    "orderStatus.paymentOnHold": "معلق",
+    "orderStatus.paymentRefunded": "مسترد",
+    "orderStatus.paymentPartiallyRefunded": "مسترد جزئياً"
   },
   "preparation": {
     "page": {

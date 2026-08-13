@@ -10824,7 +10824,14 @@
     "refreshOrders": "Refresh orders",
     "lastUpdatedAt": "Updated: {{time}}",
     "liveUpdates": "Live — auto updates enabled",
-    "offlineUpdates": "Offline — data may be stale"
+    "offlineUpdates": "Offline — data may be stale",
+    "orderStatus.paymentPending": "Payment Pending",
+    "orderStatus.paymentCompleted": "Paid",
+    "orderStatus.paymentPartiallyPaid": "Partially Paid",
+    "orderStatus.paymentFailed": "Payment Failed",
+    "orderStatus.paymentOnHold": "On Hold",
+    "orderStatus.paymentRefunded": "Refunded",
+    "orderStatus.paymentPartiallyRefunded": "Partially Refunded"
   },
   "preparation": {
     "page": {

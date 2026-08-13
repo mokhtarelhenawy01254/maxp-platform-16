@@ -1,5 +1,6 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark } from "lucide-react";
 
 export type TabId =
@@ -9,26 +10,26 @@ export type TabId =
   | "schedule" | "referring-physicians" | "statistics" | "cashier-shifts" | "settings";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: "dashboard", label: "لوحة الأشعة", icon: LayoutDashboard },
-  { id: "patients", label: "المرضى", icon: Users },
-  { id: "schedule", label: "الحجوزات", icon: CalendarDays },
-  { id: "studies", label: "الدراسات", icon: FolderOpen },
-  { id: "reports", label: "التقارير الطبية", icon: FileText },
-  { id: "exam-types", label: "الفحوصات والإضافات", icon: ScanLine },
-  { id: "price-lists", label: "قوائم الأسعار", icon: Tag },
-  { id: "contracts", label: "التعاقدات", icon: FileText },
-  { id: "branches", label: "الفروع", icon: Building2 },
-  { id: "invoices", label: "المدفوعات", icon: CreditCard },
-  { id: "reports-overview", label: "التقارير", icon: BarChart3 },
-  { id: "referring-physicians", label: "الأطباء المحوّلون", icon: Users },
-  { id: "insurance-invoices", label: "فواتير التأمين", icon: FileText },
-  { id: "insurance-ledger", label: "دفتر التأمين", icon: CreditCard },
-  { id: "insurance-companies", label: "شركات التأمين", icon: Landmark },
-  { id: "price-quote", label: "عرض سعر", icon: Tag },
-  { id: "radiologists", label: "أخصائيو الأشعة", icon: Users },
-  { id: "statistics", label: "الإحصائيات", icon: BarChart3 },
-  { id: "cashier-shifts", label: "الورديات", icon: Banknote },
-  { id: "settings", label: "الإعدادات", icon: Settings },
+  { id: "dashboard", label: "radiology.tabs.dashboard", icon: LayoutDashboard },
+  { id: "patients", label: "radiology.tabs.patients", icon: Users },
+  { id: "schedule", label: "radiology.tabs.schedule", icon: CalendarDays },
+  { id: "studies", label: "radiology.tabs.studies", icon: FolderOpen },
+  { id: "reports", label: "radiology.tabs.reports", icon: FileText },
+  { id: "exam-types", label: "radiology.tabs.exam-types", icon: ScanLine },
+  { id: "price-lists", label: "radiology.tabs.price-lists", icon: Tag },
+  { id: "contracts", label: "radiology.tabs.contracts", icon: FileText },
+  { id: "branches", label: "radiology.tabs.branches", icon: Building2 },
+  { id: "invoices", label: "radiology.tabs.invoices", icon: CreditCard },
+  { id: "reports-overview", label: "radiology.tabs.reports-overview", icon: BarChart3 },
+  { id: "referring-physicians", label: "radiology.tabs.referring-physicians", icon: Users },
+  { id: "insurance-invoices", label: "radiology.tabs.insurance-invoices", icon: FileText },
+  { id: "insurance-ledger", label: "radiology.tabs.insurance-ledger", icon: CreditCard },
+  { id: "insurance-companies", label: "radiology.tabs.insurance-companies", icon: Landmark },
+  { id: "price-quote", label: "radiology.tabs.price-quote", icon: Tag },
+  { id: "radiologists", label: "radiology.tabs.radiologists", icon: Users },
+  { id: "statistics", label: "radiology.tabs.statistics", icon: BarChart3 },
+  { id: "cashier-shifts", label: "radiology.tabs.cashier-shifts", icon: Banknote },
+  { id: "settings", label: "radiology.tabs.settings", icon: Settings },
 ];
 
 export const getCompanyId = (): string | null => {
@@ -105,6 +106,7 @@ export interface RadiologyStudy {
   patientName: string; patientPhone?: string; patientGender?: string;   patientAge?: string;
   nationalId?: string;
   insuranceNumber?: string;
+  patientFlags?: string[] | string;
   additionIds?: string[] | string;
   additionAmount?: number;
   paidAmount?: number;
@@ -121,25 +123,48 @@ export interface RadiologyStudy {
 }
 
 export const RadiologyStatusMap: Record<string, { label: string; color: string }> = {
-  PENDING_IMAGING: { label: "مسجل", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
-  IMAGED: { label: "تم رفع الصور", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  PENDING_REPORT: { label: "بانتظار التقرير", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
-  REPORTED: { label: "تم التقرير", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
-  DELIVERED: { label: "تم التسليم", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+  PENDING_IMAGING: { label: "radiology.studyStatus.PENDING_IMAGING", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  IMAGED: { label: "radiology.studyStatus.IMAGED", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  PENDING_REPORT: { label: "radiology.studyStatus.PENDING_REPORT", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  REPORTED: { label: "radiology.studyStatus.REPORTED", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  DELIVERED: { label: "radiology.studyStatus.DELIVERED", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
 };
 
 export const RadiologyReportStatusMap: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: "مسودة", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  REVIEWED: { label: "تمت المراجعة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
-  SIGNED: { label: "تم التوقيع", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
-  DELIVERED: { label: "تم التسليم", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+  DRAFT: { label: "radiology.reportStatus.DRAFT", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  REVIEWED: { label: "radiology.reportStatus.REVIEWED", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  SIGNED: { label: "radiology.reportStatus.SIGNED", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  DELIVERED: { label: "radiology.reportStatus.DELIVERED", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
 };
 
 export const RadiologySubmissionStatusMap: Record<string, { label: string; color: string }> = {
-  NOT_SUBMITTED: { label: "غير مرفوع", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
-  SUBMITTED: { label: "تم الرفع", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  REPORT_READY: { label: "التقرير جاهز", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  NOT_SUBMITTED: { label: "radiology.submissionStatus.NOT_SUBMITTED", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  SUBMITTED: { label: "radiology.submissionStatus.SUBMITTED", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  REPORT_READY: { label: "radiology.submissionStatus.REPORT_READY", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
 };
+
+export const RADIOLOGY_PATIENT_FLAGS: { value: string; label: string; color: string }[] = [
+  { value: "pregnancy", label: "radiology.patientFlags.pregnancy", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
+  { value: "contrast_allergy", label: "radiology.patientFlags.contrastAllergy", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "renal", label: "radiology.patientFlags.renal", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
+  { value: "bleeding", label: "radiology.patientFlags.bleeding", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "diabetic", label: "radiology.patientFlags.diabetic", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  { value: "claustrophobia", label: "radiology.patientFlags.claustrophobia", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
+  { value: "pacemaker", label: "radiology.patientFlags.pacemaker", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+];
+
+export const parsePatientFlags = (v?: string[] | string | null): string[] => {
+  if (!v) return [];
+  if (Array.isArray(v)) return v.filter(Boolean);
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const flagMeta = (key: string) => RADIOLOGY_PATIENT_FLAGS.find(f => f.value === key);
 
 export const STUDY_STATUS: Record<string, string> = {
   PENDING_IMAGING: "IMAGED",
@@ -155,10 +180,10 @@ export const fetchJson = async <T>(url: string, options?: RequestInit, retries =
       const res = await fetch(url, { headers: getAuthHeaders(), ...options });
       if (res.status === 502 || res.status === 503) {
         if (attempt < retries) { await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); continue; }
-        throw new Error("الخادم غير متاح حالياً - جارٍ إعادة التشغيل");
+        throw new Error(String(i18n.t("radiology.serverUnavailable")));
       }
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || data.message || "فشل العملية");
+      if (!data.success) throw new Error(data.error || data.message || String(i18n.t("radiology.operationFailed")));
       return data.data;
     } catch (e: unknown) {
       if (attempt < retries) {
@@ -171,7 +196,7 @@ export const fetchJson = async <T>(url: string, options?: RequestInit, retries =
       throw e;
     }
   }
-  throw new Error("فشل العملية");
+  throw new Error(String(i18n.t("radiology.operationFailed")));
 };
 
 export const tryParseJSON = <T = unknown>(v: unknown): T | null => {

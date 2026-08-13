@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck } from "lucide-react";
-import { api, bookingApi, fetchJson, RadiologyExamType, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { useTranslation } from "react-i18next";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, ChevronDown } from "lucide-react";
+import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 import ScheduleCalendar, { ViewMode, dayKey, addDays, egyptWeekStart } from "./ScheduleCalendar";
 
 interface Appointment {
   id: string; patientName: string; patientPhone?: string;
   patientGender?: string; patientAge?: string;
+  nationalId?: string; insuranceNumber?: string;
+  patientFlags?: string[] | string;
   examTypeId?: string; examTypeName?: string;
   insuranceCompanyId?: string;
   additionIds?: string[] | string;
@@ -18,24 +21,25 @@ interface Appointment {
 }
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  SCHEDULED: { label: "محجوز", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  CHECKED_IN: { label: "حضر", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" },
-  DONE: { label: "تم", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
-  CANCELLED: { label: "ملغي", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  SCHEDULED: { label: "radiology.appointmentStatus.SCHEDULED", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  CHECKED_IN: { label: "radiology.appointmentStatus.CHECKED_IN", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  DONE: { label: "radiology.appointmentStatus.DONE", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  CANCELLED: { label: "radiology.appointmentStatus.CANCELLED", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
 };
 
 const STATUS_CHAIN: Record<string, string> = { SCHEDULED: "CHECKED_IN", CHECKED_IN: "DONE", DONE: "", CANCELLED: "" };
 
 interface Form {
   id?: string; patientId: string; patientName: string; patientPhone: string;
-  nationalId: string; insuranceNumber: string;
+  patientGender: string; patientAge: string;
+  nationalId: string; insuranceNumber: string; patientFlags: string[];
   examTypeId: string; insuranceCompanyId: string; additionIds: string[];
   referringPhysicianId: string; referralDoctor: string; emergency: boolean;
   appointmentDate: string; appointmentTime: string; status: string; notes: string;
 }
 
 const emptyForm = (): Form => ({
-  patientId: "", patientName: "", patientPhone: "", nationalId: "", insuranceNumber: "",
+  patientId: "", patientName: "", patientPhone: "", patientGender: "", patientAge: "", nationalId: "", insuranceNumber: "", patientFlags: [],
   examTypeId: "", insuranceCompanyId: "", additionIds: [],
   referringPhysicianId: "", referralDoctor: "", emergency: false,
   appointmentDate: new Date().toISOString().slice(0, 10), appointmentTime: "", status: "SCHEDULED", notes: "",
@@ -44,11 +48,12 @@ const emptyForm = (): Form => ({
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 export default function ScheduleTab() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<Appointment[]>([]);
   const [examTypes, setExamTypes] = useState<RadiologyExamType[]>([]);
   const [additions, setAdditions] = useState<RadiologyExamAddition[]>([]);
   const [insuranceCompanies, setInsuranceCompanies] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(true);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(todayKey());
@@ -59,9 +64,16 @@ export default function ScheduleTab() {
   const [saving, setSaving] = useState(false);
   const [converting, setConverting] = useState<string | null>(null);
   const [patientSearch, setPatientSearch] = useState("");
-  const [patientResults, setPatientResults] = useState<{ id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string; insuranceNumber?: string }[]>([]);
+  const [patientResults, setPatientResults] = useState<{ id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string; insuranceNumber?: string; gender?: string; birthDate?: string }[]>([]);
   const [physicianSearch, setPhysicianSearch] = useState("");
   const [physicianResults, setPhysicianResults] = useState<{ id: string; name: string; specialty?: string }[]>([]);
+  const [examSearch, setExamSearch] = useState("");
+  const [examOpen, setExamOpen] = useState(false);
+  const [examFiltered, setExamFiltered] = useState<RadiologyExamType[]>([]);
+  const [newPatientOpen, setNewPatientOpen] = useState(false);
+  const [newPatient, setNewPatient] = useState({ firstName: "", phone: "", gender: "", nationalId: "", birthDate: "" });
+  const [savingNewPatient, setSavingNewPatient] = useState(false);
+  const [entityPrice, setEntityPrice] = useState<number | null>(null);
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -96,7 +108,7 @@ export default function ScheduleTab() {
       const res = await fetchJson<{ items?: Appointment[]; total?: number }>(url.toString());
       setItems(res.items || []);
     } catch (e) {
-      if (!opts?.silent) toast.error(e instanceof Error ? e.message : "فشل تحميل الحجوزات");
+      if (!opts?.silent) toast.error(e instanceof Error ? e.message : t("radiology.schedule.loadFailed"));
     }
   }, [status, search, dateFrom, dateTo, view, anchorDate]);
 
@@ -133,8 +145,108 @@ export default function ScheduleTab() {
     return () => clearTimeout(t);
   }, [physicianSearch]);
 
-  const pickPatient = (p: { id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string; insuranceNumber?: string }) => {
-    setModal(m => m ? { ...m, patientId: p.id, patientName: `${p.firstName}${p.lastName ? " " + p.lastName : ""}`, patientPhone: p.phone || "", nationalId: p.nationalId || m.nationalId, insuranceNumber: p.insuranceNumber || m.insuranceNumber } : m);
+  useEffect(() => {
+    if (!examSearch.trim()) { setExamFiltered(examTypes.filter(t => t.isActive !== false)); return; }
+    const term = examSearch.trim().toLowerCase();
+    setExamFiltered(examTypes.filter(t =>
+      t.isActive !== false &&
+      (t.name?.toLowerCase().includes(term) || (t.category || "").toLowerCase().includes(term) || (t.abbreviation || "").toLowerCase().includes(term))
+    ));
+  }, [examSearch, examTypes]);
+
+  useEffect(() => {
+    if (!modal?.examTypeId) { setEntityPrice(null); return; }
+    if (!modal.insuranceCompanyId) { setEntityPrice(null); return; }
+    (async () => {
+      try {
+        const url = new URL(api("entity-prices"));
+        url.searchParams.set("insuranceCompanyId", modal.insuranceCompanyId);
+        url.searchParams.set("examTypeId", modal.examTypeId);
+        const rows = await fetchJson<{ price: number }[]>(url.toString());
+        setEntityPrice(rows && rows.length ? Number(rows[0]?.price) : null);
+      } catch { setEntityPrice(null); }
+    })();
+  }, [modal?.examTypeId, modal?.insuranceCompanyId]);
+
+  const parseEgyptianNationalId = (raw: string) => {
+    const id = raw.replace(/\D/g, "");
+    if (id.length !== 14) return null;
+    const century = Number(id[0]);
+    if (century !== 2 && century !== 3) return null;
+    const year = century === 2 ? 1900 + Number(id.slice(1, 3)) : 2000 + Number(id.slice(1, 3));
+    const month = Number(id.slice(3, 5));
+    const day = Number(id.slice(5, 7));
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const gender = Number(id[12]) % 2 === 1 ? "male" : "female";
+    const dob = new Date(Date.UTC(year, month - 1, day));
+    const age = Math.max(0, Math.floor((Date.now() - dob.getTime()) / (31557600000)));
+    return { gender, age: String(age) };
+  };
+
+  const applyNationalId = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 14);
+    const parsed = parseEgyptianNationalId(digits);
+    setModal(m => m ? {
+      ...m,
+      nationalId: digits,
+      patientGender: parsed ? parsed.gender : m.patientGender,
+      patientAge: parsed ? parsed.age : m.patientAge,
+    } : m);
+  };
+
+  const pickExam = (et: RadiologyExamType) => {
+    setModal(m => m ? { ...m, examTypeId: et.id } : m);
+    setExamSearch("");
+    setExamOpen(false);
+  };
+
+  const openNewPatient = () => { setNewPatient({ firstName: "", phone: "", gender: "", nationalId: "", birthDate: "" }); setNewPatientOpen(true); };
+
+  const saveNewPatient = async () => {
+    if (savingNewPatient) return;
+    if (!newPatient.firstName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
+    setSavingNewPatient(true);
+    try {
+      const body: Record<string, string | undefined> = {
+        firstName: newPatient.firstName.trim(),
+        phone: newPatient.phone.trim() || undefined,
+        nationalId: newPatient.nationalId.replace(/\D/g, "") || undefined,
+        gender: newPatient.gender || undefined,
+        birthDate: newPatient.birthDate || undefined,
+      };
+      const created = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string; gender?: string; birthDate?: string; nationalId?: string }>(bookingApi("patients"), { method: "POST", body: JSON.stringify(body) });
+      const parsed = newPatient.nationalId.replace(/\D/g, "").length === 14 ? parseEgyptianNationalId(newPatient.nationalId.replace(/\D/g, "")) : null;
+      setModal(m => m ? {
+        ...m,
+        patientId: created.id,
+        patientName: `${created.firstName}${created.lastName ? " " + created.lastName : ""}`,
+        patientPhone: created.phone || newPatient.phone.trim(),
+        nationalId: created.nationalId || newPatient.nationalId.replace(/\D/g, ""),
+        patientGender: created.gender || parsed?.gender || newPatient.gender || m.patientGender,
+        patientAge: parsed ? parsed.age : m.patientAge,
+      } : m);
+      toast.success(t("radiology.schedule.patientAdded"));
+      setNewPatientOpen(false);
+      setPatientSearch("");
+      setPatientResults([]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.addPatientFailed"));
+    } finally {
+      setSavingNewPatient(false);
+    }
+  };
+
+  const pickPatient = (p: { id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string; insuranceNumber?: string; gender?: string; birthDate?: string }) => {
+    let gender = p.gender ? (p.gender === "male" || p.gender === "M" ? "male" : "female") : "";
+    let age = "";
+    if (p.birthDate) {
+      const dob = new Date(p.birthDate);
+      if (!Number.isNaN(dob.getTime())) {
+        const a = Math.max(0, Math.floor((Date.now() - dob.getTime()) / 31557600000));
+        if (a > 0) age = String(a);
+      }
+    }
+    setModal(m => m ? { ...m, patientId: p.id, patientName: `${p.firstName}${p.lastName ? " " + p.lastName : ""}`, patientPhone: p.phone || "", nationalId: p.nationalId || m.nationalId, insuranceNumber: p.insuranceNumber || m.insuranceNumber, patientGender: gender || m.patientGender, patientAge: age || m.patientAge } : m);
     setPatientSearch("");
     setPatientResults([]);
   };
@@ -145,12 +257,38 @@ export default function ScheduleTab() {
     setPhysicianResults([]);
   };
 
+  const syncPatientRecord = async (f: Form): Promise<string | null> => {
+    const fields: Record<string, string> = {};
+    if (f.patientPhone.trim()) fields["phone"] = f.patientPhone.trim();
+    if (f.nationalId.trim()) fields["nationalId"] = f.nationalId.trim();
+    if (f.insuranceNumber.trim()) fields["insuranceNumber"] = f.insuranceNumber.trim();
+    if (f.patientId) {
+      if (Object.keys(fields).length) {
+        await fetchJson(bookingApi(`patients/${f.patientId}`), { method: "PUT", body: JSON.stringify(fields) });
+      }
+      return f.patientId;
+    }
+    if (f.patientName.trim() || patientSearch.trim()) {
+      const name = f.patientName.trim() || patientSearch.trim();
+      const parts = name.split(/\s+/);
+      const created = await fetchJson<{ id: string }>(bookingApi("patients"), {
+        method: "POST",
+        body: JSON.stringify({ firstName: parts[0], lastName: parts.length > 1 ? parts.slice(1).join(" ") : undefined, ...fields }),
+      });
+      return created.id;
+    }
+    return null;
+  };
+
   const buildPayload = (f: Form) => ({
     patientId: f.patientId || undefined,
     patientName: f.patientName.trim(),
     patientPhone: f.patientPhone.trim() || undefined,
+    patientGender: f.patientGender || undefined,
+    patientAge: f.patientAge.trim() || undefined,
     nationalId: f.nationalId.trim() || undefined,
     insuranceNumber: f.insuranceNumber.trim() || undefined,
+    patientFlags: f.patientFlags.length ? f.patientFlags : undefined,
     examTypeId: f.examTypeId || undefined,
     insuranceCompanyId: f.insuranceCompanyId || undefined,
     additionIds: f.additionIds,
@@ -165,11 +303,12 @@ export default function ScheduleTab() {
 
   const save = async (convertAfter = false) => {
     if (!modal || saving) return;
-    if (!modal.patientName.trim()) { toast.error("اسم المريض مطلوب"); return; }
-    if (!modal.examTypeId) { toast.error("اختر نوع الفحص"); return; }
+    if (!modal.patientName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
+    if (!modal.examTypeId) { toast.error(t("radiology.schedule.selectExam")); return; }
     setSaving(true);
     try {
-      const payload = buildPayload({ ...modal, status: convertAfter ? "CHECKED_IN" : modal.status });
+      const patientId = await syncPatientRecord(modal);
+      const payload = buildPayload({ ...modal, patientId: patientId || "", status: convertAfter ? "CHECKED_IN" : modal.status });
       let id = modal.id;
       if (modal.id) {
         await fetchJson(api(`appointments/${modal.id}`), { method: "PUT", body: JSON.stringify(payload) });
@@ -178,17 +317,17 @@ export default function ScheduleTab() {
         id = created.id;
       }
       if (convertAfter && id) {
-        const r = await fetchJson<{ study: { id: string } }>(api(`appointments/${id}/convert`), { method: "POST" });
-        toast.success("تم إنشاء الدراسة — مريض فوري");
+        await fetchJson(api(`appointments/${id}/convert`), { method: "POST" });
+        toast.success(t("radiology.schedule.studyCreatedWalkIn"));
         setModal(null);
         window.location.href = "/radiology/studies";
         return;
       }
-      toast.success(modal.id ? "تم تحديث الحجز" : "تم إنشاء الحجز");
+      toast.success(modal.id ? t("radiology.schedule.bookingUpdated") : t("radiology.schedule.bookingCreated"));
       setModal(null);
       await refresh({ silent: true });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل الحفظ");
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -201,32 +340,32 @@ export default function ScheduleTab() {
       await fetchJson(api(`appointments/${a.id}`), { method: "PUT", body: JSON.stringify({ status: next }) });
       await refresh({ silent: true });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل التحديث");
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.updateFailed"));
     }
   };
 
   const remove = async (a: Appointment) => {
-    if (!window.confirm(`حذف حجز "${a.patientName}"؟`)) return;
+    if (!window.confirm(t("radiology.schedule.deleteConfirm", { name: a.patientName }) as string)) return;
     try {
       await fetchJson(api(`appointments/${a.id}`), { method: "DELETE" });
-      toast.success("تم حذف الحجز");
+      toast.success(t("radiology.schedule.bookingDeleted"));
       await refresh({ silent: true });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل الحذف");
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.deleteFailed"));
     }
   };
 
   const convert = async (a: Appointment) => {
     if (converting === a.id) return;
-    if (!window.confirm(`تحويل حجز "${a.patientName}" إلى دراسة؟`)) return;
+    if (!window.confirm(t("radiology.schedule.convertConfirm", { name: a.patientName }) as string)) return;
     setConverting(a.id);
     try {
       const r = await fetchJson<{ study: { id: string } }>(api(`appointments/${a.id}/convert`), { method: "POST" });
-      toast.success("تم إنشاء الدراسة — افتحها من تبويب الدراسات");
+      toast.success(t("radiology.schedule.studyCreated"));
       await refresh({ silent: true });
       if (r?.study?.id) window.location.href = "/radiology/studies";
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل التحويل");
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.convertFailed"));
     } finally {
       setConverting(null);
     }
@@ -236,6 +375,10 @@ export default function ScheduleTab() {
     setModal({ ...emptyForm(), status: asWalkIn ? "CHECKED_IN" : "SCHEDULED" });
     setPatientSearch("");
     setPhysicianSearch("");
+    setExamSearch("");
+    setExamOpen(false);
+    setNewPatientOpen(false);
+    setEntityPrice(null);
   };
 
   const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
@@ -251,18 +394,18 @@ export default function ScheduleTab() {
   const selectDay = (key: string) => { setAnchorDate(key); setView("day"); };
 
   const VIEW_TABS: { id: ViewMode; label: string; icon: typeof List }[] = [
-    { id: "list", label: "قائمة", icon: List },
-    { id: "day", label: "يوم", icon: CalendarDays },
-    { id: "week", label: "أسبوع", icon: CalendarRange },
-    { id: "month", label: "شهر", icon: CalendarCheck },
+    { id: "list", label: t("radiology.scheduleCalendar.viewList"), icon: List },
+    { id: "day", label: t("radiology.scheduleCalendar.viewDay"), icon: CalendarDays },
+    { id: "week", label: t("radiology.scheduleCalendar.viewWeek"), icon: CalendarRange },
+    { id: "month", label: t("radiology.scheduleCalendar.viewMonth"), icon: CalendarCheck },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold">الحجوزات — شغل اليوم</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">حجز مواعيد المرضى وتحويلها لدراسات</p>
+          <h2 className="text-xl font-bold">{t("radiology.schedule.title")}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.schedule.subtitle")}</p>
         </div>
         <div className="flex items-center gap-1.5 border dark:border-gray-600 rounded-lg p-1">
           {VIEW_TABS.map(v => (
@@ -272,26 +415,26 @@ export default function ScheduleTab() {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => { setDateFrom(todayKey()); setDateTo(todayKey()); }} className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">اليوم</button>
+          <button onClick={() => { setDateFrom(todayKey()); setDateTo(todayKey()); }} className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.today")}</button>
           <div className="relative">
             <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
-            <input className={`${MODAL_INPUT_CLS} pr-9 w-44`} placeholder="بحث بالمريض..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input className={`${MODAL_INPUT_CLS} pr-9 w-44`} placeholder={t("radiology.schedule.searchByPatient")} value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <select className={MODAL_INPUT_CLS} value={status} onChange={e => setStatus(e.target.value)}>
-            <option value="">كل الحالات</option>
-            {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            <option value="">{t("radiology.allStatuses")}</option>
+            {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
           </select>
-          <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700"><RefreshCw className="w-4 h-4" />تحديث</button>
-          <button onClick={() => openNew(true)} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"><Zap className="w-4 h-4" />مريض فوري</button>
-          <button onClick={() => openNew(false)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"><Plus className="w-4 h-4" />حجز جديد</button>
+          <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700"><RefreshCw className="w-4 h-4" />{t("radiology.refresh")}</button>
+          <button onClick={() => openNew(true)} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"><Zap className="w-4 h-4" />{t("radiology.schedule.walkIn")}</button>
+          <button onClick={() => openNew(false)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"><Plus className="w-4 h-4" />{t("radiology.schedule.newBooking")}</button>
         </div>
       </div>
 
       {view === "list" && (
         <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm text-gray-600 dark:text-gray-300">من</label>
+          <label className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.from")}</label>
           <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <label className="text-sm text-gray-600 dark:text-gray-300">إلى</label>
+          <label className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.to")}</label>
           <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </div>
       )}
@@ -308,14 +451,14 @@ export default function ScheduleTab() {
       ) : loading && !items.length ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
       ) : items.length === 0 ? (
-        <p className="text-center py-16 text-gray-400 dark:text-gray-500">لا توجد حجوزات في هذه الفترة</p>
+        <p className="text-center py-16 text-gray-400 dark:text-gray-500">{t("radiology.schedule.noBookings")}</p>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
-                  {["المريض", "الفحص", "التاريخ", "الوقت", "الحالة", "ملاحظات", "إجراءات"].map(h => (
+                  {[t("radiology.schedule.patient"), t("radiology.schedule.exam"), t("radiology.schedule.date"), t("radiology.schedule.time"), t("radiology.schedule.status"), t("radiology.schedule.notes"), t("radiology.actions")].map(h => (
                     <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -325,22 +468,28 @@ export default function ScheduleTab() {
                   const meta = STATUS_META[a.status] || STATUS_META["SCHEDULED"];
                   return (
                     <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
-                      <td className="py-3 px-4 font-medium">{a.patientName}{a.emergency ? <span className="mr-2 text-xs text-red-500">طارئ</span> : null}</td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.examTypeName || "—"}{a.additionAmount ? ` (+${Number(a.additionAmount).toFixed(0)}ج)` : ""}</td>
+                      <td className="py-3 px-4 font-medium">
+                        {a.patientName}{a.emergency ? <span className="mr-2 text-xs text-red-500">{t("radiology.schedule.emergency")}</span> : null}
+                        {parsePatientFlags(a.patientFlags).map(f => {
+                          const meta = flagMeta(f);
+                          return meta ? <span key={f} className={`mr-1.5 px-2 py-0.5 rounded-full text-[11px] ${meta.color}`}>{t(meta.label)}</span> : null;
+                        })}
+                      </td>
+                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.examTypeName || "—"}{a.additionAmount ? ` (+${Number(a.additionAmount).toFixed(0)}${t("radiology.currency")})` : ""}</td>
                       <td className="py-3 px-4">{fmtDate(a.appointmentDate)}</td>
                       <td className="py-3 px-4" dir="ltr">{a.appointmentTime || "—"}</td>
-                      <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${meta?.color}`}>{meta?.label}</span></td>
+                      <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${meta?.color}`}>{t(meta?.label as never)}</span></td>
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 max-w-[160px] truncate">{a.notes || "—"}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
-                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as { patientId?: string }).patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", nationalId: (a as { nationalId?: string }).nationalId || "", insuranceNumber: (a as { insuranceNumber?: string }).insuranceNumber || "", examTypeId: a.examTypeId || "", insuranceCompanyId: a.insuranceCompanyId || "", additionIds: Array.isArray(a.additionIds) ? a.additionIds : (typeof a.additionIds === "string" ? JSON.parse(a.additionIds) : []), referringPhysicianId: (a as { referringPhysicianId?: string }).referringPhysicianId || "", referralDoctor: a.referralDoctor || "", emergency: !!a.emergency, appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", status: a.status, notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as { patientId?: string }).patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", nationalId: (a as { nationalId?: string }).nationalId || "", insuranceNumber: (a as { insuranceNumber?: string }).insuranceNumber || "", patientFlags: parsePatientFlags((a as { patientFlags?: string[] | string }).patientFlags), examTypeId: a.examTypeId || "", insuranceCompanyId: a.insuranceCompanyId || "", additionIds: Array.isArray(a.additionIds) ? a.additionIds as string[] : (typeof a.additionIds === "string" ? JSON.parse(a.additionIds) as string[] : []), referringPhysicianId: (a as { referringPhysicianId?: string }).referringPhysicianId || "", referralDoctor: a.referralDoctor || "", emergency: !!a.emergency, appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", status: a.status, notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.schedule.edit")}><Pencil className="w-4 h-4" /></button>
                           {a.status !== "CANCELLED" && a.status !== "DONE" ? (
-                            <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="تحويل لدراسة"><ArrowRightLeft className="w-4 h-4" /></button>
+                            <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.schedule.convertToStudy")}><ArrowRightLeft className="w-4 h-4" /></button>
                           ) : null}
                           {STATUS_CHAIN[a.status] ? (
-                            <button onClick={() => advance(a)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title="تقدم الحالة"><RefreshCw className="w-4 h-4" /></button>
+                            <button onClick={() => advance(a)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title={t("radiology.schedule.advanceStatus")}><RefreshCw className="w-4 h-4" /></button>
                           ) : null}
-                          <button onClick={() => remove(a)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => remove(a)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title={t("radiology.schedule.delete")}><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
                     </tr>
@@ -356,17 +505,20 @@ export default function ScheduleTab() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => !saving && setModal(null)}>
           <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">{modal.id ? "تعديل الحجز" : (modal.status === "CHECKED_IN" ? "مريض فوري" : "حجز جديد")}</h3>
+              <h3 className="text-lg font-bold">{modal.id ? t("radiology.schedule.editBooking") : (modal.status === "CHECKED_IN" ? t("radiology.schedule.walkInModal") : t("radiology.schedule.newBookingModal"))}</h3>
               <button onClick={() => !saving && setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2 relative">
-                <label className={labelCls}>المريض *</label>
-                <input className={MODAL_INPUT_CLS} value={patientSearch || modal.patientName} onChange={e => { setPatientSearch(e.target.value); if (!e.target.value) setModal({ ...modal, patientId: "", patientName: "", patientPhone: "" }); }} placeholder="ابحث عن مريض موجود..." />
+                <div className="flex items-center justify-between">
+                  <label className={labelCls}>{t("radiology.schedule.patientRequired")}</label>
+                  <button type="button" onClick={openNewPatient} className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mb-1"><UserPlus className="w-3.5 h-3.5" />{t("radiology.schedule.addNewPatient")}</button>
+                </div>
+                <input className={MODAL_INPUT_CLS} value={patientSearch || modal.patientName} onChange={e => { setPatientSearch(e.target.value); if (!e.target.value) setModal({ ...modal, patientId: "", patientName: "", patientPhone: "" }); }} placeholder={t("radiology.schedule.searchPatient")} />
                 {patientSearch.trim() && (
                   <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
                     {patientResults.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-gray-500">لا توجد نتائج</div>
+                      <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noResults")}</div>
                     ) : patientResults.map(p => (
                       <button key={p.id} type="button" onClick={() => pickPatient(p)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
                         <span className="font-medium">{p.firstName} {p.lastName || ""}</span>
@@ -375,60 +527,147 @@ export default function ScheduleTab() {
                     ))}
                   </div>
                 )}
+                {newPatientOpen ? (
+                  <div className="mt-3 rounded-lg border dark:border-gray-600 p-3 space-y-3 bg-gray-50 dark:bg-gray-800/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.patientName")}</label>
+                        <input className={MODAL_INPUT_CLS} value={newPatient.firstName} onChange={e => setNewPatient({ ...newPatient, firstName: e.target.value })} placeholder={t("radiology.schedule.fullNamePlaceholder")} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.phone")}</label>
+                        <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.phone} onChange={e => setNewPatient({ ...newPatient, phone: e.target.value })} placeholder="01xxxxxxxxx" />
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.gender")}</label>
+                        <select className={MODAL_INPUT_CLS} value={newPatient.gender} onChange={e => setNewPatient({ ...newPatient, gender: e.target.value })}>
+                          <option value="">{t("radiology.gender.unspecified")}</option>
+                          <option value="male">{t("radiology.gender.male")}</option>
+                          <option value="female">{t("radiology.gender.female")}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.nationalIdHint")}</label>
+                        <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.nationalId} onChange={e => setNewPatient({ ...newPatient, nationalId: e.target.value.replace(/\D/g, "").slice(0, 14) })} placeholder={t("radiology.schedule.nationalId14")} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.birthDate")}</label>
+                        <input type="date" className={MODAL_INPUT_CLS} value={newPatient.birthDate} onChange={e => setNewPatient({ ...newPatient, birthDate: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => setNewPatientOpen(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border rounded-lg">{t("radiology.cancel")}</button>
+                      <button type="button" onClick={saveNewPatient} disabled={savingNewPatient} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                        {savingNewPatient ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}{t("radiology.schedule.saveAndSelectPatient")}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div>
-                <label className={labelCls}>الهاتف</label>
+                <label className={labelCls}>{t("radiology.schedule.phone")}</label>
                 <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.patientPhone} onChange={e => setModal({ ...modal, patientPhone: e.target.value })} />
               </div>
               <div>
-                <label className={labelCls}>نوع الفحص *</label>
-                <select className={MODAL_INPUT_CLS} value={modal.examTypeId} onChange={e => setModal({ ...modal, examTypeId: e.target.value })}>
-                  <option value="">اختر الفحص...</option>
-                  {examTypes.filter(t => t.isActive !== false).map(t => <option key={t.id} value={t.id}>{t.name}{t.category ? ` (${t.category})` : ""}</option>)}
+                <label className={labelCls}>{t("radiology.schedule.gender")}</label>
+                <select className={MODAL_INPUT_CLS} value={modal.patientGender} onChange={e => setModal({ ...modal, patientGender: e.target.value })}>
+                  <option value="">{t("radiology.gender.unspecified")}</option>
+                  <option value="male">{t("radiology.gender.male")}</option>
+                  <option value="female">{t("radiology.gender.female")}</option>
                 </select>
               </div>
               <div>
-                <label className={labelCls}>جهة التأمين (اختياري)</label>
+                <label className={labelCls}>{t("radiology.schedule.age")}</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.patientAge} onChange={e => setModal({ ...modal, patientAge: e.target.value })} placeholder={t("radiology.schedule.agePlaceholder")} />
+              </div>
+              <div className="relative">
+                <label className={labelCls}>{t("radiology.schedule.examType")}</label>
+                <input
+                  className={`${MODAL_INPUT_CLS} pl-8`}
+                  value={examSearch || (examTypes.find(t => t.id === modal.examTypeId)?.name || "")}
+                  onChange={e => { setExamSearch(e.target.value); setExamOpen(true); if (!e.target.value) setModal({ ...modal, examTypeId: "" }); }}
+                  onFocus={() => setExamOpen(true)}
+                  placeholder={t("radiology.schedule.searchExam")}
+                />
+                <ChevronDown className="w-4 h-4 absolute left-3 top-8 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                {examOpen ? (
+                  <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
+                    {examFiltered.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noExams")}</div>
+                    ) : examFiltered.slice(0, 60).map(et => (
+                      <button key={et.id} type="button" onClick={() => pickExam(et)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <span className="font-medium">{et.name}</span>
+                        {et.category ? <span className="text-xs text-gray-500 dark:text-gray-400"> ({et.category})</span> : null}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>{t("radiology.schedule.priceLabel")}</label>
+                <div className="rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    {(() => {
+                      const et = examTypes.find(t => t.id === modal.examTypeId);
+                      const base = entityPrice !== null ? entityPrice : (et ? Number(et.price) || 0 : 0);
+                      const add = additions.filter(a => modal.additionIds.includes(a.id)).reduce((s, a) => s + a.price, 0);
+                      return `${Number(base + add).toFixed(0)} ${t("radiology.currency")}${entityPrice !== null && et ? ` (${t("radiology.schedule.tariffSuffix", { name: insuranceCompanies.find(c => c.id === modal.insuranceCompanyId)?.name || t("radiology.schedule.insuranceOptional") })})` : ""}`;
+                    })()}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.insuranceOptional")}</label>
                 <select className={MODAL_INPUT_CLS} value={modal.insuranceCompanyId} onChange={e => setModal({ ...modal, insuranceCompanyId: e.target.value })}>
-                  <option value="">دفع مباشر من المريض</option>
+                  <option value="">{t("radiology.schedule.directPatientPayment")}</option>
                   {insuranceCompanies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>رقم قومي</label>
-                <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.nationalId} onChange={e => setModal({ ...modal, nationalId: e.target.value })} placeholder="14 رقم" />
+                <label className={labelCls}>{t("radiology.schedule.nationalIdHint")}</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.nationalId} onChange={e => applyNationalId(e.target.value)} placeholder={t("radiology.schedule.nationalId14")} />
               </div>
               <div>
-                <label className={labelCls}>رقم تأمين</label>
+                <label className={labelCls}>{t("radiology.schedule.insuranceNumberLabel")}</label>
                 <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.insuranceNumber} onChange={e => setModal({ ...modal, insuranceNumber: e.target.value })} />
               </div>
               <div className="relative">
-                <label className={labelCls}>الطبيب المحيل</label>
-                <input className={MODAL_INPUT_CLS} value={physicianSearch || modal.referralDoctor} onChange={e => { setPhysicianSearch(e.target.value); if (!e.target.value) setModal({ ...modal, referringPhysicianId: "", referralDoctor: "" }); }} placeholder="ابحث عن طبيب..." />
+                <label className={labelCls}>{t("radiology.schedule.referringDoctor")}</label>
+                <input className={MODAL_INPUT_CLS} value={physicianSearch || modal.referralDoctor} onChange={e => { setPhysicianSearch(e.target.value); if (!e.target.value) setModal({ ...modal, referringPhysicianId: "", referralDoctor: "" }); }} placeholder={t("radiology.schedule.searchDoctor")} />
                 {physicianSearch.trim() && (
                   <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
-                    {physicianResults.length === 0 ? <div className="px-3 py-2 text-sm text-gray-500">لا توجد نتائج</div> : physicianResults.map(p => (
+                    {physicianResults.length === 0 ? <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noResults")}</div> : physicianResults.map(p => (
                       <button key={p.id} type="button" onClick={() => pickPhysician(p)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"><span className="font-medium">{p.name}</span></button>
                     ))}
                   </div>
                 )}
               </div>
               <div>
-                <label className={labelCls}>التاريخ</label>
+                <label className={labelCls}>{t("radiology.schedule.date")}</label>
                 <input type="date" className={MODAL_INPUT_CLS} value={modal.appointmentDate} onChange={e => setModal({ ...modal, appointmentDate: e.target.value })} />
               </div>
               <div>
-                <label className={labelCls}>الوقت</label>
+                <label className={labelCls}>{t("radiology.schedule.time")}</label>
                 <input type="time" className={MODAL_INPUT_CLS} value={modal.appointmentTime} onChange={e => setModal({ ...modal, appointmentTime: e.target.value })} />
+                {(() => {
+                  const d = modal.appointmentDate, tm = modal.appointmentTime;
+                  if (!d || !tm) return null;
+                  const clash = items.find(a => a.id !== modal.id && a.status !== "CANCELLED" && a.appointmentDate?.slice(0, 10) === d && a.appointmentTime === tm);
+                  return clash ? (
+                    <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> {t("radiology.schedule.timeSlotTaken", { name: clash.patientName })}
+                    </p>
+                  ) : null;
+                })()}
               </div>
               {additions.length > 0 ? (
                 <div className="sm:col-span-2">
-                  <label className={labelCls}>إضافات الفحص</label>
+                  <label className={labelCls}>{t("radiology.schedule.examAdditions")}</label>
                   <div className="flex flex-wrap gap-2">
                     {additions.map(a => (
                       <label key={a.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg px-3 py-1.5 cursor-pointer">
                         <input type="checkbox" checked={modal.additionIds.includes(a.id)} onChange={() => setModal({ ...modal, additionIds: modal.additionIds.includes(a.id) ? modal.additionIds.filter(x => x !== a.id) : [...modal.additionIds, a.id] })} className="rounded border-gray-300 dark:border-gray-600" />
-                        {a.name} ({Number(a.price).toFixed(0)} ج)
+                        {a.name} ({Number(a.price).toFixed(0)} {t("radiology.currency")})
                       </label>
                     ))}
                   </div>
@@ -436,23 +675,34 @@ export default function ScheduleTab() {
               ) : null}
               <div className="sm:col-span-2 flex items-center gap-6">
                 <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <input type="checkbox" checked={modal.emergency} onChange={e => setModal({ ...modal, emergency: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />حالة طارئة
+                  <input type="checkbox" checked={modal.emergency} onChange={e => setModal({ ...modal, emergency: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />{t("radiology.schedule.emergencyCase")}
                 </label>
               </div>
               <div className="sm:col-span-2">
-                <label className={labelCls}>ملاحظات</label>
+                <label className={labelCls}>{t("radiology.schedule.medicalRiskFlags")}</label>
+                <div className="flex flex-wrap gap-2">
+                  {RADIOLOGY_PATIENT_FLAGS.map(f => (
+                    <label key={f.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg px-3 py-1.5 cursor-pointer">
+                      <input type="checkbox" checked={modal.patientFlags.includes(f.value)} onChange={() => setModal({ ...modal, patientFlags: modal.patientFlags.includes(f.value) ? modal.patientFlags.filter(x => x !== f.value) : [...modal.patientFlags, f.value] })} className="rounded border-gray-300 dark:border-gray-600" />
+                      {t(f.label)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>{t("radiology.schedule.notes")}</label>
                 <input className={MODAL_INPUT_CLS} value={modal.notes} onChange={e => setModal({ ...modal, notes: e.target.value })} />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setModal(null)} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg disabled:opacity-50">إلغاء</button>
+              <button onClick={() => setModal(null)} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg disabled:opacity-50">{t("radiology.cancel")}</button>
               {!modal.id && modal.status === "CHECKED_IN" ? (
                 <button onClick={() => save(true)} disabled={saving} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 flex items-center gap-2">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}حجز وتحويل لدراسة
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}{t("radiology.schedule.saveAndConvert")}
                 </button>
               ) : (
                 <button onClick={() => save(false)} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
-                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}حفظ
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
                 </button>
               )}
             </div>
