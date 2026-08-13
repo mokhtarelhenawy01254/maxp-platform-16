@@ -12,15 +12,15 @@ interface AutoDiscountSettingsProps {
  * إعدادات نظام "الخصم التلقائي":
  * كوبون خصم % على الأوردر الجاي، صلاحيته أيام، ويتحول لكاش باك عند الانتهاء،
  * + معدل النقاط وقيمة الاستبدال.
+ * 🆕 التفعيل مستقل عن نظام المستويات (ممكن الاتنين يشتغلوا مع بعض).
  */
-const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved, activeSystem, activated: parentActivated }) => {
+const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [cfg, setCfg] = useState({
-    system: "AUTO_DISCOUNT",
-    activated: false,
+    autoDiscountEnabled: false,
     enabled: true,
     discountPercent: 10,
     validityDays: 3,
@@ -33,8 +33,20 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved, ac
 
   const load = async () => {
     try {
-      const res = await apiClient.get("/hr/customer-loyalty/system-settings");
-      setCfg((prev) => ({ ...prev, ...(res.data?.data || {}) }));
+      const res = await apiClient.get("/hr/customer-loyalty/loyalty-config");
+      const d = res.data?.data || {};
+      const ad = d.autoDiscount || {};
+      setCfg((prev) => ({
+        ...prev,
+        autoDiscountEnabled: ad.enabled === true,
+        discountPercent: ad.discountPercent ?? prev.discountPercent,
+        validityDays: ad.validityDays ?? prev.validityDays,
+        convertExpiredToCashback: ad.convertExpiredToCashback !== false,
+        pointsPerAmount: ad.pointsPerAmount ?? prev.pointsPerAmount,
+        pointsRedemptionValue: ad.pointsRedemptionValue ?? prev.pointsRedemptionValue,
+        redeemPointsEnabled: ad.redeemPointsEnabled !== false,
+        enabled: true,
+      }));
     } catch (e: any) {
       setErrorMsg(e?.response?.data?.error || "فشل تحميل الإعدادات");
     } finally {
@@ -46,55 +58,37 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved, ac
     load();
   }, []);
 
-  // تفعيل/إيقاف نظام الخصم التلقائي: بيحفظ كل الإعدادات + بيفعّل النظام (Toggle)
-  const activate = async () => {
-    const isActivatedNow = parentActivated === true || cfg.activated === true;
-
-    // لو الخصم التلقائي مفعّل → الضغط مرة تانية معناه إيقاف
-    if (isActivatedNow) {
-      if (!window.confirm("هل تريد إيقاف تفعيل نظام الخصم التلقائي؟")) return;
-      setSaving(true);
-      setSavedMsg("");
-      setErrorMsg("");
-      try {
-        const res = await apiClient.put("/hr/customer-loyalty/system-settings", {
-          ...cfg,
-          system: "AUTO_DISCOUNT",
-          activated: false,
-        });
-        const updated = { ...(res.data?.data || {}), activated: false, loyaltySystem: "AUTO_DISCOUNT" };
-        setCfg((prev) => ({ ...prev, ...updated }));
-        setSavedMsg("تم إيقاف تفعيل نظام الخصم التلقائي ✓");
-        onSaved?.(updated);
-      } catch (e: any) {
-        setErrorMsg(e?.response?.data?.error || "فشل إيقاف التفعيل");
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-
-    // لو نظام المستويات مفعّل → سؤال تحويل
-    if (activeSystem === "TIERS" && parentActivated) {
-      const ok = window.confirm("هل تريد إيقاف تفعيل نظام المستويات وتفعيل نظام الخصم التلقائي؟");
-      if (!ok) return;
-    }
-
+  const saveActivation = async (enabled: boolean) => {
+    if (!enabled && !window.confirm("هل تريد إيقاف تفعيل نظام الخصم التلقائي؟")) return;
     setSaving(true);
     setSavedMsg("");
     setErrorMsg("");
     try {
-      const res = await apiClient.put("/hr/customer-loyalty/system-settings", {
-        ...cfg,
-        system: "AUTO_DISCOUNT",
-        activated: true,
+      const res = await apiClient.put("/hr/customer-loyalty/loyalty-config", {
+        autoDiscountEnabled: enabled,
+        enabled: true,
+        discountPercent: cfg.discountPercent,
+        validityDays: cfg.validityDays,
+        convertExpiredToCashback: cfg.convertExpiredToCashback,
+        pointsPerAmount: cfg.pointsPerAmount,
+        pointsRedemptionValue: cfg.pointsRedemptionValue,
+        redeemPointsEnabled: cfg.redeemPointsEnabled,
       });
-      const updated = { ...(res.data?.data || {}), activated: true, loyaltySystem: "AUTO_DISCOUNT" };
-      setCfg((prev) => ({ ...prev, ...updated }));
-      setSavedMsg("تم تفعيل نظام الخصم التلقائي وحفظ الإعدادات ✓");
-      onSaved?.(updated);
+      const ad = (res.data?.data || {}).autoDiscount || {};
+      setCfg((prev) => ({
+        ...prev,
+        autoDiscountEnabled: ad.enabled === true,
+        discountPercent: ad.discountPercent ?? prev.discountPercent,
+        validityDays: ad.validityDays ?? prev.validityDays,
+        convertExpiredToCashback: ad.convertExpiredToCashback !== false,
+        pointsPerAmount: ad.pointsPerAmount ?? prev.pointsPerAmount,
+        pointsRedemptionValue: ad.pointsRedemptionValue ?? prev.pointsRedemptionValue,
+        redeemPointsEnabled: ad.redeemPointsEnabled !== false,
+      }));
+      setSavedMsg(enabled ? "تم تفعيل نظام الخصم التلقائي ✓" : "تم إيقاف تفعيل نظام الخصم التلقائي ✓");
+      onSaved?.(res.data?.data);
     } catch (e: any) {
-      setErrorMsg(e?.response?.data?.error || "فشل التفعيل");
+      setErrorMsg(e?.response?.data?.error || (enabled ? "فشل التفعيل" : "فشل إيقاف التفعيل"));
     } finally {
       setSaving(false);
     }
@@ -105,7 +99,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved, ac
   const inputCls =
     "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100";
 
-  const isActivated = parentActivated === true || cfg.activated === true;
+  const isActivated = cfg.autoDiscountEnabled === true;
 
   return (
     <div className="space-y-6">
@@ -127,7 +121,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved, ac
         <>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-4">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              <input type="checkbox" checked={Boolean(cfg.enabled)} onChange={(e) => set("enabled", e.target.checked)} className="h-4 w-4 accent-amber-500" />
+              <input type="checkbox" checked={isActivated} onChange={(e) => saveActivation(e.target.checked)} className="h-4 w-4 accent-amber-500" />
               تفعيل نظام الخصم التلقائي
             </label>
 
@@ -186,7 +180,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved, ac
               {savedMsg && <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{savedMsg}</span>}
               {errorMsg && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{errorMsg}</span>}
               <button
-                onClick={activate}
+                onClick={() => saveActivation(!isActivated)}
                 disabled={saving}
                 title={isActivated ? "اضغط لإيقاف تفعيل نظام الخصم التلقائي" : "تفعيل نظام الخصم التلقائي"}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
@@ -208,7 +202,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved, ac
 
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-200">
             <p className="font-semibold">ملاحظة:</p>
-            <p>تفعيل هذا النظام يوقف نظام المستويات تلقائياً — لو رجعنا لنظام المستويات، بيوقف الخصم التلقائي.</p>
+            <p>نظام الخصم التلقائي مستقل — ممكن يشتغل مع نظام المستويات في نفس الوقت (لو الاتنين مفعّلين، يطبّقوا على الأوردر مع بعض حسب إعداد التراكم).</p>
           </div>
         </>
       )}

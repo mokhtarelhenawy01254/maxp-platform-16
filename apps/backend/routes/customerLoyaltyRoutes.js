@@ -127,6 +127,17 @@ router.put('/system-settings',
   customerLoyaltyController.updateSystemSettings
 );
 
+// 🆕 إعدادات الولاء الموحّدة (مفاتيح تفعيل مستقلة: المستويات / الخصم التلقائي / الكاش باك + stacking)
+router.get('/loyalty-config',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getLoyaltyConfig
+);
+
+router.put('/loyalty-config',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateLoyaltyConfig
+);
+
 // معالجة الكوبونات المنتهية (تحويلها لكاش باك) — يدوي
 router.post('/vouchers/process-expired',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),

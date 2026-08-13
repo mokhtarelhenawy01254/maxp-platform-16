@@ -10,6 +10,11 @@ const DEFAULT_SETTINGS = {
   pointsPerAmount: 5,
   pointsRedemptionValue: 1,
   redeemPointsEnabled: true,
+  // 🆕 فلاجات تفعيل مستقلة لكل نظام (عشان المستويات والخصم التلقائي يشتغلوا مع بعض)
+  tiersEnabled: false,
+  autoDiscountEnabled: false,
+  // هل خصم المستوى + كوبون الخصم التلقائي بيتراكموا (true) ولا ناخد الأكبر بس (false)
+  stacking: false,
 };
 
 /**
@@ -63,20 +68,20 @@ async function getSettings(companyId) {
 
 /**
  * هل نظام الخصم التلقائي هو المفعل للشركة؟
- * activated لازم يبقى true (تم الضغط على "تفعيل النظام")
+ * 🆕 مستقل عن نظام المستويات — بيعتمد على autoDiscountEnabled
  */
 async function isAutoDiscountActive(companyId) {
   const s = await getSettings(companyId);
-  return s.loyaltySystem === 'AUTO_DISCOUNT' && s.activated === true && s.enabled !== false;
+  return s.autoDiscountEnabled === true && s.enabled !== false;
 }
 
 /**
  * هل نظام المستويات (Tiers) هو المفعل للشركة؟
- * لازم loyaltySystem === 'TIERS' و activated === true (تم الضغط على "تفعيل النظام")
+ * 🆕 مستقل عن الخصم التلقائي — بيعتمد على tiersEnabled
  */
 async function isTiersActive(companyId) {
   const s = await getSettings(companyId);
-  return s.loyaltySystem === 'TIERS' && s.activated === true;
+  return s.tiersEnabled === true;
 }
 
 /**
@@ -112,6 +117,9 @@ async function updateSettings(companyId, data) {
   if (system === 'AUTO_DISCOUNT' && next.activated === true && current.loyaltySystem !== 'AUTO_DISCOUNT') {
     next.loyaltyActivatedAt = new Date().toISOString();
   }
+  // 🆕 مزامنة الفلاجات المستقلة مع النظام القديم (عشان الفرونت القديم يفضل شغال)
+  next.tiersEnabled = (system === 'TIERS' && next.activated === true);
+  next.autoDiscountEnabled = (system === 'AUTO_DISCOUNT' && next.activated === true);
   await prisma.company.update({
     where: { id: companyId },
     data: {
@@ -121,6 +129,54 @@ async function updateSettings(companyId, data) {
   });
   // ✅ نرجّع loyaltySystem في الـ response عشان الواجهة تعرف النظام الفعلي المفعّل
   return { ...next, loyaltySystem: system };
+}
+
+/**
+ * 🆕 تحديث موحّد لإعدادات الولاء مع فلاجات تفعيل مستقلة:
+ * - tiersEnabled / autoDiscountEnabled: كل واحد لوحده (الاتنين ممكن يشتغلوا مع بعض)
+ * - stacking: هل خصم المستوى + كوبون الخصم التلقائي بيتراكموا (true) ولا ناخد الأكبر (false)
+ * - حقول إعداد الخصم التلقائي (discountPercent ...)
+ * ملاحظة: الكاش باك (cashbackEnabled) بيتعامل معاه الـ controller عشان يظبط على status برنامج CASHBACK.
+ */
+async function updateLoyaltyConfig(companyId, config = {}) {
+  const prisma = getSharedPrismaClient();
+  if (!companyId) throw new Error('Company context is missing');
+  const current = await getSettings(companyId);
+  const next = { ...current };
+
+  if (config.tiersEnabled !== undefined) next.tiersEnabled = config.tiersEnabled === true;
+  if (config.autoDiscountEnabled !== undefined) next.autoDiscountEnabled = config.autoDiscountEnabled === true;
+  if (config.stacking !== undefined) next.stacking = config.stacking === true;
+
+  const autoFields = [
+    'discountPercent', 'validityDays', 'convertExpiredToCashback',
+    'pointsPerAmount', 'pointsRedemptionValue', 'redeemPointsEnabled', 'enabled'
+  ];
+  for (const k of autoFields) {
+    if (config[k] !== undefined) next[k] = config[k];
+  }
+
+  // 🕐 تاريخ تفعيل الخصم التلقائي أول مرة يتفعّل
+  if (next.autoDiscountEnabled === true && current.autoDiscountEnabled !== true) {
+    next.loyaltyActivatedAt = new Date().toISOString();
+  }
+
+  // 🔄 نحافظ على الحقول legacy (loyaltySystem/activated) متزامنة لأن كود قديم لسه بيقرأها
+  if (next.tiersEnabled && !next.autoDiscountEnabled) {
+    next.loyaltySystem = 'TIERS'; next.activated = true;
+  } else if (next.autoDiscountEnabled && !next.tiersEnabled) {
+    next.loyaltySystem = 'AUTO_DISCOUNT'; next.activated = true;
+  } else if (next.tiersEnabled && next.autoDiscountEnabled) {
+    next.activated = true; next.loyaltySystem = current.loyaltySystem || 'TIERS';
+  } else {
+    next.activated = false;
+  }
+
+  await prisma.company.update({
+    where: { id: companyId },
+    data: { loyaltySystem: next.loyaltySystem, loyaltySettings: JSON.stringify(next) }
+  });
+  return next;
 }
 
 /**
@@ -431,7 +487,7 @@ async function getCustomerAutoDiscountSummary({ customerId, companyId, settings 
  */async function enrichCustomersWithAutoDiscountStatus(companyId, customers) {
   if (!Array.isArray(customers) || customers.length === 0) return customers;
   const settings = await getSettings(companyId);
-  if (settings.loyaltySystem !== 'AUTO_DISCOUNT' || settings.activated !== true || settings.enabled === false) {
+  if (settings.autoDiscountEnabled !== true || settings.enabled === false) {
     return customers;
   }
   const prisma = getSharedPrismaClient();
@@ -549,6 +605,7 @@ module.exports = {
   isTiersActive,
   isLoyaltySystemActivated,
   updateSettings,
+  updateLoyaltyConfig,
   issueVoucherForDeliveredOrder,
   getActiveVoucher,
   applyVoucherDiscount,

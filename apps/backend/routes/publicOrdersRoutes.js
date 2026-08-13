@@ -1265,23 +1265,16 @@ router.post('/', async (req, res) => {
       loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
       if (loyaltyCustomer) {
         const autoDiscountService = require('../services/autoDiscountService');
-        const autoActive = await autoDiscountService.isAutoDiscountActive(company.id);
+        const loyaltySettings = await autoDiscountService.getSettings(company.id);
+        const autoActive = loyaltySettings.autoDiscountEnabled === true && loyaltySettings.enabled !== false;
+        const tiersActive = loyaltySettings.tiersEnabled === true;
+        const stacking = loyaltySettings.stacking === true;
 
-        if (autoActive) {
-          // نظام "الخصم التلقائي": نطبق كوبون 10% على الأوردر الجاي (لو موجود نشط)
-          const voucherRes = await autoDiscountService.applyVoucherDiscount({
-            companyId: company.id,
-            customerId: loyaltyCustomer.id,
-            cartTotal
-          });
-          if (voucherRes.discount > 0 && voucherRes.voucher) {
-            loyaltyDiscount = voucherRes.discount;
-            discountAmount += loyaltyDiscount;
-            autoDiscountVoucherId = voucherRes.voucher.id;
-            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
-          }
-        } else if (await autoDiscountService.isTiersActive(company.id)) {
-          // نظام "المستويات": مزايا المستوى (شحن مجاني + خصم %) — بس لو النظام مفعّل
+        let tierDiscount = 0;
+        let voucherDiscount = 0;
+
+        // نظام "المستويات": مزايا المستوى (شحن مجاني + خصم %) — مستقل عن الخصم التلقائي
+        if (tiersActive) {
           loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
           const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
           loyaltyTierInfo = progress?.tier || null;
@@ -1298,9 +1291,32 @@ router.post('/', async (req, res) => {
 
           const lp = Number(loyaltyRewards?.discountPercent || 0);
           if (lp > 0) {
-            loyaltyDiscount = (Number(cartTotal) || 0) * (lp / 100);
-            discountAmount += loyaltyDiscount;
+            tierDiscount = (Number(cartTotal) || 0) * (lp / 100);
           }
+        }
+
+        // نظام "الخصم التلقائي": كوبون الخصم — مستقل عن المستويات
+        if (autoActive) {
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId: company.id,
+            customerId: loyaltyCustomer.id,
+            cartTotal
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            voucherDiscount = voucherRes.discount;
+            autoDiscountVoucherId = voucherRes.voucher.id;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+          }
+        }
+
+        // دمج خصم المستوى + كوبون الخصم: تراكم (stacking) أو أكبر واحد (max)
+        if (stacking) {
+          loyaltyDiscount = tierDiscount + voucherDiscount;
+        } else {
+          loyaltyDiscount = Math.max(tierDiscount, voucherDiscount);
+        }
+        if (loyaltyDiscount > 0) {
+          discountAmount += loyaltyDiscount;
         }
       }
     } catch (loyaltyError) {
@@ -1548,7 +1564,7 @@ router.post('/', async (req, res) => {
         try {
           const autoDiscountService = require('../services/autoDiscountService');
           const autoSettings = await autoDiscountService.getSettings(company.id);
-          if (autoSettings.loyaltySystem === 'AUTO_DISCOUNT' && autoSettings.redeemPointsEnabled !== false) {
+          if (autoSettings.autoDiscountEnabled === true && autoSettings.redeemPointsEnabled !== false) {
             const program = await tx.customerLoyaltyProgram.findFirst({
               where: { companyId: company.id, type: 'POINTS', status: 'ACTIVE' },
               orderBy: { createdAt: 'asc' }

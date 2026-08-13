@@ -368,17 +368,24 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     ? 0
     : Number(activeCoupon?.discountAmount || 0);
 
-  // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
+  // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي) — كل نظام مستقل (ممكن يشتغلوا مع بعض)
   const tierProgress = useCheckoutStore((s) => s.tierProgress);
-  const isAutoDiscountMode = tierProgress?.loyaltySystem === 'AUTO_DISCOUNT';
-  const loyaltyFreeShipping = isAutoDiscountMode ? false : Boolean(tierProgress?.rewards?.freeShipping);
-  const loyaltyDiscountPercent = isAutoDiscountMode ? 0 : Number(tierProgress?.rewards?.discountPercent || 0);
+  const tiersEnabled = tierProgress?.tiersEnabled === true;
+  const autoDiscountEnabled = tierProgress?.autoDiscountEnabled === true;
+  const loyaltyFreeShipping = tiersEnabled ? Boolean(tierProgress?.rewards?.freeShipping) : false;
+  const loyaltyDiscountPercent = tiersEnabled ? Number(tierProgress?.rewards?.discountPercent || 0) : 0;
   const loyaltyDiscount =
     loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
   const voucherDiscount =
-    isAutoDiscountMode && tierProgress?.activeVoucher
+    autoDiscountEnabled && tierProgress?.activeVoucher
       ? (Number(subtotal) || 0) * (Number(tierProgress.activeVoucher.percent) / 100)
       : 0;
+  // مطابقة منطق الباك-إند: تراكم (stacking) أو أكبر خصم (max)
+  const stacking = tierProgress?.stacking === true;
+  if (!stacking && loyaltyDiscount > 0 && voucherDiscount > 0) {
+    if (loyaltyDiscount >= voucherDiscount) voucherDiscount = 0;
+    else loyaltyDiscount = 0;
+  }
 
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(
     storefrontSettings,
@@ -1379,7 +1386,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           {loyaltyDiscount > 0 ? (
             <div className="flex justify-between text-foreground">
               <span className="text-[#6f6455]">
-                {isAutoDiscountMode ? '' : 'خصم مستوى '}{loyaltyDiscountPercent}%
+                {tiersEnabled ? 'خصم مستوى ' : ''}{loyaltyDiscountPercent}%
               </span>
               <span className="text-emerald-600">
                 -{formatStorefrontCurrency(loyaltyDiscount, currency)}

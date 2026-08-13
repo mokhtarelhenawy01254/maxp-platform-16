@@ -1139,7 +1139,8 @@ class CustomerLoyaltyService {
       let loyaltySystem = 'TIERS';
       try {
         const autoDiscountService = require('../autoDiscountService');
-        loyaltySystem = (await autoDiscountService.getSettings(companyId)).loyaltySystem || 'TIERS';
+        const _adSettings = await autoDiscountService.getSettings(companyId);
+        loyaltySystem = _adSettings.loyaltySystem || 'TIERS';
         if (await autoDiscountService.isAutoDiscountActive(companyId)) {
           const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
           activeVoucher = autoDiscountService.mapVoucherToPublic(voucher);
@@ -1184,7 +1185,10 @@ class CustomerLoyaltyService {
         rewards: rewards || { freeShipping: false, discountPercent: 0 },
         activeVoucher,
         walletBalance,
-        loyaltySystem
+        loyaltySystem,
+        tiersEnabled: _adSettings.tiersEnabled === true,
+        autoDiscountEnabled: _adSettings.autoDiscountEnabled === true,
+        stacking: _adSettings.stacking === true
       };
     } catch (error) {
       console.error('❌ Error getting customer tier progress:', error);

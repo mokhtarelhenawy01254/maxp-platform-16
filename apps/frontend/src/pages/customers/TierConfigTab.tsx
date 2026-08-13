@@ -200,15 +200,15 @@ const TierConfigTab: React.FC = () => {
   useEffect(() => { loadPrograms(); }, [loadPrograms]);
   useEffect(() => { if (programId) loadConfig(programId); }, [programId, loadConfig]);
 
-  // تحميل نظام الولاء الحالي (المستويات)
+  // تحميل نظام الولاء الحالي (المستويات) — 🆕 التفعيل مستقل عبر loyalty-config
   useEffect(() => {
     let cancelled = false;
-    apiClient.get("/hr/customer-loyalty/system-settings")
+    apiClient.get("/hr/customer-loyalty/loyalty-config")
       .then((res) => {
         if (cancelled) return;
-        const s = res.data?.data?.loyaltySystem || "TIERS";
-        setActiveSystem(s);
-        setActivated(res.data?.data?.activated === true);
+        const d = res.data?.data || {};
+        setActivated(d.tiers?.enabled === true);
+        setActiveSystem(d.tiers?.enabled ? "TIERS" : "AUTO_DISCOUNT");
       })
       .catch(() => {
         if (cancelled) return;
@@ -227,14 +227,14 @@ const TierConfigTab: React.FC = () => {
     }
 
     // لو المستويات مفعّلة حالياً → الضغط مرة تانية معناه إيقاف
-    if (activated && activeSystem === "TIERS") {
+    if (activated) {
       if (!window.confirm("هل تريد إيقاف تفعيل نظام المستويات؟")) return;
       setSaving(true);
       setErrorMsg("");
       setSavedMsg("");
       try {
-        const res = await apiClient.put("/hr/customer-loyalty/system-settings", { system: "TIERS", activated: false });
-        setActivated(res.data?.data?.activated === true);
+        const res = await apiClient.put("/hr/customer-loyalty/loyalty-config", { tiersEnabled: false });
+        setActivated(res.data?.data?.tiers?.enabled === true);
         setSavedMsg("تم إيقاف تفعيل نظام المستويات ✓");
       } catch (e: any) {
         setErrorMsg(e.response?.data?.error || "فشل إيقاف التفعيل");
@@ -270,9 +270,9 @@ const TierConfigTab: React.FC = () => {
       }
 
       // 3) تفعيل نظام المستويات (الضغط على "تفعيل النظام") → باك إند بيطبقه على كل العملاء
-      const res = await apiClient.put("/hr/customer-loyalty/system-settings", { system: "TIERS", activated: true });
+      const res = await apiClient.put("/hr/customer-loyalty/loyalty-config", { tiersEnabled: true });
       setActiveSystem("TIERS");
-      setActivated(true);
+      setActivated(res.data?.data?.tiers?.enabled === true);
       const activation = res.data?.activation;
       const appliedTxt = activation ? ` — اتطبق على ${activation.enrolled || 0} عميل جديد + ${activation.updated || 0} عميل` : "";
       setSavedMsg(`تم تفعيل نظام المستويات ✓${appliedTxt}`);

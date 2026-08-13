@@ -1136,7 +1136,7 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
     }
 
     const loyaltySystem = autoSettings?.loyaltySystem || 'TIERS';
-    const isAutoDiscount = loyaltySystem === 'AUTO_DISCOUNT' && autoSettings?.activated === true;
+    const isAutoDiscount = autoSettings?.autoDiscountEnabled === true;
 
     // ملخص الخصم التلقائي (كوبون فعّال + حالة الخصم) — موحّد مع بوابة المسؤول
     let autoSummary = { activeVoucher: null, status: null };

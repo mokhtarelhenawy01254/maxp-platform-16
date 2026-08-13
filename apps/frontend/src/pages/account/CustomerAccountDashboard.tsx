@@ -305,7 +305,6 @@ export default function CustomerAccountDashboard({
   }
 
   const currency = data.wallet?.currency || data.company?.currency || "EGP";
-  const isAutoDiscount = data.loyaltySystem === "AUTO_DISCOUNT";
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -349,7 +348,8 @@ export default function CustomerAccountDashboard({
       {!isAutoDiscount ? <MembershipCard data={data} /> : null}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        {isAutoDiscount ? <AutoDiscountCard data={data} /> : <TierCard data={data} />}
+        <TierCard data={data} />
+        {data.autoDiscount ? <AutoDiscountCard data={data} /> : null}
 
         <div className="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 shadow-sm dark:border-amber-900 dark:from-amber-950/40 dark:to-orange-950/40">
           <div className="flex items-center gap-3">

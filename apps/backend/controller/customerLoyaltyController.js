@@ -844,7 +844,7 @@ async function getCustomerPortalSummary(req, res) {
     }
 
     const loyaltySystem = autoSettings?.loyaltySystem || 'TIERS';
-    const isAutoDiscount = loyaltySystem === 'AUTO_DISCOUNT' && autoSettings?.activated === true;
+    const isAutoDiscount = autoSettings?.autoDiscountEnabled === true;
 
     // ملخص الخصم التلقائي (كوبون فعّال + حالة الخصم) — موحّد مع صفحة العميل العامة
     let autoSummary = { activeVoucher: null, status: null };
@@ -1093,7 +1093,7 @@ async function getSystemAnalytics(req, res) {
 
     let data;
 
-    if (loyaltySystem === 'AUTO_DISCOUNT') {
+    if (settings?.autoDiscountEnabled === true) {
       // ── عدّ الكوبونات حسب الحالة ──
       const [activeVouchers, usedVouchers, convertedVouchers, expiredVouchers, totalDeliveredOrders] =
         await Promise.all([
@@ -1224,7 +1224,130 @@ async function getSystemAnalytics(req, res) {
   }
 }
 
+/**
+ * 🆕 جلب الإعدادات الموحّدة لأنظمة الولاء (المستويات / الخصم التلقائي / الكاش باك)
+ * كل نظام له فلاج تفعيل مستقل + إعداداته.
+ */
+async function getLoyaltyConfig(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+    const settings = await autoDiscountService.getSettings(companyId);
+
+    const cashbackProgram = await prisma.customerLoyaltyProgram.findFirst({
+      where: { companyId, type: 'CASHBACK' },
+      select: { status: true }
+    });
+    const cashbackEnabled = cashbackProgram?.status === 'ACTIVE';
+
+    res.json({
+      success: true,
+      data: {
+        tiers: { enabled: settings.tiersEnabled === true },
+        autoDiscount: {
+          enabled: settings.autoDiscountEnabled === true,
+          discountPercent: Number(settings.discountPercent || 10),
+          validityDays: Number(settings.validityDays || 3),
+          convertExpiredToCashback: settings.convertExpiredToCashback !== false,
+          pointsPerAmount: Number(settings.pointsPerAmount || 5),
+          pointsRedemptionValue: Number(settings.pointsRedemptionValue || 1),
+          redeemPointsEnabled: settings.redeemPointsEnabled !== false,
+          stacking: settings.stacking === true
+        },
+        cashback: { enabled: cashbackEnabled }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting unified loyalty config:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب الإعدادات' });
+  }
+}
+
+/**
+ * 🆕 تحديث الإعدادات الموحّدة لأنظمة الولاء.
+ * - tiersEnabled / autoDiscountEnabled: تفعيل مستقل (الاتنين ممكن يشتغلوا مع بعض)
+ * - stacking: تراكم الخصمين أو أكبر واحد
+ * - cashbackEnabled: يتزامن مع status برنامج CASHBACK (الأقل ضرر)
+ */
+async function updateLoyaltyConfig(req, res) {
+  try {
+    const { companyId, id: userId } = req.user;
+    const config = req.body || {};
+
+    const settings = await autoDiscountService.updateLoyaltyConfig(companyId, config);
+
+    if (config.cashbackEnabled !== undefined) {
+      await syncCashbackProgramStatus(companyId, config.cashbackEnabled === true, userId);
+    }
+
+    const prisma = getSharedPrismaClient();
+    const cashbackProgram = await prisma.customerLoyaltyProgram.findFirst({
+      where: { companyId, type: 'CASHBACK' },
+      select: { status: true }
+    });
+    const cashbackEnabled = cashbackProgram?.status === 'ACTIVE';
+
+    res.json({
+      success: true,
+      data: {
+        tiers: { enabled: settings.tiersEnabled === true },
+        autoDiscount: {
+          enabled: settings.autoDiscountEnabled === true,
+          discountPercent: Number(settings.discountPercent || 10),
+          validityDays: Number(settings.validityDays || 3),
+          convertExpiredToCashback: settings.convertExpiredToCashback !== false,
+          pointsPerAmount: Number(settings.pointsPerAmount || 5),
+          pointsRedemptionValue: Number(settings.pointsRedemptionValue || 1),
+          redeemPointsEnabled: settings.redeemPointsEnabled !== false,
+          stacking: settings.stacking === true
+        },
+        cashback: { enabled: cashbackEnabled }
+      },
+      message: 'تم تحديث إعدادات الولاء بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ Error updating unified loyalty config:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث الإعدادات' });
+  }
+}
+
+/**
+ * مزامنة مفتاح الكاش باك (من البانل الموحّد) مع status برنامج CASHBACK.
+ * نحافظ على سلوك الكاش باك المنشور (الماستر-سويتش على status البرنامج).
+ */
+async function syncCashbackProgramStatus(companyId, enabled, userId) {
+  const prisma = getSharedPrismaClient();
+  const program = await prisma.customerLoyaltyProgram.findFirst({
+    where: { companyId, type: 'CASHBACK' }
+  });
+  if (program) {
+    await prisma.customerLoyaltyProgram.update({
+      where: { id: program.id },
+      data: { status: enabled ? 'ACTIVE' : 'INACTIVE' }
+    });
+  } else if (enabled) {
+    await prisma.customerLoyaltyProgram.create({
+      data: {
+        companyId,
+        name: 'Cashback',
+        nameAr: 'كاش باك',
+        type: 'CASHBACK',
+        status: 'ACTIVE',
+        pointsPerPurchase: '0.00',
+        pointsPerReferral: '0.00',
+        redemptionRate: '1.00',
+        minimumPoints: '0.00',
+        expiryMonths: 12,
+        rules: JSON.stringify({ cashbackPercent: 0, base: 'total', trigger: 'payment_completed' }),
+        createdBy: userId || 'system'
+      }
+    });
+  }
+}
+
 module.exports = {
+  getLoyaltyConfig,
+  updateLoyaltyConfig,
   getPrograms,
   getProgramById,
   createProgram,

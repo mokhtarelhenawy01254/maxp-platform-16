@@ -24,11 +24,19 @@ function startAutoDiscountVoucherCron() {
   cron.schedule('15 * * * *', async () => {
     try {
       const prisma = getSharedPrismaClient();
+      // 🆕 نفلتر الشركات اللي الخصم التلقائي مفعّل عندها عبر autoDiscountEnabled (مستقل)
       const companies = await prisma.company.findMany({
-        where: { loyaltySystem: 'AUTO_DISCOUNT' },
-        select: { id: true }
+        select: { id: true, loyaltySettings: true }
       });
-      for (const c of companies) {
+      const enabledCompanies = companies.filter((c) => {
+        try {
+          const s = JSON.parse(c.loyaltySettings || '{}');
+          return s.autoDiscountEnabled === true && s.enabled !== false;
+        } catch (e) {
+          return false;
+        }
+      });
+      for (const c of enabledCompanies) {
         try {
           await backfillMissingVouchers(c.id, { limit: 50 });
         } catch (e) {
