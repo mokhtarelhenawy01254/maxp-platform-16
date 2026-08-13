@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const customerController = require('../controller/customerController');
 const customerWhatsAppController = require('../controller/customerWhatsAppController');
+const occasionController = require('../controller/occasionController');
 const verifyToken = require("../utils/verifyToken")
 const { requireDbPermission } = require('../middleware/rbacMiddleware');
 
@@ -37,6 +38,13 @@ router.get('/whatsapp-notify/campaigns/history', verifyToken.authenticateToken, 
 // 🎉 جدولة حملات المناسبات (أوتوماتيك)
 router.post('/whatsapp-notify/occasions/schedule', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.scheduleOccasionCampaign);
 router.get('/whatsapp-notify/occasions/scheduled', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getScheduledOccasionCampaigns);
+
+// 🎉 إدارة المناسبات (إضافة/حذف/تعديل/نشر)
+router.get('/whatsapp-notify/occasions', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.listOccasions);
+router.post('/whatsapp-notify/occasions', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.createOccasion);
+router.put('/whatsapp-notify/occasions/:id', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.updateOccasion);
+router.delete('/whatsapp-notify/occasions/:id', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.deleteOccasion);
+router.post('/whatsapp-notify/occasions/:id/publish', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.publishOccasion);
 
 // Legacy manual send (kept for backward compat)
 router.post('/whatsapp-notify/send', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.sendBulkWhatsAppNotification);

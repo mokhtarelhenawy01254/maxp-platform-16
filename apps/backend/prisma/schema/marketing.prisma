@@ -1246,3 +1246,27 @@ model CustomerNotificationSchedule {
   @@index([companyId])
   @@map("customer_notification_schedules")
 }
+
+/// 🎉 المناسبات القابلة للإدارة (إضافة/حذف/تكرار + إرسال تلقائي عبر الكرون)
+model Occasion {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String
+  message         String
+  mediaUrl        String?
+  scheduledAt     DateTime
+  recurrence      String   @default("none") // none | monthly | yearly
+  customerListIds String   @default("[]")   // JSON array of customerList ids
+  status          String   @default("draft") // draft | scheduled | sent | cancelled
+  lastSentAt      DateTime?
+  lastSentCount   Int      @default(0)
+  nextRunAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+  @@index([nextRunAt])
+  @@map("occasions")
+}

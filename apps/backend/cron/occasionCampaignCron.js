@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
+const { buildEffectiveCustomerListWhere } = require('../utils/customerListCriteria');
 
 /**
  * 🎉 أتمتة حملات المناسبات المجدولة (Ramadan / عيد الأم / افتتاحات...)
@@ -87,6 +88,122 @@ async function processDueOccasionCampaigns() {
   }
 }
 
+function parseListIds(raw) {
+  if (Array.isArray(raw)) return raw.filter(x => typeof x === 'string' && x);
+  if (typeof raw === 'string') {
+    try {
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.filter(x => typeof x === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+// يحل جمهور المناسبة من قوائم العملاء المختارة (يدمج الأعضاء ويمنع التكرار)
+const DEFAULT_LIST_CRITERIA = {
+  all: { type: 'all' },
+  'active-24h': { type: 'active', lastActivity: '24' },
+};
+async function resolveOccasionAudience(prisma, companyId, listIds) {
+  if (!Array.isArray(listIds) || listIds.length === 0) return [];
+  const dbLists = await prisma.customerList.findMany({ where: { id: { in: listIds }, companyId } });
+  const customerMap = new Map();
+  for (const listId of listIds) {
+    let criteria = null;
+    const dbList = dbLists.find(l => l.id === listId);
+    if (dbList) criteria = dbList.criteria;
+    else if (DEFAULT_LIST_CRITERIA[listId]) criteria = JSON.stringify(DEFAULT_LIST_CRITERIA[listId]);
+    if (!criteria) continue;
+    try {
+      const { where } = await buildEffectiveCustomerListWhere(prisma, companyId, criteria);
+      const customers = await prisma.customer.findMany({
+        where,
+        select: { id: true, phone: true, firstName: true, lastName: true },
+        take: 5000,
+      });
+      for (const c of customers) {
+        if (c.phone && !customerMap.has(c.id)) customerMap.set(c.id, c);
+      }
+    } catch (e) {
+      console.error(`❌ [OCCASION-CRON] list ${listId} resolve error:`, e.message);
+    }
+  }
+  return Array.from(customerMap.values());
+}
+
+// يعالج المناسبات المجدولة ويبعت واتساب لجمهورها، مع دعم التكرار (شهري/سنوي)
+async function processDueOccasions() {
+  const prisma = getSharedPrismaClient();
+  const now = new Date();
+  const occasions = await prisma.occasion.findMany({
+    where: { status: 'scheduled', nextRunAt: { lte: now } },
+    take: 50,
+  });
+
+  for (const occ of occasions) {
+    try {
+      const listIds = parseListIds(occ.customerListIds);
+      const audience = await resolveOccasionAudience(prisma, occ.companyId, listIds);
+      let sent = 0;
+      let failed = 0;
+
+      if (audience.length > 0) {
+        for (const customer of audience) {
+          const phone = customer.phone;
+          if (!phone) continue;
+          const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
+          try {
+            const result = await WhatsAppNotificationService.sendNotification({
+              companyId: occ.companyId,
+              recipientPhone: phone,
+              recipientName: name,
+              recipientType: 'CUSTOMER',
+              category: 'MARKETING',
+              eventType: 'OCCASION_CAMPAIGN',
+              contentOverride: occ.message,
+              variables: {
+                customerName: name,
+                firstName: customer.firstName || '',
+                occasionName: occ.name,
+              },
+              priority: 2,
+            });
+            if (result && result.success) sent++;
+            else failed++;
+          } catch (sendErr) {
+            failed++;
+          }
+        }
+      }
+
+      // تحديد الموعد التالي حسب التكرار
+      let nextRunAt = null;
+      let status = 'sent';
+      if (occ.recurrence === 'yearly') {
+        const next = new Date(occ.nextRunAt || occ.scheduledAt);
+        next.setFullYear(next.getFullYear() + 1);
+        nextRunAt = next;
+        status = 'scheduled';
+      } else if (occ.recurrence === 'monthly') {
+        const next = new Date(occ.nextRunAt || occ.scheduledAt);
+        next.setMonth(next.getMonth() + 1);
+        nextRunAt = next;
+        status = 'scheduled';
+      }
+
+      await prisma.occasion.update({
+        where: { id: occ.id },
+        data: { status, nextRunAt, lastSentAt: new Date(), lastSentCount: sent },
+      });
+      console.log(`✅ [OCCASION-CRON] "${occ.name}" sent to ${sent} (failed ${failed}) recurrence=${occ.recurrence}`);
+    } catch (error) {
+      console.error(`❌ [OCCASION-CRON] Failed processing occasion ${occ.id}:`, error.message);
+    }
+  }
+}
+
 function startOccasionCampaignScheduler() {
   console.log('🎉 [OCCASION-CRON] Initializing occasion campaign scheduler...');
   cron.schedule('0 * * * *', async () => {
@@ -95,8 +212,13 @@ function startOccasionCampaignScheduler() {
     } catch (error) {
       console.error('❌ [OCCASION-CRON] Error:', error.message);
     }
+    try {
+      await processDueOccasions();
+    } catch (error) {
+      console.error('❌ [OCCASION-CRON] processDueOccasions Error:', error.message);
+    }
   });
   console.log('✅ [OCCASION-CRON] Started (runs every hour)');
 }
 
-module.exports = { startOccasionCampaignScheduler, processDueOccasionCampaigns };
+module.exports = { startOccasionCampaignScheduler, processDueOccasionCampaigns, processDueOccasions };
