@@ -3,8 +3,6 @@ import { apiClient } from "../../services/apiClient";
 import {
   Save,
   Coins,
-  AlertCircle,
-  CheckCircle,
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
