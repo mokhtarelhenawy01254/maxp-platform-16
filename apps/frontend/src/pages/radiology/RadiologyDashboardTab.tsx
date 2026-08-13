@@ -16,6 +16,7 @@ export default function RadiologyDashboardTab() {
   const [stats, setStats] = useState<{
     studiesToday?: number; awaiting?: number; ready?: number; emergency?: number; revenue?: number;
   } | null>(null);
+  const [todayAppointments, setTodayAppointments] = useState<number>(0);
   const [fin, setFin] = useState<FinancialSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,8 +40,18 @@ export default function RadiologyDashboardTab() {
           revenue = finData?.totalCollected;
         } catch { }
 
+        let todayAppointments = 0;
+        try {
+          const d = new Date();
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          const ap = await fetchJson<{ items?: { status?: string }[]; total?: number }>(`${api("appointments")}&dateFrom=${key}&dateTo=${key}&limit=200`);
+          const list = ap.items || [];
+          todayAppointments = list.filter(a => a.status === "SCHEDULED" || a.status === "CHECKED_IN").length;
+        } catch { }
+
         setStats({ studiesToday, awaiting, ready, emergency, revenue });
         setFin(finData || null);
+        setTodayAppointments(todayAppointments);
       } catch (e) {
         setError(e instanceof Error ? e.message : "خطأ");
       }
@@ -50,6 +61,7 @@ export default function RadiologyDashboardTab() {
   if (error) return <div className="text-red-500">{error}</div>;
 
   const cards = [
+    { label: "حجوزات اليوم", value: todayAppointments ?? "—", to: "/radiology/schedule" },
     { label: "دراسات اليوم", value: stats?.studiesToday ?? "—" },
     { label: "بانتظار التقرير", value: stats?.awaiting ?? "—" },
     { label: "تقارير جاهزة", value: stats?.ready ?? "—" },
@@ -59,11 +71,15 @@ export default function RadiologyDashboardTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {cards.map(c => (
           <div key={c.label} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
             <p className="text-sm text-gray-500 dark:text-gray-400">{c.label}</p>
-            <p className="text-2xl font-bold mt-1">{c.value}</p>
+            {c.to ? (
+              <a href={c.to} className="text-2xl font-bold mt-1 block text-blue-600 dark:text-blue-400 hover:underline">{c.value}</a>
+            ) : (
+              <p className="text-2xl font-bold mt-1">{c.value}</p>
+            )}
           </div>
         ))}
       </div>
