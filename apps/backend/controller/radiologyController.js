@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
 const { parseDicomFromBuffer, generateStudyNumber } = require('../utils/dicomUtil');
+const { findOrCreatePatient } = require('../services/bookingPatientService');
+const { deriveRadiologyOrderStatus, recordRadiologyStatusHistory, syncStudyOrderStatus } = require('../utils/radiologyStatusHistory');
 
 const RADIOLOGY_STUDY_CHAIN = ['PENDING_IMAGING', 'IMAGED', 'PENDING_REPORT', 'REPORTED', 'DELIVERED'];
 const RADIOLOGY_REPORT_CHAIN = ['DRAFT', 'REVIEWED', 'SIGNED', 'DELIVERED'];
@@ -315,10 +317,75 @@ const getStudy = async (req, res) => {
       prisma.radiologyReport.findUnique({ where: { studyId: id } }),
     ]);
 
-    res.json({ success: true, data: { ...study, images: images.map(formatImage), report } });
+    const orderStatus = deriveRadiologyOrderStatus({ study });
+    res.json({ success: true, data: { ...study, orderStatus, images: images.map(formatImage), report } });
   } catch (error) {
     console.error('Error fetching radiology study:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب دراسة الأشعة' });
+  }
+};
+
+const getStudyDetails = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+
+    const [
+      appointment,
+      images,
+      report,
+      payments,
+      shiftPayments,
+      statusHistory,
+      invoiceItem,
+    ] = await Promise.all([
+      study.appointmentId
+        ? prisma.radiologyAppointment.findUnique({ where: { id: study.appointmentId } }).catch(() => null)
+        : null,
+      prisma.radiologyStudyImage.findMany({ where: { studyId: id }, orderBy: { createdAt: 'asc' } }),
+      prisma.radiologyReport.findUnique({ where: { studyId: id } }),
+      prisma.radiologyStudyPayment.findMany({ where: { studyId: id }, orderBy: { createdAt: 'desc' } }),
+      prisma.radiologyShiftPayment.findMany({ where: { studyId: id }, orderBy: { createdAt: 'desc' } }),
+      prisma.radiologyStudyStatusHistory.findMany({ where: { studyId: id }, orderBy: { createdAt: 'asc' } }),
+      prisma.radiologyInsuranceInvoiceItem.findFirst({ where: { studyId: id }, select: { invoiceId: true } }).catch(() => null),
+    ]);
+
+    let insuranceInvoice = null;
+    if (invoiceItem?.invoiceId) {
+      insuranceInvoice = await prisma.radiologyInsuranceInvoice.findUnique({ where: { id: invoiceItem.invoiceId } }).catch(() => null);
+    }
+
+    const total = (study.priceSnapshot || 0) + (study.additionAmount || 0);
+    const orderStatus = deriveRadiologyOrderStatus({ appointment, study });
+
+    res.json({
+      success: true,
+      data: {
+        study: { ...study, orderStatus },
+        appointment,
+        images: images.map(formatImage),
+        report,
+        payments,
+        shiftPayments,
+        statusHistory,
+        insuranceInvoice,
+        totals: {
+          total,
+          paidAmount: study.paidAmount || 0,
+          remaining: Math.max(0, total - (study.paidAmount || 0)),
+          paymentStatus: study.paymentStatus || 'UNPAID',
+          billingType: study.billingType || 'PATIENT',
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching radiology study details:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تفاصيل الدراسة' });
   }
 };
 
@@ -332,6 +399,27 @@ const createStudy = async (req, res) => {
     if (!patientName) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
 
     const prisma = getSharedPrismaClient();
+
+    // Resolve the patient record: use the provided patientId (validated), or find-or-create
+    // a patient from the study fields so every study links to a Patient row.
+    let patientId = body.patientId ? String(body.patientId) : null;
+    if (patientId) {
+      const linked = await prisma.patient.findFirst({
+        where: { id: patientId, companyId },
+        select: { id: true },
+      }).catch(() => null);
+      if (!linked) return res.status(400).json({ success: false, error: 'المريض لا ينتمي لهذه الشركة' });
+    } else {
+      const resolved = await findOrCreatePatient({
+        companyId,
+        customerName: patientName,
+        customerPhone: body.patientPhone ? String(body.patientPhone) : undefined,
+        customerGender: body.patientGender || undefined,
+        customerEmail: body.patientEmail || undefined,
+        nationalId: body.nationalId ? String(body.nationalId) : undefined,
+      });
+      patientId = resolved.id;
+    }
 
     let examType = null;
     if (body.examTypeId) {
@@ -357,6 +445,15 @@ const createStudy = async (req, res) => {
       });
       if (!entity) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
       insuranceCompanyName = entity.name;
+    }
+
+    let deviceName = null;
+    if (body.deviceId) {
+      const device = await prisma.radiologyDevice.findFirst({
+        where: { id: String(body.deviceId), companyId, isActive: true },
+        select: { id: true, name: true },
+      });
+      if (device) deviceName = device.name;
     }
 
     let additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;
@@ -403,7 +500,7 @@ const createStudy = async (req, res) => {
           data: {
             companyId,
             studyNumber,
-            patientId: body.patientId || null,
+            patientId,
             patientName,
             patientPhone: body.patientPhone ? String(body.patientPhone) : null,
             patientGender: body.patientGender || null,
@@ -417,6 +514,7 @@ const createStudy = async (req, res) => {
             priceSnapshot: examType ? examType.price : 0,
             billingType: body.insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
             status: 'PENDING_IMAGING',
+            orderStatus: 'IN_PROGRESS',
             emergency: body.emergency === true || body.emergency === 'true',
             withContrast: body.withContrast === true || body.withContrast === 'true',
             referralDoctor: physicianName || (body.referralDoctor ? String(body.referralDoctor) : null),
@@ -427,6 +525,8 @@ const createStudy = async (req, res) => {
             additionAmount,
             priceSnapshot,
             accessionNumber: body.accessionNumber ? String(body.accessionNumber) : null,
+            deviceId: body.deviceId || null,
+            deviceName,
             submissionStatus: 'NOT_SUBMITTED',
             createdBy: req.user?.id || req.user?.email || null,
           },
@@ -443,6 +543,16 @@ const createStudy = async (req, res) => {
         throw error;
       }
     }
+
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: study.id,
+      dimension: 'PREP',
+      status: 'PENDING_IMAGING',
+      oldStatus: null,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
 
     res.json({ success: true, data: study });
   } catch (error) {
@@ -482,6 +592,7 @@ const duplicateStudy = async (req, res) => {
             priceSnapshot: existing.priceSnapshot,
             billingType: existing.billingType || 'PATIENT',
             status: 'PENDING_IMAGING',
+            orderStatus: 'IN_PROGRESS',
             emergency: existing.emergency,
             withContrast: existing.withContrast,
             referralDoctor: existing.referralDoctor,
@@ -490,6 +601,8 @@ const duplicateStudy = async (req, res) => {
             insuranceCompanyName: existing.insuranceCompanyName,
             additionIds: existing.additionIds,
             additionAmount: existing.additionAmount,
+            deviceId: existing.deviceId,
+            deviceName: existing.deviceName,
             notes: existing.notes ? `تكرار دراسة ${existing.studyNumber || ''}: ${existing.notes}` : null,
             submissionStatus: 'NOT_SUBMITTED',
             createdBy: req.user?.id || req.user?.email || null,
@@ -503,6 +616,16 @@ const duplicateStudy = async (req, res) => {
         throw error;
       }
     }
+
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: study.id,
+      dimension: 'PREP',
+      status: 'PENDING_IMAGING',
+      oldStatus: null,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
 
     res.json({ success: true, data: study });
   } catch (error) {
@@ -524,6 +647,9 @@ const updateStudy = async (req, res) => {
 
     const data = {};
 
+    let oldStatus = null;
+    let newStatus = null;
+
     if (body.patientName !== undefined) {
       const name = typeof body.patientName === 'string' ? body.patientName.trim() : '';
       if (!name) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
@@ -538,7 +664,30 @@ const updateStudy = async (req, res) => {
       const flags = normalizePatientFlags(body.patientFlags);
       if (flags !== undefined) data.patientFlags = flags;
     }
-    if (body.patientId !== undefined) data.patientId = body.patientId || null;
+    if (body.patientId !== undefined) {
+      if (body.patientId) {
+        const linked = await prisma.patient.findFirst({
+          where: { id: String(body.patientId), companyId },
+          select: { id: true },
+        }).catch(() => null);
+        if (!linked) return res.status(400).json({ success: false, error: 'المريض لا ينتمي لهذه الشركة' });
+        data.patientId = String(body.patientId);
+      } else {
+        // Preserve the existing link instead of silently nulling it out
+        data.patientId = existing.patientId || null;
+      }
+    } else if (!existing.patientId) {
+      // Backfill link for studies that predate the patient linkage rule
+      const resolved = await findOrCreatePatient({
+        companyId,
+        customerName: existing.patientName,
+        customerPhone: existing.patientPhone || (body.patientPhone ? String(body.patientPhone) : undefined),
+        customerGender: body.patientGender || existing.patientGender,
+        customerEmail: undefined,
+        nationalId: existing.nationalId || (body.nationalId ? String(body.nationalId) : undefined),
+      });
+      data.patientId = resolved.id;
+    }
     if (body.emergency !== undefined) data.emergency = normalizeBool(body.emergency, existing.emergency);
     if (body.withContrast !== undefined) data.withContrast = normalizeBool(body.withContrast, existing.withContrast);
     if (body.referralDoctor !== undefined) data.referralDoctor = body.referralDoctor ? String(body.referralDoctor) : null;
@@ -569,6 +718,18 @@ const updateStudy = async (req, res) => {
     }
     if (body.notes !== undefined) data.notes = body.notes ? String(body.notes) : null;
     if (body.accessionNumber !== undefined) data.accessionNumber = body.accessionNumber ? String(body.accessionNumber) : null;
+    if (body.deviceId !== undefined) {
+      data.deviceId = body.deviceId ? String(body.deviceId) : null;
+      if (body.deviceId) {
+        const device = await prisma.radiologyDevice.findFirst({
+          where: { id: String(body.deviceId), companyId, isActive: true },
+          select: { id: true, name: true },
+        });
+        data.deviceName = device ? device.name : null;
+      } else {
+        data.deviceName = null;
+      }
+    }
 
     if (body.examTypeId !== undefined) {
       const examTypeId = body.examTypeId || null;
@@ -604,6 +765,8 @@ const updateStudy = async (req, res) => {
         if (!transition.valid) return res.status(400).json({ success: false, error: transition.error });
       }
       data.status = status;
+      oldStatus = existing.status;
+      newStatus = status;
     }
 
     if (body.submissionStatus !== undefined) {
@@ -621,6 +784,21 @@ const updateStudy = async (req, res) => {
     const study = await prisma.radiologyStudy.update({ where: { id }, data });
     if (data.status === 'PENDING_REPORT' || data.status === 'REPORTED') {
       await ensureReportForStudy(prisma, id, signerName(req)).catch(() => null);
+    }
+    if (data.status !== undefined && data.status !== existing.status) {
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: id,
+        dimension: 'PREP',
+        oldStatus: existing.status,
+        status: data.status,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+      await syncStudyOrderStatus(prisma, { ...study, status: data.status ?? study.status, orderStatus: study.orderStatus }, {
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
     }
     res.json({ success: true, data: study });
   } catch (error) {
@@ -687,6 +865,22 @@ const uploadStudyImages = async (req, res) => {
     let updatedStudy = study;
     if (Object.keys(studyUpdate).length) {
       updatedStudy = await prisma.radiologyStudy.update({ where: { id }, data: studyUpdate });
+    }
+
+    if (study.status === 'PENDING_IMAGING') {
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: id,
+        dimension: 'PREP',
+        oldStatus: study.status,
+        status: updatedStudy.status,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+      await syncStudyOrderStatus(prisma, { ...updatedStudy, status: updatedStudy.status }, {
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
     }
 
     res.json({ success: true, data: { images: created.map(formatImage), study: updatedStudy } });
@@ -802,6 +996,17 @@ const upsertStudyReport = async (req, res) => {
         }
       }
       const report = await prisma.radiologyReport.update({ where: { id: existing.id }, data });
+      if (requestedStatus && requestedStatus !== existing.reportStatus) {
+        await recordRadiologyStatusHistory(prisma, {
+          companyId,
+          studyId: id,
+          dimension: 'REPORT',
+          oldStatus: existing.reportStatus,
+          status: requestedStatus,
+          changedBy: req.user?.id || req.user?.email || null,
+          userName: signerName(req),
+        });
+      }
       return res.json({ success: true, data: report });
     }
 
@@ -823,8 +1028,31 @@ const upsertStudyReport = async (req, res) => {
 
     const report = await prisma.radiologyReport.create({ data: createData });
 
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: id,
+      dimension: 'REPORT',
+      oldStatus: null,
+      status: reportStatus,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+
     if (study.status !== 'REPORTED' && study.status !== 'DELIVERED') {
-      await prisma.radiologyStudy.update({ where: { id }, data: { status: 'REPORTED' } });
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: id,
+        dimension: 'PREP',
+        oldStatus: study.status,
+        status: 'REPORTED',
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+      const reportedStudy = await prisma.radiologyStudy.update({ where: { id }, data: { status: 'REPORTED' } });
+      await syncStudyOrderStatus(prisma, { ...reportedStudy, status: reportedStudy.status }, {
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
     }
 
     res.json({ success: true, data: report });
@@ -871,6 +1099,17 @@ const advanceReportStatus = async (req, res) => {
     }
 
     const updated = await prisma.radiologyReport.update({ where: { id: report.id }, data });
+    if (report.reportStatus !== target) {
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: id,
+        dimension: 'REPORT',
+        oldStatus: report.reportStatus,
+        status: target,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+    }
     res.json({ success: true, data: updated });
   } catch (error) {
     console.error('Error advancing radiology report status:', error);
@@ -918,6 +1157,29 @@ const markDelivered = async (req, res) => {
       prisma.radiologyReport.update({ where: { id: report.id }, data: { reportStatus: 'DELIVERED' } }),
       prisma.radiologyStudy.update({ where: { id }, data: { status: 'DELIVERED' } }),
     ]);
+
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: id,
+      dimension: 'PREP',
+      oldStatus: study.status,
+      status: 'DELIVERED',
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: id,
+      dimension: 'REPORT',
+      oldStatus: report.reportStatus,
+      status: 'DELIVERED',
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+    await syncStudyOrderStatus(prisma, { ...deliveredStudy, status: deliveredStudy.status }, {
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
 
     res.json({ success: true, data: { study: deliveredStudy, report: deliveredReport } });
   } catch (error) {
@@ -1171,6 +1433,7 @@ module.exports = {
   deleteExamType,
   listStudies,
   getStudy,
+  getStudyDetails,
   createStudy,
   duplicateStudy,
   updateStudy,

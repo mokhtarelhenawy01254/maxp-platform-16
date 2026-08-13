@@ -485,6 +485,46 @@ const listEntityPricesSummary = async (req, res) => {
   }
 };
 
+const checkCoverage = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { insuranceCompanyId, examTypeIds } = req.query;
+    if (!insuranceCompanyId) return res.status(400).json({ success: false, error: 'شركة التأمين مطلوبة' });
+    const ids = String(examTypeIds || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!ids.length) return res.status(400).json({ success: false, error: 'اختر فحوصات للتحقق' });
+
+    const prisma = getSharedPrismaClient();
+    const prices = await prisma.radiologyEntityPrice.findMany({
+      where: { companyId, insuranceCompanyId: String(insuranceCompanyId), examTypeId: { in: ids }, isActive: true },
+      select: { examTypeId: true, price: true },
+    });
+    const priceByExam = new Map(prices.map(p => [p.examTypeId, p.price]));
+
+    const exams = await prisma.radiologyExamType.findMany({
+      where: { companyId, id: { in: ids } },
+      select: { id: true, name: true, price: true },
+    });
+
+    const data = exams.map(e => {
+      const covered = priceByExam.has(e.id);
+      return {
+        examTypeId: e.id,
+        examTypeName: e.name,
+        covered,
+        entityPrice: covered ? priceByExam.get(e.id) : null,
+        basePrice: e.price,
+        status: covered ? 'COVERED' : 'NOT_COVERED',
+      };
+    });
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error checking insurance coverage:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في التحقق من تغطية التأمين' });
+  }
+};
+
 module.exports = {
   assignStudyInsurance,
   createInvoice,
@@ -497,4 +537,5 @@ module.exports = {
   setEntityPrice,
   listEntityPrices,
   listEntityPricesSummary,
+  checkCoverage,
 };

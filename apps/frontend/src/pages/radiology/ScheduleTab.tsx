@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, ChevronDown } from "lucide-react";
-import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, ChevronDown, ScanLine } from "lucide-react";
+import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, RadiologyDevice, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 import ScheduleCalendar, { ViewMode, dayKey, addDays, egyptWeekStart } from "./ScheduleCalendar";
 
 interface Appointment {
@@ -11,6 +11,8 @@ interface Appointment {
   nationalId?: string; insuranceNumber?: string;
   patientFlags?: string[] | string;
   examTypeId?: string; examTypeName?: string;
+  examTypeIds?: string[] | string;
+  deviceId?: string; deviceName?: string;
   insuranceCompanyId?: string;
   additionIds?: string[] | string;
   additionAmount?: number;
@@ -32,15 +34,16 @@ const STATUS_CHAIN: Record<string, string> = { SCHEDULED: "CHECKED_IN", CHECKED_
 interface Form {
   id?: string; patientId: string; patientName: string; patientPhone: string;
   patientGender: string; patientAge: string;
-  nationalId: string; insuranceNumber: string; patientFlags: string[];
-  examTypeId: string; insuranceCompanyId: string; additionIds: string[];
+  nationalId: string; nationalIdImage?: string; insuranceNumber: string; patientFlags: string[];
+  examTypeIds: string[]; insuranceCompanyId: string; additionIds: string[];
+  deviceId: string;
   referringPhysicianId: string; referralDoctor: string; emergency: boolean;
   appointmentDate: string; appointmentTime: string; status: string; notes: string;
 }
 
 const emptyForm = (): Form => ({
-  patientId: "", patientName: "", patientPhone: "", patientGender: "", patientAge: "", nationalId: "", insuranceNumber: "", patientFlags: [],
-  examTypeId: "", insuranceCompanyId: "", additionIds: [],
+  patientId: "", patientName: "", patientPhone: "", patientGender: "", patientAge: "", nationalId: "", nationalIdImage: "", insuranceNumber: "", patientFlags: [],
+  examTypeIds: [], insuranceCompanyId: "", additionIds: [], deviceId: "",
   referringPhysicianId: "", referralDoctor: "", emergency: false,
   appointmentDate: new Date().toISOString().slice(0, 10), appointmentTime: "", status: "SCHEDULED", notes: "",
 });
@@ -70,20 +73,27 @@ export default function ScheduleTab() {
   const [examOpen, setExamOpen] = useState(false);
   const [examFiltered, setExamFiltered] = useState<RadiologyExamType[]>([]);
   const [newPatientOpen, setNewPatientOpen] = useState(false);
-  const [newPatient, setNewPatient] = useState({ firstName: "", phone: "", gender: "", nationalId: "", birthDate: "" });
+  const [newPatient, setNewPatient] = useState({ firstName: "", phone: "", gender: "", nationalId: "", birthDate: "", nationalIdImage: "" });
   const [savingNewPatient, setSavingNewPatient] = useState(false);
   const [entityPrice, setEntityPrice] = useState<number | null>(null);
+  const [devices, setDevices] = useState<RadiologyDevice[]>([]);
+  const [coverage, setCoverage] = useState<Record<string, { covered: boolean; entityPrice?: number | null; basePrice?: number }>>({});
+  const [cardScan, setCardScan] = useState<string | null>(null);
+  const [cardScanTarget, setCardScanTarget] = useState<"modal" | "newPatient" | null>(null);
+  const cardInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadCatalog = useCallback(async () => {
     try {
-      const [ets, adds, ins] = await Promise.all([
+      const [ets, adds, ins, devs] = await Promise.all([
         fetchJson<RadiologyExamType[]>(`${api("exam-types")}&limit=500`),
         fetchJson<RadiologyExamType[]>(`${api("exam-types")}&isAddition=true&limit=100`).catch(() => []),
         fetchJson<{ id: string; name: string }[]>(bookingApi("insurance-companies")).catch(() => []),
+        fetchJson<RadiologyDevice[]>(`${api("devices")}&includeInactive=true`).catch(() => []),
       ]);
       setExamTypes(Array.isArray(ets) ? ets : []);
       setAdditions(Array.isArray(adds) ? adds : []);
       setInsuranceCompanies(Array.isArray(ins) ? ins : []);
+      setDevices(Array.isArray(devs) ? devs : []);
     } catch { /* catalog optional */ }
   }, []);
 
@@ -154,13 +164,13 @@ export default function ScheduleTab() {
   }, [examSearch, examTypes]);
 
   useEffect(() => {
-    if (!modal?.examTypeId || !modal.insuranceCompanyId) { setEntityPrice(null); return; }
+    if (!modal?.examTypeIds.length || !modal.insuranceCompanyId) { setEntityPrice(null); return; }
     let cancelled = false;
     (async () => {
       try {
         const url = new URL(api("entity-prices"));
         url.searchParams.set("insuranceCompanyId", modal.insuranceCompanyId);
-        url.searchParams.set("examTypeId", modal.examTypeId);
+        url.searchParams.set("examTypeId", modal.examTypeIds[0] || "");
         const rows = await fetchJson<{ price: number }[]>(url.toString());
         if (!cancelled) setEntityPrice(rows && rows.length ? Number(rows[0]?.price) : null);
       } catch {
@@ -168,7 +178,28 @@ export default function ScheduleTab() {
       }
     })();
     return () => { cancelled = true; };
-  }, [modal?.examTypeId, modal?.insuranceCompanyId]);
+  }, [modal?.examTypeIds, modal?.insuranceCompanyId]);
+
+  useEffect(() => {
+    if (!modal?.examTypeIds.length || !modal.insuranceCompanyId) { setCoverage({}); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = new URL(api("coverage"));
+        url.searchParams.set("insuranceCompanyId", modal.insuranceCompanyId);
+        url.searchParams.set("examTypeIds", modal.examTypeIds.join(","));
+        const rows = await fetchJson<{ examTypeId: string; covered: boolean; entityPrice?: number | null; basePrice?: number }[]>(url.toString());
+        if (!cancelled) {
+          const map: Record<string, { covered: boolean; entityPrice?: number | null; basePrice?: number }> = {};
+          (Array.isArray(rows) ? rows : []).forEach(r => { map[r.examTypeId] = { covered: r.covered, entityPrice: r.entityPrice, basePrice: r.basePrice }; });
+          setCoverage(map);
+        }
+      } catch {
+        if (!cancelled) setCoverage({});
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [modal?.examTypeIds, modal?.insuranceCompanyId]);
 
   const parseEgyptianNationalId = (raw: string) => {
     const id = raw.replace(/\D/g, "");
@@ -182,7 +213,15 @@ export default function ScheduleTab() {
     const gender = Number(id[12]) % 2 === 1 ? "male" : "female";
     const dob = new Date(Date.UTC(year, month - 1, day));
     const age = Math.max(0, Math.floor((Date.now() - dob.getTime()) / (31557600000)));
-    return { gender, age: String(age) };
+    return { gender, age: String(age), year, month, day };
+  };
+
+  const birthFromNationalId = (raw: string): string => {
+    const parsed = parseEgyptianNationalId(raw);
+    if (!parsed) return "";
+    const mm = String(parsed.month).padStart(2, "0");
+    const dd = String(parsed.day).padStart(2, "0");
+    return `${parsed.year}-${mm}-${dd}`;
   };
 
   const applyNationalId = (raw: string) => {
@@ -196,13 +235,60 @@ export default function ScheduleTab() {
     } : m);
   };
 
-  const pickExam = (et: RadiologyExamType) => {
-    setModal(m => m ? { ...m, examTypeId: et.id } : m);
+  const openCardScanner = (target: "modal" | "newPatient") => {
+    setCardScanTarget(target);
+    setCardScan(null);
+    if (cardInputRef.current) cardInputRef.current.click();
+  };
+
+  const handleCardScanFile = (file: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      setCardScan(dataUrl);
+      if (cardScanTarget === "newPatient") {
+        setNewPatient(p => ({ ...p, nationalIdImage: dataUrl }));
+      } else {
+        setModal(m => m ? { ...m, nationalIdImage: dataUrl } : m);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const applyScannedCard = () => {
+    const target = cardScanTarget;
+    setCardScan(null);
+    setCardScanTarget(null);
+    if (target === "newPatient") {
+      if (newPatient.nationalId.replace(/\D/g, "").length === 14) {
+        const parsed = parseEgyptianNationalId(newPatient.nationalId);
+        if (parsed) {
+          setNewPatient(p => ({ ...p, gender: parsed.gender, birthDate: birthFromNationalId(newPatient.nationalId) }));
+          toast.success(t("radiology.schedule.cardDataExtracted"));
+        }
+      }
+    } else if (modal && modal.nationalId.replace(/\D/g, "").length === 14) {
+      const parsed = parseEgyptianNationalId(modal.nationalId);
+      if (parsed) {
+        setModal(m => m ? { ...m, patientGender: parsed.gender, patientAge: parsed.age } : m);
+        toast.success(t("radiology.schedule.cardDataExtracted"));
+      }
+    }
+  };
+
+  const toggleExam = (id: string) => {
+    setModal(m => m ? {
+      ...m,
+      examTypeIds: m.examTypeIds.includes(id)
+        ? m.examTypeIds.filter(x => x !== id)
+        : [...m.examTypeIds, id],
+    } : m);
     setExamSearch("");
     setExamOpen(false);
   };
 
-  const openNewPatient = () => { setNewPatient({ firstName: "", phone: "", gender: "", nationalId: "", birthDate: "" }); setNewPatientOpen(true); };
+  const openNewPatient = () => { setNewPatient({ firstName: "", phone: "", gender: "", nationalId: "", birthDate: "", nationalIdImage: "" }); setNewPatientOpen(true); };
 
   const saveNewPatient = async () => {
     if (savingNewPatient) return;
@@ -226,6 +312,7 @@ export default function ScheduleTab() {
         firstName: newPatient.firstName.trim(),
         phone: newPatient.phone.trim() || undefined,
         nationalId: nationalId || undefined,
+        nationalIdImage: newPatient.nationalIdImage || undefined,
         gender: newPatient.gender || undefined,
         birthDate: newPatient.birthDate || undefined,
       };
@@ -276,6 +363,7 @@ export default function ScheduleTab() {
     const fields: Record<string, string> = {};
     if (f.patientPhone.trim()) fields["phone"] = f.patientPhone.trim();
     if (f.nationalId.trim()) fields["nationalId"] = f.nationalId.trim();
+    if (f.nationalIdImage) fields["nationalIdImage"] = f.nationalIdImage;
     if (f.insuranceNumber.trim()) fields["insuranceNumber"] = f.insuranceNumber.trim();
     if (f.patientId) {
       if (Object.keys(fields).length) {
@@ -334,8 +422,10 @@ export default function ScheduleTab() {
     nationalId: f.nationalId.trim() || undefined,
     insuranceNumber: f.insuranceNumber.trim() || undefined,
     patientFlags: f.patientFlags.length ? f.patientFlags : undefined,
-    examTypeId: f.examTypeId || undefined,
+    examTypeIds: f.examTypeIds.length ? f.examTypeIds : undefined,
+    examTypeId: f.examTypeIds[0] || undefined,
     insuranceCompanyId: f.insuranceCompanyId || undefined,
+    deviceId: f.deviceId || undefined,
     additionIds: f.additionIds,
     referringPhysicianId: f.referringPhysicianId || undefined,
     referralDoctor: f.referralDoctor.trim() || undefined,
@@ -349,7 +439,7 @@ export default function ScheduleTab() {
   const save = async (convertAfter = false) => {
     if (!modal || saving) return;
     if (!modal.patientName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
-    if (!modal.examTypeId) { toast.error(t("radiology.schedule.selectExam")); return; }
+    if (!modal.examTypeIds.length) { toast.error(t("radiology.schedule.selectExam")); return; }
     setSaving(true);
     try {
       const patientId = await syncPatientRecord(modal);
@@ -405,10 +495,10 @@ export default function ScheduleTab() {
     if (!window.confirm(t("radiology.schedule.convertConfirm", { name: a.patientName }) as string)) return;
     setConverting(a.id);
     try {
-      const r = await fetchJson<{ study: { id: string } }>(api(`appointments/${a.id}/convert`), { method: "POST" });
+      const r = await fetchJson<{ studies?: { id: string }[]; study?: { id: string } }>(api(`appointments/${a.id}/convert`), { method: "POST" });
       toast.success(t("radiology.schedule.studyCreated"));
       await refresh({ silent: true });
-      if (r?.study?.id) window.location.href = "/radiology/studies";
+      if (r?.study?.id || r?.studies?.length) window.location.href = "/radiology/studies";
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("radiology.schedule.convertFailed"));
     } finally {
@@ -424,6 +514,9 @@ export default function ScheduleTab() {
     setExamOpen(false);
     setNewPatientOpen(false);
     setEntityPrice(null);
+    setCoverage({});
+    setCardScan(null);
+    setCardScanTarget(null);
   };
 
   const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
@@ -521,14 +614,19 @@ export default function ScheduleTab() {
                           return meta ? <span key={f} className={`mr-1.5 px-2 py-0.5 rounded-full text-[11px] ${meta.color}`}>{t(meta.label)}</span> : null;
                         })}
                       </td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.examTypeName || "—"}{a.additionAmount ? ` (+${Number(a.additionAmount).toFixed(0)}${t("radiology.currency")})` : ""}</td>
+                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                        {a.examTypeName || "—"}
+                        {(a.examTypeIds && (Array.isArray(a.examTypeIds) ? a.examTypeIds.length : 1) > 1) ? <span className="mr-1.5 text-xs text-blue-600 dark:text-blue-400">+{Array.isArray(a.examTypeIds) ? a.examTypeIds.length - 1 : 0}</span> : null}
+                        {a.deviceName ? <span className="mr-1.5 text-xs text-gray-400">({a.deviceName})</span> : null}
+                        {a.additionAmount ? ` (+${Number(a.additionAmount).toFixed(0)}${t("radiology.currency")})` : ""}
+                      </td>
                       <td className="py-3 px-4">{fmtDate(a.appointmentDate)}</td>
                       <td className="py-3 px-4" dir="ltr">{a.appointmentTime || "—"}</td>
                       <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${meta?.color}`}>{t(meta?.label as never)}</span></td>
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 max-w-[160px] truncate">{a.notes || "—"}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
-                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as { patientId?: string }).patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", nationalId: (a as { nationalId?: string }).nationalId || "", insuranceNumber: (a as { insuranceNumber?: string }).insuranceNumber || "", patientFlags: parsePatientFlags((a as { patientFlags?: string[] | string }).patientFlags), examTypeId: a.examTypeId || "", insuranceCompanyId: a.insuranceCompanyId || "", additionIds: Array.isArray(a.additionIds) ? a.additionIds as string[] : (typeof a.additionIds === "string" ? JSON.parse(a.additionIds) as string[] : []), referringPhysicianId: (a as { referringPhysicianId?: string }).referringPhysicianId || "", referralDoctor: a.referralDoctor || "", emergency: !!a.emergency, appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", status: a.status, notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.schedule.edit")}><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as { patientId?: string }).patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", nationalId: (a as { nationalId?: string }).nationalId || "", insuranceNumber: (a as { insuranceNumber?: string }).insuranceNumber || "", patientFlags: parsePatientFlags((a as { patientFlags?: string[] | string }).patientFlags), examTypeIds: Array.isArray((a as { examTypeIds?: string[] | string }).examTypeIds) ? (a as { examTypeIds?: string[] }).examTypeIds || [] : (typeof (a as { examTypeIds?: string | string[] }).examTypeIds === "string" ? JSON.parse((a as { examTypeIds?: string }).examTypeIds || "[]") as string[] : []), deviceId: (a as { deviceId?: string }).deviceId || "", insuranceCompanyId: a.insuranceCompanyId || "", additionIds: Array.isArray(a.additionIds) ? a.additionIds as string[] : (typeof a.additionIds === "string" ? JSON.parse(a.additionIds) as string[] : []), referringPhysicianId: (a as { referringPhysicianId?: string }).referringPhysicianId || "", referralDoctor: a.referralDoctor || "", emergency: !!a.emergency, appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", status: a.status, notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.schedule.edit")}><Pencil className="w-4 h-4" /></button>
                           {a.status !== "CANCELLED" && a.status !== "DONE" ? (
                             <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.schedule.convertToStudy")}><ArrowRightLeft className="w-4 h-4" /></button>
                           ) : null}
@@ -594,7 +692,15 @@ export default function ScheduleTab() {
                       </div>
                       <div>
                         <label className={labelCls}>{t("radiology.schedule.nationalIdHint")}</label>
-                        <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.nationalId} onChange={e => setNewPatient({ ...newPatient, nationalId: e.target.value.replace(/\D/g, "").slice(0, 14) })} placeholder={t("radiology.schedule.nationalId14")} />
+                        <div className="flex gap-2">
+                          <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.nationalId} onChange={e => setNewPatient({ ...newPatient, nationalId: e.target.value.replace(/\D/g, "").slice(0, 14) })} placeholder={t("radiology.schedule.nationalId14")} />
+                          <button type="button" onClick={() => openCardScanner("newPatient")} className="shrink-0 flex items-center gap-1 px-3 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <ScanLine className="w-3.5 h-3.5" />{t("radiology.schedule.scanCard")}
+                          </button>
+                        </div>
+                        {newPatient.nationalIdImage ? (
+                          <img src={newPatient.nationalIdImage} alt="بطاقة الرقم القومي" className="mt-2 w-24 h-16 object-cover rounded-lg border dark:border-gray-600" />
+                        ) : null}
                       </div>
                       <div>
                         <label className={labelCls}>{t("radiology.schedule.birthDate")}</label>
@@ -626,33 +732,50 @@ export default function ScheduleTab() {
                 <label className={labelCls}>{t("radiology.schedule.age")}</label>
                 <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.patientAge} onChange={e => setModal({ ...modal, patientAge: e.target.value })} placeholder={t("radiology.schedule.agePlaceholder")} />
               </div>
-              <div className="relative">
-                <label className={labelCls}>{t("radiology.schedule.examType")}</label>
-                <input
-                  className={`${MODAL_INPUT_CLS} pl-8`}
-                  value={examSearch || (examTypes.find(t => t.id === modal.examTypeId)?.name || "")}
-                  onChange={e => {
-                    const v = e.target.value;
-                    setExamSearch(v);
-                    setExamOpen(true);
-                    const selected = examTypes.find(t => t.id === modal.examTypeId);
-                    if (!selected || selected.name !== v) setModal({ ...modal, examTypeId: "" });
-                  }}
-                  onFocus={() => setExamOpen(true)}
-                  onBlur={() => setExamOpen(false)}
-                  placeholder={t("radiology.schedule.searchExam")}
-                />
-                <ChevronDown className="w-4 h-4 absolute left-3 top-8 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                {examOpen ? (
-                  <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl" onMouseDown={e => e.preventDefault()}>
-                    {examFiltered.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noExams")}</div>
-                    ) : examFiltered.slice(0, 60).map(et => (
-                      <button key={et.id} type="button" onClick={() => pickExam(et)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <span className="font-medium">{et.name}</span>
-                        {et.category ? <span className="text-xs text-gray-500 dark:text-gray-400"> ({et.category})</span> : null}
-                      </button>
-                    ))}
+              <div className="sm:col-span-2 relative">
+                <label className={labelCls}>{t("radiology.schedule.examTypes")} ({modal.examTypeIds.length})</label>
+                <div className="relative">
+                  <input
+                    className={`${MODAL_INPUT_CLS} pl-8`}
+                    value={examSearch}
+                    onChange={e => { setExamSearch(e.target.value); setExamOpen(true); }}
+                    onFocus={() => setExamOpen(true)}
+                    onBlur={() => setExamOpen(false)}
+                    placeholder={t("radiology.schedule.searchExam")}
+                  />
+                  <ChevronDown className="w-4 h-4 absolute left-3 top-2.5 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                  {examOpen ? (
+                    <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl" onMouseDown={e => e.preventDefault()}>
+                      {examFiltered.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noExams")}</div>
+                      ) : examFiltered.slice(0, 60).map(et => {
+                        const selected = modal.examTypeIds.includes(et.id);
+                        return (
+                          <button key={et.id} type="button" onClick={() => toggleExam(et.id)} className={`block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between gap-2 ${selected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`}>
+                            <span className="min-w-0">
+                              <span className="font-medium">{et.name}</span>
+                              {et.category ? <span className="text-xs text-gray-500 dark:text-gray-400"> ({et.category})</span> : null}
+                            </span>
+                            {selected ? <span className="text-xs text-blue-600 dark:text-blue-400 shrink-0">✓</span> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+                {modal.examTypeIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {modal.examTypeIds.map(id => {
+                      const et = examTypes.find(t => t.id === id);
+                      const cov = coverage[id];
+                      return (
+                        <span key={id} className={`flex items-center gap-1.5 text-xs border dark:border-gray-600 rounded-full px-2.5 py-1 ${cov && !cov.covered ? "border-amber-500 text-amber-600 dark:text-amber-400" : "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"}`}>
+                          <span className="font-medium">{et?.name || "—"}</span>
+                          {cov && !cov.covered ? <span className="text-[10px] font-semibold">{t("radiology.schedule.notCovered")}</span> : null}
+                          <button type="button" onClick={() => toggleExam(id)} className="text-gray-400 hover:text-red-500"><XMarkIcon className="w-3 h-3" /></button>
+                        </span>
+                      );
+                    })}
                   </div>
                 ) : null}
               </div>
@@ -661,10 +784,14 @@ export default function ScheduleTab() {
                 <div className="rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-300">
                     {(() => {
-                      const et = examTypes.find(t => t.id === modal.examTypeId);
-                      const base = entityPrice !== null ? entityPrice : (et ? Number(et.price) || 0 : 0);
+                      const exams = modal.examTypeIds.map(id => examTypes.find(t => t.id === id)).filter(Boolean);
+                      const base = exams.reduce((s, et) => {
+                        const cov = coverage[et?.id || ""];
+                        const price = entityPrice !== null && modal.examTypeIds[0] === et?.id ? entityPrice : (cov && cov.entityPrice != null ? cov.entityPrice : (et ? Number(et.price) || 0 : 0));
+                        return s + price;
+                      }, 0);
                       const add = additions.filter(a => modal.additionIds.includes(a.id)).reduce((s, a) => s + a.price, 0);
-                      return `${Number(base + add).toFixed(0)} ${t("radiology.currency")}${entityPrice !== null && et ? ` (${t("radiology.schedule.tariffSuffix", { name: insuranceCompanies.find(c => c.id === modal.insuranceCompanyId)?.name || t("radiology.schedule.insuranceOptional") })})` : ""}`;
+                      return `${Number(base + add).toFixed(0)} ${t("radiology.currency")}${entityPrice !== null ? ` (${t("radiology.schedule.tariffSuffix", { name: insuranceCompanies.find(c => c.id === modal.insuranceCompanyId)?.name || t("radiology.schedule.insuranceOptional") })})` : ""}`;
                     })()}
                   </span>
                 </div>
@@ -677,8 +804,32 @@ export default function ScheduleTab() {
                 </select>
               </div>
               <div>
+                <label className={labelCls}>{t("radiology.schedule.device")}</label>
+                <select className={MODAL_INPUT_CLS} value={modal.deviceId} onChange={e => setModal({ ...modal, deviceId: e.target.value })}>
+                  <option value="">{t("radiology.schedule.noDevice")}</option>
+                  {devices.filter(d => d.isActive !== false).map(d => (
+                    <option key={d.id} value={d.id}>{d.name}{d.room ? ` — ${d.room}` : ""}</option>
+                  ))}
+                </select>
+              </div>
+              {modal.insuranceCompanyId && Object.keys(coverage).some(k => !coverage[k]?.covered) ? (
+                <div className="sm:col-span-2">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> {t("radiology.schedule.coverageWarning")}
+                  </p>
+                </div>
+              ) : null}
+              <div>
                 <label className={labelCls}>{t("radiology.schedule.nationalIdHint")}</label>
-                <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.nationalId} onChange={e => applyNationalId(e.target.value)} placeholder={t("radiology.schedule.nationalId14")} />
+                <div className="flex gap-2">
+                  <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.nationalId} onChange={e => applyNationalId(e.target.value)} placeholder={t("radiology.schedule.nationalId14")} />
+                  <button type="button" onClick={() => openCardScanner("modal")} className="shrink-0 flex items-center gap-1 px-3 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <ScanLine className="w-3.5 h-3.5" />{t("radiology.schedule.scanCard")}
+                  </button>
+                </div>
+                {modal.nationalIdImage ? (
+                  <img src={modal.nationalIdImage} alt="بطاقة الرقم القومي" className="mt-2 w-24 h-16 object-cover rounded-lg border dark:border-gray-600" />
+                ) : null}
               </div>
               <div>
                 <label className={labelCls}>{t("radiology.schedule.insuranceNumberLabel")}</label>
@@ -758,6 +909,37 @@ export default function ScheduleTab() {
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <input
+        ref={cardInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={e => { handleCardScanFile(e.target.files?.[0] || null); e.target.value = ""; }}
+      />
+
+      {cardScan && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => { setCardScan(null); setCardScanTarget(null); }}>
+          <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">{t("radiology.schedule.cardScanTitle")}</h3>
+              <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            <img src={cardScan} alt="البطاقة" className="w-full max-h-64 object-contain rounded-lg border dark:border-gray-600 mb-4" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{t("radiology.schedule.cardScanHint")}</p>
+            {cardScanTarget === "newPatient" ? (
+              <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.nationalId} onChange={e => setNewPatient({ ...newPatient, nationalId: e.target.value.replace(/\D/g, "").slice(0, 14) })} placeholder={t("radiology.schedule.nationalId14")} />
+            ) : (
+              <input className={MODAL_INPUT_CLS} dir="ltr" value={modal?.nationalId || ""} onChange={e => applyNationalId(e.target.value)} placeholder={t("radiology.schedule.nationalId14")} />
+            )}
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg">{t("radiology.cancel")}</button>
+              <button onClick={applyScannedCard} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t("radiology.schedule.cardScanConfirm")}</button>
             </div>
           </div>
         </div>

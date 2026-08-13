@@ -26,4 +26,7 @@ router.get('/entity-prices', controller.listEntityPrices);
 router.post('/entity-prices', verifyToken.requireRole(MANAGER_ROLES), controller.setEntityPrice);
 router.get('/entity-prices/summary', controller.listEntityPricesSummary);
 
+// Insurance pre-authorization coverage check
+router.get('/coverage', controller.checkCoverage);
+
 module.exports = router;

@@ -205,6 +205,7 @@ export default function RadiologyPatientsTab() {
           <table className="w-full text-sm min-w-[800px]">
             <thead>
               <tr className="border-b dark:border-gray-700 text-gray-500 dark:text-gray-400">
+                <th className="py-3 px-4 text-right font-medium">{t("radiology.patients.patientId")}</th>
                 <th className="py-3 px-4 text-right font-medium">{t("radiology.patients.name")}</th>
                 <th className="py-3 px-4 text-right font-medium">{t("radiology.patients.phone")}</th>
                 <th className="py-3 px-4 text-right font-medium">{t("radiology.patients.gender")}</th>
@@ -218,6 +219,9 @@ export default function RadiologyPatientsTab() {
             <tbody>
               {items.map(p => (
                 <tr key={p.id} className={`border-b dark:border-gray-700/50 last:border-0 ${!p.isActive ? "opacity-60" : ""}`}>
+                  <td className="py-3 px-4 text-gray-400 dark:text-gray-500">
+                    <span className="text-xs font-mono" dir="ltr">{p.id}</span>
+                  </td>
                   <td className="py-3 px-4 font-medium">{p.firstName} {p.lastName || ""}</td>
                   <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>
                   <td className="py-3 px-4">{GENDER_LABEL[p.gender || ""] ? t(GENDER_LABEL[p.gender || ""] ?? "") : "—"}</td>

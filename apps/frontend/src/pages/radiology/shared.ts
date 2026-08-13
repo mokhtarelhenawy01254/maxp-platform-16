@@ -68,6 +68,11 @@ export interface RadiologyExamType {
   price: number; isActive: boolean; isAddition?: boolean; createdAt: string;
 }
 
+export interface RadiologyDevice {
+  id: string; name: string; room?: string; modality?: string;
+  isActive: boolean; createdAt: string;
+}
+
 export interface RadiologyStudyImage {
   id: string; fileName: string; fileSize?: number; seriesDescription?: string; url: string;
 }
@@ -112,6 +117,7 @@ export interface RadiologyStudy {
   paidAmount?: number;
   paymentStatus?: string;
   examTypeId?: string; examTypeName?: string; examType?: RadiologyExamType;
+  deviceId?: string; deviceName?: string;
   referralDoctor?: string; notes?: string;
   emergency: boolean; withContrast: boolean;
   status: string; submissionStatus?: string;

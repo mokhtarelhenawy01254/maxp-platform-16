@@ -6,6 +6,7 @@ const additions = require('../controller/radiologyExamAdditionsController');
 const statistics = require('../controller/radiologyStatisticsController');
 const payments = require('../controller/radiologyPaymentsController');
 const shifts = require('../controller/radiologyShiftsController');
+const devices = require('../controller/radiologyDevicesController');
 const verifyToken = require('../utils/verifyToken');
 
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
@@ -32,6 +33,12 @@ router.post('/appointments', verifyToken.requireRole(MANAGER_ROLES), appointment
 router.put('/appointments/:id', verifyToken.requireRole(MANAGER_ROLES), appointments.updateAppointment);
 router.delete('/appointments/:id', verifyToken.requireRole(MANAGER_ROLES), appointments.deleteAppointment);
 router.post('/appointments/:id/convert', verifyToken.requireRole(MANAGER_ROLES), appointments.convertToStudy);
+
+// Devices (imaging machines/rooms)
+router.get('/devices', devices.listDevices);
+router.post('/devices', verifyToken.requireRole(MANAGER_ROLES), devices.createDevice);
+router.put('/devices/:id', verifyToken.requireRole(MANAGER_ROLES), devices.updateDevice);
+router.delete('/devices/:id', verifyToken.requireRole(MANAGER_ROLES), devices.deleteDevice);
 
 // Referring physicians
 router.get('/referring-physicians', physicians.listPhysicians);

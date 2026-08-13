@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { MODALITY_BY_CATEGORY } = require('./radiologyController');
+const { findOrCreatePatient } = require('../services/bookingPatientService');
 
 const APPOINTMENT_STATUSES = ['SCHEDULED', 'CHECKED_IN', 'DONE', 'CANCELLED'];
 
@@ -76,11 +77,50 @@ const createAppointment = async (req, res) => {
     if (!patientName) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
 
     const prisma = getSharedPrismaClient();
+
+    // Resolve the patient record: use the provided patientId (validated), or find-or-create
+    // a patient from the booking fields so every appointment links to a Patient row.
+    let patientId = body.patientId ? String(body.patientId) : null;
+    if (patientId) {
+      const linked = await prisma.patient.findFirst({
+        where: { id: patientId, companyId },
+        select: { id: true },
+      }).catch(() => null);
+      if (!linked) return res.status(400).json({ success: false, error: 'المريض لا ينتمي لهذه الشركة' });
+    } else {
+      const resolved = await findOrCreatePatient({
+        companyId,
+        customerName: patientName,
+        customerPhone: body.patientPhone ? String(body.patientPhone) : undefined,
+        customerGender: body.patientGender || undefined,
+        customerEmail: body.patientEmail || undefined,
+        nationalId: body.nationalId ? String(body.nationalId) : undefined,
+      });
+      patientId = resolved.id;
+    }
+
     let examTypeName = null;
     let priceResolved = 0;
-    if (body.examTypeId) {
-      const examType = await prisma.radiologyExamType.findFirst({ where: { id: body.examTypeId, companyId, isActive: true } });
-      if (examType) examTypeName = examType.name;
+    const examTypeIds = Array.isArray(body.examTypeIds) && body.examTypeIds.length
+      ? body.examTypeIds.map(String)
+      : (body.examTypeId ? [String(body.examTypeId)] : []);
+    let examTypeNames = [];
+    if (examTypeIds.length) {
+      const examTypes = await prisma.radiologyExamType.findMany({
+        where: { id: { in: examTypeIds }, companyId, isActive: true },
+        select: { id: true, name: true },
+      });
+      examTypeNames = examTypes.map(e => e.name);
+      if (examTypes.length) examTypeName = examTypes[0].name;
+    }
+
+    let deviceName = null;
+    if (body.deviceId) {
+      const device = await prisma.radiologyDevice.findFirst({
+        where: { id: String(body.deviceId), companyId, isActive: true },
+        select: { id: true, name: true },
+      });
+      if (device) deviceName = device.name;
     }
 
     let additionAmount = 0;
@@ -109,7 +149,7 @@ const createAppointment = async (req, res) => {
     const appointment = await prisma.radiologyAppointment.create({
       data: {
         companyId,
-        patientId: body.patientId || null,
+        patientId,
         patientName,
         patientPhone: body.patientPhone ? String(body.patientPhone) : null,
         patientGender: body.patientGender || null,
@@ -117,8 +157,11 @@ const createAppointment = async (req, res) => {
         nationalId: body.nationalId ? String(body.nationalId) : null,
         insuranceNumber: body.insuranceNumber ? String(body.insuranceNumber) : null,
         patientFlags: normalizePatientFlags(body.patientFlags),
-        examTypeId: body.examTypeId || null,
+        examTypeId: body.examTypeId || examTypeIds[0] || null,
         examTypeName: examTypeName || (body.examTypeName ? String(body.examTypeName) : null),
+        examTypeIds: examTypeIds.length ? JSON.stringify(examTypeIds) : null,
+        deviceId: body.deviceId || null,
+        deviceName,
         insuranceCompanyId: body.insuranceCompanyId || null,
         additionIds,
         additionAmount,
@@ -152,7 +195,37 @@ const updateAppointment = async (req, res) => {
     if (!existing) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
 
     const data = {};
-    if (body.patientId !== undefined) data.patientId = body.patientId || null;
+    if (body.patientId !== undefined) {
+      if (body.patientId) {
+        const linked = await prisma.patient.findFirst({
+          where: { id: String(body.patientId), companyId },
+          select: { id: true },
+        }).catch(() => null);
+        if (!linked) return res.status(400).json({ success: false, error: 'المريض لا ينتمي لهذه الشركة' });
+        data.patientId = String(body.patientId);
+      } else {
+        const resolved = await findOrCreatePatient({
+          companyId,
+          customerName: existing.patientName,
+          customerPhone: body.patientPhone ? String(body.patientPhone) : existing.patientPhone,
+          customerGender: body.patientGender || existing.patientGender,
+          customerEmail: undefined,
+          nationalId: body.nationalId ? String(body.nationalId) : existing.nationalId,
+        });
+        data.patientId = resolved.id;
+      }
+    } else if (!existing.patientId) {
+      // Backfill link for appointments that predate the patient linkage rule
+      const resolved = await findOrCreatePatient({
+        companyId,
+        customerName: existing.patientName,
+        customerPhone: existing.patientPhone || (body.patientPhone ? String(body.patientPhone) : undefined),
+        customerGender: body.patientGender || existing.patientGender,
+        customerEmail: undefined,
+        nationalId: existing.nationalId || (body.nationalId ? String(body.nationalId) : undefined),
+      });
+      data.patientId = resolved.id;
+    }
     if (body.patientName !== undefined) {
       if (!String(body.patientName).trim()) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
       data.patientName = String(body.patientName).trim();
@@ -176,6 +249,34 @@ const updateAppointment = async (req, res) => {
       }
     }
     if (body.examTypeName !== undefined) data.examTypeName = normalizeText(body.examTypeName);
+    if (body.examTypeIds !== undefined) {
+      const ids = Array.isArray(body.examTypeIds) ? body.examTypeIds.map(String).filter(Boolean) : [];
+      if (ids.length) {
+        const examTypes = await prisma.radiologyExamType.findMany({
+          where: { id: { in: ids }, companyId, isActive: true },
+          select: { id: true, name: true },
+        });
+        data.examTypeIds = JSON.stringify(examTypes.map(e => e.id));
+        data.examTypeId = examTypes.length ? examTypes[0].id : null;
+        data.examTypeName = examTypes.length ? examTypes[0].name : null;
+      } else {
+        data.examTypeIds = null;
+        data.examTypeId = null;
+        data.examTypeName = null;
+      }
+    }
+    if (body.deviceId !== undefined) {
+      data.deviceId = body.deviceId ? String(body.deviceId) : null;
+      if (body.deviceId) {
+        const device = await prisma.radiologyDevice.findFirst({
+          where: { id: String(body.deviceId), companyId, isActive: true },
+          select: { id: true, name: true },
+        });
+        data.deviceName = device ? device.name : null;
+      } else {
+        data.deviceName = null;
+      }
+    }
     if (body.insuranceCompanyId !== undefined) data.insuranceCompanyId = body.insuranceCompanyId || null;
     if (body.additionIds !== undefined) {
       if (Array.isArray(body.additionIds) && body.additionIds.length) {
@@ -238,65 +339,105 @@ const convertToStudy = async (req, res) => {
     if (appointment.status === 'CANCELLED') return res.status(400).json({ success: false, error: 'لا يمكن تحويل حجز ملغي' });
 
     const { generateStudyNumber } = require('../utils/dicomUtil');
-    let examType = null;
-    if (appointment.examTypeId) {
-      examType = await prisma.radiologyExamType.findFirst({ where: { id: appointment.examTypeId, companyId, isActive: true } });
-    }
-    // Resolve price: entity price > exam base
-    let priceSnapshot = examType ? examType.price : 0;
-    if (appointment.insuranceCompanyId && examType) {
-      const entityPrice = await prisma.radiologyEntityPrice.findFirst({
-        where: { insuranceCompanyId: appointment.insuranceCompanyId, examTypeId: examType.id, isActive: true },
-        select: { price: true },
-      }).catch(() => null);
-      if (entityPrice && Number.isFinite(entityPrice.price)) priceSnapshot = entityPrice.price;
-    }
-    if (examType && priceSnapshot <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: `نوع الفحص "${examType.name}" غير مسعّر — حدد سعراً للفحص أولاً أو اختر فحصاً آخر`,
-      });
-    }
+    // Multi-exam: resolve the exam list from examTypeIds (fallback to the legacy single examTypeId)
+    const examIds = (() => {
+      try {
+        const parsed = appointment.examTypeIds ? JSON.parse(appointment.examTypeIds) : [];
+        return Array.isArray(parsed) && parsed.length ? parsed.map(String) : [];
+      } catch { return []; }
+    })();
+    if (!examIds.length && appointment.examTypeId) examIds.push(String(appointment.examTypeId));
+    if (!examIds.length) return res.status(400).json({ success: false, error: 'الحجز بلا فحوصات' });
+
+    const examTypes = await prisma.radiologyExamType.findMany({
+      where: { id: { in: examIds }, companyId, isActive: true },
+    });
+    if (!examTypes.length) return res.status(400).json({ success: false, error: 'لا توجد فحوصات صالحة في الحجز' });
+    const examById = new Map(examTypes.map(e => [e.id, e]));
+
     let insuranceCompanyName = null;
     if (appointment.insuranceCompanyId) {
       const entity = await prisma.insuranceCompany.findFirst({ where: { id: appointment.insuranceCompanyId, companyId }, select: { name: true } }).catch(() => null);
       insuranceCompanyName = entity ? entity.name : null;
     }
-    const study = await prisma.radiologyStudy.create({
-      data: {
+    // Backfill the patient link for appointments created before linkage was enforced
+    let patientId = appointment.patientId || null;
+    if (!patientId) {
+      const resolved = await findOrCreatePatient({
         companyId,
-        studyNumber: generateStudyNumber(),
-        patientId: appointment.patientId || null,
-        patientName: appointment.patientName,
-        patientPhone: appointment.patientPhone,
-        patientGender: appointment.patientGender,
-        patientAge: appointment.patientAge,
-        nationalId: appointment.nationalId || null,
-        insuranceNumber: appointment.insuranceNumber || null,
-        patientFlags: appointment.patientFlags || null,
-        examTypeId: appointment.examTypeId,
-        examTypeName: appointment.examTypeName,
-        modality: examType ? (MODALITY_BY_CATEGORY[examType.category] || examType.category || null) : null,
-        priceSnapshot,
-        billingType: appointment.insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
-        insuranceCompanyId: appointment.insuranceCompanyId || null,
-        insuranceCompanyName,
-        additionIds: appointment.additionIds || null,
-        additionAmount: appointment.additionAmount || 0,
-        referringPhysicianId: appointment.referringPhysicianId || null,
-        referralDoctor: appointment.referralDoctor || null,
-        emergency: appointment.emergency === true,
-        status: 'PENDING_IMAGING',
-        submissionStatus: 'NOT_SUBMITTED',
-        createdBy: req.user?.id || req.user?.email || null,
-      },
-    });
+        customerName: appointment.patientName,
+        customerPhone: appointment.patientPhone || undefined,
+        customerGender: appointment.patientGender || undefined,
+        customerEmail: undefined,
+        nationalId: appointment.nationalId || undefined,
+      });
+      patientId = resolved.id;
+    }
+
+    const baseStudyData = {
+      companyId,
+      patientId,
+      patientName: appointment.patientName,
+      patientPhone: appointment.patientPhone,
+      patientGender: appointment.patientGender,
+      patientAge: appointment.patientAge,
+      nationalId: appointment.nationalId || null,
+      insuranceNumber: appointment.insuranceNumber || null,
+      patientFlags: appointment.patientFlags || null,
+      billingType: appointment.insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
+      insuranceCompanyId: appointment.insuranceCompanyId || null,
+      insuranceCompanyName,
+      deviceId: appointment.deviceId || null,
+      deviceName: appointment.deviceName || null,
+      additionIds: appointment.additionIds || null,
+      additionAmount: appointment.additionAmount || 0,
+      referringPhysicianId: appointment.referringPhysicianId || null,
+      referralDoctor: appointment.referralDoctor || null,
+      emergency: appointment.emergency === true,
+      status: 'PENDING_IMAGING',
+      submissionStatus: 'NOT_SUBMITTED',
+      createdBy: req.user?.id || req.user?.email || null,
+    };
+
+    const studies = [];
+    for (const id of examIds) {
+      const examType = examById.get(id);
+      if (!examType) continue;
+      // Resolve price: entity price > exam base
+      let priceSnapshot = Number(examType.price) || 0;
+      if (appointment.insuranceCompanyId) {
+        const entityPrice = await prisma.radiologyEntityPrice.findFirst({
+          where: { insuranceCompanyId: appointment.insuranceCompanyId, examTypeId: id, isActive: true },
+          select: { price: true },
+        }).catch(() => null);
+        if (entityPrice && Number.isFinite(entityPrice.price)) priceSnapshot = entityPrice.price;
+      }
+      if (priceSnapshot <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: `نوع الفحص "${examType.name}" غير مسعّر — حدد سعراً للفحص أولاً أو اختر فحصاً آخر`,
+        });
+      }
+      const study = await prisma.radiologyStudy.create({
+        data: {
+          ...baseStudyData,
+          studyNumber: generateStudyNumber(),
+          examTypeId: examType.id,
+          examTypeName: examType.name,
+          modality: MODALITY_BY_CATEGORY[examType.category] || examType.category || null,
+          priceSnapshot,
+        },
+      });
+      studies.push(study);
+    }
+
+    if (!studies.length) return res.status(400).json({ success: false, error: 'لم تُنشأ أي دراسة' });
 
     if (appointment.status !== 'DONE') {
       await prisma.radiologyAppointment.update({ where: { id }, data: { status: 'DONE' } });
     }
 
-    res.json({ success: true, data: { study, appointment } });
+    res.json({ success: true, data: { studies, study: studies[0], appointment } });
   } catch (error) {
     console.error('Error converting radiology appointment to study:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحويل الحجز لدراسة' });

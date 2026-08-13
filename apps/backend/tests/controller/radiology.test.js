@@ -2,12 +2,17 @@ jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
+jest.mock('../../services/bookingPatientService', () => ({
+  findOrCreatePatient: jest.fn(),
+}));
+
 jest.mock('../../utils/dicomUtil', () => {
   const actual = jest.requireActual('../../utils/dicomUtil');
   return { ...actual, parseDicomFromBuffer: jest.fn(() => ({})) };
 });
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
+const { findOrCreatePatient } = require('../../services/bookingPatientService');
 const controller = require('../../controller/radiologyController');
 const dicomUtil = require('../../utils/dicomUtil');
 
@@ -76,6 +81,11 @@ const createPrisma = (overrides = {}) => {
     company: {
       findUnique: jest.fn(),
     },
+    patient: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     $transaction: jest.fn((fn) => fn(prisma)),
     ...overrides,
   };
@@ -133,6 +143,7 @@ const makeExamType = (overrides = {}) => ({
 describe('radiologyController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    findOrCreatePatient.mockResolvedValue({ id: 'patient-resolved-1' });
   });
 
   describe('transition helpers', () => {

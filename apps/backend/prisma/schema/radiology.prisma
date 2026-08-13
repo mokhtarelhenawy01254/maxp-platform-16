@@ -12,6 +12,17 @@ model RadiologyExamType {
   updatedAt    DateTime @updatedAt
 }
 
+model RadiologyDevice {
+  id         String   @id @default(cuid())
+  companyId  String?
+  name       String
+  room       String?
+  modality   String?    // CT, MRI, X-Ray, US... (optional)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 model RadiologyStudy {
   id                String   @id @default(cuid())
   companyId         String?
@@ -27,7 +38,10 @@ model RadiologyStudy {
   examTypeId        String?
   examTypeName      String?
   modality          String?
+  deviceId          String?    // RadiologyDevice id
+  deviceName        String?    // device/room name snapshot at booking
   status            String   @default("PENDING_IMAGING") // PENDING_IMAGING | IMAGED | PENDING_REPORT | REPORTED | DELIVERED
+  orderStatus       String   @default("PENDING") // PENDING | CHECKED_IN | IN_PROGRESS | COMPLETED | CANCELLED
   emergency         Boolean  @default(false)
   withContrast      Boolean  @default(false)
   referralDoctor    String?
@@ -57,6 +71,15 @@ model RadiologyStudy {
   updatedAt         DateTime @updatedAt
   images            RadiologyStudyImage[]
   report            RadiologyReport?
+  appointmentId     String?   @unique
+  appointment       RadiologyAppointment?  @relation(fields: [appointmentId], references: [id])
+  statusHistory     RadiologyStudyStatusHistory[]
+
+  @@index([companyId])
+  @@index([patientId])
+  @@index([examTypeId])
+  @@index([status])
+  @@index([studyNumber])
 }
 
 model RadiologyStudyImage {
@@ -164,6 +187,9 @@ model RadiologyAppointment {
   patientFlags     Json?    // array of risk flag keys
   examTypeId       String?
   examTypeName     String?
+  examTypeIds      Json?      // array of exam type ids (multi-exam booking)
+  deviceId         String?
+  deviceName       String?
   insuranceCompanyId   String?
   additionIds          Json?
   additionAmount       Float    @default(0)
@@ -175,9 +201,16 @@ model RadiologyAppointment {
   branchId         String?
   status           String   @default("SCHEDULED") // SCHEDULED|CHECKED_IN|DONE|CANCELLED
   notes            String?
+  studyId          String?
+  study            RadiologyStudy?
   createdBy        String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([patientId])
+  @@index([appointmentDate])
+  @@index([status])
 }
 
 model RadiologyReferringPhysician {
@@ -277,4 +310,22 @@ model RadiologyReportTemplate {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model RadiologyStudyStatusHistory {
+  id        String   @id @default(cuid())
+  companyId String?
+  studyId   String
+  dimension String   // ORDER | PREP | REPORT | PAYMENT
+  status    String
+  oldStatus String?
+  changedBy String?
+  userName  String?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  study     RadiologyStudy @relation(fields: [studyId], references: [id])
+
+  @@index([studyId])
+  @@index([dimension])
 }
