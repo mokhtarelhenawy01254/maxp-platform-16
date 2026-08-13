@@ -1148,6 +1148,17 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
     const activeVoucher = autoSummary.activeVoucher;
     const autoDiscountStatus = autoSummary.status;
 
+    // 💳 كارت عضوية العميل (بطاقة مستوى الولاء) — يُنشأ عند الطلب ويُخزَّن
+    let card = null;
+    if (progress?.tier?.id && !isAutoDiscount) {
+      try {
+        const { getOrGenerateTierCard } = require('../services/loyalty/loyaltyTierCardService');
+        card = await getOrGenerateTierCard({ companyId, customerId, tierId: progress.tier.id });
+      } catch (cardError) {
+        console.warn('⚠️ [PUBLIC-LOYALTY] Failed to prepare tier card:', cardError.message);
+      }
+    }
+
     return res.json({
       success: true,
       data: {
@@ -1170,6 +1181,7 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
           loyaltySystem
         },
         loyaltySystem,
+        card,
         loyalty: {
           method: progress?.method || null,
           metricLabel: progress?.metricLabel || 'نقطة',

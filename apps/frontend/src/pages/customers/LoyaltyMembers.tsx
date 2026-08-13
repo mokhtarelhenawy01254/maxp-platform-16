@@ -17,6 +17,7 @@ import {
   Gift,
   DollarSign,
   Plus,
+  Send,
 } from "lucide-react";
 import { customerService, Customer } from "../../services/customerService";
 
@@ -81,6 +82,7 @@ const LoyaltyMembers: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [sendingCardId, setSendingCardId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPrograms();
@@ -190,6 +192,36 @@ const LoyaltyMembers: React.FC = () => {
       alert(error?.response?.data?.error || "فشل تسجيل العميل. يرجى المحاولة مرة أخرى.");
     } finally {
       setIsEnrolling(false);
+    }
+  };
+
+  const handleSendCard = async (record: CustomerLoyaltyRecord) => {
+    if (!record?.customer?.id) return;
+    setSendingCardId(record.id);
+    try {
+      const res = await apiClient.post<{
+        data?: { send?: { success?: boolean; reason?: string } };
+      }>(
+        `/hr/customer-loyalty/customers/${record.customer.id}/card/send`,
+        {},
+        { params: { programId: record.program.id } },
+      );
+      const send = res.data?.data?.send;
+      if (send?.success) {
+        alert("تم إرسال كارت العضوية للعميل على واتساب 🎖️");
+      } else {
+        alert(
+          send?.reason === "no_baileys_session"
+            ? "لا توجد جلسة واتساب متصلة لإرسال الصورة"
+            : "تعذر إرسال الكارت — تحقق من رقم الهاتف وجلسة الواتساب",
+        );
+      }
+    } catch (error) {
+      console.error("Error sending card:", error);
+      const err = error as { response?: { data?: { error?: string } } };
+      alert(err?.response?.data?.error || "فشل إرسال كارت العضوية");
+    } finally {
+      setSendingCardId(null);
     }
   };
 
@@ -440,6 +472,16 @@ const LoyaltyMembers: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
+                        {record.tier ? (
+                          <button
+                            onClick={() => handleSendCard(record)}
+                            disabled={sendingCardId === record.id}
+                            className="text-gray-400 hover:text-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                            title="إرسال كارت العضوية"
+                          >
+                            <Send className={`w-4 h-4 ${sendingCardId === record.id ? "animate-pulse" : ""}`} />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

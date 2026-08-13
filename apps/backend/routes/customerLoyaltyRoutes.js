@@ -162,6 +162,24 @@ router.get('/customers/:customerId/portal-summary',
   customerLoyaltyController.getCustomerPortalSummary
 );
 
+// 💳 كارت عضوية العميل (بطاقة مستوى الولاء) — توليد/جلب
+router.get('/customers/:customerId/card',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getCustomerTierCard
+);
+
+// 📤 إرسال كارت العضوية للعميل عبر WhatsApp
+router.post('/customers/:customerId/card/send',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.sendCustomerTierCard
+);
+
+// 🏆 إنشاء مستويات من قالب جاهز (Preset)
+router.post('/tiers/preset',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.createTierPreset
+);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔔 جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
 // ═══════════════════════════════════════════════════════════════════════════════

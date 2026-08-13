@@ -909,6 +909,28 @@ class CustomerLoyaltyService {
         customerId: customer.id,
         variables: { tierName }
       });
+
+      // 💳 ترقية فقط (وليس انخفاض): توليد كارت العضوية + إرساله تلقائياً
+      if (newPriority > oldPriority) {
+        try {
+          const { getOrGenerateTierCard, sendTierCardImage } = require('../loyalty/loyaltyTierCardService');
+          const card = await getOrGenerateTierCard({
+            companyId,
+            customerId: customer.id,
+            tierId: newTier.id
+          });
+          if (card.filePath) {
+            await sendTierCardImage({
+              companyId,
+              customer,
+              filePath: card.filePath,
+              caption: `🎖️ مبروك يا ${customer.firstName || 'عميلنا العزيز'}! وصلت لمستوى "${newTier.nameAr || newTier.name}" 🎉\nكارت عضويتك الجديد وصل لك الآن — استمتع بمزاياك ✨`
+            });
+          }
+        } catch (cardError) {
+          console.warn('⚠️ [LOYALTY] Failed to send tier card:', cardError.message);
+        }
+      }
     } catch (error) {
       console.warn('⚠️ [LOYALTY] Failed to send tier change notification:', error.message);
     }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
@@ -153,6 +154,73 @@ const TierCard = ({ data }: { data: CustomerLoyaltySummary }) => {
   );
 };
 
+const MembershipCard = ({ data }: { data: CustomerLoyaltySummary }) => {
+  const card = data.card;
+  const tier = data.loyalty.tier;
+  const tierColor = tier?.color || "#6366f1";
+  const [imageFailed, setImageFailed] = useState(false);
+
+  const cardUrl = card?.url;
+  if (!cardUrl || imageFailed) return null;
+
+  const download = () => {
+    const link = document.createElement("a");
+    link.href = cardUrl;
+    link.download = "membership-card.png";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  return (
+    <div className="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex h-11 w-11 items-center justify-center rounded-2xl text-white"
+            style={{ backgroundColor: tierColor }}
+          >
+            <Award size={20} />
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+              بطاقة العضوية
+            </div>
+            <div className="text-lg font-black text-gray-900 dark:text-white">
+              {tier?.nameAr || tier?.name || "كارت المستوى"}
+            </div>
+          </div>
+        </div>
+        {card.membershipNumber ? (
+          <div className="text-left">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              رقم العضوية
+            </div>
+            <div className="text-base font-bold text-gray-900 dark:text-white" dir="ltr">
+              {card.membershipNumber}
+            </div>
+          </div>
+        ) : null}
+        <button
+          onClick={download}
+          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700"
+        >
+          تحميل الكارت
+        </button>
+      </div>
+
+      <div className="mt-4">
+        <img
+          src={cardUrl}
+          alt="كارت العضوية"
+          onError={() => setImageFailed(true)}
+          className="w-full rounded-2xl border border-gray-200 shadow-lg dark:border-gray-700"
+        />
+      </div>
+    </div>
+  );
+};
+
 const AutoDiscountCard = ({ data }: { data: CustomerLoyaltySummary }) => {
   const autoDiscount = data.autoDiscount;
   const voucher = autoDiscount?.activeVoucher || null;
@@ -277,6 +345,8 @@ export default function CustomerAccountDashboard({
       </div>
 
       {error ? <CustomerErrorState message={error} /> : null}
+
+      {!isAutoDiscount ? <MembershipCard data={data} /> : null}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {isAutoDiscount ? <AutoDiscountCard data={data} /> : <TierCard data={data} />}

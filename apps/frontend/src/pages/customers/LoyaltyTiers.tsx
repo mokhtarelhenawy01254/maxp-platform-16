@@ -28,6 +28,12 @@ interface CustomerLoyaltyTier {
   programId: string;
 }
 
+const TIER_PRESET_PACKS = [
+  { key: "classic5", name: "كلاسيك — 5 مستويات", description: "برونز، فضة، ذهب، بلاتين، دايموند", count: 5, icon: "crown" },
+  { key: "stars10", name: "نجوم — 10 مستويات", description: "10 مستويات متدرجة بأسلوب الألعاب", count: 10, icon: "trophy" },
+  { key: "vip3", name: "VIP — 3 مستويات", description: "مستويات فاخرة بقيمة عالية", count: 3, icon: "gem" },
+];
+
 const LoyaltyTiers: React.FC = () => {
   const [tiers, setTiers] = useState<CustomerLoyaltyTier[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
@@ -35,6 +41,12 @@ const LoyaltyTiers: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<Partial<CustomerLoyaltyTier> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Preset modal state
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
+  const [presetProgramId, setPresetProgramId] = useState("");
+  const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
+  const [isApplyingPreset, setIsApplyingPreset] = useState(false);
 
   // تحويل المزايا لأي صيغة (array قديم أو object جديد) لصف array نصي للعرض
   const normalizeBenefits = (b: any): string[] => {
@@ -79,6 +91,29 @@ const LoyaltyTiers: React.FC = () => {
       console.error("Error fetching tiers:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleApplyPreset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!presetProgramId || !selectedPresetKey) return;
+    try {
+      setIsApplyingPreset(true);
+      const res = await apiClient.post<{ message?: string }>("/hr/customer-loyalty/tiers/preset", {
+        programId: presetProgramId,
+        presetKey: selectedPresetKey,
+      });
+      alert(res.data?.message || "تم إنشاء المستويات بنجاح");
+      setIsPresetModalOpen(false);
+      setPresetProgramId("");
+      setSelectedPresetKey(null);
+      fetchTiers();
+    } catch (error) {
+      console.error("Error applying preset:", error);
+      const err = error as { response?: { data?: { error?: string } } };
+      alert(err?.response?.data?.error || "حدث خطأ أثناء إنشاء المستويات");
+    } finally {
+      setIsApplyingPreset(false);
     }
   };
 
@@ -202,6 +237,18 @@ const LoyaltyTiers: React.FC = () => {
           >
             <RefreshCw className="w-4 h-4" />
             تحديث
+          </button>
+          <button
+            onClick={() => {
+              setPresetProgramId(programs.length > 0 ? programs[0].id : "");
+              setSelectedPresetKey(null);
+              setIsPresetModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            title="إنشاء مستويات من قالب جاهز"
+          >
+            <Trophy className="w-4 h-4" />
+            قالب جاهز
           </button>
           <button 
             onClick={() => handleOpenModal()} 
@@ -496,6 +543,88 @@ const LoyaltyTiers: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
+                  className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Preset Modal */}
+      {isPresetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden shadow-2xl">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between z-10">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                قوالب مستويات جاهزة
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsPresetModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleApplyPreset} className="p-6 space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  برنامج الولاء
+                </label>
+                <select
+                  value={presetProgramId}
+                  onChange={(e) => setPresetProgramId(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+                >
+                  <option value="">اختر برنامج الولاء</option>
+                  {programs.map(p => (
+                    <option key={p.id} value={p.id}>{p.nameAr || p.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  القالب سيُنشئ المستويات بأسمائها وألوانها ومزاياها جاهزة، ويمكنك تعديلها بعد ذلك من هنا.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {TIER_PRESET_PACKS.map(pack => (
+                  <button
+                    key={pack.key}
+                    type="button"
+                    onClick={() => setSelectedPresetKey(pack.key)}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-right ${
+                      selectedPresetKey === pack.key
+                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-500/30"
+                        : "border-gray-200 dark:border-gray-700 hover:border-purple-300"
+                    }`}
+                  >
+                    <div className="p-3 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 flex-shrink-0">
+                      {pack.icon === "crown" ? <Crown className="w-6 h-6" /> : pack.icon === "trophy" ? <Trophy className="w-6 h-6" /> : <Gem className="w-6 h-6" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-900 dark:text-white">{pack.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{pack.description}</div>
+                    </div>
+                    <div className="text-sm font-bold text-purple-600 dark:text-purple-400">{pack.count} مستويات</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 pb-2">
+                <button
+                  type="submit"
+                  disabled={isApplyingPreset || !presetProgramId || !selectedPresetKey}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white py-2 rounded-lg font-bold transition-all shadow-lg shadow-purple-200 dark:shadow-none"
+                >
+                  {isApplyingPreset ? "جاري الإنشاء..." : "إنشاء المستويات"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPresetModalOpen(false)}
                   className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   إلغاء

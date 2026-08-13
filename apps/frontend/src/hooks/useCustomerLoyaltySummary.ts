@@ -39,6 +39,14 @@ export interface CustomerLoyaltySummary {
     loyaltySystem: string;
   };
   loyaltySystem: string;
+  card: {
+    url: string | null;
+    filePath?: string | null;
+    generated?: boolean;
+    membershipNumber: string | null;
+    tierId: string | null;
+    tierName?: string | null;
+  } | null;
   loyalty: {
     method: string | null;
     metricLabel: string;

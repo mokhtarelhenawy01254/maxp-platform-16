@@ -842,6 +842,17 @@ async function getCustomerPortalSummary(req, res) {
     const activeVoucher = autoSummary.activeVoucher;
     const autoDiscountStatus = autoSummary.status;
 
+    // 💳 كارت عضوية العميل (بطاقة مستوى الولاء) — يُنشأ عند الطلب ويُخزَّن
+    let card = null;
+    if (progress?.tier?.id && !isAutoDiscount) {
+      try {
+        const { getOrGenerateTierCard } = require('../services/loyalty/loyaltyTierCardService');
+        card = await getOrGenerateTierCard({ companyId, customerId, tierId: progress.tier.id });
+      } catch (cardError) {
+        console.warn('⚠️ [LOYALTY] Failed to prepare tier card for summary:', cardError.message);
+      }
+    }
+
     res.json({
       success: true,
       data: {
@@ -855,6 +866,7 @@ async function getCustomerPortalSummary(req, res) {
           joinedAt: customer.createdAt
         },
         loyaltySystem,
+        card,
         loyalty: {
           method: progress?.method || null,
           metricLabel: progress?.metricLabel || 'نقطة',
@@ -889,6 +901,104 @@ async function getCustomerPortalSummary(req, res) {
   } catch (error) {
     console.error('❌ Error getting customer portal summary:', error);
     res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب بيانات العميل' });
+  }
+}
+
+/**
+ * 💳 جلب/توليد كارت عضوية العميل (بطاقة مستوى الولاء)
+ * GET /api/v1/hr/customer-loyalty/customers/:customerId/card
+ */
+async function getCustomerTierCard(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { customerId } = req.params;
+    const { programId, tierId } = req.query;
+
+    const { getOrGenerateTierCard } = require('../services/loyalty/loyaltyTierCardService');
+    const result = await getOrGenerateTierCard({ companyId, customerId, programId, tierId });
+
+    if (!result.tierId) {
+      return res.status(404).json({ success: false, error: 'لا يوجد مستوى ولاء لهذا العميل' });
+    }
+
+    res.json({ success: true, data: result, message: result.generated ? 'تم توليد كارت العضوية' : 'كارت العضوية الحالي' });
+  } catch (error) {
+    console.error('❌ Error getting tier card:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب كارت العضوية' });
+  }
+}
+
+/**
+ * 📤 إرسال كارت العضوية للعميل عبر WhatsApp (يدوي)
+ * POST /api/v1/hr/customer-loyalty/customers/:customerId/card/send
+ */
+async function sendCustomerTierCard(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { customerId } = req.params;
+    const { programId, tierId } = req.query;
+
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, companyId },
+      select: { id: true, firstName: true, lastName: true, phone: true }
+    });
+    if (!customer) {
+      return res.status(404).json({ success: false, error: 'العميل غير موجود' });
+    }
+
+    const { getOrGenerateTierCard, sendTierCardImage } = require('../services/loyalty/loyaltyTierCardService');
+    const card = await getOrGenerateTierCard({ companyId, customerId, programId, tierId });
+    if (!card.filePath) {
+      return res.status(404).json({ success: false, error: 'لا يوجد مستوى ولاء لهذا العميل' });
+    }
+
+    const tierName = card.tierName || 'مستوى جديد';
+    const sendResult = await sendTierCardImage({
+      companyId,
+      customer,
+      filePath: card.filePath,
+      caption: `🎖️ مبروك! وصلت لمستوى "${tierName}" 🎉\nكارت عضويتك الجديد وصل لك. استمتع بمزاياك!`
+    });
+
+    res.json({
+      success: true,
+      data: { ...card, send: sendResult },
+      message: sendResult.success ? 'تم إرسال الكارت للعميل' : 'تعذر إرسال الكارت (تحقق من جلسة الواتساب)'
+    });
+  } catch (error) {
+    console.error('❌ Error sending tier card:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء إرسال كارت العضوية' });
+  }
+}
+
+/**
+ * 🏆 إنشاء مستويات من قالب جاهز (Preset) — حزمة كاملة مرة واحدة
+ * POST /api/v1/hr/customer-loyalty/tiers/preset
+ */
+async function createTierPreset(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { programId, presetKey } = req.body;
+
+    if (!programId || !presetKey) {
+      return res.status(400).json({ success: false, error: 'programId و presetKey مطلوبان' });
+    }
+
+    const { applyTierPreset } = require('../services/loyalty/tierPresets');
+    const result = await applyTierPreset(companyId, programId, presetKey);
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: `تم إنشاء ${result.created} مستويات من القالب "${result.preset.name}"`
+    });
+  } catch (error) {
+    console.error('❌ Error creating tier preset:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء إنشاء المستويات'
+    });
   }
 }
 
@@ -1119,6 +1229,9 @@ module.exports = {
   getCustomerTierOverride,
   updateCustomerTierOverride,
   getCustomerPortalSummary,
+  getCustomerTierCard,
+  sendCustomerTierCard,
+  createTierPreset,
   getCashbackSettings,
   updateCashbackSettings,
   getPointsSettings,
