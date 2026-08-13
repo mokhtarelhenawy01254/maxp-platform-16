@@ -570,7 +570,6 @@ describe('radiologyController', () => {
       expect(args.take).toBe(25);
       expect(args.include).toEqual({
         report: true,
-        appointment: { select: { bookingNo: true, appointmentDate: true, status: true } },
       });
       expect(prisma.radiologyStudy.count).toHaveBeenCalledWith({ where: args.where });
 

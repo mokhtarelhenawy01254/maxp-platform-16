@@ -334,17 +334,29 @@ const listStudies = async (req, res) => {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limitNum,
-        include: {
-          report: true,
-          appointment: { select: { bookingNo: true, appointmentDate: true, status: true } },
-        },
+        include: { report: true },
       }),
       prisma.radiologyStudy.count({ where }),
     ]);
 
-    const items = studies.map(({ appointment, ...s }) => ({
+    // bookingNo resolves via the loose appointmentId scalar (no Prisma relation exists on RadiologyStudy)
+    const apptIds = [...new Set(studies.map((s) => s.appointmentId).filter(Boolean))];
+    let bookingNoById = {};
+    if (apptIds.length) {
+      try {
+        const appts = await prisma.radiologyAppointment.findMany({
+          where: { id: { in: apptIds } },
+          select: { id: true, bookingNo: true },
+        });
+        if (Array.isArray(appts)) {
+          bookingNoById = Object.fromEntries(appts.map((a) => [a.id, a.bookingNo]));
+        }
+      } catch { /* bookingNo is optional */ }
+    }
+
+    const items = studies.map((s) => ({
       ...s,
-      bookingNo: appointment?.bookingNo ?? null,
+      bookingNo: s.appointmentId ? (bookingNoById[s.appointmentId] ?? null) : null,
     }));
     res.json({ success: true, data: { items, total, page: pageNum, limit: limitNum } });
   } catch (error) {
