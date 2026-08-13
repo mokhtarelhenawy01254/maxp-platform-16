@@ -62,8 +62,11 @@ const FunnelAnalytics: React.FC = () => {
   }, [range, t]);
 
   useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+    if (range) {
+      void fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range]);
 
   if (loading) {
     return (

@@ -2,11 +2,15 @@ const express = require('express');
 const router = express.Router();
 const reportsController = require('../controller/reportsController');
 const { authenticateToken, requireCompanyAccess } = require('../utils/verifyToken');
+const { cacheMiddleware } = require('../middleware/performanceOptimization');
 
-// تطبيق authentication على جميع routes التقارير
-// كل مستخدم يرى فقط تقارير شركته
+// O�O�O"USU, authentication O1U,U% O�U.USO1 routes OU,O�U,OO�USO�
+// U�U, U.O3O�OrO_U. USO�U% U?U,O� O�U,OO�USO� O'O�U�O�U�
 router.use(authenticateToken);
 router.use(requireCompanyAccess);
+
+// O�O-O�OO�USOO� OU,O�U,OO�USO� OU,O_U_USU. U,U,U? dashboard
+router.use(cacheMiddleware(60000));
 
 // المسار القديم للـ dashboard
 router.get('/dashboard', reportsController.getReports);
