@@ -26,7 +26,7 @@ import { apiClient } from "../../../services/apiClient";
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
 import { InboxConversation } from "../../../types/inbox.types";
-import { GovernorateAreaSearch } from "../../ui/GovernorateAreaSearch";
+import { EGYPT_GOVERNORATES } from "../../../constants/egyptGovernorates";
 import { detectUserGovernorate } from "../../../utils/geolocation";
 import { getPrimaryImageUrl } from "../../../utils/imageUrl";
 
@@ -234,36 +234,6 @@ interface ShippingInfo {
   governorate: string | null;
 }
 
-export interface QuickOrderExistingOrderItem {
-  name: string;
-  quantity: number;
-  price: number;
-  image?: string | null;
-  productId?: string | null;
-  variantId?: string | null;
-  sku?: string | null;
-  productColor?: string | null;
-  productSize?: string | null;
-}
-
-export interface QuickOrderExistingOrder {
-  id: string;
-  orderNumber: string;
-  status?: string;
-  total?: number;
-  createdAt?: string;
-  items: QuickOrderExistingOrderItem[];
-  customerName?: string;
-  customerPhone?: string;
-  city?: string;
-  address?: string;
-  notes?: string;
-  shipping?: number;
-  tax?: number;
-  currency?: string;
-  paymentMethod?: string;
-}
-
 interface QuickOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -276,9 +246,6 @@ interface QuickOrderModalProps {
   platform?: 'facebook' | 'whatsapp' | 'telegram';
   pageName?: string;
   onOrderCreated?: (orderId: string) => void;
-  /** When set, the modal opens in edit/add mode for an existing order instead of creating a new one */
-  existingOrder?: QuickOrderExistingOrder | null;
-  intent?: 'create' | 'edit' | 'add';
 }
 
 // Variant Selection Modal Component - Same as ManualOrder
@@ -558,8 +525,6 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   platform: propPlatform,
   pageName: propPageName,
   onOrderCreated,
-  existingOrder,
-  intent = "create",
 }) => {
   // Derive conversation data from either conversation object OR individual props
   const convId = conversation?.id || propConvId || '';
@@ -567,9 +532,6 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const convCustomerName = conversation?.customerName || '';
   const convPageName = conversation?.pageName || propPageName || 'Facebook';
   const convPlatform = conversation?.platform || propPlatform || 'facebook';
-
-  // Edit/Add mode helpers
-  const isAddMode = intent === 'add';
 
   // Product Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -589,7 +551,6 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [customerName, setCustomerName] = useState(initialCustomerName || convCustomerName || "");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
-  const [area, setArea] = useState("");
   const [notes, setNotes] = useState("");
 
   // Shipping State
@@ -614,39 +575,6 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       setCustomerName(initialCustomerName || convCustomerName || "");
     }
   }, [isOpen, initialCustomerName, initialCustomerPhone, convCustomerName]);
-
-  // Pre-fill the cart + customer data when editing / adding to an existing order
-  useEffect(() => {
-    if (!isOpen) return;
-    if (existingOrder) {
-      setCartItems(
-        (existingOrder.items || []).map((it) => ({
-          productId: it.productId || "",
-          variantId: it.variantId || undefined,
-          name: it.name,
-          variantName: undefined,
-          price:
-            typeof it.price === "string"
-              ? parseFloat(it.price) || 0
-              : it.price || 0,
-          quantity: it.quantity || 1,
-          image: it.image || "",
-          stock: 0,
-          sku: it.sku || undefined,
-        })),
-      );
-      setPhone(existingOrder.customerPhone || initialCustomerPhone || "");
-      setCustomerName(
-        existingOrder.customerName || initialCustomerName || convCustomerName || "",
-      );
-      setCity(existingOrder.city || "");
-      setAddress(existingOrder.address || "");
-      setNotes(existingOrder.notes || "");
-      setStep("products");
-    } else {
-      setCartItems([]);
-    }
-  }, [isOpen, existingOrder, initialCustomerName, initialCustomerPhone, convCustomerName]);
 
   // Auto-detect governorate for quick checkout
   useEffect(() => {
@@ -921,12 +849,8 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     [cartItems],
   );
 
-  const shippingCost =
-    existingOrder && !shippingInfo
-      ? existingOrder.shipping || 0
-      : shippingInfo?.price || 0;
-  const taxCost = existingOrder?.tax || 0;
-  const grandTotal = subtotal + shippingCost + taxCost;
+  const shippingCost = shippingInfo?.price || 0;
+  const grandTotal = subtotal + shippingCost;
 
   // Create order
   const handleCreateOrder = async () => {
@@ -941,58 +865,6 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
 
     try {
       setLoading(true);
-
-      // Edit/Add mode: update an existing order (PUT replaces the full item list)
-      if (existingOrder) {
-        const payloadItems = cartItems.map((item) => ({
-          productId: item.productId || "",
-          productName: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          total: item.price * item.quantity,
-          variantId: item.variantId || null,
-          sku: item.sku || null,
-          productColor: null,
-          productSize: null,
-          metadata: {},
-        }));
-
-        const newSubtotal = subtotal;
-        const newTotal = newSubtotal + shippingCost + taxCost;
-
-        const response = await apiClient.put(
-          `/orders-new/simple/${encodeURIComponent(existingOrder.orderNumber)}/items`,
-          {
-            items: payloadItems,
-            subtotal: newSubtotal,
-            tax: taxCost,
-            shipping: shippingCost,
-            total: newTotal,
-          },
-        );
-        const result = response.data as { success?: boolean; error?: string };
-
-        if (result.success) {
-          if (isAddMode) {
-            tToast.success("QuickOrderModal.success_add_8f4a");
-          } else {
-            tToast.success("QuickOrderModal.success_edit_8f4a");
-          }
-          const orderId = existingOrder.id || existingOrder.orderNumber;
-          if (onOrderCreated && orderId) {
-            onOrderCreated(orderId);
-          }
-          setCartItems([]);
-          setStep("products");
-          onClose();
-        } else {
-          toast.error(
-            "فشل تحديث الطلب: " +
-              (result.error || "حدث خطأ أثناء تحديث الطلب"),
-          );
-        }
-        return;
-      }
 
       const extractionMethod =
         convPlatform === "whatsapp" ? "whatsapp_inbox" : "facebook_inbox";
@@ -1012,8 +884,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         customerPhone: phone,
         customerName: customerName.trim(),
         customerAddress: address,
-        city: area || city,
-        governorate: city,
+        city: city,
         notes: notes,
         status: "PENDING",
         paymentMethod: "cod",
@@ -1067,13 +938,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           <div className="flex items-center gap-3">
             <ShoppingCartIcon className="w-6 h-6" />
             <div>
-              <h2 className="business-workflow-title">
-                {existingOrder
-                  ? isAddMode
-                    ? `إضافة للطلب #${existingOrder.orderNumber}`
-                    : `تعديل الطلب #${existingOrder.orderNumber}`
-                  : "طلب سريع"}
-              </h2>
+              <h2 className="business-workflow-title">طلب سريع</h2>
               <p className="business-workflow-subtitle">
                 {initialCustomerName || convCustomerName} -{" "}
                 {convPageName}
@@ -1456,19 +1321,20 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                   <div className="space-y-4">
                     <div>
                       <label className="mb-1 block text-xs" style={mutedStyle}>
-                        المحافظة والمنطقة
+                        المحافظة
                       </label>
-                      <GovernorateAreaSearch
-                        value={{ governorate: city, area }}
-                        onChange={(next) => {
-                          setCity(next.governorate);
-                          setArea(next.area);
-                        }}
-                        placeholder="ابحث عن المنطقة..."
-                        searchPlaceholder="اكتب اسم المنطقة أو المحافظة..."
-                        emptyText="لا توجد نتائج مطابقة"
-                        loadingText="جاري البحث..."
-                      />
+                      <select
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="business-control-input w-full"
+                      >
+                        <option value="">اختر المحافظة...</option>
+                        {EGYPT_GOVERNORATES.map((gov) => (
+                          <option key={gov.id} value={gov.nameAr}>
+                            {gov.nameAr}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
@@ -1573,14 +1439,6 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                         </span>
                       </div>
                     )}
-                    {taxCost > 0 && (
-                      <div className="flex justify-between">
-                        <span style={mutedStyle}>الضريبة</span>
-                        <span className="font-medium" style={headingStyle}>
-                          +{taxCost.toLocaleString()} ج.م
-                        </span>
-                      </div>
-                    )}
                     <div
                       className="flex justify-between pt-2 text-lg font-bold"
                       style={{
@@ -1643,11 +1501,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
               ) : (
                 <CheckCircleIcon className="w-5 h-5" />
               )}
-              {existingOrder
-                ? isAddMode
-                  ? `إضافة للطلب (${grandTotal.toLocaleString()} ج.م)`
-                  : `حفظ التعديلات (${grandTotal.toLocaleString()} ج.م)`
-                : `إنشاء الطلب (${grandTotal.toLocaleString()} ج.م)`}
+              إنشاء الطلب ({grandTotal.toLocaleString()} ج.م)
             </button>
           )}
         </div>

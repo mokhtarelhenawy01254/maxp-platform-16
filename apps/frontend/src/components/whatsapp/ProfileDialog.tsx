@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getInboxExternalImageUrl } from "@/utils/imageUrl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -132,7 +133,7 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
           <div className="flex flex-col items-center gap-4 rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/70 px-5 py-6">
             <div className="relative">
               <Avatar className="size-32 shadow-[0_18px_40px_rgba(15,27,45,0.12)]">
-                <AvatarImage src={picturePreview || undefined} />
+                <AvatarImage src={getInboxExternalImageUrl(picturePreview) || undefined} />
                 <AvatarFallback className="bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] text-2xl font-semibold text-[color:var(--color-primary)]">
                   {(name || currentName || "WA").slice(0, 2).toUpperCase()}
                 </AvatarFallback>

@@ -282,6 +282,21 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تطبيق مستقل لربط وإدارة صفحات فيسبوك.",
   },
   {
+    id: "instagram-business",
+    area: "communication",
+    label: "انستجرام بزنس",
+    description: "إدارة الرسائل والتعليقات والـ DMs على انستجرام، الرد الآلي، وتحليلات التفاعل.",
+    status: "covered",
+    appSlug: "instagram-business",
+    appLabel: "انستجرام بزنس",
+    currentGate: "instagram-business",
+    routes: [
+      { path: "/instagram-inbox", label: "صندوق انستجرام" },
+      { path: "/settings/instagram", label: "إعدادات انستجرام" },
+    ],
+    action: "تطبيق مستقل لإدارة تفاعلات انستجرام.",
+  },
+  {
     id: "facebook-pixel",
     area: "marketing",
     label: "Facebook Pixel & CAPI",
@@ -375,6 +390,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     currentGate: "analytics-advanced",
     routes: [
       { path: "/analytics/orders", label: "Orders Overview" },
+      { path: "/analytics/orders/orders", label: "Orders Analytics" },
       { path: "/analytics/orders/revenue", label: "Revenue" },
       { path: "/analytics/orders/profit", label: "Profit" },
       { path: "/analytics/orders/cancellations", label: "Cancellation Reasons" },
@@ -384,6 +400,21 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
       { path: "/reports/status-analysis", label: "Status Analysis" },
     ],
     action: "مغطى. يمكن فصل shipping reports تحت order-shipping-reports لو احتجنا تسعير أدق.",
+  },
+  {
+    id: "orders-analytics",
+    area: "analytics",
+    label: "تحليلات الطلبات",
+    description: "لوحة تحليلات الطلبات المستقلة: إجمالي الطلبات، الحالات، المقارنات الزمنية.",
+    status: "covered",
+    appSlug: "orders-analytics",
+    appLabel: "تحليلات الطلبات",
+    currentGate: "orders-analytics",
+    legacyGate: "analytics-basic",
+    routes: [
+      { path: "/analytics/orders/orders", label: "Orders Analytics" },
+    ],
+    action: "تطبيق مستقل لتقارير تحليلات الطلبات في تصنيف التحليلات.",
   },
   {
     id: "hr-core",

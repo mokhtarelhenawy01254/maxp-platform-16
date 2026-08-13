@@ -1113,8 +1113,10 @@ const MarketplaceAppsTab = ({
     0,
   );
   const totalMonthlyRevenue = apps.reduce((sum, app) => {
+    const price = app.monthlyPrice || 0;
+    if (price <= 0) return sum;
     const installs = app._count?.installations || app.installCount || 0;
-    return sum + installs * (app.monthlyPrice || 0);
+    return sum + installs * price;
   }, 0);
   const activeApps = apps.filter((app) => app.isActive).length;
   const featuredApps = apps.filter((app) => app.isFeatured).length;
@@ -1164,8 +1166,10 @@ const MarketplaceAppsTab = ({
   };
 
   const calculateAppRevenue = (app: MarketplaceManagementItem) => {
+    const price = app.monthlyPrice || 0;
+    if (price <= 0) return 0;
     const installs = app._count?.installations || app.installCount || 0;
-    return installs * (app.monthlyPrice || 0);
+    return installs * price;
   };
 
   const handleQuickToggle = async (
@@ -1243,37 +1247,56 @@ const MarketplaceAppsTab = ({
   return (
     <div>
       {/* Statistics Dashboard */}
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3" style={{ backgroundColor: "#f3e8ff", color: "#581c87" }}>
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-6 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-              {apps.length}
-            </h4>
-            <p className="text-sm leading-6">إجمالي التطبيقات</p>
-          </div>
-          <div className="col-span-6 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-              {totalInstallations.toLocaleString()}
-            </h4>
-            <p className="text-sm leading-6">إجمالي التثبيتات</p>
-          </div>
-          <div className="col-span-6 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-              {totalMonthlyRevenue.toLocaleString()} ج.م
-            </h4>
-            <p className="text-sm leading-6">إيرادات شهرية</p>
-          </div>
-          <div className="col-span-6 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-              {activeApps}
-            </h4>
-            <p className="text-sm leading-6">نشط | {featuredApps} مميز</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-3 mb-3 md:grid-cols-4">
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">إجمالي التطبيقات</p>
+              <p className="mt-1 text-2xl font-bold tracking-tight">{apps.length}</p>
+            </div>
+            <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">إجمالي التثبيتات</p>
+              <p className="mt-1 text-2xl font-bold tracking-tight">{totalInstallations.toLocaleString()}</p>
+            </div>
+            <div className="rounded-lg bg-sky-500/10 p-2.5 text-sky-500">
+              <Download className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">إيرادات شهرية</p>
+              <p className="mt-1 text-2xl font-bold tracking-tight">{totalMonthlyRevenue.toLocaleString()} ج.م</p>
+            </div>
+            <div className="rounded-lg bg-emerald-500/10 p-2.5 text-emerald-500">
+              <DollarSign className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">التطبيقات النشطة</p>
+              <p className="mt-1 text-2xl font-bold tracking-tight">{activeApps}</p>
+              <p className="text-xs text-muted-foreground">{featuredApps} مميز</p>
+            </div>
+            <div className="rounded-lg bg-amber-500/10 p-2.5 text-amber-500">
+              <Star className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Catalog Diff (Files vs DB) */}
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-3" style={{ borderColor: (catalogDiff?.totals?.diffEntries || 0) > 0 ? "#fbbf24" : "#86efac" }}>
+      <div className={`rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-3 ${(catalogDiff?.totals?.diffEntries || 0) > 0 ? "border-yellow-500/60" : "border-green-500/60"}`}>
         <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-1 mb-1.5">
           <div>
             <h6 className="text-base font-semibold leading-none font-bold">
@@ -1422,16 +1445,19 @@ const MarketplaceAppsTab = ({
       </div>
 
       {/* Filters and Search */}
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-3">
-        <div className="grid grid-cols-12 gap-2 items-center">
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3">
+        <div className="grid grid-cols-12 gap-3 items-end">
           <div className="col-span-12 md:col-span-4">
-            <div className="relative">
-              <span className="absolute right-3 top-1/2 -translate-y-1/2">🔍</span>
-              <Input className="w-full pr-10" placeholder="البحث في التطبيقات..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label htmlFor="apps-search">البحث</Label>
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input id="apps-search" className="w-full pr-10" placeholder="البحث في التطبيقات..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
             </div>
           </div>
           <div className="col-span-12 md:col-span-3">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>الترتيب</Label>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -1445,15 +1471,15 @@ const MarketplaceAppsTab = ({
             </div>
           </div>
           <div className="col-span-12 md:col-span-5">
-            <div className="flex gap-1">
-              <Button className="w-full" variant="default" onClick={() => onEdit(null)}>
+            <div className="flex gap-2 justify-end">
+              <Button className="flex-1 md:flex-none" variant="default" onClick={() => onEdit(null)}>
                 <Plus className="h-4 w-4 ml-1" />إضافة
               </Button>
-              <Button variant="outline" onClick={handleExport} style={{ minWidth: 100 }}>
+              <Button variant="outline" onClick={handleExport} className="flex-1 md:flex-none">
                 <Download className="h-4 w-4 ml-1" />تصدير
               </Button>
-              <label className="inline-flex items-center gap-1 cursor-pointer">
-                <Button variant="outline" style={{ minWidth: 100 }} asChild>
+              <label className="inline-flex items-center gap-1 cursor-pointer flex-1 md:flex-none">
+                <Button variant="outline" className="w-full" asChild>
                   <span>
                     <Upload className="h-4 w-4 ml-1" />استيراد
                   </span>
@@ -1464,24 +1490,23 @@ const MarketplaceAppsTab = ({
           </div>
         </div>
         {filteredApps.length !== apps.length && (
-          <span className="text-xs text-muted-foreground block mt-1">عرض {filteredApps.length} من {apps.length} تطبيق</span>
+          <span className="text-xs text-muted-foreground block mt-2">عرض {filteredApps.length} من {apps.length} تطبيق</span>
         )}
       </div>
 
       {/* Category Tabs + Apps Grid Layout */}
-      <div className="grid grid-cols-12 gap-2">
+      <div className="grid grid-cols-12 gap-3">
         {/* Side Category Tabs */}
         <div className="col-span-12 md:col-span-2">
-          <div className="rounded-lg border bg-card text-card-foreground shadow-sm" style={{ minHeight: 400 }}>
-            <div className="flex flex-col border-l border-border">
+          <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-1.5" style={{ minHeight: 400 }}>
+            <div className="flex flex-col gap-0.5">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
-                  className={`flex items-center gap-1 w-full text-right px-1 py-3 text-sm transition-colors ${categoryFilter === cat ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:bg-accent/50"}`}
-                  style={{ borderRight: categoryFilter === cat ? `3px solid ${cat === "ALL" ? "#6b7280" : getCategoryColor(cat)}` : "3px solid transparent" }}
+                  className={`flex items-center gap-2 w-full text-right px-3 py-2 text-sm transition-colors rounded-md ${categoryFilter === cat ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:bg-accent/50"}`}
                 >
-                  <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat === "ALL" ? "#6b7280" : getCategoryColor(cat) }} />
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat === "ALL" ? "var(--muted-foreground)" : getCategoryColor(cat) }} />
                   <span className="flex-1 text-right text-sm">{categoryLabels[cat] || cat}</span>
                   <Badge variant="secondary" className="h-5 text-[0.7rem]">
                     {cat === "ALL" ? apps.length : apps.filter((a) => a.category === cat).length}
@@ -1521,18 +1546,21 @@ const MarketplaceAppsTab = ({
                       </p>
 
                       {/* Stats Row */}
-                      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-1.5 mb-2 bg-muted/50">
+                      <div className="rounded-lg border bg-muted/50 p-2 mb-2">
                         <div className="grid grid-cols-12 gap-1 text-center">
                           <div className="col-span-4">
-                            <h6 className="text-base font-semibold leading-none font-bold text-primary" style={{ fontSize: "1rem" }}>{app._count?.installations || app.installCount || 0}</h6>
+                            <p className="text-base font-bold text-primary" style={{ fontSize: "1rem" }}>{app._count?.installations || app.installCount || 0}</p>
                             <span className="text-xs text-muted-foreground block" style={{ fontSize: "0.65rem" }}>تثبيت</span>
                           </div>
                           <div className="col-span-4">
-                            <h6 className="text-base font-semibold leading-none font-bold text-green-600" style={{ fontSize: "1rem" }}>⭐ {app.rating?.toFixed(1) || "0.0"}</h6>
+                            <p className="text-base font-bold text-green-600 inline-flex items-center gap-1" style={{ fontSize: "1rem" }}>
+                              <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                              {app.rating?.toFixed(1) || "0.0"}
+                            </p>
                             <span className="text-xs text-muted-foreground block" style={{ fontSize: "0.65rem" }}>({app.reviewCount || 0})</span>
                           </div>
                           <div className="col-span-4">
-                            <h6 className="text-base font-semibold leading-none font-bold text-amber-500" style={{ fontSize: "1rem" }}>{monthlyRevenue.toLocaleString()}</h6>
+                            <p className="text-base font-bold text-amber-500" style={{ fontSize: "1rem" }}>{monthlyRevenue.toLocaleString()}</p>
                             <span className="text-xs text-muted-foreground block" style={{ fontSize: "0.65rem" }}>ج.م/شهر</span>
                           </div>
                         </div>
@@ -1542,8 +1570,8 @@ const MarketplaceAppsTab = ({
                       <div className="flex items-center gap-1 mb-1">
                         <h5 className="scroll-m-18 text-lg font-semibold tracking-tight text-primary font-bold">{app.monthlyPrice?.toLocaleString() || 0} ج</h5>
                         <span className="text-xs text-muted-foreground">/ شهر</span>
-                        {app.yearlyPrice > 0 && (
-                          <Badge variant="outline" className="border-green-500/50 text-green-700 text-xs">{`${Math.round((1 - app.yearlyPrice / (app.monthlyPrice * 12)) * 100)}% توفير سنوي`}</Badge>
+                        {app.monthlyPrice > 0 && app.yearlyPrice > 0 && (
+                          <Badge variant="outline" className="border-green-500/50 text-green-700 text-xs">{`${Math.max(0, Math.round((1 - app.yearlyPrice / (app.monthlyPrice * 12)) * 100))}% توفير سنوي`}</Badge>
                         )}
                       </div>
 
@@ -1607,8 +1635,10 @@ const MarketplaceAppsTab = ({
           </div>
 
           {filteredApps.length === 0 && (
-            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 text-center">
-              <h6 className="text-base font-semibold leading-none text-muted-foreground">لا توجد تطبيقات مطابقة للبحث</h6>
+            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-10 text-center">
+              <Search className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <h6 className="text-base font-semibold text-muted-foreground mt-3">لا توجد تطبيقات مطابقة للبحث</h6>
+              <p className="text-sm text-muted-foreground mt-1">جرّب تعديل كلمات البحث أو اختيار فئة أخرى</p>
             </div>
           )}
         </div>
@@ -1735,7 +1765,7 @@ const BundlesAndPricingTab = ({
                   </div>
 
                   {/* Pricing Info */}
-                  <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-2" style={{ backgroundColor: "#f0fdf4" }}>
+                  <div className="rounded-lg border bg-muted/40 p-2 mb-2">
                     <div className="grid grid-cols-12 gap-2 items-center">
                       <div className="col-span-6">
                         <span className="text-xs text-muted-foreground block">السعر الحالي</span>
@@ -1840,8 +1870,9 @@ const BundlesAndPricingTab = ({
       </div>
 
       {bundles.length === 0 && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 text-center">
-          <h6 className="text-base font-semibold leading-none text-muted-foreground">لا توجد باقات محددة</h6>
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-10 text-center">
+          <Package className="mx-auto h-10 w-10 text-muted-foreground/40" />
+          <h6 className="text-base font-semibold text-muted-foreground mt-3">لا توجد باقات محددة</h6>
         </div>
       )}
     </div>
@@ -2352,25 +2383,51 @@ const StorefrontThemesTab = ({
 
   return (
     <div>
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3" style={{ backgroundColor: "#e0f2fe", color: "#0c4a6e" }}>
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-6 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">{draftThemes.length}</h4>
-            <p className="text-sm leading-6">إجمالي القوالب</p>
-          </div>
-          <div className="col-span-6 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">{draftThemes.filter((theme) => theme.isActive).length}</h4>
-            <p className="text-sm leading-6">قوالب متاحة للتفعيل</p>
-          </div>
-          <div className="col-span-6 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">{totalCurrentCompanies}</h4>
-            <p className="text-sm leading-6">شركات تستخدم قالبًا</p>
-          </div>
-          <div className="col-span-6 md:col-span-3">
-            <h6 className="text-base font-semibold leading-none font-bold break-all">{defaultTheme ? defaultTheme.name : "غير محدد"}</h6>
-            <p className="text-sm leading-6">القالب الافتراضي</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-3 mb-3 md:grid-cols-4">
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">إجمالي القوالب</p>
+              <p className="mt-1 text-2xl font-bold tracking-tight">{draftThemes.length}</p>
+            </div>
+            <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
+              <Store className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">قوالب متاحة للتفعيل</p>
+              <p className="mt-1 text-2xl font-bold tracking-tight">{draftThemes.filter((theme) => theme.isActive).length}</p>
+            </div>
+            <div className="rounded-lg bg-emerald-500/10 p-2.5 text-emerald-500">
+              <Check className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">شركات تستخدم قالبًا</p>
+              <p className="mt-1 text-2xl font-bold tracking-tight">{totalCurrentCompanies}</p>
+            </div>
+            <div className="rounded-lg bg-sky-500/10 p-2.5 text-sky-500">
+              <Building2 className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-muted-foreground">القالب الافتراضي</p>
+              <p className="mt-1 text-lg font-bold tracking-tight truncate">{defaultTheme ? defaultTheme.name : "غير محدد"}</p>
+            </div>
+            <div className="rounded-lg bg-amber-500/10 p-2.5 text-amber-500">
+              <Star className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Alert variant="default" className="mb-3 border-blue-500/50 text-blue-700">

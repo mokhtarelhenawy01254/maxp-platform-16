@@ -525,6 +525,16 @@ export default defineConfig(({ mode }) => {
         '@base-ui/react/dialog',
         '@base-ui/react/alert-dialog',
       ],
+      // Node-only codecs (used by the radiology DICOM viewer) must not be
+      // pre-bundled: they `require('fs')`/`path` and crash the esbuild
+      // dep-optimizer at dev startup. They load fine as raw modules.
+      exclude: [
+        '@cornerstonejs/codec-openjpeg',
+        '@cornerstonejs/codec-openjph',
+        '@cornerstonejs/core',
+        '@cornerstonejs/dicom-image-loader',
+        '@cornerstonejs/tools',
+      ],
     },
 
     build: {

@@ -49,11 +49,9 @@ import BroadcastDialog from '../../components/whatsapp/BroadcastDialog';
 import PrivacySettingsDialog from '../../components/whatsapp/PrivacySettingsDialog';
 import BusinessProfileDialog from '../../components/whatsapp/BusinessProfileDialog';
 
-import QuickOrderModal, { type QuickOrderExistingOrder } from '../../components/facebook-inbox/Modals/QuickOrderModal';
+import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 import { useAuth } from '../../hooks/useAuthSimple';
-
-import type { Order as CustomerOrder } from '../../hooks/inbox/useCustomerProfile';
 
 import ChatSidebar from './components/ChatSidebar';
 import ChatWindow from './components/ChatWindow';
@@ -102,6 +100,7 @@ import {
   AvatarFallback as UiAvatarFallback,
   AvatarImage as UiAvatarImage,
 } from '@/components/ui/avatar';
+import { getInboxExternalImageUrl } from '@/utils/imageUrl';
 import { Button as UiButton } from '@/components/ui/button';
 import {
   Dialog as UiDialog,
@@ -208,31 +207,6 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   const appError = error as AppErrorLike;
   return appError.response?.data?.error || appError.message || fallback;
 };
-
-function toExistingOrder(order: CustomerOrder): QuickOrderExistingOrder {
-  return {
-    id: order.id,
-    orderNumber: order.orderNumber,
-    status: order.status,
-    total: order.total,
-    createdAt: order.createdAt,
-    items: (order.items || []).map((it) => ({
-      name: it.name,
-      quantity: it.quantity,
-      price: it.price,
-      image: it.image,
-    })),
-    customerName: order.customerName,
-    customerPhone: order.customerPhone,
-    city: order.city,
-    address: order.address,
-    notes: order.notes,
-    shipping: order.shipping,
-    tax: order.tax,
-    currency: order.currency,
-    paymentMethod: order.paymentMethod,
-  };
-}
 
 const WhatsAppChatContent: React.FC = () => {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
@@ -440,10 +414,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   // Quick Order Modal (same as Facebook inbox)
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
-  const [orderForModal, setOrderForModal] = useState<QuickOrderExistingOrder | null>(null);
-  const [orderIntent, setOrderIntent] = useState<'create' | 'edit' | 'add'>('create');
   const [ordersRefreshToken, setOrdersRefreshToken] = useState(0);
-  const [quickOrderContact, setQuickOrderContact] = useState<Contact | null>(null);
   const [showQuickCreateTaskModal, setShowQuickCreateTaskModal] = useState(false);
   const loadContactsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const markAsReadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -2181,7 +2152,7 @@ const WhatsAppChatContent: React.FC = () => {
           onOpenList={() => setListDialogOpen(true)}
           onOpenCatalog={() => { loadProducts(); setCatalogDialogOpen(true); }}
           onOpenLocation={() => setLocationDialogOpen(true)}
-          onOpenOrder={() => { setOrderForModal(null); setOrderIntent('create'); setShowQuickOrderModal(true); }}
+          onOpenOrder={() => setShowQuickOrderModal(true)}
           onOpenTasks={() => setShowQuickCreateTaskModal(true)}
           onOpenTemplate={handleOpenTemplateDialog}
           onBackToList={() => {
@@ -2208,19 +2179,9 @@ const WhatsAppChatContent: React.FC = () => {
                 contact={selectedContact}
                 labels={labels}
                 refreshToken={ordersRefreshToken}
-                onOpenOrder={() => { setOrderForModal(null); setOrderIntent('create'); setShowQuickOrderModal(true); }}
+                onOpenOrder={() => setShowQuickOrderModal(true)}
                 onOpenTasks={() => setShowQuickCreateTaskModal(true)}
                 onClose={() => setShowRightPanel(false)}
-                onEditOrder={(order) => {
-                  setOrderForModal(toExistingOrder(order));
-                  setOrderIntent('edit');
-                  setShowQuickOrderModal(true);
-                }}
-                onAddToOrder={(order) => {
-                  setOrderForModal(toExistingOrder(order));
-                  setOrderIntent('add');
-                  setShowQuickOrderModal(true);
-                }}
                 onOpenLabels={() => {
                   setSelectedContactForLabel(selectedContact);
                   setLabelDialogOpen(true);
@@ -2389,7 +2350,7 @@ const WhatsAppChatContent: React.FC = () => {
                   )}
                 >
                   <UiAvatar className="size-11">
-                    <UiAvatarImage src={contact.profilePicUrl || undefined} />
+                    <UiAvatarImage src={getInboxExternalImageUrl(contact.profilePicUrl) || undefined} />
                     <UiAvatarFallback className="bg-primary/10 font-semibold text-[color:var(--color-primary)]">
                       {contactName.slice(0, 2).toUpperCase()}
                     </UiAvatarFallback>
@@ -2444,7 +2405,7 @@ const WhatsAppChatContent: React.FC = () => {
               <UiSheetHeader className="border-b border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-6 py-6 text-start">
                 <div className="flex flex-col items-center gap-4 pt-7">
                   <UiAvatar className="size-28 shadow-[0_18px_40px_rgba(15,27,45,0.12)]">
-                    <UiAvatarImage src={selectedContact.profilePicUrl || undefined} />
+                    <UiAvatarImage src={getInboxExternalImageUrl(selectedContact.profilePicUrl) || undefined} />
                     <UiAvatarFallback className="bg-primary/10 text-2xl font-semibold text-[color:var(--color-primary)]">
                       {getContactInitials(selectedContactName)}
                     </UiAvatarFallback>
@@ -3163,22 +3124,17 @@ const WhatsAppChatContent: React.FC = () => {
       {/* Quick Order Modal (same as Facebook inbox - 1:1 copy) */}
       <QuickOrderModal
         isOpen={showQuickOrderModal}
-        onClose={() => {
-          setShowQuickOrderModal(false);
-          setQuickOrderContact(null);
-        }}
-        customerName={quickOrderContact ? getContactName(quickOrderContact) : (selectedContact ? getContactName(selectedContact) : undefined)}
-        customerPhone={(quickOrderContact ? getContactPhoneNumber(quickOrderContact) : selectedContactPhoneNumber) || undefined}
-        conversationId={quickOrderContact?.id || selectedContact?.id}
-        customerId={quickOrderContact?.customer?.id || quickOrderContact?.id || selectedContact?.id}
+        onClose={() => setShowQuickOrderModal(false)}
+        customerName={selectedContact ? getContactName(selectedContact) : undefined}
+        customerPhone={selectedContactPhoneNumber || undefined}
+        conversationId={selectedContact?.id}
+        customerId={selectedContact?.id}
         platform="whatsapp"
         pageName={
           selectedSession && selectedSession !== 'all'
             ? sessions.find(s => s.id === selectedSession)?.name || 'WhatsApp'
             : 'WhatsApp'
         }
-        existingOrder={orderForModal}
-        intent={orderIntent}
         onOrderCreated={(orderId) => {
           toast.success(t('whatsapp.dialogs.orderCreated', { orderId }));
           setOrdersRefreshToken((prev) => prev + 1);

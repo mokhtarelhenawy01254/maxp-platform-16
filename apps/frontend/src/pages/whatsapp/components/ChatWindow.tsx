@@ -34,6 +34,7 @@ import { Contact, Message } from "../../../hooks/useWhatsAppQueries";
 import {
   getContactDisplayPhone,
 } from "../whatsappContactDisplay";
+import { getInboxExternalImageUrl } from "@/utils/imageUrl";
 import MessageBubble from "./MessageBubble";
 import AudioRecorder from "./AudioRecorder";
 
@@ -188,7 +189,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </Button>
           ) : null}
           <Avatar className="size-8">
-            <AvatarImage src={selectedContact.profilePicUrl || undefined} />
+            <AvatarImage src={getInboxExternalImageUrl(selectedContact.profilePicUrl) || undefined} />
             <AvatarFallback className="bg-primary/10 text-xs text-[color:var(--color-primary)]">
               {getContactName(selectedContact).slice(0, 2).toUpperCase()}
             </AvatarFallback>

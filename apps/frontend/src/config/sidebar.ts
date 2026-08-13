@@ -476,7 +476,7 @@ export const getSidebarConfig = (
                 { to: '/settings/smart-replies', icon: MessageSquare, label: t('sidebar.smartReplies') },
             ],
             // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic'),
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-pages-connect', 'crm-basic']),
         },
 
         // 2ï¸âƒ£.1 Ø¥Ù†Ø³ØªØ¬Ø±Ø§Ù…
@@ -489,7 +489,7 @@ export const getSidebarConfig = (
                 { to: '/settings/instagram', icon: Cog, label: t('sidebar.instagramSettings') },
             ],
             // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic'),
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['instagram-business', 'crm-basic']),
         },
 
         // 2ï¸âƒ£.5 ÙˆØ§ØªØ³Ø§Ø¨
@@ -614,7 +614,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/status-movement', icon: GitBranch, label: t('sidebar.orderMovement', 'Ø­Ø±ÙƒØ© Ø§Ù„Ø­Ø§Ù„Ø§Øª') },
             ],
             // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic', 'orders-analytics'])
         },
 
         // 4ï¸âƒ£ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª

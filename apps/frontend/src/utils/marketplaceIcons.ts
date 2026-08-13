@@ -11,7 +11,7 @@ import {
   RefreshCcw, FileBarChart, Cog, ArrowLeftRight, Volume2,
   Calculator, Tag,
 } from "lucide-react";
-import { WhatsAppIcon, TelegramIcon, FacebookIcon } from "@/components/icons/brands";
+import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from "@/components/icons/brands";
 import type { ReactElement } from "react";
 
 export const appIcons: Record<string, React.ElementType> = {
@@ -80,12 +80,14 @@ export const appIconsBySlug: Record<string, React.ElementType> = {
   "ai-inbox-bundle": Inbox,
   "whatsapp-business": WhatsAppIcon,
   "telegram-business": TelegramIcon,
+  "instagram-business": InstagramIcon,
   "broadcast-pro": Megaphone,
   "messaging-bundle": Inbox,
   "crm-basic": HeartHandshake,
   "crm-loyalty": Gift,
   "opportunities-pipeline": GitBranch,
   "analytics-basic": BarChart3,
+  "orders-analytics": BarChart3,
   "turbo-analytics": TrendingUp,
   "appointments-pro": Calendar,
   "smart-scheduler": Clock,

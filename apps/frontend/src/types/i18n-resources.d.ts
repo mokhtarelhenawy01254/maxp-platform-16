@@ -3638,6 +3638,14 @@ declare module 'react-i18next' {
             completed: string;
             pending: string;
             cancelled: string;
+            paymentPending: string;
+            paymentCompleted: string;
+            paymentPartiallyPaid: string;
+            paymentFailed: string;
+            paymentOnHold: string;
+            paymentRefunded: string;
+            paymentPartiallyRefunded: string;
+            paymentNotSpecified: string;
           };
           tags: string;
           notes: string;
@@ -14299,6 +14307,7 @@ declare module 'react-i18next' {
         radiologyReportsOverview: string;
         radiologyInsuranceInvoices: string;
         radiologyInsuranceLedger: string;
+        radiologyInsuranceCompanies: string;
         radiologyPriceQuote: string;
         radiologyRadiologists: string;
         radiologySettings: string;

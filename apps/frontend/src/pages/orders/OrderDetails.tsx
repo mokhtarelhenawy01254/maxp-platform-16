@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
@@ -139,6 +139,18 @@ const OrderDetails: React.FC = () => {
   useEffect(() => {
     if (order?.id) fetchBostaShipment();
   }, [order?.id]);
+
+  // Auto-enter edit mode when opened with ?edit=1 (e.g. from WhatsApp chat order code)
+  const [searchParams] = useSearchParams();
+  const openInEditMode = searchParams.get("edit") === "1";
+  const didAutoEnterEditRef = useRef(false);
+
+  useEffect(() => {
+    if (openInEditMode && order && !isEditing && !didAutoEnterEditRef.current) {
+      didAutoEnterEditRef.current = true;
+      setIsEditing(true);
+    }
+  }, [openInEditMode, order, isEditing, setIsEditing]);
 
   // Local UI State (Modals)
   const [showStatusModal, setShowStatusModal] = useState(false);
