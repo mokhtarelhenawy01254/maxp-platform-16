@@ -98,7 +98,6 @@ model Company {
   customerLoyaltyVouchers         CustomerLoyaltyVoucher[]
   customerNotificationPreferences CustomerNotificationPreference[]
   customerNotificationSchedules   CustomerNotificationSchedule[]
-  occasions                       Occasion[]
   customerWallets                 CustomerWallet[]
   customerBlockRules              CustomerBlockRule[]
   customerBlockSettings           CustomerBlockSettings?
