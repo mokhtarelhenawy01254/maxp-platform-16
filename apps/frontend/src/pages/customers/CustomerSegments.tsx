@@ -4,13 +4,12 @@ import {
   PlusIcon, PencilIcon, TrashIcon, TagIcon, FolderIcon, SparklesIcon,
 } from "@heroicons/react/24/outline";
 import {
-  Users, Star, Shield, TrendingUp, AlertTriangle, Search, Crown, Medal, Gem, Trophy, Settings2,
+  Users, Star, Shield, TrendingUp, AlertTriangle, Search, Crown, Medal, Gem, Trophy,
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import analyticsService from "../../services/analyticsService";
 import { useCurrency } from "../../hooks/useCurrency";
-import TierConfigTab from "./TierConfigTab";
 
 // ── Shared Types ────────────────────────────────────
 interface LeadCategory {
@@ -224,7 +223,7 @@ const CustomerSegments: React.FC = () => {
   const { formatPrice } = useCurrency();
 
   // ── Tab state ─────────────────────────────────
-  const [activeTab, setActiveTab] = useState<"overview" | "quality" | "loyalty" | "categories" | "tags" | "tier-config">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "quality" | "loyalty" | "categories" | "tags">("overview");
 
   const tabs = [
     { key: "overview" as const, label: "الرئيسية", icon: TrendingUp },
@@ -232,7 +231,6 @@ const CustomerSegments: React.FC = () => {
     { key: "loyalty" as const, label: "الولاء", icon: Star },
     { key: "categories" as const, label: "تصنيفات الليدات", icon: FolderIcon },
     { key: "tags" as const, label: "الوسوم", icon: TagIcon },
-    { key: "tier-config" as const, label: "إعدادات المستويات", icon: Settings2 },
   ];
 
   // ── Data state ────────────────────────────────
@@ -813,11 +811,6 @@ const CustomerSegments: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* ════════════ TAB: Tier Config ════════════ */}
-      {activeTab === "tier-config" && (
-        <TierConfigTab />
       )}
 
       {/* ════════════ TAB: Categories (existing) ═════ */}

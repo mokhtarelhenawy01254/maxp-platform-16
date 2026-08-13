@@ -13,6 +13,7 @@ import {
   Trash2,
   Edit,
   X,
+  Loader2,
 } from "lucide-react";
 
 interface CustomerLoyaltyTier {
@@ -47,6 +48,34 @@ const LoyaltyTiers: React.FC = () => {
   const [presetProgramId, setPresetProgramId] = useState("");
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
   const [isApplyingPreset, setIsApplyingPreset] = useState(false);
+
+  // 🆕 تفعيل نظام المستويات (مستقل عن الخصم التلقائي عبر loyalty-config)
+  const [tiersEnabled, setTiersEnabled] = useState<boolean>(false);
+  const [tiersToggleSaving, setTiersToggleSaving] = useState(false);
+  const [tiersToggleMsg, setTiersToggleMsg] = useState("");
+
+  useEffect(() => {
+    apiClient.get("/hr/customer-loyalty/loyalty-config")
+      .then((res) => { setTiersEnabled(res.data?.data?.tiers?.enabled === true); })
+      .catch(() => {});
+  }, []);
+
+  const toggleTiersEnabled = async (next: boolean) => {
+    if (!window.confirm(next ? "هل تريد تفعيل نظام المستويات؟" : "هل تريد إيقاف تفعيل نظام المستويات؟")) {
+      return;
+    }
+    setTiersToggleSaving(true);
+    setTiersToggleMsg("");
+    try {
+      const res = await apiClient.put("/hr/customer-loyalty/loyalty-config", { tiersEnabled: next });
+      setTiersEnabled(res.data?.data?.tiers?.enabled === true);
+      setTiersToggleMsg(next ? "تم تفعيل نظام المستويات ✓" : "تم إيقاف تفعيل نظام المستويات ✓");
+    } catch (e: any) {
+      setTiersToggleMsg(e?.response?.data?.error || "فشل حفظ التفعيل");
+    } finally {
+      setTiersToggleSaving(false);
+    }
+  };
 
   // تحويل المزايا لأي صيغة (array قديم أو object جديد) لصف array نصي للعرض
   const normalizeBenefits = (b: any): string[] => {
@@ -258,6 +287,39 @@ const LoyaltyTiers: React.FC = () => {
             مستوى جديد
           </button>
         </div>
+      </div>
+
+      {/* 🆕 تفعيل نظام المستويات — مستقل عن الخصم التلقائي */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-3 border border-purple-200 dark:border-purple-700">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-purple-500" />
+            <div>
+              <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">تفعيل نظام المستويات</h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                شغّل المستويات عشان يطبّق خصم/مزايا المستوى على الأوردر (مستقل عن الخصم التلقائي).
+              </p>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={tiersEnabled}
+              disabled={tiersToggleSaving}
+              onChange={(e) => toggleTiersEnabled(e.target.checked)}
+              className="h-5 w-5 accent-purple-600"
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {tiersEnabled ? "مفعّل" : "متوقف"}
+            </span>
+          </label>
+        </div>
+        {tiersToggleSaving && <Loader2 className="h-4 w-4 animate-spin text-purple-500" />}
+        {tiersToggleMsg && (
+          <p className={`text-sm font-medium ${tiersToggleMsg.includes("✓") ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+            {tiersToggleMsg}
+          </p>
+        )}
       </div>
 
       <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg flex items-start gap-3">
