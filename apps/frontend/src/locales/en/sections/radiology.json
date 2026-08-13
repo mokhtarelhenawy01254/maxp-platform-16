@@ -593,6 +593,7 @@
     "noCategories": "No categories yet — add the first one",
     "name": "Name",
     "nameEn": "English name",
+    "abbreviation": "Abbreviation",
     "modality": "Modality",
     "parent": "Parent category",
     "exams": "Exams",

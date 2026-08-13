@@ -48,7 +48,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.setCriticalFinding(req({ params: { id: 'study-1' }, body: { category: 'CAT1' } }), res);
 
     expect(res.statusCode).toBe(404);
-    expect(res.payload).toEqual({ success: false, error: 'الدراسة غير موجودة' });
+    expect(res.payload).toEqual({ success: false, error: 'الحالة غير موجودة' });
   });
 
   test('setCriticalFinding returns 400 when report is missing', async () => {
@@ -148,7 +148,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.acknowledgeCriticalFinding(req({ params: { id: 'study-1' } }), res);
 
     expect(res.statusCode).toBe(404);
-    expect(res.payload).toEqual({ success: false, error: 'الدراسة غير موجودة' });
+    expect(res.payload).toEqual({ success: false, error: 'الحالة غير موجودة' });
   });
 
   test('acknowledgeCriticalFinding returns 400 when report is missing', async () => {

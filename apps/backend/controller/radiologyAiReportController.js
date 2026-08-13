@@ -24,7 +24,7 @@ const generateDraft = async (req, res) => {
       where: { id, companyId },
       include: { report: true, examType: true },
     });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const key = await resolveAiKey(prisma, companyId);
     if (!key) {

@@ -72,7 +72,7 @@ describe('radiologyAiReportController', () => {
     await controller.generateDraft(req({ params: { id: 'study-1' } }), res);
 
     expect(res.statusCode).toBe(404);
-    expect(res.payload).toEqual({ success: false, error: 'الدراسة غير موجودة' });
+    expect(res.payload).toEqual({ success: false, error: 'الحالة غير موجودة' });
   });
 
   test('happy path returns draft via OpenAI-compatible endpoint', async () => {
