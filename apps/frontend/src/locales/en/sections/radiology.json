@@ -97,8 +97,8 @@
     "patient": "Patient",
     "exam": "Exam",
     "appointment": "Appointment",
-    "timeline": "Status timeline",
-    "timeline.empty": "No activity yet",
+    "timelineTitle": "Status timeline",
+    "timelineEmpty": "No activity yet",
     "report": "Report",
     "images": "Images",
     "payment": "Payment",
@@ -112,6 +112,7 @@
     "refund": "Refund",
     "emptyReport": "No report yet",
     "noImages": "No images",
+    "noPayments": "No payments yet",
     "notes": "Notes",
     "viewDetails": "Details"
   },
@@ -363,7 +364,11 @@
     "cardScanTitle": "Scan national ID card",
     "cardScanHint": "Enter/confirm the national ID number on the card — gender and age will be extracted automatically",
     "cardScanConfirm": "Confirm and extract data",
-    "cardDataExtracted": "Data extracted from national ID"
+    "cardDataExtracted": "Data extracted from national ID",
+    "cardOcrReading": "Reading the card with AI...",
+    "cardOcrFound": "National ID recognized automatically",
+    "cardOcrNotFound": "Could not recognize the number automatically — enter it manually",
+    "cardOcrFailed": "Could not start the reader — enter the national ID manually"
   },
   "scheduleCalendar": {
     "viewList": "List",

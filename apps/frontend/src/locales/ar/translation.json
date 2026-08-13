@@ -13651,8 +13651,8 @@
       "patient": "بيانات المريض",
       "exam": "الفحص",
       "appointment": "الحجز",
-      "timeline": "خط سير الحالات",
-      "timeline.empty": "لا توجد حركات بعد",
+      "timelineTitle": "خط سير الحالات",
+      "timelineEmpty": "لا توجد حركات بعد",
       "report": "التقرير",
       "images": "الصور",
       "payment": "الدفع",
@@ -13666,6 +13666,7 @@
       "refund": "استرجاع",
       "emptyReport": "لا يوجد تقرير بعد",
       "noImages": "لا توجد صور",
+      "noPayments": "لا توجد مدفوعات بعد",
       "notes": "ملاحظات",
       "viewDetails": "تفاصيل"
     },

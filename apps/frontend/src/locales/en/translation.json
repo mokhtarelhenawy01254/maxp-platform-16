@@ -13650,8 +13650,8 @@
       "patient": "Patient",
       "exam": "Exam",
       "appointment": "Appointment",
-      "timeline": "Status timeline",
-      "timeline.empty": "No activity yet",
+      "timelineTitle": "Status timeline",
+      "timelineEmpty": "No activity yet",
       "report": "Report",
       "images": "Images",
       "payment": "Payment",
@@ -13665,6 +13665,7 @@
       "refund": "Refund",
       "emptyReport": "No report yet",
       "noImages": "No images",
+      "noPayments": "No payments yet",
       "notes": "Notes",
       "viewDetails": "Details"
     },

@@ -412,9 +412,9 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
             </Card>
           ) : null}
 
-          <Card title={t("radiology.details.timeline")} icon={<History className="w-5 h-5" />}>
+          <Card title={t("radiology.details.timelineTitle")} icon={<History className="w-5 h-5" />}>
             {history.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">{t("radiology.details.timeline.empty")}</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t("radiology.details.timelineEmpty")}</p>
             ) : (
               <div>
                 {history.map((h, idx) => {
@@ -550,7 +550,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
               </button>
             </div>
             {payments.length === 0 && shiftPayments.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{t("radiology.insuranceLedger.noPayments")}</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{t("radiology.details.noPayments")}</p>
             ) : (
               <>
                 {payments.map(p => (
