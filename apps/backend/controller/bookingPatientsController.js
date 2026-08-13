@@ -172,9 +172,23 @@ const createPatient = async (req, res) => {
       if (!memberType) return res.status(400).json({ success: false, error: 'نوع العضوية غير موجود' });
     }
 
+    // Sequential per-company patient number (starts at 1) for human-friendly IDs
+    let patientNo = null;
+    try {
+      const res = await getSharedPrismaClient().patient.aggregate({
+        _max: { patientNo: true },
+        where: { companyId },
+      });
+      const max = res._max && res._max.patientNo;
+      patientNo = (Number.isFinite(max) ? max : 0) + 1;
+    } catch (error) {
+      console.error('[bookingPatientsController] failed to assign patientNo:', error);
+    }
+
     const patient = await getSharedPrismaClient().patient.create({
       data: {
         companyId,
+        patientNo,
         customerId: resolvedCustomerId || null,
         firstName: firstName.trim(),
         lastName: lastName || null,

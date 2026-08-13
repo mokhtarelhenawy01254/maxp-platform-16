@@ -184,6 +184,7 @@ model BookingDraft {
 /// Booking module - Patient medical file (may link to a CRM Customer booker)
 model Patient {
   id              String    @id @default(cuid())
+  patientNo       Int?      /// Sequential patient number per company (starts at 1)
   companyId       String
   customerId      String?   /// Optional link to CRM Customer (booker/contact person)
   firstName       String
@@ -242,6 +243,7 @@ model Patient {
   @@index([priceListId])
   @@index([insuranceCompanyId])
   @@index([memberTypeId])
+  @@index([companyId, patientNo])
   @@map("patients")
 }
 

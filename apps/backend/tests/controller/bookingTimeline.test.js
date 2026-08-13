@@ -478,6 +478,7 @@ describe('bookingPatientService.findOrCreatePatient tenant isolation', () => {
       customer: { findFirst: jest.fn().mockResolvedValue(null) },
       patient: {
         findFirst: jest.fn().mockResolvedValue(null),
+        aggregate: jest.fn().mockResolvedValue({ _max: { patientNo: null } }),
         create: jest.fn().mockImplementation(async ({ data }) => ({ id: 'p1', ...data })),
       },
     };
