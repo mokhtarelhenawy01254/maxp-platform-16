@@ -1,5 +1,5 @@
-import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation } from 'lucide-react'
+﻿import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -53,7 +53,7 @@ const mergeSectionOverrides = (
         return { ...section, hidden: true };
     }
 
-    // Apply DB/user visibility — but only user-level settings can hide a
+    // Apply DB/user visibility â€” but only user-level settings can hide a
     // runtime-visible section. Company-level DB settings cannot override
     // app-gated visibility, preventing stale "visible: false" data from
     // keeping a section hidden after its required app is reactivated.
@@ -204,9 +204,9 @@ export const getSidebarConfig = (
         import.meta.env?.DEV &&
         ((debugWindow?.debugSidebar === true) || (debugWindow?.debug === true));
 
-    // 🔍 DEBUG: Track user role for sidebar visibility
+    // ðŸ” DEBUG: Track user role for sidebar visibility
     if (shouldDebugSidebar) {
-        console.log('🔍 [SIDEBAR] getSidebarConfig called with user:', {
+        console.log('ðŸ” [SIDEBAR] getSidebarConfig called with user:', {
             role: user?.role,
             email: user?.email,
             id: user?.id,
@@ -218,9 +218,9 @@ export const getSidebarConfig = (
     // ponytail: plan-based superCompany check removed
 
     if (shouldDebugSidebar) {
-        console.log('🔍 [SIDEBAR-DEBUG] Current Company:', currentCompany?.name);
-        console.log('🔍 [SIDEBAR-DEBUG] Active Apps Count:', activeApps?.length);
-        console.log('🔍 [SIDEBAR-DEBUG] Active Apps List:', activeApps);
+        console.log('ðŸ” [SIDEBAR-DEBUG] Current Company:', currentCompany?.name);
+        console.log('ðŸ” [SIDEBAR-DEBUG] Active Apps Count:', activeApps?.length);
+        console.log('ðŸ” [SIDEBAR-DEBUG] Active Apps List:', activeApps);
     }
 
     const FEATURE_FLAG_MAP: Record<string, boolean | undefined> = {
@@ -229,7 +229,7 @@ export const getSidebarConfig = (
     const isFeatureEnabled = (key: string): boolean => FEATURE_FLAG_MAP[key] === true;
 
     const isAppActive = (slug: string) => {
-        // ponytail: isSuperCompany removed — app visibility now purely per activeApps
+        // ponytail: isSuperCompany removed â€” app visibility now purely per activeApps
 
         // Ensure activeApps is an array and check for the slug
         return Array.isArray(activeApps) && activeApps.some(a =>
@@ -300,8 +300,8 @@ export const getSidebarConfig = (
     }
 
     if (shouldDebugSidebar) {
-        console.log('🔍 [SIDEBAR] Full user object:', user);
-        console.log('🔍 [SIDEBAR] Company data:', user?.company);
+        console.log('ðŸ” [SIDEBAR] Full user object:', user);
+        console.log('ðŸ” [SIDEBAR] Company data:', user?.company);
     }
 
     const isAffiliateDemoCompany = currentCompany?.sidebarLayout === 'affiliate-demo';
@@ -353,7 +353,7 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
                 { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
-                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements', 'حركات المخزون') },
+                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements', 'Ø­Ø±ÙƒØ§Øª Ø§Ù„Ù…Ø®Ø²ÙˆÙ†') },
                     { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
                     { to: '/shipping-companies', icon: Truck, label: t('sidebar.shippingCompanies') },
                 ],
@@ -417,7 +417,7 @@ export const getSidebarConfig = (
     }
 
     const sidebarConfig = [
-        // 1️⃣ الرئيسية
+        // 1ï¸âƒ£ Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©
         {
             id: 'main',
             title: t('sidebar.mainSection'),
@@ -428,7 +428,7 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE'
         },
         
-        // 1.5 الإنبوكس الموحد
+        // 1.5 Ø§Ù„Ø¥Ù†Ø¨ÙˆÙƒØ³ Ø§Ù„Ù…ÙˆØ­Ø¯
         {
             id: 'unified-inbox-section',
             title: t('sidebar.unifiedInbox'),
@@ -440,7 +440,7 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAppActive('unified-inbox')
         },
 
-        // 1️⃣.6 العميل الذكي AI (للأدمن والمالك - عند تفعيل ai-chat-basic)
+        // 1ï¸âƒ£.6 Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø§Ù„Ø°ÙƒÙŠ AI (Ù„Ù„Ø£Ø¯Ù…Ù† ÙˆØ§Ù„Ù…Ø§Ù„Ùƒ - Ø¹Ù†Ø¯ ØªÙØ¹ÙŠÙ„ ai-chat-basic)
         ...((user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER') && isAppActive('ai-chat-basic') ? [{
             id: 'ai-operator',
             title: t('sidebar.aiOperatorSection'),
@@ -461,7 +461,7 @@ export const getSidebarConfig = (
             ]
         }] : []),
 
-        // 2️⃣ فيسبوك
+        // 2ï¸âƒ£ ÙÙŠØ³Ø¨ÙˆÙƒ
         {
           id: 'facebook',
           title: t('sidebar.facebookSection'),
@@ -475,11 +475,11 @@ export const getSidebarConfig = (
                 { to: '/settings/facebook-blocked', icon: Ban, label: t('sidebar.facebookBlocked') },
                 { to: '/settings/smart-replies', icon: MessageSquare, label: t('sidebar.smartReplies') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic'),
         },
 
-        // 2️⃣.1 إنستجرام
+        // 2ï¸âƒ£.1 Ø¥Ù†Ø³ØªØ¬Ø±Ø§Ù…
         {
           id: 'instagram',
           title: t('sidebar.instagramSection'),
@@ -488,11 +488,11 @@ export const getSidebarConfig = (
                 { to: '/instagram-inbox', icon: MessageSquare, label: t('sidebar.instagramInbox') },
                 { to: '/settings/instagram', icon: Cog, label: t('sidebar.instagramSettings') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic'),
         },
 
-        // 2️⃣.5 واتساب
+        // 2ï¸âƒ£.5 ÙˆØ§ØªØ³Ø§Ø¨
         {
           id: 'whatsapp',
           title: t('sidebar.whatsappSection'),
@@ -512,11 +512,11 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/lead-followup', icon: Zap, label: t('sidebar.whatsappLeadFollowup'), requiredPermissions: ['inbox.view'] },
                 { to: '/whatsapp/customer-journey', icon: RefreshCcw, label: t('sidebar.whatsappCustomerJourney'), requiredPermissions: ['inbox.view'] },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business')
         },
 
-        // 2️⃣.6 تليجرام
+        // 2ï¸âƒ£.6 ØªÙ„ÙŠØ¬Ø±Ø§Ù…
         {
           id: 'telegram',
           title: t('sidebar.telegramSection'),
@@ -531,11 +531,11 @@ export const getSidebarConfig = (
                 { to: '/telegram/groups', icon: Users, label: t('sidebar.groups') },
                 { to: '/settings/telegram', icon: Cog, label: t('sidebar.telegramSettings') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAppActive('telegram-business'),
         },
 
-        // 3️⃣ إدارة الطلبات (قسم مستقل شامل)
+        // 3ï¸âƒ£ Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø·Ù„Ø¨Ø§Øª (Ù‚Ø³Ù… Ù…Ø³ØªÙ‚Ù„ Ø´Ø§Ù…Ù„)
         {
             id: 'orders',
             title: t('sidebar.ordersSection'),
@@ -560,24 +560,24 @@ export const getSidebarConfig = (
                 { to: '/orders/turbo-captains', icon: Users, label: t('sidebar.turboCaptains'), requiredPermissions: ['orders.turbo.view'] },
                 { to: '/tickets', icon: Ticket, label: t('sidebar.turboTickets'), requiredPermissions: ['orders.tickets.view'] },
                 { to: '/shipping-companies', icon: Truck, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'] },
-                { to: '/shipping-settlement', icon: Banknote, label: t('sidebar.shippingSettlement', 'تسويات شركات الشحن'), requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-settlement', icon: Banknote, label: t('sidebar.shippingSettlement', 'ØªØ³ÙˆÙŠØ§Øª Ø´Ø±ÙƒØ§Øª Ø§Ù„Ø´Ø­Ù†'), requiredPermissions: ['orders.shipping.view'] },
                 { to: '/returns', icon: CheckCircle2, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'] },
                 { to: '/orders/bulk', icon: ListOrdered, label: t('sidebar.bulkOrders'), requiredPermissions: ['bulkOrders.view', 'orders.bulk.create'] },
-                { to: '/orders/bulk-status', icon: ArrowLeftRight, label: t('sidebar.bulkStatusUpdate', 'تحديث جماعي للحالات'), requiredPermissions: ['orders.status.change'] },
+                { to: '/orders/bulk-status', icon: ArrowLeftRight, label: t('sidebar.bulkStatusUpdate', 'ØªØ­Ø¯ÙŠØ« Ø¬Ù…Ø§Ø¹ÙŠ Ù„Ù„Ø­Ø§Ù„Ø§Øª'), requiredPermissions: ['orders.status.change'] },
                 { to: '/orders/quick-status', icon: RefreshCcw, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'] },
                 { to: '/orders/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'] },
                 { to: '/orders/status-summary', icon: FileBarChart, label: t('sidebar.orderStatusSummary'), requiredPermissions: ['orders.status-summary.view'] },
                 { to: '/returns/settings', icon: Cog, label: t('sidebar.returnSettings'), requiredPermissions: ['orders.return-settings.view'] },
                 { to: '/platform-integrations', icon: Zap, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
                 { to: '/settings/order-workflow', icon: ArrowLeftRight, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
-                { to: '/settings/cod-deposit', icon: Banknote, label: t('sidebar.codDeposit', 'الدفعة المقدمة COD'), requiredPermissions: ['orders.settings.view'] },
-                { to: '/orders/status-templates', icon: FileText, label: t('sidebar.orderStatusTemplates', 'قوالب الواتساب للحالات'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
+                { to: '/settings/cod-deposit', icon: Banknote, label: t('sidebar.codDeposit', 'Ø§Ù„Ø¯ÙØ¹Ø© Ø§Ù„Ù…Ù‚Ø¯Ù…Ø© COD'), requiredPermissions: ['orders.settings.view'] },
+                { to: '/orders/status-templates', icon: FileText, label: t('sidebar.orderStatusTemplates', 'Ù‚ÙˆØ§Ù„Ø¨ Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨ Ù„Ù„Ø­Ø§Ù„Ø§Øª'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
-        // 3️⃣.5 إحصائيات الطلبات
+        // 3ï¸âƒ£.5 Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø§Ù„Ø·Ù„Ø¨Ø§Øª
         {
             id: 'orders-analytics',
             title: t('sidebar.orderAnalytics'),
@@ -611,13 +611,13 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
                 { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss') },
                 { to: '/analytics/orders/status-analysis', icon: BarChart3, label: t('sidebar.statusAnalysis') },
-                { to: '/analytics/orders/status-movement', icon: GitBranch, label: t('sidebar.orderMovement', 'حركة الحالات') },
+                { to: '/analytics/orders/status-movement', icon: GitBranch, label: t('sidebar.orderMovement', 'Ø­Ø±ÙƒØ© Ø§Ù„Ø­Ø§Ù„Ø§Øª') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
         },
 
-        // 4️⃣ المنتجات
+        // 4ï¸âƒ£ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª
         {
             id: 'products',
             title: t('sidebar.productsSection'),
@@ -631,7 +631,7 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
-        // 4️⃣.1 تصميم وتنسيق المتجر (Storefront Design)
+        // 4ï¸âƒ£.1 ØªØµÙ…ÙŠÙ… ÙˆØªÙ†Ø³ÙŠÙ‚ Ø§Ù„Ù…ØªØ¬Ø± (Storefront Design)
         {
             id: 'storefront-design',
             title: t('sidebar.storefrontSection'),
@@ -679,11 +679,11 @@ export const getSidebarConfig = (
                 },
                 { to: '/settings/store-pages', icon: FileText, label: t('sidebar.storePages') },
             ],
-            // 🔒 متاح للمالك والأدمن فقط لتغيير تصميم المتجر
+            // ðŸ”’ Ù…ØªØ§Ø­ Ù„Ù„Ù…Ø§Ù„Ùƒ ÙˆØ§Ù„Ø£Ø¯Ù…Ù† ÙÙ‚Ø· Ù„ØªØºÙŠÙŠØ± ØªØµÙ…ÙŠÙ… Ø§Ù„Ù…ØªØ¬Ø±
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro', 'conversion-suite'])
         },
 
-        // 4️⃣.2 العملاء
+        // 4ï¸âƒ£.2 Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡
         {
             id: 'customers',
             title: t('sidebar.customers'),
@@ -708,11 +708,11 @@ export const getSidebarConfig = (
                 { to: '/customers/points-center', icon: Trophy, label: t('sidebar.customerPointsCenter') },
                 { to: '/customers/customer-notifications', icon: Bell, label: t('sidebar.customerNotifications') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان CRM غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† CRM ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['crm-basic', 'crm-lite'])
         },
 
-        // 4️⃣.3 المشتريات
+        // 4ï¸âƒ£.3 Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª
         {
             id: 'procurement',
             title: t('sidebar.procurement'),
@@ -724,11 +724,11 @@ export const getSidebarConfig = (
                 { to: '/procurement/purchase-invoices', icon: ClipboardCheck, label: t('sidebar.purchaseInvoices') },
                 { to: '/procurement/supplier-payments', icon: Banknote, label: t('sidebar.supplierPayments') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['procurement-pro'])
         },
 
-        // 4️⃣.4 البيع بالجملة
+        // 4ï¸âƒ£.4 Ø§Ù„Ø¨ÙŠØ¹ Ø¨Ø§Ù„Ø¬Ù…Ù„Ø©
         {
             id: 'wholesale',
             title: t('sidebar.wholesale'),
@@ -743,7 +743,7 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['wholesale-pro'])
         },
 
-        // 4️⃣.5 الافليت والدروب شيبنج
+        // 4ï¸âƒ£.5 Ø§Ù„Ø§ÙÙ„ÙŠØª ÙˆØ§Ù„Ø¯Ø±ÙˆØ¨ Ø´ÙŠØ¨Ù†Ø¬
         {
             id: 'affiliate',
             title: t('sidebar.affiliateSection'),
@@ -768,7 +768,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 4️⃣.6 برنامج شركاء المنصة (Platform Partner Program)
+        // 4ï¸âƒ£.6 Ø¨Ø±Ù†Ø§Ù…Ø¬ Ø´Ø±ÙƒØ§Ø¡ Ø§Ù„Ù…Ù†ØµØ© (Platform Partner Program)
         {
             id: 'platform-partner',
             title: t('sidebar.partnerProgram'),
@@ -779,7 +779,7 @@ export const getSidebarConfig = (
             hidden: !isAppActive('partner-program'),
         },
 
-        // 4️⃣.7 المخزون
+        // 4ï¸âƒ£.7 Ø§Ù„Ù…Ø®Ø²ÙˆÙ†
         {
             id: 'inventory',
             title: t('sidebar.inventorySection'),
@@ -792,11 +792,11 @@ export const getSidebarConfig = (
                 { to: '/inventory/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics') },
                 { to: '/inventory/reports', icon: BarChart3, label: t('sidebar.inventoryReports') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
-        // 5️⃣ التسويق والإعلانات
+        // 5ï¸âƒ£ Ø§Ù„ØªØ³ÙˆÙŠÙ‚ ÙˆØ§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª
         {
             id: 'marketing',
             title: t('sidebar.marketingSection'),
@@ -827,11 +827,11 @@ export const getSidebarConfig = (
                 { to: '/tools/upsell-planner', icon: TrendingUp, label: t('sidebar.upsellPlanner') },
                 { to: '/tools/refund-rate', icon: ShieldAlert, label: t('sidebar.refundRateCalculator') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])
         },
 
-        // 5️⃣.5 تحليل المنافسين
+        // 5ï¸âƒ£.5 ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ù…Ù†Ø§ÙØ³ÙŠÙ†
         {
             id: 'competitors',
             title: t('sidebar.competitors'),
@@ -845,7 +845,7 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAppActive('competitor-analysis')
         },
 
-        // 6️⃣ حسابي (للموظف)
+        // 6ï¸âƒ£ Ø­Ø³Ø§Ø¨ÙŠ (Ù„Ù„Ù…ÙˆØ¸Ù)
         {
             id: 'my-account',
             title: t('sidebar.myAccountSection'),
@@ -870,7 +870,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 6️⃣.5 الشركة (مدمج: شركاتي + إدارة الشركة + القانونية)
+        // 6ï¸âƒ£.5 Ø§Ù„Ø´Ø±ÙƒØ© (Ù…Ø¯Ù…Ø¬: Ø´Ø±ÙƒØ§ØªÙŠ + Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø´Ø±ÙƒØ© + Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©)
         ...(['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(user?.role || '') ? [{
             id: 'company',
             title: t('sidebar.companyManagementSection'),
@@ -887,7 +887,7 @@ export const getSidebarConfig = (
             ]
         }] : []),
 
-        // 7️⃣ الموارد البشرية (للإدارة)
+        // 7ï¸âƒ£ Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ© (Ù„Ù„Ø¥Ø¯Ø§Ø±Ø©)
         ...(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'].includes(user?.role || '') ? [{
             id: 'hr',
             title: t('sidebar.hrSection'),
@@ -922,11 +922,11 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/templates?category=HR', icon: Bell, label: t('sidebar.whatsappNotifications') },
                 { to: '/hr/rewards', icon: Star, label: t('sidebar.rewards.title') },
             ],
-            // 🔒 إخفاء إذا كان غير مفعل
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
             hidden: !isAppActive('hr-basic')
         }] : []),
 
-        // 7️⃣.5 المواعيد
+        // 7ï¸âƒ£.5 Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯
         {
             id: 'appointments',
             title: t('sidebar.appointments'),
@@ -937,7 +937,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 7️⃣.5️⃣ النظام الطبي
+        // 7ï¸âƒ£.5ï¸âƒ£ Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø·Ø¨ÙŠ
         {
             id: 'medical-center',
             title: t('sidebar.medicalCenter'),
@@ -961,7 +961,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 7️⃣.6️⃣ نظام المعمل
+        // 7ï¸âƒ£.6ï¸âƒ£ Ù†Ø¸Ø§Ù… Ø§Ù„Ù…Ø¹Ù…Ù„
         {
             id: 'lab',
             title: t('sidebar.labModule'),
@@ -985,7 +985,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 7️⃣.6️⃣.5 نظام الأشعة
+        // 7ï¸âƒ£.6ï¸âƒ£.5 Ù†Ø¸Ø§Ù… Ø§Ù„Ø£Ø´Ø¹Ø©
         {
             id: 'radiology',
             title: t('sidebar.radiologyModule'),
@@ -1008,6 +1008,7 @@ export const getSidebarConfig = (
                 { to: '/radiology/referring-physicians', icon: Users, label: t('sidebar.radiologyReferringPhysicians') },
                 { to: '/radiology/insurance-invoices', icon: FileText, label: t('sidebar.radiologyInsuranceInvoices') },
                 { to: '/radiology/insurance-ledger', icon: CreditCard, label: t('sidebar.radiologyInsuranceLedger') },
+                { to: '/radiology/insurance-companies', icon: Landmark, label: t('sidebar.radiologyInsuranceCompanies') },
                 { to: '/radiology/price-quote', icon: Tag, label: t('sidebar.radiologyPriceQuote') },
                 { to: '/radiology/radiologists', icon: Users, label: t('sidebar.radiologyRadiologists') },
                 { to: '/radiology/statistics', icon: BarChart3, label: t('sidebar.radiologyStatistics') },
@@ -1016,7 +1017,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 7️⃣.7️⃣ النظام التعليمي
+        // 7ï¸âƒ£.7ï¸âƒ£ Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„ØªØ¹Ù„ÙŠÙ…ÙŠ
         {
             id: 'education',
             title: t('sidebar.educationModule'),
@@ -1036,7 +1037,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 7️⃣.8️⃣ نظام الفنادق
+        // 7ï¸âƒ£.8ï¸âƒ£ Ù†Ø¸Ø§Ù… Ø§Ù„ÙÙ†Ø§Ø¯Ù‚
         {
             id: 'hotel',
             title: t('sidebar.hotelModule'),
@@ -1047,7 +1048,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 8️⃣ نماذج التسجيل
+        // 8ï¸âƒ£ Ù†Ù…Ø§Ø°Ø¬ Ø§Ù„ØªØ³Ø¬ÙŠÙ„
         {
             id: 'forms',
             title: t('sidebar.formsBuilder'),
@@ -1058,7 +1059,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 8️⃣.5️⃣ طلبات الخدمات
+        // 8ï¸âƒ£.5ï¸âƒ£ Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø®Ø¯Ù…Ø§Øª
         {
             id: 'service-requests',
             title: t('sidebar.serviceRequests'),
@@ -1070,7 +1071,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 9️⃣ إدارة المهام
+        // 9ï¸âƒ£ Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ù‡Ø§Ù…
         {
             id: 'tasks',
             title: t('sidebar.tasksWorkspace'),
@@ -1096,7 +1097,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 1️⃣1️⃣ التطبيقات والفواتير
+        // 1ï¸âƒ£1ï¸âƒ£ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§Øª ÙˆØ§Ù„ÙÙˆØ§ØªÙŠØ±
         {
             id: 'marketplace',
             title: t('sidebar.marketplace'),
@@ -1108,11 +1109,11 @@ export const getSidebarConfig = (
                 { to: '/marketplace/bundles', icon: Gift, label: t('sidebar.browseBundles') },
                 { to: '/payments', icon: Wallet, label: t('sidebar.myPayments') },
             ],
-            // 🔒 إخفاء القسم للمسوقين
+            // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ†
             hidden: user?.role === 'AFFILIATE'
         },
 
-        // 1️⃣2️⃣ الإشعارات والأدوات
+        // 1ï¸âƒ£2ï¸âƒ£ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª ÙˆØ§Ù„Ø£Ø¯ÙˆØ§Øª
         {
             id: 'notifications',
             title: t('sidebar.notificationsSection'),
@@ -1125,7 +1126,7 @@ export const getSidebarConfig = (
             hidden: !isAnyAppActive(['notification-automation'])
         },
 
-        // 1️⃣4️⃣ الإعدادات (قسم موحد)
+        // 1ï¸âƒ£4ï¸âƒ£ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª (Ù‚Ø³Ù… Ù…ÙˆØ­Ø¯)
         {
             id: 'settings',
             title: t('sidebar.settingsSection'),
@@ -1140,7 +1141,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 1️⃣5️⃣ إدارة النظام (للسوبر أدمن)
+        // 1ï¸âƒ£5ï¸âƒ£ Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù†Ø¸Ø§Ù… (Ù„Ù„Ø³ÙˆØ¨Ø± Ø£Ø¯Ù…Ù†)
         ...(user?.role === 'SUPER_ADMIN' ? [{
             id: 'system',
             title: t('sidebar.systemManagementSection'),
