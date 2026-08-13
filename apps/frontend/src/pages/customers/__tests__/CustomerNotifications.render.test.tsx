@@ -121,4 +121,54 @@ describe("CustomerNotifications عبر TemplateCenter", () => {
     expect(screen.queryByRole("button", { name: /تقارير الحالات/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^الإعدادات$/ })).not.toBeInTheDocument();
   });
+
+  test("المعاينة في نطاق العملاء تحل متغيراتهم بقيم نموذجية (points/customerName)", async () => {
+    apiClient.get.mockImplementation((url: string) => {
+      if (url === "/hr/customer-loyalty/notifications/schedule") {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [
+              {
+                id: "s1",
+                eventType: "LOYALTY_POINTS_AWARDED",
+                enabled: true,
+                activeChannel: "BAILEYS",
+                delayValue: 0,
+                delayUnit: "HOURS",
+                label: "كسب نقاط",
+                category: "loyalty",
+                trigger: "عند كسب نقاط",
+              },
+            ],
+          },
+        });
+      }
+      if (url === "/whatsapp-notifications/templates") {
+        return Promise.resolve({
+          data: {
+            success: true,
+            templates: [
+              {
+                id: "t1",
+                eventType: "LOYALTY_POINTS_AWARDED",
+                name: "قالب نقاط",
+                content: "كسبت {points} نقطة يا {customerName}",
+                channel: "BAILEYS",
+                isActive: true,
+              },
+            ],
+          },
+        });
+      }
+      if (url === "/whatsapp/sessions") return Promise.resolve({ data: { sessions: [] } });
+      return Promise.resolve({ data: {} });
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /قوالب الولاء/ }));
+    await user.click(await screen.findByRole("button", { name: /^معاينة/ }));
+    expect(screen.getAllByText(/50 نقطة/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/\[points\]/)).not.toBeInTheDocument();
+  });
 });

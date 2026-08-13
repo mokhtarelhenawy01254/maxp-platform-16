@@ -197,10 +197,10 @@ const SAMPLE_VARIABLES: Record<string, string> = {
   estimatedDays: "2-3",
 };
 
-function resolveVariablesForPreview(content: string): string {
+function resolveVariablesForPreview(content: string, sample: Record<string, string> = SAMPLE_VARIABLES): string {
   if (!content) return "";
   return content.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (_, name) => {
-    return SAMPLE_VARIABLES[name] || `[${name}]`;
+    return sample[name] || `[${name}]`;
   });
 }
 
@@ -208,13 +208,13 @@ function resolveVariablesForPreview(content: string): string {
  * عرض نص قالب ميتا (اللي فيه {{1}}، {{2}}...) بقيم نموذجية —
  * بيربط كل رقم ميتا بالمتغير المحلي المطابق حسب ترتيب الظهور.
  */
-function resolveMetaBodyPreview(metaBody: string, localContent: string): string {
+function resolveMetaBodyPreview(metaBody: string, localContent: string, sample: Record<string, string> = SAMPLE_VARIABLES): string {
   if (!metaBody) return "";
   const localVars = extractLocalVariableOrder(localContent);
   return metaBody.replace(/\{\{(\d+)\}\}/g, (_, n) => {
     const idx = parseInt(n, 10) - 1;
     const v = localVars[idx];
-    return v ? (SAMPLE_VARIABLES[v] || `[${v}]`) : `[${n}]`;
+    return v ? (sample[v] || `[${v}]`) : `[${n}]`;
   });
 }
 
@@ -263,14 +263,15 @@ interface WhatsAppBubblePreviewProps {
   content: string;
   buttons: TemplateButton[];
   hasButtons: boolean;
+  sampleVariables?: Record<string, string>;
 }
 
 function formatWhatsAppText(text: string): string {
   return text.trim();
 }
 
-export function WhatsAppBubblePreview({ content, buttons, hasButtons }: WhatsAppBubblePreviewProps) {
-  const resolved = resolveVariablesForPreview(content);
+export function WhatsAppBubblePreview({ content, buttons, hasButtons, sampleVariables }: WhatsAppBubblePreviewProps) {
+  const resolved = resolveVariablesForPreview(content, sampleVariables);
   const now = new Date();
   const time = now.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
   const visibleButtons = hasButtons ? buttons.filter((b) => b.text.trim()) : [];
@@ -426,6 +427,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const [activeTab, setActiveTab] = useState(() => config.tabs[0]?.key || "all");
 
   const variableDescriptions = useMemo(() => buildVariableDescriptionsFrom(config.variables), [config.variables]);
+  const sampleVariables = useMemo(() => config.sampleVariables || {}, [config.sampleVariables]);
 
   const [statuses, setStatuses] = useState<StatusWithTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -601,18 +603,20 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       name: slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`,
       content: slot === "meta" && status.template?.content ? status.template.content : config.defaultContent,
       isActive: true,
-      hasButtons: true,
-      buttons: [
-        { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED" },
-        { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED" }
-      ],
+      hasButtons: config.features.enableButtons,
+      buttons: config.features.enableButtons
+        ? [
+            { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED" },
+            { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED" }
+          ]
+        : [],
       sendMode: slot === "meta" ? "bind_meta" : "direct",
       metaTemplateName: "",
       metaTemplateLanguage: "ar",
       headerFormat: slot === "meta" ? "IMAGE" : "TEXT",
       headerMediaHandle: "",
       headerMediaName: "",
-      headerUsesOrderProduct: slot === "meta",
+      headerUsesOrderProduct: config.features.enableHeaderProductImage && slot === "meta",
       category: config.features.categoryMode === "manual" ? (config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER") : "CUSTOMER",
     });
     setShowLocalRef(false);
@@ -634,15 +638,15 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       name: target?.name || (slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`),
       content: target?.content || config.defaultContent,
       isActive: target?.isActive ?? true,
-      hasButtons: target?.hasButtons ?? true,
-      buttons: parseTemplateButtons(target?.buttons),
+      hasButtons: config.features.enableButtons ? (target?.hasButtons ?? true) : false,
+      buttons: config.features.enableButtons ? parseTemplateButtons(target?.buttons) : [],
       sendMode: slot === "meta" ? "bind_meta" : "direct",
       metaTemplateName: metaName,
       metaTemplateLanguage: target?.metaTemplateLanguage || "ar",
       headerFormat: target?.headerFormat || (slot === "meta" ? "IMAGE" : "TEXT"),
       headerMediaHandle: target?.headerMediaHandle || "",
       headerMediaName: target?.headerMediaHandle || "",
-      headerUsesOrderProduct: target?.headerUsesOrderProduct ?? (slot === "meta"),
+      headerUsesOrderProduct: config.features.enableHeaderProductImage ? (target?.headerUsesOrderProduct ?? (slot === "meta")) : false,
       category: config.features.categoryMode === "manual" ? (config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER") : "CUSTOMER",
     });
     setDialogOpen(true);
@@ -667,15 +671,15 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       name: current?.name || `قالب ميتا ${status.name}`,
       content: current?.content || config.defaultContent,
       isActive: current?.isActive ?? true,
-      hasButtons: current?.hasButtons ?? true,
-      buttons: parseTemplateButtons(current?.buttons),
+      hasButtons: config.features.enableButtons ? (current?.hasButtons ?? true) : false,
+      buttons: config.features.enableButtons ? parseTemplateButtons(current?.buttons) : [],
       sendMode: "bind_meta",
       metaTemplateName: metaName,
       metaTemplateLanguage: current?.metaTemplateLanguage || "ar",
       headerFormat: current?.headerFormat || "IMAGE",
       headerMediaHandle: current?.headerMediaHandle || "",
       headerMediaName: current?.headerMediaHandle || "",
-      headerUsesOrderProduct: current?.headerUsesOrderProduct ?? true,
+      headerUsesOrderProduct: config.features.enableHeaderProductImage ? (current?.headerUsesOrderProduct ?? true) : false,
       category: config.features.categoryMode === "manual" ? (config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER") : "CUSTOMER",
     });
     setDialogOpen(true);
@@ -688,7 +692,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
       return null;
     }
-    const saveButtons = templateForm.hasButtons
+    const enableButtons = config.features.enableButtons;
+    const saveButtons = enableButtons && templateForm.hasButtons
       ? templateForm.buttons
           .filter((b) => b.text.trim())
           .map((b) => ({ id: b.id, text: b.text.trim(), action: b.action.toUpperCase() }))
@@ -716,6 +721,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         headerFormat?: string;
         headerMediaHandle?: string;
         headerUsesOrderProduct?: boolean;
+        variables?: string[];
       } = {
         category,
         eventType: selectedStatus.code,
@@ -724,11 +730,14 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         isActive: templateForm.isActive,
         hasButtons: saveButtons.length > 0,
         buttons: saveButtons,
+        variables: extractLocalVariableOrder(templateForm.content),
       };
       if (dialogSlot === "meta" && templateForm.headerFormat !== "TEXT") {
         payload.headerFormat = templateForm.headerFormat;
         payload.headerMediaHandle = templateForm.headerMediaHandle || undefined;
-        payload.headerUsesOrderProduct = templateForm.headerUsesOrderProduct;
+        if (config.features.enableHeaderProductImage) {
+          payload.headerUsesOrderProduct = templateForm.headerUsesOrderProduct;
+        }
       }
       if (!isEdit) {
         payload.channel = dialogSlot === "meta" ? "META_CLOUD" : "AUTO";
@@ -1832,6 +1841,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     onOpenCreate={openCreateDialog}
                     onOpenSwitch={openSwitchDialog}
                     onUnbindMeta={requestUnbindMeta}
+                    sampleVariables={sampleVariables}
                   />
                 ));
               })}
@@ -1935,7 +1945,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     className="rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
                   >
                     <p className="whitespace-pre-wrap break-words">
-                      {resolveMetaBodyPreview(selectedMetaBody, templateForm.content)}
+                      {resolveMetaBodyPreview(selectedMetaBody, templateForm.content, sampleVariables)}
                     </p>
                   </div>
                   <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
@@ -2088,17 +2098,23 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                             className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           >
                             <option value="">اختر قالب...</option>
-                            {availableMetaTemplates.map((mt) => {
-                              const boundEvents = mt.boundToEventTypes?.length
-                                ? mt.boundToEventTypes.join("، ")
-                                : (mt.boundToEventType || "");
-                              return (
-                                <option key={mt.name} value={mt.name}>
-                                  {mt.name} {mt.category ? `(${mt.category})` : ""}
-                                  {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
-                                </option>
-                              );
-                            })}
+                            {availableMetaTemplates
+                              .filter((mt) =>
+                                config.features.enableMetaMultiBind
+                                  ? true
+                                  : !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedTemplate?.id
+                              )
+                              .map((mt) => {
+                                const boundEvents = mt.boundToEventTypes?.length
+                                  ? mt.boundToEventTypes.join("، ")
+                                  : (mt.boundToEventType || "");
+                                return (
+                                  <option key={mt.name} value={mt.name}>
+                                    {mt.name} {mt.category ? `(${mt.category})` : ""}
+                                    {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
+                                  </option>
+                                );
+                              })}
                           </select>
 
                           {selectedMetaBody && (
@@ -2112,7 +2128,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                                 className="rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
                               >
                                 <p className="whitespace-pre-wrap break-words">
-                                  {resolveMetaBodyPreview(selectedMetaBody, templateForm.content)}
+                                  {resolveMetaBodyPreview(selectedMetaBody, templateForm.content, sampleVariables)}
                                 </p>
                               </div>
                               <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
@@ -2333,6 +2349,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                       content={templateForm.content}
                       buttons={templateForm.buttons}
                       hasButtons={templateForm.hasButtons}
+                      sampleVariables={sampleVariables}
                     />
                   </div>
                 </div>
@@ -2569,6 +2586,7 @@ interface StatusRowProps {
   onOpenCreate: (status: StatusWithTemplate, slot: TemplateSlot) => void;
   onOpenSwitch: (status: StatusWithTemplate) => void;
   onUnbindMeta: (status: StatusWithTemplate) => void;
+  sampleVariables?: Record<string, string>;
 }
 
 function StatusRow({
@@ -2584,6 +2602,7 @@ function StatusRow({
   onOpenCreate,
   onOpenSwitch,
   onUnbindMeta,
+  sampleVariables,
 }: StatusRowProps) {
   const { t } = useTranslation();
   const regular = status.template;
@@ -2678,6 +2697,7 @@ function StatusRow({
           onTogglePreview={() => onTogglePreview("regular")}
           onEdit={() => onOpenEdit(status, "regular")}
           onCreate={() => onOpenCreate(status, "regular")}
+          sampleVariables={sampleVariables}
         />
         <StatusTemplateSlot
           slot="meta"
@@ -2690,6 +2710,7 @@ function StatusRow({
           onCreate={() => onOpenCreate(status, "meta")}
           onSwitch={() => onOpenSwitch(status)}
           onUnbind={meta ? () => onUnbindMeta(status) : undefined}
+          sampleVariables={sampleVariables}
         />
       </div>
     </div>
@@ -2707,6 +2728,7 @@ interface StatusTemplateSlotProps {
   onCreate: () => void;
   onSwitch?: () => void;
   onUnbind?: () => void;
+  sampleVariables?: Record<string, string>;
 }
 
 function StatusTemplateSlot({
@@ -2720,6 +2742,7 @@ function StatusTemplateSlot({
   onCreate,
   onSwitch,
   onUnbind,
+  sampleVariables,
 }: StatusTemplateSlotProps) {
   const isMeta = slot === "meta";
   const bound = isMetaTemplateBound(template);
@@ -2802,7 +2825,7 @@ function StatusTemplateSlot({
             </p>
             {hasContent && (
               <p className="mt-0.5 line-clamp-2 whitespace-pre-wrap break-words text-xs text-slate-600 dark:text-slate-400">
-                {resolveVariablesForPreview(previewContent)}
+                {resolveVariablesForPreview(previewContent, sampleVariables)}
               </p>
             )}
           </>
@@ -2889,7 +2912,7 @@ function StatusTemplateSlot({
             المعاينة الكاملة
           </p>
           <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
-            {resolveVariablesForPreview(previewContent)}
+            {resolveVariablesForPreview(previewContent, sampleVariables)}
           </p>
           {template?.hasButtons && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
