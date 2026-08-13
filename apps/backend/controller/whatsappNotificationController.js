@@ -653,9 +653,9 @@ async function getStatusReport(req, res) {
 async function getNotificationStats(req, res) {
   try {
     const { companyId } = req.user;
-    const { days = 30 } = req.query;
+    const { days = 30, startDate, endDate } = req.query;
 
-    const stats = await WhatsAppNotificationService.getNotificationStats(companyId, parseInt(days));
+    const stats = await WhatsAppNotificationService.getNotificationStats(companyId, parseInt(days), startDate, endDate);
 
     res.json({
       success: true,

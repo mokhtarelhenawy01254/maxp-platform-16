@@ -3008,43 +3008,55 @@ async function queueSendPacingDelay(notification, error) {
 /**
  * جلب إحصائيات الإشعارات
  */
-async function getNotificationStats(companyId, dateRange = 30) {
+async function getNotificationStats(companyId, dateRange = 30, startDateParam, endDateParam) {
   const prisma = getSharedPrismaClient();
 
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - dateRange);
+  let startDate;
+  let endDate = null;
+  if (startDateParam) {
+    startDate = new Date(startDateParam);
+    startDate.setHours(0, 0, 0, 0);
+  } else {
+    startDate = new Date();
+    startDate.setDate(startDate.getDate() - dateRange);
+  }
+  if (endDateParam) {
+    endDate = new Date(endDateParam);
+    endDate.setHours(23, 59, 59, 999);
+  }
+  const createdAtFilter = endDate ? { gte: startDate, lte: endDate } : { gte: startDate };
 
   const [total, sent, delivered, read, failed, byCategory, byEvent] = await Promise.all([
     // إجمالي
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, createdAt: { gte: startDate } }
+      where: { companyId, createdAt: createdAtFilter }
     }),
     // المرسلة
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, status: 'SENT', createdAt: { gte: startDate } }
+      where: { companyId, status: 'SENT', createdAt: createdAtFilter }
     }),
     // المستلمة
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, status: 'DELIVERED', createdAt: { gte: startDate } }
+      where: { companyId, status: 'DELIVERED', createdAt: createdAtFilter }
     }),
     // المقروءة
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, status: 'READ', createdAt: { gte: startDate } }
+      where: { companyId, status: 'READ', createdAt: createdAtFilter }
     }),
     // الفاشلة
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, status: 'FAILED', createdAt: { gte: startDate } }
+      where: { companyId, status: 'FAILED', createdAt: createdAtFilter }
     }),
     // حسب التصنيف
     prisma.whatsAppNotificationLog.groupBy({
       by: ['category'],
-      where: { companyId, createdAt: { gte: startDate } },
+      where: { companyId, createdAt: createdAtFilter },
       _count: true
     }),
     // حسب الحدث
     prisma.whatsAppNotificationLog.groupBy({
       by: ['eventType'],
-      where: { companyId, createdAt: { gte: startDate } },
+      where: { companyId, createdAt: createdAtFilter },
       _count: true
     })
   ]);

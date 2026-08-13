@@ -31,6 +31,9 @@ import {
 } from "@/components/ui/table";
 
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../components/common/PeriodSelector";
 import {
   WhatsAppMetricCard,
   WhatsAppPageShell,
@@ -168,7 +171,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalLogs, setTotalLogs] = useState(0);
-  const [dateRange, setDateRange] = useState(30);
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const withCompanyConfig = useCallback(
@@ -179,10 +182,12 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
 
   const fetchStats = useCallback(async () => {
     const response = await apiClient.get("/whatsapp-notifications/stats", withCompanyConfig({
-      params: { days: dateRange },
+      params: range
+        ? { startDate: range.startDate, endDate: range.endDate }
+        : { days: 30 },
     }));
     setStats((response as any).data.stats);
-  }, [dateRange, withCompanyConfig]);
+  }, [range, withCompanyConfig]);
 
   const fetchLogs = useCallback(async () => {
     const response = await apiClient.get("/whatsapp-notifications/logs", withCompanyConfig({
@@ -256,13 +261,17 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
   };
 
   const summaryHint = `${t("whatsappAnalytics.timeRange.label")}: ${
-    dateRange === 7
+    range?.period === "7"
       ? t("whatsappAnalytics.timeRange.last7Days")
-      : dateRange === 30
-        ? t("whatsappAnalytics.timeRange.last30Days")
-        : dateRange === 90
-          ? t("whatsappAnalytics.timeRange.last90Days")
-          : t("whatsappAnalytics.timeRange.lastYear")
+      : range?.period === "90"
+        ? t("whatsappAnalytics.timeRange.last90Days")
+        : range?.period === "365"
+          ? t("whatsappAnalytics.timeRange.lastYear")
+          : range?.period === "180"
+            ? t("periodSelector.last6Months")
+            : range?.period === "today" || range?.period === "yesterday"
+              ? t("periodSelector.today")
+              : t("whatsappAnalytics.timeRange.last30Days")
   }`;
 
   const categorySeries = useMemo(
@@ -318,31 +327,12 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
       eyebrow={eyebrow}
       actions={
         <>
-          <Select
-            value={String(dateRange)}
-            onValueChange={(value) => {
+          <PeriodSelector
+            onRangeChange={(next) => {
               setPage(0);
-              setDateRange(Number(value));
+              setRange(next);
             }}
-          >
-            <SelectTrigger className="min-w-[13rem] bg-[color:var(--color-card)]">
-              <SelectValue placeholder={t("whatsappAnalytics.timeRange.label")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">
-                {t("whatsappAnalytics.timeRange.last7Days")}
-              </SelectItem>
-              <SelectItem value="30">
-                {t("whatsappAnalytics.timeRange.last30Days")}
-              </SelectItem>
-              <SelectItem value="90">
-                {t("whatsappAnalytics.timeRange.last90Days")}
-              </SelectItem>
-              <SelectItem value="365">
-                {t("whatsappAnalytics.timeRange.lastYear")}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          />
 
           <Button
             variant="outline"
