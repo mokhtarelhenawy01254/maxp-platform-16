@@ -1,5 +1,5 @@
 ﻿import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -516,7 +516,18 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business')
         },
 
-        // 2ï¸âƒ£.6 ØªÙ„ÙŠØ¬Ø±Ø§Ù…
+        // أتمتة المحادثات (البوت)
+        {
+          id: 'messaging-automation',
+          title: t('sidebar.messagingAutomationSection'),
+          icon: Send,
+            items: [
+                { to: '/automation/bot-studio', icon: Send, label: t('sidebar.botStudio') },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['whatsapp-business', 'facebook-pages-connect', 'crm-basic'])
+        },
+
+        // 2️⃣.6 تيليجرام
         {
           id: 'telegram',
           title: t('sidebar.telegramSection'),
@@ -804,6 +815,9 @@ export const getSidebarConfig = (
             items: [
                 { to: '/broadcast', icon: Volume2, label: t('sidebar.broadcast'), hidden: !isAppActive('crm-basic') },
                 { to: '/facebook/create-post', icon: SquarePen, label: t('sidebar.facebookPost') },
+                { to: '/tiktok/publish', icon: SquarePen, label: t('sidebar.tiktokPublish') },
+                { to: '/tiktok/shop', icon: ShoppingBag, label: t('sidebar.tiktokShop') },
+                { to: '/tiktok/settings', icon: Cog, label: t('sidebar.tiktokSettings') },
                 { to: '/advertising/facebook-pixel', icon: BarChart3, label: t('sidebar.facebookPixel') },
                 { to: '/advertising/google-tag-manager', icon: BarChart3, label: t('sidebar.googleTagManager') },
                 { to: '/advertising/facebook-ads', icon: Megaphone, label: t('sidebar.facebookAds'), hidden: false },
@@ -998,6 +1012,7 @@ export const getSidebarConfig = (
                 { to: '/radiology/reports', icon: FileText, label: t('sidebar.radiologyReports') },
                 { to: '/radiology/patients', icon: Users, label: t('sidebar.radiologyPatients') },
                 { to: '/radiology/exam-types', icon: ScanLine, label: t('sidebar.radiologyExamTypes') },
+                { to: '/radiology/exam-categories', icon: FolderTree, label: t('sidebar.radiologyExamCategories') },
                 { to: '/radiology/price-lists', icon: Tag, label: t('sidebar.radiologyPriceLists') },
                 { to: '/radiology/radiologists', icon: Users, label: t('sidebar.radiologyRadiologists') },
                 { to: '/radiology/referring-physicians', icon: Users, label: t('sidebar.radiologyReferringPhysicians') },
