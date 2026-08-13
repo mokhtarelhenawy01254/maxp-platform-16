@@ -17,8 +17,15 @@ type StorefrontFetchOptions = RequestInit & {
   query?: QueryParams;
 };
 
-const API_BASE = getApiUrl().replace(/\/$/, "");
-const PUBLIC_BASE = `${API_BASE}/public`;
+// Lazy memoized getters — never dereference imports at module scope (rollup chunk-hosting TDZ risk).
+let _apiBase: string | null = null;
+const getApiBase = (): string => {
+  if (!_apiBase) {
+    _apiBase = getApiUrl().replace(/\/$/, "");
+  }
+  return _apiBase;
+};
+const getPublicBase = (): string => `${getApiBase()}/public`;
 
 const hasWindow = typeof window !== "undefined";
 const LOCAL_STORE_HOSTNAMES = new Set(["localhost", "127.0.0.1", "0.0.0.0", "lvh.me"]);
@@ -218,7 +225,7 @@ export const storefrontFetch = async (
   options: StorefrontFetchOptions = {},
 ): Promise<any> => {
   const { headers, query } = buildStorefrontRequestContext(options);
-  const url = buildUrl(PUBLIC_BASE, path, query);
+  const url = buildUrl(getPublicBase(), path, query);
 
   const response = await fetch(url, {
     ...options,
@@ -240,7 +247,7 @@ const productLandingFetch = async (
   options: StorefrontFetchOptions = {},
 ): Promise<any> => {
   const { headers, query } = buildStorefrontRequestContext(options);
-  const url = buildUrl(API_BASE, path, query);
+  const url = buildUrl(getApiBase(), path, query);
 
   const response = await fetch(url, {
     ...options,
@@ -402,7 +409,7 @@ export const storefrontApi = {
       : [];
 
     const url = buildUrl(
-      API_BASE,
+      getApiBase(),
       `/shipping-zones/public/${encodeURIComponent(companyId)}/calculate`,
       normalizedItems.length > 0 ? undefined : { governorate },
     );
@@ -436,7 +443,7 @@ export const storefrontApi = {
     const params: Record<string, string> = { phone };
     const companyId = getCompanyId();
     if (companyId) params['companyId'] = companyId;
-    const url = buildUrl(API_BASE, "/public/loyalty/tier-progress", params);
+    const url = buildUrl(getApiBase(), "/public/loyalty/tier-progress", params);
     const response = await fetch(url, {
       method: "GET",
       credentials: "include",
@@ -544,7 +551,7 @@ export const storefrontApi = {
 
   kashierCheckout: async (payload: Record<string, unknown>) => {
     const { headers } = buildStorefrontRequestContext();
-    const url = buildUrl(API_BASE, "/payment/kashier/checkout");
+    const url = buildUrl(getApiBase(), "/payment/kashier/checkout");
     const response = await fetch(url, {
       method: "POST",
       headers: { ...headers, "Content-Type": "application/json" },
