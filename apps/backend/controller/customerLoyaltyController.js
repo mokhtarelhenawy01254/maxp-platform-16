@@ -161,13 +161,20 @@ async function updateCashbackSettings(req, res) {
       tierOverrides
     };
 
-    // Global cashback settings: apply to ALL loyalty programs of the company
+    // Global cashback settings: broadcast the cashback rules to ALL loyalty
+    // programs of the company, but only change the activation status on the
+    // cashback program itself — otherwise saving cashback could forcibly
+    // activate/deactivate every other loyalty program.
     const programs = await prisma.customerLoyaltyProgram.findMany({ where: { companyId } });
     for (const p of programs) {
       const merged = { ...parseJsonMaybe(p.rules, {}), ...newRules };
+      const updateData = { rules: JSON.stringify(merged) };
+      if (p.id === cashbackProgram.id) {
+        updateData.status = nextStatus;
+      }
       await prisma.customerLoyaltyProgram.update({
         where: { id: p.id },
-        data: { status: nextStatus, rules: JSON.stringify(merged) }
+        data: updateData
       });
     }
 
@@ -199,10 +206,17 @@ async function getPointsSettings(req, res) {
     const { companyId } = req.user;
     const prisma = getSharedPrismaClient();
 
-    const program = await prisma.customerLoyaltyProgram.findFirst({
-      where: { companyId },
-      orderBy: { createdAt: 'asc' }
-    });
+    // Prefer a non-CASHBACK program so the cashback program's zeroed points
+    // defaults don't leak into the global points settings view.
+    const program =
+      (await prisma.customerLoyaltyProgram.findFirst({
+        where: { companyId, type: { not: 'CASHBACK' } },
+        orderBy: { createdAt: 'asc' }
+      })) ||
+      (await prisma.customerLoyaltyProgram.findFirst({
+        where: { companyId },
+        orderBy: { createdAt: 'asc' }
+      }));
 
     if (!program) {
       return res.json({
