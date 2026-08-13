@@ -651,7 +651,8 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                         ))}
                     </div>
                     {scheduleMode === 'scheduled' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                                 <label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 block">اليوم</label>
                                 <input
@@ -672,10 +673,11 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                                     className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 transition text-gray-900 dark:text-white"
                                 />
                             </div>
-                        </div>
-                        <p className="text-[11px] text-amber-500 dark:text-amber-400 mt-1">
-                            ملاحظة: الحد الأقصى للجدولة 24 يوماً من الآن.
-                        </p>
+                            </div>
+                            <p className="text-[11px] text-amber-500 dark:text-amber-400 mt-1">
+                                ملاحظة: الحد الأقصى للجدولة 24 يوماً من الآن.
+                            </p>
+                        </>
                     )}
                 </div>
 
