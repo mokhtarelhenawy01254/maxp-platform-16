@@ -179,7 +179,7 @@ router.put('/notifications/schedule',
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 💰 Cashback Settings
+// 💰 Cashback Settings (Global)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 router.get('/cashback/settings',
@@ -190,6 +190,20 @@ router.get('/cashback/settings',
 router.put('/cashback/settings',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
   customerLoyaltyController.updateCashbackSettings
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🏅 Points Settings (Global)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/points/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getPointsSettings
+);
+
+router.put('/points/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updatePointsSettings
 );
 
 module.exports = router;

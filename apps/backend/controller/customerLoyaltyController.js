@@ -109,7 +109,30 @@ async function updateCashbackSettings(req, res) {
     const { companyId, id: userId } = req.user;
     const prisma = getSharedPrismaClient();
 
-    const program = await prisma.customerLoyaltyProgram.findFirst({
+    const percent = Number(req.body.cashbackPercent ?? req.body.percent ?? 0);
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'cashbackPercent must be a number between 0 and 100'
+      });
+    }
+
+    const maxPerOrder = Number(req.body.maxPerOrder ?? 0);
+    if (!Number.isFinite(maxPerOrder) || maxPerOrder < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'maxPerOrder must be a positive number'
+      });
+    }
+
+    const base = req.body.base === 'subtotal' ? 'subtotal' : 'total';
+    const nextStatus = req.body.status || 'ACTIVE';
+    const tierOverrides = (req.body.tierOverrides && typeof req.body.tierOverrides === 'object')
+      ? req.body.tierOverrides
+      : {};
+
+    // Ensure the CASHBACK program exists to hold the global cashback settings
+    const cashbackProgram = await prisma.customerLoyaltyProgram.findFirst({
       where: { companyId, type: 'CASHBACK' },
       orderBy: { createdAt: 'asc' }
     }) || await prisma.customerLoyaltyProgram.create({
@@ -129,60 +152,136 @@ async function updateCashbackSettings(req, res) {
       }
     });
 
-    const currentRules = normalizeCashbackRules(program.rules);
+    const currentRules = normalizeCashbackRules(cashbackProgram.rules);
+    const newRules = {
+      ...currentRules,
+      cashbackPercent: percent,
+      base,
+      maxPerOrder,
+      tierOverrides
+    };
 
-    const nextPercent = req.body.cashbackPercent ?? req.body.percent ?? currentRules.cashbackPercent;
-    const nextBase = req.body.base ?? currentRules.base;
-    const nextStatus = req.body.status ?? program.status;
-    const nextMaxPerOrder = req.body.maxPerOrder ?? currentRules.maxPerOrder;
-    const nextTierOverrides = req.body.tierOverrides ?? currentRules.tierOverrides;
-
-    const percent = Number(nextPercent);
-    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
-      return res.status(400).json({
-        success: false,
-        error: 'cashbackPercent must be a number between 0 and 100'
+    // Global cashback settings: apply to ALL loyalty programs of the company
+    const programs = await prisma.customerLoyaltyProgram.findMany({ where: { companyId } });
+    for (const p of programs) {
+      const merged = { ...parseJsonMaybe(p.rules, {}), ...newRules };
+      await prisma.customerLoyaltyProgram.update({
+        where: { id: p.id },
+        data: { status: nextStatus, rules: JSON.stringify(merged) }
       });
     }
-
-    const maxPerOrder = Number(nextMaxPerOrder);
-    if (!Number.isFinite(maxPerOrder) || maxPerOrder < 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'maxPerOrder must be a positive number'
-      });
-    }
-
-    const base = nextBase === 'subtotal' ? 'subtotal' : 'total';
-
-    const updated = await prisma.customerLoyaltyProgram.update({
-      where: { id: program.id },
-      data: {
-        status: nextStatus,
-        rules: JSON.stringify({
-          ...currentRules,
-          cashbackPercent: percent,
-          base,
-          maxPerOrder,
-          tierOverrides: nextTierOverrides
-        })
-      }
-    });
 
     res.json({
       success: true,
       data: {
-        id: updated.id,
-        status: updated.status,
-        rules: normalizeCashbackRules(updated.rules)
+        id: cashbackProgram.id,
+        status: nextStatus,
+        rules: normalizeCashbackRules(JSON.stringify(newRules))
       },
-      message: 'تم تحديث إعدادات الكاش باك بنجاح'
+      message: 'تم تحديث إعدادات الكاش باك في جميع أنظمة الولاء بنجاح'
     });
   } catch (error) {
     console.error('❌ Error updating cashback settings:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'حدث خطأ أثناء تحديث إعدادات الكاش باك'
+    });
+  }
+}
+
+/**
+ * جلب إعدادات النقاط العامة (على مستوى الشركة)
+ * تُقرأ من أول برنامج ولاء للشركة (كل البرامج متزامنة بعد التحديث العام)
+ * GET /api/v1/hr/customer-loyalty/points/settings
+ */
+async function getPointsSettings(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    const program = await prisma.customerLoyaltyProgram.findFirst({
+      where: { companyId },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    if (!program) {
+      return res.json({
+        success: true,
+        data: {
+          pointsPerAmount: 1,
+          pointsPerPurchase: 1,
+          pointsPerReferral: 10,
+          redemptionRate: 100,
+          minimumPoints: 100,
+          maxPointsPerTransaction: 0,
+          expiryMonths: 12
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        pointsPerAmount: Number(program.pointsPerAmount ?? 1),
+        pointsPerPurchase: Number(program.pointsPerPurchase ?? 0),
+        pointsPerReferral: Number(program.pointsPerReferral ?? 0),
+        redemptionRate: Number(program.redemptionRate ?? 0),
+        minimumPoints: Number(program.minimumPoints ?? 0),
+        maxPointsPerTransaction: program.maxPointsPerTransaction != null ? Number(program.maxPointsPerTransaction) : 0,
+        expiryMonths: Number(program.expiryMonths ?? 12)
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting points settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء جلب إعدادات النقاط'
+    });
+  }
+}
+
+/**
+ * تحديث إعدادات النقاط العامة (على مستوى الشركة)
+ * يُطبَّق التغيير على جميع برامج الولاء الخاصة بالشركة
+ * PUT /api/v1/hr/customer-loyalty/points/settings
+ */
+async function updatePointsSettings(req, res) {
+  try {
+    const { companyId, id: userId } = req.user;
+    const prisma = getSharedPrismaClient();
+    const body = req.body || {};
+
+    const toNumber = (v, fallback) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    };
+
+    const data = {
+      pointsPerAmount: toNumber(body.pointsPerAmount, 1),
+      pointsPerPurchase: toNumber(body.pointsPerPurchase, 0),
+      pointsPerReferral: toNumber(body.pointsPerReferral, 0),
+      redemptionRate: toNumber(body.redemptionRate, 0),
+      minimumPoints: toNumber(body.minimumPoints, 0),
+      maxPointsPerTransaction: toNumber(body.maxPointsPerTransaction, 0),
+      expiryMonths: Math.round(toNumber(body.expiryMonths, 12))
+    };
+
+    // Global points settings: apply to ALL loyalty programs of the company
+    const result = await prisma.customerLoyaltyProgram.updateMany({
+      where: { companyId },
+      data
+    });
+
+    res.json({
+      success: true,
+      data: { ...data, updatedCount: result.count },
+      message: 'تم تحديث إعدادات النقاط في جميع أنظمة الولاء بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ Error updating points settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء تحديث إعدادات النقاط'
     });
   }
 }
@@ -1022,6 +1121,8 @@ module.exports = {
   getCustomerPortalSummary,
   getCashbackSettings,
   updateCashbackSettings,
+  getPointsSettings,
+  updatePointsSettings,
   getNotificationSchedule,
   updateNotificationSchedule,
   getSystemSettings,

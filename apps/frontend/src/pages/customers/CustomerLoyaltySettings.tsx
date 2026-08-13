@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useState } from "react";
 import { DollarSign, Coins, BadgePercent, Star, Settings2 } from "lucide-react";
 
 const CashbackSettings = lazy(() => import("./CashbackSettings"));
-const LoyaltyPrograms = lazy(() => import("./LoyaltyPrograms"));
+const PointsSettings = lazy(() => import("./PointsSettings"));
 const AutoDiscountSettings = lazy(() => import("./AutoDiscountSettings"));
 const LoyaltyTiers = lazy(() => import("./LoyaltyTiers"));
 
@@ -61,7 +61,7 @@ const CustomerLoyaltySettings: React.FC = () => {
         }
       >
         {activeTab === "cashback" && <CashbackSettings />}
-        {activeTab === "points" && <LoyaltyPrograms />}
+        {activeTab === "points" && <PointsSettings />}
         {activeTab === "discount" && <AutoDiscountSettings />}
         {activeTab === "tiers" && <LoyaltyTiers />}
       </Suspense>
