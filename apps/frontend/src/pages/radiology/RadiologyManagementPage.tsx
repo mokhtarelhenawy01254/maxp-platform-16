@@ -1,7 +1,6 @@
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import { TabId, TABS } from "./shared";
 import RadiologyDashboardTab from "./RadiologyDashboardTab";
-import ReceptionTab from "./ReceptionTab";
 import RadiologyPatientsTab from "./RadiologyPatientsTab";
 import StudiesTab from "./StudiesTab";
 import RadiologyReportsTab from "./RadiologyReportsTab";
@@ -27,6 +26,8 @@ import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 export default function RadiologyManagementPage() {
   const { "*": path } = useParams();
   const urlTab = (path || "").split("/")[0] || "";
+  // Legacy route redirect: reception was merged into schedule (appointment-based daily workflow)
+  if (urlTab === "reception") return <Navigate to="/radiology/schedule" replace />;
   const activeTab = (TABS.some(t => t.id === urlTab) ? urlTab : "dashboard") as TabId;
 
   return (
@@ -39,7 +40,6 @@ export default function RadiologyManagementPage() {
       </div>
 
       {activeTab === "dashboard" && <TabErrorBoundary tabLabel="لوحة الأشعة"><RadiologyDashboardTab /></TabErrorBoundary>}
-      {activeTab === "reception" && <TabErrorBoundary tabLabel="الاستقبال"><ReceptionTab /></TabErrorBoundary>}
       {activeTab === "patients" && <TabErrorBoundary tabLabel="المرضى"><RadiologyPatientsTab /></TabErrorBoundary>}
       {activeTab === "studies" && <TabErrorBoundary tabLabel="الدراسات"><StudiesTab /></TabErrorBoundary>}
       {activeTab === "reports" && <TabErrorBoundary tabLabel="التقارير الطبية"><RadiologyReportsTab /></TabErrorBoundary>}

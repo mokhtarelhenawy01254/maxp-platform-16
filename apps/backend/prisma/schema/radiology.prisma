@@ -157,8 +157,16 @@ model RadiologyAppointment {
   patientPhone    String?
   patientGender    String?
   patientAge       String?
+  nationalId       String?
+  insuranceNumber  String?
   examTypeId       String?
   examTypeName     String?
+  insuranceCompanyId   String?
+  additionIds          Json?
+  additionAmount       Float    @default(0)
+  referringPhysicianId String?
+  referralDoctor       String?
+  emergency            Boolean  @default(false)
   appointmentDate  DateTime?
   appointmentTime  String? // HH:MM
   branchId         String?

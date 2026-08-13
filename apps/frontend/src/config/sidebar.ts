@@ -993,7 +993,6 @@ export const getSidebarConfig = (
             hidden: !isAppActive('radiology-app'),
             items: [
                 { to: '/radiology/dashboard', icon: BarChart3, label: t('sidebar.radiologyDashboard') },
-                { to: '/radiology/reception', icon: Inbox, label: t('sidebar.radiologyReception') },
                 { to: '/radiology/patients', icon: Users, label: t('sidebar.radiologyPatients') },
                 { to: '/radiology/studies', icon: FolderOpen, label: t('sidebar.radiologyStudies') },
                 { to: '/radiology/schedule', icon: CalendarDays, label: t('sidebar.radiologySchedule') },

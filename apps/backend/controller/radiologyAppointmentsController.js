@@ -64,9 +64,33 @@ const createAppointment = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     let examTypeName = null;
+    let priceResolved = 0;
     if (body.examTypeId) {
       const examType = await prisma.radiologyExamType.findFirst({ where: { id: body.examTypeId, companyId, isActive: true } });
       if (examType) examTypeName = examType.name;
+    }
+
+    let additionAmount = 0;
+    let additionIds = null;
+    if (Array.isArray(body.additionIds) && body.additionIds.length) {
+      const additions = await prisma.radiologyExamAddition.findMany({
+        where: { id: { in: body.additionIds }, companyId, isActive: true },
+      });
+      if (additions.length) {
+        additionIds = JSON.stringify(additions.map(a => a.id));
+        additionAmount = additions.reduce((s, a) => s + a.price, 0);
+      }
+    }
+
+    let referringPhysicianName = body.referralDoctor ? String(body.referralDoctor) : null;
+    if (body.referringPhysicianId) {
+      const physician = await prisma.radiologyReferringPhysician.findFirst({
+        where: { id: String(body.referringPhysicianId), companyId, isActive: true },
+        select: { id: true, name: true },
+      });
+      if (physician) {
+        referringPhysicianName = physician.name;
+      }
     }
 
     const appointment = await prisma.radiologyAppointment.create({
@@ -77,12 +101,20 @@ const createAppointment = async (req, res) => {
         patientPhone: body.patientPhone ? String(body.patientPhone) : null,
         patientGender: body.patientGender || null,
         patientAge: body.patientAge ? String(body.patientAge) : null,
+        nationalId: body.nationalId ? String(body.nationalId) : null,
+        insuranceNumber: body.insuranceNumber ? String(body.insuranceNumber) : null,
         examTypeId: body.examTypeId || null,
         examTypeName: examTypeName || (body.examTypeName ? String(body.examTypeName) : null),
+        insuranceCompanyId: body.insuranceCompanyId || null,
+        additionIds,
+        additionAmount,
+        referringPhysicianId: body.referringPhysicianId || null,
+        referralDoctor: referringPhysicianName,
+        emergency: body.emergency === true || body.emergency === 'true',
         appointmentDate: parseDate(body.appointmentDate),
         appointmentTime: normalizeText(body.appointmentTime),
         branchId: body.branchId || null,
-        status: 'SCHEDULED',
+        status: body.status || 'SCHEDULED',
         notes: body.notes ? String(body.notes) : null,
         createdBy: req.user?.id || req.user?.email || null,
       },
@@ -114,7 +146,32 @@ const updateAppointment = async (req, res) => {
     if (body.patientPhone !== undefined) data.patientPhone = normalizeText(body.patientPhone);
     if (body.patientGender !== undefined) data.patientGender = normalizeText(body.patientGender);
     if (body.patientAge !== undefined) data.patientAge = normalizeText(body.patientAge);
+    if (body.nationalId !== undefined) data.nationalId = normalizeText(body.nationalId);
+    if (body.insuranceNumber !== undefined) data.insuranceNumber = normalizeText(body.insuranceNumber);
+    if (body.examTypeId !== undefined) {
+      data.examTypeId = body.examTypeId || null;
+      if (body.examTypeId) {
+        const examType = await prisma.radiologyExamType.findFirst({ where: { id: String(body.examTypeId), companyId } });
+        data.examTypeName = examType ? examType.name : (data.examTypeName || null);
+      } else {
+        data.examTypeName = null;
+      }
+    }
     if (body.examTypeName !== undefined) data.examTypeName = normalizeText(body.examTypeName);
+    if (body.insuranceCompanyId !== undefined) data.insuranceCompanyId = body.insuranceCompanyId || null;
+    if (body.additionIds !== undefined) {
+      if (Array.isArray(body.additionIds) && body.additionIds.length) {
+        const additions = await prisma.radiologyExamAddition.findMany({ where: { id: { in: body.additionIds }, companyId, isActive: true } });
+        data.additionIds = JSON.stringify(additions.map(a => a.id));
+        data.additionAmount = additions.reduce((s, a) => s + a.price, 0);
+      } else {
+        data.additionIds = null;
+        data.additionAmount = 0;
+      }
+    }
+    if (body.referringPhysicianId !== undefined) data.referringPhysicianId = body.referringPhysicianId || null;
+    if (body.referralDoctor !== undefined) data.referralDoctor = normalizeText(body.referralDoctor);
+    if (body.emergency !== undefined) data.emergency = body.emergency === true || body.emergency === 'true';
     if (body.appointmentDate !== undefined) data.appointmentDate = parseDate(body.appointmentDate);
     if (body.appointmentTime !== undefined) data.appointmentTime = normalizeText(body.appointmentTime);
     if (body.branchId !== undefined) data.branchId = normalizeText(body.branchId);
@@ -167,12 +224,25 @@ const convertToStudy = async (req, res) => {
     if (appointment.examTypeId) {
       examType = await prisma.radiologyExamType.findFirst({ where: { id: appointment.examTypeId, companyId, isActive: true } });
     }
-    const priceSnapshot = examType ? examType.price : 0;
+    // Resolve price: entity price > exam base
+    let priceSnapshot = examType ? examType.price : 0;
+    if (appointment.insuranceCompanyId && examType) {
+      const entityPrice = await prisma.radiologyEntityPrice.findFirst({
+        where: { insuranceCompanyId: appointment.insuranceCompanyId, examTypeId: examType.id, isActive: true },
+        select: { price: true },
+      }).catch(() => null);
+      if (entityPrice && Number.isFinite(entityPrice.price)) priceSnapshot = entityPrice.price;
+    }
     if (examType && priceSnapshot <= 0) {
       return res.status(400).json({
         success: false,
         error: `نوع الفحص "${examType.name}" غير مسعّر — حدد سعراً للفحص أولاً أو اختر فحصاً آخر`,
       });
+    }
+    let insuranceCompanyName = null;
+    if (appointment.insuranceCompanyId) {
+      const entity = await prisma.insuranceCompany.findFirst({ where: { id: appointment.insuranceCompanyId, companyId }, select: { name: true } }).catch(() => null);
+      insuranceCompanyName = entity ? entity.name : null;
     }
     const study = await prisma.radiologyStudy.create({
       data: {
@@ -183,11 +253,20 @@ const convertToStudy = async (req, res) => {
         patientPhone: appointment.patientPhone,
         patientGender: appointment.patientGender,
         patientAge: appointment.patientAge,
+        nationalId: appointment.nationalId || null,
+        insuranceNumber: appointment.insuranceNumber || null,
         examTypeId: appointment.examTypeId,
         examTypeName: appointment.examTypeName,
         modality: examType ? (MODALITY_BY_CATEGORY[examType.category] || examType.category || null) : null,
         priceSnapshot,
-        billingType: 'PATIENT',
+        billingType: appointment.insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
+        insuranceCompanyId: appointment.insuranceCompanyId || null,
+        insuranceCompanyName,
+        additionIds: appointment.additionIds || null,
+        additionAmount: appointment.additionAmount || 0,
+        referringPhysicianId: appointment.referringPhysicianId || null,
+        referralDoctor: appointment.referralDoctor || null,
+        emergency: appointment.emergency === true,
         status: 'PENDING_IMAGING',
         submissionStatus: 'NOT_SUBMITTED',
         createdBy: req.user?.id || req.user?.email || null,

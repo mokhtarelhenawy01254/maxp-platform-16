@@ -1,16 +1,15 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import { LayoutDashboard, Inbox, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Plus, Banknote, Landmark } from "lucide-react";
+import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Plus, Banknote, Landmark } from "lucide-react";
 
 export type TabId =
-  | "dashboard" | "reception" | "patients" | "studies" | "reports"
+  | "dashboard" | "patients" | "studies" | "reports"
   | "exam-types" | "price-lists" | "contracts" | "branches" | "invoices"
   | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "insurance-companies" | "price-quote" | "radiologists"
   | "schedule" | "referring-physicians" | "exam-additions" | "statistics" | "cashier-shifts" | "settings";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "لوحة الأشعة", icon: LayoutDashboard },
-  { id: "reception", label: "الاستقبال", icon: Inbox },
   { id: "patients", label: "المرضى", icon: Users },
   { id: "schedule", label: "الحجوزات", icon: CalendarDays },
   { id: "studies", label: "الدراسات", icon: FolderOpen },

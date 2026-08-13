@@ -154,7 +154,7 @@ export default function RadiologyPatientsTab() {
       )}
 
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        لإنشاء دراسة جديدة لمريض موجود، استخدم تبويب <a href="/radiology/reception" className="text-blue-600 dark:text-blue-400">الاستقبال</a>.
+        لإنشاء دراسة جديدة لمريض، استخدم تبويب <a href="/radiology/schedule" className="text-blue-600 dark:text-blue-400">الحجوزات</a>.
       </p>
 
       {modal && (

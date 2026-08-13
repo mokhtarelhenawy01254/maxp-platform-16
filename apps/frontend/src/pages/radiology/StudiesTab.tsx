@@ -296,7 +296,7 @@ export default function StudiesTab() {
           <p className="text-sm text-gray-500 dark:text-gray-400">متابعة الدراسات والصور والتقارير وحالة Rology</p>
         </div>
         <div className="flex items-center gap-2">
-          <a href="/radiology/reception" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+          <a href="/radiology/schedule" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
             <Plus className="w-4 h-4" />دراسة جديدة
           </a>
           <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
