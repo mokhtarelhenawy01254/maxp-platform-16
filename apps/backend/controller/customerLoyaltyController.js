@@ -926,10 +926,10 @@ async function getCustomerTierCard(req, res) {
   try {
     const { companyId } = req.user;
     const { customerId } = req.params;
-    const { programId, tierId } = req.query;
+    const { programId, tierId, force } = req.query;
 
     const { getOrGenerateTierCard } = require('../services/loyalty/loyaltyTierCardService');
-    const result = await getOrGenerateTierCard({ companyId, customerId, programId, tierId });
+    const result = await getOrGenerateTierCard({ companyId, customerId, programId, tierId, force: force === 'true' });
 
     if (!result.tierId) {
       return res.status(404).json({ success: false, error: 'لا يوجد مستوى ولاء لهذا العميل' });

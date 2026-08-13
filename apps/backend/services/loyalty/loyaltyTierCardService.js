@@ -223,6 +223,21 @@ function drawEmblem(ctx, icon, cx, cy, s, color) {
   }
 }
 
+function isArabicText(text) {
+  return /[\u0600-\u06FF]/.test(String(text || ''));
+}
+
+// يضبط حجم الخط ليلائم العرض المتاح (عشان الأسماء الطويلة ما تفيضش)
+function fitFontSize(ctx, text, baseSize, maxWidth) {
+  let size = baseSize;
+  ctx.font = `${size}px ${FONT_FAMILY}`;
+  while (size > 18 && ctx.measureText(String(text || '')).width > maxWidth) {
+    size -= 2;
+    ctx.font = `${size}px ${FONT_FAMILY}`;
+  }
+  return size;
+}
+
 function drawFancyText(ctx, text, x, y, opts = {}) {
   const {
     size = 32,
@@ -242,9 +257,11 @@ function drawFancyText(ctx, text, x, y, opts = {}) {
   try {
     ctx.direction = 'rtl';
   } catch (e) { /* غير مدعوم — نرسم يميناً عبر textAlign */ }
-  if (letterSpacing > 0) {
-    // تباعد بسيط عبر رسم الأحرف
-    const chars = String(text).split('');
+  const str = String(text);
+  // التباعد يُطبَّق فقط على النص غير العربي (أرقام/إنجليزي) — رسم كل حرف لوحده
+  // بيكسر اتصال الحروف العربية (تشكيل Skia).
+  if (letterSpacing > 0 && !isArabicText(str)) {
+    const chars = str.split('');
     const widths = chars.map((ch) => ctx.measureText(ch).width);
     const total = widths.reduce((a, b) => a + b, 0) + letterSpacing * (chars.length - 1);
     let startX = x;
@@ -255,7 +272,7 @@ function drawFancyText(ctx, text, x, y, opts = {}) {
       startX += widths[i] + letterSpacing;
     });
   } else {
-    ctx.fillText(String(text), x, y);
+    ctx.fillText(str, x, y);
   }
   ctx.restore();
 }
@@ -342,138 +359,159 @@ function renderTierCard(data) {
 
   const tierColor = parseColor(data.tier?.color);
   const main = tierColor;
-  const deep = shade(main, 0.62);
-  const soft = tint(main, 0.18);
+  const deep = shade(main, 0.55);
+  const light = tint(main, 0.22);
 
-  // 1) الخلفية: تدرج فاخر
+  // 1) قاعدة داكنة فاخرة (زي كروت البلاتينيوم) مع مسحة من لون المستوى بالأسفل
   const bg = ctx.createLinearGradient(0, 0, CARD_W, CARD_H);
-  bg.addColorStop(0, rgba(shade(main, 0.78), 1));
-  bg.addColorStop(0.45, rgba(shade(main, 0.45), 1));
-  bg.addColorStop(1, rgba(shade(main, 0.12), 1));
+  bg.addColorStop(0, '#0b0e13');
+  bg.addColorStop(0.55, '#131922');
+  bg.addColorStop(1, rgba(shade(main, 0.5), 1));
   ctx.fillStyle = bg;
   roundedRectPath(ctx, 0, 0, CARD_W, CARD_H, 36);
   ctx.fill();
 
-  // 2) توهج علوي ناعم
-  const glow = ctx.createRadialGradient(CARD_W * 0.72, -CARD_H * 0.2, 20, CARD_W * 0.72, -CARD_H * 0.2, CARD_W * 0.9);
-  glow.addColorStop(0, rgba(tint(main, 0.5), 0.5));
-  glow.addColorStop(0.5, rgba(main, 0.18));
+  // 2) توهج لوني أسفل يمين (عمق + هوية المستوى)
+  const glow = ctx.createRadialGradient(CARD_W * 0.9, CARD_H * 1.05, 20, CARD_W * 0.9, CARD_H * 1.05, CARD_W * 0.85);
+  glow.addColorStop(0, rgba(main, 0.5));
+  glow.addColorStop(0.45, rgba(main, 0.16));
   glow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
 
-  // 3) شريط زجاجي مائل (لمعة)
+  // 3) لمعة ناعمة علوية (ضوء)
+  const sheen = ctx.createLinearGradient(0, 0, CARD_W, CARD_H * 0.6);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.09)');
+  sheen.addColorStop(0.4, 'rgba(255,255,255,0.02)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sheen;
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+  // 4) لمسة قطرية رفيعة جداً (تلميعة خفيفة غير صارخة)
   ctx.save();
-  ctx.globalAlpha = 0.14;
-  ctx.translate(CARD_W * 0.28, CARD_H * 0.5);
-  ctx.rotate(-0.28);
-  const glass = ctx.createLinearGradient(-300, 0, 300, 0);
-  glass.addColorStop(0, 'rgba(255,255,255,0)');
-  glass.addColorStop(0.5, 'rgba(255,255,255,0.9)');
-  glass.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = glass;
-  ctx.fillRect(-320, -CARD_H * 0.55, 300, CARD_H * 1.1);
+  ctx.globalAlpha = 0.05;
+  ctx.translate(CARD_W * 0.5, CARD_H * 0.5);
+  ctx.rotate(-0.22);
+  const band = ctx.createLinearGradient(-CARD_W, 0, CARD_W, 0);
+  band.addColorStop(0, 'rgba(255,255,255,0)');
+  band.addColorStop(0.5, 'rgba(255,255,255,1)');
+  band.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = band;
+  ctx.fillRect(-CARD_W, -CARD_H * 0.75, CARD_W * 0.45, CARD_H * 1.5);
   ctx.restore();
 
-  // 4) حدود داخلية
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-  ctx.lineWidth = 2;
+  // 5) حدود داخلية رفيعة
+  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+  ctx.lineWidth = 1.5;
   roundedRectPath(ctx, 14, 14, CARD_W - 28, CARD_H - 28, 26);
   ctx.stroke();
 
   const textColor = '#ffffff';
-  const muted = 'rgba(255,255,255,0.78)';
+  const muted = 'rgba(255,255,255,0.6)';
 
-  // 5) ترويسة: اسم الشركة يمين + عضوية منذ يسار
-  drawFancyText(ctx, data.companyName, CARD_W - PAD, 84, {
-    size: 26,
-    color: rgba(tint(main, 0.85), 1),
-    align: 'right',
-    letterSpacing: 1
-  });
-  const joinedLabel = `عضو منذ ${formatArabicDate(data.record?.joinDate)}`;
-  drawFancyText(ctx, joinedLabel, PAD, 84, { size: 20, color: muted, align: 'left' });
+  // 6) الترويسة: اسم الشركة يمين + شارة Member Card يسار
+  drawFancyText(ctx, data.companyName, CARD_W - PAD, 76, { size: 30, color: textColor, align: 'right' });
+  drawFancyText(ctx, 'MEMBER  CARD', PAD, 72, { size: 15, color: muted, align: 'left', letterSpacing: 3 });
 
-  // 6) الشعار + المستوى
-  const emblemR = 108;
-  const emblemCx = CARD_W - PAD - 125;
-  const emblemCy = 240;
+  // خط أكسنت صغير بلون المستوى تحت الترويسة
+  ctx.fillStyle = rgba(light, 0.9);
+  roundedRectPath(ctx, CARD_W - PAD - 64, 96, 64, 4, 2);
+  ctx.fill();
 
-  // هالة حول الشعار
-  const halo = ctx.createRadialGradient(emblemCx, emblemCy, 10, emblemCx, emblemCy, emblemR * 1.45);
-  halo.addColorStop(0, rgba(tint(main, 0.4), 0.35));
+  // 7) الشعار + اسم المستوى + اسم العميل
+  const emblemR = 122;
+  const emblemCx = CARD_W - PAD - 130;
+  const emblemCy = 262;
+
+  // هالة
+  const halo = ctx.createRadialGradient(emblemCx, emblemCy, 8, emblemCx, emblemCy, emblemR * 1.5);
+  halo.addColorStop(0, rgba(light, 0.5));
+  halo.addColorStop(0.4, rgba(main, 0.2));
   halo.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = halo;
   ctx.beginPath();
-  ctx.arc(emblemCx, emblemCy, emblemR * 1.45, 0, Math.PI * 2);
+  ctx.arc(emblemCx, emblemCy, emblemR * 1.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // دائرة خلف الشعار
-  ctx.fillStyle = rgba(shade(main, 0.5), 0.35);
+  // دائرة الشعار
+  ctx.fillStyle = rgba(shade(main, 0.35), 0.55);
   ctx.beginPath();
-  ctx.arc(emblemCx, emblemCy, emblemR * 0.98, 0, Math.PI * 2);
+  ctx.arc(emblemCx, emblemCy, emblemR, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.35)';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  drawEmblem(ctx, data.tier?.icon, emblemCx, emblemCy, emblemR * 0.72, main);
+  drawEmblem(ctx, data.tier?.icon, emblemCx, emblemCy, emblemR * 0.7, main);
 
-  // اسم المستوى + اسم العميل (يسار الشعار، محاذاة يمين)
   const tierName = data.tier?.nameAr || data.tier?.name || '';
   const customerName = [data.customer?.firstName, data.customer?.lastName].filter(Boolean).join(' ') || 'عميلنا العزيز';
-  const tierX = emblemCx - 150;
+  const tierX = emblemCx - 175;
 
-  // اسم المستوى
-  drawFancyText(ctx, tierName, tierX, 218, { size: 52, color: rgba(tint(main, 0.95), 1), align: 'right', weight: '700' });
+  drawFancyText(ctx, 'المستوى', tierX, 188, { size: 20, color: rgba(light, 0.95), align: 'right' });
+  // ظل خفيف لاسم المستوى (عمق)
+  const tierSize = fitFontSize(ctx, tierName, 54, emblemCx - 175 - 120);
+  const tierSh = tierSize + 2;
+  ctx.save();
+  ctx.font = `${tierSh}px ${FONT_FAMILY}`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'alphabetic';
+  try { ctx.direction = 'rtl'; } catch (e) { /* ignore */ }
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillText(tierName, tierX + 2, 254);
+  ctx.restore();
+  drawFancyText(ctx, tierName, tierX, 252, { size: tierSize, color: textColor, align: 'right' });
+  const nameSize = fitFontSize(ctx, customerName, 32, emblemCx - 175 - 60);
+  drawFancyText(ctx, customerName, tierX, 312, { size: nameSize, color: 'rgba(255,255,255,0.92)', align: 'right' });
 
-  // شريط صغير تحت اسم المستوى
-  ctx.fillStyle = rgba(tint(main, 0.7), 0.9);
-  ctx.fillRect(tierX - 90, 238, 56, 4);
+  // 8) فاصل ناعم
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD, 404);
+  ctx.lineTo(CARD_W - PAD, 404);
+  ctx.stroke();
 
-  drawFancyText(ctx, customerName, tierX, 286, { size: 34, color: textColor, align: 'right' });
-
-  // 7) المزايا (chips) — يمين أسفل
+  // 9) المزايا (chips) — بلون المستوى
   const benefits = parseBenefits(data.tier?.benefits);
   if (benefits.length > 0) {
     ctx.font = `22px ${FONT_FAMILY}`;
     ctx.textAlign = 'right';
     const chips = benefits.slice(0, 3);
     let chipX = CARD_W - PAD;
-    const chipY = 448;
-    const chipH = 44;
+    const chipY = 460;
+    const chipH = 42;
     for (let i = chips.length - 1; i >= 0; i--) {
       const label = chips[i];
-      const w = ctx.measureText(label).width + 36;
+      const w = ctx.measureText(label).width + 34;
       const x = chipX - w;
-      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
       roundedRectPath(ctx, x, chipY - chipH / 2, w, chipH, chipH / 2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.strokeStyle = rgba(main, 0.6);
       ctx.lineWidth = 1.2;
       ctx.stroke();
-      drawFancyText(ctx, label, x + w - 18, chipY, { size: 22, color: textColor, align: 'right', baseline: 'middle' });
-      chipX = x - 14;
+      drawFancyText(ctx, label, x + w - 17, chipY, { size: 21, color: 'rgba(255,255,255,0.9)', align: 'right', baseline: 'middle' });
+      chipX = x - 12;
     }
   }
 
-  // 8) التذييل: رقم العضوية يمين + النقاط يسار
-  const numberLabel = 'رقم العضوية';
-  drawFancyText(ctx, numberLabel, CARD_W - PAD, 540, { size: 18, color: muted, align: 'right', letterSpacing: 1 });
-  const cardNumber = data.membershipNumber;
+  // 10) التذييل: رقم العضوية يمين + الرصيد يسار
+  drawFancyText(ctx, 'رقم العضوية', CARD_W - PAD, 526, { size: 16, color: muted, align: 'right' });
   ctx.save();
-  ctx.font = `26px ${FONT_FAMILY}`;
+  ctx.font = `28px ${FONT_FAMILY}`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = rgba(tint(main, 0.95), 1);
   ctx.direction = 'ltr';
-  ctx.fillText(cardNumber, CARD_W - PAD, 578);
+  ctx.fillStyle = textColor;
+  ctx.fillText(data.membershipNumber, CARD_W - PAD, 566);
   ctx.restore();
 
   const pointsLabel = data.metricLabel || 'نقطة';
-  const pointsText = `رصيدك: ${Number(data.points || 0).toLocaleString('ar-EG')} ${pointsLabel}`;
-  drawFancyText(ctx, pointsText, PAD, 540, { size: 18, color: muted, align: 'left', letterSpacing: 1 });
-  drawFancyText(ctx, 'MaxP Loyalty', PAD, 578, { size: 26, color: rgba(tint(main, 0.95), 1), align: 'left' });
+  const pointsText = `${Number(data.points || 0).toLocaleString('ar-EG')} ${pointsLabel}`;
+  drawFancyText(ctx, 'رصيدك', PAD, 526, { size: 16, color: muted, align: 'left' });
+  drawFancyText(ctx, pointsText, PAD, 566, { size: 28, color: textColor, align: 'left' });
+  drawFancyText(ctx, 'MAXP', PAD, 602, { size: 15, color: muted, align: 'left', letterSpacing: 4 });
 
   return canvas.toBuffer('image/png');
 }
