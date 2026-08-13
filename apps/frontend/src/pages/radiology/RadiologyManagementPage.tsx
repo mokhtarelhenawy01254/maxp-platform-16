@@ -18,6 +18,7 @@ import InsuranceCompaniesTab from "./InsuranceCompaniesTab";
 import PriceQuoteTab from "./PriceQuoteTab";
 import RadiologistsTab from "./RadiologistsTab";
 import ScheduleTab from "./ScheduleTab";
+import DailyQueueTab from "./DailyQueueTab";
 import ReferringPhysiciansTab from "./ReferringPhysiciansTab";
 import StatisticsTab from "./StatisticsTab";
 import CashierShiftsTab from "./CashierShiftsTab";
@@ -80,6 +81,7 @@ export default function RadiologyManagementPage() {
       {activeTab === "price-quote" && <TabErrorBoundary tabLabel={t("radiology.tabs.price-quote")}><PriceQuoteTab /></TabErrorBoundary>}
       {activeTab === "radiologists" && <TabErrorBoundary tabLabel={t("radiology.tabs.radiologists")}><RadiologistsTab /></TabErrorBoundary>}
       {activeTab === "schedule" && <TabErrorBoundary tabLabel={t("radiology.tabs.schedule")}><ScheduleTab /></TabErrorBoundary>}
+      {activeTab === "queue" && <TabErrorBoundary tabLabel={t("radiology.tabs.queue")}><DailyQueueTab /></TabErrorBoundary>}
       {activeTab === "referring-physicians" && <TabErrorBoundary tabLabel={t("radiology.tabs.referring-physicians")}><ReferringPhysiciansTab /></TabErrorBoundary>}
       {activeTab === "statistics" && <TabErrorBoundary tabLabel={t("radiology.tabs.statistics")}><StatisticsTab /></TabErrorBoundary>}
       {activeTab === "cashier-shifts" && <TabErrorBoundary tabLabel={t("radiology.tabs.cashier-shifts")}><CashierShiftsTab /></TabErrorBoundary>}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, ChevronDown, ScanLine, Info } from "lucide-react";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, UserCheck, ChevronDown, ScanLine, Info } from "lucide-react";
 import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, RadiologyDevice, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyIdSettings, DEFAULT_ID_SETTINGS, formatSequentialId, fetchIdSettings } from "./shared";
 import ScheduleCalendar, { ViewMode, dayKey, addDays, egyptWeekStart } from "./ScheduleCalendar";
 
@@ -32,6 +32,8 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 };
 
 const STATUS_CHAIN: Record<string, string> = { SCHEDULED: "CHECKED_IN", CHECKED_IN: "DONE", DONE: "", CANCELLED: "" };
+
+const PAY_METHODS = ["CASH", "CARD", "BANK", "VODAFONE_CASH"] as const;
 
 interface Form {
   id?: string; patientId: string; patientName: string; patientPhone: string;
@@ -86,6 +88,9 @@ export default function ScheduleTab() {
   const [cardOcrBusy, setCardOcrBusy] = useState(false);
   const cardInputRef = useRef<HTMLInputElement | null>(null);
   const [idSettings, setIdSettings] = useState<RadiologyIdSettings>(DEFAULT_ID_SETTINGS);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<"checkin" | "convert" | null>(null);
+  const [initialPayment, setInitialPayment] = useState<{ amount: string; method: string }>({ amount: "", method: "CASH" });
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -120,7 +125,14 @@ export default function ScheduleTab() {
         url.searchParams.set("dateTo", to);
       }
       const res = await fetchJson<{ items?: Appointment[]; total?: number }>(url.toString());
-      setItems(res.items || []);
+      const rows = res.items || [];
+      setItems(rows);
+      setSelected(prev => {
+        if (!prev.size) return prev;
+        const valid = new Set(rows.map(a => a.id));
+        const next = new Set([...prev].filter(id => valid.has(id)));
+        return next.size === prev.size ? prev : next;
+      });
     } catch (e) {
       if (!opts?.silent) toast.error(e instanceof Error ? e.message : t("radiology.schedule.loadFailed"));
     }
@@ -532,6 +544,91 @@ export default function ScheduleTab() {
     }
   };
 
+  const toggleSelected = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (items.length && items.every(a => selected.has(a.id))) setSelected(new Set());
+    else setSelected(new Set(items.map(a => a.id)));
+  };
+
+  const runBulk = async (action: "checkin" | "convert") => {
+    if (!selected.size || bulkBusy) return;
+    setBulkBusy(action);
+    try {
+      const res = await fetchJson<{ successCount: number; failed: { id: string; error: string }[] }>(
+        api(`bulk/appointments/${action}`),
+        { method: "POST", body: JSON.stringify({ ids: [...selected] }) },
+      );
+      const ok = res?.successCount ?? 0;
+      const fail = res?.failed?.length ?? 0;
+      if (fail > 0) toast.warning(t("radiology.schedule.bulkPartial", { ok, fail }));
+      else toast.success(t("radiology.schedule.bulkDone", { count: ok }));
+      setSelected(new Set());
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.bulkFailed"));
+    } finally {
+      setBulkBusy(null);
+    }
+  };
+
+  const distributeInitialPayment = async (studies: { id: string; priceSnapshot?: number }[], amount: number, method: string) => {
+    let remaining = amount;
+    let paid = 0;
+    for (const s of studies) {
+      if (remaining <= 0) break;
+      const total = Number(s.priceSnapshot);
+      const pay = total > 0 ? Math.min(remaining, total) : remaining;
+      if (pay <= 0) continue;
+      try {
+        await fetchJson(api(`studies/${s.id}/payment`), { method: "POST", body: JSON.stringify({ amount: pay, method }) });
+        remaining -= pay;
+        paid += pay;
+      } catch { /* best-effort */ }
+    }
+    return paid > 0;
+  };
+
+  const receiveAndCreate = async () => {
+    if (!modal || saving) return;
+    if (!modal.patientName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
+    if (!modal.examTypeIds.length) { toast.error(t("radiology.schedule.selectExam")); return; }
+    setSaving(true);
+    try {
+      const patientId = await syncPatientRecord(modal);
+      const payload = buildPayload({ ...modal, patientId: patientId || "", status: "CHECKED_IN" });
+      let id = modal.id;
+      if (modal.id) {
+        await fetchJson(api(`appointments/${modal.id}`), { method: "PUT", body: JSON.stringify(payload) });
+      } else {
+        const created = await fetchJson<{ id: string }>(api("appointments"), { method: "POST", body: JSON.stringify(payload) });
+        id = created.id;
+      }
+      if (!id) throw new Error(t("radiology.schedule.saveFailed"));
+      const r = await fetchJson<{ studies?: { id: string; priceSnapshot?: number }[]; study?: { id: string; priceSnapshot?: number } }>(api(`appointments/${id}/convert`), { method: "POST" });
+      const studies = r?.studies?.length ? r.studies : (r?.study ? [r.study] : []);
+      const amount = Number(initialPayment.amount);
+      if (studies.length && Number.isFinite(amount) && amount > 0) {
+        const ok = await distributeInitialPayment(studies, amount, initialPayment.method || "CASH");
+        toast.success(ok ? t("radiology.receptionFlow.created") : t("radiology.receptionFlow.paymentWarning"));
+      } else {
+        toast.success(t("radiology.receptionFlow.created"));
+      }
+      setModal(null);
+      window.location.href = "/radiology/studies";
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.saveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openNew = (asWalkIn = false) => {
     setModal({ ...emptyForm(), status: asWalkIn ? "CHECKED_IN" : "SCHEDULED" });
     setPatientSearch("");
@@ -544,6 +641,7 @@ export default function ScheduleTab() {
     setCardScan(null);
     setCardScanTarget(null);
     setCardOcrBusy(false);
+    setInitialPayment({ amount: "", method: "CASH" });
   };
 
   const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
@@ -621,6 +719,9 @@ export default function ScheduleTab() {
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
+                  <th className="py-3 px-4">
+                    <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600" checked={items.length > 0 && items.every(a => selected.has(a.id))} onChange={toggleSelectAll} title={t("radiology.schedule.selectAll") as string} />
+                  </th>
                   {[t("radiology.schedule.bookingId"), t("radiology.schedule.patient"), t("radiology.schedule.exam"), t("radiology.schedule.date"), t("radiology.schedule.time"), t("radiology.schedule.status"), t("radiology.schedule.notes"), t("radiology.actions")].map(h => (
                     <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
                   ))}
@@ -631,6 +732,9 @@ export default function ScheduleTab() {
                   const meta = STATUS_META[a.status] || STATUS_META["SCHEDULED"];
                   return (
                     <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+                      <td className="py-3 px-4">
+                        <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600" checked={selected.has(a.id)} onChange={() => toggleSelected(a.id)} />
+                      </td>
                       <td className="py-3 px-4 text-gray-700 dark:text-gray-300" dir="ltr">
                         <span className="text-xs font-mono font-medium">{formatSequentialId(idSettings.bookingPrefix, a.bookingNo, idSettings.digits, idSettings.enabled) || a.id.slice(0, 8)}</span>
                       </td>
@@ -670,6 +774,20 @@ export default function ScheduleTab() {
               </tbody>
             </table>
           </div>
+          {selected.size > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70">
+              <span className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.selectedCount", { count: selected.size })}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button onClick={() => runBulk("checkin")} disabled={!!bulkBusy} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">
+                  {bulkBusy === "checkin" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}{t("radiology.schedule.bulkCheckin")}
+                </button>
+                <button onClick={() => runBulk("convert")} disabled={!!bulkBusy} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 disabled:opacity-50">
+                  {bulkBusy === "convert" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRightLeft className="w-3.5 h-3.5" />}{t("radiology.schedule.bulkConvert")}
+                </button>
+                <button onClick={() => setSelected(new Set())} className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title={t("radiology.cancel") as string}><XMarkIcon className="w-4 h-4" /></button>
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -839,7 +957,35 @@ export default function ScheduleTab() {
                     <option key={d.id} value={d.id}>{d.name}{d.room ? ` — ${d.room}` : ""}</option>
                   ))}
                 </select>
+                {(() => {
+                  const did = modal.deviceId, d = modal.appointmentDate;
+                  if (!did || !d) return null;
+                  const clash = items.find(a => {
+                    if (a.id === modal.id || a.status === "CANCELLED" || a.deviceId !== did) return false;
+                    if (a.appointmentDate?.slice(0, 10) !== d) return false;
+                    const t1 = modal.appointmentTime, t2 = a.appointmentTime;
+                    if (t1 && t2) return t1 === t2;
+                    return true;
+                  });
+                  return clash ? (
+                    <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> {t("radiology.schedule.deviceConflict", { name: clash.patientName, time: clash.appointmentTime || "—" })}
+                    </p>
+                  ) : null;
+                })()}
               </div>
+              {!modal.id && modal.status === "CHECKED_IN" ? (
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>{t("radiology.receptionFlow.initialPayment")}</label>
+                  <div className="flex gap-3">
+                    <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" placeholder={t("radiology.receptionFlow.amountPlaceholder") as string} value={initialPayment.amount} onChange={e => setInitialPayment(p => ({ ...p, amount: e.target.value }))} />
+                    <select className={MODAL_INPUT_CLS} style={{ maxWidth: 200 }} value={initialPayment.method} onChange={e => setInitialPayment(p => ({ ...p, method: e.target.value }))}>
+                      {PAY_METHODS.map(m => <option key={m} value={m}>{t(`radiology.paymentMethod.${m}`)}</option>)}
+                    </select>
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t("radiology.receptionFlow.initialPaymentHint")}</p>
+                </div>
+              ) : null}
               {modal.insuranceCompanyId && Object.keys(coverage).some(k => !coverage[k]?.covered) ? (
                 <div className="sm:col-span-2">
                   <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
@@ -926,12 +1072,17 @@ export default function ScheduleTab() {
                 <input className={MODAL_INPUT_CLS} value={modal.notes} onChange={e => setModal({ ...modal, notes: e.target.value })} />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex flex-wrap justify-end gap-3 mt-6">
               <button onClick={() => setModal(null)} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg disabled:opacity-50">{t("radiology.cancel")}</button>
               {!modal.id && modal.status === "CHECKED_IN" ? (
-                <button onClick={() => save(true)} disabled={saving} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 flex items-center gap-2">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}{t("radiology.schedule.saveAndConvert")}
-                </button>
+                <>
+                  <button onClick={receiveAndCreate} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}{t("radiology.receptionFlow.receiveAndCreate")}
+                  </button>
+                  <button onClick={() => save(true)} disabled={saving} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 flex items-center gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}{t("radiology.schedule.saveAndConvert")}
+                  </button>
+                </>
               ) : (
                 <button onClick={() => save(false)} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}

@@ -1007,6 +1007,7 @@ export const getSidebarConfig = (
             hidden: !isAppActive('radiology-app'),
             items: [
                 { to: '/radiology/dashboard', icon: BarChart3, label: t('sidebar.radiologyDashboard') },
+                { to: '/radiology/queue', icon: ListChecks, label: t('sidebar.radiologyQueue') },
                 { to: '/radiology/schedule', icon: CalendarDays, label: t('sidebar.radiologySchedule') },
                 { to: '/radiology/studies', icon: FolderOpen, label: t('sidebar.radiologyStudies') },
                 { to: '/radiology/reports', icon: FileText, label: t('sidebar.radiologyReports') },

@@ -229,6 +229,11 @@ const radiologyReportRolesRoutes = require("./routes/radiologyReportRolesRoutes"
 const radiologyTagsRoutes = require("./routes/radiologyTagsRoutes");
 const radiologyLabelsRoutes = require("./routes/radiologyLabelsRoutes");
 const radiologyAdminRoutes = require("./routes/radiologyAdminRoutes");
+const radiologyAiReportRoutes = require("./routes/radiologyAiReportRoutes");
+const radiologyCriticalFindingsRoutes = require("./routes/radiologyCriticalFindingsRoutes");
+const radiologyBulkRoutes = require("./routes/radiologyBulkRoutes");
+const radiologyQueueRoutes = require("./routes/radiologyQueueRoutes");
+const radiologyIntelligenceRoutes = require("./routes/radiologyIntelligenceRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -343,6 +348,8 @@ const schedulerRoutes = require("./routes/schedulerRoutes");
 const securityRoutes = require("./routes/securityRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
 const smartRepliesRoutes = require("./routes/smartRepliesRoutes");
+const botAutomationRoutes = require("./routes/botAutomationRoutes");
+const publicBotWidgetRoutes = require("./routes/publicBotWidgetRoutes");
 const shippingZoneRoutes = require("./routes/shippingZoneRoutes");
 const storePagesRoutes = require("./routes/storePagesRoutes");
 
@@ -813,6 +820,8 @@ app.use("/api/v1/lab/contracts", labContractsRoutes);
 app.use("/api/v1/lab/home-visits", labHomeVisitsRoutes);
 app.use("/api/v1/lab/sample-types", labSampleTypesRoutes);
 app.use("/api/v1/radiology", radiologyReportRolesRoutes);
+app.use("/api/v1/radiology", radiologyCriticalFindingsRoutes);
+app.use("/api/v1/radiology", radiologyAiReportRoutes);
 app.use("/api/v1/radiology", radiologyRoutes);
 app.use("/api/v1/radiology", radiologyInsuranceRoutes);
 app.use("/api/v1/radiology", radiologyQuoteRoutes);
@@ -820,6 +829,9 @@ app.use("/api/v1/radiology", radiologyRadiologistsRoutes);
 app.use("/api/v1/radiology", radiologyTagsRoutes);
 app.use("/api/v1/radiology", radiologyLabelsRoutes);
 app.use("/api/v1/radiology", radiologyAdminRoutes);
+app.use("/api/v1/radiology/bulk", radiologyBulkRoutes);
+app.use("/api/v1/radiology/queue", radiologyQueueRoutes);
+app.use("/api/v1/radiology/intelligence", radiologyIntelligenceRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);
@@ -916,6 +928,8 @@ app.use("/api/v1/hr/lateness", require("./routes/latenessRoutes"));
 app.use("/api/v1/settings", settingsRoutes);
 app.use("/api/v1/user/settings", require("./routes/userSettingsRoutes"));
 app.use("/api/v1/smart-replies", smartRepliesRoutes);
+app.use("/api/v1/bot-automation", botAutomationRoutes);
+app.use("/api/v1/public/bot-widget", publicBotWidgetRoutes);
 app.use("/api/v1/companies", companyRoutes);
 app.use("/api/v1/permissions", require("./routes/permissionRoutes"));
 app.use("/api/v1/company-connections", companyConnectionRoutes);
@@ -1317,6 +1331,13 @@ app.get("/api/v1/permissions", (req, res) => {
     },
   });
 });
+
+// TikTok integrations (publish / shop / auth / display / events)
+app.use("/api/v1/tiktok/publish", require("./routes/tiktokPublishRoutes"));
+app.use("/api/v1/tiktok/shop", require("./routes/tiktokShopRoutes"));
+app.use("/api/v1/tiktok/auth", require("./routes/tiktokAuthRoutes"));
+app.use("/api/v1/tiktok/display", require("./routes/tiktokDisplayRoutes"));
+app.use("/api/v1/tiktok/events", require("./routes/tiktokEventsRoutes"));
 
 // 404 Handler - Must return JSON, not HTML
 app.use((req, res, next) => {

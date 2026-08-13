@@ -1,18 +1,19 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark, FolderTree } from "lucide-react";
+import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark, FolderTree, ListChecks } from "lucide-react";
 
 export type TabId =
   | "dashboard" | "patients" | "studies" | "reports"
   | "exam-types" | "exam-categories" | "price-lists" | "contracts" | "branches" | "invoices"
   | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "insurance-companies" | "price-quote" | "radiologists"
-  | "schedule" | "referring-physicians" | "statistics" | "cashier-shifts" | "settings";
+  | "schedule" | "queue" | "referring-physicians" | "statistics" | "cashier-shifts" | "settings";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "radiology.tabs.dashboard", icon: LayoutDashboard },
   { id: "patients", label: "radiology.tabs.patients", icon: Users },
   { id: "schedule", label: "radiology.tabs.schedule", icon: CalendarDays },
+  { id: "queue", label: "radiology.tabs.queue", icon: ListChecks },
   { id: "studies", label: "radiology.tabs.studies", icon: FolderOpen },
   { id: "reports", label: "radiology.tabs.reports", icon: FileText },
   { id: "exam-types", label: "radiology.tabs.exam-types", icon: ScanLine },
@@ -282,3 +283,25 @@ export const fetchIdSettings = async (): Promise<RadiologyIdSettings> => {
     return { ...DEFAULT_ID_SETTINGS };
   }
 };
+
+// ==================== STAGE STEPPER ====================
+
+export type RadiologyStage = "RECEPTION" | "IMAGING" | "REPORT" | "DELIVERED";
+
+/** Map a study's radiology status to its primary pipeline stage (single-stage stepper). */
+export const derivePrimaryStage = (study: { status?: string }): RadiologyStage => {
+  const status = study?.status || "";
+  if (status === "PENDING_IMAGING" || status === "IMAGED") return "IMAGING";
+  if (status === "PENDING_REPORT" || status === "REPORTED") return "REPORT";
+  if (status === "DELIVERED") return "DELIVERED";
+  return "RECEPTION";
+};
+
+export const RADIOLOGY_STAGE_META: Record<RadiologyStage, { label: string; color: string }> = {
+  RECEPTION: { label: "radiology.stage.RECEPTION", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  IMAGING: { label: "radiology.stage.IMAGING", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  REPORT: { label: "radiology.stage.REPORT", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  DELIVERED: { label: "radiology.stage.DELIVERED", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+};
+
+export const STAGE_ORDER: RadiologyStage[] = ["RECEPTION", "IMAGING", "REPORT", "DELIVERED"];

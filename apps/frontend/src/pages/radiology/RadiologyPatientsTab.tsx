@@ -17,9 +17,36 @@ interface RadiologyPatient {
 
 interface PatientStudy {
   id: string; studyNumber?: string; examTypeName?: string;
-  status?: string; report?: { reportStatus?: string }; priceSnapshot?: number;
-  billingType?: string; createdAt?: string;
+  status?: string; report?: { reportStatus?: string; reportText?: string } | null;
+  priceSnapshot?: number; paidAmount?: number; paymentStatus?: string;
+  billingType?: string; appointmentId?: string; bookingNo?: number | null;
+  createdAt?: string;
 }
+
+interface StudyVisit {
+  key: string;
+  appointmentId?: string;
+  bookingNo?: number | null;
+  ts: number;
+  date: string;
+  studies: PatientStudy[];
+}
+
+const groupIntoVisits = (rows: PatientStudy[]): StudyVisit[] => {
+  const map = new Map<string, StudyVisit>();
+  for (const s of rows) {
+    const key = s.appointmentId ? `appt:${s.appointmentId}` : `study:${s.id}`;
+    const ts = s.createdAt ? new Date(s.createdAt).getTime() || 0 : 0;
+    let v = map.get(key);
+    if (!v) {
+      v = { key, appointmentId: s.appointmentId, bookingNo: s.bookingNo ?? null, ts, date: s.createdAt || "", studies: [] };
+      map.set(key, v);
+    }
+    if (ts > v.ts) { v.ts = ts; v.date = s.createdAt || v.date; }
+    v.studies.push(s);
+  }
+  return [...map.values()].sort((a, b) => b.ts - a.ts);
+};
 
 const GENDER_LABEL: Record<string, string> = { male: "radiology.gender.male", female: "radiology.gender.female" };
 const STATUS_LABEL: Record<string, string> = { ACTIVE: "radiology.patients.active", INACTIVE: "radiology.patients.inactive", REVIEW: "radiology.patients.underReview" };
@@ -43,7 +70,7 @@ export default function RadiologyPatientsTab() {
   const [insuranceCompanies, setInsuranceCompanies] = useState<{ id: string; name: string }[]>([]);
   const [modal, setModal] = useState<Partial<BookingPatient> | null | undefined>(undefined);
   const [recordId, setRecordId] = useState<string | null>(null);
-  const [recordStudies, setRecordStudies] = useState<PatientStudy[]>([]);
+  const [recordVisits, setRecordVisits] = useState<StudyVisit[]>([]);
   const [recordLoading, setRecordLoading] = useState(false);
   const [recordPatient, setRecordPatient] = useState<RadiologyPatient | null>(null);
   const [mergeSource, setMergeSource] = useState<RadiologyPatient | null>(null);
@@ -158,7 +185,7 @@ export default function RadiologyPatientsTab() {
 
   const viewRecord = async (p: RadiologyPatient) => {
     setRecordPatient(p);
-    setRecordStudies([]);
+    setRecordVisits([]);
     setRecordLoading(true);
     try {
       const fullName = `${p.firstName}${p.lastName ? " " + p.lastName : ""}`.trim();
@@ -166,7 +193,7 @@ export default function RadiologyPatientsTab() {
       if (!rows.items?.length && fullName) {
         rows = await fetchJson<{ items?: PatientStudy[] }>(`${api("studies")}&patientName=${encodeURIComponent(fullName)}&limit=100`);
       }
-      setRecordStudies(rows.items || []);
+      setRecordVisits(groupIntoVisits(rows.items || []));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("radiology.patients.fetchStudiesFailed"));
     } finally {
@@ -284,38 +311,75 @@ export default function RadiologyPatientsTab() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setRecordPatient(null)}>
           <div className={`${MODAL_CONTENT_CLS} max-h-[85vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">{t("radiology.patients.patientStudies")} — {recordPatient.firstName} {recordPatient.lastName || ""}</h3>
+              <h3 className="text-lg font-bold">{t("radiology.patientTimeline.title")} — {recordPatient.firstName} {recordPatient.lastName || ""}</h3>
               <button onClick={() => setRecordPatient(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             {recordLoading ? (
               <p className="text-center py-10 text-gray-400">{t("radiology.loadingEllipsis")}</p>
-            ) : recordStudies.length === 0 ? (
-              <p className="text-center py-10 text-gray-400">{t("radiology.patients.noStudies")}</p>
+            ) : recordVisits.length === 0 ? (
+              <p className="text-center py-10 text-gray-400">{t("radiology.patientTimeline.noVisits")}</p>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b dark:border-gray-700 text-gray-500 dark:text-gray-400">
-                    <th className="py-2 px-3 text-right font-medium">{t("radiology.patients.studyNumber")}</th>
-                    <th className="py-2 px-3 text-right font-medium">{t("radiology.patients.exam")}</th>
-                    <th className="py-2 px-3 text-right font-medium">{t("radiology.patients.status")}</th>
-                    <th className="py-2 px-3 text-right font-medium">{t("radiology.patients.report")}</th>
-                    <th className="py-2 px-3 text-right font-medium">{t("radiology.patients.price")}</th>
-                    <th className="py-2 px-3 text-right font-medium">{t("radiology.date")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recordStudies.map(s => (
-                    <tr key={s.id} className="border-b dark:border-gray-700/50 last:border-0">
-                      <td className="py-2 px-3" dir="ltr">{s.studyNumber || "—"}</td>
-                      <td className="py-2 px-3">{s.examTypeName || "—"}</td>
-                      <td className="py-2 px-3">{s.status || "—"}</td>
-                      <td className="py-2 px-3">{s.report?.reportStatus || "—"}</td>
-                      <td className="py-2 px-3">{Number(s.priceSnapshot || 0).toFixed(0)} {t("radiology.currency")}</td>
-                      <td className="py-2 px-3">{s.createdAt ? new Date(s.createdAt).toLocaleDateString("ar-EG") : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.patientTimeline.visits", { count: recordVisits.length })}</p>
+                {recordVisits.map((v, idx) => (
+                  <div key={v.key} className="rounded-lg border dark:border-gray-700 overflow-hidden">
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-gray-50 dark:bg-gray-800/70 border-b dark:border-gray-700">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">
+                          {v.appointmentId ? t("radiology.patientTimeline.visitNumber", { n: recordVisits.length - idx }) : t("radiology.patientTimeline.singleVisit")}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 whitespace-nowrap">
+                          {t("radiology.patientTimeline.studyCount", { count: v.studies.length })}
+                        </span>
+                        {v.bookingNo ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap" dir="ltr">
+                            {t("radiology.patientTimeline.bookingNo")}: {formatSequentialId(idSettings.bookingPrefix, v.bookingNo, idSettings.digits, idSettings.enabled) || v.bookingNo}
+                          </span>
+                        ) : null}
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{v.date ? new Date(v.date).toLocaleDateString("ar-EG") : "—"}</span>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b dark:border-gray-700 text-gray-500 dark:text-gray-400">
+                          <th className="py-2 px-3 text-right font-medium">{t("radiology.patients.studyNumber")}</th>
+                          <th className="py-2 px-3 text-right font-medium">{t("radiology.patients.exam")}</th>
+                          <th className="py-2 px-3 text-right font-medium">{t("radiology.patients.status")}</th>
+                          <th className="py-2 px-3 text-right font-medium">{t("radiology.patientTimeline.report")}</th>
+                          <th className="py-2 px-3 text-right font-medium">{t("radiology.paid")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {v.studies.map(s => (
+                          <tr key={s.id} className="border-b dark:border-gray-700/50 last:border-0">
+                            <td className="py-2 px-3" dir="ltr">{s.studyNumber || "—"}</td>
+                            <td className="py-2 px-3">{s.examTypeName || "—"}</td>
+                            <td className="py-2 px-3">{s.status || "—"}</td>
+                            <td className="py-2 px-3 max-w-[240px]">
+                              {s.report?.reportStatus ? (
+                                <div className="truncate" title={s.report?.reportText || s.report?.reportStatus}>
+                                  <span className="text-blue-600 dark:text-blue-400">{s.report?.reportStatus}</span>
+                                  {s.report?.reportText ? <span className="text-gray-500 dark:text-gray-400"> — {s.report.reportText.slice(0, 60)}{s.report.reportText.length > 60 ? "…" : ""}</span> : null}
+                                </div>
+                              ) : <span className="text-gray-400">—</span>}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              {Number(s.paidAmount || 0) > 0 ? (
+                                <span className="text-green-600 dark:text-green-400">{Number(s.paidAmount).toFixed(0)} {t("radiology.currency")}</span>
+                              ) : (
+                                <span className="text-gray-400">0 {t("radiology.currency")}</span>
+                              )}
+                              {s.paymentStatus && s.paymentStatus !== "UNPAID" && s.paymentStatus !== "PAID" ? (
+                                <span className="text-xs text-amber-600 dark:text-amber-400"> ({s.paymentStatus})</span>
+                              ) : null}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

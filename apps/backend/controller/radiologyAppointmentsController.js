@@ -366,7 +366,7 @@ const convertToStudy = async (req, res) => {
     if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
     if (appointment.status === 'CANCELLED') return res.status(400).json({ success: false, error: 'لا يمكن تحويل حجز ملغي' });
 
-    const { generateStudyNumber } = require('../utils/dicomUtil');
+    const { generateStudyNumber, deriveAccession } = require('../utils/orderNumbering');
     // Multi-exam: resolve the exam list from examTypeIds (fallback to the legacy single examTypeId)
     const examIds = (() => {
       try {
@@ -429,7 +429,7 @@ const convertToStudy = async (req, res) => {
     };
 
     const studies = [];
-    for (const id of examIds) {
+    for (const [index, id] of examIds.entries()) {
       const examType = examById.get(id);
       if (!examType) continue;
       // Resolve price: entity price > exam base
@@ -447,10 +447,16 @@ const convertToStudy = async (req, res) => {
           error: `نوع الفحص "${examType.name}" غير مسعّر — حدد سعراً للفحص أولاً أو اختر فحصاً آخر`,
         });
       }
+      const studyNumber = generateStudyNumber({
+        bookingNo: appointment.bookingNo,
+        examIndex: index,
+        date: appointment.appointmentDate,
+      });
       const study = await prisma.radiologyStudy.create({
         data: {
           ...baseStudyData,
-          studyNumber: generateStudyNumber(),
+          studyNumber,
+          accessionNumber: deriveAccession(studyNumber),
           examTypeId: examType.id,
           examTypeName: examType.name,
           modality: resolveModality(examType.examCategory || examType.category),

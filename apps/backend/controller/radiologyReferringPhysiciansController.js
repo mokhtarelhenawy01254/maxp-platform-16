@@ -117,6 +117,81 @@ const deletePhysician = async (req, res) => {
   }
 };
 
+/**
+ * نتائج طبيب مُحيل: دراسات مكتملة/مسلّمة لمرضى أحالهم.
+ * يعتمد "مقروء/غير مقروء" محلياً في الواجهة (localStorage) — لا يُخزَّن هنا.
+ */
+const getPhysicianResults = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const { limit } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    const physician = await prisma.radiologyReferringPhysician.findFirst({ where: { id, companyId } });
+    if (!physician) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
+
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+
+    const where = {
+      companyId,
+      status: { in: ['DELIVERED', 'REPORTED'] },
+      OR: [{ referringPhysicianId: physician.id }, { referralDoctor: physician.name }],
+    };
+
+    const studies = await prisma.radiologyStudy.findMany({
+      where,
+      select: {
+        id: true,
+        studyNumber: true,
+        patientName: true,
+        examTypeName: true,
+        modality: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        report: { select: { reportStatus: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limitNum,
+    });
+
+    // deliveredAt من أول حركة DELIVERED في الـ statusHistory (أي dimension)
+    const ids = studies.map((s) => s.id);
+    let deliveredByStudy = {};
+    if (ids.length > 0) {
+      const history = await prisma.radiologyStudyStatusHistory.findMany({
+        where: { studyId: { in: ids }, status: 'DELIVERED' },
+        select: { studyId: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      deliveredByStudy = {};
+      for (const h of history) {
+        if (!deliveredByStudy[h.studyId]) deliveredByStudy[h.studyId] = h.createdAt;
+      }
+    }
+
+    const items = studies.map((s) => ({
+      id: s.id,
+      studyNumber: s.studyNumber,
+      patientName: s.patientName,
+      examTypeName: s.examTypeName,
+      modality: s.modality,
+      status: s.status,
+      reportStatus: s.report?.reportStatus || null,
+      createdAt: s.createdAt,
+      deliveredAt: deliveredByStudy[s.id] || s.updatedAt || null,
+    }));
+
+    res.json({ success: true, data: { physician: { id: physician.id, name: physician.name }, items } });
+  } catch (error) {
+    console.error('Error fetching radiology physician results:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب نتائج الطبيب' });
+  }
+};
+
 const physicianCommissions = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -174,4 +249,4 @@ const physicianCommissions = async (req, res) => {
   }
 };
 
-module.exports = { listPhysicians, createPhysician, updatePhysician, deletePhysician, physicianCommissions };
+module.exports = { listPhysicians, createPhysician, updatePhysician, deletePhysician, physicianCommissions, getPhysicianResults };

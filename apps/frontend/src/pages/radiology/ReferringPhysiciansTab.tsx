@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, BadgePercent } from "lucide-react";
-import { api, fetchJson, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, BadgePercent, FileText, CheckCircle2, Circle } from "lucide-react";
+import { api, fetchJson, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyStatusMap, getCompanyId } from "./shared";
 
 interface Physician {
   id: string; name: string; phone?: string; specialty?: string;
@@ -10,6 +10,12 @@ interface Physician {
 }
 
 interface CommissionRow { physicianId: string; name?: string; count: number; amount: number; commission: number; commissionType?: string; commissionValue?: number; }
+
+interface ResultItem {
+  id: string; studyNumber?: string; patientName: string; examTypeName?: string;
+  modality?: string; status: string; reportStatus?: string | null;
+  createdAt: string; deliveredAt?: string | null;
+}
 
 const COMMISSION_LABEL: Record<string, string> = { NONE: "radiology.referringPhysicians.none", PERCENTAGE: "radiology.referringPhysicians.percentage", FIXED: "radiology.referringPhysicians.fixed" };
 
@@ -22,6 +28,31 @@ export default function ReferringPhysiciansTab() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<{ id?: string; name: string; phone: string; specialty: string; commissionType: string; commissionValue: string } | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const READ_KEY = () => `radiology.physicianResults.read.${getCompanyId() || "default"}`;
+  const [results, setResults] = useState<{ physician: Physician; items: ResultItem[] } | null>(null);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    try { return new Set<string>(JSON.parse(localStorage.getItem(READ_KEY()) || "[]")); } catch { return new Set<string>(); }
+  });
+
+  const openResults = async (p: Physician) => {
+    setResults({ physician: p, items: [] });
+    setResultsLoading(true);
+    try {
+      const data = await fetchJson<{ items: ResultItem[] }>(api(`intelligence/referring-physicians/${p.id}/results`));
+      const items = data.items || [];
+      setResults({ physician: p, items });
+      const updated = new Set(readIds);
+      items.forEach(i => updated.add(i.id));
+      setReadIds(updated);
+      try { localStorage.setItem(READ_KEY(), JSON.stringify([...updated])); } catch { /* ignore */ }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.physicianResults.loadFailed"));
+    } finally {
+      setResultsLoading(false);
+    }
+  };
 
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     try {
@@ -137,6 +168,7 @@ export default function ReferringPhysiciansTab() {
                     <td className="py-3 px-4">{t(COMMISSION_LABEL[p.commissionType] || p.commissionType)}{p.commissionType === "PERCENTAGE" ? ` ${p.commissionValue}%` : p.commissionType === "FIXED" ? ` ${p.commissionValue} ${t("radiology.currency")}` : ""}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
+                        <button onClick={() => openResults(p)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.physicianResults.button")}><FileText className="w-4 h-4" /></button>
                         <button onClick={() => setModal({ id: p.id, name: p.name, phone: p.phone || "", specialty: p.specialty || "", commissionType: p.commissionType, commissionValue: String(p.commissionValue) })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.edit")}><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => remove(p)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title={t("radiology.delete")}><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -187,6 +219,61 @@ export default function ReferringPhysiciansTab() {
               <button onClick={save} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {results && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setResults(null)}>
+          <div className={`${MODAL_CONTENT_CLS} max-w-2xl max-h-[80vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">{t("radiology.physicianResults.title")}</h3>
+              <button onClick={() => setResults(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("radiology.physicianResults.subtitle", { name: results.physician.name })}</p>
+            {resultsLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            ) : results.items.length === 0 ? (
+              <p className="text-center py-16 text-gray-400 dark:text-gray-500">{t("radiology.physicianResults.empty")}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[600px] text-sm">
+                  <thead>
+                    <tr className="border-b dark:border-gray-700 text-gray-500 dark:text-gray-400 text-right">
+                      <th className="py-2 px-2">{t("radiology.physicianResults.patient")}</th>
+                      <th className="py-2 px-2">{t("radiology.physicianResults.exam")}</th>
+                      <th className="py-2 px-2">{t("radiology.physicianResults.date")}</th>
+                      <th className="py-2 px-2">{t("radiology.physicianResults.status")}</th>
+                      <th className="py-2 px-2">{t("radiology.physicianResults.read")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.items.map(i => (
+                      <tr key={i.id} className="border-b dark:border-gray-700/50">
+                        <td className="py-2 px-2 font-medium">{i.patientName}</td>
+                        <td className="py-2 px-2">{i.examTypeName || i.modality || "—"}</td>
+                        <td className="py-2 px-2 whitespace-nowrap">{new Date(i.createdAt).toLocaleDateString("ar-EG")}</td>
+                        <td className="py-2 px-2">
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs ${RadiologyStatusMap[i.status]?.color || "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"}`}>
+                            {RadiologyStatusMap[i.status] ? t(RadiologyStatusMap[i.status].label) : i.status}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2">
+                          {readIds.has(i.id) ? (
+                            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs"><CheckCircle2 className="w-3.5 h-3.5" />{t("radiology.physicianResults.read")}</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-gray-400 dark:text-gray-500 text-xs"><Circle className="w-3.5 h-3.5" />{t("radiology.physicianResults.unread")}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="flex justify-end mt-6">
+              <button onClick={() => setResults(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">{t("radiology.close")}</button>
             </div>
           </div>
         </div>

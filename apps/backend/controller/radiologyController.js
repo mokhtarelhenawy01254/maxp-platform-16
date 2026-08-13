@@ -6,6 +6,7 @@ const { findOrCreatePatient } = require('../services/bookingPatientService');
 const { getRadiologyGuards } = require('../utils/radiologyGuards');
 const { deriveRadiologyOrderStatus, recordRadiologyStatusHistory, syncStudyOrderStatus } = require('../utils/radiologyStatusHistory');
 const { MODALITY_BY_CATEGORY, resolveModality } = require('../utils/radiologyModality');
+const { notifyStudyDelivery } = require('../utils/radiologyDeliveryNotify');
 
 const RADIOLOGY_STUDY_CHAIN = ['PENDING_IMAGING', 'IMAGED', 'PENDING_REPORT', 'REPORTED', 'DELIVERED'];
 const RADIOLOGY_REPORT_CHAIN = ['DRAFT', 'REVIEWED', 'SIGNED', 'DELIVERED'];
@@ -273,9 +274,12 @@ const listStudies = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { patientName, patientId, nationalId, insuranceNumber, studyNumber, status, reportStatus, criticalCategory, hasReport, dateFrom, dateTo, page, limit } = req.query;
+    const { patientName, patientId, nationalId, insuranceNumber, studyNumber, status, reportStatus, criticalCategory, hasReport, appointmentId, dateFrom, dateTo, page, limit } = req.query;
     const where = { companyId };
 
+    if (appointmentId && String(appointmentId).trim()) {
+      where.appointmentId = String(appointmentId).trim();
+    }
     if (patientId && String(patientId).trim()) {
       where.patientId = String(patientId).trim();
     }
@@ -325,11 +329,24 @@ const listStudies = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const [studies, total] = await Promise.all([
-      prisma.radiologyStudy.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limitNum, include: { report: true } }),
+      prisma.radiologyStudy.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+        include: {
+          report: true,
+          appointment: { select: { bookingNo: true, appointmentDate: true, status: true } },
+        },
+      }),
       prisma.radiologyStudy.count({ where }),
     ]);
 
-    res.json({ success: true, data: { items: studies, total, page: pageNum, limit: limitNum } });
+    const items = studies.map(({ appointment, ...s }) => ({
+      ...s,
+      bookingNo: appointment?.bookingNo ?? null,
+    }));
+    res.json({ success: true, data: { items, total, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('Error fetching radiology studies:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب حالات الأشعة' });
@@ -400,7 +417,7 @@ const getStudyDetails = async (req, res) => {
     res.json({
       success: true,
       data: {
-        study: { ...study, orderStatus },
+        study: { ...study, orderStatus, bookingNo: appointment?.bookingNo ?? null },
         appointment,
         images: images.map(formatImage),
         report,
@@ -1226,6 +1243,13 @@ const markDelivered = async (req, res) => {
       changedBy: req.user?.id || req.user?.email || null,
       userName: signerName(req),
     });
+
+    // Best-effort WhatsApp delivery notification — never blocks/breaks the response.
+    try {
+      await notifyStudyDelivery(prisma, { ...deliveredStudy, report: deliveredReport }, { companyId });
+    } catch (notifyError) {
+      console.warn('notifyStudyDelivery failed (non-blocking):', notifyError?.message || notifyError);
+    }
 
     res.json({ success: true, data: { study: deliveredStudy, report: deliveredReport } });
   } catch (error) {

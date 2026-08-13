@@ -2,10 +2,11 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpCircle, Banknote, Copy, ExternalLink, FileText, FolderOpen, Info, Loader2, Plus, Printer, RefreshCw, Save, Search, Upload, X as XMarkIcon } from "lucide-react";
+import { ArrowUpCircle, Banknote, ChevronDown, Copy, ExternalLink, FileText, FolderOpen, Info, Layers, Loader2, Plus, Printer, RefreshCw, Save, Search, Upload, X as XMarkIcon } from "lucide-react";
 import tokenManager from "../../utils/tokenManager";
 import {
-  api, fetchJson, getCompanyId, RadiologyStudy, RadiologyStudyPayment, RadiologyStatusMap, RadiologySubmissionStatusMap,
+  api, fetchJson, getCompanyId, RadiologyReport, RadiologyStudy, RadiologyStudyPayment, RadiologyStatusMap, RadiologySubmissionStatusMap,
+  RADIOLOGY_CRITICAL_META, criticalCategoryText,
   parsePatientFlags, flagMeta, STUDY_STATUS, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
 import RadiologyViewerModal from "./RadiologyViewerModal";
@@ -35,6 +36,7 @@ type StudyWithRadiologist = RadiologyStudy & {
   assignedRadiologistId?: string;
   assignedRadiologistName?: string;
   radiologistLocation?: string;
+  bookingNo?: number | null;
 };
 
 const filterCls = "border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100";
@@ -64,6 +66,10 @@ export default function StudiesTab() {
   const [payMethod, setPayMethod] = useState("CASH");
   const [savingPay, setSavingPay] = useState(false);
   const [refundAmount, setRefundAmount] = useState("");
+  const [viewMode, setViewMode] = useState<"studies" | "orders">("studies");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<"advance" | "deliver" | "labels" | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const uploadImages = async (id: string, files: FileList | null) => {
@@ -162,7 +168,7 @@ export default function StudiesTab() {
   };
 
   const duplicateStudy = async (s: StudyWithRadiologist) => {
-    if (!window.confirm(t("radiology.studies.duplicateConfirm", { name: s.patientName }))) return;
+    if (!window.confirm(t("radiology.studies.duplicateConfirm", { name: s.patientName }) as string)) return;
     try {
       await fetchJson(api(`studies/${s.id}/duplicate`), { method: "POST" });
       toast.success(t("radiology.studies.duplicateCreated"));
@@ -203,6 +209,66 @@ export default function StudiesTab() {
       .catch(() => setRadiologists([]));
   }, []);
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (checked: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      (studies || []).forEach(s => {
+        if (checked) next.add(s.id); else next.delete(s.id);
+      });
+      return next;
+    });
+  };
+
+  const toggleGroupExpand = (key: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const runBulk = async (kind: "advance" | "deliver" | "labels") => {
+    if (bulkBusy) return;
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBulkBusy(kind);
+    try {
+      if (kind === "labels") {
+        const data = await fetchJson<{ items: { id: string; studyNumber?: string }[] }>(api("bulk/studies/labels"), {
+          method: "POST",
+          body: JSON.stringify({ ids }),
+        });
+        (data.items || []).forEach(item => window.open(api(`studies/${item.id}/label`), "_blank"));
+        toast.success(t("radiology.order.bulkLabelsOpened", { count: (data.items || []).length }));
+      } else {
+        const data = await fetchJson<{ successCount: number; failed: { id: string; error?: string }[] }>(api(`bulk/studies/${kind}`), {
+          method: "POST",
+          body: JSON.stringify({ ids }),
+        });
+        const failedCount = (data.failed || []).length;
+        if (failedCount > 0) {
+          toast.warning(t("radiology.order.bulkResultPartial", { success: data.successCount ?? ids.length - failedCount, failed: failedCount }));
+        } else {
+          toast.success(t("radiology.order.bulkResult", { success: data.successCount ?? ids.length }));
+        }
+      }
+      setSelectedIds(new Set());
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.order.bulkFailed"));
+    } finally {
+      setBulkBusy(null);
+    }
+  };
+
   const statusBadge = (value?: string) => {
     const meta = value ? RadiologyStatusMap[value] : undefined;
     if (meta) return <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${meta.color}`}>{t(meta.label)}</span>;
@@ -213,6 +279,21 @@ export default function StudiesTab() {
     const meta = value ? RadiologySubmissionStatusMap[value] : undefined;
     if (meta) return <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${meta.color}`}>{t(meta.label)}</span>;
     return <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "—"}</span>;
+  };
+
+  const criticalBadge = (r?: RadiologyReport | null) => {
+    const cat = criticalCategoryText(r);
+    if (!cat) return null;
+    const meta = RADIOLOGY_CRITICAL_META[cat];
+    if (!meta) return null;
+    return (
+      <span
+        className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${meta.color}`}
+        title={r?.criticalFindingText || t(meta.label) as string}
+      >
+        {t(meta.label)}
+      </span>
+    );
   };
 
   const toggleExpand = (s: RadiologyStudy) => {
@@ -292,6 +373,112 @@ export default function StudiesTab() {
 
   const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "—");
 
+  const renderStudyRow = (s: StudyWithRadiologist) => (
+    <Fragment key={s.id}>
+      <tr className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+        <td className="py-3 px-4 w-8">
+          <input type="checkbox" className="w-4 h-4" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} />
+        </td>
+        <td className="py-3 px-4 whitespace-nowrap" dir="ltr">{s.bookingNo ? String(s.bookingNo).padStart(4, "0") : "—"}</td>
+        <td className="py-3 px-4 font-medium" dir="ltr">{s.studyNumber || s.id.slice(0, 8)}</td>
+        <td className="py-3 px-4 font-medium">
+          {s.patientName}
+          {s.emergency ? <span className="mr-2 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{t("radiology.studies.emergency")}</span> : null}
+          {parsePatientFlags(s.patientFlags).map(f => {
+            const meta = flagMeta(f);
+            return meta ? <span key={f} className={`mr-1.5 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap inline-block align-middle ${meta.color}`}>{t(meta.label)}</span> : null;
+          })}
+        </td>
+        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "—"}</td>
+        <td className="py-3 px-4">
+          <div className="flex flex-col gap-1 min-w-[150px]">
+            <select
+              className={`${MODAL_INPUT_CLS} text-xs py-1.5`}
+              value={s.assignedRadiologistId || ""}
+              onChange={e => assignRadiologist(s, e.target.value)}
+              disabled={assigningId === s.id}
+            >
+              <option value="">{t("radiology.studies.unassigned")}</option>
+              {radiologists.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            {s.assignedRadiologistName ? (
+              <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">{s.assignedRadiologistName}</span>
+            ) : null}
+            {s.radiologistLocation ? (
+              <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${s.radiologistLocation === "ON_SITE" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" : "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"}`}>
+                {s.radiologistLocation === "ON_SITE" ? t("radiology.studies.onSite") : t("radiology.studies.offSite")}
+              </span>
+            ) : null}
+          </div>
+        </td>
+        <td className="py-3 px-4">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {statusBadge(s.status)}
+            {criticalBadge(s.report)}
+          </div>
+        </td>
+        <td className="py-3 px-4">{submissionBadge(s.submissionStatus)}</td>
+        <td className="py-3 px-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtDate(s.createdAt)}</td>
+        <td className="py-3 px-4">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button onClick={() => navigate(`/radiology/study/${s.id}`)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.details.viewDetails") as string}><Info className="w-4 h-4" /></button>
+            <button onClick={() => navigate(`/radiology/study/${s.id}`)} className="p-1.5 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/30 rounded" title={t("radiology.studies.openReport") as string}><FileText className="w-4 h-4" /></button>
+            <input
+              ref={el => { fileInputs.current[s.id] = el; }}
+              type="file"
+              accept=".dcm,.DCM,application/dicom,application/octet-stream"
+              multiple
+              className="hidden"
+              onChange={e => { uploadImages(s.id, e.target.files); e.target.value = ""; }}
+            />
+            <button onClick={() => fileInputs.current[s.id]?.click()} disabled={uploadingId === s.id} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded disabled:opacity-40" title={t("radiology.studies.uploadImages") as string}>{uploadingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}</button>
+            <button onClick={() => setViewerStudyId(s.id)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.studies.viewImages") as string}><FolderOpen className="w-4 h-4" /></button>
+            <button onClick={() => setReportStudyId(s.id)} className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded" title={t("radiology.studies.enterReport") as string}><FileText className="w-4 h-4" /></button>
+            <button onClick={() => printLabel(s.id)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 rounded" title={t("radiology.studies.printLabel") as string}><Printer className="w-4 h-4" /></button>
+            <button onClick={() => openPayment(s.id)} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title={t("radiology.studies.payment") as string}><Banknote className="w-4 h-4" /></button>
+            <button onClick={() => duplicateStudy(s)} className="p-1.5 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/30 rounded" title={t("radiology.studies.duplicate") as string}><Copy className="w-4 h-4" /></button>
+            {s.rologyStudyLink ? (
+              <a href={s.rologyStudyLink} target="_blank" rel="noreferrer" className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.studies.openInRology") as string}><ExternalLink className="w-4 h-4" /></a>
+            ) : null}
+            <button onClick={() => toggleExpand(s)} className={`px-2 py-1 text-xs rounded border font-medium ${expanded.has(s.id) ? "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"}`} title={t("radiology.studies.trackRology") as string}>Rology</button>
+            <button onClick={() => advanceStatus(s)} disabled={advancingId === s.id || !STUDY_STATUS[s.status]} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded disabled:opacity-40" title={t("radiology.studies.advanceStatus") as string}>{advancingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpCircle className="w-4 h-4" />}</button>
+          </div>
+        </td>
+      </tr>
+      {expanded.has(s.id) && (
+        <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
+          <td colSpan={10} className="py-4 px-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.studies.rologySubmissionStatus")}</label>
+                <select className={MODAL_INPUT_CLS} value={drafts[s.id]?.submissionStatus ?? ""} onChange={e => setDrafts(d => ({ ...d, [s.id]: { ...(d[s.id] ?? emptyRologyDraft()), submissionStatus: e.target.value } }))}>
+                  {Object.entries(RadiologySubmissionStatusMap).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.studies.rologyStudyLink")}</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={drafts[s.id]?.rologyStudyLink ?? ""} onChange={e => setDrafts(d => ({ ...d, [s.id]: { ...(d[s.id] ?? emptyRologyDraft()), rologyStudyLink: e.target.value } }))} placeholder="https://..." />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.studies.rologyReportLink")}</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={drafts[s.id]?.rologyReportLink ?? ""} onChange={e => setDrafts(d => ({ ...d, [s.id]: { ...(d[s.id] ?? emptyRologyDraft()), rologyReportLink: e.target.value } }))} placeholder="https://..." />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.studies.rologistName")}</label>
+                <input className={MODAL_INPUT_CLS} value={drafts[s.id]?.rologyRadiologist ?? ""} onChange={e => setDrafts(d => ({ ...d, [s.id]: { ...(d[s.id] ?? emptyRologyDraft()), rologyRadiologist: e.target.value } }))} placeholder={t("radiology.studies.rologistPlaceholder") as string} />
+              </div>
+            </div>
+            <div className="flex justify-end mt-4">
+              <button onClick={() => saveRology(s.id)} disabled={savingId === s.id} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
+                {savingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}{t("radiology.save")}
+              </button>
+            </div>
+          </td>
+        </tr>
+      )}
+    </Fragment>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -310,16 +497,30 @@ export default function StudiesTab() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center rounded-lg border dark:border-gray-600 overflow-hidden text-sm">
+          <button
+            onClick={() => setViewMode("orders")}
+            className={`flex items-center gap-1.5 px-3 py-2 ${viewMode === "orders" ? "bg-blue-600 text-white" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
+          >
+            <Layers className="w-4 h-4" />{t("radiology.order.viewAsOrders")}
+          </button>
+          <button
+            onClick={() => setViewMode("studies")}
+            className={`flex items-center gap-1.5 px-3 py-2 ${viewMode === "studies" ? "bg-blue-600 text-white" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
+          >
+            <FolderOpen className="w-4 h-4" />{t("radiology.order.viewAsStudies")}
+          </button>
+        </div>
         <select className={filterCls} value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">{t("radiology.studies.allStatuses")}</option>
           {Object.entries(RadiologyStatusMap).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
         </select>
         <div className="relative">
           <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
-          <input className={`${filterCls} pr-9 w-48`} placeholder={t("radiology.studies.searchByName")} value={search} onChange={e => setSearch(e.target.value)} />
+          <input className={`${filterCls} pr-9 w-48`} placeholder={t("radiology.studies.searchByName") as string} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <input className={filterCls} dir="ltr" placeholder={t("radiology.studies.nationalId")} value={nationalSearch} onChange={e => setNationalSearch(e.target.value)} />
-        <input className={filterCls} dir="ltr" placeholder={t("radiology.studies.insuranceNumber")} value={insuranceSearch} onChange={e => setInsuranceSearch(e.target.value)} />
+        <input className={filterCls} dir="ltr" placeholder={t("radiology.studies.nationalId") as string} value={nationalSearch} onChange={e => setNationalSearch(e.target.value)} />
+        <input className={filterCls} dir="ltr" placeholder={t("radiology.studies.insuranceNumber") as string} value={insuranceSearch} onChange={e => setInsuranceSearch(e.target.value)} />
         <input type="date" className={filterCls} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
         <input type="date" className={filterCls} value={dateTo} onChange={e => setDateTo(e.target.value)} />
       </div>
@@ -334,112 +535,116 @@ export default function StudiesTab() {
             <table className="w-full min-w-[1000px]">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
+                  <th className="text-right py-3 px-4 w-8">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4"
+                      checked={(studies?.length || 0) > 0 && (studies || []).every(s => selectedIds.has(s.id))}
+                      onChange={e => toggleSelectAll(e.target.checked)}
+                    />
+                  </th>
+                  <th className="text-right py-3 px-4 whitespace-nowrap">{t("radiology.order.bookingNo")}</th>
                   {[t("radiology.studies.studyNumber"), t("radiology.studies.patient"), t("radiology.studies.examType"), t("radiology.studies.radiologist"), t("radiology.status"), t("radiology.studies.submission"), t("radiology.date"), t("radiology.actions")].map(h => (
                     <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {studies.map(s => (
-                  <Fragment key={s.id}>
-                    <tr className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
-                      <td className="py-3 px-4 font-medium" dir="ltr">{s.studyNumber || s.id.slice(0, 8)}</td>
-                      <td className="py-3 px-4 font-medium">
-                        {s.patientName}
-                        {s.emergency ? <span className="mr-2 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{t("radiology.studies.emergency")}</span> : null}
-                        {parsePatientFlags(s.patientFlags).map(f => {
-                          const meta = flagMeta(f);
-                          return meta ? <span key={f} className={`mr-1.5 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap inline-block align-middle ${meta.color}`}>{t(meta.label)}</span> : null;
-                        })}
-                      </td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "—"}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col gap-1 min-w-[150px]">
-                          <select
-                            className={`${MODAL_INPUT_CLS} text-xs py-1.5`}
-                            value={s.assignedRadiologistId || ""}
-                            onChange={e => assignRadiologist(s, e.target.value)}
-                            disabled={assigningId === s.id}
-                          >
-                            <option value="">{t("radiology.studies.unassigned")}</option>
-                            {radiologists.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                          </select>
-                          {s.assignedRadiologistName ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">{s.assignedRadiologistName}</span>
-                          ) : null}
-                          {s.radiologistLocation ? (
-                            <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${s.radiologistLocation === "ON_SITE" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" : "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"}`}>
-                              {s.radiologistLocation === "ON_SITE" ? t("radiology.studies.onSite") : t("radiology.studies.offSite")}
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">{statusBadge(s.status)}</td>
-                      <td className="py-3 px-4">{submissionBadge(s.submissionStatus)}</td>
-                      <td className="py-3 px-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtDate(s.createdAt)}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <button onClick={() => navigate(`/radiology/study/${s.id}`)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.details.viewDetails") as string}><Info className="w-4 h-4" /></button>
-                          <input
-                            ref={el => { fileInputs.current[s.id] = el; }}
-                            type="file"
-                            accept=".dcm,.DCM,application/dicom,application/octet-stream"
-                            multiple
-                            className="hidden"
-                            onChange={e => { uploadImages(s.id, e.target.files); e.target.value = ""; }}
-                          />
-                          <button onClick={() => fileInputs.current[s.id]?.click()} disabled={uploadingId === s.id} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded disabled:opacity-40" title={t("radiology.studies.uploadImages")}>{uploadingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}</button>
-                          <button onClick={() => setViewerStudyId(s.id)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.studies.viewImages")}><FolderOpen className="w-4 h-4" /></button>
-                          <button onClick={() => setReportStudyId(s.id)} className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded" title={t("radiology.studies.enterReport")}><FileText className="w-4 h-4" /></button>
-                          <button onClick={() => printLabel(s.id)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 rounded" title={t("radiology.studies.printLabel")}><Printer className="w-4 h-4" /></button>
-                          <button onClick={() => openPayment(s.id)} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title={t("radiology.studies.payment")}><Banknote className="w-4 h-4" /></button>
-                          <button onClick={() => duplicateStudy(s)} className="p-1.5 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/30 rounded" title={t("radiology.studies.duplicate")}><Copy className="w-4 h-4" /></button>
-                          {s.rologyStudyLink ? (
-                            <a href={s.rologyStudyLink} target="_blank" rel="noreferrer" className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.studies.openInRology")}><ExternalLink className="w-4 h-4" /></a>
-                          ) : null}
-                          <button onClick={() => toggleExpand(s)} className={`px-2 py-1 text-xs rounded border font-medium ${expanded.has(s.id) ? "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"}`} title={t("radiology.studies.trackRology")}>Rology</button>
-                          <button onClick={() => advanceStatus(s)} disabled={advancingId === s.id || !STUDY_STATUS[s.status]} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded disabled:opacity-40" title={t("radiology.studies.advanceStatus")}>{advancingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpCircle className="w-4 h-4" />}</button>
-                        </div>
-                      </td>
-                    </tr>
-                    {expanded.has(s.id) && (
-                      <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
-                        <td colSpan={8} className="py-4 px-6">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.studies.rologySubmissionStatus")}</label>
-                              <select className={MODAL_INPUT_CLS} value={drafts[s.id]?.submissionStatus ?? ""} onChange={e => setDrafts(d => ({ ...d, [s.id]: { ...(d[s.id] ?? emptyRologyDraft()), submissionStatus: e.target.value } }))}>
-                                {Object.entries(RadiologySubmissionStatusMap).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.studies.rologyStudyLink")}</label>
-                              <input className={MODAL_INPUT_CLS} dir="ltr" value={drafts[s.id]?.rologyStudyLink ?? ""} onChange={e => setDrafts(d => ({ ...d, [s.id]: { ...(d[s.id] ?? emptyRologyDraft()), rologyStudyLink: e.target.value } }))} placeholder="https://..." />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.studies.rologyReportLink")}</label>
-                              <input className={MODAL_INPUT_CLS} dir="ltr" value={drafts[s.id]?.rologyReportLink ?? ""} onChange={e => setDrafts(d => ({ ...d, [s.id]: { ...(d[s.id] ?? emptyRologyDraft()), rologyReportLink: e.target.value } }))} placeholder="https://..." />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.studies.rologistName")}</label>
-                              <input className={MODAL_INPUT_CLS} value={drafts[s.id]?.rologyRadiologist ?? ""} onChange={e => setDrafts(d => ({ ...d, [s.id]: { ...(d[s.id] ?? emptyRologyDraft()), rologyRadiologist: e.target.value } }))} placeholder={t("radiology.studies.rologistPlaceholder")} />
-                            </div>
-                          </div>
-                          <div className="flex justify-end mt-4">
-                            <button onClick={() => saveRology(s.id)} disabled={savingId === s.id} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
-                              {savingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}{t("radiology.save")}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
+                {viewMode === "orders"
+                  ? (() => {
+                      const groups = new Map<string, StudyWithRadiologist[]>();
+                      (studies || []).forEach(s => {
+                        const key = s.appointmentId || `solo-${s.id}`;
+                        if (!groups.has(key)) groups.set(key, []);
+                        groups.get(key)!.push(s);
+                      });
+                      return Array.from(groups.entries()).map(([key, items]) => {
+                        const parent = items[0];
+                        const groupSelected = items.length > 0 && items.every(i => selectedIds.has(i.id));
+                        const groupExpanded = expandedGroups.has(key);
+                        return (
+                          <Fragment key={key}>
+                            <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                              <td className="py-3 px-4 w-8">
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4"
+                                  checked={groupSelected}
+                                  onChange={e => {
+                                    setSelectedIds(prev => {
+                                      const next = new Set(prev);
+                                      items.forEach(i => {
+                                        if (e.target.checked) next.add(i.id); else next.delete(i.id);
+                                      });
+                                      return next;
+                                    });
+                                  }}
+                                />
+                              </td>
+                              <td colSpan={9} className="py-3 px-4">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <button onClick={() => toggleGroupExpand(key)} className="flex items-center gap-1.5 font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                                    <ChevronDown className={`w-4 h-4 transition-transform ${groupExpanded ? "rotate-180" : ""}`} />
+                                    <span dir="ltr">{parent.bookingNo ? String(parent.bookingNo).padStart(4, "0") : parent.studyNumber || parent.id.slice(0, 8)}</span>
+                                  </button>
+                                  <span className="font-medium">{parent.patientName}</span>
+                                  <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 whitespace-nowrap">
+                                    {t("radiology.order.examProgress", { done: items.filter(i => i.status === "DELIVERED").length, total: items.length })}
+                                  </span>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                                    {t("radiology.order.siblingCount", { count: items.length })}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            {groupExpanded
+                              ? items.map(s => renderStudyRow(s))
+                              : null}
+                          </Fragment>
+                        );
+                      });
+                    })()
+                  : (studies || []).map(s => renderStudyRow(s))}
               </tbody>
             </table>
           </div>
         </div>
       )}
+
+      {selectedIds.size > 0 ? (
+        <div className="fixed bottom-4 inset-x-0 z-40 flex justify-center px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 px-4 py-3 flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("radiology.order.bulkSelected", { count: selectedIds.size })}</span>
+            <button
+              onClick={() => void runBulk("advance")}
+              disabled={bulkBusy !== null}
+              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+            >
+              {bulkBusy === "advance" ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpCircle className="w-4 h-4" />}
+              {t("radiology.order.bulkAdvance")}
+            </button>
+            <button
+              onClick={() => void runBulk("deliver")}
+              disabled={bulkBusy !== null}
+              className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 text-sm"
+            >
+              {bulkBusy === "deliver" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+              {t("radiology.order.bulkDeliver")}
+            </button>
+            <button
+              onClick={() => void runBulk("labels")}
+              disabled={bulkBusy !== null}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 text-sm"
+            >
+              {bulkBusy === "labels" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+              {t("radiology.order.bulkLabels")}
+            </button>
+            <button onClick={() => setSelectedIds(new Set())} className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" title={t("radiology.close") as string}>
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {viewerStudyId && <RadiologyViewerModal studyId={viewerStudyId} onClose={() => setViewerStudyId(null)} />}
       {reportStudyId && <RadiologyReportModal studyId={reportStudyId} onClose={() => setReportStudyId(null)} onSaved={() => refresh({ silent: true })} />}
@@ -481,7 +686,7 @@ export default function StudiesTab() {
               </div>
             ) : null}
             <div className="flex gap-3">
-              <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" placeholder={t("radiology.studies.amountPlaceholder")} value={payAmount} onChange={e => setPayAmount(e.target.value)} />
+              <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" placeholder={t("radiology.studies.amountPlaceholder") as string} value={payAmount} onChange={e => setPayAmount(e.target.value)} />
               <select className={MODAL_INPUT_CLS} value={payMethod} onChange={e => setPayMethod(e.target.value)}>
                 <option value="CASH">{t("radiology.paymentMethod.CASH")}</option>
                 <option value="CARD">{t("radiology.paymentMethod.CARD")}</option>
@@ -490,7 +695,7 @@ export default function StudiesTab() {
               </select>
             </div>
             <div className="flex gap-3 mt-3">
-              <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" placeholder={t("radiology.studies.refundPlaceholder")} value={refundAmount} onChange={e => setRefundAmount(e.target.value)} />
+              <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" placeholder={t("radiology.studies.refundPlaceholder") as string} value={refundAmount} onChange={e => setRefundAmount(e.target.value)} />
               <button onClick={saveRefund} disabled={savingPay || !refundAmount} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 text-sm">
                 {t("radiology.studies.refund")}
               </button>

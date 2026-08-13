@@ -3,17 +3,28 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  ArrowRight, Banknote, Calendar, CreditCard, Eye, FileText, History,
-  Image as ImageIcon, Loader2, MessageSquare, Printer, RefreshCw, Shield,
-  Stethoscope, Undo2, User, X as XMarkIcon,
+  AlertTriangle, ArrowRight, Banknote, Calendar, ChevronDown, CreditCard, Eye,
+  FileText, Flag, History, Image as ImageIcon, Loader2, MessageSquare, Pencil,
+  Printer, RefreshCw, Save, Shield, Sparkles, Stethoscope, Undo2, User, X as XMarkIcon,
 } from "lucide-react";
 import {
   api, fetchJson, getAuthHeaders,
   RadiologyStudy, RadiologyStudyImage, RadiologyReport,
   RadiologyOrderStatusMap, RadiologyStatusMap, RadiologyPaymentStatusMap, RadiologyReportStatusMap,
+  RADIOLOGY_CRITICAL_META, criticalCategoryText,
   parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
 import RadiologyViewerModal from "./RadiologyViewerModal";
+
+const MANAGER_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"];
+
+const canManageRadiology = (): boolean => {
+  try {
+    return MANAGER_ROLES.includes((JSON.parse(localStorage.getItem("user") || "{}") as { role?: string }).role || "");
+  } catch {
+    return false;
+  }
+};
 
 interface StudyDetailsAppointment {
   id: string;
@@ -117,6 +128,7 @@ const Row = ({ label, children }: { label: string; children: ReactNode }) => (
 export default function StudyDetails({ studyId }: { studyId: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const canManage = canManageRadiology();
   const [data, setData] = useState<StudyDetailsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +139,16 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   const [payNote, setPayNote] = useState("");
   const [savingPay, setSavingPay] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [editingReport, setEditingReport] = useState(false);
+  const [draftText, setDraftText] = useState("");
+  const [savingReport, setSavingReport] = useState(false);
+  const [aiDrafting, setAiDrafting] = useState(false);
+  const [aiDraftInfo, setAiDraftInfo] = useState<string | null>(null);
+  const [criticalOpen, setCriticalOpen] = useState(false);
+  const [criticalCategory, setCriticalCategory] = useState("NONE");
+  const [criticalFindingText, setCriticalFindingText] = useState("");
+  const [savingCritical, setSavingCritical] = useState(false);
+  const [siblings, setSiblings] = useState<RadiologyStudy[] | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -134,6 +156,16 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
     try {
       const d = await fetchJson<StudyDetailsData>(api(`studies/${studyId}/details`));
       setData(d);
+      if (d.study.appointmentId) {
+        try {
+          const list = await fetchJson<{ items?: RadiologyStudy[] }>(api(`studies?appointmentId=${encodeURIComponent(d.study.appointmentId)}&limit=50`));
+          setSiblings((list.items || []).filter(s => s.id !== studyId));
+        } catch {
+          setSiblings([]);
+        }
+      } else {
+        setSiblings([]);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : t("radiology.operationFailed"));
     } finally {
@@ -153,6 +185,14 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   const shiftPayments = data?.shiftPayments || [];
   const insuranceInvoice = data?.insuranceInvoice || null;
   const totals = data?.totals || { total: 0, paidAmount: 0, remaining: 0 };
+
+  const criticalCat = criticalCategoryText(report);
+  const criticalMeta = criticalCat ? RADIOLOGY_CRITICAL_META[criticalCat] ?? null : null;
+
+  useEffect(() => {
+    setCriticalCategory(report?.criticalCategory || "NONE");
+    setCriticalFindingText(report?.criticalFindingText || "");
+  }, [report?.criticalCategory, report?.criticalFindingText]);
 
   const history = useMemo(
     () => [...(data?.statusHistory || [])].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
@@ -293,6 +333,112 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
     }
   };
 
+  const startEditReport = () => {
+    setDraftText(report?.reportText || "");
+    setAiDraftInfo(null);
+    setEditingReport(true);
+  };
+
+  const cancelEditReport = () => {
+    setEditingReport(false);
+    setDraftText("");
+    setAiDraftInfo(null);
+  };
+
+  const saveReport = async () => {
+    if (savingReport) return;
+    setSavingReport(true);
+    try {
+      await fetchJson(api(`studies/${studyId}/report`), {
+        method: "PUT",
+        body: JSON.stringify({ reportText: draftText.trim() }),
+      });
+      toast.success(t("radiology.reports.reportSaved"));
+      setEditingReport(false);
+      setDraftText("");
+      setAiDraftInfo(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.reports.reportSaveFailed"));
+    } finally {
+      setSavingReport(false);
+    }
+  };
+
+  const generateDraft = async () => {
+    if (aiDrafting) return;
+    setAiDrafting(true);
+    setAiDraftInfo(null);
+    try {
+      const res = await fetchJson<{ draft: string | null; reason?: string; model?: string }>(api(`studies/${studyId}/report/draft`), {
+        method: "POST",
+        body: JSON.stringify({ focus: "full" }),
+      });
+      if (res.draft) {
+        setDraftText(res.draft);
+        setAiDraftInfo(res.model ? `${t("radiology.aiDraft.disclaimer")} — ${t("radiology.aiDraft.model")}: ${res.model}` : t("radiology.aiDraft.disclaimer"));
+        toast.info(t("radiology.aiDraft.filled"));
+      } else if (res.reason === "AI_NOT_CONFIGURED") {
+        toast.warning(t("radiology.aiDraft.notConfigured"));
+      } else {
+        toast.error(t("radiology.aiDraft.failed"));
+      }
+    } catch (e) {
+      toast.error(t("radiology.aiDraft.failed"));
+    } finally {
+      setAiDrafting(false);
+    }
+  };
+
+  const saveCriticalFlag = async () => {
+    if (savingCritical) return;
+    setSavingCritical(true);
+    try {
+      await fetchJson(api(`studies/${studyId}/report/critical`), {
+        method: "PUT",
+        body: JSON.stringify({ category: criticalCategory, findingText: criticalFindingText.trim() || undefined }),
+      });
+      await load();
+      if (criticalCategory === "NONE") {
+        toast.success(t("radiology.critical.clearSuccess"));
+      }
+    } catch (e) {
+      toast.error(t("radiology.critical.saveFailed"));
+    } finally {
+      setSavingCritical(false);
+    }
+  };
+
+  const acknowledgeCritical = async () => {
+    if (savingCritical) return;
+    if (!window.confirm(t("radiology.critical.confirmAcknowledge") as string)) return;
+    setSavingCritical(true);
+    try {
+      await fetchJson(api(`studies/${studyId}/report/critical/acknowledge`), {
+        method: "POST",
+      });
+      toast.success(t("radiology.critical.acknowledgeSuccess"));
+      await load();
+    } catch (e) {
+      toast.error(t("radiology.critical.saveFailed"));
+    } finally {
+      setSavingCritical(false);
+    }
+  };
+
+  const turnaroundText = (): string => {
+    if (!report || !report.createdAt) return "—";
+    const from = new Date(report.createdAt);
+    if (Number.isNaN(from.getTime())) return "—";
+    const to = report.signedAt ? new Date(report.signedAt) : new Date(report.updatedAt);
+    if (Number.isNaN(to.getTime())) return "—";
+    const diffMin = Math.round((to.getTime() - from.getTime()) / 60000);
+    if (diffMin < 0) return "—";
+    const h = Math.floor(diffMin / 60);
+    const m = diffMin % 60;
+    return `${h}س ${m}د`;
+  };
+
   if (loading) {
     return (
       <div dir="rtl" className="max-w-7xl mx-auto p-4 md:p-6 w-full min-h-screen">
@@ -412,6 +558,32 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
             </Card>
           ) : null}
 
+          {study.appointmentId ? (
+            <Card title={t("radiology.order.siblingStudies")} icon={<FileText className="w-5 h-5" />}>
+              {siblings === null ? (
+                <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+              ) : siblings.length === 0 ? (
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t("radiology.order.noSiblings")}</p>
+              ) : (
+                <div className="space-y-2">
+                  {siblings.map(sib => (
+                    <button
+                      key={sib.id}
+                      onClick={() => navigate(`/radiology/study/${sib.id}`)}
+                      className="w-full flex items-center justify-between gap-3 text-sm border dark:border-gray-700 rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-right"
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium text-blue-600 dark:text-blue-400 truncate" dir="ltr">{sib.studyNumber || sib.id.slice(0, 8)}</span>
+                        <span className="text-gray-500 dark:text-gray-400 truncate">{sib.examTypeName || sib.examType?.name || "—"}</span>
+                      </span>
+                      {renderBadge(RadiologyStatusMap, sib.status)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Card>
+          ) : null}
+
           <Card title={t("radiology.details.timelineTitle")} icon={<History className="w-5 h-5" />}>
             {history.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">{t("radiology.details.timelineEmpty")}</p>
@@ -447,20 +619,68 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
             title={t("radiology.details.report")}
             icon={<FileText className="w-5 h-5" />}
             action={
-              report ? (
-                <button onClick={() => void printPdf()} disabled={printing} className="flex items-center gap-1.5 px-3 py-1.5 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
-                  {printing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}{t("radiology.reports.printPdf")}
-                </button>
-              ) : undefined
+              <div className="flex items-center gap-2 flex-wrap">
+                {report ? (
+                  <button onClick={() => void printPdf()} disabled={printing} className="flex items-center gap-1.5 px-3 py-1.5 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+                    {printing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}{t("radiology.reports.printPdf")}
+                  </button>
+                ) : null}
+                {editingReport ? (
+                  <>
+                    <button onClick={() => void saveReport()} disabled={savingReport} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">
+                      {savingReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}{t("radiology.save")}
+                    </button>
+                    <button onClick={cancelEditReport} disabled={savingReport} className="px-3 py-1.5 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+                      {t("radiology.cancel")}
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={startEditReport} className="flex items-center gap-1.5 px-3 py-1.5 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <Pencil className="w-3.5 h-3.5" />{report ? t("radiology.details.editReport") : t("radiology.details.draftReport")}
+                  </button>
+                )}
+              </div>
             }
           >
-            {!report ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">{t("radiology.details.emptyReport")}</p>
+            {criticalCat && criticalMeta ? (
+              <div className={`mb-4 rounded-lg px-4 py-3 ${criticalMeta.color}`}>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="text-sm font-bold">{t(criticalMeta.label)}</span>
+                </div>
+                {report?.criticalFindingText ? <p className="text-sm mt-1.5 whitespace-pre-wrap">{report.criticalFindingText}</p> : null}
+                <div className="text-xs mt-2 space-y-0.5 opacity-80">
+                  {report?.criticalFlaggedBy ? (
+                    <p>{t("radiology.critical.flaggedBy")}: {report.criticalFlaggedBy} — {fmtDateTime(report.criticalFlaggedAt)}</p>
+                  ) : null}
+                  {report?.criticalAcknowledgedBy ? (
+                    <p>{t("radiology.critical.acknowledgedBy")}: {report.criticalAcknowledgedBy} — {fmtDateTime(report.criticalAcknowledgedAt)}</p>
+                  ) : (
+                    <p>{t("radiology.critical.notAcknowledged")}</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+            {report?.reportStatus ? <div className="mb-3">{renderBadge(RadiologyReportStatusMap, report.reportStatus)}</div> : null}
+            {editingReport ? (
+              <div className="space-y-3">
+                <button onClick={() => void generateDraft()} disabled={aiDrafting} className="flex items-center gap-1.5 px-3 py-1.5 border border-purple-300 dark:border-purple-800 text-purple-600 dark:text-purple-400 rounded-lg text-xs hover:bg-purple-50 dark:hover:bg-purple-900/20 disabled:opacity-50">
+                  {aiDrafting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {t(draftText.trim() ? "radiology.aiDraft.regenerate" : "radiology.aiDraft.generate")}
+                </button>
+                <textarea
+                  className={`${MODAL_INPUT_CLS} min-h-[160px]`}
+                  autoFocus
+                  value={draftText}
+                  onChange={e => setDraftText(e.target.value)}
+                  placeholder={t("radiology.reports.reportTextPlaceholder") as string}
+                />
+                {aiDraftInfo ? <p className="text-xs text-amber-600 dark:text-amber-400">{aiDraftInfo}</p> : null}
+              </div>
             ) : (
               <>
-                {report.reportStatus ? <div className="mb-3">{renderBadge(RadiologyReportStatusMap, report.reportStatus)}</div> : null}
-                <p className="text-sm leading-6 text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{report.reportText || "—"}</p>
-                {report.typedBy || report.reviewedBy || report.signedBy ? (
+                <p className="text-sm leading-6 text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{report?.reportText || t("radiology.details.emptyReport")}</p>
+                {report?.typedBy || report?.reviewedBy || report?.signedBy ? (
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                     {report.typedBy ? <div><span className="text-gray-500 dark:text-gray-400">{t("radiology.reports.typedBy")}: </span><span className="font-medium text-gray-800 dark:text-gray-200">{report.typedBy}</span></div> : null}
                     {report.reviewedBy ? <div><span className="text-gray-500 dark:text-gray-400">{t("radiology.reports.reviewedBy")}: </span><span className="font-medium text-gray-800 dark:text-gray-200">{report.reviewedBy}</span></div> : null}
@@ -469,6 +689,54 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
                 ) : null}
               </>
             )}
+            {report ? (
+              <div className="mt-4 pt-3 border-t dark:border-gray-700/50 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <div>{t("radiology.details.reportCreatedAt")}: <span className="font-medium text-gray-700 dark:text-gray-300">{fmtDateTime(report.createdAt)}</span></div>
+                <div>{t("radiology.details.reportSignedAt")}: <span className="font-medium text-gray-700 dark:text-gray-300">{fmtDateTime(report.signedAt)}</span></div>
+                <div>{t("radiology.details.turnaround")}: <span className="font-medium text-gray-700 dark:text-gray-300">{turnaroundText()}</span></div>
+              </div>
+            ) : null}
+            <div className="mt-4 border dark:border-gray-700 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setCriticalOpen(o => !o)}
+                className="w-full px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg flex items-center gap-1.5"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />{t("radiology.critical.title")}
+                <ChevronDown className={`w-3.5 h-3.5 ms-auto transition-transform ${criticalOpen ? "rotate-180" : ""}`} />
+              </button>
+              {criticalOpen ? (
+                <div className="px-3 pb-3 space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.critical.label")}</label>
+                    <select className={MODAL_INPUT_CLS} value={criticalCategory} onChange={e => setCriticalCategory(e.target.value)}>
+                      {Object.entries(RADIOLOGY_CRITICAL_META).map(([k, meta]) => (
+                        <option key={k} value={k}>{t(meta.label)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.critical.findingText")}</label>
+                    <input
+                      className={MODAL_INPUT_CLS}
+                      value={criticalFindingText}
+                      onChange={e => setCriticalFindingText(e.target.value)}
+                      placeholder={t("radiology.critical.findingPlaceholder") as string}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button onClick={() => void saveCriticalFlag()} disabled={savingCritical} className="flex items-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700 disabled:opacity-50">
+                      {savingCritical ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Flag className="w-3.5 h-3.5" />}{t(criticalCategory === "NONE" ? "radiology.critical.clear" : "radiology.critical.flag")}
+                    </button>
+                    {criticalCat && !report?.criticalAcknowledgedBy && canManage ? (
+                      <button onClick={() => void acknowledgeCritical()} disabled={savingCritical} className="px-3 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+                        {t("radiology.critical.acknowledge")}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </Card>
 
           <Card
