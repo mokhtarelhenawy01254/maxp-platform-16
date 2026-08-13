@@ -17,6 +17,11 @@ const EVENT_GROUPS: Record<string, string[]> = {
   ],
   cashback: ["CASHBACK_CREDITED", "CASHBACK_REVERSED"],
   quality: ["CUSTOMER_QUALITY_UPGRADED", "CUSTOMER_QUALITY_DOWNGRADED"],
+  autoDiscount: [
+    "AUTO_DISCOUNT_COUPON_GRANTED",
+    "AUTO_DISCOUNT_COUPON_EXPIRING",
+    "AUTO_DISCOUNT_CASHBACK_CONVERTED",
+  ],
 };
 
 const ALL_EVENTS = Object.values(EVENT_GROUPS).flat();
@@ -35,6 +40,9 @@ const CUSTOMER_VARIABLES = [
   { var: "{balance}", desc: "رصيد المحفظة الحالي" },
   { var: "{qualityTier}", desc: "تصنيف الجودة (VIP/عالي/متوسط/منخفض)" },
   { var: "{score}", desc: "درجة الجودة من 100" },
+  { var: "{discountPercent}", desc: "نسبة خصم كوبون الخصم التلقائي" },
+  { var: "{voucherAmount}", desc: "قيمة كوبون الخصم بالعملة" },
+  { var: "{validityDays}", desc: "عدد أيام صلاحية كوبون الخصم" },
 ];
 
 const CUSTOMER_META_ORDER: string[] = [
@@ -51,6 +59,9 @@ const CUSTOMER_META_ORDER: string[] = [
   "balance",
   "qualityTier",
   "score",
+  "discountPercent",
+  "voucherAmount",
+  "validityDays",
 ];
 
 const DEFAULT_CONTENT = `مرحباً {customerName} 👋\n\n{reason}\n\nشكراً لتعاملك معنا! ✨`;
@@ -94,7 +105,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
   scope: "customers",
   documentTitle: "إشعارات العملاء",
   title: "إشعارات العملاء",
-  description: "إدارة إشعارات الولاء والكاش باك وتقسيم العملاء — القوالب ومواعيد الإرسال",
+  description: "إدارة إشعارات الولاء والكاش باك والخصم التلقائي وتقسيم العملاء — القوالب ومواعيد الإرسال",
   variableSyntax: "single",
   variables: CUSTOMER_VARIABLES,
   sampleVariables: {
@@ -111,6 +122,9 @@ export const customerScopeConfig: TemplateScopeConfig = {
     balance: "75.00",
     qualityTier: "VIP",
     score: "85",
+    discountPercent: "10",
+    voucherAmount: "50.00",
+    validityDays: "3",
   },
   metaToLocalDefaultOrder: CUSTOMER_META_ORDER,
   defaultContent: DEFAULT_CONTENT,
@@ -210,6 +224,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
     { key: "loyalty", label: "قوالب الولاء", kind: "list", filter: (r) => EVENT_GROUPS["loyalty"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["loyalty"]!.includes(r.code)).length },
     { key: "cashback", label: "قوالب الكاش باك", kind: "list", filter: (r) => EVENT_GROUPS["cashback"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cashback"]!.includes(r.code)).length },
     { key: "quality", label: "قوالب التقسيم", kind: "list", filter: (r) => EVENT_GROUPS["quality"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["quality"]!.includes(r.code)).length },
+    { key: "autoDiscount", label: "قوالب الخصم التلقائي", kind: "list", filter: (r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code)).length },
   ],
 
   features: {

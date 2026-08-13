@@ -81,6 +81,27 @@ const CUSTOMER_NOTIFICATION_EVENTS = {
     trigger: 'عند انخفاض تصنيف جودة العميل',
     defaultDelay: 0,
     defaultDelayUnit: 'HOURS'
+  },
+  AUTO_DISCOUNT_COUPON_GRANTED: {
+    label: 'منح كوبون الخصم التلقائي',
+    category: 'MARKETING',
+    trigger: 'عند تسليم الطلب وإصدار كوبون الخصم',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS'
+  },
+  AUTO_DISCOUNT_COUPON_EXPIRING: {
+    label: 'تنبيه قرب انتهاء كوبون الخصم',
+    category: 'MARKETING',
+    trigger: 'قبل انتهاء صلاحية كوبون الخصم',
+    defaultDelay: 1,
+    defaultDelayUnit: 'DAYS'
+  },
+  AUTO_DISCOUNT_CASHBACK_CONVERTED: {
+    label: 'تحويل الكوبون المنتهي إلى كاش باك',
+    category: 'MARKETING',
+    trigger: 'عند انتهاء صلاحية الكوبون وتحويله إلى كاش باك',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS'
   }
 };
 

@@ -231,6 +231,40 @@ async function issueVoucherForDeliveredOrder({ orderId, companyId }) {
         expiresAt
       }
     });
+
+    // 📨 إشعار العميل بمنح كوبون الخصم التلقائي (عبر جدول إشعارات العملاء)
+    try {
+      const { sendCustomerNotification } = require('./hr/customerNotificationScheduleService');
+      const customer = await prisma.customer.findUnique({
+        where: { id: order.customerId },
+        select: { id: true, phone: true, firstName: true, lastName: true }
+      });
+      if (customer) {
+        await sendCustomerNotification({
+          companyId,
+          eventType: 'AUTO_DISCOUNT_COUPON_GRANTED',
+          customer: {
+            id: customer.id,
+            phone: customer.phone,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+          },
+          customerId: customer.id,
+          orderId: order.id,
+          variables: {
+            discountPercent: String(percent),
+            voucherAmount: String(amount.toFixed(2)),
+            validityDays: String(Number(settings.validityDays || 3)),
+            expiryDate: expiresAt.toISOString().slice(0, 10),
+            orderNumber: order.orderNumber || ''
+          }
+        });
+      }
+    } catch (notifError) {
+      console.warn(`⚠️ [AUTO-DISCOUNT-NOTIF] Failed to notify ${orderNumber}:`, notifError.message);
+    }
+
     return { issued: true, voucher };
   } catch (error) {
     console.error('❌ [AUTO-DISCOUNT] Failed to issue voucher:', error.message);
@@ -307,6 +341,36 @@ async function convertExpiredVouchers() {
           return { updated, txId: walletRes?.transaction?.id };
         });
         converted++;
+
+        // 📨 إشعار العميل بتحويل الكوبون المنتهي إلى كاش باك
+        try {
+          const { sendCustomerNotification } = require('./hr/customerNotificationScheduleService');
+          const customer = await prisma.customer.findUnique({
+            where: { id: v.customerId },
+            select: { id: true, phone: true, firstName: true, lastName: true }
+          });
+          if (customer) {
+            await sendCustomerNotification({
+              companyId: v.companyId,
+              eventType: 'AUTO_DISCOUNT_CASHBACK_CONVERTED',
+              customer: {
+                id: customer.id,
+                phone: customer.phone,
+                firstName: customer.firstName,
+                lastName: customer.lastName,
+                name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+              },
+              customerId: customer.id,
+              variables: {
+                voucherAmount: String(Number(v.amount).toFixed(2)),
+                cashAmount: String(Number(v.amount).toFixed(2)),
+                orderNumber: v.orderNumber || ''
+              }
+            });
+          }
+        } catch (notifError) {
+          console.warn(`⚠️ [AUTO-DISCOUNT-NOTIF] Failed to notify convert for voucher ${v.id}:`, notifError.message);
+        }
       } else {
         await prisma.customerLoyaltyVoucher.update({
           where: { id: v.id },
@@ -611,6 +675,63 @@ async function backfillMissingVouchers(companyId, { limit = 50 } = {}) {
   return { processed: delivered.length, issued, skipped };
 }
 
+/**
+ * ⏰ إرسال تنبيه للعملاء قبل انتهاء صلاحية كوبون الخصم التلقائي.
+ * يُستدعى من كرون يومي — يرسل مرة واحدة لكل كوبون (lastExpiryWarnedAt فارغ).
+ * @param {Object} [options] — { hoursBefore } عدد الساعات قبل الانتهاء (افتراضي 24)
+ */
+async function sendExpiryWarnings({ hoursBefore = 24 } = {}) {
+  const prisma = getSharedPrismaClient();
+  const threshold = new Date(Date.now() + hoursBefore * 60 * 60 * 1000);
+  const vouchers = await prisma.customerLoyaltyVoucher.findMany({
+    where: {
+      status: 'ACTIVE',
+      expiresAt: { lte: threshold, gt: new Date() },
+      lastExpiryWarnedAt: null
+    }
+  });
+
+  let warned = 0;
+  for (const v of vouchers) {
+    try {
+      const { sendCustomerNotification } = require('./hr/customerNotificationScheduleService');
+      const customer = await prisma.customer.findUnique({
+        where: { id: v.customerId },
+        select: { id: true, phone: true, firstName: true, lastName: true }
+      });
+      if (!customer) continue;
+
+      await sendCustomerNotification({
+        companyId: v.companyId,
+        eventType: 'AUTO_DISCOUNT_COUPON_EXPIRING',
+        customer: {
+          id: customer.id,
+          phone: customer.phone,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+        },
+        customerId: customer.id,
+        variables: {
+          discountPercent: String(Number(v.percent)),
+          voucherAmount: String(Number(v.amount).toFixed(2)),
+          expiryDate: v.expiresAt.toISOString().slice(0, 10),
+          orderNumber: v.orderNumber || ''
+        }
+      });
+
+      await prisma.customerLoyaltyVoucher.update({
+        where: { id: v.id },
+        data: { lastExpiryWarnedAt: new Date() }
+      });
+      warned++;
+    } catch (error) {
+      console.warn(`⚠️ [AUTO-DISCOUNT-NOTIF] Expiry warn failed for voucher ${v.id}:`, error.message);
+    }
+  }
+  return { warned };
+}
+
 module.exports = {
   DEFAULT_SETTINGS,
   getSettings,
@@ -631,5 +752,6 @@ module.exports = {
   getCustomerAutoDiscountSummary,
   mapVoucherToPublic,
   enrichCustomersWithAutoDiscountStatus,
-  backfillMissingVouchers
+  backfillMissingVouchers,
+  sendExpiryWarnings
 };

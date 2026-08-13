@@ -31,18 +31,21 @@ describe('customerNotificationScheduleService', () => {
   });
 
   describe('CUSTOMER_NOTIFICATION_EVENTS', () => {
-    it('covers all 10 loyalty/cashback/quality events', () => {
-      expect(Object.keys(scheduleService.CUSTOMER_NOTIFICATION_EVENTS)).toHaveLength(10);
+    it('covers all 13 loyalty/cashback/quality/auto-discount events', () => {
+      expect(Object.keys(scheduleService.CUSTOMER_NOTIFICATION_EVENTS)).toHaveLength(13);
       expect(scheduleService.CUSTOMER_NOTIFICATION_EVENTS[eventType]).toBeDefined();
       expect(scheduleService.CUSTOMER_NOTIFICATION_EVENTS.CASHBACK_CREDITED).toBeDefined();
       expect(scheduleService.CUSTOMER_NOTIFICATION_EVENTS.CUSTOMER_QUALITY_UPGRADED).toBeDefined();
+      expect(scheduleService.CUSTOMER_NOTIFICATION_EVENTS.AUTO_DISCOUNT_COUPON_GRANTED).toBeDefined();
+      expect(scheduleService.CUSTOMER_NOTIFICATION_EVENTS.AUTO_DISCOUNT_COUPON_EXPIRING).toBeDefined();
+      expect(scheduleService.CUSTOMER_NOTIFICATION_EVENTS.AUTO_DISCOUNT_CASHBACK_CONVERTED).toBeDefined();
     });
   });
 
   describe('ensureSchedules', () => {
     it('upserts a default row for every event', async () => {
       await scheduleService.ensureSchedules(companyId);
-      expect(prisma.customerNotificationSchedule.upsert).toHaveBeenCalledTimes(10);
+      expect(prisma.customerNotificationSchedule.upsert).toHaveBeenCalledTimes(13);
       expect(prisma.customerNotificationSchedule.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { companyId_eventType: { companyId, eventType: eventType } },
@@ -208,6 +211,62 @@ describe('customerNotificationScheduleService', () => {
       });
       expect(result).toEqual({ success: false, reason: 'meta_template_not_ready' });
       expect(WhatsAppNotificationService.sendNotification).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('auto-discount events', () => {
+    const WhatsAppNotificationService = require('../../services/whatsapp/WhatsAppNotificationService');
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('sends AUTO_DISCOUNT_COUPON_GRANTED with discount variables', async () => {
+      prisma.customerNotificationSchedule.findUnique.mockResolvedValue({
+        id: 'sched-1', companyId, eventType: 'AUTO_DISCOUNT_COUPON_GRANTED', enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS',
+      });
+      const result = await scheduleService.sendCustomerNotification({
+        companyId,
+        eventType: 'AUTO_DISCOUNT_COUPON_GRANTED',
+        customer: { id: 'c-1', phone: '01000000000', firstName: 'Ahmed' },
+        variables: { discountPercent: '10', voucherAmount: '50.00', validityDays: '3', expiryDate: '2026-08-20', orderNumber: 'ORD-1' },
+      });
+      expect(result).toEqual({ success: true });
+      const callArgs = WhatsAppNotificationService.sendNotification.mock.calls[0][0];
+      expect(callArgs.eventType).toBe('AUTO_DISCOUNT_COUPON_GRANTED');
+      expect(callArgs.variables).toEqual(expect.objectContaining({
+        discountPercent: '10', voucherAmount: '50.00', validityDays: '3', expiryDate: '2026-08-20',
+      }));
+    });
+
+    it('sends AUTO_DISCOUNT_COUPON_EXPIRING with expiry variables', async () => {
+      prisma.customerNotificationSchedule.findUnique.mockResolvedValue({
+        id: 'sched-1', companyId, eventType: 'AUTO_DISCOUNT_COUPON_EXPIRING', enabled: true, activeChannel: 'AUTO', delayValue: 1, delayUnit: 'DAYS',
+      });
+      const result = await scheduleService.sendCustomerNotification({
+        companyId,
+        eventType: 'AUTO_DISCOUNT_COUPON_EXPIRING',
+        customer: { id: 'c-1', phone: '01000000000', firstName: 'Ahmed' },
+        variables: { discountPercent: '10', expiryDate: '2026-08-20', orderNumber: 'ORD-1' },
+      });
+      expect(result).toEqual({ success: true });
+      const callArgs = WhatsAppNotificationService.sendNotification.mock.calls[0][0];
+      expect(callArgs.eventType).toBe('AUTO_DISCOUNT_COUPON_EXPIRING');
+    });
+
+    it('sends AUTO_DISCOUNT_CASHBACK_CONVERTED with cashback variables', async () => {
+      prisma.customerNotificationSchedule.findUnique.mockResolvedValue({
+        id: 'sched-1', companyId, eventType: 'AUTO_DISCOUNT_CASHBACK_CONVERTED', enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS',
+      });
+      const result = await scheduleService.sendCustomerNotification({
+        companyId,
+        eventType: 'AUTO_DISCOUNT_CASHBACK_CONVERTED',
+        customer: { id: 'c-1', phone: '01000000000', firstName: 'Ahmed' },
+        variables: { voucherAmount: '50.00', cashAmount: '50.00', orderNumber: 'ORD-1' },
+      });
+      expect(result).toEqual({ success: true });
+      const callArgs = WhatsAppNotificationService.sendNotification.mock.calls[0][0];
+      expect(callArgs.eventType).toBe('AUTO_DISCOUNT_CASHBACK_CONVERTED');
     });
   });
 });

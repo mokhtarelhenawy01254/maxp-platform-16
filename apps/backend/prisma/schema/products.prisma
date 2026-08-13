@@ -573,6 +573,7 @@ model CustomerLoyaltyVoucher {
   usedAt                DateTime?
   convertedAt           DateTime?
   convertedWalletTxId   String?
+  lastExpiryWarnedAt    DateTime?
   metadata              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt

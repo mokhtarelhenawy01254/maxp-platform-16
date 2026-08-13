@@ -141,6 +141,17 @@ describe("customerScope", () => {
     expect(f.enableButtons).toBe(false);
     expect(f.enableMetaSwitch).toBe(false);
     expect(f.categoryMode).toBe("manual");
-    expect(customerScopeConfig.tabs.map((t) => t.key)).toEqual(["schedule", "loyalty", "cashback", "quality"]);
+    expect(customerScopeConfig.tabs.map((t) => t.key)).toEqual(["schedule", "loyalty", "cashback", "quality", "autoDiscount"]);
+  });
+
+  test("نطاق الخصم التلقائي يشمل الأحداث الثلاثة ومتغيراته", () => {
+    const adEvents = (customerScopeConfig as any).tabs.find((t: any) => t.key === "autoDiscount");
+    expect(adEvents).toBeDefined();
+    const vars = customerScopeConfig.variables.map((v) => v.var);
+    expect(vars).toContain("{discountPercent}");
+    expect(vars).toContain("{voucherAmount}");
+    expect(vars).toContain("{validityDays}");
+    expect(customerScopeConfig.sampleVariables.discountPercent).toBe("10");
+    expect(customerScopeConfig.sampleVariables.voucherAmount).toBe("50.00");
   });
 });
