@@ -344,6 +344,34 @@ function parseBenefits(raw) {
  * يرسم كارت العضوية ويعيد Buffer PNG.
  * @param {Object} data { customer, tier, record, company, points, metricLabel }
  */
+// شريحة EMV (مثل كروت البنوك) — لمسة "كارت حقيقي فخم"
+function drawChip(ctx, cx, cy, w, h, color) {
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  const g = ctx.createLinearGradient(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
+  g.addColorStop(0, rgba(tint(color, 0.55), 1));
+  g.addColorStop(0.5, rgba(color, 1));
+  g.addColorStop(1, rgba(shade(color, 0.45), 1));
+  ctx.fillStyle = g;
+  roundedRectPath(ctx, cx - w / 2, cy - h / 2, w, h, 7);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1.5;
+  roundedRectPath(ctx, cx - w / 2, cy - h / 2, w, h, 7);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.2, cy - h / 2);
+  ctx.lineTo(cx - w * 0.2, cy + h / 2);
+  ctx.moveTo(cx + w * 0.2, cy - h / 2);
+  ctx.lineTo(cx + w * 0.2, cy + h / 2);
+  ctx.moveTo(cx - w / 2, cy);
+  ctx.lineTo(cx + w / 2, cy);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function renderTierCard(data) {
   const { createCanvas, GlobalFonts } = requireCanvas();
   if (!GlobalFonts.families.some((f) => f.family === FONT_FAMILY) && fs.existsSync(FONT_REGULAR)) {
@@ -360,36 +388,46 @@ function renderTierCard(data) {
   const tierColor = parseColor(data.tier?.color);
   const main = tierColor;
   const deep = shade(main, 0.55);
-  const light = tint(main, 0.22);
+  const light = tint(main, 0.28);
+  const gold = '#d8b45a'; // لمسة ذهبية كلاسيكية للإطار
 
-  // 1) قاعدة داكنة فاخرة (زي كروت البلاتينيوم) مع مسحة من لون المستوى بالأسفل
+  // 1) قاعدة داكنة عميقة (كروت بلاستينوم/بلاتينية)
   const bg = ctx.createLinearGradient(0, 0, CARD_W, CARD_H);
-  bg.addColorStop(0, '#0b0e13');
-  bg.addColorStop(0.55, '#131922');
-  bg.addColorStop(1, rgba(shade(main, 0.5), 1));
+  bg.addColorStop(0, '#0b0d12');
+  bg.addColorStop(0.5, '#12161f');
+  bg.addColorStop(1, '#171e2b');
   ctx.fillStyle = bg;
-  roundedRectPath(ctx, 0, 0, CARD_W, CARD_H, 36);
+  roundedRectPath(ctx, 0, 0, CARD_W, CARD_H, 40);
   ctx.fill();
 
-  // 2) توهج لوني أسفل يمين (عمق + هوية المستوى)
-  const glow = ctx.createRadialGradient(CARD_W * 0.9, CARD_H * 1.05, 20, CARD_W * 0.9, CARD_H * 1.05, CARD_W * 0.85);
-  glow.addColorStop(0, rgba(main, 0.5));
+  // 2) توهج لوني من لون المستوى (أسفل يمين + أعلى يسار)
+  const glow = ctx.createRadialGradient(CARD_W * 0.92, CARD_H * 1.05, 20, CARD_W * 0.92, CARD_H * 1.05, CARD_W * 0.9);
+  glow.addColorStop(0, rgba(main, 0.55));
   glow.addColorStop(0.45, rgba(main, 0.16));
   glow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
 
-  // 3) لمعة ناعمة علوية (ضوء)
-  const sheen = ctx.createLinearGradient(0, 0, CARD_W, CARD_H * 0.6);
-  sheen.addColorStop(0, 'rgba(255,255,255,0.09)');
-  sheen.addColorStop(0.4, 'rgba(255,255,255,0.02)');
-  sheen.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = sheen;
+  const glow2 = ctx.createRadialGradient(CARD_W * 0.05, -CARD_H * 0.1, 10, CARD_W * 0.05, -CARD_H * 0.1, CARD_W * 0.55);
+  glow2.addColorStop(0, rgba(light, 0.18));
+  glow2.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow2;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
 
-  // 4) لمسة قطرية رفيعة جداً (تلميعة خفيفة غير صارخة)
+  // 3) نسيج خطوط قطرية خفيفة جداً (عمق خفي)
   ctx.save();
-  ctx.globalAlpha = 0.05;
+  ctx.globalAlpha = 0.03;
+  ctx.translate(CARD_W / 2, CARD_H / 2);
+  ctx.rotate(-0.28);
+  ctx.fillStyle = '#ffffff';
+  for (let i = -60; i <= 60; i += 22) {
+    ctx.fillRect(-CARD_W * 1.6, i - 1, CARD_W * 3.2, 2);
+  }
+  ctx.restore();
+
+  // 4) لمعة قطرية ناعمة (tone mapping)
+  ctx.save();
+  ctx.globalAlpha = 0.07;
   ctx.translate(CARD_W * 0.5, CARD_H * 0.5);
   ctx.rotate(-0.22);
   const band = ctx.createLinearGradient(-CARD_W, 0, CARD_W, 0);
@@ -397,121 +435,155 @@ function renderTierCard(data) {
   band.addColorStop(0.5, 'rgba(255,255,255,1)');
   band.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = band;
-  ctx.fillRect(-CARD_W, -CARD_H * 0.75, CARD_W * 0.45, CARD_H * 1.5);
+  ctx.fillRect(-CARD_W * 0.2, -CARD_H * 0.9, CARD_W * 0.4, CARD_H * 1.8);
   ctx.restore();
 
-  // 5) حدود داخلية رفيعة
-  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+  // 5) إطار مزدوج: خارجي ناعم + داخلي ذهبي رفيع (الفخامة)
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
   ctx.lineWidth = 1.5;
-  roundedRectPath(ctx, 14, 14, CARD_W - 28, CARD_H - 28, 26);
+  roundedRectPath(ctx, 10, 10, CARD_W - 20, CARD_H - 20, 34);
+  ctx.stroke();
+  ctx.strokeStyle = rgba({ r: 216, g: 180, b: 90 }, 0.55);
+  ctx.lineWidth = 1.2;
+  roundedRectPath(ctx, 18, 18, CARD_W - 36, CARD_H - 36, 28);
   ctx.stroke();
 
   const textColor = '#ffffff';
-  const muted = 'rgba(255,255,255,0.6)';
+  const muted = 'rgba(255,255,255,0.55)';
+  const goldSoft = 'rgba(216,180,90,0.8)';
 
-  // 6) الترويسة: اسم الشركة يمين + شارة Member Card يسار
-  drawFancyText(ctx, data.companyName, CARD_W - PAD, 76, { size: 30, color: textColor, align: 'right' });
-  drawFancyText(ctx, 'MEMBER  CARD', PAD, 72, { size: 15, color: muted, align: 'left', letterSpacing: 3 });
+  // 6) الترويسة: اسم الشركة يمين + شارة فاخرة يسار
+  drawFancyText(ctx, data.companyName, CARD_W - PAD, 74, { size: 29, color: textColor, align: 'right' });
+  drawFancyText(ctx, 'MEMBER  CARD', PAD, 70, { size: 14, color: goldSoft, align: 'left', letterSpacing: 4 });
 
-  // خط أكسنت صغير بلون المستوى تحت الترويسة
-  ctx.fillStyle = rgba(light, 0.9);
-  roundedRectPath(ctx, CARD_W - PAD - 64, 96, 64, 4, 2);
-  ctx.fill();
+  // خط ذهبي تحت الترويسة (يمتد تحت اسم الشركة)
+  ctx.strokeStyle = 'rgba(216,180,90,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(CARD_W - PAD - 150, 94);
+  ctx.lineTo(CARD_W - PAD, 94);
+  ctx.stroke();
 
-  // 7) الشعار + اسم المستوى + اسم العميل
-  const emblemR = 122;
-  const emblemCx = CARD_W - PAD - 130;
-  const emblemCy = 262;
+  // 7) الشعار في حلقة معدنية + اسم المستوى + اسم العميل
+  const emblemR = 118;
+  const emblemCx = CARD_W - PAD - 126;
+  const emblemCy = 258;
 
   // هالة
-  const halo = ctx.createRadialGradient(emblemCx, emblemCy, 8, emblemCx, emblemCy, emblemR * 1.5);
-  halo.addColorStop(0, rgba(light, 0.5));
+  const halo = ctx.createRadialGradient(emblemCx, emblemCy, 8, emblemCx, emblemCy, emblemR * 1.6);
+  halo.addColorStop(0, rgba(light, 0.55));
   halo.addColorStop(0.4, rgba(main, 0.2));
   halo.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = halo;
   ctx.beginPath();
-  ctx.arc(emblemCx, emblemCy, emblemR * 1.5, 0, Math.PI * 2);
+  ctx.arc(emblemCx, emblemCy, emblemR * 1.6, 0, Math.PI * 2);
   ctx.fill();
 
-  // دائرة الشعار
-  ctx.fillStyle = rgba(shade(main, 0.35), 0.55);
+  // حلقة معدنية (tier color metallic)
+  const ring = ctx.createLinearGradient(emblemCx - emblemR, emblemCy - emblemR, emblemCx + emblemR, emblemCy + emblemR);
+  ring.addColorStop(0, rgba(tint(main, 0.6), 1));
+  ring.addColorStop(0.45, rgba(main, 1));
+  ring.addColorStop(1, rgba(shade(main, 0.5), 1));
+  ctx.fillStyle = rgba(shade(main, 0.45), 0.6);
   ctx.beginPath();
   ctx.arc(emblemCx, emblemCy, emblemR, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = ring;
+  ctx.lineWidth = 3.5;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(emblemCx, emblemCy, emblemR - 5, 0, Math.PI * 2);
   ctx.stroke();
 
-  drawEmblem(ctx, data.tier?.icon, emblemCx, emblemCy, emblemR * 0.7, main);
+  drawEmblem(ctx, data.tier?.icon, emblemCx, emblemCy, emblemR * 0.66, main);
 
   const tierName = data.tier?.nameAr || data.tier?.name || '';
   const customerName = [data.customer?.firstName, data.customer?.lastName].filter(Boolean).join(' ') || 'عميلنا العزيز';
   const tierX = emblemCx - 175;
 
-  drawFancyText(ctx, 'المستوى', tierX, 188, { size: 20, color: rgba(light, 0.95), align: 'right' });
-  // ظل خفيف لاسم المستوى (عمق)
-  const tierSize = fitFontSize(ctx, tierName, 54, emblemCx - 175 - 120);
-  const tierSh = tierSize + 2;
+  drawFancyText(ctx, 'بطاقة عضوية', tierX, 178, { size: 18, color: goldSoft, align: 'right' });
+  const tierSize = fitFontSize(ctx, tierName, 58, emblemCx - 175 - 130);
+  // ظل خفيف لاسم المستوى
   ctx.save();
-  ctx.font = `${tierSh}px ${FONT_FAMILY}`;
+  ctx.font = `${tierSize + 2}px ${FONT_FAMILY}`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'alphabetic';
   try { ctx.direction = 'rtl'; } catch (e) { /* ignore */ }
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillText(tierName, tierX + 2, 254);
   ctx.restore();
   drawFancyText(ctx, tierName, tierX, 252, { size: tierSize, color: textColor, align: 'right' });
-  const nameSize = fitFontSize(ctx, customerName, 32, emblemCx - 175 - 60);
-  drawFancyText(ctx, customerName, tierX, 312, { size: nameSize, color: 'rgba(255,255,255,0.92)', align: 'right' });
 
-  // 8) فاصل ناعم
+  // خط ذهبي تحت اسم المستوى
+  ctx.font = `${tierSize}px ${FONT_FAMILY}`;
+  ctx.textAlign = 'right';
+  const tierW = ctx.measureText(String(tierName)).width;
+  ctx.fillStyle = 'rgba(216,180,90,0.75)';
+  roundedRectPath(ctx, tierX - tierW, 268, tierW, 3, 1.5);
+  ctx.fill();
+
+  const nameSize = fitFontSize(ctx, customerName, 31, emblemCx - 175 - 60);
+  drawFancyText(ctx, customerName, tierX, 318, { size: nameSize, color: 'rgba(255,255,255,0.92)', align: 'right' });
+
+  // 8) ختم مائي خفيف (شعار كبير شفاف) أسفل يسار
+  ctx.save();
+  ctx.globalAlpha = 0.05;
+  drawEmblem(ctx, data.tier?.icon, 200, 500, 230, main);
+  ctx.restore();
+
+  // 9) فاصل ناعم
   ctx.strokeStyle = 'rgba(255,255,255,0.10)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(PAD, 404);
-  ctx.lineTo(CARD_W - PAD, 404);
+  ctx.moveTo(PAD, 398);
+  ctx.lineTo(CARD_W - PAD, 398);
   ctx.stroke();
 
-  // 9) المزايا (chips) — بلون المستوى
+  // 10) المزايا (chips) — حدود ذهبية رفيعة
   const benefits = parseBenefits(data.tier?.benefits);
   if (benefits.length > 0) {
     ctx.font = `22px ${FONT_FAMILY}`;
     ctx.textAlign = 'right';
     const chips = benefits.slice(0, 3);
     let chipX = CARD_W - PAD;
-    const chipY = 460;
-    const chipH = 42;
+    const chipY = 448;
+    const chipH = 40;
     for (let i = chips.length - 1; i >= 0; i--) {
       const label = chips[i];
-      const w = ctx.measureText(label).width + 34;
+      const w = ctx.measureText(label).width + 32;
       const x = chipX - w;
-      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
       roundedRectPath(ctx, x, chipY - chipH / 2, w, chipH, chipH / 2);
       ctx.fill();
-      ctx.strokeStyle = rgba(main, 0.6);
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(216,180,90,0.5)';
+      ctx.lineWidth = 1.1;
       ctx.stroke();
-      drawFancyText(ctx, label, x + w - 17, chipY, { size: 21, color: 'rgba(255,255,255,0.9)', align: 'right', baseline: 'middle' });
+      drawFancyText(ctx, label, x + w - 16, chipY, { size: 20, color: 'rgba(255,255,255,0.9)', align: 'right', baseline: 'middle' });
       chipX = x - 12;
     }
   }
 
-  // 10) التذييل: رقم العضوية يمين + الرصيد يسار
-  drawFancyText(ctx, 'رقم العضوية', CARD_W - PAD, 526, { size: 16, color: muted, align: 'right' });
+  // 11) التذييل: رقم العضوية + شريحة EMV يمين / الرصيد يسار
+  // شريحة صغيرة (EMV chip) — يسار رقم العضوية (بعيدة عنه)
+  drawChip(ctx, CARD_W - PAD - 305, 558, 52, 38, main);
+
+  drawFancyText(ctx, 'رقم العضوية', CARD_W - PAD, 514, { size: 15, color: muted, align: 'right' });
   ctx.save();
-  ctx.font = `28px ${FONT_FAMILY}`;
+  ctx.font = `30px ${FONT_FAMILY}`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'alphabetic';
   ctx.direction = 'ltr';
   ctx.fillStyle = textColor;
-  ctx.fillText(data.membershipNumber, CARD_W - PAD, 566);
+  ctx.fillText(data.membershipNumber, CARD_W - PAD, 556);
   ctx.restore();
 
   const pointsLabel = data.metricLabel || 'نقطة';
   const pointsText = `${Number(data.points || 0).toLocaleString('ar-EG')} ${pointsLabel}`;
-  drawFancyText(ctx, 'رصيدك', PAD, 526, { size: 16, color: muted, align: 'left' });
-  drawFancyText(ctx, pointsText, PAD, 566, { size: 28, color: textColor, align: 'left' });
-  drawFancyText(ctx, 'MAXP', PAD, 602, { size: 15, color: muted, align: 'left', letterSpacing: 4 });
+  drawFancyText(ctx, 'رصيدك', PAD, 514, { size: 15, color: muted, align: 'left' });
+  drawFancyText(ctx, pointsText, PAD, 556, { size: 28, color: textColor, align: 'left' });
+  drawFancyText(ctx, 'MAXP', PAD, 596, { size: 14, color: goldSoft, align: 'left', letterSpacing: 5 });
 
   return canvas.toBuffer('image/png');
 }
