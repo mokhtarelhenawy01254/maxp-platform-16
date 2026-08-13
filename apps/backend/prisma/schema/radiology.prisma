@@ -71,8 +71,7 @@ model RadiologyStudy {
   updatedAt         DateTime @updatedAt
   images            RadiologyStudyImage[]
   report            RadiologyReport?
-  appointmentId     String?   @unique
-  appointment       RadiologyAppointment?  @relation(fields: [appointmentId], references: [id])
+  appointmentId     String?   // loose link back to the booking (one appointment → possibly many studies)
   statusHistory     RadiologyStudyStatusHistory[]
 
   @@index([companyId])
@@ -80,6 +79,7 @@ model RadiologyStudy {
   @@index([examTypeId])
   @@index([status])
   @@index([studyNumber])
+  @@index([appointmentId])
 }
 
 model RadiologyStudyImage {
@@ -201,8 +201,7 @@ model RadiologyAppointment {
   branchId         String?
   status           String   @default("SCHEDULED") // SCHEDULED|CHECKED_IN|DONE|CANCELLED
   notes            String?
-  studyId          String?
-  study            RadiologyStudy?
+  studyId          String?   // loose link to the main study created on convert
   createdBy        String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -211,6 +210,7 @@ model RadiologyAppointment {
   @@index([patientId])
   @@index([appointmentDate])
   @@index([status])
+  @@index([studyId])
 }
 
 model RadiologyReferringPhysician {

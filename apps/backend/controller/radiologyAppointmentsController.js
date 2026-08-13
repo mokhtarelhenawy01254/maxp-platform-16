@@ -1,8 +1,11 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { MODALITY_BY_CATEGORY } = require('./radiologyController');
 const { findOrCreatePatient } = require('../services/bookingPatientService');
+const { deriveRadiologyOrderStatus, recordRadiologyStatusHistory, syncStudyOrderStatus } = require('../utils/radiologyStatusHistory');
 
 const APPOINTMENT_STATUSES = ['SCHEDULED', 'CHECKED_IN', 'DONE', 'CANCELLED'];
+
+const userDisplayName = (req) => ([req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ') || req.user?.email || null);
 
 const normalizeText = (value) => {
   if (value === undefined || value === null) return null;
@@ -302,6 +305,16 @@ const updateAppointment = async (req, res) => {
     }
 
     const appointment = await prisma.radiologyAppointment.update({ where: { id }, data });
+    if (existing.studyId) {
+      const linkedStudy = await prisma.radiologyStudy.findUnique({ where: { id: existing.studyId } }).catch(() => null);
+      if (linkedStudy) {
+        await syncStudyOrderStatus(prisma, { ...linkedStudy, status: linkedStudy.status }, {
+          changedBy: req.user?.id || req.user?.email || null,
+          userName: userDisplayName(req),
+          appointment: { status: data.status || existing.status },
+        });
+      }
+    }
     res.json({ success: true, data: appointment });
   } catch (error) {
     console.error('Error updating radiology appointment:', error);
@@ -426,15 +439,39 @@ const convertToStudy = async (req, res) => {
           examTypeName: examType.name,
           modality: MODALITY_BY_CATEGORY[examType.category] || examType.category || null,
           priceSnapshot,
+          appointmentId: appointment.id,
+          orderStatus: 'IN_PROGRESS',
         },
       });
       studies.push(study);
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: study.id,
+        dimension: 'PREP',
+        status: 'PENDING_IMAGING',
+        oldStatus: null,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: userDisplayName(req),
+      });
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: study.id,
+        dimension: 'ORDER',
+        oldStatus: 'PENDING',
+        status: 'IN_PROGRESS',
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: userDisplayName(req),
+      });
     }
 
     if (!studies.length) return res.status(400).json({ success: false, error: 'لم تُنشأ أي دراسة' });
 
     if (appointment.status !== 'DONE') {
-      await prisma.radiologyAppointment.update({ where: { id }, data: { status: 'DONE' } });
+      const patch = { status: 'DONE' };
+      if (!appointment.studyId && studies[0]?.id) patch.studyId = studies[0].id;
+      await prisma.radiologyAppointment.update({ where: { id }, data: patch });
+    } else if (!appointment.studyId && studies[0]?.id) {
+      await prisma.radiologyAppointment.update({ where: { id }, data: { studyId: studies[0].id } });
     }
 
     res.json({ success: true, data: { studies, study: studies[0], appointment } });

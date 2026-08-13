@@ -21,6 +21,7 @@ import ReferringPhysiciansTab from "./ReferringPhysiciansTab";
 import StatisticsTab from "./StatisticsTab";
 import CashierShiftsTab from "./CashierShiftsTab";
 import SettingsTab from "./SettingsTab";
+import StudyDetails from "./StudyDetails";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function RadiologyManagementPage() {
@@ -29,6 +30,17 @@ export default function RadiologyManagementPage() {
   const urlTab = (path || "").split("/")[0] || "";
   // Legacy route redirect: reception was merged into schedule (appointment-based daily workflow)
   if (urlTab === "reception") return <Navigate to="/radiology/schedule" replace />;
+
+  const segments = (path || "").split("/");
+  const studyId = urlTab === "study" ? segments[1] : undefined;
+  if (studyId) {
+    return (
+      <div dir="rtl">
+        <StudyDetails studyId={studyId} />
+      </div>
+    );
+  }
+
   const activeTab = (TABS.some(t => t.id === urlTab) ? urlTab : "dashboard") as TabId;
 
   return (

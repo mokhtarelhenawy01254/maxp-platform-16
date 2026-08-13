@@ -13622,6 +13622,53 @@
       "SUBMITTED": "تم الرفع",
       "REPORT_READY": "التقرير جاهز"
     },
+    "orderStatus": {
+      "PENDING": "قيد الانتظار",
+      "CHECKED_IN": "حضر",
+      "IN_PROGRESS": "قيد التنفيذ",
+      "COMPLETED": "مكتمل",
+      "CANCELLED": "ملغي"
+    },
+    "paymentStatus": {
+      "UNPAID": "غير مدفوع",
+      "PARTIAL": "مسدد جزئياً",
+      "PAID": "مسدد",
+      "REFUNDED": "مسترد"
+    },
+    "historyDimension": {
+      "ORDER": "حالة الطلب",
+      "PREP": "حالة التجهيز",
+      "REPORT": "التقرير",
+      "PAYMENT": "الدفع"
+    },
+    "details": {
+      "title": "تفاصيل الدراسة",
+      "back": "رجوع",
+      "studyNumber": "رقم الدراسة",
+      "orderStatus": "حالة الطلب",
+      "preparationStatus": "حالة التجهيز",
+      "paymentStatus": "حالة الدفع",
+      "patient": "بيانات المريض",
+      "exam": "الفحص",
+      "appointment": "الحجز",
+      "timeline": "خط سير الحالات",
+      "timeline.empty": "لا توجد حركات بعد",
+      "report": "التقرير",
+      "images": "الصور",
+      "payment": "الدفع",
+      "insurance": "التأمين",
+      "total": "الإجمالي",
+      "paid": "المدفوع",
+      "remaining": "المتبقي",
+      "billingType.PATIENT": "مدفوعات المريض",
+      "billingType.INSURANCE": "شركة تأمين",
+      "recordPayment": "تسجيل دفعة",
+      "refund": "استرجاع",
+      "emptyReport": "لا يوجد تقرير بعد",
+      "noImages": "لا توجد صور",
+      "notes": "ملاحظات",
+      "viewDetails": "تفاصيل"
+    },
     "appointmentStatus": {
       "SCHEDULED": "محجوز",
       "CHECKED_IN": "حضر",

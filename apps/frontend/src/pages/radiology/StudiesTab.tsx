@@ -1,7 +1,8 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { ArrowUpCircle, Banknote, Copy, ExternalLink, FileText, FolderOpen, Loader2, Plus, Printer, RefreshCw, Save, Search, Upload, X as XMarkIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowUpCircle, Banknote, Copy, ExternalLink, FileText, FolderOpen, Info, Loader2, Plus, Printer, RefreshCw, Save, Search, Upload, X as XMarkIcon } from "lucide-react";
 import tokenManager from "../../utils/tokenManager";
 import {
   api, fetchJson, getCompanyId, RadiologyStudy, RadiologyStudyPayment, RadiologyStatusMap, RadiologySubmissionStatusMap,
@@ -40,6 +41,7 @@ const filterCls = "border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark
 
 export default function StudiesTab() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [studies, setStudies] = useState<StudyWithRadiologist[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -377,6 +379,7 @@ export default function StudiesTab() {
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtDate(s.createdAt)}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5 flex-wrap">
+                          <button onClick={() => navigate(`/radiology/study/${s.id}`)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.details.viewDetails") as string}><Info className="w-4 h-4" /></button>
                           <input
                             ref={el => { fileInputs.current[s.id] = el; }}
                             type="file"

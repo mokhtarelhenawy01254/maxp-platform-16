@@ -1,10 +1,15 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { attachToActiveShift } = require('./radiologyShiftsController');
+const { recordRadiologyStatusHistory } = require('../utils/radiologyStatusHistory');
 
 const PAYMENT_METHODS = ['CASH', 'CARD', 'BANK', 'VODAFONE_CASH', 'OTHER'];
 
-const paymentStatusFor = (total, paid) => {
-  if (!Number.isFinite(total) || total <= 0) return paid > 0 ? 'PAID' : 'UNPAID';
+const paymentStatusFor = (total, paid, hasRefunds = false) => {
+  if (!Number.isFinite(total) || total <= 0) {
+    if (hasRefunds && paid <= 0) return 'REFUNDED';
+    return paid > 0 ? 'PAID' : 'UNPAID';
+  }
+  if (hasRefunds && paid <= 0) return 'REFUNDED';
   if (paid >= total) return 'PAID';
   if (paid > 0) return 'PARTIAL';
   return 'UNPAID';
@@ -45,10 +50,13 @@ const getStudyPayment = async (req, res) => {
 
 const recomputePaid = async (prisma, studyId, total) => {
   const payments = await prisma.radiologyStudyPayment.findMany({ where: { studyId }, select: { amount: true } });
-  const paid = payments.reduce((s, p) => s + p.amount, 0);
-  const status = paymentStatusFor(total, paid);
-  const updated = await prisma.radiologyStudy.update({ where: { id: studyId }, data: { paidAmount: Math.max(0, paid), paymentStatus: status } });
-  return { paid: Math.max(0, paid), status, updated };
+  const positive = payments.filter(p => p.amount > 0).reduce((s, p) => s + p.amount, 0);
+  const refunded = payments.filter(p => p.amount < 0).reduce((s, p) => s + p.amount, 0);
+  const net = Math.max(0, positive + refunded);
+  const hasRefunds = refunded < 0;
+  const status = paymentStatusFor(total, net, hasRefunds);
+  const updated = await prisma.radiologyStudy.update({ where: { id: studyId }, data: { paidAmount: net, paymentStatus: status } });
+  return { paid: net, status, updated };
 };
 
 const recordStudyPayment = async (req, res) => {
@@ -85,6 +93,16 @@ const recordStudyPayment = async (req, res) => {
     await attachToActiveShift(prisma, companyId, id, 'PAYMENT', amt, m, note ? String(note) : null);
 
     const { paid, status, updated } = await recomputePaid(prisma, id, total);
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: id,
+      dimension: 'PAYMENT',
+      oldStatus: study.paymentStatus,
+      status,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: req.user?.firstName ? ([req.user.firstName, req.user.lastName].filter(Boolean).join(' ')) : (req.user?.email || null),
+      reason: note ? String(note) : 'تسجيل دفعة',
+    });
     res.json({ success: true, data: { payment, study: updated, total, paidAmount: paid, remaining: Math.max(0, total - paid), paymentStatus: status } });
   } catch (error) {
     console.error('Error recording radiology study payment:', error);
@@ -124,6 +142,16 @@ const refundStudyPayment = async (req, res) => {
 
     const total = getStudyTotal(study);
     const { paid: newPaid, status, updated } = await recomputePaid(prisma, id, total);
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: id,
+      dimension: 'PAYMENT',
+      oldStatus: study.paymentStatus,
+      status,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: req.user?.firstName ? ([req.user.firstName, req.user.lastName].filter(Boolean).join(' ')) : (req.user?.email || null),
+      reason: note ? `استرجاع: ${String(note)}` : 'استرجاع دفعة',
+    });
     res.json({ success: true, data: { refund: payment, study: updated, total, paidAmount: newPaid, remaining: Math.max(0, total - newPaid), paymentStatus: status } });
   } catch (error) {
     console.error('Error refunding radiology study payment:', error);

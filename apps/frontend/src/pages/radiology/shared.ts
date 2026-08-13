@@ -121,6 +121,7 @@ export interface RadiologyStudy {
   referralDoctor?: string; notes?: string;
   emergency: boolean; withContrast: boolean;
   status: string; submissionStatus?: string;
+  orderStatus?: string; appointmentId?: string;
   rologyStudyLink?: string; rologyReportLink?: string; rologyRadiologist?: string;
   reportStatus?: string;
   createdAt: string;
@@ -147,6 +148,21 @@ export const RadiologySubmissionStatusMap: Record<string, { label: string; color
   NOT_SUBMITTED: { label: "radiology.submissionStatus.NOT_SUBMITTED", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
   SUBMITTED: { label: "radiology.submissionStatus.SUBMITTED", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   REPORT_READY: { label: "radiology.submissionStatus.REPORT_READY", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+};
+
+export const RadiologyOrderStatusMap: Record<string, { label: string; color: string }> = {
+  PENDING:    { label: "radiology.orderStatus.PENDING",    color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  CHECKED_IN: { label: "radiology.orderStatus.CHECKED_IN", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  IN_PROGRESS:{ label: "radiology.orderStatus.IN_PROGRESS",color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  COMPLETED:  { label: "radiology.orderStatus.COMPLETED",  color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+  CANCELLED:  { label: "radiology.orderStatus.CANCELLED",  color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+};
+
+export const RadiologyPaymentStatusMap: Record<string, { label: string; color: string }> = {
+  UNPAID:   { label: "radiology.paymentStatus.UNPAID",   color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  PARTIAL:  { label: "radiology.paymentStatus.PARTIAL",  color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  PAID:     { label: "radiology.paymentStatus.PAID",     color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  REFUNDED: { label: "radiology.paymentStatus.REFUNDED", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
 };
 
 export const RADIOLOGY_PATIENT_FLAGS: { value: string; label: string; color: string }[] = [

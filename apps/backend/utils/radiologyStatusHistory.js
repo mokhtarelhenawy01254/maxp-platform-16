@@ -37,9 +37,9 @@ function signerDisplayName(req) {
   return ([req?.user?.firstName, req?.user?.lastName].filter(Boolean).join(' ') || req?.user?.email || null);
 }
 
-async function syncStudyOrderStatus(prisma, study, { changedBy, userName } = {}) {
+async function syncStudyOrderStatus(prisma, study, { changedBy, userName, appointment = null } = {}) {
   try {
-    const derived = deriveRadiologyOrderStatus({ study });
+    const derived = deriveRadiologyOrderStatus({ study, appointment });
     if (derived !== study.orderStatus) {
       await recordRadiologyStatusHistory(prisma, {
         companyId: study.companyId,

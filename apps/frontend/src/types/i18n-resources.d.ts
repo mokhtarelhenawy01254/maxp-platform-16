@@ -13614,6 +13614,53 @@ declare module 'react-i18next' {
           SUBMITTED: string;
           REPORT_READY: string;
         };
+        orderStatus: {
+          PENDING: string;
+          CHECKED_IN: string;
+          IN_PROGRESS: string;
+          COMPLETED: string;
+          CANCELLED: string;
+        };
+        paymentStatus: {
+          UNPAID: string;
+          PARTIAL: string;
+          PAID: string;
+          REFUNDED: string;
+        };
+        historyDimension: {
+          ORDER: string;
+          PREP: string;
+          REPORT: string;
+          PAYMENT: string;
+        };
+        details: {
+          title: string;
+          back: string;
+          studyNumber: string;
+          orderStatus: string;
+          preparationStatus: string;
+          paymentStatus: string;
+          patient: string;
+          exam: string;
+          appointment: string;
+          timeline: string;
+          'timeline.empty': string;
+          report: string;
+          images: string;
+          payment: string;
+          insurance: string;
+          total: string;
+          paid: string;
+          remaining: string;
+          'billingType.PATIENT': string;
+          'billingType.INSURANCE': string;
+          recordPayment: string;
+          refund: string;
+          emptyReport: string;
+          noImages: string;
+          notes: string;
+          viewDetails: string;
+        };
         appointmentStatus: {
           SCHEDULED: string;
           CHECKED_IN: string;

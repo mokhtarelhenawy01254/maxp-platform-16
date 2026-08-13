@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, ChevronDown, ScanLine } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, ChevronDown, ScanLine, Info } from "lucide-react";
 import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, RadiologyDevice, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 import ScheduleCalendar, { ViewMode, dayKey, addDays, egyptWeekStart } from "./ScheduleCalendar";
 
@@ -20,6 +21,7 @@ interface Appointment {
   emergency?: boolean;
   appointmentDate?: string; appointmentTime?: string;
   branchId?: string; status: string; notes?: string; createdAt: string;
+  studyId?: string;
 }
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -52,6 +54,7 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 
 export default function ScheduleTab() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [items, setItems] = useState<Appointment[]>([]);
   const [examTypes, setExamTypes] = useState<RadiologyExamType[]>([]);
   const [additions, setAdditions] = useState<RadiologyExamAddition[]>([]);
@@ -626,6 +629,9 @@ export default function ScheduleTab() {
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 max-w-[160px] truncate">{a.notes || "—"}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
+                          {a.studyId ? (
+                            <button onClick={() => navigate(`/radiology/study/${a.studyId}`)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.details.viewDetails") as string}><Info className="w-4 h-4" /></button>
+                          ) : null}
                           <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as { patientId?: string }).patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", nationalId: (a as { nationalId?: string }).nationalId || "", insuranceNumber: (a as { insuranceNumber?: string }).insuranceNumber || "", patientFlags: parsePatientFlags((a as { patientFlags?: string[] | string }).patientFlags), examTypeIds: Array.isArray((a as { examTypeIds?: string[] | string }).examTypeIds) ? (a as { examTypeIds?: string[] }).examTypeIds || [] : (typeof (a as { examTypeIds?: string | string[] }).examTypeIds === "string" ? JSON.parse((a as { examTypeIds?: string }).examTypeIds || "[]") as string[] : []), deviceId: (a as { deviceId?: string }).deviceId || "", insuranceCompanyId: a.insuranceCompanyId || "", additionIds: Array.isArray(a.additionIds) ? a.additionIds as string[] : (typeof a.additionIds === "string" ? JSON.parse(a.additionIds) as string[] : []), referringPhysicianId: (a as { referringPhysicianId?: string }).referringPhysicianId || "", referralDoctor: a.referralDoctor || "", emergency: !!a.emergency, appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", status: a.status, notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.schedule.edit")}><Pencil className="w-4 h-4" /></button>
                           {a.status !== "CANCELLED" && a.status !== "DONE" ? (
                             <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.schedule.convertToStudy")}><ArrowRightLeft className="w-4 h-4" /></button>

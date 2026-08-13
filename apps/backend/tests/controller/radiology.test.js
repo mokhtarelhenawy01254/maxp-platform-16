@@ -66,6 +66,10 @@ const createPrisma = (overrides = {}) => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    radiologyStudyStatusHistory: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+    },
     radiologyContract: {
       findMany: jest.fn(),
       findFirst: jest.fn(),

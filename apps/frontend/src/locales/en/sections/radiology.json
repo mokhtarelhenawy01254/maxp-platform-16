@@ -68,6 +68,53 @@
     "SUBMITTED": "Submitted",
     "REPORT_READY": "Report ready"
   },
+  "orderStatus": {
+    "PENDING": "Pending",
+    "CHECKED_IN": "Checked in",
+    "IN_PROGRESS": "In progress",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "paymentStatus": {
+    "UNPAID": "Unpaid",
+    "PARTIAL": "Partially paid",
+    "PAID": "Paid",
+    "REFUNDED": "Refunded"
+  },
+  "historyDimension": {
+    "ORDER": "Order status",
+    "PREP": "Preparation",
+    "REPORT": "Report",
+    "PAYMENT": "Payment"
+  },
+  "details": {
+    "title": "Study details",
+    "back": "Back",
+    "studyNumber": "Study number",
+    "orderStatus": "Order status",
+    "preparationStatus": "Preparation",
+    "paymentStatus": "Payment",
+    "patient": "Patient",
+    "exam": "Exam",
+    "appointment": "Appointment",
+    "timeline": "Status timeline",
+    "timeline.empty": "No activity yet",
+    "report": "Report",
+    "images": "Images",
+    "payment": "Payment",
+    "insurance": "Insurance",
+    "total": "Total",
+    "paid": "Paid",
+    "remaining": "Remaining",
+    "billingType.PATIENT": "Patient billed",
+    "billingType.INSURANCE": "Insurance billed",
+    "recordPayment": "Record payment",
+    "refund": "Refund",
+    "emptyReport": "No report yet",
+    "noImages": "No images",
+    "notes": "Notes",
+    "viewDetails": "Details"
+  },
   "appointmentStatus": {
     "SCHEDULED": "Scheduled",
     "CHECKED_IN": "Checked in",
