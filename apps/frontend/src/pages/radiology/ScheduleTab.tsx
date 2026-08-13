@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap } from "lucide-react";
-import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck } from "lucide-react";
+import { api, bookingApi, fetchJson, RadiologyExamType, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import ScheduleCalendar, { ViewMode, dayKey, addDays, egyptWeekStart } from "./ScheduleCalendar";
 
 interface Appointment {
   id: string; patientName: string; patientPhone?: string;
@@ -52,6 +53,8 @@ export default function ScheduleTab() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(todayKey());
   const [dateTo, setDateTo] = useState(todayKey());
+  const [view, setView] = useState<ViewMode>("list");
+  const [anchorDate, setAnchorDate] = useState(todayKey());
   const [modal, setModal] = useState<Form | null>(null);
   const [saving, setSaving] = useState(false);
   const [converting, setConverting] = useState<string | null>(null);
@@ -76,17 +79,26 @@ export default function ScheduleTab() {
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     try {
       const url = new URL(api("appointments"));
-      url.searchParams.set("limit", "200");
+      url.searchParams.set("limit", "300");
       if (status) url.searchParams.set("status", status);
       if (search.trim()) url.searchParams.set("patientName", search.trim());
-      if (dateFrom) url.searchParams.set("dateFrom", dateFrom);
-      if (dateTo) url.searchParams.set("dateTo", dateTo);
+      if (view === "list") {
+        if (dateFrom) url.searchParams.set("dateFrom", dateFrom);
+        if (dateTo) url.searchParams.set("dateTo", dateTo);
+      } else {
+        const a = new Date(anchorDate + "T12:00:00");
+        let from = dayKey(a), to = dayKey(a);
+        if (view === "week") { const s = egyptWeekStart(a); from = dayKey(s); to = dayKey(addDays(s, 6)); }
+        if (view === "month") { from = dayKey(new Date(a.getFullYear(), a.getMonth(), 1)); to = dayKey(new Date(a.getFullYear(), a.getMonth() + 1, 0)); }
+        url.searchParams.set("dateFrom", from);
+        url.searchParams.set("dateTo", to);
+      }
       const res = await fetchJson<{ items?: Appointment[]; total?: number }>(url.toString());
       setItems(res.items || []);
     } catch (e) {
       if (!opts?.silent) toast.error(e instanceof Error ? e.message : "فشل تحميل الحجوزات");
     }
-  }, [status, search, dateFrom, dateTo]);
+  }, [status, search, dateFrom, dateTo, view, anchorDate]);
 
   useEffect(() => {
     loadCatalog();
@@ -229,12 +241,35 @@ export default function ScheduleTab() {
   const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
   const labelCls = "block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1";
 
+  const shiftAnchor = (dir: number) => {
+    const a = new Date(anchorDate + "T12:00:00");
+    if (view === "day") setAnchorDate(dayKey(addDays(a, dir)));
+    else if (view === "week") setAnchorDate(dayKey(addDays(a, dir * 7)));
+    else { const x = new Date(a.getFullYear(), a.getMonth() + dir, 1); setAnchorDate(dayKey(x)); }
+  };
+  const gotoToday = () => setAnchorDate(todayKey());
+  const selectDay = (key: string) => { setAnchorDate(key); setView("day"); };
+
+  const VIEW_TABS: { id: ViewMode; label: string; icon: typeof List }[] = [
+    { id: "list", label: "قائمة", icon: List },
+    { id: "day", label: "يوم", icon: CalendarDays },
+    { id: "week", label: "أسبوع", icon: CalendarRange },
+    { id: "month", label: "شهر", icon: CalendarCheck },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">الحجوزات — شغل اليوم</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">حجز مواعيد المرضى وتحويلها لدراسات</p>
+        </div>
+        <div className="flex items-center gap-1.5 border dark:border-gray-600 rounded-lg p-1">
+          {VIEW_TABS.map(v => (
+            <button key={v.id} onClick={() => setView(v.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === v.id ? "bg-blue-600 text-white" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
+              <v.icon className="w-4 h-4" />{v.label}
+            </button>
+          ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => { setDateFrom(todayKey()); setDateTo(todayKey()); }} className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">اليوم</button>
@@ -252,14 +287,25 @@ export default function ScheduleTab() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm text-gray-600 dark:text-gray-300">من</label>
-        <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-        <label className="text-sm text-gray-600 dark:text-gray-300">إلى</label>
-        <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
-      </div>
+      {view === "list" && (
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-sm text-gray-600 dark:text-gray-300">من</label>
+          <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <label className="text-sm text-gray-600 dark:text-gray-300">إلى</label>
+          <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        </div>
+      )}
 
-      {loading && !items.length ? (
+      {view !== "list" ? (
+        <ScheduleCalendar
+          view={view as "day" | "week" | "month"}
+          anchorDate={anchorDate}
+          items={items}
+          onShift={shiftAnchor}
+          onToday={gotoToday}
+          onSelectDay={selectDay}
+        />
+      ) : loading && !items.length ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
       ) : items.length === 0 ? (
         <p className="text-center py-16 text-gray-400 dark:text-gray-500">لا توجد حجوزات في هذه الفترة</p>
