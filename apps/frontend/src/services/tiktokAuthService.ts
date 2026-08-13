@@ -11,7 +11,7 @@ export interface TikTokCustomerProfile {
   phone: string | null;
 }
 
-const API_BASE = config.apiUrl.replace(/\/api\/v1\/?$/, "");
+const getApiBase = (): string => config.apiUrl.replace(/\/api\/v1\/?$/, "");
 
 export function getTiktokLoginUrl(
   companyId: string,
@@ -21,7 +21,7 @@ export function getTiktokLoginUrl(
   if (redirectPath && redirectPath.startsWith("/")) {
     params.set("redirect", redirectPath);
   }
-  return `${API_BASE}/api/v1/tiktok/auth/login?${params.toString()}`;
+  return `${getApiBase()}/api/v1/tiktok/auth/login?${params.toString()}`;
 }
 
 export async function fetchTiktokProfile(): Promise<TikTokCustomerProfile> {
