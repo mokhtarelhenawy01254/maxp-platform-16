@@ -139,7 +139,6 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
 
     const [delayValue, setDelayValue] = useState(1.5);
     const [delayUnit, setDelayUnit] = useState<'seconds' | 'minutes'>('seconds');
-    const [delayMode, setDelayMode] = useState<'perMessage' | 'perSession'>('perMessage');
 
     const [sending, setSending] = useState<boolean>(() =>
         Boolean(localStorage.getItem(CAMPAIGN_STORAGE_KEY))
@@ -301,7 +300,6 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                 sessionId: targetSession.sessionId,
                 delayValue,
                 delayUnit,
-                delayMode,
             };
             if (audience === 'newCustomers') payload.newDays = clampDays(newDays);
             if (trimmedMediaUrl) payload.mediaUrl = trimmedMediaUrl;
@@ -370,12 +368,26 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
             : undefined;
     const canSend =
         !sending &&
-        !!message.trim() &&
-        !!selectedSession &&
         !sessionsLoading &&
         !audienceLoading &&
+        !!message.trim() &&
+        message.trim().length <= MAX_MESSAGE_LENGTH &&
+        !!occasionName.trim() &&
+        occasionName.trim().length <= MAX_OCCASION_NAME_LENGTH &&
+        Number.isFinite(delayValue) && delayValue > 0 &&
+        (mediaUrl.trim() ? isValidHttpUrl(mediaUrl.trim()) : true) &&
+        !!selectedSession &&
         connectedSessions.length > 0 &&
-        (audienceCount ?? 0) > 0;
+        (audienceCount ?? 0) > 0 &&
+        (scheduleMode !== 'scheduled' ||
+            (() => {
+                if (!sendDate || !sendTime) return false;
+                const combined = new Date(`${sendDate}T${sendTime}:00`);
+                return (
+                    !Number.isNaN(combined.getTime()) &&
+                    combined.getTime() - Date.now() >= MIN_SCHEDULE_LEAD_MS
+                );
+            })());
 
     const statusColor =
         campaign?.status === 'scheduled'
@@ -661,6 +673,9 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                                 />
                             </div>
                         </div>
+                        <p className="text-[11px] text-amber-500 dark:text-amber-400 mt-1">
+                            ملاحظة: الحد الأقصى للجدولة 24 يوماً من الآن.
+                        </p>
                     )}
                 </div>
 
@@ -784,14 +799,6 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                                 <option value="minutes" className="dark:bg-slate-900">دقيقة</option>
                             </select>
                         </div>
-                        <select
-                            value={delayMode}
-                            onChange={e => setDelayMode(e.target.value as 'perMessage' | 'perSession')}
-                            className="border border-gray-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs bg-gray-50 dark:bg-slate-950 outline-none text-gray-900 dark:text-slate-100"
-                        >
-                            <option value="perMessage" className="dark:bg-slate-900">لكل رسالة</option>
-                            <option value="perSession" className="dark:bg-slate-900">لكل جلسة</option>
-                        </select>
                         <span className="text-[11px] text-gray-400 dark:text-slate-500">
                             نصيحة: 1.5-3 ثواني آمن ✓
                         </span>
