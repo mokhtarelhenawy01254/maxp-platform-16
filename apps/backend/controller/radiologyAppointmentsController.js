@@ -9,6 +9,19 @@ const normalizeText = (value) => {
   return s === '' ? null : s;
 };
 
+const normalizePatientFlags = (value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  let arr = value;
+  if (typeof value === 'string') {
+    try { arr = JSON.parse(value); } catch { return undefined; }
+  }
+  if (!Array.isArray(arr)) return undefined;
+  const flags = arr
+    .map(f => (typeof f === 'string' ? f.trim() : ''))
+    .filter(Boolean);
+  return flags.length ? JSON.stringify([...new Set(flags)]) : null;
+};
+
 const parseDate = (value) => {
   if (!value) return null;
   const d = new Date(value);
@@ -103,6 +116,7 @@ const createAppointment = async (req, res) => {
         patientAge: body.patientAge ? String(body.patientAge) : null,
         nationalId: body.nationalId ? String(body.nationalId) : null,
         insuranceNumber: body.insuranceNumber ? String(body.insuranceNumber) : null,
+        patientFlags: normalizePatientFlags(body.patientFlags),
         examTypeId: body.examTypeId || null,
         examTypeName: examTypeName || (body.examTypeName ? String(body.examTypeName) : null),
         insuranceCompanyId: body.insuranceCompanyId || null,
@@ -148,6 +162,10 @@ const updateAppointment = async (req, res) => {
     if (body.patientAge !== undefined) data.patientAge = normalizeText(body.patientAge);
     if (body.nationalId !== undefined) data.nationalId = normalizeText(body.nationalId);
     if (body.insuranceNumber !== undefined) data.insuranceNumber = normalizeText(body.insuranceNumber);
+    if (body.patientFlags !== undefined) {
+      const flags = normalizePatientFlags(body.patientFlags);
+      if (flags !== undefined) data.patientFlags = flags;
+    }
     if (body.examTypeId !== undefined) {
       data.examTypeId = body.examTypeId || null;
       if (body.examTypeId) {
@@ -255,6 +273,7 @@ const convertToStudy = async (req, res) => {
         patientAge: appointment.patientAge,
         nationalId: appointment.nationalId || null,
         insuranceNumber: appointment.insuranceNumber || null,
+        patientFlags: appointment.patientFlags || null,
         examTypeId: appointment.examTypeId,
         examTypeName: appointment.examTypeName,
         modality: examType ? (MODALITY_BY_CATEGORY[examType.category] || examType.category || null) : null,

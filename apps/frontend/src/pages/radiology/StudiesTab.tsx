@@ -260,7 +260,7 @@ export default function StudiesTab() {
     setAdvancingId(s.id);
     try {
       await fetchJson(api(`studies/${s.id}`), { method: "PUT", body: JSON.stringify({ status: next }) });
-      toast.success(t("radiology.studies.statusUpdated", { status: RadiologyStatusMap[next] ? t(RadiologyStatusMap[next].label) : next }));
+      toast.success(t("radiology.studies.statusUpdated", { status: RadiologyStatusMap[next] ? t(RadiologyStatusMap[next]?.label ?? "") : next }));
       await refresh({ silent: true });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("radiology.studies.statusUpdateFailed"));

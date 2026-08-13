@@ -82,7 +82,7 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
         setText(r?.reportText || "");
         const tpls = await fetchJson<RadiologyReportTemplate[]>(api("report-templates"));
         setTemplates(tpls || []);
-        if (!r && tpls && tpls.length > 0) {
+        if ((!r || !(r.reportText || "").trim()) && tpls && tpls.length > 0) {
           const first = tpls[0]!;
           setTemplateId(first.id);
           setText(first.body);

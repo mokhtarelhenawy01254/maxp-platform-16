@@ -299,6 +299,52 @@ describe('radiologyController', () => {
       expect(res.payload.data.studyNumber).toMatch(/^RAD-\d{8}-\d{4}$/);
     });
 
+    test('stores patientFlags as a deduplicated JSON array', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyExamType.findFirst.mockResolvedValue(makeExamType());
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createStudy(
+        req({
+          body: {
+            patientName: 'محمد علي',
+            examTypeId: 'et-1',
+            patientFlags: ['pregnancy', 'renal', 'pregnancy'],
+          },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.create.mock.calls[0][0].data;
+      expect(JSON.parse(data.patientFlags)).toEqual(['pregnancy', 'renal']);
+    });
+
+    test('stores patientFlags when passed as a JSON string', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyExamType.findFirst.mockResolvedValue(makeExamType());
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createStudy(
+        req({
+          body: {
+            patientName: 'محمد علي',
+            examTypeId: 'et-1',
+            patientFlags: '["contrast_allergy","bleeding"]',
+          },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.create.mock.calls[0][0].data;
+      expect(JSON.parse(data.patientFlags)).toEqual(['contrast_allergy', 'bleeding']);
+    });
+
     test('retries with a fresh studyNumber on a unique collision', async () => {
       const prisma = createPrisma();
       prisma.radiologyStudy.create
@@ -438,6 +484,50 @@ describe('radiologyController', () => {
       expect(res.payload.error).toBe('حالة الدراسة غير صحيحة');
       expect(prisma.radiologyStudy.findMany).not.toHaveBeenCalled();
     });
+
+    test('filters studies that have a report (hasReport=true)', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findMany.mockResolvedValue([makeStudy()]);
+      prisma.radiologyStudy.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.listStudies(req({ query: { hasReport: 'true' } }), res);
+
+      const args = prisma.radiologyStudy.findMany.mock.calls[0][0];
+      expect(args.where.report).toEqual({ isNot: null });
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('filters by report status and study number', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findMany.mockResolvedValue([makeStudy()]);
+      prisma.radiologyStudy.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.listStudies(
+        req({ query: { reportStatus: 'signed', studyNumber: 'RAD-20260809' } }),
+        res
+      );
+
+      const args = prisma.radiologyStudy.findMany.mock.calls[0][0];
+      expect(args.where.report).toEqual({ is: { reportStatus: 'SIGNED' } });
+      expect(args.where.studyNumber).toEqual({ contains: 'RAD-20260809', mode: 'insensitive' });
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('rejects an invalid report status filter', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.listStudies(req({ query: { reportStatus: 'BOGUS' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('حالة التقرير غير صحيحة');
+      expect(prisma.radiologyStudy.findMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('getStudy', () => {
@@ -520,6 +610,52 @@ describe('radiologyController', () => {
           data: expect.objectContaining({ status: 'PENDING_REPORT' }),
         })
       );
+    });
+
+    test('auto-creates a DRAFT report when the study enters PENDING_REPORT', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({ status: 'IMAGED' }));
+      prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ ...makeStudy(), ...data }));
+      prisma.radiologyReport.findUnique.mockResolvedValue(null);
+      prisma.radiologyReport.create.mockImplementation(({ data }) => Promise.resolve({ id: 'rep-auto', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateStudy(req({ params: { id: 'study-1' }, body: { status: 'PENDING_REPORT' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyReport.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ studyId: 'study-1', reportStatus: 'DRAFT', reportText: '' }),
+        })
+      );
+    });
+
+    test('does not duplicate an existing report on transition', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({ status: 'IMAGED' }));
+      prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ ...makeStudy(), ...data }));
+      prisma.radiologyReport.findUnique.mockResolvedValue({ id: 'rep-1', studyId: 'study-1', reportStatus: 'DRAFT' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateStudy(req({ params: { id: 'study-1' }, body: { status: 'PENDING_REPORT' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyReport.create).not.toHaveBeenCalled();
+    });
+
+    test('does not auto-create a report for a non-report stage', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({ status: 'PENDING_IMAGING' }));
+      prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ ...makeStudy(), ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateStudy(req({ params: { id: 'study-1' }, body: { status: 'IMAGED' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyReport.create).not.toHaveBeenCalled();
     });
 
     test('allows setting the same status without a transition error', async () => {
@@ -609,6 +745,40 @@ describe('radiologyController', () => {
 
       expect(res.statusCode).toBe(404);
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
+    });
+
+    test('updates patientFlags (dedupe + JSON serialize)', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy());
+      prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ ...makeStudy(), ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateStudy(
+        req({ params: { id: 'study-1' }, body: { patientFlags: ['claustrophobia', 'bleeding', 'claustrophobia'] } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.update.mock.calls[0][0].data;
+      expect(JSON.parse(data.patientFlags)).toEqual(['claustrophobia', 'bleeding']);
+    });
+
+    test('clears patientFlags when an empty array is sent', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy());
+      prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ ...makeStudy(), ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateStudy(
+        req({ params: { id: 'study-1' }, body: { patientFlags: [] } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.update.mock.calls[0][0].data;
+      expect(data.patientFlags).toBeNull();
     });
   });
 
@@ -965,7 +1135,7 @@ describe('radiologyController', () => {
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyReport.update).toHaveBeenCalledWith({
         where: { id: 'rep-1' },
-        data: { reportStatus: 'REVIEWED' },
+        data: expect.objectContaining({ reportStatus: 'REVIEWED' }),
       });
     });
 

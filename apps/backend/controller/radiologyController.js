@@ -39,6 +39,19 @@ const normalizeText = (value) => {
   return s === '' ? null : s;
 };
 
+const normalizePatientFlags = (value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  let arr = value;
+  if (typeof value === 'string') {
+    try { arr = JSON.parse(value); } catch { return undefined; }
+  }
+  if (!Array.isArray(arr)) return undefined;
+  const flags = arr
+    .map(f => (typeof f === 'string' ? f.trim() : ''))
+    .filter(Boolean);
+  return flags.length ? JSON.stringify([...new Set(flags)]) : null;
+};
+
 const parseDate = (value) => {
   if (value === undefined || value === null || value === '') return null;
   const date = new Date(value);
@@ -82,6 +95,20 @@ const resolveModality = (category) => {
 const signerName = (req) => {
   const name = [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ');
   return name || req.user?.email || null;
+};
+
+const ensureReportForStudy = async (prisma, studyId, signer) => {
+  const existing = await prisma.radiologyReport.findUnique({ where: { studyId } });
+  if (existing) return existing;
+  return prisma.radiologyReport.create({
+    data: {
+      studyId,
+      reportText: '',
+      reportStatus: 'DRAFT',
+      typedBy: signer || null,
+      typedAt: new Date(),
+    },
+  });
 };
 
 const formatImage = (image) => {
@@ -218,7 +245,7 @@ const listStudies = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { patientName, patientId, nationalId, insuranceNumber, status, dateFrom, dateTo, page, limit } = req.query;
+    const { patientName, patientId, nationalId, insuranceNumber, studyNumber, status, reportStatus, hasReport, dateFrom, dateTo, page, limit } = req.query;
     const where = { companyId };
 
     if (patientId && String(patientId).trim()) {
@@ -233,10 +260,21 @@ const listStudies = async (req, res) => {
     if (insuranceNumber && String(insuranceNumber).trim()) {
       where.insuranceNumber = { contains: String(insuranceNumber).trim(), mode: 'insensitive' };
     }
+    if (studyNumber && String(studyNumber).trim()) {
+      where.studyNumber = { contains: String(studyNumber).trim(), mode: 'insensitive' };
+    }
     if (status) {
       const s = String(status).toUpperCase();
       if (!STUDY_STATUSES.has(s)) return res.status(400).json({ success: false, error: 'حالة الدراسة غير صحيحة' });
       where.status = s;
+    }
+    if (hasReport === 'true' || hasReport === '1') {
+      where.report = { isNot: null };
+    }
+    if (reportStatus) {
+      const rs = String(reportStatus).toUpperCase();
+      if (!REPORT_STATUSES.has(rs)) return res.status(400).json({ success: false, error: 'حالة التقرير غير صحيحة' });
+      where.report = { is: { reportStatus: rs } };
     }
     if (dateFrom || dateTo) {
       const createdAtFilter = {};
@@ -372,6 +410,7 @@ const createStudy = async (req, res) => {
             patientAge: body.patientAge ? String(body.patientAge) : null,
             nationalId: body.nationalId ? String(body.nationalId) : null,
             insuranceNumber: body.insuranceNumber ? String(body.insuranceNumber) : null,
+            patientFlags: normalizePatientFlags(body.patientFlags),
             examTypeId: examType ? examType.id : null,
             examTypeName: examType ? examType.name : null,
             modality: examType ? resolveModality(examType.category) : null,
@@ -436,6 +475,7 @@ const duplicateStudy = async (req, res) => {
             patientAge: existing.patientAge,
             nationalId: existing.nationalId,
             insuranceNumber: existing.insuranceNumber,
+            patientFlags: existing.patientFlags,
             examTypeId: existing.examTypeId,
             examTypeName: existing.examTypeName,
             modality: existing.modality,
@@ -494,6 +534,10 @@ const updateStudy = async (req, res) => {
     if (body.patientAge !== undefined) data.patientAge = body.patientAge ? String(body.patientAge) : null;
     if (body.nationalId !== undefined) data.nationalId = body.nationalId ? String(body.nationalId) : null;
     if (body.insuranceNumber !== undefined) data.insuranceNumber = body.insuranceNumber ? String(body.insuranceNumber) : null;
+    if (body.patientFlags !== undefined) {
+      const flags = normalizePatientFlags(body.patientFlags);
+      if (flags !== undefined) data.patientFlags = flags;
+    }
     if (body.patientId !== undefined) data.patientId = body.patientId || null;
     if (body.emergency !== undefined) data.emergency = normalizeBool(body.emergency, existing.emergency);
     if (body.withContrast !== undefined) data.withContrast = normalizeBool(body.withContrast, existing.withContrast);
@@ -575,6 +619,9 @@ const updateStudy = async (req, res) => {
     if (body.reportReceivedAt !== undefined) data.reportReceivedAt = parseDate(body.reportReceivedAt);
 
     const study = await prisma.radiologyStudy.update({ where: { id }, data });
+    if (data.status === 'PENDING_REPORT' || data.status === 'REPORTED') {
+      await ensureReportForStudy(prisma, id, signerName(req)).catch(() => null);
+    }
     res.json({ success: true, data: study });
   } catch (error) {
     console.error('Error updating radiology study:', error);

@@ -144,7 +144,7 @@ export default function InsuranceLedgerTab() {
                   return (
                     <tr key={e.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
                       <td className="py-3 px-4 font-medium">{e.insuranceCompanyName || "—"}</td>
-                      <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${meta?.color}`}>{t(meta?.label)}</span></td>
+                      <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${meta?.color}`}>{t(meta?.label ?? "")}</span></td>
                       <td className="py-3 px-4 font-bold">{e.type === "PAYMENT" ? "+" : "±"} {fmtMoney(e.amount, t("radiology.currency"))}</td>
                       <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{e.note || "—"}</td>
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtDate(e.createdAt)}</td>

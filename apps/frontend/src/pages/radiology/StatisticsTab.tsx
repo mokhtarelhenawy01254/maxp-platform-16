@@ -95,7 +95,7 @@ export default function StatisticsTab() {
               <div className="space-y-2">
                 {Object.entries(stats.byStatus).map(([k, v]) => (
                   <div key={k} className="flex justify-between text-sm border-b dark:border-gray-700/50 pb-1.5">
-                    <span className="text-gray-600 dark:text-gray-300">{STATUS_LABEL[k] ? t(STATUS_LABEL[k]) : k}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{STATUS_LABEL[k] ? t(STATUS_LABEL[k] ?? "") : k}</span>
                     <b>{v}</b>
                   </div>
                 ))}

@@ -76,7 +76,7 @@ export default function RadiologyInvoicesTab() {
                     <td className="py-3 px-4">{fmtMoney(net(i), t("radiology.currency"))}</td>
                     <td className="py-3 px-4">{fmtMoney(i.amountPaid, t("radiology.currency"))}</td>
                     <td className="py-3 px-4">{fmtMoney(remaining(i), t("radiology.currency"))}</td>
-                    <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${st.color}`}>{t(st.label)}</span></td>
+                    <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${st?.color}`}>{t(st?.label ?? "")}</span></td>
                   </tr>
                 );
               })}

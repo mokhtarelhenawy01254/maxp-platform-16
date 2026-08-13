@@ -64,12 +64,12 @@ export default function RadiologyPatientsTab() {
       if (insuranceCompanyId) url.searchParams.set("insuranceCompanyId", insuranceCompanyId);
       const res = await fetch(url.toString(), { headers: getAuthHeaders() });
       const json = await res.json();
-      if (!json.success) throw new Error(json.error || "فشل تحميل المرضى");
+      if (!json.success) throw new Error(json.error || t("radiology.patients.loadingFailed"));
       const rows = Array.isArray(json.data) ? json.data : [];
       setItems(rows);
       setTotal(json.total ?? rows.length);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل تحميل المرضى");
+      toast.error(e instanceof Error ? e.message : t("radiology.patients.loadingFailed"));
     } finally {
       setLoading(false);
     }
@@ -220,7 +220,7 @@ export default function RadiologyPatientsTab() {
                 <tr key={p.id} className={`border-b dark:border-gray-700/50 last:border-0 ${!p.isActive ? "opacity-60" : ""}`}>
                   <td className="py-3 px-4 font-medium">{p.firstName} {p.lastName || ""}</td>
                   <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>
-                  <td className="py-3 px-4">{GENDER_LABEL[p.gender || ""] ? t(GENDER_LABEL[p.gender || ""]) : "—"}</td>
+                  <td className="py-3 px-4">{GENDER_LABEL[p.gender || ""] ? t(GENDER_LABEL[p.gender || ""] ?? "") : "—"}</td>
                   <td className="py-3 px-4" dir="ltr">{p.nationalId || "—"}</td>
                   <td className="py-3 px-4">
                     {p.insuranceNumber ? <span dir="ltr">{p.insuranceNumber}</span> : "—"}
@@ -229,7 +229,7 @@ export default function RadiologyPatientsTab() {
                   <td className="py-3 px-4">{p.visitCount ?? 0}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${statusColor(p.status, p.isActive)}`}>
-                      {STATUS_LABEL[p.status || ""] ? t(STATUS_LABEL[p.status || ""]) : (p.isActive ? t("radiology.patients.active") : t("radiology.patients.inactive"))}
+                      {STATUS_LABEL[p.status || ""] ? t(STATUS_LABEL[p.status || ""] ?? "") : (p.isActive ? t("radiology.patients.active") : t("radiology.patients.inactive"))}
                     </span>
                   </td>
                   <td className="py-3 px-4">

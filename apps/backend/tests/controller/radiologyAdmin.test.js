@@ -106,6 +106,45 @@ describe('radiologyAppointmentsController', () => {
     expect(prisma.radiologyAppointment.create).toHaveBeenCalledWith({ data: expect.objectContaining({ patientId: 'pat-1', status: 'SCHEDULED' }) });
   });
 
+  test('createAppointment stores patientFlags as a deduplicated JSON array', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyAppointment.create.mockImplementation(({ data }) => Promise.resolve({ id: 'ap-1', ...data }));
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await appointments.createAppointment(req({
+      body: {
+        patientName: 'مريض',
+        examTypeId: 'et-1',
+        patientFlags: ['pregnancy', 'contrast_allergy', 'pregnancy'],
+      },
+    }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.radiologyAppointment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ patientFlags: '["pregnancy","contrast_allergy"]' }),
+    });
+  });
+
+  test('updateAppointment stores patientFlags', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyAppointment.findFirst.mockResolvedValue({ id: 'ap-1', companyId: 'company-1', status: 'SCHEDULED' });
+    prisma.radiologyAppointment.update.mockImplementation(({ data }) => Promise.resolve({ id: 'ap-1', ...data }));
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await appointments.updateAppointment(req({
+      params: { id: 'ap-1' },
+      body: { patientFlags: ['renal', 'bleeding'] },
+    }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.radiologyAppointment.update).toHaveBeenCalledWith({
+      where: { id: 'ap-1' },
+      data: expect.objectContaining({ patientFlags: '["renal","bleeding"]' }),
+    });
+  });
+
   test('convertToStudy sets priceSnapshot, modality, billingType and carries patientId', async () => {
     const prisma = createPrisma();
     prisma.radiologyAppointment.findFirst.mockResolvedValue({
@@ -126,6 +165,28 @@ describe('radiologyAppointmentsController', () => {
     expect(data.priceSnapshot).toBe(500);
     expect(data.modality).toBe('CT');
     expect(data.billingType).toBe('PATIENT');
+  });
+
+  test('convertToStudy carries patientFlags from the appointment', async () => {
+    const prisma = createPrisma();
+    prisma.radiologyAppointment.findFirst.mockResolvedValue({
+      id: 'ap-1', companyId: 'company-1', patientId: 'pat-1', patientName: 'مريض', patientPhone: '011', patientGender: 'F',
+      patientAge: '30', examTypeId: 'et-1', examTypeName: 'أشعة مقطعية على الصدر', status: 'SCHEDULED',
+      nationalId: '29901010123456', insuranceNumber: 'INS-1', patientFlags: '["pregnancy","renal"]',
+    });
+    prisma.radiologyExamType.findFirst.mockResolvedValue({ id: 'et-1', name: 'أشعة مقطعية على الصدر', category: 'CT', price: 500, isActive: true });
+    prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+    prisma.radiologyAppointment.update.mockResolvedValue({});
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await appointments.convertToStudy(req({ params: { id: 'ap-1' } }), res);
+
+    expect(res.statusCode).toBe(200);
+    const data = prisma.radiologyStudy.create.mock.calls[0][0].data;
+    expect(data.patientFlags).toBe('["pregnancy","renal"]');
+    expect(data.nationalId).toBe('29901010123456');
+    expect(data.insuranceNumber).toBe('INS-1');
   });
 
   test('convertToStudy rejects an unpriced exam', async () => {

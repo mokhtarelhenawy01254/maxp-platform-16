@@ -65,7 +65,7 @@ export const bookingApi = (path: string) => {
 
 export interface RadiologyExamType {
   id: string; name: string; category?: string; abbreviation?: string;
-  price: number; isActive: boolean; createdAt: string;
+  price: number; isActive: boolean; isAddition?: boolean; createdAt: string;
 }
 
 export interface RadiologyStudyImage {

@@ -23,6 +23,7 @@ model RadiologyStudy {
   patientAge        String?
   nationalId        String?    // الرقم القومي
   insuranceNumber   String?    // رقم التأمين
+  patientFlags      Json?      // array of risk flag keys (pregnancy, contrast_allergy, renal, bleeding, diabetic, claustrophobia, pacemaker)
   examTypeId        String?
   examTypeName      String?
   modality          String?
@@ -160,6 +161,7 @@ model RadiologyAppointment {
   patientAge       String?
   nationalId       String?
   insuranceNumber  String?
+  patientFlags     Json?    // array of risk flag keys
   examTypeId       String?
   examTypeName     String?
   insuranceCompanyId   String?

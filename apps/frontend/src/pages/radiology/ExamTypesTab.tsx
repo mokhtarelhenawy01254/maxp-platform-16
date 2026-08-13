@@ -56,7 +56,7 @@ export default function ExamTypesTab() {
       if (includeInactive) params.set("includeInactive", "true");
       const res = await fetch(`${api("exam-types")}&${params.toString()}`, { headers: getAuthHeaders() });
       const json = (await res.json()) as { success?: boolean; error?: string; message?: string; data?: RadiologyExamType[]; total?: number; page?: number };
-      if (!json.success) throw new Error(json.error || json.message || t("radiology.examTypes.operationFailed"));
+      if (!json.success) throw new Error(json.error || json.message || String(t("radiology.examTypes.operationFailed")));
       if (requestRef.current !== reqId) return;
       setExamTypes(json.data || []);
       setTotal(json.total ?? 0);
