@@ -1252,7 +1252,8 @@ async function getLoyaltyConfig(req, res) {
           pointsPerAmount: Number(settings.pointsPerAmount || 5),
           pointsRedemptionValue: Number(settings.pointsRedemptionValue || 1),
           redeemPointsEnabled: settings.redeemPointsEnabled !== false,
-          stacking: settings.stacking === true
+          discountCombination: settings.discountCombination || 'ADDITIVE',
+          maxTotalDiscountPercent: Number(settings.maxTotalDiscountPercent || 0)
         },
         cashback: { enabled: cashbackEnabled }
       }
@@ -1266,7 +1267,7 @@ async function getLoyaltyConfig(req, res) {
 /**
  * 🆕 تحديث الإعدادات الموحّدة لأنظمة الولاء.
  * - tiersEnabled / autoDiscountEnabled: تفعيل مستقل (الاتنين ممكن يشتغلوا مع بعض)
- * - stacking: تراكم الخصمين أو أكبر واحد
+ * - discountCombination / maxTotalDiscountPercent: وضع دمج الخصم + حد أقصى
  * - cashbackEnabled: يتزامن مع status برنامج CASHBACK (الأقل ضرر)
  */
 async function updateLoyaltyConfig(req, res) {
@@ -1299,7 +1300,8 @@ async function updateLoyaltyConfig(req, res) {
           pointsPerAmount: Number(settings.pointsPerAmount || 5),
           pointsRedemptionValue: Number(settings.pointsRedemptionValue || 1),
           redeemPointsEnabled: settings.redeemPointsEnabled !== false,
-          stacking: settings.stacking === true
+          discountCombination: settings.discountCombination || 'ADDITIVE',
+          maxTotalDiscountPercent: Number(settings.maxTotalDiscountPercent || 0)
         },
         cashback: { enabled: cashbackEnabled }
       },

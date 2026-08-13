@@ -380,11 +380,27 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     autoDiscountEnabled && tierProgress?.activeVoucher
       ? (Number(subtotal) || 0) * (Number(tierProgress.activeVoucher.percent) / 100)
       : 0;
-  // مطابقة منطق الباك-إند: تراكم (stacking) أو أكبر خصم (max)
-  const stacking = tierProgress?.stacking === true;
-  if (!stacking && loyaltyDiscount > 0 && voucherDiscount > 0) {
-    if (loyaltyDiscount >= voucherDiscount) voucherDiscount = 0;
-    else loyaltyDiscount = 0;
+  // مطابقة منطق الباك-إند: دمج الخصم حسب discountCombination + حد أقصى
+  const combination = tierProgress?.discountCombination || 'ADDITIVE';
+  const maxTotalPct = Number(tierProgress?.maxTotalDiscountPercent || 0);
+  const base = Number(subtotal) || 0;
+  let combined = 0;
+  if (combination === 'BEST') {
+    combined = Math.max(loyaltyDiscount, voucherDiscount);
+  } else if (combination === 'COMPOUND') {
+    const lp = base > 0 ? (loyaltyDiscount / base) * 100 : 0;
+    const vp = base > 0 ? (voucherDiscount / base) * 100 : 0;
+    combined = base * (1 - (1 - lp / 100) * (1 - vp / 100));
+  } else {
+    combined = loyaltyDiscount + voucherDiscount;
+  }
+  if (maxTotalPct > 0) {
+    const cap = base * (maxTotalPct / 100);
+    if (combined > cap) combined = cap;
+  }
+  if (combined !== loyaltyDiscount + voucherDiscount) {
+    loyaltyDiscount = combined;
+    voucherDiscount = 0;
   }
 
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(

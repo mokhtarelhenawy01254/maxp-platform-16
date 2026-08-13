@@ -39,7 +39,7 @@ describe('independent loyalty toggles', () => {
     await svc.updateLoyaltyConfig('c1', {
       tiersEnabled: true,
       autoDiscountEnabled: true,
-      stacking: true,
+      discountCombination: 'ADDITIVE',
     });
 
     expect(await svc.isTiersActive('c1')).toBe(true);
@@ -48,7 +48,7 @@ describe('independent loyalty toggles', () => {
     const settings = await svc.getSettings('c1');
     expect(settings.tiersEnabled).toBe(true);
     expect(settings.autoDiscountEnabled).toBe(true);
-    expect(settings.stacking).toBe(true);
+    expect(settings.discountCombination).toBe('ADDITIVE');
   });
 
   it('updating one flag does not clear the other (independent)', async () => {
@@ -65,7 +65,7 @@ describe('independent loyalty toggles', () => {
     const settings = await svc.getSettings('c2');
     expect(settings.tiersEnabled).toBe(false);
     expect(settings.autoDiscountEnabled).toBe(false);
-    expect(settings.stacking).toBe(false);
+    expect(settings.discountCombination).toBe('ADDITIVE');
   });
 
   it('keeps legacy loyaltySystem in sync when only one system is on', async () => {
@@ -77,5 +77,29 @@ describe('independent loyalty toggles', () => {
     await svc.updateLoyaltyConfig('c1', { autoDiscountEnabled: false, tiersEnabled: true });
     const settings2 = await svc.getSettings('c1');
     expect(settings2.loyaltySystem).toBe('TIERS');
+  });
+
+  it('stores discount combination mode and clamps the total discount cap', async () => {
+    await svc.updateLoyaltyConfig('c1', {
+      tiersEnabled: true,
+      autoDiscountEnabled: true,
+      discountCombination: 'COMPOUND',
+      maxTotalDiscountPercent: 15,
+    });
+    const settings = await svc.getSettings('c1');
+    expect(settings.discountCombination).toBe('COMPOUND');
+    expect(settings.maxTotalDiscountPercent).toBe(15);
+  });
+
+  it('rejects an invalid combination mode and falls back to ADDITIVE', async () => {
+    await svc.updateLoyaltyConfig('c1', { discountCombination: 'INVALID' });
+    const settings = await svc.getSettings('c1');
+    expect(settings.discountCombination).toBe('ADDITIVE');
+  });
+
+  it('treats a non-positive cap as no cap (0)', async () => {
+    await svc.updateLoyaltyConfig('c1', { maxTotalDiscountPercent: -5 });
+    const settings = await svc.getSettings('c1');
+    expect(settings.maxTotalDiscountPercent).toBe(0);
   });
 });

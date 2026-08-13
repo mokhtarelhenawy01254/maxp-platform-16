@@ -127,7 +127,7 @@ router.put('/system-settings',
   customerLoyaltyController.updateSystemSettings
 );
 
-// 🆕 إعدادات الولاء الموحّدة (مفاتيح تفعيل مستقلة: المستويات / الخصم التلقائي / الكاش باك + stacking)
+// 🆕 إعدادات الولاء الموحّدة (مفاتيح تفعيل مستقلة: المستويات / الخصم التلقائي / الكاش باك + وضع دمج الخصم + حد أقصى)
 router.get('/loyalty-config',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
   customerLoyaltyController.getLoyaltyConfig

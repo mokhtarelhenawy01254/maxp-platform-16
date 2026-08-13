@@ -1268,7 +1268,8 @@ router.post('/', async (req, res) => {
         const loyaltySettings = await autoDiscountService.getSettings(company.id);
         const autoActive = loyaltySettings.autoDiscountEnabled === true && loyaltySettings.enabled !== false;
         const tiersActive = loyaltySettings.tiersEnabled === true;
-        const stacking = loyaltySettings.stacking === true;
+        const discountCombination = loyaltySettings.discountCombination || 'ADDITIVE';
+        const maxTotalDiscountPercent = Number(loyaltySettings.maxTotalDiscountPercent || 0);
 
         let tierDiscount = 0;
         let voucherDiscount = 0;
@@ -1309,12 +1310,25 @@ router.post('/', async (req, res) => {
           }
         }
 
-        // دمج خصم المستوى + كوبون الخصم: تراكم (stacking) أو أكبر واحد (max)
-        if (stacking) {
-          loyaltyDiscount = tierDiscount + voucherDiscount;
+        // دمج خصم المستوى + كوبون الخصم حسب وضع الدمج (discountCombination) + حد أقصى
+        const base = Number(cartTotal) || 0;
+        let combined = 0;
+        if (discountCombination === 'BEST') {
+          combined = Math.max(tierDiscount, voucherDiscount);
+        } else if (discountCombination === 'COMPOUND') {
+          const tierPct = base > 0 ? (tierDiscount / base) * 100 : 0;
+          const voucherPct = base > 0 ? (voucherDiscount / base) * 100 : 0;
+          combined = base * (1 - (1 - tierPct / 100) * (1 - voucherPct / 100));
         } else {
-          loyaltyDiscount = Math.max(tierDiscount, voucherDiscount);
+          // ADDITIVE: جمع النسب
+          combined = tierDiscount + voucherDiscount;
         }
+        // 🛡️ حد أقصى لإجمالي الخصم
+        if (maxTotalDiscountPercent > 0) {
+          const capAmount = base * (maxTotalDiscountPercent / 100);
+          if (combined > capAmount) combined = capAmount;
+        }
+        loyaltyDiscount = combined;
         if (loyaltyDiscount > 0) {
           discountAmount += loyaltyDiscount;
         }

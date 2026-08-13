@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import { Loader2, Zap, CheckCircle } from "lucide-react";
+import { Loader2, Zap, CheckCircle, Settings2 } from "lucide-react";
 
 interface AutoDiscountSettingsProps {
   onSaved?: (data?: any) => void;
@@ -19,6 +19,9 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [comboSaving, setComboSaving] = useState(false);
+  const [comboMsg, setComboMsg] = useState("");
+  const [comboErr, setComboErr] = useState("");
   const [cfg, setCfg] = useState({
     autoDiscountEnabled: false,
     enabled: true,
@@ -28,6 +31,8 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
     pointsPerAmount: 5,
     pointsRedemptionValue: 1,
     redeemPointsEnabled: true,
+    discountCombination: 'ADDITIVE',
+    maxTotalDiscountPercent: 20,
     loyaltyActivatedAt: undefined as string | undefined,
   });
 
@@ -45,6 +50,11 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         pointsPerAmount: ad.pointsPerAmount ?? prev.pointsPerAmount,
         pointsRedemptionValue: ad.pointsRedemptionValue ?? prev.pointsRedemptionValue,
         redeemPointsEnabled: ad.redeemPointsEnabled !== false,
+        discountCombination: ad.discountCombination || prev.discountCombination,
+        maxTotalDiscountPercent:
+          ad.maxTotalDiscountPercent !== undefined && ad.maxTotalDiscountPercent !== null
+            ? Number(ad.maxTotalDiscountPercent)
+            : prev.maxTotalDiscountPercent,
         enabled: true,
       }));
     } catch (e: any) {
@@ -73,6 +83,8 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         pointsPerAmount: cfg.pointsPerAmount,
         pointsRedemptionValue: cfg.pointsRedemptionValue,
         redeemPointsEnabled: cfg.redeemPointsEnabled,
+        discountCombination: cfg.discountCombination,
+        maxTotalDiscountPercent: cfg.maxTotalDiscountPercent,
       });
       const ad = (res.data?.data || {}).autoDiscount || {};
       setCfg((prev) => ({
@@ -84,6 +96,9 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         pointsPerAmount: ad.pointsPerAmount ?? prev.pointsPerAmount,
         pointsRedemptionValue: ad.pointsRedemptionValue ?? prev.pointsRedemptionValue,
         redeemPointsEnabled: ad.redeemPointsEnabled !== false,
+        discountCombination: ad.discountCombination || prev.discountCombination,
+        maxTotalDiscountPercent:
+          ad.maxTotalDiscountPercent !== undefined ? Number(ad.maxTotalDiscountPercent) : prev.maxTotalDiscountPercent,
       }));
       setSavedMsg(enabled ? "تم تفعيل نظام الخصم التلقائي ✓" : "تم إيقاف تفعيل نظام الخصم التلقائي ✓");
       onSaved?.(res.data?.data);
@@ -91,6 +106,39 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
       setErrorMsg(e?.response?.data?.error || (enabled ? "فشل التفعيل" : "فشل إيقاف التفعيل"));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveCombo = async () => {
+    setComboSaving(true);
+    setComboMsg("");
+    setComboErr("");
+    try {
+      const res = await apiClient.put("/hr/customer-loyalty/loyalty-config", {
+        autoDiscountEnabled: cfg.autoDiscountEnabled,
+        enabled: true,
+        discountPercent: cfg.discountPercent,
+        validityDays: cfg.validityDays,
+        convertExpiredToCashback: cfg.convertExpiredToCashback,
+        pointsPerAmount: cfg.pointsPerAmount,
+        pointsRedemptionValue: cfg.pointsRedemptionValue,
+        redeemPointsEnabled: cfg.redeemPointsEnabled,
+        discountCombination: cfg.discountCombination,
+        maxTotalDiscountPercent: cfg.maxTotalDiscountPercent,
+      });
+      const ad = (res.data?.data || {}).autoDiscount || {};
+      setCfg((prev) => ({
+        ...prev,
+        discountCombination: ad.discountCombination || prev.discountCombination,
+        maxTotalDiscountPercent:
+          ad.maxTotalDiscountPercent !== undefined ? Number(ad.maxTotalDiscountPercent) : prev.maxTotalDiscountPercent,
+      }));
+      setComboMsg("تم حفظ إعدادات الدمج ✓");
+      onSaved?.(res.data?.data);
+    } catch (e: any) {
+      setComboErr(e?.response?.data?.error || "فشل حفظ إعدادات الدمج");
+    } finally {
+      setComboSaving(false);
     }
   };
 
@@ -202,7 +250,52 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
 
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-200">
             <p className="font-semibold">ملاحظة:</p>
-            <p>نظام الخصم التلقائي مستقل — ممكن يشتغل مع نظام المستويات في نفس الوقت (لو الاتنين مفعّلين، يطبّقوا على الأوردر مع بعض حسب إعداد التراكم).</p>
+            <p>نظام الخصم التلقائي مستقل — ممكن يشتغل مع نظام المستويات في نفس الوقت. من قسم "دمج الخصم" تحت يمكنك تحديد إزاي الاتنين يتطبّقوا مع بعض (جمع / أعلى خصم / مركّب) وتحط حد أقصى لإجمالي الخصم.</p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-4 border-t-2 border-indigo-200 dark:border-indigo-700">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5 text-indigo-500" />
+              <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">دمج الخصم (المستويات + الخصم التلقائي)</h4>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              لو الاتنين مفعّلين مع بعض، اختر إزاي يتطبّقوا على الأوردر، وحط حد أقصى لإجمالي الخصم عشان تحمي هامش الربح.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-500">وضع دمج الخصم</label>
+                <select
+                  value={cfg.discountCombination}
+                  onChange={(e) => set("discountCombination", e.target.value)}
+                  className={inputCls + " mt-1"}
+                >
+                  <option value="ADDITIVE">جمع النسب (الاتنين مع بعض)</option>
+                  <option value="BEST">أعلى خصم بس</option>
+                  <option value="COMPOUND">مركّب (خصم على المتبقي)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">حد أقصى لإجمالي الخصم % (0 = بدون حد)</label>
+                <input
+                  type="number" min="0" max="100"
+                  value={cfg.maxTotalDiscountPercent}
+                  onChange={(e) => set("maxTotalDiscountPercent", Number(e.target.value))}
+                  className={inputCls + " mt-1"}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              {comboMsg && <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{comboMsg}</span>}
+              {comboErr && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{comboErr}</span>}
+              <button
+                onClick={saveCombo}
+                disabled={comboSaving}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {comboSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings2 className="h-4 w-4" />}
+                حفظ إعدادات الدمج
+              </button>
+            </div>
           </div>
         </>
       )}

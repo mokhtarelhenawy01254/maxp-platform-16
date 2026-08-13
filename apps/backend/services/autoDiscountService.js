@@ -13,8 +13,11 @@ const DEFAULT_SETTINGS = {
   // 🆕 فلاجات تفعيل مستقلة لكل نظام (عشان المستويات والخصم التلقائي يشتغلوا مع بعض)
   tiersEnabled: false,
   autoDiscountEnabled: false,
-  // هل خصم المستوى + كوبون الخصم التلقائي بيتراكموا (true) ولا ناخد الأكبر بس (false)
-  stacking: false,
+  // 🆕 وضع دمج خصم المستوى + كوبون الخصم التلقائي:
+  //   'BEST' = أعلى خصم بس | 'ADDITIVE' = جمع النسب | 'COMPOUND' = مركّب
+  discountCombination: 'ADDITIVE',
+  // حد أقصى لإجمالي الخصم (٪) — 0 = بدون حد
+  maxTotalDiscountPercent: 20,
 };
 
 /**
@@ -134,7 +137,8 @@ async function updateSettings(companyId, data) {
 /**
  * 🆕 تحديث موحّد لإعدادات الولاء مع فلاجات تفعيل مستقلة:
  * - tiersEnabled / autoDiscountEnabled: كل واحد لوحده (الاتنين ممكن يشتغلوا مع بعض)
- * - stacking: هل خصم المستوى + كوبون الخصم التلقائي بيتراكموا (true) ولا ناخد الأكبر (false)
+ * - discountCombination: وضع دمج الخصم (BEST | ADDITIVE | COMPOUND)
+ * - maxTotalDiscountPercent: حد أقصى لإجمالي الخصم (%) — 0 = بدون حد
  * - حقول إعداد الخصم التلقائي (discountPercent ...)
  * ملاحظة: الكاش باك (cashbackEnabled) بيتعامل معاه الـ controller عشان يظبط على status برنامج CASHBACK.
  */
@@ -146,7 +150,16 @@ async function updateLoyaltyConfig(companyId, config = {}) {
 
   if (config.tiersEnabled !== undefined) next.tiersEnabled = config.tiersEnabled === true;
   if (config.autoDiscountEnabled !== undefined) next.autoDiscountEnabled = config.autoDiscountEnabled === true;
-  if (config.stacking !== undefined) next.stacking = config.stacking === true;
+  if (config.discountCombination !== undefined) {
+    const allowedCombos = ['BEST', 'ADDITIVE', 'COMPOUND'];
+    next.discountCombination = allowedCombos.includes(config.discountCombination)
+      ? config.discountCombination
+      : 'ADDITIVE';
+  }
+  if (config.maxTotalDiscountPercent !== undefined) {
+    const pct = Number(config.maxTotalDiscountPercent);
+    next.maxTotalDiscountPercent = Number.isFinite(pct) && pct > 0 ? pct : 0;
+  }
 
   const autoFields = [
     'discountPercent', 'validityDays', 'convertExpiredToCashback',

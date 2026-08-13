@@ -1188,7 +1188,8 @@ class CustomerLoyaltyService {
         loyaltySystem,
         tiersEnabled: _adSettings.tiersEnabled === true,
         autoDiscountEnabled: _adSettings.autoDiscountEnabled === true,
-        stacking: _adSettings.stacking === true
+        discountCombination: _adSettings.discountCombination || 'ADDITIVE',
+        maxTotalDiscountPercent: Number(_adSettings.maxTotalDiscountPercent || 0)
       };
     } catch (error) {
       console.error('❌ Error getting customer tier progress:', error);
