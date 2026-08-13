@@ -312,6 +312,22 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تطبيق مستقل للتتبع والتحويل بعد فصله عن Ads Pro.",
   },
   {
+    id: "tiktok-integrations",
+    area: "marketing",
+    label: "تكامل TikTok",
+    description: "نشر المحتوى، ربط متجر TikTok Shop، تسجيل دخول العملاء، عرض الفيديوهات في المتجر، وتتبع أحداث الإعلانات.",
+    status: "covered",
+    appSlug: "tiktok-integrations",
+    appLabel: "نشر وتجارة وتتبع TikTok",
+    currentGate: "tiktok-integrations",
+    routes: [
+      { path: "/tiktok/publish", label: "نشر محتوى TikTok" },
+      { path: "/tiktok/shop", label: "متجر TikTok Shop" },
+      { path: "/tiktok/settings", label: "إعدادات TikTok" },
+    ],
+    action: "تطبيق مستقل للتكامل الرسمي مع TikTok.",
+  },
+  {
     id: "facebook-ads",
     area: "marketing",
     label: "إعلانات فيسبوك",

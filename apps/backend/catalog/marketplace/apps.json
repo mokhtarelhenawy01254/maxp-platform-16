@@ -133,6 +133,44 @@
     "updatedAt": "2026-08-11T00:00:00Z"
   },
   {
+    "id": "cat-app-tiktok-integrations",
+    "slug": "tiktok-integrations",
+    "name": "تكامل TikTok",
+    "nameEn": "TikTok for Business",
+    "description": "نشر المحتوى على TikTok مباشرة، ربط متجر TikTok Shop، تسجيل دخول العملاء بحساب TikTok، عرض الفيديوهات في المتجر، وتتبع أحداث الإعلانات — كل التكاملات الرسمية في مكان واحد.",
+    "descriptionEn": "Publish videos to TikTok directly, connect TikTok Shop, customer login with TikTok, embed videos in your store, and track ad events — all official integrations in one place.",
+    "category": "COMMUNICATION",
+    "pricingModel": "FREE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المتاجر التي تبيع أو تسوّق على TikTok وتريد إدارة النشر والتتبع والتجارة من لوحة واحدة.",
+      "surface": "داخل قسم TikTok — نشر المحتوى، متجر TikTok Shop، الإعدادات والتتبع.",
+      "outcome": "نشر أسرع، بيع عبر TikTok Shop، وتتبع دقيق للتحويلات دون مغادرة المنصة."
+    },
+    "features": {
+      "publish": { "enabled": true, "name": "نشر المحتوى", "description": "نشر فيديوهات مباشرة على حساب TikTok من لوحة التحكم.", "access": "FREE" },
+      "shop": { "enabled": true, "name": "متجر TikTok Shop", "description": "ربط متجر TikTok Shop ومزامنة الطلبات والمنتجات.", "access": "FREE" },
+      "loginKit": { "enabled": true, "name": "تسجيل دخول العملاء", "description": "تسجيل دخول عملاء المتجر بحساب TikTok.", "access": "FREE" },
+      "embed": { "enabled": true, "name": "عرض الفيديوهات في المتجر", "description": "عرض مقاطع TikTok داخل صفحات المتجر.", "access": "FREE" },
+      "events": { "enabled": true, "name": "تتبع أحداث الإعلانات", "description": "إرسال أحداث التحويل إلى TikTok Events API.", "access": "FREE" }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "zap",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-13T00:00:00Z",
+    "updatedAt": "2026-08-13T00:00:00Z"
+  },
+  {
     "id": "cat-app-facebook-ads-pro",
     "slug": "facebook-ads-pro",
     "name": "إعلانات فيسبوك وانستجرام",

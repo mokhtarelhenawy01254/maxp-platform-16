@@ -815,9 +815,9 @@ export const getSidebarConfig = (
             items: [
                 { to: '/broadcast', icon: Volume2, label: t('sidebar.broadcast'), hidden: !isAppActive('crm-basic') },
                 { to: '/facebook/create-post', icon: SquarePen, label: t('sidebar.facebookPost') },
-                { to: '/tiktok/publish', icon: SquarePen, label: t('sidebar.tiktokPublish') },
-                { to: '/tiktok/shop', icon: ShoppingBag, label: t('sidebar.tiktokShop') },
-                { to: '/tiktok/settings', icon: Cog, label: t('sidebar.tiktokSettings') },
+                { to: '/tiktok/publish', icon: SquarePen, label: t('sidebar.tiktokPublish'), hidden: !isAppActive('tiktok-integrations') },
+                { to: '/tiktok/shop', icon: ShoppingBag, label: t('sidebar.tiktokShop'), hidden: !isAppActive('tiktok-integrations') },
+                { to: '/tiktok/settings', icon: Cog, label: t('sidebar.tiktokSettings'), hidden: !isAppActive('tiktok-integrations') },
                 { to: '/advertising/facebook-pixel', icon: BarChart3, label: t('sidebar.facebookPixel') },
                 { to: '/advertising/google-tag-manager', icon: BarChart3, label: t('sidebar.googleTagManager') },
                 { to: '/advertising/facebook-ads', icon: Megaphone, label: t('sidebar.facebookAds'), hidden: false },
@@ -842,7 +842,7 @@ export const getSidebarConfig = (
                 { to: '/tools/refund-rate', icon: ShieldAlert, label: t('sidebar.refundRateCalculator') },
             ],
             // ðŸ”’ Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø³Ù… Ù„Ù„Ù…Ø³ÙˆÙ‚ÙŠÙ† Ø£Ùˆ Ø¥Ø°Ø§ ÙƒØ§Ù† ØºÙŠØ± Ù…ÙØ¹Ù„
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic', 'tiktok-integrations'])
         },
 
         // 5ï¸âƒ£.5 ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ù…Ù†Ø§ÙØ³ÙŠÙ†
