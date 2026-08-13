@@ -1,7 +1,9 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { MODALITY_BY_CATEGORY } = require('./radiologyController');
+const { resolveModality } = require('../utils/radiologyModality');
 const { findOrCreatePatient } = require('../services/bookingPatientService');
 const { deriveRadiologyOrderStatus, recordRadiologyStatusHistory, syncStudyOrderStatus } = require('../utils/radiologyStatusHistory');
+const { getRadiologyGuards } = require('../utils/radiologyGuards');
+const { nextCompanyNumber } = require('../utils/radiologyNumbering');
 
 const APPOINTMENT_STATUSES = ['SCHEDULED', 'CHECKED_IN', 'DONE', 'CANCELLED'];
 
@@ -149,9 +151,13 @@ const createAppointment = async (req, res) => {
       }
     }
 
+    // Sequential per-company booking number (starts at 1) for human-friendly IDs
+    const bookingNo = await nextCompanyNumber(prisma, 'radiologyAppointment', 'bookingNo', companyId);
+
     const appointment = await prisma.radiologyAppointment.create({
       data: {
         companyId,
+        bookingNo,
         patientId,
         patientName,
         patientPhone: body.patientPhone ? String(body.patientPhone) : null,
@@ -301,6 +307,15 @@ const updateAppointment = async (req, res) => {
     if (body.status !== undefined) {
       const s = String(body.status).toUpperCase();
       if (!APPOINTMENT_STATUSES.includes(s)) return res.status(400).json({ success: false, error: 'حالة الحجز غير صحيحة' });
+      if (s === 'CANCELLED' && existing.studyId) {
+        const linkedStudy = await prisma.radiologyStudy.findUnique({ where: { id: existing.studyId } }).catch(() => null);
+        if (linkedStudy && linkedStudy.status === 'DELIVERED') {
+          const guards = await getRadiologyGuards(prisma, companyId);
+          if (guards.blockCancelAfterDelivery) {
+            return res.status(400).json({ success: false, error: 'لا يمكن إلغاء الحجز بعد تسليم الحالة' });
+          }
+        }
+      }
       data.status = s;
     }
 
@@ -364,6 +379,7 @@ const convertToStudy = async (req, res) => {
 
     const examTypes = await prisma.radiologyExamType.findMany({
       where: { id: { in: examIds }, companyId, isActive: true },
+      include: { examCategory: true },
     });
     if (!examTypes.length) return res.status(400).json({ success: false, error: 'لا توجد فحوصات صالحة في الحجز' });
     const examById = new Map(examTypes.map(e => [e.id, e]));
@@ -437,7 +453,7 @@ const convertToStudy = async (req, res) => {
           studyNumber: generateStudyNumber(),
           examTypeId: examType.id,
           examTypeName: examType.name,
-          modality: MODALITY_BY_CATEGORY[examType.category] || examType.category || null,
+          modality: resolveModality(examType.examCategory || examType.category),
           priceSnapshot,
           appointmentId: appointment.id,
           orderStatus: 'IN_PROGRESS',
@@ -464,7 +480,7 @@ const convertToStudy = async (req, res) => {
       });
     }
 
-    if (!studies.length) return res.status(400).json({ success: false, error: 'لم تُنشأ أي دراسة' });
+    if (!studies.length) return res.status(400).json({ success: false, error: 'لم تُنشأ أي حالة' });
 
     if (appointment.status !== 'DONE') {
       const patch = { status: 'DONE' };
@@ -477,8 +493,28 @@ const convertToStudy = async (req, res) => {
     res.json({ success: true, data: { studies, study: studies[0], appointment } });
   } catch (error) {
     console.error('Error converting radiology appointment to study:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في تحويل الحجز لدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحويل الحجز لحالة' });
   }
 };
 
-module.exports = { listAppointments, createAppointment, updateAppointment, deleteAppointment, convertToStudy };
+const getAppointmentDetails = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+
+    const studies = await prisma.radiologyStudy.findMany({ where: { appointmentId: id }, orderBy: { createdAt: 'asc' } });
+    const orderStatus = deriveRadiologyOrderStatus({ appointment, study: studies[0] || null });
+
+    res.json({ success: true, data: { appointment, studies, orderStatus } });
+  } catch (error) {
+    console.error('Error fetching radiology appointment details:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تفاصيل الحجز' });
+  }
+};
+
+module.exports = { listAppointments, createAppointment, updateAppointment, deleteAppointment, convertToStudy, getAppointmentDetails };

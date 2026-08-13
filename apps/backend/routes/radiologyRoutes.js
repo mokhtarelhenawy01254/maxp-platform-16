@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const controller = require('../controller/radiologyController');
+const examCategories = require('../controller/radiologyExamCategoriesController');
 const verifyToken = require('../utils/verifyToken');
 
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
@@ -27,6 +28,12 @@ router.get('/exam-types', controller.listExamTypes);
 router.post('/exam-types', verifyToken.requireRole(MANAGER_ROLES), controller.createExamType);
 router.put('/exam-types/:id', verifyToken.requireRole(MANAGER_ROLES), controller.updateExamType);
 router.delete('/exam-types/:id', verifyToken.requireRole(MANAGER_ROLES), controller.deleteExamType);
+
+// Exam categories
+router.get('/exam-categories', examCategories.listCategories);
+router.post('/exam-categories', verifyToken.requireRole(MANAGER_ROLES), examCategories.createCategory);
+router.put('/exam-categories/:id', verifyToken.requireRole(MANAGER_ROLES), examCategories.updateCategory);
+router.delete('/exam-categories/:id', verifyToken.requireRole(MANAGER_ROLES), examCategories.deleteCategory);
 
 // Studies
 router.get('/studies', controller.listStudies);

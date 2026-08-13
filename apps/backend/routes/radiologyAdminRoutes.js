@@ -7,6 +7,7 @@ const statistics = require('../controller/radiologyStatisticsController');
 const payments = require('../controller/radiologyPaymentsController');
 const shifts = require('../controller/radiologyShiftsController');
 const devices = require('../controller/radiologyDevicesController');
+const settings = require('../controller/radiologySettingsController');
 const verifyToken = require('../utils/verifyToken');
 
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
@@ -29,6 +30,7 @@ router.get('/financial-summary', payments.financialSummary);
 
 // Appointments
 router.get('/appointments', appointments.listAppointments);
+router.get('/appointments/:id/details', appointments.getAppointmentDetails);
 router.post('/appointments', verifyToken.requireRole(MANAGER_ROLES), appointments.createAppointment);
 router.put('/appointments/:id', verifyToken.requireRole(MANAGER_ROLES), appointments.updateAppointment);
 router.delete('/appointments/:id', verifyToken.requireRole(MANAGER_ROLES), appointments.deleteAppointment);
@@ -39,6 +41,14 @@ router.get('/devices', devices.listDevices);
 router.post('/devices', verifyToken.requireRole(MANAGER_ROLES), devices.createDevice);
 router.put('/devices/:id', verifyToken.requireRole(MANAGER_ROLES), devices.updateDevice);
 router.delete('/devices/:id', verifyToken.requireRole(MANAGER_ROLES), devices.deleteDevice);
+
+// ID numbering settings
+router.get('/id-settings', settings.listSettings);
+router.put('/id-settings', verifyToken.requireRole(MANAGER_ROLES), settings.updateSettings);
+
+// Workflow guards
+router.get('/guards', settings.listGuards);
+router.put('/guards', verifyToken.requireRole(MANAGER_ROLES), settings.updateGuards);
 
 // Referring physicians
 router.get('/referring-physicians', physicians.listPhysicians);

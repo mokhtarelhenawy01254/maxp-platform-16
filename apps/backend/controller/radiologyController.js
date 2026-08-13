@@ -3,7 +3,9 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
 const { parseDicomFromBuffer, generateStudyNumber } = require('../utils/dicomUtil');
 const { findOrCreatePatient } = require('../services/bookingPatientService');
+const { getRadiologyGuards } = require('../utils/radiologyGuards');
 const { deriveRadiologyOrderStatus, recordRadiologyStatusHistory, syncStudyOrderStatus } = require('../utils/radiologyStatusHistory');
+const { MODALITY_BY_CATEGORY, resolveModality } = require('../utils/radiologyModality');
 
 const RADIOLOGY_STUDY_CHAIN = ['PENDING_IMAGING', 'IMAGED', 'PENDING_REPORT', 'REPORTED', 'DELIVERED'];
 const RADIOLOGY_REPORT_CHAIN = ['DRAFT', 'REVIEWED', 'SIGNED', 'DELIVERED'];
@@ -11,17 +13,7 @@ const SUBMISSION_STATUSES = ['NOT_SUBMITTED', 'SUBMITTED', 'REPORT_READY'];
 
 const STUDY_STATUSES = new Set(RADIOLOGY_STUDY_CHAIN);
 const REPORT_STATUSES = new Set(RADIOLOGY_REPORT_CHAIN);
-
-const MODALITY_BY_CATEGORY = {
-  CT: 'CT',
-  MRI: 'MR',
-  'X-Ray': 'CR',
-  US: 'US',
-  DEXA: 'DXA',
-  NM: 'NM',
-  PET: 'PT',
-  Fluoroscopy: 'FLUOROSCOPY',
-};
+const CRITICAL_CATEGORIES = new Set(['NONE', 'CAT1', 'CAT2', 'CAT3', 'CRITICAL']);
 
 const normalizePrice = (value) => {
   if (value === undefined || value === null || value === '') return { value: undefined, error: null };
@@ -39,6 +31,25 @@ const normalizeText = (value) => {
   if (value === undefined || value === null) return undefined;
   const s = String(value).trim();
   return s === '' ? null : s;
+};
+
+const resolveExamCategory = async (prisma, companyId, body) => {
+  const categoryId = normalizeText(body.categoryId);
+  if (categoryId) {
+    const category = await prisma.radiologyExamCategory.findFirst({
+      where: { id: categoryId, companyId, isActive: true },
+    });
+    if (!category) return { error: 'الفئة غير موجودة أو غير مفعلة' };
+    return { categoryId: category.id, categoryName: category.name, modality: resolveModality(category) };
+  }
+  const categoryText = normalizeText(body.category);
+  if (!categoryText) return { categoryId: null, categoryName: null, modality: null };
+  const existing = await prisma.radiologyExamCategory.findFirst({ where: { companyId, name: categoryText } });
+  if (existing) return { categoryId: existing.id, categoryName: existing.name, modality: resolveModality(existing) };
+  const created = await prisma.radiologyExamCategory.create({
+    data: { companyId, name: categoryText, modality: resolveModality(categoryText) },
+  });
+  return { categoryId: created.id, categoryName: created.name, modality: created.modality };
 };
 
 const normalizePatientFlags = (value) => {
@@ -83,16 +94,11 @@ const validateTransition = (chain, from, to, message) => {
 
 const validateRadiologyStudyTransition = (from, to) =>
   validateTransition(RADIOLOGY_STUDY_CHAIN, from, to, (f, t) =>
-    `لا يمكن الانتقال في حالة الدراسة من "${f}" إلى "${t}"`);
+    `لا يمكن الانتقال في حالة الأشعة من "${f}" إلى "${t}"`);
 
 const validateRadiologyReportTransition = (from, to) =>
   validateTransition(RADIOLOGY_REPORT_CHAIN, from, to, (f, t) =>
     `لا يمكن الانتقال في حالة التقرير من "${f}" إلى "${t}"`);
-
-const resolveModality = (category) => {
-  if (!category) return null;
-  return MODALITY_BY_CATEGORY[category] || category || null;
-};
 
 const signerName = (req) => {
   const name = [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ');
@@ -126,13 +132,14 @@ const listExamTypes = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { search, category, page, limit, includeInactive, isAddition } = req.query;
+    const { search, category, categoryId, page, limit, includeInactive, isAddition } = req.query;
     const where = { companyId };
     if (includeInactive !== 'true') where.isActive = true;
     if (isAddition !== undefined && isAddition !== '') {
       where.isAddition = isAddition === 'true' || isAddition === '1';
     }
     if (category) where.category = String(category);
+    if (categoryId) where.categoryId = String(categoryId);
     if (search && String(search).trim()) {
       const term = String(search).trim();
       where.OR = [
@@ -148,7 +155,13 @@ const listExamTypes = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const [examTypes, total] = await Promise.all([
-      prisma.radiologyExamType.findMany({ where, orderBy: { name: 'asc' }, skip, take: limitNum }),
+      prisma.radiologyExamType.findMany({
+        where,
+        include: { examCategory: { select: { id: true, name: true, nameEn: true, modality: true, parentId: true } } },
+        orderBy: { name: 'asc' },
+        skip,
+        take: limitNum,
+      }),
       prisma.radiologyExamType.count({ where }),
     ]);
 
@@ -164,17 +177,22 @@ const createExamType = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { name, category, abbreviation, price, isAddition } = req.body || {};
+    const { name, category, categoryId, abbreviation, price, isAddition } = req.body || {};
     if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم نوع الفحص مطلوب' });
 
     const priceCheck = normalizePrice(price);
     if (priceCheck.error) return res.status(400).json({ success: false, error: priceCheck.error });
 
-    const examType = await getSharedPrismaClient().radiologyExamType.create({
+    const prisma = getSharedPrismaClient();
+    const resolvedCategory = await resolveExamCategory(prisma, companyId, { categoryId, category });
+    if (resolvedCategory.error) return res.status(400).json({ success: false, error: resolvedCategory.error });
+
+    const examType = await prisma.radiologyExamType.create({
       data: {
         companyId,
         name: String(name).trim(),
-        category: normalizeText(category),
+        categoryId: resolvedCategory.categoryId,
+        category: resolvedCategory.categoryName,
         abbreviation: normalizeText(abbreviation),
         price: priceCheck.value ?? 0,
         isAddition: normalizeBool(isAddition, false),
@@ -204,7 +222,15 @@ const updateExamType = async (req, res) => {
       if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم نوع الفحص مطلوب' });
       data.name = String(body.name).trim();
     }
-    if (body.category !== undefined) data.category = normalizeText(body.category);
+    if (body.categoryId !== undefined || body.category !== undefined) {
+      const resolvedCategory = await resolveExamCategory(prisma, companyId, {
+        categoryId: body.categoryId !== undefined ? body.categoryId : undefined,
+        category: body.category !== undefined ? body.category : undefined,
+      });
+      if (resolvedCategory.error) return res.status(400).json({ success: false, error: resolvedCategory.error });
+      data.categoryId = resolvedCategory.categoryId;
+      data.category = resolvedCategory.categoryName;
+    }
     if (body.abbreviation !== undefined) data.abbreviation = normalizeText(body.abbreviation);
     if (body.price !== undefined) {
       const priceCheck = normalizePrice(body.price);
@@ -247,7 +273,7 @@ const listStudies = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { patientName, patientId, nationalId, insuranceNumber, studyNumber, status, reportStatus, hasReport, dateFrom, dateTo, page, limit } = req.query;
+    const { patientName, patientId, nationalId, insuranceNumber, studyNumber, status, reportStatus, criticalCategory, hasReport, dateFrom, dateTo, page, limit } = req.query;
     const where = { companyId };
 
     if (patientId && String(patientId).trim()) {
@@ -267,7 +293,7 @@ const listStudies = async (req, res) => {
     }
     if (status) {
       const s = String(status).toUpperCase();
-      if (!STUDY_STATUSES.has(s)) return res.status(400).json({ success: false, error: 'حالة الدراسة غير صحيحة' });
+      if (!STUDY_STATUSES.has(s)) return res.status(400).json({ success: false, error: 'حالة الأشعة غير صحيحة' });
       where.status = s;
     }
     if (hasReport === 'true' || hasReport === '1') {
@@ -277,6 +303,14 @@ const listStudies = async (req, res) => {
       const rs = String(reportStatus).toUpperCase();
       if (!REPORT_STATUSES.has(rs)) return res.status(400).json({ success: false, error: 'حالة التقرير غير صحيحة' });
       where.report = { is: { reportStatus: rs } };
+    }
+    if (criticalCategory) {
+      const cc = String(criticalCategory).toUpperCase();
+      if (!CRITICAL_CATEGORIES.has(cc)) return res.status(400).json({ success: false, error: 'فئة العثور الحرج غير صحيحة' });
+      const criticalWhere = cc === 'CRITICAL'
+        ? { criticalCategory: { in: ['CAT1', 'CAT2', 'CAT3'] } }
+        : { criticalCategory: cc === 'NONE' ? null : cc };
+      where.report = { is: { ...(where.report?.is || {}), ...criticalWhere } };
     }
     if (dateFrom || dateTo) {
       const createdAtFilter = {};
@@ -298,7 +332,7 @@ const listStudies = async (req, res) => {
     res.json({ success: true, data: { items: studies, total, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('Error fetching radiology studies:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب دراسات الأشعة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب حالات الأشعة' });
   }
 };
 
@@ -310,7 +344,7 @@ const getStudy = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const [images, report] = await Promise.all([
       prisma.radiologyStudyImage.findMany({ where: { studyId: id }, orderBy: { createdAt: 'asc' } }),
@@ -321,7 +355,7 @@ const getStudy = async (req, res) => {
     res.json({ success: true, data: { ...study, orderStatus, images: images.map(formatImage), report } });
   } catch (error) {
     console.error('Error fetching radiology study:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب دراسة الأشعة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب حالة الأشعة' });
   }
 };
 
@@ -333,7 +367,7 @@ const getStudyDetails = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const [
       appointment,
@@ -385,7 +419,7 @@ const getStudyDetails = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching radiology study details:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تفاصيل الدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تفاصيل الحالة' });
   }
 };
 
@@ -425,6 +459,7 @@ const createStudy = async (req, res) => {
     if (body.examTypeId) {
       examType = await prisma.radiologyExamType.findFirst({
         where: { id: body.examTypeId, companyId, isActive: true },
+        include: { examCategory: true },
       });
       if (!examType) return res.status(400).json({ success: false, error: 'نوع الفحص لا ينتمي لهذه الشركة' });
     }
@@ -510,7 +545,7 @@ const createStudy = async (req, res) => {
             patientFlags: normalizePatientFlags(body.patientFlags),
             examTypeId: examType ? examType.id : null,
             examTypeName: examType ? examType.name : null,
-            modality: examType ? resolveModality(examType.category) : null,
+            modality: examType ? resolveModality(examType.examCategory || examType.category) : null,
             priceSnapshot: examType ? examType.price : 0,
             billingType: body.insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
             status: 'PENDING_IMAGING',
@@ -538,7 +573,7 @@ const createStudy = async (req, res) => {
           continue;
         }
         if (error?.code === 'P2002' && clientProvidedNumber) {
-          return res.status(409).json({ success: false, error: 'رقم الدراسة مستخدم من قبل' });
+          return res.status(409).json({ success: false, error: 'رقم الحالة مستخدم من قبل' });
         }
         throw error;
       }
@@ -557,7 +592,7 @@ const createStudy = async (req, res) => {
     res.json({ success: true, data: study });
   } catch (error) {
     console.error('Error creating radiology study:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء دراسة الأشعة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء حالة الأشعة' });
   }
 };
 
@@ -569,7 +604,7 @@ const duplicateStudy = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     let study;
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -603,7 +638,7 @@ const duplicateStudy = async (req, res) => {
             additionAmount: existing.additionAmount,
             deviceId: existing.deviceId,
             deviceName: existing.deviceName,
-            notes: existing.notes ? `تكرار دراسة ${existing.studyNumber || ''}: ${existing.notes}` : null,
+            notes: existing.notes ? `تكرار حالة ${existing.studyNumber || ''}: ${existing.notes}` : null,
             submissionStatus: 'NOT_SUBMITTED',
             createdBy: req.user?.id || req.user?.email || null,
           },
@@ -630,7 +665,7 @@ const duplicateStudy = async (req, res) => {
     res.json({ success: true, data: study });
   } catch (error) {
     console.error('Error duplicating radiology study:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في تكرار الدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تكرار الحالة' });
   }
 };
 
@@ -643,7 +678,7 @@ const updateStudy = async (req, res) => {
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const data = {};
 
@@ -734,11 +769,14 @@ const updateStudy = async (req, res) => {
     if (body.examTypeId !== undefined) {
       const examTypeId = body.examTypeId || null;
       if (examTypeId) {
-        const examType = await prisma.radiologyExamType.findFirst({ where: { id: examTypeId, companyId } });
+        const examType = await prisma.radiologyExamType.findFirst({
+          where: { id: examTypeId, companyId },
+          include: { examCategory: true },
+        });
         if (!examType) return res.status(400).json({ success: false, error: 'نوع الفحص لا ينتمي لهذه الشركة' });
         data.examTypeId = examType.id;
         data.examTypeName = examType.name;
-        data.modality = resolveModality(examType.category);
+        data.modality = resolveModality(examType.examCategory || examType.category);
         // Re-resolve the price snapshot for the new exam (entity price if the study is insured)
         let newPrice = examType.price;
         if (existing.insuranceCompanyId) {
@@ -759,7 +797,7 @@ const updateStudy = async (req, res) => {
 
     if (body.status !== undefined) {
       const status = String(body.status).toUpperCase();
-      if (!STUDY_STATUSES.has(status)) return res.status(400).json({ success: false, error: 'حالة الدراسة غير صحيحة' });
+      if (!STUDY_STATUSES.has(status)) return res.status(400).json({ success: false, error: 'حالة الأشعة غير صحيحة' });
       if (status !== existing.status) {
         const transition = validateRadiologyStudyTransition(existing.status, status);
         if (!transition.valid) return res.status(400).json({ success: false, error: transition.error });
@@ -803,7 +841,7 @@ const updateStudy = async (req, res) => {
     res.json({ success: true, data: study });
   } catch (error) {
     console.error('Error updating radiology study:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث دراسة الأشعة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث حالة الأشعة' });
   }
 };
 
@@ -822,7 +860,7 @@ const uploadStudyImages = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const sliceIndexBase = parseSliceIndex(req.body?.sliceIndex);
     const seriesDescription =
@@ -886,7 +924,7 @@ const uploadStudyImages = async (req, res) => {
     res.json({ success: true, data: { images: created.map(formatImage), study: updatedStudy } });
   } catch (error) {
     console.error('Error uploading radiology study images:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في رفع صور الدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في رفع صور الحالة' });
   }
 };
 
@@ -898,7 +936,7 @@ const getStudyImageFile = async (req, res) => {
     const { id, imageId } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const image = await prisma.radiologyStudyImage.findFirst({ where: { id: imageId, studyId: id } });
     if (!image || !image.data) return res.status(404).json({ success: false, error: 'الصورة غير موجودة' });
@@ -915,7 +953,7 @@ const getStudyImageFile = async (req, res) => {
     res.send(buf);
   } catch (error) {
     console.error('Error fetching radiology study image file:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب صورة الدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب صورة الحالة' });
   }
 };
 
@@ -927,7 +965,7 @@ const deleteStudyImage = async (req, res) => {
     const { id, imageId } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const image = await prisma.radiologyStudyImage.findFirst({ where: { id: imageId, studyId: id } });
     if (!image) return res.status(404).json({ success: false, error: 'الصورة غير موجودة' });
@@ -936,7 +974,7 @@ const deleteStudyImage = async (req, res) => {
     res.json({ success: true, data: { id: imageId } });
   } catch (error) {
     console.error('Error deleting radiology study image:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في حذف صورة الدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف صورة الحالة' });
   }
 };
 
@@ -950,13 +988,13 @@ const getStudyReport = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
     res.json({ success: true, data: report || null });
   } catch (error) {
     console.error('Error fetching radiology study report:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تقرير الدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تقرير الحالة' });
   }
 };
 
@@ -970,7 +1008,7 @@ const upsertStudyReport = async (req, res) => {
     const prisma = getSharedPrismaClient();
 
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const requestedStatus = body.reportStatus === undefined || body.reportStatus === null || body.reportStatus === ''
       ? null
@@ -1058,7 +1096,7 @@ const upsertStudyReport = async (req, res) => {
     res.json({ success: true, data: report });
   } catch (error) {
     console.error('Error upserting radiology study report:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في حفظ تقرير الدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حفظ تقرير الحالة' });
   }
 };
 
@@ -1078,7 +1116,7 @@ const advanceReportStatus = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
     if (!report) return res.status(400).json({ success: false, error: 'التقرير غير موجود' });
@@ -1131,7 +1169,7 @@ const markDelivered = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
     if (!report) return res.status(400).json({ success: false, error: 'التقرير غير موجود' });
@@ -1150,7 +1188,15 @@ const markDelivered = async (req, res) => {
     const hasLocalImages = imageCount > 0;
     const hasExternalReport = !!(study.rologyReportLink || study.submissionStatus === 'SUBMITTED');
     if (!hasLocalImages && !hasExternalReport) {
-      return res.status(400).json({ success: false, error: 'لا يمكن تسليم الدراسة قبل رفع الصور أو استلام تقرير خارجي' });
+      return res.status(400).json({ success: false, error: 'لا يمكن تسليم الحالة قبل رفع الصور أو استلام تقرير خارجي' });
+    }
+
+    const guards = await getRadiologyGuards(prisma, companyId);
+    if (guards.requirePaymentBeforeDelivery && study.billingType === 'PATIENT') {
+      const total = (study.priceSnapshot || 0) + (study.additionAmount || 0);
+      if (total > 0 && (study.paidAmount || 0) <= 0) {
+        return res.status(400).json({ success: false, error: 'لا يمكن تسليم الحالة قبل سداد المبلغ' });
+      }
     }
 
     const [deliveredReport, deliveredStudy] = await Promise.all([
@@ -1184,7 +1230,7 @@ const markDelivered = async (req, res) => {
     res.json({ success: true, data: { study: deliveredStudy, report: deliveredReport } });
   } catch (error) {
     console.error('Error delivering radiology study:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في تسليم دراسة الأشعة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسليم حالة الأشعة' });
   }
 };
 
@@ -1198,7 +1244,7 @@ const getStudyReportPdf = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, include: { report: true } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
     const { generateStudyReportPdf } = require('../services/radiologyPdfService');

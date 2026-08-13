@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Boxes, FileText, Loader2, Pencil, Plus, RefreshCw, Tag, Trash2, X as XMarkIcon } from "lucide-react";
+import { Boxes, FileText, Hash, Loader2, Pencil, Plus, RefreshCw, Tag, Trash2, X as XMarkIcon } from "lucide-react";
 import { api, fetchJson, RadiologyReportTemplate, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface TemplateForm {
@@ -28,8 +28,17 @@ interface Modality {
   count: number;
 }
 
+interface IdSettings {
+  bookingPrefix: string;
+  patientPrefix: string;
+  digits: number;
+  enabled: boolean;
+}
+
 const emptyForm = (): TemplateForm => ({ name: "", body: "" });
 const emptyTagForm = (): TagForm => ({ name: "" });
+
+const DEFAULT_ID_SETTINGS: IdSettings = { bookingPrefix: "B", patientPrefix: "P", digits: 4, enabled: true };
 
 export default function SettingsTab() {
   const { t } = useTranslation();
@@ -45,6 +54,21 @@ export default function SettingsTab() {
 
   const [modalities, setModalities] = useState<Modality[] | null>(null);
   const [modalitiesLoading, setModalitiesLoading] = useState(true);
+
+  const [idSettings, setIdSettings] = useState<IdSettings>(DEFAULT_ID_SETTINGS);
+  const [idSettingsLoaded, setIdSettingsLoaded] = useState(false);
+  const [savingIdSettings, setSavingIdSettings] = useState(false);
+
+  const refreshIdSettings = useCallback(async () => {
+    try {
+      const data = await fetchJson<Partial<IdSettings>>(api("id-settings"));
+      setIdSettings({ ...DEFAULT_ID_SETTINGS, ...data });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.settings.loadIdSettingsFailed"));
+    } finally {
+      setIdSettingsLoaded(true);
+    }
+  }, [t]);
 
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     try {
@@ -80,7 +104,8 @@ export default function SettingsTab() {
     refreshTags().finally(() => setTagsLoading(false));
     setModalitiesLoading(true);
     refreshModalities().finally(() => setModalitiesLoading(false));
-  }, [refresh, refreshTags, refreshModalities]);
+    refreshIdSettings();
+  }, [refresh, refreshTags, refreshModalities, refreshIdSettings]);
 
   const save = async () => {
     if (!modal || saving) return;
@@ -147,6 +172,28 @@ export default function SettingsTab() {
     }
   };
 
+  const saveIdSettings = async () => {
+    if (savingIdSettings) return;
+    setSavingIdSettings(true);
+    try {
+      await fetchJson(api("id-settings"), {
+        method: "PUT",
+        body: JSON.stringify({
+          bookingPrefix: idSettings.bookingPrefix,
+          patientPrefix: idSettings.patientPrefix,
+          digits: Number(idSettings.digits) || 4,
+          enabled: idSettings.enabled,
+        }),
+      });
+      toast.success(t("radiology.settings.idSettingsSaved"));
+      await refreshIdSettings();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.settings.saveFailed"));
+    } finally {
+      setSavingIdSettings(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -161,6 +208,58 @@ export default function SettingsTab() {
           <button onClick={() => setModal(emptyForm())} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
             <Plus className="w-4 h-4" />{t("radiology.settings.newTemplate")}
           </button>
+        </div>
+      </div>
+
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-lg font-bold flex items-center gap-2"><Hash className="w-5 h-5" />{t("radiology.settings.idSettingsTitle")}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.settings.idSettingsSubtitle")}</p>
+          </div>
+          <button onClick={() => refreshIdSettings()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <RefreshCw className="w-4 h-4" />{t("radiology.refresh")}
+          </button>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+          {!idSettingsLoaded ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.settings.bookingPrefix")}</label>
+                  <input className={MODAL_INPUT_CLS} value={idSettings.bookingPrefix} onChange={e => setIdSettings(s => ({ ...s, bookingPrefix: e.target.value }))} placeholder="B" maxLength={10} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.settings.patientPrefix")}</label>
+                  <input className={MODAL_INPUT_CLS} value={idSettings.patientPrefix} onChange={e => setIdSettings(s => ({ ...s, patientPrefix: e.target.value }))} placeholder="P" maxLength={10} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.settings.idDigits")}</label>
+                  <input className={MODAL_INPUT_CLS} type="number" min={1} max={10} value={idSettings.digits} onChange={e => setIdSettings(s => ({ ...s, digits: Number(e.target.value) || 4 }))} />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={idSettings.enabled} onChange={e => setIdSettings(s => ({ ...s, enabled: e.target.checked }))} className="w-4 h-4" />
+                  {t("radiology.settings.idEnabled")}
+                </label>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {t("radiology.settings.preview")}:{" "}
+                  <span className="font-mono font-medium text-gray-700 dark:text-gray-200" dir="ltr">
+                    {idSettings.enabled ? `${idSettings.bookingPrefix}-${String(1).padStart(idSettings.digits, "0")}` : "1"} /{" "}
+                    {idSettings.enabled ? `${idSettings.patientPrefix}-${String(1).padStart(idSettings.digits, "0")}` : "1"}
+                  </span>
+                </div>
+                <button onClick={saveIdSettings} disabled={savingIdSettings} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
+                  {savingIdSettings && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

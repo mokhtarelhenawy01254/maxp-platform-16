@@ -405,6 +405,7 @@ export default defineConfig(({ mode }) => {
         },
         injectManifest: {
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+          globIgnores: ['**/tesseract/**'],
         },
       }),
       !disableCompression &&

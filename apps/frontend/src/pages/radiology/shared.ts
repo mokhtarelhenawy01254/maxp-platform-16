@@ -1,11 +1,11 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark } from "lucide-react";
+import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark, FolderTree } from "lucide-react";
 
 export type TabId =
   | "dashboard" | "patients" | "studies" | "reports"
-  | "exam-types" | "price-lists" | "contracts" | "branches" | "invoices"
+  | "exam-types" | "exam-categories" | "price-lists" | "contracts" | "branches" | "invoices"
   | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "insurance-companies" | "price-quote" | "radiologists"
   | "schedule" | "referring-physicians" | "statistics" | "cashier-shifts" | "settings";
 
@@ -16,6 +16,7 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "studies", label: "radiology.tabs.studies", icon: FolderOpen },
   { id: "reports", label: "radiology.tabs.reports", icon: FileText },
   { id: "exam-types", label: "radiology.tabs.exam-types", icon: ScanLine },
+  { id: "exam-categories", label: "radiology.tabs.exam-categories", icon: FolderTree },
   { id: "price-lists", label: "radiology.tabs.price-lists", icon: Tag },
   { id: "contracts", label: "radiology.tabs.contracts", icon: FileText },
   { id: "branches", label: "radiology.tabs.branches", icon: Building2 },
@@ -64,8 +65,19 @@ export const bookingApi = (path: string) => {
 };
 
 export interface RadiologyExamType {
-  id: string; name: string; category?: string; abbreviation?: string;
+  id: string; name: string; category?: string; categoryId?: string;
+  examCategory?: RadiologyExamCategory;
+  abbreviation?: string;
   price: number; isActive: boolean; isAddition?: boolean; createdAt: string;
+}
+
+export interface RadiologyExamCategory {
+  id: string; companyId?: string; name: string; nameEn?: string; abbreviation?: string;
+  modality?: string; parentId?: string; parentName?: string;
+  isActive: boolean; sortOrder?: number; createdAt?: string; updatedAt?: string;
+  examTypeCount?: number; childrenCount?: number;
+  _count?: { examTypes: number; children: number };
+  children?: RadiologyExamCategory[];
 }
 
 export interface RadiologyDevice {
@@ -83,6 +95,9 @@ export interface RadiologyReport {
   typedBy?: string; typedAt?: string;
   reviewedBy?: string; reviewedAt?: string;
   finalizedBy?: string; finalizedAt?: string;
+  criticalCategory?: string; criticalFindingText?: string;
+  criticalFlaggedBy?: string; criticalFlaggedAt?: string;
+  criticalAcknowledgedBy?: string; criticalAcknowledgedAt?: string;
   createdAt: string; updatedAt: string;
 }
 
@@ -165,6 +180,19 @@ export const RadiologyPaymentStatusMap: Record<string, { label: string; color: s
   REFUNDED: { label: "radiology.paymentStatus.REFUNDED", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
 };
 
+export const RADIOLOGY_CRITICAL_META: Record<string, { label: string; color: string; level: number }> = {
+  CAT1: { label: "radiology.critical.CAT1", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300", level: 1 },
+  CAT2: { label: "radiology.critical.CAT2", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300", level: 2 },
+  CAT3: { label: "radiology.critical.CAT3", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", level: 3 },
+  NONE: { label: "radiology.critical.NONE", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300", level: 0 },
+};
+
+export const criticalCategoryText = (report?: { criticalCategory?: string } | null): string | null => {
+  const c = report?.criticalCategory;
+  if (!c || c === "NONE") return null;
+  return RADIOLOGY_CRITICAL_META[c] ? c : null;
+};
+
 export const RADIOLOGY_PATIENT_FLAGS: { value: string; label: string; color: string }[] = [
   { value: "pregnancy", label: "radiology.patientFlags.pregnancy", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
   { value: "contrast_allergy", label: "radiology.patientFlags.contrastAllergy", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
@@ -229,3 +257,28 @@ export const tryParseJSON = <T = unknown>(v: unknown): T | null => {
 
 export const MODAL_CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4";
 export const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
+
+export interface RadiologyIdSettings {
+  bookingPrefix: string;
+  patientPrefix: string;
+  digits: number;
+  enabled: boolean;
+}
+
+export const DEFAULT_ID_SETTINGS: RadiologyIdSettings = { bookingPrefix: "B", patientPrefix: "P", digits: 4, enabled: true };
+
+/** Format a sequential number as a human-friendly ID, e.g. B-0001 (falls back to the raw number). */
+export const formatSequentialId = (prefix: string, number?: number | null, digits = 4, enabled = true): string => {
+  if (number === undefined || number === null) return "";
+  const padded = enabled ? String(number).padStart(digits, "0") : String(number);
+  return enabled ? `${prefix}${prefix ? "-" : ""}${padded}` : padded;
+};
+
+export const fetchIdSettings = async (): Promise<RadiologyIdSettings> => {
+  try {
+    const data = await fetchJson<Partial<RadiologyIdSettings>>(api("id-settings"));
+    return { ...DEFAULT_ID_SETTINGS, ...data };
+  } catch {
+    return { ...DEFAULT_ID_SETTINGS };
+  }
+};

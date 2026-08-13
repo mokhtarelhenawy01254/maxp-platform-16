@@ -26,7 +26,7 @@ const createResponse = () => {
 };
 
 const createPrisma = () => ({
-  radiologyAppointment: { findMany: jest.fn(), count: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
+  radiologyAppointment: { findMany: jest.fn(), count: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), aggregate: jest.fn().mockResolvedValue({ _max: { bookingNo: null } }) },
   radiologyReferringPhysician: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   radiologyExamAddition: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   radiologyExamType: { findMany: jest.fn(), findFirst: jest.fn() },
@@ -396,6 +396,7 @@ describe('radiologyStatisticsController', () => {
       { status: 'PENDING_REPORT', modality: 'CT', assignedRadiologistName: null, referralDoctor: null },
     ]);
     prisma.radiologyExamType.findMany.mockResolvedValue([{ category: 'CT' }, { category: 'MRI' }]);
+    prisma.radiologyAppointment.findMany.mockResolvedValue([]);
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();

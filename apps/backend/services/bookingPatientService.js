@@ -73,9 +73,23 @@ const findOrCreatePatient = async ({ companyId, customerName, customerPhone, cus
     if (customer) resolvedCustomerId = customer.id;
   }
 
+  // Sequential per-company patient number (starts at 1) for human-friendly IDs
+  let patientNo = null;
+  try {
+    const res = await prisma.patient.aggregate({
+      _max: { patientNo: true },
+      where: { companyId },
+    });
+    const max = res._max && res._max.patientNo;
+    patientNo = (Number.isFinite(max) ? max : 0) + 1;
+  } catch (error) {
+    console.error('[bookingPatientService] failed to assign patientNo:', error);
+  }
+
   const patient = await prisma.patient.create({
     data: {
       companyId,
+      patientNo,
       customerId: resolvedCustomerId,
       firstName,
       lastName,

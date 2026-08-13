@@ -16,10 +16,22 @@ const getStatistics = async (req, res) => {
       where.createdAt = f;
     }
 
-    const [studies, exams] = await Promise.all([
-      prisma.radiologyStudy.findMany({ where, select: { status: true, modality: true, examTypeName: true, assignedRadiologistName: true, referralDoctor: true, createdAt: true } }),
+    const [studies, exams, appointments] = await Promise.all([
+      prisma.radiologyStudy.findMany({ where, select: { status: true, orderStatus: true, modality: true, examTypeName: true, assignedRadiologistName: true, referralDoctor: true, createdAt: true } }),
       prisma.radiologyExamType.findMany({ where: { companyId }, select: { category: true } }),
+      prisma.radiologyAppointment.findMany({ where, select: { status: true, studyId: true } }),
     ]);
+
+    const orderStatusBreakdown = { PENDING: 0, CHECKED_IN: 0, IN_PROGRESS: 0, COMPLETED: 0, CANCELLED: 0 };
+    for (const a of appointments) {
+      if (a.status === 'SCHEDULED') orderStatusBreakdown.PENDING += 1;
+      else if (a.status === 'CHECKED_IN') orderStatusBreakdown.CHECKED_IN += 1;
+      else if (a.status === 'CANCELLED' && !a.studyId) orderStatusBreakdown.CANCELLED += 1;
+    }
+    for (const s of studies) {
+      const k = s.orderStatus || 'IN_PROGRESS';
+      if (orderStatusBreakdown[k] !== undefined) orderStatusBreakdown[k] += 1;
+    }
 
     const byStatus = {};
     const byModality = {};
@@ -47,6 +59,7 @@ const getStatistics = async (req, res) => {
         pendingReport,
         reported,
         completionRate: total ? Math.round((delivered / total) * 100) : 0,
+        orderStatusBreakdown,
         byStatus,
         byModality,
         byRadiologist,

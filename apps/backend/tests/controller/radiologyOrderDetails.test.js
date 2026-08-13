@@ -211,7 +211,7 @@ describe('radiologyOrderDetails', () => {
       await controller.getStudyDetails(req({ params: { id: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('الدراسة غير موجودة');
+      expect(res.payload.error).toBe('الحالة غير موجودة');
     });
 
     test('aggregates study, images, report, payments, history, appointment and invoice', async () => {

@@ -299,7 +299,7 @@ describe('radiologyRadiologistsController', () => {
       await controller.assignRadiologist(req({ params: { id: 'foreign' }, body: { radiologistId: 'rad-1' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('الدراسة غير موجودة');
+      expect(res.payload.error).toBe('الحالة غير موجودة');
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
     });
 

@@ -25,7 +25,7 @@ const getStudyPayment = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const total = getStudyTotal(study);
     const payments = await prisma.radiologyStudyPayment.findMany({ where: { studyId: id }, orderBy: { createdAt: 'desc' } });
@@ -71,7 +71,7 @@ const recordStudyPayment = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const total = getStudyTotal(study);
     const paidSoFar = (await prisma.radiologyStudyPayment.aggregate({ where: { studyId: id }, _sum: { amount: true } }))._sum?.amount || 0;
@@ -122,7 +122,7 @@ const refundStudyPayment = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const payments = await prisma.radiologyStudyPayment.findMany({ where: { studyId: id }, select: { amount: true } });
     const paid = payments.reduce((s, p) => s + p.amount, 0);

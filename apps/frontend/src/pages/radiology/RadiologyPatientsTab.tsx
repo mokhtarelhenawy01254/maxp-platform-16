@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Search, FileText, GitMerge, Trash2, Pencil, Check, X as XMarkIcon } from "lucide-react";
-import { api, bookingApi, fetchJson, getAuthHeaders, MODAL_INPUT_CLS, MODAL_CONTENT_CLS } from "./shared";
+import { api, bookingApi, fetchJson, getAuthHeaders, MODAL_INPUT_CLS, MODAL_CONTENT_CLS, RadiologyIdSettings, DEFAULT_ID_SETTINGS, formatSequentialId, fetchIdSettings } from "./shared";
 import { BookingPatient } from "../admin/booking/shared";
 import PatientModal from "../admin/booking/PatientModal";
 import PatientDetailModal from "../admin/booking/PatientDetailModal";
 
 interface RadiologyPatient {
-  id: string; firstName: string; lastName?: string; phone?: string;
+  id: string; patientNo?: number; firstName: string; lastName?: string; phone?: string;
   gender?: string; nationalId?: string; insuranceNumber?: string;
   insuranceCompany?: { id: string; name: string };
   bloodType?: string; visitCount?: number;
@@ -50,8 +50,13 @@ export default function RadiologyPatientsTab() {
   const [mergeTargetId, setMergeTargetId] = useState("");
   const [merging, setMerging] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [idSettings, setIdSettings] = useState<RadiologyIdSettings>(DEFAULT_ID_SETTINGS);
 
   const pageSize = 25;
+
+  useEffect(() => {
+    fetchIdSettings().then(setIdSettings);
+  }, []);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -219,8 +224,8 @@ export default function RadiologyPatientsTab() {
             <tbody>
               {items.map(p => (
                 <tr key={p.id} className={`border-b dark:border-gray-700/50 last:border-0 ${!p.isActive ? "opacity-60" : ""}`}>
-                  <td className="py-3 px-4 text-gray-400 dark:text-gray-500">
-                    <span className="text-xs font-mono" dir="ltr">{p.id}</span>
+                  <td className="py-3 px-4 text-gray-700 dark:text-gray-300">
+                    <span className="text-xs font-mono font-medium" dir="ltr">{formatSequentialId(idSettings.patientPrefix, p.patientNo, idSettings.digits, idSettings.enabled) || p.id.slice(0, 8)}</span>
                   </td>
                   <td className="py-3 px-4 font-medium">{p.firstName} {p.lastName || ""}</td>
                   <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>

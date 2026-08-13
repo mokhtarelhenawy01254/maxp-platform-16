@@ -19,7 +19,7 @@ const recordRole = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
     if (!report) return res.status(400).json({ success: false, error: 'التقرير غير موجود' });
@@ -46,7 +46,7 @@ const clearRole = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
     if (!report) return res.status(400).json({ success: false, error: 'التقرير غير موجود' });

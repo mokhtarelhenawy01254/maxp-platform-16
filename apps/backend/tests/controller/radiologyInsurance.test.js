@@ -216,7 +216,7 @@ describe('radiologyInsuranceController', () => {
       );
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('الدراسة غير موجودة');
+      expect(res.payload.error).toBe('الحالة غير موجودة');
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
     });
   });
@@ -387,7 +387,7 @@ describe('radiologyInsuranceController', () => {
       await controller.createInvoice(req({ body: { insuranceCompanyId: 'ins-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('لا توجد دراسات لإنشاء الفاتورة');
+      expect(res.payload.error).toBe('لا توجد حالات لإنشاء الفاتورة');
       expect(prisma.radiologyInsuranceInvoice.create).not.toHaveBeenCalled();
     });
   });
@@ -654,6 +654,42 @@ describe('radiologyInsuranceController', () => {
         { insuranceCompanyId: 'ins-1', name: 'شركة الأهلية', total: 1000, paid: 500, remaining: 500 },
         { insuranceCompanyId: 'ins-2', name: 'التكافلية', total: 500, paid: 0, remaining: 500 },
       ]);
+    });
+  });
+
+  describe('checkCoverage', () => {
+    test('reports covered vs not-covered per exam for an insurance company', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyEntityPrice.findMany.mockResolvedValue([
+        { examTypeId: 'et-1', price: 350 },
+      ]);
+      prisma.radiologyExamType.findMany.mockResolvedValue([
+        { id: 'et-1', name: 'أشعة الصدر', price: 300 },
+        { id: 'et-2', name: 'أشعة مقطعية', price: 500 },
+      ]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.checkCoverage(req({ query: { insuranceCompanyId: 'ins-1', examTypeIds: 'et-1,et-2' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data).toEqual([
+        { examTypeId: 'et-1', examTypeName: 'أشعة الصدر', covered: true, entityPrice: 350, basePrice: 300, status: 'COVERED' },
+        { examTypeId: 'et-2', examTypeName: 'أشعة مقطعية', covered: false, entityPrice: null, basePrice: 500, status: 'NOT_COVERED' },
+      ]);
+    });
+
+    test('rejects missing insuranceCompanyId or examTypeIds', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res1 = createResponse();
+      await controller.checkCoverage(req({ query: { examTypeIds: 'et-1' } }), res1);
+      expect(res1.statusCode).toBe(400);
+
+      const res2 = createResponse();
+      await controller.checkCoverage(req({ query: { insuranceCompanyId: 'ins-1' } }), res2);
+      expect(res2.statusCode).toBe(400);
     });
   });
 });

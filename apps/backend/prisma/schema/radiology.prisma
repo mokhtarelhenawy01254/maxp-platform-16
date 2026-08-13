@@ -1,15 +1,39 @@
 // Radiology module - exam types and studies
+model RadiologyExamCategory {
+  id           String   @id @default(cuid())
+  companyId    String?
+  name         String
+  nameEn       String?
+  abbreviation String?
+  modality     String?    // CT, MR, CR, US, DXA, NM, PT, FLUOROSCOPY...
+  parentId     String?
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parent       RadiologyExamCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children     RadiologyExamCategory[] @relation("CategoryTree")
+  examTypes    RadiologyExamType[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
 model RadiologyExamType {
   id           String   @id @default(cuid())
   companyId    String?
   name         String
-  category     String?    // CT, MRI, X-Ray, US, DEXA, NM, PET, Fluoroscopy, Other
+  category     String?    // snapshot of category name at creation (legacy display/back-compat)
+  categoryId   String?    // RadiologyExamCategory link (category is its denormalized name)
   abbreviation String?
   price        Float    @default(0)
   isAddition   Boolean  @default(false) // إضافة فحص (صبغة/مشروبات تباين...) — تظهر في إضافات الدراسة
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  examCategory RadiologyExamCategory? @relation(fields: [categoryId], references: [id])
 }
 
 model RadiologyDevice {
@@ -110,6 +134,13 @@ model RadiologyReport {
   reviewedAt   DateTime?
   finalizedBy  String?
   finalizedAt  DateTime?
+  // Critical findings (ACR Actionable Reporting): CAT1 (immediate) | CAT2 (within hours) | CAT3 (follow-up)
+  criticalCategory       String? // NONE | CAT1 | CAT2 | CAT3
+  criticalFindingText    String?
+  criticalFlaggedBy      String?
+  criticalFlaggedAt      DateTime?
+  criticalAcknowledgedBy String?
+  criticalAcknowledgedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   study        RadiologyStudy @relation(fields: [studyId], references: [id])
@@ -176,6 +207,7 @@ model RadiologyExamTag {
 
 model RadiologyAppointment {
   id              String   @id @default(cuid())
+  bookingNo       Int?      // sequential booking number per company (starts at 1)
   companyId       String?
   patientId       String?   // external ref to booking Patient
   patientName     String
@@ -211,6 +243,18 @@ model RadiologyAppointment {
   @@index([appointmentDate])
   @@index([status])
   @@index([studyId])
+}
+
+model RadiologySetting {
+  id        String   @id @default(cuid())
+  companyId String?
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, key])
+  @@index([companyId])
 }
 
 model RadiologyReferringPhysician {

@@ -47,6 +47,17 @@ const createPrisma = (overrides = {}) => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    radiologyExamCategory: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(({ data }) => Promise.resolve({ id: 'cat-auto', ...data })),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    radiologyAppointment: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
     radiologyStudy: {
       findMany: jest.fn(),
       count: jest.fn(),
@@ -81,6 +92,14 @@ const createPrisma = (overrides = {}) => {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+    },
+    radiologyAppointment: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
     },
     company: {
       findUnique: jest.fn(),
@@ -272,6 +291,77 @@ describe('radiologyController', () => {
       expect(res.payload.error).toBe('نوع الفحص غير موجود');
       expect(prisma.radiologyExamType.update).not.toHaveBeenCalled();
     });
+
+    test('createExamType links a category by categoryId and stores the snapshot', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyExamCategory.findFirst.mockResolvedValue({ id: 'cat-1', name: 'أشعة مقطعية', modality: 'CT' });
+      prisma.radiologyExamType.create.mockImplementation(({ data }) => Promise.resolve({ id: 'et-9', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createExamType(
+        req({ body: { name: 'أشعة مقطعية على البطن', categoryId: 'cat-1', abbreviation: 'CT', price: '300' } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyExamType.create.mock.calls[0][0].data;
+      expect(data.categoryId).toBe('cat-1');
+      expect(data.category).toBe('أشعة مقطعية');
+      expect(prisma.radiologyExamCategory.findFirst).toHaveBeenCalledWith({
+        where: { id: 'cat-1', companyId: 'company-1', isActive: true },
+      });
+    });
+
+    test('createExamType rejects a categoryId that is not in the company', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyExamCategory.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createExamType(req({ body: { name: 'أشعة', categoryId: 'foreign' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('الفئة غير موجودة أو غير مفعلة');
+      expect(prisma.radiologyExamType.create).not.toHaveBeenCalled();
+    });
+
+    test('createExamType auto-creates a category from a legacy category string', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyExamCategory.findFirst.mockResolvedValue(null);
+      prisma.radiologyExamType.create.mockImplementation(({ data }) => Promise.resolve({ id: 'et-9', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createExamType(req({ body: { name: 'رنين', category: 'MRI' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyExamCategory.create).toHaveBeenCalledWith({
+        data: { companyId: 'company-1', name: 'MRI', modality: 'MR' },
+      });
+      const data = prisma.radiologyExamType.create.mock.calls[0][0].data;
+      expect(data.categoryId).toBe('cat-auto');
+      expect(data.category).toBe('MRI');
+    });
+
+    test('updateExamType re-links a category and refreshes the snapshot', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyExamType.findFirst.mockResolvedValue(makeExamType());
+      prisma.radiologyExamCategory.findFirst.mockResolvedValue({ id: 'cat-2', name: 'رنين مغناطيسي', modality: 'MR' });
+      prisma.radiologyExamType.update.mockImplementation(({ data }) => Promise.resolve({ ...makeExamType(), ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateExamType(
+        req({ params: { id: 'et-1' }, body: { categoryId: 'cat-2' } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      const args = prisma.radiologyExamType.update.mock.calls[0][0];
+      expect(args.data.categoryId).toBe('cat-2');
+      expect(args.data.category).toBe('رنين مغناطيسي');
+    });
   });
 
   describe('createStudy', () => {
@@ -390,7 +480,7 @@ describe('radiologyController', () => {
       await controller.createStudy(req({ body: { patientName: 'مريض', studyNumber: 'RAD-20260809-1111' } }), res);
 
       expect(res.statusCode).toBe(409);
-      expect(res.payload.error).toBe('رقم الدراسة مستخدم من قبل');
+      expect(res.payload.error).toBe('رقم الحالة مستخدم من قبل');
       expect(prisma.radiologyStudy.create).toHaveBeenCalledTimes(1);
     });
 
@@ -496,7 +586,7 @@ describe('radiologyController', () => {
       await controller.listStudies(req({ query: { status: 'DONE' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('حالة الدراسة غير صحيحة');
+      expect(res.payload.error).toBe('حالة الأشعة غير صحيحة');
       expect(prisma.radiologyStudy.findMany).not.toHaveBeenCalled();
     });
 
@@ -580,7 +670,7 @@ describe('radiologyController', () => {
       await controller.getStudy(req({ params: { id: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('الدراسة غير موجودة');
+      expect(res.payload.error).toBe('الحالة غير موجودة');
     });
   });
 
@@ -905,7 +995,7 @@ describe('radiologyController', () => {
       );
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('الدراسة غير موجودة');
+      expect(res.payload.error).toBe('الحالة غير موجودة');
       expect(prisma.radiologyStudyImage.create).not.toHaveBeenCalled();
     });
   });
@@ -1262,7 +1352,7 @@ describe('radiologyController', () => {
       await controller.markDelivered(req({ params: { id: 'study-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('لا يمكن تسليم الدراسة قبل رفع الصور أو استلام تقرير خارجي');
+      expect(res.payload.error).toBe('لا يمكن تسليم الحالة قبل رفع الصور أو استلام تقرير خارجي');
       expect(prisma.radiologyReport.update).not.toHaveBeenCalled();
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
     });
@@ -1536,6 +1626,7 @@ describe('radiologyStatisticsController', () => {
       { status: 'PENDING_IMAGING', modality: null, examTypeName: 'أشعة الصدر', assignedRadiologistName: null, referralDoctor: null },
     ]);
     prisma.radiologyExamType.findMany.mockResolvedValue([{ category: 'CT' }]);
+    prisma.radiologyAppointment.findMany.mockResolvedValue([]);
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();

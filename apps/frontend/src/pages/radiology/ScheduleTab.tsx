@@ -3,11 +3,11 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, ChevronDown, ScanLine, Info } from "lucide-react";
-import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, RadiologyDevice, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, RadiologyDevice, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyIdSettings, DEFAULT_ID_SETTINGS, formatSequentialId, fetchIdSettings } from "./shared";
 import ScheduleCalendar, { ViewMode, dayKey, addDays, egyptWeekStart } from "./ScheduleCalendar";
 
 interface Appointment {
-  id: string; patientName: string; patientPhone?: string;
+  id: string; bookingNo?: number; patientName: string; patientPhone?: string;
   patientGender?: string; patientAge?: string;
   nationalId?: string; insuranceNumber?: string;
   patientFlags?: string[] | string;
@@ -83,7 +83,9 @@ export default function ScheduleTab() {
   const [coverage, setCoverage] = useState<Record<string, { covered: boolean; entityPrice?: number | null; basePrice?: number }>>({});
   const [cardScan, setCardScan] = useState<string | null>(null);
   const [cardScanTarget, setCardScanTarget] = useState<"modal" | "newPatient" | null>(null);
+  const [cardOcrBusy, setCardOcrBusy] = useState(false);
   const cardInputRef = useRef<HTMLInputElement | null>(null);
+  const [idSettings, setIdSettings] = useState<RadiologyIdSettings>(DEFAULT_ID_SETTINGS);
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -127,6 +129,7 @@ export default function ScheduleTab() {
   useEffect(() => {
     loadCatalog();
     refresh();
+    fetchIdSettings().then(setIdSettings);
   }, [loadCatalog, refresh]);
 
   useEffect(() => {
@@ -244,7 +247,7 @@ export default function ScheduleTab() {
     if (cardInputRef.current) cardInputRef.current.click();
   };
 
-  const handleCardScanFile = (file: File | null) => {
+  const handleCardScanFile = async (file: File | null) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -257,6 +260,26 @@ export default function ScheduleTab() {
       }
     };
     reader.readAsDataURL(file);
+
+    setCardOcrBusy(true);
+    try {
+      const { extractNationalIdFromImage } = await import("./cardOcr");
+      const result = await extractNationalIdFromImage(file);
+      if (result.nationalId) {
+        if (cardScanTarget === "newPatient") {
+          setNewPatient(p => ({ ...p, nationalId: result.nationalId || "" }));
+        } else {
+          applyNationalId(result.nationalId);
+        }
+        toast.success(t("radiology.schedule.cardOcrFound"));
+      } else {
+        toast.warning(t("radiology.schedule.cardOcrNotFound"));
+      }
+    } catch {
+      toast.warning(t("radiology.schedule.cardOcrFailed"));
+    } finally {
+      setCardOcrBusy(false);
+    }
   };
 
   const applyScannedCard = () => {
@@ -520,6 +543,7 @@ export default function ScheduleTab() {
     setCoverage({});
     setCardScan(null);
     setCardScanTarget(null);
+    setCardOcrBusy(false);
   };
 
   const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
@@ -607,8 +631,8 @@ export default function ScheduleTab() {
                   const meta = STATUS_META[a.status] || STATUS_META["SCHEDULED"];
                   return (
                     <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
-                      <td className="py-3 px-4 text-gray-400 dark:text-gray-500" dir="ltr">
-                        <span className="text-xs font-mono">{a.id}</span>
+                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300" dir="ltr">
+                        <span className="text-xs font-mono font-medium">{formatSequentialId(idSettings.bookingPrefix, a.bookingNo, idSettings.digits, idSettings.enabled) || a.id.slice(0, 8)}</span>
                       </td>
                       <td className="py-3 px-4 font-medium">
                         {a.patientName}{a.emergency ? <span className="mr-2 text-xs text-red-500">{t("radiology.schedule.emergency")}</span> : null}
@@ -937,7 +961,13 @@ export default function ScheduleTab() {
               <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <img src={cardScan} alt="البطاقة" className="w-full max-h-64 object-contain rounded-lg border dark:border-gray-600 mb-4" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{t("radiology.schedule.cardScanHint")}</p>
+            {cardOcrBusy ? (
+              <p className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mb-3">
+                <Loader2 className="w-4 h-4 animate-spin" />{t("radiology.schedule.cardOcrReading")}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{t("radiology.schedule.cardScanHint")}</p>
+            )}
             {cardScanTarget === "newPatient" ? (
               <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.nationalId} onChange={e => setNewPatient({ ...newPatient, nationalId: e.target.value.replace(/\D/g, "").slice(0, 14) })} placeholder={t("radiology.schedule.nationalId14")} />
             ) : (
@@ -945,7 +975,7 @@ export default function ScheduleTab() {
             )}
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg">{t("radiology.cancel")}</button>
-              <button onClick={applyScannedCard} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t("radiology.schedule.cardScanConfirm")}</button>
+              <button onClick={applyScannedCard} disabled={cardOcrBusy} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{t("radiology.schedule.cardScanConfirm")}</button>
             </div>
           </div>
         </div>

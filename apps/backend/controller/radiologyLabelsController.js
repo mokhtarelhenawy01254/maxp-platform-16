@@ -8,7 +8,7 @@ const getStudyLabel = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const { generateStudyLabel } = require('../services/radiologyLabelService');
     const pdfBuffer = await generateStudyLabel(study);

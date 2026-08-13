@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2, X as XMarkIcon, Search, ScanLine, ChevronRight, ChevronLeft } from "lucide-react";
-import { api, fetchJson, getAuthHeaders, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyExamType } from "./shared";
+import { Plus, Pencil, Trash2, X as XMarkIcon, Search, ScanLine, ChevronRight, ChevronLeft, FolderTree, Loader2 } from "lucide-react";
+import { api, fetchJson, getAuthHeaders, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyExamType, RadiologyExamCategory } from "./shared";
 
 interface ExamTypeForm {
   id?: string;
   name: string;
-  category: string;
+  categoryId: string;
   abbreviation: string;
   price: string;
   isAddition: boolean;
@@ -16,13 +16,13 @@ interface ExamTypeForm {
 export default function ExamTypesTab() {
   const { t } = useTranslation();
   const [examTypes, setExamTypes] = useState<RadiologyExamType[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<RadiologyExamCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -31,18 +31,18 @@ export default function ExamTypesTab() {
   const [modal, setModal] = useState<ExamTypeForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [quickName, setQuickName] = useState("");
+  const [quickSaving, setQuickSaving] = useState(false);
   const requestRef = useRef(0);
 
-  const loadCategories = useCallback(async () => {
+  const loadCategories = useCallback(async (silent = false) => {
     try {
-      const data = await fetchJson<RadiologyExamType[]>(`${api("exam-types")}&limit=500&includeInactive=true`);
-      const seen = new Map<string, boolean>();
-      for (const t of data || []) {
-        if (t.category) seen.set(t.category, true);
-      }
-      setCategories(Array.from(seen.keys()).sort((a, b) => a.localeCompare(b, "ar")));
+      const url = new URL(api("exam-categories"));
+      url.searchParams.set("includeInactive", "true");
+      const data = await fetchJson<RadiologyExamCategory[]>(url.toString());
+      setCategories(data || []);
     } catch {
-      setCategories([]);
+      if (!silent) setCategories([]);
     }
   }, []);
 
@@ -52,7 +52,7 @@ export default function ExamTypesTab() {
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (search) params.set("search", search);
-      if (category) params.set("category", category);
+      if (categoryId) params.set("categoryId", categoryId);
       if (includeInactive) params.set("includeInactive", "true");
       const res = await fetch(`${api("exam-types")}&${params.toString()}`, { headers: getAuthHeaders() });
       const json = (await res.json()) as { success?: boolean; error?: string; message?: string; data?: RadiologyExamType[]; total?: number; page?: number };
@@ -67,16 +67,16 @@ export default function ExamTypesTab() {
     } finally {
       if (requestRef.current === reqId) setLoading(false);
     }
-  }, [page, limit, search, category, includeInactive]);
+  }, [page, limit, search, categoryId, includeInactive, t]);
 
   useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput.trim()), 350);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setSearch(searchInput.trim()), 350);
+    return () => clearTimeout(timer);
   }, [searchInput]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, category, includeInactive]);
+  }, [search, categoryId, includeInactive]);
 
   useEffect(() => {
     loadExamTypes();
@@ -99,20 +99,38 @@ export default function ExamTypesTab() {
 
   const openCreate = () => {
     setError(null);
-    setModal({ name: "", category: "", abbreviation: "", price: "", isAddition: false, isActive: true });
+    setQuickName("");
+    setModal({ name: "", categoryId: "", abbreviation: "", price: "", isAddition: false, isActive: true });
   };
 
   const openEdit = (et: RadiologyExamType) => {
     setError(null);
+    setQuickName("");
     setModal({
       id: et.id,
       name: et.name,
-      category: et.category || "",
+      categoryId: et.categoryId || "",
       abbreviation: et.abbreviation || "",
       price: String(et.price ?? 0),
       isAddition: !!et.isAddition,
       isActive: et.isActive,
     });
+  };
+
+  const quickAddCategory = async () => {
+    const name = quickName.trim();
+    if (!name || quickSaving) return;
+    setQuickSaving(true);
+    try {
+      const data = await mutate("exam-categories", "POST", { name });
+      setCategories(prev => [...prev.filter(c => c.id !== data.id), data]);
+      setModal(prev => (prev ? { ...prev, categoryId: data.id } : prev));
+      setQuickName("");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : t("radiology.examCategories.saveFailed"));
+    } finally {
+      setQuickSaving(false);
+    }
   };
 
   const save = async () => {
@@ -126,7 +144,7 @@ export default function ExamTypesTab() {
     try {
       const payload: Record<string, unknown> = {
         name: modal.name.trim(),
-        category: modal.category.trim() || undefined,
+        categoryId: modal.categoryId || undefined,
         abbreviation: modal.abbreviation.trim() || undefined,
         price,
         isAddition: modal.isAddition,
@@ -137,7 +155,7 @@ export default function ExamTypesTab() {
         await mutate("exam-types", "POST", payload);
       }
       setModal(null);
-      await Promise.all([loadExamTypes(true), loadCategories()]);
+      await Promise.all([loadExamTypes(true), loadCategories(true)]);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : t("radiology.examTypes.saveFailed"));
     } finally {
@@ -151,7 +169,7 @@ export default function ExamTypesTab() {
     setRemovingId(et.id);
     try {
       await mutate(`exam-types/${et.id}`, "DELETE");
-      await Promise.all([loadExamTypes(true), loadCategories()]);
+      await Promise.all([loadExamTypes(true), loadCategories(true)]);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : t("radiology.examTypes.deleteFailed"));
     } finally {
@@ -190,9 +208,9 @@ export default function ExamTypesTab() {
             placeholder={t("radiology.examTypes.searchPlaceholder")}
           />
         </div>
-        <select className={`${MODAL_INPUT_CLS} w-auto`} value={category} onChange={e => setCategory(e.target.value)}>
+        <select className={`${MODAL_INPUT_CLS} w-auto`} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
           <option value="">{t("radiology.examTypes.allCategories")}</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          {categories.map(c => <option key={c.id} value={c.id}>{c.parentName ? `${c.parentName} / ${c.name}` : c.name}</option>)}
         </select>
         <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
           <input
@@ -210,7 +228,7 @@ export default function ExamTypesTab() {
       ) : examTypes.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-12 text-center text-gray-400 dark:text-gray-500">
           <ScanLine className="w-10 h-10 mx-auto mb-3" />
-          {search || category ? t("radiology.examTypes.noResults") : t("radiology.examTypes.noExamTypes")}
+          {search || categoryId ? t("radiology.examTypes.noResults") : t("radiology.examTypes.noExamTypes")}
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
@@ -233,7 +251,7 @@ export default function ExamTypesTab() {
                       {et.name}
                       {et.isAddition ? <span className="mr-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{t("radiology.examTypes.additionBadge")}</span> : null}
                     </td>
-                    <td className="py-3 px-4">{et.category || "—"}</td>
+                    <td className="py-3 px-4">{et.examCategory?.name || et.category || "—"}</td>
                     <td className="py-3 px-4">{et.abbreviation || "—"}</td>
                     <td className="py-3 px-4 whitespace-nowrap">{et.price ?? 0} {t("radiology.currency")}</td>
                     <td className="py-3 px-4">
@@ -299,7 +317,19 @@ export default function ExamTypesTab() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("radiology.examTypes.category")}</label>
-                  <input className={MODAL_INPUT_CLS} value={modal.category} onChange={e => setModal({ ...modal, category: e.target.value })} placeholder={t("radiology.examTypes.categoryPlaceholder")} />
+                  <select className={MODAL_INPUT_CLS} value={modal.categoryId} onChange={e => setModal({ ...modal, categoryId: e.target.value })}>
+                    <option value="">{t("radiology.examTypes.selectCategory")}</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.parentName ? `${c.parentName} / ${c.name}` : c.name}</option>)}
+                  </select>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input className={MODAL_INPUT_CLS} value={quickName} onChange={e => setQuickName(e.target.value)} placeholder={t("radiology.examTypes.newCategoryPlaceholder")} />
+                    <button onClick={quickAddCategory} disabled={quickSaving || !quickName.trim()} className="flex items-center gap-1 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 whitespace-nowrap text-sm">
+                      {quickSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}{t("radiology.examTypes.addCategory")}
+                    </button>
+                  </div>
+                  <a href="#/radiology/exam-categories" onClick={e => { e.preventDefault(); window.location.hash = "#/radiology/exam-categories"; }} className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 mt-2 hover:underline">
+                    <FolderTree className="w-3.5 h-3.5" />{t("radiology.examTypes.manageCategories")}
+                  </a>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("radiology.examTypes.abbreviation")}</label>

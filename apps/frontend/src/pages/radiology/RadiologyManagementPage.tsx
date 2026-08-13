@@ -6,6 +6,7 @@ import RadiologyPatientsTab from "./RadiologyPatientsTab";
 import StudiesTab from "./StudiesTab";
 import RadiologyReportsTab from "./RadiologyReportsTab";
 import ExamTypesTab from "./ExamTypesTab";
+import ExamCategoriesTab from "./ExamCategoriesTab";
 import PriceListsTab from "./PriceListsTab";
 import RadiologyContractsTab from "./RadiologyContractsTab";
 import RadiologyBranchesTab from "./RadiologyBranchesTab";
@@ -57,6 +58,7 @@ export default function RadiologyManagementPage() {
       {activeTab === "studies" && <TabErrorBoundary tabLabel={t("radiology.tabs.studies")}><StudiesTab /></TabErrorBoundary>}
       {activeTab === "reports" && <TabErrorBoundary tabLabel={t("radiology.tabs.reports")}><RadiologyReportsTab /></TabErrorBoundary>}
       {activeTab === "exam-types" && <TabErrorBoundary tabLabel={t("radiology.tabs.exam-types")}><ExamTypesTab /></TabErrorBoundary>}
+      {activeTab === "exam-categories" && <TabErrorBoundary tabLabel={t("radiology.tabs.exam-categories")}><ExamCategoriesTab /></TabErrorBoundary>}
       {activeTab === "price-lists" && <TabErrorBoundary tabLabel={t("radiology.tabs.price-lists")}><PriceListsTab /></TabErrorBoundary>}
       {activeTab === "contracts" && <TabErrorBoundary tabLabel={t("radiology.tabs.contracts")}><RadiologyContractsTab /></TabErrorBoundary>}
       {activeTab === "branches" && <TabErrorBoundary tabLabel={t("radiology.tabs.branches")}><RadiologyBranchesTab /></TabErrorBoundary>}

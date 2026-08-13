@@ -75,7 +75,7 @@ const assignStudyInsurance = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     let insuranceCompanyName = null;
     let priceSnapshot = study.priceSnapshot || 0;
@@ -119,7 +119,7 @@ const assignStudyInsurance = async (req, res) => {
     res.json({ success: true, data: updated });
   } catch (error) {
     console.error('Error assigning radiology study insurance:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في ربط شركة التأمين بالدراسة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في ربط شركة التأمين بالحالة' });
   }
 };
 
@@ -147,7 +147,7 @@ const createInvoice = async (req, res) => {
       where,
       select: { id: true, patientName: true, examTypeId: true, examTypeName: true, priceSnapshot: true, additionAmount: true },
     });
-    if (!studies.length) return res.status(400).json({ success: false, error: 'لا توجد دراسات لإنشاء الفاتورة' });
+    if (!studies.length) return res.status(400).json({ success: false, error: 'لا توجد حالات لإنشاء الفاتورة' });
 
     const lineItems = await resolveStudyAmounts(prisma, companyId, studies);
     const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
