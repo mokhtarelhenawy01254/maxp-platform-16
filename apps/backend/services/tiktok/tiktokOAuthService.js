@@ -23,11 +23,11 @@ function getAppCredentials(settings) {
 }
 
 async function getSettings(companyId) {
-  return prisma().tiktokSettings.findUnique({ where: { companyId } });
+  return prisma().tikTokSettings.findUnique({ where: { companyId } });
 }
 
 async function getAccount(companyId) {
-  return prisma().tiktokAccount.findFirst({
+  return prisma().tikTokAccount.findFirst({
     where: { companyId, status: 'connected' },
     orderBy: { updatedAt: 'desc' },
   });
@@ -35,18 +35,18 @@ async function getAccount(companyId) {
 
 async function upsertAccount(companyId, data) {
   const existing = data.openId
-    ? await prisma().tiktokAccount.findUnique({
+    ? await prisma().tikTokAccount.findUnique({
         where: { companyId_openId: { companyId, openId: data.openId } },
       })
     : null;
 
   if (existing) {
-    return prisma().tiktokAccount.update({
+    return prisma().tikTokAccount.update({
       where: { id: existing.id },
       data,
     });
   }
-  return prisma().tiktokAccount.create({ data: { companyId, ...data } });
+  return prisma().tikTokAccount.create({ data: { companyId, ...data } });
 }
 
 async function saveToken(companyId, tokenData) {
@@ -126,7 +126,7 @@ async function getValidAccessToken(account, companyId) {
       const tokenExpiresAt = (data?.data?.expires_in || data?.expires_in)
         ? new Date(Date.now() + (data.data.expires_in || data.expires_in) * 1000)
         : null;
-      await prisma().tiktokAccount.update({
+      await prisma().tikTokAccount.update({
         where: { id: account.id },
         data: { accessToken: newToken, refreshToken: data?.data?.refresh_token || account.refreshToken, tokenExpiresAt },
       });

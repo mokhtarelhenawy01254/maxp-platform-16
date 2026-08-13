@@ -28,7 +28,7 @@ function normalizeCreateTime(value) {
 
 async function updateLastSyncedAt(account) {
   try {
-    await prisma().tiktokShopAccount.update({
+    await prisma().tikTokShopAccount.update({
       where: { id: account.id },
       data: { lastSyncedAt: new Date() }
     });
@@ -38,7 +38,7 @@ async function updateLastSyncedAt(account) {
 }
 
 async function getAccount(companyId) {
-  return prisma().tiktokShopAccount.findFirst({
+  return prisma().tikTokShopAccount.findFirst({
     where: { companyId },
     orderBy: { updatedAt: 'desc' }
   });
@@ -46,7 +46,7 @@ async function getAccount(companyId) {
 
 async function saveAccount(companyId, data) {
   const shopId = String(data.shopId || '').trim();
-  const existing = await prisma().tiktokShopAccount.findUnique({
+  const existing = await prisma().tikTokShopAccount.findUnique({
     where: { companyId_shopId: { companyId, shopId } }
   });
 
@@ -60,7 +60,7 @@ async function saveAccount(companyId, data) {
     lastSyncedAt: existing?.lastSyncedAt || new Date()
   };
 
-  return prisma().tiktokShopAccount.upsert({
+  return prisma().tikTokShopAccount.upsert({
     where: { companyId_shopId: { companyId, shopId } },
     create: { ...payload, companyId, shopId },
     update: payload

@@ -131,7 +131,7 @@ async function saveSettings(companyId, { storefrontUsername, storefrontEnabled }
     data.storefrontEnabled = Boolean(storefrontEnabled);
   }
 
-  return prisma().tiktokSettings.upsert({
+  return prisma().tikTokSettings.upsert({
     where: { companyId },
     update: data,
     create: { companyId, ...data },

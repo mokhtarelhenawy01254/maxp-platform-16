@@ -104,7 +104,7 @@ const getPost = async (req, res) => {
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
-    const post = await prisma.tiktokPost.findFirst({ where: { id, companyId } });
+    const post = await prisma.tikTokPost.findFirst({ where: { id, companyId } });
     if (!post) {
       return res.status(404).json({ success: false, error: 'المنشور غير موجود' });
     }

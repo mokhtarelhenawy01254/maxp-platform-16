@@ -19,7 +19,7 @@ async function listConfigs(req, res) {
   const companyId = req.user?.companyId;
   try {
     const prisma = getSharedPrismaClient();
-    const configs = await prisma.tiktokPixelConfig.findMany({
+    const configs = await prisma.tikTokPixelConfig.findMany({
       where: { companyId },
       orderBy: { updatedAt: 'desc' },
     });
@@ -40,7 +40,7 @@ async function createConfig(req, res) {
 
   try {
     const prisma = getSharedPrismaClient();
-    const config = await prisma.tiktokPixelConfig.create({
+    const config = await prisma.tikTokPixelConfig.create({
       data: {
         companyId,
         pixelId: pixelId.trim(),
@@ -65,7 +65,7 @@ async function updateConfig(req, res) {
 
   try {
     const prisma = getSharedPrismaClient();
-    const existing = await prisma.tiktokPixelConfig.findFirst({
+    const existing = await prisma.tikTokPixelConfig.findFirst({
       where: { id, companyId },
     });
     if (!existing) {
@@ -88,7 +88,7 @@ async function updateConfig(req, res) {
     }
     if (typeof body.isActive === 'boolean') data.isActive = body.isActive;
 
-    const config = await prisma.tiktokPixelConfig.update({
+    const config = await prisma.tikTokPixelConfig.update({
       where: { id: existing.id },
       data,
     });
@@ -105,14 +105,14 @@ async function deleteConfig(req, res) {
 
   try {
     const prisma = getSharedPrismaClient();
-    const existing = await prisma.tiktokPixelConfig.findFirst({
+    const existing = await prisma.tikTokPixelConfig.findFirst({
       where: { id, companyId },
     });
     if (!existing) {
       return res.status(404).json({ success: false, error: 'إعداد البيكسل غير موجود' });
     }
 
-    const config = await prisma.tiktokPixelConfig.update({
+    const config = await prisma.tikTokPixelConfig.update({
       where: { id: existing.id },
       data: { isActive: false },
     });
@@ -129,7 +129,7 @@ async function testConfig(req, res) {
 
   try {
     const prisma = getSharedPrismaClient();
-    const config = await prisma.tiktokPixelConfig.findFirst({
+    const config = await prisma.tikTokPixelConfig.findFirst({
       where: { id, companyId },
     });
     if (!config) {
@@ -141,7 +141,7 @@ async function testConfig(req, res) {
     const payload = service.buildPayload('PageView', userData, { test: true }, `test-${Date.now()}`);
     const result = await service.sendEvent(payload);
 
-    const updated = await prisma.tiktokPixelConfig.update({
+    const updated = await prisma.tikTokPixelConfig.update({
       where: { id: config.id },
       data: { lastTestAt: new Date() },
     });

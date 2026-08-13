@@ -12,7 +12,7 @@ const LOG_PREFIX = '[TikTok Events Manager]';
 
 async function getActiveConfig(companyId) {
   const prisma = getSharedPrismaClient();
-  return prisma.tiktokPixelConfig.findFirst({
+  return prisma.tikTokPixelConfig.findFirst({
     where: { companyId, isActive: true },
     orderBy: { updatedAt: 'desc' },
   });

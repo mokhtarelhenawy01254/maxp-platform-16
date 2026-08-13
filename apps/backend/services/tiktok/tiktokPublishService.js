@@ -93,7 +93,7 @@ async function initPublish({ companyId, account, videoUrl, caption, privacyLevel
     throw { code: apiError.code, message: apiError.message };
   }
 
-  const existing = await prisma.tiktokPost.findFirst({ where: { publishId } });
+  const existing = await prisma.tikTokPost.findFirst({ where: { publishId } });
   const data = {
     companyId,
     accountId: account.id,
@@ -105,8 +105,8 @@ async function initPublish({ companyId, account, videoUrl, caption, privacyLevel
   };
 
   const post = existing
-    ? await prisma.tiktokPost.update({ where: { id: existing.id }, data })
-    : await prisma.tiktokPost.create({ data });
+    ? await prisma.tikTokPost.update({ where: { id: existing.id }, data })
+    : await prisma.tikTokPost.create({ data });
 
   return post;
 }
@@ -145,7 +145,7 @@ async function pollStatus(prisma, post) {
   }
 
   if (Object.keys(updates).length > 0) {
-    return prisma.tiktokPost.update({ where: { id: post.id }, data: updates });
+    return prisma.tikTokPost.update({ where: { id: post.id }, data: updates });
   }
 
   return post;
@@ -153,7 +153,7 @@ async function pollStatus(prisma, post) {
 
 async function refreshStatus({ companyId, postId }) {
   const prisma = getSharedPrismaClient();
-  const post = await prisma.tiktokPost.findFirst({ where: { id: postId, companyId } });
+  const post = await prisma.tikTokPost.findFirst({ where: { id: postId, companyId } });
   if (!post) {
     throw { code: 'NOT_FOUND', message: 'المنشور غير موجود' };
   }
@@ -170,8 +170,8 @@ async function listPosts({ companyId, page, limit, status }) {
   if (status) where.status = status;
 
   const [total, posts] = await Promise.all([
-    prisma.tiktokPost.count({ where }),
-    prisma.tiktokPost.findMany({
+    prisma.tikTokPost.count({ where }),
+    prisma.tikTokPost.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       skip: (pageNum - 1) * limitNum,
@@ -181,7 +181,7 @@ async function listPosts({ companyId, page, limit, status }) {
 
   const accountIds = [...new Set(posts.map(p => p.accountId).filter(Boolean))];
   const accounts = accountIds.length > 0
-    ? await prisma.tiktokAccount.findMany({
+    ? await prisma.tikTokAccount.findMany({
         where: { id: { in: accountIds } },
         select: { id: true, displayName: true, avatarUrl: true },
       })
