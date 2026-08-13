@@ -249,7 +249,7 @@
     "CONFIRMED": "مؤكد",
     "PENDING_PREPARATION": "بانتظار التجهيز",
     "PREPARING": "قيد التجهيز",
-    "PROCESSING": "قيد المعالجة",
+    "PROCESSING": "قيد التنفيذ",
     "QUALITY_CHECK": "فحص الجودة",
     "PACKAGED": "تم التغليف",
     "READY": "جاهز",

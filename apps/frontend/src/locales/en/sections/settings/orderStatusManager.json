@@ -1,15 +1,15 @@
 {
-  "error_fetch_fe2a": "خطأ في جلب الحالات",
-  "msg_d864": "خطأ في تهيئة الحالات الافتراضية",
-  "msg_e1a9": "الكود والاسم مطلوبان",
-  "success_create_67d7": "تم إنشاء الحالة بنجاح",
-  "error_create_9567": "خطأ في إنشاء الحالة",
-  "success_update_dfad": "تم تحديث الحالة بنجاح",
-  "error_update_f3e8": "خطأ في تحديث الحالة",
+  "error_fetch_fe2a": "Error fetching statuses",
+  "msg_d864": "Error initializing default statuses",
+  "msg_e1a9": "Code and name are required",
+  "success_create_67d7": "Status created successfully",
+  "error_create_9567": "Error creating status",
+  "success_update_dfad": "Status updated successfully",
+  "error_update_f3e8": "Error updating status",
   "success_delete_f86e": "تم حذف الحالة بنجاح",
-  "error_delete_e809": "خطأ في حذف الحالة",
-  "error_save_9d9b": "خطأ في حفظ الترتيب",
-  "msg_8149": "تم تهيئة الحالات الافتراضية بنجاح",
-  "msg_e0af": "خطأ في تهيئة الحالات",
-  "msg_8f8d": "لا يمكن حذف هذه الحالة"
+  "error_delete_e809": "Error deleting status",
+  "error_save_9d9b": "Error saving order",
+  "msg_8149": "Default statuses initialized successfully",
+  "msg_e0af": "Error initializing statuses",
+  "msg_8f8d": "Cannot delete this status"
 }
