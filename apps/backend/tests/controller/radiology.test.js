@@ -15,6 +15,7 @@ const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const { findOrCreatePatient } = require('../../services/bookingPatientService');
 const controller = require('../../controller/radiologyController');
 const dicomUtil = require('../../utils/dicomUtil');
+const appointments = require('../../controller/radiologyAppointmentsController');
 
 const createResponse = () => {
   const response = {
@@ -1638,5 +1639,262 @@ describe('radiologyStatisticsController', () => {
     expect(res.payload.data.byModality).toEqual({ CT: 1, 'غير محدد': 1 });
     expect(res.payload.data.byModality['أشعة الصدر']).toBeUndefined();
     expect(res.payload.data.total).toBe(2);
+  });
+});
+
+describe('radiologyAppointmentsController hardening', () => {
+  const makeAppointment = (overrides = {}) => ({
+    id: 'appt-1',
+    companyId: 'company-1',
+    patientId: 'pat-1',
+    patientName: 'محمد علي',
+    patientPhone: '01001234567',
+    nationalId: '29901010123456',
+    bookingNo: 12,
+    status: 'SCHEDULED',
+    studyId: null,
+    ...overrides,
+  });
+
+  describe('updateAppointment status chain', () => {
+    test('rejects CHECKED_IN -> SCHEDULED', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(makeAppointment({ status: 'CHECKED_IN' }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'SCHEDULED' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('انتقال حالة غير مسموح به');
+      expect(prisma.radiologyAppointment.update).not.toHaveBeenCalled();
+    });
+
+    test('rejects CANCELLED -> SCHEDULED', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(makeAppointment({ status: 'CANCELLED' }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'SCHEDULED' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('انتقال حالة غير مسموح به');
+      expect(prisma.radiologyAppointment.update).not.toHaveBeenCalled();
+    });
+
+    test('rejects SCHEDULED -> DONE directly', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(makeAppointment({ status: 'SCHEDULED' }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'DONE' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('انتقال حالة غير مسموح به');
+      expect(prisma.radiologyAppointment.update).not.toHaveBeenCalled();
+    });
+
+    test('rejects DONE -> CHECKED_IN', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(makeAppointment({ status: 'DONE' }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'CHECKED_IN' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('انتقال حالة غير مسموح به');
+      expect(prisma.radiologyAppointment.update).not.toHaveBeenCalled();
+    });
+
+    test('allows SCHEDULED -> CHECKED_IN', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(makeAppointment({ status: 'SCHEDULED' }));
+      prisma.radiologyAppointment.update.mockImplementation(({ data }) => Promise.resolve({ id: 'appt-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'CHECKED_IN' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyAppointment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'CHECKED_IN' }) })
+      );
+    });
+
+    test('allows CHECKED_IN -> DONE', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(makeAppointment({ status: 'CHECKED_IN' }));
+      prisma.radiologyAppointment.update.mockImplementation(({ data }) => Promise.resolve({ id: 'appt-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'DONE' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyAppointment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'DONE' }) })
+      );
+    });
+
+    test('allows same-status updates (idempotent)', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(makeAppointment({ status: 'DONE' }));
+      prisma.radiologyAppointment.update.mockImplementation(({ data }) => Promise.resolve({ id: 'appt-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'done' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyAppointment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'DONE' }) })
+      );
+    });
+
+    test('allows SCHEDULED -> CANCELLED', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(makeAppointment({ status: 'SCHEDULED' }));
+      prisma.radiologyAppointment.update.mockResolvedValue({ id: 'appt-1', status: 'CANCELLED' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'CANCELLED' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyAppointment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'CANCELLED' }) })
+      );
+    });
+  });
+
+  describe('deleteAppointment protection', () => {
+    test('rejects deleting an appointment linked to a study', async () => {
+      const prisma = createPrisma({
+        radiologyAppointment: {
+          findMany: jest.fn(),
+          count: jest.fn(),
+          findFirst: jest.fn().mockResolvedValue(makeAppointment({ status: 'DONE', studyId: 'study-1' })),
+          findUnique: jest.fn(),
+          create: jest.fn(),
+          update: jest.fn(),
+          delete: jest.fn(),
+        },
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.deleteAppointment(req({ params: { id: 'appt-1' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('لا يمكن حذف حجز مرتبط بدراسة');
+      expect(prisma.radiologyAppointment.delete).not.toHaveBeenCalled();
+    });
+
+    test('allows deleting an appointment without a study link', async () => {
+      const prisma = createPrisma({
+        radiologyAppointment: {
+          findMany: jest.fn(),
+          count: jest.fn(),
+          findFirst: jest.fn().mockResolvedValue(makeAppointment()),
+          findUnique: jest.fn(),
+          create: jest.fn(),
+          update: jest.fn(),
+          delete: jest.fn().mockResolvedValue({ id: 'appt-1' }),
+        },
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.deleteAppointment(req({ params: { id: 'appt-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyAppointment.delete).toHaveBeenCalledWith({ where: { id: 'appt-1' } });
+    });
+  });
+
+  describe('listAppointments search', () => {
+    test('searches by nationalId and matches bookingNo exactly for a numeric search', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findMany.mockResolvedValue([makeAppointment()]);
+      prisma.radiologyAppointment.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.listAppointments(req({ query: { search: '29901010123456' } }), res);
+
+      const args = prisma.radiologyAppointment.findMany.mock.calls[0][0];
+      expect(args.where.OR).toEqual([
+        { patientName: { contains: '29901010123456', mode: 'insensitive' } },
+        { patientPhone: { contains: '29901010123456', mode: 'insensitive' } },
+        { nationalId: { contains: '29901010123456', mode: 'insensitive' } },
+        { bookingNo: 29901010123456 },
+      ]);
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('searches by phone', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findMany.mockResolvedValue([makeAppointment()]);
+      prisma.radiologyAppointment.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.listAppointments(req({ query: { search: '0100123' } }), res);
+
+      const args = prisma.radiologyAppointment.findMany.mock.calls[0][0];
+      expect(args.where.OR).toEqual([
+        { patientName: { contains: '0100123', mode: 'insensitive' } },
+        { patientPhone: { contains: '0100123', mode: 'insensitive' } },
+        { nationalId: { contains: '0100123', mode: 'insensitive' } },
+        { bookingNo: 100123 },
+      ]);
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('matches bookingNo exactly when the search string is a valid number', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findMany.mockResolvedValue([makeAppointment()]);
+      prisma.radiologyAppointment.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.listAppointments(req({ query: { search: '12' } }), res);
+
+      const args = prisma.radiologyAppointment.findMany.mock.calls[0][0];
+      expect(args.where.OR).toContainEqual({ bookingNo: 12 });
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('omits the bookingNo clause for a non-numeric search', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findMany.mockResolvedValue([makeAppointment()]);
+      prisma.radiologyAppointment.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.listAppointments(req({ query: { search: 'محمد' } }), res);
+
+      const args = prisma.radiologyAppointment.findMany.mock.calls[0][0];
+      expect(args.where.OR).toHaveLength(3);
+      expect(args.where.OR.some((clause) => Object.hasOwn(clause, 'bookingNo'))).toBe(false);
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('keeps the existing patientName filter behavior', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findMany.mockResolvedValue([makeAppointment()]);
+      prisma.radiologyAppointment.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.listAppointments(req({ query: { patientName: 'محمد' } }), res);
+
+      const args = prisma.radiologyAppointment.findMany.mock.calls[0][0];
+      expect(args.where).toEqual({ companyId: 'company-1', patientName: { contains: 'محمد', mode: 'insensitive' } });
+      expect(res.statusCode).toBe(200);
+    });
   });
 });

@@ -4,6 +4,8 @@ const radiologyController = require('./radiologyController');
 const appointmentsController = require('./radiologyAppointmentsController');
 
 const BULK_REPORT_ACTIONS = ['review', 'sign', 'deliver'];
+const BULK_MAX_IDS = 500;
+const BULK_CHUNK_SIZE = 10;
 
 const normalizeIds = (value) => {
   if (!Array.isArray(value)) return [];
@@ -41,21 +43,43 @@ const sendBulkResult = (res, { successCount, failed, extra }) => {
   res.json({ success: true, data: { successCount, failed, ...extra } });
 };
 
+const runInChunks = async (ids, chunkSize, task) => {
+  const failed = [];
+  let successCount = 0;
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const batch = ids.slice(i, i + chunkSize);
+    const results = await Promise.all(batch.map(async (id) => {
+      try {
+        await task(id);
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, id, error: error.message || 'حدث خطأ' };
+      }
+    }));
+    for (const result of results) {
+      if (result.ok) successCount++;
+      else failed.push({ id: result.id, error: result.error });
+    }
+  }
+  return { successCount, failed };
+};
+
+const assertBulkIds = (ids) => {
+  if (ids.length > BULK_MAX_IDS) return 'عدد العناصر يتجاوز الحد الأقصى المسموح (500)';
+  return null;
+};
+
 const bulkConvertAppointments = async (req, res) => {
   const companyId = req.user?.companyId;
   if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
   const ids = normalizeIds(req.body?.ids);
-  const failed = [];
-  let successCount = 0;
-  for (const id of ids) {
-    try {
-      await invokeController(appointmentsController.convertToStudy, { id }, req.user);
-      successCount++;
-    } catch (error) {
-      failed.push({ id, error: error.message || 'حدث خطأ' });
-    }
-  }
+  const idsError = assertBulkIds(ids);
+  if (idsError) return res.status(400).json({ success: false, error: idsError });
+
+  const { successCount, failed } = await runInChunks(ids, BULK_CHUNK_SIZE, async (id) => {
+    await invokeController(appointmentsController.convertToStudy, { id }, req.user);
+  });
   sendBulkResult(res, { successCount, failed });
 };
 
@@ -64,32 +88,29 @@ const bulkCheckinAppointments = async (req, res) => {
   if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
   const ids = normalizeIds(req.body?.ids);
+  const idsError = assertBulkIds(ids);
+  if (idsError) return res.status(400).json({ success: false, error: idsError });
+
   const prisma = getSharedPrismaClient();
   const changedBy = req.user?.id || req.user?.email || null;
   const userName = signerDisplayName(req);
-  const failed = [];
-  let successCount = 0;
-  for (const id of ids) {
-    try {
-      const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
-      if (!appointment) throw new Error('الحجز غير موجود');
-      if (appointment.status !== 'SCHEDULED') throw new Error('يمكن تسجيل الحضور للحجوزات المجدولة فقط');
-      await prisma.radiologyAppointment.update({ where: { id }, data: { status: 'CHECKED_IN' } });
-      if (appointment.studyId) {
-        const linkedStudy = await prisma.radiologyStudy.findUnique({ where: { id: appointment.studyId } }).catch(() => null);
-        if (linkedStudy) {
-          await syncStudyOrderStatus(prisma, { ...linkedStudy, status: linkedStudy.status }, {
-            changedBy,
-            userName,
-            appointment: { status: 'CHECKED_IN' },
-          });
-        }
+
+  const { successCount, failed } = await runInChunks(ids, BULK_CHUNK_SIZE, async (id) => {
+    const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
+    if (!appointment) throw new Error('الحجز غير موجود');
+    if (appointment.status !== 'SCHEDULED') throw new Error('يمكن تسجيل الحضور للحجوزات المجدولة فقط');
+    await prisma.radiologyAppointment.update({ where: { id }, data: { status: 'CHECKED_IN' } });
+    if (appointment.studyId) {
+      const linkedStudy = await prisma.radiologyStudy.findUnique({ where: { id: appointment.studyId } }).catch(() => null);
+      if (linkedStudy) {
+        await syncStudyOrderStatus(prisma, { ...linkedStudy, status: linkedStudy.status }, {
+          changedBy,
+          userName,
+          appointment: { status: 'CHECKED_IN' },
+        });
       }
-      successCount++;
-    } catch (error) {
-      failed.push({ id, error: error.message || 'حدث خطأ' });
     }
-  }
+  });
   sendBulkResult(res, { successCount, failed });
 };
 

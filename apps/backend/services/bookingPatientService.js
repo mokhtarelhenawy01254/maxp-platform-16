@@ -34,13 +34,28 @@ const splitName = (name) => {
 const findOrCreatePatient = async ({ companyId, customerName, customerPhone, customerGender, customerEmail, customerId, nationalId, nationalIdImage, address }) => {
   const prisma = getSharedPrismaClient();
   const phone = normalizePhone(customerPhone);
+  const nationalIdClean = nationalId ? String(nationalId).trim() : null;
 
-  if (phone) {
-    const existing = await prisma.patient.findFirst({
-      where: { companyId, phone, isActive: true },
-      select: { id: true },
-      orderBy: { createdAt: 'asc' },
-    });
+  if (phone || nationalIdClean) {
+    const predicates = [];
+    if (phone) predicates.push({ phone, isActive: true });
+    if (nationalIdClean) predicates.push({ nationalId: nationalIdClean, isActive: true });
+
+    let existing = null;
+    if (phone && nationalIdClean) {
+      existing = await prisma.patient.findFirst({
+        where: { companyId, phone, nationalId: nationalIdClean, isActive: true },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+    }
+    if (!existing) {
+      existing = await prisma.patient.findFirst({
+        where: { companyId, OR: predicates },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+    }
     if (existing) {
       // Update identity fields if provided (fill gaps on an existing patient)
       const patch = {};

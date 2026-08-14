@@ -7,6 +7,13 @@ const { nextCompanyNumber } = require('../utils/radiologyNumbering');
 
 const APPOINTMENT_STATUSES = ['SCHEDULED', 'CHECKED_IN', 'DONE', 'CANCELLED'];
 
+const APPOINTMENT_STATUS_TRANSITIONS = {
+  SCHEDULED: ['CHECKED_IN', 'CANCELLED'],
+  CHECKED_IN: ['DONE', 'CANCELLED'],
+  DONE: ['CANCELLED'],
+  CANCELLED: [],
+};
+
 const userDisplayName = (req) => ([req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ') || req.user?.email || null);
 
 const normalizeText = (value) => {
@@ -39,10 +46,21 @@ const listAppointments = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { patientName, status, dateFrom, dateTo, page, limit } = req.query;
+    const { patientName, search, status, dateFrom, dateTo, page, limit } = req.query;
     const where = { companyId };
     if (patientName && String(patientName).trim()) {
       where.patientName = { contains: String(patientName).trim(), mode: 'insensitive' };
+    }
+    if (search && String(search).trim()) {
+      const term = String(search).trim();
+      const or = [
+        { patientName: { contains: term, mode: 'insensitive' } },
+        { patientPhone: { contains: term, mode: 'insensitive' } },
+        { nationalId: { contains: term, mode: 'insensitive' } },
+      ];
+      const bookingNo = parseInt(term, 10);
+      if (Number.isInteger(bookingNo)) or.push({ bookingNo });
+      where.OR = or;
     }
     if (status) {
       const s = String(status).toUpperCase();
@@ -307,6 +325,13 @@ const updateAppointment = async (req, res) => {
     if (body.status !== undefined) {
       const s = String(body.status).toUpperCase();
       if (!APPOINTMENT_STATUSES.includes(s)) return res.status(400).json({ success: false, error: 'حالة الحجز غير صحيحة' });
+      const currentStatus = String(existing.status || '').toUpperCase();
+      if (s !== currentStatus) {
+        const allowed = APPOINTMENT_STATUS_TRANSITIONS[currentStatus] || [];
+        if (!allowed.includes(s)) {
+          return res.status(400).json({ success: false, error: 'انتقال حالة غير مسموح به' });
+        }
+      }
       if (s === 'CANCELLED' && existing.studyId) {
         const linkedStudy = await prisma.radiologyStudy.findUnique({ where: { id: existing.studyId } }).catch(() => null);
         if (linkedStudy && linkedStudy.status === 'DELIVERED') {
@@ -346,6 +371,7 @@ const deleteAppointment = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+    if (existing.studyId) return res.status(400).json({ success: false, error: 'لا يمكن حذف حجز مرتبط بدراسة' });
 
     await prisma.radiologyAppointment.delete({ where: { id } });
     res.json({ success: true, message: 'تم حذف الحجز', data: { id } });

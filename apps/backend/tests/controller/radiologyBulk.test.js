@@ -548,4 +548,178 @@ describe('radiologyBulkController', () => {
       expect(res.payload.error).toBe('غير مصرح');
     });
   });
+
+  describe('bulkConvertAppointments concurrency', () => {
+    test('handles a mix of valid and invalid ids and processes in parallel', async () => {
+      const prisma = createPrisma();
+      let active = 0;
+      let maxActive = 0;
+      prisma.radiologyAppointment.findFirst.mockImplementation(({ where }) => {
+        active++;
+        maxActive = Math.max(maxActive, active);
+        const appointment = where.id === 'ap-bad' ? null : makeAppointment({ id: where.id });
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            active--;
+            resolve(appointment);
+          }, 15);
+        });
+      });
+      prisma.radiologyExamType.findMany.mockResolvedValue([
+        { id: 'et-1', name: 'أشعة مقطعية', price: 500, category: 'CT', examCategory: null },
+      ]);
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: `study-${data.examTypeId}`, ...data }));
+      prisma.radiologyAppointment.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const ids = Array.from({ length: 9 }, (_, i) => `ap-${i + 1}`).concat('ap-bad');
+      const res = createResponse();
+      await bulkController.bulkConvertAppointments(req({ body: { ids } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(9);
+      expect(res.payload.data.failed).toEqual([{ id: 'ap-bad', error: 'الحجز غير موجود' }]);
+      expect(prisma.radiologyStudy.create).toHaveBeenCalledTimes(9);
+      expect(maxActive).toBeGreaterThan(1);
+    });
+
+    test('rejects more than 500 ids with 400', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkConvertAppointments(
+        req({ body: { ids: Array.from({ length: 501 }, (_, i) => `ap-${i}`) } }),
+        res,
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toBe('عدد العناصر يتجاوز الحد الأقصى المسموح (500)');
+    });
+  });
+
+  describe('bulkCheckinAppointments concurrency', () => {
+    test('handles a mix of valid and invalid ids and processes in parallel', async () => {
+      const prisma = createPrisma();
+      let active = 0;
+      let maxActive = 0;
+      prisma.radiologyAppointment.findFirst.mockImplementation(({ where }) => {
+        active++;
+        maxActive = Math.max(maxActive, active);
+        const appointment = where.id === 'ap-bad' ? null : makeAppointment({ id: where.id });
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            active--;
+            resolve(appointment);
+          }, 15);
+        });
+      });
+      prisma.radiologyAppointment.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const ids = Array.from({ length: 9 }, (_, i) => `ap-${i + 1}`).concat('ap-bad');
+      const res = createResponse();
+      await bulkController.bulkCheckinAppointments(req({ body: { ids } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(9);
+      expect(res.payload.data.failed).toEqual([{ id: 'ap-bad', error: 'الحجز غير موجود' }]);
+      expect(prisma.radiologyAppointment.update).toHaveBeenCalledTimes(9);
+      expect(maxActive).toBeGreaterThan(1);
+    });
+  });
+
+  describe('bookingPatientsController nationalId + delete protection', () => {
+    const bookingPatientsController = require('../../controller/bookingPatientsController');
+
+    test('getAllPatients searches by nationalId', async () => {
+      const prisma = {
+        patient: {
+          findMany: jest.fn().mockResolvedValue([
+            { id: 'p1', firstName: 'أحمد', lastName: 'علي', _count: { appointments: 0 } },
+          ]),
+          count: jest.fn().mockResolvedValue(1),
+        },
+      };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bookingPatientsController.getAllPatients(req({ query: { search: '30101234567890' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.patient.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: expect.arrayContaining([
+              { nationalId: { contains: '30101234567890', mode: 'insensitive' } },
+            ]),
+          }),
+        }),
+      );
+      expect(res.payload.data).toHaveLength(1);
+    });
+
+    test('deletePatient returns 400 when radiology references exist', async () => {
+      const prisma = createPrisma();
+      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1', companyId: 'company-1' });
+      prisma.radiologyStudy.count = jest.fn().mockResolvedValue(2);
+      prisma.radiologyAppointment.count = jest.fn().mockResolvedValue(0);
+      prisma.appointment = { count: jest.fn().mockResolvedValue(1) };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bookingPatientsController.deletePatient(req({ params: { id: 'patient-1' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toBe('لا يمكن حذف مريض لديه سجلات مرتبطة (دراسات/حجوزات)');
+      expect(prisma.patient.update).not.toHaveBeenCalled();
+    });
+
+    test('deletePatient soft-deletes when no references exist', async () => {
+      const prisma = createPrisma();
+      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1', companyId: 'company-1' });
+      prisma.radiologyStudy.count = jest.fn().mockResolvedValue(0);
+      prisma.radiologyAppointment.count = jest.fn().mockResolvedValue(0);
+      prisma.appointment = { count: jest.fn().mockResolvedValue(0) };
+      prisma.patient.update.mockResolvedValue({ id: 'patient-1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bookingPatientsController.deletePatient(req({ params: { id: 'patient-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(prisma.patient.update).toHaveBeenCalledWith(
+        { where: { id: 'patient-1' }, data: { isActive: false } },
+      );
+    });
+
+    test('findOrCreatePatient matches an existing patient by nationalId', async () => {
+      const service = jest.requireActual('../../services/bookingPatientService');
+      const prisma = createPrisma();
+      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-nid' });
+      prisma.patient.update.mockResolvedValue({ id: 'patient-nid' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const result = await service.findOrCreatePatient({
+        companyId: 'company-1',
+        customerName: 'محمد علي',
+        nationalId: '30101234567890',
+        nationalIdImage: 'img-base64',
+      });
+
+      expect(result).toEqual({ id: 'patient-nid', created: false });
+      expect(prisma.patient.findFirst).toHaveBeenCalledWith({
+        where: { companyId: 'company-1', OR: [{ nationalId: '30101234567890', isActive: true }] },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(prisma.patient.update).toHaveBeenCalledWith({
+        where: { id: 'patient-nid' },
+        data: { nationalId: '30101234567890', nationalIdImage: 'img-base64' },
+      });
+    });
+  });
 });

@@ -43,6 +43,7 @@ const getAllPatients = async (req, res) => {
         { lastName: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
         { insuranceNumber: { contains: search, mode: 'insensitive' } },
+        { nationalId: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -410,11 +411,21 @@ const deletePatient = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const existing = await getSharedPrismaClient().patient.findFirst({ where: { id, companyId } });
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.patient.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
+    const [studyCount, radiologyAppointmentCount, appointmentCount] = await Promise.all([
+      prisma.radiologyStudy.count({ where: { companyId, patientId: id } }),
+      prisma.radiologyAppointment.count({ where: { companyId, patientId: id } }),
+      prisma.appointment.count({ where: { companyId, patientId: id } }),
+    ]);
+    if (studyCount + radiologyAppointmentCount + appointmentCount > 0) {
+      return res.status(400).json({ success: false, error: 'لا يمكن حذف مريض لديه سجلات مرتبطة (دراسات/حجوزات)' });
+    }
+
     // Soft delete to preserve medical history linkage
-    await getSharedPrismaClient().patient.update({ where: { id }, data: { isActive: false } });
+    await prisma.patient.update({ where: { id }, data: { isActive: false } });
     res.json({ success: true, message: 'تم تعطيل المريض' });
   } catch (error) {
     console.error('Error deleting patient:', error);

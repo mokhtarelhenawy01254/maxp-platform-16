@@ -7,6 +7,8 @@ interface CalendarItem {
   id: string;
   patientName: string;
   examTypeName?: string;
+  deviceName?: string;
+  patientFlags?: string[] | string;
   appointmentTime?: string;
   appointmentDate?: string;
   status?: string;
@@ -38,9 +40,10 @@ export default function ScheduleCalendar(props: {
   onShift: (dir: number) => void;
   onToday: () => void;
   onSelectDay: (key: string) => void;
+  onOpenAppointment?: (id: string) => void;
 }) {
   const { t } = useTranslation();
-  const { view, anchorDate, items, onShift, onToday, onSelectDay } = props;
+  const { view, anchorDate, items, onShift, onToday, onSelectDay, onOpenAppointment } = props;
   const anchor = new Date(anchorDate + "T12:00:00");
   const byDay = new Map<string, CalendarItem[]>();
   for (const it of items) {
@@ -67,10 +70,17 @@ export default function ScheduleCalendar(props: {
         ) : (
           <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
             {list.length === 0 ? <div className="text-xs text-gray-400">—</div> : list.map(a => (
-              <div key={a.id} className={`text-[11px] px-1.5 py-0.5 rounded ${statusCls(a.status)} flex items-center justify-between`}>
+              <button
+                key={a.id}
+                type="button"
+                disabled={!onOpenAppointment}
+                onClick={() => onOpenAppointment?.(a.id)}
+                aria-label={a.patientName}
+                className={`text-[11px] px-1.5 py-0.5 rounded ${statusCls(a.status)} flex items-center justify-between w-full text-left ${onOpenAppointment ? "cursor-pointer hover:opacity-80" : ""}`}
+              >
                 <span className="truncate">{a.patientName}{a.emergency ? " ⚡" : ""}</span>
                 <span className="whitespace-nowrap" dir="ltr">{a.appointmentTime || "—"}</span>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -85,10 +95,10 @@ export default function ScheduleCalendar(props: {
       <div className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <button className={navBtn} onClick={() => onShift(-1)}><ChevronRight className="w-4 h-4" /></button>
-            <button className={navBtn} onClick={() => onShift(1)}><ChevronLeft className="w-4 h-4" /></button>
+            <button className={navBtn} onClick={() => onShift(-1)} aria-label={t("radiology.patients.previous") as string}><ChevronRight className="w-4 h-4" /></button>
+            <button className={navBtn} onClick={() => onShift(1)} aria-label={t("radiology.patients.next") as string}><ChevronLeft className="w-4 h-4" /></button>
             <span className="font-bold text-sm">{fmtLabel(anchor)}</span>
-            <button className={`${navBtn} text-blue-600 dark:text-blue-400`} onClick={onToday}>{t("radiology.scheduleCalendar.today")}</button>
+            <button className={`${navBtn} text-blue-600 dark:text-blue-400`} onClick={onToday} aria-label={t("radiology.scheduleCalendar.today") as string}>{t("radiology.scheduleCalendar.today")}</button>
           </div>
           <span className="text-sm text-gray-500 dark:text-gray-400">{list.length} {t("radiology.scheduleCalendar.bookings")}</span>
         </div>
@@ -96,12 +106,19 @@ export default function ScheduleCalendar(props: {
           {list.length === 0 ? (
             <div className="p-10 text-center text-gray-400">{t("radiology.scheduleCalendar.noBookingsToday")}</div>
           ) : list.map(a => (
-            <div key={a.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+            <button
+              key={a.id}
+              type="button"
+              disabled={!onOpenAppointment}
+              onClick={() => onOpenAppointment?.(a.id)}
+              aria-label={`${t("radiology.scheduleCalendar.booking")} ${a.patientName}`}
+              className={`flex items-center gap-3 px-4 py-3 text-sm w-full ${onOpenAppointment ? "cursor-pointer hover:opacity-80" : ""}`}
+            >
               <span className="font-mono whitespace-nowrap text-gray-500 dark:text-gray-400" dir="ltr">{a.appointmentTime || "—"}</span>
               <span className={`px-2 py-0.5 rounded-full text-xs ${statusCls(a.status)}`}>{a.status === "SCHEDULED" ? t("radiology.scheduleCalendar.scheduled") : a.status === "CHECKED_IN" ? t("radiology.scheduleCalendar.checkedIn") : a.status === "DONE" ? t("radiology.scheduleCalendar.done") : t("radiology.scheduleCalendar.cancelled")}</span>
               <span className="font-medium">{a.patientName}{a.emergency ? <span className="mr-1 text-xs text-red-500">{t("radiology.scheduleCalendar.emergency")}</span> : null}</span>
-              <span className="text-gray-500 dark:text-gray-400 flex-1 truncate">{a.examTypeName || ""}{a.additionAmount ? ` (+${Number(a.additionAmount).toFixed(0)}${t("radiology.currency")})` : ""}</span>
-            </div>
+              <span className="text-gray-500 dark:text-gray-400 flex-1 truncate">{a.examTypeName || ""}{a.deviceName ? ` (${a.deviceName})` : ""}{a.additionAmount ? ` (+${Number(a.additionAmount).toFixed(0)}${t("radiology.currency")})` : ""}</span>
+            </button>
           ))}
         </div>
       </div>
@@ -116,10 +133,10 @@ export default function ScheduleCalendar(props: {
       <div className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <button className={navBtn} onClick={() => onShift(-1)}><ChevronRight className="w-4 h-4" /></button>
-            <button className={navBtn} onClick={() => onShift(1)}><ChevronLeft className="w-4 h-4" /></button>
+            <button className={navBtn} onClick={() => onShift(-1)} aria-label={t("radiology.patients.previous") as string}><ChevronRight className="w-4 h-4" /></button>
+            <button className={navBtn} onClick={() => onShift(1)} aria-label={t("radiology.patients.next") as string}><ChevronLeft className="w-4 h-4" /></button>
             <span className="font-bold text-sm">{weekLabel}</span>
-            <button className={`${navBtn} text-blue-600 dark:text-blue-400`} onClick={onToday}>{t("radiology.scheduleCalendar.thisWeek")}</button>
+            <button className={`${navBtn} text-blue-600 dark:text-blue-400`} onClick={onToday} aria-label={t("radiology.scheduleCalendar.thisWeek") as string}>{t("radiology.scheduleCalendar.thisWeek")}</button>
           </div>
         </div>
         <div className="grid grid-cols-7 gap-2">
@@ -143,12 +160,12 @@ export default function ScheduleCalendar(props: {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <button className={navBtn} onClick={() => onShift(-1)}><ChevronRight className="w-4 h-4" /></button>
-          <button className={navBtn} onClick={() => onShift(1)}><ChevronLeft className="w-4 h-4" /></button>
-          <span className="font-bold text-sm">{monthLabel}</span>
-          <button className={`${navBtn} text-blue-600 dark:text-blue-400`} onClick={onToday}>{t("radiology.scheduleCalendar.thisMonth")}</button>
-        </div>
+          <div className="flex items-center gap-2">
+            <button className={navBtn} onClick={() => onShift(-1)} aria-label={t("radiology.patients.previous") as string}><ChevronRight className="w-4 h-4" /></button>
+            <button className={navBtn} onClick={() => onShift(1)} aria-label={t("radiology.patients.next") as string}><ChevronLeft className="w-4 h-4" /></button>
+            <span className="font-bold text-sm">{monthLabel}</span>
+            <button className={`${navBtn} text-blue-600 dark:text-blue-400`} onClick={onToday} aria-label={t("radiology.scheduleCalendar.thisMonth") as string}>{t("radiology.scheduleCalendar.thisMonth")}</button>
+          </div>
         <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><CalendarDays className="w-4 h-4" />{t("radiology.scheduleCalendar.clickDayForBookings")}</span>
       </div>
       <div className="grid grid-cols-7 gap-1.5">

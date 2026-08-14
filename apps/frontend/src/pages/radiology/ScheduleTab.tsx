@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, UserCheck, ChevronDown, ScanLine, Info } from "lucide-react";
-import { api, bookingApi, fetchJson, RadiologyExamType, RadiologyExamAddition, RadiologyDevice, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyIdSettings, DEFAULT_ID_SETTINGS, formatSequentialId, fetchIdSettings } from "./shared";
+import { api, bookingApi, fetchJson, tryParseJSON, RadiologyExamType, RadiologyExamAddition, RadiologyDevice, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyIdSettings, DEFAULT_ID_SETTINGS, formatSequentialId, fetchIdSettings } from "./shared";
 import ScheduleCalendar, { ViewMode, dayKey, addDays, egyptWeekStart } from "./ScheduleCalendar";
 
 interface Appointment {
@@ -49,23 +49,42 @@ const emptyForm = (): Form => ({
   patientId: "", patientName: "", patientPhone: "", patientGender: "", patientAge: "", nationalId: "", nationalIdImage: "", insuranceNumber: "", patientFlags: [],
   examTypeIds: [], insuranceCompanyId: "", additionIds: [], deviceId: "",
   referringPhysicianId: "", referralDoctor: "", emergency: false,
-  appointmentDate: new Date().toISOString().slice(0, 10), appointmentTime: "", status: "SCHEDULED", notes: "",
+  appointmentDate: todayKey(), appointmentTime: "", status: "SCHEDULED", notes: "",
 });
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
+const todayKey = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const MANAGER_ROLES: string[] = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"];
 
 export default function ScheduleTab() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Appointment[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const [isManagerUser] = useState(() => {
+    try {
+      const role = (JSON.parse(localStorage.getItem("user") || "{}") as { role?: string }).role || "";
+      return MANAGER_ROLES.includes(role);
+    } catch { return false; }
+  });
   const [examTypes, setExamTypes] = useState<RadiologyExamType[]>([]);
   const [additions, setAdditions] = useState<RadiologyExamAddition[]>([]);
   const [insuranceCompanies, setInsuranceCompanies] = useState<{ id: string; name: string }[]>([]);
-  const [status, setStatus] = useState("");
-  const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState(todayKey());
-  const [dateTo, setDateTo] = useState(todayKey());
-  const [view, setView] = useState<ViewMode>("list");
+  const [status, setStatus] = useState(searchParams.get("status") || "");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [dateFrom, setDateFrom] = useState(searchParams.get("dateFrom") || todayKey());
+  const [dateTo, setDateTo] = useState(searchParams.get("dateTo") || todayKey());
+  const [view, setView] = useState<ViewMode>((searchParams.get("view") as ViewMode) || "list");
   const [anchorDate, setAnchorDate] = useState(todayKey());
   const [modal, setModal] = useState<Form | null>(null);
   const [saving, setSaving] = useState(false);
@@ -91,6 +110,8 @@ export default function ScheduleTab() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState<"checkin" | "convert" | null>(null);
   const [initialPayment, setInitialPayment] = useState<{ amount: string; method: string }>({ amount: "", method: "CASH" });
+  const abortRef = useRef<AbortController | null>(null);
+  const appendNextRef = useRef(false);
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -107,12 +128,25 @@ export default function ScheduleTab() {
     } catch { /* catalog optional */ }
   }, []);
 
+  const mergeById = (prev: Appointment[], rows: Appointment[]) => {
+    const seen = new Map<string, Appointment>();
+    [...prev, ...rows].forEach(a => { if (!seen.has(a.id)) seen.set(a.id, a); });
+    return [...seen.values()];
+  };
+
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setLoading(true);
+    const append = appendNextRef.current;
+    appendNextRef.current = false;
     try {
       const url = new URL(api("appointments"));
-      url.searchParams.set("limit", "300");
+      url.searchParams.set("limit", "200");
+      url.searchParams.set("page", String(page));
       if (status) url.searchParams.set("status", status);
-      if (search.trim()) url.searchParams.set("patientName", search.trim());
+      if (debouncedSearch.trim()) url.searchParams.set("patientName", debouncedSearch.trim());
       if (view === "list") {
         if (dateFrom) url.searchParams.set("dateFrom", dateFrom);
         if (dateTo) url.searchParams.set("dateTo", dateTo);
@@ -124,25 +158,54 @@ export default function ScheduleTab() {
         url.searchParams.set("dateFrom", from);
         url.searchParams.set("dateTo", to);
       }
-      const res = await fetchJson<{ items?: Appointment[]; total?: number }>(url.toString());
+      const res = await fetchJson<{ items?: Appointment[]; total?: number; page?: number }>(url.toString(), { signal: ctrl.signal });
+      if (ctrl.signal.aborted) return;
       const rows = res.items || [];
-      setItems(rows);
-      setSelected(prev => {
-        if (!prev.size) return prev;
-        const valid = new Set(rows.map(a => a.id));
-        const next = new Set([...prev].filter(id => valid.has(id)));
-        return next.size === prev.size ? prev : next;
-      });
+      setTotal(res.total ?? 0);
+      setItems(append ? prev => mergeById(prev, rows) : rows);
+      setLoadError(null);
+      if (!append) {
+        setSelected(prev => {
+          if (!prev.size) return prev;
+          const valid = new Set(rows.map(a => a.id));
+          const next = new Set([...prev].filter(id => valid.has(id)));
+          return next.size === prev.size ? prev : next;
+        });
+      }
     } catch (e) {
+      if (ctrl.signal.aborted) return;
+      setLoadError(e instanceof Error ? e.message : t("radiology.schedule.loadFailed"));
       if (!opts?.silent) toast.error(e instanceof Error ? e.message : t("radiology.schedule.loadFailed"));
+    } finally {
+      if (!ctrl.signal.aborted) setLoading(false);
     }
-  }, [status, search, dateFrom, dateTo, view, anchorDate]);
+  }, [status, debouncedSearch, dateFrom, dateTo, view, anchorDate, page]);
 
   useEffect(() => {
     loadCatalog();
     refresh();
     fetchIdSettings().then(setIdSettings);
   }, [loadCatalog, refresh]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (status) params["status"] = status;
+    if (search) params["search"] = search;
+    if (dateFrom) params["dateFrom"] = dateFrom;
+    if (dateTo) params["dateTo"] = dateTo;
+    if (view !== "list") params["view"] = view;
+    setSearchParams(params, { replace: true });
+  }, [status, search, dateFrom, dateTo, view]);
+
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   useEffect(() => {
     if (!patientSearch.trim()) { setPatientResults([]); return; }
@@ -474,6 +537,46 @@ export default function ScheduleTab() {
     notes: f.notes.trim() || undefined,
   });
 
+  const distributeInitialPayment = async (studies: { id: string; priceSnapshot?: number }[], amount: number, method: string) => {
+    let remaining = amount;
+    let paid = 0;
+    for (const s of studies) {
+      if (remaining <= 0) break;
+      const total = Number(s.priceSnapshot);
+      const pay = total > 0 ? Math.min(remaining, total) : remaining;
+      if (pay <= 0) continue;
+      try {
+        await fetchJson(api(`studies/${s.id}/payment`), { method: "POST", body: JSON.stringify({ amount: pay, method }) });
+        remaining -= pay;
+        paid += pay;
+      } catch { /* best-effort */ }
+    }
+    return paid > 0;
+  };
+
+  const persistAndConvert = async (payload: ReturnType<typeof buildPayload>, initialPaymentValue?: { amount: string; method: string }, successKey = "radiology.schedule.studyCreatedWalkIn") => {
+    const currentId = modal?.id;
+    let id = currentId;
+    if (currentId) {
+      await fetchJson(api(`appointments/${currentId}`), { method: "PUT", body: JSON.stringify(payload) });
+    } else {
+      const created = await fetchJson<{ id: string }>(api("appointments"), { method: "POST", body: JSON.stringify(payload) });
+      id = created.id;
+    }
+    if (!id) throw new Error(t("radiology.schedule.saveFailed") as string);
+    const r = await fetchJson<{ studies?: { id: string; priceSnapshot?: number }[]; study?: { id: string; priceSnapshot?: number } }>(api(`appointments/${id}/convert`), { method: "POST" });
+    const studies = r?.studies?.length ? r.studies : (r?.study ? [r.study] : []);
+    const amount = Number(initialPaymentValue?.amount);
+    if (studies.length && Number.isFinite(amount) && amount > 0) {
+      const ok = await distributeInitialPayment(studies, amount, initialPaymentValue?.method || "CASH");
+      toast.success(ok ? t("radiology.receptionFlow.created") : t("radiology.receptionFlow.paymentWarning"));
+    } else {
+      toast.success(t(successKey));
+    }
+    setModal(null);
+    navigate("/radiology/studies");
+  };
+
   const save = async (convertAfter = false) => {
     if (!modal || saving) return;
     if (!modal.patientName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
@@ -482,18 +585,8 @@ export default function ScheduleTab() {
     try {
       const patientId = await syncPatientRecord(modal);
       const payload = buildPayload({ ...modal, patientId: patientId || "", status: convertAfter ? "CHECKED_IN" : modal.status });
-      let id = modal.id;
-      if (modal.id) {
-        await fetchJson(api(`appointments/${modal.id}`), { method: "PUT", body: JSON.stringify(payload) });
-      } else {
-        const created = await fetchJson<{ id: string }>(api("appointments"), { method: "POST", body: JSON.stringify(payload) });
-        id = created.id;
-      }
-      if (convertAfter && id) {
-        await fetchJson(api(`appointments/${id}/convert`), { method: "POST" });
-        toast.success(t("radiology.schedule.studyCreatedWalkIn"));
-        setModal(null);
-        window.location.href = "/radiology/studies";
+      if (convertAfter) {
+        await persistAndConvert(payload);
         return;
       }
       toast.success(modal.id ? t("radiology.schedule.bookingUpdated") : t("radiology.schedule.bookingCreated"));
@@ -536,7 +629,7 @@ export default function ScheduleTab() {
       const r = await fetchJson<{ studies?: { id: string }[]; study?: { id: string } }>(api(`appointments/${a.id}/convert`), { method: "POST" });
       toast.success(t("radiology.schedule.studyCreated"));
       await refresh({ silent: true });
-      if (r?.study?.id || r?.studies?.length) window.location.href = "/radiology/studies";
+      if (r?.study?.id || r?.studies?.length) navigate("/radiology/studies");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("radiology.schedule.convertFailed"));
     } finally {
@@ -578,23 +671,6 @@ export default function ScheduleTab() {
     }
   };
 
-  const distributeInitialPayment = async (studies: { id: string; priceSnapshot?: number }[], amount: number, method: string) => {
-    let remaining = amount;
-    let paid = 0;
-    for (const s of studies) {
-      if (remaining <= 0) break;
-      const total = Number(s.priceSnapshot);
-      const pay = total > 0 ? Math.min(remaining, total) : remaining;
-      if (pay <= 0) continue;
-      try {
-        await fetchJson(api(`studies/${s.id}/payment`), { method: "POST", body: JSON.stringify({ amount: pay, method }) });
-        remaining -= pay;
-        paid += pay;
-      } catch { /* best-effort */ }
-    }
-    return paid > 0;
-  };
-
   const receiveAndCreate = async () => {
     if (!modal || saving) return;
     if (!modal.patientName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
@@ -603,25 +679,7 @@ export default function ScheduleTab() {
     try {
       const patientId = await syncPatientRecord(modal);
       const payload = buildPayload({ ...modal, patientId: patientId || "", status: "CHECKED_IN" });
-      let id = modal.id;
-      if (modal.id) {
-        await fetchJson(api(`appointments/${modal.id}`), { method: "PUT", body: JSON.stringify(payload) });
-      } else {
-        const created = await fetchJson<{ id: string }>(api("appointments"), { method: "POST", body: JSON.stringify(payload) });
-        id = created.id;
-      }
-      if (!id) throw new Error(t("radiology.schedule.saveFailed"));
-      const r = await fetchJson<{ studies?: { id: string; priceSnapshot?: number }[]; study?: { id: string; priceSnapshot?: number } }>(api(`appointments/${id}/convert`), { method: "POST" });
-      const studies = r?.studies?.length ? r.studies : (r?.study ? [r.study] : []);
-      const amount = Number(initialPayment.amount);
-      if (studies.length && Number.isFinite(amount) && amount > 0) {
-        const ok = await distributeInitialPayment(studies, amount, initialPayment.method || "CASH");
-        toast.success(ok ? t("radiology.receptionFlow.created") : t("radiology.receptionFlow.paymentWarning"));
-      } else {
-        toast.success(t("radiology.receptionFlow.created"));
-      }
-      setModal(null);
-      window.location.href = "/radiology/studies";
+      await persistAndConvert(payload, initialPayment, "radiology.receptionFlow.created");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("radiology.schedule.saveFailed"));
     } finally {
@@ -656,6 +714,36 @@ export default function ScheduleTab() {
   const gotoToday = () => setAnchorDate(todayKey());
   const selectDay = (key: string) => { setAnchorDate(key); setView("day"); };
 
+  const toggleSort = (key: string) => {
+    setSort(s => (s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+  };
+
+  const loadMore = () => {
+    appendNextRef.current = true;
+    setPage(p => p + 1);
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sort) return items;
+    const dir = sort.dir === "asc" ? 1 : -1;
+    const val = (a: Appointment): string | number => {
+      switch (sort.key) {
+        case "patient": return a.patientName || "";
+        case "exam": return a.examTypeName || "";
+        case "date": return a.appointmentDate || "";
+        case "time": return a.appointmentTime || "";
+        case "status": return a.status || "";
+        case "amount": return Number(a.additionAmount) || 0;
+        default: return "";
+      }
+    };
+    return [...items].sort((x, y) => {
+      const vx = val(x), vy = val(y);
+      if (typeof vx === "number" && typeof vy === "number") return (vx - vy) * dir;
+      return String(vx).localeCompare(String(vy), "ar") * dir;
+    });
+  }, [items, sort]);
+
   const VIEW_TABS: { id: ViewMode; label: string; icon: typeof List }[] = [
     { id: "list", label: t("radiology.scheduleCalendar.viewList"), icon: List },
     { id: "day", label: t("radiology.scheduleCalendar.viewDay"), icon: CalendarDays },
@@ -672,18 +760,18 @@ export default function ScheduleTab() {
         </div>
         <div className="flex items-center gap-1.5 border dark:border-gray-600 rounded-lg p-1">
           {VIEW_TABS.map(v => (
-            <button key={v.id} onClick={() => setView(v.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === v.id ? "bg-blue-600 text-white" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
+            <button key={v.id} onClick={() => { setPage(1); setView(v.id); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === v.id ? "bg-blue-600 text-white" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
               <v.icon className="w-4 h-4" />{v.label}
             </button>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => { setDateFrom(todayKey()); setDateTo(todayKey()); }} className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.today")}</button>
+          <button onClick={() => { setPage(1); setDateFrom(todayKey()); setDateTo(todayKey()); }} className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.today")}</button>
           <div className="relative">
             <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
             <input className={`${MODAL_INPUT_CLS} pr-9 w-44`} placeholder={t("radiology.schedule.searchByPatient")} value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <select className={MODAL_INPUT_CLS} value={status} onChange={e => setStatus(e.target.value)}>
+          <select className={MODAL_INPUT_CLS} value={status} onChange={e => { setPage(1); setStatus(e.target.value); }}>
             <option value="">{t("radiology.allStatuses")}</option>
             {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
           </select>
@@ -696,9 +784,21 @@ export default function ScheduleTab() {
       {view === "list" && (
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.from")}</label>
-          <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateFrom} onChange={e => { setPage(1); setDateFrom(e.target.value); }} />
           <label className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.to")}</label>
-          <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateTo} onChange={e => { setPage(1); setDateTo(e.target.value); }} />
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => { setPage(1); setDateFrom(dayKey(addDays(new Date(), -1))); setDateTo(dayKey(addDays(new Date(), -1))); }} className="px-2.5 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.quickYesterday")}</button>
+            <button onClick={() => { setPage(1); setDateFrom(dayKey(addDays(new Date(), -6))); setDateTo(todayKey()); }} className="px-2.5 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.quick7Days")}</button>
+            <button onClick={() => { setPage(1); setDateFrom(dayKey(addDays(new Date(), -29))); setDateTo(todayKey()); }} className="px-2.5 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.quick30Days")}</button>
+          </div>
+        </div>
+      )}
+
+      {view === "list" && loadError && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-900/20 text-sm text-red-700 dark:text-red-300">
+          <span>{loadError}</span>
+          <button onClick={() => refresh()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs hover:bg-red-700"><RefreshCw className="w-3.5 h-3.5" />{t("radiology.schedule.retry")}</button>
         </div>
       )}
 
@@ -711,6 +811,8 @@ export default function ScheduleTab() {
           onToday={gotoToday}
           onSelectDay={selectDay}
         />
+      ) : loading && items.length === 0 ? (
+        <div className="flex items-center justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-gray-400 dark:text-gray-500" /></div>
       ) : items.length === 0 ? (
         <p className="text-center py-16 text-gray-400 dark:text-gray-500">{t("radiology.schedule.noBookings")}</p>
       ) : (
@@ -722,13 +824,30 @@ export default function ScheduleTab() {
                   <th className="py-3 px-4">
                     <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600" checked={items.length > 0 && items.every(a => selected.has(a.id))} onChange={toggleSelectAll} title={t("radiology.schedule.selectAll") as string} />
                   </th>
-                  {[t("radiology.schedule.bookingId"), t("radiology.schedule.patient"), t("radiology.schedule.exam"), t("radiology.schedule.date"), t("radiology.schedule.time"), t("radiology.schedule.status"), t("radiology.schedule.notes"), t("radiology.actions")].map(h => (
-                    <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
+                  {[
+                    { key: "bookingId", label: t("radiology.schedule.bookingId"), sortable: false },
+                    { key: "patient", label: t("radiology.schedule.patient"), sortable: true },
+                    { key: "exam", label: t("radiology.schedule.exam"), sortable: true },
+                    { key: "amount", label: t("radiology.schedule.amount"), sortable: true },
+                    { key: "date", label: t("radiology.schedule.date"), sortable: true },
+                    { key: "time", label: t("radiology.schedule.time"), sortable: true },
+                    { key: "status", label: t("radiology.schedule.status"), sortable: true },
+                    { key: "notes", label: t("radiology.schedule.notes"), sortable: false },
+                    { key: "actions", label: t("radiology.actions"), sortable: false },
+                  ].map(h => (
+                    <th key={h.key} className="text-right py-3 px-4 whitespace-nowrap">
+                      {h.sortable ? (
+                        <button onClick={() => toggleSort(h.key)} className="flex items-center gap-1 font-medium">
+                          {h.label}
+                          {sort?.key === h.key ? (sort.dir === "asc" ? "▲" : "▼") : null}
+                        </button>
+                      ) : h.label}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {items.map(a => {
+                {sortedItems.map(a => {
                   const meta = STATUS_META[a.status] || STATUS_META["SCHEDULED"];
                   return (
                     <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
@@ -749,23 +868,25 @@ export default function ScheduleTab() {
                         {a.examTypeName || "—"}
                         {(a.examTypeIds && (Array.isArray(a.examTypeIds) ? a.examTypeIds.length : 1) > 1) ? <span className="mr-1.5 text-xs text-blue-600 dark:text-blue-400">+{Array.isArray(a.examTypeIds) ? a.examTypeIds.length - 1 : 0}</span> : null}
                         {a.deviceName ? <span className="mr-1.5 text-xs text-gray-400">({a.deviceName})</span> : null}
-                        {a.additionAmount ? ` (+${Number(a.additionAmount).toFixed(0)}${t("radiology.currency")})` : ""}
                       </td>
+                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.additionAmount ? `${Number(a.additionAmount).toFixed(0)} ${t("radiology.currency")}` : "—"}</td>
                       <td className="py-3 px-4">{fmtDate(a.appointmentDate)}</td>
                       <td className="py-3 px-4" dir="ltr">{a.appointmentTime || "—"}</td>
                       <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${meta?.color}`}>{t(meta?.label as never)}</span></td>
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 max-w-[160px] truncate">{a.notes || "—"}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
-                          <button onClick={() => navigate(a.studyId ? `/radiology/study/${a.studyId}` : `/radiology/appointment/${a.id}`)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.details.viewDetails") as string}><Info className="w-4 h-4" /></button>
-                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as { patientId?: string }).patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", nationalId: (a as { nationalId?: string }).nationalId || "", insuranceNumber: (a as { insuranceNumber?: string }).insuranceNumber || "", patientFlags: parsePatientFlags((a as { patientFlags?: string[] | string }).patientFlags), examTypeIds: Array.isArray((a as { examTypeIds?: string[] | string }).examTypeIds) ? (a as { examTypeIds?: string[] }).examTypeIds || [] : (typeof (a as { examTypeIds?: string | string[] }).examTypeIds === "string" ? JSON.parse((a as { examTypeIds?: string }).examTypeIds || "[]") as string[] : []), deviceId: (a as { deviceId?: string }).deviceId || "", insuranceCompanyId: a.insuranceCompanyId || "", additionIds: Array.isArray(a.additionIds) ? a.additionIds as string[] : (typeof a.additionIds === "string" ? JSON.parse(a.additionIds) as string[] : []), referringPhysicianId: (a as { referringPhysicianId?: string }).referringPhysicianId || "", referralDoctor: a.referralDoctor || "", emergency: !!a.emergency, appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", status: a.status, notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.schedule.edit")}><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => navigate(a.studyId ? `/radiology/study/${a.studyId}` : `/radiology/appointment/${a.id}`)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.details.viewDetails") as string} aria-label={t("radiology.details.viewDetails") as string}><Info className="w-4 h-4" /></button>
+                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as { patientId?: string }).patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", nationalId: (a as { nationalId?: string }).nationalId || "", insuranceNumber: (a as { insuranceNumber?: string }).insuranceNumber || "", patientFlags: parsePatientFlags((a as { patientFlags?: string[] | string }).patientFlags), examTypeIds: Array.isArray((a as { examTypeIds?: string[] | string }).examTypeIds) ? (a as { examTypeIds?: string[] }).examTypeIds || [] : tryParseJSON<string[]>((a as { examTypeIds?: string }).examTypeIds || "[]") || [], deviceId: (a as { deviceId?: string }).deviceId || "", insuranceCompanyId: a.insuranceCompanyId || "", additionIds: Array.isArray(a.additionIds) ? a.additionIds as string[] : tryParseJSON<string[]>(a.additionIds || "[]") || [], referringPhysicianId: (a as { referringPhysicianId?: string }).referringPhysicianId || "", referralDoctor: a.referralDoctor || "", emergency: !!a.emergency, appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", status: a.status, notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.schedule.edit") as string} aria-label={t("radiology.schedule.edit") as string}><Pencil className="w-4 h-4" /></button>
                           {a.status !== "CANCELLED" && a.status !== "DONE" ? (
-                            <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.schedule.convertToStudy")}><ArrowRightLeft className="w-4 h-4" /></button>
+                            <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.schedule.convertToStudy") as string} aria-label={t("radiology.schedule.convertToStudy") as string}><ArrowRightLeft className="w-4 h-4" /></button>
                           ) : null}
                           {STATUS_CHAIN[a.status] ? (
-                            <button onClick={() => advance(a)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title={t("radiology.schedule.advanceStatus")}><RefreshCw className="w-4 h-4" /></button>
+                            <button onClick={() => advance(a)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title={t("radiology.schedule.advanceStatus") as string} aria-label={t("radiology.schedule.advanceStatus") as string}><RefreshCw className="w-4 h-4" /></button>
                           ) : null}
-                          <button onClick={() => remove(a)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title={t("radiology.schedule.delete")}><Trash2 className="w-4 h-4" /></button>
+                          {isManagerUser ? (
+                            <button onClick={() => remove(a)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title={t("radiology.schedule.delete") as string} aria-label={t("radiology.schedule.delete") as string}><Trash2 className="w-4 h-4" /></button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -781,22 +902,34 @@ export default function ScheduleTab() {
                 <button onClick={() => runBulk("checkin")} disabled={!!bulkBusy} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">
                   {bulkBusy === "checkin" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}{t("radiology.schedule.bulkCheckin")}
                 </button>
-                <button onClick={() => runBulk("convert")} disabled={!!bulkBusy} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 disabled:opacity-50">
-                  {bulkBusy === "convert" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRightLeft className="w-3.5 h-3.5" />}{t("radiology.schedule.bulkConvert")}
-                </button>
-                <button onClick={() => setSelected(new Set())} className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title={t("radiology.cancel") as string}><XMarkIcon className="w-4 h-4" /></button>
+                {isManagerUser ? (
+                  <button onClick={() => runBulk("convert")} disabled={!!bulkBusy} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 disabled:opacity-50">
+                    {bulkBusy === "convert" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRightLeft className="w-3.5 h-3.5" />}{t("radiology.schedule.bulkConvert")}
+                  </button>
+                ) : null}
+                {isManagerUser ? (
+                  <button onClick={() => setSelected(new Set())} className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title={t("radiology.cancel") as string} aria-label={t("radiology.cancel") as string}><XMarkIcon className="w-4 h-4" /></button>
+                ) : null}
               </div>
             </div>
           ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t dark:border-gray-700">
+            <span className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.showingCount", { shown: items.length, total })}</span>
+            {items.length < total ? (
+              <button onClick={loadMore} className="flex items-center gap-1.5 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                <Loader2 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />{t("radiology.schedule.loadMore")}
+              </button>
+            ) : null}
+          </div>
         </div>
       )}
 
       {modal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => !saving && setModal(null)}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" role="dialog" aria-modal="true" onClick={() => !saving && setModal(null)}>
           <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">{modal.id ? t("radiology.schedule.editBooking") : (modal.status === "CHECKED_IN" ? t("radiology.schedule.walkInModal") : t("radiology.schedule.newBookingModal"))}</h3>
-              <button onClick={() => !saving && setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+              <button onClick={() => !saving && setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300" aria-label={t("radiology.cancel") as string}><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2 relative">
@@ -804,7 +937,7 @@ export default function ScheduleTab() {
                   <label className={labelCls}>{t("radiology.schedule.patientRequired")}</label>
                   <button type="button" onClick={openNewPatient} className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mb-1"><UserPlus className="w-3.5 h-3.5" />{t("radiology.schedule.addNewPatient")}</button>
                 </div>
-                <input className={MODAL_INPUT_CLS} value={patientSearch || modal.patientName} onChange={e => { setPatientSearch(e.target.value); if (!e.target.value) setModal({ ...modal, patientId: "", patientName: "", patientPhone: "" }); }} placeholder={t("radiology.schedule.searchPatient")} />
+                <input className={MODAL_INPUT_CLS} value={patientSearch || modal.patientName} onChange={e => { const v = e.target.value; setPatientSearch(v); setModal(m => m ? { ...m, patientId: "", patientName: v, patientPhone: v ? m.patientPhone : "" } : m); }} placeholder={t("radiology.schedule.searchPatient")} />
                 {patientSearch.trim() && (
                   <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
                     {patientResults.length === 0 ? (
@@ -1103,11 +1236,11 @@ export default function ScheduleTab() {
       />
 
       {cardScan && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => { setCardScan(null); setCardScanTarget(null); }}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" role="dialog" aria-modal="true" onClick={() => { setCardScan(null); setCardScanTarget(null); }}>
           <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">{t("radiology.schedule.cardScanTitle")}</h3>
-              <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
+              <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label={t("radiology.cancel") as string}><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <img src={cardScan} alt="البطاقة" className="w-full max-h-64 object-contain rounded-lg border dark:border-gray-600 mb-4" />
             {cardOcrBusy ? (

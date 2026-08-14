@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowRightLeft, ArrowRight, Loader2, User, CalendarDays, FileText, Stethoscope, Building2, ClipboardList, History } from "lucide-react";
-import { api, fetchJson, RadiologyOrderStatusMap, RADIOLOGY_PATIENT_FLAGS, parsePatientFlags, flagMeta, MODAL_INPUT_CLS } from "./shared";
+import { api, fetchJson, RadiologyOrderStatusMap, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS } from "./shared";
 
 interface RadiologyAppointmentView {
   id: string; bookingNo?: number; patientId?: string; patientName: string; patientPhone?: string;
@@ -56,6 +56,7 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
+  const [showConvertConfirm, setShowConvertConfirm] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -74,7 +75,7 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
 
   const convert = async () => {
     if (!data || converting) return;
-    if (!window.confirm(t("radiology.appointmentDetails.convertConfirm", { name: data.appointment.patientName }) as string)) return;
+    setShowConvertConfirm(false);
     setConverting(true);
     try {
       await fetchJson(api(`appointments/${appointmentId}/convert`), { method: "POST" });
@@ -89,8 +90,9 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center py-24" dir="rtl">
+      <div className="p-6 flex flex-col items-center gap-2 py-24" dir="rtl">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+        <span className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.loading")}</span>
       </div>
     );
   }
@@ -107,8 +109,8 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
   if (!data) return null;
 
   const a = data.appointment;
-  const orderMeta = RadiologyOrderStatusMap[data.orderStatus] || RadiologyOrderStatusMap["PENDING"];
-  const apptMeta = APPT_STATUS_META[a.status] || APPT_STATUS_META["SCHEDULED"];
+  const orderMeta = (RadiologyOrderStatusMap[data.orderStatus] || RadiologyOrderStatusMap["PENDING"])!;
+  const apptMeta = (APPT_STATUS_META[a.status] || APPT_STATUS_META["SCHEDULED"])!;
   const flags = parsePatientFlags(a.patientFlags);
   const examNames = (() => {
     try {
@@ -131,6 +133,9 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <ArrowRight className="w-4 h-4" />{t("radiology.details.back")}
           </button>
+          <button onClick={() => navigate("/radiology/schedule")} className="flex items-center gap-1.5 px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <CalendarDays className="w-4 h-4" />{t("radiology.schedule.title")}
+          </button>
           <div className="flex-1 min-w-[220px]">
             <h1 className="text-xl font-bold flex items-center gap-2">
               <CalendarDays className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -146,7 +151,7 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
             <span className={`px-3 py-1 rounded-full text-xs ${apptMeta.color}`}>{t(apptMeta.label)}</span>
           </div>
           {canConvert ? (
-            <button onClick={convert} disabled={converting} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm">
+            <button onClick={() => setShowConvertConfirm(true)} disabled={converting} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm">
               {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />}
               {t("radiology.appointmentDetails.convert")}
             </button>
@@ -223,6 +228,21 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
           </div>
         </div>
       </div>
+
+      {showConvertConfirm && data ? (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label={t("radiology.appointmentDetails.convert") as string}>
+          <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-4">{t("radiology.appointmentDetails.convert")}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{t("radiology.appointmentDetails.convertConfirm", { name: data.appointment.patientName })}</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowConvertConfirm(false)} disabled={converting} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">{t("radiology.cancel")}</button>
+              <button onClick={convert} disabled={converting} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+                {converting && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
