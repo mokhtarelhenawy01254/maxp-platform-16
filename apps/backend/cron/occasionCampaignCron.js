@@ -146,11 +146,42 @@ async function processDueOccasions() {
     try {
       const listIds = parseListIds(occ.customerListIds);
       const audience = await resolveOccasionAudience(prisma, occ.companyId, listIds);
+
+      // تطبيق إعدادات الإرسال: حد أقصى للعملاء + معدل أقصى لكل جولة (كل ساعة)
+      const limit = occ.sendLimit > 0 ? occ.sendLimit : audience.length;
+      const recipients = audience.slice(0, limit);
+      const already = Math.min(occ.totalSent || 0, recipients.length);
+
+      if (already >= recipients.length) {
+        // خلصنا كل المطلوب — خالص لمرحلة التكرار/الإتمام
+        let doneNextRunAt = null;
+        let doneStatus = 'sent';
+        if (occ.recurrence === 'yearly') {
+          const next = new Date(occ.nextRunAt || occ.scheduledAt);
+          next.setFullYear(next.getFullYear() + 1);
+          doneNextRunAt = next;
+          doneStatus = 'scheduled';
+        } else if (occ.recurrence === 'monthly') {
+          const next = new Date(occ.nextRunAt || occ.scheduledAt);
+          next.setMonth(next.getMonth() + 1);
+          doneNextRunAt = next;
+          doneStatus = 'scheduled';
+        }
+        await prisma.occasion.update({
+          where: { id: occ.id },
+          data: { status: doneStatus, nextRunAt: doneNextRunAt, lastSentAt: new Date(), lastSentCount: 0 },
+        });
+        console.log(`✅ [OCCASION-CRON] "${occ.name}" reached limit (${already}/${limit}) - ${doneStatus}`);
+        continue;
+      }
+
+      const batchSize = occ.throttlePerRun > 0 ? occ.throttlePerRun : recipients.length - already;
+      const batch = recipients.slice(already, already + batchSize);
       let sent = 0;
       let failed = 0;
 
-      if (audience.length > 0) {
-        for (const customer of audience) {
+      if (batch.length > 0) {
+        for (const customer of batch) {
           const phone = customer.phone;
           if (!phone) continue;
           const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
@@ -178,10 +209,17 @@ async function processDueOccasions() {
         }
       }
 
-      // تحديد الموعد التالي حسب التكرار
+      const totalSent = already + sent;
+
+      // هل لسه باقي مستلمين في الجولة الحالية؟ (بسبب معدل الإرسال لكل ساعة)
+      const stillRemaining = already + batch.length < recipients.length;
+
       let nextRunAt = null;
       let status = 'sent';
-      if (occ.recurrence === 'yearly') {
+      if (stillRemaining) {
+        nextRunAt = new Date(Date.now() + 60 * 60 * 1000);
+        status = 'scheduled';
+      } else if (occ.recurrence === 'yearly') {
         const next = new Date(occ.nextRunAt || occ.scheduledAt);
         next.setFullYear(next.getFullYear() + 1);
         nextRunAt = next;
@@ -195,9 +233,9 @@ async function processDueOccasions() {
 
       await prisma.occasion.update({
         where: { id: occ.id },
-        data: { status, nextRunAt, lastSentAt: new Date(), lastSentCount: sent },
+        data: { status, nextRunAt, lastSentAt: new Date(), lastSentCount: sent, totalSent },
       });
-      console.log(`✅ [OCCASION-CRON] "${occ.name}" sent to ${sent} (failed ${failed}) recurrence=${occ.recurrence}`);
+      console.log(`✅ [OCCASION-CRON] "${occ.name}" sent ${sent} this run (total ${totalSent}/${limit}, failed ${failed}) recurrence=${occ.recurrence}${stillRemaining ? ' -> continuing next hour' : ''}`);
     } catch (error) {
       console.error(`❌ [OCCASION-CRON] Failed processing occasion ${occ.id}:`, error.message);
     }

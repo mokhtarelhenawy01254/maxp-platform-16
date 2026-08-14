@@ -1260,6 +1260,9 @@ model Occasion {
   status          String   @default("draft") // draft | scheduled | sent | cancelled
   lastSentAt      DateTime?
   lastSentCount   Int      @default(0)
+  totalSent       Int      @default(0) // إجمالي الرسائل المرسلة (تراكمي عبر الجولات)
+  sendLimit       Int      @default(0) // أقصى عدد عملاء للمناسبة (0 = بدون حد)
+  throttlePerRun  Int      @default(0) // أقصى رسائل لكل جولة cron (كل ساعة) (0 = بدون حد)
   nextRunAt       DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

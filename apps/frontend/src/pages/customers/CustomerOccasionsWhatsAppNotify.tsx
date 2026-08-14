@@ -91,6 +91,9 @@ interface Occasion {
     status: OccasionStatus;
     lastSentAt: string | null;
     lastSentCount: number;
+    totalSent: number;
+    sendLimit: number;
+    throttlePerRun: number;
     nextRunAt: string | null;
     createdAt: string;
     updatedAt: string;
@@ -207,6 +210,8 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
     const [occTime, setOccTime] = useState(defaultSchedule.time);
     const [occRecurrence, setOccRecurrence] = useState<Recurrence>('yearly');
     const [occListIds, setOccListIds] = useState<string[]>([]);
+    const [occSendLimit, setOccSendLimit] = useState('');
+    const [occThrottlePerRun, setOccThrottlePerRun] = useState('');
     const [occFormError, setOccFormError] = useState('');
     const [occSaving, setOccSaving] = useState(false);
 
@@ -451,6 +456,8 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
         setOccTime(defaultSchedule.time);
         setOccRecurrence('yearly');
         setOccListIds([]);
+        setOccSendLimit('');
+        setOccThrottlePerRun('');
         setOccFormError('');
         setShowOccasionForm(false);
     };
@@ -465,6 +472,8 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
         setOccTime(toLocalTimeInput(d));
         setOccRecurrence(occ.recurrence);
         setOccListIds(occ.customerListIds || []);
+        setOccSendLimit(occ.sendLimit > 0 ? String(occ.sendLimit) : '');
+        setOccThrottlePerRun(occ.throttlePerRun > 0 ? String(occ.throttlePerRun) : '');
         setOccFormError('');
         setShowOccasionForm(true);
     };
@@ -497,6 +506,8 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                 scheduledAt: scheduledAt.toISOString(),
                 recurrence: occRecurrence,
                 customerListIds: occListIds,
+                sendLimit: parseInt(occSendLimit, 10) || 0,
+                throttlePerRun: parseInt(occThrottlePerRun, 10) || 0,
             };
             let res;
             if (editingOccasionId) {
@@ -783,6 +794,33 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                                 )}
                             </div>
 
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-gray-100 dark:border-slate-800 pt-3">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 block">أقصى عدد عملاء للمناسبة (0 = بدون حد)</label>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        value={occSendLimit}
+                                        onChange={e => setOccSendLimit(e.target.value)}
+                                        placeholder="مثال: 500"
+                                        className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 transition text-gray-900 dark:text-white"
+                                    />
+                                    <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">يوقف الإرسال تلقائياً عند الوصول للعدد ده.</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 block">أقصى رسائل لكل ساعة (0 = بدون حد)</label>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        value={occThrottlePerRun}
+                                        onChange={e => setOccThrottlePerRun(e.target.value)}
+                                        placeholder="مثال: 100"
+                                        className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 transition text-gray-900 dark:text-white"
+                                    />
+                                    <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">لو حطيت حد، الإرسال بيتم على دفعات كل ساعة لحد ما يخلص.</p>
+                                </div>
+                            </div>
+
                             {occFormError && (
                                 <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 rounded-xl p-2.5 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2">
                                     <ExclamationCircleIcon className="h-4 w-4 flex-shrink-0" />
@@ -838,6 +876,9 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                                             <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
                                                 📅 {new Date(occ.scheduledAt).toLocaleString('ar-EG')}
                                                 {listNames.length > 0 ? ` • جمهور: ${listNames.join('، ')}` : ' • بدون جمهور'}
+                                                {occ.sendLimit > 0 ? ` • حد: ${occ.sendLimit}` : ''}
+                                                {occ.throttlePerRun > 0 ? ` • معدل: ${occ.throttlePerRun}/ساعة` : ''}
+                                                {occ.totalSent > 0 ? ` • أُرسل: ${occ.totalSent}` : ''}
                                                 {occ.lastSentCount ? ` • آخر إرسال: ${occ.lastSentCount}` : ''}
                                             </p>
                                         </div>

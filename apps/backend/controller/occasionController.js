@@ -32,6 +32,11 @@ function isValidHttpUrl(value) {
     }
 }
 
+function parseCount(value) {
+    const n = parseInt(value, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 async function listOccasions(req, res) {
     try {
         const { companyId } = req.user;
@@ -51,7 +56,7 @@ async function listOccasions(req, res) {
 async function createOccasion(req, res) {
     try {
         const { companyId } = req.user;
-        const { name, message, mediaUrl, scheduledAt, recurrence, customerListIds } = req.body || {};
+        const { name, message, mediaUrl, scheduledAt, recurrence, customerListIds, sendLimit, throttlePerRun } = req.body || {};
         const trimmedName = (name || '').toString().trim();
         const trimmedMessage = (message || '').toString().trim();
 
@@ -68,6 +73,8 @@ async function createOccasion(req, res) {
 
         const rec = RECURRENCES.includes(recurrence) ? recurrence : 'none';
         const listIds = parseListIds(customerListIds);
+        const sendLimitCount = parseCount(sendLimit);
+        const throttlePerRunCount = parseCount(throttlePerRun);
         const prisma = getSharedPrismaClient();
 
         const record = await prisma.occasion.create({
@@ -79,6 +86,8 @@ async function createOccasion(req, res) {
                 scheduledAt: new Date(scheduledAt),
                 recurrence: rec,
                 customerListIds: JSON.stringify(listIds),
+                sendLimit: sendLimitCount,
+                throttlePerRun: throttlePerRunCount,
                 status: 'draft',
             },
         });
@@ -97,7 +106,7 @@ async function updateOccasion(req, res) {
     try {
         const { companyId } = req.user;
         const { id } = req.params;
-        const { name, message, mediaUrl, scheduledAt, recurrence, customerListIds } = req.body || {};
+        const { name, message, mediaUrl, scheduledAt, recurrence, customerListIds, sendLimit, throttlePerRun } = req.body || {};
         const prisma = getSharedPrismaClient();
         const existing = await prisma.occasion.findFirst({ where: { id, companyId } });
         if (!existing) return res.status(404).json({ success: false, message: 'المناسبة غير موجودة' });
@@ -129,6 +138,8 @@ async function updateOccasion(req, res) {
         }
         if (recurrence !== undefined) data.recurrence = RECURRENCES.includes(recurrence) ? recurrence : 'none';
         if (customerListIds !== undefined) data.customerListIds = JSON.stringify(parseListIds(customerListIds));
+        if (sendLimit !== undefined) data.sendLimit = parseCount(sendLimit);
+        if (throttlePerRun !== undefined) data.throttlePerRun = parseCount(throttlePerRun);
 
         const updated = await prisma.occasion.update({ where: { id }, data });
         return res.json({
@@ -175,7 +186,7 @@ async function publishOccasion(req, res) {
 
         const updated = await prisma.occasion.update({
             where: { id },
-            data: { status: 'scheduled', scheduledAt: when, nextRunAt: when },
+            data: { status: 'scheduled', scheduledAt: when, nextRunAt: when, totalSent: 0, lastSentCount: 0 },
         });
         return res.json({
             success: true,
