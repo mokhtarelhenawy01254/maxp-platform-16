@@ -1083,7 +1083,8 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
     const senderId = webhookEvent.sender.id;
     // 🆕 Handle referral events without message object (OPEN_THREAD events)
-    const messageText = webhookEvent.message?.text || null;
+    // Prefer the quick_reply payload (button tap) over the button title so rules/flows match on payload values.
+    const messageText = resolveInboundMessageText(webhookEvent);
     let attachments = webhookEvent.message?.attachments || null;
 
     // 🆕 Extract postId from webhookEvent (fast - already extracted in webhookController)
@@ -2991,12 +2992,19 @@ async function sendInstagramMessage({ recipientId, messageText, igAccountId, pag
   }
 }
 
+function resolveInboundMessageText(webhookEvent) {
+  const quickReplyPayload = webhookEvent?.message?.quick_reply?.payload || null;
+  const postbackPayload = webhookEvent?._isPostback ? webhookEvent._postbackPayload : null;
+  return quickReplyPayload || postbackPayload || webhookEvent?.message?.text || null;
+}
+
 module.exports = {
   sendFacebookMessage,
   sendFacebookMessageViaDeliveryOutbox,
   sendInstagramMessage,
   handleMessageDirectly,
   handleFacebookMessage,
+  resolveInboundMessageText,
   handleInstagramMessage,
   getPageToken,
   updatePageTokenCache,

@@ -300,10 +300,20 @@ const postWebhook = async (req, res) => {
                     }
                   }
 
-                  // Handle postback events (button clicks, etc.)
+                  // Handle postback events (button clicks, persistent menu, etc.)
+                  // Route the payload through the same text pipeline so rules/flows can match on it.
                   if (webhookEvent.postback) {
-                    // يمكن إضافة معالجة إضافية هنا لاحقاً
-                    return;
+                    const payload = webhookEvent.postback?.payload;
+                    if (payload && typeof payload === 'string') {
+                      webhookEvent._isPostback = true;
+                      webhookEvent._postbackPayload = payload;
+                      webhookEvent.message = {
+                        text: payload,
+                        mid: `postback_${webhookEvent.timestamp || Date.now()}_${senderId}`,
+                      };
+                    } else {
+                      return;
+                    }
                   }
 
                   // 🎯 Customer message
