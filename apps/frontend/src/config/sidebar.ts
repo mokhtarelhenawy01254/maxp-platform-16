@@ -525,7 +525,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/automation/bot-studio', icon: Send, label: t('sidebar.botStudio') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['whatsapp-business', 'facebook-pages-connect', 'crm-basic'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['bot-automation', 'whatsapp-business', 'facebook-pages-connect', 'crm-basic'])
         },
 
         // 2️⃣.6 تيليجرام

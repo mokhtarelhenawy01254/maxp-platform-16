@@ -439,6 +439,47 @@
     "updatedAt": "2026-08-11T00:00:00Z"
   },
   {
+    "id": "cat-app-bot-automation",
+    "slug": "bot-automation",
+    "name": "أتمتة المحادثات",
+    "nameEn": "Chat Automation",
+    "description": "بوت محادثات آلي بدون ذكاء اصطناعي على واتساب وفيسبوك: ردود بالكلمات المفتاحية، رسالة ترحيب، رد افتراضي، روابط بدء المحادثة، قائمة المسنجر، ودجت محادثة، QR، فلوهات تفاعلية تتفرع على رد العميل، أزرار سريعة، وإلغاء اشتراك (Opt-out).",
+    "descriptionEn": "No-AI chat bot for WhatsApp & Facebook: keyword replies, welcome message, default reply, conversation starters, persistent menu, chat widget, QR codes, interactive flows that branch on the customer's reply, quick replies, and opt-out.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المتاجر التي تريد رداً تلقائياً فورياً على رسائل واتساب ومسنجر بدون تكلفة ذكاء اصطناعي.",
+      "surface": "داخل قسم أتمتة المحادثات — الردود الآلية، بدء المحادثة، القائمة، الودجت، الفلوهات، والجمهور.",
+      "outcome": "رد آلي فوري على كل الرسائل، توفير وقت الفريق، وزيادة نسبة تحويل المتابعين لعملاء."
+    },
+    "features": {
+      "keywordRules": { "enabled": true, "name": "الردود الآلية", "description": "ردود بالكلمات المفتاحية مع أولوية واختيار القناة.", "access": "PAID" },
+      "welcomeDefault": { "enabled": true, "name": "الترحيب والرد الافتراضي", "description": "رسالة ترحيب أول رسالة + رد افتراضي.", "access": "PAID" },
+      "conversationStarters": { "enabled": true, "name": "بدء المحادثة", "description": "روابط wa.me و m.me برسالة جاهزة + QR.", "access": "PAID" },
+      "persistentMenu": { "enabled": true, "name": "قائمة المسنجر", "description": "قائمة ثابتة أسفل محادثة المسنجر.", "access": "PAID" },
+      "chatWidget": { "enabled": true, "name": "ودجت المحادثة", "description": "زر عائم يفتح محادثة واتساب أو مسنجر.", "access": "PAID" },
+      "interactiveFlows": { "enabled": true, "name": "الفلوهات التفاعلية", "description": "سلاسل تتفرع على رد العميل بالكلمات أو الأزرار.", "access": "PAID" },
+      "quickReplies": { "enabled": true, "name": "أزرار سريعة", "description": "أزرار Quick Replies على واتساب ومسنجر.", "access": "PAID" },
+      "optOut": { "enabled": true, "name": "إلغاء الاشتراك", "description": "إدارة STOP/Opt-out وشرائح الجمهور.", "access": "PAID" }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "bot",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-14T00:00:00Z",
+    "updatedAt": "2026-08-14T00:00:00Z"
+  },
+  {
     "id": "cat-app-analytics-basic",
     "slug": "analytics-basic",
     "name": "Analytics Basic",

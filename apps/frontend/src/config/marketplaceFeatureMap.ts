@@ -248,6 +248,20 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "مغطى بتطبيق WhatsApp Business API الموحد بعد إزالة whatsapp-integration.",
   },
   {
+    id: "bot-automation",
+    area: "communication",
+    label: "أتمتة المحادثات",
+    description: "بوت محادثات بدون ذكاء اصطناعي: ردود بالكلمات، ترحيب، رد افتراضي، بدء محادثة، قائمة مسنجر، ودجت، فلوهات تفاعلية، أزرار، وشرائح.",
+    status: "covered",
+    appSlug: "bot-automation",
+    appLabel: "أتمتة المحادثات",
+    currentGate: "bot-automation",
+    routes: [
+      { path: "/automation/bot-studio", label: "البوت الآلي" },
+    ],
+    action: "مغطى بتطبيق أتمتة المحادثات المستقل.",
+  },
+  {
     id: "telegram",
     area: "communication",
     label: "تليجرام",
