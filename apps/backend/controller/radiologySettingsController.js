@@ -1,6 +1,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { DEFAULT_SETTINGS, getRadiologyIdSettings } = require('../utils/radiologyNumbering');
 const { getRadiologyGuards } = require('../utils/radiologyGuards');
+const { DEFAULT_DELIVERY, getRadiologyDeliverySettings } = require('../utils/radiologyDeliverySettings');
 
 const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
 
@@ -103,4 +104,47 @@ const updateGuards = async (req, res) => {
   }
 };
 
-module.exports = { listSettings, updateSettings, listGuards, updateGuards };
+const listDeliverySettings = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const settings = await getRadiologyDeliverySettings(getSharedPrismaClient(), companyId);
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Error listing radiology delivery settings:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب إعدادات التوصيل' });
+  }
+};
+
+const updateDeliverySettings = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+
+    const entries = [];
+    if (body.deliverSmsPatient !== undefined) {
+      entries.push(['deliverSmsPatient', body.deliverSmsPatient === true || body.deliverSmsPatient === 'true' ? 'true' : 'false']);
+    }
+    if (body.notifyReferringDoctor !== undefined) {
+      entries.push(['notifyReferringDoctor', body.notifyReferringDoctor === true || body.notifyReferringDoctor === 'true' ? 'true' : 'false']);
+    }
+
+    for (const [key, value] of entries) {
+      await prisma.radiologySetting.upsert({
+        where: { companyId_key: { companyId, key } },
+        update: { value },
+        create: { companyId, key, value },
+      });
+    }
+
+    res.json({ success: true, data: await getRadiologyDeliverySettings(prisma, companyId) });
+  } catch (error) {
+    console.error('Error updating radiology delivery settings:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث إعدادات التوصيل' });
+  }
+};
+
+module.exports = { listSettings, updateSettings, listGuards, updateGuards, listDeliverySettings, updateDeliverySettings };

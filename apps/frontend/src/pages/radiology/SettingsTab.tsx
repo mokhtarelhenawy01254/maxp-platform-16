@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Boxes, FileText, Hash, Loader2, Pencil, Plus, RefreshCw, Shield, Tag, Trash2, X as XMarkIcon } from "lucide-react";
+import { Boxes, FileText, Hash, Loader2, MessageSquare, Pencil, Plus, RefreshCw, Shield, Tag, Trash2, X as XMarkIcon } from "lucide-react";
 import { api, fetchJson, RadiologyReportTemplate, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface TemplateForm {
@@ -101,6 +101,41 @@ export default function SettingsTab() {
     }
   };
 
+  const [delivery, setDelivery] = useState({ deliverSmsPatient: true, notifyReferringDoctor: true });
+  const [deliveryLoaded, setDeliveryLoaded] = useState(false);
+  const [savingDelivery, setSavingDelivery] = useState(false);
+
+  const refreshDelivery = useCallback(async () => {
+    try {
+      const data = await fetchJson<{ deliverSmsPatient?: boolean; notifyReferringDoctor?: boolean }>(api("delivery-settings"));
+      setDelivery({ deliverSmsPatient: data.deliverSmsPatient !== false, notifyReferringDoctor: data.notifyReferringDoctor !== false });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.settings.loadIdSettingsFailed"));
+    } finally {
+      setDeliveryLoaded(true);
+    }
+  }, [t]);
+
+  const saveDelivery = async () => {
+    if (savingDelivery) return;
+    setSavingDelivery(true);
+    try {
+      await fetchJson(api("delivery-settings"), {
+        method: "PUT",
+        body: JSON.stringify({
+          deliverSmsPatient: delivery.deliverSmsPatient,
+          notifyReferringDoctor: delivery.notifyReferringDoctor,
+        }),
+      });
+      toast.success(t("radiology.settings.deliverySaved"));
+      await refreshDelivery();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.settings.saveFailed"));
+    } finally {
+      setSavingDelivery(false);
+    }
+  };
+
   const refreshIdSettings = useCallback(async () => {
     try {
       const data = await fetchJson<Partial<IdSettings>>(api("id-settings"));
@@ -148,7 +183,8 @@ export default function SettingsTab() {
     refreshModalities().finally(() => setModalitiesLoading(false));
     refreshIdSettings();
     refreshGuards();
-  }, [refresh, refreshTags, refreshModalities, refreshIdSettings, refreshGuards]);
+    refreshDelivery();
+  }, [refresh, refreshTags, refreshModalities, refreshIdSettings, refreshGuards, refreshDelivery]);
 
   const save = async () => {
     if (!modal || saving) return;
@@ -332,6 +368,38 @@ export default function SettingsTab() {
               </label>
               <button onClick={saveGuards} disabled={savingGuards} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
                 {savingGuards && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-lg font-bold flex items-center gap-2"><MessageSquare className="w-5 h-5" />{t("radiology.settings.deliveryTitle")}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.settings.deliverySubtitle")}</p>
+          </div>
+          <button onClick={() => refreshDelivery()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <RefreshCw className="w-4 h-4" />{t("radiology.refresh")}
+          </button>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+          {!deliveryLoaded ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          ) : (
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={delivery.deliverSmsPatient} onChange={e => setDelivery(d => ({ ...d, deliverSmsPatient: e.target.checked }))} className="w-4 h-4" />
+                {t("radiology.settings.deliverSmsPatient")}
+              </label>
+              <label className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={delivery.notifyReferringDoctor} onChange={e => setDelivery(d => ({ ...d, notifyReferringDoctor: e.target.checked }))} className="w-4 h-4" />
+                {t("radiology.settings.notifyReferringDoctor")}
+              </label>
+              <button onClick={saveDelivery} disabled={savingDelivery} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
+                {savingDelivery && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
               </button>
             </div>
           )}

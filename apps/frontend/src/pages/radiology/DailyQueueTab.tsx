@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, RefreshCw, UserCheck, ScanLine, FileText, PackageCheck, AlertTriangle, Clock } from "lucide-react";
 import {
   api, fetchJson,
-  derivePrimaryStage, RadiologyStage, RADIOLOGY_STAGE_META,
+  derivePrimaryStage,
 } from "./shared";
 
 interface QueueAppointment {
@@ -36,16 +36,7 @@ interface DailyQueueData {
 
 const EMPTY_COUNTS = { pendingCheckIn: 0, imagingQueue: 0, readyForReport: 0, readyForDelivery: 0, stuck: 0, totalActive: 0 };
 
-/** Badge يعرض اسم المرحلة الأساسية للحالة بلونها (Stage stepper) */
-export function StageBadge({ stage, className = "" }: { stage: RadiologyStage; className?: string }) {
-  const { t } = useTranslation();
-  const meta = RADIOLOGY_STAGE_META[stage] || RADIOLOGY_STAGE_META.RECEPTION;
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${meta.color} ${className}`}>
-      {t(meta.label)}
-    </span>
-  );
-}
+export { StageBadge } from "./StageBadge";
 
 export default function DailyQueueTab() {
   const { t } = useTranslation();

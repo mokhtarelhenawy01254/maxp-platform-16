@@ -114,8 +114,19 @@ async function notifyStudyDelivery(prisma, study, { companyId } = {}) {
     const cid = companyId || study.companyId;
     if (!cid) return results;
 
+    // Per-company toggles (RadiologySetting). Default ON; centres can disable either.
+    let settings = {};
+    try {
+      const rows = await prisma.radiologySetting.findMany({ where: { companyId: cid }, select: { key: true, value: true } });
+      settings = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    } catch (e) {
+      console.warn('[RADIOLOGY-NOTIFY] Failed to load delivery settings:', e?.message || e);
+    }
+    const deliverPatient = settings.deliverSmsPatient === undefined || settings.deliverSmsPatient === 'true';
+    const notifyPhysician = settings.notifyReferringDoctor === undefined || settings.notifyReferringDoctor === 'true';
+
     // 1) PDF التقرير للمريض
-    if (study.patientPhone && study.report) {
+    if (deliverPatient && study.patientPhone && study.report) {
       try {
         const { generateStudyReportPdf } = require('../services/radiologyPdfService');
         let company = null;
@@ -135,22 +146,28 @@ async function notifyStudyDelivery(prisma, study, { companyId } = {}) {
         console.warn('[RADIOLOGY-NOTIFY] Patient PDF failed (non-blocking):', e?.message || e);
       }
     } else {
-      console.log(`[RADIOLOGY-NOTIFY] Patient PDF skipped — missing phone or report (study ${study.id})`);
+      console.log(
+        `[RADIOLOGY-NOTIFY] Patient PDF skipped — deliverPatient=${deliverPatient}, missing phone/report (study ${study.id})`
+      );
     }
 
     // 2) إشعار الطبيب المُحيل
-    try {
-      const phone = await resolvePhysicianPhone(prisma, cid, study);
-      if (phone) {
-        results.physicianText = await sendWhatsAppText(prisma, cid, phone, buildReadyText(study));
-        console.log(
-          `[RADIOLOGY-NOTIFY] Physician text ${results.physicianText.success ? 'sent' : `skipped (${results.physicianText.reason})`} — study ${study.id}`
-        );
-      } else {
-        console.log(`[RADIOLOGY-NOTIFY] Physician text skipped — no physician phone (study ${study.id})`);
+    if (notifyPhysician) {
+      try {
+        const phone = await resolvePhysicianPhone(prisma, cid, study);
+        if (phone) {
+          results.physicianText = await sendWhatsAppText(prisma, cid, phone, buildReadyText(study));
+          console.log(
+            `[RADIOLOGY-NOTIFY] Physician text ${results.physicianText.success ? 'sent' : `skipped (${results.physicianText.reason})`} — study ${study.id}`
+          );
+        } else {
+          console.log(`[RADIOLOGY-NOTIFY] Physician text skipped — no physician phone (study ${study.id})`);
+        }
+      } catch (e) {
+        console.warn('[RADIOLOGY-NOTIFY] Physician notify failed (non-blocking):', e?.message || e);
       }
-    } catch (e) {
-      console.warn('[RADIOLOGY-NOTIFY] Physician notify failed (non-blocking):', e?.message || e);
+    } else {
+      console.log(`[RADIOLOGY-NOTIFY] Physician text skipped — notifyReferringDoctor=${notifyPhysician} (study ${study.id})`);
     }
   } catch (e) {
     console.warn('[RADIOLOGY-NOTIFY] notifyStudyDelivery failed (non-blocking):', e?.message || e);

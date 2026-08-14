@@ -13,7 +13,9 @@ import {
   RadiologyOrderStatusMap, RadiologyStatusMap, RadiologyPaymentStatusMap, RadiologyReportStatusMap,
   RADIOLOGY_CRITICAL_META, criticalCategoryText,
   parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
+  derivePrimaryStage,
 } from "./shared";
+import StageBadge from "./StageBadge";
 import RadiologyViewerModal from "./RadiologyViewerModal";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"];
@@ -484,6 +486,10 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[11px] text-gray-500 dark:text-gray-400">{t("radiology.stageLabel")}</span>
+            <StageBadge stage={derivePrimaryStage(study)} />
+          </div>
           <div className="flex flex-col items-center gap-1">
             <span className="text-[11px] text-gray-500 dark:text-gray-400">{t("radiology.details.orderStatus")}</span>
             {renderBadge(RadiologyOrderStatusMap, study.orderStatus)}

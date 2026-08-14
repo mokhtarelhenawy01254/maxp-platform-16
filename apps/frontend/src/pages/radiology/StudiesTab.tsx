@@ -8,7 +8,9 @@ import {
   api, fetchJson, getCompanyId, RadiologyReport, RadiologyStudy, RadiologyStudyPayment, RadiologyStatusMap, RadiologySubmissionStatusMap,
   RADIOLOGY_CRITICAL_META, criticalCategoryText,
   parsePatientFlags, flagMeta, STUDY_STATUS, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
+  derivePrimaryStage,
 } from "./shared";
+import StageBadge from "./StageBadge";
 import RadiologyViewerModal from "./RadiologyViewerModal";
 import { RadiologyReportModal } from "./RadiologyReportsTab";
 
@@ -413,6 +415,7 @@ export default function StudiesTab() {
         </td>
         <td className="py-3 px-4">
           <div className="flex items-center gap-1.5 flex-wrap">
+            <StageBadge stage={derivePrimaryStage(s)} />
             {statusBadge(s.status)}
             {criticalBadge(s.report)}
           </div>

@@ -50,6 +50,10 @@ router.put('/id-settings', verifyToken.requireRole(MANAGER_ROLES), settings.upda
 router.get('/guards', settings.listGuards);
 router.put('/guards', verifyToken.requireRole(MANAGER_ROLES), settings.updateGuards);
 
+// Delivery notifications (WhatsApp on study delivery)
+router.get('/delivery-settings', settings.listDeliverySettings);
+router.put('/delivery-settings', verifyToken.requireRole(MANAGER_ROLES), settings.updateDeliverySettings);
+
 // Referring physicians
 router.get('/referring-physicians', physicians.listPhysicians);
 router.post('/referring-physicians', verifyToken.requireRole(MANAGER_ROLES), physicians.createPhysician);
