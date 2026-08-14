@@ -46,6 +46,7 @@ export interface FlowStep {
   delayDays: number;
   content: string;
   mediaUrl?: string;
+  buttons?: { title: string; payload: string }[];
   stepOrder: number;
   expectReply?: boolean;
   replyKeywords?: string[];

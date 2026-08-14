@@ -2868,6 +2868,28 @@ declare module 'react-i18next' {
         menuAddItem: string;
         menuSave: string;
         menuPushFailed: string;
+        buttons: string;
+        buttonsHint: string;
+        buttonTitle: string;
+        buttonPayload: string;
+        addButton: string;
+        tabsAudience: string;
+        customFields: string;
+        customFieldPlaceholder: string;
+        segments: string;
+        addSegment: string;
+        editSegment: string;
+        noSegments: string;
+        segmentNamePlaceholder: string;
+        rulesCount: string;
+        ruleValue: string;
+        segmentCount: string;
+        segmentPreview: string;
+        customers: string;
+        unsubscribers: string;
+        unsubscribersDesc: string;
+        noUnsubscribers: string;
+        resubscribe: string;
         rulesHint: string;
         addRule: string;
         editRule: string;
@@ -4272,6 +4294,7 @@ declare module 'react-i18next' {
           nextStepAuto: string;
           timeout: string;
           timeoutHint: string;
+          buttons: string;
         };
         actions: {
           saveSuccess: string;

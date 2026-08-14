@@ -260,6 +260,10 @@ model Company {
   botAutomationRules              BotAutomationRule[]
   botConversationStarters         BotConversationStarter[]
   botPersistentMenus              BotPersistentMenu[]
+  botUnsubscribes                 BotUnsubscribe[]
+  botCustomFields                 BotCustomField[]
+  botCustomerFieldValues          BotCustomerFieldValue[]
+  botSegments                     BotSegment[]
   leadFollowUpSettings            LeadFollowUpSettings?
   leadFollowUpEnrollments         LeadFollowUpEnrollment[]
   wishlists                       Wishlist[]

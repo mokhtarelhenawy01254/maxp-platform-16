@@ -2009,6 +2009,23 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       const fbBotText = (messageText || (messageType === 'TEXT' ? content : '') || '').trim();
       if (fbBotText && customer.companyId && pageData?.pageAccessToken) {
         try {
+          const { isUnsubscribeText, isUnsubscribed, recordUnsubscribe, UNSUBSCRIBE_CONFIRMATION } = require('../services/botUnsubscribeService');
+          const alreadyUnsubscribed = await isUnsubscribed(customer.companyId, customer.id, 'FACEBOOK');
+          const isStop = isUnsubscribeText(fbBotText);
+          if (isStop || alreadyUnsubscribed) {
+            if (isStop) {
+              await recordUnsubscribe(customer.companyId, customer.id, 'FACEBOOK', fbBotText.slice(0, 200));
+              await sendProductionFacebookMessage(
+                senderId,
+                UNSUBSCRIBE_CONFIRMATION,
+                'TEXT',
+                messagePageId,
+                pageData.pageAccessToken
+              );
+            }
+            botHandledFb = true;
+          }
+
           const { evaluateInboundBotReply } = require('../services/botRuleEngine');
           const firstContact = (await prisma.message.count({
             where: { conversationId: conversation.id }
@@ -2025,14 +2042,24 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
             isFirstMessage: firstContact,
           });
 
-          if (evaluation?.kind && evaluation.replyText) {
-            const fbResult = await sendProductionFacebookMessage(
-              senderId,
-              evaluation.replyText,
-              'TEXT',
-              messagePageId,
-              pageData.pageAccessToken
-            );
+          if (evaluation?.kind && (evaluation.replyText || evaluation.mediaUrl)) {
+            const { sendFacebookRichMessage } = require('../services/botMessageSender');
+            const fbResult = evaluation.buttons && evaluation.buttons.length > 0
+              ? await sendFacebookRichMessage({
+                  senderId,
+                  pageId: messagePageId,
+                  pageAccessToken: pageData.pageAccessToken,
+                  text: evaluation.replyText,
+                  mediaUrl: evaluation.replyType === 'IMAGE' ? evaluation.mediaUrl : null,
+                  buttons: evaluation.buttons,
+                })
+              : await sendProductionFacebookMessage(
+                  senderId,
+                  evaluation.replyType === 'IMAGE' ? evaluation.mediaUrl : evaluation.replyText,
+                  evaluation.replyType === 'IMAGE' ? 'IMAGE' : 'TEXT',
+                  messagePageId,
+                  pageData.pageAccessToken
+                );
             if (fbResult?.success) {
               await prisma.message.create({
                 data: {
@@ -2065,13 +2092,33 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
             channel: 'FACEBOOK',
             text: fbBotText,
             sendStep: async (step) => {
-              await sendProductionFacebookMessage(
-                senderId,
-                step.content,
-                'TEXT',
-                messagePageId,
-                pageData.pageAccessToken
-              );
+              const { sendFacebookRichMessage } = require('../services/botMessageSender');
+              if (step.buttons && step.buttons.length > 0) {
+                await sendFacebookRichMessage({
+                  senderId,
+                  pageId: messagePageId,
+                  pageAccessToken: pageData.pageAccessToken,
+                  text: step.content,
+                  mediaUrl: step.mediaUrl || null,
+                  buttons: step.buttons,
+                });
+              } else if (step.mediaUrl) {
+                await sendProductionFacebookMessage(
+                  senderId,
+                  step.mediaUrl,
+                  'IMAGE',
+                  messagePageId,
+                  pageData.pageAccessToken
+                );
+              } else {
+                await sendProductionFacebookMessage(
+                  senderId,
+                  step.content,
+                  'TEXT',
+                  messagePageId,
+                  pageData.pageAccessToken
+                );
+              }
               await prisma.message.create({
                 data: {
                   conversationId: conversation.id,

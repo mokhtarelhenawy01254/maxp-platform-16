@@ -277,8 +277,33 @@ async function saveIncomingMessage(payload) {
   let botHandled = false;
   if (content && messageType === 'TEXT' && syncedCustomer?.companyId) {
     try {
-      const { evaluateInboundBotReply } = require('../botRuleEngine');
+      const { isUnsubscribeText, isUnsubscribed, recordUnsubscribe, UNSUBSCRIBE_CONFIRMATION } = require('../botUnsubscribeService');
       const prisma = getSharedPrismaClient();
+
+      const alreadyUnsubscribed = await isUnsubscribed(syncedCustomer.companyId, syncedCustomer.id, 'WHATSAPP');
+      const isStop = isUnsubscribeText(content);
+      if (isStop || alreadyUnsubscribed) {
+        if (isStop) {
+          await recordUnsubscribe(syncedCustomer.companyId, syncedCustomer.id, 'WHATSAPP', content.slice(0, 200));
+          await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, UNSUBSCRIBE_CONFIRMATION, {
+            isAIResponse: false,
+          });
+          if (syncedConversation?.id) {
+            prisma.message.create({
+              data: {
+                conversationId: syncedConversation.id,
+                content: UNSUBSCRIBE_CONFIRMATION,
+                type: 'TEXT',
+                isFromCustomer: false,
+                metadata: JSON.stringify({ platform: 'whatsapp', source: 'unsubscribe_reply' }),
+              },
+            }).catch(() => {});
+          }
+        }
+        botHandled = true;
+      }
+
+      const { evaluateInboundBotReply } = require('../botRuleEngine');
       const firstContact = (await prisma.whatsAppMessage.count({
         where: { sessionId, remoteJid: normalizedJid }
       })) <= 1;
@@ -294,10 +319,26 @@ async function saveIncomingMessage(payload) {
         isFirstMessage: firstContact,
       });
 
-      if (evaluation?.kind && evaluation.replyText) {
-        await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, evaluation.replyText, {
-          isAIResponse: false,
-        });
+      if (evaluation?.kind && (evaluation.replyText || evaluation.mediaUrl)) {
+        const { buildWhatsAppButtons } = require('../botMessageSender');
+        const waButtons = buildWhatsAppButtons(evaluation.buttons);
+        if (evaluation.replyType === 'IMAGE' && evaluation.mediaUrl) {
+          await WhatsAppMessageHandler.sendImage(sessionId, normalizedJid, evaluation.mediaUrl, evaluation.replyText || '', {
+            isAIResponse: false,
+          });
+        } else if (waButtons.length > 0) {
+          await WhatsAppMessageHandler.sendButtons(
+            sessionId,
+            normalizedJid,
+            evaluation.replyText || '',
+            waButtons,
+            { isAIResponse: false }
+          );
+        } else {
+          await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, evaluation.replyText, {
+            isAIResponse: false,
+          });
+        }
         if (syncedConversation?.id) {
           prisma.message.create({
             data: {
@@ -324,9 +365,21 @@ async function saveIncomingMessage(payload) {
           channel: 'WHATSAPP',
           text: content,
           sendStep: async (step) => {
-            await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, step.content, {
-              isAIResponse: false,
-            });
+            const { buildWhatsAppButtons } = require('../botMessageSender');
+            const waButtons = buildWhatsAppButtons(step.buttons);
+            if (waButtons.length > 0) {
+              await WhatsAppMessageHandler.sendButtons(sessionId, normalizedJid, step.content, waButtons, {
+                isAIResponse: false,
+              });
+            } else if (step.mediaUrl) {
+              await WhatsAppMessageHandler.sendImage(sessionId, normalizedJid, step.mediaUrl, step.content, {
+                isAIResponse: false,
+              });
+            } else {
+              await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, step.content, {
+                isAIResponse: false,
+              });
+            }
             if (syncedConversation?.id) {
               prisma.message.create({
                 data: {

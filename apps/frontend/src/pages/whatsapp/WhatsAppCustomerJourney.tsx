@@ -51,6 +51,7 @@ import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { WhatsAppSurfaceCard } from "./components/WhatsAppPageShell";
 import { FlowCanvas, type FlowStep } from "./components/journey/FlowCanvas";
+import ButtonsEditor from "../automation/components/ButtonsEditor";
 import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotDrawer";
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
@@ -1384,6 +1385,18 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   {t("whatsappJourney.steps.preview")}
                 </p>
                 <MessagePreview content={currentStep.content || ""} />
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
+                <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                  {t("whatsappJourney.steps.buttons")}
+                </p>
+                <ButtonsEditor
+                  buttons={currentStep.buttons ?? []}
+                  onChange={(buttons) =>
+                    setCurrentStep((previous) => ({ ...previous, buttons }))
+                  }
+                />
               </div>
             </div>
           </div>

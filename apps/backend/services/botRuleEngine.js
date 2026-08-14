@@ -190,6 +190,9 @@ async function matchBotRulesFromDb(companyId, text, channel) {
     rule: matched.rule,
     matchedKeyword: matched.matchedKeyword,
     replyText: interpolateReply(matched.rule.replyText || '', {}),
+    replyType: matched.rule.replyType || 'TEXT',
+    mediaUrl: matched.rule.mediaUrl || null,
+    buttons: matched.rule.buttons || null,
     stopFurtherProcessing: matched.rule.stopFurtherProcessing !== false,
   };
 }

@@ -4,6 +4,8 @@ const verifyToken = require('../utils/verifyToken');
 const { normalizeKeywordList } = require('../services/botRuleEngine');
 const { buildStarterLinks, getFacebookPage } = require('../services/botLinkService');
 const { buildMenuItems, pushPersistentMenu } = require('../services/botMenuService');
+const { listUnsubscribers, removeUnsubscribe } = require('../services/botUnsubscribeService');
+const { evaluateSegment } = require('../services/botSegmentService');
 
 const router = express.Router();
 
@@ -114,6 +116,7 @@ router.get('/rules', verifyToken.authenticateToken, async (req, res) => {
         replyType: r.replyType,
         replyText: r.replyText || '',
         mediaUrl: r.mediaUrl || '',
+        buttons: r.buttons ? JSON.parse(r.buttons) : [],
         priority: r.priority,
         isEnabled: r.isEnabled,
         stopFurtherProcessing: r.stopFurtherProcessing,
@@ -153,6 +156,14 @@ function validateRuleInput(body) {
       replyType,
       replyText: String(body.replyText || '').trim(),
       mediaUrl: String(body.mediaUrl || '').trim(),
+      buttons: Array.isArray(body.buttons)
+        ? body.buttons
+            .filter((b) => b && typeof b === 'object' && String(b.title || '').trim())
+            .map((b) => ({
+              title: String(b.title).trim(),
+              payload: String(b.payload || '').trim(),
+            }))
+        : [],
       priority: Number.isInteger(Number(body.priority)) ? Number(body.priority) : 0,
       isEnabled: body.isEnabled !== false,
       stopFurtherProcessing: body.stopFurtherProcessing !== false,
@@ -181,6 +192,7 @@ router.post('/rules', verifyToken.authenticateToken, async (req, res) => {
         replyType: data.replyType,
         replyText: data.replyText,
         mediaUrl: data.mediaUrl,
+        buttons: JSON.stringify(data.buttons),
         priority: data.priority,
         isEnabled: data.isEnabled,
         stopFurtherProcessing: data.stopFurtherProcessing,
@@ -219,6 +231,7 @@ router.put('/rules/:id', verifyToken.authenticateToken, async (req, res) => {
         replyType: data.replyType,
         replyText: data.replyText,
         mediaUrl: data.mediaUrl,
+        buttons: JSON.stringify(data.buttons),
         priority: data.priority,
         isEnabled: data.isEnabled,
         stopFurtherProcessing: data.stopFurtherProcessing,
@@ -516,6 +529,212 @@ router.delete('/menu', verifyToken.authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error deleting persistent menu:', error);
     return res.status(500).json({ success: false, error: 'Failed to delete persistent menu' });
+  }
+});
+
+// ── Audience: Unsubscribers ────────────────────────────────────────────────
+
+router.get('/audience/unsubscribers', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const data = await listUnsubscribers(companyId);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error listing unsubscribers:', error);
+    return res.status(500).json({ success: false, error: 'Failed to list unsubscribers' });
+  }
+});
+
+router.delete('/audience/unsubscribers/:customerId', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const channel = String(req.query.channel || 'WHATSAPP').toUpperCase();
+    await removeUnsubscribe(companyId, req.params.customerId, channel);
+    return res.json({ success: true, message: 'Resubscribed' });
+  } catch (error) {
+    console.error('Error resubscribing customer:', error);
+    return res.status(500).json({ success: false, error: 'Failed to resubscribe' });
+  }
+});
+
+// ── Audience: Custom Fields ────────────────────────────────────────────────
+
+router.get('/audience/fields', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const fields = await getSharedPrismaClient().botCustomField.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return res.json({ success: true, data: fields.map((f) => ({ id: f.id, name: f.name, key: f.key })) });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to load custom fields' });
+  }
+});
+
+router.post('/audience/fields', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const name = String(req.body?.name || '').trim();
+    if (!name) {
+      return res.status(400).json({ success: false, error: 'Field name is required' });
+    }
+    const key = String(req.body?.key || name).trim().toLowerCase().replace(/\s+/g, '_');
+    const field = await getSharedPrismaClient().botCustomField.create({ data: { companyId, name, key } });
+    return res.json({ success: true, data: { id: field.id } });
+  } catch (error) {
+    if (error?.code === 'P2002') {
+      return res.status(400).json({ success: false, error: 'Field key already exists' });
+    }
+    return res.status(500).json({ success: false, error: 'Failed to create custom field' });
+  }
+});
+
+router.delete('/audience/fields/:id', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const existing = await getSharedPrismaClient().botCustomField.findFirst({
+      where: { id: req.params.id, companyId },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Field not found' });
+    }
+    await getSharedPrismaClient().botCustomField.delete({ where: { id: existing.id } });
+    return res.json({ success: true, message: 'Field deleted' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to delete custom field' });
+  }
+});
+
+// ── Audience: Segments ─────────────────────────────────────────────────────
+
+router.get('/audience/segments', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const segments = await getSharedPrismaClient().botSegment.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.json({
+      success: true,
+      data: segments.map((s) => ({
+        id: s.id,
+        name: s.name,
+        rules: s.rules ? JSON.parse(s.rules) : [],
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to load segments' });
+  }
+});
+
+function normalizeSegmentRules(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((r) => r && typeof r === 'object' && String(r.field || '').trim() && String(r.value ?? '').toString().trim())
+    .map((r) => ({
+      field: String(r.field).trim(),
+      op: ['eq', 'contains', 'gte', 'lte'].includes(r.op) ? r.op : 'eq',
+      value: String(r.value).trim(),
+    }));
+}
+
+router.post('/audience/segments', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const name = String(req.body?.name || '').trim();
+    if (!name) {
+      return res.status(400).json({ success: false, error: 'Segment name is required' });
+    }
+    const rules = normalizeSegmentRules(req.body?.rules);
+    const segment = await getSharedPrismaClient().botSegment.create({
+      data: { companyId, name, rules: JSON.stringify(rules) },
+    });
+    return res.json({ success: true, data: { id: segment.id } });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to create segment' });
+  }
+});
+
+router.put('/audience/segments/:id', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const existing = await getSharedPrismaClient().botSegment.findFirst({
+      where: { id: req.params.id, companyId },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Segment not found' });
+    }
+    const data = {};
+    if (req.body?.name !== undefined) data.name = String(req.body.name).trim();
+    if (req.body?.rules !== undefined) data.rules = JSON.stringify(normalizeSegmentRules(req.body.rules));
+    await getSharedPrismaClient().botSegment.update({ where: { id: existing.id }, data: { ...data, updatedAt: new Date() } });
+    return res.json({ success: true, message: 'Segment updated' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to update segment' });
+  }
+});
+
+router.delete('/audience/segments/:id', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const existing = await getSharedPrismaClient().botSegment.findFirst({
+      where: { id: req.params.id, companyId },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Segment not found' });
+    }
+    await getSharedPrismaClient().botSegment.delete({ where: { id: existing.id } });
+    return res.json({ success: true, message: 'Segment deleted' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to delete segment' });
+  }
+});
+
+router.get('/audience/segments/:id/preview', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' });
+    }
+    const segment = await getSharedPrismaClient().botSegment.findFirst({
+      where: { id: req.params.id, companyId },
+    });
+    if (!segment) {
+      return res.status(404).json({ success: false, error: 'Segment not found' });
+    }
+    const customers = await evaluateSegment(companyId, segment);
+    return res.json({ success: true, data: { count: customers.length, customers: customers.slice(0, 100) } });
+  } catch (error) {
+    console.error('Error previewing segment:', error);
+    return res.status(500).json({ success: false, error: 'Failed to preview segment' });
   }
 });
 

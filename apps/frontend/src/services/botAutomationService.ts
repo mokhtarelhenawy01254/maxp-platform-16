@@ -24,6 +24,7 @@ export interface BotAutomationRule {
   replyType: BotReplyType;
   replyText: string;
   mediaUrl: string;
+  buttons: { title: string; payload: string }[];
   priority: number;
   isEnabled: boolean;
   stopFurtherProcessing: boolean;
@@ -60,6 +61,12 @@ export interface BotMenu {
   pageName: string | null;
   hasPageConnected: boolean;
   items: { type: "postback" | "web_url"; title: string; payload?: string; url?: string }[];
+}
+
+export interface SegmentRule {
+  field: string;
+  op: "eq" | "contains" | "gte" | "lte";
+  value: string;
 }
 
 function getResponseData<T>(response: AxiosResponse): T | null {
@@ -132,5 +139,56 @@ export const botAutomationService = {
 
   async deleteMenu(): Promise<void> {
     await apiClient.delete("/bot-automation/menu");
+  },
+
+  async listUnsubscribers(): Promise<
+    { id: string; customerId: string; channel: string; customerName: string; phone: string | null; unsubscribedAt: string }[]
+  > {
+    const response = await apiClient.get("/bot-automation/audience/unsubscribers");
+    return getResponseData(response) ?? [];
+  },
+
+  async resubscribe(customerId: string, channel: string): Promise<void> {
+    await apiClient.delete(`/bot-automation/audience/unsubscribers/${customerId}`, {
+      params: { channel },
+    });
+  },
+
+  async listCustomFields(): Promise<{ id: string; name: string; key: string }[]> {
+    const response = await apiClient.get("/bot-automation/audience/fields");
+    return getResponseData(response) ?? [];
+  },
+
+  async createCustomField(name: string): Promise<void> {
+    await apiClient.post("/bot-automation/audience/fields", { name });
+  },
+
+  async deleteCustomField(id: string): Promise<void> {
+    await apiClient.delete(`/bot-automation/audience/fields/${id}`);
+  },
+
+  async listSegments(): Promise<{ id: string; name: string; rules: SegmentRule[] }[]> {
+    const response = await apiClient.get("/bot-automation/audience/segments");
+    return getResponseData(response) ?? [];
+  },
+
+  async createSegment(name: string, rules: SegmentRule[]): Promise<void> {
+    await apiClient.post("/bot-automation/audience/segments", { name, rules });
+  },
+
+  async updateSegment(id: string, name: string, rules: SegmentRule[]): Promise<void> {
+    await apiClient.put(`/bot-automation/audience/segments/${id}`, { name, rules });
+  },
+
+  async deleteSegment(id: string): Promise<void> {
+    await apiClient.delete(`/bot-automation/audience/segments/${id}`);
+  },
+
+  async previewSegment(id: string): Promise<{
+    count: number;
+    customers: { customerId: string; firstName: string; lastName: string; phone: string | null }[];
+  }> {
+    const response = await apiClient.get(`/bot-automation/audience/segments/${id}/preview`);
+    return getResponseData(response) ?? { count: 0, customers: [] };
   },
 };

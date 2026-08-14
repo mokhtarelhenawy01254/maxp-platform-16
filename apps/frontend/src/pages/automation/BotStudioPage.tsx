@@ -23,6 +23,8 @@ import {
 import StartersTab from "./components/StartersTab";
 import MenuTab from "./components/MenuTab";
 import WidgetTab from "./components/WidgetTab";
+import AudienceTab from "./components/AudienceTab";
+import ButtonsEditor, { type BotButton } from "./components/ButtonsEditor";
 
 const CHANNELS: BotChannel[] = ["WHATSAPP", "FACEBOOK"];
 const MATCH_MODES: { value: BotMatchMode; label: string }[] = [
@@ -51,6 +53,7 @@ function emptyRule(): BotAutomationRule {
     replyType: "TEXT",
     replyText: "",
     mediaUrl: "",
+    buttons: [],
     priority: 0,
     isEnabled: true,
     stopFurtherProcessing: true,
@@ -81,7 +84,7 @@ const BotStudioPage: React.FC = () => {
   const { t: translate } = useTranslation();
   const t = (key: string) => String(translate(key));
 
-  const [activeTab, setActiveTab] = useState<"rules" | "starters" | "menu" | "widget" | "settings">("rules");
+  const [activeTab, setActiveTab] = useState<"rules" | "starters" | "menu" | "widget" | "audience" | "settings">("rules");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rules, setRules] = useState<BotAutomationRule[]>([]);
@@ -168,6 +171,7 @@ const BotStudioPage: React.FC = () => {
         replyType: editingRule.replyType,
         replyText: editingRule.replyText,
         mediaUrl: editingRule.mediaUrl,
+        buttons: editingRule.buttons,
         priority: Number(editingRule.priority) || 0,
         isEnabled: editingRule.isEnabled,
         stopFurtherProcessing: editingRule.stopFurtherProcessing,
@@ -296,6 +300,16 @@ const BotStudioPage: React.FC = () => {
           {t("botStudio.tabsWidget")}
         </button>
         <button
+          onClick={() => setActiveTab("audience")}
+          className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+            activeTab === "audience"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+          }`}
+        >
+          {t("botStudio.tabsAudience")}
+        </button>
+        <button
           onClick={() => setActiveTab("settings")}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
             activeTab === "settings"
@@ -383,6 +397,8 @@ const BotStudioPage: React.FC = () => {
         <MenuTab />
       ) : activeTab === "widget" ? (
         <WidgetTab />
+      ) : activeTab === "audience" ? (
+        <AudienceTab />
       ) : (
         <div className="space-y-6 max-w-2xl">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -595,6 +611,17 @@ const BotStudioPage: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                     placeholder={t("botStudio.mediaUrlPlaceholder")}
                   />
+                </div>
+              )}
+
+              {editingRule.replyType === "TEXT" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t("botStudio.buttons")}</label>
+                  <ButtonsEditor
+                    buttons={editingRule.buttons}
+                    onChange={(buttons: BotButton[]) => setEditingRule({ ...editingRule, buttons })}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t("botStudio.buttonsHint")}</p>
                 </div>
               )}
 

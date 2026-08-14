@@ -101,7 +101,8 @@
     "nextStep": "Next step on match",
     "nextStepAuto": "Automatic (next step)",
     "timeout": "Timeout in hours (optional)",
-    "timeoutHint": "If the customer does not reply in time, the next step runs"
+    "timeoutHint": "If the customer does not reply in time, the next step runs",
+    "buttons": "Step buttons (Quick Replies)"
   },
   "actions": {
     "saveSuccess": "Saved successfully",

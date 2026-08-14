@@ -187,7 +187,7 @@ class WhatsAppAutomationController {
             if (!companyId) return;
 
             const { flowId } = req.params;
-            const { id, delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder, expectReply, replyKeywords, nextStepId, timeoutHours, timeoutNextStepId } = req.body;
+            const { id, delayDays, delayHours, delayUnit, content, mediaUrl, buttons, stepOrder, expectReply, replyKeywords, nextStepId, timeoutHours, timeoutNextStepId } = req.body;
 
             // Verify flow ownership
             const flow = await this.prisma.whatsAppFollowUpFlow.findUnique({
@@ -202,6 +202,9 @@ class WhatsAppAutomationController {
                 nextStepId: nextStepId || null,
                 timeoutHours: Number.isInteger(Number(timeoutHours)) ? Number(timeoutHours) : null,
                 timeoutNextStepId: timeoutNextStepId || null,
+                buttons: buttons && Array.isArray(buttons)
+                    ? JSON.stringify(buttons.filter((b) => b && b.title))
+                    : null,
             };
 
             let step;

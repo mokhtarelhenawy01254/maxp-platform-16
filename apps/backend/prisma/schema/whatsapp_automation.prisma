@@ -46,6 +46,7 @@ model WhatsAppFollowUpStep {
   delayUnit         String               @default("DAYS")      // NEW: "HOURS" | "DAYS"
   content           String               @db.Text
   mediaUrl          String?
+  buttons           String?              @db.Text // JSON array: [{title, payload}] — أزرار/quick replies
   stepOrder         Int                  @default(1)
   expectReply       Boolean              @default(false)       // الخطوة بتستنى رد العميل
   replyKeywords     String?              @db.Text              // JSON array — كلمات الفرع
