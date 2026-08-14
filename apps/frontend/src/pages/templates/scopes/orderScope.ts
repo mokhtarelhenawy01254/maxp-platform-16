@@ -117,6 +117,9 @@ export const orderScopeConfig: TemplateScopeConfig = {
 
   gateCreateOnNotify: true,
 
+  // فئات الطلبات الافتراضية لتقرير الرسائل (نفس سلوك الـ backend الأصلي)
+  reportCategories: ["ORDERS", "ORDER", "ABANDONED_CART"],
+
   tabs: [
     { key: "all", label: "الكل", kind: "list", count: (rows) => rows.filter((r) => !r.isNonNotifiable).length },
     { key: "order", label: "الطلبات", kind: "list", filter: (r) => r.statusType === "order", count: (rows) => rows.filter((r) => r.statusType === "order" && !r.isNonNotifiable).length },

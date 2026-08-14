@@ -1360,7 +1360,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       </div>
 
       {activeTab === "reports" ? (
-        <StatusReportTab statuses={statuses} />
+        <StatusReportTab statuses={statuses} config={config} />
       ) : activeTab === "schedule" && config.features.enableSchedule ? (
         /* ── Schedule tab (خاص بالعملاء) ── */
         <div className="space-y-4">
@@ -3082,7 +3082,7 @@ function escapeCsvCell(value: unknown): string {
   return `"${raw.replace(/"/g, '""')}"`;
 }
 
-function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
+function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[]; config: TemplateScopeConfig }) {
   const { t } = useTranslation();
   const [range, setRange] = useState<ReportRange>("today");
   const [startDate, setStartDate] = useState(() => localDateStr(new Date()));
@@ -3094,6 +3094,10 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [detailByEvent, setDetailByEvent] = useState<Record<string, { items: StatusReportItem[]; loading: boolean }>>({});
 
+  const reportEndpoint = config.endpoints?.report || "/whatsapp/notifications/status-report";
+  const reportCategories = config.reportCategories?.length ? config.reportCategories.join(",") : undefined;
+  const reportEventTypes = config.reportEventTypes?.length ? config.reportEventTypes.join(",") : undefined;
+
   const statusNameMap = useMemo(() => {
     const m = new Map<string, string>();
     for (const s of statuses) {
@@ -3103,11 +3107,19 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
     return m;
   }, [statuses]);
 
+  const reportParams = useCallback((params: Record<string, unknown>) => {
+    return {
+      ...params,
+      ...(reportEventTypes ? { eventTypes: reportEventTypes } : {}),
+      ...(reportCategories ? { category: reportCategories } : {}),
+    };
+  }, [reportCategories, reportEventTypes]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = reportRangeParams(range, startDate, endDate);
-      const res = await apiClient.get("/whatsapp/notifications/status-report", { params: { ...params, limit: 200 } });
+      const res = await apiClient.get(reportEndpoint, { params: reportParams({ ...params, limit: 200 }) });
       const body = res.data as StatusReportData | undefined;
       setData(body?.success ? body : null);
     } catch {
@@ -3115,7 +3127,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
     } finally {
       setLoading(false);
     }
-  }, [range, startDate, endDate]);
+  }, [range, startDate, endDate, reportEndpoint, reportParams]);
 
   useEffect(() => {
     load();
@@ -3135,8 +3147,8 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
     const params = reportRangeParams(range, startDate, endDate);
     setDetailByEvent((prev) => ({ ...prev, [eventType]: { items: [], loading: true } }));
     try {
-      const res = await apiClient.get("/whatsapp/notifications/status-report", {
-        params: { ...params, eventType, limit: 500 },
+      const res = await apiClient.get(reportEndpoint, {
+        params: reportParams({ ...params, eventType, limit: 500 }),
       });
       const detailBody = res.data as StatusReportData | undefined;
       const items = detailBody?.items || [];
@@ -3144,14 +3156,14 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
     } catch {
       setDetailByEvent((prev) => ({ ...prev, [eventType]: { items: [], loading: false } }));
     }
-  }, [detailByEvent, range, startDate, endDate]);
+  }, [detailByEvent, range, startDate, endDate, reportEndpoint, reportParams]);
 
   const exportCsv = async () => {
     setExporting(true);
     try {
       const params = reportRangeParams(range, startDate, endDate);
-      const res = await apiClient.get("/whatsapp/notifications/status-report", {
-        params: { ...params, limit: 5000 },
+      const res = await apiClient.get(reportEndpoint, {
+        params: reportParams({ ...params, limit: 5000 }),
       });
       const exportBody = res.data as StatusReportData | undefined;
       const items: StatusReportItem[] = (exportBody?.items || []).filter((it) =>
@@ -3182,7 +3194,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `status-report-${range}.csv`;
+      link.download = `status-report-${config.scope}-${range}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

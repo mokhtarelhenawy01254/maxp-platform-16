@@ -115,9 +115,12 @@ describe("CustomerNotifications عبر TemplateCenter", () => {
     );
   });
 
-  test("لا يعرض تبويبات خاصة بالأوردرز (تقارير/إعدادات) في نطاق العملاء", async () => {
+  test("يعرض تبويب تقارير الرسائل الخاص بالعملاء بدون تبويبات الأوردرز (تقارير الحالات/الإعدادات)", async () => {
     renderPage();
     await screen.findAllByText("كسب نقاط");
+    // تبويب التقرير الخاص بالعملاء (MARKETING) موجود
+    expect(screen.getByRole("button", { name: /تقارير الرسائل/ })).toBeInTheDocument();
+    // تبويبات الأوردرز (تقارير الحالات/الإعدادات) مش موجودة في نطاق العملاء
     expect(screen.queryByRole("button", { name: /تقارير الحالات/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^الإعدادات$/ })).not.toBeInTheDocument();
   });

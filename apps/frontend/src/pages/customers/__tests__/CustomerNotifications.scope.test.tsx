@@ -140,8 +140,9 @@ describe("customerScope", () => {
     expect(f.enableTestSender).toBe(true);
     expect(f.enableButtons).toBe(false);
     expect(f.enableMetaSwitch).toBe(false);
+    expect(f.enableReports).toBe(true);
     expect(f.categoryMode).toBe("manual");
-    expect(customerScopeConfig.tabs.map((t) => t.key)).toEqual(["schedule", "loyalty", "cashback", "quality", "autoDiscount"]);
+    expect(customerScopeConfig.tabs.map((t) => t.key)).toEqual(["schedule", "loyalty", "cashback", "quality", "autoDiscount", "reports"]);
   });
 
   test("نطاق الخصم التلقائي يشمل الأحداث الثلاثة ومتغيراته", () => {

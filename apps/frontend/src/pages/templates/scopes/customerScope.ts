@@ -225,6 +225,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
     { key: "cashback", label: "قوالب الكاش باك", kind: "list", filter: (r) => EVENT_GROUPS["cashback"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cashback"]!.includes(r.code)).length },
     { key: "quality", label: "قوالب التقسيم", kind: "list", filter: (r) => EVENT_GROUPS["quality"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["quality"]!.includes(r.code)).length },
     { key: "autoDiscount", label: "قوالب الخصم التلقائي", kind: "list", filter: (r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code)).length },
+    { key: "reports", label: "تقارير الرسائل", kind: "reports", isSpecial: true },
   ],
 
   features: {
@@ -234,7 +235,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
     enableMetaMultiBind: false,
     enableTestSender: true,
     enableSchedule: true,
-    enableReports: false,
+    enableReports: true,
     enableSettings: false,
     enableFilterChips: false,
     enableInternalToggle: false,
@@ -250,8 +251,12 @@ export const customerScopeConfig: TemplateScopeConfig = {
 
   gateCreateOnNotify: false,
 
+  // أحداث إشعارات العملاء الـ 13 بالظبط — التقرير يعرضهم بس (مش كل رسايل MARKETING زي أعياد الميلاد/المناسبات)
+  reportEventTypes: ALL_EVENTS,
+
   endpoints: {
     sessions: "/whatsapp/sessions",
+    report: "/whatsapp/notifications/status-report",
     uploadMedia: "/whatsapp-templates/templates/upload-media",
   },
 };

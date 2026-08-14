@@ -506,7 +506,7 @@ async function getNotificationLogs(req, res) {
 async function getStatusReport(req, res) {
   try {
     const { companyId } = req.user;
-    const { startDate, endDate, eventType, status, type, page = 1, limit = 50 } = req.query;
+    const { startDate, endDate, eventType, eventTypes, status, type, category, page = 1, limit = 50 } = req.query;
 
     const now = new Date();
     const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -514,18 +514,39 @@ async function getStatusReport(req, res) {
     const endOfDay = new Date(end);
     endOfDay.setHours(23, 59, 59, 999);
 
+    // category بس مش startsWith — eventType حقل enum في Prisma و enum مابيدعمش startsWith
+    // (بيدي 500 "Unknown argument"). كل إشعارات حالات الطلبات بتتخزن بـ category
+    // ORDER / ORDERS / ABANDONED_CART فعلاً.
+    // لو اتبعت category في الـ query (مفصولة بفواصل — زي إشعارات العملاء MARKETING)
+    // نستخدمها بدل فئات الطلبات الافتراضية.
+    const categories = String(category || '')
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+
+    // لو اتبعت eventTypes (مفصولة بفواصل — زي أحداث إشعارات العملاء الـ 13)
+    // نضيّق على الأحداث دي بالظبط بدل فلترة الفئة.
+    const eventTypeList = String(eventTypes || '')
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean);
+
     const where = {
       companyId,
       createdAt: { gte: start, lte: endOfDay },
-      // category بس مش startsWith — eventType حقل enum في Prisma و enum مابيدعمش startsWith
-      // (بيدي 500 "Unknown argument"). كل إشعارات حالات الطلبات بتتخزن بـ category
-      // ORDER / ORDERS / ABANDONED_CART فعلاً.
-      OR: [
+    };
+
+    if (eventTypeList.length > 0) {
+      where.eventType = { in: eventTypeList };
+    } else if (categories.length > 0) {
+      where.category = { in: categories };
+    } else {
+      where.OR = [
         { category: 'ORDERS' },
         { category: 'ORDER' },
         { category: 'ABANDONED_CART' },
-      ],
-    };
+      ];
+    }
 
     if (eventType) where.eventType = eventType;
     if (status) where.status = status;

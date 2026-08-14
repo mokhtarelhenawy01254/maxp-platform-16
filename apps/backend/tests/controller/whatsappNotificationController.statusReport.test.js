@@ -134,6 +134,47 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(where.createdAt.lte).toBeInstanceOf(Date);
   });
 
+  test('يدعم فلترة eventTypes (مفصولة بفواصل) لتقييد التقرير على أحداث محددة', async () => {
+    const prisma = buildPrisma({ logs: [makeLog({ eventType: 'LOYALTY_POINTS_AWARDED' })], total: 1 });
+    const { req, res } = makeReqRes(prisma, { eventTypes: 'LOYALTY_POINTS_AWARDED,CASHBACK_CREDITED' });
+    await getStatusReport(req, res);
+
+    const where = prisma.whatsAppNotificationLog.findMany.mock.calls[0][0].where;
+    expect(where.eventType).toEqual({ in: ['LOYALTY_POINTS_AWARDED', 'CASHBACK_CREDITED'] });
+    expect(where.category).toBeUndefined();
+    expect(where.OR).toBeUndefined();
+  });
+
+  test('eventTypes له أولوية على category لو اتبعت الاتنين', async () => {
+    const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
+    const { req, res } = makeReqRes(prisma, { eventTypes: 'LOYALTY_POINTS_AWARDED', category: 'MARKETING' });
+    await getStatusReport(req, res);
+
+    const where = prisma.whatsAppNotificationLog.findMany.mock.calls[0][0].where;
+    expect(where.eventType).toEqual({ in: ['LOYALTY_POINTS_AWARDED'] });
+    expect(where.category).toBeUndefined();
+  });
+
+  test('يدعم فلترة category مخصصة (مفصولة بفواصل) بدل فئات الطلبات — لإشعارات العملاء', async () => {
+    const prisma = buildPrisma({ logs: [makeLog({ category: 'MARKETING', eventType: 'LOYALTY_POINTS_AWARDED' })], total: 1 });
+    const { req, res } = makeReqRes(prisma, { category: 'MARKETING,CUSTOMER' });
+    await getStatusReport(req, res);
+
+    const where = prisma.whatsAppNotificationLog.findMany.mock.calls[0][0].where;
+    expect(where.category).toEqual({ in: ['MARKETING', 'CUSTOMER'] });
+    expect(where.OR).toBeUndefined();
+  });
+
+  test('فلترة category فارغة ترجع للفئات الافتراضية للطلبات', async () => {
+    const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
+    const { req, res } = makeReqRes(prisma, { category: '' });
+    await getStatusReport(req, res);
+
+    const where = prisma.whatsAppNotificationLog.findMany.mock.calls[0][0].where;
+    expect(where.category).toBeUndefined();
+    expect(Array.isArray(where.OR)).toBe(true);
+  });
+
   test('الفلترة الافتراضية بتستخدم category فقط (ممنوع startsWith على enum eventType)', async () => {
     const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
     const { req, res } = makeReqRes(prisma);

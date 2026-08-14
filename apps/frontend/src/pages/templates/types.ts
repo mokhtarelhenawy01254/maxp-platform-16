@@ -200,6 +200,12 @@ export interface TemplateScopeConfig {
   /** لتحديد فئة القالب تلقائياً (وضع auto) */
   resolveCategory?: (row: EventRow) => string;
 
+  /** فئات السجل اللي يعرضها تقرير الرسائل — لو فاضية نستخدم فئات الطلبات الافتراضية */
+  reportCategories?: string[];
+
+  /** أحداث السجل اللي يعرضها التقرير (لو محدد — أولوية على reportCategories) */
+  reportEventTypes?: string[];
+
   /** تعطيل/تفعيل زر إنشاء القالب العادي إذا كان الحدث غير مفعّل */
   gateCreateOnNotify?: boolean;
 
