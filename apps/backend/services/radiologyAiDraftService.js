@@ -19,6 +19,8 @@ const BASE_URL_DEFAULTS = {
   ANTHROPIC: 'https://api.anthropic.com/v1',
   GOOGLE: 'https://generativelanguage.googleapis.com/v1beta',
   MISTRAL: 'https://api.mistral.ai/v1',
+  NVIDIA: 'https://integrate.api.nvidia.com/v1',
+  HUGGINGFACE: 'https://router.huggingface.co/v1',
   OLLAMA: 'http://localhost:11434/v1',
 };
 
@@ -30,6 +32,8 @@ const MODEL_DEFAULTS = {
   ANTHROPIC: 'claude-3-5-haiku-latest',
   GOOGLE: 'gemini-2.0-flash',
   MISTRAL: 'mistral-small-latest',
+  NVIDIA: 'nvidia/llama-3.1-nemotron-70b-instruct',
+  HUGGINGFACE: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
   OLLAMA: 'llama3.1',
 };
 
