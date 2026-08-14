@@ -13763,6 +13763,7 @@ declare module 'react-i18next' {
           back: string;
           studyNumber: string;
           orderStatus: string;
+          stageLabel: string;
           preparationStatus: string;
           paymentStatus: string;
           patient: string;
@@ -14079,6 +14080,14 @@ declare module 'react-i18next' {
           bulkDone: string;
           bulkFailed: string;
           deviceConflict: string;
+          amount: string;
+          quickYesterday: string;
+          quick7Days: string;
+          quick30Days: string;
+          retry: string;
+          showingCount: string;
+          loadMore: string;
+          managerOnly: string;
         };
         scheduleCalendar: {
           viewList: string;
@@ -14625,6 +14634,11 @@ declare module 'react-i18next' {
           requirePaymentBeforeDelivery: string;
           blockCancelAfterDelivery: string;
           guardsSaved: string;
+          deliveryTitle: string;
+          deliverySubtitle: string;
+          deliverSmsPatient: string;
+          notifyReferringDoctor: string;
+          deliverySaved: string;
           examTypeCount: string;
           editTemplate: string;
           newReportTemplate: string;
@@ -15590,6 +15604,11 @@ declare module 'react-i18next' {
         radiologyPatients: string;
         radiologyStudies: string;
         radiologyQueue: string;
+        radiologyGroupToday: string;
+        radiologyGroupResources: string;
+        radiologyGroupFinance: string;
+        radiologyGroupAnalytics: string;
+        radiologyGroupSettings: string;
         radiologySchedule: string;
         radiologyReports: string;
         radiologyExamTypes: string;
