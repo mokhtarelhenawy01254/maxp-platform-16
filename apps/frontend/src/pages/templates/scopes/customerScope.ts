@@ -251,8 +251,10 @@ export const customerScopeConfig: TemplateScopeConfig = {
 
   gateCreateOnNotify: false,
 
-  // أحداث إشعارات العملاء الـ 13 بالظبط — التقرير يعرضهم بس (مش كل رسايل MARKETING زي أعياد الميلاد/المناسبات)
-  reportEventTypes: ALL_EVENTS,
+  // إشعارات العملاء كلها (ولاء/كاش باك/تقسيم/خصم تلقائي) بتتخزن بـ category MARKETING في
+  // whatsAppNotificationLog — فلترة الفئة بتغطي الـ 13 حدث بشكل آمن
+  // (أحداث AUTO_DISCOUNT_* مش في enum السجل، فمينفعش نفلترهم بالـ eventType).
+  reportCategories: ["MARKETING"],
 
   endpoints: {
     sessions: "/whatsapp/sessions",

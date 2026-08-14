@@ -8,7 +8,7 @@ const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotifi
 const { v4: uuidv4 } = require('uuid');
 const { mapVariablesByOrder, extractLocalVariableOrder } = require('../utils/metaTemplateVariables');
 const { buildMetaTemplatePayload } = require('../utils/metaTemplatePayload');
-const { isOrderCategory } = require('../services/whatsapp/notificationTypes');
+const { isOrderCategory, VALID_WHATSAPP_EVENT_TYPES } = require('../services/whatsapp/notificationTypes');
 
 function buildQueuedSuccessMessage(result) {
   if (!result?.queueId) {
@@ -526,10 +526,14 @@ async function getStatusReport(req, res) {
 
     // لو اتبعت eventTypes (مفصولة بفواصل — زي أحداث إشعارات العملاء الـ 13)
     // نضيّق على الأحداث دي بالظبط بدل فلترة الفئة.
+    // 🛡️ نفلتر أولاً على القيم الصالحة بس في enum السجل — الأحداث اللي مش enum
+    // (مثل AUTO_DISCOUNT_* اللي بتتخزن فعلاً كـ ANNOUNCEMENT) هتفشل الـ query لو وصلت لـ Prisma.
+    const validEventTypes = VALID_WHATSAPP_EVENT_TYPES;
     const eventTypeList = String(eventTypes || '')
       .split(',')
       .map((e) => e.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((e) => validEventTypes.has(e));
 
     const where = {
       companyId,

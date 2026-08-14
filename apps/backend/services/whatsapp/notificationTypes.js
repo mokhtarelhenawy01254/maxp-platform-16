@@ -154,4 +154,5 @@ module.exports = {
   getPersistedNotificationEventType,
   getPersistedNotificationCategory,
   getPersistedNotificationRecipientType,
+  VALID_WHATSAPP_EVENT_TYPES,
 };

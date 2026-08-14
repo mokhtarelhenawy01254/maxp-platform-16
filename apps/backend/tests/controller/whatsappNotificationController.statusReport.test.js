@@ -155,6 +155,25 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(where.category).toBeUndefined();
   });
 
+  test('يبني eventType صالح من mixed list (بيشيل القيم اللي مش enum عشان تمنع 500)', async () => {
+    const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
+    const { req, res } = makeReqRes(prisma, { eventTypes: 'LOYALTY_POINTS_AWARDED,AUTO_DISCOUNT_COUPON_GRANTED,__INVALID__' });
+    await getStatusReport(req, res);
+
+    const where = prisma.whatsAppNotificationLog.findMany.mock.calls[0][0].where;
+    expect(where.eventType).toEqual({ in: ['LOYALTY_POINTS_AWARDED'] });
+  });
+
+  test('eventTypes كلها مش صالحة → بيترشح للفئات الافتراضية بدل 500', async () => {
+    const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
+    const { req, res } = makeReqRes(prisma, { eventTypes: 'AUTO_DISCOUNT_COUPON_GRANTED,AUTO_DISCOUNT_COUPON_EXPIRING' });
+    await getStatusReport(req, res);
+
+    const where = prisma.whatsAppNotificationLog.findMany.mock.calls[0][0].where;
+    expect(where.eventType).toBeUndefined();
+    expect(Array.isArray(where.OR)).toBe(true);
+  });
+
   test('يدعم فلترة category مخصصة (مفصولة بفواصل) بدل فئات الطلبات — لإشعارات العملاء', async () => {
     const prisma = buildPrisma({ logs: [makeLog({ category: 'MARKETING', eventType: 'LOYALTY_POINTS_AWARDED' })], total: 1 });
     const { req, res } = makeReqRes(prisma, { category: 'MARKETING,CUSTOMER' });
