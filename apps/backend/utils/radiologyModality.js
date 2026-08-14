@@ -9,6 +9,10 @@ const MODALITY_BY_CATEGORY = {
   NM: 'NM',
   PET: 'PT',
   Fluoroscopy: 'FLUOROSCOPY',
+  Dental: 'DENTAL',
+  DENTAL: 'DENTAL',
+  ECHO: 'ECHO',
+  EEG: 'EEG',
 };
 
 const MODALITY_ALIASES = {
