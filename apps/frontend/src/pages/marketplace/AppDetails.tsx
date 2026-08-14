@@ -78,6 +78,8 @@ export default function AppDetails() {
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => { if (slug) fetchAppDetails(); }, [slug]);
 
@@ -85,11 +87,45 @@ export default function AppDetails() {
     try {
       setLoading(true);
       const response = await apiClient.get(`/marketplace/apps/${slug}`);
-      setApp(response.data.data);
+      const data = response.data.data;
+      setApp(data);
+      setIsInstalled(Boolean(data?.isInstalled));
     } catch {
       toast.error("Error loading app details");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInstall = async () => {
+    if (!app) return;
+    setInstalling(true);
+    try {
+      await apiClient.post(`/marketplace/apps/${app.slug}/install`, {
+        pricingModel: app.pricingModel,
+      });
+      toast.success("تم تفعيل التطبيق بنجاح");
+      setIsInstalled(true);
+      await fetchAppDetails();
+    } catch {
+      toast.error("فشل تفعيل التطبيق");
+    } finally {
+      setInstalling(false);
+    }
+  };
+
+  const handleUninstall = async () => {
+    if (!app || !window.confirm("هل تريد تعطيل هذا التطبيق؟")) return;
+    setInstalling(true);
+    try {
+      await apiClient.post(`/marketplace/apps/${app.slug}/uninstall`);
+      toast.success("تم تعطيل التطبيق");
+      setIsInstalled(false);
+      await fetchAppDetails();
+    } catch {
+      toast.error("فشل تعطيل التطبيق");
+    } finally {
+      setInstalling(false);
     }
   };
 
@@ -222,6 +258,36 @@ export default function AppDetails() {
                     <div className="text-lg font-extrabold text-primary">{pricingSummary.price}</div>
                   </div>
                 </div>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {isInstalled ? (
+                  <>
+                    <Button disabled className="w-full gap-2" size="sm">
+                      <Check size={14} /> مثبت
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                      disabled={installing}
+                      onClick={handleUninstall}
+                    >
+                      {installing ? <Loader2 size={14} className="animate-spin" /> : null}
+                      تعطيل
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    className="w-full gap-2"
+                    size="sm"
+                    disabled={installing}
+                    onClick={handleInstall}
+                  >
+                    {installing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                    تثبيت التطبيق
+                  </Button>
+                )}
               </div>
             </aside>
           </div>
