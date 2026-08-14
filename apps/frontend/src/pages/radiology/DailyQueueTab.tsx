@@ -36,7 +36,7 @@ interface DailyQueueData {
 
 const EMPTY_COUNTS = { pendingCheckIn: 0, imagingQueue: 0, readyForReport: 0, readyForDelivery: 0, stuck: 0, totalActive: 0 };
 
-export { StageBadge } from "./StageBadge";
+import { StageBadge } from "./StageBadge";
 
 export default function DailyQueueTab() {
   const { t } = useTranslation();
