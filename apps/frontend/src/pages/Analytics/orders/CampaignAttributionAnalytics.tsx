@@ -358,14 +358,33 @@ const CampaignAttributionAnalytics: React.FC = () => {
 
   const rows = data?.rows || [];
 
+  const header = (
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 className="text-xl font-extrabold text-gray-900 dark:text-white">
+          تحليل الحملات ومصدر الطلبات
+        </h1>
+        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+          ربط الطلبات بالمصدر والمنصة ورقم الحملة من{" "}
+          <code className="text-[10px]">metadata.attribution</code> داخل
+          الأوردر
+        </p>
+      </div>
+      <PeriodSelector onRangeChange={setRange} />
+    </div>
+  );
+
   if (loading && !data) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 dark:border-blue-900 dark:border-t-blue-400" />
-          <p className="text-sm text-gray-400 dark:text-gray-500">
-            جارٍ تحليل الحملات ومصادر الطلبات…
-          </p>
+      <div className="space-y-4" dir="rtl">
+        {header}
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 dark:border-blue-900 dark:border-t-blue-400" />
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              جارٍ تحليل الحملات ومصادر الطلبات…
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -373,12 +392,15 @@ const CampaignAttributionAnalytics: React.FC = () => {
 
   if (error && !data) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="w-full max-w-md rounded-2xl border border-red-200 bg-red-50/60 p-8 text-center dark:border-red-900 dark:bg-red-900/10">
-          <XCircleIcon className="mx-auto h-12 w-12 text-red-500" />
-          <p className="mt-4 font-semibold text-red-700 dark:text-red-300">
-            {error}
-          </p>
+      <div className="space-y-4" dir="rtl">
+        {header}
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="w-full max-w-md rounded-2xl border border-red-200 bg-red-50/60 p-8 text-center dark:border-red-900 dark:bg-red-900/10">
+            <XCircleIcon className="mx-auto h-12 w-12 text-red-500" />
+            <p className="mt-4 font-semibold text-red-700 dark:text-red-300">
+              {error}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -393,20 +415,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
 
   return (
     <div className="space-y-4" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-xl font-extrabold text-gray-900 dark:text-white">
-            تحليل الحملات ومصدر الطلبات
-          </h1>
-          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-            ربط الطلبات بالمصدر والمنصة ورقم الحملة من{" "}
-            <code className="text-[10px]">metadata.attribution</code> داخل
-            الأوردر
-          </p>
-        </div>
-        <PeriodSelector onRangeChange={setRange} />
-      </div>
+      {header}
 
       {/* Compact filters */}
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-100 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800">

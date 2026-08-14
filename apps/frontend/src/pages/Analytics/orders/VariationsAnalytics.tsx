@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { SwatchIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import {
@@ -73,43 +73,52 @@ const VariationsAnalytics: React.FC = () => {
     }
   };
 
+  const header = (
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {t("variationsAnalytics.title")}
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
+          {t("variationsAnalytics.subtitle")}
+        </p>
+      </div>
+      <PeriodSelector onRangeChange={setRange} />
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="space-y-6" dir="rtl">
+        {header}
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-        <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button
-          onClick={fetchData}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-        >
-          {t("variationsAnalytics.retry")}
-        </button>
+      <div className="space-y-6" dir="rtl">
+        {header}
+        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
+          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <button
+            onClick={fetchData}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            {t("variationsAnalytics.retry")}
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t("variationsAnalytics.title")}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {t("variationsAnalytics.subtitle")}
-          </p>
-        </div>
-        <PeriodSelector onRangeChange={setRange} />
-      </div>
+      {header}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sizes Chart */}

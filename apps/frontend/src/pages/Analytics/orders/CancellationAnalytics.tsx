@@ -227,27 +227,49 @@ const CancellationAnalytics: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
+  const header = (
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          تحليل الإلغاءات
+        </h1>
+        <p className="mt-1 text-gray-500 dark:text-gray-400">
+          أسباب الإلغاء وأحدث الطلبات الملغاة للمراجعة من مساحة الطلبات
+        </p>
+      </div>
+      <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto md:items-center">
+        <PeriodSelector onRangeChange={setRange} />
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-red-600" />
+      <div className="space-y-6" dir="rtl">
+        {header}
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-red-600" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl bg-red-50 p-6 text-center dark:bg-red-900/20">
-        <XCircleIcon className="mx-auto mb-4 h-12 w-12 text-red-500" />
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button
-          type="button"
-          onClick={fetchData}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-        >
-          <ArrowPathIcon className="h-5 w-5" />
-          إعادة المحاولة
-        </button>
+      <div className="space-y-6" dir="rtl">
+        {header}
+        <div className="rounded-xl bg-red-50 p-6 text-center dark:bg-red-900/20">
+          <XCircleIcon className="mx-auto mb-4 h-12 w-12 text-red-500" />
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <button
+            type="button"
+            onClick={fetchData}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+          >
+            <ArrowPathIcon className="h-5 w-5" />
+            إعادة المحاولة
+          </button>
+        </div>
       </div>
     );
   }
@@ -256,19 +278,7 @@ const CancellationAnalytics: React.FC = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            تحليل الإلغاءات
-          </h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">
-            أسباب الإلغاء وأحدث الطلبات الملغاة للمراجعة من مساحة الطلبات
-          </p>
-        </div>
-        <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto md:items-center">
-          <PeriodSelector onRangeChange={setRange} />
-        </div>
-      </div>
+      {header}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
