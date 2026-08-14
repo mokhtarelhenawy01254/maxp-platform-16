@@ -34,7 +34,7 @@ function emptyStarter(): BotConversationStarter {
 
 const StartersTab: React.FC = () => {
   const { t: translate } = useTranslation();
-  const t = (key: string) => String(translate(key));
+  const t = useCallback((key: string) => String(translate(key)), [translate]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [starters, setStarters] = useState<BotConversationStarter[]>([]);
@@ -61,8 +61,9 @@ const StartersTab: React.FC = () => {
   }, [t]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openCreate = () => {
     setEditing(emptyStarter());

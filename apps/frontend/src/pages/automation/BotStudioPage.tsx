@@ -82,7 +82,7 @@ function ChannelBadges({ channels }: { channels: BotChannel[] }) {
 
 const BotStudioPage: React.FC = () => {
   const { t: translate } = useTranslation();
-  const t = (key: string) => String(translate(key));
+  const t = useCallback((key: string) => String(translate(key)), [translate]);
 
   const [activeTab, setActiveTab] = useState<"rules" | "starters" | "menu" | "widget" | "audience" | "settings">("rules");
   const [loading, setLoading] = useState(true);
@@ -112,8 +112,9 @@ const BotStudioPage: React.FC = () => {
   }, [t]);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+    void loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveSettings = async () => {
     try {
