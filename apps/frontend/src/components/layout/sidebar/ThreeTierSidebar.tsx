@@ -15,6 +15,7 @@ import { buildStoreUrl } from "../../../utils/storeUrl";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { CompanyLogo } from "@/components/ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
+import SidebarOrderSearch from "./SidebarOrderSearch";
 
 interface ThreeTierSidebarProps {
   isCollapsed: boolean;
@@ -478,14 +479,21 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                     <div className="business-sidebar-mobile-group-items">
                       {section.visibleItems.map((item) => (
                         <div key={getSidebarItemKey(item)} className="space-y-1">
-                          <NavLink
-                            to={item.to}
-                            icon={item.icon}
-                            external={!!item.external}
-                            badge={item.badge}
-                          >
-                            {item.label}
-                          </NavLink>
+                          {item.kind === "order-search" ? (
+                            <SidebarOrderSearch
+                              mobileMode={mobileMode}
+                              onNavigate={toggleSidebar}
+                            />
+                          ) : (
+                            <NavLink
+                              to={item.to}
+                              icon={item.icon}
+                              external={!!item.external}
+                              badge={item.badge}
+                            >
+                              {item.label}
+                            </NavLink>
+                          )}
 
                           {item.children ? (
                             <div className="business-sidebar-children">
@@ -568,14 +576,21 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
           <div className="business-sidebar-links">
             {(activeSection?.visibleItems ?? []).map((item) => (
               <div key={getSidebarItemKey(item)} className="space-y-1">
-                <NavLink
-                  to={item.to}
-                  icon={item.icon}
-                  external={!!item.external}
-                  badge={item.badge}
-                >
-                  {item.label}
-                </NavLink>
+                {item.kind === "order-search" ? (
+                  <SidebarOrderSearch
+                    mobileMode={mobileMode}
+                    onNavigate={toggleSidebar}
+                  />
+                ) : (
+                  <NavLink
+                    to={item.to}
+                    icon={item.icon}
+                    external={!!item.external}
+                    badge={item.badge}
+                  >
+                    {item.label}
+                  </NavLink>
+                )}
 
                 {item.children ? (
                   <div className="business-sidebar-children">

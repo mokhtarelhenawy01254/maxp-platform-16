@@ -414,6 +414,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   // Quick Order Modal (same as Facebook inbox)
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
+  const [quickOrderContact, setQuickOrderContact] = useState<Contact | null>(null);
   const [ordersRefreshToken, setOrdersRefreshToken] = useState(0);
   const [showQuickCreateTaskModal, setShowQuickCreateTaskModal] = useState(false);
   const loadContactsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -2055,9 +2056,9 @@ const WhatsAppChatContent: React.FC = () => {
     <div className="whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden">
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
       <div className="whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:flex-row border-none rounded-none shadow-none bg-[color:var(--color-card)]">
-      {/* Sidebar */}
+      {/* Sidebar — always on the LEFT of the workspace (like WhatsApp Web), in both LTR & RTL */}
       <ChatSidebar
-        className={cn("wa-panel-sidebar", selectedContact && "max-lg:hidden")}
+        className={cn("wa-panel-sidebar ltr:lg:order-1 rtl:lg:order-2", selectedContact && "max-lg:hidden")}
         sessions={sessions}
         conversations={conversations}
         statuses={statuses}
@@ -2100,9 +2101,13 @@ const WhatsAppChatContent: React.FC = () => {
         showArchived={showArchived}
         onToggleArchived={(archived) => setShowArchived(archived)}
         counts={conversationCounts}
+        onAddOrder={(contact) => {
+          setQuickOrderContact(contact);
+          setShowQuickOrderModal(true);
+        }}
       />
 
-      <div className="relative flex h-full min-h-0 flex-1 overflow-hidden">
+      <div className="relative flex h-full min-h-0 flex-1 overflow-hidden ltr:lg:order-2 rtl:lg:order-1">
         <ChatWindow
           showRightPanel={showRightPanel}
           onToggleRightPanel={() => setShowRightPanel((prev) => !prev)}
@@ -3124,11 +3129,14 @@ const WhatsAppChatContent: React.FC = () => {
       {/* Quick Order Modal (same as Facebook inbox - 1:1 copy) */}
       <QuickOrderModal
         isOpen={showQuickOrderModal}
-        onClose={() => setShowQuickOrderModal(false)}
-        customerName={selectedContact ? getContactName(selectedContact) : undefined}
-        customerPhone={selectedContactPhoneNumber || undefined}
-        conversationId={selectedContact?.id}
-        customerId={selectedContact?.id}
+        onClose={() => {
+          setShowQuickOrderModal(false);
+          setQuickOrderContact(null);
+        }}
+        customerName={quickOrderContact ? getContactName(quickOrderContact) : (selectedContact ? getContactName(selectedContact) : undefined)}
+        customerPhone={(quickOrderContact ? getContactPhoneNumber(quickOrderContact) : selectedContactPhoneNumber) || undefined}
+        conversationId={quickOrderContact?.id || selectedContact?.id}
+        customerId={quickOrderContact?.customer?.id || quickOrderContact?.id || selectedContact?.id}
         platform="whatsapp"
         pageName={
           selectedSession && selectedSession !== 'all'

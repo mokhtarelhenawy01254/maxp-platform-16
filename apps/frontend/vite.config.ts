@@ -530,6 +530,8 @@ export default defineConfig(({ mode }) => {
       // pre-bundled: they `require('fs')`/`path` and crash the esbuild
       // dep-optimizer at dev startup. They load fine as raw modules.
       exclude: [
+        '@cornerstonejs/codec-charls',
+        '@cornerstonejs/codec-libjpeg-turbo-8bit',
         '@cornerstonejs/codec-openjpeg',
         '@cornerstonejs/codec-openjph',
         '@cornerstonejs/core',
@@ -539,6 +541,20 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
+      // The radiology DICOM codec wrappers `require("fs")`/`path` inside
+      // `if(ENVIRONMENT_IS_NODE)` guards that never run in the browser.
+      // Leave those Node built-ins as raw `require()` calls instead of letting
+      // the CJS transform resolve them, otherwise the build fails with
+      // `Failed to resolve entry for package "fs"`.
+      commonjsOptions: {
+        ignore: [
+          'fs', 'path', 'buffer', 'child_process', 'stream', 'util', 'url',
+          'zlib', 'os', 'crypto', 'net', 'http', 'https', 'events', 'assert',
+          'string_decoder', 'tty', 'querystring', 'punycode', 'dns', 'timers',
+          'constants', 'module', 'vm', 'worker_threads', 'process', 'tls',
+          'dgram', 'readline', 'cluster',
+        ],
+      },
       modulePreload: {
         resolveDependencies(filename, deps) {
           const storefrontFiltered = shouldFilterStorefrontPreloads(filename, deps)
@@ -572,6 +588,23 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       reportCompressedSize: false,
       rollupOptions: {
+        // Node built-ins referenced by the emscripten DICOM codec wrappers
+        // inside `if(ENVIRONMENT_IS_NODE)` guards (never executed in browser).
+        // Keep them external so Rollup stops failing with
+        // `Failed to resolve entry for package "fs"` while the radiology
+        // viewer's lazy chunk is built.
+        external(id) {
+          return (
+            id.startsWith('node:') ||
+            [
+              'fs', 'path', 'buffer', 'child_process', 'stream', 'util', 'url',
+              'zlib', 'os', 'crypto', 'net', 'http', 'https', 'events', 'assert',
+              'string_decoder', 'tty', 'querystring', 'punycode', 'dns', 'timers',
+              'constants', 'module', 'vm', 'worker_threads', 'process', 'tls',
+              'dgram', 'readline', 'cluster',
+            ].includes(id)
+          );
+        },
         // maxParallelFileOps removed — default (20) is faster for CI/CD
         onwarn(warning, warn) {
           if (

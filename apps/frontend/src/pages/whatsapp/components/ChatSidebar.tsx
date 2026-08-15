@@ -18,6 +18,7 @@ import {
   MoreVertical,
   Pencil,
   Pin,
+  Plus,
   RefreshCw,
   Search,
   Shield,
@@ -124,6 +125,8 @@ interface ChatSidebarProps {
   showArchived: boolean;
   onToggleArchived: (archived: boolean) => void;
   counts?: WhatsAppConversationCounts;
+  // فتح مودال إنشاء طلب جديد لهذا العميل (من قائمة كود الأوردر)
+  onAddOrder?: (contact: Contact) => void;
 }
 
 function getContactName(contact: Contact) {
@@ -276,6 +279,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   showArchived,
   onToggleArchived,
   counts,
+  onAddOrder,
 }) => {
   const { t, i18n } = useTranslation();
   const [contextMenu, setContextMenu] = useState<{
@@ -473,7 +477,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     <aside
       dir={i18n.dir()}
       className={cn(
-        "whatsapp-theme-transition relative flex h-full max-lg:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] lg:min-h-0 lg:w-[390px] lg:min-w-[360px] lg:border-b-0 ltr:lg:border-r rtl:lg:border-l",
+        "whatsapp-theme-transition relative flex h-full max-lg:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] lg:min-h-0 lg:w-[390px] lg:min-w-[360px] lg:border-b-0 lg:border-r",
         className,
       )}
     >
@@ -1283,6 +1287,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <p className="mx-1 mb-1 border-b border-[color:var(--shell-control-border)] px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--color-muted-foreground)]">
               {orderMenu.orderCode}
             </p>
+            {onAddOrder ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const contact = orderMenu.contact;
+                  setOrderMenu(null);
+                  onAddOrder(contact);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[color:var(--color-foreground)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
+              >
+                <Plus className="size-4" />
+                <span>إضافة طلب جديد</span>
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {

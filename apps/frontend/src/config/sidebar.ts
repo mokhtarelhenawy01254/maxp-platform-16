@@ -553,6 +553,7 @@ export const getSidebarConfig = (
             title: t('sidebar.ordersSection'),
             icon: Archive,
             items: [
+                { to: '/order-code-search', kind: 'order-search', icon: Search, label: t('sidebar.orderSearchByCode'), requiredPermissions: ['orders.view'] },
                 { to: '/orders', icon: Archive, label: t('sidebar.orders'), requiredPermissions: ['orders.view'] },
                 { to: '/orders/workspace', icon: CircleUser, label: t('sidebar.agentWorkspace'), requiredPermissions: ['orders.workspace.view'], hidden: !isAppActive('agent-workspace') },
                 { to: '/orders/preparation', icon: FlaskConical, label: t('sidebar.orderPreparation'), requiredPermissions: ['orders.preparation.view'] },

@@ -24,6 +24,7 @@ import SnoozeModal from "../../components/facebook-inbox/Modals/SnoozeModal";
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
 import TextGalleryModal from "../../components/facebook-inbox/TextGallery/TextGalleryModal";
 import ImageGalleryModal from "../../components/facebook-inbox/ImageGallery/ImageGalleryModal";
+import ProductImagePickerModal from "../../components/facebook-inbox/ProductImagePicker/ProductImagePickerModal";
 import {
   InboxTab,
   ConversationStatus,
@@ -217,6 +218,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
   // Image Gallery State
   const [showImageGallery, setShowImageGallery] = useState(false);
+
+  // 🆕 Product Image Picker State
+  const [showProductPicker, setShowProductPicker] = useState(false);
 
   // 🆕 Quick Order Modal State
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
@@ -1167,6 +1171,94 @@ const getApiError = (error: unknown): ApiErrorLike => {
       activeTab,
       isConnected,
       debouncedLoadConversations,
+    ],
+  );
+
+  // 🆕 Handle sending product images as a message
+  const handleSendProductImages = useCallback(
+    async (
+      product: { id: string; name: string; price: number | string },
+      images: Array<{ url: string; filename: string }>,
+      includeDetails: boolean,
+    ) => {
+      if (!selectedConversation || !companyId || images.length === 0) return;
+
+      setShowProductPicker(false);
+
+      try {
+        // Send product name & price text first if requested
+        if (includeDetails) {
+          const detailText = `${product.name}\nالسعر: ${product.price} ج.م`;
+          await sendTextMessage(
+            selectedConversation.id,
+            detailText,
+            companyId,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+
+        // Send images
+        let successCount = 0;
+        for (const image of images) {
+          try {
+            await apiClient.post(
+              `/conversations/${selectedConversation.id}/send-existing-image`,
+              {
+                imageUrl: image.url,
+                filename: image.filename,
+              },
+            );
+            successCount++;
+
+            if (successCount < images.length) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          } catch (error) {
+            console.error("Error sending product image:", error);
+          }
+        }
+
+        if (successCount > 0) {
+          updateSelectedConversation({
+            lastMessageIsFromCustomer: false,
+            lastMessage:
+              includeDetails
+                ? product.name
+                : t("facebookInbox.photos", { count: successCount }),
+            lastMessageTime: new Date(),
+          });
+
+          if (!isConnected) {
+            setTimeout(() => {
+              loadMessages(selectedConversation.id);
+            }, 500);
+          }
+
+          if (activeTab === "unreplied") {
+            debouncedLoadConversations("unreplied");
+          }
+
+          if (successCount < images.length) {
+            alert(t("conversations.imagesPartialSend", { success: successCount, total: images.length }));
+          }
+        } else {
+          alert(t("conversations.imagesSendFailed"));
+        }
+      } catch (error) {
+        console.error("Error sending product images:", error);
+        alert(t("conversations.imagesSendFailed"));
+      }
+    },
+    [
+      selectedConversation,
+      companyId,
+      sendTextMessage,
+      loadMessages,
+      updateSelectedConversation,
+      activeTab,
+      isConnected,
+      debouncedLoadConversations,
+      t,
     ],
   );
 
@@ -2615,6 +2707,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   onCancelReply={handleCancelReply}
                   onOpenTextGallery={() => setShowTextGallery(true)}
                   onOpenImageGallery={() => setShowImageGallery(true)}
+                  onOpenProductPicker={() => setShowProductPicker(true)}
                 />
               </div>
             </>
@@ -2811,6 +2904,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
         onClose={() => setShowImageGallery(false)}
         onSelectImage={handleSelectImageFromGallery}
         onSelectMultipleImages={handleSelectMultipleImagesFromGallery}
+      />
+
+      {/* 🆕 Product Image Picker Modal */}
+      <ProductImagePickerModal
+        isOpen={showProductPicker}
+        onClose={() => setShowProductPicker(false)}
+        onSendProduct={handleSendProductImages}
       />
 
       {/* 🆕 Block Customer Modal */}

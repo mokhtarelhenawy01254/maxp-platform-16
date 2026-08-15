@@ -5,7 +5,7 @@ import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import {
   Package, Loader2,
-  Layers3, Sparkles, X, Zap,
+  Layers3, Sparkles, PackageX, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
   DollarSign, Heart,
   ShoppingBag, Brain,
@@ -151,6 +151,7 @@ export default function MarketplaceV2() {
   const [collection, setCollection] = useState<ToolCollectionId>("ALL");
   const [uninstallingApp, setUninstallingApp] = useState<string | null>(null);
   const [confirmUninstallApp, setConfirmUninstallApp] = useState<MarketplaceApp | null>(null);
+  const [showNotInstalled, setShowNotInstalled] = useState(false);
   const [filters, setFilters] = useState<MarketplaceFilters>({});
   const [displayCount, setDisplayCount] = useState(DISPLAY_INCREMENT);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -197,7 +198,7 @@ export default function MarketplaceV2() {
   const collectionFiltered = apps.filter(a => matchesCollection(a, collection));
   const searchFiltered = collectionFiltered.filter(a => matchesSearch(a, searchQuery));
   const filterFiltered = searchFiltered.filter(a => matchesFilters(a, filters));
-  const filteredApps = filterFiltered;
+  const filteredApps = showNotInstalled ? filterFiltered.filter(a => !a.isInstalled) : filterFiltered;
   const displayedApps = filteredApps.slice(0, displayCount);
 
   const hasMoreApps = filteredApps.length > displayCount;
@@ -277,6 +278,15 @@ export default function MarketplaceV2() {
                     onSelect={handleCategorySelect}
                     className="lg:hidden"
                   />
+                  <Button
+                    variant={showNotInstalled ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowNotInstalled(!showNotInstalled)}
+                    className="h-9 gap-1.5 rounded-xl text-xs font-bold"
+                  >
+                    <PackageX size={13} />
+                    {t('marketplace.notInstalled')}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -297,7 +307,7 @@ export default function MarketplaceV2() {
                   <p className="text-sm text-muted-foreground mb-4 max-w-md">
                     {t('marketplace.emptyHint')}
                   </p>
-                  {(searchQuery || selectedCategory || filters) && (
+                  {(searchQuery || selectedCategory || filters || showNotInstalled) && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -306,6 +316,7 @@ export default function MarketplaceV2() {
                         setSearchQuery("");
                         setSelectedCategory("");
                         setCollection("ALL");
+                        setShowNotInstalled(false);
                         setFilters({});
                         setDisplayCount(DISPLAY_INCREMENT);
                       }}

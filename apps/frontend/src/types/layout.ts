@@ -19,6 +19,8 @@ export interface SidebarItem {
   requiredApps?: string[];
   requiredPermissions?: string[];
   itemId?: string;
+  /** Marks special sidebar items (e.g. "order-search") so renderers can render custom components instead of nav links. */
+  kind?: string;
 }
 
 export interface SidebarSection {

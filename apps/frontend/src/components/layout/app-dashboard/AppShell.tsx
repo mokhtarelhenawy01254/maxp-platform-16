@@ -360,7 +360,12 @@ const appHasVisibleSections = (
 const getFirstVisibleItemPath = (sections: SidebarSection[]): string | null => {
   for (const section of sections) {
     if (section.hidden) continue;
-    const item = section.items.find((candidate) => !candidate.hidden && !candidate.external);
+    const item = section.items.find(
+      (candidate) =>
+        !candidate.hidden &&
+        !candidate.external &&
+        candidate.kind !== "order-search",
+    );
     if (item?.to) {
       return item.to;
     }

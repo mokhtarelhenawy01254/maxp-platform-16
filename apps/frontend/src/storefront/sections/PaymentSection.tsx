@@ -406,9 +406,9 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   const autoDiscountEnabled = tierProgress?.autoDiscountEnabled === true;
   const loyaltyFreeShipping = tiersEnabled ? Boolean(tierProgress?.rewards?.freeShipping) : false;
   const loyaltyDiscountPercent = tiersEnabled ? Number(tierProgress?.rewards?.discountPercent || 0) : 0;
-  const loyaltyDiscount =
+  let loyaltyDiscount =
     loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
-  const voucherDiscount =
+  let voucherDiscount =
     autoDiscountEnabled && tierProgress?.activeVoucher
       ? (Number(subtotal) || 0) * (Number(tierProgress.activeVoucher.percent) / 100)
       : 0;

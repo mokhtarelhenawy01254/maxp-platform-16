@@ -547,20 +547,13 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
 
               {activeTab === 'orders' && (
                 <div className="space-y-3">
-                  <div className="rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5 p-3" style={{ border: '1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)' }}>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 text-center">
+                  {orders.length > 0 ? (
+                    <>
+                      <div className="rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5 p-3 text-center" style={{ border: '1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)' }}>
                         <ShoppingBag className="mx-auto mb-1 size-5 text-primary" />
                         <p className="text-sm font-semibold text-primary">سجل الطلبات</p>
                         <p className="text-xs text-muted-foreground">{orders.length} طلب — بإجمالي {ltv.toLocaleString()} ج.م</p>
                       </div>
-                      <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs" onClick={onOpenOrder}>
-                        <Plus className="size-3.5" /> إضافة طلب
-                      </Button>
-                    </div>
-                  </div>
-                  {orders.length > 0 ? (
-                    <>
                       {orders.map((order) => {
                         const theme = ORDER_STATUS_THEME[order.status] || { label: order.status, color: 'var(--color-muted-foreground)' };
                         return (
@@ -590,6 +583,9 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                       <p className="text-sm">لا توجد طلبات سابقة</p>
                     </div>
                   )}
+                  <Button variant="outline" className="w-full gap-1.5" onClick={onOpenOrder}>
+                    <ShoppingBag className="size-4" /> طلب جديد
+                  </Button>
                 </div>
               )}
 

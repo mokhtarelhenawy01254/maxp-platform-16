@@ -93,6 +93,35 @@ export const useCustomerProfile = () => {
     [companyId],
   );
 
+  const updateCustomerPhone = useCallback(
+    async (phone: string) => {
+      if (!customer?.id || !companyId) {
+        return { success: false, message: "معرف العميل غير متاح" };
+      }
+
+      try {
+        const res = await apiClient.put(
+          `/customers/${customer.id}`,
+          { phone },
+          { params: { companyId } },
+        );
+
+        if (res.data.success) {
+          setCustomer((prev) => (prev ? { ...prev, phone } : prev));
+          return { success: true, message: res.data.message || "تم تحديث رقم الهاتف بنجاح" };
+        }
+        return { success: false, message: res.data?.message || "فشل تحديث رقم الهاتف" };
+      } catch (err: any) {
+        console.error("Error updating customer phone:", err);
+        return {
+          success: false,
+          message: err?.response?.data?.message || "حدث خطأ أثناء تحديث رقم الهاتف",
+        };
+      }
+    },
+    [customer?.id, companyId],
+  );
+
   const calculateLTV = useCallback(() => {
     return orders
       .filter(
@@ -143,6 +172,7 @@ export const useCustomerProfile = () => {
     loading,
     error,
     loadCustomerData,
+    updateCustomerPhone,
     calculateLTV,
     calculateRating,
   };

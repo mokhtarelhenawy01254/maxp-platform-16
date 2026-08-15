@@ -15871,6 +15871,17 @@ declare module 'react-i18next' {
         orderPreparation: string;
         incompleteOrders: string;
         ordersSection: string;
+        orderSearchByCode: string;
+        orderSearchPlaceholder: string;
+        orderSearchAction: string;
+        orderSearchClose: string;
+        orderSearchNotFound: string;
+        orderSearchError: string;
+        orderSearchSessionError: string;
+        orderSearchOpenConversation: string;
+        orderSearchNoConversation: string;
+        orderSearchTotal: string;
+        orderCustomerUnknown: string;
         ordersSettings: string;
         customerBlockSettings: string;
         overlayCampaigns: string;
