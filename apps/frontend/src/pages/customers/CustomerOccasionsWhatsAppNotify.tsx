@@ -215,6 +215,8 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
     const [occFormError, setOccFormError] = useState('');
     const [occSaving, setOccSaving] = useState(false);
 
+    const [activeTab, setActiveTab] = useState<'occasions' | 'quick'>('occasions');
+
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const loadSessions = useCallback(async () => {
@@ -671,7 +673,34 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                     </div>
                 </div>
 
-                {/* ── مناسباتي (Managed Occasions) ── */}
+                {/* ── Tabs ── */}
+                <div className="flex items-center gap-2 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-1.5 shadow-sm">
+                    <button
+                        onClick={() => setActiveTab('occasions')}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            activeTab === 'occasions'
+                                ? 'bg-violet-600 dark:bg-violet-500 text-white shadow-sm'
+                                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                        }`}
+                    >
+                        <CalendarDaysIcon className="h-4 w-4" />
+                        مناسباتي
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('quick')}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            activeTab === 'quick'
+                                ? 'bg-violet-600 dark:bg-violet-500 text-white shadow-sm'
+                                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                        }`}
+                    >
+                        <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
+                        إرسال سريع
+                    </button>
+                </div>
+
+                {/* ── تبويب: مناسباتي ── */}
+                {activeTab === 'occasions' && (
                 <div className="bg-white dark:bg-slate-900 border border-violet-200 dark:border-violet-900/50 rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-200">
@@ -913,7 +942,11 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                         </div>
                     )}
                 </div>
+                )}
 
+                {/* ── تبويب: إرسال سريع ── */}
+                {activeTab === 'quick' && (
+                <>
                 {/* ── Active Campaign Progress ── */}
                 {campaign && (
                     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 shadow-sm">
@@ -1370,7 +1403,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                         </div>
                     )}
                 </div>
-
+                </>)}
             </div>
         </div>
     );
