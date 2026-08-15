@@ -18,6 +18,7 @@ import {
   ArrowPathIcon,
   PhotoIcon,
   PaperAirplaneIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import {
   Dialog,
