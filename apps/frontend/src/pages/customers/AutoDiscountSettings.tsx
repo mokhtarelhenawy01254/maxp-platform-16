@@ -10,8 +10,7 @@ interface AutoDiscountSettingsProps {
 
 /**
  * إعدادات نظام "الخصم التلقائي":
- * كوبون خصم % على الأوردر الجاي، صلاحيته أيام، ويتحول لكاش باك عند الانتهاء،
- * + معدل النقاط وقيمة الاستبدال.
+ * كوبون خصم % على الأوردر الجاي، صلاحيته أيام، ويتحول لكاش باك عند الانتهاء.
  * 🆕 التفعيل مستقل عن نظام المستويات (ممكن الاتنين يشتغلوا مع بعض).
  */
 const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) => {
@@ -28,8 +27,6 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
     discountPercent: 10,
     validityDays: 3,
     convertExpiredToCashback: true,
-    pointsPerAmount: 5,
-    pointsRedemptionValue: 1,
     redeemPointsEnabled: true,
     discountCombination: 'ADDITIVE',
     maxTotalDiscountPercent: 20,
@@ -47,8 +44,6 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         discountPercent: ad.discountPercent ?? prev.discountPercent,
         validityDays: ad.validityDays ?? prev.validityDays,
         convertExpiredToCashback: ad.convertExpiredToCashback !== false,
-        pointsPerAmount: ad.pointsPerAmount ?? prev.pointsPerAmount,
-        pointsRedemptionValue: ad.pointsRedemptionValue ?? prev.pointsRedemptionValue,
         redeemPointsEnabled: ad.redeemPointsEnabled !== false,
         discountCombination: ad.discountCombination || prev.discountCombination,
         maxTotalDiscountPercent:
@@ -80,8 +75,6 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         discountPercent: cfg.discountPercent,
         validityDays: cfg.validityDays,
         convertExpiredToCashback: cfg.convertExpiredToCashback,
-        pointsPerAmount: cfg.pointsPerAmount,
-        pointsRedemptionValue: cfg.pointsRedemptionValue,
         redeemPointsEnabled: cfg.redeemPointsEnabled,
         discountCombination: cfg.discountCombination,
         maxTotalDiscountPercent: cfg.maxTotalDiscountPercent,
@@ -93,8 +86,6 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         discountPercent: ad.discountPercent ?? prev.discountPercent,
         validityDays: ad.validityDays ?? prev.validityDays,
         convertExpiredToCashback: ad.convertExpiredToCashback !== false,
-        pointsPerAmount: ad.pointsPerAmount ?? prev.pointsPerAmount,
-        pointsRedemptionValue: ad.pointsRedemptionValue ?? prev.pointsRedemptionValue,
         redeemPointsEnabled: ad.redeemPointsEnabled !== false,
         discountCombination: ad.discountCombination || prev.discountCombination,
         maxTotalDiscountPercent:
@@ -120,8 +111,6 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         discountPercent: cfg.discountPercent,
         validityDays: cfg.validityDays,
         convertExpiredToCashback: cfg.convertExpiredToCashback,
-        pointsPerAmount: cfg.pointsPerAmount,
-        pointsRedemptionValue: cfg.pointsRedemptionValue,
         redeemPointsEnabled: cfg.redeemPointsEnabled,
         discountCombination: cfg.discountCombination,
         maxTotalDiscountPercent: cfg.maxTotalDiscountPercent,
@@ -173,7 +162,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
               تفعيل نظام الخصم التلقائي
             </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-gray-500">نسبة الخصم %</label>
                 <input type="number" min="0" max="100" value={cfg.discountPercent} onChange={(e) => set("discountPercent", Number(e.target.value))} className={inputCls + " mt-1"} />
@@ -181,11 +170,6 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
               <div>
                 <label className="text-xs text-gray-500">مدة الصلاحية (أيام)</label>
                 <input type="number" min="1" value={cfg.validityDays} onChange={(e) => set("validityDays", Number(e.target.value))} className={inputCls + " mt-1"} />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">معدل النقاط (ج.م لكل نقطة)</label>
-                <input type="number" min="0.01" step="0.01" value={cfg.pointsPerAmount} onChange={(e) => set("pointsPerAmount", Number(e.target.value))} className={inputCls + " mt-1"} />
-                <p className="text-[10px] text-gray-400 mt-1">مثال: 5 = كل 100ج → 20 نقطة</p>
               </div>
             </div>
 
@@ -199,11 +183,6 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
                   className={inputCls + " mt-1"}
                 />
                 <p className="text-[10px] text-gray-400 mt-1">الأوردرات اللي اتسلمت قبل التاريخ ده مش بتاخد كوبون خصم وبتتوصف "قبل تفعيل النظام".</p>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">قيمة النقطة عند الاستبدال (ج.م لكل نقطة)</label>
-                <input type="number" min="0.01" step="0.01" value={cfg.pointsRedemptionValue} onChange={(e) => set("pointsRedemptionValue", Number(e.target.value))} className={inputCls + " mt-1"} />
-                <p className="text-[10px] text-gray-400 mt-1">مثال: 1 = كل نقطة بجنية — 500 نقطة = 500ج أوردر</p>
               </div>
             </div>
 
