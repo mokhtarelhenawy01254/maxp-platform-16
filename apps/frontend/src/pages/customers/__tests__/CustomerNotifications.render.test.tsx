@@ -175,4 +175,59 @@ describe("CustomerNotifications عبر TemplateCenter", () => {
     expect(screen.getAllByText(/50 نقطة/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/\[points\]/)).not.toBeInTheDocument();
   });
+
+  test("تبويب مناسبات العملاء يعرض حالات القوالب ويربط قالباً بمناسبة", async () => {
+    apiClient.get.mockImplementation((url: string) => {
+      if (url === "/hr/customer-loyalty/notifications/schedule") return Promise.resolve({ data: SCHEDULE });
+      if (url === "/whatsapp-notifications/templates") {
+        return Promise.resolve({
+          data: {
+            success: true,
+            templates: [
+              {
+                id: "t1",
+                eventType: "LOYALTY_POINTS_AWARDED",
+                name: "قالب نقاط",
+                content: "كسبت {points} نقطة يا {customerName}",
+                channel: "BAILEYS",
+                isActive: true,
+              },
+            ],
+          },
+        });
+      }
+      if (url === "/customers/whatsapp-notify/occasions") {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [
+              {
+                id: "occ1",
+                name: "عيد الأم",
+                message: "كل سنة وانتي طيبة",
+                scheduledAt: "2026-03-21T09:00:00.000Z",
+                status: "scheduled",
+                templateId: null,
+              },
+            ],
+          },
+        });
+      }
+      if (url === "/whatsapp/sessions") return Promise.resolve({ data: { sessions: [] } });
+      return Promise.resolve({ data: {} });
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /مناسبات العملاء/ }));
+    // حالة القالب تظهر مع زر الربط
+    expect(await screen.findByTestId("occasion-link-row-LOYALTY_POINTS_AWARDED")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ربط بمناسبة/ })).toBeInTheDocument();
+    // ربط القالب بمناسبة "عيد الأم"
+    await user.click(screen.getByRole("button", { name: /ربط بمناسبة/ }));
+    await user.click(screen.getByText("عيد الأم"));
+    await user.click(screen.getByRole("button", { name: /حفظ الربط/ }));
+    expect(apiClient.put).toHaveBeenCalledWith("/customers/whatsapp-notify/occasions/occ1", {
+      templateId: "t1",
+    });
+  });
 });

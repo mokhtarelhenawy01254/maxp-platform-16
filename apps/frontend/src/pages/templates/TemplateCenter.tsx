@@ -34,7 +34,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { Label } from "@/components/ui/label";
 import { normalizeVariableSyntax } from "./utils";
 import type { TemplateScopeConfig, EventRow } from "./types";
-import CustomerOccasionsWhatsAppNotify from "../customers/CustomerOccasionsWhatsAppNotify";
+import OccasionTemplateLinkTab from "./OccasionTemplateLinkTab";
 
 // حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
@@ -1366,7 +1366,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       {activeTab === "reports" ? (
         <StatusReportTab statuses={statuses} config={config} />
       ) : activeTab === "occasions" ? (
-        <CustomerOccasionsWhatsAppNotify embedded />
+        <OccasionTemplateLinkTab statuses={statuses as EventRow[]} />
       ) : activeTab === "schedule" && config.features.enableSchedule ? (
         /* ── Schedule tab (خاص بالعملاء) ── */
         <div className="space-y-4">
