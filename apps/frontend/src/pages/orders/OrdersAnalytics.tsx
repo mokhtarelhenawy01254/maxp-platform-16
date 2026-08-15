@@ -6,6 +6,8 @@ import {
   CurrencyDollarIcon,
   MapPinIcon,
   CreditCardIcon,
+  CubeIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 import { companyAwareApi } from "../../services/companyAwareApi";
@@ -22,6 +24,11 @@ interface OrderStats {
   totalOrders: number;
   totalRevenue: number;
   avgOrderValue: number;
+  totalPieces: number;
+  avgPiecesPerOrder: number;
+  avgOrdersPerDay: number;
+  daysInPeriod: number;
+  orderPieceShare: { orderNumber: string; pieces: number; sharePct: number }[];
   statusDistribution: Record<string, number>;
   governorateStats: Record<string, number>;
   paymentStats: Record<string, number>;
@@ -155,6 +162,18 @@ const OrdersAnalytics: React.FC = () => {
       icon: ChartBarIcon,
       color: "text-purple-600 bg-purple-50 dark:bg-purple-900/20",
     },
+    {
+      title: t("orders.averagePiecesPerOrder"),
+      value: stats?.avgPiecesPerOrder || 0,
+      icon: CubeIcon,
+      color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20",
+    },
+    {
+      title: t("orders.averageOrdersPerDay"),
+      value: stats?.avgOrdersPerDay || 0,
+      icon: CalendarDaysIcon,
+      color: "text-teal-600 bg-teal-50 dark:bg-teal-900/20",
+    },
   ];
 
   return (
@@ -218,7 +237,7 @@ const OrdersAnalytics: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
         {metricCards.map((card, i) => (
           <Card key={i}>
             <CardContent className="pt-6">
@@ -339,6 +358,51 @@ const OrdersAnalytics: React.FC = () => {
                     </span>
                   </div>
                 ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CubeIcon className="h-5 w-5 text-amber-500" />
+              {t("orders.analyticsOrderPieceShare")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats &&
+                stats.orderPieceShare.map((order) => (
+                  <div
+                    key={order.orderNumber}
+                    className="flex justify-between items-center"
+                  >
+                    <span className="text-sm font-medium dark:text-gray-300 truncate">
+                      {order.orderNumber}
+                    </span>
+                    <div className="flex items-center gap-3 flex-1 px-4">
+                      <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full flex-1 overflow-hidden">
+                        <div
+                          className="h-full bg-amber-500"
+                          style={{ width: `${order.sharePct}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 font-bold w-8 text-left">
+                        {order.pieces}
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400 w-12 text-left">
+                      {order.sharePct}%
+                    </span>
+                  </div>
+                ))}
+              {stats &&
+                stats.orderPieceShare.length === 0 && (
+                  <p className="text-center text-gray-500">{t("orders.analyticsNoData")}</p>
+                )}
+              {!stats && (
+                <p className="text-center text-gray-500">{t("orders.analyticsNoData")}</p>
+              )}
             </div>
           </CardContent>
         </Card>

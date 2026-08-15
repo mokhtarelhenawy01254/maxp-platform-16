@@ -10644,6 +10644,9 @@ declare module 'react-i18next' {
         analyticsPaymentMethods: string;
         analyticsNoData: string;
         analyticsOrderCount: string;
+        analyticsOrderPieceShare: string;
+        averagePiecesPerOrder: string;
+        averageOrdersPerDay: string;
         pendingWithdrawal: string;
         transferFailed: string;
         minutesAgo: string;

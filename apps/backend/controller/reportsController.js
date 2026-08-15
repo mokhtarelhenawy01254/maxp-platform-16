@@ -672,11 +672,16 @@ const getDetailedOrderReport = async (req, res) => {
                 createdAt: { gte: start, lte: end }
             },
             select: {
+                id: true,
+                orderNumber: true,
                 status: true,
                 total: true,
                 governorate: true,
                 createdAt: true,
-                paymentMethod: true
+                paymentMethod: true,
+                orderItems: {
+                    select: { quantity: true }
+                }
             }
         });
 
@@ -685,6 +690,7 @@ const getDetailedOrderReport = async (req, res) => {
         const governorateStats = {};
         const paymentStats = {};
         let totalRevenue = 0;
+        let totalPieces = 0;
 
         orders.forEach(order => {
             statusDistribution[order.status] = (statusDistribution[order.status] || 0) + 1;
@@ -695,12 +701,40 @@ const getDetailedOrderReport = async (req, res) => {
             totalRevenue += parseFloat(order.total);
         });
 
+        // إحصائيات القطع (items/quantity)
+        const orderPieceData = orders.map(order => {
+            const pieces = (order.orderItems || []).reduce(
+                (sum, item) => sum + (parseInt(item.quantity, 10) || 0),
+                0
+            );
+            totalPieces += pieces;
+            return { orderNumber: order.orderNumber, pieces };
+        });
+
+        // متوسط الطلبات في اليوم (فترة أكثر من يوم واحد)
+        const dayMs = 24 * 60 * 60 * 1000;
+        const daysInPeriod = Math.max(1, Math.round((end - start) / dayMs) + 1);
+
+        const orderPieceShare = orderPieceData
+            .map(o => ({
+                orderNumber: o.orderNumber,
+                pieces: o.pieces,
+                sharePct: totalPieces > 0 ? Number(((o.pieces / totalPieces) * 100).toFixed(1)) : 0
+            }))
+            .sort((a, b) => b.pieces - a.pieces)
+            .slice(0, 10);
+
         res.json({
             success: true,
             data: {
                 totalOrders: orders.length,
                 totalRevenue,
                 avgOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
+                totalPieces,
+                avgPiecesPerOrder: orders.length > 0 ? Number((totalPieces / orders.length).toFixed(1)) : 0,
+                avgOrdersPerDay: orders.length > 0 ? Number((orders.length / daysInPeriod).toFixed(1)) : 0,
+                daysInPeriod,
+                orderPieceShare,
                 statusDistribution,
                 governorateStats,
                 paymentStats
