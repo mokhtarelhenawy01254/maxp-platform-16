@@ -70,21 +70,22 @@ model AffiliateProduct {
 }
 
 model AffiliateReferral {
-  id           String    @id @default(cuid())
-  affiliateId  String
-  customerId   String?
-  orderId      String?   @unique
-  referralCode String
-  referralUrl  String?
-  ipAddress    String?
-  userAgent    String?
-  source       String?
-  converted    Boolean   @default(false)
-  convertedAt  DateTime?
-  createdAt    DateTime  @default(now())
-  affiliate    Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
-  customer     Customer? @relation(fields: [customerId], references: [id])
-  order        Order?    @relation("OrderAffiliateReferral", fields: [orderId], references: [id])
+  id            String    @id @default(cuid())
+  affiliateId   String
+  customerId    String?
+  orderId       String?   @unique
+  referralCode  String
+  referralUrl   String?
+  ipAddress     String?
+  userAgent     String?
+  source        String?
+  converted     Boolean   @default(false)
+  convertedAt   DateTime?
+  pointsAwarded Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  affiliate     Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  order         Order?    @relation("OrderAffiliateReferral", fields: [orderId], references: [id])
 
   @@index([affiliateId])
   @@index([converted])
@@ -123,6 +124,7 @@ model Affiliate {
   id                       String                   @id @default(cuid())
   userId                   String                   @unique
   companyId                String?
+  customerId               String?
   affiliateCode            String                   @unique
   commissionType           AffiliatesCommissionType @default(PERCENTAGE)
   commissionRate           Float                    @default(5)
@@ -155,12 +157,14 @@ model Affiliate {
   reviewLogs               AffiliateReviewLog[]
   company                  Company?                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer                 Customer?                @relation("AffiliateCustomer", fields: [customerId], references: [id])
   commissions              Commission[]
   guestOrders              GuestOrder[]
   orders                   Order[]
 
   @@index([affiliateCode])
   @@index([companyId])
+  @@index([customerId])
   @@index([status])
   @@map("affiliates")
 }

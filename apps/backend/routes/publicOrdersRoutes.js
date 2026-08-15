@@ -2210,6 +2210,11 @@ router.post('/', async (req, res) => {
         // Update referral to mark as converted
         if (affiliateReferralId) {
           try {
+            const referralBefore = await prisma.affiliateReferral.findUnique({
+              where: { id: affiliateReferralId },
+              select: { id: true, converted: true }
+            });
+
             await prisma.affiliateReferral.update({
               where: { id: affiliateReferralId },
               data: {
@@ -2218,6 +2223,16 @@ router.post('/', async (req, res) => {
                 orderId: createdOrder.id
               }
             });
+
+            // 🎁 منح المسوق نقاط ولاء بدلاً من العمولة المالية عند نجاح الإحالة
+            if (referralBefore && !referralBefore.converted) {
+              try {
+                const affiliateService = require('../services/affiliateService');
+                await affiliateService.awardReferralLoyaltyPoints(affiliateReferralId);
+              } catch (awardErr) {
+                console.error('⚠️ [GUEST-ORDER] Error awarding referral loyalty points:', awardErr.message);
+              }
+            }
           } catch (error) {
             console.error('⚠️ [GUEST-ORDER] Error updating referral:', error.message);
           }

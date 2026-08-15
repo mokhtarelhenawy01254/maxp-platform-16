@@ -29,6 +29,7 @@ model Customer {
   lastNotifiedQualityTier        String?
   activities                     Activity[]
   affiliate_referrals            AffiliateReferral[]
+  affiliates                     Affiliate[]                     @relation("AffiliateCustomer")
   aiInteractions                 AiInteraction[]
   appointments                   Appointment[]
   blockedCustomersOnPages        BlockedCustomersOnPage[]
