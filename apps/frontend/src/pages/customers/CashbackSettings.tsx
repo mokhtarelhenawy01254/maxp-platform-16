@@ -1,24 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import {
-  Save,
-  DollarSign,
-  AlertCircle,
-  CheckCircle,
-  Crown,
-  Shield,
-  Info,
-} from "lucide-react";
+import { Save, DollarSign, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-
-interface CustomerLoyaltyTier {
-  id: string;
-  name: string;
-  nameAr?: string;
-  color: string;
-  icon: string;
-}
 
 interface CashbackSettings {
   id: string;
@@ -28,20 +12,17 @@ interface CashbackSettings {
     base: "total" | "subtotal";
     trigger: string;
     maxPerOrder?: number;
-    tierOverrides?: Record<string, number>;
   };
 }
 
 const CashbackSettingsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [tiers, setTiers] = useState<CustomerLoyaltyTier[]>([]);
   const [settings, setSettings] = useState<{
     cashbackPercent: number;
     base: "total" | "subtotal";
     status: CashbackSettings["status"];
     maxPerOrder: number;
-    tierOverrides: Record<string, number>;
   } | null>(null);
 
   useEffect(() => {
@@ -51,12 +32,7 @@ const CashbackSettingsPage: React.FC = () => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [tiersRes, settingsRes] = await Promise.all([
-        apiClient.get("/hr/customer-loyalty/tiers"),
-        apiClient.get("/hr/customer-loyalty/cashback/settings"),
-      ]);
-
-      setTiers(tiersRes.data.data || []);
+      const settingsRes = await apiClient.get("/hr/customer-loyalty/cashback/settings");
 
       const cs: CashbackSettings | null = settingsRes?.data?.data || null;
       if (cs) {
@@ -65,7 +41,6 @@ const CashbackSettingsPage: React.FC = () => {
           base: cs.rules.base,
           status: cs.status,
           maxPerOrder: cs.rules.maxPerOrder || 0,
-          tierOverrides: cs.rules.tierOverrides || {},
         });
       } else {
         // Default state if no settings exist
@@ -74,7 +49,6 @@ const CashbackSettingsPage: React.FC = () => {
           base: "subtotal",
           status: "INACTIVE",
           maxPerOrder: 0,
-          tierOverrides: {},
         });
       }
     } catch (error) {
@@ -96,13 +70,6 @@ const CashbackSettingsPage: React.FC = () => {
 
     if (settings.maxPerOrder < 0) {
       tToast.error("CashbackSettings.msg_3170");
-      return;
-    }
-
-    // Validate tier overrides
-    const invalidOverrides = Object.values(settings.tierOverrides).some(val => val < 0 || val > 100);
-    if (invalidOverrides) {
-      tToast.error("CashbackSettings.msg_2ddf");
       return;
     }
 
@@ -278,98 +245,6 @@ const CashbackSettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tiers Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
-                <Crown className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  تخصيص المستويات (Advanced)
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  تجاوز النسبة الافتراضية لعملاء محددين
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6">
-          {tiers.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
-              <Info className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500 dark:text-gray-400">
-                لا توجد مستويات عملاء معرفة حالياً.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tiers.map((tier) => (
-                <div
-                  key={tier.id}
-                  className="relative group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-purple-500/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: tier.color }}
-                      ></span>
-                      {tier.nameAr || tier.name}
-                    </span>
-                  </div>
-
-                  <div className="relative">
-                    <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                      نسبة خاصة
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      placeholder={`${settings.cashbackPercent}% (Default)`}
-                      value={settings.tierOverrides?.[tier.id] ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const newOverrides = { ...settings.tierOverrides };
-                        if (val === "") {
-                           delete newOverrides[tier.id];
-                        } else {
-                           const numVal = Number(val);
-                           if (!isNaN(numVal)) {
-                             newOverrides[tier.id] = numVal;
-                           }
-                        }
-                        setSettings({
-                          ...settings,
-                          tierOverrides: newOverrides,
-                        });
-                      }}
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
-                    />
-                    <div className="absolute left-3 top-[26px] text-gray-400 text-xs">
-                      %
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-4 flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
-            <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <p>
-              <strong>ملاحظة:</strong> إذا قمت بتعيين نسبة خاصة لمستوى معين،
-              سيتم تجاهل "النسبة الافتراضية" لهذا المستوى واستخدام النسبة
-              المحددة هنا.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
