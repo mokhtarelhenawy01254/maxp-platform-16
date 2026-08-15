@@ -37,6 +37,36 @@ function parseCount(value) {
     return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+async function resolveTemplate(prisma, companyId, templateId) {
+    if (!templateId) return null;
+    const tpl = await prisma.whatsAppNotificationTemplate.findFirst({
+        where: { id: templateId, companyId },
+    });
+    return tpl || null;
+}
+
+// يملأ رسالة كل مناسبة من القالب المرتبط بيها (ربط حي) + اسم القالب
+async function decorateWithTemplates(prisma, companyId, occasions) {
+    const templateIds = occasions.map(o => o.templateId).filter(Boolean);
+    const templateMap = new Map();
+    if (templateIds.length > 0) {
+        const templates = await prisma.whatsAppNotificationTemplate.findMany({
+            where: { id: { in: templateIds }, companyId },
+        });
+        templates.forEach(t => templateMap.set(t.id, t));
+    }
+    return occasions.map(o => {
+        const rec = { ...o, customerListIds: parseListIds(o.customerListIds) };
+        const tpl = o.templateId ? templateMap.get(o.templateId) : null;
+        if (tpl) {
+            rec.message = tpl.content;
+            rec.templateName = tpl.name;
+            rec.templateMetaStatus = tpl.metaTemplateStatus || null;
+        }
+        return rec;
+    });
+}
+
 async function listOccasions(req, res) {
     try {
         const { companyId } = req.user;
@@ -45,7 +75,7 @@ async function listOccasions(req, res) {
             where: { companyId },
             orderBy: { scheduledAt: 'asc' },
         });
-        const data = occasions.map(o => ({ ...o, customerListIds: parseListIds(o.customerListIds) }));
+        const data = await decorateWithTemplates(prisma, companyId, occasions);
         return res.json({ success: true, data });
     } catch (error) {
         console.error('[OCCASION] listOccasions error:', error);
@@ -56,9 +86,14 @@ async function listOccasions(req, res) {
 async function createOccasion(req, res) {
     try {
         const { companyId } = req.user;
-        const { name, message, mediaUrl, scheduledAt, recurrence, customerListIds, sendLimit, throttlePerRun } = req.body || {};
+        const { name, message, mediaUrl, scheduledAt, recurrence, customerListIds, sendLimit, throttlePerRun, templateId } = req.body || {};
         const trimmedName = (name || '').toString().trim();
-        const trimmedMessage = (message || '').toString().trim();
+        const prisma = getSharedPrismaClient();
+
+        const linkedTemplate = templateId ? await resolveTemplate(prisma, companyId, templateId) : null;
+        if (templateId && !linkedTemplate)
+            return res.status(400).json({ success: false, message: 'القالب غير موجود أو غير تابع لهذا الحساب' });
+        const trimmedMessage = (message || '').toString().trim() || (linkedTemplate && linkedTemplate.content ? linkedTemplate.content.trim() : '');
 
         if (!trimmedName) return res.status(400).json({ success: false, message: 'اسم المناسبة مطلوب' });
         if (trimmedName.length > MAX_OCCASION_NAME_LENGTH)
@@ -75,13 +110,13 @@ async function createOccasion(req, res) {
         const listIds = parseListIds(customerListIds);
         const sendLimitCount = parseCount(sendLimit);
         const throttlePerRunCount = parseCount(throttlePerRun);
-        const prisma = getSharedPrismaClient();
 
         const record = await prisma.occasion.create({
             data: {
                 companyId,
                 name: trimmedName,
                 message: trimmedMessage,
+                templateId: templateId || null,
                 mediaUrl: mediaUrl && mediaUrl.trim() ? mediaUrl.trim() : null,
                 scheduledAt: new Date(scheduledAt),
                 recurrence: rec,
@@ -106,7 +141,7 @@ async function updateOccasion(req, res) {
     try {
         const { companyId } = req.user;
         const { id } = req.params;
-        const { name, message, mediaUrl, scheduledAt, recurrence, customerListIds, sendLimit, throttlePerRun } = req.body || {};
+        const { name, message, mediaUrl, scheduledAt, recurrence, customerListIds, sendLimit, throttlePerRun, templateId } = req.body || {};
         const prisma = getSharedPrismaClient();
         const existing = await prisma.occasion.findFirst({ where: { id, companyId } });
         if (!existing) return res.status(404).json({ success: false, message: 'المناسبة غير موجودة' });
@@ -119,12 +154,28 @@ async function updateOccasion(req, res) {
                 return res.status(400).json({ success: false, message: `اسم المناسبة لا يزيد عن ${MAX_OCCASION_NAME_LENGTH} حرف` });
             data.name = t;
         }
+
+        // ربط/فك القالب: null = فك، string = ربط قالب جديد
+        let resolvedTemplate = null;
+        if (templateId !== undefined) {
+            if (templateId === null || templateId === '') {
+                data.templateId = null;
+            } else {
+                resolvedTemplate = await resolveTemplate(prisma, companyId, templateId);
+                if (!resolvedTemplate)
+                    return res.status(400).json({ success: false, message: 'القالب غير موجود أو غير تابع لهذا الحساب' });
+                data.templateId = templateId;
+            }
+        }
+
         if (message !== undefined) {
             const t = message.toString().trim();
             if (!t) return res.status(400).json({ success: false, message: 'محتوى الرسالة مطلوب' });
             if (t.length > MAX_MESSAGE_LENGTH)
                 return res.status(400).json({ success: false, message: `الرسالة لا تزيد عن ${MAX_MESSAGE_LENGTH} حرف` });
             data.message = t;
+        } else if (resolvedTemplate && resolvedTemplate.content) {
+            data.message = resolvedTemplate.content.trim();
         }
         if (mediaUrl !== undefined) {
             if (!isValidHttpUrl(mediaUrl))

@@ -33,6 +33,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { Label } from "@/components/ui/label";
 import { normalizeVariableSyntax } from "./utils";
 import type { TemplateScopeConfig, EventRow } from "./types";
+import CustomerOccasionsWhatsAppNotify from "../customers/CustomerOccasionsWhatsAppNotify";
 
 // حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
@@ -1335,7 +1336,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
           const isReports = tab.kind === "reports";
           const isSettings = tab.kind === "settings";
           const isSchedule = tab.kind === "schedule";
-          const count = isReports || isSettings || isSchedule ? 0 : tab.count ? tab.count(statuses as EventRow[]) : notifiableCount;
+          const isOccasions = tab.kind === "occasions";
+          const count = isReports || isSettings || isSchedule || isOccasions ? 0 : tab.count ? tab.count(statuses as EventRow[]) : notifiableCount;
           return (
             <button
               key={tab.key}
@@ -1348,8 +1350,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
             >
               {isReports ? <DocumentTextIcon className="ml-1.5 inline h-4 w-4" /> : null}
               {isSettings ? <Cog6ToothIcon className="ml-1.5 inline h-4 w-4" /> : null}
+              {isOccasions ? <CalendarDaysIcon className="ml-1.5 inline h-4 w-4" /> : null}
               {tab.label}
-              {!isReports && !isSettings && !isSchedule && (
+              {!isReports && !isSettings && !isSchedule && !isOccasions && (
                 <span className="mr-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] dark:bg-slate-800">
                   {count}
                 </span>
@@ -1361,6 +1364,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
 
       {activeTab === "reports" ? (
         <StatusReportTab statuses={statuses} config={config} />
+      ) : activeTab === "occasions" ? (
+        <CustomerOccasionsWhatsAppNotify embedded />
       ) : activeTab === "schedule" && config.features.enableSchedule ? (
         /* ── Schedule tab (خاص بالعملاء) ── */
         <div className="space-y-4">

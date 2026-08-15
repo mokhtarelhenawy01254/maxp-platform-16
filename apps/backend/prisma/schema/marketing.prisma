@@ -1253,6 +1253,7 @@ model Occasion {
   companyId       String
   name            String
   message         String
+  templateId      String? // اختياري: ربط المناسبة بقالب واتساب (محتواه هو الرسالة الحية)
   mediaUrl        String?
   scheduledAt     DateTime
   recurrence      String   @default("none") // none | monthly | yearly

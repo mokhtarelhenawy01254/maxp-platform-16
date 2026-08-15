@@ -30,6 +30,9 @@ interface Occasion {
     id: string;
     name: string;
     message: string;
+    templateId?: string | null;
+    templateName?: string | null;
+    templateMetaStatus?: string | null;
     mediaUrl: string | null;
     scheduledAt: string;
     recurrence: Recurrence;
@@ -43,6 +46,13 @@ interface Occasion {
     nextRunAt: string | null;
     createdAt: string;
     updatedAt: string;
+}
+
+interface OccasionTemplate {
+    id: string;
+    name: string;
+    content: string;
+    metaTemplateStatus?: string | null;
 }
 
 interface CustomerListOption {
@@ -77,7 +87,10 @@ const isValidHttpUrl = (value: string) => {
     } catch { return false; }
 };
 
-const CustomerOccasionsWhatsAppNotify: React.FC = () => {
+// يحول {{var}} إلى {var} (المحرر الموحد بيخزن بـ قوسين، المناسبة بتستخدم قوس واحد)
+const normalizeTemplateToSingle = (content: string) => content.replace(/\{\{(\w+)\}\}/g, '{$1}');
+
+const CustomerOccasionsWhatsAppNotify: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
     const defaultSchedule = getDefaultSchedule();
 
     const [sessions, setSessions] = useState<Session[]>([]);
@@ -87,12 +100,14 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
     const [occasions, setOccasions] = useState<Occasion[]>([]);
     const [occasionsLoading, setOccasionsLoading] = useState(false);
     const [customerLists, setCustomerLists] = useState<CustomerListOption[]>([]);
+    const [templates, setTemplates] = useState<OccasionTemplate[]>([]);
     const [showOccasionForm, setShowOccasionForm] = useState(false);
     const [editingOccasionId, setEditingOccasionId] = useState<string | null>(null);
     const [occName, setOccName] = useState('');
     const [occMessage, setOccMessage] = useState(
         '🎉 بمناسبة {اسم المناسبة}،\n\nكل سنة وأنتم طيبين يا {اسم العميل}!\nيسعدنا نقدم لكم عرض خاص لفترة محدودة.'
     );
+    const [occTemplateId, setOccTemplateId] = useState('');
     const [occMediaUrl, setOccMediaUrl] = useState('');
     const [occDate, setOccDate] = useState(defaultSchedule.date);
     const [occTime, setOccTime] = useState(defaultSchedule.time);
@@ -145,9 +160,27 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
         }
     }, []);
 
+    const loadTemplates = useCallback(async () => {
+        try {
+            const res = await apiClient.get('/whatsapp-notifications/templates');
+            const list: OccasionTemplate[] = (res.data?.templates || [])
+                .filter((t: any) => t?.id && t?.content)
+                .map((t: any) => ({
+                    id: t.id,
+                    name: t.name || t.id,
+                    content: t.content,
+                    metaTemplateStatus: t.metaTemplateStatus || null,
+                }));
+            setTemplates(list);
+        } catch {
+            setTemplates([]);
+        }
+    }, []);
+
     useEffect(() => { loadSessions(); }, [loadSessions]);
     useEffect(() => { loadOccasions(); }, [loadOccasions]);
     useEffect(() => { loadCustomerLists(); }, [loadCustomerLists]);
+    useEffect(() => { loadTemplates(); }, [loadTemplates]);
 
     // ── مناسباتي: دوال الإدارة ──
     const resetOccasionForm = () => {
@@ -156,6 +189,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
         setOccMessage(
             '🎉 بمناسبة {اسم المناسبة}،\n\nكل سنة وأنتم طيبين يا {اسم العميل}!\nيسعدنا نقدم لكم عرض خاص لفترة محدودة.'
         );
+        setOccTemplateId('');
         setOccMediaUrl('');
         setOccDate(defaultSchedule.date);
         setOccTime(defaultSchedule.time);
@@ -171,6 +205,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
         setEditingOccasionId(occ.id);
         setOccName(occ.name);
         setOccMessage(occ.message);
+        setOccTemplateId(occ.templateId || '');
         setOccMediaUrl(occ.mediaUrl || '');
         const d = new Date(occ.scheduledAt);
         setOccDate(toLocalDateInput(d));
@@ -207,6 +242,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
             const payload = {
                 name: trimmedName,
                 message: trimmedMessage,
+                templateId: occTemplateId || null,
                 mediaUrl: occMediaUrl.trim() || undefined,
                 scheduledAt: scheduledAt.toISOString(),
                 recurrence: occRecurrence,
@@ -264,9 +300,11 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
     const connectedSession = sessions.find(s => s.isConnected);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-fuchsia-50/20 dark:from-slate-950 dark:via-violet-950/20 dark:to-fuchsia-950/20 text-gray-900 dark:text-slate-100 p-4 md:p-6" dir="rtl">
-            <div className="max-w-5xl mx-auto space-y-5">
+        <div className={embedded ? "" : "min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-fuchsia-50/20 dark:from-slate-950 dark:via-violet-950/20 dark:to-fuchsia-950/20 text-gray-900 dark:text-slate-100 p-4 md:p-6"} dir="rtl">
+            <div className={embedded ? "" : "max-w-5xl mx-auto space-y-5"}>
 
+                {!embedded && (
+                <>
                 {/* ── Header ── */}
                 <div className="flex items-start justify-between gap-3">
                     <div>
@@ -304,6 +342,8 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                </>
+                )}
 
                 <div className="bg-white dark:bg-slate-900 border border-violet-200 dark:border-violet-900/50 rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center justify-between gap-3">
@@ -356,19 +396,53 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                             </div>
 
                             <div>
+                                <label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 block">قالب الرسالة (اختياري)</label>
+                                <select
+                                    value={occTemplateId}
+                                    onChange={e => {
+                                        const tplId = e.target.value;
+                                        setOccTemplateId(tplId);
+                                        const tpl = templates.find(t => t.id === tplId);
+                                        if (tpl) {
+                                            setOccMessage(normalizeTemplateToSingle(tpl.content));
+                                            setOccFormError('');
+                                        }
+                                    }}
+                                    className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 transition text-gray-900 dark:text-white"
+                                >
+                                    <option value="">بدون قالب — اكتب الرسالة يدويًا</option>
+                                    {templates.map(t => (
+                                        <option key={t.id} value={t.id} className="dark:bg-slate-900">{t.name}</option>
+                                    ))}
+                                </select>
+                                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">
+                                    اختر قالبًا من صفحة القوالب — أي تعديل على القالب هينعكس هنا تلقائيًا.
+                                </p>
+                            </div>
+
+                            <div>
                                 <label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 block">نص الرسالة</label>
                                 <textarea
                                     rows={4}
                                     value={occMessage}
                                     onChange={e => setOccMessage(e.target.value)}
-                                    className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm leading-6 resize-none outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 transition text-gray-900 dark:text-slate-100"
+                                    disabled={!!occTemplateId}
+                                    className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm leading-6 resize-none outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 transition text-gray-900 dark:text-slate-100 disabled:opacity-60 disabled:cursor-not-allowed"
                                 />
-                                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">
-                                    متغيرات متاحة: {'{اسم العميل}'} - {'{اسم المناسبة}'}
-                                </p>
-                                <p className={`text-[11px] mt-1 ${occMessage.trim().length > MAX_MESSAGE_LENGTH ? 'text-rose-600 font-bold' : 'text-gray-400 dark:text-slate-500'}`}>
-                                    {occMessage.trim().length}/{MAX_MESSAGE_LENGTH}
-                                </p>
+                                {occTemplateId ? (
+                                    <p className="text-[11px] mt-1 text-violet-500 dark:text-violet-400 font-bold">
+                                        الرسالة مرتبطة بالقالب — أي تعديل على القالب في صفحة القوالب هيتحدّث هنا تلقائيًا.
+                                    </p>
+                                ) : (
+                                    <>
+                                        <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">
+                                            متغيرات متاحة: {'{اسم العميل}'} - {'{اسم المناسبة}'}
+                                        </p>
+                                        <p className={`text-[11px] mt-1 ${occMessage.trim().length > MAX_MESSAGE_LENGTH ? 'text-rose-600 font-bold' : 'text-gray-400 dark:text-slate-500'}`}>
+                                            {occMessage.trim().length}/{MAX_MESSAGE_LENGTH}
+                                        </p>
+                                    </>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -509,6 +583,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                                             <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
                                                 📅 {new Date(occ.scheduledAt).toLocaleString('ar-EG')}
                                                 {listNames.length > 0 ? ` • جمهور: ${listNames.join('، ')}` : ' • بدون جمهور'}
+                                                {occ.templateName ? ` • قالب: ${occ.templateName}` : ''}
                                                 {occ.sendLimit > 0 ? ` • حد: ${occ.sendLimit}` : ''}
                                                 {occ.throttlePerRun > 0 ? ` • معدل: ${occ.throttlePerRun}/ساعة` : ''}
                                                 {occ.totalSent > 0 ? ` • أُرسل: ${occ.totalSent}` : ''}

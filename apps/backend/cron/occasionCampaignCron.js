@@ -142,8 +142,20 @@ async function processDueOccasions() {
     take: 50,
   });
 
+  // ربط حي: لو المناسبة متربطة بقالب، استخدم محتوى القالب الحالي كرسالة
+  const templateIds = occasions.map(o => o.templateId).filter(Boolean);
+  const templateMap = new Map();
+  if (templateIds.length > 0) {
+    const templates = await prisma.whatsAppNotificationTemplate.findMany({
+      where: { id: { in: templateIds } },
+    });
+    templates.forEach(t => templateMap.set(t.id, t));
+  }
+
   for (const occ of occasions) {
     try {
+      const tpl = occ.templateId ? templateMap.get(occ.templateId) : null;
+      const message = tpl && tpl.content ? tpl.content : occ.message;
       const listIds = parseListIds(occ.customerListIds);
       const audience = await resolveOccasionAudience(prisma, occ.companyId, listIds);
 
@@ -193,7 +205,7 @@ async function processDueOccasions() {
               recipientType: 'CUSTOMER',
               category: 'MARKETING',
               eventType: 'OCCASION_CAMPAIGN',
-              contentOverride: occ.message,
+              contentOverride: message,
               variables: {
                 customerName: name,
                 firstName: customer.firstName || '',

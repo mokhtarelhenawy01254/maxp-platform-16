@@ -88,6 +88,7 @@ describe("CustomerNotifications عبر TemplateCenter", () => {
     expect(screen.getByRole("button", { name: /إرسال تجريبي/ })).toBeInTheDocument();
     // التبويبات
     expect(screen.getByRole("button", { name: /جدول الإشعارات/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /مناسبات العملاء/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /قوالب الولاء/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /قوالب الكاش باك/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /قوالب التقسيم/ })).toBeInTheDocument();
