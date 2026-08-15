@@ -10,6 +10,7 @@ import {
     PencilIcon,
 } from '@heroicons/react/24/outline';
 import { apiClient } from '../../services/apiClient';
+import CustomerListDialog from '../../components/broadcast/CustomerListDialog';
 
 interface Session {
     sessionId: string;
@@ -117,6 +118,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC<{ embedded?: boolean }> = ({ emb
     const [occThrottlePerRun, setOccThrottlePerRun] = useState('');
     const [occFormError, setOccFormError] = useState('');
     const [occSaving, setOccSaving] = useState(false);
+    const [showCreateListModal, setShowCreateListModal] = useState(false);
 
     const loadSessions = useCallback(async () => {
         setSessionsLoading(true);
@@ -478,7 +480,17 @@ const CustomerOccasionsWhatsAppNotify: React.FC<{ embedded?: boolean }> = ({ emb
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 block">جمهور المناسبة (قوائم العملاء)</label>
+                                <div className="flex items-center justify-between gap-3 mb-1.5">
+                                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block">جمهور المناسبة (قوائم العملاء)</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCreateListModal(true)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-900/50 bg-violet-50 dark:bg-violet-950/30 hover:bg-violet-100 dark:hover:bg-violet-950/50 transition-colors"
+                                    >
+                                        <PlusIcon className="h-3.5 w-3.5" />
+                                        إضافة قائمة عملاء
+                                    </button>
+                                </div>
                                 <div className="flex flex-wrap gap-2">
                                     {customerLists.length === 0 ? (
                                         <span className="text-[11px] text-gray-400 dark:text-slate-500">لا توجد قوائم — أنشئ قائمة من صفحة العملاء أولاً.</span>
@@ -622,6 +634,14 @@ const CustomerOccasionsWhatsAppNotify: React.FC<{ embedded?: boolean }> = ({ emb
                     )}
                 </div>
             </div>
+
+            {showCreateListModal && (
+                <CustomerListDialog
+                    open={showCreateListModal}
+                    onOpenChange={setShowCreateListModal}
+                    onSuccess={() => { void loadCustomerLists(); }}
+                />
+            )}
         </div>
     );
 };

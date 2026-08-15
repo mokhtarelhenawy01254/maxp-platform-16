@@ -117,7 +117,7 @@ export interface SettingsForm {
 export interface TabDef {
   key: string;
   label: string;
-  kind: "list" | "reports" | "settings" | "schedule" | "occasions";
+  kind: "list" | "reports" | "settings" | "schedule";
   filter?: (row: EventRow) => boolean;
   count?: (rows: EventRow[]) => number;
   isSpecial?: boolean;
