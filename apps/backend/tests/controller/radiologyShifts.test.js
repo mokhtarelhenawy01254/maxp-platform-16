@@ -148,6 +148,7 @@ describe('radiologyShiftsController', () => {
           companyId: 'company-1',
           shiftId: 'shift-1',
           studyId: null,
+          appointmentId: null,
           invoiceId: 'inv-1',
           source: 'INSURANCE',
           type: 'PAYMENT',

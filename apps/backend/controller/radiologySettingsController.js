@@ -2,6 +2,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { DEFAULT_SETTINGS, getRadiologyIdSettings } = require('../utils/radiologyNumbering');
 const { getRadiologyGuards } = require('../utils/radiologyGuards');
 const { DEFAULT_DELIVERY, getRadiologyDeliverySettings } = require('../utils/radiologyDeliverySettings');
+const { getRadiologyRiskFlags, saveRadiologyRiskFlags } = require('../utils/radiologyRiskFlags');
 
 const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
 
@@ -104,6 +105,32 @@ const updateGuards = async (req, res) => {
   }
 };
 
+const listRiskFlags = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const flags = await getRadiologyRiskFlags(getSharedPrismaClient(), companyId);
+    res.json({ success: true, data: flags });
+  } catch (error) {
+    console.error('Error listing radiology risk flags:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب مؤشرات الخطر الطبي' });
+  }
+};
+
+const updateRiskFlags = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const flags = await saveRadiologyRiskFlags(getSharedPrismaClient(), companyId, req.body?.flags);
+    res.json({ success: true, data: flags });
+  } catch (error) {
+    console.error('Error updating radiology risk flags:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث مؤشرات الخطر الطبي' });
+  }
+};
+
 const listDeliverySettings = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -147,4 +174,4 @@ const updateDeliverySettings = async (req, res) => {
   }
 };
 
-module.exports = { listSettings, updateSettings, listGuards, updateGuards, listDeliverySettings, updateDeliverySettings };
+module.exports = { listSettings, updateSettings, listGuards, updateGuards, listRiskFlags, updateRiskFlags, listDeliverySettings, updateDeliverySettings };

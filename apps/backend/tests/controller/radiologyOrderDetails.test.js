@@ -6,6 +6,11 @@ jest.mock('../../services/bookingPatientService', () => ({
   findOrCreatePatient: jest.fn(),
 }));
 
+jest.mock('../../utils/dicomUtil', () => {
+  const actual = jest.requireActual('../../utils/dicomUtil');
+  return { ...actual, generateStudyNumber: jest.fn(() => 'RAD-20260815-TEST1') };
+});
+
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const { findOrCreatePatient } = require('../../services/bookingPatientService');
 const controller = require('../../controller/radiologyController');
@@ -88,6 +93,7 @@ const createPrisma = (overrides = {}) => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      aggregate: jest.fn(),
     },
     radiologyExamType: {
       findMany: jest.fn(),
@@ -101,6 +107,22 @@ const createPrisma = (overrides = {}) => {
     },
     insuranceCompany: {
       findFirst: jest.fn(),
+    },
+    radiologyReferringPhysician: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+    },
+    radiologyReferralSource: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+    },
+    radiologyExternalPartner: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+    },
+    radiologyMarketingRep: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
     },
     patient: {
       findFirst: jest.fn(),
@@ -556,6 +578,145 @@ describe('radiologyOrderDetails', () => {
 
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('referral chain — source + external partner + auto marketing rep', () => {
+    test('createStudy auto-suggests the physician rep and stores source/external partner snapshots', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findMany.mockResolvedValue([]);
+      prisma.radiologyExamType.findFirst.mockResolvedValue({ id: 'exam-1', name: 'أشعة عادية', price: 500 });
+      prisma.radiologyExamType.findMany.mockResolvedValue([]);
+      prisma.radiologyReferringPhysician.findFirst.mockResolvedValue({ id: 'doc-1', name: 'د. محمد أحمد', marketingRepId: 'rep-1' });
+      prisma.radiologyReferralSource.findFirst.mockResolvedValue({ id: 'src-1', name: 'عيادات النخبة', marketingRepId: 'rep-other' });
+      prisma.radiologyMarketingRep.findFirst.mockResolvedValue({ id: 'rep-1', name: 'علي إسماعيل' });
+      prisma.radiologyExternalPartner.findFirst.mockResolvedValue({ id: 'part-1', name: 'مستشفى النيل' });
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createStudy(req({
+        body: {
+          patientName: 'مريض 1',
+          examTypeId: 'exam-1',
+          referringPhysicianId: 'doc-1',
+          referralSourceId: 'src-1',
+          isExternalReferral: true,
+          externalPartnerId: 'part-1',
+        },
+      }), res);
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.create.mock.calls[0][0].data;
+      expect(data.referringPhysicianId).toBe('doc-1');
+      expect(data.referralSourceId).toBe('src-1');
+      expect(data.referralSourceName).toBe('عيادات النخبة');
+      // مندوب الطبيب يسبق مندوب الجهة
+      expect(data.marketingRepId).toBe('rep-1');
+      expect(data.marketingRepName).toBe('علي إسماعيل');
+      expect(data.isExternalReferral).toBe(true);
+      expect(data.externalPartnerId).toBe('part-1');
+      expect(data.externalPartnerName).toBe('مستشفى النيل');
+    });
+
+    test('createStudy uses the explicit marketingRepId (override wins over suggestion)', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findMany.mockResolvedValue([]);
+      prisma.radiologyExamType.findFirst.mockResolvedValue({ id: 'exam-1', name: 'أشعة', price: 300 });
+      prisma.radiologyExamType.findMany.mockResolvedValue([]);
+      prisma.radiologyReferringPhysician.findFirst.mockResolvedValue({ id: 'doc-1', name: 'د. محمد', marketingRepId: 'rep-1' });
+      prisma.radiologyMarketingRep.findFirst.mockResolvedValue({ id: 'rep-2', name: 'مندوب آخر' });
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createStudy(req({
+        body: { patientName: 'مريض', examTypeId: 'exam-1', referringPhysicianId: 'doc-1', marketingRepId: 'rep-2' },
+      }), res);
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.create.mock.calls[0][0].data;
+      expect(data.marketingRepId).toBe('rep-2');
+      expect(data.marketingRepName).toBe('مندوب آخر');
+    });
+
+    test('createAppointment carries source + external partner fields and auto-suggests rep', async () => {
+      const prisma = createPrisma();
+      prisma.patient.findFirst.mockResolvedValue({ id: 'pat-1' });
+      prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'exam-1', name: 'أشعة' }]);
+      prisma.radiologyAppointment.aggregate.mockResolvedValue({ _max: { bookingNo: 0 } });
+      prisma.radiologyReferringPhysician.findFirst.mockResolvedValue({ id: 'doc-1', name: 'د. محمد أحمد', marketingRepId: 'rep-1' });
+      prisma.radiologyReferralSource.findFirst.mockResolvedValue({ id: 'src-1', name: 'عيادات النخبة', marketingRepId: null });
+      prisma.radiologyMarketingRep.findFirst.mockResolvedValue({ id: 'rep-1', name: 'علي إسماعيل' });
+      prisma.radiologyExternalPartner.findFirst.mockResolvedValue({ id: 'part-1', name: 'مستشفى النيل' });
+      prisma.radiologyAppointment.create.mockImplementation(({ data }) => Promise.resolve({ id: 'appt-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.createAppointment(req({
+        body: {
+          patientName: 'مريض',
+          examTypeId: 'exam-1',
+          referringPhysicianId: 'doc-1',
+          referralSourceId: 'src-1',
+          isExternalReferral: true,
+          externalPartnerId: 'part-1',
+        },
+      }), res);
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyAppointment.create.mock.calls[0][0].data;
+      expect(data.referralSourceId).toBe('src-1');
+      expect(data.referralSourceName).toBe('عيادات النخبة');
+      expect(data.marketingRepId).toBe('rep-1');
+      expect(data.marketingRepName).toBe('علي إسماعيل');
+      expect(data.isExternalReferral).toBe(true);
+      expect(data.externalPartnerName).toBe('مستشفى النيل');
+    });
+
+    test('updateAppointment re-suggests the rep when the physician changes (no explicit rep)', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue({
+        id: 'appt-1', companyId: 'company-1', status: 'SCHEDULED', referringPhysicianId: 'doc-old', referralSourceId: null,
+      });
+      prisma.radiologyAppointment.update.mockImplementation(({ data }) => Promise.resolve({ id: 'appt-1', ...data }));
+      prisma.radiologyReferringPhysician.findFirst.mockResolvedValue({ id: 'doc-new', name: 'د. جديد', marketingRepId: 'rep-9' });
+      prisma.radiologyMarketingRep.findFirst.mockResolvedValue({ id: 'rep-9', name: 'مندوب جديد' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await appointments.updateAppointment(req({
+        params: { id: 'appt-1' },
+        body: { referringPhysicianId: 'doc-new' },
+      }), res);
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyAppointment.update.mock.calls[0][0].data;
+      expect(data.referringPhysicianId).toBe('doc-new');
+      expect(data.marketingRepId).toBe('rep-9');
+      expect(data.marketingRepName).toBe('مندوب جديد');
+    });
+
+    test('updateStudy persists external partner fields', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue({
+        id: 'study-1', companyId: 'company-1', patientName: 'مريض', status: 'PENDING_IMAGING', emergency: false, withContrast: false,
+      });
+      prisma.radiologyStudy.update.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
+      prisma.radiologyExternalPartner.findFirst.mockResolvedValue({ id: 'part-2', name: 'شريك خارجي 2' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateStudy(req({
+        params: { id: 'study-1' },
+        body: { isExternalReferral: true, externalPartnerId: 'part-2' },
+      }), res);
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.radiologyStudy.update.mock.calls[0][0].data;
+      expect(data.isExternalReferral).toBe(true);
+      expect(data.externalPartnerId).toBe('part-2');
+      expect(data.externalPartnerName).toBe('شريك خارجي 2');
     });
   });
 });

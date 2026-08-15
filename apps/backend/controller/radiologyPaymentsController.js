@@ -17,6 +17,134 @@ const paymentStatusFor = (total, paid, hasRefunds = false) => {
 
 const getStudyTotal = (study) => (study.priceSnapshot || 0) + (study.additionAmount || 0);
 
+const getAppointmentTotal = (appointment) => (appointment.priceSnapshot || 0) + (appointment.additionAmount || 0);
+
+const appointmentPaymentStatusFor = (total, paid) => {
+  if (!Number.isFinite(total) || total <= 0) return paid > 0 ? 'PAID' : 'UNPAID';
+  if (paid >= total) return 'PAID';
+  if (paid > 0) return 'PARTIAL';
+  return 'UNPAID';
+};
+
+const recomputeAppointmentPaid = async (prisma, appointmentId, total) => {
+  const payments = await prisma.radiologyAppointmentPayment.findMany({ where: { appointmentId }, select: { amount: true } });
+  const net = Math.max(0, payments.reduce((s, p) => s + p.amount, 0));
+  const status = appointmentPaymentStatusFor(total, net);
+  const updated = await prisma.radiologyAppointment.update({ where: { id: appointmentId }, data: { paidAmount: net, paymentStatus: status } });
+  return { paid: net, status, updated };
+};
+
+const getAppointmentPayment = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+
+    const total = getAppointmentTotal(appointment);
+    const payments = await prisma.radiologyAppointmentPayment.findMany({ where: { appointmentId: id }, orderBy: { createdAt: 'desc' } });
+    const paid = payments.reduce((s, p) => s + p.amount, 0);
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        paidAmount: Math.max(0, paid),
+        remaining: Math.max(0, total - paid),
+        paymentStatus: appointment.paymentStatus || 'UNPAID',
+        billingType: appointment.insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
+        payments,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting radiology appointment payment:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب بيانات الدفع' });
+  }
+};
+
+const recordAppointmentPayment = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const { amount, method, note } = req.body || {};
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'المبلغ غير صحيح' });
+
+    const prisma = getSharedPrismaClient();
+    const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+
+    const total = getAppointmentTotal(appointment);
+    const paidSoFar = (await prisma.radiologyAppointmentPayment.aggregate({ where: { appointmentId: id }, _sum: { amount: true } }))._sum?.amount || 0;
+    if (paidSoFar + amt > total) {
+      return res.status(400).json({ success: false, error: `المبلغ يتجاوز المتبقي (${Math.max(0, total - paidSoFar).toFixed(0)} ج)` });
+    }
+
+    const m = String(method || 'CASH').toUpperCase();
+    const payment = await prisma.radiologyAppointmentPayment.create({
+      data: {
+        companyId,
+        appointmentId: id,
+        amount: amt,
+        method: PAYMENT_METHODS.includes(m) ? m : 'CASH',
+        note: note ? String(note) : null,
+        paidBy: req.user?.id || req.user?.email || null,
+      },
+    });
+    await attachToActiveShift(prisma, companyId, null, 'PAYMENT', amt, m, note ? String(note) : null, 'APPOINTMENT', null, id);
+
+    const { paid, status, updated } = await recomputeAppointmentPaid(prisma, id, total);
+    res.json({ success: true, data: { payment, appointment: updated, total, paidAmount: paid, remaining: Math.max(0, total - paid), paymentStatus: status } });
+  } catch (error) {
+    console.error('Error recording radiology appointment payment:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة' });
+  }
+};
+
+const refundAppointmentPayment = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const { amount, note } = req.body || {};
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'المبلغ غير صحيح' });
+
+    const prisma = getSharedPrismaClient();
+    const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+
+    const payments = await prisma.radiologyAppointmentPayment.findMany({ where: { appointmentId: id }, select: { amount: true } });
+    const paid = payments.reduce((s, p) => s + p.amount, 0);
+    if (amt > paid) return res.status(400).json({ success: false, error: 'مبلغ الاسترجاع أكبر من المدفوع' });
+
+    const payment = await prisma.radiologyAppointmentPayment.create({
+      data: {
+        companyId,
+        appointmentId: id,
+        amount: -amt,
+        method: 'REFUND',
+        note: note ? `استرجاع: ${String(note)}` : 'استرجاع دفعة',
+        paidBy: req.user?.id || req.user?.email || null,
+      },
+    });
+    await attachToActiveShift(prisma, companyId, null, 'REFUND', amt, 'CASH', note ? String(note) : null, 'APPOINTMENT', null, id);
+
+    const total = getAppointmentTotal(appointment);
+    const { paid: newPaid, status, updated } = await recomputeAppointmentPaid(prisma, id, total);
+    res.json({ success: true, data: { refund: payment, appointment: updated, total, paidAmount: newPaid, remaining: Math.max(0, total - newPaid), paymentStatus: status } });
+  } catch (error) {
+    console.error('Error refunding radiology appointment payment:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في استرجاع الدفعة' });
+  }
+};
+
 const getStudyPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -208,4 +336,4 @@ const financialSummary = async (req, res) => {
   }
 };
 
-module.exports = { getStudyPayment, recordStudyPayment, refundStudyPayment, financialSummary };
+module.exports = { getStudyPayment, recordStudyPayment, refundStudyPayment, financialSummary, getAppointmentPayment, recordAppointmentPayment, refundAppointmentPayment };

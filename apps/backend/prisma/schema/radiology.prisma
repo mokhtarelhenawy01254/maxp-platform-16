@@ -45,6 +45,53 @@ model RadiologyDevice {
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  roomLinks RadiologyRoomDevice[]
+}
+
+/// نظام الغرف — كل غرفة ليها استيعاب في الساعة + مجموعة أجهزة وأطباء (مش ثابتين)
+model RadiologyRoom {
+  id              String   @id @default(cuid())
+  companyId       String?
+  name            String
+  capacityPerHour Int      @default(1) // عدد الاستيعاب في الساعة
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  devices RadiologyRoomDevice[]
+  doctors RadiologyRoomDoctor[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+/// ربط الغرفة بالأجهزة (أكتر من جهاز لكل غرفة)
+model RadiologyRoomDevice {
+  id        String          @id @default(cuid())
+  roomId    String
+  deviceId  String
+  createdAt DateTime        @default(now())
+
+  room   RadiologyRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  device RadiologyDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, deviceId])
+  @@index([deviceId])
+}
+
+/// ربط الغرفة بالأطباء (أكتر من دكتور قابل للتغيير)
+model RadiologyRoomDoctor {
+  id            String              @id @default(cuid())
+  roomId        String
+  radiologistId String
+  createdAt     DateTime            @default(now())
+
+  room        RadiologyRoom        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  radiologist RadiologyRadiologist @relation(fields: [radiologistId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, radiologistId])
+  @@index([radiologistId])
 }
 
 model RadiologyStudy {
@@ -70,10 +117,19 @@ model RadiologyStudy {
   withContrast      Boolean  @default(false)
   referralDoctor    String?
   referringPhysicianId String?  // RadiologyReferringPhysician id
+  referralSourceId  String?    // RadiologyReferralSource id — جهة الإحالة
+  referralSourceName String?   // snapshot من اسم جهة الإحالة
+  marketingRepId    String?    // RadiologyMarketingRep id — مندوب التسويق المسؤول
+  marketingRepName  String?    // snapshot من اسم المندوب
+  isExternalReferral Boolean  @default(false) // روتانا تُحيل المريض للخارج لتنفيذ خدمة
+  externalPartnerId String?    // RadiologyExternalPartner id
+  externalPartnerName String?  // snapshot من اسم الشريك الخارجي
   additionIds       Json?    // array of RadiologyExamAddition ids
   additionAmount    Float    @default(0) // extra charges (contrast, etc.)
   priceSnapshot     Float    @default(0) // exam price at study creation (entity-resolved)
   billingType       String   @default("PATIENT") // PATIENT pays directly | INSURANCE billed via entity invoice
+  payerType         String   @default("CUSTOMER") // CUSTOMER | INSURANCE | REFERRAL | PARTNER — من المسؤول عن الدفع
+  paymentDestination String  @default("ME") // ME (الدفع عندي) | PARTNER (الدفع عند الشريك المنفذ)
   paidAmount        Float    @default(0)
   paymentStatus     String   @default("UNPAID") // UNPAID | PARTIAL | PAID
   notes             String?
@@ -194,6 +250,8 @@ model RadiologyRadiologist {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  roomLinks RadiologyRoomDoctor[]
 }
 
 model RadiologyExamTag {
@@ -227,22 +285,53 @@ model RadiologyAppointment {
   additionAmount       Float    @default(0)
   referringPhysicianId String?
   referralDoctor       String?
+  referralSourceId     String?
+  referralSourceName   String?
+  marketingRepId       String?
+  marketingRepName     String?
+  isExternalReferral   Boolean  @default(false)
+  externalPartnerId    String?
+  externalPartnerName  String?
+  payerType            String   @default("CUSTOMER") // CUSTOMER | INSURANCE | REFERRAL | PARTNER
+  paymentDestination   String   @default("ME") // ME (الدفع عندي) | PARTNER (الدفع عند الشريك المنفذ)
   emergency            Boolean  @default(false)
   appointmentDate  DateTime?
   appointmentTime  String? // HH:MM
   branchId         String?
   status           String   @default("SCHEDULED") // SCHEDULED|CHECKED_IN|DONE|CANCELLED
+  priceSnapshot    Float    @default(0) // total exam prices at booking (entity-resolved) — قبل التحويل
+  paidAmount       Float    @default(0) // cash collected on the booking before convert
+  paymentStatus    String   @default("UNPAID") // UNPAID | PARTIAL | PAID
   notes            String?
   studyId          String?   // loose link to the main study created on convert
   createdBy        String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  payments RadiologyAppointmentPayment[]
+
   @@index([companyId])
   @@index([patientId])
   @@index([appointmentDate])
   @@index([status])
   @@index([studyId])
+}
+
+/// دفعات محصّلة على الحجز قبل التحويل (الاستقبال) — تُنقل للدراسة عند التحويل
+model RadiologyAppointmentPayment {
+  id            String   @id @default(cuid())
+  companyId     String?
+  appointmentId String
+  amount        Float    @default(0)
+  method        String?  // CASH | CARD | BANK | VODAFONE_CASH | OTHER
+  note          String?
+  paidBy        String?
+  createdAt     DateTime @default(now())
+
+  appointment RadiologyAppointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([appointmentId])
 }
 
 model RadiologySetting {
@@ -263,11 +352,15 @@ model RadiologyReferringPhysician {
   name            String
   phone           String?
   specialty       String?
+  marketingRepId  String?  // مندوب التسويق المسؤول عن هذا الطبيب
   commissionType  String   @default("NONE") // NONE|PERCENTAGE|FIXED
   commissionValue Float    @default(0)
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([marketingRepId])
 }
 
 model RadiologyExamAddition {
@@ -278,6 +371,64 @@ model RadiologyExamAddition {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// مندوب التسويق — موظف روتانا المسؤول عن الأطباء المحوّلين و/أو جهات الإحالة
+model RadiologyMarketingRep {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  phone     String?
+  userId    String?    // ربط اختياري بحساب مستخدم روتانا
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+/// جهة الإحالة — الجهة التي جاء منها المريض (عيادة/مركز/معمل/مستشفى/شركة/شبكة طبية)
+model RadiologyReferralSource {
+  id                  String   @id @default(cuid())
+  companyId           String?
+  name                String
+  type                String   @default("OTHER") // CLINIC | MEDICAL_CENTER | LAB | HOSPITAL | COMPANY | MEDICAL_NETWORK | OTHER
+  phone               String?
+  contactName         String?
+  marketingRepId      String?  // مندوب التسويق المسؤول عن هذه الجهة
+  insuranceCompanyId  String?  // رابط اختياري لشركة تأمين (للتحصيل/من والي) — ليست جهة إحالة بحد ذاتها
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([marketingRepId])
+  @@unique([companyId, name])
+}
+
+/// ربط الطبيب المحوّل بجهات إحالته (يعمل في أكثر من جهة)
+model RadiologyPhysicianSourceLink {
+  id          String   @id @default(cuid())
+  companyId   String?
+  physicianId String
+  sourceId    String
+
+  @@unique([physicianId, sourceId])
+  @@index([sourceId])
+}
+
+/// الشريك الخارجي — مسار مختلف عندما تُحيل روتانا المريض للخارج لتنفيذ خدمة
+model RadiologyExternalPartner {
+  id          String   @id @default(cuid())
+  companyId   String?
+  name        String
+  phone       String?
+  contactName String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
 }
 
 model RadiologyEntityPrice {
@@ -318,18 +469,19 @@ model RadiologyShift {
 }
 
 model RadiologyShiftPayment {
-  id        String   @id @default(cuid())
-  companyId String?
-  shiftId   String
-  studyId   String?
-  invoiceId String?   // RadiologyInsuranceInvoice id when source = INSURANCE
-  source    String   @default("STUDY") // STUDY (patient direct) | INSURANCE (insurance invoice collection)
-  type      String   // PAYMENT | REFUND
-  amount    Float    @default(0)
-  method    String?  // CASH | CARD | VODAFONE_CASH | BANK
-  note      String?
-  createdAt DateTime @default(now())
-  shift     RadiologyShift @relation(fields: [shiftId], references: [id])
+  id            String   @id @default(cuid())
+  companyId     String?
+  shiftId       String
+  studyId       String?
+  appointmentId String?   // RadiologyAppointment id when collected on the booking (before convert)
+  invoiceId     String?   // RadiologyInsuranceInvoice id when source = INSURANCE
+  source        String   @default("STUDY") // STUDY (patient direct) | APPOINTMENT (booking collection) | INSURANCE (insurance invoice collection)
+  type          String   // PAYMENT | REFUND
+  amount        Float    @default(0)
+  method        String?  // CASH | CARD | VODAFONE_CASH | BANK
+  note          String?
+  createdAt     DateTime @default(now())
+  shift         RadiologyShift @relation(fields: [shiftId], references: [id])
 }
 
 model RadiologyContract {

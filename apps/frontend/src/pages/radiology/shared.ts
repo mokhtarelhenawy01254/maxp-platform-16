@@ -1,13 +1,15 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark, FolderTree, ListChecks } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark, FolderTree, ListChecks, BadgeCheck, DoorOpen } from "lucide-react";
 
 export type TabId =
   | "dashboard" | "patients" | "studies" | "reports"
   | "exam-types" | "exam-categories" | "price-lists" | "contracts" | "branches" | "invoices"
   | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "insurance-companies" | "price-quote" | "radiologists"
-  | "schedule" | "queue" | "referring-physicians" | "statistics" | "cashier-shifts" | "settings";
+  | "schedule" | "queue" | "referring-physicians" | "statistics" | "cashier-shifts" | "settings" | "rooms"
+  | "referral-sources" | "marketing-reps" | "external-partners";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "radiology.tabs.dashboard", icon: LayoutDashboard },
@@ -24,6 +26,8 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "invoices", label: "radiology.tabs.invoices", icon: CreditCard },
   { id: "reports-overview", label: "radiology.tabs.reports-overview", icon: BarChart3 },
   { id: "referring-physicians", label: "radiology.tabs.referring-physicians", icon: Users },
+  { id: "referral-sources", label: "radiology.tabs.referral-sources", icon: Landmark },
+  { id: "marketing-reps", label: "radiology.tabs.marketing-reps", icon: BadgeCheck },
   { id: "insurance-invoices", label: "radiology.tabs.insurance-invoices", icon: FileText },
   { id: "insurance-ledger", label: "radiology.tabs.insurance-ledger", icon: CreditCard },
   { id: "insurance-companies", label: "radiology.tabs.insurance-companies", icon: Landmark },
@@ -31,6 +35,8 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "radiologists", label: "radiology.tabs.radiologists", icon: Users },
   { id: "statistics", label: "radiology.tabs.statistics", icon: BarChart3 },
   { id: "cashier-shifts", label: "radiology.tabs.cashier-shifts", icon: Banknote },
+  { id: "rooms", label: "radiology.tabs.rooms", icon: DoorOpen },
+  { id: "external-partners", label: "radiology.tabs.external-partners", icon: Building2 },
   { id: "settings", label: "radiology.tabs.settings", icon: Settings },
 ];
 
@@ -86,6 +92,21 @@ export interface RadiologyDevice {
   isActive: boolean; createdAt: string;
 }
 
+export interface RadiologyRoomDevice {
+  id: string; name: string; room?: string; modality?: string; isActive: boolean;
+}
+
+export interface RadiologyRoomDoctor {
+  id: string; name: string; location?: string; isActive: boolean;
+}
+
+export interface RadiologyRoom {
+  id: string; companyId?: string; name: string; capacityPerHour: number;
+  isActive: boolean; createdAt: string; updatedAt?: string;
+  devices?: RadiologyRoomDevice[];
+  doctors?: RadiologyRoomDoctor[];
+}
+
 export interface RadiologyStudyImage {
   id: string; fileName: string; fileSize?: number; seriesDescription?: string; url: string;
 }
@@ -135,6 +156,9 @@ export interface RadiologyStudy {
   examTypeId?: string; examTypeName?: string; examType?: RadiologyExamType;
   deviceId?: string; deviceName?: string;
   referralDoctor?: string; notes?: string;
+  referralSourceId?: string; referralSourceName?: string;
+  marketingRepId?: string; marketingRepName?: string;
+  isExternalReferral?: boolean; externalPartnerId?: string; externalPartnerName?: string;
   emergency: boolean; withContrast: boolean;
   status: string; submissionStatus?: string;
   orderStatus?: string; appointmentId?: string;
@@ -194,15 +218,64 @@ export const criticalCategoryText = (report?: { criticalCategory?: string } | nu
   return RADIOLOGY_CRITICAL_META[c] ? c : null;
 };
 
-export const RADIOLOGY_PATIENT_FLAGS: { value: string; label: string; color: string }[] = [
-  { value: "pregnancy", label: "radiology.patientFlags.pregnancy", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
-  { value: "contrast_allergy", label: "radiology.patientFlags.contrastAllergy", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-  { value: "renal", label: "radiology.patientFlags.renal", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
-  { value: "bleeding", label: "radiology.patientFlags.bleeding", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-  { value: "diabetic", label: "radiology.patientFlags.diabetic", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  { value: "claustrophobia", label: "radiology.patientFlags.claustrophobia", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
-  { value: "pacemaker", label: "radiology.patientFlags.pacemaker", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+export interface RadiologyPatientFlag {
+  value: string;
+  label: string;
+  color: string;
+}
+
+export const DEFAULT_RADIOLOGY_PATIENT_FLAGS: RadiologyPatientFlag[] = [
+  { value: "pregnancy", label: "حمل", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
+  { value: "contrast_allergy", label: "حساسية تباين", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "renal", label: "قصور كلوي", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
+  { value: "bleeding", label: "سيولة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "diabetic", label: "سكر", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  { value: "claustrophobia", label: "خوف من الأماكن المغلقة", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
+  { value: "pacemaker", label: "منظم ضربات القلب", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
 ];
+
+let riskFlagsCache: RadiologyPatientFlag[] | null = null;
+let riskFlagsPromise: Promise<RadiologyPatientFlag[]> | null = null;
+const riskFlagsSubscribers = new Set<(flags: RadiologyPatientFlag[]) => void>();
+
+const getEffectiveRiskFlags = (): RadiologyPatientFlag[] => riskFlagsCache || DEFAULT_RADIOLOGY_PATIENT_FLAGS;
+
+const notifyRiskFlags = () => {
+  const flags = getEffectiveRiskFlags();
+  riskFlagsSubscribers.forEach(cb => cb(flags));
+};
+
+const loadRiskFlags = (): Promise<RadiologyPatientFlag[]> => {
+  if (!riskFlagsPromise) {
+    riskFlagsPromise = fetchJson<RadiologyPatientFlag[]>(api("risk-flags"))
+      .then(data => {
+        riskFlagsCache = Array.isArray(data) && data.length ? data : DEFAULT_RADIOLOGY_PATIENT_FLAGS;
+        notifyRiskFlags();
+        return riskFlagsCache;
+      })
+      .catch(() => {
+        riskFlagsCache = DEFAULT_RADIOLOGY_PATIENT_FLAGS;
+        notifyRiskFlags();
+        return riskFlagsCache;
+      });
+  }
+  return riskFlagsPromise;
+};
+
+export const useRadiologyRiskFlags = (): RadiologyPatientFlag[] => {
+  const [flags, setFlags] = useState<RadiologyPatientFlag[]>(getEffectiveRiskFlags());
+  useEffect(() => {
+    riskFlagsSubscribers.add(setFlags);
+    if (!riskFlagsCache) loadRiskFlags();
+    return () => { riskFlagsSubscribers.delete(setFlags); };
+  }, []);
+  return flags;
+};
+
+export const setRadiologyRiskFlags = (flags: RadiologyPatientFlag[]) => {
+  riskFlagsCache = Array.isArray(flags) && flags.length ? flags : DEFAULT_RADIOLOGY_PATIENT_FLAGS;
+  notifyRiskFlags();
+};
 
 export const parsePatientFlags = (v?: string[] | string | null): string[] => {
   if (!v) return [];
@@ -215,7 +288,7 @@ export const parsePatientFlags = (v?: string[] | string | null): string[] => {
   }
 };
 
-export const flagMeta = (key: string) => RADIOLOGY_PATIENT_FLAGS.find(f => f.value === key);
+export const flagMeta = (key: string): RadiologyPatientFlag | undefined => getEffectiveRiskFlags().find(f => f.value === key);
 
 export const STUDY_STATUS: Record<string, string> = {
   PENDING_IMAGING: "IMAGED",

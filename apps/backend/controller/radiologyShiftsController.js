@@ -27,7 +27,7 @@ const summarize = (payments) => {
   return { collected, patientCollected, insuranceCollected, refunded, net: collected - refunded, byMethod, count };
 };
 
-const attachToActiveShift = async (prisma, companyId, studyId, type, amount, method, note, source, invoiceId) => {
+const attachToActiveShift = async (prisma, companyId, studyId, type, amount, method, note, source, invoiceId, appointmentId) => {
   try {
     const shift = await prisma.radiologyShift.findFirst({ where: { companyId, status: 'OPEN' }, select: { id: true } });
     if (!shift) return null;
@@ -36,8 +36,9 @@ const attachToActiveShift = async (prisma, companyId, studyId, type, amount, met
         companyId,
         shiftId: shift.id,
         studyId: studyId || null,
+        appointmentId: appointmentId || null,
         invoiceId: invoiceId || null,
-        source: source === 'INSURANCE' ? 'INSURANCE' : 'STUDY',
+        source: source === 'INSURANCE' ? 'INSURANCE' : (source === 'APPOINTMENT' ? 'APPOINTMENT' : 'STUDY'),
         type,
         amount,
         method: method || 'CASH',

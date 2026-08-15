@@ -4,6 +4,7 @@ const { findOrCreatePatient } = require('../services/bookingPatientService');
 const { deriveRadiologyOrderStatus, recordRadiologyStatusHistory, syncStudyOrderStatus } = require('../utils/radiologyStatusHistory');
 const { getRadiologyGuards } = require('../utils/radiologyGuards');
 const { nextCompanyNumber } = require('../utils/radiologyNumbering');
+const { resolveReferralContext, resolveMarketingRepForStudy } = require('../utils/radiologyReferral');
 
 const APPOINTMENT_STATUSES = ['SCHEDULED', 'CHECKED_IN', 'DONE', 'CANCELLED'];
 
@@ -20,6 +21,19 @@ const normalizeText = (value) => {
   if (value === undefined || value === null) return null;
   const s = String(value).trim();
   return s === '' ? null : s;
+};
+
+const PAYER_TYPES = ['CUSTOMER', 'INSURANCE', 'REFERRAL', 'PARTNER'];
+const PAYMENT_DESTINATIONS = ['ME', 'PARTNER'];
+
+const normalizePayerType = (value, fallback = 'CUSTOMER') => {
+  const v = String(value || '').toUpperCase();
+  return PAYER_TYPES.includes(v) ? v : fallback;
+};
+
+const normalizePaymentDestination = (value, fallback = 'ME') => {
+  const v = String(value || '').toUpperCase();
+  return PAYMENT_DESTINATIONS.includes(v) ? v : fallback;
 };
 
 const normalizePatientFlags = (value) => {
@@ -39,6 +53,21 @@ const parseDate = (value) => {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
+};
+
+// Sum the exam prices for a booking: entity price per exam when insured, else base exam price.
+const resolveAppointmentPrice = async (prisma, examTypes, insuranceCompanyId) => {
+  if (!examTypes || !examTypes.length) return 0;
+  if (!insuranceCompanyId) {
+    return examTypes.reduce((s, e) => s + (Number(e.price) || 0), 0);
+  }
+  const ids = examTypes.map(e => e.id);
+  const entityPrices = await prisma.radiologyEntityPrice.findMany({
+    where: { insuranceCompanyId: String(insuranceCompanyId), examTypeId: { in: ids }, isActive: true },
+    select: { examTypeId: true, price: true },
+  }).catch(() => []);
+  const priceById = new Map(entityPrices.map(ep => [ep.examTypeId, ep.price]));
+  return examTypes.reduce((s, e) => s + (Number(priceById.get(e.id)) || Number(e.price) || 0), 0);
 };
 
 const listAppointments = async (req, res) => {
@@ -131,10 +160,11 @@ const createAppointment = async (req, res) => {
     if (examTypeIds.length) {
       const examTypes = await prisma.radiologyExamType.findMany({
         where: { id: { in: examTypeIds }, companyId, isActive: true },
-        select: { id: true, name: true },
+        select: { id: true, name: true, price: true },
       });
       examTypeNames = examTypes.map(e => e.name);
       if (examTypes.length) examTypeName = examTypes[0].name;
+      priceResolved = await resolveAppointmentPrice(prisma, examTypes, body.insuranceCompanyId);
     }
 
     let deviceName = null;
@@ -169,6 +199,34 @@ const createAppointment = async (req, res) => {
       }
     }
 
+    // جهة الإحالة: تحقق اختياري (company-scoped) — واسمها snapshot
+    let referralSourceName = body.referralSourceName ? String(body.referralSourceName) : null;
+    if (body.referralSourceId) {
+      const source = await prisma.radiologyReferralSource.findFirst({
+        where: { id: String(body.referralSourceId), companyId },
+        select: { id: true, name: true },
+      }).catch(() => null);
+      if (source) referralSourceName = source.name;
+    }
+
+    // الشريك الخارجي: تحقق اختياري (company-scoped)
+    let externalPartnerName = body.externalPartnerName ? String(body.externalPartnerName) : null;
+    if (body.externalPartnerId) {
+      const partner = await prisma.radiologyExternalPartner.findFirst({
+        where: { id: String(body.externalPartnerId), companyId, isActive: true },
+        select: { id: true, name: true },
+      }).catch(() => null);
+      if (partner) externalPartnerName = partner.name;
+    }
+
+    // مندوب التسويق: اقتراح تلقائي قابلة للتجاوز (مندوب الطبيب ← مندوب الجهة)
+    const resolvedRep = await resolveMarketingRepForStudy(prisma, {
+      companyId,
+      referringPhysicianId: body.referringPhysicianId || null,
+      referralSourceId: body.referralSourceId || null,
+      marketingRepId: body.marketingRepId || null,
+    });
+
     // Sequential per-company booking number (starts at 1) for human-friendly IDs
     const bookingNo = await nextCompanyNumber(prisma, 'radiologyAppointment', 'bookingNo', companyId);
 
@@ -192,8 +250,18 @@ const createAppointment = async (req, res) => {
         insuranceCompanyId: body.insuranceCompanyId || null,
         additionIds,
         additionAmount,
+        priceSnapshot: priceResolved,
         referringPhysicianId: body.referringPhysicianId || null,
         referralDoctor: referringPhysicianName,
+        referralSourceId: body.referralSourceId || null,
+        referralSourceName: referralSourceName || (body.referralSourceName ? String(body.referralSourceName) : null),
+        marketingRepId: resolvedRep.marketingRepId,
+        marketingRepName: resolvedRep.marketingRepName,
+        isExternalReferral: body.isExternalReferral === true || body.isExternalReferral === 'true',
+        externalPartnerId: body.externalPartnerId || null,
+        externalPartnerName,
+        payerType: normalizePayerType(body.payerType, body.insuranceCompanyId ? 'INSURANCE' : 'CUSTOMER'),
+        paymentDestination: normalizePaymentDestination(body.paymentDestination),
         emergency: body.emergency === true || body.emergency === 'true',
         appointmentDate: parseDate(body.appointmentDate),
         appointmentTime: normalizeText(body.appointmentTime),
@@ -281,15 +349,33 @@ const updateAppointment = async (req, res) => {
       if (ids.length) {
         const examTypes = await prisma.radiologyExamType.findMany({
           where: { id: { in: ids }, companyId, isActive: true },
-          select: { id: true, name: true },
+          select: { id: true, name: true, price: true },
         });
         data.examTypeIds = JSON.stringify(examTypes.map(e => e.id));
         data.examTypeId = examTypes.length ? examTypes[0].id : null;
         data.examTypeName = examTypes.length ? examTypes[0].name : null;
+        const effectiveInsurance = body.insuranceCompanyId !== undefined ? body.insuranceCompanyId : existing.insuranceCompanyId;
+        data.priceSnapshot = await resolveAppointmentPrice(prisma, examTypes, effectiveInsurance);
       } else {
         data.examTypeIds = null;
         data.examTypeId = null;
         data.examTypeName = null;
+        data.priceSnapshot = 0;
+      }
+    } else if (body.insuranceCompanyId !== undefined) {
+      // Payer/entity changed without touching exams → recompute against existing exams
+      const ids = (() => {
+        try {
+          const parsed = existing.examTypeIds ? JSON.parse(existing.examTypeIds) : [];
+          return Array.isArray(parsed) ? parsed.map(String) : [];
+        } catch { return []; }
+      })();
+      if (ids.length) {
+        const examTypes = await prisma.radiologyExamType.findMany({
+          where: { id: { in: ids }, companyId, isActive: true },
+          select: { id: true, name: true, price: true },
+        });
+        data.priceSnapshot = await resolveAppointmentPrice(prisma, examTypes, body.insuranceCompanyId || null);
       }
     }
     if (body.deviceId !== undefined) {
@@ -317,6 +403,80 @@ const updateAppointment = async (req, res) => {
     }
     if (body.referringPhysicianId !== undefined) data.referringPhysicianId = body.referringPhysicianId || null;
     if (body.referralDoctor !== undefined) data.referralDoctor = normalizeText(body.referralDoctor);
+    if (body.referralSourceId !== undefined) {
+      data.referralSourceId = body.referralSourceId || null;
+      if (body.referralSourceId) {
+        const source = await prisma.radiologyReferralSource.findFirst({
+          where: { id: String(body.referralSourceId), companyId },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        data.referralSourceName = source ? source.name : (data.referralSourceName || null);
+      } else {
+        data.referralSourceName = null;
+      }
+    }
+    if (body.referralSourceName !== undefined) data.referralSourceName = normalizeText(body.referralSourceName);
+    if (body.externalPartnerId !== undefined) {
+      data.externalPartnerId = body.externalPartnerId || null;
+      if (body.externalPartnerId) {
+        const partner = await prisma.radiologyExternalPartner.findFirst({
+          where: { id: String(body.externalPartnerId), companyId, isActive: true },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        data.externalPartnerName = partner ? partner.name : (data.externalPartnerName || null);
+      } else {
+        data.externalPartnerName = null;
+      }
+    }
+    if (body.externalPartnerName !== undefined) data.externalPartnerName = normalizeText(body.externalPartnerName);
+    if (body.isExternalReferral !== undefined) data.isExternalReferral = body.isExternalReferral === true || body.isExternalReferral === 'true';
+    if (body.payerType !== undefined) data.payerType = normalizePayerType(body.payerType);
+    if (body.paymentDestination !== undefined) data.paymentDestination = normalizePaymentDestination(body.paymentDestination);
+    if (body.payerType !== undefined && !['INSURANCE'].includes(data.payerType)) data.insuranceCompanyId = null;
+    if (body.payerType !== undefined && !['REFERRAL'].includes(data.payerType)) {
+      data.referralSourceId = null;
+      data.referralSourceName = null;
+    }
+    if (body.payerType !== undefined && !['PARTNER'].includes(data.payerType)) {
+      data.isExternalReferral = false;
+      data.externalPartnerId = null;
+      data.externalPartnerName = null;
+    }
+    if (body.marketingRepId !== undefined) {
+      // اقتراح تلقائي إذا أُرسل "auto"، أو null لمسح، أو id صريح
+      if (body.marketingRepId === 'auto') {
+        const resolved = await resolveMarketingRepForStudy(prisma, {
+          companyId,
+          referringPhysicianId: data.referringPhysicianId ?? existing.referringPhysicianId,
+          referralSourceId: data.referralSourceId ?? existing.referralSourceId,
+          marketingRepId: null,
+        });
+        data.marketingRepId = resolved.marketingRepId;
+        data.marketingRepName = resolved.marketingRepName;
+      } else if (body.marketingRepId) {
+        const rep = await prisma.radiologyMarketingRep.findFirst({
+          where: { id: String(body.marketingRepId), companyId, isActive: true },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        if (rep) {
+          data.marketingRepId = rep.id;
+          data.marketingRepName = rep.name;
+        }
+      } else {
+        data.marketingRepId = null;
+        data.marketingRepName = null;
+      }
+    } else if (body.referringPhysicianId !== undefined || body.referralSourceId !== undefined) {
+      // غيّر الطبيب/الجهة بدون مندوب صريح → إعادة اقتراح تلقائي
+      const resolved = await resolveMarketingRepForStudy(prisma, {
+        companyId,
+        referringPhysicianId: data.referringPhysicianId ?? existing.referringPhysicianId,
+        referralSourceId: data.referralSourceId ?? existing.referralSourceId,
+        marketingRepId: null,
+      });
+      data.marketingRepId = resolved.marketingRepId;
+      data.marketingRepName = resolved.marketingRepName;
+    }
     if (body.emergency !== undefined) data.emergency = body.emergency === true || body.emergency === 'true';
     if (body.appointmentDate !== undefined) data.appointmentDate = parseDate(body.appointmentDate);
     if (body.appointmentTime !== undefined) data.appointmentTime = normalizeText(body.appointmentTime);
@@ -429,6 +589,26 @@ const convertToStudy = async (req, res) => {
       patientId = resolved.id;
     }
 
+    // Backfill the marketing rep for older appointments (auto-suggest from physician/source)
+    let marketingRepId = appointment.marketingRepId || null;
+    let marketingRepName = appointment.marketingRepName || null;
+    if (!marketingRepId && (appointment.referringPhysicianId || appointment.referralSourceId)) {
+      const resolved = await resolveMarketingRepForStudy(prisma, {
+        companyId,
+        referringPhysicianId: appointment.referringPhysicianId || null,
+        referralSourceId: appointment.referralSourceId || null,
+        marketingRepId: null,
+      });
+      marketingRepId = resolved.marketingRepId;
+      marketingRepName = resolved.marketingRepName;
+      if (marketingRepId) {
+        await prisma.radiologyAppointment.update({
+          where: { id },
+          data: { marketingRepId, marketingRepName },
+        }).catch(() => null);
+      }
+    }
+
     const baseStudyData = {
       companyId,
       patientId,
@@ -448,6 +628,15 @@ const convertToStudy = async (req, res) => {
       additionAmount: appointment.additionAmount || 0,
       referringPhysicianId: appointment.referringPhysicianId || null,
       referralDoctor: appointment.referralDoctor || null,
+      referralSourceId: appointment.referralSourceId || null,
+      referralSourceName: appointment.referralSourceName || null,
+      marketingRepId: marketingRepId,
+      marketingRepName: marketingRepName,
+      isExternalReferral: appointment.isExternalReferral === true,
+      externalPartnerId: appointment.externalPartnerId || null,
+      externalPartnerName: appointment.externalPartnerName || null,
+      payerType: appointment.payerType || (appointment.insuranceCompanyId ? 'INSURANCE' : 'CUSTOMER'),
+      paymentDestination: appointment.paymentDestination || 'ME',
       emergency: appointment.emergency === true,
       status: 'PENDING_IMAGING',
       submissionStatus: 'NOT_SUBMITTED',

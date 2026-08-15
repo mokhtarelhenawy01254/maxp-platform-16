@@ -12,7 +12,7 @@ import {
   RadiologyStudy, RadiologyStudyImage, RadiologyReport,
   RadiologyOrderStatusMap, RadiologyStatusMap, RadiologyPaymentStatusMap, RadiologyReportStatusMap,
   RADIOLOGY_CRITICAL_META, criticalCategoryText,
-  parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
+  parsePatientFlags, flagMeta, useRadiologyRiskFlags, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
   derivePrimaryStage,
 } from "./shared";
 import StageBadge from "./StageBadge";
@@ -202,7 +202,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   );
 
   const flags = useMemo(() => parsePatientFlags(study?.patientFlags), [study?.patientFlags]);
-
+  useRadiologyRiskFlags();
   const fmtDate = (iso?: string): string => {
     if (!iso) return "—";
     const d = new Date(iso);
@@ -529,7 +529,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
                 <span className="flex flex-wrap gap-1 justify-end">
                   {flags.map(f => {
                     const meta = flagMeta(f);
-                    return meta ? <span key={f} className={`px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap ${meta.color}`}>{t(meta.label)}</span> : null;
+                    return meta ? <span key={f} className={`px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap ${meta.color}`}>{meta.label}</span> : null;
                   })}
                 </span>
               </div>
@@ -542,6 +542,16 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
             {study.deviceName ? <Row label={t("radiology.schedule.device")}>{study.deviceName}</Row> : null}
             {study.additionAmount ? <Row label={t("radiology.reception.examAdditions")}>{fmtMoney(study.additionAmount)}</Row> : null}
             {study.referralDoctor ? <Row label={t("radiology.reception.referringDoctor")}>{study.referralDoctor}</Row> : null}
+            {study.referralSourceName ? <Row label={t("radiology.details.referralSource")}>{study.referralSourceName}</Row> : null}
+            {study.marketingRepName ? <Row label={t("radiology.details.marketingRep")}>{study.marketingRepName}</Row> : null}
+            {study.isExternalReferral ? (
+              <Row label={t("radiology.details.externalReferral")}>
+                <span className="flex items-center gap-2 flex-wrap justify-end">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">{t("radiology.details.externalReferralBadge")}</span>
+                  {study.externalPartnerName || "—"}
+                </span>
+              </Row>
+            ) : null}
             {appointment?.insuranceCompanyName || billingType ? (
               <Row label={t("radiology.schedule.insuranceOptional")}>
                 <span className="flex items-center gap-2 flex-wrap justify-end">

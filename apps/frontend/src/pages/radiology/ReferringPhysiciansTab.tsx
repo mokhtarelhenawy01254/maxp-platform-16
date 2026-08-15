@@ -7,7 +7,10 @@ import { api, fetchJson, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyStatusMap,
 interface Physician {
   id: string; name: string; phone?: string; specialty?: string;
   commissionType: string; commissionValue: number; isActive: boolean;
+  marketingRepId?: string | null; marketingRepName?: string | null;
 }
+
+interface MarketingRep { id: string; name: string; }
 
 interface CommissionRow { physicianId: string; name?: string; count: number; amount: number; commission: number; commissionType?: string; commissionValue?: number; }
 
@@ -22,11 +25,12 @@ const COMMISSION_LABEL: Record<string, string> = { NONE: "radiology.referringPhy
 export default function ReferringPhysiciansTab() {
   const { t } = useTranslation();
   const [items, setItems] = useState<Physician[]>([]);
+  const [reps, setReps] = useState<MarketingRep[]>([]);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [totalCommission, setTotalCommission] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [modal, setModal] = useState<{ id?: string; name: string; phone: string; specialty: string; commissionType: string; commissionValue: string } | null>(null);
+  const [modal, setModal] = useState<{ id?: string; name: string; phone: string; specialty: string; commissionType: string; commissionValue: string; marketingRepId: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const READ_KEY = () => `radiology.physicianResults.read.${getCompanyId() || "default"}`;
@@ -60,6 +64,8 @@ export default function ReferringPhysiciansTab() {
       if (search.trim()) url.searchParams.set("search", search.trim());
       const data = await fetchJson<Physician[]>(url.toString());
       setItems(data || []);
+      const repList = await fetchJson<MarketingRep[]>(api("marketing-reps")).catch(() => []);
+      setReps(repList || []);
       const c = await fetchJson<{ rows?: CommissionRow[]; totalCommission?: number }>(api("referring-physicians/commissions"));
       setCommissions(c.rows || []);
       setTotalCommission(c.totalCommission || 0);
@@ -84,6 +90,7 @@ export default function ReferringPhysiciansTab() {
         specialty: modal.specialty.trim() || undefined,
         commissionType: modal.commissionType,
         commissionValue: Number(modal.commissionValue) || 0,
+        marketingRepId: modal.marketingRepId || undefined,
       };
       if (modal.id) await fetchJson(api(`referring-physicians/${modal.id}`), { method: "PUT", body: JSON.stringify(payload) });
       else await fetchJson(api("referring-physicians"), { method: "POST", body: JSON.stringify(payload) });
@@ -123,7 +130,7 @@ export default function ReferringPhysiciansTab() {
           <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("radiology.refresh")}
           </button>
-          <button onClick={() => setModal({ name: "", phone: "", specialty: "", commissionType: "NONE", commissionValue: "0" })} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+          <button onClick={() => setModal({ name: "", phone: "", specialty: "", commissionType: "NONE", commissionValue: "0", marketingRepId: "" })} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
             <Plus className="w-4 h-4" />{t("radiology.referringPhysicians.newPhysician")}
           </button>
         </div>
@@ -154,7 +161,7 @@ export default function ReferringPhysiciansTab() {
             <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
-                  {[t("radiology.referringPhysicians.name"), t("radiology.referringPhysicians.specialty"), t("radiology.referringPhysicians.phone"), t("radiology.referringPhysicians.commission"), t("radiology.actions")].map(h => (
+                  {[t("radiology.referringPhysicians.name"), t("radiology.referringPhysicians.specialty"), t("radiology.referringPhysicians.phone"), t("radiology.referringPhysicians.rep"), t("radiology.referringPhysicians.commission"), t("radiology.actions")].map(h => (
                     <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -165,11 +172,12 @@ export default function ReferringPhysiciansTab() {
                     <td className="py-3 px-4 font-medium">{p.name}</td>
                     <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.specialty || "—"}</td>
                     <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>
+                    <td className="py-3 px-4">{p.marketingRepName || "—"}</td>
                     <td className="py-3 px-4">{t(COMMISSION_LABEL[p.commissionType] || p.commissionType)}{p.commissionType === "PERCENTAGE" ? ` ${p.commissionValue}%` : p.commissionType === "FIXED" ? ` ${p.commissionValue} ${t("radiology.currency")}` : ""}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
                         <button onClick={() => openResults(p)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.physicianResults.button")}><FileText className="w-4 h-4" /></button>
-                        <button onClick={() => setModal({ id: p.id, name: p.name, phone: p.phone || "", specialty: p.specialty || "", commissionType: p.commissionType, commissionValue: String(p.commissionValue) })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.edit")}><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => setModal({ id: p.id, name: p.name, phone: p.phone || "", specialty: p.specialty || "", commissionType: p.commissionType, commissionValue: String(p.commissionValue), marketingRepId: p.marketingRepId || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.edit")}><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => remove(p)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title={t("radiology.delete")}><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
@@ -200,6 +208,13 @@ export default function ReferringPhysiciansTab() {
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.referringPhysicians.phone")}</label>
                 <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.phone} onChange={e => setModal({ ...modal, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.referringPhysicians.rep")}</label>
+                <select className={MODAL_INPUT_CLS} value={modal.marketingRepId} onChange={e => setModal({ ...modal, marketingRepId: e.target.value })}>
+                  <option value="">{t("radiology.referringPhysicians.noRep")}</option>
+                  {reps.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.referringPhysicians.commissionType")}</label>

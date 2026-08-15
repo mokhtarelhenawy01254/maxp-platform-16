@@ -11,7 +11,7 @@ import tokenManager from "../../utils/tokenManager";
 import {
   api, fetchJson, getCompanyId,
   RadiologyReport, RadiologyReportStatusMap, RadiologyReportTemplate, RadiologyStudy,
-  RADIOLOGY_CRITICAL_META, criticalCategoryText, parsePatientFlags, flagMeta,
+  RADIOLOGY_CRITICAL_META, criticalCategoryText, parsePatientFlags, flagMeta, useRadiologyRiskFlags,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
 import RadiologyViewerModal from "./RadiologyViewerModal";
@@ -333,7 +333,7 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {parsePatientFlags(study.patientFlags).map(f => {
                       const meta = flagMeta(f);
-                      return meta ? <span key={f} className={`px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap ${meta.color}`}>{t(meta.label)}</span> : null;
+                      return meta ? <span key={f} className={`px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap ${meta.color}`}>{meta.label}</span> : null;
                     })}
                     {study.emergency ? <span className="px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{t("radiology.studies.emergency")}</span> : null}
                     {study.withContrast ? <span className="px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">{t("radiology.reception.withContrast")}</span> : null}
@@ -493,6 +493,7 @@ export default function RadiologyReportsTab() {
   const [total, setTotal] = useState(0);
   const [counters, setCounters] = useState<Counters | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  useRadiologyRiskFlags();
   const [confirmAction, setConfirmAction] = useState<{ id: string; kind: ActionKind } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());

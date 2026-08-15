@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Boxes, FileText, Hash, Loader2, MessageSquare, Pencil, Plus, RefreshCw, Shield, Tag, Trash2, X as XMarkIcon } from "lucide-react";
-import { api, fetchJson, RadiologyReportTemplate, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { AlertTriangle, Boxes, FileText, Hash, Loader2, MessageSquare, Pencil, Plus, RefreshCw, Shield, Tag, Trash2, X as XMarkIcon } from "lucide-react";
+import { api, fetchJson, RadiologyReportTemplate, RadiologyPatientFlag, setRadiologyRiskFlags, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface TemplateForm {
   id?: string;
@@ -47,6 +47,24 @@ interface GuardSettings {
 
 const DEFAULT_GUARDS: GuardSettings = { requirePaymentBeforeDelivery: false, blockCancelAfterDelivery: true };
 
+interface FlagForm {
+  index?: number;
+  value: string;
+  label: string;
+  color: string;
+}
+
+const FLAG_COLOR_OPTIONS: { name: string; value: string }[] = [
+  { name: "radiology.settings.colorRed", value: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { name: "radiology.settings.colorOrange", value: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
+  { name: "radiology.settings.colorAmber", value: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  { name: "radiology.settings.colorPink", value: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
+  { name: "radiology.settings.colorPurple", value: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
+  { name: "radiology.settings.colorBlue", value: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  { name: "radiology.settings.colorGreen", value: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  { name: "radiology.settings.colorGray", value: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+];
+
 export default function SettingsTab() {
   const { t } = useTranslation();
   const [templates, setTemplates] = useState<RadiologyReportTemplate[] | null>(null);
@@ -69,6 +87,59 @@ export default function SettingsTab() {
   const [guards, setGuards] = useState<GuardSettings>(DEFAULT_GUARDS);
   const [guardsLoaded, setGuardsLoaded] = useState(false);
   const [savingGuards, setSavingGuards] = useState(false);
+
+  const [riskFlags, setRiskFlags] = useState<RadiologyPatientFlag[]>([]);
+  const [riskFlagsLoaded, setRiskFlagsLoaded] = useState(false);
+  const [savingRiskFlags, setSavingRiskFlags] = useState(false);
+  const [flagModal, setFlagModal] = useState<FlagForm | null>(null);
+
+  const refreshRiskFlags = useCallback(async (opts?: { silent?: boolean }) => {
+    try {
+      const data = await fetchJson<RadiologyPatientFlag[]>(api("risk-flags"));
+      setRiskFlags(Array.isArray(data) ? data : []);
+      if (Array.isArray(data) && data.length) setRadiologyRiskFlags(data);
+    } catch (e) {
+      if (!opts?.silent) toast.error(e instanceof Error ? e.message : t("radiology.settings.loadRiskFlagsFailed"));
+    } finally {
+      setRiskFlagsLoaded(true);
+    }
+  }, [t]);
+
+  const saveRiskFlags = async () => {
+    if (savingRiskFlags) return;
+    setSavingRiskFlags(true);
+    try {
+      const data = await fetchJson<RadiologyPatientFlag[]>(api("risk-flags"), {
+        method: "PUT",
+        body: JSON.stringify({ flags: riskFlags }),
+      });
+      const saved = Array.isArray(data) ? data : riskFlags;
+      setRiskFlags(saved);
+      setRadiologyRiskFlags(saved);
+      toast.success(t("radiology.settings.riskFlagsSaved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.settings.saveFailed"));
+    } finally {
+      setSavingRiskFlags(false);
+    }
+  };
+
+  const saveFlag = () => {
+    if (!flagModal) return;
+    const value = flagModal.value.trim();
+    const label = flagModal.label.trim();
+    if (!value) { toast.error(t("radiology.settings.riskFlagsValueRequired")); return; }
+    if (!label) { toast.error(t("radiology.settings.riskFlagsLabelRequired")); return; }
+    if (riskFlags.some((f, i) => f.value === value && i !== flagModal.index)) { toast.error(t("radiology.settings.riskFlagsValueTaken")); return; }
+    const entry: RadiologyPatientFlag = { value, label, color: flagModal.color };
+    setRiskFlags(fs => (flagModal.index !== undefined ? fs.map((f, i) => (i === flagModal.index ? entry : f)) : [...fs, entry]));
+    setFlagModal(null);
+  };
+
+  const removeFlag = (f: RadiologyPatientFlag) => {
+    if (!window.confirm(t("radiology.settings.riskFlagsDeleteConfirm", { name: f.label }))) return;
+    setRiskFlags(fs => fs.filter(x => x !== f));
+  };
 
   const refreshGuards = useCallback(async () => {
     try {
@@ -183,8 +254,9 @@ export default function SettingsTab() {
     refreshModalities().finally(() => setModalitiesLoading(false));
     refreshIdSettings();
     refreshGuards();
+    refreshRiskFlags({ silent: true });
     refreshDelivery();
-  }, [refresh, refreshTags, refreshModalities, refreshIdSettings, refreshGuards, refreshDelivery]);
+  }, [refresh, refreshTags, refreshModalities, refreshIdSettings, refreshGuards, refreshRiskFlags, refreshDelivery]);
 
   const save = async () => {
     if (!modal || saving) return;
@@ -377,6 +449,49 @@ export default function SettingsTab() {
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
+            <h3 className="text-lg font-bold flex items-center gap-2"><AlertTriangle className="w-5 h-5" />{t("radiology.settings.riskFlagsTitle")}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.settings.riskFlagsSubtitle")}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => refreshRiskFlags()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+              <RefreshCw className="w-4 h-4" />{t("radiology.refresh")}
+            </button>
+            <button onClick={() => setFlagModal({ value: `flag_${riskFlags.length + 1}`, label: "", color: FLAG_COLOR_OPTIONS[0].value })} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+              <Plus className="w-4 h-4" />{t("radiology.settings.newRiskFlag")}
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+          {!riskFlagsLoaded ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          ) : riskFlags.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">{t("radiology.settings.noRiskFlags")}</div>
+          ) : (
+            <div className="space-y-3">
+              {riskFlags.map((f, i) => (
+                <div key={`${f.value}-${i}`} className="flex items-center justify-between gap-3 border dark:border-gray-700 rounded-lg px-4 py-2.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap shrink-0 ${f.color}`}>{f.label}</span>
+                    <span className="text-xs font-mono text-gray-500 dark:text-gray-400 truncate" dir="ltr">{f.value}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button onClick={() => setFlagModal({ index: i, value: f.value, label: f.label, color: f.color })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.edit")}><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => removeFlag(f)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title={t("radiology.delete")}><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              ))}
+              <button onClick={saveRiskFlags} disabled={savingRiskFlags} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
+                {savingRiskFlags && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
             <h3 className="text-lg font-bold flex items-center gap-2"><MessageSquare className="w-5 h-5" />{t("radiology.settings.deliveryTitle")}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.settings.deliverySubtitle")}</p>
           </div>
@@ -547,6 +662,42 @@ export default function SettingsTab() {
               <button onClick={saveTag} disabled={savingTag} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
                 {savingTag && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {flagModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setFlagModal(null)}>
+          <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">{flagModal.index !== undefined ? t("radiology.settings.editRiskFlag") : t("radiology.settings.newRiskFlag")}</h3>
+              <button onClick={() => setFlagModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.settings.riskFlagsValue")}</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={flagModal.value} onChange={e => setFlagModal({ ...flagModal, value: e.target.value })} placeholder="pregnancy" onKeyDown={e => { if (e.key === "Enter") saveFlag(); }} />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("radiology.settings.riskFlagsValueHint")}</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.settings.riskFlagsLabel")}</label>
+                <input className={MODAL_INPUT_CLS} value={flagModal.label} onChange={e => setFlagModal({ ...flagModal, label: e.target.value })} placeholder={t("radiology.settings.riskFlagsLabelPlaceholder")} onKeyDown={e => { if (e.key === "Enter") saveFlag(); }} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.settings.riskFlagsColor")}</label>
+                <div className="flex flex-wrap gap-2">
+                  {FLAG_COLOR_OPTIONS.map(c => (
+                    <button key={c.name} type="button" onClick={() => setFlagModal({ ...flagModal, color: c.value })} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border ${flagModal.color === c.value ? "ring-2 ring-blue-500 border-blue-500" : "border-gray-300 dark:border-gray-600"} ${c.value}`}>
+                      {t(c.name)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setFlagModal(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">{t("radiology.cancel")}</button>
+              <button onClick={saveFlag} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t("radiology.save")}</button>
             </div>
           </div>
         </div>

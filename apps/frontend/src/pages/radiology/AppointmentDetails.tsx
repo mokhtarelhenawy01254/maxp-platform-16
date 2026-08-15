@@ -3,14 +3,16 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowRightLeft, ArrowRight, Loader2, User, CalendarDays, FileText, Stethoscope, Building2, ClipboardList, History } from "lucide-react";
-import { api, fetchJson, RadiologyOrderStatusMap, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS } from "./shared";
+import { api, fetchJson, RadiologyOrderStatusMap, parsePatientFlags, flagMeta, useRadiologyRiskFlags, MODAL_CONTENT_CLS } from "./shared";
 
 interface RadiologyAppointmentView {
   id: string; bookingNo?: number; patientId?: string; patientName: string; patientPhone?: string;
   patientGender?: string; patientAge?: string; nationalId?: string; insuranceNumber?: string;
   patientFlags?: string[] | string;
   examTypeId?: string; examTypeName?: string; examTypeIds?: string[] | string;
-  deviceId?: string; deviceName?: string; insuranceCompanyId?: string;
+  deviceId?: string; deviceName?: string; insuranceCompanyId?: string; insuranceCompanyName?: string;
+  payerType?: string; referralSourceId?: string; referralSourceName?: string;
+  externalPartnerId?: string; externalPartnerName?: string; paymentDestination?: string; isExternalReferral?: boolean;
   additionIds?: string[] | string; additionAmount?: number;
   referringPhysicianId?: string; referralDoctor?: string;
   emergency?: boolean; appointmentDate?: string; appointmentTime?: string;
@@ -52,6 +54,7 @@ const Card = ({ title, icon, children }: { title: string; icon?: React.ReactNode
 export default function AppointmentDetails({ appointmentId }: { appointmentId: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  useRadiologyRiskFlags();
   const [data, setData] = useState<AppointmentDetailsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -165,7 +168,7 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
                 {a.emergency ? <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{t("radiology.schedule.emergency")}</span> : null}
                 {flags.map(f => {
                   const meta = flagMeta(f);
-                  return meta ? <span key={f} className={`px-2 py-0.5 rounded-full text-xs ${meta.color}`}>{t(meta.label)}</span> : null;
+                  return meta ? <span key={f} className={`px-2 py-0.5 rounded-full text-xs ${meta.color}`}>{meta.label}</span> : null;
                 })}
               </div>
               <Row label={t("radiology.patients.name")}>{a.patientName}</Row>
@@ -184,6 +187,21 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
               <Row label={t("radiology.appointmentDetails.additions")}>{Number(a.additionAmount || 0).toFixed(0)} {t("radiology.currency")}</Row>
               <Row label={t("radiology.appointmentDetails.referringDoctor")}>{a.referralDoctor || "—"}</Row>
               <Row label={t("radiology.appointmentDetails.insuranceCompany")}>{a.insuranceCompanyId ? t("radiology.appointmentDetails.insuranceProvided") : "—"}</Row>
+              {(() => {
+                const pt = a.payerType || (a.insuranceCompanyId ? "INSURANCE" : a.referralSourceId ? "REFERRAL" : a.isExternalReferral ? "PARTNER" : "CUSTOMER");
+                let txt = t("radiology.schedule.payerCustomer");
+                if (pt === "INSURANCE") txt = `${t("radiology.schedule.payerInsurance")}${a.insuranceCompanyName ? " — " + a.insuranceCompanyName : ""}`;
+                else if (pt === "REFERRAL") txt = `${t("radiology.schedule.payerReferral")}${a.referralSourceName ? " — " + a.referralSourceName : ""}`;
+                else if (pt === "PARTNER") txt = `${t("radiology.schedule.payerPartner")}${a.externalPartnerName ? " — " + a.externalPartnerName : ""}`;
+                return (
+                  <Row label={t("radiology.schedule.payer")}>
+                    <span className="flex flex-col items-end gap-0.5">
+                      <span>{txt}</span>
+                      {pt === "PARTNER" ? <span className="text-xs text-gray-400">{a.paymentDestination === "PARTNER" ? t("radiology.schedule.destPartner") : t("radiology.schedule.destMe")}</span> : null}
+                    </span>
+                  </Row>
+                );
+              })()}
             </Card>
 
             <Card title={t("radiology.appointmentDetails.studies")} icon={<FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />}>

@@ -7,7 +7,7 @@ import tokenManager from "../../utils/tokenManager";
 import {
   api, fetchJson, getCompanyId, RadiologyReport, RadiologyStudy, RadiologyStudyPayment, RadiologyStatusMap, RadiologySubmissionStatusMap,
   RADIOLOGY_CRITICAL_META, criticalCategoryText,
-  parsePatientFlags, flagMeta, STUDY_STATUS, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
+  parsePatientFlags, flagMeta, useRadiologyRiskFlags, STUDY_STATUS, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
   derivePrimaryStage,
 } from "./shared";
 import StageBadge from "./StageBadge";
@@ -73,6 +73,7 @@ export default function StudiesTab() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState<"advance" | "deliver" | "labels" | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+  useRadiologyRiskFlags();
 
   const uploadImages = async (id: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -388,7 +389,7 @@ export default function StudiesTab() {
           {s.emergency ? <span className="mr-2 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{t("radiology.studies.emergency")}</span> : null}
           {parsePatientFlags(s.patientFlags).map(f => {
             const meta = flagMeta(f);
-            return meta ? <span key={f} className={`mr-1.5 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap inline-block align-middle ${meta.color}`}>{t(meta.label)}</span> : null;
+            return meta ? <span key={f} className={`mr-1.5 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap inline-block align-middle ${meta.color}`}>{meta.label}</span> : null;
           })}
         </td>
         <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "—"}</td>

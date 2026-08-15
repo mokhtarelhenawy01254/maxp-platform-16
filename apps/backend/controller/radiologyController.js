@@ -7,6 +7,7 @@ const { getRadiologyGuards } = require('../utils/radiologyGuards');
 const { deriveRadiologyOrderStatus, recordRadiologyStatusHistory, syncStudyOrderStatus } = require('../utils/radiologyStatusHistory');
 const { MODALITY_BY_CATEGORY, resolveModality } = require('../utils/radiologyModality');
 const { notifyStudyDelivery } = require('../utils/radiologyDeliveryNotify');
+const { resolveMarketingRepForStudy } = require('../utils/radiologyReferral');
 
 const RADIOLOGY_STUDY_CHAIN = ['PENDING_IMAGING', 'IMAGED', 'PENDING_REPORT', 'REPORTED', 'DELIVERED'];
 const RADIOLOGY_REPORT_CHAIN = ['DRAFT', 'REVIEWED', 'SIGNED', 'DELIVERED'];
@@ -32,6 +33,19 @@ const normalizeText = (value) => {
   if (value === undefined || value === null) return undefined;
   const s = String(value).trim();
   return s === '' ? null : s;
+};
+
+const PAYER_TYPES = ['CUSTOMER', 'INSURANCE', 'REFERRAL', 'PARTNER'];
+const PAYMENT_DESTINATIONS = ['ME', 'PARTNER'];
+
+const normalizePayerType = (value, fallback = 'CUSTOMER') => {
+  const v = String(value || '').toUpperCase();
+  return PAYER_TYPES.includes(v) ? v : fallback;
+};
+
+const normalizePaymentDestination = (value, fallback = 'ME') => {
+  const v = String(value || '').toUpperCase();
+  return PAYMENT_DESTINATIONS.includes(v) ? v : fallback;
 };
 
 const resolveExamCategory = async (prisma, companyId, body) => {
@@ -501,6 +515,34 @@ const createStudy = async (req, res) => {
       if (physician) physicianName = physician.name;
     }
 
+    // جهة الإحالة: تحقق اختياري (company-scoped) — واسمها snapshot
+    let referralSourceName = body.referralSourceName ? String(body.referralSourceName) : null;
+    if (body.referralSourceId) {
+      const source = await prisma.radiologyReferralSource.findFirst({
+        where: { id: String(body.referralSourceId), companyId },
+        select: { id: true, name: true },
+      }).catch(() => null);
+      if (source) referralSourceName = source.name;
+    }
+
+    // الشريك الخارجي: تحقق اختياري (company-scoped)
+    let externalPartnerName = body.externalPartnerName ? String(body.externalPartnerName) : null;
+    if (body.externalPartnerId) {
+      const partner = await prisma.radiologyExternalPartner.findFirst({
+        where: { id: String(body.externalPartnerId), companyId, isActive: true },
+        select: { id: true, name: true },
+      }).catch(() => null);
+      if (partner) externalPartnerName = partner.name;
+    }
+
+    // مندوب التسويق: اقتراح تلقائي قابلة للتجاوز (مندوب الطبيب ← مندوب الجهة)
+    const resolvedRep = await resolveMarketingRepForStudy(prisma, {
+      companyId,
+      referringPhysicianId: body.referringPhysicianId || null,
+      referralSourceId: body.referralSourceId || null,
+      marketingRepId: body.marketingRepId || null,
+    });
+
     let insuranceCompanyName = null;
     if (body.insuranceCompanyId) {
       const entity = await prisma.insuranceCompany.findFirst({
@@ -583,6 +625,15 @@ const createStudy = async (req, res) => {
             withContrast: body.withContrast === true || body.withContrast === 'true',
             referralDoctor: physicianName || (body.referralDoctor ? String(body.referralDoctor) : null),
             referringPhysicianId: body.referringPhysicianId || null,
+            referralSourceId: body.referralSourceId || null,
+            referralSourceName: referralSourceName || (body.referralSourceName ? String(body.referralSourceName) : null),
+            marketingRepId: resolvedRep.marketingRepId,
+            marketingRepName: resolvedRep.marketingRepName,
+            isExternalReferral: body.isExternalReferral === true || body.isExternalReferral === 'true',
+            externalPartnerId: body.externalPartnerId || null,
+            externalPartnerName,
+            payerType: normalizePayerType(body.payerType, body.insuranceCompanyId ? 'INSURANCE' : 'CUSTOMER'),
+            paymentDestination: normalizePaymentDestination(body.paymentDestination),
             insuranceCompanyId: body.insuranceCompanyId || null,
             insuranceCompanyName,
             additionIds: additionIds ? JSON.stringify(additionIds) : null,
@@ -661,6 +712,13 @@ const duplicateStudy = async (req, res) => {
             withContrast: existing.withContrast,
             referralDoctor: existing.referralDoctor,
             referringPhysicianId: existing.referringPhysicianId,
+            referralSourceId: existing.referralSourceId,
+            referralSourceName: existing.referralSourceName,
+            marketingRepId: existing.marketingRepId,
+            marketingRepName: existing.marketingRepName,
+            isExternalReferral: existing.isExternalReferral,
+            externalPartnerId: existing.externalPartnerId,
+            externalPartnerName: existing.externalPartnerName,
             insuranceCompanyId: existing.insuranceCompanyId,
             insuranceCompanyName: existing.insuranceCompanyName,
             additionIds: existing.additionIds,
@@ -765,6 +823,86 @@ const updateStudy = async (req, res) => {
       } else {
         data.referringPhysicianId = null;
       }
+    }
+    if (body.referralSourceId !== undefined) {
+      data.referralSourceId = body.referralSourceId || null;
+      if (body.referralSourceId) {
+        const source = await prisma.radiologyReferralSource.findFirst({
+          where: { id: String(body.referralSourceId), companyId },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        if (!source) return res.status(400).json({ success: false, error: 'جهة الإحالة غير موجودة' });
+        data.referralSourceName = source.name;
+      } else {
+        data.referralSourceName = null;
+      }
+    }
+    if (body.referralSourceName !== undefined && data.referralSourceName === undefined) {
+      data.referralSourceName = body.referralSourceName ? String(body.referralSourceName) : null;
+    }
+    if (body.externalPartnerId !== undefined) {
+      data.externalPartnerId = body.externalPartnerId || null;
+      if (body.externalPartnerId) {
+        const partner = await prisma.radiologyExternalPartner.findFirst({
+          where: { id: String(body.externalPartnerId), companyId, isActive: true },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        if (!partner) return res.status(400).json({ success: false, error: 'الشريك الخارجي غير موجود' });
+        data.externalPartnerName = partner.name;
+      } else {
+        data.externalPartnerName = null;
+      }
+    }
+    if (body.externalPartnerName !== undefined && data.externalPartnerName === undefined) {
+      data.externalPartnerName = body.externalPartnerName ? String(body.externalPartnerName) : null;
+    }
+    if (body.isExternalReferral !== undefined) data.isExternalReferral = normalizeBool(body.isExternalReferral, existing.isExternalReferral);
+    if (body.payerType !== undefined) data.payerType = normalizePayerType(body.payerType);
+    if (body.paymentDestination !== undefined) data.paymentDestination = normalizePaymentDestination(body.paymentDestination);
+    if (body.payerType !== undefined && !['INSURANCE'].includes(data.payerType)) data.insuranceCompanyId = null;
+    if (body.payerType !== undefined && !['REFERRAL'].includes(data.payerType)) {
+      data.referralSourceId = null;
+      data.referralSourceName = null;
+    }
+    if (body.payerType !== undefined && !['PARTNER'].includes(data.payerType)) {
+      data.isExternalReferral = false;
+      data.externalPartnerId = null;
+      data.externalPartnerName = null;
+    }
+    if (body.marketingRepId !== undefined) {
+      // اقتراح تلقائي إذا أُرسل "auto"، أو null لمسح، أو id صريح
+      if (body.marketingRepId === 'auto') {
+        const resolved = await resolveMarketingRepForStudy(prisma, {
+          companyId,
+          referringPhysicianId: data.referringPhysicianId ?? existing.referringPhysicianId,
+          referralSourceId: data.referralSourceId ?? existing.referralSourceId,
+          marketingRepId: null,
+        });
+        data.marketingRepId = resolved.marketingRepId;
+        data.marketingRepName = resolved.marketingRepName;
+      } else if (body.marketingRepId) {
+        const rep = await prisma.radiologyMarketingRep.findFirst({
+          where: { id: String(body.marketingRepId), companyId, isActive: true },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        if (rep) {
+          data.marketingRepId = rep.id;
+          data.marketingRepName = rep.name;
+        }
+      } else {
+        data.marketingRepId = null;
+        data.marketingRepName = null;
+      }
+    } else if (body.referringPhysicianId !== undefined || body.referralSourceId !== undefined) {
+      // غيّر الطبيب/الجهة بدون مندوب صريح → إعادة اقتراح تلقائي
+      const resolved = await resolveMarketingRepForStudy(prisma, {
+        companyId,
+        referringPhysicianId: data.referringPhysicianId ?? existing.referringPhysicianId,
+        referralSourceId: data.referralSourceId ?? existing.referralSourceId,
+        marketingRepId: null,
+      });
+      data.marketingRepId = resolved.marketingRepId;
+      data.marketingRepName = resolved.marketingRepName;
     }
     if (body.additionAmount !== undefined) {
       data.additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;

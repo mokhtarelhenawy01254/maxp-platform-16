@@ -234,6 +234,7 @@ const radiologyCriticalFindingsRoutes = require("./routes/radiologyCriticalFindi
 const radiologyBulkRoutes = require("./routes/radiologyBulkRoutes");
 const radiologyQueueRoutes = require("./routes/radiologyQueueRoutes");
 const radiologyIntelligenceRoutes = require("./routes/radiologyIntelligenceRoutes");
+const radiologyReferralRoutes = require("./routes/radiologyReferralRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -832,6 +833,7 @@ app.use("/api/v1/radiology", radiologyAdminRoutes);
 app.use("/api/v1/radiology/bulk", radiologyBulkRoutes);
 app.use("/api/v1/radiology/queue", radiologyQueueRoutes);
 app.use("/api/v1/radiology/intelligence", radiologyIntelligenceRoutes);
+app.use("/api/v1/radiology", radiologyReferralRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);

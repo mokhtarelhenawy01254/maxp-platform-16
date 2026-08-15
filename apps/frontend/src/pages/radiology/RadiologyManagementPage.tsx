@@ -20,8 +20,12 @@ import RadiologistsTab from "./RadiologistsTab";
 import ScheduleTab from "./ScheduleTab";
 import DailyQueueTab from "./DailyQueueTab";
 import ReferringPhysiciansTab from "./ReferringPhysiciansTab";
+import ReferralSourcesTab from "./ReferralSourcesTab";
+import MarketingRepsTab from "./MarketingRepsTab";
+import ExternalPartnersTab from "./ExternalPartnersTab";
 import StatisticsTab from "./StatisticsTab";
 import CashierShiftsTab from "./CashierShiftsTab";
+import RoomsTab from "./RoomsTab";
 import SettingsTab from "./SettingsTab";
 import StudyDetails from "./StudyDetails";
 import AppointmentDetails from "./AppointmentDetails";
@@ -83,8 +87,12 @@ export default function RadiologyManagementPage() {
       {activeTab === "schedule" && <TabErrorBoundary tabLabel={t("radiology.tabs.schedule")}><ScheduleTab /></TabErrorBoundary>}
       {activeTab === "queue" && <TabErrorBoundary tabLabel={t("radiology.tabs.queue")}><DailyQueueTab /></TabErrorBoundary>}
       {activeTab === "referring-physicians" && <TabErrorBoundary tabLabel={t("radiology.tabs.referring-physicians")}><ReferringPhysiciansTab /></TabErrorBoundary>}
+      {activeTab === "referral-sources" && <TabErrorBoundary tabLabel={t("radiology.tabs.referral-sources")}><ReferralSourcesTab /></TabErrorBoundary>}
+      {activeTab === "marketing-reps" && <TabErrorBoundary tabLabel={t("radiology.tabs.marketing-reps")}><MarketingRepsTab /></TabErrorBoundary>}
+      {activeTab === "external-partners" && <TabErrorBoundary tabLabel={t("radiology.tabs.external-partners")}><ExternalPartnersTab /></TabErrorBoundary>}
       {activeTab === "statistics" && <TabErrorBoundary tabLabel={t("radiology.tabs.statistics")}><StatisticsTab /></TabErrorBoundary>}
       {activeTab === "cashier-shifts" && <TabErrorBoundary tabLabel={t("radiology.tabs.cashier-shifts")}><CashierShiftsTab /></TabErrorBoundary>}
+      {activeTab === "rooms" && <TabErrorBoundary tabLabel={t("radiology.tabs.rooms")}><RoomsTab /></TabErrorBoundary>}
       {activeTab === "settings" && <TabErrorBoundary tabLabel={t("radiology.tabs.settings")}><SettingsTab /></TabErrorBoundary>}
     </div>
   );

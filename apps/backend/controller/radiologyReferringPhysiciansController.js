@@ -30,8 +30,21 @@ const listPhysicians = async (req, res) => {
       ];
     }
     const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
-    const items = await getSharedPrismaClient().radiologyReferringPhysician.findMany({ where, orderBy: { name: 'asc' }, take: limitNum });
-    res.json({ success: true, data: items });
+    const prisma = getSharedPrismaClient();
+    const items = await prisma.radiologyReferringPhysician.findMany({ where, orderBy: { name: 'asc' }, take: limitNum });
+
+    // Attach marketing rep name (loose scalar — resolved in a second query)
+    const repIds = [...new Set(items.map((i) => i.marketingRepId).filter(Boolean))];
+    let reps = [];
+    if (repIds.length) {
+      reps = await prisma.radiologyMarketingRep.findMany({
+        where: { id: { in: repIds }, companyId },
+        select: { id: true, name: true },
+      });
+    }
+    const repById = new Map(reps.map((r) => [r.id, r.name]));
+    const data = items.map((i) => ({ ...i, marketingRepName: i.marketingRepId ? repById.get(i.marketingRepId) || null : null }));
+    res.json({ success: true, data });
   } catch (error) {
     console.error('Error listing radiology referring physicians:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب الأطباء المحوّلين' });
@@ -43,17 +56,29 @@ const createPhysician = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { name, phone, specialty, commissionType, commissionValue } = req.body || {};
+    const { name, phone, specialty, marketingRepId, commissionType, commissionValue } = req.body || {};
     if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم الطبيب مطلوب' });
     const type = String(commissionType || 'NONE').toUpperCase();
     if (!COMMISSION_TYPES.includes(type)) return res.status(400).json({ success: false, error: 'نوع العمولة غير صالح' });
 
-    const item = await getSharedPrismaClient().radiologyReferringPhysician.create({
+    const prisma = getSharedPrismaClient();
+    let resolvedRepId = null;
+    if (marketingRepId) {
+      const rep = await prisma.radiologyMarketingRep.findFirst({
+        where: { id: String(marketingRepId), companyId, isActive: true },
+        select: { id: true },
+      });
+      if (!rep) return res.status(400).json({ success: false, error: 'المندوب غير موجود' });
+      resolvedRepId = rep.id;
+    }
+
+    const item = await prisma.radiologyReferringPhysician.create({
       data: {
         companyId,
         name: String(name).trim(),
         phone: normalizeText(phone),
         specialty: normalizeText(specialty),
+        marketingRepId: resolvedRepId,
         commissionType: type,
         commissionValue: clampValue(commissionValue),
       },
@@ -83,6 +108,18 @@ const updatePhysician = async (req, res) => {
     }
     if (body.phone !== undefined) data.phone = normalizeText(body.phone);
     if (body.specialty !== undefined) data.specialty = normalizeText(body.specialty);
+    if (body.marketingRepId !== undefined) {
+      if (body.marketingRepId) {
+        const rep = await prisma.radiologyMarketingRep.findFirst({
+          where: { id: String(body.marketingRepId), companyId, isActive: true },
+          select: { id: true },
+        });
+        if (!rep) return res.status(400).json({ success: false, error: 'المندوب غير موجود' });
+        data.marketingRepId = rep.id;
+      } else {
+        data.marketingRepId = null;
+      }
+    }
     if (body.commissionType !== undefined) {
       const type = String(body.commissionType).toUpperCase();
       if (!COMMISSION_TYPES.includes(type)) return res.status(400).json({ success: false, error: 'نوع العمولة غير صالح' });

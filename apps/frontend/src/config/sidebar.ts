@@ -1,5 +1,5 @@
 ﻿import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -1013,10 +1013,11 @@ export const getSidebarConfig = (
                     icon: ListChecks,
                     label: t('sidebar.radiologyGroupToday'),
                     children: [
-                        { to: '/radiology/schedule', label: t('sidebar.radiologySchedule') },
-                        { to: '/radiology/studies', label: t('sidebar.radiologyStudies') },
-                        { to: '/radiology/reports', label: t('sidebar.radiologyReports') },
-                        { to: '/radiology/patients', label: t('sidebar.radiologyPatients') },
+                        { to: '/radiology/exam-categories', label: t('sidebar.radiologyExamCategories') },
+                        { to: '/radiology/rooms', label: t('sidebar.radiologyRooms'), icon: DoorOpen },
+                        { to: '/radiology/price-lists', label: t('sidebar.radiologyPriceLists') },
+                        { to: '/radiology/radiologists', label: t('sidebar.radiologyRadiologists') },
+                        { to: '/radiology/referring-physicians', label: t('sidebar.radiologyReferringPhysicians') },
                     ],
                 },
                 {
@@ -1029,6 +1030,9 @@ export const getSidebarConfig = (
                         { to: '/radiology/price-lists', label: t('sidebar.radiologyPriceLists') },
                         { to: '/radiology/radiologists', label: t('sidebar.radiologyRadiologists') },
                         { to: '/radiology/referring-physicians', label: t('sidebar.radiologyReferringPhysicians') },
+                        { to: '/radiology/referral-sources', label: t('sidebar.radiologyReferralSources') },
+                        { to: '/radiology/marketing-reps', label: t('sidebar.radiologyMarketingReps') },
+                        { to: '/radiology/external-partners', label: t('sidebar.radiologyExternalPartners') },
                     ],
                 },
                 {
