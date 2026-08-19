@@ -1,6 +1,6 @@
 import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, Clipboard, Calendar, Clock, CheckCircle2, File, Loader2, Info, ShieldAlert, Eye } from 'lucide-react';
+import { AlertTriangle, Clipboard, Calendar, Clock, CheckCircle2, File, Loader2, Info, ShieldAlert, Eye, AlertCircle } from 'lucide-react';
 import api from "../../services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import {
