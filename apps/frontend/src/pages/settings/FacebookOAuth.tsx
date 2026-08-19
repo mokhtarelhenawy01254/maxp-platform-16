@@ -672,7 +672,9 @@ const FacebookOAuth: React.FC = () => {
           : oauthStatus?.accounts?.find((account) => account.id === key);
       return {
         key,
-        label: account?.name || t("facebookOAuth.unknownAccount"),
+        label: account?.name
+          ? t("facebookOAuth.accountGroupTitle", { name: account.name })
+          : t("facebookOAuth.unknownAccount"),
         items,
       };
     });

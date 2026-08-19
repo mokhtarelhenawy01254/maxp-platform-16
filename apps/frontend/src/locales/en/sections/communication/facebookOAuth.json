@@ -93,6 +93,5 @@
   "resolveError": "Error marking skipped pages",
   "accountsCount": "Accounts: {{count}}",
   "accountGroupTitle": "Facebook Account: {{name}}",
-  "unknownAccount": "Unknown Account",
-  "accountsLinked": "Linked Accounts"
+  "unknownAccount": "Unknown Account"
 }

@@ -93,6 +93,5 @@
   "resolveError": "خطأ في وضع علامة على الصفحات المتخطاة",
   "accountsCount": "عدد الحسابات: {{count}}",
   "accountGroupTitle": "حساب فيسبوك: {{name}}",
-  "unknownAccount": "حساب غير معروف",
-  "accountsLinked": "حسابات مرتبطة"
+  "unknownAccount": "حساب غير معروف"
 }
