@@ -1339,6 +1339,7 @@ async function validateFullAdAssetReadiness({ companyId, pageId, pixelId, adAcco
       select: {
         id: true,
         pageId: true,
+        pageAccessToken: true,
       },
     });
     if (!storedPage) {
@@ -1351,7 +1352,10 @@ async function validateFullAdAssetReadiness({ companyId, pageId, pixelId, adAcco
       };
     }
 
-    const pageAccessToken = await getCompanyPageAccessToken(companyId);
+    // توكِن الصفحة المخزّن هو الصحيح لجلب الصفحات — توكِن المستخدم/الإعلانات
+    // ممكن مايقدرش يجلبها (scopes مختلفة) فيفشل النشر بـ NOT_ACCESSIBLE بلا سبب
+    const pageAccessToken =
+      storedPage.pageAccessToken || (await getCompanyPageAccessToken(companyId));
     if (pageAccessToken) {
       const pageService = new FacebookAdsService(pageAccessToken, adAccount.accountId);
       const pagesResult = await pageService.getFacebookPages();

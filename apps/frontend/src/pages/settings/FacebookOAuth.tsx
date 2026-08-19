@@ -111,6 +111,7 @@ const FacebookOAuth: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [skippedPages, setSkippedPages] = useState<SkippedPage[]>([]);
+  const [forceDisconnecting, setForceDisconnecting] = useState<string | null>(null);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
 
   const loadOAuthStatus = useCallback(async () => {
@@ -328,6 +329,39 @@ const FacebookOAuth: React.FC = () => {
     } catch (error: unknown) {
       console.error("❌ Error resolving skipped pages:", error);
       setError(t("facebookOAuth.resolveError"));
+    }
+  };
+
+  const forceDisconnectPage = async (pageId: string) => {
+    try {
+      setForceDisconnecting(pageId);
+      setError(null);
+
+      const response = await fetch(
+        `${envConfig.apiUrl}/facebook-oauth/force-disconnect-page`,
+        {
+          method: "POST",
+          headers: getAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ pageId }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(data.message || t("facebookOAuth.forceDisconnectSuccess"));
+        setSkippedPages((current) => current.filter((page) => page.pageId !== pageId));
+        void loadOAuthStatus();
+        void loadSkippedPages();
+        emitFacebookPageSync(user?.companyId || null);
+      } else {
+        setError(data.message || t("facebookOAuth.forceDisconnectError"));
+      }
+    } catch (error) {
+      console.error("❌ Error force-disconnecting page:", error);
+      setError(t("facebookOAuth.forceDisconnectError"));
+    } finally {
+      setForceDisconnecting(null);
     }
   };
 
@@ -735,9 +769,22 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                         Page ID: {page.pageId}
                       </p>
                     </div>
-                    <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 text-xs rounded-full shrink-0">
-                      {t("facebookOAuth.skippedPageBoundToOther")}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 text-xs rounded-full">
+                        {t("facebookOAuth.skippedPageBoundToOther")}
+                      </span>
+                      {user?.role === "SUPER_ADMIN" && (
+                        <button
+                          onClick={() => void forceDisconnectPage(page.pageId)}
+                          disabled={forceDisconnecting === page.pageId}
+                          className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-xs font-medium"
+                        >
+                          {forceDisconnecting === page.pageId
+                            ? t("facebookOAuth.forceDisconnecting")
+                            : t("facebookOAuth.forceDisconnect")}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
