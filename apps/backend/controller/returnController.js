@@ -643,3 +643,127 @@ exports.getActivityLog = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch activity logs' });
     }
 };
+
+// Employee Performance Report for Returns
+exports.getEmployeePerformance = async (req, res) => {
+    try {
+        const { dateFrom, dateTo } = req.query;
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+
+        // Build date filter
+        const dateFilter = {};
+        if (dateFrom) {
+            const from = new Date(dateFrom);
+            if (!isNaN(from.getTime())) {
+                dateFilter.gte = from;
+            }
+        }
+        if (dateTo) {
+            const to = new Date(dateTo);
+            to.setHours(23, 59, 59, 999);
+            if (!isNaN(to.getTime())) {
+                dateFilter.lte = to;
+            }
+        }
+
+        // Get all return requests with assignedTo
+        const returnRequests = await getPrisma().returnRequest.findMany({
+            where: {
+                companyId,
+                ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {})
+            },
+            include: {
+                assignedUser: {
+                    select: { id: true, firstName: true, lastName: true }
+                }
+            }
+        });
+
+        // Get activity logs for returns
+        const activityLogs = await getPrisma().returnActivityLog.findMany({
+            where: {
+                returnRequest: { companyId },
+                ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {})
+            },
+            include: {
+                user: {
+                    select: { id: true, firstName: true, lastName: true }
+                }
+            }
+        });
+
+        // Calculate stats per employee
+        const employeeStats = {};
+
+        // Stats from return requests (assignedTo)
+        returnRequests.forEach(req => {
+            if (req.assignedTo && req.assignedUser) {
+                const empId = req.assignedTo;
+                if (!employeeStats[empId]) {
+                    employeeStats[empId] = {
+                        id: empId,
+                        name: `${req.assignedUser.firstName || ''} ${req.assignedUser.lastName || ''}`.trim(),
+                        totalAssigned: 0,
+                        totalReviewed: 0,
+                        totalActions: 0,
+                        actions: {}
+                    };
+                }
+                employeeStats[empId].totalAssigned++;
+
+                if (req.isReviewed && req.reviewedBy === empId) {
+                    employeeStats[empId].totalReviewed++;
+                }
+            }
+        });
+
+        // Stats from activity logs
+        activityLogs.forEach(log => {
+            if (log.userId && log.user) {
+                const empId = log.userId;
+                if (!employeeStats[empId]) {
+                    employeeStats[empId] = {
+                        id: empId,
+                        name: `${log.user.firstName || ''} ${log.user.lastName || ''}`.trim(),
+                        totalAssigned: 0,
+                        totalReviewed: 0,
+                        totalActions: 0,
+                        actions: {}
+                    };
+                }
+                employeeStats[empId].totalActions++;
+
+                const action = log.action || 'UNKNOWN';
+                if (!employeeStats[empId].actions[action]) {
+                    employeeStats[empId].actions[action] = 0;
+                }
+                employeeStats[empId].actions[action]++;
+            }
+        });
+
+        // Convert to array and sort by total actions
+        const employees = Object.values(employeeStats).sort((a, b) => b.totalActions - a.totalActions);
+
+        // Summary stats
+        const summary = {
+            totalReturns: returnRequests.length,
+            totalReviewed: returnRequests.filter(r => r.isReviewed).length,
+            totalUnreviewed: returnRequests.filter(r => !r.isReviewed).length,
+            reviewRate: returnRequests.length > 0
+                ? ((returnRequests.filter(r => r.isReviewed).length / returnRequests.length) * 100).toFixed(1)
+                : 0
+        };
+
+        res.json({
+            success: true,
+            data: {
+                summary,
+                employees
+            }
+        });
+    } catch (error) {
+        console.error('❌ [GET_EMPLOYEE_PERFORMANCE] ERROR:', error.message);
+        console.error(error.stack);
+        res.status(500).json({ error: 'Failed to fetch employee performance', details: error.message });
+    }
+};

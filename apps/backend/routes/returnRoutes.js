@@ -29,6 +29,8 @@ router.post('/requests/:id/contact', verifyToken.authenticateToken, checkAppAcce
 router.get('/requests/:id/contacts', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getContactHistory);
 router.get('/requests/:id/activity', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getActivityLog);
 
+// Employee Performance Report
+router.get('/employee-performance', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getEmployeePerformance);
 
 // Public Routes (Self-Service)
 router.post('/public/request', returnController.createPublicReturnRequest);
