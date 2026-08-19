@@ -527,8 +527,8 @@ model CustomerLoyaltyTier {
   programId              String
   name                   String
   nameAr                 String?
-  minPoints              Decimal                 @db.Decimal(10, 2)
-  maxPoints              Decimal?                @db.Decimal(10, 2)
+   minPoints              Decimal?                @db.Decimal(10, 2)
+   maxPoints              Decimal?                @db.Decimal(10, 2)
   benefits               String?
   color                  String                  @default("#6366f1")
   icon                   String                  @default("crown")
