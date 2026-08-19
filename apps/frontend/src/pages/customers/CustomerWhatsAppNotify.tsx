@@ -717,6 +717,21 @@ const CustomerWhatsAppNotify: React.FC<CustomerWhatsAppNotifyProps> = ({ mode = 
                                             </div>
                                             <button onClick={() => setMessage('')} className="text-[10px] text-gray-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 font-bold transition-colors">{t('whatsappNotify.clearText')}</button>
                                         </div>
+
+                                        {/* Dynamic Variables Buttons */}
+                                        <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-[10px] text-gray-400 font-bold">إدراج متغير:</span>
+                                            <button onClick={() => setMessage(prev => prev + ' {customerName}')} className="text-[10px] bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/20 px-2 py-1 rounded-lg font-bold transition-all">
+                                                + {`{customerName}`}
+                                            </button>
+                                            <button onClick={() => setMessage(prev => prev + ' {coupon_code}')} className="text-[10px] bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/20 px-2 py-1 rounded-lg font-bold transition-all">
+                                                + {`{coupon_code}`}
+                                            </button>
+                                            <button onClick={() => setMessage(prev => prev + ' {customer_link}')} className="text-[10px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/20 px-2 py-1 rounded-lg font-bold transition-all">
+                                                🔗 {`{customer_link}`}
+                                            </button>
+                                        </div>
+
                                         <div className="mt-2 flex items-center gap-1.5 bg-violet-500/5 dark:bg-violet-500/10 border border-violet-500/10 rounded-lg p-2">
                                             <SparklesIcon className="h-3 w-3 text-violet-500 dark:text-violet-400" />
                                             <p className="text-[9px] text-violet-700 dark:text-violet-300">

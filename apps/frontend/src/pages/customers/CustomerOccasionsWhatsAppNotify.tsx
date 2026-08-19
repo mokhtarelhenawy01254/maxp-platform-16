@@ -679,6 +679,20 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                                 placeholder="اكتب الرسالة هنا..."
                                 className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm leading-6 resize-none outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 focus:border-violet-300 dark:focus:border-violet-700 transition text-gray-900 dark:text-slate-100"
                             />
+                            {/* Dynamic Variables */}
+                            <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] text-gray-400 font-bold">إدراج متغير:</span>
+                                <button onClick={() => setMessage(prev => prev + ' {اسم العميل}')} className="text-[10px] bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/20 px-2 py-1 rounded-lg font-bold transition-all">
+                                    + {`{اسم العميل}`}
+                                </button>
+                                <button onClick={() => setMessage(prev => prev + ' {اسم المناسبة}')} className="text-[10px] bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/20 px-2 py-1 rounded-lg font-bold transition-all">
+                                    + {`{اسم المناسبة}`}
+                                </button>
+                                <button onClick={() => setMessage(prev => prev + ' {customer_link}')} className="text-[10px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/20 px-2 py-1 rounded-lg font-bold transition-all">
+                                    🔗 {`{customer_link}`}
+                                </button>
+                            </div>
+
                             <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">
                                 متغيرات متاحة:{' '}
                                 <span
