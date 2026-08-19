@@ -1,6 +1,6 @@
 import { Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Trash2 as TrashIcon, Plus as PlusIcon, ExternalLink as ArrowTopRightOnSquareIcon, RefreshCw as ArrowPathIcon, Circle as UserGroupIcon, MessageSquare as ChatBubbleLeftRightIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 ;
 import { useAuth } from "../../hooks/useAuthSimple";
 import { envConfig } from "../../config/environment";
@@ -24,6 +24,23 @@ interface FacebookPage {
   needsReconnect?: boolean;
   canReconnect?: boolean;
   healthMessage?: string | null;
+  account?: {
+    id: string;
+    facebookUserId: string | null;
+    name: string | null;
+    email: string | null;
+    status: string;
+  } | null;
+}
+
+interface FacebookAccountSummary {
+  id: string;
+  facebookUserId: string | null;
+  name: string | null;
+  email: string | null;
+  status: string;
+  pagesCount: number;
+  connectedPagesCount: number;
 }
 
 interface OAuthStatus {
@@ -34,6 +51,7 @@ interface OAuthStatus {
   needsAttention?: boolean;
   unhealthyPagesCount?: number;
   pages: FacebookPage[];
+  accounts?: FacebookAccountSummary[];
   facebookUser?: {
     id: string;
     name: string;
@@ -593,6 +611,33 @@ const FacebookOAuth: React.FC = () => {
     .filter((page) => page.canReconnect !== false)
     .map((page) => page.id);
 
+  const accountGroups = useMemo(() => {
+    const groups = new Map<string, FacebookPage[]>();
+    for (const page of pages) {
+      const key = page.account?.id || "__legacy__";
+      const bucket = groups.get(key);
+      if (bucket) {
+        bucket.push(page);
+      } else {
+        groups.set(key, [page]);
+      }
+    }
+
+    return Array.from(groups.entries()).map(([key, items]) => {
+      const account =
+        key === "__legacy__"
+          ? undefined
+          : oauthStatus?.accounts?.find((account) => account.id === key);
+      return {
+        key,
+        label: account?.name
+          ? t("facebookOAuth.accountGroupTitle", { name: account.name })
+          : t("facebookOAuth.unknownAccount"),
+        items,
+      };
+    });
+  }, [pages, oauthStatus, t]);
+
   const handleDebug = async () => {
     if (!user?.companyId) return;
 
@@ -848,6 +893,13 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
             <UserGroupIcon className="h-5 w-5 text-gray-500" />
             {t("facebookOAuth.savedPages", { count: pages.length })}
+            {oauthStatus?.accounts && oauthStatus.accounts.length > 0 && (
+              <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                {t("facebookOAuth.accountsCount", {
+                  count: oauthStatus.accounts.length,
+                })}
+              </span>
+            )}
           </h3>
 
           <div className="mb-4 flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4 md:flex-row md:items-center md:justify-between">
@@ -898,8 +950,19 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
               <p className="text-sm text-gray-500">{t("facebookOAuth.noPagesFoundYet")}</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {pages.map((page) => (
+            <div className="space-y-4">
+              {accountGroups.map((group) => (
+                <div key={group.key} className="space-y-3">
+                  <div className="flex items-center gap-2 px-1 pb-1">
+                    <UserGroupIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      {group.label}
+                    </h4>
+                    <span className="text-xs text-gray-400">
+                      ({group.items.length})
+                    </span>
+                  </div>
+                  {group.items.map((page) => (
                 <div
                   key={page.id}
                   className="flex items-start justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -987,6 +1050,8 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                       <TrashIcon className="h-4 w-4" />
                     </button>
                   </div>
+                </div>
+                  ))}
                 </div>
               ))}
             </div>

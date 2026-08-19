@@ -119,6 +119,33 @@ async function listFacebookPagesForUser(
   return collectedPages;
 }
 
+async function resolvePageUserAccessToken(prisma, { companyId, facebookAccountId }) {
+  if (facebookAccountId) {
+    const connection = await prisma.facebookAccountConnection.findFirst({
+      where: { id: facebookAccountId, companyId },
+      select: { accessToken: true, status: true },
+    });
+
+    if (connection?.accessToken && connection.status === "connected") {
+      return { token: connection.accessToken, source: "account_connection" };
+    }
+  }
+
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { facebookUserAccessToken: true },
+  });
+
+  if (company?.facebookUserAccessToken) {
+    return {
+      token: company.facebookUserAccessToken,
+      source: "company_legacy",
+    };
+  }
+
+  return { token: null, source: null };
+}
+
 async function refreshFacebookPageAccessToken({
   companyId,
   pageId,
@@ -136,12 +163,29 @@ async function refreshFacebookPageAccessToken({
   }
 
   const prisma = getSharedPrismaClient();
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { facebookUserAccessToken: true },
+
+  const page = await prisma.facebookPage.findUnique({
+    where: { pageId },
+    select: { companyId: true, facebookAccountId: true },
   });
 
-  if (!company?.facebookUserAccessToken) {
+  if (!page) {
+    return {
+      success: false,
+      reason: "PAGE_NOT_FOUND_IN_COMPANY",
+      error: {
+        code: null,
+        message: "The requested Facebook page is not linked to this company",
+      },
+    };
+  }
+
+  const resolved = await resolvePageUserAccessToken(prisma, {
+    companyId,
+    facebookAccountId: page.facebookAccountId,
+  });
+
+  if (!resolved.token) {
     return {
       success: false,
       reason: "MISSING_COMPANY_USER_ACCESS_TOKEN",
@@ -154,7 +198,7 @@ async function refreshFacebookPageAccessToken({
 
   let availablePages;
   try {
-    availablePages = await listFacebookPagesForUser(company.facebookUserAccessToken, {
+    availablePages = await listFacebookPagesForUser(resolved.token, {
       timeoutMs,
     });
   } catch (error) {
@@ -312,5 +356,6 @@ module.exports = {
   ensureValidFacebookPageAccessToken,
   getFacebookGraphError,
   refreshFacebookPageAccessToken,
+  resolvePageUserAccessToken,
   validateFacebookPageAccessToken,
 };

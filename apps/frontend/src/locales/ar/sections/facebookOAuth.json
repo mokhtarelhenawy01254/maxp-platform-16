@@ -86,5 +86,8 @@
   "skippedPagesNote": "ملاحظة: لربط هذه الصفحات، يجب أولاً فك ربطها من الشركة الأخرى التي تستخدمها حالياً.",
   "skippedPagesAcknowledge": "تم الاطلاع - إخفاء هذا التنبيه",
   "resolveSuccess": "تم وضع علامة على {{count}} صفحة كمحلولة",
-  "resolveError": "خطأ في وضع علامة على الصفحات المتخطاة"
+  "resolveError": "خطأ في وضع علامة على الصفحات المتخطاة",
+  "accountsCount": "عدد الحسابات: {{count}}",
+  "accountGroupTitle": "حساب فيسبوك: {{name}}",
+  "unknownAccount": "حساب غير معروف"
 }

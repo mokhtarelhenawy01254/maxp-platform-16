@@ -119,6 +119,7 @@ model Company {
   facebookLookalikeAudiences      FacebookLookalikeAudience[]
   facebookPages                   FacebookPage[]
   facebookPosts                   FacebookPost[]
+  facebookAccountConnections      FacebookAccountConnection[]
   facebookProductCatalogs         FacebookProductCatalog[]
   faqs                            Faq[]
   footerSettings                  FooterSettings?

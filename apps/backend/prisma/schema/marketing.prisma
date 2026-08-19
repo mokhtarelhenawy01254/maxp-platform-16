@@ -739,6 +739,35 @@ model FacebookLookalikeAudience {
   @@map("facebook_lookalike_audiences")
 }
 
+/// Facebook page OAuth connection source — one per Facebook personal account
+/// that granted Messenger/page permissions. Stores the user access token per
+/// account so pages from different Facebook accounts can be linked to the same
+/// company and refreshed independently. Page OAuth is the only flow that writes
+/// rows here; it never overwrites another account's token.
+model FacebookAccountConnection {
+  id                String       @id @default(cuid())
+  companyId         String
+  facebookUserId    String
+  facebookUserName  String?
+  facebookUserEmail String?
+  accessToken       String?
+  status            String       @default("connected")
+  connectedByUserId String?
+  connectedAt       DateTime     @default(now())
+  lastSyncedAt      DateTime?
+  lastError         String?
+  metadata          String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  facebookPages     FacebookPage[]
+
+  @@unique([companyId, facebookUserId])
+  @@index([companyId])
+  @@index([status])
+  @@map("facebook_account_connections")
+}
+
 model FacebookPage {
   id                      String                   @id @default(cuid())
   pageId                  String                   @unique
@@ -755,11 +784,14 @@ model FacebookPage {
   negativeCommentAction   String?                   @default("hide")
   instagramAccountId      String?                   @unique
   instagramAccountName    String?
+  facebookAccountId       String?
   blockedCustomersOnPages BlockedCustomersOnPage[]
   facebookPosts           FacebookPost[]
   company                 Company?                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  facebookAccount         FacebookAccountConnection? @relation(fields: [facebookAccountId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
+  @@index([facebookAccountId])
   @@map("facebook_pages")
 }
 

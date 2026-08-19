@@ -106,8 +106,7 @@ const getSpecificFacebookPageDetails = async (req, res) => {
                 pageId: facebookPage.pageId,
                 pageName: facebookPage.pageName,
                 status: facebookPage.status,
-                connectedAt: facebookPage.connectedAt,
-                pageAccessToken: facebookPage.pageAccessToken
+                connectedAt: facebookPage.connectedAt
             }
         });
     } catch (error) {

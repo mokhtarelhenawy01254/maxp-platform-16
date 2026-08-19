@@ -3863,7 +3863,10 @@
     "skippedPagesNote": "Note: To connect these pages, you must first disconnect them from the other company currently using them.",
     "skippedPagesAcknowledge": "Acknowledged - Hide this alert",
     "resolveSuccess": "Marked {{count}} page(s) as resolved",
-    "resolveError": "Error marking skipped pages"
+    "resolveError": "Error marking skipped pages",
+    "accountsCount": "Accounts: {{count}}",
+    "accountGroupTitle": "Facebook Account: {{name}}",
+    "unknownAccount": "Unknown Account"
   },
   "facebookPostCreator": {
     "pageTitle": "Create & Schedule Posts",
