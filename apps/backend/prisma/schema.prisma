@@ -3113,6 +3113,7 @@ enum WhatsAppNotificationTemplatesCategory {
   SYSTEM
   GENERAL
   ORDER_NOTIFICATION
+  OCCASION
 
   @@map("whatsapp_notification_templates_category")
 }
