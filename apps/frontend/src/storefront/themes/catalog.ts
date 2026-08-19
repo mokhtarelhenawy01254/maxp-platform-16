@@ -101,12 +101,6 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "womens-shoes",
     "أحذية حريمي",
   ),
-  "smart-bazaar": createThemeCategoryMeta(
-    "general",
-    "عام",
-    "multi-category",
-    "متجر متعدد الأقسام",
-  ),
   "district-market": createThemeCategoryMeta(
     "general",
     "عام",
@@ -366,12 +360,6 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "travel-services",
     "سفر وحجوزات",
   ),
-  "cafe-demo": createThemeCategoryMeta(
-    "food",
-    "مطاعم وأغذية",
-    "restaurants",
-    "مطاعم وقهوة",
-  ),
   "max-care-go": createThemeCategoryMeta(
     "general",
     "عام",
@@ -383,24 +371,6 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "عام",
     "pharmacy-care",
     "صيدلية وعناية",
-  ),
-  "furniture-demo": createThemeCategoryMeta(
-    "general",
-    "عام",
-    "furniture",
-    "مفروشات وديكور",
-  ),
-  "electronics-demo": createThemeCategoryMeta(
-    "electronics",
-    "إلكترونيات",
-    "tech-store",
-    "متجر تقني فاخر",
-  ),
-  "restaurant-demo": createThemeCategoryMeta(
-    "food",
-    "مطاعم وأغذية",
-    "restaurants",
-    "وجبات سريعة",
   ),
   "butcher-counter-eg": createThemeCategoryMeta(
     "food",
@@ -533,8 +503,6 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
     "واجهة دافئة مستوحاة من الصحراء مناسبة للأزياء التراثية والقطع ذات الهوية الشرقية الواضحة.",
   "airlume-ai":
     "واجهة سفر حديثة مع Hero عائم وبطاقات مزايا غير منتظمة لعرض تجربة حجز أكثر وضوحًا.",
-  "smart-bazaar":
-    "قالب متجر عام جاهز للبيع من أول يوم: أقسام واضحة، عروض متحركة، ورسائل ثقة تقلل التردد قبل الطلب.",
   "district-market":
     "قالب متجر عام عربي بإيقاع أسرع وترتيب أوضح للأقسام والعروض والمنتجات الأكثر حركة داخل المتجر.",
   "shop-orbit":
@@ -581,18 +549,10 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
     "قالب موبايلات وإكسسوارات جاهز للسوق المصري: مواصفات واضحة، تقسيط، وضمان ورسائل بيع تقرّب القرار.",
   "kids-play":
     "قالب ألعاب أطفال يسهّل على الأهل الشراء: حسب السن، حسب نوع اللعب، وعروض واضحة على الهدايا والنشاطات.",
-  "cafe-demo":
-    "قالب كافيه يبيع المزاج قبل المنتج: بن طازة، أدوات تحضير، وعروض تخلي العميل يحسم من أول زيارة.",
   "max-care-go":
     "قالب صيدلية موبايل-أول للطلبات السريعة: رفع روشتة، إعادة طلب، وعروض يومية تشجع العميل يكمل الطلب.",
   "pharmacy-demo":
     "قالب صيدلية هادئ للأسرة والاحتياجات اليومية، يركز على الوضوح والبدائل والدعم قبل تأكيد الطلب.",
-  "furniture-demo":
-    "قالب أثاث وديكور يخلّي القطعة تبيع نفسها: صور واسعة، زوايا مرتبة، ورسائل تشجع الحسم على القطع الكبيرة.",
-  "electronics-demo":
-    "قالب إلكترونيات يبرز القوة والسعر والمواصفات مع عروض واضحة تساعد العميل يقارن ويحسم أسرع.",
-  "restaurant-demo":
-    "قالب مطعم سريع يفتح النفس ويقفل الطلب: كومبوهات جاهزة، عروض واضحة، وإضافات ترفع قيمة السلة بسهولة.",
   "butcher-counter-eg":
     "قالب جزارة Premium فاخر بتقطيعات حسب الطلب، وزن مؤكد قبل التجهيز، وتوصيل مبرد يحافظ على الطزاجة.",
   pawsome:
@@ -628,23 +588,14 @@ const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
     "/assets/themes/atelier-nova/preview.png",
   "elegant-luxe":
     "/assets/themes/elegant-luxe/preview.png",
-  "restaurant-demo":
-    "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1600",
   "butcher-counter-eg":
     "https://images.unsplash.com/photo-1777799095908-978e9f70a872?auto=format&fit=crop&w=1600&q=80",
-  "furniture-demo":
-    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=2000",
-  "electronics-demo":
-    "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&q=80&w=2070",
   "max-care-go":
     "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=1200&q=80",
-  "cafe-demo":
-    "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=2000",
   "menswear-prime":
     "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=2000&auto=format&fit=crop",
   "mystic-desert": "/products/mystic/hero.png",
   "modern-minimal": "/assets/themes/modern-minimal/preview.svg",
-  "smart-bazaar": "/assets/themes/smart-bazaar/preview.png",
   "district-market": "/assets/themes/district-market/preview.svg",
   "vanguard-premium": "/assets/themes/style-store-eg/hero-banner.jpg",
   "solea-femme":

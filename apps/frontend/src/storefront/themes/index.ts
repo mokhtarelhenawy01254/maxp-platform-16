@@ -9,7 +9,6 @@ import zenOrganicData from "./zen-organic.json";
 import fakhamaEliteData from "./fakhama-elite.json";
 import mysticDesertData from "./mystic-desert.json";
 import airlumeAiData from "./airlume-ai.json";
-import smartBazaarData from "./smart-bazaar.json";
 import shopOrbitData from "./shop-orbit.json";
 import districtMarketData from "./district-market.json";
 import menswearPrimeData from "./menswear-prime.json";
@@ -31,11 +30,7 @@ import fittingRoomStudioData from "./fitting-room-studio.json";
 import nileBistroData from "./nile-bistro.json";
 import novaMobileData from "./nova-mobile.json";
 import kidsPlayData from "./kids-play.json";
-import cafeDemoData from "./cafe-demo.json";
 import maxCareGoData from "./max-care-go.json";
-import furnitureDemoData from "./furniture-demo.json";
-import electronicsDemoData from "./electronics-demo.json";
-import restaurantDemoData from "./restaurant-demo.json";
 import butcherCounterEgData from "./butcher-counter-eg.json";
 import pawsomeData from "./pawsome.json";
 import velvetGlowData from "./velvet-glow.json";
@@ -666,7 +661,6 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "fakhama-elite": asStorefrontTheme(fakhamaEliteData),
   "mystic-desert": asStorefrontTheme(mysticDesertData),
   "airlume-ai": asStorefrontTheme(airlumeAiData),
-  "smart-bazaar": asStorefrontTheme(smartBazaarData),
   "shop-orbit": asStorefrontTheme(shopOrbitData),
   "district-market": asStorefrontTheme(districtMarketData),
   "menswear-prime": asStorefrontTheme(menswearPrimeData),
@@ -688,11 +682,7 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "nile-bistro": asStorefrontTheme(nileBistroData),
   "nova-mobile": asStorefrontTheme(novaMobileData),
   "kids-play": asStorefrontTheme(kidsPlayData),
-  "cafe-demo": asStorefrontTheme(cafeDemoData),
   "max-care-go": asStorefrontTheme(maxCareGoData),
-  "furniture-demo": asStorefrontTheme(furnitureDemoData),
-  "electronics-demo": asStorefrontTheme(electronicsDemoData),
-  "restaurant-demo": asStorefrontTheme(restaurantDemoData),
   "butcher-counter-eg": asStorefrontTheme(butcherCounterEgData),
   "pharmacy-demo": pharmacyDemoData,
   "cutline-club": cutlineClubData,
