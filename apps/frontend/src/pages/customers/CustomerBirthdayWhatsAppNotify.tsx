@@ -66,10 +66,11 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
         isEnabled: true,
         dailySendTime: '12:00',
         channel: 'whatsapp_session',
-        messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\nنتمنى لك سنة سعيدة ملئية بالنجاح! ❤️',
+        messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\n\nاضغط على الرابط التالي للدخول لصفحتك واستلام هديتك فوراً:\n🔗 {customer_link}\n\nنتمنى لك سنة سعيدة مليئة بالنجاح! ❤️',
         couponCode: 'HBD10',
         metaTemplateName: 'birthday_greeting_v1'
     });
+
 
     // Loading & Status States
     const [loading, setLoading] = useState<boolean>(true);
