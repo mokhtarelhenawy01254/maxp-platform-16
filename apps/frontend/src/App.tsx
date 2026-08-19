@@ -1120,6 +1120,9 @@ const ReturnManagementPage = React.lazy(
 const ReturnSettingsPage = React.lazy(
   () => import("./pages/returns/ReturnSettingsPage"),
 );
+const ReturnEmployeePerformance = React.lazy(
+  () => import("./pages/returns/ReturnEmployeePerformance"),
+);
 const CancellationSettingsPage = React.lazy(
   () => import("./pages/cancellations/CancellationSettingsPage"),
 );
@@ -4089,6 +4092,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ReturnSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/returns/employee-performance"
+                  element={
+                    <Layout>
+                      <ReturnEmployeePerformance />
                     </Layout>
                   }
                 />
