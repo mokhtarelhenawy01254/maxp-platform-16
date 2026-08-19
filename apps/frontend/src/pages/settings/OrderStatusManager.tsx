@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Tag, Plus, Edit2, Trash2, Save, X, RefreshCw, Link2, Bell, Check, Clock, Package, Truck, RotateCcw, ShoppingBag, CreditCard, AlertTriangle, Loader2, ChevronUp, ChevronDown, Cog } from 'lucide-react';
+import { Tag, Plus, Edit2, Trash2, Save, X, RefreshCw, Link2, Bell, Check, CheckCircle, CheckCircle2, XCircle, Clock, Package, Truck, RotateCcw, ShoppingCart, CreditCard, AlertCircle, Cog, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 
@@ -33,7 +33,7 @@ interface OrderStatus {
 const ICON_MAP: Record<string, React.ReactNode> = {
   Clock: <Clock className="w-4 h-4" />,
   CheckCircle: <CheckCircle className="w-4 h-4" />,
-  CheckCircle2: <CheckCircle className="w-4 h-4" />,
+  CheckCircle2: <CheckCircle2 className="w-4 h-4" />,
   Package: <Package className="w-4 h-4" />,
   Truck: <Truck className="w-4 h-4" />,
   XCircle: <XCircle className="w-4 h-4" />,
