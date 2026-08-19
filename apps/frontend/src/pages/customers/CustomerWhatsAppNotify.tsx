@@ -1000,10 +1000,24 @@ const CustomerWhatsAppNotify: React.FC<CustomerWhatsAppNotifyProps> = ({ mode = 
                                     className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 resize-none outline-none focus:ring-2 focus:ring-amber-400/30"
                                 />
 
+                                <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[10px] text-gray-400 font-bold">إدراج سريع:</span>
+                                    <button onClick={() => setBirthdayMessage(prev => prev + ' {اسم العميل}')} className="text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/20 px-2.5 py-1 rounded-lg font-bold transition-all">
+                                        + {`{اسم العميل}`}
+                                    </button>
+                                    <button onClick={() => setBirthdayMessage(prev => prev + ' {العمر}')} className="text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/20 px-2.5 py-1 rounded-lg font-bold transition-all">
+                                        + {`{العمر}`}
+                                    </button>
+                                    <button onClick={() => setBirthdayMessage(prev => prev + ' {customer_link}')} className="text-[10px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-600 dark:text-blue-300 border border-blue-500/30 px-2.5 py-1 rounded-lg font-bold transition-all shadow-sm">
+                                        🔗 {`{customer_link}`}
+                                    </button>
+                                </div>
+
                                 <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
-                                    {t('whatsappNotify.availableVariables')} <span className="font-mono">{t('whatsappNotify.customerNameVar')}</span> {t('common.and')} <span className="font-mono">{t('whatsappNotify.ageVar')}</span>
+                                    {t('whatsappNotify.availableVariables')} <span className="font-mono">{t('whatsappNotify.customerNameVar')}</span> {t('common.and')} <span className="font-mono">{t('whatsappNotify.ageVar')}</span> {t('common.and')} <span className="font-mono text-blue-500 font-bold">{`{customer_link}`}</span>
                                 </p>
                             </div>
+
 
                             <div>
                                 <label className="text-[11px] text-gray-500 dark:text-gray-400 mb-2 block font-bold">{t('whatsappNotify.imageUrl')}</label>
