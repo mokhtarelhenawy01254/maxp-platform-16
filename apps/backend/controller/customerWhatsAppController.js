@@ -1483,7 +1483,9 @@ exports.sendTestBirthdayMessage = async (req, res) => {
             .replace(/\{first_name\}/g, 'أحمد')
             .replace(/\{full_name\}/g, 'أحمد محمود')
             .replace(/\{coupon_code\}/g, couponCode || 'TEST10')
-            .replace(/\{company_name\}/g, 'متجرنا');
+            .replace(/\{company_name\}/g, 'متجرنا')
+            .replace(/\{customer_link\}/g, 'https://yourdomain.com/customer/profile?token=demo');
+
 
         const activeSessions = await WhatsAppNotificationService.getConnectedSessions(companyId);
         if (!activeSessions || activeSessions.length === 0) {
