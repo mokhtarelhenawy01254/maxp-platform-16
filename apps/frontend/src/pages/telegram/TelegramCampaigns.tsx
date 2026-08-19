@@ -15,7 +15,7 @@ import {
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
-import { Plus, X, Trash2, Volume2, ChevronDown, ChevronUp, RefreshCw, Check, X as FailedIcon, Hourglass } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Hourglass, Megaphone, Plus, RefreshCw, Trash2, Volume2, X, X as FailedIcon, XCircle } from 'lucide-react';
 import { toast } from "sonner";
 
 const TelegramCampaigns = () => {

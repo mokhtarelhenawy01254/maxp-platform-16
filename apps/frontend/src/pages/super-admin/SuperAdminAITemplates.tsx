@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Checkbox } from "../../components/ui/checkbox";
 import { apiClient } from "../../services/apiClient";
-import { Bot, Search, Eye, Pencil, Clipboard, Navigation, Trash2, ChevronDown, ChevronUp, Plus, Grid, ExternalLink, CheckSquare, CheckCheck, X } from 'lucide-react';
+import { Bot, CheckCheck, CheckSquare, ChevronDown, ChevronUp, Clipboard, Copy, ExternalLink, Eye, Grid, Layers, Navigation, Pencil, Plus, Search, Send, Trash2, X } from 'lucide-react';
 import {
   CreateDialog, EditDialog, PreviewDialog, ApplyDialog, DeleteDialog, DuplicateDialog,
   ROLE_ICONS, ROLE_COLORS, toneColors, TemplateItem,
@@ -191,7 +191,7 @@ const SuperAdminAITemplates: React.FC = () => {
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <Bot className="size-16 opacity-15" />
             <p className="text-sm text-muted-foreground">لا توجد قوالب تطابق بحثك</p>
-            <Button variant="outline" size="sm" onClick={() => { setSearch(""); setRoleFilter(""); setIndustryFilter(""); }}>مسح الفلتر</Button>
+            <Button variant="outline" size="sm" onClick={() => { setFilter("search", ""); setFilter("role", ""); setFilter("industry", ""); }}>مسح الفلتر</Button>
           </div>
         ) : (
           <div className="rounded-xl border bg-card overflow-hidden">

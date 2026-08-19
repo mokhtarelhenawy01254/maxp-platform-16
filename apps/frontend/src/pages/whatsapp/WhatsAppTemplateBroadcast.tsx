@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
-import { Navigation, Volume2, Check, X, Users, Clock, Activity, Circle, Eye, MousePointerClick, Reply, List, Tag } from 'lucide-react';
+import { Activity, BarChart, Check, CheckCircle, Circle, Clock, Eye, List, Megaphone, MousePointerClick, Navigation, Reply, Send, Tag, UserPlus, Users, Volume2, X, XCircle } from 'lucide-react';
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

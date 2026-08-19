@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ShoppingBag, Star, Globe, DollarSign, Target, Zap, Check, Loader2, ArrowLeft, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle, DollarSign, Globe, Loader2, ShoppingBag, Sparkles, Star, Target, TrendingUp, Zap } from 'lucide-react';
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 const AdvantagePlusShopping: React.FC = () => {

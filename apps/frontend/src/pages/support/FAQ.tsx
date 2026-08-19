@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Search, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, Book, Info, MessageSquare, Plus } from 'lucide-react';
+import { ArrowLeft, Book, BookOpen, ChevronDown, ChevronUp, HelpCircle, Info, MessageSquare, Plus, Search, ThumbsDown, ThumbsUp } from 'lucide-react';
 import supportService, { FAQ as FAQType } from "../../services/supportService";
 import ThemeToggle from "../../components/ui/theme-toggle";
 import { useAuth } from "../../hooks/useAuthSimple";

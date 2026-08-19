@@ -1,5 +1,5 @@
 import React from "react";
-import { ShoppingBag, LayoutDashboard, Users, Volume2, ShieldAlert, Bot, Globe, CreditCard, MessageSquare, Facebook, Server, Code, Award, Truck } from 'lucide-react';
+import { Award, Bot, Code, CreditCard, Database, Facebook, Globe, LayoutDashboard, Megaphone, MessageSquare, Server, ShieldAlert, ShoppingBag, ShoppingCart, Trophy, Truck, Users, Volume2 } from 'lucide-react';
 
 export type ProjectNodeStatus = "stable" | "beta" | "new" | "maintenance";
 

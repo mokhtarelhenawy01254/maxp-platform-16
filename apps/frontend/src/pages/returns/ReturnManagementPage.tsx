@@ -6,7 +6,7 @@ import {
   ReviewDisplayConfig,
 } from "../../services/returnService";
 import { toast } from "sonner";
-import { Plus, Filter, RefreshCw, Check, X, Clock, Eye, Edit, Package } from 'lucide-react';
+import { Check, CheckCircle, Clock, Edit, Eye, Filter, Package, Plus, RefreshCw, X, XCircle } from 'lucide-react';
 import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
 

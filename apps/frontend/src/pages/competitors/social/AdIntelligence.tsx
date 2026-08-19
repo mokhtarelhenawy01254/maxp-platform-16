@@ -18,7 +18,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { Loader2, DollarSign, Eye, MousePointerClick, Headphones, Mail } from 'lucide-react';
+import { DollarSign, Eye, Headphones, Inbox, Loader2, Mail, MousePointerClick } from 'lucide-react';
 import axios from 'axios';
 import i18n from '../../../i18n';
 

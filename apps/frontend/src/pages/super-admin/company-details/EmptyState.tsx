@@ -1,7 +1,6 @@
 import type { ElementType } from "react"
 import { cn } from "../../../lib/utils"
-import { Mail } from 'lucide-react'
-
+import { Inbox, Mail } from 'lucide-react';
 export function EmptyState({ message, icon: Icon, className }: {
   message: string;
   icon?: ElementType;

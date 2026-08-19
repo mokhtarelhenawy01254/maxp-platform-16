@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Clipboard, Link, Loader2, ArrowRight, Pencil, Plus, Save, Shield, ShieldOff, Users, X } from 'lucide-react';
+import { ArrowRight, Check, Clipboard, Copy, Link, Loader2, LogOut, Pencil, Plus, Save, Shield, ShieldOff, Users, X } from 'lucide-react';
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, AlertTriangle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2, Shield, RefreshCw, Menu, MessageSquare, Archive, Lock } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Archive, Bot, Clock, Loader2, Lock, Menu, MessageSquare, PenLine, Plus, RefreshCw, Save, Search, Shield, Trash2, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { sandboxApi, type AgentProfileResponse } from "../ai-agent-sandbox/services/sandboxApi";
 import AgentGuardrailsTab from "./AgentGuardrailsTab";

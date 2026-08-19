@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Facebook, Search, Loader2, Check, AlertTriangle, Building } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Building, Building2, Check, Facebook, Loader2, Search } from 'lucide-react';
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";

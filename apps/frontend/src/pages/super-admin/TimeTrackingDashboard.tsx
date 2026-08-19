@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, Users, Check, TrendingUp, Activity, Calendar, Download, Filter, RefreshCw, BarChart, PieChart, Timer, DollarSign } from 'lucide-react';
+import { Activity, BarChart, BarChart3, Calendar, Check, CheckCircle, Clock, DollarSign, Download, Filter, PieChart, RefreshCw, Timer, TrendingUp, Users } from 'lucide-react';
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
 

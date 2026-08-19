@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
-import { DollarSign, Plus, Download, Filter, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Check, CreditCard, File, Calculator, TrendingUp, Users, Calendar, MoreVertical, Star, ShieldCheck, AlertTriangle, RefreshCw, Zap, ArrowUpCircle, ArrowDownCircle, Landmark, Clock } from 'lucide-react';
+import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Calculator, Calendar, Check, CheckCircle, ChevronLeft, ChevronRight, Clock, CreditCard, DollarSign, Download, Edit, Eye, File, FileText, Filter, Landmark, MoreVertical, Plus, RefreshCw, ShieldCheck, Sparkles, Star, Trash2, TrendingUp, Users, Wallet, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';

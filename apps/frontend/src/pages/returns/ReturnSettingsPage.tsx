@@ -8,7 +8,7 @@ import {
   ReturnSettingsData,
 } from "../../services/returnService";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, Folder, Tag, Shield, Check, X, Star, Eye, EyeOff, Save, Settings2, Filter, Package, Calendar } from 'lucide-react';
+import { Calendar, Check, CheckCircle, Edit2, Eye, EyeOff, Filter, Folder, FolderPlus, Package, Plus, Save, Settings2, Shield, Sparkles, Star, Tag, Trash2, X, XCircle } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 
 const getOrderStatusFields = (t: any): {

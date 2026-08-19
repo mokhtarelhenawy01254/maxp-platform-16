@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Edit, Eye, File, Plus, Search, Navigation, Save, RefreshCw } from 'lucide-react';
+import { Check, CheckCircle, Edit, Eye, File, FileText, Navigation, Plus, RefreshCw, Save, Search, Send } from 'lucide-react';
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";

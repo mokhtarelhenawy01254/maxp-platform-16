@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, BarChart2, Check, Clock, Edit, Eye, Layout, MessageSquare, Package, Plus, RefreshCw, Search, Navigation, Star, Trash2, TrendingUp, Users, X, Zap } from 'lucide-react';
+import { AlertCircle, AlertTriangle, BarChart2, BarChart3, Check, CheckCircle, Clock, Edit, Eye, Layout, MessageSquare, Navigation, Package, Plus, RefreshCw, Search, Send, Sparkles, Star, Trash2, TrendingUp, Users, X, Zap } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {

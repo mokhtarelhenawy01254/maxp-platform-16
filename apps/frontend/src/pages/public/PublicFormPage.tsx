@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Loader2, Check } from 'lucide-react';
+import { Check, CheckCircle, Loader2 } from 'lucide-react';
 
 interface FormField {
   id: string;

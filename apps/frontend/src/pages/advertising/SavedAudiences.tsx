@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Users, Plus, Search, Trash2, Eye, Loader2, ArrowLeft, Target, Calendar, MoreVertical, Check } from 'lucide-react';
+import { ArrowLeft, Calendar, Check, CheckCircle, Eye, Loader2, MoreVertical, Plus, Search, Target, Trash2, Users } from 'lucide-react';
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 interface SavedAudience {

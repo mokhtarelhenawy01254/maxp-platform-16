@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag, Check, AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle, ShoppingBag, ShoppingCart } from 'lucide-react';
 
 const ParentBuyPackagePage: React.FC = () => {
   const [subjects, setSubjects] = useState<any[]>([]);

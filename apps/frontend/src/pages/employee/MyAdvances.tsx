@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { CreditCard, Plus, History, Clock, CheckCircle2, X, AlertTriangle, Info, Loader2, DollarSign, Calendar, ArrowRight, TrendingDown, User, ShieldCheck, BarChart } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowRight, Banknote, BarChart, BarChart3, Calendar, CheckCircle2, Clock, CreditCard, DollarSign, History, Info, Loader2, Plus, ShieldCheck, TrendingDown, User, Wallet, X, XCircle } from 'lucide-react';
 import api from "../../services/api";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { Button } from "../../components/ui/button";

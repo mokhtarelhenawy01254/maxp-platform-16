@@ -25,7 +25,7 @@ import {
   DialogDescription,
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { RefreshCw, Clock, Download, ChevronLeft, ChevronRight, CheckCircle2, X, Activity, Zap, Building, ArrowUpRight, Server, Key } from 'lucide-react';
+import { Activity, ArrowUpRight, Building, Building2, CheckCircle2, ChevronLeft, ChevronRight, Clock, Database, Download, Key, RefreshCw, Server, X, XCircle, Zap } from 'lucide-react';
 import { Button } from "../../components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { companyAwareApi } from "../../services/companyAwareApi";

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart2, Clock, Mail, MessageSquare, Navigation, UserCheck, UserX, Users, RefreshCw, Calendar, Award, ArrowDown, Activity, Zap, Target, LayoutGrid, ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Activity, ArrowDown, Award, BarChart2, BarChart3, Calendar, ChevronRight, Clock, Inbox, Layers, LayoutGrid, Mail, MessageSquare, Minus, Navigation, RefreshCw, Send, Target, TrendingDown, TrendingUp, Trophy, UserCheck, Users, UserX, Zap } from 'lucide-react';
 import {
   motion,
   AnimatePresence,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TrendingUp, Plus, Calendar, Folder, Trash2, Edit, Search, CheckCircle2, X } from 'lucide-react';
+import { Briefcase, Calendar, CheckCircle2, Edit, Folder, Plus, Search, Trash2, TrendingUp, X, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

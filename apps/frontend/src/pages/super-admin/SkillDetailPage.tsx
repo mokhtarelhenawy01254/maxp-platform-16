@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { Star, Zap, File, Shield, ArrowRight, Users, Clipboard, Check, Info, Package, Book, Terminal, AlertTriangle, Grid } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Book, BookOpen, Check, Clipboard, Copy, File, FileText, Grid, Info, Layers, Package, Shield, Sparkles, Star, Terminal, UserPlus, Users, Zap } from 'lucide-react';
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 

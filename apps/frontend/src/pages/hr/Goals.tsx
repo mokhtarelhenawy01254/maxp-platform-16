@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Folder, CalendarRange, ChevronLeft, Filter, FolderKanban, Plus, Target, Users } from 'lucide-react';
+import { ArrowRight, Briefcase, CalendarRange, ChevronLeft, Filter, Folder, FolderKanban, Plus, Target, Users } from 'lucide-react';
 
 import {
   BusinessPageHero,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import { Save, DollarSign, AlertTriangle, Check, Crown, Shield, Info } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle, Crown, DollarSign, Info, Save, Shield } from 'lucide-react';
 import { toast } from "sonner";
 
 interface CustomerLoyaltyTier {

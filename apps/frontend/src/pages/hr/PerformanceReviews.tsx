@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BarChart, Plus, Star, Calendar, User, TrendingUp, Edit, Trash2 } from 'lucide-react';
+import { BarChart, BarChart3, Calendar, Edit, Plus, Star, Trash2, TrendingUp, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

@@ -13,7 +13,7 @@ import {
   normalizeRewardStatus,
   type RewardUiStatus,
 } from "./rewardRecordUtils";
-import { Award, Search, Filter, Plus, Eye, Edit, Trash2, RefreshCw, DollarSign, Check, X, Clock, AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Award, Check, CheckCircle, Clock, DollarSign, Edit, Eye, Filter, Plus, RefreshCw, Search, Trash2, X, XCircle } from 'lucide-react';
 
 interface RewardRecord {
   id: string;

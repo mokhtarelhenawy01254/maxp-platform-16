@@ -8,7 +8,7 @@ import {
   CardTitle,
   CardDescription,
 } from "../../../components/ui/card";
-import { Gift, Award, Clipboard, Folder, BarChart, User } from 'lucide-react';
+import { Award, BarChart, Briefcase, Clipboard, Folder, Gift, User } from 'lucide-react';
 import { useAuth } from "../../../hooks/useAuthSimple";
 
 // Import components (Lazy loaded)

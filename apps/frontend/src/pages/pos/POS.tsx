@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { Search, ShoppingBag, User, Trash2, Plus, Minus, CreditCard, PauseCircle, RotateCcw, Maximize, Minimize, Grid, List as ListIcon, Barcode } from 'lucide-react';
+import { Barcode, CreditCard, Grid, List as ListIcon, Maximize, Minimize, Minus, PauseCircle, Plus, RotateCcw, Search, ShoppingBag, ShoppingCart, Trash2, User } from 'lucide-react';
 
 // Types
 interface Product {

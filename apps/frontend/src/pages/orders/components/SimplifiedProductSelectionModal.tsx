@@ -524,7 +524,7 @@ const SimplifiedProductSelectionModal: React.FC<
                               {variant.price &&
                               parseFloat(variant.price as any) > 0
                                 ? `${variant.price} ج.م`
-                                : `${product.price} ج.م`}
+                                : `${selectedProduct.price} ج.م`}
                             </span>
                             {variant.stock !== undefined &&
                               (variant.stock <= 0 ? (

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Clock, Calendar, DollarSign, File, TrendingUp, AlertTriangle, Check, Users, Award, Target, CreditCard, Folder, ChevronRight, Plus, ArrowRight } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowRight, Award, Briefcase, Calendar, Check, ChevronRight, Clock, CreditCard, DollarSign, File, FileText, Folder, Plus, Target, TrendingUp, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

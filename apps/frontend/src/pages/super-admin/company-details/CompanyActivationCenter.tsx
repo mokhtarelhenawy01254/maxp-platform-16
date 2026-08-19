@@ -1,4 +1,4 @@
-import { CheckCircle2, Cog, Loader2, Package, Star, Grid, Zap } from 'lucide-react';
+import { CheckCircle2, Cog, Grid, Layers, Loader2, Package, Sparkles, Star, Zap } from 'lucide-react';
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";

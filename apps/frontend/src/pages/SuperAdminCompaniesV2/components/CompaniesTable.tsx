@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { flexRender, getCoreRowModel, useReactTable, createColumnHelper } from "@tanstack/react-table";
-import { Mail, Facebook, Eye, LogIn, MoreHorizontal, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Trash2, Pencil, Users, ArrowRight, Building, RefreshCw, Check, ChevronDown, ChevronUp, Phone, Search, MessageCircle, Package } from 'lucide-react';
+import { AlertTriangle, ArrowLeftRight, ArrowRight, BadgeCheck, Building, Building2, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Facebook, LogIn, Mail, MessageCircle, MoreHorizontal, Package, Pencil, Phone, RefreshCw, Search, Trash2, UserPlus, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { Checkbox } from "../../../components/ui/checkbox";
 import { Badge } from "../../../components/ui/badge";

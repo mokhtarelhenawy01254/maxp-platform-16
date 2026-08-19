@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Plus, Check, X, Calendar, ChevronLeft, ChevronRight, Download, Eye, AlertTriangle, History, Zap, Timer, File, RefreshCw, ArrowRight, RotateCcw, Loader2, Trash2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowRight, Calendar, Check, ChevronLeft, ChevronRight, Clock, Download, Eye, File, FileText, History, Loader2, Plus, Receipt, RefreshCcw, RefreshCw, RotateCcw, Timer, Trash2, X, Zap } from 'lucide-react';
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";

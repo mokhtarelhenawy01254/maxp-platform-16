@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowRight, Folder, CalendarRange, CheckSquare, FolderKanban, Plus, Save, Target, Trash2, UserRound, Users } from 'lucide-react';
+import { ArrowRight, Briefcase, CalendarRange, CheckSquare, Folder, FolderKanban, Plus, Save, Target, Trash2, UserRound, Users } from 'lucide-react';
 import { toast } from "sonner";
 
 import {

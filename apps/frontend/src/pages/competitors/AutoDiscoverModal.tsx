@@ -6,7 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Star, Plus, Wifi, Mail } from 'lucide-react';
+import { Inbox, Lightbulb, Loader2, Mail, Plus, Star, Wifi } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 
 interface DiscoveredItem {

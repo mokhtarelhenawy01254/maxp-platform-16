@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MessageSquare, Plus, Star, User, Mail, Navigation as SendIcon, Search, Calendar, AlertTriangle, Clock, CheckCircle2, Eye } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Calendar, CheckCircle2, Clock, Eye, Inbox, Mail, MessageSquare, Navigation as SendIcon, Plus, Search, Star, User } from 'lucide-react';
 import {
     Card,
     CardContent,

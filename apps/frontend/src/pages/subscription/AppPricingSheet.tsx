@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useMemo } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { Search, ArrowUp, ArrowDown, Check, X, Clock, Package, Grid, DollarSign, Eye } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle, Clock, DollarSign, Eye, Grid, Layers, Package, Search, X, XCircle } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";

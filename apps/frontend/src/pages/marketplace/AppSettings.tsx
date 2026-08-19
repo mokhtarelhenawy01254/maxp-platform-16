@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, BarChart, BadgePercent, CheckCircle2, Clock3, ExternalLink, Mail, MessageSquare, Package, Save, Settings2, ShieldCheck, ShoppingBag, Star } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, BadgePercent, BarChart, BarChart3, CheckCircle2, Clock3, ExternalLink, Mail, MessageSquare, Package, Save, Settings2, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Star } from 'lucide-react';
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import {
@@ -410,6 +410,13 @@ const toSafeNumber = (value: number | string | null | undefined) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+interface ReviewListResponseData {
+  pagination?: {
+    total?: number | string | null;
+  };
+  reviews?: ReviewModerationItem[];
+}
+
 const buildUsageFeatureMap = (
   entries: AppUsageByFeatureEntry[] | undefined,
 ): Record<string, UsageFeatureTotals> => {
@@ -425,15 +432,8 @@ const buildUsageFeatureMap = (
       actions: Number(entry?._count?.id || 0),
       quantity: Number(entry?._sum?.quantity || 0),
       totalCost: toSafeNumber(entry?._sum?.totalCost),
-  };
-}
-
-interface ReviewListResponseData {
-  pagination?: {
-    total?: number | string | null;
-  };
-  reviews?: ReviewModerationItem[];
-}
+    };
+  }
 
   return featureMap;
 };

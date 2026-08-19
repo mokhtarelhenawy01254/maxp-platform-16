@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Search, Clock, Check, AlertTriangle, MessageSquare } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle, Clock, MessageSquare, Plus, Search } from 'lucide-react';
 import { Ticket } from "../../../services/supportService";
 
 interface TicketsSidebarProps {

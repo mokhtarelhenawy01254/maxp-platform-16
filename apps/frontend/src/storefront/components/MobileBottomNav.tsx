@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Grid3X3, Home, Search, ShoppingBag, User, Circle } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { buildStorefrontPath } from '../utils/paths';
 import { useCartStore } from '../store/useCartStore';
 import { useStorefrontTheme } from '../engine/ThemeProvider';

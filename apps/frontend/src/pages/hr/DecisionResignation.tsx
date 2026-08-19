@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { File, ArrowRight, Check, X, Calendar, User, AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowRight, Calendar, Check, CheckCircle, File, FileText, User, X, XCircle } from 'lucide-react';
 import { toast } from "sonner";
 import api from "../../services/api";
 

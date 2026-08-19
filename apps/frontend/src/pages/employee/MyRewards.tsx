@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { Award, Calendar, DollarSign, Gift, Clock, Check, X, AlertTriangle, Loader2, Filter, ArrowUpRight, TrendingUp, Info, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowUpRight, Award, Calendar, Check, CheckCircle, Clock, DollarSign, Filter, Gift, Info, Loader2, TrendingUp, Trophy, X, XCircle } from 'lucide-react';
 import api from "../../services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";

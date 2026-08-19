@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Settings, ArrowLeft, Clock, MousePointer, Eye, Loader2, Check, Info, BarChart } from 'lucide-react';
+import { ArrowLeft, BarChart, BarChart3, Check, CheckCircle, Clock, Eye, Info, Loader2, MousePointer, Settings } from 'lucide-react';
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 const AttributionSettings: React.FC = () => {

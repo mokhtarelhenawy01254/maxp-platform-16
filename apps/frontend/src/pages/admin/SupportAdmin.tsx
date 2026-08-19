@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Search, Filter, Clock, Check, AlertTriangle, MessageSquare, Calendar, Tag, User, BarChart, Plus, Eye, Edit, Trash2, Settings } from 'lucide-react';
+import { AlertCircle, AlertTriangle, BarChart, BarChart3, Calendar, Check, CheckCircle, Clock, Edit, Eye, Filter, MessageSquare, Plus, Search, Settings, Tag, Trash2, User } from 'lucide-react';
 import supportService, {
   Ticket,
   FAQ,

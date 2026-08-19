@@ -31,7 +31,7 @@ import {
   isStorefrontMarketplaceAppEnabled,
 } from '../utils/marketplaceApps';
 import TrustedBadgePanel from '../components/TrustedBadgePanel';
-import { AlarmClock, Check, CheckCircle2, Eye, Facebook, Heart, Twitter, ExternalLink, MessageCircle, Ruler, Share2, ShieldCheck, Star, Truck, RotateCcw, X } from 'lucide-react';
+import { AlarmClock, BadgeCheck, Check, CheckCircle2, ExternalLink, Eye, Facebook, Heart, MessageCircle, RotateCcw, Ruler, Share2, ShieldCheck, Sparkles, Star, Truck, Twitter, X } from 'lucide-react';
 import {
   calculateVolumeDiscountPricing,
   getProductVolumeDiscounts,
@@ -3184,6 +3184,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   // Embedded quick-order sections can still depend on the buybox surface as the
   // primary decision area, especially for merged-buybox PDP variants.
   const shouldRenderPrimaryBuyBox = !externalOnlyProduct;
+  const showStickyMobileAddToCart =
+    shouldRenderPrimaryBuyBox && !externalOnlyProduct && !isCartOpen;
   const shouldRenderStandaloneBuyBox =
     shouldRenderPrimaryBuyBox && !isPrimaryQuantityOffersDecision;
   const primaryActionTargetId = hasEmbeddedPdpCheckout

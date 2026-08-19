@@ -2,7 +2,7 @@ import type { WhatsAppSummary, WhatsAppSession } from "./companyDetailsTypes";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { MessageSquare, Phone, CheckCircle2, X, Loader2, Mail, Plus } from 'lucide-react';
+import { CheckCircle2, Loader2, Mail, MessageSquare, Phone, Plus, X, XCircle } from 'lucide-react';
 
 function SessionStatusBadge({ status }: { status: string }) {
   const connected = status === "CONNECTED";

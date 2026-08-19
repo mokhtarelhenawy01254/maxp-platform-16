@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Building, Users, Facebook, AlertTriangle, MessageSquare, Phone, TrendingUp, Search, X } from 'lucide-react';
+import { AlertTriangle, Building, Building2, Facebook, MessageSquare, Phone, Search, Smartphone, TrendingUp, Users, X } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { useCompanies } from "../SuperAdminCompaniesV2/hooks/useCompanies";
 import { apiClient } from "../../services/apiClient";

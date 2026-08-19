@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { Users, Search, Filter, Star, Crown, Medal, Gem, Award, Eye, Edit, RefreshCw, Gift, DollarSign, Plus } from 'lucide-react';
+import { Award, Crown, DollarSign, Edit, Eye, Filter, Gem, Gift, Medal, Plus, RefreshCw, Search, Star, Trophy, Users } from 'lucide-react';
 import { customerService, Customer } from "../../services/customerService";
 
 interface CustomerLoyaltyProgram {

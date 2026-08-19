@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { ArrowLeft, Check, BarChart, Folder, PhoneCall, Play, Star, Target } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, BarChart, BarChart3, Briefcase, Check, Folder, PhoneCall, Play, PlayCircle, Sparkles, Star, Target } from 'lucide-react';
 import { submitPublicLead } from "../../services/publicLeadService";
 
 const MG_PAGE_SLUG = "mg-agency";

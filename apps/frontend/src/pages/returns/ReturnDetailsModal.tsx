@@ -6,7 +6,7 @@ import {
   ContactAttempt,
   ActivityLog,
 } from "../../services/returnService";
-import { X, Phone, MessageCircle, Clock, Check, Shield, Calendar } from 'lucide-react';
+import { Calendar, Check, CheckCircle, Clock, MessageCircle, Phone, Shield, X, XCircle } from 'lucide-react';
 import { toast } from "sonner";
 
 interface ReturnDetailsModalProps {

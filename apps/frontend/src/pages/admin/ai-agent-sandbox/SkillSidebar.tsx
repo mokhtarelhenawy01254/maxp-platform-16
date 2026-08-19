@@ -1,7 +1,7 @@
 import React from "react";
 import { SkillDefinition } from "./hooks/useAgentSandbox";
 import { AgentConfig } from "./types/sandbox.types";
-import { Star } from 'lucide-react';
+import { Sparkles, Star } from 'lucide-react';
 
 interface SkillSidebarProps {
   selectedAgent: AgentConfig | null;

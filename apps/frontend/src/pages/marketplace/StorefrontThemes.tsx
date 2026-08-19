@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle2, Check, Clipboard, Eye, Loader2, Brush, Search, ShoppingBag, Star, CreditCard } from 'lucide-react';
+import { Brush, Check, CheckCircle2, Clipboard, Copy, CreditCard, Eye, Loader2, Palette, Search, ShoppingBag, ShoppingCart, Sparkles, Star, Wallet } from 'lucide-react';
 import { toast } from "sonner";
 
 import { useOptionalAuth } from "../../hooks/useAuthSimple";

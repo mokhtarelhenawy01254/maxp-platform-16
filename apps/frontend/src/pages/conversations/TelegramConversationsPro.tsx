@@ -5,7 +5,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import useSocket from "../../hooks/useSocket";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import LinkifiedText from "../../components/common/LinkifiedText";
-import { Navigation, Link, Smile, MoreVertical, Search, Phone, Check, CheckCheck, MessageCircle, Bot, Settings, User, Pin, File, Image as ImageIcon, Reply, Forward, Trash2, Mic, X, Video, Volume2, Contact, Edit, Download, Play, Pause } from 'lucide-react';
+import { Bot, Check, CheckCheck, Contact, Download, Edit, File, Forward, Image as ImageIcon, Link, MapPin, MessageCircle, Mic, MoreVertical, Music, Navigation, Paperclip, Pause, Phone, Pin, Play, Reply, Search, Send, Settings, Smile, Trash2, User, Video, Volume2, X } from 'lucide-react';
 
 // --- Types ---
 interface Message {

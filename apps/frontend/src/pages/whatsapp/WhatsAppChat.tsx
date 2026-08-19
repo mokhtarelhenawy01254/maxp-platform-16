@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from 'react';
-import { AlertTriangle, Ban, BarChart2, Check, CheckCheck, Clock3, Clipboard, Forward, List as ListIcon, File, Loader2, Pin, MousePointerSquare, PanelRightClose, PanelRightOpen, Phone, Plus, Reply, ShieldAlert, Smile, Star, Store, Trash2, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Ban, BarChart2, BarChart3, Check, CheckCheck, Clipboard, Clock3, Copy, File, FileText, Forward, List as ListIcon, Loader2, MapPin, MousePointerSquare, PanelRightClose, PanelRightOpen, Phone, Pin, Plus, PlusCircle, Reply, ShieldAlert, Smile, SmilePlus, Star, Store, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { format } from 'date-fns';

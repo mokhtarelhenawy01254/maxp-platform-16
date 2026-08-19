@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import orderWorkflowService, { OrderStatusDefinition } from "../../services/orderWorkflowService";
-import { Search, ArrowRight, Loader2, Package, RotateCcw, AlertTriangle, Check } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowRight, Check, CheckCircle, Loader2, Package, RotateCcw, Search } from 'lucide-react';
 import { getStatusDisplay, getSystemStatusOptions } from "../../utils/statusRegistry";
 
 interface OrderData {

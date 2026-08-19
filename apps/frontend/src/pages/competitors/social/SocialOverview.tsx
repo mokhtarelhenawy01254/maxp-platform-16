@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Loader2, Instagram, Facebook, Volume2, ThumbsUp, MessageCircle, Eye, Check, Mail } from 'lucide-react';
+import { Check, CheckCircle, Eye, Facebook, Inbox, Instagram, Loader2, Mail, MessageCircle, Music, RefreshCw, ThumbsUp, Volume2 } from 'lucide-react';
 import axios from 'axios';
 import i18n from '../../../i18n';
 

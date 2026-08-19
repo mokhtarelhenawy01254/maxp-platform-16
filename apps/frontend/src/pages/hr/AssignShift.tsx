@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Clock, Calendar, ArrowRight, Users, Check, AlertTriangle, Search, ShieldCheck, Folder, X, CalendarRange } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowRight, Briefcase, Calendar, CalendarRange, Check, Clock, Folder, Search, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
 import {
   Card,
   CardContent,

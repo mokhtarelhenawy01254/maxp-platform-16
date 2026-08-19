@@ -6,7 +6,7 @@ import {
   CancellationReasonCategory,
 } from "../../services/cancellationService";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, Folder, Tag, Check, X, Star } from 'lucide-react';
+import { Check, CheckCircle, Edit2, Folder, FolderPlus, Plus, Sparkles, Star, Tag, Trash2, X, XCircle } from 'lucide-react';
 
 const getDefaultData = (t: any) => [
   {

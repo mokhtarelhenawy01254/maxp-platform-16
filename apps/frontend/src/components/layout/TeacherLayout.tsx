@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Calendar, CreditCard, Clock, LayoutDashboard, ArrowRight, Menu, X, User } from 'lucide-react';
+import { ArrowRight, Calendar, CalendarDays, Clock, CreditCard, LayoutDashboard, LogOut, Menu, User, Wallet, X } from 'lucide-react';
 
 interface TeacherLayoutProps {
   children: React.ReactNode;

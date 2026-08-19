@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Navigation, Bot, User, Clipboard, Check, CheckCircle2, AlertTriangle, Clock, Server, Book, Image as ImageIcon, X, Loader2, Upload } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Book, BookOpen, Bot, Check, CheckCircle2, Clipboard, Clock, Copy, Cpu, Image as ImageIcon, Loader2, Navigation, Send, Server, Upload, User, X } from 'lucide-react';
 import type { ChatMessage, AgentConfig, ModelConfig, ToolCall } from "../types/sandbox.types";
 import type { AgentSkillDetail } from "../services/sandboxApi";
 

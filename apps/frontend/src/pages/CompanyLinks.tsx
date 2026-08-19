@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Clipboard, ExternalLink, Eye, Globe, Link2, LockKeyhole, Pencil, Plus, ShieldAlert, Trash2, UserRound } from 'lucide-react';
+import { Clipboard, Copy, ExternalLink, Eye, Globe, Link2, LockKeyhole, Pencil, Plus, ShieldAlert, Trash2, UserRound } from 'lucide-react';
 import { toast } from "sonner";
 import {
   AlertDialog,

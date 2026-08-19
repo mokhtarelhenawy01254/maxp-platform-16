@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from "react";
 import { getStatusDisplay } from "../../../utils/statusRegistry";
-import { User, Phone, Mail, Clock, ShoppingBag, Activity, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, Ban as NoSymbolIcon, Check as CheckCircleIcon } from 'lucide-react';
+import { Activity, Ban as NoSymbolIcon, Bell, BellOff, Check as CheckCircleIcon, Clock, ExternalLink, Mail, Phone, RefreshCw, ShoppingBag, User, Volume2, VolumeX } from 'lucide-react';
 ;
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";

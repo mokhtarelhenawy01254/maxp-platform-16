@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MessageSquare, Plus, Star, User, ArrowRight, Filter, Search, TrendingUp, Mail, Navigation as SendIcon, Award, Calendar, MoreVertical, Pencil, Trash2, Reply, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowRight, Award, Calendar, CheckCircle2, Clock, Filter, Inbox, Mail, MessageSquare, MoreVertical, Navigation as SendIcon, Pencil, Plus, Reply, Search, Star, Trash2, TrendingUp, User } from 'lucide-react';
 import {
   Card,
   CardContent,

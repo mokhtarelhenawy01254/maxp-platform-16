@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Loader2, LogIn, MessageSquare, RefreshCw, Star, Users, CreditCard } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowLeftRight, ArrowRight, CheckCircle2, CreditCard, Loader2, LogIn, MessageSquare, RefreshCw, Sparkles, Star, UserPlus, Users, Wallet } from 'lucide-react';
 import { useCallback, useState, type ChangeEvent } from "react";
 import { cn } from "../../lib/utils";
 import i18n from "../../i18n";

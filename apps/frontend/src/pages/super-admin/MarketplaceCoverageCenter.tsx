@@ -23,7 +23,7 @@ import i18n from "../../i18n";
 import { areaLabels, marketplaceFeatureMap, statusLabels } from "../../config/marketplaceFeatureMap";
 import { buildMarketplaceCoverage } from "./marketplaceCoverageUtils";
 import type { CompanyCoverageSummary, CoverageCompany, CoverageFeatureEntry, MarketplaceCoverageStatus } from "./marketplaceCoverageUtils";
-import { Star, Zap, Check, AlertTriangle, Package, RefreshCw, Shield } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle, Package, RefreshCw, Shield, Sparkles, Star, Zap } from 'lucide-react';
 
 type CompanyFilter = "all" | "risk" | "fallback" | "missing" | "clean";
 const getAuthHeaders = (additional: Record<string, string> = {}) => tokenManager.createAuthHeaders(additional);

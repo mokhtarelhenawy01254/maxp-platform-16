@@ -1,4 +1,4 @@
-import { MessageSquare, Tag } from 'lucide-react';
+import { MessageSquare, Tag, Ticket } from 'lucide-react';
 import type { TicketListItem } from "./companyDetailsTypes";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";

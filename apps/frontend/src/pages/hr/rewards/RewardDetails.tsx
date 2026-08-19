@@ -11,7 +11,7 @@ import {
   normalizeRewardStatus,
   type RewardUiStatus,
 } from "./rewardRecordUtils";
-import { Award, ArrowLeft, User, Calendar, DollarSign, File, Check, X, Clock, Edit, Trash2, AlertTriangle, RefreshCw, Info, Ban } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, Award, Ban, Calendar, Check, CheckCircle, Clock, DollarSign, Edit, File, Info, RefreshCw, Trash2, User, X, XCircle } from 'lucide-react';
 
 interface RewardDetails {
   id: string;

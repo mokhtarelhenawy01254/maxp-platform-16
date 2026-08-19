@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Users, Search, File, CheckCircle2, Phone, ArrowLeft, Clock, LayoutDashboard, Shield } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, File, FileText, LayoutDashboard, Phone, Search, Shield, Smartphone, Users } from 'lucide-react';
 import { Link } from "react-router-dom";
 
 const EmployeesLanding = () => {

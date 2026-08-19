@@ -12,7 +12,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { Loader2, ShoppingBag, Pin, Store, Globe, Star, Mail } from 'lucide-react';
+import { Globe, Inbox, Loader2, Mail, MapPin, Pin, ShoppingBag, Star, Store } from 'lucide-react';
 import axios from 'axios';
 
 const platformIcons = {

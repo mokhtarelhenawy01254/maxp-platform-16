@@ -15,7 +15,7 @@ import {
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
-import { Plus, X, Clock, RotateCcw } from 'lucide-react';
+import { Clock, Plus, RotateCcw, X, XCircle } from 'lucide-react';
 import { toast } from "sonner";
 
 const TelegramScheduler = () => {

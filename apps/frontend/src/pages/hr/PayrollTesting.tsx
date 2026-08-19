@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Users, Search, Calculator, AlertTriangle, Save, Printer, Trash2, Plus, Zap, ShieldCheck, Calendar, Clock, DollarSign, MinusCircle, Check, RefreshCw, ChevronRight, File, Percent, FileCheck, Settings, Download } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Banknote, Calculator, Calendar, Check, CheckCircle, ChevronRight, Clock, DollarSign, Download, File, FileCheck, FileText, MinusCircle, Percent, Plus, Printer, RefreshCw, Save, Search, Settings, ShieldCheck, Trash2, Users, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,

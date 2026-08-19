@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
-import { Check, AlertTriangle, Calculator, User } from 'lucide-react';
+import { AlertTriangle, Calculator, Check, CheckCircle, User } from 'lucide-react';
 import { toast } from "sonner";
 import api from "../../../services/api";
 

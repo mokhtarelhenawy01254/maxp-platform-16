@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Clock, Calendar, DollarSign, Save, RefreshCw, Users, Bell, File, AlertTriangle, Folder, Home, Gift, Lock, Baby, Heart, Plane, Trash2, Search, CheckCircle2, Info, X, Pin, Navigation, ExternalLink, Loader2, TrendingUp, Calculator, MessageSquare } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Baby, Bell, Briefcase, Calculator, Calendar, CheckCircle2, Clock, DollarSign, ExternalLink, File, FileText, Folder, Gift, Heart, Home, Info, Loader2, Lock, MapPin, MessageSquare, Navigation, Pin, Plane, RefreshCw, Save, Search, Trash2, TrendingUp, Users, X } from 'lucide-react';
 import {
   Card,
   CardContent,

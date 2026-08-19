@@ -1,5 +1,5 @@
 import React from "react";
-import { Building, Users, MoreVertical, User, Trash2, ChevronRight, Folder, Activity } from 'lucide-react';
+import { Activity, Briefcase, Building, Building2, ChevronRight, Folder, MoreVertical, Trash2, User, UserCircle, Users } from 'lucide-react';
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";

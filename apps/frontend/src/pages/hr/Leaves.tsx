@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Plus, Check, X, Clock, ChevronLeft, ChevronRight, Download, Eye, Palmtree, Stethoscope, Baby, Heart, Book, AlertTriangle, File, ArrowRight, RotateCcw, Trash2, CreditCard } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Baby, Book, Calendar, Check, ChevronLeft, ChevronRight, Clock, CreditCard, Download, Eye, File, FileText, GraduationCap, Heart, Palmtree, Plus, RotateCcw, Stethoscope, Trash2, Wallet, X } from 'lucide-react';
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";

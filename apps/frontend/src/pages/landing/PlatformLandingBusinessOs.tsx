@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, Clock3, DatabaseZap, Link2Off, MessageSquareMore, Play, Star, UsersRound, WalletCards, Workflow } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, Clock3, DatabaseZap, Link2Off, MessageSquareMore, Play, PlayCircle, Sparkles, Star, UsersRound, WalletCards, Workflow } from 'lucide-react';
 import { trackPlatformSiteLead } from "../../utils/platformSiteMetaPixel";
 
 const MANROPE_FONT_LINK_ID = "platform-landing-business-os-manrope";

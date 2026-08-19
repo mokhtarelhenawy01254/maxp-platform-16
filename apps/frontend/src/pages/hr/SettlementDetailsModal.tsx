@@ -10,7 +10,7 @@ import { Badge } from "../../components/ui/badge";
 import { Separator } from "../../components/ui/separator";
 import { toast } from "sonner";
 import api from "../../services/api";
-import { Loader2, Calculator, Check, DollarSign, Calendar } from 'lucide-react';
+import { Banknote, Calculator, Calendar, Check, CheckCircle, DollarSign, Loader2 } from 'lucide-react';
 
 interface SettlementDetailsModalProps {
   isOpen: boolean;

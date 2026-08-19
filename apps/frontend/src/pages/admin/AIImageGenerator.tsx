@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Star, Loader2, Download, Trash2, Clipboard, ExternalLink, RefreshCw, Grid3X3, AlertTriangle, Info, Wand2, RotateCcw, ImageIcon, File, Tag, Type, MessageSquare, MoreVertical, Grid } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Clipboard, Copy, Download, ExternalLink, File, FileText, Grid, Grid3X3, Hash, ImageIcon, Info, Layers, Loader2, MessageSquare, MoreVertical, RefreshCw, RotateCcw, Sparkles, Star, Tag, Trash2, Type, Wand2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

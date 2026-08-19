@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, ExternalLink, Link2, Loader2, Mail, Package, Search, ShoppingBag, Star, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, ExternalLink, Link2, Loader2, Mail, Package, Search, ShoppingBag, ShoppingCart, Sparkles, Star, X } from 'lucide-react';
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 

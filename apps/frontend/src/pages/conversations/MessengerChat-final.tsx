@@ -10,6 +10,9 @@ import apiService, {
 import { config } from "../../config";
 import { tokenManager } from "../../utils/tokenManager";
 import LinkifiedText from "../../components/common/LinkifiedText";
+import SavedReplies from "../../components/conversations/SavedReplies";
+import CustomerProfile from "../../components/conversations/CustomerProfile";
+import { getImageUrl } from "../../utils/urlConverter";
 
 const MOCK_CONVERSATIONS: Conversation[] = [
   {
@@ -817,16 +820,14 @@ const MessengerChat: React.FC = () => {
       </div>
 
       {/* مكون الردود المحفوظة */}
-      {showSavedReplies && (
-        <SavedReplies
-          replies={savedReplies}
-          onClose={() => setShowSavedReplies(false)}
-          onUseReply={(reply: SavedReply) => {
-            setNewMessage(reply.content);
-            setShowSavedReplies(false);
-          }}
-        />
-      )}
+      <SavedReplies
+        isOpen={showSavedReplies}
+        onClose={() => setShowSavedReplies(false)}
+        onSelectReply={(reply: SavedReply) => {
+          setNewMessage(reply.content);
+          setShowSavedReplies(false);
+        }}
+      />
 
       {/* مكون ملف العميل */}
       {showCustomerProfile && customerProfile && selectedConversation && (

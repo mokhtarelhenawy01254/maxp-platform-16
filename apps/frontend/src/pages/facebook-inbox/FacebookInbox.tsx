@@ -41,7 +41,7 @@ import {
   showBrowserNotification as showNativeBrowserNotification,
 } from "../../utils/browserNotifications";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { StickyNote, Menu, ArrowRight, Clipboard, Check, MoreHorizontal, PanelRightClose, PanelRightOpen, Check as CheckCircleIcon, Clock as ClockIcon, Ban as NoSymbolIcon, ShoppingBag as ShoppingCartIcon, Star as StarIcon, Trash2 as TrashIcon, Circle as UserCircleIcon, X as XMarkIcon } from 'lucide-react';
+import { ArrowRight, Ban as NoSymbolIcon, Check, Check as CheckCircleIcon, Circle as UserCircleIcon, Clipboard, Clock as ClockIcon, Copy, Menu, MoreHorizontal, PanelRightClose, PanelRightOpen, ShoppingBag as ShoppingCartIcon, Star as StarIcon, StickyNote, Trash2 as TrashIcon, X as XMarkIcon } from 'lucide-react';
 ;
 import { apiClient } from "../../services/apiClient";
 import { useDebounce } from "../../hooks/useDebounce";

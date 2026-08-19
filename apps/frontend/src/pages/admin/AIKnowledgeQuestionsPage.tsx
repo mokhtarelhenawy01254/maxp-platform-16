@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Info, MessageSquare, Navigation, CheckCircle2, Clock, Loader2, RefreshCw, Facebook, MessageCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Facebook, HelpCircle, Info, Loader2, MessageCircle, MessageSquare, Navigation, RefreshCw, Send } from 'lucide-react';
 import aiKnowledgeQuestionService, {
   KnowledgeQuestion,
 } from "../../services/aiKnowledgeQuestionService";

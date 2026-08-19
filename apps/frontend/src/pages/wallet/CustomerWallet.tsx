@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Clock3, CreditCard, Gift, Star, CreditCard as WalletIcon } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Clock3, CreditCard, CreditCard as WalletIcon, Gift, Sparkles, Star } from 'lucide-react';
 
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";

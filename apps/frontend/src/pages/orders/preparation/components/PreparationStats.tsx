@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { PackageSearch, CheckCircle2, AlertTriangle, Truck, Clock, Timer } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Clock, PackageSearch, Timer, Truck } from 'lucide-react';
 
 interface PreparationStatsProps {
   searchedOrdersCount: number;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, Link2, Phone, Workflow } from 'lucide-react';
+import { Bell, BellRing, Link2, Phone, Smartphone, Workflow } from 'lucide-react';
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

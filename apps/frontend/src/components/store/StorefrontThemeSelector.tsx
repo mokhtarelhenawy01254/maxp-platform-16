@@ -1,5 +1,5 @@
 import React, { useDeferredValue, useMemo, useState } from "react";
-import { CheckCircle2, Grid, Loader2, Search, ShoppingBag, Star, Store } from 'lucide-react';
+import { CheckCircle2, Grid, LayoutGrid, Loader2, Search, ShoppingBag, ShoppingCart, Sparkles, Star, Store } from 'lucide-react';
 
 import { cn } from "../../lib/utils";
 import type { StorefrontThemeCatalogItem } from "../../storefront/themes/catalog";

@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Star, Zap, ExternalLink, Users, RefreshCw, Search, Check, AlertTriangle, Plus } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, ExternalLink, Plus, RefreshCw, Search, Sparkles, Star, UserPlus, Users, Zap } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

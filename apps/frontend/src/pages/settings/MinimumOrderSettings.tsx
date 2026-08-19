@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Loader2, Save, ShoppingBag } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle, Loader2, Save, ShoppingBag } from 'lucide-react';
 import { apiClient } from "../../services/api";
 
 interface MinimumOrderSettingsData {

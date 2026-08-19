@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getStatusDisplay } from "../../utils/statusRegistry";
 import { useNavigate, useParams } from 'react-router-dom';
 ;
-import { FileIcon, ImageIcon, Volume2, Link, ShoppingBag, Video, ShoppingBag as ShoppingCartIcon } from 'lucide-react';
+import { FileIcon, ImageIcon, Link, Music, Paperclip, ShoppingBag, ShoppingBag as ShoppingCartIcon, Video, Volume2 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
 import LinkifiedText from '../../components/common/LinkifiedText';

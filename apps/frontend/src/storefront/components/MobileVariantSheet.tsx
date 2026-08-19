@@ -1,6 +1,6 @@
 import React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Star, X } from 'lucide-react';
+import { Sparkles, Star, X } from 'lucide-react';
 import type { ProductVariant } from "../hooks/useProducts";
 import VariantSelector from "./VariantSelector";
 import QuantitySelector from "./QuantitySelector";

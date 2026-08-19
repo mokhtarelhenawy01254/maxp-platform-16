@@ -991,6 +991,10 @@ const Orders: React.FC = () => {
   // Stats State
 
   const { t } = useTranslation();
+  const getStatusText = (status: string) => {
+    const statusKey = `orders.status.${status.toLowerCase()}`;
+    return t(statusKey, { defaultValue: status });
+  };
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const orderStatusMap = useMemo(

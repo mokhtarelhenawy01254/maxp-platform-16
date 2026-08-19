@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import { Crown, Medal, Gem, Award, Zap, Plus, RefreshCw, Info, Trash2, Edit, X } from 'lucide-react';
+import { Award, Crown, Edit, Gem, Info, Medal, Plus, RefreshCw, Trash2, Trophy, X, Zap } from 'lucide-react';
 
 interface CustomerLoyaltyTier {
   id: string;

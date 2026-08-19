@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, type TouchEvent as ReactTouchEvent } from "react";
 import EmojiPicker from "emoji-picker-react";
 import { VirtualItem } from "@tanstack/react-virtual";
-import { AlertTriangle, ArrowLeft, BarChart2, Info, List, Pin, Mic, Link, PanelRightClose, PanelRightOpen, RefreshCw, Navigation, ShoppingBag, Smile, Menu, Plus, Store, Clipboard, File, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, BarChart2, BarChart3, Clipboard, ClipboardList, File, FileText, Info, Link, List, MapPin, Menu, Mic, Navigation, PanelRightClose, PanelRightOpen, Paperclip, Pin, Plus, RefreshCw, Send, ShoppingBag, ShoppingCart, Smile, Store, X } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

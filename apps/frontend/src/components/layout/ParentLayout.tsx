@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Calendar, CreditCard, Users, LayoutDashboard, ArrowRight, Menu, X, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Calendar, CalendarDays, CreditCard, LayoutDashboard, LogOut, Menu, ShoppingBag, ShoppingCart, Users, Wallet, X } from 'lucide-react';
 
 interface ParentLayoutProps {
   children: React.ReactNode;

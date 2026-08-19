@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DollarSign, Plus, Search, Eye, Trash2, Check, X, Clock, AlertTriangle, TrendingDown, Loader2, Edit2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle, Clock, DollarSign, Edit2, Eye, Loader2, Plus, Search, Trash2, TrendingDown, X } from 'lucide-react';
 import api from "../../services/api";
 
 interface Deduction {

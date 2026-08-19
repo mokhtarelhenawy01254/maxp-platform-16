@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Building, Plus, Trash2, Users, MoreVertical, ChevronRight, User, X, Pencil, Activity } from 'lucide-react';
+import { Activity, Building, Building2, ChevronRight, LayoutGrid, MoreVertical, Pencil, Plus, Trash2, User, UserPlus, Users, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";

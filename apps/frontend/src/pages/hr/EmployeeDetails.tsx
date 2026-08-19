@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Mail, Phone, Pin, Calendar, Folder, Building, DollarSign, Clock, File, Award, AlertTriangle, Book, Edit, ArrowRight, CreditCard, Heart, ShieldHalf } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Award, Book, Briefcase, Building, Building2, Calendar, Clock, CreditCard, DollarSign, Edit, File, FileText, Folder, Heart, Mail, MapPin, Phone, Pin, ShieldHalf, User, UserCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -88,6 +89,7 @@ const maritalLabels: Record<string, string> = {
 };
 
 const EmployeeDetails: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);

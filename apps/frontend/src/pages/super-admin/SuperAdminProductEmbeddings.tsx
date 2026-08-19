@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
-import { Server, RefreshCw, Play, Check, AlertTriangle, Clock, Grid, Building, ChevronDown, ChevronRight, Info, Book, Search } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Book, BookOpen, Building, Building2, Check, CheckCircle, ChevronDown, ChevronRight, Clock, Database, Grid, Info, Layers, Play, RefreshCw, Search, Server } from 'lucide-react';
 
 interface JobState {
   status: "idle" | "running" | "done" | "error";

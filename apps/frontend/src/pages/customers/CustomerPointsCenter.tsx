@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiClient } from "../../services/apiClient";
-import { Star, RefreshCw, Search, Users, TrendingUp, AlertTriangle, Gift, Target, ArrowUpCircle, ArrowDownCircle, Settings, History, Filter, ChevronLeft, ChevronRight, MessageCircle, X, Wrench } from 'lucide-react';
+import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, ChevronLeft, ChevronRight, Filter, Gift, History, MessageCircle, RefreshCw, Search, Settings, Sparkles, Star, Target, TrendingUp, UserPlus, Users, Wrench, X } from 'lucide-react';
 
 interface CustomerLoyaltyProgram {
   id: string;

@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Beaker, Clipboard, ArrowRight, List, Star } from 'lucide-react';
+import { ArrowLeftRight, ArrowRight, Beaker, Clipboard, ClipboardCheck, Download, FlaskConical, LayoutList, List, Sparkles, Star } from 'lucide-react';
 import type { AgentConfig, ModelConfig } from "../types/sandbox.types";
 import type { CentralKeyConfig } from "../types/sandbox.types";
 

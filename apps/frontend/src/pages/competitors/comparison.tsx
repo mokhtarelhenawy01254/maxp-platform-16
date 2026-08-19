@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Activity, Check, X, Minus, RefreshCw } from 'lucide-react';
+import { Activity, ArrowLeft, ArrowRight, Check, Minus, RefreshCw, Scale, X, XCircle } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
 import { updateCompetitorStatus } from './useCompetitorStatus';

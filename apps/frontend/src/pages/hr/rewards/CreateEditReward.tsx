@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../../services/apiClient";
-import { Award, ArrowLeft, Save, AlertTriangle, RefreshCw, User, Calendar, DollarSign, Star, Grid } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, Award, Calendar, DollarSign, Grid, RefreshCw, Save, Sparkles, Star, User } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3007";
 

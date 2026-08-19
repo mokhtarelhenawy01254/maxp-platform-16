@@ -1,6 +1,6 @@
 import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, ShoppingBag } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Product } from '../hooks/useProducts';
 import { useCartStore } from '../store/useCartStore';

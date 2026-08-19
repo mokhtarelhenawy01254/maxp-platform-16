@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Calendar, Gift, PanelTop, Plus, RefreshCw, Save, ShoppingBag, Tag, Trash2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Calendar, Gift, PanelTop, Plus, RefreshCcw, RefreshCw, Save, ShoppingBag, ShoppingCart, Tag, Trash2 } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

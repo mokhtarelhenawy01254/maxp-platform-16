@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, Bell, Folder, Check, Clock, DollarSign, Edit, Eye, File, Gift, Volume2, Package, Plus, RefreshCw, Save, Search, Navigation, Settings, ShoppingBag, Phone, TestTube, TrendingUp, Users, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Bell, Briefcase, Check, CheckCircle, Clock, DollarSign, Edit, Eye, File, FileText, Folder, Gift, Megaphone, Navigation, Package, Phone, Plus, RefreshCw, Save, Search, Send, Settings, ShoppingBag, ShoppingCart, Smartphone, TestTube, TrendingUp, Users, Volume2, X, XCircle } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

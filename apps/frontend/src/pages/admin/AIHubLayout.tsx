@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useLayoutEffect, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Bot, Building, Navigation, Loader2 } from 'lucide-react';
+import { Bot, Building, Building2, Loader2, Navigation, Send } from 'lucide-react';
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import tokenManager from "../../utils/tokenManager";

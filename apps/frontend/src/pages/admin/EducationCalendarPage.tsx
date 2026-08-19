@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight, X, Clock, User, Book } from 'lucide-react';
+import { Book, BookOpen, ChevronLeft, ChevronRight, Clock, User, X } from 'lucide-react';
 
 const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const DAYS_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];

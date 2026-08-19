@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, FileOutput, FileSpreadsheet, File, Loader2, Mail, PackageCheck, Brush, Printer, RefreshCw, RotateCcw, Save, ScanText, Settings2, Star, Workflow } from 'lucide-react';
+import { Brush, CheckCircle2, File, FileOutput, FileSpreadsheet, FileText, Loader2, Mail, PackageCheck, Palette, Printer, RefreshCcw, RefreshCw, RotateCcw, Save, ScanText, Settings2, Sparkles, Star, Workflow } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

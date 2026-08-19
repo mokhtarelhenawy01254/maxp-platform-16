@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Brush, Loader2, Save } from 'lucide-react';
+import { Brush, Loader2, Palette, Save } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -11,7 +11,7 @@ import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
-import { Brain, Plus, Trash2, Navigation, Check, Clipboard, Save } from 'lucide-react';
+import { Brain, Check, CheckCircle, Clipboard, Copy, Navigation, Plus, Save, Send, Trash2 } from 'lucide-react';
 
 const CHANNEL_OPTIONS: MultiSelectOption[] = [
   { value: "dashboard", label: "لوحة التحكم" },

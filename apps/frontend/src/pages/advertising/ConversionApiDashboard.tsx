@@ -6,7 +6,7 @@
 
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Activity, Navigation, ShoppingBag, Users, Eye, CreditCard, Phone, Mail, Check, Loader2, History, TrendingUp, AlertTriangle, Settings } from 'lucide-react';
+import { Activity, AlertTriangle, Check, CheckCircle, CreditCard, Eye, History, Loader2, Mail, Navigation, Phone, Send, Settings, ShoppingBag, ShoppingCart, TrendingUp, UserPlus, Users } from 'lucide-react';
 import {
   facebookAdsService,
   type ConversionApiSendResponse,

@@ -1,6 +1,6 @@
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, BarChart, Calendar, CheckCircle2, Clock3, Server, Download, Loader2, Play, RefreshCw, Sliders, Table2 } from 'lucide-react';
+import { AlertTriangle, BarChart, BarChart3, Calendar, CalendarDays, CheckCircle2, Clock3, Database, Download, Loader2, Play, RefreshCw, Server, Sliders, SlidersHorizontal, Table2 } from 'lucide-react';
 import FacebookAdsAccountContextPanel from "../../components/advertising/FacebookAdsAccountContextPanel";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";

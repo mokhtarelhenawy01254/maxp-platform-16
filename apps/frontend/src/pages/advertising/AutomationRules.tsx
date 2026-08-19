@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Zap, Plus, Trash2, Edit, Play, Pause, AlertTriangle, Check, Clock, TrendingUp, TrendingDown, DollarSign, Target, Loader2, ChevronDown } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, Clock, DollarSign, Edit, Loader2, Pause, Play, Plus, Target, Trash2, TrendingDown, TrendingUp, Zap } from 'lucide-react';
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 // ============================================

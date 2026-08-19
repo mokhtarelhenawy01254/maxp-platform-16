@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart2, AlertTriangle, CheckCircle2, Eye, RefreshCw, Navigation, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BarChart2, BarChart3, CheckCircle2, Eye, Navigation, RefreshCw, Send, TrendingUp } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

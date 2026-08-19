@@ -1,7 +1,7 @@
 import { formatCurrency } from '@/utils/formatters';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertTriangle, ArrowUpRight, BarChart, Bell, Calendar, CheckCircle2, Gauge, Volume2, Plus, RefreshCw, Target, TrendingUp, CreditCard } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, BarChart, BarChart3, Bell, BellRing, Calendar, CalendarDays, CheckCircle2, CreditCard, Gauge, Megaphone, Plus, RefreshCw, Target, TrendingUp, Volume2, Wallet } from 'lucide-react';
 import { toast } from "sonner";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";

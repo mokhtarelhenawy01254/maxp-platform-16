@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { Clock, LogIn, ArrowRight, Calendar, TrendingUp, Target, AlertTriangle, Check, X, Timer, Pin, Home, ChevronLeft, ChevronRight, Building, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowRight, Building, Building2, Calendar, Check, CheckCircle, ChevronLeft, ChevronRight, Clock, Home, LogIn, LogOut, MapPin, Pin, Target, Timer, TrendingUp, X, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CreditCard, Plus } from 'lucide-react';
+import { CreditCard, Plus, Wallet } from 'lucide-react';
 
 const ParentWalletPage: React.FC = () => {
   const [wallet, setWallet] = useState<any>(null);

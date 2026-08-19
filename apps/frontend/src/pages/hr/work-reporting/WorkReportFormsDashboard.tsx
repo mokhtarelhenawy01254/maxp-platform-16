@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, BarChart, Clipboard, Eye, FilePlus2, PenSquare, Search, Star, Trash2 } from 'lucide-react';
+import { ArrowLeft, BarChart, BarChart3, Clipboard, ClipboardList, Eye, FilePlus2, PenSquare, Search, Sparkles, Star, Trash2 } from 'lucide-react';
 import { toast } from "sonner";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { buildMessagingPreset } from "./catalog";
