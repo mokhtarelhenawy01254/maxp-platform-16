@@ -66,10 +66,11 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
         isEnabled: true,
         dailySendTime: '12:00',
         channel: 'whatsapp_session',
-        messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\nنتمنى لك سنة سعيدة ملئية بالنجاح! ❤️',
+        messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\n\nاضغط على الرابط التالي للدخول لصفحتك واستلام هديتك فوراً:\n🔗 {customer_link}\n\nنتمنى لك سنة سعيدة مليئة بالنجاح! ❤️',
         couponCode: 'HBD10',
         metaTemplateName: 'birthday_greeting_v1'
     });
+
 
     // Loading & Status States
     const [loading, setLoading] = useState<boolean>(true);
@@ -592,14 +593,18 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
                             <div>
                                 <div className="flex justify-between items-center mb-1.5">
                                     <label className="block text-xs font-bold text-gray-700">نص وقالب الرسالة</label>
-                                    <div className="flex gap-1">
+                                    <div className="flex gap-1 flex-wrap">
                                         <button onClick={() => insertVariable('first_name')} className="text-[10px] bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-0.5 rounded font-bold">
                                             + {`{first_name}`}
                                         </button>
                                         <button onClick={() => insertVariable('coupon_code')} className="text-[10px] bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-0.5 rounded font-bold">
                                             + {`{coupon_code}`}
                                         </button>
+                                        <button onClick={() => insertVariable('customer_link')} className="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-0.5 rounded font-bold">
+                                            🔗 {`{customer_link}`}
+                                        </button>
                                     </div>
+
                                 </div>
                                 <textarea
                                     rows={5}

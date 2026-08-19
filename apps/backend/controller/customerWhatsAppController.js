@@ -1279,11 +1279,12 @@ exports.getBirthdayAutomationSettings = async (req, res) => {
                 isEnabled: true,
                 dailySendTime: '12:00',
                 channel: 'whatsapp_session', // 'meta_api' or 'whatsapp_session'
-                messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\nنتمنى لك سنة سعيدة ملئية بالنجاح! ❤️',
+                messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\n\nاضغط على الرابط التالي للدخول لصفحتك واستلام هديتك فوراً:\n🔗 {customer_link}\n\nنتمنى لك سنة سعيدة مليئة بالنجاح! ❤️',
                 couponCode: 'HBD10',
                 metaTemplateName: 'birthday_greeting_v1'
             };
         }
+
 
         return res.json({ success: true, data: settings });
     } catch (error) {
@@ -1483,7 +1484,9 @@ exports.sendTestBirthdayMessage = async (req, res) => {
             .replace(/\{first_name\}/g, 'أحمد')
             .replace(/\{full_name\}/g, 'أحمد محمود')
             .replace(/\{coupon_code\}/g, couponCode || 'TEST10')
-            .replace(/\{company_name\}/g, 'متجرنا');
+            .replace(/\{company_name\}/g, 'متجرنا')
+            .replace(/\{customer_link\}/g, 'https://yourdomain.com/customer/profile?token=demo');
+
 
         const activeSessions = await WhatsAppNotificationService.getConnectedSessions(companyId);
         if (!activeSessions || activeSessions.length === 0) {
