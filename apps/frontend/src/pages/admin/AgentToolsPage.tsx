@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Zap, ChevronDown, ChevronLeft, RefreshCw, Search, Users, Lock, Unlock, Shield, Check, AlertTriangle, Settings, Pencil, Save, X } from 'lucide-react';
+import { Zap, ChevronDown, ChevronLeft, RefreshCw, Search, Users, Lock, Unlock, Shield, Check, AlertTriangle, Settings, Pencil, Save, X, Wrench } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

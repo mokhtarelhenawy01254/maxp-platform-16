@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Settings, Activity, Trash2, ChevronDown, ChevronUp, ChevronRight, AlertTriangle, Route, Server, Book, Check, Clipboard } from 'lucide-react';
+import { Settings, Activity, Trash2, ChevronDown, ChevronUp, ChevronRight, AlertTriangle, Route, Server, Book, Check, Clipboard, Wrench } from 'lucide-react';
 import type {
   SandboxTraceSummary,
   ToolDefinition,
