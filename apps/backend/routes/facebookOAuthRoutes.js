@@ -265,59 +265,79 @@ const sendPopupResponse = (res, data) => {
     <button id="close-btn" class="btn" style="display: none;">إغلاق النافذة</button>
   </div>
 
-  <script>
-    const data = ${JSON.stringify(message)};
-    const isSuccess = data.success === true;
-    
-    try {
-      const targetWindow = window.opener || window.parent;
-      if (targetWindow) {
-        targetWindow.postMessage(data, "*");
-      }
-    } catch (e) {
-      console.error("Failed to post message", e);
-    }
-
-    setTimeout(() => {
-      window.close();
-    }, 1500);
-
-    const statusIcon = document.getElementById("status-icon");
-    const statusTitle = document.getElementById("status-title");
-    const statusDesc = document.getElementById("status-desc");
-    const closeBtn = document.getElementById("close-btn");
-
-    if (isSuccess) {
-      statusIcon.className = "icon-wrapper success-bg";
-      statusIcon.innerHTML = \`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>\`;
-      statusTitle.textContent = "تم الربط بنجاح";
-      statusDesc.textContent = "تم ربط حسابك فيسبوك بالمنصة بنجاح. سيتم إغلاق هذه النافذة تلقائياً.";
-      closeBtn.className = "btn btn-primary";
-      closeBtn.style.display = "block";
-    } else {
-      statusIcon.className = "icon-wrapper error-bg";
-      statusIcon.innerHTML = \`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>\`;
-      statusTitle.textContent = "فشل الربط";
-      
-      let errorMsg = data.error || "حدث خطأ غير معروف أثناء الاتصال";
-      if (errorMsg === "state_expired") {
-        errorMsg = "انتهت صلاحية جلسة الربط لمرور أكثر من 10 دقائق. يرجى إعادة المحاولة من الإعدادات.";
-      } else if (errorMsg === "no_company_id") {
-        errorMsg = "معرف الشركة مفقود أو غير صالح.";
-      }
-      
-      statusDesc.textContent = errorMsg;
-      closeBtn.className = "btn btn-secondary";
-      closeBtn.style.display = "block";
-    }
-
-    closeBtn.addEventListener("click", () => {
-      window.close();
-    });
-  </script>
+  <script type="application/json" id="fb-oauth-result">${JSON.stringify(message).replace(/</g, "\\u003c")}</script>
+  <script src="/api/v1/facebook-oauth/popup-close.js"></script>
 </body>
 </html>`);
 };
+
+// سكربت خارجي same-origin — CSP بتمنع السكربتات الـ inline في صفحة البوب أب،
+// و'script-src self' بيسمح بالملفات من نفس النطاق فقط
+router.get("/popup-close.js", (req, res) => {
+  res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(`(function () {
+  var block = document.getElementById("fb-oauth-result");
+  var data = {};
+  try {
+    data = JSON.parse(block ? block.textContent : "{}");
+  } catch (e) {
+    data = {};
+  }
+  data.type = "facebook-oauth-callback";
+  var isSuccess = data.success === true;
+
+  try {
+    var targetWindow = window.opener || window.parent;
+    if (targetWindow) {
+      targetWindow.postMessage(data, "*");
+    }
+  } catch (e) {
+    console.error("Failed to post message", e);
+  }
+
+  if (isSuccess) {
+    setTimeout(function () {
+      window.close();
+    }, 1500);
+  }
+
+  var statusIcon = document.getElementById("status-icon");
+  var statusTitle = document.getElementById("status-title");
+  var statusDesc = document.getElementById("status-desc");
+  var closeBtn = document.getElementById("close-btn");
+
+  if (isSuccess) {
+    statusIcon.className = "icon-wrapper success-bg";
+    statusIcon.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    statusTitle.textContent = "تم الربط بنجاح";
+    statusDesc.textContent = "تم ربط حسابك فيسبوك بالمنصة بنجاح. سيتم إغلاق هذه النافذة تلقائياً.";
+    closeBtn.className = "btn btn-primary";
+    closeBtn.style.display = "block";
+  } else {
+    statusIcon.className = "icon-wrapper error-bg";
+    statusIcon.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    statusTitle.textContent = "فشل الربط";
+
+    var errorMsg = data.error || "حدث خطأ غير معروف أثناء الاتصال";
+    if (errorMsg === "state_expired") {
+      errorMsg = "انتهت صلاحية جلسة الربط لمرور أكثر من 10 دقائق. يرجى إعادة المحاولة من الإعدادات.";
+    } else if (errorMsg === "no_company_id") {
+      errorMsg = "معرف الشركة مفقود أو غير صالح.";
+    } else if (errorMsg === "invalid_state") {
+      errorMsg = "جلسة الربط غير صالحة أو منتهية. يرجى إعادة المحاولة من الإعدادات.";
+    }
+
+    statusDesc.textContent = errorMsg;
+    closeBtn.className = "btn btn-secondary";
+    closeBtn.style.display = "block";
+  }
+
+  closeBtn.addEventListener("click", function () {
+    window.close();
+  });
+})();`);
+});
 
 const sendCallbackRedirect = (res, popup, baseUrl, type, params) => {
   if (popup) {
