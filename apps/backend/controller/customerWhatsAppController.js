@@ -1244,3 +1244,259 @@ exports.getProductsForNotification = async (req, res) => {
         return res.status(500).json({ success: false, message: 'خطأ في جلب المنتجات' });
     }
 };
+
+// ─────────────────────────────────────────────────────────────
+// 🎂 Birthday Tracker & Automation Controls
+// ─────────────────────────────────────────────────────────────
+
+const birthdaySettingsStore = new Map();
+
+/**
+ * جلب إعدادات أتمتة رسائل اعياد الميلاد
+ */
+exports.getBirthdayAutomationSettings = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const prisma = getSharedPrismaClient();
+
+        let settings = birthdaySettingsStore.get(companyId);
+        if (!settings) {
+            // محاولة جلب من DB إن وجد في StoreSetting أو افتراضي
+            try {
+                const storeSetting = await prisma.storeSetting.findFirst({
+                    where: { companyId, key: 'whatsapp_birthday_automation' }
+                });
+                if (storeSetting && storeSetting.value) {
+                    settings = typeof storeSetting.value === 'string' ? JSON.parse(storeSetting.value) : storeSetting.value;
+                }
+            } catch (e) {
+                // Ignore DB error fallback to default
+            }
+        }
+
+        if (!settings) {
+            settings = {
+                isEnabled: true,
+                dailySendTime: '12:00',
+                channel: 'whatsapp_session', // 'meta_api' or 'whatsapp_session'
+                messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\nنتمنى لك سنة سعيدة ملئية بالنجاح! ❤️',
+                couponCode: 'HBD10',
+                metaTemplateName: 'birthday_greeting_v1'
+            };
+        }
+
+        return res.json({ success: true, data: settings });
+    } catch (error) {
+        console.error('[CWA] getBirthdayAutomationSettings error:', error);
+        return res.status(500).json({ success: false, message: 'فشل في جلب إعدادات اعياد الميلاد' });
+    }
+};
+
+/**
+ * حفظ وتحديث إعدادات أتمتة اعياد الميلاد
+ */
+exports.saveBirthdayAutomationSettings = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { isEnabled, dailySendTime, channel, messageTemplate, couponCode, metaTemplateName } = req.body;
+        const prisma = getSharedPrismaClient();
+
+        const updatedSettings = {
+            isEnabled: Boolean(isEnabled),
+            dailySendTime: dailySendTime || '12:00',
+            channel: channel || 'whatsapp_session',
+            messageTemplate: messageTemplate || '',
+            couponCode: couponCode || '',
+            metaTemplateName: metaTemplateName || 'birthday_greeting_v1',
+            updatedAt: new Date().toISOString()
+        };
+
+        birthdaySettingsStore.set(companyId, updatedSettings);
+
+        try {
+            await prisma.storeSetting.upsert({
+                where: { companyId_key: { companyId, key: 'whatsapp_birthday_automation' } },
+                update: { value: JSON.stringify(updatedSettings) },
+                create: { companyId, key: 'whatsapp_birthday_automation', value: JSON.stringify(updatedSettings) }
+            });
+        } catch (dbErr) {
+            console.log('[CWA] DB save warning for birthday settings:', dbErr.message);
+        }
+
+        return res.json({ success: true, message: 'تم حفظ الإعدادات بنجاح', data: updatedSettings });
+    } catch (error) {
+        console.error('[CWA] saveBirthdayAutomationSettings error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ أثناء حفظ الإعدادات' });
+    }
+};
+
+/**
+ * جلب تتبع اعياد ميلاد اليوم (العملاء + حالة الإرسال)
+ */
+exports.getTodayBirthdayTrack = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const prisma = getSharedPrismaClient();
+        const today = new Date();
+        const currentMonth = today.getMonth() + 1;
+        const currentDay = today.getDate();
+
+        const customers = await safeQuery(() =>
+            prisma.customer.findMany({
+                where: { companyId, isDeleted: { not: true } },
+                select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true }
+            })
+        );
+
+        const todayBirthdays = [];
+        for (const customer of customers) {
+            const dateParts = extractBirthdayParts(customer);
+            if (dateParts && dateParts.month === currentMonth && dateParts.day === currentDay) {
+                todayBirthdays.push({
+                    id: customer.id,
+                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عميل بدون اسم',
+                    phone: customer.phone,
+                    email: customer.email,
+                    birthday: `${dateParts.year || '----'}-${pad2(dateParts.month)}-${pad2(dateParts.day)}`,
+                    age: dateParts.year ? today.getFullYear() - dateParts.year : null,
+                    scheduledTime: '12:00 PM',
+                    status: 'scheduled', // 'scheduled' | 'sent' | 'failed'
+                    sentAt: null
+                });
+            }
+        }
+
+        return res.json({
+            success: true,
+            totalToday: todayBirthdays.length,
+            data: todayBirthdays
+        });
+    } catch (error) {
+        console.error('[CWA] getTodayBirthdayTrack error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جلب اعياد ميلاد اليوم' });
+    }
+};
+
+/**
+ * جلب اعياد الميلاد القادمة (خلال N يوم)
+ */
+exports.getUpcomingBirthdaysTrack = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const daysAhead = parseInt(req.query.days || '30', 10);
+        const prisma = getSharedPrismaClient();
+
+        const customers = await safeQuery(() =>
+            prisma.customer.findMany({
+                where: { companyId, isDeleted: { not: true } },
+                select: { id: true, firstName: true, lastName: true, phone: true, metadata: true }
+            })
+        );
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcoming = [];
+        for (const customer of customers) {
+            const dateParts = extractBirthdayParts(customer);
+            if (!dateParts) continue;
+
+            const nextBday = new Date(today.getFullYear(), dateParts.month - 1, dateParts.day);
+            if (nextBday < today) {
+                nextBday.setFullYear(today.getFullYear() + 1);
+            }
+
+            const diffTime = nextBday.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0 && diffDays <= daysAhead) {
+                upcoming.push({
+                    id: customer.id,
+                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عميل بدون اسم',
+                    phone: customer.phone,
+                    birthdayDate: `${pad2(dateParts.month)}-${pad2(dateParts.day)}`,
+                    daysRemaining: diffDays,
+                    formattedNextDate: nextBday.toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' })
+                });
+            }
+        }
+
+        upcoming.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+        return res.json({ success: true, total: upcoming.length, data: upcoming });
+    } catch (error) {
+        console.error('[CWA] getUpcomingBirthdaysTrack error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جلب اعياد الميلاد القادمة' });
+    }
+};
+
+/**
+ * جلب قائمة العملاء بدون تاريخ ميلاد لتنبيه الموظفين
+ */
+exports.getMissingBirthdaysTrack = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const prisma = getSharedPrismaClient();
+
+        const customers = await safeQuery(() =>
+            prisma.customer.findMany({
+                where: { companyId, isDeleted: { not: true } },
+                select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true },
+                take: 100
+            })
+        );
+
+        const missing = [];
+        for (const customer of customers) {
+            const dateParts = extractBirthdayParts(customer);
+            if (!dateParts) {
+                missing.push({
+                    id: customer.id,
+                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عميل بدون اسم',
+                    phone: customer.phone,
+                    email: customer.email,
+                    createdAt: customer.createdAt
+                });
+            }
+        }
+
+        return res.json({ success: true, totalMissing: missing.length, data: missing });
+    } catch (error) {
+        console.error('[CWA] getMissingBirthdaysTrack error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جلب العملاء الناقص بياناتهم' });
+    }
+};
+
+/**
+ * إرسال رسالة تهنئة تجريبية
+ */
+exports.sendTestBirthdayMessage = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { testPhone, messageTemplate, couponCode } = req.body;
+
+        if (!testPhone) {
+            return res.status(400).json({ success: false, message: 'يرجى كتابة رقم الهاتف التجريبي' });
+        }
+
+        const formattedMsg = (messageTemplate || 'كل سنة وأنت طيب يا {first_name}!')
+            .replace(/\{first_name\}/g, 'أحمد')
+            .replace(/\{full_name\}/g, 'أحمد محمود')
+            .replace(/\{coupon_code\}/g, couponCode || 'TEST10')
+            .replace(/\{company_name\}/g, 'متجرنا');
+
+        const activeSessions = await WhatsAppNotificationService.getConnectedSessions(companyId);
+        if (!activeSessions || activeSessions.length === 0) {
+            return res.status(400).json({ success: false, message: 'لا توجد جلسات واتساب متصلة حالياً لإرسال الاختيار التجريبي' });
+        }
+
+        const sessionId = activeSessions[0].sessionId;
+        await WhatsAppMessageHandler.sendTextMessage(sessionId, testPhone, formattedMsg);
+
+        return res.json({ success: true, message: `تم إرسال الرسالة التجريبية بنجاح إلى الرقم ${testPhone}` });
+    } catch (error) {
+        console.error('[CWA] sendTestBirthdayMessage error:', error);
+        return res.status(500).json({ success: false, message: 'فشل في إرسال الرسالة التجريبية: ' + error.message });
+    }
+};
+

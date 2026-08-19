@@ -27,6 +27,15 @@ router.get('/whatsapp-notify/preview-birthday-audience', verifyToken.authenticat
 router.post('/whatsapp-notify/smart-send', verifyToken.authenticateToken, customerWhatsAppController.sendSmartBulkNotification);
 router.post('/whatsapp-notify/smart-send-birthday', verifyToken.authenticateToken, customerWhatsAppController.sendBirthdayBulkNotification);
 
+// 🎂 Birthday Automation & Tracking Endpoints
+router.get('/whatsapp-notify/birthday-automation/settings', verifyToken.authenticateToken, customerWhatsAppController.getBirthdayAutomationSettings);
+router.post('/whatsapp-notify/birthday-automation/settings', verifyToken.authenticateToken, customerWhatsAppController.saveBirthdayAutomationSettings);
+router.get('/whatsapp-notify/birthday-automation/today', verifyToken.authenticateToken, customerWhatsAppController.getTodayBirthdayTrack);
+router.get('/whatsapp-notify/birthday-automation/upcoming', verifyToken.authenticateToken, customerWhatsAppController.getUpcomingBirthdaysTrack);
+router.get('/whatsapp-notify/birthday-automation/missing', verifyToken.authenticateToken, customerWhatsAppController.getMissingBirthdaysTrack);
+router.post('/whatsapp-notify/birthday-automation/send-test', verifyToken.authenticateToken, customerWhatsAppController.sendTestBirthdayMessage);
+
+
 // Campaign status tracking
 router.get('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateToken, customerWhatsAppController.getCampaignStatus);
 router.delete('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateToken, customerWhatsAppController.stopCampaign);
