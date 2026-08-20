@@ -1,6 +1,6 @@
 const productConsolidationService = require('../services/productConsolidationService');
 
-exports.listDuplicateGroups = async (req, res) => {
+const listDuplicateGroups = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
