@@ -1499,6 +1499,11 @@ router.get("/callback", async (req, res) => {
     const accountLink = accountConnectionId
       ? { facebookAccountId: accountConnectionId }
       : {};
+    // Prisma rejects the raw FK scalar in `create` for a relation; it requires
+    // a nested `connect` there (unlike `update`, where the scalar is valid).
+    const accountLinkCreate = accountConnectionId
+      ? { facebookAccount: { connect: { id: accountConnectionId } } }
+      : {};
 
     // 🔍 Fetch existing pages from DB to check for company ownership
     const existingPages =
@@ -1569,7 +1574,7 @@ router.get("/callback", async (req, res) => {
               connectedAt: new Date(),
               updatedAt: new Date(),
               company: { connect: { id: companyId } },
-              ...accountLink,
+              ...accountLinkCreate,
             },
           });
         }
