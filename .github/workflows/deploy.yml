@@ -13,21 +13,48 @@ env:
   NODE_VERSION: '20'
   SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
 
-concurrency:
-  group: production-deploy
-  cancel-in-progress: true
-
 jobs:
-  deploy:
-    name: Deploy Frontend & Backend
+  # ═══════════════════════════════════════════════════════════════════
+  # BUILD job — CI + نقل التاربولز لـ staging dir على السيرفر (cancelable)
+  # cancel-in-progress: true — أي commit أحدث يلغي البناء القديم فورًا.
+  # لو اتلغى في النص: الـ staging بيفضل جزئي بس جوب الـ deploy لن يشتغل
+  # لإنه needs build + is-latest. الملفات القديمة بتتنضف age-based.
+  # ═══════════════════════════════════════════════════════════════════
+  build:
+    name: Build & Verify (cancelable)
     runs-on: ubuntu-latest
-    
+    concurrency:
+      group: production-build
+      cancel-in-progress: true
+    outputs:
+      is-latest: ${{ steps.check-latest.outputs.is-latest }}
+      catalog-changed: ${{ steps.cat-check.outputs.cat-changed }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           token: ${{ secrets.MAXP3_CHECKOUT_TOKEN || github.token }}
           fetch-depth: 2 # Required for git diff HEAD~1
+
+      - name: Skip if superseded by a newer commit
+        id: check-latest
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "is-latest=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --force origin main
+          LATEST=$(git rev-parse origin/main)
+          if [ "$LATEST" != "${{ github.sha }}" ]; then
+            echo "⏭️ This build (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST)."
+            echo "   Skipping to avoid redundant rebuild — the newer commit's deploy will cover these changes."
+            echo "is-latest=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "✅ This is the latest commit on main. Proceeding with deploy."
+          echo "is-latest=true" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -41,6 +68,218 @@ jobs:
           if [ -z "${{ secrets.SERVER_SSH_KEY }}" ]; then echo "❌ SERVER_SSH_KEY missing"; exit 1; fi
           echo "✅ All secrets present"
 
+      # 🛡️ RADICAL SAFETY GATE — full syntax check over all runtime backend files.
+      # Any commit with a SyntaxError in a runtime file blocks the deploy BEFORE
+      # it reaches the server (a broken commit previously crashed the backend → 502).
+      - name: Full Backend Syntax Gate
+        working-directory: ./apps/backend
+        run: node scripts/check_syntax.js
+        continue-on-error: false
+
+      - name: Enforce AI Agent File Size Guard
+        run: |
+          node scripts/check-file-sizes.js --max-kb=150
+
+      # 🛡️ Customer Portal Routing Guard — يمنع أي merge من agents تانية يرجّع
+      # بوابة العميل على الـ subdomain (اعتماد دائري بيكسر المتجر). أي مخالفة => block.
+      - name: Guard Customer Portal Routing
+        run: node scripts/check-customer-portal-routing.js
+        continue-on-error: false
+
+      - name: Check for Facebook Ads Changes
+        id: fb-check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "fb-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if echo "$CHANGED" | grep -qE "apps/backend/(controller/facebookAds|services/facebookAds|utils/.*facebook|tests/controller/facebookAds)"; then
+            echo "fb-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fb-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Backend-only deploys skip the frontend install/build/upload path (~70s).
+      # Conservative: frontend builds whenever ANY changed path is NOT backend-only,
+      # so an unexpected change still triggers the full build.
+      - name: Check if Frontend Needs Rebuild
+        id: fe-check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "fe-needed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if [ -z "$CHANGED" ]; then
+            echo "fe-needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Non-frontend path prefixes that never affect the frontend build.
+          if echo "$CHANGED" | grep -vqE "^(apps/backend/|apps/ai-service/|scripts/|\.github/|\.agents/|nginx_configs/|\.env\.example|docs/|.*\.md)"; then
+            echo "fe-needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fe-needed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Marketplace catalog files feed the DB via catalog:sync-target; only run it
+      # when they change (it still runs on every workflow_dispatch).
+      - name: Check if Marketplace Catalog Changed
+        id: cat-check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if echo "$CHANGED" | grep -qE "apps/backend/catalog/marketplace/|apps/backend/prisma/seeds/"; then
+            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cat-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cache Backend node_modules
+        if: steps.fb-check.outputs.fb-changed == 'true'
+        uses: actions/cache@v4
+        id: cache-backend
+        with:
+          path: apps/backend/node_modules
+          key: backend-node-${{ hashFiles('apps/backend/package-lock.json') }}
+          restore-keys: |
+            backend-node-
+
+      - name: Cache Frontend node_modules
+        if: steps.fe-check.outputs.fe-needed == 'true'
+        uses: actions/cache@v4
+        id: cache-frontend
+        with:
+          path: apps/frontend/node_modules
+          key: frontend-node-${{ hashFiles('apps/frontend/package-lock.json') }}
+          restore-keys: |
+            frontend-node-
+
+      # Only install backend deps + run the Facebook Ads regression when
+      # facebook-related files actually changed — otherwise skip (saves ~56s/deploy).
+      - name: Install Backend Test Dependencies
+        if: steps.fb-check.outputs.fb-changed == 'true'
+        working-directory: ./apps/backend
+        run: |
+          npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: '1'
+          HUSKY: '0'
+        continue-on-error: false
+
+      - name: Generate Prisma Client
+        if: steps.fb-check.outputs.fb-changed == 'true'
+        working-directory: ./apps/backend
+        run: |
+          npx prisma generate --schema=prisma/schema
+        continue-on-error: false
+
+      - name: Run Facebook Ads Regression Tests
+        if: steps.fb-check.outputs.fb-changed == 'true'
+        working-directory: ./apps/backend
+        run: |
+          npm test -- --testPathPattern="tests/controller/facebookAdsController.fullAd.test.js"
+        continue-on-error: false
+
+      # Build Frontend (skipped when only backend files changed)
+      - name: Install Frontend Dependencies
+        if: steps.fe-check.outputs.fe-needed == 'true'
+        working-directory: ./apps/frontend
+        run: |
+          if [ "${{ steps.cache-frontend.outputs.cache-hit }}" != 'true' ] || [ ! -f node_modules/.bin/vite ]; then
+            echo "📦 Installing frontend dependencies (cache-hit=${{ steps.cache-frontend.outputs.cache-hit }}, vite-found=$(test -f node_modules/.bin/vite && echo yes || echo no))..."
+            npm ci
+          else
+            echo "✅ Frontend dependencies restored from cache and vite binary found"
+          fi
+        env:
+          HUSKY: '0'
+        continue-on-error: false
+
+      # 🛡️ يمنع أي "icon: X" يستخدم معرّفاً غير مستورد في src/config (كان سبب انهيار الـ dashboard)
+      - name: Check Frontend Icon Imports
+        if: steps.fe-check.outputs.fe-needed == 'true'
+        working-directory: ./apps/frontend
+        run: node scripts/check-icon-imports.cjs
+        continue-on-error: false
+
+      - name: Build Frontend
+        if: steps.fe-check.outputs.fe-needed == 'true'
+        working-directory: ./apps/frontend
+        run: |
+          # Purge Vite's persistent transform cache before building so a stale
+          # node_modules cache restored by actions/cache@v4 can never serve an
+          # outdated bundle (this previously shipped an old index-*.js hash).
+          rm -rf node_modules/.vite
+          npm run build
+          test -f dist/placeholders/luxury-shoes/hero.png
+          echo "📂 Listing build files:"
+          ls -R dist | head -n 20
+        env:
+          NODE_OPTIONS: '--max-old-space-size=8192'
+          VITE_DISABLE_COMPRESSION: 'true'
+          VITE_BUILD_MINIFY: 'esbuild'
+        continue-on-error: false
+
+      - name: Validate i18n Sections
+        run: node scripts/validate-i18n.js
+        continue-on-error: false
+
+      - name: Check i18n Consistency (AR vs EN)
+        run: node scripts/i18n-check.js
+        continue-on-error: false
+
+      - name: Generate i18n TypeScript Types
+        run: node scripts/generate-i18n-types.js
+        continue-on-error: false
+
+      # Packaging for reliable transfer (Optimized to exclude large node_modules)
+      - name: Package Assets
+        env:
+          FE_NEEDED: ${{ steps.fe-check.outputs.fe-needed }}
+        run: |
+          if [ "$FE_NEEDED" == "true" ]; then
+            echo "📦 Packaging Frontend..."
+            tar -czf frontend.tar.gz -C apps/frontend/dist .
+            tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
+          else
+            echo "ℹ️ Skipping frontend tarballs (backend-only deploy)"
+          fi
+          tar -czf backend.tar.gz -C apps --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" backend
+
+          echo "📦 Packaging Shared..."
+          tar -czf shared.tar.gz -C shared .
+
+          echo "📦 Packaging AI service..."
+          tar -czf ai-service.tar.gz \
+            --exclude=".env" \
+            --exclude=".venv" \
+            --exclude="__pycache__" \
+            --exclude=".pytest_cache" \
+            --exclude=".ruff_cache" \
+            --exclude="*.pyc" \
+            -C apps ai-service
+
+          echo "📦 Packaging Nginx configs..."
+          rm -rf deploy_nginx
+          mkdir -p deploy_nginx
+          cp nginx_configs/maxp.online.conf deploy_nginx/maxp.online.conf
+          cp nginx_configs/mokhtarelhenawy.online.conf deploy_nginx/mokhtarelhenawy.online.conf
+          tar -czf nginx-configs.tar.gz -C deploy_nginx .
+          rm -rf deploy_nginx
+
+          ls -lh *.tar.gz
+
+      # ───────────────────────────────────────────────────────────────────
+      # نقل التاربولز للسيرفر (staging فقط — آمن، لا يلمس الحالة الحية)
+      # ───────────────────────────────────────────────────────────────────
       - name: Setup SSH Key
         uses: ./.github/actions/setup-ssh
         with:
@@ -66,137 +305,8 @@ jobs:
           echo "🌐 GitHub Runner Public IP: $RUNNER_IP"
           echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
 
-      - name: Enforce AI Agent File Size Guard
-        run: |
-          node scripts/check-file-sizes.js --max-kb=150
-
-      - name: Cache Backend node_modules
-        uses: actions/cache@v4
-        id: cache-backend
-        with:
-          path: apps/backend/node_modules
-          key: backend-node-${{ hashFiles('apps/backend/package-lock.json') }}
-          restore-keys: |
-            backend-node-
-
-      - name: Cache Frontend node_modules
-        uses: actions/cache@v4
-        id: cache-frontend
-        with:
-          path: apps/frontend/node_modules
-          key: frontend-node-${{ hashFiles('apps/frontend/package-lock.json') }}
-          restore-keys: |
-            frontend-node-
-
-      - name: Install Backend Test Dependencies
-        working-directory: ./apps/backend
-        run: |
-          npm ci
-        env:
-          PUPPETEER_SKIP_DOWNLOAD: '1'
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: '1'
-          HUSKY: '0'
-        continue-on-error: false
-
-      - name: Generate Prisma Client
-        working-directory: ./apps/backend
-        run: |
-          npx prisma generate --schema=prisma/schema
-        continue-on-error: false
-
-      - name: Run Facebook Ads Regression Tests
-        working-directory: ./apps/backend
-        run: |
-          npm test -- --testPathPattern="tests/controller/facebookAdsController.fullAd.test.js"
-        continue-on-error: false
-
-      # Build Frontend
-      - name: Install Frontend Dependencies
-        working-directory: ./apps/frontend
-        run: |
-          if [ "${{ steps.cache-frontend.outputs.cache-hit }}" != 'true' ] || [ ! -f node_modules/.bin/vite ]; then
-            echo "📦 Installing frontend dependencies (cache-hit=${{ steps.cache-frontend.outputs.cache-hit }}, vite-found=$(test -f node_modules/.bin/vite && echo yes || echo no))..."
-            npm ci
-          else
-            echo "✅ Frontend dependencies restored from cache and vite binary found"
-          fi
-        env:
-          HUSKY: '0'
-        continue-on-error: false
-
-      - name: Build Frontend
-        working-directory: ./apps/frontend
-        run: |
-          npm run build
-          test -f dist/placeholders/luxury-shoes/hero.png
-          echo "📂 Listing build files:"
-          ls -R dist | head -n 20
-        env:
-          NODE_OPTIONS: '--max-old-space-size=8192'
-          VITE_DISABLE_COMPRESSION: 'true'
-          VITE_BUILD_MINIFY: 'esbuild'
-        continue-on-error: false
-
-      - name: Validate i18n Sections
-        run: node scripts/validate-i18n.js
-        continue-on-error: false
-
-      # Strip dev dependencies after tests (deps already installed above)
-      - name: Prune Dev Dependencies
-        working-directory: ./apps/backend
-        run: |
-          npm prune --production --ignore-scripts
-        env:
-          HUSKY: '0'
-        continue-on-error: false
-
-      # Packaging for reliable transfer (Optimized to exclude large node_modules)
-      - name: Package Assets
-        run: |
-          echo "📦 Packaging Frontend..."
-          tar -czf frontend.tar.gz -C apps/frontend/dist .
-          tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
-          tar -czf backend.tar.gz -C apps --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" backend
-          
-          echo "📦 Packaging Shared..."
-          tar -czf shared.tar.gz -C shared .
-
-          echo "📦 Packaging AI service..."
-          tar -czf ai-service.tar.gz \
-            --exclude=".env" \
-            --exclude=".venv" \
-            --exclude="__pycache__" \
-            --exclude=".pytest_cache" \
-            --exclude=".ruff_cache" \
-            --exclude="*.pyc" \
-            -C apps ai-service
-
-          echo "📦 Packaging Nginx configs..."
-          rm -rf deploy_nginx
-          mkdir -p deploy_nginx
-          cp nginx_configs/maxp.online.conf deploy_nginx/maxp.online.conf
-          cp nginx_configs/mokhtarelhenawy.online.conf deploy_nginx/mokhtarelhenawy.online.conf
-          tar -czf nginx-configs.tar.gz -C deploy_nginx .
-          rm -rf deploy_nginx
-
-          ls -lh *.tar.gz
-
-      - name: Upload Build Artifacts
-        continue-on-error: true
-        uses: actions/upload-artifact@v4
-        with:
-          name: deploy-tarballs-${{ github.run_id }}
-          path: |
-            frontend.tar.gz
-            backend.tar.gz
-            ai-service.tar.gz
-            shared.tar.gz
-            nginx-configs.tar.gz
-            theme-presets.tar.gz
-          retention-days: 3
-
-      # Setup Remote Staging Directory
-
+      # Setup Remote Staging Directory — التنظيف age-based عشان محدش يمسح
+      # staging تبع deploy شغال في الخلفية (كانت rm -rf لكل حاجة).
       - name: Setup Remote Staging Directory
         shell: bash
         env:
@@ -208,16 +318,15 @@ jobs:
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
           ssh -i "$SSH_KEY_PATH" -p "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" '
             set -e
-            echo "🧹 Cleaning up old deploy staging directories, logs, and caches to free space..."
-            rm -rf $HOME/deploy_staging_* 2>/dev/null || true
-            sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak /tmp/backend_uploads_backup 2>/dev/null || true
+            echo "🧹 Cleaning stale staging dirs (older than 1 day)..."
+            find $HOME -maxdepth 1 -name "deploy_staging_*" -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+            sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak 2>/dev/null || true
             sudo journalctl --vacuum-time=1d 2>/dev/null || true
-            sudo npm cache clean --force 2>/dev/null || true
-            sudo docker system prune -af --volumes 2>/dev/null || true
             pm2 flush 2>/dev/null || true
 
-            DEPLOY_STAGING="$HOME/deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}"
+            DEPLOY_STAGING="$HOME/deploy_staging_${{ github.run_id }}"
             echo "🚀 Creating staging directory: $DEPLOY_STAGING"
+            rm -rf "$DEPLOY_STAGING"
             mkdir -p "$DEPLOY_STAGING/backend"
             mkdir -p "$DEPLOY_STAGING/frontend"
             echo "✅ Staging directory created."
@@ -246,7 +355,7 @@ jobs:
               -o ServerAliveCountMax=10 \
               -o ConnectTimeout=30 \
               *.tar.gz \
-              "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}/"; then
+              "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}/"; then
               echo "✅ Tarballs transferred successfully"
               break
             else
@@ -263,13 +372,55 @@ jobs:
           scp -i "$SSH_KEY_PATH" -P "$SERVER_SSH_PORT" \
             -o StrictHostKeyChecking=accept-new \
             scripts/deploy-remote.sh \
-            "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}/deploy-remote.sh"
+            "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}/deploy-remote.sh"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # DEPLOY job — ينفذ deploy-remote.sh على السيرفر فقط (never cancel)
+  # cancel-in-progress: false — الديبلوي اللي شغال لازم يخلص من غير ما
+  # يتقطع في النص (npm prune / prisma migrate / pm2 restart).
+  # الـ pending الأقدم بيتلغي أوتوماتيك لصالح الأحدث (سلوك GitHub الافتراضي).
+  # ═══════════════════════════════════════════════════════════════════
+  deploy:
+    name: Deploy to Server (never cancel)
+    runs-on: ubuntu-latest
+    needs: build
+    # مش هينضاف للطابور غير لما الـ build يكون هو الأحدث على main.
+    if: needs.build.outputs.is-latest == 'true'
+    concurrency:
+      group: production-deploy-apply
+      cancel-in-progress: false
+    timeout-minutes: 150
+
+    steps:
+      - name: Skip deploy if superseded while waiting in queue
+        id: check-deploy-latest
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LATEST=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/main" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
+          if [ -n "$LATEST" ] && [ "$LATEST" != "${{ github.sha }}" ]; then
+            echo "⏭️ Skipping deploy: commit ${{ github.sha }} is superseded by $LATEST on main."
+            echo "   The newer commit's deploy will cover these changes."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "✅ Still the latest commit on main. Proceeding with deploy."
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
 
       - name: Run Deployment Script on Server
+        if: steps.check-deploy-latest.outputs.proceed == 'true'
         uses: appleboy/ssh-action@v1.0.3
         env:
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD }}
+          CATALOG_CHANGED: ${{ needs.build.outputs.catalog-changed }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -278,14 +429,14 @@ jobs:
           debug: true
           timeout: 60m
           command_timeout: 50m
-          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,CATALOG_CHANGED
           script: |
             set -e
             sudo -n true || {
               echo "❌ Passwordless sudo is required for production deploys"
               exit 1
             }
-            export DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+            export DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}"
             exec 9>/tmp/maxp-production-deploy.lock
             if ! flock -n 9; then
               echo "❌ Another production deployment is already running on the server"
