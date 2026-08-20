@@ -147,7 +147,19 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
   if (
     normalizedId.includes('/jspdf/') ||
     normalizedId.includes('/jspdf-autotable/') ||
-    normalizedId.includes('/xlsx/') ||
+    normalizedId.includes('/xlsx/')
+  ) {
+    return 'vendor-documents';
+  }
+
+  if (
+    normalizedId.includes('/lucide-react/') ||
+    normalizedId.includes('/@heroicons/')
+  ) {
+    return 'vendor-icons-bundle';
+  }
+
+  if (
     packageName === 'i18next' ||
     packageName === 'react-i18next' ||
     packageName === 'i18next-browser-languagedetector'
