@@ -41,6 +41,53 @@ function mapPaymentMethod(method) {
   return mapping[method?.toLowerCase()] || 'CASH';
 }
 
+// تطبيقات صفحة الطلب اليدوي (اشتراك): وجود سجل لأي منها يسمح بفتح الصفحة
+const MANUAL_ORDER_APP_SLUGS = ['manual-orders-pro', 'store-pro'];
+const MANUAL_ORDER_ACTIVE_STATUSES = ['TRIAL', 'ACTIVE'];
+
+/**
+ * حالة اشتراك الطلبات اليدوية للشركة
+ * GET /api/v1/orders-enhanced/manual-access
+ * - NONE    → لا يوجد سجل اشتراك → الواجهة تظهر شاشة التفعيل
+ * - ACTIVE  → TRIAL/ACTIVE → الصفحة تعمل عادي
+ * - EXPIRED → يوجد سجل لكن منتهي → الصفحة تعمل والأوردرات الجديدة تتعلق
+ */
+router.get('/manual-access', async (req, res) => {
+  try {
+    if (req.user?.role === 'SUPER_ADMIN') {
+      return res.json({ success: true, data: { subscription: 'ACTIVE', installed: true } });
+    }
+
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(401).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+
+    const installed = await getSharedPrismaClient().companyApp.findMany({
+      where: { companyId, app: { slug: { in: MANUAL_ORDER_APP_SLUGS } } },
+      select: { status: true, app: { select: { slug: true, name: true } } },
+    });
+
+    if (installed.length === 0) {
+      return res.json({ success: true, data: { subscription: 'NONE', installed: false } });
+    }
+
+    const active = installed.some((r) => MANUAL_ORDER_ACTIVE_STATUSES.includes(r.status));
+    res.json({
+      success: true,
+      data: {
+        subscription: active ? 'ACTIVE' : 'EXPIRED',
+        installed: true,
+        status: active ? 'ACTIVE' : installed[0].status,
+        app: installed[0].app,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [MANUAL-ACCESS] Error:', error.message);
+    res.status(500).json({ success: false, message: 'خطأ في التحقق من وصول الطلب اليدوي' });
+  }
+});
+
 /**
  * جلب الطلبات المحسنة
  * GET /api/v1/orders-enhanced
