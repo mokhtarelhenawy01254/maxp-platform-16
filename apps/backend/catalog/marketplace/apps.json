@@ -1257,5 +1257,61 @@
     "engineCompatibility": null,
     "createdAt": "2026-07-21T00:00:00.000Z",
     "updatedAt": "2026-07-21T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-product-consolidator",
+    "slug": "product-consolidator",
+    "name": "Product Consolidator",
+    "nameEn": "Product Consolidator",
+    "description": "دمج المنتجات المكررة في منتج واحد جديد مع الاحتفاظ بـ SKU لكل منتج كمتغير مستقل — مع نقل الطلبات والمخزون والعروض التقديمية بأمان.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": ["store"],
+    "positioning": {
+      "audience": "المتاجر التي تعاني من تكرار المنتجات أو تريد تنظيم الكتالوج في منتجات موحدة بمتغيرات.",
+      "surface": "داخل إدارة المنتجات، مع أداة دمج مخصصة وأزرار سريعة على المجموعات المكررة.",
+      "outcome": "كتالوج أنظف وتجربة تسوق أوضح مع الحفاظ على كل البيانات القديمة بدون فقدان."
+    },
+    "features": {
+      "duplicateDetection": {
+        "enabled": true,
+        "name": "كشف المجموعات المكررة",
+        "description": "عرض تلقائي للمنتجات المكررة مجمعة حسب الاسم مع عدد النسخ لكل مجموعة.",
+        "access": "PAID"
+      },
+      "mergeWizard": {
+        "enabled": true,
+        "name": "معالج الدمج",
+        "description": "اختيار المنتجات وتحديد الاسم والتفاصيل الجديدة واختيار المتغيرات قبل التنفيذ.",
+        "access": "PAID"
+      },
+      "variantSkus": {
+        "enabled": true,
+        "name": "الاحتفاظ بالـ SKU لكل متغير",
+        "description": "كل منتج مدمج يصبح متغيراً مستقلاً ببياناته وسعره ومخزونه وصوره و SKU الخاص به.",
+        "access": "PAID"
+      },
+      "safeMigration": {
+        "enabled": true,
+        "name": "نقل آمن للبيانات",
+        "description": "نقل الطلبات والمخزون والعروض التقديمية والإحصائيات قبل أي حذف أو إخفاء للأصل.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "git-merge",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-20T00:00:00.000Z",
+    "updatedAt": "2026-08-20T00:00:00.000Z"
   }
 ]

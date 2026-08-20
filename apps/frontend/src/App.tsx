@@ -154,6 +154,9 @@ const ProductsTrash = React.lazy(
 const ProductNewFinal = React.lazy(
   () => import("./pages/products/ProductNewFinal"),
 );
+const ProductConsolidatorPage = React.lazy(
+  () => import("./pages/products/ProductConsolidatorPage"),
+);
 const AffiliateSystemSettings = React.lazy(
   () => import("./pages/affiliates/AffiliateSystemSettings"),
 );
@@ -3573,6 +3576,16 @@ const AppContent = () => {
                     <PermissionProtectedRoute requiredPermissions={['products.view']}>
                       <Layout>
                         <ProductsTrash />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/products/consolidate"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ProductConsolidatorPage />
                       </Layout>
                     </PermissionProtectedRoute>
                   }

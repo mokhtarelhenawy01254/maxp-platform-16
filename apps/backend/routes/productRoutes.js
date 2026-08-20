@@ -3,6 +3,7 @@ const router = express.Router();
 const productController = require('../controller/productController');
 const volumeDiscountController = require('../controller/volumeDiscountController');
 const presentationController = require('../controller/productPresentationController');
+const consolidationController = require('../controller/productConsolidationController');
 const verifyToken = require("../utils/verifyToken")
 const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const multer = require('multer');
@@ -107,5 +108,9 @@ router.delete('/:id/presentations/:presentationId', verifyToken.authenticateToke
 router.post('/:id/convert-to-presentation', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.convertToPresentation);
 // Bulk convert: multiple products -> presentations of one target original
 router.post('/convert-bulk-to-presentations', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.convertBulkToPresentations);
+
+// Product consolidation (merge products into one new product with variants)
+router.get('/consolidate/duplicates', verifyToken.authenticateToken, requireDbPermission('products.view'), consolidationController.listDuplicateGroups);
+router.post('/consolidate', verifyToken.authenticateToken, requireDbPermission('products.view'), consolidationController.consolidate);
 
 module.exports = router;

@@ -623,6 +623,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/products', icon: ShoppingBagIcon, label: t('sidebar.products') },
                 { to: '/categories', icon: TagIcon, label: t('sidebar.categories') },
+                { to: '/products/consolidate', icon: ArrowsRightLeftIcon, label: t('sidebar.productConsolidator') },
                 { to: '/settings/upsell', icon: ArrowTrendingUpIcon, label: t('sidebar.upsellManagement') },
                 { to: '/analytics/store', icon: ArrowTrendingUpIcon, label: t('sidebar.storeAnalytics') },
             ],

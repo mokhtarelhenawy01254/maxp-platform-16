@@ -8476,6 +8476,7 @@ declare module 'react-i18next' {
         monthlyPnL: string;
         clvCalculator: string;
         upsellPlanner: string;
+        productConsolidator: string;
         refundRateCalculator: string;
         campaigns: string;
         cashbackSettings: string;
