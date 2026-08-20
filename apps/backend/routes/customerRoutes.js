@@ -28,6 +28,19 @@ router.get('/whatsapp-notify/preview-birthday-audience', verifyToken.authenticat
 router.post('/whatsapp-notify/smart-send', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.sendSmartBulkNotification);
 router.post('/whatsapp-notify/smart-send-birthday', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.sendBirthdayBulkNotification);
 
+// 🎂 Birthday Automation & Tracking Endpoints
+router.get('/whatsapp-notify/birthday-analytics', verifyToken.authenticateToken, customerWhatsAppController.getBirthdayAnalyticsReports);
+router.get('/whatsapp-notify/birthday-automation/settings', verifyToken.authenticateToken, customerWhatsAppController.getBirthdayAutomationSettings);
+router.post('/whatsapp-notify/birthday-automation/settings', verifyToken.authenticateToken, customerWhatsAppController.saveBirthdayAutomationSettings);
+router.get('/whatsapp-notify/birthday-automation/today', verifyToken.authenticateToken, customerWhatsAppController.getTodayBirthdayTrack);
+router.get('/whatsapp-notify/birthday-automation/upcoming', verifyToken.authenticateToken, customerWhatsAppController.getUpcomingBirthdaysTrack);
+router.get('/whatsapp-notify/birthday-automation/missing', verifyToken.authenticateToken, customerWhatsAppController.getMissingBirthdaysTrack);
+router.get('/whatsapp-notify/occasions', verifyToken.authenticateToken, (req, res) => res.json({ success: true, occasions: [] }));
+router.post('/whatsapp-notify/birthday-automation/send-test', verifyToken.authenticateToken, customerWhatsAppController.sendTestBirthdayMessage);
+
+
+
+
 // Campaign status tracking
 router.get('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCampaignStatus);
 router.delete('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.stopCampaign);

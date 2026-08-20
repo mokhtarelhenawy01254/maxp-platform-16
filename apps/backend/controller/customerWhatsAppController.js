@@ -1,6 +1,6 @@
 /**
- * 📢 Customer WhatsApp Notifications Controller
- * إرسال إشعارات واتساب للعملاء (منتج جديد، عروض، إلخ)
+ * ðŸ“¢ Customer WhatsApp Notifications Controller
+ * Ø¥Ø±Ø³Ø§Ù„ Ø¥Ø´Ø¹Ø§Ø±Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ù„Ù„Ø¹Ù…Ù„Ø§Ø¡ (Ù…Ù†ØªØ¬ Ø¬Ø¯ÙŠØ¯ØŒ Ø¹Ø±ÙˆØ¶ØŒ Ø¥Ù„Ø®)
  */
 
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
@@ -8,11 +8,11 @@ const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotifi
 const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
 const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
 
-console.log('📢 [CWA] Customer WhatsApp Notifications Controller Loaded');
+console.log('ðŸ“¢ [CWA] Customer WhatsApp Notifications Controller Loaded');
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Active campaign tracker (in-memory, per-process)
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const activeCampaigns = new Map(); // campaignId -> { status, sent, failed, total, startedAt, dbId }
 const scheduledCampaignTimers = new Map(); // campaignId -> timeoutId
 const MAX_CAMPAIGN_TIMEOUT_MS = 2147483647; // Node.js setTimeout max delay (~24.8 days)
@@ -26,7 +26,7 @@ async function persistCampaignToDB(companyId, userId, campaignData) {
         const record = await prisma.broadcastCampaign.create({
             data: {
                 companyId,
-                name: campaignData.occasionName || 'حملة واتساب',
+                name: campaignData.occasionName || 'Ø­Ù…Ù„Ø© ÙˆØ§ØªØ³Ø§Ø¨',
                 message: campaignData.message || '',
                 targetAudience: campaignData.audience || 'all',
                 scheduledAt: campaignData.scheduledAt ? new Date(campaignData.scheduledAt) : null,
@@ -63,9 +63,9 @@ async function updateCampaignInDB(dbId, updates) {
     }
 }
 
-const BIRTHDAY_KEY_PATTERN = /(birth|birthday|dob|date[_-]?of[_-]?birth|تاريخ.?الميلاد|ميلاد)/i;
-const ARABIC_INDIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
-const EASTERN_ARABIC_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+const BIRTHDAY_KEY_PATTERN = /(birth|birthday|dob|date[_-]?of[_-]?birth|ØªØ§Ø±ÙŠØ®.?Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯|Ù…ÙŠÙ„Ø§Ø¯)/i;
+const ARABIC_INDIC_DIGITS = 'Ù Ù¡Ù¢Ù£Ù¤Ù¥Ù¦Ù§Ù¨Ù©';
+const EASTERN_ARABIC_DIGITS = 'Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹';
 
 function pad2(n) {
     return String(n).padStart(2, '0');
@@ -94,11 +94,11 @@ function normalizeDateText(text) {
     if (!normalized) return '';
 
     normalized = normalized
-        .replace(/[٠-٩]/g, d => String(ARABIC_INDIC_DIGITS.indexOf(d)))
-        .replace(/[۰-۹]/g, d => String(EASTERN_ARABIC_DIGITS.indexOf(d)))
+        .replace(/[Ù -Ù©]/g, d => String(ARABIC_INDIC_DIGITS.indexOf(d)))
+        .replace(/[Û°-Û¹]/g, d => String(EASTERN_ARABIC_DIGITS.indexOf(d)))
         .replace(/[.]/g, '/')
         .replace(/[\\]/g, '/')
-        .replace(/[ـ]/g, '')
+        .replace(/[Ù€]/g, '')
         .replace(/\s+/g, ' ');
 
     return normalized;
@@ -370,7 +370,7 @@ async function getBirthdayAudienceCustomers(companyId, inputDate) {
 }
 
 /**
- * جلب جلسات واتساب المتصلة للشركة
+ * Ø¬Ù„Ø¨ Ø¬Ù„Ø³Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ø§Ù„Ù…ØªØµÙ„Ø© Ù„Ù„Ø´Ø±ÙƒØ©
  */
 async function getConnectedSessions(companyId) {
     try {
@@ -388,7 +388,7 @@ async function getConnectedSessions(companyId) {
             const active = activeSessions[ds.id];
             return {
                 sessionId: ds.id,
-                phoneNumber: ds.phoneNumber || 'غير معروف',
+                phoneNumber: ds.phoneNumber || 'ØºÙŠØ± Ù…Ø¹Ø±ÙˆÙ',
                 isConnected: active ? active.isConnected : false,
                 status: active ? active.status : ds.status
             };
@@ -400,7 +400,7 @@ async function getConnectedSessions(companyId) {
 }
 
 /**
- * جلب قائمة العملاء مع أرقام هواتفهم (للاختيار في الفرونت)
+ * Ø¬Ù„Ø¨ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ù…Ø¹ Ø£Ø±Ù‚Ø§Ù… Ù‡ÙˆØ§ØªÙÙ‡Ù… (Ù„Ù„Ø§Ø®ØªÙŠØ§Ø± ÙÙŠ Ø§Ù„ÙØ±ÙˆÙ†Øª)
  */
 exports.getCustomersWithPhones = async (req, res) => {
     try {
@@ -447,12 +447,12 @@ exports.getCustomersWithPhones = async (req, res) => {
         });
     } catch (error) {
         console.error('[CWA] getCustomersWithPhones error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب العملاء' });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡' });
     }
 };
 
 /**
- * جلب جلسات واتساب المتصلة للشركة
+ * Ø¬Ù„Ø¨ Ø¬Ù„Ø³Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ø§Ù„Ù…ØªØµÙ„Ø© Ù„Ù„Ø´Ø±ÙƒØ©
  */
 exports.getConnectedWhatsAppSessions = async (req, res) => {
     try {
@@ -466,29 +466,29 @@ exports.getConnectedWhatsAppSessions = async (req, res) => {
         });
     } catch (error) {
         console.error('[CWA] getConnectedWhatsAppSessions error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب الجلسات' });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ø¬Ù„Ø³Ø§Øª' });
     }
 };
 
 /**
- * إعادة استعادة الجلسات (تدنيب)
+ * Ø¥Ø¹Ø§Ø¯Ø© Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ø¬Ù„Ø³Ø§Øª (ØªØ¯Ù†ÙŠØ¨)
  */
 exports.refreshSessions = async (req, res) => {
     try {
         await WhatsAppManager.restoreAllSessions();
-        return res.json({ success: true, message: 'تم إعادة تحميل الجلسات' });
+        return res.json({ success: true, message: 'ØªÙ… Ø¥Ø¹Ø§Ø¯Ø© ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø¬Ù„Ø³Ø§Øª' });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // AUDIENCE FILTER BUILDER
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
- * يبني where clause بناءً على فلتر الجمهور
+ * ÙŠØ¨Ù†ÙŠ where clause Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ ÙÙ„ØªØ± Ø§Ù„Ø¬Ù…Ù‡ÙˆØ±
  * audience: 'all' | 'withOrders' | 'newCustomers' | 'activeCustomers'
- * newDays: عدد الأيام للعملاء الجدد (default 7)
+ * newDays: Ø¹Ø¯Ø¯ Ø§Ù„Ø£ÙŠØ§Ù… Ù„Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„Ø¬Ø¯Ø¯ (default 7)
  */
 async function buildAudienceWhere(companyId, audience, newDays = 7) {
     const where = { companyId, phone: { not: null } };
@@ -516,7 +516,7 @@ async function buildAudienceWhere(companyId, audience, newDays = 7) {
 }
 
 /**
- * معاينة عدد العملاء المستهدفين (بدون إرسال)
+ * Ù…Ø¹Ø§ÙŠÙ†Ø© Ø¹Ø¯Ø¯ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„Ù…Ø³ØªÙ‡Ø¯ÙÙŠÙ† (Ø¨Ø¯ÙˆÙ† Ø¥Ø±Ø³Ø§Ù„)
  */
 exports.previewAudience = async (req, res) => {
     try {
@@ -531,12 +531,12 @@ exports.previewAudience = async (req, res) => {
         return res.json({ success: true, count, audience });
     } catch (error) {
         console.error('[CWA] previewAudience error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في معاينة الجمهور' });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ù…Ø¹Ø§ÙŠÙ†Ø© Ø§Ù„Ø¬Ù…Ù‡ÙˆØ±' });
     }
 };
 
 /**
- * معاينة عدد عملاء عيد الميلاد لتاريخ محدد (من metadata)
+ * Ù…Ø¹Ø§ÙŠÙ†Ø© Ø¹Ø¯Ø¯ Ø¹Ù…Ù„Ø§Ø¡ Ø¹ÙŠØ¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯ Ù„ØªØ§Ø±ÙŠØ® Ù…Ø­Ø¯Ø¯ (Ù…Ù† metadata)
  */
 exports.previewBirthdayAudience = async (req, res) => {
     try {
@@ -551,27 +551,27 @@ exports.previewBirthdayAudience = async (req, res) => {
         });
     } catch (error) {
         if (error?.code === 'INVALID_DATE') {
-            return res.status(400).json({ success: false, message: 'صيغة التاريخ غير صحيحة' });
+            return res.status(400).json({ success: false, message: 'ØµÙŠØºØ© Ø§Ù„ØªØ§Ø±ÙŠØ® ØºÙŠØ± ØµØ­ÙŠØ­Ø©' });
         }
         console.error('[CWA] previewBirthdayAudience error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في معاينة جمهور أعياد الميلاد' });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ù…Ø¹Ø§ÙŠÙ†Ø© Ø¬Ù…Ù‡ÙˆØ± Ø£Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯' });
     }
 };
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // SMART BULK SEND (filter-based, no manual IDs needed)
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
- * إرسال إشعار ذكي بالفلتر (بدون تحديد يدوي للعملاء)
+ * Ø¥Ø±Ø³Ø§Ù„ Ø¥Ø´Ø¹Ø§Ø± Ø°ÙƒÙŠ Ø¨Ø§Ù„ÙÙ„ØªØ± (Ø¨Ø¯ÙˆÙ† ØªØ­Ø¯ÙŠØ¯ ÙŠØ¯ÙˆÙŠ Ù„Ù„Ø¹Ù…Ù„Ø§Ø¡)
  * Body:
  *   audience: 'all' | 'withOrders' | 'newCustomers' | 'activeCustomers'
  *   newDays: number (for newCustomers)
- *   message: string (supports {اسم العميل})
+ *   message: string (supports {Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„})
  *   sessionId: string (optional, auto-selects first connected)
  *   mediaUrl: string (optional)
  *   mediaCaption: string (optional)
  *   delayMs: number (default 1500ms between messages)
- *   occasionName: string (optional, supports {اسم المناسبة}/{occasionName})
+ *   occasionName: string (optional, supports {Ø§Ø³Ù… Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø©}/{occasionName})
  *   sendAt: ISO datetime string (optional, schedule send)
  */
 exports.sendSmartBulkNotification = async (req, res) => {
@@ -600,7 +600,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
         if (!usableSession) {
             return res.status(400).json({
                 success: false,
-                message: 'لا توجد جلسات واتساب متصلة. يرجى ربط واتساب أولاً.'
+                message: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¬Ù„Ø³Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ù…ØªØµÙ„Ø©. ÙŠØ±Ø¬Ù‰ Ø±Ø¨Ø· ÙˆØ§ØªØ³Ø§Ø¨ Ø£ÙˆÙ„Ø§Ù‹.'
             });
         }
 
@@ -611,7 +611,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
             if (!selected) {
                 return res.status(400).json({
                     success: false,
-                    message: 'الجلسة المختارة غير متصلة حالياً أو لا تنتمي لهذه الشركة. اختر جلسة متصلة.',
+                    message: 'Ø§Ù„Ø¬Ù„Ø³Ø© Ø§Ù„Ù…Ø®ØªØ§Ø±Ø© ØºÙŠØ± Ù…ØªØµÙ„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹ Ø£Ùˆ Ù„Ø§ ØªÙ†ØªÙ…ÙŠ Ù„Ù‡Ø°Ù‡ Ø§Ù„Ø´Ø±ÙƒØ©. Ø§Ø®ØªØ± Ø¬Ù„Ø³Ø© Ù…ØªØµÙ„Ø©.',
                 });
             }
             targetSessionId = selected.sessionId;
@@ -620,7 +620,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
         if (reqMediaUrl && !isValidHttpUrl(reqMediaUrl)) {
             return res.status(400).json({
                 success: false,
-                message: 'رابط الصورة غير صالح. استخدم رابط http أو https.',
+                message: 'Ø±Ø§Ø¨Ø· Ø§Ù„ØµÙˆØ±Ø© ØºÙŠØ± ØµØ§Ù„Ø­. Ø§Ø³ØªØ®Ø¯Ù… Ø±Ø§Ø¨Ø· http Ø£Ùˆ https.',
             });
         }
 
@@ -628,7 +628,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
         if (normalizedOccasionName.length > MAX_OCCASION_NAME_LENGTH) {
             return res.status(400).json({
                 success: false,
-                message: `اسم المناسبة يجب أن لا يزيد عن ${MAX_OCCASION_NAME_LENGTH} حرف.`,
+                message: `Ø§Ø³Ù… Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø© ÙŠØ¬Ø¨ Ø£Ù† Ù„Ø§ ÙŠØ²ÙŠØ¯ Ø¹Ù† ${MAX_OCCASION_NAME_LENGTH} Ø­Ø±Ù.`,
             });
         }
 
@@ -648,7 +648,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
         if (eligibleCustomers.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: 'لا يوجد عملاء مطابقون للفلتر المحدد.',
+                message: 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ Ù…Ø·Ø§Ø¨Ù‚ÙˆÙ† Ù„Ù„ÙÙ„ØªØ± Ø§Ù„Ù…Ø­Ø¯Ø¯.',
             });
         }
 
@@ -672,7 +672,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
 
                 // If no message provided, use a default product template
                 if (!baseMessage) {
-                    baseMessage = `عزيزي {اسم العميل} ✨\n\nنبشرك بمنتجنا الجديد! 🎉\n\n✨ ${product.name}\n💰 السعر: ${product.price} جنيه\n\nاطلبه الآن من متجرنا 🛍️`;
+                    baseMessage = `Ø¹Ø²ÙŠØ²ÙŠ {Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„} âœ¨\n\nÙ†Ø¨Ø´Ø±Ùƒ Ø¨Ù…Ù†ØªØ¬Ù†Ø§ Ø§Ù„Ø¬Ø¯ÙŠØ¯! ðŸŽ‰\n\nâœ¨ ${product.name}\nðŸ’° Ø§Ù„Ø³Ø¹Ø±: ${product.price} Ø¬Ù†ÙŠÙ‡\n\nØ§Ø·Ù„Ø¨Ù‡ Ø§Ù„Ø¢Ù† Ù…Ù† Ù…ØªØ¬Ø±Ù†Ø§ ðŸ›ï¸`;
                 } else {
                     // Replace product placeholders
                     baseMessage = baseMessage
@@ -684,12 +684,12 @@ exports.sendSmartBulkNotification = async (req, res) => {
 
         const normalizedBaseMessage = String(baseMessage || '').trim();
         if (!normalizedBaseMessage) {
-            return res.status(400).json({ success: false, message: 'الرسالة مطلوبة' });
+            return res.status(400).json({ success: false, message: 'Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ù…Ø·Ù„ÙˆØ¨Ø©' });
         }
         if (normalizedBaseMessage.length > MAX_MESSAGE_LENGTH) {
             return res.status(400).json({
                 success: false,
-                message: `الرسالة طويلة جدًا. الحد الأقصى ${MAX_MESSAGE_LENGTH} حرف.`,
+                message: `Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø·ÙˆÙŠÙ„Ø© Ø¬Ø¯Ù‹Ø§. Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ù‚ØµÙ‰ ${MAX_MESSAGE_LENGTH} Ø­Ø±Ù.`,
             });
         }
 
@@ -698,13 +698,13 @@ exports.sendSmartBulkNotification = async (req, res) => {
             scheduleInfo = parseScheduledSendAt(sendAt);
         } catch (scheduleError) {
             if (scheduleError.code === 'INVALID_SCHEDULED_AT') {
-                return res.status(400).json({ success: false, message: 'صيغة الموعد غير صحيحة' });
+                return res.status(400).json({ success: false, message: 'ØµÙŠØºØ© Ø§Ù„Ù…ÙˆØ¹Ø¯ ØºÙŠØ± ØµØ­ÙŠØ­Ø©' });
             }
             if (scheduleError.code === 'SCHEDULED_AT_IN_PAST') {
-                return res.status(400).json({ success: false, message: 'لا يمكن الجدولة في وقت سابق' });
+                return res.status(400).json({ success: false, message: 'Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„Ø¬Ø¯ÙˆÙ„Ø© ÙÙŠ ÙˆÙ‚Øª Ø³Ø§Ø¨Ù‚' });
             }
             if (scheduleError.code === 'SCHEDULED_AT_TOO_FAR') {
-                return res.status(400).json({ success: false, message: 'موعد الجدولة بعيد جدًا. اختر وقتًا أقرب (أقل من 24 يومًا).' });
+                return res.status(400).json({ success: false, message: 'Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ø¯ÙˆÙ„Ø© Ø¨Ø¹ÙŠØ¯ Ø¬Ø¯Ù‹Ø§. Ø§Ø®ØªØ± ÙˆÙ‚ØªÙ‹Ø§ Ø£Ù‚Ø±Ø¨ (Ø£Ù‚Ù„ Ù…Ù† 24 ÙŠÙˆÙ…Ù‹Ø§).' });
             }
             throw scheduleError;
         }
@@ -717,7 +717,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
         // Persist campaign to DB for persistence across server restarts
         const userId = req.user?.id || req.user?.userId;
         const dbCampaignId = await persistCampaignToDB(companyId, userId, {
-            occasionName: normalizedOccasionName || 'حملة مناسبة',
+            occasionName: normalizedOccasionName || 'Ø­Ù…Ù„Ø© Ù…Ù†Ø§Ø³Ø¨Ø©',
             message: normalizedBaseMessage,
             audience,
             scheduledAt: scheduledAtIso,
@@ -745,8 +745,8 @@ exports.sendSmartBulkNotification = async (req, res) => {
             status: initialStatus,
             scheduledAt: scheduledAtIso,
             message: scheduleInfo
-                ? `تم جدولة إرسال ${eligibleCustomers.length} رسالة في ${scheduledAtIso}.`
-                : `بدأ إرسال ${eligibleCustomers.length} رسالة في الخلفية. تتبع الحملة بـ campaignId.`,
+                ? `ØªÙ… Ø¬Ø¯ÙˆÙ„Ø© Ø¥Ø±Ø³Ø§Ù„ ${eligibleCustomers.length} Ø±Ø³Ø§Ù„Ø© ÙÙŠ ${scheduledAtIso}.`
+                : `Ø¨Ø¯Ø£ Ø¥Ø±Ø³Ø§Ù„ ${eligibleCustomers.length} Ø±Ø³Ø§Ù„Ø© ÙÙŠ Ø§Ù„Ø®Ù„ÙÙŠØ©. ØªØªØ¨Ø¹ Ø§Ù„Ø­Ù…Ù„Ø© Ø¨Ù€ campaignId.`,
         });
 
         const runCampaign = async () => {
@@ -764,7 +764,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
                 campaign.completedAt = new Date().toISOString();
                 campaign.errors.push({
                     customerId: 'SYSTEM',
-                    error: 'الجلسة المختارة غير متصلة وقت التنفيذ.',
+                    error: 'Ø§Ù„Ø¬Ù„Ø³Ø© Ø§Ù„Ù…Ø®ØªØ§Ø±Ø© ØºÙŠØ± Ù…ØªØµÙ„Ø© ÙˆÙ‚Øª Ø§Ù„ØªÙ†ÙÙŠØ°.',
                     timestamp: new Date().toISOString(),
                 });
                 return;
@@ -776,27 +776,27 @@ exports.sendSmartBulkNotification = async (req, res) => {
                 // Check if campaign was cancelled
                 const currentCampaign = activeCampaigns.get(campaignId);
                 if (!currentCampaign || currentCampaign.status === 'cancelled') {
-                    console.log(`🛑 [CWA-SMART] Campaign ${campaignId} stopped.`);
+                    console.log(`ðŸ›‘ [CWA-SMART] Campaign ${campaignId} stopped.`);
                     break;
                 }
 
-                const customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
+                const customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Ø¹Ø²ÙŠØ²ÙŠ Ø§Ù„Ø¹Ù…ÙŠÙ„';
 
                 // 1. Apply Personalization
                 let personalizedMessage = normalizedBaseMessage
-                    .replace(/{اسم العميل}/g, customerName)
+                    .replace(/{Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„}/g, customerName)
                     .replace(/{customerName}/g, customerName)
-                    .replace(/{اسم المناسبة}/g, normalizedOccasionName)
+                    .replace(/{Ø§Ø³Ù… Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø©}/g, normalizedOccasionName)
                     .replace(/{occasionName}/g, normalizedOccasionName);
 
-                // 2. Apply Spintax {A|B|C} عشوائي
+                // 2. Apply Spintax {A|B|C} Ø¹Ø´ÙˆØ§Ø¦ÙŠ
                 personalizedMessage = parseSpintax(personalizedMessage);
 
                 const formattedPhone = WhatsAppNotificationService.formatPhoneNumber(customer.phone);
 
                 try {
                     if (!formattedPhone) {
-                        throw new Error('رقم الهاتف غير صالح (بتنسيق غير مدعوم)');
+                        throw new Error('Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ ØºÙŠØ± ØµØ§Ù„Ø­ (Ø¨ØªÙ†Ø³ÙŠÙ‚ ØºÙŠØ± Ù…Ø¯Ø¹ÙˆÙ…)');
                     }
 
                     if (productMediaUrl) {
@@ -828,7 +828,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
                 const finalCampaign = activeCampaigns.get(campaignId);
                 finalCampaign.status = 'completed';
                 finalCampaign.completedAt = new Date().toISOString();
-                console.log(`✅ [CWA-SMART] Campaign ${campaignId} done: ${finalCampaign.sent} sent, ${finalCampaign.failed} failed`);
+                console.log(`âœ… [CWA-SMART] Campaign ${campaignId} done: ${finalCampaign.sent} sent, ${finalCampaign.failed} failed`);
 
                 // Update DB record
                 await updateCampaignInDB(finalCampaign.dbId, {
@@ -840,7 +840,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
             }
 
             // Cleanup from memory AFTER campaign is done + 10 minutes buffer
-            // Calculate estimated campaign duration (customers × delay + buffer)
+            // Calculate estimated campaign duration (customers Ã— delay + buffer)
             const estimatedDurationMs = Math.max(
                 10 * 60 * 1000, // min 10 minutes
                 eligibleCustomers.length * computeBaseDelayMs(req.body) + 10 * 60 * 1000
@@ -863,7 +863,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
                         current.completedAt = new Date().toISOString();
                         current.errors.push({
                             customerId: 'SYSTEM',
-                            error: err.message || 'فشل تنفيذ الحملة المجدولة',
+                            error: err.message || 'ÙØ´Ù„ ØªÙ†ÙÙŠØ° Ø§Ù„Ø­Ù…Ù„Ø© Ø§Ù„Ù…Ø¬Ø¯ÙˆÙ„Ø©',
                             timestamp: new Date().toISOString(),
                         });
                     }
@@ -881,7 +881,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
                         current.completedAt = new Date().toISOString();
                         current.errors.push({
                             customerId: 'SYSTEM',
-                            error: err.message || 'فشل تنفيذ الحملة',
+                            error: err.message || 'ÙØ´Ù„ ØªÙ†ÙÙŠØ° Ø§Ù„Ø­Ù…Ù„Ø©',
                             timestamp: new Date().toISOString(),
                         });
                     }
@@ -891,12 +891,12 @@ exports.sendSmartBulkNotification = async (req, res) => {
 
     } catch (error) {
         console.error('[CWA] sendSmartBulkNotification error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في إرسال الإشعارات: ' + error.message });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª: ' + error.message });
     }
 };
 
 /**
- * إرسال رسائل واتساب لعملاء عيد الميلاد (من metadata)
+ * Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ø¦Ù„ ÙˆØ§ØªØ³Ø§Ø¨ Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø¹ÙŠØ¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯ (Ù…Ù† metadata)
  */
 exports.sendBirthdayBulkNotification = async (req, res) => {
     try {
@@ -910,7 +910,7 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
         } = req.body || {};
 
         if (!message || !String(message).trim()) {
-            return res.status(400).json({ success: false, message: 'الرسالة مطلوبة' });
+            return res.status(400).json({ success: false, message: 'Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ù…Ø·Ù„ÙˆØ¨Ø©' });
         }
 
         // 1) Check session
@@ -919,7 +919,7 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
         if (!usableSession) {
             return res.status(400).json({
                 success: false,
-                message: 'لا توجد جلسات واتساب متصلة. يرجى ربط واتساب أولاً.',
+                message: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¬Ù„Ø³Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ù…ØªØµÙ„Ø©. ÙŠØ±Ø¬Ù‰ Ø±Ø¨Ø· ÙˆØ§ØªØ³Ø§Ø¨ Ø£ÙˆÙ„Ø§Ù‹.',
             });
         }
         const targetSessionId = sessionId || usableSession.sessionId;
@@ -929,14 +929,14 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
         if (eligibleCustomers.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: `لا يوجد عملاء لديهم عيد ميلاد في ${target.isoDate}.`,
+                message: `Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ Ù„Ø¯ÙŠÙ‡Ù… Ø¹ÙŠØ¯ Ù…ÙŠÙ„Ø§Ø¯ ÙÙŠ ${target.isoDate}.`,
             });
         }
 
         const campaignId = `campaign_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const userId = req.user?.id || req.user?.userId;
         const dbCampaignId = await persistCampaignToDB(companyId, userId, {
-            occasionName: 'تهنئة عيد ميلاد',
+            occasionName: 'ØªÙ‡Ù†Ø¦Ø© Ø¹ÙŠØ¯ Ù…ÙŠÙ„Ø§Ø¯',
             message: message,
             audience: 'birthday',
             scheduledAt: null,
@@ -959,7 +959,7 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
             campaignId,
             total: eligibleCustomers.length,
             date: target.isoDate,
-            message: `بدأ إرسال تهنئة عيد ميلاد لـ ${eligibleCustomers.length} عميل.`,
+            message: `Ø¨Ø¯Ø£ Ø¥Ø±Ø³Ø§Ù„ ØªÙ‡Ù†Ø¦Ø© Ø¹ÙŠØ¯ Ù…ÙŠÙ„Ø§Ø¯ Ù„Ù€ ${eligibleCustomers.length} Ø¹Ù…ÙŠÙ„.`,
         });
 
         setImmediate(async () => {
@@ -972,17 +972,17 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
             for (const customer of eligibleCustomers) {
                 const currentCampaign = activeCampaigns.get(campaignId);
                 if (!currentCampaign || currentCampaign.status === 'cancelled') {
-                    console.log(`🛑 [CWA-BIRTHDAY] Campaign ${campaignId} stopped.`);
+                    console.log(`ðŸ›‘ [CWA-BIRTHDAY] Campaign ${campaignId} stopped.`);
                     break;
                 }
 
-                const customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
+                const customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Ø¹Ø²ÙŠØ²ÙŠ Ø§Ù„Ø¹Ù…ÙŠÙ„';
                 const ageText = customer.age != null ? String(customer.age) : '';
 
                 let personalizedMessage = baseMessage
-                    .replace(/{اسم العميل}/g, customerName)
+                    .replace(/{Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„}/g, customerName)
                     .replace(/{customerName}/g, customerName)
-                    .replace(/{العمر}/g, ageText)
+                    .replace(/{Ø§Ù„Ø¹Ù…Ø±}/g, ageText)
                     .replace(/{age}/g, ageText);
                 personalizedMessage = parseSpintax(personalizedMessage);
 
@@ -990,7 +990,7 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
 
                 try {
                     if (!formattedPhone) {
-                        throw new Error('رقم الهاتف غير صالح (بتنسيق غير مدعوم)');
+                        throw new Error('Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ ØºÙŠØ± ØµØ§Ù„Ø­ (Ø¨ØªÙ†Ø³ÙŠÙ‚ ØºÙŠØ± Ù…Ø¯Ø¹ÙˆÙ…)');
                     }
 
                     if (mediaUrl) {
@@ -1020,7 +1020,7 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
             if (latest && latest.status === 'running') {
                 latest.status = 'completed';
                 latest.completedAt = new Date().toISOString();
-                console.log(`✅ [CWA-BIRTHDAY] Campaign ${campaignId} done: ${latest.sent} sent, ${latest.failed} failed`);
+                console.log(`âœ… [CWA-BIRTHDAY] Campaign ${campaignId} done: ${latest.sent} sent, ${latest.failed} failed`);
                 
                 // Update DB record
                 await updateCampaignInDB(latest.dbId, {
@@ -1032,7 +1032,7 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
             }
 
             // Cleanup from memory AFTER campaign is done + 10 minutes buffer
-            // Calculate estimated campaign duration (customers × delay + buffer)
+            // Calculate estimated campaign duration (customers Ã— delay + buffer)
             const estimatedDurationMs = Math.max(
                 10 * 60 * 1000, // min 10 minutes
                 eligibleCustomers.length * computeBaseDelayMs(req.body) + 10 * 60 * 1000
@@ -1042,15 +1042,15 @@ exports.sendBirthdayBulkNotification = async (req, res) => {
         });
     } catch (error) {
         if (error?.code === 'INVALID_DATE') {
-            return res.status(400).json({ success: false, message: 'صيغة التاريخ غير صحيحة' });
+            return res.status(400).json({ success: false, message: 'ØµÙŠØºØ© Ø§Ù„ØªØ§Ø±ÙŠØ® ØºÙŠØ± ØµØ­ÙŠØ­Ø©' });
         }
         console.error('[CWA] sendBirthdayBulkNotification error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في إرسال تهنئة عيد الميلاد: ' + error.message });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ ØªÙ‡Ù†Ø¦Ø© Ø¹ÙŠØ¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯: ' + error.message });
     }
 };
 
 /**
- * إيقاف حملة جارية
+ * Ø¥ÙŠÙ‚Ø§Ù Ø­Ù…Ù„Ø© Ø¬Ø§Ø±ÙŠØ©
  */
 exports.stopCampaign = async (req, res) => {
     try {
@@ -1058,7 +1058,7 @@ exports.stopCampaign = async (req, res) => {
         const campaign = activeCampaigns.get(campaignId);
 
         if (!campaign) {
-            return res.status(404).json({ success: false, message: 'الحملة غير موجودة' });
+            return res.status(404).json({ success: false, message: 'Ø§Ù„Ø­Ù…Ù„Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©' });
         }
 
         const scheduledTimer = scheduledCampaignTimers.get(campaignId);
@@ -1082,14 +1082,14 @@ exports.stopCampaign = async (req, res) => {
             scheduledCampaignTimers.delete(campaignId);
             activeCampaigns.delete(campaignId);
         }, 10 * 60 * 1000);
-        return res.json({ success: true, message: 'تم إرسال طلب إيقاف الحملة' });
+        return res.json({ success: true, message: 'ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø·Ù„Ø¨ Ø¥ÙŠÙ‚Ø§Ù Ø§Ù„Ø­Ù…Ù„Ø©' });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
 
 /**
- * جلب سجل الحملات السابقة من قاعدة البيانات
+ * Ø¬Ù„Ø¨ Ø³Ø¬Ù„ Ø§Ù„Ø­Ù…Ù„Ø§Øª Ø§Ù„Ø³Ø§Ø¨Ù‚Ø© Ù…Ù† Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª
  */
 exports.getCampaignHistory = async (req, res) => {
     try {
@@ -1120,12 +1120,12 @@ exports.getCampaignHistory = async (req, res) => {
         return res.json({ success: true, campaigns });
     } catch (error) {
         console.error('[CWA] getCampaignHistory error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب سجل الحملات' });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø³Ø¬Ù„ Ø§Ù„Ø­Ù…Ù„Ø§Øª' });
     }
 };
 
 /**
- * تتبع حالة حملة الإرسال
+ * ØªØªØ¨Ø¹ Ø­Ø§Ù„Ø© Ø­Ù…Ù„Ø© Ø§Ù„Ø¥Ø±Ø³Ø§Ù„
  */
 exports.getCampaignStatus = async (req, res) => {
     try {
@@ -1133,7 +1133,7 @@ exports.getCampaignStatus = async (req, res) => {
         const campaign = activeCampaigns.get(campaignId);
 
         if (!campaign) {
-            return res.status(404).json({ success: false, message: 'الحملة غير موجودة أو انتهت' });
+            return res.status(404).json({ success: false, message: 'Ø§Ù„Ø­Ù…Ù„Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø© Ø£Ùˆ Ø§Ù†ØªÙ‡Øª' });
         }
 
         return res.json({
@@ -1150,7 +1150,7 @@ exports.getCampaignStatus = async (req, res) => {
 };
 
 /**
- * إرسال إشعار واتساب جماعي للعملاء المختارين يدوياً (legacy)
+ * Ø¥Ø±Ø³Ø§Ù„ Ø¥Ø´Ø¹Ø§Ø± ÙˆØ§ØªØ³Ø§Ø¨ Ø¬Ù…Ø§Ø¹ÙŠ Ù„Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„Ù…Ø®ØªØ§Ø±ÙŠÙ† ÙŠØ¯ÙˆÙŠØ§Ù‹ (legacy)
  */
 exports.sendBulkWhatsAppNotification = async (req, res) => {
     try {
@@ -1158,10 +1158,10 @@ exports.sendBulkWhatsAppNotification = async (req, res) => {
         const { customerIds, message, sessionId, mediaUrl, mediaCaption } = req.body;
 
         if (!message || !message.trim()) {
-            return res.status(400).json({ success: false, message: 'الرسالة مطلوبة' });
+            return res.status(400).json({ success: false, message: 'Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ù…Ø·Ù„ÙˆØ¨Ø©' });
         }
         if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0) {
-            return res.status(400).json({ success: false, message: 'يجب تحديد عميل واحد على الأقل' });
+            return res.status(400).json({ success: false, message: 'ÙŠØ¬Ø¨ ØªØ­Ø¯ÙŠØ¯ Ø¹Ù…ÙŠÙ„ ÙˆØ§Ø­Ø¯ Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„' });
         }
 
         const prisma = getSharedPrismaClient();
@@ -1174,7 +1174,7 @@ exports.sendBulkWhatsAppNotification = async (req, res) => {
 
         const connectedSessions = await getConnectedSessions(companyId);
         if (connectedSessions.length === 0) {
-            return res.status(400).json({ success: false, message: 'لا توجد جلسات واتساب متصلة.' });
+            return res.status(400).json({ success: false, message: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¬Ù„Ø³Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ù…ØªØµÙ„Ø©.' });
         }
 
         const targetSessionId = sessionId || connectedSessions[0].sessionId;
@@ -1183,12 +1183,12 @@ exports.sendBulkWhatsAppNotification = async (req, res) => {
         for (const customer of customers) {
             if (!customer.phone) {
                 results.failed++;
-                results.errors.push({ customerId: customer.id, error: 'لا يوجد رقم هاتف' });
+                results.errors.push({ customerId: customer.id, error: 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø±Ù‚Ù… Ù‡Ø§ØªÙ' });
                 continue;
             }
 
-            const customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
-            const personalizedMessage = message.replace(/{اسم العميل}/g, customerName).replace(/{customerName}/g, customerName);
+            const customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Ø¹Ø²ÙŠØ²ÙŠ Ø§Ù„Ø¹Ù…ÙŠÙ„';
+            const personalizedMessage = message.replace(/{Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„}/g, customerName).replace(/{customerName}/g, customerName);
 
             try {
                 if (mediaUrl) {
@@ -1205,15 +1205,15 @@ exports.sendBulkWhatsAppNotification = async (req, res) => {
             }
         }
 
-        return res.json({ success: true, message: 'تم الإرسال', results });
+        return res.json({ success: true, message: 'ØªÙ… Ø§Ù„Ø¥Ø±Ø³Ø§Ù„', results });
     } catch (error) {
         console.error('[CWA] sendBulkWhatsAppNotification error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في إرسال الإشعارات: ' + error.message });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª: ' + error.message });
     }
 };
 
 /**
- * جلب المنتجات (للإشعارات)
+ * Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª (Ù„Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª)
  */
 exports.getProductsForNotification = async (req, res) => {
     try {
@@ -1241,12 +1241,12 @@ exports.getProductsForNotification = async (req, res) => {
         return res.json({ success: true, data: products });
     } catch (error) {
         console.error('[CWA] getProductsForNotification error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب المنتجات' });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª' });
     }
 };
 
 /**
- * 🎉 جدولة حملة مناسبة (أوتوماتيك) — بتتبعت لوحدها في الموعد المحدد
+ * ðŸŽ‰ Ø¬Ø¯ÙˆÙ„Ø© Ø­Ù…Ù„Ø© Ù…Ù†Ø§Ø³Ø¨Ø© (Ø£ÙˆØªÙˆÙ…Ø§ØªÙŠÙƒ) â€” Ø¨ØªØªØ¨Ø¹Øª Ù„ÙˆØ­Ø¯Ù‡Ø§ ÙÙŠ Ø§Ù„Ù…ÙˆØ¹Ø¯ Ø§Ù„Ù…Ø­Ø¯Ø¯
  * POST /api/v1/customers/whatsapp-notify/occasions/schedule
  */
 exports.scheduleOccasionCampaign = async (req, res) => {
@@ -1255,17 +1255,17 @@ exports.scheduleOccasionCampaign = async (req, res) => {
         const { name, message, scheduledAt, targetAudience } = req.body || {};
 
         if (!message || !String(message).trim()) {
-            return res.status(400).json({ success: false, message: 'الرسالة مطلوبة' });
+            return res.status(400).json({ success: false, message: 'Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ù…Ø·Ù„ÙˆØ¨Ø©' });
         }
         if (!scheduledAt) {
-            return res.status(400).json({ success: false, message: 'تاريخ الإرسال مطلوب' });
+            return res.status(400).json({ success: false, message: 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ Ù…Ø·Ù„ÙˆØ¨' });
         }
 
         const prisma = getSharedPrismaClient();
         const record = await prisma.broadcastCampaign.create({
             data: {
                 companyId,
-                name: name || 'حملة مناسبة',
+                name: name || 'Ø­Ù…Ù„Ø© Ù…Ù†Ø§Ø³Ø¨Ø©',
                 message: String(message).trim(),
                 channel: 'whatsapp',
                 targetAudience: targetAudience || 'all',
@@ -1278,16 +1278,16 @@ exports.scheduleOccasionCampaign = async (req, res) => {
         return res.json({
             success: true,
             data: record,
-            message: 'تمت جدولة الحملة — هتتبعت تلقائياً في الموعد المحدد'
+            message: 'ØªÙ…Øª Ø¬Ø¯ÙˆÙ„Ø© Ø§Ù„Ø­Ù…Ù„Ø© â€” Ù‡ØªØªØ¨Ø¹Øª ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ ÙÙŠ Ø§Ù„Ù…ÙˆØ¹Ø¯ Ø§Ù„Ù…Ø­Ø¯Ø¯'
         });
     } catch (error) {
         console.error('[CWA] scheduleOccasionCampaign error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جدولة الحملة' });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ø¯ÙˆÙ„Ø© Ø§Ù„Ø­Ù…Ù„Ø©' });
     }
 };
 
 /**
- * 📋 قائمة حملات المناسبات المجدولة
+ * ðŸ“‹ Ù‚Ø§Ø¦Ù…Ø© Ø­Ù…Ù„Ø§Øª Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø§Øª Ø§Ù„Ù…Ø¬Ø¯ÙˆÙ„Ø©
  * GET /api/v1/customers/whatsapp-notify/occasions/scheduled
  */
 exports.getScheduledOccasionCampaigns = async (req, res) => {
@@ -1302,6 +1302,465 @@ exports.getScheduledOccasionCampaigns = async (req, res) => {
         return res.json({ success: true, data: campaigns });
     } catch (error) {
         console.error('[CWA] getScheduledOccasionCampaigns error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب الحملات المجدولة' });
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ø­Ù…Ù„Ø§Øª Ø§Ù„Ù…Ø¬Ø¯ÙˆÙ„Ø©' });
+    }
+};
+
+
+const birthdaySettingsStore = new Map();
+
+/**
+ * Ø¬Ù„Ø¨ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø£ØªÙ…ØªØ© Ø±Ø³Ø§Ø¦Ù„ Ø§Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯
+ */
+exports.getBirthdayAutomationSettings = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const prisma = getSharedPrismaClient();
+
+        let settings = birthdaySettingsStore.get(companyId);
+        if (!settings) {
+            // Ù…Ø­Ø§ÙˆÙ„Ø© Ø¬Ù„Ø¨ Ù…Ù† DB Ø¥Ù† ÙˆØ¬Ø¯ ÙÙŠ StoreSetting Ø£Ùˆ Ø§ÙØªØ±Ø§Ø¶ÙŠ
+            try {
+                const storeSetting = await prisma.storeSetting.findFirst({
+                    where: { companyId, key: 'whatsapp_birthday_automation' }
+                });
+                if (storeSetting && storeSetting.value) {
+                    settings = typeof storeSetting.value === 'string' ? JSON.parse(storeSetting.value) : storeSetting.value;
+                }
+            } catch (e) {
+                // Ignore DB error fallback to default
+            }
+        }
+
+        if (!settings) {
+            settings = {
+                isEnabled: true,
+                dailySendTime: '12:00',
+                channel: 'whatsapp_session', // 'meta_api' or 'whatsapp_session'
+                messageTemplate: 'ðŸŽ‰ ÙƒÙ„ Ø³Ù†Ø© ÙˆØ£Ù†Øª Ø·ÙŠØ¨ ÙŠØ§ {first_name}! ðŸŽ‚\n\nØ¨Ù…Ù†Ø§Ø³Ø¨Ø© Ø¹ÙŠØ¯ Ù…ÙŠÙ„Ø§Ø¯ÙƒØŒ ÙŠØ³Ø¹Ø¯Ù†Ø§ Ù†Ù‚Ø¯Ù… Ù„Ùƒ Ù‡Ø¯ÙŠØ© Ø®Ø§ØµØ© ÙˆØ®ØµÙ… Ù…Ù…ÙŠØ² Ù…Ù† Ù…ØªØ¬Ø±Ù†Ø§.\nØ§Ø³ØªØ®Ø¯Ù… ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ…: {coupon_code}\n\nØ§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø±Ø§Ø¨Ø· Ø§Ù„ØªØ§Ù„ÙŠ Ù„Ù„Ø¯Ø®ÙˆÙ„ Ù„ØµÙØ­ØªÙƒ ÙˆØ§Ø³ØªÙ„Ø§Ù… Ù‡Ø¯ÙŠØªÙƒ ÙÙˆØ±Ø§Ù‹:\nðŸ”— {customer_link}\n\nÙ†ØªÙ…Ù†Ù‰ Ù„Ùƒ Ø³Ù†Ø© Ø³Ø¹ÙŠØ¯Ø© Ù…Ù„ÙŠØ¦Ø© Ø¨Ø§Ù„Ù†Ø¬Ø§Ø­! â¤ï¸',
+                couponCode: 'HBD10',
+                metaTemplateName: 'birthday_greeting_v1'
+            };
+        }
+
+
+        return res.json({ success: true, data: settings });
+    } catch (error) {
+        console.error('[CWA] getBirthdayAutomationSettings error:', error);
+        return res.status(500).json({ success: false, message: 'ÙØ´Ù„ ÙÙŠ Ø¬Ù„Ø¨ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯' });
+    }
+};
+
+/**
+ * Ø­ÙØ¸ ÙˆØªØ­Ø¯ÙŠØ« Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø£ØªÙ…ØªØ© Ø§Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯
+ */
+exports.saveBirthdayAutomationSettings = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { isEnabled, dailySendTime, channel, messageTemplate, couponCode, metaTemplateName } = req.body;
+        const prisma = getSharedPrismaClient();
+
+        const updatedSettings = {
+            isEnabled: Boolean(isEnabled),
+            dailySendTime: dailySendTime || '12:00',
+            channel: channel || 'whatsapp_session',
+            messageTemplate: messageTemplate || '',
+            couponCode: couponCode || '',
+            metaTemplateName: metaTemplateName || 'birthday_greeting_v1',
+            updatedAt: new Date().toISOString()
+        };
+
+        birthdaySettingsStore.set(companyId, updatedSettings);
+
+        try {
+            await prisma.storeSetting.upsert({
+                where: { companyId_key: { companyId, key: 'whatsapp_birthday_automation' } },
+                update: { value: JSON.stringify(updatedSettings) },
+                create: { companyId, key: 'whatsapp_birthday_automation', value: JSON.stringify(updatedSettings) }
+            });
+        } catch (dbErr) {
+            console.log('[CWA] DB save warning for birthday settings:', dbErr.message);
+        }
+
+        return res.json({ success: true, message: 'ØªÙ… Ø­ÙØ¸ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø¨Ù†Ø¬Ø§Ø­', data: updatedSettings });
+    } catch (error) {
+        console.error('[CWA] saveBirthdayAutomationSettings error:', error);
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø­ÙØ¸ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª' });
+    }
+};
+
+/**
+ * Ø¬Ù„Ø¨ ØªØªØ¨Ø¹ Ø§Ø¹ÙŠØ§Ø¯ Ù…ÙŠÙ„Ø§Ø¯ Ø§Ù„ÙŠÙˆÙ… (Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ + Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø±Ø³Ø§Ù„)
+ */
+exports.getTodayBirthdayTrack = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const prisma = getSharedPrismaClient();
+        const today = new Date();
+        const currentMonth = today.getMonth() + 1;
+        const currentDay = today.getDate();
+
+        const customers = await safeQuery(() =>
+            prisma.customer.findMany({
+                where: { companyId, isDeleted: { not: true } },
+                select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true }
+            })
+        );
+
+        const todayBirthdays = [];
+        for (const customer of customers) {
+            const dateParts = extractBirthdayParts(customer);
+            if (dateParts && dateParts.month === currentMonth && dateParts.day === currentDay) {
+                todayBirthdays.push({
+                    id: customer.id,
+                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Ø¹Ù…ÙŠÙ„ Ø¨Ø¯ÙˆÙ† Ø§Ø³Ù…',
+                    phone: customer.phone,
+                    email: customer.email,
+                    birthday: `${dateParts.year || '----'}-${pad2(dateParts.month)}-${pad2(dateParts.day)}`,
+                    age: dateParts.year ? today.getFullYear() - dateParts.year : null,
+                    scheduledTime: '12:00 PM',
+                    status: 'scheduled', // 'scheduled' | 'sent' | 'failed'
+                    sentAt: null
+                });
+            }
+        }
+
+        return res.json({
+            success: true,
+            totalToday: todayBirthdays.length,
+            data: todayBirthdays
+        });
+    } catch (error) {
+        console.error('[CWA] getTodayBirthdayTrack error:', error);
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ø¹ÙŠØ§Ø¯ Ù…ÙŠÙ„Ø§Ø¯ Ø§Ù„ÙŠÙˆÙ…' });
+    }
+};
+
+/**
+ * Ø¬Ù„Ø¨ Ø§Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯ Ø§Ù„Ù‚Ø§Ø¯Ù…Ø© (Ø®Ù„Ø§Ù„ N ÙŠÙˆÙ…)
+ */
+exports.getUpcomingBirthdaysTrack = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const daysAhead = parseInt(req.query.days || '30', 10);
+        const prisma = getSharedPrismaClient();
+
+        const customers = await safeQuery(() =>
+            prisma.customer.findMany({
+                where: { companyId, isDeleted: { not: true } },
+                select: { id: true, firstName: true, lastName: true, phone: true, metadata: true }
+            })
+        );
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcoming = [];
+        for (const customer of customers) {
+            const dateParts = extractBirthdayParts(customer);
+            if (!dateParts) continue;
+
+            const nextBday = new Date(today.getFullYear(), dateParts.month - 1, dateParts.day);
+            if (nextBday < today) {
+                nextBday.setFullYear(today.getFullYear() + 1);
+            }
+
+            const diffTime = nextBday.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0 && diffDays <= daysAhead) {
+                upcoming.push({
+                    id: customer.id,
+                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Ø¹Ù…ÙŠÙ„ Ø¨Ø¯ÙˆÙ† Ø§Ø³Ù…',
+                    phone: customer.phone,
+                    birthdayDate: `${pad2(dateParts.month)}-${pad2(dateParts.day)}`,
+                    daysRemaining: diffDays,
+                    formattedNextDate: nextBday.toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' })
+                });
+            }
+        }
+
+        upcoming.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+        return res.json({ success: true, total: upcoming.length, data: upcoming });
+    } catch (error) {
+        console.error('[CWA] getUpcomingBirthdaysTrack error:', error);
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯ Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©' });
+    }
+};
+
+/**
+ * Ø¬Ù„Ø¨ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø¨Ø¯ÙˆÙ† ØªØ§Ø±ÙŠØ® Ù…ÙŠÙ„Ø§Ø¯ Ù„ØªÙ†Ø¨ÙŠÙ‡ Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ†
+ */
+exports.getMissingBirthdaysTrack = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const prisma = getSharedPrismaClient();
+
+        const customers = await safeQuery(() =>
+            prisma.customer.findMany({
+                where: { companyId, isDeleted: { not: true } },
+                select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true },
+                take: 100
+            })
+        );
+
+        const missing = [];
+        for (const customer of customers) {
+            const dateParts = extractBirthdayParts(customer);
+            if (!dateParts) {
+                missing.push({
+                    id: customer.id,
+                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Ø¹Ù…ÙŠÙ„ Ø¨Ø¯ÙˆÙ† Ø§Ø³Ù…',
+                    phone: customer.phone,
+                    email: customer.email,
+                    createdAt: customer.createdAt
+                });
+            }
+        }
+
+        return res.json({ success: true, totalMissing: missing.length, data: missing });
+    } catch (error) {
+        console.error('[CWA] getMissingBirthdaysTrack error:', error);
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„Ù†Ø§Ù‚Øµ Ø¨ÙŠØ§Ù†Ø§ØªÙ‡Ù…' });
+    }
+};
+
+/**
+ * Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© ØªÙ‡Ù†Ø¦Ø© ØªØ¬Ø±ÙŠØ¨ÙŠØ©
+ */
+exports.sendTestBirthdayMessage = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { testPhone, messageTemplate, couponCode } = req.body;
+
+        if (!testPhone) {
+            return res.status(400).json({ success: false, message: 'ÙŠØ±Ø¬Ù‰ ÙƒØªØ§Ø¨Ø© Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠ' });
+        }
+
+        const formattedMsg = (messageTemplate || 'ÙƒÙ„ Ø³Ù†Ø© ÙˆØ£Ù†Øª Ø·ÙŠØ¨ ÙŠØ§ {first_name}!')
+            .replace(/\{first_name\}/g, 'Ø£Ø­Ù…Ø¯')
+            .replace(/\{full_name\}/g, 'Ø£Ø­Ù…Ø¯ Ù…Ø­Ù…ÙˆØ¯')
+            .replace(/\{coupon_code\}/g, couponCode || 'TEST10')
+            .replace(/\{company_name\}/g, 'Ù…ØªØ¬Ø±Ù†Ø§')
+            .replace(/\{customer_link\}/g, 'https://yourdomain.com/customer/profile?token=demo');
+
+
+        const activeSessions = await WhatsAppNotificationService.getConnectedSessions(companyId);
+        if (!activeSessions || activeSessions.length === 0) {
+            return res.status(400).json({ success: false, message: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¬Ù„Ø³Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ù…ØªØµÙ„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹ Ù„Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠ' });
+        }
+
+        const sessionId = activeSessions[0].sessionId;
+        await WhatsAppMessageHandler.sendTextMessage(sessionId, testPhone, formattedMsg);
+
+        return res.json({ success: true, message: `ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠØ© Ø¨Ù†Ø¬Ø§Ø­ Ø¥Ù„Ù‰ Ø§Ù„Ø±Ù‚Ù… ${testPhone}` });
+    } catch (error) {
+        console.error('[CWA] sendTestBirthdayMessage error:', error);
+        return res.status(500).json({ success: false, message: 'ÙØ´Ù„ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠØ©: ' + error.message });
+    }
+};
+
+/**
+ * ðŸ“Š Birthday Analytics Reports
+ * Ø¬Ù„Ø¨ Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø­Ù…Ù„Ø§Øª Ø£Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯ Ø§Ù„Ù…ØªÙ‚Ø¯Ù…Ø© Ù…Ù† Ù…ØµØ§Ø¯Ø± Ø­Ù‚ÙŠÙ‚ÙŠØ©
+ *
+ * Query params:
+ *   range : 'today' | 'week' | 'month' | 'all' | 'custom'
+ *   from  : ISO date (YYYY-MM-DD) â€” required when range=custom
+ *   to    : ISO date (YYYY-MM-DD) â€” required when range=custom
+ */
+exports.getBirthdayAnalyticsReports = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { range = 'all', from, to } = req.query;
+
+        const prisma = getSharedPrismaClient();
+        const now = new Date();
+
+        // â”€â”€ Resolve date window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        let fromDate = null;
+        let toDate = null;
+
+        if (range === 'custom' && from && to) {
+            fromDate = new Date(`${String(from).split('T')[0]}T00:00:00.000Z`);
+            toDate = new Date(`${String(to).split('T')[0]}T23:59:59.999Z`);
+        } else if (range === 'today') {
+            const start = new Date(now);
+            start.setHours(0, 0, 0, 0);
+            fromDate = start;
+            toDate = new Date(now);
+            toDate.setHours(23, 59, 59, 999);
+        } else if (range === 'week') {
+            const start = new Date(now);
+            const day = start.getDay();
+            start.setDate(start.getDate() - day);
+            start.setHours(0, 0, 0, 0);
+            fromDate = start;
+            toDate = new Date();
+        } else if (range === 'month') {
+            fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            toDate = new Date();
+        } else {
+            // 'all' â€” no lower bound
+            toDate = new Date();
+        }
+
+        const dateFilter = {};
+        if (fromDate) dateFilter.gte = fromDate;
+        if (toDate) dateFilter.lte = toDate;
+
+        // â”€â”€ 1) Targeted customers (prospective) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Count customers whose birthday falls inside the window.
+        let prospectiveCustomers = 0;
+        try {
+            if (range === 'today' || range === 'custom') {
+                // iterate day-by-day across the window
+                const start = fromDate || new Date(now.getFullYear(), now.getMonth(), 1);
+                const end = toDate || now;
+                const cursor = new Date(start);
+                while (cursor <= end) {
+                    const iso = cursor.toISOString().split('T')[0];
+                    const { customers } = await getBirthdayAudienceCustomers(companyId, iso);
+                    prospectiveCustomers += customers.length;
+                    cursor.setDate(cursor.getDate() + 1);
+                    if (prospectiveCustomers > 5_000_000) break; // safety
+                }
+            } else {
+                // for week/month/all we approximate prospective via campaign recipient totals
+                const campaigns = await safeQuery(() =>
+                    prisma.broadcastCampaign.findMany({
+                        where: {
+                            companyId,
+                            targetAudience: 'birthday',
+                            ...(Object.keys(dateFilter).length ? { createdAt: dateFilter } : {})
+                        },
+                        select: { recipientCount: true }
+                    })
+                );
+                prospectiveCustomers = (campaigns || []).reduce((acc, c) => acc + (c.recipientCount || 0), 0);
+            }
+        } catch (e) {
+            console.log('[CWA] Analytics prospective fetch error:', e.message);
+        }
+
+        // â”€â”€ 2) Sent / failed messages (real campaigns) â”€â”€â”€â”€â”€â”€â”€â”€
+        let totalMessagesSent = 0;
+        let failedMessages = 0;
+        try {
+            const campaigns = await safeQuery(() =>
+                prisma.broadcastCampaign.findMany({
+                    where: {
+                        companyId,
+                        targetAudience: 'birthday',
+                        ...(Object.keys(dateFilter).length ? { createdAt: dateFilter } : {})
+                    },
+                    select: { sentCount: true, failedCount: true, recipientCount: true }
+                })
+            );
+            if (campaigns && Array.isArray(campaigns)) {
+                totalMessagesSent = campaigns.reduce((acc, c) => acc + (c.sentCount || 0), 0);
+                failedMessages = campaigns.reduce((acc, c) => acc + (c.failedCount || 0), 0);
+            }
+        } catch (e) {
+            console.log('[CWA] Analytics campaigns fetch error:', e.message);
+        }
+
+        // â”€â”€ 3) Coupon usage (option A: couponCode from settings) â”€
+        let couponCode = null;
+        try {
+            const storeSetting = await prisma.storeSetting.findFirst({
+                where: { companyId, key: 'whatsapp_birthday_automation' }
+            });
+            if (storeSetting && storeSetting.value) {
+                const s = typeof storeSetting.value === 'string'
+                    ? JSON.parse(storeSetting.value)
+                    : storeSetting.value;
+                couponCode = (s.couponCode || '').trim();
+            }
+        } catch (e) {
+            console.log('[CWA] Analytics settings fetch error:', e.message);
+        }
+
+        let usedCoupons = 0;
+        let totalSales = 0;
+        let couponUsages = [];
+        if (couponCode) {
+            let coupon = null;
+            try {
+                coupon = await safeQuery(() =>
+                    prisma.coupon.findFirst({
+                        where: { companyId, code: { equals: couponCode, mode: 'insensitive' } },
+                        select: { id: true }
+                    })
+                );
+            } catch (e) {
+                console.log('[CWA] Analytics coupon lookup error:', e.message);
+            }
+
+            if (coupon && coupon.id) {
+                try {
+                    couponUsages = await safeQuery(() =>
+                        prisma.couponUsage.findMany({
+                            where: {
+                                companyId,
+                                couponId: coupon.id,
+                                ...(Object.keys(dateFilter).length ? { usedAt: dateFilter } : {})
+                            },
+                            select: {
+                                id: true,
+                                customerId: true,
+                                orderId: true,
+                                discountAmount: true,
+                                orderAmount: true,
+                                usedAt: true
+                            },
+                            orderBy: { usedAt: 'desc' },
+                            take: 50
+                        })
+                    );
+                    if (couponUsages && Array.isArray(couponUsages)) {
+                        usedCoupons = couponUsages.length;
+                        totalSales = couponUsages.reduce(
+                            (sum, u) => sum + (Number(u.orderAmount) || 0), 0
+                        );
+                    }
+                } catch (e) {
+                    console.log('[CWA] Analytics coupon usage fetch error:', e.message);
+                }
+            }
+        }
+
+        const conversionRate = prospectiveCustomers > 0
+            ? ((usedCoupons / prospectiveCustomers) * 100).toFixed(2)
+            : 0;
+
+        return res.json({
+            success: true,
+            data: {
+                timeRange: range,
+                from: fromDate ? fromDate.toISOString() : null,
+                to: toDate ? toDate.toISOString() : null,
+                couponCode,
+                prospectiveCustomers,
+                totalMessagesSent,
+                failedMessages,
+                usedCoupons,
+                conversionRate: parseFloat(conversionRate),
+                totalSales: Number(totalSales.toFixed(2)),
+                couponUsages: (couponUsages || []).map(u => ({
+                    id: u.id,
+                    customerId: u.customerId,
+                    orderId: u.orderId,
+                    discountAmount: Number(u.discountAmount) || 0,
+                    orderAmount: Number(u.orderAmount) || 0,
+                    usedAt: u.usedAt
+                }))
+            }
+        });
+
+    } catch (error) {
+        console.error('[CWA] getBirthdayAnalyticsReports error:', error);
+        return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø£Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯' });
     }
 };

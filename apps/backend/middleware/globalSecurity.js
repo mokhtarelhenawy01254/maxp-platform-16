@@ -395,6 +395,7 @@ const PUBLIC_ROUTES = [
   // Facebook OAuth callback routes (NO AUTHENTICATION - Facebook redirects here directly)
   'GET /api/v1/facebook-oauth/callback',
   'GET /api/v1/facebook-oauth/pixel-callback',
+  'GET /api/v1/facebook-oauth/popup-close.js',
 
   // Image proxy routes (للصور الخارجية)
   'GET /api/proxy-image',
