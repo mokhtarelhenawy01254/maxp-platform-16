@@ -9431,3 +9431,5 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 ProductInfo.displayName = 'ProductInfo';
 
 export default ProductInfo;
+/ /   F o r c e   r e b u i l d   0 8 / 2 1 / 2 0 2 6   0 2 : 5 5 : 5 6  
+ 
