@@ -223,6 +223,8 @@ const StaticMotionDiv = ({
   <div {...props} style={resolveStaticMotionStyle(animate, style)} />
 );
 
+StaticMotionDiv.displayName = 'StaticMotionDiv';
+
 const StaticMotionSpan = ({
   initial: _initial,
   animate,
@@ -233,6 +235,8 @@ const StaticMotionSpan = ({
   <span {...props} style={resolveStaticMotionStyle(animate, style)} />
 );
 
+StaticMotionSpan.displayName = 'StaticMotionSpan';
+
 const StaticMotionButton = ({
   initial: _initial,
   animate: _animate,
@@ -240,6 +244,8 @@ const StaticMotionButton = ({
   whileTap: _whileTap,
   ...props
 }: StaticMotionProps<'button'>) => <button {...props} />;
+
+StaticMotionButton.displayName = 'StaticMotionButton';
 
 const parseMaybeNumber = (value: unknown): number | null => {
   const parsed =
@@ -602,6 +608,8 @@ const Accordion = ({
   );
 };
 
+Accordion.displayName = 'Accordion';
+
 const ProductDescription = ({
   safeDescription,
   emptyText = 'لا يوجد وصف متاح لهذا المنتج حتى الآن.',
@@ -621,6 +629,8 @@ const ProductDescription = ({
   )
 );
 
+ProductDescription.displayName = 'ProductDescription';
+
 const ConfigurableTrustBadges = ({
   title,
   subtitle,
@@ -639,6 +649,8 @@ const ConfigurableTrustBadges = ({
     variant={variant}
   />
 );
+
+ConfigurableTrustBadges.displayName = 'ConfigurableTrustBadges';
 
 /**
  * Premium Tech variants for Nova Mobile
@@ -694,6 +706,8 @@ const SpecsGrid = ({
     </div>
   );
 };
+
+SpecsGrid.displayName = 'SpecsGrid';
 
 const BentoSpecs = ({
   specs,
@@ -780,6 +794,8 @@ const BentoSpecs = ({
   );
 };
 
+BentoSpecs.displayName = 'BentoSpecs';
+
 const StickyMobileCTA = ({
   activePrice,
   currency,
@@ -831,6 +847,8 @@ const StickyMobileCTA = ({
     </StaticMotionDiv>
   );
 };
+
+StickyMobileCTA.displayName = 'StickyMobileCTA';
 
 const PlayfulStory = ({
   header,
@@ -894,6 +912,8 @@ const PlayfulStory = ({
     </StaticMotionDiv>
   </div>
 );
+
+PlayfulStory.displayName = 'PlayfulStory';
 
 const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSettings }) => {
   const { t } = useTranslation();
@@ -9409,5 +9429,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     </section>
   );
 };
+
+ProductInfo.displayName = 'ProductInfo';
 
 export default ProductInfo;
