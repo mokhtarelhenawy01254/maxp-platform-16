@@ -19,7 +19,7 @@ const listDuplicateGroups = async (req, res) => {
   }
 };
 
-exports.consolidate = async (req, res) => {
+const consolidate = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
