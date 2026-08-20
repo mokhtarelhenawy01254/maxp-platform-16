@@ -1337,8 +1337,8 @@ const createNewCompany = async (req, res) => {
                 isActive: true,
                 // useCentralKeys field removed — key routing is now schema-agnostic
                 sidebarLayout: 'three-tier', // ✅ الوضع الحديث كافتراضي
-                registrationIp,
-                registrationUserAgent,
+                registration_ip: registrationIp,
+                registration_user_agent: registrationUserAgent,
             }
         });
 
