@@ -15,7 +15,6 @@ env:
 
 concurrency:
   group: production-deploy
-  cancel-in-progress: true
 
 jobs:
   deploy:

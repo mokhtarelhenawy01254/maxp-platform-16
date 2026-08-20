@@ -363,7 +363,8 @@ fi
 echo "📦 Installing backend production dependencies on server..."
 cd /var/www/backend2
 if [ -f package-lock.json ]; then
-  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm ci --omit=dev
+  # Use npm install instead of npm ci to prevent deleting node_modules while the server is running (Zero Downtime)
+  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install --omit=dev
 else
   PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install --omit=dev
 fi
