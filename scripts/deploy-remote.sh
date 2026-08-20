@@ -448,11 +448,16 @@ echo "✅ Database schema synchronized with PostgreSQL"
 
 # Step 7.5: Sync file-defined marketplace apps/bundles into DB before the app boots.
 # This keeps production (CATALOG_SOURCE=db) from hiding newly shipped catalog entries.
-echo "🧩 Syncing missing marketplace catalog entries..."
-NODE_ENV=production npm run catalog:sync-target -- --only-missing --fail-on-missing || {
-    echo "❌ Marketplace catalog sync failed or left unresolved catalog entries"
-    exit 1
-}
+# Skipped when the workflow already determined no catalog files changed (saves ~30s).
+if [ "${CATALOG_CHANGED:-true}" = "true" ]; then
+  echo "🧩 Syncing missing marketplace catalog entries..."
+  NODE_ENV=production npm run catalog:sync-target -- --only-missing --fail-on-missing || {
+      echo "❌ Marketplace catalog sync failed or left unresolved catalog entries"
+      exit 1
+  }
+else
+  echo "ℹ️ Skipping marketplace catalog sync (no catalog files changed)"
+fi
 
 echo "🧹 Repairing stale required-app references in marketplace apps..."
 NODE_ENV=production node scripts/repair_stale_marketplace_required_apps.js || {

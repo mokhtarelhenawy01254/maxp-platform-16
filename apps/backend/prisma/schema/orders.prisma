@@ -1,4 +1,4 @@
-model Branche {
+﻿model Branche {
   id           String   @id @default(cuid())
   name         String
   address      String?
@@ -59,6 +59,48 @@ model GuestCart {
   @@map("guest_carts")
 }
 
+// ╪¬╪│╪¼┘è┘ä ╪¬╪¡┘ê┘è┘ä ╪│┘ä╪⌐ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐ ╪Ñ┘ä┘ë ╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è
+// ┘è┘Å┘â╪¬╪¿ ┘é╪¿┘ä ╪¡╪░┘ü ╪º┘ä┘Ç GuestCart ╪¡╪¬┘ë ┘è╪¿┘é┘ë ╪ú╪½╪▒ ╪º┘ä╪¬╪¡┘ê┘è┘ä ┘ä┘ä╪¬┘é╪º╪▒┘è╪▒ (Recovery Pipeline + ╪ú╪»╪º╪í ╪º┘ä┘ü╪▒┘è┘é)
+model CartConversionLog {
+  id             String   @id @default(cuid())
+  cartId         String
+  orderId        String?
+  orderNumber    String?
+  employeeId     String?
+  employeeName   String?
+  companyId      String
+  cartValue      Decimal  @default(0.00) @db.Decimal(10, 2)
+  governorate    String?
+  channel        String   @default("admin-convert")
+  convertedAt    DateTime @default(now())
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, convertedAt])
+  @@index([companyId, employeeId])
+  @@map("cart_conversion_logs")
+}
+
+// ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º┘ä╪¬┘ê╪º╪╡┘ä (╪º╪¬╪╡╪º┘ä/┘ê╪º╪¬╪│╪º╪¿) ╪╣┘ä┘ë ╪º┘ä╪│┘ä╪º┘ä ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐
+// ┘è╪│╪¬╪«╪»┘à ┘ä┘é┘è╪º╪│ ┘å╪┤╪º╪╖ ╪º┘ä┘ü╪▒┘è┘é ┘ê┘å╪│╪¿╪⌐ ╪º┘ä╪º╪│╪¬╪¼╪º╪¿╪⌐ ┘ü┘è ╪¬┘é╪▒┘è╪▒ ╪º┘ä╪ú╪»╪º╪í
+model CartContactLog {
+  id           String   @id @default(cuid())
+  cartId       String
+  companyId    String
+  employeeId   String?
+  employeeName String?
+  method       String   @default("call")
+  result       String?
+  note         String?
+  createdAt    DateTime @default(now())
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, employeeId])
+  @@index([companyId, cartId])
+  @@map("cart_contact_logs")
+}
+
 model GuestOrder {
   id                  String               @id @default(cuid())
   orderNumber         String
@@ -81,12 +123,20 @@ model GuestOrder {
   isViewed            Boolean              @default(false)
   metadata            String?
   affiliateId         String?
-  turboLabelUrl       String?
-  turboMetadata       String?
-  turboShipmentId     String?
-  turboShipmentStatus String?
-  turboTrackingNumber String?
-  callAttempts        Int                  @default(0)
+  turboLabelUrl           String?
+  turboMetadata           String?
+  turboShipmentId         String?
+  turboShipmentStatus     String?
+  turboTrackingNumber     String?
+  turboCaptainName        String?
+  turboCaptainPhone       String?
+  turboBranchName         String?
+  turboBranchPhone        String?
+  turboBranchId           String?
+  turboDelayReason        String?
+  turboReturnReason       String?
+  turboExpectedBranch     String?
+  callAttempts            Int                  @default(0)
   lastCallAt          DateTime?
   followUpDate        DateTime?
   createdBy           String?
@@ -230,6 +280,7 @@ model OrderStatusConfig {
   notifyAdmin         Boolean  @default(false)
   emailTemplate       String?
   smsTemplate         String?
+  allowStatusEdit     Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -280,6 +331,8 @@ model Order {
   sourceType              String?                   @default("ai_conversation")
   extractionTimestamp     DateTime?
   metadata                String?
+  billingHoldAt           DateTime?
+  billingHoldAmount       Decimal?                  @db.Decimal(10, 2)
   companyId               String
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
@@ -297,6 +350,13 @@ model Order {
   turboShipmentId         String?
   turboShipmentStatus     String?
   turboTrackingNumber     String?
+  turboCaptainName        String?
+  turboCaptainPhone       String?
+  turboBranchName         String?
+  turboBranchPhone        String?
+  turboDelayReason        String?
+  turboReturnReason       String?
+  turboExpectedBranch     String?
   callAttempts            Int                       @default(0)
   lastCallAttemptAt       DateTime?
   followUpDate            DateTime?
@@ -589,6 +649,7 @@ model OrderInvoiceSettings {
   duplicateOrderAction   String   @default("filter")
   duplicateOrderWindowMinutes Int @default(60)
   incompleteOrderLostAfterHours Int @default(24)
+  showIncompleteCartsInOrders Boolean @default(false)
   minimumOrderEnabled    Boolean  @default(false)
   minimumOrderAmount     Decimal  @default(0.00) @db.Decimal(10, 2)
   minimumOrderMessage    String?  @db.Text
@@ -663,6 +724,8 @@ model OrderConfirmationSettings {
   orderValueRules        String?  // JSON array
   workloadMaxOpen        Int?
   workloadStatuses       String?  // JSON array
+  maxCallsNoAnswer       Int      @default(3)
+  intervalMinutes        Int      @default(30)
   lastAssignedUserId     String?
   notifyOnNew            Boolean  @default(true)
   autoAssignOnConfirm    Boolean  @default(true)
@@ -695,6 +758,7 @@ model OrderAssignment {
   @@index([companyId, assignedAt])
   @@index([companyId, strategy, assignedAt])
   @@index([assignedTo])
+  @@index([companyId, assignedTo, isActive, assignedAt])
   @@map("order_assignments")
 }
 
