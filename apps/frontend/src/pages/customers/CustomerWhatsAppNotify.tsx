@@ -13,6 +13,8 @@ import { formatCurrency } from '../../utils/currency';
 type Audience = 'all' | 'withOrders' | 'newCustomers' | 'activeCustomers';
 type NotifyMode = 'general' | 'birthday';
 
+import CustomerBirthdayWhatsAppNotify from './CustomerBirthdayWhatsAppNotify';
+
 interface CustomerWhatsAppNotifyProps {
     mode?: NotifyMode;
 }
@@ -121,6 +123,10 @@ const getBirthdayTemplates = () => [
 const CustomerWhatsAppNotify: React.FC<CustomerWhatsAppNotifyProps> = ({ mode = 'general' }) => {
     const { t } = useTranslation();
     const isBirthdayPage = mode === 'birthday';
+
+    if (isBirthdayPage) {
+        return <CustomerBirthdayWhatsAppNotify />;
+    }
 
     const campaignStorageKey = isBirthdayPage ? 'active_birthday_campaign_id' : 'active_general_campaign_id';
 
