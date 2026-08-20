@@ -1,3 +1,4 @@
+// Version 2.5 - Full Birthday Analytics & Automation Dashboard
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     Calendar as CalendarIcon,
