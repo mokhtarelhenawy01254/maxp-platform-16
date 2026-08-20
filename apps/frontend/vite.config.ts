@@ -315,6 +315,7 @@ export default defineConfig(({ mode }) => {
     },
     esbuild: {
       sourcemap: false,
+      keepNames: true,
     },
     root: '.',
     worker: {
