@@ -1,8 +1,16 @@
-import { User as UserIcon, Phone as PhoneIcon, Pin as MapPinIcon, AlertTriangle as ExclamationCircleIcon, RefreshCw as ArrowPathIcon, Ban as NoSymbolIcon, Check as CheckCircleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import React, { useEffect, useState } from "react";
-;
+﻿import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  UserIcon,
+  PhoneIcon,
+  MapPinIcon,
+  ExclamationCircleIcon,
+  ArrowPathIcon,
+  NoSymbolIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 import { OrderDetailsType, Government, Area } from "../types";
+import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSearch";
 import { validateEgyptianPhone } from "../../../utils/validation";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import {
@@ -30,26 +38,26 @@ const blockReasonOptions: Array<{
   value: CustomerBlockReasonCode;
   label: string;
 }> = [
-  { value: "FAKE_ORDERS", label: "طلبات وهمية" },
-  { value: "REPEATED_REFUSAL", label: "رفض استلام متكرر" },
-  { value: "ABUSE", label: "إساءة للدعم" },
-  { value: "FRAUD", label: "احتيال" },
-  { value: "WRONG_DATA", label: "بيانات غير صحيحة" },
-  { value: "OTHER", label: "سبب آخر" },
+  { value: "FAKE_ORDERS", label: "╪╖┘ä╪¿╪º╪¬ ┘ê┘ç┘à┘è╪⌐" },
+  { value: "REPEATED_REFUSAL", label: "╪▒┘ü╪╢ ╪º╪│╪¬┘ä╪º┘à ┘à╪¬┘â╪▒╪▒" },
+  { value: "ABUSE", label: "╪Ñ╪│╪º╪í╪⌐ ┘ä┘ä╪»╪╣┘à" },
+  { value: "FRAUD", label: "╪º╪¡╪¬┘è╪º┘ä" },
+  { value: "WRONG_DATA", label: "╪¿┘è╪º┘å╪º╪¬ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐" },
+  { value: "OTHER", label: "╪│╪¿╪¿ ╪ó╪«╪▒" },
 ];
 
 const blockActionOptions: Array<{
   value: CustomerBlockAction;
   label: string;
 }> = [
-  { value: "BLOCK_ORDERS", label: "منع الطلبات" },
-  { value: "REQUIRE_MANAGER_APPROVAL", label: "موافقة مدير قبل الطلب" },
-  { value: "BLOCK_COD_ONLY", label: "منع الدفع عند الاستلام فقط" },
+  { value: "BLOCK_ORDERS", label: "┘à┘å╪╣ ╪º┘ä╪╖┘ä╪¿╪º╪¬" },
+  { value: "REQUIRE_MANAGER_APPROVAL", label: "┘à┘ê╪º┘ü┘é╪⌐ ┘à╪»┘è╪▒ ┘é╪¿┘ä ╪º┘ä╪╖┘ä╪¿" },
+  { value: "BLOCK_COD_ONLY", label: "┘à┘å╪╣ ╪º┘ä╪»┘ü╪╣ ╪╣┘å╪» ╪º┘ä╪º╪│╪¬┘ä╪º┘à ┘ü┘é╪╖" },
 ];
 
 const getBlockActionLabel = (action?: string | null) =>
   blockActionOptions.find((item) => item.value === action)?.label ||
-  "منع الطلبات";
+  "┘à┘å╪╣ ╪º┘ä╪╖┘ä╪¿╪º╪¬";
 
 const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
   order,
@@ -57,12 +65,6 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
   editForm,
   setEditForm,
   governments,
-  areas,
-  loadingGovernments,
-  loadingAreas,
-  selectedGovernmentId,
-  setSelectedGovernmentId,
-  handleGovernmentChange,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -159,12 +161,12 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
       setCustomerBlock({
         blocked: true,
         action: rule.action,
-        message: "هذا العميل محظور من إنشاء الطلبات",
+        message: "┘ç╪░╪º ╪º┘ä╪╣┘à┘è┘ä ┘à╪¡╪╕┘ê╪▒ ┘à┘å ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿╪º╪¬",
         rule,
       });
       setShowBlockModal(false);
     } catch (error: any) {
-      alert(error.response?.data?.message || error.message || "فشل في حظر العميل");
+      alert(error.response?.data?.message || error.message || "┘ü╪┤┘ä ┘ü┘è ╪¡╪╕╪▒ ╪º┘ä╪╣┘à┘è┘ä");
     } finally {
       setSavingBlock(false);
     }
@@ -178,11 +180,11 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
     try {
       await customerBlocklistService.liftRule(
         ruleId,
-        `تم فك الحظر من تفاصيل الطلب ${order.orderNumber}`,
+        `╪¬┘à ┘ü┘â ╪º┘ä╪¡╪╕╪▒ ┘à┘å ╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä╪╖┘ä╪¿ ${order.orderNumber}`,
       );
       setCustomerBlock(null);
     } catch (error: any) {
-      alert(error.response?.data?.message || error.message || "فشل في فك الحظر");
+      alert(error.response?.data?.message || error.message || "┘ü╪┤┘ä ┘ü┘è ┘ü┘â ╪º┘ä╪¡╪╕╪▒");
     } finally {
       setSavingBlock(false);
     }
@@ -251,7 +253,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60 dark:border-red-800 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20"
               >
                 <CheckCircleIcon className="h-4 w-4" />
-                {savingBlock ? "جاري..." : "فك الحظر"}
+                {savingBlock ? "╪¼╪º╪▒┘è..." : "┘ü┘â ╪º┘ä╪¡╪╕╪▒"}
               </button>
             ) : (
               <button
@@ -261,7 +263,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30"
               >
                 <NoSymbolIcon className="h-4 w-4" />
-                {checkingBlock ? "فحص..." : "حظر العميل"}
+                {checkingBlock ? "┘ü╪¡╪╡..." : "╪¡╪╕╪▒ ╪º┘ä╪╣┘à┘è┘ä"}
               </button>
             )
           )}
@@ -272,9 +274,9 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             <div className="flex items-start gap-2">
               <NoSymbolIcon className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
-                <p className="font-semibold">العميل محظور</p>
+                <p className="font-semibold">╪º┘ä╪╣┘à┘è┘ä ┘à╪¡╪╕┘ê╪▒</p>
                 <p className="mt-0.5">
-                  الأكشن:{" "}
+                  ╪º┘ä╪ú┘â╪┤┘å:{" "}
                   {getBlockActionLabel(
                     customerBlock.action || customerBlock.rule?.action,
                   )}
@@ -390,29 +392,23 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             {t("orderDetails.governorate")}
           </label>
           {isEditing ? (
-            <select
-              value={editForm.governorate}
-              onChange={(e) => {
-                const selectedGov = governments.find(
-                  (g) => g.name === e.target.value,
-                );
-                if (selectedGov) {
-                  handleGovernmentChange(selectedGov.id, selectedGov.name);
-                } else {
-                  setEditForm({ ...editForm, governorate: e.target.value });
-                  setSelectedGovernmentId(null);
-                }
+            <GovernorateAreaSearch
+              value={{
+                governorate: editForm.governorate || "",
+                area: editForm.city || "",
               }}
-              className="w-full border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-100"
-              disabled={loadingGovernments}
-            >
-              <option value="">{t("orderDetails.selectGovernorate")}</option>
-              {governments.map((gov) => (
-                <option key={gov.id} value={gov.name}>
-                  {gov.name}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => {
+                setEditForm({
+                  ...editForm,
+                  governorate: next.governorate,
+                  city: next.area,
+                });
+              }}
+              placeholder={t("orderDetails.selectGovernorate") as string}
+              searchPlaceholder={t("orderDetails.searchArea") as string}
+              emptyText={t("orderDetails.noAreasAvailable") as string}
+              loadingText={t("orderDetails.loading") as string}
+            />
           ) : (
             <p className="text-gray-900 dark:text-gray-100">
               {(() => {
@@ -439,31 +435,11 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             {t("orderDetails.areaCity")}
           </label>
           {isEditing ? (
-            <select
-              value={editForm.city}
-              onChange={(e) =>
-                setEditForm({ ...editForm, city: e.target.value })
-              }
-              className="w-full border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-100"
-              disabled={
-                loadingAreas || !selectedGovernmentId || areas.length === 0
-              }
-            >
-              <option value="">
-                {loadingAreas
-                  ? t("orderDetails.loading")
-                  : !selectedGovernmentId
-                    ? t("orderDetails.selectGovernorateFirst")
-                    : areas.length === 0
-                      ? t("orderDetails.noAreasAvailable")
-                      : t("orderDetails.selectArea")}
-              </option>
-              {areas.map((area) => (
-                <option key={area.id} value={area.name}>
-                  {area.name}
-                </option>
-              ))}
-            </select>
+            <p className="text-gray-900 dark:text-gray-100">
+              {editForm.city
+                ? String(editForm.city).replace(/^\d+:/, "").trim()
+                : t("orders.notSpecified")}
+            </p>
           ) : (
             <p className="text-gray-900 dark:text-gray-100">
               {order.city
@@ -536,10 +512,10 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  حظر العميل من الطلب
+                  ╪¡╪╕╪▒ ╪º┘ä╪╣┘à┘è┘ä ┘à┘å ╪º┘ä╪╖┘ä╪¿
                 </h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  سيتم تطبيق الحظر على بيانات العميل المرتبطة بهذا الطلب.
+                  ╪│┘è╪¬┘à ╪¬╪╖╪¿┘è┘é ╪º┘ä╪¡╪╕╪▒ ╪╣┘ä┘ë ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿.
                 </p>
               </div>
             </div>
@@ -547,7 +523,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             <div className="space-y-4">
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  الأكشن
+                  ╪º┘ä╪ú┘â╪┤┘å
                 </span>
                 <select
                   value={blockForm.action}
@@ -569,7 +545,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  السبب
+                  ╪º┘ä╪│╪¿╪¿
                 </span>
                 <select
                   value={blockForm.reasonCode}
@@ -591,7 +567,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ينتهي في
+                  ┘è┘å╪¬┘ç┘è ┘ü┘è
                 </span>
                 <input
                   type="date"
@@ -608,7 +584,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ملاحظة السبب
+                  ┘à┘ä╪º╪¡╪╕╪⌐ ╪º┘ä╪│╪¿╪¿
                 </span>
                 <textarea
                   value={blockForm.reasonNote}
@@ -631,7 +607,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 disabled={savingBlock}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
               >
-                إلغاء
+                ╪Ñ┘ä╪║╪º╪í
               </button>
               <button
                 type="button"
@@ -644,7 +620,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 ) : (
                   <NoSymbolIcon className="h-4 w-4" />
                 )}
-                تأكيد الحظر
+                ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╕╪▒
               </button>
             </div>
           </div>

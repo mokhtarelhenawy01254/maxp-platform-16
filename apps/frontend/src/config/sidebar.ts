@@ -553,6 +553,7 @@ export const getSidebarConfig = (
                 { to: '/orders/preparation', icon: BeakerIcon, label: t('sidebar.orderPreparation'), requiredPermissions: ['orders.preparation.view'] },
                 { to: '/orders/automation', icon: BoltIcon, label: t('sidebar.orderAutomation', 'أتمتة الحالات'), requiredPermissions: ['orders.automation.view'] },
                 { to: '/orders/incomplete', icon: ExclamationTriangleIcon, label: t('sidebar.incompleteOrders'), requiredPermissions: ['orders.incomplete.view'] },
+                { to: '/orders/incomplete/reports', icon: ChartBarIcon, label: t('sidebar.incompleteReports', 'تقارير الاسترداد'), requiredPermissions: ['orders.incomplete.view'] },
                 { to: '/pos', icon: CreditCardIcon, label: t('sidebar.pos'), requiredPermissions: ['orders.pos.view'] },
                 { to: '/orders/invoices', icon: DocumentTextIcon, label: t('sidebar.orderInvoices'), requiredPermissions: ['orders.invoices.view'] },
                 { to: '/settings/order-invoice', icon: CogIcon, label: t('sidebar.orderInvoiceSettings'), requiredPermissions: ['orders.invoices.view'] },

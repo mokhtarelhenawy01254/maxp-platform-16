@@ -10,21 +10,6 @@ import {
 } from "../utils/facebookPixel";
 import type { StorefrontSettings as PublicStorefrontSettings } from "../services/storefrontSettingsService";
 
-const scheduleIdleTask = (callback: () => void): (() => void) => {
-  const idleWindow = window as Window & {
-    requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
-    cancelIdleCallback?: (id: number) => void;
-  };
-
-  if (typeof idleWindow.requestIdleCallback === "function") {
-    const idleId = idleWindow.requestIdleCallback(callback, { timeout: 2500 });
-    return () => idleWindow.cancelIdleCallback?.(idleId);
-  }
-
-  const timeoutId = window.setTimeout(callback, 1200);
-  return () => window.clearTimeout(timeoutId);
-};
-
 export const useFacebookPixel = (
   storefrontSettings?: PublicStorefrontSettings | null,
 ) => {
@@ -34,43 +19,39 @@ export const useFacebookPixel = (
   const [pageViewEnabled, setPageViewEnabled] = useState(false);
   const lastTrackedPathRef = useRef<string>("");
 
+  const facebookPixelEnabled = storefrontSettings?.facebookPixelEnabled ?? false;
+  const facebookPixelId = storefrontSettings?.facebookPixelId ?? null;
+  const gtmEnabled = storefrontSettings?.gtmEnabled ?? false;
+  const gtmSuppressPixels = storefrontSettings?.gtmSuppressPixels ?? false;
+  const pixelTrackPageView = storefrontSettings?.pixelTrackPageView ?? true;
+
   useEffect(() => {
     setIsLoaded(false);
     setPixelId(null);
     setPageViewEnabled(false);
 
-    if (!storefrontSettings) {
+    if (gtmEnabled && gtmSuppressPixels) {
       return;
     }
 
-    if (
-      storefrontSettings.gtmEnabled &&
-      storefrontSettings.gtmSuppressPixels
-    ) {
+    if (!facebookPixelEnabled || !facebookPixelId) {
       return;
     }
 
-    if (
-      !storefrontSettings.facebookPixelEnabled ||
-      !storefrontSettings.facebookPixelId
-    ) {
-      return;
-    }
-
-    const cleanupIdleTask = scheduleIdleTask(() => {
-      loadFacebookPixel(storefrontSettings.facebookPixelId!);
-      setPixelId(storefrontSettings.facebookPixelId!);
-      setIsLoaded(true);
-      setPageViewEnabled(storefrontSettings.pixelTrackPageView !== false);
-    });
-
-    return cleanupIdleTask;
+    // Load the Facebook Pixel immediately (Meta's recommended async-in-head
+    // behavior) so conversion events never miss a fast or non-interacting
+    // visitor. The script is small and async, so this has negligible impact
+    // on Core Web Vitals.
+    loadFacebookPixel(facebookPixelId);
+    setPixelId(facebookPixelId);
+    setIsLoaded(true);
+    setPageViewEnabled(pixelTrackPageView !== false);
   }, [
-    storefrontSettings?.facebookPixelEnabled,
-    storefrontSettings?.facebookPixelId,
-    storefrontSettings?.gtmEnabled,
-    storefrontSettings?.gtmSuppressPixels,
-    storefrontSettings?.pixelTrackPageView,
+    facebookPixelEnabled,
+    facebookPixelId,
+    gtmEnabled,
+    gtmSuppressPixels,
+    pixelTrackPageView,
   ]);
 
   useEffect(() => {

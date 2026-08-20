@@ -1,8 +1,6 @@
-import { ShoppingBag as ShoppingBagIcon, Eye as EyeIcon, Check as CheckCircleIcon, Search as MagnifyingGlassIcon, Printer as PrinterIcon, Filter as FunnelIcon, Info as InformationCircleIcon, Star as StarIcon, AlertTriangle as ExclamationTriangleIcon, Circle as RocketLaunchIcon, MessageSquare as ChatBubbleLeftRightIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Sliders as AdjustmentsHorizontalIcon, DollarSign as BanknotesIcon, Circle as CubeIcon, Truck as TruckIcon, Clock as ClockIcon, Circle as BriefcaseIcon, Zap as BoltIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/utils/formatters';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
@@ -17,17 +15,43 @@ import {
   AFFILIATE_OPERATION_APP_SLUGS,
   MERCHANT_OPERATION_APP_SLUGS,
   ORDER_SOURCE_TRACKING_APP_SLUGS,
+  AGENT_WORKSPACE_APP_SLUGS,
   getCurrentCompanyActiveApps,
   hasAnyCompanyAppSlug,
   normalizeCompanyAppSlug,
 } from "../../utils/companyApps";
-import EnhancedOrderModal from "../../components/orders/EnhancedOrderModal";
-import InvoiceModal from "../../components/orders/InvoiceModal";
+import { OrdersMobileList } from "./components/OrdersMobileList";
+import { OrdersToolbar } from "./components/OrdersToolbar";
+import { OrdersTable } from "./components/OrdersTable";
+import { OrdersStatsBar } from "./components/OrdersStatsBar";
+import { OrdersOverviewStats } from "./components/OrdersOverviewStats";
+import { OrdersPagination } from "./components/OrdersPagination";
+import { BulkActionBar } from "./components/BulkActionBar";
+import { CommandPalette } from "../../components/common/CommandPalette";
+import ErrorBoundary from "../../components/common/ErrorBoundary";
+import type { OrderDetailsType } from "./types";
 
-;
+const EnhancedOrderModal = React.lazy(
+  () => import("../../components/orders/EnhancedOrderModal"),
+);
+const InvoiceModal = React.lazy(
+  () => import("../../components/orders/InvoiceModal"),
+);
+
+import {
+  ShoppingBagIcon,
+  EyeIcon,
+  CheckCircleIcon,
+  PrinterIcon,
+  InformationCircleIcon,
+  StarIcon,
+  ExclamationTriangleIcon,
+  RocketLaunchIcon,
+  ChatBubbleLeftRightIcon,
+} from "@heroicons/react/24/outline";
 
 
-interface Order {
+export interface Order {
   id: string;
   orderNumber: string;
   customerName: string;
@@ -95,6 +119,8 @@ interface Order {
   metadata?: {
     source?: string;
     isGuestOrder?: boolean;
+    isIncompleteCart?: boolean;
+    cartId?: string;
     confidence?: number;
     extractionMethod?: string;
     [key: string]: unknown;
@@ -188,8 +214,18 @@ const normalizeOrderStatus = (value: unknown): OrderStatus => {
 const normalizePaymentStatus = (
   value: unknown,
   isGuestOrder: boolean,
+  order?: RawOrder,
 ): PaymentStatus => {
-  switch (String(value ?? "").trim().toUpperCase()) {
+  const raw = String(value ?? "").trim().toUpperCase();
+  const walletProof = (order?.metadata as any)?.walletPaymentProof;
+  const isWalletPayment =
+    String(order?.paymentMethod || "").trim().toLowerCase() === "wallet";
+  const hasScreenshot = Boolean(walletProof?.imageUrl);
+  const isRejected =
+    String(walletProof?.status || "").toUpperCase() === "REJECTED";
+  const walletPaid = isWalletPayment && hasScreenshot && !isRejected;
+
+  switch (raw) {
     case "COMPLETED":
     case "PAID":
       return "completed";
@@ -197,31 +233,37 @@ const normalizePaymentStatus = (
       return "failed";
     case "REFUNDED":
       return "refunded";
-    case "UNAVAILABLE":
-      return "unavailable";
     case "PENDING":
-      return "pending";
+      return walletPaid ? "completed" : "pending";
+    case "UNAVAILABLE":
+    case "UNKNOWN":
+    case "":
+      return walletPaid
+        ? "completed"
+        : isGuestOrder
+          ? "unavailable"
+          : "pending";
     default:
       return isGuestOrder ? "unavailable" : "pending";
   }
 };
 
-interface OrderStatusDefinition {
+export interface OrderStatusDefinition {
   code: string;
   name: string;
   nameEn?: string;
   color?: string;
 }
 
-interface OrdersFilters {
-  status: string;
-  paymentStatus: string;
-  sourceType: string;
-  merchantId: string;
-  affiliateId: string;
-  fulfillmentSource: string;
-  merchantOperationStatus: string;
-  merchantSettlementStatus: string;
+export interface OrdersFilters {
+  status: string[];
+  paymentStatus: string[];
+  sourceType: string[];
+  merchantId: string[];
+  affiliateId: string[];
+  fulfillmentSource: string[];
+  merchantOperationStatus: string[];
+  merchantSettlementStatus: string[];
   search: string;
   startDate: string;
   endDate: string;
@@ -237,14 +279,14 @@ interface OrdersListViewState {
   filters: OrdersFilters;
 }
 
-interface MerchantFilterOption {
+export interface MerchantFilterOption {
   id: string;
   name: string;
   email?: string;
   fulfillmentMode?: string;
 }
 
-interface AffiliateFilterOption {
+export interface AffiliateFilterOption {
   id: string;
   affiliateCode?: string;
   status?: string;
@@ -289,7 +331,7 @@ interface MerchantInventorySummary {
   warehouseNames?: string[];
 }
 
-interface MerchantOperationsTotals {
+export interface MerchantOperationsTotals {
   assignedOrdersCount: number;
   assignedPieces: number;
   preparationOrdersCount: number;
@@ -312,7 +354,7 @@ interface MerchantOperationsTotals {
   paidAmount: number;
 }
 
-interface MerchantOperationsSummary {
+export interface MerchantOperationsSummary {
   summary?: Partial<MerchantOperationsTotals>;
   rows?: Array<{
     id: string;
@@ -352,7 +394,7 @@ interface MerchantPayoutSummary {
   payouts?: MerchantPayout[];
 }
 
-interface MerchantSettlementSummary {
+export interface MerchantSettlementSummary {
   merchant?: MerchantFilterOption & {
     inventorySummary?: MerchantInventorySummary | null;
     operationsSummary?: MerchantOperationsSummary | null;
@@ -388,30 +430,32 @@ const DEFAULT_ORDER_STATUSES: OrderStatusDefinition[] = [
   { code: "PARTIALLY_DELIVERED", name: i18n.t('orders.partiallyDelivered'), color: "#FBBF24" },
   { code: "EXCHANGED", name: i18n.t('orders.exchanged'), color: "#7C3AED" },
   { code: "TRASH", name: i18n.t('orders.trash'), color: "#6B7280" },
-  // 🚀 حالات شحن تربو 1..13
-  { code: "turbo_saved", name: "تربو: محفوظة قبل الشحن (كود 1)", color: "#6366F1" },
-  { code: "turbo_sent", name: "تربو: مرسلة لشركة تربو (كود 2)", color: "#3B82F6" },
-  { code: "processing", name: "تربو: قيد التنفيذ بالفرع (كود 3)", color: "#8B5CF6" },
-  { code: "out_for_delivery", name: "تربو: مسلمة للمندوب (كود 4)", color: "#06B6D4" },
-  { code: "returned_to_company", name: "تربو: مرتجعات بالشركة (كود 5)", color: "#991B1B" },
-  { code: "cancelled", name: "تربو: ملغي من الشحن (كود 6)", color: "#DC2626" },
-  { code: "delivered", name: "تربو: تم التسليم (كود 7)", color: "#10B981" },
-  { code: "remitted", name: "تربو: تم التوريد وتحصيل المبلغ (كود 8)", color: "#047857" },
-  { code: "archived", name: "تربو: شحنة محذوفة (كود 9)", color: "#78716C" },
-  { code: "returned_resent", name: "تربو: معاد إرسالها (كود 10)", color: "#2563EB" },
-  { code: "returned_missing", name: "تربو: مرتجع مفقود (كود 11)", color: "#7F1D1D" },
-  { code: "returned_destroyed", name: "تربو: مرتجع معدوم (كود 12)", color: "#451A03" },
-  { code: "delayed", name: "تربو: مؤجلة مع المندوب (كود 13)", color: "#F97316" },
+  { code: "STOCK_SHORTAGE", name: i18n.t('orders.stockShortage'), color: "#F97316" },
+  { code: "SHORTAGE_FAILED", name: i18n.t('orders.shortageFailed'), color: "#7C3AED" },
+  // ≡ƒÜÇ ╪¡╪º┘ä╪º╪¬ ╪┤╪¡┘å ╪¬╪▒╪¿┘ê 1..13
+  { code: "turbo_saved", name: "╪¬╪▒╪¿┘ê: ┘à╪¡┘ü┘ê╪╕╪⌐ ┘é╪¿┘ä ╪º┘ä╪┤╪¡┘å (┘â┘ê╪» 1)", color: "#6366F1" },
+  { code: "turbo_sent", name: "╪¬╪▒╪¿┘ê: ┘à╪▒╪│┘ä╪⌐ ┘ä╪┤╪▒┘â╪⌐ ╪¬╪▒╪¿┘ê (┘â┘ê╪» 2)", color: "#3B82F6" },
+  { code: "processing", name: "╪¬╪▒╪¿┘ê: ┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░ ╪¿╪º┘ä┘ü╪▒╪╣ (┘â┘ê╪» 3)", color: "#8B5CF6" },
+  { code: "out_for_delivery", name: "╪¬╪▒╪¿┘ê: ┘à╪│┘ä┘à╪⌐ ┘ä┘ä┘à┘å╪»┘ê╪¿ (┘â┘ê╪» 4)", color: "#06B6D4" },
+  { code: "returned_to_company", name: "╪¬╪▒╪¿┘ê: ┘à╪▒╪¬╪¼╪╣╪º╪¬ ╪¿╪º┘ä╪┤╪▒┘â╪⌐ (┘â┘ê╪» 5)", color: "#991B1B" },
+  { code: "cancelled", name: "╪¬╪▒╪¿┘ê: ┘à┘ä╪║┘è ┘à┘å ╪º┘ä╪┤╪¡┘å (┘â┘ê╪» 6)", color: "#DC2626" },
+  { code: "delivered", name: "╪¬╪▒╪¿┘ê: ╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à (┘â┘ê╪» 7)", color: "#10B981" },
+  { code: "remitted", name: "╪¬╪▒╪¿┘ê: ╪¬┘à ╪º┘ä╪¬┘ê╪▒┘è╪» ┘ê╪¬╪¡╪╡┘è┘ä ╪º┘ä┘à╪¿┘ä╪║ (┘â┘ê╪» 8)", color: "#047857" },
+  { code: "archived", name: "╪¬╪▒╪¿┘ê: ╪┤╪¡┘å╪⌐ ┘à╪¡╪░┘ê┘ü╪⌐ (┘â┘ê╪» 9)", color: "#78716C" },
+  { code: "returned_resent", name: "╪¬╪▒╪¿┘ê: ┘à╪╣╪º╪» ╪Ñ╪▒╪│╪º┘ä┘ç╪º (┘â┘ê╪» 10)", color: "#2563EB" },
+  { code: "returned_missing", name: "╪¬╪▒╪¿┘ê: ┘à╪▒╪¬╪¼╪╣ ┘à┘ü┘é┘ê╪» (┘â┘ê╪» 11)", color: "#7F1D1D" },
+  { code: "returned_destroyed", name: "╪¬╪▒╪¿┘ê: ┘à╪▒╪¬╪¼╪╣ ┘à╪╣╪»┘ê┘à (┘â┘ê╪» 12)", color: "#451A03" },
+  { code: "delayed", name: "╪¬╪▒╪¿┘ê: ┘à╪ñ╪¼┘ä╪⌐ ┘à╪╣ ╪º┘ä┘à┘å╪»┘ê╪¿ (┘â┘ê╪» 13)", color: "#F97316" },
 ];
 
 const DEFAULT_PAYMENT_STATUSES: OrderStatusDefinition[] = [
-  { code: "PENDING", name: i18n.t('orderStatus.paymentPending'), color: "#F59E0B" },
-  { code: "COMPLETED", name: i18n.t('orderStatus.paymentCompleted'), color: "#10B981" },
-  { code: "PARTIALLY_PAID", name: i18n.t('orderStatus.paymentPartiallyPaid'), color: "#3B82F6" },
-  { code: "FAILED", name: i18n.t('orderStatus.paymentFailed'), color: "#EF4444" },
-  { code: "ON_HOLD", name: i18n.t('orderStatus.paymentOnHold'), color: "#F97316" },
-  { code: "REFUNDED", name: i18n.t('orderStatus.paymentRefunded'), color: "#6B7280" },
-  { code: "PARTIALLY_REFUNDED", name: i18n.t('orderStatus.paymentPartiallyRefunded'), color: "#9CA3AF" },
+  { code: "PENDING", name: i18n.t('orders.paymentStatuses.pending'), color: "#F59E0B" },
+  { code: "COMPLETED", name: i18n.t('orders.paymentStatuses.completed'), color: "#10B981" },
+  { code: "PARTIALLY_PAID", name: i18n.t('orders.paymentStatuses.partiallyPaid'), color: "#3B82F6" },
+  { code: "FAILED", name: i18n.t('orders.paymentStatuses.failed'), color: "#EF4444" },
+  { code: "ON_HOLD", name: i18n.t('orders.paymentStatuses.onHold'), color: "#F97316" },
+  { code: "REFUNDED", name: i18n.t('orders.paymentStatuses.refunded'), color: "#6B7280" },
+  { code: "PARTIALLY_REFUNDED", name: i18n.t('orders.paymentStatuses.partiallyRefunded'), color: "#9CA3AF" },
 ];
 
 const FILTERABLE_STATUS_CODES = [
@@ -427,6 +471,8 @@ const FILTERABLE_STATUS_CODES = [
   "PARTIALLY_RETURNED",
   "REFUNDED",
   "PARTIALLY_REFUNDED",
+  "STOCK_SHORTAGE",
+  "SHORTAGE_FAILED",
 ] as const;
 
 const BULK_UPDATABLE_STATUS_CODES = [
@@ -496,7 +542,7 @@ const transformOrder = (order: RawOrder): Order => {
         ? parseFloat(order.total) || 0
         : (order.total ?? 0)),
     paymentMethod: order.paymentMethod || "",
-    paymentStatus: normalizePaymentStatus(order.paymentStatus, isGuestOrder),
+    paymentStatus: normalizePaymentStatus(order.paymentStatus, isGuestOrder, order),
     shippingAddress: isRecord(order.shippingAddress)
       ? {
           city:
@@ -625,14 +671,14 @@ const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
 
 const ORDERS_LIST_STORAGE_KEY = "orders:list:view-state:v1";
 const DEFAULT_ORDERS_FILTERS: OrdersFilters = {
-  status: "",
-  paymentStatus: "",
-  sourceType: "",
-  merchantId: "",
-  affiliateId: "",
-  fulfillmentSource: "",
-  merchantOperationStatus: "",
-  merchantSettlementStatus: "",
+  status: [],
+  paymentStatus: [],
+  sourceType: [],
+  merchantId: [],
+  affiliateId: [],
+  fulfillmentSource: [],
+  merchantOperationStatus: [],
+  merchantSettlementStatus: [],
   search: "",
   startDate: "",
   endDate: "",
@@ -689,42 +735,56 @@ const EMPTY_MERCHANT_OPERATIONS_TOTALS: MerchantOperationsTotals = {
   paidAmount: 0,
 };
 
-const formatMerchantPieces = (value: string | number | undefined | null) =>
+export const formatMerchantPieces = (value: string | number | undefined | null) =>
   Number(value || 0).toLocaleString("ar-EG", {
     maximumFractionDigits: 0,
   });
 
-const payoutStatusLabels: Record<string, string> = {
+export const payoutStatusLabels: Record<string, string> = {
   PENDING: i18n.t('orders.pendingWithdrawal'),
   PROCESSED: i18n.t('orders.transferred'),
   FAILED: i18n.t('orders.transferFailed'),
   CANCELLED: i18n.t('orders.cancelled'),
 };
 
-const getMerchantOperationsTotals = (
+export const getMerchantOperationsTotals = (
   summary?: MerchantOperationsSummary | null,
 ): MerchantOperationsTotals => ({
   ...EMPTY_MERCHANT_OPERATIONS_TOTALS,
   ...(summary?.summary || {}),
 });
 
-const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilters => ({
-  status: searchParams.get("status") || "",
-  paymentStatus: searchParams.get("paymentStatus") || "",
-  sourceType: searchParams.get("sourceType") || "",
-  merchantId: searchParams.get("merchantId") || "",
-  affiliateId: searchParams.get("affiliateId") || "",
-  fulfillmentSource: searchParams.get("fulfillmentSource") || "",
-  merchantOperationStatus: searchParams.get("merchantOperationStatus") || "",
-  merchantSettlementStatus: searchParams.get("merchantSettlementStatus") || "",
-  search: searchParams.get("search") || "",
+const parseMultiFilterParam = (rawValue: string | null): string[] => {
+  if (!rawValue) return [];
+  return rawValue.split(",").map((s) => s.trim()).filter(Boolean);
+};
+
+const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilters => {
+  const rawStatus = searchParams.get("status") || "";
+  return {
+    status: rawStatus
+      ? rawStatus.split(",").map((s) => s.trim()).filter(Boolean)
+      : [],
+    paymentStatus: parseMultiFilterParam(searchParams.get("paymentStatus")),
+    sourceType: parseMultiFilterParam(searchParams.get("sourceType")),
+    merchantId: parseMultiFilterParam(searchParams.get("merchantId")),
+    affiliateId: parseMultiFilterParam(searchParams.get("affiliateId")),
+    fulfillmentSource: parseMultiFilterParam(searchParams.get("fulfillmentSource")),
+    merchantOperationStatus: parseMultiFilterParam(
+      searchParams.get("merchantOperationStatus"),
+    ),
+    merchantSettlementStatus: parseMultiFilterParam(
+      searchParams.get("merchantSettlementStatus"),
+    ),
+    search: searchParams.get("search") || "",
   startDate: searchParams.get("startDate") || "",
   endDate: searchParams.get("endDate") || "",
   extractionMethod: searchParams.get("extractionMethod") || "",
   minConfidence: searchParams.get("minConfidence") || "",
   onlyUnseen: searchParams.get("onlyUnseen") === "true",
   timeRange: searchParams.get("timeRange") || "",
-});
+  };
+};
 
 const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
   const candidate =
@@ -733,24 +793,30 @@ const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
       : {};
 
   return {
-    status: typeof candidate.status === "string" ? candidate.status : "",
-    paymentStatus:
-      typeof candidate.paymentStatus === "string" ? candidate.paymentStatus : "",
-    sourceType: typeof candidate.sourceType === "string" ? candidate.sourceType : "",
-    merchantId: typeof candidate.merchantId === "string" ? candidate.merchantId : "",
-    affiliateId: typeof candidate.affiliateId === "string" ? candidate.affiliateId : "",
-    fulfillmentSource:
-      typeof candidate.fulfillmentSource === "string"
-        ? candidate.fulfillmentSource
-        : "",
-    merchantOperationStatus:
-      typeof candidate.merchantOperationStatus === "string"
-        ? candidate.merchantOperationStatus
-        : "",
-    merchantSettlementStatus:
-      typeof candidate.merchantSettlementStatus === "string"
-        ? candidate.merchantSettlementStatus
-        : "",
+    status: Array.isArray(candidate.status)
+      ? candidate.status.filter((s): s is string => typeof s === "string")
+      : [],
+    paymentStatus: Array.isArray(candidate.paymentStatus)
+      ? candidate.paymentStatus.filter((s): s is string => typeof s === "string")
+      : [],
+    sourceType: Array.isArray(candidate.sourceType)
+      ? candidate.sourceType.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantId: Array.isArray(candidate.merchantId)
+      ? candidate.merchantId.filter((s): s is string => typeof s === "string")
+      : [],
+    affiliateId: Array.isArray(candidate.affiliateId)
+      ? candidate.affiliateId.filter((s): s is string => typeof s === "string")
+      : [],
+    fulfillmentSource: Array.isArray(candidate.fulfillmentSource)
+      ? candidate.fulfillmentSource.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantOperationStatus: Array.isArray(candidate.merchantOperationStatus)
+      ? candidate.merchantOperationStatus.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantSettlementStatus: Array.isArray(candidate.merchantSettlementStatus)
+      ? candidate.merchantSettlementStatus.filter((s): s is string => typeof s === "string")
+      : [],
     search: typeof candidate.search === "string" ? candidate.search : "",
     startDate: typeof candidate.startDate === "string" ? candidate.startDate : "",
     endDate: typeof candidate.endDate === "string" ? candidate.endDate : "",
@@ -812,8 +878,222 @@ const getInitialOrdersListViewState = (
   );
 };
 
+interface BillingHoldOrder {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  itemCount: number;
+  billingHoldAmount: number | null;
+  holdReason: "insufficient_balance" | "subscription_expired";
+  customerName: string;
+  customerPhone: string;
+}
+
+const HELD_REASON_LABEL: Record<string, string> = {
+  insufficient_balance: "╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐",
+  subscription_expired: "╪º╪┤╪¬╪▒╪º┘â ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐",
+};
+
+const HeldOrdersBanner: React.FC = () => {
+  const { user } = useAuth();
+  const [held, setHeld] = useState<{
+    count: number;
+    amount: number;
+    subscriptionCount: number;
+  } | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [heldOrders, setHeldOrders] = useState<BillingHoldOrder[]>([]);
+  const [heldTotal, setHeldTotal] = useState(0);
+  const [loadingHeld, setLoadingHeld] = useState(false);
+  const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
+    user?.role || "",
+  );
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    apiClient
+      .get("/wallet/billing/summary")
+      .then(
+        (res: {
+          data?: {
+            data?: {
+              heldOrders?: { count?: number; amount?: number; subscriptionCount?: number };
+            };
+          };
+        }) => {
+          const data = res?.data?.data;
+          const count = Number(data?.heldOrders?.count || 0);
+          if (count > 0) {
+            setHeld({
+              count,
+              amount: Number(data?.heldOrders?.amount || 0),
+              subscriptionCount: Number(data?.heldOrders?.subscriptionCount || 0),
+            });
+          }
+        },
+      )
+      .catch(() => {
+        /* ╪¬╪¼╪º┘ç┘ä - ╪º┘ä╪¿╪º┘å╪▒ ╪º╪«╪¬┘è╪º╪▒┘è */
+      });
+  }, [isAdmin]);
+
+  const openMoreInfo = async () => {
+    setModalOpen(true);
+    setLoadingHeld(true);
+    try {
+      const res = await apiClient.get("/orders-new/billing-holds");
+      const data = (res as {
+        data?: {
+          data?: {
+            orders?: BillingHoldOrder[];
+            totalAmount?: number;
+            subscriptionCount?: number;
+          };
+        };
+      })?.data?.data;
+      setHeldOrders(data?.orders || []);
+      setHeldTotal(Number(data?.totalAmount || 0));
+    } catch {
+      setHeldOrders([]);
+    } finally {
+      setLoadingHeld(false);
+    }
+  };
+
+  if (!held) return null;
+
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
+        <span className="font-semibold">
+          ┘ä╪»┘è┘â {held.count} ╪╖┘ä╪¿ ┘à╪╣┘ä┘æ┘é
+          {held.subscriptionCount > 0 && held.subscriptionCount === held.count
+            ? " ╪¿╪│╪¿╪¿ ╪º┘å╪¬┘ç╪º╪í ╪º╪┤╪¬╪▒╪º┘â ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐"
+            : held.subscriptionCount > 0
+              ? " (╪▒╪╡┘è╪» + ╪º╪┤╪¬╪▒╪º┘â)"
+              : " ╪¿╪│╪¿╪¿ ╪º┘å╪«┘ü╪º╪╢ ╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐"}
+          .
+        </span>
+        <span className="text-sm">
+          {held.amount > 0
+            ? `╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪¬╪¡┘é ${held.amount.toLocaleString("en-US", { maximumFractionDigits: 2 })} ╪¼.┘à ΓÇö `
+            : ""}
+          ╪º╪┤╪¡┘å ╪▒╪╡┘è╪»┘â ╪ú┘ê ╪¼╪»┘æ╪» ╪º╪┤╪¬╪▒╪º┘â┘â ┘ä┘è┘Å╪«╪╡┘à ╪º┘ä┘à╪¿┘ä╪║ ┘ê╪¬╪╕┘ç╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï.
+        </span>
+        <button
+          onClick={openMoreInfo}
+          className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
+        >
+          ┘à╪▓┘è╪» ╪º┘ä┘à╪╣┘ä┘ê┘à╪º╪¬
+        </button>
+        <Link
+          to="/payments"
+          className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
+        >
+          ╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪»
+        </Link>
+      </div>
+
+      {modalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐ ({heldOrders.length})
+              </h3>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                ╪Ñ╪║┘ä╪º┘é
+              </button>
+            </div>
+
+            {loadingHeld ? (
+              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                ╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...
+              </div>
+            ) : heldOrders.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                ┘ä╪º ╪¬┘ê╪¼╪» ╪╖┘ä╪¿╪º╪¬ ┘à╪╣┘ä┘æ┘é╪⌐.
+              </div>
+            ) : (
+              <>
+                <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                  {heldTotal > 0 ? (
+                    <>
+                      ╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪¬╪¡┘é ╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è:{" "}
+                      <b className="font-semibold">
+                        {heldTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })} ╪¼.┘à
+                      </b>
+                    </>
+                  ) : (
+                    "┘ä╪º ╪¬┘ê╪¼╪» ╪▒╪│┘ê┘à ┘à╪│╪¬╪¡┘é╪⌐ ΓÇö ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘à╪╣┘ä┘æ┘é╪⌐ ╪¿╪│╪¿╪¿ ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪º╪┤╪¬╪▒╪º┘â."
+                  )}
+                </div>
+                <div className="max-h-96 space-y-2 overflow-y-auto">
+                  {heldOrders.map((o) => (
+                    <div
+                      key={o.id}
+                      className="rounded-xl border border-gray-200 p-3 dark:border-gray-700"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {o.orderNumber}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            o.holdReason === "subscription_expired"
+                              ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                          }`}
+                        >
+                          {HELD_REASON_LABEL[o.holdReason] || "┘à╪╣┘ä┘æ┘é"}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {format(new Date(o.createdAt), "dd/MM/yyyy HH:mm")} ΓÇó ╪╣╪»╪» ╪º┘ä┘é╪╖╪╣:{" "}
+                        {o.itemCount}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700 dark:text-gray-200">
+                        <span>╪º┘ä╪╣┘à┘è┘ä: {o.customerName || "-"}</span>
+                        <span>╪º┘ä┘ç╪º╪¬┘ü: {o.customerPhone || "-"}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {o.holdReason === "subscription_expired"
+                          ? "┘à╪╣┘ä┘æ┘é ╪¡╪¬┘ë ╪¬╪¼╪»┘è╪» ╪º╪┤╪¬╪▒╪º┘â ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐"
+                          : `╪▒╪│┘ê┘à ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à ╪º┘ä┘à╪│╪¬╪¡┘é╪⌐: ${(o.billingHoldAmount || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} ╪¼.┘à`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <Link
+                    to="/payments"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    ╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪» / ╪¬╪¼╪»┘è╪» ╪º┘ä╪º╪┤╪¬╪▒╪º┘â ┘ä╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+};
+
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const ordersRef = useRef(orders);
+  ordersRef.current = orders;
   const [loading, setLoading] = useState(true);
   const [ordersLoadError, setOrdersLoadError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -867,6 +1147,8 @@ const Orders: React.FC = () => {
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
   );
+  const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   // Sync URL search parameters back to local filters state
   useEffect(() => {
@@ -884,7 +1166,27 @@ const Orders: React.FC = () => {
     setLimit((prev) => (prev !== newLimit ? newLimit : prev));
   }, [searchParams]);
 
-  const isTrashView = filters.status.toLowerCase() === "trash";
+  const isTrashView =
+    Array.isArray(filters.status) &&
+    filters.status.some((s) => s.toLowerCase() === "trash");
+
+  const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">(() => {
+    try {
+      return localStorage.getItem("orders:table-density") === "compact"
+        ? "compact"
+        : "comfortable";
+    } catch {
+      return "comfortable";
+    }
+  });
+  const changeTableDensity = (density: "comfortable" | "compact") => {
+    setTableDensity(density);
+    try {
+      localStorage.setItem("orders:table-density", density);
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   useEffect(() => {
     const normalized = normalizeOrderTableColumns(
@@ -916,15 +1218,19 @@ const Orders: React.FC = () => {
     activeCompanyAppSlugSet,
     MERCHANT_OPERATION_APP_SLUGS,
   );
-  const merchantOperationFilterIsActive = Boolean(
-    filters.merchantId ||
-      filters.fulfillmentSource ||
-      filters.merchantOperationStatus ||
-      filters.merchantSettlementStatus,
+  const hasAgentWorkspace = hasAnyCompanyAppSlug(
+    activeCompanyAppSlugSet,
+    AGENT_WORKSPACE_APP_SLUGS,
   );
-  const affiliateFilterIsActive = Boolean(filters.affiliateId);
+  const merchantOperationFilterIsActive = Boolean(
+    filters.merchantId.length > 0 ||
+      filters.fulfillmentSource.length > 0 ||
+      filters.merchantOperationStatus.length > 0 ||
+      filters.merchantSettlementStatus.length > 0,
+  );
+  const affiliateFilterIsActive = filters.affiliateId.length > 0;
   const canShowUnifiedOperationFilters = isAdmin && !isMerchant;
-  const sourceFilterIsActive = Boolean(filters.sourceType);
+  const sourceFilterIsActive = filters.sourceType.length > 0;
   const hasOrderSourceTrackingApp = hasAnyCompanyAppSlug(
     activeCompanyAppSlugSet,
     ORDER_SOURCE_TRACKING_APP_SLUGS,
@@ -963,6 +1269,8 @@ const Orders: React.FC = () => {
 
       if (typeof value === "string" && value) {
         params[key] = value;
+      } else if (Array.isArray(value) && value.length > 0) {
+        params[key] = value.join(",");
       }
     });
 
@@ -991,10 +1299,6 @@ const Orders: React.FC = () => {
   // Stats State
 
   const { t } = useTranslation();
-  const getStatusText = (status: string) => {
-    const statusKey = `orders.status.${status.toLowerCase()}`;
-    return t(statusKey, { defaultValue: status });
-  };
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const orderStatusMap = useMemo(
@@ -1030,6 +1334,10 @@ const Orders: React.FC = () => {
           return count + (value ? 1 : 0);
         }
 
+        if (Array.isArray(value)) {
+          return count + value.length;
+        }
+
         if (!value) return count;
         return count + 1;
       }, 0),
@@ -1038,14 +1346,14 @@ const Orders: React.FC = () => {
   const advancedFilterCount = useMemo(() => {
     let count = 0;
 
-    if (filters.status) count += 1;
-    if (filters.paymentStatus) count += 1;
-    if (filters.sourceType) count += 1;
-    if (filters.merchantId) count += 1;
-    if (filters.affiliateId) count += 1;
-    if (filters.fulfillmentSource) count += 1;
-    if (filters.merchantOperationStatus) count += 1;
-    if (filters.merchantSettlementStatus) count += 1;
+    if (filters.status.length > 0) count += filters.status.length;
+    if (filters.paymentStatus.length > 0) count += filters.paymentStatus.length;
+    if (filters.sourceType.length > 0) count += filters.sourceType.length;
+    if (filters.merchantId.length > 0) count += filters.merchantId.length;
+    if (filters.affiliateId.length > 0) count += filters.affiliateId.length;
+    if (filters.fulfillmentSource.length > 0) count += filters.fulfillmentSource.length;
+    if (filters.merchantOperationStatus.length > 0) count += filters.merchantOperationStatus.length;
+    if (filters.merchantSettlementStatus.length > 0) count += filters.merchantSettlementStatus.length;
     if (filters.extractionMethod) count += 1;
     if (filters.minConfidence) count += 1;
     if (filters.timeRange || filters.startDate || filters.endDate) count += 1;
@@ -1184,7 +1492,8 @@ const Orders: React.FC = () => {
   }, [isAdmin, isMerchant]);
 
   useEffect(() => {
-    if (!isAdmin || isMerchant || !filters.merchantId) {
+    const selectedMerchantId = filters.merchantId[0] || "";
+    if (!isAdmin || isMerchant || filters.merchantId.length !== 1 || !selectedMerchantId) {
       setMerchantSettlementSummary(null);
       setMerchantSettlementError("");
       setMerchantSettlementLoading(false);
@@ -1201,7 +1510,7 @@ const Orders: React.FC = () => {
           success?: boolean;
           data?: MerchantSettlementSummary;
           message?: string;
-        }>(`/merchants/${filters.merchantId}/settlement-summary`, {
+        }>(`/merchants/${selectedMerchantId}/settlement-summary`, {
           _skipErrorToast: true,
         });
 
@@ -1239,16 +1548,37 @@ const Orders: React.FC = () => {
   useEffect(() => {
     if (!socket || !isConnected) return;
 
+    const hasActiveFilters = () => {
+      const f = filtersRef.current;
+      return Boolean(
+        f.status.length > 0 ||
+        f.paymentStatus.length > 0 ||
+        f.sourceType.length > 0 ||
+        f.merchantId.length > 0 ||
+        f.affiliateId.length > 0 ||
+        f.fulfillmentSource.length > 0 ||
+        f.merchantOperationStatus.length > 0 ||
+        f.merchantSettlementStatus.length > 0 ||
+        f.search ||
+        f.startDate ||
+        f.endDate ||
+        f.onlyUnseen,
+      );
+    };
+
     // Listen for new orders
     const handleNewOrder = (newOrder: RawOrder) => {
-      if (page === 1) {
-        setOrders((prev) => {
-          if (prev.find((o) => o.orderNumber === newOrder.orderNumber))
-            return prev;
-          return [transformOrder(newOrder), ...prev];
-        });
-        setTotalOrders((prev) => prev + 1);
+      if (page !== 1) return;
+      if (hasActiveFilters()) {
+        void fetchOrdersRef.current();
+        return;
       }
+      const transformed = transformOrder(newOrder);
+      if (ordersRef.current.some((o) => o.orderNumber === transformed.orderNumber)) {
+        return;
+      }
+      setOrders((prev) => [transformed, ...prev].slice(0, limit));
+      setTotalOrders((prev) => prev + 1);
     };
 
     // Listen for order updates
@@ -1303,11 +1633,11 @@ const Orders: React.FC = () => {
 
       // Merchants use the same core Orders screen, scoped by the simple orders API.
       const usesUnifiedOperationFilters = Boolean(
-        filters.merchantId ||
-          filters.affiliateId ||
-          filters.fulfillmentSource ||
-          filters.merchantOperationStatus ||
-          filters.merchantSettlementStatus,
+        filters.merchantId.length > 0 ||
+          filters.affiliateId.length > 0 ||
+          filters.fulfillmentSource.length > 0 ||
+          filters.merchantOperationStatus.length > 0 ||
+          filters.merchantSettlementStatus.length > 0,
       );
       const useEnhanced =
         !isMerchant &&
@@ -1319,11 +1649,15 @@ const Orders: React.FC = () => {
         const queryParams = {
           page: page.toString(),
           limit: limit.toString(),
-          ...(filters.status && { status: filters.status.toUpperCase() }),
-          ...(filters.paymentStatus && {
-            paymentStatus: filters.paymentStatus.toUpperCase(),
+          ...(filters.status.length > 0 && {
+            status: filters.status.map((s) => s.toUpperCase()).join(","),
           }),
-          ...(filters.sourceType && { sourceType: filters.sourceType }),
+          ...(filters.paymentStatus.length > 0 && {
+            paymentStatus: filters.paymentStatus.map((s) => s.toUpperCase()).join(","),
+          }),
+          ...(filters.sourceType.length > 0 && {
+            sourceType: filters.sourceType.join(","),
+          }),
           ...(filters.search && { search: filters.search }),
           ...(filters.extractionMethod && {
             extractionMethod: filters.extractionMethod,
@@ -1375,6 +1709,7 @@ const Orders: React.FC = () => {
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
+          setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
         } else {
           console.error("Failed to fetch enhanced orders:", data.message);
@@ -1387,18 +1722,18 @@ const Orders: React.FC = () => {
           limit: limit.toString(),
         };
 
-        if (filters.status) queryParams.status = filters.status;
-        if (filters.paymentStatus)
-          queryParams.paymentStatus = filters.paymentStatus;
-        if (filters.sourceType) queryParams.sourceType = filters.sourceType;
-        if (filters.merchantId) queryParams.merchantId = filters.merchantId;
-        if (filters.affiliateId) queryParams.affiliateId = filters.affiliateId;
-        if (filters.fulfillmentSource)
-          queryParams.fulfillmentSource = filters.fulfillmentSource;
-        if (filters.merchantOperationStatus)
-          queryParams.merchantOperationStatus = filters.merchantOperationStatus;
-        if (filters.merchantSettlementStatus)
-          queryParams.merchantSettlementStatus = filters.merchantSettlementStatus;
+        if (filters.status.length > 0) queryParams.status = filters.status.join(",");
+        if (filters.paymentStatus.length > 0)
+          queryParams.paymentStatus = filters.paymentStatus.join(",");
+        if (filters.sourceType.length > 0) queryParams.sourceType = filters.sourceType.join(",");
+        if (filters.merchantId.length > 0) queryParams.merchantId = filters.merchantId.join(",");
+        if (filters.affiliateId.length > 0) queryParams.affiliateId = filters.affiliateId.join(",");
+        if (filters.fulfillmentSource.length > 0)
+          queryParams.fulfillmentSource = filters.fulfillmentSource.join(",");
+        if (filters.merchantOperationStatus.length > 0)
+          queryParams.merchantOperationStatus = filters.merchantOperationStatus.join(",");
+        if (filters.merchantSettlementStatus.length > 0)
+          queryParams.merchantSettlementStatus = filters.merchantSettlementStatus.join(",");
         if (filters.search) queryParams.search = filters.search;
         if (filters.startDate) queryParams.startDate = filters.startDate;
         if (filters.endDate) queryParams.endDate = filters.endDate;
@@ -1443,7 +1778,12 @@ const Orders: React.FC = () => {
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
+          setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
+          const metaFlag = (data as { meta?: { showIncompleteCartsInOrders?: boolean } })?.meta;
+          if (metaFlag && typeof metaFlag.showIncompleteCartsInOrders === "boolean") {
+            setShowIncompleteInOrders(metaFlag.showIncompleteCartsInOrders);
+          }
         } else {
           console.error("Failed to fetch orders:", data.message);
           setOrdersLoadError(i18n.t('orders.failedToLoadOrdersShort'));
@@ -1509,7 +1849,7 @@ const Orders: React.FC = () => {
   };
 
   const getConfidenceColor = (confidence?: number) => {
-    if (!confidence) return "bg-gray-100 text-gray-800";
+    if (!confidence) return "bg-slate-100 text-slate-800";
     if (confidence >= 0.8) return "bg-green-100 text-green-800";
     if (confidence >= 0.6) return "bg-yellow-100 text-yellow-800";
     return "bg-red-100 text-red-800";
@@ -1582,6 +1922,22 @@ const Orders: React.FC = () => {
         startDate = format(subDays(now, 30), "yyyy-MM-dd");
         endDate = format(now, "yyyy-MM-dd");
         break;
+      case "last90":
+        startDate = format(subDays(now, 90), "yyyy-MM-dd");
+        endDate = format(now, "yyyy-MM-dd");
+        break;
+      case "last180":
+        startDate = format(subDays(now, 180), "yyyy-MM-dd");
+        endDate = format(now, "yyyy-MM-dd");
+        break;
+      case "last365":
+        startDate = format(subDays(now, 365), "yyyy-MM-dd");
+        endDate = format(now, "yyyy-MM-dd");
+        break;
+      case "thisYear":
+        startDate = format(new Date(now.getFullYear(), 0, 1), "yyyy-MM-dd");
+        endDate = format(now, "yyyy-MM-dd");
+        break;
       case "thisMonth":
         startDate = format(
           new Date(now.getFullYear(), now.getMonth(), 1),
@@ -1610,14 +1966,14 @@ const Orders: React.FC = () => {
   const clearAdvancedFilters = () => {
     setFilters((prev) => ({
       ...prev,
-      status: "",
-      paymentStatus: "",
-      sourceType: "",
-      merchantId: "",
-      affiliateId: "",
-      fulfillmentSource: "",
-      merchantOperationStatus: "",
-      merchantSettlementStatus: "",
+      status: [],
+      paymentStatus: [],
+      sourceType: [],
+      merchantId: [],
+      affiliateId: [],
+      fulfillmentSource: [],
+      merchantOperationStatus: [],
+      merchantSettlementStatus: [],
       startDate: "",
       endDate: "",
       extractionMethod: "",
@@ -1635,6 +1991,12 @@ const Orders: React.FC = () => {
     setPage(1);
   };
 
+  const clearAllFilters = () => {
+    clearAdvancedFilters();
+    setFilters((prev) => ({ ...prev, search: "", onlyUnseen: false }));
+    setPage(1);
+  };
+
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
@@ -1647,6 +2009,8 @@ const Orders: React.FC = () => {
   };
 
   const toggleOrderSelection = (orderNumber: string) => {
+    const order = orders.find((o) => o.orderNumber === orderNumber);
+    if (order?.metadata?.isIncompleteCart) return;
     setSelectedOrders((prev) =>
       prev.includes(orderNumber)
         ? prev.filter((id) => id !== orderNumber)
@@ -1655,10 +2019,11 @@ const Orders: React.FC = () => {
   };
 
   const toggleAllSelection = () => {
-    if (orders.every((o) => selectedOrders.includes(o.orderNumber))) {
+    const selectable = orders.filter((o) => !o.metadata?.isIncompleteCart);
+    if (selectable.every((o) => selectedOrders.includes(o.orderNumber))) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(orders.map((o) => o.orderNumber));
+      setSelectedOrders(selectable.map((o) => o.orderNumber));
     }
   };
 
@@ -1684,7 +2049,7 @@ const Orders: React.FC = () => {
       !window.confirm(
         t("orders.confirmBulkUpdate", {
           count: selectedOrders.length,
-          status: getStatusText(normalizedStatus),
+          status: getStatusDisplay(normalizedStatus).label,
         }),
       )
     )
@@ -1796,7 +2161,7 @@ const Orders: React.FC = () => {
       return;
     }
 
-    // للطباعة الجماعية، نفتح صفحة منفصلة
+    // ┘ä┘ä╪╖╪¿╪º╪╣╪⌐ ╪º┘ä╪¼┘à╪º╪╣┘è╪⌐╪î ┘å┘ü╪¬╪¡ ╪╡┘ü╪¡╪⌐ ┘à┘å┘ü╪╡┘ä╪⌐
     if (selectedOrders.length > 1) {
       if (!window.confirm(t("orders.confirmPrintInvoices", { count: selectedOrders.length })))
         return;
@@ -1808,14 +2173,32 @@ const Orders: React.FC = () => {
         });
 
         if (response.data.success) {
-          const { success, existing, failed, invoices } = response.data.data;
+          const { success, existing, failed, invoices, guestOrders } = response.data.data;
+          const invoiceList = (invoices as GeneratedInvoice[]) || [];
+          const guestList = (guestOrders as Array<{ orderId: string; order: OrderDetailsType }>) || [];
 
-          if (invoices && invoices.length > 0) {
-            const invoiceIds = (invoices as GeneratedInvoice[]).map(
-              (invoice) => invoice.id,
-            );
-            const printUrl = `/orders/invoices/print-multiple?ids=${invoiceIds.join(",")}`;
-            window.open(printUrl, "_blank");
+          if (invoiceList.length === 0 && guestList.length === 0) {
+            alert(t("orders.invoicePrintError"));
+          } else {
+            // ╪º╪¿┘å┘É URL ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖╪¿╪º╪╣╪⌐: ┘ü┘ê╪º╪¬┘è╪▒ DB ╪╣╪¿╪▒ ids╪î ┘ê╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ╪╣╪¿╪▒ sessionStorage
+            // (┘â┘ä╪º ╪º┘ä┘å┘ê╪╣┘è┘å ┘è┘Å╪╣╪▒╪╢ ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪¿┘å┘ü╪│ ╪┤╪▒┘è╪╖ ╪º┘ä╪¬┘é╪│┘è┘à ┘ê┘à┘â┘ê┘æ┘å ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐)
+            const params = new URLSearchParams();
+            if (invoiceList.length > 0) {
+              params.set("ids", invoiceList.map((inv) => inv.id).join(","));
+            }
+            if (guestList.length > 0) {
+              const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
+              const guestKey = storeGuestPrintPayload({
+                company: {
+                  companyName: user?.company?.name || "",
+                  companyPhone: user?.company?.phone || null,
+                  companyLogo: user?.company?.logo || null,
+                },
+                orders: guestList.map((entry) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number]),
+              });
+              params.set("guestKey", guestKey);
+            }
+            window.open(`/orders/invoices/print-multiple${params.toString() ? `?${params.toString()}` : ""}`, "_blank");
           }
 
           alert(
@@ -1830,21 +2213,47 @@ const Orders: React.FC = () => {
         setPrintingInvoices(false);
       }
     } else {
-      // لفاتورة واحدة، نعرضها في modal
+      // ┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ┘ê╪º╪¡╪»╪⌐╪î ┘å╪╣╪▒╪╢┘ç╪º ┘ü┘è modal
       try {
         setPrintingInvoices(true);
+        // ┘ü╪¬╪¡ ┘å╪º┘ü╪░╪⌐ ╪º┘ä╪╖╪¿╪º╪╣╪⌐ ┘ü┘ê╪▒╪º┘ï ╪╢┘à┘å ╪¬┘ü╪º╪╣┘ä ╪º┘ä┘à╪│╪¬╪«╪»┘à ┘ä╪¬╪¼┘å╪¿ ╪¡╪¼╪¿┘ç╪º ╪¿┘ê╪º╪│╪╖╪⌐ ┘à╪º┘å╪╣ ╪º┘ä┘å┘ê╪º┘ü╪░ ╪º┘ä┘à┘å╪¿╪½┘é╪⌐
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) {
+          alert(t("orders.invoiceGenerationError"));
+          return;
+        }
         const response = await apiClient.post("/order-invoices/bulk-generate", {
           orderIds: selectedOrders,
         });
 
         if (response.data.success) {
-          const { invoices } = response.data.data as {
+          const data = response.data.data as {
             invoices?: GeneratedInvoice[];
+            guestOrders?: Array<{ orderId: string; order: OrderDetailsType }>;
           };
+          const { invoices, guestOrders } = data;
 
           if (invoices && invoices.length > 0) {
+            printWindow.close();
             setSelectedInvoice(invoices[0]);
+          } else if (guestOrders && guestOrders.length > 0) {
+            // ╪╖┘ä╪¿ ╪╢┘è┘ü ┘ê╪º╪¡╪»: ╪º╪╣╪▒╪╢┘ç ┘ü┘è ╪╡┘ü╪¡╪⌐ print-multiple ╪º┘ä┘à┘ê╪¡┘æ╪»╪⌐ (╪¿┘å┘ü╪│ ╪┤╪▒┘è╪╖ ╪º┘ä╪¬┘é╪│┘è┘à ┘ê╪º┘ä╪ú┘â┘ê╪º╪»)
+            printWindow.close();
+            const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
+            const guestKey = storeGuestPrintPayload({
+              company: {
+                companyName: user?.company?.name || "",
+                companyPhone: user?.company?.phone || null,
+                companyLogo: user?.company?.logo || null,
+              },
+              orders: guestOrders.map((entry) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number]),
+            });
+            navigate(`/orders/invoices/print-multiple?guestKey=${encodeURIComponent(guestKey)}`);
+          } else {
+            printWindow.close();
           }
+        } else {
+          printWindow.close();
         }
       } catch (error: unknown) {
         console.error("Error generating invoice:", error);
@@ -1972,23 +2381,42 @@ const Orders: React.FC = () => {
 
   const filterableOrderStatuses = useMemo(() => {
     const list = orderStatuses.filter((s) => normalizeStatusCode(s.code) !== "TRASH");
-    const activeFilter = normalizeStatusCode(filters.status);
-    if (activeFilter && activeFilter !== "TRASH" && activeFilter !== "TRASH_ORDER") {
+    if (showIncompleteInOrders) {
+      const existingCodes = new Set(list.map((s) => normalizeStatusCode(s.code)));
+      if (!existingCodes.has("INCOMPLETE")) {
+        list.push({
+          code: "INCOMPLETE",
+          name: getStatusDisplay("INCOMPLETE").label,
+        });
+      }
+      if (!existingCodes.has("LOST")) {
+        list.push({
+          code: "LOST",
+          name: getStatusDisplay("LOST").label,
+        });
+      }
+    }
+    filters.status.forEach((raw) => {
+      const activeFilter = normalizeStatusCode(raw);
+      if (!activeFilter || activeFilter === "TRASH" || activeFilter === "TRASH_ORDER") {
+        return;
+      }
       const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
       if (!exists) {
         list.push({
           code: activeFilter,
-          name: getStatusText(activeFilter),
+          name: getStatusDisplay(activeFilter).label,
         });
       }
-    }
+    });
     return list;
-  }, [orderStatuses, filters.status]);
+  }, [orderStatuses, filters.status, showIncompleteInOrders]);
 
   const filterablePaymentStatuses = useMemo(() => {
     const list = [...paymentStatuses];
-    const activeFilter = normalizeStatusCode(filters.paymentStatus);
-    if (activeFilter) {
+    filters.paymentStatus.forEach((raw) => {
+      const activeFilter = normalizeStatusCode(raw);
+      if (!activeFilter) return;
       const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
       if (!exists) {
         list.push({
@@ -1996,7 +2424,7 @@ const Orders: React.FC = () => {
           name: getPaymentStatusText(activeFilter.toLowerCase()),
         });
       }
-    }
+    });
     return list;
   }, [paymentStatuses, filters.paymentStatus]);
 
@@ -2039,217 +2467,6 @@ const Orders: React.FC = () => {
       default:
         return "";
     }
-  };
-
-  const renderMerchantSettlementPanel = () => {
-    if (!isAdmin || isMerchant || !filters.merchantId) {
-      return null;
-    }
-
-    const selectedMerchant = merchantSettlementSummary?.merchant;
-    const selectedMerchantOption = merchantOptions.find(
-      (merchantOption) => merchantOption.id === filters.merchantId,
-    );
-    const merchantName =
-      selectedMerchant?.name ||
-      selectedMerchantOption?.name ||
-      selectedMerchant?.email ||
-      selectedMerchantOption?.email ||
-      t("orders.selectedMerchant");
-
-    if (merchantSettlementLoading) {
-      return (
-        <section className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/88 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/72">
-          <div className="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
-        </section>
-      );
-    }
-
-    if (merchantSettlementError) {
-      return (
-        <section className="mb-4 rounded-[26px] border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-sm dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>{merchantSettlementError}</span>
-            <Link
-              to={`/merchants/${filters.merchantId}`}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-rose-200 bg-white px-3 py-2 font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-200"
-            >
-              {t("orders.openMerchantProfile")}
-            </Link>
-          </div>
-        </section>
-      );
-    }
-
-    if (!merchantSettlementSummary) {
-      return null;
-    }
-
-    const operationsTotals = getMerchantOperationsTotals(
-      merchantSettlementSummary.operationsSummary,
-    );
-    const inventorySummary = merchantSettlementSummary.inventorySummary || {};
-    const payoutBalances = merchantSettlementSummary.payoutSummary?.balances || {};
-    const pendingPayouts =
-      merchantSettlementSummary.payoutSummary?.payouts?.filter(
-        (payout) => String(payout.status).toUpperCase() === "PENDING",
-      ) || [];
-    const fulfillmentLabel = getFulfillmentSourceText(
-      selectedMerchant?.fulfillmentMode,
-    ) || selectedMerchant?.fulfillmentMode || t("orders.merchantFulfillment");
-
-    const metricCards = [
-      {
-        label: t("orders.availableForWithdrawal"),
-        value: formatPrice(payoutBalances.availableAmount || 0),
-        subValue: `${formatMerchantPieces(payoutBalances.availableCommissionsCount)} ${t("orders.deliveredOrders")}`,
-        icon: BanknotesIcon,
-        className:
-          "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100",
-      },
-      {
-        label: t("orders.pendingWithdrawalRequest"),
-        value: formatPrice(payoutBalances.pendingPayoutAmount || 0),
-        subValue: `${formatMerchantPieces(pendingPayouts.length)} ${t("orders.pendingWithdrawalRequest")}`,
-        icon: ClockIcon,
-        className:
-          "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100",
-      },
-      {
-        label: t("orders.transferred"),
-        value: formatPrice(payoutBalances.paidAmount || 0),
-        subValue: t("orders.paidAndClosed"),
-        icon: CheckCircleIcon,
-        className:
-          "border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
-      },
-      {
-        label: t("orders.settlementInShipping"),
-        value: formatPrice(operationsTotals.inShippingAmount),
-        subValue: t("orders.piecesPending", { count: formatMerchantPieces(operationsTotals.inShippingPieces) }),
-        icon: TruckIcon,
-        className:
-          "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-100",
-      },
-      {
-        label: t("orders.sellableBalance"),
-        value: `${formatMerchantPieces(inventorySummary.availableForSale)} ${t("orders.pieces")}`,
-        subValue: t("orders.reservedPieces", { count: formatMerchantPieces(inventorySummary.reservedQuantity) }),
-        icon: CubeIcon,
-        className:
-          "border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-100",
-      },
-      {
-        label: t("orders.deliveredOrders"),
-        value: `${formatMerchantPieces(operationsTotals.deliveredOrdersCount)} ${t("orders.orders2")}`,
-        subValue: t("orders.piecesDue", { count: formatMerchantPieces(operationsTotals.payablePieces) }),
-        icon: CheckCircleIcon,
-        className:
-          "border-emerald-200 bg-white text-emerald-900 dark:border-emerald-500/20 dark:bg-slate-900 dark:text-emerald-100",
-      },
-      {
-        label: t("orders.settlementNotDelivered"),
-        value: `${formatMerchantPieces(operationsTotals.notDeliveredOrdersCount)} ${t("orders.orders2")}`,
-        subValue: formatPrice(operationsTotals.notDeliveredAmount),
-        icon: ExclamationTriangleIcon,
-        className:
-          "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-100",
-      },
-    ];
-
-    return (
-      <section className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/72">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-                <BanknotesIcon className="h-4 w-4" />
-                {t("orders.merchantSettlementLabel")}
-              </span>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                {fulfillmentLabel}
-              </span>
-              {inventorySummary.stockLocationLabel ? (
-                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-200">
-                  {inventorySummary.stockLocationLabel}
-                </span>
-              ) : null}
-            </div>
-            <h2 className="mt-2 text-xl font-black text-slate-950 dark:text-white">
-              {merchantName}
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-              {t("orders.merchantSettlementDesc")}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                handleFilterChange("merchantOperationStatus", "");
-                handleFilterChange("merchantSettlementStatus", "");
-              }}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              {t("orders.allMerchantOrders")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                handleFilterChange("merchantOperationStatus", "DELIVERED");
-                handleFilterChange("merchantSettlementStatus", "PAYABLE");
-              }}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
-            >
-              {t("orders.dueOrders")}
-            </button>
-            <Link
-              to={`/merchants/${filters.merchantId}`}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              {t("orders.merchantProfile")}
-            </Link>
-            <Link
-              to="/inventory"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-200"
-            >
-              {t("orders.inventory")}
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
-          {metricCards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <div key={card.label} className={`rounded-2xl border p-3 ${card.className}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold">{card.label}</p>
-                  <Icon className="h-4 w-4 opacity-70" />
-                </div>
-                <p className="mt-2 text-lg font-black">{card.value}</p>
-                <p className="mt-1 text-[11px] opacity-75">{card.subValue}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {pendingPayouts.length > 0 ? (
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <span className="font-bold">
-                {t("orders.pendingWithdrawalRequests", { count: formatMerchantPieces(pendingPayouts.length) })}
-              </span>
-              <span className="text-[11px] opacity-80">
-                {t("orders.lastPayout")}: {payoutStatusLabels[pendingPayouts[0]?.status] || pendingPayouts[0]?.status} •{" "}
-                {formatPrice(Number(pendingPayouts[0]?.amount || 0))}
-              </span>
-            </div>
-          </div>
-        ) : null}
-      </section>
-    );
   };
 
   const handleUpdateStatus = async (orderNumber: string, newStatus: string) => {
@@ -2365,6 +2582,10 @@ const Orders: React.FC = () => {
   };
 
   const handleOpenOrder = (order: Order) => {
+    if (order.metadata?.isIncompleteCart) {
+      navigate(`/orders/incomplete/${encodeURIComponent(order.metadata.cartId || order.orderNumber)}`);
+      return;
+    }
     setSelectedOrder(order);
     setShowOrderModal(true);
     if (!order.isViewed) {
@@ -2372,1182 +2593,306 @@ const Orders: React.FC = () => {
     }
   };
 
+  const mobileListHelpers = useMemo(
+    () => ({
+      getCustomerDisplayName,
+      formatPrice,
+      getOrderAmount,
+      getOrderSourceText,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+    }),
+    [
+      getCustomerDisplayName,
+      formatPrice,
+      getOrderAmount,
+      getOrderSourceText,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+    ],
+  );
+
+  const tableHelpers = useMemo(
+    () => ({
+      getCustomerDisplayName,
+      formatPrice,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+      getConfidenceColor,
+      getConfidenceIcon,
+    }),
+    [
+      getCustomerDisplayName,
+      formatPrice,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+      getConfidenceColor,
+      getConfidenceIcon,
+    ],
+  );
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.96)_0%,_rgba(241,245,249,0.94)_100%)] px-2 py-2 dark:bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.2),_transparent_34%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(15,23,42,0.98)_100%)] sm:px-4 sm:py-3 lg:px-3">
       <div className="w-full max-w-none">
-        <div className="mb-3 space-y-2.5">
-          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/80 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
-                  <ShoppingBagIcon className="h-4 w-4" />
-                  {isMerchant ? t("orders.myOrders") : t("orders.title")}
-                </span>
-                {!loading && (
-                  <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300">
-                    {t("orders.totalOrdersCount", { count: totalOrders })}
-                  </span>
-                )}
-                {activeFilterCount > 0 && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200/70 bg-fuchsia-50/80 px-3 py-1 text-xs font-medium text-fuchsia-700 dark:border-fuchsia-500/20 dark:bg-fuchsia-500/10 dark:text-fuchsia-200">
-                    <FunnelIcon className="h-3.5 w-3.5" />
-                    {t("orders.activeFiltersCount", { count: activeFilterCount })}
-                  </span>
-                )}
-              </div>
-            </div>
+        <HeldOrdersBanner />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => handleFilterChange("status", "")}
-                className={`relative inline-flex min-w-[126px] items-center justify-center rounded-[16px] px-4 py-2.5 text-sm font-semibold transition ${!filters.status || filters.status !== "trash"
-                  ? "bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300"
-                  : "border border-slate-200/70 bg-white/70 text-slate-500 hover:text-slate-800 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-slate-100"
-                  }`}
-              >
-                {t("orders.allOrders")}
-              </button>
-              <button
-                onClick={() => navigate("/orders/workspace")}
-                title={t('orders.workspaceSubtitle')}
-                className="relative inline-flex min-w-[126px] items-center justify-center gap-2 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
-              >
-                <BriefcaseIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
-                <span className="sm:hidden">{t('orders.myWorkspace')}</span>
-              </button>
+        <OrdersOverviewStats />
 
-              {!loading && (
-                <div className="hidden items-center gap-2 rounded-full border border-slate-200/70 bg-white/75 px-3 py-2 text-xs font-medium text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 lg:inline-flex">
-                  <span>{t("orders.showing")}</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    {orders.length > 0
-                      ? `${(page - 1) * limit + 1}-${Math.min(page * limit, totalOrders)}`
-                      : "0"}
-                  </span>
-                  <span>{t("orders.of")} {totalOrders}</span>
-                </div>
-              )}
-            </div>
-          </div>
+        <OrdersToolbar
+        filters={filters}
+        loading={loading}
+        totalOrders={totalOrders}
+        activeFilterCount={activeFilterCount}
+        advancedFilterCount={advancedFilterCount}
+        isMerchant={isMerchant}
+        hasAgentWorkspace={hasAgentWorkspace}
+        ordersCount={orders.length}
+        page={page}
+        limit={limit}
+        ordersLoadError={ordersLoadError}
+        showAdvancedFilters={showAdvancedFilters}
+        fieldClassName={fieldClassName}
+        filterableOrderStatuses={filterableOrderStatuses}
+        filterablePaymentStatuses={filterablePaymentStatuses}
+        merchantOptions={merchantOptions}
+        affiliateOptions={affiliateOptions}
+        showOrderSourceFilter={showOrderSourceFilter}
+        showUnifiedOperationFilters={showUnifiedOperationFilters}
+        showMerchantOperationFilters={showMerchantOperationFilters}
+        showAffiliateOperationFilter={showAffiliateOperationFilter}
+        hasCustomDateFilters={hasCustomDateFilters}
+        getAffiliateDisplayName={getAffiliateDisplayName}
+        onFilterChange={handleFilterChange}
+        onClearAdvancedFilters={clearAdvancedFilters}
+        onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
+        onSetQuickDate={setQuickDate}
+        onOpenWorkspace={() => navigate("/orders/workspace")}
+        onRetry={fetchOrders}
+        onRefresh={fetchOrders}
+        lastUpdatedAt={lastUpdatedAt}
+        isConnected={isConnected}
+      />
 
-          {/* Compact Filters Section */}
-          <div className="rounded-[22px] border border-slate-200/70 bg-white/88 p-2 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
-            <div className="flex flex-col gap-3">
-              {ordersLoadError && (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-red-200/80 bg-red-50/80 px-3 py-1.5 text-[11px] text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">{ordersLoadError}</span>
-                  </div>
-                  <button
-                    onClick={() => fetchOrders()}
-                    className="rounded-xl border border-red-200/80 px-2.5 py-1 font-semibold transition hover:bg-red-100/80 dark:border-red-500/30 dark:hover:bg-red-500/10"
-                  >
-                    {t("orders.incompleteRetry")}
-                  </button>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
-                <div className="relative min-w-[200px] flex-1 lg:min-w-0">
-                  <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                  <input
-                    type="text"
-                    aria-label={String(t("orders.searchPlaceholder"))}
-                    placeholder={t("orders.searchPlaceholder")}
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange("search", e.target.value)}
-                    className={`${fieldClassName} pr-10`}
-                  />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvancedFilters((prev) => !prev)}
-                    className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${showAdvancedFilters
-                      ? "border-fuchsia-300/80 bg-fuchsia-50/90 text-fuchsia-700 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/10 dark:text-fuchsia-200"
-                      : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                      }`}
-                  >
-                    <AdjustmentsHorizontalIcon className="h-4 w-4" />
-                    <span className="whitespace-nowrap">
-                      {showAdvancedFilters ? t("orders.hideFilters") : t("orders.filters")}
-                    </span>
-                    {advancedFilterCount > 0 && (
-                      <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[11px] font-bold text-fuchsia-700 dark:bg-slate-900/80 dark:text-fuchsia-200">
-                        {advancedFilterCount}
-                      </span>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      handleFilterChange("onlyUnseen", !filters.onlyUnseen)
-                    }
-                    className={`flex min-h-[44px] min-w-[118px] items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${filters.onlyUnseen
-                      ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                      : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                      }`}
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                    <span className="whitespace-nowrap">
-                      {filters.onlyUnseen
-                        ? t("orders.showAll")
-                        : t("orders.unseen")}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {!showAdvancedFilters && advancedFilterCount > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2 text-[11px] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/55 dark:text-slate-300">
-                  <span>{t("orders.activeFiltersApplied", { count: advancedFilterCount })}</span>
-                  <button
-                    type="button"
-                    onClick={clearAdvancedFilters}
-                    className="rounded-xl px-2.5 py-1 font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
-                  >
-                    {t("orders.clearFilters")}
-                  </button>
-                </div>
-              )}
-
-              {showAdvancedFilters && (
-                <div className="animate-in slide-in-from-top-2 flex flex-col gap-2.5 border-t border-slate-200/70 pt-2.5 duration-200 dark:border-slate-700/70">
-                  <div className="grid gap-2.5 lg:grid-cols-4">
-                    <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">
-                      <FunnelIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                      <select
-                        aria-label={String(t("orders.allDates"))}
-                        value={filters.timeRange}
-                        onChange={(e) => setQuickDate(e.target.value)}
-                        className={`${fieldClassName} appearance-none pr-8 pl-2 text-xs sm:text-sm`}
-                      >
-                        <option value="">{t("orders.allDates")}</option>
-                        <option value="today">{t("orders.today")}</option>
-                        <option value="yesterday">{t("orders.yesterday")}</option>
-                        <option value="last7">{t("orders.last7Days")}</option>
-                        <option value="thisMonth">{t("orders.thisMonth")}</option>
-                        <option value="custom">{t("orders.customPeriod")}</option>
-                      </select>
-                    </div>
-
-                    <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">
-                      <select
-                        aria-label={String(t("orders.allStatuses"))}
-                        value={filters.status}
-                        onChange={(e) => handleFilterChange("status", e.target.value)}
-                        className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                      >
-                        <option value="">{t("orders.allStatuses")}</option>
-                        {filterableOrderStatuses.map((status) => (
-                          <option
-                            key={status.code}
-                            value={status.code.toLowerCase()}
-                          >
-                            {status.name}
-                          </option>
-                        ))}
-                        <option value="trash">{t("orders.trash")}</option>
-                      </select>
-                    </div>
-
-                    <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">
-                      <select
-                        aria-label={String(t("orders.allPaymentStatuses"))}
-                        value={filters.paymentStatus}
-                        onChange={(e) =>
-                          handleFilterChange("paymentStatus", e.target.value)
-                        }
-                        className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                      >
-                        <option value="">{t("orders.allPaymentStatuses")}</option>
-                        {filterablePaymentStatuses.map((status) => (
-                          <option
-                            key={status.code}
-                            value={status.code.toLowerCase()}
-                          >
-                            {status.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {showOrderSourceFilter && (
-                      <div className="relative min-w-[140px] sm:flex-1 lg:min-w-0">
-                        <select
-                          aria-label={String(t("orders.allSources"))}
-                          value={filters.sourceType}
-                          onChange={(e) =>
-                            handleFilterChange("sourceType", e.target.value)
-                          }
-                          className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                        >
-                          <option value="">{t("orders.allSources")}</option>
-                          <option value="ai_conversation">
-                            {t("orders.sourceAutoConversation")}
-                          </option>
-                          <option value="manual">{t("orders.sourceManual")}</option>
-                          <option value="storefront">
-                            {t("orders.sourceStorefront")}
-                          </option>
-                          <option value="woocommerce">
-                            {t("orders.sourceWooCommerce")}
-                          </option>
-                          <option value="pos">{t("orders.sourcePOS")}</option>
-                          <option value="api">{t("orders.sourceAPI")}</option>
-                          <option value="import">{t("orders.sourceImport")}</option>
-                          <option value="unknown">{t("orders.sourceUnknown")}</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-
-                  {showUnifiedOperationFilters && (
-                    <div className="grid gap-2.5 lg:grid-cols-5">
-                      {showMerchantOperationFilters && (
-                        <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                          <select
-                            aria-label={String(t("orders.allMerchants"))}
-                            value={filters.merchantId}
-                            onChange={(e) =>
-                              handleFilterChange("merchantId", e.target.value)
-                            }
-                            className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                          >
-                            <option value="">{t("orders.allMerchants")}</option>
-                            {merchantOptions.map((merchantOption) => (
-                              <option key={merchantOption.id} value={merchantOption.id}>
-                                {merchantOption.name || merchantOption.email || merchantOption.id}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {showAffiliateOperationFilter && (
-                        <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                          <select
-                            aria-label={String(t("orders.allAffiliates"))}
-                            value={filters.affiliateId}
-                            onChange={(e) =>
-                              handleFilterChange("affiliateId", e.target.value)
-                            }
-                            className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                          >
-                            <option value="">{t("orders.allAffiliates")}</option>
-                            {affiliateOptions.map((affiliateOption) => (
-                              <option key={affiliateOption.id} value={affiliateOption.id}>
-                                {getAffiliateDisplayName(affiliateOption)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {showMerchantOperationFilters && (
-                        <>
-                          <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                            <select
-                              aria-label={String(t("orders.fulfillmentSource"))}
-                              value={filters.fulfillmentSource}
-                              onChange={(e) =>
-                                handleFilterChange("fulfillmentSource", e.target.value)
-                              }
-                              className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                            >
-                              <option value="">{t("orders.allFulfillmentSources")}</option>
-                              <option value="MERCHANT">{t("orders.fromMerchant")}</option>
-                              <option value="COMPANY_WAREHOUSE">{t("orders.fromCompanyWarehouse")}</option>
-                            </select>
-                          </div>
-
-                          <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                            <select
-                              aria-label={String(t("orders.merchantOperationStatus"))}
-                              value={filters.merchantOperationStatus}
-                              onChange={(e) =>
-                                handleFilterChange(
-                                  "merchantOperationStatus",
-                                  e.target.value,
-                                )
-                              }
-                              className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                            >
-                              <option value="">{t("orders.allMerchantOperationStatuses")}</option>
-                              <option value="PREPARATION">{t("orders.preparation")}</option>
-                              <option value="IN_SHIPPING">{t("orders.inShipping")}</option>
-                              <option value="DELIVERED">{t("orders.delivered")}</option>
-                              <option value="NOT_DELIVERED">{t("orders.returnedOrNotDelivered")}</option>
-                            </select>
-                          </div>
-
-                          <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                            <select
-                              aria-label={String(t("orders.merchantSettlements"))}
-                              value={filters.merchantSettlementStatus}
-                              onChange={(e) =>
-                                handleFilterChange(
-                                  "merchantSettlementStatus",
-                                  e.target.value,
-                                )
-                              }
-                              className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                            >
-                              <option value="">{t("orders.allSettlements")}</option>
-                              <option value="PAYABLE">{t("orders.settlementPayable")}</option>
-                              <option value="PAID">{t("orders.settlementPaid")}</option>
-                              <option value="NOT_PAYABLE">{t("orders.settlementNotPayable")}</option>
-                            </select>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {hasCustomDateFilters && (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-900/80">
-                          <span className="whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {t("orders.fromDate")}
-                          </span>
-                          <input
-                            type="date"
-                            aria-label={String(t("orders.startDate"))}
-                            value={filters.startDate}
-                            onChange={(e) => {
-                              handleFilterChange("startDate", e.target.value);
-                              if (filters.timeRange !== "custom")
-                                handleFilterChange("timeRange", "custom");
-                            }}
-                            className="theme-native-control rounded-xl border-0 bg-transparent p-0 text-xs text-slate-700 focus:ring-0 dark:text-slate-100"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-900/80">
-                          <span className="whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {t("orders.toDate")}
-                          </span>
-                          <input
-                            type="date"
-                            aria-label={String(t("orders.endDate"))}
-                            value={filters.endDate}
-                            onChange={(e) => {
-                              handleFilterChange("endDate", e.target.value);
-                              if (filters.timeRange !== "custom")
-                                handleFilterChange("timeRange", "custom");
-                            }}
-                            className="theme-native-control rounded-xl border-0 bg-transparent p-0 text-xs text-slate-700 focus:ring-0 dark:text-slate-100"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={clearAdvancedFilters}
-                        className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
-                      >
-                        {t("orders.clearAdvancedFilters")}
-                      </button>
-                    </div>
-                  )}
-
-                  {!hasCustomDateFilters && advancedFilterCount > 0 && (
-                    <div className="flex justify-end">
-                      <button
-                        onClick={clearAdvancedFilters}
-                        className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
-                      >
-                        {t("orders.clearAdvancedFilters")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-      {renderMerchantSettlementPanel()}
+      <OrdersStatsBar
+        isAdmin={isAdmin}
+        isMerchant={isMerchant}
+        merchantId={filters.merchantId[0] || ""}
+        merchantSettlementSummary={merchantSettlementSummary}
+        merchantSettlementLoading={merchantSettlementLoading}
+        merchantSettlementError={merchantSettlementError}
+        merchantOptions={merchantOptions}
+        formatPrice={formatPrice}
+        getFulfillmentSourceText={getFulfillmentSourceText}
+        onClearMerchantFilters={() => {
+          handleFilterChange("merchantOperationStatus", []);
+          handleFilterChange("merchantSettlementStatus", []);
+        }}
+        onShowDueOrders={() => {
+          handleFilterChange("merchantOperationStatus", ["DELIVERED"]);
+          handleFilterChange("merchantSettlementStatus", ["PAYABLE"]);
+        }}
+      />
 
       {/* Bulk Toolbar */}
-      {canSelectOrders && selectedOrders.length > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CheckCircleIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            <span className="font-medium text-blue-900 dark:text-blue-100">
-              {t("orders.ordersSelected", { count: selectedOrders.length })}
-            </span>
-          </div>
-          <div className="flex gap-3">
-            <select
-              aria-label={String(t("orders.updateStatus"))}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val) {
-                  handleBulkStatusUpdate(val);
-                  e.target.value = ""; // Reset
-                }
-              }}
-              className="theme-native-control px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg text-sm focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
-              disabled={bulkProcessing}
-            >
-              <option value="">{t("orders.updateStatus")}</option>
-              {bulkUpdatableStatuses.map((status) => (
-                <option
-                  key={status.code}
-                  value={status.code.toLowerCase()}
-                >
-                  {status.name}
-                </option>
-              ))}
-              <option value="trash">{t("orders.moveToTrash")}</option>
-              <option value="restore">{t("orders.restoreFromTrash")}</option>
-            </select>
-            <button
-              onClick={handleBulkPrintInvoices}
-              disabled={printingInvoices}
-              className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg text-sm hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
-            >
-              <PrinterIcon className="w-4 h-4 ml-2" />
-              {printingInvoices ? t("orders.printing") : t("orders.printInvoices")}
-            </button>
-            <button
-              onClick={handleBulkCreateTurboShipments}
-              disabled={bulkProcessing}
-              className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-            >
-              <RocketLaunchIcon className="w-4 h-4 ml-2" />
-              {bulkProcessing
-                ? t("orders.creating")
-                : t("orders.createTurboShipments")}
-            </button>
-            <button
-              onClick={handleBulkDelete}
-              disabled={bulkProcessing}
-              className="px-4 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors border border-red-200 dark:border-red-800"
-            >
-              {bulkProcessing
-                ? t("orders.processing2")
-                : t(isTrashView ? "orders.deleteSelectedPermanently" : "orders.deleteSelected")}
-            </button>
-          </div>
-        </div>
+      {canSelectOrders && (
+        <BulkActionBar
+          count={selectedOrders.length}
+          statuses={bulkUpdatableStatuses}
+          isTrashView={isTrashView}
+          busy={bulkProcessing}
+          printing={printingInvoices}
+          onClearSelection={() => setSelectedOrders([])}
+          onStatusChange={handleBulkStatusUpdate}
+          onPrintInvoices={handleBulkPrintInvoices}
+          onCreateTurboShipments={handleBulkCreateTurboShipments}
+          onDelete={handleBulkDelete}
+        />
       )}
 
-      <div className="mb-6 grid gap-4 lg:hidden">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={`mobile-skeleton-${index}`}
-              className="animate-pulse rounded-[26px] border border-slate-200/70 bg-white/85 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70"
-            >
-              <div className="mb-4 flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="h-4 w-28 rounded-full bg-slate-200 dark:bg-slate-700" />
-                  <div className="h-5 w-40 rounded-full bg-slate-300/80 dark:bg-slate-600" />
-                </div>
-                <div className="h-6 w-6 rounded-md bg-slate-200 dark:bg-slate-700" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="h-16 rounded-2xl bg-slate-100 dark:bg-slate-800" />
-                <div className="h-16 rounded-2xl bg-slate-100 dark:bg-slate-800" />
-              </div>
-            </div>
-          ))
-        ) : orders.length === 0 ? (
-          <div className="rounded-[28px] border border-dashed border-slate-300/80 bg-white/80 px-6 py-12 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
-            <ShoppingBagIcon className="mx-auto mb-4 h-12 w-12 text-slate-300 dark:text-slate-600" />
-            <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {ordersLoadError ? t("orders.failedToLoadOrders") : t("orders.noOrders")}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
-                      </p>
-          </div>
-        ) : (
-          orders.map((order, idx) => {
-            const orderItemsSummary = summarizeOrderDocumentItems(order.items);
-            const isSelected = selectedOrders.includes(order.orderNumber);
+      {/* Hidden command palette that registers the page-level bulk actions.
+          The toolbar already has its own palette trigger; this one is mount-only
+          (no trigger button) and just contributes commands to the same global
+          keyboard shortcut handler. */}
+      <CommandPalette
+        showTrigger={false}
+        extraCommands={[
+          {
+            id: "bulk-print",
+            group: "bulk",
+            label: t("orders.palette.bulkPrintAll"),
+            onSelect: () => handleBulkPrintInvoices(),
+          },
+          {
+            id: "bulk-turbo",
+            group: "bulk",
+            label: t("orders.palette.bulkCreateTurboAll"),
+            onSelect: () => handleBulkCreateTurboShipments(),
+          },
+          {
+            id: "bulk-delete",
+            group: "bulk",
+            label: t("orders.palette.bulkDeleteAll"),
+            onSelect: () => handleBulkDelete(),
+          },
+        ]}
+      />
 
-            return (
-              <article
-                key={`mobile-${order.id || idx}`}
-                className={`rounded-[28px] border p-4 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.5)] transition ${isSelected
-                  ? "border-blue-400/70 bg-blue-50/90 dark:border-blue-500/60 dark:bg-blue-500/10"
-                  : "border-slate-200/70 bg-white/88 dark:border-slate-700/70 dark:bg-slate-900/72"
-                  }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        #{order.orderNumber}
-                      </span>
-                      {!order.isViewed && (
-                        <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-                          {t("orders.newLabel")}
-                        </span>
-                      )}
-                      {order.metadata?.isGuestOrder && (
-                        <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                          {t("orders.guest")}
-                        </span>
-                      )}
-                    </div>
+            <OrdersMobileList
+        orders={orders}
+        loading={loading}
+        ordersLoadError={ordersLoadError}
+        selectedOrders={selectedOrders}
+        canSelectOrders={canSelectOrders}
+        isMerchant={isMerchant}
+        activeFilterCount={activeFilterCount}
+        search={filters.search}
+        density={tableDensity}
+        helpers={mobileListHelpers}
+        onOpenOrder={handleOpenOrder}
+        onToggleSelection={toggleOrderSelection}
+        onMarkAsViewed={handleMarkAsViewed}
+        onClearFilters={clearAllFilters}
+      />
 
-                    <div>
-                      <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">
-                        {getCustomerDisplayName(order)}
-                      </h3>
-                      {order.customerPhone && (
-                        <p
-                          className="mt-1 text-sm text-slate-500 dark:text-slate-400"
-                          dir="ltr"
-                        >
-                          {order.customerPhone}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {canSelectOrders && (
-                    <input
-                      type="checkbox"
-                      aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
-                      className="mt-1 h-5 w-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400"
-                      checked={isSelected}
-                      onChange={() => toggleOrderSelection(order.orderNumber)}
-                    />
-                  )}
-                </div>
-
-                {orderItemsSummary.hasQuantityOffers ? (
-                  <div className="mt-4 rounded-[20px] border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                    <div className="font-semibold">
-                      {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
-                    </div>
-                    <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
-                      {orderItemsSummary.secondaryLabel}
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-[20px] border border-slate-200/70 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/50">
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {t("orders.amount")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                      {formatPrice(getOrderAmount(order))}
-                    </p>
-                    <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                      {getOrderSourceText(order)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-[20px] border border-slate-200/70 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/50">
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {t("orders.time")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                      {getRelativeTime(order.createdAt || new Date().toISOString())}
-                    </p>
-                    <p
-                      className="mt-1 text-[11px] text-slate-500 dark:text-slate-400"
-                      title={formatDate(order.createdAt || new Date().toISOString())}
-                    >
-                      {formatDate(order.createdAt || new Date().toISOString())}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getPaymentStatusBadgeStyle(
-                      order.paymentStatus || "pending",
-                    )
-                      ? ""
-                      : getPaymentStatusColor(
-                          (order.paymentStatus || "pending").toLowerCase(),
-                        )}`}
-                    style={getPaymentStatusBadgeStyle(order.paymentStatus || "pending")}
-                  >
-                    {getPaymentStatusText(
-                      (order.paymentStatus || "pending").toLowerCase(),
-                    )}
-                  </span>
-                  {(() => {
-                    const unifiedStatus = getUnifiedStatusDisplay(order, t);
-                    return (
-                      <span className={unifiedStatus.className} style={unifiedStatus.style} aria-label={unifiedStatus.labelKey}>
-                        {unifiedStatus.text}
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleOpenOrder(order)}
-                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                    {t("orders.quickView")}
-                  </button>
-
-                  <Link
-                    to={`/orders/${order.orderNumber}`}
-                    onClick={() => {
-                      if (!order.isViewed) {
-                        handleMarkAsViewed(order.orderNumber);
-                      }
-                    }}
-                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                  >
-                    <ShoppingBagIcon className="h-4 w-4" />
-                    {t("orders.viewDetails")}
-                  </Link>
-
-                  {order.conversationId && (
-                    <Link
-                      to={`/whatsapp?conversationId=${order.conversationId}`}
-                      className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
-                    >
-                      <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                      {t("orders.conversation")}
-                    </Link>
-                  )}
-                </div>
-              </article>
-            );
-          })
-        )}
-      </div>
-
-      {/* Orders Table */}
-      <div className="hidden overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/88 shadow-[0_24px_80px_-56px_rgba(15,23,42,0.5)] dark:border-slate-700/70 dark:bg-slate-900/72 lg:block">
-        <div className="overflow-x-auto">
-          <table className="w-full text-right">
-            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
-              <tr>
-                {canSelectOrders && (
-                  <th className="w-10 px-3 py-2.5 lg:px-4">
-                    <input
-                      type="checkbox"
-                      aria-label={String(t("orders.selectAllOrders"))}
-                      className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
-                      onChange={toggleAllSelection}
-                      checked={
-                        orders.length > 0 &&
-                        orders.every((o) =>
-                          selectedOrders.includes(o.orderNumber),
-                        )
-                      }
-                    />
-                  </th>
-                )}
-                {columnsToRender.includes("orderNumber") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
-                    {t("orders.orderNumber")}
-                  </th>
-                )}
-                {columnsToRender.includes("customer") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
-                    {t("orders.customer")}
-                  </th>
-                )}
-                {columnsToRender.includes("amount") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
-                    {t("orders.amount")}
-                  </th>
-                )}
-                {columnsToRender.includes("status") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
-                    {t("orders.status")}
-                  </th>
-                )}
-                {columnsToRender.includes("payment") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
-                    {t("orders.payment")}
-                  </th>
-                )}
-                {columnsToRender.includes("date") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
-                    {t("orders.date")}
-                  </th>
-                )}
-                {columnsToRender.includes("actions") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
-                    {t("orders.actions")}
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={`skeleton-${i}`} className="animate-pulse">
-                    {canSelectOrders && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-5 w-5 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("orderNumber") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                        <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("customer") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                        <div className="h-3 w-40 bg-gray-100 dark:bg-gray-800 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("amount") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("status") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("payment") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("date") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("actions") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-8 w-8 bg-gray-100 dark:bg-gray-800 rounded"></div>
-                      </td>
-                    )}
-                  </tr>
-                ))
-              ) : orders.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={tableColumnCount}
-                    className="px-6 py-10 text-center text-gray-500 dark:text-gray-400"
-                  >
-                    <div className="flex flex-col items-center justify-center">
-                      <ShoppingBagIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-                      <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              {ordersLoadError ? t("orders.failedToLoadOrders") : t("orders.noOrders")}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                orders.map((order, idx) => {
-                  const orderItemsSummary = summarizeOrderDocumentItems(order.items);
-                  return (
-                    <tr
-                      key={order.id || idx}
-                      onClick={() => {
-                        handleOpenOrder(order);
-                      }}
-                      className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/10 cursor-pointer transition-all duration-200 group ${selectedOrders.includes(order.orderNumber)
-                        ? "bg-blue-50/60 dark:bg-blue-900/30"
-                        : !order.isViewed
-                          ? "bg-blue-50 dark:bg-blue-900/20"
-                          : ""
-                        }`}
-                    >
-                      {canSelectOrders && (
-                        <td
-                          className="px-3 py-2.5 lg:px-4"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
-                            className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
-                            checked={selectedOrders.includes(order.orderNumber)}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              toggleOrderSelection(order.orderNumber);
-                            }}
-                          />
-                        </td>
-                      )}
-                      {columnsToRender.includes("orderNumber") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex flex-col gap-1.5">
-                            <div>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">
-                                #{order.orderNumber}
-                              </span>
-                              {order.metadata?.isGuestOrder && (
-                                <span className="mr-2 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
-                                  {t("orders.guest")}
-                                </span>
-                              )}
-                              {!order.isViewed && (
-                                <span className="mr-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-200">
-                                  {t("orders.newLabel")}
-                                </span>
-                              )}
-                            </div>
-                            {orderItemsSummary.hasQuantityOffers ? (
-                              <div className="max-w-[240px] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-100">
-                                <div className="font-semibold">
-                      {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
-                                </div>
-                                <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
-                                  {orderItemsSummary.secondaryLabel}
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-                        </td>
-                      )}
-                      {columnsToRender.includes("customer") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex flex-col">
-                            <span className="text-gray-900 dark:text-gray-100 font-medium">
-                              {getCustomerDisplayName(order)}
-                            </span>
-                            {order.customerPhone && (
-                              <span
-                                className="text-gray-500 dark:text-gray-400 text-sm"
-                                dir="ltr"
-                              >
-                                {order.customerPhone}
-                              </span>
-                            )}
-                            {order.extractionMethod && (
-                              <span className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                                {order.extractionMethod === "ai_enhanced"
-                                  ? t("orders.enhancedExtraction")
-                                  : order.extractionMethod === "ai_basic"
-                                    ? t("orders.basicExtraction")
-                                    : order.extractionMethod === "manual"
-                                      ? t("orders.manual")
-                                      : order.extractionMethod}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                      {columnsToRender.includes("amount") && (
-                        <td className="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100 lg:px-4">
-                          {(() => {
-                            try {
-                              // PRIORITIZE: subtotal + shipping + tax for consistency with OrderDetails
-                              const subtotal =
-                                typeof order.subtotal === "number"
-                                  ? order.subtotal
-                                  : 0;
-                              const shipping =
-                                typeof order.shipping === "number"
-                                  ? order.shipping
-                                  : 0;
-                              const tax =
-                                typeof order.tax === "number" ? order.tax : 0;
-
-                              const amount =
-                                subtotal + shipping + tax || order.total || 0;
-                              return formatPrice(amount);
-                            } catch (e) {
-                              return "0.00";
-                            }
-                          })()}
-                        </td>
-                      )}
-                      {columnsToRender.includes("status") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex flex-col gap-1">
-                            {(() => {
-                              const unifiedStatus = getUnifiedStatusDisplay(order, t);
-                              return (
-                                <span
-                                  className={unifiedStatus.className}
-                                  style={unifiedStatus.style}
-                                  aria-label={unifiedStatus.labelKey}
-                                >
-                                  {unifiedStatus.text}
-                                </span>
-                              );
-                            })()}
-                            {order.isScheduled &&
-                              order.scheduledDeliveryDate && (
-                                <span
-                                  className="text-xs text-gray-600 dark:text-gray-400"
-                                  dir="ltr"
-                                >
-                                  📅{" "}
-                                  {new Date(
-                                    order.scheduledDeliveryDate,
-                                  ).toLocaleDateString("ar-EG", {
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </span>
-                              )}
-                            {order.confidence && (
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${getConfidenceColor(order.confidence)}`}
-                              >
-                                {getConfidenceIcon(order.confidence)}
-                                <span className="mr-1">
-                                  {(order.confidence * 100).toFixed(0)}%
-                                </span>
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                      {columnsToRender.includes("payment") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusBadgeStyle(
-                              order.paymentStatus || "pending",
-                            )
-                              ? ""
-                              : getPaymentStatusColor(
-                                  (order.paymentStatus || "pending").toLowerCase(),
-                                )}`}
-                            style={getPaymentStatusBadgeStyle(order.paymentStatus || "pending")}
-                          >
-                            {getPaymentStatusText(
-                              (order.paymentStatus || "pending").toLowerCase(),
-                            )}
-                          </span>
-                        </td>
-                      )}
-                      {columnsToRender.includes("date") && (
-                        <td
-                          className="px-3 py-2.5 text-sm text-gray-500 dark:text-gray-400 lg:px-4"
-                          title={formatDate(
-                            order.createdAt || new Date().toISOString(),
-                          )}
-                        >
-                          {(() => {
-                            try {
-                              return getRelativeTime(
-                                order.createdAt || new Date().toISOString(),
-                              );
-                            } catch (e) {
-                              return "-";
-                            }
-                          })()}
-                        </td>
-                      )}
-                      {columnsToRender.includes("actions") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenOrder(order);
-                              }}
-                              aria-label={`${t("orders.quickView")} ${order.orderNumber}`}
-                              className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              title={t("orders.quickView")}
-                            >
-                              <EyeIcon className="w-5 h-5" />
-                            </button>
-                            <Link
-                              to={`/orders/${order.orderNumber}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (!order.isViewed) {
-                                  handleMarkAsViewed(order.orderNumber);
-                                }
-                              }}
-                              aria-label={`${t("orders.viewFullDetails")} ${order.orderNumber}`}
-                              className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              title={t("orders.viewFullDetails")}
-                            >
-                              <ShoppingBagIcon className="w-5 h-5" />
-                            </Link>
-                            {order.conversationId && (
-                              <Link
-                                to={`/whatsapp?conversationId=${order.conversationId}`}
-                                onClick={(e) => e.stopPropagation()}
-                                aria-label={`${t("orders.conversation")} ${order.orderNumber}`}
-                                className="p-1 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
-                                title={t("orders.conversation")}
-                              >
-                                <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                              </Link>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Controls */}
-        {!loading && orders.length > 0 && (
-          <div className="bg-gray-50 dark:bg-gray-900 px-3 py-2.5 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4 lg:px-4">
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                {t("orders.showing")} {(page - 1) * limit + 1} {t("orders.to")}{" "}
-                {Math.min(page * limit, totalOrders)} {t("orders.of")}{" "}
-                {totalOrders} {t("orders.orders2")}
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("orders.show")}
-                </label>
-                <select
-                  aria-label={String(t("orders.ordersPerPage"))}
-                  value={limit}
-                  onChange={(e) => handleLimitChange(parseInt(e.target.value))}
-                  className="theme-native-control px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-sm transition-colors"
-                >
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                  <option value="200">200</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-                className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-white dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-300"
-              >
-                <ChevronRightIcon className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let p = i + 1;
-                  if (totalPages > 5 && page > 3) {
-                    p = page - 2 + i;
-                  }
-                  if (p > totalPages) return null;
-
-                  return (
-                    <button
-                      key={p}
-                      onClick={() => handlePageChange(p)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${page === p
-                        ? "bg-blue-600 dark:bg-blue-500 text-white"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        }`}
-                    >
-                      {p}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages}
-                className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-white dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-300"
-              >
-                <ChevronLeftIcon className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <OrdersTable
+        orders={orders}
+        loading={loading}
+        ordersLoadError={ordersLoadError}
+        selectedOrders={selectedOrders}
+        canSelectOrders={canSelectOrders}
+        isMerchant={isMerchant}
+        activeFilterCount={activeFilterCount}
+        search={filters.search}
+        columns={columnsToRender}
+        columnCount={tableColumnCount}
+        density={tableDensity}
+        page={page}
+        totalPages={totalPages}
+        totalOrders={totalOrders}
+        limit={limit}
+        helpers={tableHelpers}
+        onOpenOrder={handleOpenOrder}
+        onToggleSelection={toggleOrderSelection}
+        onToggleAllSelection={toggleAllSelection}
+        onMarkAsViewed={handleMarkAsViewed}
+        onClearFilters={clearAllFilters}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+        onDensityChange={changeTableDensity}
+      />
 
       {!loading && orders.length > 0 && (
-        <div className="rounded-[26px] border border-slate-200/70 bg-white/88 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/72 lg:hidden">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {t("orders.currentPage")}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                {page} / {Math.max(totalPages, 1)}
-              </p>
-            </div>
-            <div className="text-left">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {t("orders.currentlyShown")}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                {Math.min(page * limit, totalOrders)} / {totalOrders}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 1}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-               {t("orders.previous")}
-            </button>
-            <button
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page === totalPages}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-               {t("orders.next")}
-            </button>
-            <select
-              aria-label={String(t("orders.ordersPerPage"))}
-              value={limit}
-              onChange={(e) => handleLimitChange(parseInt(e.target.value))}
-              className={`${fieldClassName} w-auto min-w-[88px] px-3`}
-            >
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="200">200</option>
-            </select>
-          </div>
-        </div>
+        <OrdersPagination
+          variant="mobile"
+          page={page}
+          totalPages={totalPages}
+          totalOrders={totalOrders}
+          limit={limit}
+          density={tableDensity}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+          onDensityChange={changeTableDensity}
+        />
       )}
       </div>
 
       {/* Enhanced Order Modal */}
       {selectedOrder && (
-        <EnhancedOrderModal
-          order={selectedOrder}
-          isOpen={showOrderModal}
-          canManagePaymentStatus={!isMerchant}
-          orderStatuses={orderStatuses}
-          onClose={() => {
-            setShowOrderModal(false);
-            setSelectedOrder(null);
-          }}
-          onOrderUpdate={(updatedOrder) => {
-            setSelectedOrder(updatedOrder);
-            setOrders(
-              orders.map((o) =>
-                o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
-              ),
-            );
-          }}
-        />
+        <ErrorBoundary
+          fallback={
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
+              <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {t("orders.modalLoadFailed")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowOrderModal(false)}
+                  className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  {t("orders.close")}
+                </button>
+              </div>
+            </div>
+          }
+        >
+          <React.Suspense
+            fallback={
+              <div className="flex items-center justify-center p-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+              </div>
+            }
+          >
+            <EnhancedOrderModal
+              order={selectedOrder}
+              isOpen={showOrderModal}
+              canManagePaymentStatus={!isMerchant}
+              orderStatuses={orderStatuses}
+              onClose={() => {
+                setShowOrderModal(false);
+                setSelectedOrder(null);
+              }}
+              onOrderUpdate={(updatedOrder) => {
+                setSelectedOrder(updatedOrder);
+                setOrders(
+                  orders.map((o) =>
+                    o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
+                  ),
+                );
+              }}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
 
       {selectedInvoice && (
-        <InvoiceModal
-          invoice={selectedInvoice}
-          onClose={() => setSelectedInvoice(null)}
-        />
+        <ErrorBoundary
+          fallback={
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
+              <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {t("orders.modalLoadFailed")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedInvoice(null)}
+                  className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  {t("orders.close")}
+                </button>
+              </div>
+            </div>
+          }
+        >
+          <React.Suspense
+            fallback={
+              <div className="flex items-center justify-center p-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+              </div>
+            }
+          >
+            <InvoiceModal
+              invoice={selectedInvoice}
+              onClose={() => setSelectedInvoice(null)}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
 
 

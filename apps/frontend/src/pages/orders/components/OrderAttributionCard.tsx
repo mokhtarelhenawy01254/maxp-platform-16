@@ -1,11 +1,16 @@
-import { Globe as GlobeAltIcon, Circle as HashtagIcon, Link as LinkIcon, Circle as MegaphoneIcon, Clock as ClockIcon } from 'lucide-react';
-import React from "react";
-;
+﻿import React from "react";
+import {
+  GlobeAltIcon,
+  HashtagIcon,
+  LinkIcon,
+  MegaphoneIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { OrderAttributionData, OrderDetailsType } from "../types";
 
 interface OrderAttributionCardProps {
-  order: OrderDetailsType;
+  order: Pick<OrderDetailsType, "metadata">;
 }
 
 const parseAttribution = (value: unknown): OrderAttributionData | null => {
@@ -67,7 +72,15 @@ const DetailRow: React.FC<{
 const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) => {
   const { formatDateTime } = useDateFormat();
   const attribution = parseAttribution(order.metadata?.attribution);
-  const sourceMedium = [attribution?.source, attribution?.medium].filter(Boolean).join(" / ");
+  const sourceLabel = (value?: string) => {
+    if (!value) return undefined;
+    return value === "audience_network" || value === "audience-network"
+      ? "Audience Network"
+      : value;
+  };
+  const sourceMedium = [sourceLabel(attribution?.source), attribution?.medium]
+    .filter(Boolean)
+    .join(" / ");
   const campaignLabel = attribution?.campaignName || attribution?.campaignId;
 
   return (
@@ -78,18 +91,18 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            بيانات الحملة
+            ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪¡┘à┘ä╪⌐
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            المصدر الإعلاني والربط التسويقي للطلب
+            ╪º┘ä┘à╪╡╪»╪▒ ╪º┘ä╪Ñ╪╣┘ä╪º┘å┘è ┘ê╪º┘ä╪▒╪¿╪╖ ╪º┘ä╪¬╪│┘ê┘è┘é┘è ┘ä┘ä╪╖┘ä╪¿
           </p>
         </div>
       </div>
 
       {!attribution ? (
         <p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-          لا توجد بيانات حملة محفوظة لهذا الطلب. ستظهر هنا الطلبات الجديدة القادمة من روابط
-          معلّمة أو بعد تفعيل الالتقاط الجديد.
+          ┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ╪¡┘à┘ä╪⌐ ┘à╪¡┘ü┘ê╪╕╪⌐ ┘ä┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿. ╪│╪¬╪╕┘ç╪▒ ┘ç┘å╪º ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪º┘ä┘é╪º╪»┘à╪⌐ ┘à┘å ╪▒┘ê╪º╪¿╪╖
+          ┘à╪╣┘ä┘æ┘à╪⌐ ╪ú┘ê ╪¿╪╣╪» ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪º┘ä╪¬┘é╪º╪╖ ╪º┘ä╪¼╪»┘è╪».
         </p>
       ) : (
         <div className="space-y-3">
@@ -115,17 +128,17 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
 
           <DetailRow
             icon={<GlobeAltIcon />}
-            label="المصدر / الوسيط"
+            label="╪º┘ä┘à╪╡╪»╪▒ / ╪º┘ä┘ê╪│┘è╪╖"
             value={sourceMedium}
           />
           <DetailRow
             icon={<MegaphoneIcon />}
-            label="اسم الحملة"
+            label="╪º╪│┘à ╪º┘ä╪¡┘à┘ä╪⌐"
             value={attribution.campaignName}
           />
           <DetailRow
             icon={<HashtagIcon />}
-            label="رقم الحملة"
+            label="╪▒┘é┘à ╪º┘ä╪¡┘à┘ä╪⌐"
             value={attribution.campaignId}
             mono
           />
@@ -143,7 +156,7 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
           />
           <DetailRow
             icon={<LinkIcon />}
-            label="صفحة الهبوط"
+            label="╪╡┘ü╪¡╪⌐ ╪º┘ä┘ç╪¿┘ê╪╖"
             value={attribution.landingPath}
             mono
           />
@@ -155,7 +168,7 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
           />
           <DetailRow
             icon={<ClockIcon />}
-            label="وقت الالتقاط"
+            label="┘ê┘é╪¬ ╪º┘ä╪º┘ä╪¬┘é╪º╪╖"
             value={attribution.capturedAt ? formatDateTime(attribution.capturedAt) : undefined}
           />
         </div>

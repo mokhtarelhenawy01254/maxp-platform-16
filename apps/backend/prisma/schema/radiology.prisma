@@ -1,0 +1,527 @@
+﻿// Radiology module - exam types and studies
+model RadiologyExamCategory {
+  id           String   @id @default(cuid())
+  companyId    String?
+  name         String
+  nameEn       String?
+  abbreviation String?
+  modality     String?    // CT, MR, CR, US, DXA, NM, PT, FLUOROSCOPY...
+  parentId     String?
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parent       RadiologyExamCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children     RadiologyExamCategory[] @relation("CategoryTree")
+  examTypes    RadiologyExamType[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model RadiologyExamType {
+  id           String   @id @default(cuid())
+  companyId    String?
+  name         String
+  category     String?    // snapshot of category name at creation (legacy display/back-compat)
+  categoryId   String?    // RadiologyExamCategory link (category is its denormalized name)
+  abbreviation String?
+  price        Float    @default(0)
+  isAddition   Boolean  @default(false) // ╪Ñ╪╢╪º┘ü╪⌐ ┘ü╪¡╪╡ (╪╡╪¿╪║╪⌐/┘à╪┤╪▒┘ê╪¿╪º╪¬ ╪¬╪¿╪º┘è┘å...) ΓÇö ╪¬╪╕┘ç╪▒ ┘ü┘è ╪Ñ╪╢╪º┘ü╪º╪¬ ╪º┘ä╪»╪▒╪º╪│╪⌐
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  examCategory RadiologyExamCategory? @relation(fields: [categoryId], references: [id])
+}
+
+model RadiologyDevice {
+  id         String   @id @default(cuid())
+  companyId  String?
+  name       String
+  room       String?
+  modality   String?    // CT, MRI, X-Ray, US... (optional)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  roomLinks RadiologyRoomDevice[]
+}
+
+/// ┘å╪╕╪º┘à ╪º┘ä╪║╪▒┘ü ΓÇö ┘â┘ä ╪║╪▒┘ü╪⌐ ┘ä┘è┘ç╪º ╪º╪│╪¬┘è╪╣╪º╪¿ ┘ü┘è ╪º┘ä╪│╪º╪╣╪⌐ + ┘à╪¼┘à┘ê╪╣╪⌐ ╪ú╪¼┘ç╪▓╪⌐ ┘ê╪ú╪╖╪¿╪º╪í (┘à╪┤ ╪½╪º╪¿╪¬┘è┘å)
+model RadiologyRoom {
+  id              String   @id @default(cuid())
+  companyId       String?
+  name            String
+  capacityPerHour Int      @default(1) // ╪╣╪»╪» ╪º┘ä╪º╪│╪¬┘è╪╣╪º╪¿ ┘ü┘è ╪º┘ä╪│╪º╪╣╪⌐
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  devices RadiologyRoomDevice[]
+  doctors RadiologyRoomDoctor[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+/// ╪▒╪¿╪╖ ╪º┘ä╪║╪▒┘ü╪⌐ ╪¿╪º┘ä╪ú╪¼┘ç╪▓╪⌐ (╪ú┘â╪¬╪▒ ┘à┘å ╪¼┘ç╪º╪▓ ┘ä┘â┘ä ╪║╪▒┘ü╪⌐)
+model RadiologyRoomDevice {
+  id        String          @id @default(cuid())
+  roomId    String
+  deviceId  String
+  createdAt DateTime        @default(now())
+
+  room   RadiologyRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  device RadiologyDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, deviceId])
+  @@index([deviceId])
+}
+
+/// ╪▒╪¿╪╖ ╪º┘ä╪║╪▒┘ü╪⌐ ╪¿╪º┘ä╪ú╪╖╪¿╪º╪í (╪ú┘â╪¬╪▒ ┘à┘å ╪»┘â╪¬┘ê╪▒ ┘é╪º╪¿┘ä ┘ä┘ä╪¬╪║┘è┘è╪▒)
+model RadiologyRoomDoctor {
+  id            String              @id @default(cuid())
+  roomId        String
+  radiologistId String
+  createdAt     DateTime            @default(now())
+
+  room        RadiologyRoom        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  radiologist RadiologyRadiologist @relation(fields: [radiologistId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, radiologistId])
+  @@index([radiologistId])
+}
+
+model RadiologyStudy {
+  id                String   @id @default(cuid())
+  companyId         String?
+  studyNumber       String?   @unique // RAD-YYYYMMDD-XXXX
+  patientId         String?    // external ref to booking Patient
+  patientName       String
+  patientPhone      String?
+  patientGender     String?
+  patientAge        String?
+  nationalId        String?    // ╪º┘ä╪▒┘é┘à ╪º┘ä┘é┘ê┘à┘è
+  insuranceNumber   String?    // ╪▒┘é┘à ╪º┘ä╪¬╪ú┘à┘è┘å
+  patientFlags      Json?      // array of risk flag keys (pregnancy, contrast_allergy, renal, bleeding, diabetic, claustrophobia, pacemaker)
+  examTypeId        String?
+  examTypeName      String?
+  modality          String?
+  deviceId          String?    // RadiologyDevice id
+  deviceName        String?    // device/room name snapshot at booking
+  status            String   @default("PENDING_IMAGING") // PENDING_IMAGING | IMAGED | PENDING_REPORT | REPORTED | DELIVERED
+  orderStatus       String   @default("PENDING") // PENDING | CHECKED_IN | IN_PROGRESS | COMPLETED | CANCELLED
+  emergency         Boolean  @default(false)
+  withContrast      Boolean  @default(false)
+  referralDoctor    String?
+  referringPhysicianId String?  // RadiologyReferringPhysician id
+  referralSourceId  String?    // RadiologyReferralSource id ΓÇö ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐
+  referralSourceName String?   // snapshot ┘à┘å ╪º╪│┘à ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐
+  marketingRepId    String?    // RadiologyMarketingRep id ΓÇö ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ╪º┘ä┘à╪│╪ñ┘ê┘ä
+  marketingRepName  String?    // snapshot ┘à┘å ╪º╪│┘à ╪º┘ä┘à┘å╪»┘ê╪¿
+  isExternalReferral Boolean  @default(false) // ╪▒┘ê╪¬╪º┘å╪º ╪¬┘Å╪¡┘è┘ä ╪º┘ä┘à╪▒┘è╪╢ ┘ä┘ä╪«╪º╪▒╪¼ ┘ä╪¬┘å┘ü┘è╪░ ╪«╪»┘à╪⌐
+  externalPartnerId String?    // RadiologyExternalPartner id
+  externalPartnerName String?  // snapshot ┘à┘å ╪º╪│┘à ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä╪«╪º╪▒╪¼┘è
+  additionIds       Json?    // array of RadiologyExamAddition ids
+  additionAmount    Float    @default(0) // extra charges (contrast, etc.)
+  priceSnapshot     Float    @default(0) // exam price at study creation (entity-resolved)
+  billingType       String   @default("PATIENT") // PATIENT pays directly | INSURANCE billed via entity invoice
+  payerType         String   @default("CUSTOMER") // CUSTOMER | INSURANCE | REFERRAL | PARTNER ΓÇö ┘à┘å ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪╣┘å ╪º┘ä╪»┘ü╪╣
+  paymentDestination String  @default("ME") // ME (╪º┘ä╪»┘ü╪╣ ╪╣┘å╪»┘è) | PARTNER (╪º┘ä╪»┘ü╪╣ ╪╣┘å╪» ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä┘à┘å┘ü╪░)
+  paidAmount        Float    @default(0)
+  paymentStatus     String   @default("UNPAID") // UNPAID | PARTIAL | PAID
+  notes             String?
+  accessionNumber   String?
+  submissionStatus  String   @default("NOT_SUBMITTED") // NOT_SUBMITTED | SUBMITTED | REPORT_READY  (Rology tracking)
+  rologyStudyLink   String?
+  rologyReportLink  String?
+  rologyRadiologist String?
+  reportReceivedAt  DateTime?
+  insuranceCompanyId   String?   // entity that sent the patient (booking InsuranceCompany)
+  insuranceCompanyName String?
+  assignedRadiologistId   String?  // RadiologyRadiologist id
+  assignedRadiologistName String?
+  radiologistLocation     String?  // ON_SITE | OFF_SITE
+  reportAssignedAt        DateTime?
+  tagIds                  Json?    // array of RadiologyExamTag ids
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  images            RadiologyStudyImage[]
+  report            RadiologyReport?
+  appointmentId     String?   // loose link back to the booking (one appointment ΓåÆ possibly many studies)
+  statusHistory     RadiologyStudyStatusHistory[]
+
+  @@index([companyId])
+  @@index([patientId])
+  @@index([examTypeId])
+  @@index([status])
+  @@index([studyNumber])
+  @@index([appointmentId])
+}
+
+model RadiologyStudyImage {
+  id                String   @id @default(cuid())
+  studyId           String
+  fileName          String
+  storedName        String
+  fileSize          Int
+  mimeType          String?  @default("application/dicom")
+  seriesDescription String?
+  sliceIndex        Int?
+  metadataJson      String?    // JSON string of parsed DICOM tags
+  data              Bytes      // raw DICOM file bytes
+  createdAt         DateTime @default(now())
+  study             RadiologyStudy @relation(fields: [studyId], references: [id])
+}
+
+model RadiologyReport {
+  id           String   @id @default(cuid())
+  studyId      String   @unique
+  reportText   String
+  reportStatus String   @default("DRAFT") // DRAFT | REVIEWED | SIGNED | DELIVERED
+  signedBy     String?
+  signedAt     DateTime?
+  typedBy      String?
+  typedAt      DateTime?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  finalizedBy  String?
+  finalizedAt  DateTime?
+  // Critical findings (ACR Actionable Reporting): CAT1 (immediate) | CAT2 (within hours) | CAT3 (follow-up)
+  criticalCategory       String? // NONE | CAT1 | CAT2 | CAT3
+  criticalFindingText    String?
+  criticalFlaggedBy      String?
+  criticalFlaggedAt      DateTime?
+  criticalAcknowledgedBy String?
+  criticalAcknowledgedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  study        RadiologyStudy @relation(fields: [studyId], references: [id])
+}
+
+model RadiologyInsuranceInvoice {
+  id                   String   @id @default(cuid())
+  companyId            String?
+  invoiceNumber        String?  @unique // INS-YYYYMMDD-XXXX
+  insuranceCompanyId   String
+  insuranceCompanyName String?
+  totalAmount          Float    @default(0)
+  paidAmount           Float    @default(0)
+  remainingAmount      Float    @default(0)
+  status               String   @default("OPEN") // OPEN | PARTIAL | PAID
+  periodFrom           DateTime?
+  periodTo             DateTime?
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  items                RadiologyInsuranceInvoiceItem[]
+}
+
+model RadiologyInsuranceInvoiceItem {
+  id           String   @id @default(cuid())
+  invoiceId    String
+  studyId      String
+  patientName  String
+  examTypeName String?
+  amount       Float    @default(0)
+  createdAt    DateTime @default(now())
+  invoice      RadiologyInsuranceInvoice @relation(fields: [invoiceId], references: [id])
+}
+
+model RadiologyInsuranceLedgerEntry {
+  id                   String   @id @default(cuid())
+  companyId            String?
+  insuranceCompanyId   String
+  insuranceCompanyName String?
+  type                 String   // PAYMENT | ADJUSTMENT
+  amount               Float    @default(0)
+  note                 String?
+  createdAt            DateTime @default(now())
+}
+
+model RadiologyRadiologist {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  location  String   @default("ON_SITE") // ON_SITE | OFF_SITE
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roomLinks RadiologyRoomDoctor[]
+}
+
+model RadiologyExamTag {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RadiologyAppointment {
+  id              String   @id @default(cuid())
+  bookingNo       Int?      // sequential booking number per company (starts at 1)
+  companyId       String?
+  patientId       String?   // external ref to booking Patient
+  patientName     String
+  patientPhone    String?
+  patientGender    String?
+  patientAge       String?
+  nationalId       String?
+  insuranceNumber  String?
+  patientFlags     Json?    // array of risk flag keys
+  examTypeId       String?
+  examTypeName     String?
+  examTypeIds      Json?      // array of exam type ids (multi-exam booking)
+  deviceId         String?
+  deviceName       String?
+  insuranceCompanyId   String?
+  additionIds          Json?
+  additionAmount       Float    @default(0)
+  referringPhysicianId String?
+  referralDoctor       String?
+  referralSourceId     String?
+  referralSourceName   String?
+  marketingRepId       String?
+  marketingRepName     String?
+  isExternalReferral   Boolean  @default(false)
+  externalPartnerId    String?
+  externalPartnerName  String?
+  payerType            String   @default("CUSTOMER") // CUSTOMER | INSURANCE | REFERRAL | PARTNER
+  paymentDestination   String   @default("ME") // ME (╪º┘ä╪»┘ü╪╣ ╪╣┘å╪»┘è) | PARTNER (╪º┘ä╪»┘ü╪╣ ╪╣┘å╪» ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä┘à┘å┘ü╪░)
+  emergency            Boolean  @default(false)
+  appointmentDate  DateTime?
+  appointmentTime  String? // HH:MM
+  branchId         String?
+  status           String   @default("SCHEDULED") // SCHEDULED|CHECKED_IN|DONE|CANCELLED
+  priceSnapshot    Float    @default(0) // total exam prices at booking (entity-resolved) ΓÇö ┘é╪¿┘ä ╪º┘ä╪¬╪¡┘ê┘è┘ä
+  paidAmount       Float    @default(0) // cash collected on the booking before convert
+  paymentStatus    String   @default("UNPAID") // UNPAID | PARTIAL | PAID
+  notes            String?
+  studyId          String?   // loose link to the main study created on convert
+  createdBy        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  payments RadiologyAppointmentPayment[]
+
+  @@index([companyId])
+  @@index([patientId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@index([studyId])
+}
+
+/// ╪»┘ü╪╣╪º╪¬ ┘à╪¡╪╡┘æ┘ä╪⌐ ╪╣┘ä┘ë ╪º┘ä╪¡╪¼╪▓ ┘é╪¿┘ä ╪º┘ä╪¬╪¡┘ê┘è┘ä (╪º┘ä╪º╪│╪¬┘é╪¿╪º┘ä) ΓÇö ╪¬┘Å┘å┘é┘ä ┘ä┘ä╪»╪▒╪º╪│╪⌐ ╪╣┘å╪» ╪º┘ä╪¬╪¡┘ê┘è┘ä
+model RadiologyAppointmentPayment {
+  id            String   @id @default(cuid())
+  companyId     String?
+  appointmentId String
+  amount        Float    @default(0)
+  method        String?  // CASH | CARD | BANK | VODAFONE_CASH | OTHER
+  note          String?
+  paidBy        String?
+  createdAt     DateTime @default(now())
+
+  appointment RadiologyAppointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([appointmentId])
+}
+
+model RadiologySetting {
+  id        String   @id @default(cuid())
+  companyId String?
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, key])
+  @@index([companyId])
+}
+
+model RadiologyReferringPhysician {
+  id              String   @id @default(cuid())
+  companyId       String?
+  name            String
+  phone           String?
+  specialty       String?
+  marketingRepId  String?  // ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪╣┘å ┘ç╪░╪º ╪º┘ä╪╖╪¿┘è╪¿
+  commissionType  String   @default("NONE") // NONE|PERCENTAGE|FIXED
+  commissionValue Float    @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([marketingRepId])
+}
+
+model RadiologyExamAddition {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  price     Float    @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ΓÇö ┘à┘ê╪╕┘ü ╪▒┘ê╪¬╪º┘å╪º ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪╣┘å ╪º┘ä╪ú╪╖╪¿╪º╪í ╪º┘ä┘à╪¡┘ê┘æ┘ä┘è┘å ┘ê/╪ú┘ê ╪¼┘ç╪º╪¬ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐
+model RadiologyMarketingRep {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  phone     String?
+  userId    String?    // ╪▒╪¿╪╖ ╪º╪«╪¬┘è╪º╪▒┘è ╪¿╪¡╪│╪º╪¿ ┘à╪│╪¬╪«╪»┘à ╪▒┘ê╪¬╪º┘å╪º
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+/// ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐ ΓÇö ╪º┘ä╪¼┘ç╪⌐ ╪º┘ä╪¬┘è ╪¼╪º╪í ┘à┘å┘ç╪º ╪º┘ä┘à╪▒┘è╪╢ (╪╣┘è╪º╪»╪⌐/┘à╪▒┘â╪▓/┘à╪╣┘à┘ä/┘à╪│╪¬╪┤┘ü┘ë/╪┤╪▒┘â╪⌐/╪┤╪¿┘â╪⌐ ╪╖╪¿┘è╪⌐)
+model RadiologyReferralSource {
+  id                  String   @id @default(cuid())
+  companyId           String?
+  name                String
+  type                String   @default("OTHER") // CLINIC | MEDICAL_CENTER | LAB | HOSPITAL | COMPANY | MEDICAL_NETWORK | OTHER
+  phone               String?
+  contactName         String?
+  marketingRepId      String?  // ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪╣┘å ┘ç╪░┘ç ╪º┘ä╪¼┘ç╪⌐
+  insuranceCompanyId  String?  // ╪▒╪º╪¿╪╖ ╪º╪«╪¬┘è╪º╪▒┘è ┘ä╪┤╪▒┘â╪⌐ ╪¬╪ú┘à┘è┘å (┘ä┘ä╪¬╪¡╪╡┘è┘ä/┘à┘å ┘ê╪º┘ä┘è) ΓÇö ┘ä┘è╪│╪¬ ╪¼┘ç╪⌐ ╪Ñ╪¡╪º┘ä╪⌐ ╪¿╪¡╪» ╪░╪º╪¬┘ç╪º
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([marketingRepId])
+  @@unique([companyId, name])
+}
+
+/// ╪▒╪¿╪╖ ╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä ╪¿╪¼┘ç╪º╪¬ ╪Ñ╪¡╪º┘ä╪¬┘ç (┘è╪╣┘à┘ä ┘ü┘è ╪ú┘â╪½╪▒ ┘à┘å ╪¼┘ç╪⌐)
+model RadiologyPhysicianSourceLink {
+  id          String   @id @default(cuid())
+  companyId   String?
+  physicianId String
+  sourceId    String
+
+  @@unique([physicianId, sourceId])
+  @@index([sourceId])
+}
+
+/// ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä╪«╪º╪▒╪¼┘è ΓÇö ┘à╪│╪º╪▒ ┘à╪«╪¬┘ä┘ü ╪╣┘å╪»┘à╪º ╪¬┘Å╪¡┘è┘ä ╪▒┘ê╪¬╪º┘å╪º ╪º┘ä┘à╪▒┘è╪╢ ┘ä┘ä╪«╪º╪▒╪¼ ┘ä╪¬┘å┘ü┘è╪░ ╪«╪»┘à╪⌐
+model RadiologyExternalPartner {
+  id          String   @id @default(cuid())
+  companyId   String?
+  name        String
+  phone       String?
+  contactName String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model RadiologyEntityPrice {
+  id                 String   @id @default(cuid())
+  companyId          String?
+  insuranceCompanyId String
+  examTypeId         String
+  price              Float    @default(0)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  @@unique([insuranceCompanyId, examTypeId])
+}
+
+model RadiologyStudyPayment {
+  id        String   @id @default(cuid())
+  companyId String?
+  studyId   String
+  amount    Float    @default(0)
+  method    String?  // CASH | CARD | BANK | OTHER
+  note      String?
+  paidBy    String?
+  createdAt DateTime @default(now())
+}
+
+model RadiologyShift {
+  id          String   @id @default(cuid())
+  companyId   String?
+  branchId    String?
+  cashierName String
+  status      String   @default("OPEN") // OPEN | CLOSED
+  openedBy    String?
+  openedAt    DateTime @default(now())
+  closedBy    String?
+  closedAt    DateTime?
+  createdAt   DateTime @default(now())
+  payments    RadiologyShiftPayment[]
+}
+
+model RadiologyShiftPayment {
+  id            String   @id @default(cuid())
+  companyId     String?
+  shiftId       String
+  studyId       String?
+  appointmentId String?   // RadiologyAppointment id when collected on the booking (before convert)
+  invoiceId     String?   // RadiologyInsuranceInvoice id when source = INSURANCE
+  source        String   @default("STUDY") // STUDY (patient direct) | APPOINTMENT (booking collection) | INSURANCE (insurance invoice collection)
+  type          String   // PAYMENT | REFUND
+  amount        Float    @default(0)
+  method        String?  // CASH | CARD | VODAFONE_CASH | BANK
+  note          String?
+  createdAt     DateTime @default(now())
+  shift         RadiologyShift @relation(fields: [shiftId], references: [id])
+}
+
+model RadiologyContract {
+  id              String   @id @default(cuid())
+  companyId       String?
+  name            String
+  region          String?
+  governorate     String?
+  discountType    String   @default("PERCENTAGE") // PERCENTAGE|CUSTOM|NONE
+  discountPercent Float    @default(0)
+  externalSample  Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model RadiologyReportTemplate {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  body      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RadiologyStudyStatusHistory {
+  id        String   @id @default(cuid())
+  companyId String?
+  studyId   String
+  dimension String   // ORDER | PREP | REPORT | PAYMENT
+  status    String
+  oldStatus String?
+  changedBy String?
+  userName  String?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  study     RadiologyStudy @relation(fields: [studyId], references: [id])
+
+  @@index([studyId])
+  @@index([dimension])
+}

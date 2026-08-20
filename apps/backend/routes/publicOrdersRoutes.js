@@ -92,6 +92,9 @@ router.post('/checkout-draft', async (req, res) => {
       subtotal: toCheckoutDraftAmount(req.body?.subtotal, 0),
       shippingCost: toCheckoutDraftAmount(req.body?.shippingCost, 0),
       total: toCheckoutDraftAmount(req.body?.total, 0),
+      ...(sanitizeOrderAttribution(req.body?.attribution)
+        ? { attribution: sanitizeOrderAttribution(req.body?.attribution) }
+        : {}),
     };
 
     const hasCheckoutSignal = Boolean(
@@ -146,6 +149,15 @@ router.post('/checkout-draft', async (req, res) => {
             checkoutUpdatedAt: now,
           },
         });
+
+    if (!existingCart && savedCart) {
+      try {
+        const { handleCartCreated } = require('./services/orders/incompleteCartMessagingService');
+        handleCartCreated(savedCart);
+      } catch (triggerError) {
+        console.warn('⚠️ [PUBLIC-ORDERS] Incomplete cart messaging trigger failed:', triggerError.message);
+      }
+    }
 
     if (typeof res.cookie === 'function') {
       res.cookie('cart_id', resolvedCartId, {
