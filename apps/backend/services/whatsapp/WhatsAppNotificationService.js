@@ -7,901 +7,14 @@ const { getSharedPrismaClient, safeQuery } = require('../sharedDatabase');
 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
 const WhatsAppManager = require('./WhatsAppManager');
 const axios = require('axios');
+const { isNonNotifiableStatus } = require('../../utils/orderStatusMeta');
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 📋 القوالب الافتراضية
+// 📋 القوالب الافتراضية (مستخرجة إلى templates/defaultTemplates.js — §5.1)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const DEFAULT_TEMPLATES = {
-  // إشعارات الطلبات
-  ORDER_CREATED: {
-    name: 'تأكيد الطلب التلقائي',
-    content: `مرحباً بك {customerName} ✨
-    
-شكراً لتسوقك معنا! لقد استلمنا طلبك بنجاح وجاري العمل عليه الآن.
+const DEFAULT_TEMPLATES = require('./templates/defaultTemplates');
 
-📋 تفاصيل الطلب:
-------------------------------
-🆔 رقم الطلب: {orderNumber}
-📅 التاريخ: {orderDate}
-📱 الهاتف: {customerPhone}
-
-{orderItems}
-
-🚚 الشحن: {shipping} {currency}
-💰 الإجمالي: {total} {currency}
-------------------------------
-
-📑 الخطوات القادمة:
-1️⃣ سيتم تأكيد البيانات وشحن الطلب في أسرع وقت.
-2️⃣ ستصلك رسالة عند خروج الطلب مع المندوب.
-
-🚚 تتبع طلبك من هنا: {trackingLink}
-
-يسعدنا دائماً خدمتك 🙏✨`,
-    variables: ['customerName', 'orderNumber', 'orderDate', 'customerPhone', 'orderItems', 'shipping', 'total', 'currency', 'trackingLink'],
-    hasButtons: true,
-    buttons: [
-      { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-      { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-      { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-    ],
-    footer: "Mokhtar Elhenawy Store"
-  },
-
-  ORDER_CONFIRMED: {
-    name: 'تأكيد الطلب',
-    content: `أهلا بحضرتك نورتينا 🌟
-
-✅ تم تأكيد الطلب
-
-👤 العميل: {customerName}
-📱 رقم الهاتف: {customerPhone}
-📦 رقم الطلب: {orderNumber}
-{orderItems}
-💰 الإجمالي: {total} {currency}
-
-🚀 سيتم البدء في التجهيز حالاً`,
-    variables: ['customerName', 'customerPhone', 'orderNumber', 'orderItems', 'total', 'currency'],
-    hasButtons: true,
-    buttons: [
-      { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-      { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-      { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-    ]
-  },
-
-  ORDER_PROCESSING: {
-    name: 'الطلب قيد التجهيز',
-    content: `مرحباً {customerName} 📦
-
-طلبك رقم #{orderNumber} قيد التجهيز الآن!
-
-سنخبرك عند الشحن.`,
-    variables: ['customerName', 'orderNumber'],
-    hasButtons: true,
-    buttons: [
-      { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-      { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-      { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-    ]
-  },
-
-  ORDER_SHIPPED: {
-    name: 'تم شحن الطلب',
-    content: `مرحباً {customerName} 🚚
-
-تم شحن طلبك رقم #{orderNumber}!
-
-📍 رقم التتبع: {trackingNumber}
-
-سيصلك خلال {estimatedDays} أيام.`,
-    variables: ['customerName', 'orderNumber', 'trackingNumber', 'estimatedDays'],
-    hasButtons: true,
-    buttons: [
-      { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-      { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-      { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-    ]
-  },
-
-  ORDER_OUT_FOR_DELIVERY: {
-    name: 'الطلب في الطريق',
-    content: `مرحباً {customerName} 🎉
-
-طلبك رقم #{orderNumber} في الطريق إليك!
-
-📞 سيتواصل معك المندوب قريباً.
-
-يرجى التأكد من توفرك لاستلام الطلب.`,
-    variables: ['customerName', 'orderNumber'],
-    hasButtons: true,
-    buttons: [
-      { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-      { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-      { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-    ]
-  },
-
-  ORDER_DELIVERED: {
-    name: 'تم التوصيل',
-    content: `مرحباً {customerName} ✅
-
-تم توصيل طلبك رقم #{orderNumber} بنجاح!
-
-نتمنى أن تكون راضياً عن منتجاتنا 😊
-
-شكراً لثقتك بنا! 🙏`,
-    variables: ['customerName', 'orderNumber'],
-    hasButtons: true,
-    buttons: [
-      { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-      { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-      { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-    ]
-  },
-
-  ORDER_CANCELLED: {
-    name: 'إلغاء الطلب',
-    content: `مرحباً {customerName}
-
-تم إلغاء طلبك رقم #{orderNumber}.
-
-السبب: {reason}
-
-إذا كان لديك أي استفسار، تواصل معنا.`,
-    variables: ['customerName', 'orderNumber', 'reason'],
-    hasButtons: true,
-    buttons: [
-      { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-      { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-      { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-    ]
-  },
-
-  PAYMENT_REMINDER: {
-    name: 'تذكير بالدفع',
-    content: `مرحباً {customerName} 👋
-
-لديك طلب معلق رقم #{orderNumber} بقيمة {total} {currency}.
-
-يرجى إتمام الدفع لتأكيد الطلب.
-
-للمساعدة، تواصل معنا.`,
-    variables: ['customerName', 'orderNumber', 'total', 'currency']
-  },
-
-  // إشعارات المنتجات
-  BACK_IN_STOCK: {
-    name: 'المنتج متوفر',
-    content: `مرحباً {customerName} 🎉
-
-المنتج الذي طلبته متوفر الآن!
-
-📦 {productName}
-💰 السعر: {price} {currency}
-
-اطلبه الآن قبل نفاد الكمية!`,
-    variables: ['customerName', 'productName', 'price', 'currency']
-  },
-
-  PRICE_DROP: {
-    name: 'تخفيض السعر',
-    content: `مرحباً {customerName} 🔥
-
-خبر سار! تم تخفيض سعر المنتج الذي تابعته:
-
-📦 {productName}
-💰 السعر الجديد: {newPrice} {currency}
-🏷️ كان: {oldPrice} {currency}
-
-وفر {discount}%! اطلب الآن!`,
-    variables: ['customerName', 'productName', 'newPrice', 'oldPrice', 'currency', 'discount']
-  },
-
-  // العربة المتروكة
-  CART_ABANDONED_1H: {
-    name: 'تذكير العربة - ساعة',
-    content: `مرحباً {customerName} 👋
-
-لاحظنا أنك تركت منتجات في عربة التسوق!
-
-🛒 لديك {itemCount} منتج بقيمة {total} {currency}
-
-أكمل طلبك الآن قبل نفاد الكمية!`,
-    variables: ['customerName', 'itemCount', 'total', 'currency']
-  },
-
-  CART_ABANDONED_24H: {
-    name: 'تذكير العربة - يوم',
-    content: `مرحباً {customerName} 👋
-
-منتجاتك لا تزال في انتظارك! 🛒
-
-لديك {itemCount} منتج بقيمة {total} {currency}
-
-لا تفوت الفرصة، أكمل طلبك الآن!`,
-    variables: ['customerName', 'itemCount', 'total', 'currency']
-  },
-
-  CART_ABANDONED_WITH_DISCOUNT: {
-    name: 'تذكير العربة مع خصم',
-    content: `مرحباً {customerName} 🎁
-
-هدية خاصة لك!
-
-خصم {discount}% على عربة التسوق الخاصة بك!
-
-🛒 {itemCount} منتج
-💰 السعر بعد الخصم: {discountedTotal} {currency}
-
-استخدم الكود: {couponCode}
-
-العرض ساري لمدة 24 ساعة فقط!`,
-    variables: ['customerName', 'itemCount', 'discount', 'discountedTotal', 'currency', 'couponCode']
-  },
-
-  // التسويق
-  PROMOTIONAL: {
-    name: 'عرض ترويجي',
-    content: `مرحباً {customerName} 🎉
-
-{promotionTitle}
-
-{promotionDescription}
-
-🏷️ خصم يصل إلى {discount}%
-
-العرض ساري حتى {endDate}
-
-تسوق الآن!`,
-    variables: ['customerName', 'promotionTitle', 'promotionDescription', 'discount', 'endDate']
-  },
-
-  COUPON_SENT: {
-    name: 'كوبون خصم',
-    content: `مرحباً {customerName} 🎁
-
-لديك كوبون خصم خاص!
-
-🏷️ الكود: {couponCode}
-💰 الخصم: {discount}%
-📅 صالح حتى: {expiryDate}
-
-استخدمه في طلبك القادم!`,
-    variables: ['customerName', 'couponCode', 'discount', 'expiryDate']
-  },
-
-  BIRTHDAY_WISH: {
-    name: 'تهنئة عيد ميلاد',
-    content: `عيد ميلاد سعيد {customerName}! 🎂🎉
-
-نتمنى لك عاماً سعيداً!
-
-هديتنا لك: خصم {discount}% على طلبك القادم!
-
-🎁 الكود: {couponCode}
-
-كل عام وأنت بخير! 💝`,
-    variables: ['customerName', 'discount', 'couponCode']
-  },
-
-  REVIEW_REQUEST: {
-    name: 'طلب تقييم',
-    content: `مرحباً {customerName} 😊
-
-نأمل أنك استمتعت بمنتجاتنا!
-
-نود سماع رأيك في طلبك رقم #{orderNumber}
-
-تقييمك يساعدنا على التحسين 🌟
-
-شكراً لك!`,
-    variables: ['customerName', 'orderNumber']
-  },
-
-  NEW_SIGNUP_WELCOME: {
-    name: 'رسالة ترحيب بعد التسجيل',
-    content: `أهلاً {customerName} 👋
-
-تم تسجيلك بنجاح في {companyName}.
-
-نوع التسجيل: {signupTypeLabel}
-تاريخ التسجيل: {createdAt}
-
-يسعدنا وجودك معنا، وإذا احتجت أي مساعدة يمكنك التواصل على:
-{supportLine}
-
-نتمنى لك تجربة رائعة معنا ✨`,
-    variables: ['customerName', 'companyName', 'signupTypeLabel', 'createdAt', 'supportLine']
-  },
-
-  NEW_SIGNUP_ADMIN_ALERT: {
-    name: 'تنبيه المدير بتسجيل جديد',
-    content: `تنبيه تسجيل جديد 🔔
-
-الاسم: {customerName}
-الهاتف: {customerPhone}
-البريد: {email}
-نوع التسجيل: {signupTypeLabel}
-الشركة: {companyName}
-التاريخ: {createdAt}`,
-    variables: ['customerName', 'customerPhone', 'email', 'signupTypeLabel', 'companyName', 'createdAt']
-  },
-
-  SUBSCRIPTION_CREATED: {
-    name: 'تأكيد إنشاء الاشتراك',
-    content: `مرحباً {customerName} ✅
-
-تم تفعيل الاشتراك بنجاح لشركة {companyName}.
-
-الخطة: {planName}
-الدورة: {billingCycleLabel}
-القيمة: {monthlyFee} {currency}
-تاريخ الفاتورة القادمة: {nextBillingDate}
-مدة التجربة: {trialDays} يوم
-
-بالتوفيق في رحلتك معنا 🚀`,
-    variables: ['customerName', 'companyName', 'planName', 'billingCycleLabel', 'monthlyFee', 'currency', 'nextBillingDate', 'trialDays']
-  },
-
-  SUBSCRIPTION_RENEWED: {
-    name: 'تجديد الاشتراك',
-    content: `مرحباً {customerName} ♻️
-
-تم تجديد الاشتراك الخاص بشركة {companyName}.
-
-الخطة: {planName}
-الدورة: {billingCycleLabel}
-القيمة: {monthlyFee} {currency}
-تاريخ الفاتورة القادمة: {nextBillingDate}
-
-شكراً لاستمرارك معنا 🌟`,
-    variables: ['customerName', 'companyName', 'planName', 'billingCycleLabel', 'monthlyFee', 'currency', 'nextBillingDate']
-  },
-
-  SUBSCRIPTION_CANCELLED: {
-    name: 'إلغاء الاشتراك',
-    content: `مرحباً {customerName}
-
-تم تسجيل إلغاء الاشتراك الخاص بشركة {companyName}.
-
-الخطة: {planName}
-سبب الإلغاء: {reason}
-تاريخ الإيقاف: {endDate}
-
-إذا رغبت في إعادة التفعيل لاحقاً فنحن جاهزون لخدمتك.`,
-    variables: ['customerName', 'companyName', 'planName', 'reason', 'endDate']
-  },
-
-  NEWSLETTER_SUBSCRIBED: {
-    name: 'تأكيد الاشتراك في النشرة',
-    content: `مرحباً {customerName} 💌
-
-تم تأكيد اشتراكك في تحديثات {companyName}.
-
-تاريخ الاشتراك: {subscribedAt}
-
-سنرسل لك الأخبار والعروض المهمة أولاً بأول.`,
-    variables: ['customerName', 'companyName', 'subscribedAt']
-  },
-
-  BENEFIT_GRANTED: {
-    name: 'إشعار ميزة جديدة',
-    content: `مبروك {customerName} 🎁
-
-تمت إضافة ميزة جديدة لك في {companyName}.
-
-النوع: {benefitTitle}
-التفاصيل: {benefitSummary}
-الكود: {couponCode}
-
-نتمنى أن تستفيد منها بأفضل شكل ممكن ✨`,
-    variables: ['customerName', 'companyName', 'benefitTitle', 'benefitSummary', 'couponCode']
-  },
-
-  // الموارد البشرية
-  ATTENDANCE_REMINDER: {
-    name: 'تذكير الحضور',
-    content: `صباح الخير {employeeName} ☀️
-
-تذكير: لا تنسَ تسجيل حضورك اليوم.
-
-⏰ وقت بدء العمل: {startTime}
-
-يوم موفق!`,
-    variables: ['employeeName', 'startTime']
-  },
-
-  ATTENDANCE_CONFIRMED: {
-    name: 'تأكيد الحضور',
-    content: `✅ تم تسجيل حضورك بنجاح {employeeName}!
-
-⏰ وقت الحضور: {checkInTime}
-📅 التاريخ: {date}
-
-شكراً لالتزامك بالمواعيد! 💚`,
-    variables: ['employeeName', 'checkInTime', 'date']
-  },
-
-  ATTENDANCE_LATE: {
-    name: 'إشعار التأخير',
-    content: `مرحباً {employeeName}
-    
-تم تسجيل تأخير اليوم {date}.
-
-⏰ وقت الحضور: {checkInTime}
-📝 مدة التأخير: {lateMinutes} دقيقة
-💰 الخصم: {deductionAmount} {currency}
-
-يرجى الالتزام بمواعيد العمل.`,
-    variables: ['employeeName', 'date', 'checkInTime', 'lateMinutes', 'deductionAmount', 'currency']
-  },
-
-  ATTENDANCE_LATE_WITH_DEDUCTION: {
-    name: 'إشعار التأخير مع الخصم',
-    content: `⚠️ تم تسجيل تأخير {employeeName}
-
-📅 التاريخ: {date}
-⏰ وقت الحضور: {checkInTime}
-📝 مدة التأخير: {lateMinutes} دقيقة
-💰 الخصم: {deductionAmount} {currency}
-
-يرجى الالتزام بمواعيد العمل لتجنب الخصومات.`,
-    variables: ['employeeName', 'date', 'checkInTime', 'lateMinutes', 'deductionAmount', 'currency']
-  },
-
-  CHECKOUT_CONFIRMED: {
-    name: 'تأكيد الانصراف',
-    content: `👋 تم تسجيل انصرافك {employeeName}
-
-⏰ وقت الحضور: {checkInTime}
-⏰ وقت الانصراف: {checkOutTime}
-📅 التاريخ: {date}
-📊 ساعات العمل اليوم: {workHours} ساعة
-💰 الخصم: {deductionAmount} {currency}
-
-شكراً لجهودك اليوم! 🙏`,
-    variables: ['employeeName', 'checkInTime', 'checkOutTime', 'date', 'workHours', 'deductionAmount', 'currency']
-  },
-
-  LEAVE_APPROVED: {
-    name: 'الموافقة على الإجازة',
-    content: `مرحباً {employeeName} ✅
-
-تمت الموافقة على طلب إجازتك!
-
-📅 من: {startDate}
-📅 إلى: {endDate}
-📝 النوع: {leaveType}
-
-إجازة سعيدة! 🌴`,
-    variables: ['employeeName', 'startDate', 'endDate', 'leaveType']
-  },
-
-  LEAVE_REJECTED: {
-    name: 'رفض الإجازة',
-    content: `مرحباً {employeeName}
-
-للأسف، تم رفض طلب إجازتك.
-
-📅 من: {startDate}
-📅 إلى: {endDate}
-📝 السبب: {reason}
-
-يمكنك التواصل مع الإدارة للمزيد من التفاصيل.`,
-    variables: ['employeeName', 'startDate', 'endDate', 'reason']
-  },
-
-  PERMISSION_APPROVED: {
-    name: 'الموافقة على الإذن',
-    content: `مرحباً {employeeName} ✅
-
-تمت الموافقة على طلب الإذن الخاص بك!
-
-📅 التاريخ: {date}
-⏰ من: {startTime}
-⏰ إلى: {endTime}
-📝 النوع: {permissionType}
-
-يوم موفق!`,
-    variables: ['employeeName', 'date', 'startTime', 'endTime', 'permissionType']
-  },
-
-  PERMISSION_REJECTED: {
-    name: 'رفض الإذن',
-    content: `مرحباً {employeeName}
-
-للأسف، تم رفض طلب الإذن الخاص بك.
-
-📅 التاريخ: {date}
-📝 النوع: {permissionType}
-📝 السبب: {reason}
-
-إذا كان لديك أي استفسار، تواصل مع الإدارة.`,
-    variables: ['employeeName', 'date', 'permissionType', 'reason']
-  },
-
-  PAYROLL_READY: {
-    name: 'الراتب جاهز',
-    content: `مرحباً {employeeName} 💰
-
-تم إيداع راتبك لشهر {month}!
-
-💵 المبلغ الصافي: {netSalary} {currency}
-
-شكراً لجهودك! 🙏`,
-    variables: ['employeeName', 'month', 'netSalary', 'currency']
-  },
-
-  BIRTHDAY_EMPLOYEE: {
-    name: 'عيد ميلاد موظف',
-    content: `عيد ميلاد سعيد {employeeName}! 🎂🎉
-
-نتمنى لك عاماً مليئاً بالنجاح والسعادة!
-
-فريق العمل يتمنى لك كل التوفيق! 💝
-
-كل عام وأنت بخير!`,
-    variables: ['employeeName']
-  },
-
-  WARNING_ISSUED: {
-    name: 'إنذار',
-    content: `مرحباً {employeeName}
-
-تم إصدار إنذار بتاريخ {date}.
-
-📝 السبب: {reason}
-⚠️ النوع: {warningType}
-
-يرجى مراجعة الإدارة.`,
-    variables: ['employeeName', 'date', 'reason', 'warningType']
-  },
-
-  ANNOUNCEMENT: {
-    name: 'إعلان',
-    content: `📢 إعلان هام
-
-{title}
-
-{content}
-
-{signature}`,
-    variables: ['title', 'content', 'signature']
-  },
-
-  OTP: {
-    name: 'كود الواتساب لتسجيل الدخول',
-    content: `كود الواتساب لتسجيل الدخول: {otpCode}`,
-    variables: ['otpCode']
-  },
-
-  ASSET_REQUEST_APPROVED: {
-    name: 'الموافقة على طلب عهدة',
-    content: `مرحباً {employeeName} ✅
-    
-تمت الموافقة على طلبك للحصول على: {assetType}
-
-سيقوم فريق الدعم بتجهيز الأصل لك في أقرب وقت.
-
-شكراً لك!`,
-    variables: ['employeeName', 'assetType']
-  },
-
-  ASSET_REQUEST_REJECTED: {
-    name: 'رفض طلب عهدة',
-    content: `مرحباً {employeeName} ❌
-    
-نأسف، تم رفض طلبك للحصول على: {assetType}
-
-السبب: {reason}
-
-يمكنك التواصل مع الإدارة للمزيد من التفاصيل.`,
-    variables: ['employeeName', 'assetType', 'reason']
-  },
-
-  ASSET_REQUEST_FULFILLED: {
-    name: 'تسليم عهدة',
-    content: `مرحباً {employeeName} 📦
-    
-تم تسليمك العهدة التالية بنجاح:
-✅ {assetName}
-
-يرجى مراجعة تفاصيل العهدة في لوحة التحكم الخاصة بك.
-
-يوم موفق!`,
-    variables: ['employeeName', 'assetName']
-  },
-
-  // الولاء
-  LOYALTY_POINTS_AWARDED: {
-    name: 'إشعار كسب نقاط',
-    content: `مبروك {customerName}! 🎉
-
-لقد حصلت على {points} نقطة ولاء جديدة! 🌟
-
-💰 رصيدك الحالي: {currentPoints} نقطة
-📝 السبب: {reason}
-
-شكراً لولائك الدائم لنا! ❤️`,
-    variables: ['customerName', 'points', 'currentPoints', 'reason']
-  },
-
-  // السلف
-  LOAN_REQUEST_CREATED: {
-    name: 'طلب سلفة جديد',
-    content: `مرحباً {employeeName} 👋
-    
-تم استلام طلب السلفة الخاص بك.
-
-💰 المبلغ: {amount} {currency}
-📝 السبب: {reason}
-
-سيتم مراجعته قريباً.`,
-    variables: ['employeeName', 'amount', 'currency', 'reason']
-  },
-
-  LOAN_APPROVED: {
-    name: 'الموافقة على السلفة',
-    content: `مرحباً {employeeName} ✅
-
-تمت الموافقة على طلب السلفة الخاص بك!
-
-💰 المبلغ: {amount} {currency}
-📅 عدد الأقساط: {installmentsCount}
-
-سيتم صرف المبلغ قريباً.`,
-    variables: ['employeeName', 'amount', 'currency', 'installmentsCount']
-  },
-
-  LOAN_REJECTED: {
-    name: 'رفض السلفة',
-    content: `مرحباً {employeeName}
-
-نأسف، تم رفض طلب السلفة الخاص بك.
-
-💰 المبلغ: {amount} {currency}
-📝 السبب: {reason}
-
-يمكنك التواصل مع الإدارة للمزيد من التفاصيل.`,
-    variables: ['employeeName', 'amount', 'currency', 'reason']
-  },
-
-  // المكافآت
-  BONUS_ISSUED: {
-    name: 'صرف مكافأة',
-    content: `مبروك {employeeName}! 🎉
-
-تم صرف مكافأة لك!
-
-💰 المبلغ: {amount} {currency}
-📝 السبب: {reason}
-📅 التاريخ: {date}
-
-شكراً لجهودك وعملكم المميز! 🌟`,
-    variables: ['employeeName', 'amount', 'currency', 'reason', 'date']
-  },
-
-  // الاستقالات
-  RESIGNATION_STATUS_UPDATE: {
-    name: 'تحديث حالة الاستقالة',
-    content: `مرحباً {employeeName}
-
-تم تحديث حالة طلب الاستقالة الخاص بك.
-
-📝 الحالة الجديدة: {status}
-📅 تاريخ آخر يوم عمل: {lastWorkingDay}
-
-يرجى مراجعة قسم الموارد البشرية للمزيد من التفاصيل.`,
-    variables: ['employeeName', 'status', 'lastWorkingDay']
-  },
-
-  MANUAL_DEDUCTION: {
-    name: 'إشعار خصم يدوي',
-    content: `مرحباً {employeeName} ⚠️
-    
-تم تسجيل خصم جديد بحسابك.
-
-📅 التاريخ: {date}
-📝 النوع: {deductionType}
-💰 المبلغ: {amount} {currency}
-📝 السبب: {reason}
-
-يرجى مراجعة الإدارة في حال وجود أي استفسار.`,
-    variables: ['employeeName', 'date', 'deductionType', 'amount', 'currency', 'reason']
-  },
-
-  // المهام (Tasks)
-  TASK_CREATED: {
-    name: 'مهمة جديدة',
-    content: `مرحباً {userName} 👋
-    
-تم إسناد مهمة جديدة لك:
-📌 العنوان: {taskTitle}
-📅 تاريخ الاستحقاق: {dueDate}
-🚀 الأولوية: {priority}
-
-يرجى مراجعة التفاصيل في لوحة التحكم.`,
-    variables: ['userName', 'taskTitle', 'dueDate', 'priority']
-  },
-
-  TASK_COMMENTED: {
-    name: 'تعليق جديد على مهمة',
-    content: `مرحباً {userName} 💬
-    
-تم إضافة تعليق جديد على المهمة: {taskTitle}
-👤 بواسطة: {commentAuthor}
-📝 التعليق: {commentExcerpt}
-
-يمكنك الرد من خلال الموقع.`,
-    variables: ['userName', 'taskTitle', 'commentAuthor', 'commentExcerpt']
-  },
-
-  TASK_STATUS_CHANGED: {
-    name: 'تغيير حالة المهمة',
-    content: `مرحباً {userName} 🔄
-    
-تم تحديث حالة المهمة: {taskTitle}
-📉 الحالة السابقة: {oldStatus}
-📈 الحالة الجديدة: {newStatus}
-
-بالتوفيق!`,
-    variables: ['userName', 'taskTitle', 'oldStatus', 'newStatus']
-  },
-
-  TASK_DEADLINE_REMINDER: {
-    name: 'تذكير بموعد المهمة',
-    content: `تنبيه {userName} ⏰
-    
-تقترب مهمة "{taskTitle}" من موعد استحقاقها.
-📅 الموعد: {dueDate}
-
-يرجى العمل على إنهائها في الموعد المحدد.`,
-    variables: ['userName', 'taskTitle', 'dueDate']
-  },
-
-  TASK_UPDATED: {
-    name: 'تحديث مهمة',
-    content: `مرحباً {userName} 🔔
-
-تم تحديث المهمة: {taskTitle}
-📝 التغيير: {changes}
-📅 موعد التسليم: {dueDate}
-📌 الحالة: {status}
-
-يرجى مراجعة التفاصيل في لوحة التحكم.`,
-    variables: ['userName', 'taskTitle', 'changes', 'dueDate', 'status']
-  },
-
-  TASK_ATTACHMENT_ADDED: {
-    name: 'مرفق جديد على مهمة',
-    content: `مرحباً {userName} 📎
-
-تم إضافة مرفق جديد على المهمة: {taskTitle}
-📄 الملف: {attachmentName}
-
-يمكنك مراجعته من تفاصيل المهمة.`,
-    variables: ['userName', 'taskTitle', 'attachmentName']
-  },
-
-  TASK_OVERDUE: {
-    name: 'مهمة متأخرة',
-    content: `تنبيه {userName} ⚠️
-
-المهمة "{taskTitle}" متأخرة عن موعدها.
-📅 الموعد: {dueDate}
-📌 الحالة الحالية: {status}
-
-تم إرسال متابعة للمنفذ لمعرفة موقف التنفيذ.`,
-    variables: ['userName', 'taskTitle', 'dueDate', 'status']
-  },
-
-  TASK_EXECUTION_CHECK: {
-    name: 'سؤال متابعة تنفيذ مهمة',
-    content: `مرحباً {userName}
-
-هل تم تنفيذ المهمة التالية؟
-📌 المهمة: {taskTitle}
-📅 موعد التسليم: {dueDate}
-📍 السبب: {reason}
-
-اختر الرد المناسب من الأزرار.`,
-    variables: ['userName', 'taskTitle', 'dueDate', 'reason'],
-    hasButtons: true,
-    buttons: [
-      { id: 'task_done_{taskId}', text: 'تم التنفيذ' },
-      { id: 'task_not_done_{taskId}', text: 'لم يتم بعد' },
-      { id: 'task_blocked_{taskId}', text: 'توجد مشكلة' }
-    ],
-    footer: 'متابعة المهام'
-  },
-
-  TASK_EXECUTION_CHECK_SENT: {
-    name: 'تم إرسال سؤال متابعة للمنفذ',
-    content: `مرحباً {userName}
-
-تم سؤال منفذ المهمة عن موقف التنفيذ.
-📌 المهمة: {taskTitle}
-👤 المنفذ: {assigneeName}
-📍 السبب: {reason}
-
-سنرسل لك رد المنفذ عند وصوله.`,
-    variables: ['userName', 'taskTitle', 'assigneeName', 'reason']
-  },
-
-  TASK_EXECUTION_RESPONSE: {
-    name: 'رد منفذ المهمة',
-    content: `مرحباً {userName}
-
-وصل رد على متابعة المهمة:
-📌 المهمة: {taskTitle}
-👤 المنفذ: {responderName}
-✅ الرد: {response}
-🔄 الحالة: {oldStatus} ← {newStatus}
-
-تم تسجيل الرد في سجل المهمة.`,
-    variables: ['userName', 'taskTitle', 'responderName', 'response', 'oldStatus', 'newStatus']
-  },
-
-  TASK_WATCHER_ADDED: {
-    name: 'متابعة مهمة',
-    content: `مرحباً {userName}
-
-تمت إضافتك كمراقب على المهمة:
-📌 {taskTitle}
-📅 موعد التسليم: {dueDate}
-
-ستصلك التحديثات المهمة الخاصة بها.`,
-    variables: ['userName', 'taskTitle', 'dueDate']
-  },
-
-  TASK_DELETED: {
-    name: 'حذف مهمة',
-    content: `مرحباً {userName}
-
-تم حذف المهمة: {taskTitle}
-
-هذا إشعار للمتابعة فقط.`,
-    variables: ['userName', 'taskTitle']
-  },
-
-  TASK_SUBTASK_CREATED: {
-    name: 'مهمة فرعية جديدة',
-    content: `مرحباً {userName} 👋
-    
-تم إنشاء مهمة فرعية ضمن المهمة: {parentTaskTitle}
-📌 العنوان: {subtaskTitle}
-📅 تاريخ الاستحقاق: {dueDate}
-
-يرجى مراجعة التفاصيل في لوحة التحكم.`,
-    variables: ['userName', 'parentTaskTitle', 'subtaskTitle', 'dueDate']
-  },
-
-  TASK_TIME_ENTRY_ADDED: {
-    name: 'تسجيل وقت على مهمة',
-    content: `مرحباً {userName} ⏱️
-
-تم تسجيل وقت على المهمة: {taskTitle}
-⏱️ المدة: {duration}
-📝 النوع: {entryType}
-
-تم تحديث إجمالي الوقت المسجل للمهمة.`,
-    variables: ['userName', 'taskTitle', 'duration', 'entryType']
-  },
-
-  TASK_CHECKLIST_ITEM_COMPLETED: {
-    name: 'إتمام عنصر في قائمة التحقق',
-    content: `مرحباً {userName} ✅
-
-{itemContent}
-في المهمة: {taskTitle}
-من إنجاز: {completedBy}
-
-تم تسجيل الإنجاز في سجل المهمة.`,
-    variables: ['userName', 'itemContent', 'taskTitle', 'completedBy']
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔧 الدوال المساعدة
@@ -919,6 +32,130 @@ function replaceVariables(template, variables) {
     result = result.replace(regex, value !== undefined && value !== null ? value : '');
   }
   return result;
+}
+
+/**
+ * يحوّل أي مسار وسيط لرابط HTTPS مطلق (ميتا تتطلب رابطاً قابلاً للتحميل في الهيدر).
+ */
+function toAbsoluteMediaUrl(url) {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const baseUrl = (process.env.APP_URL || 'https://maxp.online').replace(/\/$/, '');
+  const relativePath = url.startsWith('/') ? url : `/${url}`;
+  return `${baseUrl}${relativePath}`;
+}
+
+/**
+ * يستخرج صورة أول منتج من الطلب (snapshot على الـ orderItem أو من المنتج نفسه).
+ * تسمح لقالب الحالة بهيدر IMAGE أن يرسل صورة المنتج اللي العميل طلبه.
+ */
+function resolveOrderPrimaryImage(order) {
+  if (!order) return null;
+  const items = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
+  const first = items[0];
+  if (!first) return null;
+
+  let img = first.productImage || first.imageUrl || first.image || first.product?.mainImage;
+  if (!img && typeof first.product?.images === 'string') {
+    img = first.product.images;
+  }
+  if (!img) return null;
+
+  // Product.images قد يكون JSON array نصي
+  let url = img;
+  if (typeof img === 'string' && img.trim().startsWith('[')) {
+    try {
+      const arr = JSON.parse(img);
+      if (Array.isArray(arr)) url = arr[0];
+    } catch { /* نص عادي */ }
+  }
+  return url ? toAbsoluteMediaUrl(url) : null;
+}
+
+/**
+ * اختيار قالب الحدث حسب قناة الإرسال الفعلية (Baileys أم Meta Cloud).
+ *
+ * الحالة الواحدة تقدر يكون ليها قالبان مستقلان (من صفحة قوالب الحالات):
+ *  - template عادي (channel != META_CLOUD) يُرسل نصاً حراً.
+ *  - metaTemplate (channel == META_CLOUD) مربوط بقالب ميتا معتمد.
+ *
+ * القاعدة:
+ *  1) جلسة META_CLOUD → نفضّل قالب META_CLOUD المرتبط بقالب معتمد؛
+ *     لو مش موجود/معتمد → ننزل للقالب العادي.
+ *  2) جلسة BAILEYS → نفضّل القالب العادي.
+ *  3) لو مفيش قالب مطابق للقناة → أي قالب للحدث (توافق مع بيانات قديمة
+ *     مالهاش channel، واللي كان فيها الربط على نفس القالب).
+ */
+async function findNotificationTemplateForEvent(companyId, eventType, sessionProvider, prisma) {
+  const isMetaSession = String(sessionProvider || '').toUpperCase() === 'META_CLOUD';
+
+  if (isMetaSession) {
+    // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
+    // 🚨 PRODUCTION-FIX (meta-template-empty-name): ممكن يبقى فيه أكتر من سجل META_CLOUD
+    // لنفس الحدث وواحد منهم metaTemplateName فاضي (غالباً ناتج عن إعادة ربط قديمة). لو
+    // findFirst رجّع السجل الفاضي الأول (ترتيب isDefault غير حاسم — كلهم f) كان الكود
+    // هيكمل للقالب العادي ويبعث نص حر بأزرار بدل قالب الميتا المعتمد. لازم نستبعد السجلات
+    // اللي اسمها فاضي من البحث مباشرةً.
+    const metaTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
+      where: { companyId, eventType, isActive: true, channel: 'META_CLOUD', metaTemplateName: { not: null } },
+      orderBy: { isDefault: 'desc' }
+    });
+    if (metaTemplate && metaTemplate.metaTemplateName && String(metaTemplate.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
+      return metaTemplate;
+    }
+
+    // 2) توافق قديم (legacy): سجل عادي (channel AUTO/غير محدد) عليه ربط ميتا معتمد.
+    //    لازم يتفّضل على القالب العادي الصريح — وإلا هيتبعت نص حر بدل قالب ميتا.
+    const legacyMeta = await prisma.whatsAppNotificationTemplate.findFirst({
+      where: {
+        companyId,
+        eventType,
+        isActive: true,
+        channel: { not: 'META_CLOUD' },
+        metaTemplateName: { not: null },
+      },
+      orderBy: { isDefault: 'desc' }
+    });
+    if (legacyMeta && legacyMeta.metaTemplateName && String(legacyMeta.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
+      return legacyMeta;
+    }
+  }
+
+  const regularTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
+    where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
+    orderBy: { isDefault: 'desc' }
+  });
+  if (regularTemplate) return regularTemplate;
+
+  return prisma.whatsAppNotificationTemplate.findFirst({
+    where: { companyId, eventType, isActive: true },
+    orderBy: { isDefault: 'desc' }
+  });
+}
+
+/**
+ * بناء ID وظيفي لزر تغيير حالة الطلب من إعدادات الزر
+ * @param {object} btn - { id, text, action }
+ * @param {object} variables - متغيرات الإرسال (يجب أن تحتوي orderId)
+ */
+function buildOrderStatusButtonId(btn, variables) {
+  const orderId = variables.orderId || '';
+
+  // التوافق القديم: أزرار تحتوي بالفعل على ID وظيفي جاهز (مثل confirm_order_{orderId})
+  if (btn.id && !btn.action) {
+    return replaceVariables(btn.id, variables);
+  }
+
+  const action = String(btn.action || 'CONFIRMED').toUpperCase();
+
+  if (action === 'CONFIRMED') return `confirm_order_${orderId}`;
+  if (action === 'PROCESSING') return `delay_order_${orderId}`;
+  if (action === 'CANCELLED') return `cancel_order_${orderId}`;
+
+  // حالة مخصصة: set_status_{STATUS_CODE}_{orderId}
+  return `set_status_${action}_${orderId}`;
 }
 
 /**
@@ -954,25 +191,8 @@ function isQuietHours(settings) {
 /**
  * تنسيق رقم الهاتف
  */
-function formatPhoneNumber(phone) {
-  if (!phone) return null;
 
-  // إزالة كل شيء ما عدا الأرقام
-  let cleaned = phone.replace(/\D/g, '');
-
-  // إذا كان الرقم يبدأ بـ 0 وليس 00، نفترض أنه رقم محلي مصري ونضيف 20
-  if (cleaned.startsWith('0') && !cleaned.startsWith('00')) {
-    cleaned = '20' + cleaned.substring(1);
-  } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
-    // حالة أرقام مصر (010...) بدون الصفر
-    cleaned = '20' + cleaned;
-  } else if (cleaned.length === 10 && !cleaned.startsWith('2')) {
-    // افتراض رقم محلي بدون كود الدولة (مصر)
-    cleaned = '20' + cleaned;
-  }
-
-  return cleaned;
-}
+const { formatPhoneNumber } = require('../../utils/phoneFormat');
 
 const COMPANY_OWNER_ROLES = ['OWNER', 'COMPANY_ADMIN'];
 const COMPANY_OPERATIONS_ROLES = ['MANAGER', 'ADMIN'];
@@ -991,16 +211,7 @@ const COMPANY_LIFECYCLE_EVENT_TYPES = new Set([
   'NEWSLETTER_SUBSCRIBED',
   'BENEFIT_GRANTED'
 ]);
-const PERSISTED_EVENT_TYPE_FALLBACKS = {
-  TASK_CREATED: 'ANNOUNCEMENT',
-  TASK_COMMENTED: 'ANNOUNCEMENT',
-  TASK_STATUS_CHANGED: 'ANNOUNCEMENT',
-  TASK_DEADLINE_REMINDER: 'ANNOUNCEMENT'
-};
-const PERSISTED_CATEGORY_FALLBACKS = {
-  TASKS: 'HR'
-};
-const VALID_PERSISTED_RECIPIENT_TYPES = new Set(['CUSTOMER', 'EMPLOYEE', 'ADMIN']);
+
 
 let platformSenderCompanyCache = {
   value: null,
@@ -1021,37 +232,35 @@ function formatNotificationDate(value) {
   });
 }
 
-function getPersistedNotificationEventType(eventType) {
-  if (String(eventType || '').toUpperCase().startsWith('TASK_')) {
-    return 'ANNOUNCEMENT';
-  }
 
-  return PERSISTED_EVENT_TYPE_FALLBACKS[eventType] || eventType;
+/**
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §3.1):
+ * نقطة واحدة للتحقق من تكرار إشعار — تستخدمها sendOrderCreatedNotification /
+ * orderService / orderWorkflowService.
+ * - للطلبات المسجلة (orderId موجود): المفتاح = orderId + eventType.
+ * - للطلبات الضيوف (بدون orderId): المفتاح = recipientPhone + eventType.
+ * - يُطبَّع الـ eventType عبر getPersistedNotificationEventType حتى يطابق ما
+ *   يُخزَّن فعلاً في whatsAppNotificationLog (لا contains — تطابق تام).
+ */
+async function isDuplicateNotification({ companyId, orderId, recipientPhone, eventType, windowMs = 10000 }) {
+  const prisma = getSharedPrismaClient();
+  const persistedEventType = getPersistedNotificationEventType(eventType);
+  const where = {
+    companyId,
+    eventType: persistedEventType,
+    createdAt: { gte: new Date(Date.now() - windowMs) },
+  };
+  if (orderId) {
+    where.orderId = orderId;
+  } else if (recipientPhone) {
+    where.recipientPhone = recipientPhone;
+  } else {
+    return false;
+  }
+  const found = await prisma.whatsAppNotificationLog.findFirst({ where, select: { id: true } });
+  return Boolean(found);
 }
 
-function getPersistedNotificationCategory(category, eventType) {
-  const normalizedCategory = String(category || '').toUpperCase();
-  if (PERSISTED_CATEGORY_FALLBACKS[normalizedCategory]) {
-    return PERSISTED_CATEGORY_FALLBACKS[normalizedCategory];
-  }
-
-  if (normalizedCategory) {
-    return normalizedCategory;
-  }
-
-  if (String(eventType || '').toUpperCase().startsWith('TASK_')) {
-    return 'HR';
-  }
-
-  return 'GENERAL';
-}
-
-function getPersistedNotificationRecipientType(recipientType) {
-  const normalizedRecipientType = String(recipientType || 'CUSTOMER').toUpperCase();
-  return VALID_PERSISTED_RECIPIENT_TYPES.has(normalizedRecipientType)
-    ? normalizedRecipientType
-    : 'CUSTOMER';
-}
 
 function formatBillingCycleLabel(billingCycle) {
   const normalizedCycle = String(billingCycle || '').toLowerCase();
@@ -1193,10 +402,19 @@ function getModuleSettingKey(eventType) {
     eventType.startsWith('CART_') ||
     eventType === 'PROMOTIONAL' ||
     eventType === 'COUPON_SENT' ||
-    eventType === 'BIRTHDAY_WISH' ||
-    eventType === 'LOYALTY_POINTS_AWARDED'
+    eventType === 'BIRTHDAY_WISH'
   ) {
     return 'marketingNotificationsEnabled';
+  }
+
+  // 🎁 إشعارات الولاء والكاش باك والجودة — تُدار من مفتاح الولاء الخاص
+  // (loyaltyEnabled) بدل الاعتماد على marketingNotificationsEnabled.
+  if (
+    eventType.startsWith('LOYALTY_') ||
+    eventType.startsWith('CASHBACK_') ||
+    eventType.startsWith('CUSTOMER_QUALITY_')
+  ) {
+    return 'loyaltyEnabled';
   }
 
   if (
@@ -1630,149 +848,14 @@ function buildNewsletterAdminAlertContent() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // تتبع الدوران (Round Robin) للجلسات لكل شركة لـ موازنة الحمل (Load Balancing)
-const sessionRotation = new Map();
-const SESSION_ROTATION_MAX_SIZE = 5000;
-function setSessionRotation(companyId, index) {
-  if (sessionRotation.size >= SESSION_ROTATION_MAX_SIZE && !sessionRotation.has(companyId)) {
-    const oldestKey = sessionRotation.keys().next().value;
-    sessionRotation.delete(oldestKey);
-  }
-  sessionRotation.set(companyId, index);
-}
 
-const sessionInitializationInFlight = new Map();
+// موازنة الجلسات مستخرجة (sessionBalancer.js — §5.1)
+const { getOrAssignSession, ensureRuntimeSessionConnected, findAlternativeBaileysSession, isMetaWindowError } = require('./sessionBalancer');
+const { isOrderCategory, getPersistedNotificationEventType, getPersistedNotificationCategory, getPersistedNotificationRecipientType } = require('./notificationTypes');
+const { buildMetaBodyParams } = require('../../utils/metaTemplateVariables');
+const { buildBroadcastHeaderParams } = require('../../utils/broadcastTemplateParams');
+
 const settingsInitializationInFlight = new Map();
-
-/**
- * الحصول على الجلسة المناسبة للإرسال (Sticky Load Balancer)
- * تعتمد على تثبيت العميل مع رقم واتس محدد لضمان استمرارية المحادثة من نفس الرقم
- */
-async function getOrAssignSession({ companyId, customerId, recipientPhone, connectedSessions, settings }) {
-  const prisma = getSharedPrismaClient();
-
-  if (!connectedSessions || connectedSessions.length === 0) {
-    return settings?.defaultSessionId || null;
-  }
-
-  // 1. البحث عن جلسة مثبتة (Sticky Session Affinity)
-  // نطبق هذا المنطق فقط إذا كان الخيار مفعلاً في الإعدادات
-  if (settings?.stickySessionEnabled !== false) {
-    const connectedSessionIds = connectedSessions.map(s => s.sessionId);
-
-    try {
-      let existingSessionId = null;
-
-      if (customerId) {
-        const contact = await safeQuery(() => prisma.whatsAppContact.findFirst({
-          where: {
-            customerId,
-            sessionId: { in: connectedSessionIds }
-          },
-          orderBy: { lastMessageAt: 'desc' },
-          select: { sessionId: true }
-        }));
-        if (contact) existingSessionId = contact.sessionId;
-      }
-
-      if (!existingSessionId && recipientPhone) {
-        const formattedPhone = formatPhoneNumber(recipientPhone);
-        const contact = await safeQuery(() => prisma.whatsAppContact.findFirst({
-          where: {
-            phoneNumber: formattedPhone,
-            sessionId: { in: connectedSessionIds }
-          },
-          orderBy: { lastMessageAt: 'desc' },
-          select: { sessionId: true }
-        }));
-        if (contact) existingSessionId = contact.sessionId;
-      }
-
-      if (existingSessionId) {
-        console.log(`🔗 [WHATSAPP-AFFINITY] Sticky session matched: ${existingSessionId}`);
-        return existingSessionId;
-      }
-    } catch (err) {
-      console.error('❌ [WHATSAPP-AFFINITY] Error checking affinity:', err);
-    }
-  } else {
-    console.log(`⚖️ [WHATSAPP-LB] Sticky sessions disabled, forcing load balancing for every message.`);
-  }
-
-  // 2. إذا لم توجد جلسة مثبتة أو الخيار معطل، نستخدم التوزيع الموزون (Weighted Round Robin)
-  if (connectedSessions.length > 1) {
-    let weightedPool = [];
-    connectedSessions.forEach(s => {
-      // الأولوية لـ loadBalanceWeight ثم لـ isDefault
-      const weight = s.loadBalanceWeight || (s.isDefault ? 3 : 1);
-      for (let i = 0; i < weight; i++) {
-        weightedPool.push(s.sessionId);
-      }
-    });
-
-    let lastIndex = sessionRotation.get(companyId) || 0;
-    let nextIndex = (lastIndex + 1) % weightedPool.length;
-    setSessionRotation(companyId, nextIndex);
-
-    const pickedId = weightedPool[nextIndex];
-    console.log(`⚖️ [LOAD-BALANCER] New assignment via Weighted Round-Robin (Weight Strategy): ${pickedId} (Step ${nextIndex + 1}/${weightedPool.length})`);
-    return pickedId;
-  }
-
-  // إذا كان هناك رقم واحد فقط متصل
-  return connectedSessions[0].sessionId;
-}
-
-async function ensureRuntimeSessionConnected(sessionId, companyId) {
-  let pendingInitialization = sessionInitializationInFlight.get(sessionId);
-
-  if (!pendingInitialization) {
-    pendingInitialization = (async () => {
-      let session = WhatsAppManager.getSession(sessionId);
-      if (session && session.status === 'connected') {
-        return session;
-      }
-
-      const dbSession = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findUnique({
-        where: { id: sessionId },
-        select: { status: true, authState: true }
-      }));
-
-      if (!dbSession || dbSession.status !== 'CONNECTED' || !dbSession.authState) {
-        return session;
-      }
-
-      console.log(`🔄 [WHATSAPP-JIT] Session ${sessionId} is CONNECTED in DB but null in memory. Initializing...`);
-
-      try {
-        await WhatsAppManager.createSession(sessionId, companyId);
-
-        let waitTime = 0;
-        while (waitTime < 5000) {
-          session = WhatsAppManager.getSession(sessionId);
-          if (session && session.status === 'connected') {
-            console.log(`✅ [WHATSAPP-JIT] Session ${sessionId} initialized and connected successfully via JIT`);
-            return session;
-          }
-
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          waitTime += 1000;
-        }
-      } catch (err) {
-        console.error(`❌ [WHATSAPP-JIT] Failed to initialize session ${sessionId}:`, err.message);
-      }
-
-      return WhatsAppManager.getSession(sessionId);
-    })().finally(() => {
-      sessionInitializationInFlight.delete(sessionId);
-    });
-
-    sessionInitializationInFlight.set(sessionId, pendingInitialization);
-  } else {
-    console.log(`⏳ [WHATSAPP-JIT] Awaiting in-flight initialization for session ${sessionId}`);
-  }
-
-  return pendingInitialization;
-}
 
 async function ensureNotificationSettings(companyId) {
   const prisma = getSharedPrismaClient();
@@ -1851,7 +934,14 @@ async function sendNotification(options) {
     cartId,
     priority = 5,
     scheduleAt = null,
-    buttons = null
+    buttons = null,
+    fallbackEventType = null,
+    // 🎁 دعم إشعارات العملاء: إرسال قالب محدد + فرض قناة (BAILEYS/META_CLOUD/AUTO)
+    preferredTemplateId = null,
+    channel = null,
+    // 🛡️ PRODUCTION-FIX (custom-status-enum): قيمة enum صالحة تُخزّن في whatsAppNotificationLog
+    // للحالات المخصصة (مثل mapsToSystem بتاعها) — لأن eventType في السجل enum مقفول.
+    persistedEventType = null
   } = options;
 
   const prisma = getSharedPrismaClient();
@@ -1864,10 +954,15 @@ async function sendNotification(options) {
   try {
     // 1. جلب إعدادات الإشعارات
     const settings = await ensureNotificationSettings(companyId);
-    const persistedEventType = getPersistedNotificationEventType(eventType);
+    const persistedEventType = options.persistedEventType || getPersistedNotificationEventType(eventType);
     const persistedCategory = getPersistedNotificationCategory(category, eventType);
     const persistedRecipientType =
       getPersistedNotificationRecipientType(recipientType);
+
+    // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.2): multi-tenant brand resolution
+    // (الاسم + النطاق من DB مع cache، لا هاردكود شركة محددة)
+    const { getCompanyBranding } = require('../../utils/companyBranding');
+    const branding = await getCompanyBranding(companyId);
 
     console.log(`[WHATSAPP-DEBUG-sendNotification] Settings check:`, {
       hasSettings: !!settings,
@@ -1927,35 +1022,57 @@ async function sendNotification(options) {
       return { success: false, reason: 'no_session' };
     }
 
+    // 🆕 تحديد نوع الجلسة (META_CLOUD vs BAILEYS) من قاعدة البيانات.
+    // جلسات META_CLOUD لا تُحمّل في ذاكرة Baileys (activeSessions)، لذلك يجب
+    // معاملتها كجلسة "connected" بناءً على حالة DB فقط.
+    let sessionProvider = 'BAILEYS';
+    const dbSessionForSend = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findUnique({
+      where: { id: sessionId },
+      select: { provider: true, status: true }
+    }));
+    if (dbSessionForSend?.provider) sessionProvider = dbSessionForSend.provider;
+
     let session = WhatsAppManager.getSession(sessionId);
-    console.log(`[WHATSAPP-DEBUG] Session status from manager memory:`, session ? session.status : 'null');
+    console.log(`[WHATSAPP-DEBUG] Session status from manager memory:`, session ? session.status : 'null', `| provider: ${sessionProvider}`);
 
-    // 🆕 JIT Initialization: إذا لم تكن الجلسة في الذاكرة ولكنها متصلة في DB، قم بتنشيطها
-    if (!session || session.status !== 'connected') {
+    // 🆕 جلسات Meta Cloud API تُعتبر متصلة إذا كانت CONNECTED في DB (لا socket في الذاكرة)
+    if (sessionProvider === 'META_CLOUD' && dbSessionForSend?.status === 'CONNECTED') {
+      session = { status: 'connected', provider: 'META_CLOUD', sessionId };
+      console.log(`☁️ [WHATSAPP-DEBUG] META_CLOUD session ${sessionId} treated as connected (DB status=CONNECTED)`);
+    } else if (!session || session.status !== 'connected') {
+      // 🆕 JIT Initialization: إذا لم تكن الجلسة في الذاكرة ولكنها متصلة في DB، قم بتنشيطها
       session = await ensureRuntimeSessionConnected(sessionId, deliveryCompanyId);
-    }
 
-    if (!session || session.status !== 'connected') {
-      console.log(`⚠️ [WHATSAPP-DEBUG] Session not connected: ${sessionId}`);
+      if (!session || session.status !== 'connected') {
+        console.log(`⚠️ [WHATSAPP-DEBUG] Session not connected: ${sessionId}`);
 
-      // Try one more fallback: pick any CONNECTED session from DB and see if runtime is connected
-      const connected = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findFirst({
-        where: {
-          companyId: deliveryCompanyId,
-          status: 'CONNECTED',
-          id: { not: sessionId }
-        },
-        select: { id: true },
-        orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
-      }));
+        // Try one more fallback: pick any CONNECTED session from DB and see if runtime is connected
+        const connected = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findFirst({
+          where: {
+            companyId: deliveryCompanyId,
+            status: 'CONNECTED',
+            id: { not: sessionId }
+          },
+          select: { id: true, provider: true },
+          orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
+        }));
 
-      if (connected?.id) {
-        const fallbackId = connected.id;
-        const fallbackSession = WhatsAppManager.getSession(fallbackId);
-        if (fallbackSession && fallbackSession.status === 'connected') {
-          sessionId = fallbackId;
-          session = fallbackSession;
-          console.log(`ℹ️ Using fallback runtime-connected session for company ${deliveryCompanyId}: ${sessionId}`);
+        if (connected?.id) {
+          const fallbackId = connected.id;
+          if (connected.provider === 'META_CLOUD') {
+            sessionId = fallbackId;
+            sessionProvider = 'META_CLOUD';
+            session = { status: 'connected', provider: 'META_CLOUD', sessionId };
+            console.log(`☁️ Using fallback META_CLOUD session for company ${deliveryCompanyId}: ${sessionId}`);
+          } else {
+            const fallbackSession = WhatsAppManager.getSession(fallbackId);
+            if (fallbackSession && fallbackSession.status === 'connected') {
+              sessionId = fallbackId;
+              sessionProvider = 'BAILEYS';
+              session = fallbackSession;
+              console.log(`ℹ️ Using fallback runtime-connected session for company ${deliveryCompanyId}: ${sessionId}`);
+            }
+          }
         }
       }
     }
@@ -1992,45 +1109,81 @@ async function sendNotification(options) {
     if (options.contentOverride) {
       console.log(`[WHATSAPP-NOTIFY] Using contentOverride for journey notification`);
     } else {
-      template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-        where: {
-          companyId,
-          eventType,
-          isActive: true
-        },
-        orderBy: { isDefault: 'desc' }
-      }));
+      // 🎁 إشعارات العملاء: عند تمرير قالب محدد نستخدمه مباشرة (وليس بحثاً بالحدث)
+      if (preferredTemplateId) {
+        template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+          where: { id: preferredTemplateId, companyId, isActive: true }
+        }));
+        if (!template) return { success: false, reason: 'template_not_found' };
+        templateId = template.id;
+      } else {
+        // محاولة العثور على القالب برمز الحالة مباشرة أولاً
+        // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
+        if (fallbackEventType && fallbackEventType !== eventType) {
+          template = await safeQuery(() => findNotificationTemplateForEvent(
+            companyId,
+            fallbackEventType,
+            sessionProvider,
+            getSharedPrismaClient()
+          ));
+        }
 
-      // استخدام القالب الافتراضي إذا لم يوجد
-      if (!template && DEFAULT_TEMPLATES[eventType]) {
-        const defaultTemplate = DEFAULT_TEMPLATES[eventType];
-        template = {
-          id: null,
-          content: defaultTemplate.content,
-          hasButtons: defaultTemplate.hasButtons || false,
-          buttons: defaultTemplate.buttons || null,
-          hasList: false
-        };
-      }
+        if (!template) {
+          template = await safeQuery(() => findNotificationTemplateForEvent(
+            companyId,
+            eventType,
+            sessionProvider,
+            getSharedPrismaClient()
+          ));
+        }
 
-      if (!template) {
-        // Fallback for order status updates
-        if (category === 'ORDERS' || eventType.startsWith('ORDER_') || eventType.match(/^[A-Z_]+$/)) {
+        // استخدام القالب الافتراضي إذا لم يوجد
+        // ملاحظة: أحداث الطلبات لا تستخدم القوالب المثبتة في الكود —
+        // مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates (جدول DB).
+        const isOrderEvent = isOrderCategory(category, eventType);
+        if (!template && !isOrderEvent && DEFAULT_TEMPLATES[eventType]) {
+          const defaultTemplate = DEFAULT_TEMPLATES[eventType];
           template = {
-            content: `مرحباً {{customerName}} 👋\n\nنود إعلامك أن حالة طلبك رقم {{orderNumber}} قد تغيرت إلى حالياً: *{{status}}* \n\n{{orderItems}}\nشكراً لتعاملك معنا! ✨`,
-            hasButtons: true,
-            buttons: [
-              { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-              { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-              { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-            ],
+            id: null,
+            content: defaultTemplate.content,
+            hasButtons: defaultTemplate.hasButtons || false,
+            buttons: defaultTemplate.buttons || null,
             hasList: false
           };
-        } else {
+        }
+
+        // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3): auto-seed دفاعي —
+        // شركة جديدة لم تفتح صفحة /orders/status-templates بعد كانت تفشل بصمت
+        // بـ no_template. نضمن قالباً (صف DB قابلاً للتعديل من الصفحة) ثم نعيد البحث.
+        if (!template && isOrderEvent) {
+          try {
+            const { ensureOrderTemplate } = require('../orderTemplateSeeding');
+            template = await ensureOrderTemplate({
+              companyId,
+              eventType,
+              fallbackEventType,
+              prisma: getSharedPrismaClient(),
+            });
+          } catch (seedErr) {
+            console.error('⚠️ [WHATSAPP-ORDER] Auto-seed failed:', seedErr.message);
+          }
+        }
+
+        if (!template) {
+          if (isOrderEvent) {
+            // لا نرسل نصاً حراً لحالات الطلبات — إن لم يوجد قالب في الداتابيز
+            // (أُنشئ من صفحة /orders/status-templates) نتوقف ونُسجّل تحذيراً واضحاً.
+            console.error(
+              `⚠️ [WHATSAPP-ORDER] لا يوجد قالب طلب مُعدّ في الداتابيز للحدث "${eventType}" ` +
+              `(fallback=${fallbackEventType || 'none'}, category=${category}). ` +
+              `لم يتم الإرسال. أنشئ القالب من صفحة /orders/status-templates.`
+            );
+            return { success: false, reason: 'no_template' };
+          }
           return { success: false, reason: 'no_template' };
         }
+        templateId = template.id || null;
       }
-      templateId = template.id || null;
     }
 
     const safeTemplate = template || {
@@ -2042,6 +1195,20 @@ async function sendNotification(options) {
       listData: null,
       footer: null
     };
+
+    // 🎁 فرض القناة المطلوبة (من جدول إشعارات العملاء)
+    if (channel === 'BAILEYS') {
+      // إرسال نص حر دائماً — نجرد ربط الميتا حتى لا يدخل مسار القالب المعتمد
+      safeTemplate.metaTemplateName = null;
+      safeTemplate.metaTemplateStatus = null;
+    } else if (channel === 'META_CLOUD') {
+      const metaName = safeTemplate?.metaTemplateName;
+      const metaStatus = String(safeTemplate?.metaTemplateStatus || '').toUpperCase();
+      if (!metaName || metaStatus !== 'APPROVED') {
+        console.warn(`⚠️ [WHATSAPP] Channel=META_CLOUD لكن قالب "${eventType}" غير مربوط/معتمد — تم التخطي.`);
+        return { success: false, reason: 'meta_template_not_ready' };
+      }
+    }
 
     // 5. تجهيز المحتوى
     const rawContent = options.contentOverride || safeTemplate.content || '';
@@ -2056,7 +1223,7 @@ async function sendNotification(options) {
       shipping: variables.shipping || '0',
       total: variables.total || '0',
       currency: variables.currency || settings.currency || 'EGP',
-      trackingLink: variables.trackingLink || (variables.orderNumber ? `https://mokhtarelhenawy.online/track/${variables.orderNumber}` : ''),
+      trackingLink: variables.trackingLink || (variables.orderNumber ? `https://${branding.domain}/track/${variables.orderNumber}` : ''),
       trackingNumber: variables.trackingNumber || '',
       estimatedDays: variables.estimatedDays || '3-5',
       employeeName: variables.employeeName || recipientName || 'الموظف العزيز'
@@ -2123,6 +1290,242 @@ async function sendNotification(options) {
       const jid = `${formattedPhone}@s.whatsapp.net`;
 
       let result;
+      let usedMessageType = 'TEXT'; // TEMPLATE | BUTTONS | TEXT
+
+      // 🚨 PRODUCTION-FIX: منع مسار النص الحر (BUTTONS/TEXT) عبر META_CLOUD
+      // لما كان فيه قالب معتمد APPROVED متاح وفشل. خارج نافذة 24 ساعة،
+      // free-form (interactive/text) مرفوض من ميتا حتماً — النزول له = فشل مضمون
+      // يكتب failureReason مضلل (131047) بدل السبب الحقيقي لفشل القالب.
+      let blockFreeTextMetaFallback = false;
+      let lastMetaTemplateError = null;
+
+      // 🔗 زر "صفحة العميل": لو القالب فيه زرار LINK، نبني رابط سري لفتح بوابة العميل
+      // على ساب دومين الشركة (من غير ما يكتب رقم الموبايل) وندمجه في الرسالة.
+      // بيتعمل هنا بدري عشان لازم يتوفر لمسار قالب ميتا (URL button parameters).
+      let customerPageLink = null;
+      if (recipientPhone) {
+        try {
+          const rawBtns = safeTemplate?.hasButtons && safeTemplate.buttons
+            ? (typeof safeTemplate.buttons === 'string' ? JSON.parse(safeTemplate.buttons) : safeTemplate.buttons)
+            : [];
+          const linkButtons = (Array.isArray(rawBtns) ? rawBtns : []).filter((b) =>
+            String(b.type || b.action || '').toUpperCase() === 'LINK'
+          );
+          if (linkButtons.length > 0) {
+            const magicLinkService = require('../services/customerMagicLinkService');
+            // لو مفيش customerId (مثل إرسال عام) نحاول نلقى العميل بالرقم في الشركة
+            let linkCustomerId = customerId || null;
+            if (!linkCustomerId) {
+              const { findCustomerByPhone } = require('../../utils/customerIdentity');
+              const foundCust = await safeQuery(() => findCustomerByPhone(prisma, recipientPhone, companyId));
+              linkCustomerId = foundCust?.id || null;
+            }
+            if (linkCustomerId) {
+              const company = await safeQuery(() => prisma.company.findUnique({
+                where: { id: companyId },
+                select: { id: true, slug: true, customDomain: true }
+              }));
+              const linkInfo = await magicLinkService.createMagicLink(prisma, {
+                companyId,
+                customerId: linkCustomerId,
+                phone: recipientPhone,
+              });
+              customerPageLink = {
+                token: linkInfo.token,
+                text: linkButtons[0].text || 'صفحتي على المتجر',
+                url: magicLinkService.buildMagicLinkUrl(
+                  company || { id: companyId, slug: companyId },
+                  linkInfo.token,
+                  recipientPhone
+                ),
+              };
+              // رابط قابل للضغط في نص الرسالة (يعمل على كل القنوات — واتساب بيحوّل اللينكات تلقائياً)
+              content = `${content}\n\n🔗 *${customerPageLink.text}*\n${customerPageLink.url}`;
+              console.log(`[WHATSAPP-DEBUG] Customer page link generated for ${recipientPhone}`);
+            }
+          }
+        } catch (linkErr) {
+          console.error(`⚠️ [WHATSAPP-DEBUG] Failed to generate customer page link:`, linkErr?.message || linkErr);
+        }
+      }
+
+      // ☁️ [META-CLOUD] إرسال عبر قالب ميتا المعتمد (Approved Template) بدلاً من free text
+      // ميتا Cloud API ترفض الرسائل النصية الحرة خارج نافذة 24 ساعة، لذلك نستخدم
+      // القالب المعتمد (metaTemplateName مع APPROVED) عندما تكون الجلسة META_CLOUD.
+      const metaTemplateName = safeTemplate?.metaTemplateName || null;
+      const metaTemplateStatus = safeTemplate?.metaTemplateStatus || null;
+      const canSendViaMetaTemplate =
+        sessionProvider === 'META_CLOUD' &&
+        metaTemplateName &&
+        String(metaTemplateStatus).toUpperCase() === 'APPROVED';
+
+      if (canSendViaMetaTemplate) {
+        try {
+          console.log(`☁️ [META-CLOUD] Sending via approved Meta template "${metaTemplateName}" (status=${metaTemplateStatus}) for event ${eventType}`);
+
+          // بناء الـ components من ترتيب المتغيرات المخزّن في القالب ({position, name}).
+          // 🆕 buildMetaBodyParams يوحّد المسارين (variables JSON + fallback من نص القالب)
+          // بنفس منطق mapVariablesByOrder المستخدم وقت الربط — يمنع رسايل بمتغيرات مغلوطة.
+          const variablesOrder = safeTemplate?.variables ? (() => {
+            try { const parsed = JSON.parse(safeTemplate.variables); return Array.isArray(parsed) ? parsed : null; } catch { return null; }
+          })() : null;
+          const bodyParams = buildMetaBodyParams(variablesOrder, safeTemplate?.content, variables);
+
+          // helper يبني الـ components مع خيار إسقاط الـ header
+          // 🚨 PRODUCTION-FIX (meta-header-132018): القالب المعتمد في ميتا ممكن
+          // ميكونش فيه header رغم أن headerFormat في الداتابيز = IMAGE — ميتا بترفض
+          // بـ 132018 "Template does not contain title component, no parameters allowed".
+          // لما يحصل ده نعيد المحاولة من غير header components.
+          const buildComponents = async (includeHeader) => {
+            const comps = [];
+            if (includeHeader && safeTemplate?.headerFormat && safeTemplate.headerFormat !== 'TEXT') {
+              // 🆕 headerUsesOrderProduct: صورة أول منتج من الطلب (متغيرة لكل رسالة)
+              let headerMedia = null;
+              if (safeTemplate.headerUsesOrderProduct) {
+                headerMedia = variables.productImage || null;
+                if (!headerMedia && orderId) {
+                  try {
+                    const order = await safeQuery(() => getSharedPrismaClient().order.findUnique({
+                      where: { id: orderId },
+                      select: {
+                        orderItems: { select: { productImage: true, imageUrl: true, product: { select: { mainImage: true, images: true } } } },
+                      }
+                    }));
+                    headerMedia = resolveOrderPrimaryImage(order);
+                  } catch { /* غير حرج — يقع على الصورة الثابتة */ }
+                }
+              }
+              const fallbackMedia = safeTemplate.headerMediaHandle || null;
+              const media = headerMedia || fallbackMedia;
+              if (media) {
+                const headerParam = buildBroadcastHeaderParams(media, String(safeTemplate.headerFormat).toLowerCase());
+                if (headerParam) comps.push(headerParam);
+              }
+            }
+            comps.push({ type: 'BODY', parameters: bodyParams });
+
+            // 🔗 لو القالب فيه زرار صفحة العميل (URL button) — نضيف parameters الزرار
+            // ({{1}}=التوكن، {{2}}=الرقم) بنفس ترتيب buildMetaTemplatePayload.
+            if (customerPageLink) {
+              comps.push({
+                type: 'BUTTON',
+                sub_type: 'url',
+                index: 0,
+                parameters: [
+                  { type: 'text', text: customerPageLink.token },
+                  { type: 'text', text: recipientPhone }
+                ]
+              });
+            }
+            return comps;
+          };
+
+          let components = await buildComponents(true);
+
+          result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, formattedPhone, metaTemplateName, {
+            name: metaTemplateName,
+            language: safeTemplate?.metaTemplateLanguage || 'ar',
+            components
+          }, {
+            templateBody: content,
+            senderId: null
+          });
+
+          console.log(`☁️ [META-CLOUD] Template message result:`, result);
+          if (result) usedMessageType = 'TEMPLATE';
+        } catch (metaError) {
+          // 🚨 PRODUCTION-FIX (meta-header-132018): ميتا رفضت بسبب header غير موجود في القالب
+          // المعتمد ("Template does not contain title component") — نعيد المحاولة من غير header.
+          // ملاحظة: النص ده بييجي في error.details (من error_data.details)، مش في error.message.
+          const headerRejected =
+            metaError &&
+            String(
+              metaError?.details ||
+              metaError?.response?.data?.error?.error_data?.details ||
+              metaError?.message ||
+              metaError?.response?.data?.error?.message ||
+              ''
+            ).includes('does not contain title component');
+          if (headerRejected && safeTemplate?.headerFormat && safeTemplate.headerFormat !== 'TEXT') {
+            console.warn(`⚠️ [META-CLOUD] Meta rejected header component for "${metaTemplateName}" (template has no title/header). Retrying WITHOUT header...`);
+            try {
+              const componentsNoHeader = await buildComponents(false);
+              result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, formattedPhone, metaTemplateName, {
+                name: metaTemplateName,
+                language: safeTemplate?.metaTemplateLanguage || 'ar',
+                components: componentsNoHeader
+              }, {
+                templateBody: content,
+                senderId: null
+              });
+              console.log(`☁️ [META-CLOUD] Retry without header succeeded for "${metaTemplateName}".`);
+              if (result) usedMessageType = 'TEMPLATE';
+            } catch (retryErr) {
+              console.error(`❌ [META-CLOUD] Retry without header also failed for "${metaTemplateName}":`, retryErr?.message || retryErr);
+              result = null;
+              throw retryErr;
+            }
+          } else {
+            // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
+            console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
+            lastMetaTemplateError = metaError;
+
+            // 🆕 PRODUCTION-FIX (notifications-fix-plan §5.3 — Meta → Baileys fallback):
+            // لو الخطأ بسبب نافذة 24 ساعة أو قالب غير معتمد، دوّر على Baileys session
+            // تانية في الشركة وابعت منها نص حر بدل فشل صامت. البتتم مرة واحدة (مفيش loop).
+            const isWindowError = isMetaWindowError(metaError);
+
+            if (isWindowError && sessionProvider === 'META_CLOUD') {
+              console.log(`🔄 [FALLBACK] Meta rejected (24h window / template issue). Searching for a Baileys session...`);
+              const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+              if (baileysSession) {
+                console.log(`✅ [FALLBACK] Found Baileys session ${baileysSession.sessionId}. Retrying send as free-text.`);
+                try {
+                  result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                  console.log(`✅ [FALLBACK] Sent via Baileys fallback.`);
+                  if (result) usedMessageType = 'TEXT';
+                } catch (fallbackErr) {
+                  console.error(`❌ [FALLBACK] Baileys fallback also failed:`, fallbackErr.message);
+                  result = null;
+                }
+              } else {
+                // 🚨 PRODUCTION-FIX: لا يوجد Baileys متصل.
+                // لو كان القالب المعتمد متاحاً (canSendViaMetaTemplate)، ممنوع النزول
+                // لـ BUTTONS/TEXT عبر نفس جلسة META_CLOUD — free-form مرفوض خارج
+                // نافذة 24 ساعة وسيفشل حتماً بنفس الخطأ (131047) ويضلل الـ failureReason.
+                // الأصح: نوقف هنا ونُسجّل فشل القالب الحقيقي.
+                if (canSendViaMetaTemplate) {
+                  console.warn(`⚠️ [FALLBACK] No connected Baileys session for company ${companyId}. ` +
+                    `Approved template "${metaTemplateName}" failed (${metaError?.code || metaError?.message}) ` +
+                    `and free-text via META_CLOUD is impossible outside 24h window. Failing notification.`);
+                  blockFreeTextMetaFallback = true;
+                  result = null;
+                  metaError.code = metaError.code || (isWindowError ? 131047 : null);
+                  throw metaError;
+                }
+                console.warn(`⚠️ [FALLBACK] No connected Baileys session available for company ${companyId}. Notification will fail.`);
+                result = null;
+              }
+            } else {
+              // 🚨 PRODUCTION-FIX: فشل القالب المعتمد بخطأ غير نافذة (network/params/undeliverable...).
+              // بما أن canSendViaMetaTemplate كان متاحاً والجلسة META_CLOUD، النزول لـ BUTTONS/TEXT
+              // عبر نفس جلسة الميتا خارج نافذة 24 ساعة سيفشل حتماً (free-form مرفوض) ويضلل الـ failureReason.
+              // الأصح: نمنع مسار النص الحر ونُسجّل فشل القالب الحقيقي.
+              if (canSendViaMetaTemplate) {
+                console.error(`☁️ [META-CLOUD] Approved template "${metaTemplateName}" failed with non-window error ` +
+                  `(${metaError?.code || metaError?.message}). Blocking free-text meta fallback.`);
+                blockFreeTextMetaFallback = true;
+                result = null;
+                throw metaError;
+              }
+              console.error(`☁️ [META-CLOUD] Falling back to local send path for ${eventType}`);
+              result = null;
+            }
+          }
+        }
+        // إذا نجح الإرسال (result موجود) نتخطى مسار الإرسال العادي بالأسفل (شرط !result)
+      }
+
       // 📋 معالجة الأزرار التفاعلية
       // الأولوية للأزرار من القالب إذا كانت موجودة، مع الحفاظ على الأيدي (IDs) الوظيفية إذا تم تمريرها من الكود
       let templateButtons = null;
@@ -2133,6 +1536,8 @@ async function sendNotification(options) {
           console.error('❌ Failed to parse template buttons:', e);
         }
       }
+
+      const isOrderNotification = category === 'ORDER' || category === 'ORDERS' || eventType.startsWith('ORDER_');
 
       let finalButtons = buttons;
 
@@ -2147,6 +1552,12 @@ async function sendNotification(options) {
               text: tplBtn && tplBtn.text ? replaceVariables(tplBtn.text, variables) : replaceVariables(btn.text, variables)
             };
           });
+        } else if (isOrderNotification) {
+          // أزرار القالب لحالات الطلبات: نبني ID وظيفي من حقل action
+          finalButtons = templateButtons.map(btn => ({
+            id: buildOrderStatusButtonId(btn, variables),
+            text: replaceVariables(btn.text || btn.id, variables)
+          }));
         } else {
           // إذا لم يتم تمرير أزرار من الكود، نستخدم أزرار القالب مباشرة
           finalButtons = templateButtons.map(btn => ({
@@ -2163,7 +1574,7 @@ async function sendNotification(options) {
       }
 
       // 🔥 ضمان وجود أزرار لإشعارات الطلبات إذا لم يتم توفيرها (Default Fallback)
-      if ((!finalButtons || finalButtons.length === 0) && (category === 'ORDER' || category === 'ORDERS' || eventType.startsWith('ORDER_'))) {
+      if ((!finalButtons || finalButtons.length === 0) && isOrderNotification) {
         console.log(`[WHATSAPP-DEBUG] Injecting default buttons for order notification: ${eventType}`);
         finalButtons = [
           { id: replaceVariables("confirm_order_{orderId}", variables), text: "تأكيد الأوردر" },
@@ -2172,45 +1583,134 @@ async function sendNotification(options) {
         ];
       }
 
-      if (finalButtons && finalButtons.length > 0) {
+      if (blockFreeTextMetaFallback) {
+        // 🚨 PRODUCTION-FIX: القالب المعتمد APPROVED فشل ولا يوجد Baileys بديل.
+        // ممنوع تجربة free-text عبر META_CLOUD خارج نافذة 24 ساعة — ميتا سترفض حتماً.
+        // نرمي خطأ يحمل السبب الحقيقي لفشل القالب (بدل 131047 مضلل من buttons).
+        throw new Error(
+          `Approved Meta template failed and free-text is blocked outside 24h window` +
+          (lastMetaTemplateError ? ` (${lastMetaTemplateError.code || ''} ${lastMetaTemplateError.message || ''})` : '')
+        );
+      }
+
+      if (!result && finalButtons && finalButtons.length > 0) {
         try {
           // Get footer from default template if not in DB template (DB model lacks footer field currently)
+          // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.2): اسم الشركة من DB بدل هاردكود
           const footerStr =
             safeTemplate.footer ||
-            (DEFAULT_TEMPLATES[eventType]?.footer
+            (!isOrderCategory(category, eventType) && DEFAULT_TEMPLATES[eventType]?.footer
               ? replaceVariables(DEFAULT_TEMPLATES[eventType].footer, variables)
-              : "Mokhtar Elhenawy Store");
+              : branding.name);
 
           console.log(`🚀 [WHATSAPP-DEBUG] Triggering sendButtons with ${finalButtons.length} buttons and footer: ${footerStr}`);
 
           result = await WhatsAppMessageHandler.sendButtons(sessionId, jid, content, finalButtons, {
             footer: footerStr
           });
+          if (result) usedMessageType = 'BUTTONS';
         } catch (error) {
-          console.error(`❌ [WHATSAPP-DEBUG] Failed to send buttons, falling back to text:`, error);
-          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          // 🚨 PRODUCTION-FIX: لو فشلت الأزرار عبر META_CLOUD بخطأ نافذة (131047/131026) —
+          // sendText عبر نفس جلسة الميتا سيفشل حتماً خارج نافذة 24 ساعة.
+          // نحاول Baileys session بديلة أولاً؛ إن لم توجد نرمي الخطأ الأصلي (يحافظ على errorCode).
+          if (sessionProvider === 'META_CLOUD' && isMetaWindowError(error)) {
+            console.log(`🔄 [FALLBACK] Meta buttons rejected (window error). Searching for a Baileys session...`);
+            const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+            if (baileysSession) {
+              try {
+                result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (baileysErr) {
+                console.error(`❌ [FALLBACK] Baileys text fallback also failed:`, baileysErr.message);
+                throw error; // نحتفظ بخطأ الميتا الأصلي (131047) للسبب الحقيقي
+              }
+            } else {
+              console.error(`❌ [WHATSAPP-DEBUG] Meta buttons failed and no Baileys session available:`, error.message);
+              throw error; // نحتفظ بالكود الأصلي بدل 'Both Meta and Baileys send failed' (بلا code)
+            }
+          } else {
+            console.error(`❌ [WHATSAPP-DEBUG] Failed to send buttons, falling back to text:`, error);
+            result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+            if (result) usedMessageType = 'TEXT';
+          }
         }
-      } else if (safeTemplate.hasList && safeTemplate.listData) {
+      } else if (!result && safeTemplate.hasList && safeTemplate.listData) {
         try {
           const listData = typeof safeTemplate.listData === 'string' ? JSON.parse(safeTemplate.listData) : safeTemplate.listData;
           console.log(`[WHATSAPP-DEBUG] Sending list message`);
           result = await WhatsAppMessageHandler.sendList(sessionId, jid, listData);
         } catch (parseError) {
           console.error(`❌ [WHATSAPP-DEBUG] Failed to parse listData, falling back to text:`, parseError);
-          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          // 🚨 PRODUCTION-FIX: لو META_CLOUD خارج النافذة، نفضل Baileys بدل sendText عبر ميتا.
+          if (sessionProvider === 'META_CLOUD') {
+            const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+            if (baileysSession) {
+              try {
+                result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (baileysErr) {
+                console.error(`❌ [WHATSAPP-DEBUG] Baileys text fallback failed:`, baileysErr.message);
+                result = null;
+              }
+            } else {
+              try {
+                result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (metaTextErr) {
+                console.error(`❌ [WHATSAPP-DEBUG] Meta text send failed:`, metaTextErr.message);
+                throw metaTextErr;
+              }
+            }
+          } else {
+            result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+            if (result) usedMessageType = 'TEXT';
+          }
         }
-      } else {
+      } else if (!result) {
         console.log(`[WHATSAPP-DEBUG] Sending text message:`, content?.substring(0, 50));
-        result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+
+        // 🚨 PRODUCTION-FIX: لو الجلسة META_CLOUD وخارج نافذة 24 ساعة، sendText عبر الميتا
+        // سيفشل بـ 131047. نحاول Baileys session بديلة إن وجدت — نص Baileys يعمل دائماً.
+        if (sessionProvider === 'META_CLOUD') {
+          const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+          if (baileysSession) {
+            try {
+              result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+              if (result) usedMessageType = 'TEXT';
+            } catch (baileysErr) {
+              console.error(`❌ [WHATSAPP-DEBUG] Baileys text fallback failed:`, baileysErr.message);
+              result = null;
+            }
+          } else {
+            try {
+              result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+              if (result) usedMessageType = 'TEXT';
+            } catch (metaTextErr) {
+              console.error(`❌ [WHATSAPP-DEBUG] Meta text send failed:`, metaTextErr.message);
+              throw metaTextErr; // يحافظ على errorCode الحقيقي (مثل 131047)
+            }
+          }
+        } else {
+          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          if (result) usedMessageType = 'TEXT';
+        }
       }
 
       console.log(`[WHATSAPP-DEBUG] Send result:`, result);
+
+      // 🚨 PRODUCTION-FIX (notifications-fix-plan §5.3 hardening):
+      // لا نكتب SENT أبداً بدون نتيجة إرسال فعلية — لو Meta رفضت وfallback فشل
+      // (result = null) نرمي خطأ لنمر عبر مسار FAILED بدل نجاح وهمي.
+      if (!result) {
+        throw new Error('Both Meta and Baileys send failed');
+      }
 
       // تحديث السجل
       await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
         where: { id: notificationLog.id },
         data: {
           status: 'SENT',
+          messageType: usedMessageType || result?.messageType || 'TEXT',
           sentAt: new Date(),
           whatsappMessageId: result?.messageId || result?.key?.id || null
         }
@@ -2223,6 +1723,7 @@ async function sendNotification(options) {
       if ((category === 'ORDERS' || eventType === 'ORDER_CREATED') && process.env.ENABLE_LOCAL_WHATSAPP === 'true') {
         await sendViaLocalWhatsApp({
           phone: formattedPhone,
+          companyId: companyId,
           message: content,
           orderNumber: variables.orderNumber,
           customerName: recipientName,
@@ -2249,6 +1750,38 @@ async function sendNotification(options) {
         }
       }));
 
+      // 🚨 PRODUCTION-FIX (notifications-fix-plan §4.1):
+      // إعادة محاولة واحدة عبر الطابور للأخطاء العابرة (retryable=true من Meta Cloud).
+      // يعتمد على §1.1 (الطابور مفعّل) + §4.1 (حل الجلسة مؤجّل للمعالجة).
+      if (sendError?.retryable) {
+        try {
+          const scheduled = await scheduleNotification({
+            companyId,
+            deliveryCompanyId,
+            recipientPhone,
+            recipientName,
+            recipientType,
+            category,
+            eventType,
+            variables,
+            orderId,
+            customerId,
+            productId,
+            employeeId,
+            cartId,
+            contentOverride: options.contentOverride || null,
+            scheduleAt: new Date(Date.now() + 5 * 60 * 1000),
+            priority: Math.max(priority || 5, 8),
+          });
+          if (scheduled?.success) {
+            console.log(`📅 [WHATSAPP-DEBUG] Retry scheduled via queue for ${eventType}: ${scheduled.queueId}`);
+            return { success: false, reason: 'retry_scheduled', queueId: scheduled.queueId };
+          }
+        } catch (retryErr) {
+          console.error('[WHATSAPP-DEBUG] Retry scheduling failed:', retryErr.message);
+        }
+      }
+
       return {
         success: false,
         reason: sendError.reason || 'send_failed',
@@ -2271,12 +1804,13 @@ async function sendNotification(options) {
  */
 async function sendViaLocalWhatsApp(data) {
   try {
-    const { phone, message, orderNumber, customerName, variables, eventType } = data;
+    const { phone, message, orderNumber, customerName, variables, eventType, companyId } = data;
 
     console.log(`🚀 [LOCAL-WHATSAPP] Sending to localhost:3000 for order ${orderNumber || 'N/A'}`);
 
     const response = await axios.post('http://localhost:3007/whatsapp', {
       phone,
+      companyId,
       message,
       orderNumber,
       customerName,
@@ -2367,8 +1901,12 @@ async function scheduleNotification(options) {
       if (connected?.id) sessionId = connected.id;
     }
 
+    // 🚨 PRODUCTION-FIX (notifications-fix-plan §4.1):
+    // لا تُسقط الإشعار عند غياب الجلسة الآن — صفّف sessionId='' واترك الحلّ للمعالجة
+    // (processNotificationQueue يعيد حلّ الجلسة وقت الإرسال: META_CLOUD + إعادة اتصال لاحقة).
+    // sessionId: '' قيمة صالحة لحقل non-null String.
     if (!sessionId) {
-      return { success: false, reason: 'no_session' };
+      console.log(`📅 [WHATSAPP-QUEUE] No session at schedule time for company ${deliveryCompanyId} — will defer session resolution to processing.`);
     }
 
     // 3. جلب القالب
@@ -2376,11 +1914,17 @@ async function scheduleNotification(options) {
       where: { companyId, eventType, isActive: true }
     });
 
-    if (!template && DEFAULT_TEMPLATES[eventType]) {
+    const isOrderEvent = isOrderCategory(category, eventType);
+    if (!template && !isOrderEvent && DEFAULT_TEMPLATES[eventType]) {
       template = { content: DEFAULT_TEMPLATES[eventType].content };
     }
 
     if (!template && !contentOverride) {
+      if (isOrderEvent) {
+        console.error(
+          `⚠️ [WHATSAPP-ORDER] لا يوجد قالب طلب مُعدّ في الداتابيز للحدث "${eventType}" (مجدوَل). لم يتم الإرسال.`
+        );
+      }
       return { success: false, reason: 'no_template' };
     }
 
@@ -2396,7 +1940,7 @@ async function scheduleNotification(options) {
       data: {
         companyId,
         templateId: template?.id || null,
-        sessionId: sessionId,
+        sessionId: sessionId || '',
         recipientPhone: formatPhoneNumber(recipientPhone),
         recipientName,
         recipientType: persistedRecipientType,
@@ -2472,13 +2016,18 @@ async function sendOrderCreatedNotification(order) {
   if (!phone) return { success: false, reason: 'no_phone' };
 
   // Format order items with color and size
+  // 🚨 PRODUCTION-FIX (131008): نقرأ order.orderItems (Prisma relation) أو order.items —
+  // مش items بس — وإلا رسالة "طلب جديد" تطلع بمتغير orderItems فاضي والقالب يفشل بـ 131008.
+  const createdItemsSource = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
   let orderItemsText = '';
-  if (order.items && order.items.length > 0) {
+  if (createdItemsSource.length > 0) {
     orderItemsText = '\n📋 تفاصيل الطلب:\n';
-    order.items.forEach((item, index) => {
+    createdItemsSource.forEach((item, index) => {
       const color = item.productColor || item.color || item.attributes?.color;
       const size = item.productSize || item.size || item.attributes?.size;
-      let itemDetails = `${index + 1}. ${item.productName || item.name}`;
+      let itemDetails = `${index + 1}. ${item.productName || item.name || item.product?.name || 'منتج'}`;
       if (color) itemDetails += ` | اللون: ${color}`;
       if (size) itemDetails += ` | المقاس: ${size}`;
       itemDetails += ` | الكمية: ${item.quantity || 1}`;
@@ -2486,19 +2035,20 @@ async function sendOrderCreatedNotification(order) {
     });
     // Add separator line after items
     orderItemsText += '------------------------------\n';
+  } else {
+    // 🚨 PRODUCTION-FIX (131008): قيمة غير فاضية لمتغير orderItems في قالب "طلب جديد"
+    // — وإلا Meta Cloud بترفض بـ 131008 "Required parameter is missing".
+    orderItemsText = 'لا يوجد';
   }
 
   // Build tracking link
+  // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.2): استخدم getCompanyBranding —
+  // النطاق من DB (customDomain → website → slug.platformDomain)، لا هاردكود.
   let trackingLink = '';
   try {
-    const company = await prisma.company.findUnique({
-      where: { id: order.companyId },
-      select: { slug: true, customDomain: true }
-    });
-
-    const baseUrl = company?.customDomain
-      ? `https://${company.customDomain}`
-      : `https://${company?.slug || 'store'}.mokhtarelhenawy.online`;
+    const { getCompanyBranding } = require('../../utils/companyBranding');
+    const branding = await getCompanyBranding(order.companyId);
+    const baseUrl = `https://${branding.domain}`;
 
     trackingLink = `${baseUrl}/shop/track-order?orderNumber=${order.orderNumber}&phone=${encodeURIComponent(phone)}&companyId=${order.companyId}`;
   } catch (err) {
@@ -2507,6 +2057,23 @@ async function sendOrderCreatedNotification(order) {
 
   console.log(`[WHATSAPP-DEBUG] Calling sendNotification...`);
   const { trackedOrderId } = getOrderNotificationTracking(order);
+
+  // 🛡️ Duplicate guard: منع إرسال رسالة "طلب جديد" مرتين لنفس الطلب
+  // خلال نافذة قصيرة (يحدث أحياناً عندما يُستدعى الإرسال من أكثر من مسار
+  // عند إنشاء الطلب، مثل enhancedOrderService + route).
+  // 🚨 PRODUCTION-FIX (notifications-fix-plan §3.1): وحّدت عبر isDuplicateNotification
+  if (trackedOrderId) {
+    const isDup = await isDuplicateNotification({
+      companyId: order.companyId,
+      orderId: trackedOrderId,
+      eventType: 'ORDER_CREATED',
+    });
+    if (isDup) {
+      console.log(`⚠️ [WHATSAPP] Duplicate ORDER_CREATED blocked for order ${order.orderNumber}`);
+      return { success: false, reason: 'duplicate_blocked' };
+    }
+  }
+
   return sendNotification({
     companyId: order.companyId,
     recipientPhone: phone,
@@ -2524,6 +2091,7 @@ async function sendOrderCreatedNotification(order) {
       total: (order.total || 0).toString(),
       currency: order.currency || 'EGP',
       trackingLink,
+      productImage: resolveOrderPrimaryImage(order),
       orderId: order.id
     },
     orderId: trackedOrderId,
@@ -2554,6 +2122,13 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     return { success: false, reason: 'disabled' };
   }
 
+  // 🛡️ حالات داخلية مش لازم تبعت notification للعميل (TRASH/DRAFT/DUPLICATE...) —
+  // بيمنع Prisma enum error على eventType وبيوقف spam للعملاء.
+  if (isNonNotifiableStatus(newStatus)) {
+    console.log(`[WHATSAPP-STATUS] ⏭️ Skipping notification for internal status: ${newStatus}`);
+    return { success: false, reason: "status_not_notifiable" };
+  }
+
   // 🆕 تحديد نوع الإشعار بناءً على الحالة (دعم للحالات الديناميكية)
   let statusConfig = null;
   const statusEventMap = {
@@ -2567,10 +2142,27 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
 
   if (statusEventMap[newStatus]) {
     statusConfig = statusEventMap[newStatus];
+    // 🛡️ PRODUCTION-FIX (status-notify-flag): احترم notifyCustomer من إعداد الحالة حتى
+    // للقياسية الست — كان الإعداد العام (orderProcessingEnabled... إلخ) بيغلب على القرار
+    // ويبعت رسايل لحالات التاجر معطّلها من صفحة حالات الطلبات (مثل PROCESSING
+    // notifyCustomer=false) — التناقض ده كان بيولّد محاولات إرسال فاشلة 131047.
+    try {
+      const dbNotify = await prisma.orderStatusConfig.findFirst({
+        where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping'] }, isActive: true },
+        select: { notifyCustomer: true }
+      });
+      if (dbNotify && dbNotify.notifyCustomer === false) {
+        console.log(`[WHATSAPP-STATUS] ⏭️ ${newStatus} notifyCustomer=false في إعداد الحالة — تخطي الإرسال`);
+        return { success: false, reason: 'status_notification_disabled' };
+      }
+    } catch (notifyFlagErr) {
+      console.warn(`[WHATSAPP-STATUS] ⚠️ Failed to check notifyCustomer for ${newStatus}:`, notifyFlagErr.message);
+    }
   } else {
     // التحقق من الحالات المخصصة في قاعدة البيانات
+    // (statusType ممكن يكون order أو shipping — الحالات المخصصة بتاعة التاجر زي DELAYED-WITH-CAPTAIN)
     const dbStatus = await prisma.orderStatusConfig.findFirst({
-      where: { companyId: order.companyId, code: newStatus, statusType: 'order', isActive: true }
+      where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping'] }, isActive: true }
     });
 
     if (dbStatus) {
@@ -2578,7 +2170,10 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
         event: dbStatus.code,
         enabled: dbStatus.notifyCustomer,
         isCustom: true,
-        statusName: dbStatus.name
+        statusName: dbStatus.name,
+        // 🛡️ PRODUCTION-FIX (custom-status-enum): نخزّن في السجل قيمة enum صالحة —
+        // نستخدم mapsToSystem بتاعة الحالة المخصصة (مثل ON_HOLD) إن وجدت.
+        persistedEventType: getPersistedNotificationEventType(dbStatus.mapsToSystem || dbStatus.code)
       };
     } else {
       // 🚀 [FALLBACK] If not in map or DB, allow the notification but let sendNotification decide
@@ -2611,13 +2206,21 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
   if (!phone) return { success: false, reason: 'no_phone' };
 
   // Format order items with color and size (Always include if available)
+  // 🚨 PRODUCTION-FIX: الطلب قد يأتي بــ order.orderItems (Prisma relation من
+  // updateOrderStatus) أو order.items (من مسارات أخرى). كان الكود يقرأ order.items
+  // فقط → الـ orderItemsText يبقى فاضي → قوالب بvariable إلزامي (orderItems) تفشل
+  // بـ Meta 131008 "Required parameter is missing".
+  const orderItemsSource = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
+
   let orderItemsText = '';
-  if (order.items && order.items.length > 0) {
+  if (orderItemsSource.length > 0) {
     orderItemsText = '\n📋 تفاصيل الطلب:\n';
-    order.items.forEach((item, index) => {
+    orderItemsSource.forEach((item, index) => {
       const color = item.productColor || item.color || item.attributes?.color;
       const size = item.productSize || item.size || item.attributes?.size;
-      let itemDetails = `${index + 1}. ${item.productName || item.name}`;
+      let itemDetails = `${index + 1}. ${item.productName || item.name || item.product?.name || 'منتج'}`;
       if (color) itemDetails += ` | اللون: ${color}`;
       if (size) itemDetails += ` | المقاس: ${size}`;
       itemDetails += ` | الكمية: ${item.quantity || 1}`;
@@ -2625,6 +2228,11 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     });
     // Add separator line after items
     orderItemsText += '------------------------------\n';
+  } else {
+    // 🚨 PRODUCTION-FIX (131008): لو الأوردر مفيش فيه منتجات (أو items مش متعمّرة)،
+    // لازم نبعث قيمة غير فاضية لمتغير orderItems — وإلا Meta Cloud بترفض القالب
+    // بـ 131008 "Required parameter is missing" (القالب بيطلب orderItems إلزامي).
+    orderItemsText = 'لا يوجد';
   }
 
   console.log(`[WHATSAPP-STATUS] Phone: ${phone}`);
@@ -2639,17 +2247,20 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
       recipientType: 'CUSTOMER',
       category: 'ORDER',
       eventType: statusConfig.event,
+      fallbackEventType: newStatus,
+      persistedEventType: statusConfig.persistedEventType || null,
       variables: {
         customerName: order.customerName || order.customer?.firstName || 'عميلنا العزيز',
         customerPhone: phone,
         orderNumber: order.orderNumber,
         orderItems: orderItemsText,
         status: statusConfig.statusName || newStatus, // 🔥 Added status name for templates
-        total: order.total?.toString(),
+        total: order.total != null ? String(order.total) : '0',
         currency: order.currency || 'EGP',
         trackingNumber: order.turboTrackingNumber || '',
         estimatedDays: '2-3',
-        reason: ''
+        reason: '',
+        productImage: resolveOrderPrimaryImage(order)
       },
       orderId: trackedOrderId,
       customerId: order.customerId,
@@ -2665,6 +2276,58 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     console.log(`[WHATSAPP-STATUS] ==== END (with error) ====`);
     return { success: false, reason: 'error', error: error.message };
   }
+}
+
+/**
+ * إرسال إشعار إنشاء طلب متوافق مع حالة الطلب الفعلية.
+ * تُستخدم في مسارات إنشاء الطلب اليدوي (service + route) لتوحيد المنطق:
+ * - بدون حالة / PENDING / SCHEDULED / حالات داخلية → قالب "طلب جديد" (ORDER_CREATED).
+ * - أي حالة أخرى (CONFIRMED/PROCESSING/RETURNED/EXCHANGED/حالة مخصصة...) →
+ *   قالب حالة الطلب عبر sendOrderStatusNotification (ORDER_CONFIRMED... إلخ)
+ *   من صفحة /orders/status-templates — بدل إرسال "طلب جديد" دائماً.
+ */
+async function sendOrderCreationNotification(order) {
+  const status = String(order?.status || '').trim().toUpperCase();
+
+  const useNewOrderTemplate =
+    !status ||
+    status === 'PENDING' ||
+    status === 'SCHEDULED' ||
+    isNonNotifiableStatus(status);
+
+  // نفس الـ eventType اللي بيتخزّن فعلاً في whatsAppNotificationLog
+  // (sendOrderStatusNotification بيرشّحه بـ getPersistedNotificationEventType).
+  const eventType = useNewOrderTemplate
+    ? 'ORDER_CREATED'
+    : getPersistedNotificationEventType(status);
+
+  // 🛡️ Dedup موحّد: createEnhancedOrder والـ route بينادوها الاتنين عند الإنشاء
+  // اليدوي — منع إرسال رسالة "طلب جديد" أو "حالة الطلب" مرتين لنفس الطلب
+  // (مسار ORDER_CREATED كان محمي بالداخل قبل التعديل، والحالات بقا لازم تتحمي برضه).
+  const { trackedOrderId, isGuestOrder } = getOrderNotificationTracking(order);
+  const hasDedupKey =
+    trackedOrderId ||
+    (isGuestOrder && (order.customerPhone || order.customer?.phone));
+  if (hasDedupKey) {
+    const isDup = await isDuplicateNotification({
+      companyId: order.companyId,
+      ...(trackedOrderId
+        ? { orderId: trackedOrderId }
+        : { recipientPhone: order.customerPhone || order.customer?.phone }),
+      eventType,
+    });
+    if (isDup) {
+      console.log(`⚠️ [WHATSAPP] Duplicate ${eventType} blocked for order ${order.orderNumber}`);
+      return { success: false, reason: 'duplicate_blocked' };
+    }
+  }
+
+  if (useNewOrderTemplate) {
+    return sendOrderCreatedNotification(order);
+  }
+
+  console.log(`[WHATSAPP-ORDER] Order ${order?.orderNumber} created directly with status ${status} — using status template instead of ORDER_CREATED`);
+  return sendOrderStatusNotification(order, status, 'PENDING');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3233,7 +2896,17 @@ async function sendManualDeductionNotification(deduction, employee, companyId) {
 /**
  * معالجة الإشعارات المجدولة
  */
+let notificationQueueProcessing = false;
+
 async function processNotificationQueue() {
+  // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): حارس ضد التداخل —
+  // لو الجولة السابقة ما زالت تعمل (تجاوزت 60 ثانية) نتخطى هذه الجولة.
+  if (notificationQueueProcessing) {
+    console.log('[WHATSAPP-QUEUE] Previous run still active, skipping.');
+    return;
+  }
+  notificationQueueProcessing = true;
+
   const prisma = getSharedPrismaClient();
 
   // ✅ CRITICAL FIX: Check if prisma client is available
@@ -3250,6 +2923,24 @@ async function processNotificationQueue() {
   }
 
   try {
+    // 🧹 Reaper: إعادة تعيين أي صفوف عالقة في PROCESSING منذ أكثر من 5 دقائق
+    // (crash/OOM/deploy أثناء المعالجة يترك الصف في PROCESSING للأبد وإلا)
+    const REAPER_STALE_MS = 5 * 60 * 1000;
+    try {
+      const reaped = await prisma.whatsAppNotificationQueue.updateMany({
+        where: {
+          status: 'PROCESSING',
+          processedAt: { lt: new Date(Date.now() - REAPER_STALE_MS) }
+        },
+        data: { status: 'PENDING', processedAt: null }
+      });
+      if (reaped.count > 0) {
+        console.log(`🧹 [WHATSAPP-QUEUE] Reaped ${reaped.count} stale PROCESSING rows -> PENDING`);
+      }
+    } catch (reaperErr) {
+      console.error('❌ [WHATSAPP-QUEUE] Reaper failed:', reaperErr.message);
+    }
+
     // جلب الإشعارات المستحقة
     const pendingNotifications = await prisma.whatsAppNotificationQueue.findMany({
       where: {
@@ -3260,47 +2951,73 @@ async function processNotificationQueue() {
         { priority: 'asc' },
         { scheduledAt: 'asc' }
       ],
-      take: 50
+      take: 200
     });
 
     console.log(`📬 Processing ${pendingNotifications.length} queued notifications`);
 
     for (const notification of pendingNotifications) {
-      // تحديث الحالة
-      await prisma.whatsAppNotificationQueue.update({
-        where: { id: notification.id },
-        data: { status: 'PROCESSING' }
+      // 🚨 PRODUCTION-FIX (N1): claim ذري — updateMany بـ status: 'PENDING' في
+      // الـ where (compare-and-set). لو صف آخر (worker/replica) استحوذ عليه قبلنا
+      // count = 0 → نتخطى. بيضمن عدم المعالجة المزدوجة حتى لو فتحنا multi-replica.
+      const claimed = await prisma.whatsAppNotificationQueue.updateMany({
+        where: { id: notification.id, status: 'PENDING' },
+        data: { status: 'PROCESSING', processedAt: new Date() }
       });
+      if (claimed.count === 0) {
+        console.log(`⏭️ [WHATSAPP-QUEUE] ${notification.id} already claimed by another worker — skipping`);
+        continue;
+      }
 
       try {
-        // التحقق من الجلسة
-        const session = WhatsAppManager.getSession(notification.sessionId);
+        // التحقق من الجلسة — أعد حلّها وقت المعالجة (إصلاح §4.1):
+        // - META_CLOUD لا يملك socket في ذاكرة Baileys (getSession يرجع undefined).
+        // - الجلسة قد تنفصل بين الجدولة والمعالجة.
+        let sessionId = notification.sessionId;
+        let session = sessionId ? WhatsAppManager.getSession(sessionId) : null;
+        if (!session || session.status !== 'connected') {
+          const connected = await prisma.whatsAppSession.findFirst({
+            where: { companyId: notification.companyId, status: 'CONNECTED' },
+            select: { id: true, provider: true },
+            orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
+          });
+          if (connected?.id) {
+            sessionId = connected.id;
+            session = WhatsAppManager.getSession(sessionId);
+            if (!session || session.status !== 'connected') {
+              // META_CLOUD يُعتبر متصلاً إذا كان CONNECTED في DB (لا socket في الذاكرة)
+              if (connected.provider === 'META_CLOUD') {
+                session = { status: 'connected', provider: 'META_CLOUD', sessionId };
+              }
+            }
+          }
+        }
         if (!session || session.status !== 'connected') {
           throw new Error('Session not connected');
         }
 
-        // إرسال الرسالة
+        // إرسال الرسالة — WhatsAppMessageHandler يروّت META_CLOUD تلقائياً (getSessionProvider)
         const jid = `${notification.recipientPhone}@s.whatsapp.net`;
 
         let result;
         if (notification.buttons) {
           try {
             const buttons = typeof notification.buttons === 'string' ? JSON.parse(notification.buttons) : notification.buttons;
-            result = await WhatsAppMessageHandler.sendButtons(notification.sessionId, jid, notification.content, buttons);
+            result = await WhatsAppMessageHandler.sendButtons(sessionId, jid, notification.content, buttons);
           } catch (parseErr) {
             console.error('❌ [WHATSAPP-QUEUE] Failed to parse buttons:', parseErr);
-            result = await WhatsAppMessageHandler.sendText(notification.sessionId, jid, notification.content);
+            result = await WhatsAppMessageHandler.sendText(sessionId, jid, notification.content);
           }
         } else if (notification.listData) {
           try {
             const listData = typeof notification.listData === 'string' ? JSON.parse(notification.listData) : notification.listData;
-            result = await WhatsAppMessageHandler.sendList(notification.sessionId, jid, listData);
+            result = await WhatsAppMessageHandler.sendList(sessionId, jid, listData);
           } catch (parseErr) {
             console.error('❌ [WHATSAPP-QUEUE] Failed to parse listData:', parseErr);
-            result = await WhatsAppMessageHandler.sendText(notification.sessionId, jid, notification.content);
+            result = await WhatsAppMessageHandler.sendText(sessionId, jid, notification.content);
           }
         } else {
-          result = await WhatsAppMessageHandler.sendText(notification.sessionId, jid, notification.content);
+          result = await WhatsAppMessageHandler.sendText(sessionId, jid, notification.content);
         }
 
         // إنشاء سجل
@@ -3308,7 +3025,7 @@ async function processNotificationQueue() {
           data: {
             companyId: notification.companyId,
             templateId: notification.templateId,
-            sessionId: notification.sessionId,
+            sessionId,
             recipientPhone: notification.recipientPhone,
             recipientName: notification.recipientName,
             recipientType: notification.recipientType,
@@ -3322,17 +3039,22 @@ async function processNotificationQueue() {
             cartId: notification.cartId,
             status: 'SENT',
             sentAt: new Date(),
-            whatsappMessageId: result?.key?.id
+            whatsappMessageId: result?.messageId || result?.key?.id || null
           }
         });
 
         // تحديث الطابور
+        // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1-pre):
+        // 'COMPLETED' ليست قيمة في WhatsAppNotificationQueueStatus enum
+        // (PENDING/PROCESSING/SENT/FAILED/CANCELLED). استخدم 'SENT' لتطابق
+        // دلالة الـ log row (status: 'SENT') ولتفادي enum error → retry → إرسال مكرر.
         await prisma.whatsAppNotificationQueue.update({
           where: { id: notification.id },
-          data: { status: 'COMPLETED', processedAt: new Date() }
+          data: { status: 'SENT', processedAt: new Date() }
         });
 
         console.log(`✅ Queued notification sent: ${notification.eventType}`);
+        await queueSendPacingDelay(notification, null);
 
       } catch (error) {
         // زيادة عداد المحاولات
@@ -3344,27 +3066,50 @@ async function processNotificationQueue() {
             data: { status: 'FAILED', retryCount: newRetryCount }
           });
         } else {
-          // إعادة الجدولة بعد 5 دقائق
+          // إعادة الجدولة — backoff متفاوت حسب نوع الخطأ:
+          // rate-limit ياخد 15 دقيقة (Meta يفرض النافذة)، والعابر ياخد دقيقتين.
+          const retryDelayMs = isRateLimitedSendError(error) ? 15 * 60 * 1000 : 2 * 60 * 1000;
           await prisma.whatsAppNotificationQueue.update({
             where: { id: notification.id },
             data: {
               status: 'PENDING',
               retryCount: newRetryCount,
-              scheduledAt: new Date(Date.now() + 5 * 60 * 1000)
+              scheduledAt: new Date(Date.now() + retryDelayMs)
             }
           });
         }
 
         console.error(`❌ Failed to process queued notification:`, error);
+        await queueSendPacingDelay(notification, error);
       }
-
-      // تأخير بين الرسائل لتجنب الحظر
-      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
   } catch (error) {
     console.error('❌ Error processing notification queue:', error);
+  } finally {
+    notificationQueueProcessing = false;
   }
+}
+
+function isRateLimitedSendError(error) {
+  if (!error) return false;
+  const code = String(error?.code || '');
+  const message = String(error?.message || '');
+  return (
+    error?.httpStatus === 429 ||
+    code === '429' ||
+    /rate.?over.?limit|rate.?limit|too_many_requests|rate_over_limits|130429|131048|80007/i.test(message + ' ' + code)
+  );
+}
+
+async function queueSendPacingDelay(notification, error) {
+  // نباعد 2s بين الرسائل الناجحة أو المتأثرة بـ rate-limit لتجنب حظر الرقم،
+  // لكن الفشل الفوري (غير القابل لإعادة المحاولة) لا يدفع التأخير — لا نقطة
+  // في الانتظار بعد فشل دائم (backlog يتفرّغ أسرع).
+  if (error && !error?.retryable && !isRateLimitedSendError(error)) {
+    return;
+  }
+  await new Promise(resolve => setTimeout(resolve, 2000));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3374,43 +3119,55 @@ async function processNotificationQueue() {
 /**
  * جلب إحصائيات الإشعارات
  */
-async function getNotificationStats(companyId, dateRange = 30) {
+async function getNotificationStats(companyId, dateRange = 30, startDateParam, endDateParam) {
   const prisma = getSharedPrismaClient();
 
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - dateRange);
+  let startDate;
+  let endDate = null;
+  if (startDateParam) {
+    startDate = new Date(startDateParam);
+    startDate.setHours(0, 0, 0, 0);
+  } else {
+    startDate = new Date();
+    startDate.setDate(startDate.getDate() - dateRange);
+  }
+  if (endDateParam) {
+    endDate = new Date(endDateParam);
+    endDate.setHours(23, 59, 59, 999);
+  }
+  const createdAtFilter = endDate ? { gte: startDate, lte: endDate } : { gte: startDate };
 
   const [total, sent, delivered, read, failed, byCategory, byEvent] = await Promise.all([
     // إجمالي
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, createdAt: { gte: startDate } }
+      where: { companyId, createdAt: createdAtFilter }
     }),
     // المرسلة
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, status: 'SENT', createdAt: { gte: startDate } }
+      where: { companyId, status: 'SENT', createdAt: createdAtFilter }
     }),
     // المستلمة
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, status: 'DELIVERED', createdAt: { gte: startDate } }
+      where: { companyId, status: 'DELIVERED', createdAt: createdAtFilter }
     }),
     // المقروءة
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, status: 'READ', createdAt: { gte: startDate } }
+      where: { companyId, status: 'READ', createdAt: createdAtFilter }
     }),
     // الفاشلة
     prisma.whatsAppNotificationLog.count({
-      where: { companyId, status: 'FAILED', createdAt: { gte: startDate } }
+      where: { companyId, status: 'FAILED', createdAt: createdAtFilter }
     }),
     // حسب التصنيف
     prisma.whatsAppNotificationLog.groupBy({
       by: ['category'],
-      where: { companyId, createdAt: { gte: startDate } },
+      where: { companyId, createdAt: createdAtFilter },
       _count: true
     }),
     // حسب الحدث
     prisma.whatsAppNotificationLog.groupBy({
       by: ['eventType'],
-      where: { companyId, createdAt: { gte: startDate } },
+      where: { companyId, createdAt: createdAtFilter },
       _count: true
     })
   ]);
@@ -3979,6 +3736,8 @@ module.exports = {
   formatPhoneNumber,
   isQuietHours,
   resolveDeliveryCompanyId,
+  getPersistedNotificationEventType,
+  isDuplicateNotification,
 
   // الإرسال
   sendNotification,
@@ -3994,6 +3753,7 @@ module.exports = {
   // إشعارات الطلبات
   sendOrderCreatedNotification,
   sendOrderStatusNotification,
+  sendOrderCreationNotification,
 
   // إشعارات العربة المتروكة
   sendAbandonedCartNotification,
@@ -4022,6 +3782,10 @@ module.exports = {
 
   // معالج الطابور
   processNotificationQueue,
+
+  // أدوات الطابور (اختبار)
+  isRateLimitedSendError,
+  queueSendPacingDelay,
 
   // الإحصائيات
   getNotificationStats
