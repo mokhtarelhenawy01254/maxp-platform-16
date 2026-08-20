@@ -577,7 +577,10 @@ export default defineConfig(({ mode }) => {
                 drop_debugger: mode === 'production',
                 pure_funcs: mode === 'production' ? ['console.log', 'console.debug'] : [],
               },
-              mangle: true,
+              mangle: {
+                keep_classnames: true,
+                keep_fnames: true,
+              },
               format: {
                 comments: false,
               },
