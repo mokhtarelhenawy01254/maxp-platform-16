@@ -27,7 +27,8 @@
     "audit:storefront-centering:core": "tsx src/storefront/scripts/audit-storefront-centering.ts --core",
     "audit:storefront-themes": "tsx src/storefront/scripts/audit-storefront-themes.ts",
     "validate:blueprints": "tsx src/storefront/scripts/validate-blueprints.ts",
-    "test:storefront-themes": "vitest run src/storefront/__tests__"
+    "test:storefront-themes": "vitest run src/storefront/__tests__",
+    "refactor": "tsx scratch_refactor.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -111,6 +112,9 @@
     "@babel/parser": "^8.0.0",
     "@babel/plugin-syntax-jsx": "^8.0.1",
     "@babel/plugin-syntax-typescript": "^8.0.3",
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "@chromatic-com/storybook": "^5.0.2",
     "@storybook/addon-a11y": "^10.3.1",
     "@storybook/addon-docs": "^10.3.1",

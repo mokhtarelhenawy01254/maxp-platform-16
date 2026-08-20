@@ -773,7 +773,29 @@ class CustomerLoyaltyService {
         const expiryDate = new Date(record.lastPointsEarned);
         expiryDate.setMonth(expiryDate.getMonth() + expiryMonths);
 
-        if (expiryDate < new Date() && parseFloat(record.currentPoints) > 0) {
+        const now = new Date();
+        const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+
+        // 🔔 إرسال تذكير استباقي للعميل قبل الانتهاء بـ 7 أيام
+        if (daysLeft > 0 && daysLeft <= 7 && parseFloat(record.currentPoints) > 0) {
+          try {
+            const WhatsAppNotificationService = require('../whatsapp/WhatsAppNotificationService');
+            const customer = await prisma.customer.findUnique({ where: { id: record.customerId } });
+            if (customer && customer.phone) {
+              await WhatsAppNotificationService.sendLoyaltyPointsNotification(
+                record.companyId,
+                customer,
+                0,
+                record.currentPoints,
+                `تنبيه: لديك ${record.currentPoints} نقطة تنتهي خلال ${daysLeft} أيام! استغلها الآن.`
+              );
+            }
+          } catch (e) {
+            console.warn('⚠️ Expiry warning notification failed:', e.message);
+          }
+        }
+
+        if (expiryDate < now && parseFloat(record.currentPoints) > 0) {
           const pointsToExpire = parseFloat(record.currentPoints);
 
           await prisma.customerLoyaltyRecord.update({
@@ -861,6 +883,82 @@ class CustomerLoyaltyService {
       return { applied: true, totalPointsAwarded };
     } catch (error) {
       console.error('❌ Error applying loyalty points for order:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🛑 خصم/إلغاء نقاط الولاء عند إلغاء أو إرجاع الطلب (Refund & Cancellation Rollback)
+   */
+  async rollbackLoyaltyPointsForOrder({ orderId, companyId, reason = 'إلغاء/إرجاع طلب' }) {
+    const prisma = getSharedPrismaClient();
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId, companyId },
+        include: { customer: true }
+      });
+
+      if (!order || !order.customerId) return { rolledBack: false, reason: 'order_not_found' };
+
+      const programs = await prisma.customerLoyaltyProgram.findMany({
+        where: {
+          companyId,
+          type: 'POINTS',
+          status: 'ACTIVE'
+        }
+      });
+
+      if (programs.length === 0) return { rolledBack: false, reason: 'no_active_programs' };
+
+      let totalPointsDeducted = 0;
+
+      for (const program of programs) {
+        const record = await prisma.customerLoyaltyRecord.findUnique({
+          where: {
+            customer_program_unique: {
+              customerId: order.customerId,
+              programId: program.id
+            }
+          }
+        });
+
+        if (!record || record.currentPoints <= 0) continue;
+
+        let pointsToDeduct = 0;
+        const baseAmount = parseFloat(order.subtotal || order.total || 0);
+
+        if (program.pointsPerAmount && parseFloat(program.pointsPerAmount) > 0) {
+          pointsToDeduct = Math.floor(baseAmount / parseFloat(program.pointsPerAmount)) * parseFloat(program.pointsPerPurchase || 1);
+        } else {
+          pointsToDeduct = parseFloat(program.pointsPerPurchase || 0);
+        }
+
+        if (pointsToDeduct > 0) {
+          const actualDeduction = Math.min(record.currentPoints, pointsToDeduct);
+          await prisma.customerLoyaltyRecord.update({
+            where: { id: record.id },
+            data: {
+              currentPoints: { decrement: actualDeduction },
+              lastActivity: new Date(),
+              metadata: JSON.stringify({
+                ...(record.metadata ? JSON.parse(record.metadata) : {}),
+                lastRollback: {
+                  orderId,
+                  deductedPoints: actualDeduction,
+                  reason,
+                  at: new Date().toISOString()
+                }
+              })
+            }
+          });
+          totalPointsDeducted += actualDeduction;
+        }
+      }
+
+      console.log(`✅ [LOYALTY] Rolled back ${totalPointsDeducted} points for returned order #${order.orderNumber}`);
+      return { rolledBack: true, totalPointsDeducted };
+    } catch (error) {
+      console.error('❌ Error rolling back loyalty points:', error);
       throw error;
     }
   }

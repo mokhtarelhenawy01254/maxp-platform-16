@@ -1,0 +1,20 @@
+{
+  "short_name": "MAX-P",
+  "name": "MAX-P Business Platform",
+  "description": "منصة MAX-P لإدارة الأعمال والمبيعات والعمليات التجارية والتنبيهات الفورية",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "ar-EG",
+  "dir": "rtl"
+}
