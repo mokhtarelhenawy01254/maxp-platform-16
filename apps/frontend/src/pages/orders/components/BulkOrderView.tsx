@@ -1,5 +1,6 @@
-import { useTranslation } from 'react-i18next';
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { getStatusDisplay } from "../../../utils/statusRegistry";
 
@@ -28,11 +29,22 @@ interface BulkOrderDetail {
     orderNumber?: string;
     customerName?: string;
     customerPhone?: string;
+    city?: string;
+    area?: string;
+    governorate?: string;
+    address?: string;
     productName?: string;
+    sku?: string;
+    size?: string;
+    color?: string;
     quantity: number;
     price: number;
     total: number;
+    collectAmount?: number;
+    deliverAmount?: number;
+    returnContent?: string;
     status: string;
+    notes?: string;
   }>;
 }
 
@@ -41,6 +53,7 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
   const isRtl = i18n.language === "ar";
   const [data, setData] = useState<BulkOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [executing, setExecuting] = useState(false);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -59,6 +72,32 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
     fetchDetail();
   }, [id]);
 
+  const handleExecute = async () => {
+    setExecuting(true);
+    try {
+      const res = await apiClient.post(`/api/v1/bulk-orders/${id}/execute`);
+      if (res.data?.success) {
+        const { successCount, errors: execErrors } = res.data;
+        if (execErrors && execErrors.length > 0) {
+          toast.warning(
+            t("orders.bulkExecutedPartial", { success: successCount, failed: execErrors.length }) ||
+            `${successCount} succeeded, ${execErrors.length} failed`
+          );
+        } else {
+          toast.success(t("orders.bulkExecuted") || "Operation executed successfully");
+        }
+        const refresh = await apiClient.get(`/api/v1/bulk-orders/${id}`);
+        if (refresh.data?.success) {
+          setData(refresh.data.data);
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t("orders.bulkExecuteFailed") || "Execution failed");
+    } finally {
+      setExecuting(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const info = getStatusDisplay(status);
     return (
@@ -67,6 +106,24 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
       </span>
     );
   };
+
+  const getColorHex = (color: string): string | null => {
+    const map: Record<string, string> = {
+      'black': '#000', 'white': '#fff', 'red': '#ef4444', 'blue': '#3b82f6',
+      'green': '#22c55e', 'yellow': '#eab308', 'orange': '#f97316',
+      'purple': '#a855f7', 'pink': '#ec4899', 'gray': '#6b7280', 'grey': '#6b7280',
+      'brown': '#92400e', 'navy': '#1e3a5f', 'beige': '#f5f0e1', 'gold': '#f59e0b',
+      'silver': '#cbd5e1', '╪ú╪¡┘à╪▒': '#ef4444', '╪ú╪▓╪▒┘é': '#3b82f6', '╪ú╪«╪╢╪▒': '#22c55e',
+      '╪ú╪╡┘ü╪▒': '#eab308', '╪¿╪▒╪¬┘é╪º┘ä┘è': '#f97316', '╪¿┘å┘ü╪│╪¼┘è': '#a855f7', '┘ê╪▒╪»┘è': '#ec4899',
+      '╪ú╪│┘ê╪»': '#000', '╪ú╪¿┘è╪╢': '#fff', '╪▒┘à╪º╪»┘è': '#6b7280', '╪¿┘å┘è': '#92400e',
+      '┘â╪¡┘ä┘è': '#1e3a5f', '╪░┘ç╪¿┘è': '#f59e0b', '┘ü╪╢┘è': '#cbd5e1',
+    };
+    return map[color?.toLowerCase()] || null;
+  };
+
+  const totalQty = data?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const totalPrice = data?.items.reduce((sum, item) => sum + Number(item.total || 0), 0) || 0;
+  const totalCOD = data?.items.reduce((sum, item) => sum + Number(item.collectAmount || 0), 0) || 0;
 
   if (loading) {
     return (
@@ -108,6 +165,26 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
           <button onClick={() => onDuplicate(data.id)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             {t("orders.bulkDuplicate")}
           </button>
+          {(data.status !== "COMPLETED" && data.status !== "CANCELLED" && data.status !== "PROCESSING") && (
+            <button
+              onClick={handleExecute}
+              disabled={executing}
+              className="px-4 py-2 text-sm rounded-lg bg-amber-500 hover:bg-amber-600 disabled:bg-amber-400 text-white transition-colors flex items-center gap-1.5"
+            >
+              {executing ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {t("orders.bulkExecute")}
+            </button>
+          )}
           <button onClick={() => onExport(data.id, "excel")} className="px-4 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
             {t("orders.bulkExportExcel")}
           </button>
@@ -158,43 +235,70 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
-                  {t("orders.bulkOrderNumber")}
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  ╪º┘ä┘â┘ê╪»
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemCustomer")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemCity")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemArea") || "Area"}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemGovernorate")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left min-w-[120px] max-w-[180px]">
+                  {t("orders.bulkItemAddress") || "Address"}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemProduct")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  COD
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemQuantity")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemPrice")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemTotal")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemSKU")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemSize")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemColor")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemStatus")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left min-w-[80px]">
+                  {t("orders.bulkItemNotes")}
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <td colSpan={16} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                     {t("orders.bulkNoItems")}
                   </td>
                 </tr>
               ) : (
                 data.items.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-mono text-indigo-600 dark:text-indigo-400">
+                    <td className="px-3 py-3 text-sm font-mono text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
                       {item.orderNumber || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       <div>
                         <p className="font-medium">{item.customerName || "-"}</p>
                         {item.customerPhone && (
@@ -202,23 +306,78 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.city || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.area || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.governorate || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-[180px] truncate" title={item.address || ""}>
+                      {item.address || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       {item.productName || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{item.quantity}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                      {Number(item.collectAmount || 0).toFixed(2)}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{item.quantity}</td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                       {Number(item.price).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                    <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       {Number(item.total).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3">{getStatusBadge(item.status)}</td>
+                    <td className="px-3 py-3 text-sm font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                      {item.sku || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.size || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.color ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300 dark:border-gray-500 flex-shrink-0"
+                            style={{ backgroundColor: getColorHex(item.color) || '#d1d5db' }}
+                          />
+                          {item.color}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-3 py-3">{getStatusBadge(item.status)}</td>
+                    <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-[120px] truncate" title={item.notes || ""}>
+                      {item.notes || "-"}
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+        {data.items.length > 0 && (
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-indigo-50/50 dark:bg-indigo-900/10 flex items-center justify-between text-sm font-semibold">
+            <span className="text-gray-600 dark:text-gray-400">
+              {t("orders.bulkItems")}: {data.items.length}
+            </span>
+            <div className="flex items-center gap-6">
+              <span className="text-gray-600 dark:text-gray-400">
+                {t("orders.bulkItemQuantity")}: <span className="text-indigo-700 dark:text-indigo-300">{totalQty}</span>
+              </span>
+              <span className="text-gray-600 dark:text-gray-400">
+                {t("orders.bulkItemTotal")}: <span className="text-indigo-700 dark:text-indigo-300 font-bold">{Number(totalPrice).toFixed(2)}</span>
+              </span>
+              <span className="text-gray-600 dark:text-gray-400">
+                COD: <span className="text-indigo-700 dark:text-indigo-300 font-bold">{Number(totalCOD).toFixed(2)}</span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 dark:text-gray-400">

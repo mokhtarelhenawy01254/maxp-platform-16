@@ -1,9 +1,7 @@
-import { Search as MagnifyingGlassIcon, Check as CheckCircleIcon, Filter as FunnelIcon, X as XMarkIcon, X as XCircleIcon } from 'lucide-react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/utils/formatters';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-;
+import { MagnifyingGlassIcon, CheckCircleIcon, FunnelIcon, XMarkIcon, XCircleIcon, PhoneIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -12,6 +10,8 @@ import orderConfirmationService, {
   OrderConfirmationSettings,
   OrderConfirmationUser
 } from '../../services/orderConfirmationService';
+import api from '../../services/api';
+import PostponeOrderModal from './components/PostponeOrderModal';
 
 interface ConfirmationOrder {
   id: string;
@@ -30,6 +30,10 @@ interface ConfirmationOrder {
   isGuestOrder?: boolean;
   assignedToName?: string | null;
   assignmentStrategy?: string | null;
+  callAttempts?: number;
+  lastCallAttemptAt?: string | null;
+  shipping?: number;
+  codDepositAmount?: number;
 }
 
 interface ConfirmationStats {
@@ -54,6 +58,9 @@ interface OrderRowProps {
   eligibleUsers: OrderConfirmationUser[];
   assigningId: string | null;
   cancellingId: string | null;
+  callingId: string | null;
+  maxCallsNoAnswer: number;
+  intervalMinutes: number;
   settingsEnabled: boolean;
   selectionEnabled: boolean;
   isSelected: boolean;
@@ -64,6 +71,8 @@ interface OrderRowProps {
   onAssign: (orderId: string, userId: string) => void;
   onConfirm: (orderId: string) => void;
   onCancel: (order: ConfirmationOrder) => void;
+  onLogCall: (order: ConfirmationOrder, result?: string) => void;
+  onPostpone: (order: ConfirmationOrder) => void;
   onToggleSelect: (orderId: string) => void;
 }
 
@@ -73,6 +82,9 @@ const OrderRow = React.memo(({
   eligibleUsers,
   assigningId,
   cancellingId,
+  callingId,
+  maxCallsNoAnswer,
+  intervalMinutes,
   settingsEnabled,
   selectionEnabled,
   isSelected,
@@ -83,10 +95,23 @@ const OrderRow = React.memo(({
   onAssign,
   onConfirm,
   onCancel,
+  onLogCall,
+  onPostpone,
   onToggleSelect
 }: OrderRowProps) => {
   const { t } = useTranslation();
   const isCancelled = String(order.status || '').toUpperCase() === 'CANCELLED';
+  const callAttempts = order.callAttempts || 0;
+  const deposit = Number(order.codDepositAmount) || 0;
+  const shipping = Number(order.shipping) || 0;
+  const amountDue = (Number(order.total) || 0) + shipping - deposit;
+  const callsLimitReached = maxCallsNoAnswer > 0 && callAttempts >= maxCallsNoAnswer;
+  const lastCallAt = order.lastCallAttemptAt ? new Date(order.lastCallAttemptAt) : null;
+  const nextCallAllowedAt = lastCallAt && intervalMinutes > 0
+    ? new Date(lastCallAt.getTime() + intervalMinutes * 60 * 1000)
+    : null;
+  const waitingForNextCall = Boolean(nextCallAllowedAt && nextCallAllowedAt.getTime() > Date.now());
+  const callBlocked = callsLimitReached || waitingForNextCall;
 
   return (
     <div className="p-4 flex flex-col lg:flex-row lg:items-center gap-4">
@@ -114,21 +139,33 @@ const OrderRow = React.memo(({
           )}
         </div>
         <div className="text-sm text-gray-500 mt-1">
-          {order.customerName} • {order.customerPhone || t('orders.noPhone')}
+          {order.customerName} ΓÇó {order.customerPhone || t('orders.noPhone')}
         </div>
         <div className="text-xs text-gray-400 mt-1">
-          {formatDate(order.createdAt)} • {order.sourceType}
+          {formatDate(order.createdAt)} ΓÇó {order.sourceType}
         </div>
         <div className="text-xs text-gray-400 mt-1">
           {t('orders.distributedTo')} {order.assignedToName || order.assignedTo || t('orders.unassigned')}
           {order.assignmentStrategy
-            ? ` • ${strategyLabelMap[order.assignmentStrategy] || order.assignmentStrategy}`
+            ? ` ΓÇó ${strategyLabelMap[order.assignmentStrategy] || order.assignmentStrategy}`
             : ''}
         </div>
         </div>
       </div>
-      <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-        {formatPrice(Number(order.total) || 0)}
+      <div className="flex flex-col items-start gap-1 text-sm">
+        <span className="font-bold text-gray-800 dark:text-gray-200">
+          {t('orders.amountDue', '╪º┘ä┘à╪│╪¬╪¡┘é')}: {formatPrice(amountDue)}
+        </span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {formatPrice(Number(order.total) || 0)}
+          {shipping > 0 && ` + ${formatPrice(shipping)} ${t('orders.shippingShort', '╪┤╪¡┘å')}`}
+          {deposit > 0 && ` - ${formatPrice(deposit)} ${t('orders.depositShort', '╪╣╪▒╪¿┘ê┘å')}`}
+        </span>
+        {callAttempts > 0 && (
+          <span className={`text-xs px-2 py-0.5 rounded-full ${callBlocked ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600 dark:bg-gray-900/50 dark:text-gray-300'}`}>
+            {t('orders.callAttemptsCount', '┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º┘ä╪º╪¬╪╡╪º┘ä')}: {callAttempts}/{maxCallsNoAnswer > 0 ? maxCallsNoAnswer : 'Γê₧'}
+          </span>
+        )}
       </div>
       <div className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
         {order.status}
@@ -158,6 +195,25 @@ const OrderRow = React.memo(({
             </button>
           </>
         )}
+        <button
+          onClick={() => onLogCall(order, 'unreached')}
+          disabled={isCancelled || callBlocked || callingId === order.id}
+          title={waitingForNextCall && nextCallAllowedAt
+            ? `${t('orders.nextCallAfter', '╪º╪¬╪╡┘ä ╪¿╪╣╪»')}: ${new Intl.DateTimeFormat('ar-EG', { hour: '2-digit', minute: '2-digit' }).format(nextCallAllowedAt)}`
+            : callsLimitReached ? String(t('orders.callsLimitReached', '┘ê╪╡┘ä╪¬ ┘ä╪ú┘é╪╡┘ë ┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º┘ä╪º╪¬╪╡╪º┘ä')) : undefined}
+          className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300"
+        >
+          <PhoneIcon className="w-4 h-4" />
+          {callingId === order.id ? t('orders.loggingCall', '╪¼╪º╪▒┘è ╪º┘ä╪¬╪│╪¼┘è┘ä...') : t('orders.noAnswer', '┘ä╪º ╪▒╪»')}
+        </button>
+        <button
+          onClick={() => onPostpone(order)}
+          disabled={isCancelled}
+          className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 text-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+        >
+          <CalendarDaysIcon className="w-4 h-4" />
+          {t('orders.postponeOrderTitle', '╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿')}
+        </button>
         <button
           onClick={() => onConfirm(order.id)}
           disabled={isCancelled}
@@ -213,10 +269,15 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   const [assignSelections, setAssignSelections] = useState<Record<string, string>>({});
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [callingId, setCallingId] = useState<string | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [bulkUserId, setBulkUserId] = useState('');
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<ConfirmationOrder | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [postponeTarget, setPostponeTarget] = useState<ConfirmationOrder | null>(null);
+  const [postponeLoading, setPostponeLoading] = useState(false);
   const listParentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -365,8 +426,8 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
 
   const statsSummaryLabel = useMemo(() => {
     if (statsStartDate || statsEndDate) {
-      const fromLabel = statsStartDate ? formatDate(statsStartDate) : '—';
-      const toLabel = statsEndDate ? formatDate(statsEndDate) : '—';
+      const fromLabel = statsStartDate ? formatDate(statsStartDate) : 'ΓÇö';
+      const toLabel = statsEndDate ? formatDate(statsEndDate) : 'ΓÇö';
       const base = t('orders.summaryFromTo', { from: fromLabel, to: toLabel });
       return statsStrategy ? `${base} ${t('orders.summaryStrategy', { strategy: strategyLabel })}` : base;
     }
@@ -420,16 +481,15 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   }, [t]);
 
   const handleCancel = useCallback(async (order: ConfirmationOrder) => {
-    const cancellationReason = window.prompt(
-      resolveCopy('orders.cancellationReasonPrompt', 'Write the reason for cancelling this order:'),
-    );
+    setCancelReason('');
+    setCancelTarget(order);
+  }, []);
 
-    if (cancellationReason === null) {
-      return;
-    }
+  const submitCancel = useCallback(async () => {
+    const order = cancelTarget;
+    if (!order) return;
 
-    const notes = cancellationReason.trim();
-
+    const notes = cancelReason.trim();
     if (!notes) {
       toast.error(resolveCopy('orders.cancellationReasonRequired', 'Cancellation reason is required'));
       return;
@@ -447,8 +507,50 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       toast.error(error?.message || t('orders.cancelFailedToast'));
     } finally {
       setCancellingId(null);
+      setCancelTarget(null);
+      setCancelReason('');
     }
-  }, [resolveCopy, t]);
+  }, [cancelTarget, cancelReason, resolveCopy, t]);
+
+  const handleLogCall = useCallback(async (order: ConfirmationOrder, result = 'unreached') => {
+    try {
+      setCallingId(order.id);
+      const res = await orderConfirmationService.logCall(order.id, result, null);
+      const attempts = res?.data?.callAttempts ?? order.callAttempts;
+      toast.success(t('orders.callLogged', '╪¬┘à ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä'));
+      setOrders((prev) => prev.map((o) =>
+        o.id === order.id
+          ? { ...o, callAttempts: attempts, lastCallAttemptAt: res?.data?.order?.lastCallAttemptAt || res?.data?.order?.lastCallAt || o.lastCallAttemptAt }
+          : o
+      ));
+    } catch (error: any) {
+      toast.error(error?.message || t('orders.logCallFailed', '╪¬╪╣╪░╪▒ ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä'));
+      setRefreshKey((prev) => prev + 1);
+    } finally {
+      setCallingId(null);
+    }
+  }, [t]);
+
+  const handlePostpone = useCallback(async (data: { scheduledDeliveryDate: string; scheduledNotes: string; autoTransitionEnabled: boolean }) => {
+    const order = postponeTarget;
+    if (!order) return;
+    try {
+      setPostponeLoading(true);
+      await api.post(`/orders-new/simple/${encodeURIComponent(order.orderNumber)}/schedule`, {
+        scheduledDeliveryDate: data.scheduledDeliveryDate,
+        scheduledNotes: data.scheduledNotes,
+        autoTransitionEnabled: data.autoTransitionEnabled,
+        changeStatusToScheduled: true
+      });
+      toast.success(t('orders.orderPostponed', '╪¬┘à ╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿'));
+      setPostponeTarget(null);
+      setRefreshKey((prev) => prev + 1);
+    } catch (error: any) {
+      toast.error(error?.message || t('orders.postponeFailed', '╪¬╪╣╪░╪▒ ╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿'));
+    } finally {
+      setPostponeLoading(false);
+    }
+  }, [postponeTarget, t]);
 
   const handleAssign = useCallback(async (orderId: string, userId: string) => {
     if (!userId) {
@@ -1042,6 +1144,9 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                       eligibleUsers={eligibleUsers}
                       assigningId={assigningId}
                       cancellingId={cancellingId}
+                      callingId={callingId}
+                      maxCallsNoAnswer={settings?.maxCallsNoAnswer ?? 3}
+                      intervalMinutes={settings?.intervalMinutes ?? 30}
                       settingsEnabled={Boolean(settings?.enabled)}
                       selectionEnabled={Boolean(settings?.enabled)}
                       isSelected={selectedOrderIds.includes(order.id)}
@@ -1052,6 +1157,8 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                       onAssign={handleAssign}
                       onConfirm={handleConfirm}
                       onCancel={handleCancel}
+                      onLogCall={handleLogCall}
+                      onPostpone={(o) => setPostponeTarget(o)}
                       onToggleSelect={handleToggleSelect}
                     />
                   </div>
@@ -1085,6 +1192,56 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
           </div>
         </div>
       )}
+      {cancelTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={resolveCopy('orders.cancelReasonTitle', 'Cancellation reason')}
+          onClick={() => setCancelTarget(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="mb-3 text-base font-bold text-gray-900 dark:text-white">
+              {resolveCopy('orders.cancelReasonPrompt', 'Write the reason for cancelling this order:')}
+            </h2>
+            <textarea
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+              placeholder={resolveCopy('orders.cancelReasonPlaceholder', 'Write the cancellation reason...')}
+              rows={3}
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+            />
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCancelTarget(null)}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+              >
+                {resolveCopy('orders.cancelClose', 'Close')}
+              </button>
+              <button
+                type="button"
+                onClick={submitCancel}
+                disabled={!cancelReason.trim() || cancellingId === cancelTarget.id}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {cancellingId === cancelTarget.id
+                  ? resolveCopy('orders.cancellingOrder', 'Cancelling...')
+                  : resolveCopy('orders.cancelConfirm', 'Confirm cancellation')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <PostponeOrderModal
+        isOpen={Boolean(postponeTarget)}
+        onClose={() => setPostponeTarget(null)}
+        onConfirm={handlePostpone}
+        loading={postponeLoading}
+      />
     </div>
   );
 };

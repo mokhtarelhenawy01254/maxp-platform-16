@@ -1,7 +1,14 @@
-import { Check as CheckCircleIcon, MessageSquare as ChatBubbleLeftIcon, Calendar as CalendarIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, Check as CheckIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import React, { useState, useMemo } from "react";
-;
+﻿import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  CheckCircleIcon,
+  ChatBubbleLeftIcon,
+  CalendarIcon,
+  PencilIcon,
+  TrashIcon,
+  XMarkIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { OrderDetailsType } from "../types";
 
@@ -132,7 +139,9 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
   };
 
   const rawActivities: ActivityItem[] = useMemo(() => {
-    const statusActivities: ActivityItem[] = (order.statusHistory || []).map((h: any, idx: number) => {
+    const statusActivities: ActivityItem[] = (order.statusHistory || [])
+      .filter((entry) => entry != null)
+      .map((h: any, idx: number) => {
       const reason =
         typeof h.reason === "string" && h.reason.trim()
           ? h.reason.trim()
@@ -144,7 +153,9 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
       const isTrash = h.status === "TRASH" || h.status === "DELETED";
 
       const reasonLine = reason
-        ? (isCancellationStatus(h.status) || isTrash || isModification)
+        ? isModification
+          ? t("orderDetails.modificationDetail", { reason })
+          : (isCancellationStatus(h.status) || isTrash)
             ? t("orderDetails.cancellationReasonLine", { reason })
             : t("orderDetails.statusReasonLine", { reason })
         : "";

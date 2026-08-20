@@ -1,7 +1,13 @@
-import { User as UserIcon, MessageSquare as ChatBubbleLeftRightIcon, Globe as GlobeAltIcon, Circle as UserGroupIcon, Star as SparklesIcon, Clock as ClockIcon } from 'lucide-react';
-import React from "react";
+﻿import React from "react";
 import { Link } from "react-router-dom";
-;
+import {
+  UserIcon,
+  ChatBubbleLeftRightIcon,
+  GlobeAltIcon,
+  UserGroupIcon,
+  SparklesIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 
 interface OrderSourceCardProps {
@@ -50,33 +56,33 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
       { name: string; color: string; icon: string }
     > = {
       WHATSAPP: {
-        name: "واتساب",
+        name: "┘ê╪º╪¬╪│╪º╪¿",
         color:
           "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
-        icon: "💬",
+        icon: "≡ƒÆ¼",
       },
       FACEBOOK: {
-        name: "فيسبوك",
+        name: "┘ü┘è╪│╪¿┘ê┘â",
         color:
           "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
-        icon: "📘",
+        icon: "≡ƒôÿ",
       },
       INSTAGRAM: {
-        name: "انستجرام",
+        name: "╪º┘å╪│╪¬╪¼╪▒╪º┘à",
         color:
           "bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400",
-        icon: "📷",
+        icon: "≡ƒô╖",
       },
       TELEGRAM: {
-        name: "تيليجرام",
+        name: "╪¬┘è┘ä┘è╪¼╪▒╪º┘à",
         color: "bg-sky-100 text-sky-800 dark:bg-sky-900/20 dark:text-sky-400",
-        icon: "✈️",
+        icon: "Γ£ê∩╕Å",
       },
       WEBCHAT: {
-        name: "الدردشة المباشرة",
+        name: "╪º┘ä╪»╪▒╪»╪┤╪⌐ ╪º┘ä┘à╪¿╪º╪┤╪▒╪⌐",
         color:
           "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
-        icon: "💻",
+        icon: "≡ƒÆ╗",
       },
     };
 
@@ -85,23 +91,23 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
         name: channel,
         color:
           "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400",
-        icon: "📱",
+        icon: "≡ƒô▒",
       }
     );
   };
 
   const getSourceTypeInfo = () => {
-    // محاولة تحديد المصدر من البيانات المتاحة
+    // ┘à╪¡╪º┘ê┘ä╪⌐ ╪¬╪¡╪»┘è╪» ╪º┘ä┘à╪╡╪»╪▒ ┘à┘å ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐
     let sourceType = order.sourceType;
 
-    // التحقق من extractionMethod أولاً
+    // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å extractionMethod ╪ú┘ê┘ä╪º┘ï
     if (
       order.extractionMethod === "manual" ||
       order.extractionMethod === "manual_order_modal"
     ) {
       sourceType = "manual";
     }
-    // إذا لم يكن هناك sourceType أو كان unknown، نحاول التخمين
+    // ╪Ñ╪░╪º ┘ä┘à ┘è┘â┘å ┘ç┘å╪º┘â sourceType ╪ú┘ê ┘â╪º┘å unknown╪î ┘å╪¡╪º┘ê┘ä ╪º┘ä╪¬╪«┘à┘è┘å
     else if (
       !sourceType ||
       sourceType === "unknown" ||
@@ -122,17 +128,17 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
     }
 
     const sourceMap: Record<string, { name: string; icon: string }> = {
-      ai_conversation: { name: "محادثة تلقائية", icon: "💬" },
-      manual: { name: "طلب يدوي", icon: "✍️" },
-      manual_order_modal: { name: "طلب يدوي", icon: "✍️" },
-      storefront: { name: "المتجر الإلكتروني", icon: "🛒" },
-      woocommerce: { name: "WooCommerce", icon: "🛍️" },
-      api: { name: "API", icon: "🔌" },
-      import: { name: "استيراد", icon: "📥" },
-      unknown: { name: "غير محدد", icon: "❓" },
+      ai_conversation: { name: "┘à╪¡╪º╪»╪½╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐", icon: "≡ƒÆ¼" },
+      manual: { name: "╪╖┘ä╪¿ ┘è╪»┘ê┘è", icon: "Γ£ì∩╕Å" },
+      manual_order_modal: { name: "╪╖┘ä╪¿ ┘è╪»┘ê┘è", icon: "Γ£ì∩╕Å" },
+      storefront: { name: "╪º┘ä┘à╪¬╪¼╪▒ ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è", icon: "≡ƒ¢Æ" },
+      woocommerce: { name: "WooCommerce", icon: "≡ƒ¢ì∩╕Å" },
+      api: { name: "API", icon: "≡ƒöî" },
+      import: { name: "╪º╪│╪¬┘è╪▒╪º╪»", icon: "≡ƒôÑ" },
+      unknown: { name: "╪║┘è╪▒ ┘à╪¡╪»╪»", icon: "Γ¥ô" },
     };
 
-    return sourceMap[sourceType] || { name: "غير محدد", icon: "📋" };
+    return sourceMap[sourceType] || { name: "╪║┘è╪▒ ┘à╪¡╪»╪»", icon: "≡ƒôï" };
   };
 
   const channelInfo = getChannelInfo();
@@ -158,7 +164,7 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
           <SparklesIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          مصدر الطلب
+          ┘à╪╡╪»╪▒ ╪º┘ä╪╖┘ä╪¿
         </h3>
       </div>
 
@@ -169,12 +175,12 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
             <UserIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                أنشئ بواسطة
+                ╪ú┘å╪┤╪ª ╪¿┘ê╪º╪│╪╖╪⌐
               </div>
               <div className="font-medium text-gray-900 dark:text-gray-100">
                 {order.createdByUser
                   ? `${order.createdByUser.firstName} ${order.createdByUser.lastName}`
-                  : order.createdByName || "موظف"}
+                  : order.createdByName || "┘à┘ê╪╕┘ü"}
               </div>
               {order.createdByUser?.email && (
                 <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -191,7 +197,7 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
             <ChatBubbleLeftRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                القناة
+                ╪º┘ä┘é┘å╪º╪⌐
               </div>
               <div className="flex items-center gap-2">
                 <span
@@ -205,7 +211,7 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
                     to={`/whatsapp?conversationId=${order.conversationId}`}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   >
-                    عرض المحادثة
+                    ╪╣╪▒╪╢ ╪º┘ä┘à╪¡╪º╪»╪½╪⌐
                   </Link>
                 )}
               </div>
@@ -218,7 +224,7 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
           <GlobeAltIcon className="h-5 w-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              نوع المصدر
+              ┘å┘ê╪╣ ╪º┘ä┘à╪╡╪»╪▒
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -229,9 +235,9 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     (
                     {order.extractionMethod === "ai_enhanced"
-                      ? "استخراج محسّن"
+                      ? "╪º╪│╪¬╪«╪▒╪º╪¼ ┘à╪¡╪│┘æ┘å"
                       : order.extractionMethod === "ai_basic"
-                        ? "استخراج أساسي"
+                        ? "╪º╪│╪¬╪«╪▒╪º╪¼ ╪ú╪│╪º╪│┘è"
                         : order.extractionMethod}
                     )
                   </span>
@@ -246,16 +252,16 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
             <UserGroupIcon className="h-5 w-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                مسوق بالعمولة
+                ┘à╪│┘ê┘é ╪¿╪º┘ä╪╣┘à┘ê┘ä╪⌐
               </div>
               <div className="font-medium text-gray-900 dark:text-gray-100">
                 {order.affiliate.user
                   ? `${order.affiliate.user.firstName} ${order.affiliate.user.lastName}`
-                  : "مسوق"}
+                  : "┘à╪│┘ê┘é"}
               </div>
               {order.affiliate.affiliateCode && (
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  كود: {order.affiliate.affiliateCode}
+                  ┘â┘ê╪»: {order.affiliate.affiliateCode}
                 </div>
               )}
               {order.affiliate.user?.email && (
@@ -267,7 +273,7 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
                 to={`/affiliates/management/${order.affiliateId}`}
                 className="text-xs text-purple-600 dark:text-purple-400 hover:underline mt-1 inline-block"
               >
-                عرض التفاصيل
+                ╪╣╪▒╪╢ ╪º┘ä╪¬┘ü╪º╪╡┘è┘ä
               </Link>
             </div>
           </div>
@@ -279,28 +285,30 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
             <SparklesIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                تصنيف الطلب
+                ╪¬╪╡┘å┘è┘ü ╪º┘ä╪╖┘ä╪¿
               </div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {order.orderSource === "AFFILIATE_REFERRAL" && "🔗 إحالة مسوق"}
+                {order.orderSource === "AFFILIATE_REFERRAL" && "≡ƒöù ╪Ñ╪¡╪º┘ä╪⌐ ┘à╪│┘ê┘é"}
                 {order.orderSource === "AFFILIATE_DIRECT" &&
-                  "👤 طلب مباشر من مسوق"}
+                  "≡ƒæñ ╪╖┘ä╪¿ ┘à╪¿╪º╪┤╪▒ ┘à┘å ┘à╪│┘ê┘é"}
               </div>
             </div>
           </div>
         )}
 
         {/* Request Type Badge */}
-        {parsedMetadata?.requestType && parsedMetadata.requestType !== "delivery" && (
-          <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800">
-            <SparklesIcon className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+        {parsedMetadata?.requestType && (
+          <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+            <SparklesIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                نوع الطلب
+                ┘å┘ê╪╣ ╪º┘ä╪╖┘ä╪¿
               </div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {parsedMetadata.requestType === "return" && "🔄 طلب مرتجع"}
-                {parsedMetadata.requestType === "exchange" && "🔀 طلب استبدال"}
+                {parsedMetadata.requestType === "delivery" && "≡ƒôª ╪╖┘ä╪¿ ╪¬╪│┘ä┘è┘à (╪╣╪º╪»┘è)"}
+                {parsedMetadata.requestType === "partial_delivery" && "≡ƒôª ╪╖┘ä╪¿ ╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è"}
+                {parsedMetadata.requestType === "return" && "≡ƒöä ╪╖┘ä╪¿ ┘à╪▒╪¬╪¼╪╣"}
+                {parsedMetadata.requestType === "exchange" && "≡ƒöÇ ╪╖┘ä╪¿ ╪º╪│╪¬╪¿╪»╪º┘ä"}
               </div>
             </div>
           </div>
@@ -311,7 +319,7 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
           <ClockIcon className="h-5 w-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              تاريخ الإنشاء
+              ╪¬╪º╪▒┘è╪« ╪º┘ä╪Ñ┘å╪┤╪º╪í
             </div>
             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {formatDateTime(order.createdAt)}

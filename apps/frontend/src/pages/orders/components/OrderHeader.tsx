@@ -1,8 +1,14 @@
-import { ArrowLeft as ArrowLeftIcon, Check as CheckIcon, ChevronDown as ChevronDownIcon, ShoppingBag as ShoppingBagIcon, Pencil as PencilIcon, Printer as PrinterIcon, Truck as TruckIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/utils/formatters';
-import React, { useEffect, useRef, useState } from "react";
-;
+﻿import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ShoppingBagIcon,
+  PencilIcon,
+  PrinterIcon,
+  TruckIcon,
+} from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { getOrderStatusDisplay, getTurboStatusDisplay } from "../../../utils/statusRegistry";
 import { OrderDetailsType } from "../types";
@@ -174,14 +180,14 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     const turboInfo = getTurboStatusDisplay(order.turboShipmentStatus);
                     return (
                       <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${turboInfo.colorClass}`}>
-                        🚚 {turboInfo.label}
+                        ≡ƒÜÜ {turboInfo.label}
                       </span>
                     );
                   })()}
                   {canQuickSelectStatus && isStatusMenuOpen && (
                     <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
                       <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200">
-                        اختاري الحالة
+                        ╪º╪«╪¬╪º╪▒┘è ╪º┘ä╪¡╪º┘ä╪⌐
                       </div>
                       <div className="max-h-72 overflow-y-auto py-2">
                         {statusOptions.map((status) => {
@@ -246,7 +252,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                 className="inline-flex items-center px-4 py-2 border border-green-300 dark:border-green-600 text-sm font-medium rounded-lg text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30"
               >
                 <PrinterIcon className="h-4 w-4 ml-2" />
-                طباعة ورقة التجهيز
+                ╪╖╪¿╪º╪╣╪⌐ ┘ê╪▒┘é╪⌐ ╪º┘ä╪¬╪¼┘ç┘è╪▓
               </button>
             )}
           </>
