@@ -111,7 +111,6 @@ const register = async (req, res) => {
       companyName,
       phone,
       timezone,
-      partnerCode,
       promoCode,
       businessSpecialtyId,
       businessSpecialtySlug,
@@ -251,6 +250,10 @@ const register = async (req, res) => {
       specialtyAppSlugs,
       specialtySlug: selectedSpecialty?.slug || null,
     });
+
+    // Attribution window: prefer the cookie/session code captured by the
+    // server-level middleware, fall back to an explicit code in the body.
+    const partnerCode = req.partnerCode || req.body?.partnerCode || req.query?.partner || undefined;
 
     if (partnerCode) {
       try {

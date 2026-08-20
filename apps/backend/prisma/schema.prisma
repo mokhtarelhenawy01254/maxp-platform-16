@@ -9143,6 +9143,7 @@ model PlatformPartner {
   title            PartnerTitle          @default(PARTNER)
   maxAllowedDepth  Int                   @default(1)
   status           PlatformPartnerStatus @default(PENDING)
+  customCommissionRate Float?             // override L1 rate (%) for this partner only; null = use global setting
   totalEarnings    Decimal               @default(0.00) @db.Decimal(12, 2)
   paidEarnings     Decimal               @default(0.00) @db.Decimal(12, 2)
   pendingEarnings  Decimal               @default(0.00) @db.Decimal(12, 2)

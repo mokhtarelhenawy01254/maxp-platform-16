@@ -19,6 +19,7 @@ router.get('/admin/stats', cacheMiddleware(60000), partnerController.getAdminSta
 router.get('/admin/partners', partnerController.getAdminPartners);
 router.get('/admin/payouts', partnerController.getAdminPayouts);
 router.put('/admin/partners/:partnerId/title', partnerController.updateTitle);
+router.put('/admin/partners/:partnerId/commission-rate', partnerController.updateCommissionRate);
 router.put('/admin/payouts/:payoutId', partnerController.processPayout);
 router.get('/admin/settings', partnerController.getAdminSettings);
 router.put('/admin/settings', partnerController.updateAdminSettings);

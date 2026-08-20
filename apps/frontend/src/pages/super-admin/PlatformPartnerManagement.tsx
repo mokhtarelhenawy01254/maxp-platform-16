@@ -22,7 +22,7 @@ import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import { Edit, Info, TrendingUp, Users, Wallet, History, Landmark, Settings, Save } from "lucide-react";
+import { Edit, Info, TrendingUp, Users, Wallet, History, Landmark, Settings, Save, Percent } from "lucide-react";
 
 const PlatformPartnerManagement = () => {
   const { formatPrice } = useCurrency();
@@ -38,6 +38,8 @@ const PlatformPartnerManagement = () => {
   const [rankDialogOpen, setRankDialogOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [newTitle, setNewTitle] = useState("");
+  const [rateDialogOpen, setRateDialogOpen] = useState(false);
+  const [newRate, setNewRate] = useState("");
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [payoutStatus, setPayoutStatus] = useState("COMPLETED");
@@ -65,7 +67,7 @@ const PlatformPartnerManagement = () => {
         </div>
 
         {activeTab === 0 && <Table><TableHeader className="bg-muted/50 dark:bg-white/[0.02]"><TableRow><TableHead className="font-bold">الشريك</TableHead><TableHead className="font-bold">اللقب (Rank)</TableHead><TableHead className="font-bold">إجمالي الأرباح</TableHead><TableHead className="font-bold">الرصيد المتاح</TableHead><TableHead className="font-bold">الحالة</TableHead><TableHead className="text-center font-bold">الإجراءات</TableHead></TableRow></TableHeader>
-          <TableBody>{partners.map(partner => <TableRow key={partner.id}><TableCell><div className="flex items-center gap-2"><Avatar className="bg-blue-500"><AvatarFallback>{partner.user?.firstName?.charAt(0)}</AvatarFallback></Avatar><div><p className="text-sm font-bold">{partner.user?.firstName} {partner.user?.lastName}</p><p className="text-xs text-muted-foreground">{partner.partnerCode}</p></div></div></TableCell><TableCell><Badge className="font-bold rounded">{partner.title}</Badge></TableCell><TableCell>{formatPrice(partner.totalEarnings)}</TableCell><TableCell className="text-blue-500 font-bold">{formatPrice(partner.pendingEarnings)}</TableCell><TableCell><Badge variant={getStatusColor(partner.status)}>{partner.status}</Badge></TableCell><TableCell className="text-center"><Button variant="ghost" size="icon" onClick={() => { setSelectedPartner(partner); setNewTitle(partner.title); setRankDialogOpen(true); }}><Edit className="size-4" /></Button></TableCell></TableRow>)}</TableBody></Table>}
+          <TableBody>{partners.map(partner => <TableRow key={partner.id}><TableCell><div className="flex items-center gap-2"><Avatar className="bg-blue-500"><AvatarFallback>{partner.user?.firstName?.charAt(0)}</AvatarFallback></Avatar><div><p className="text-sm font-bold">{partner.user?.firstName} {partner.user?.lastName}</p><p className="text-xs text-muted-foreground">{partner.partnerCode}</p></div></div></TableCell><TableCell><Badge className="font-bold rounded">{partner.title}</Badge><div className="text-xs text-muted-foreground mt-1">{partner.customCommissionRate != null ? `نسبة مخصصة: ${partner.customCommissionRate}%` : "النسبة العامة"}</div></TableCell><TableCell>{formatPrice(partner.totalEarnings)}</TableCell><TableCell className="text-blue-500 font-bold">{formatPrice(partner.pendingEarnings)}</TableCell><TableCell><Badge variant={getStatusColor(partner.status)}>{partner.status}</Badge></TableCell><TableCell className="text-center"><div className="flex items-center justify-center gap-1"><Button variant="ghost" size="icon" title="تعديل اللقب" onClick={() => { setSelectedPartner(partner); setNewTitle(partner.title); setRankDialogOpen(true); }}><Edit className="size-4" /></Button><Button variant="ghost" size="icon" title="نسبة عمولة مخصصة" onClick={() => { setSelectedPartner(partner); setNewRate(partner.customCommissionRate != null ? String(partner.customCommissionRate) : ""); setRateDialogOpen(true); }}><Percent className="size-4" /></Button></div></TableCell></TableRow>)}</TableBody></Table>}
 
         {activeTab === 1 && <Table><TableHeader className="bg-muted/50 dark:bg-white/[0.02]"><TableRow><TableHead className="font-bold">الشريك</TableHead><TableHead className="font-bold">المبلغ</TableHead><TableHead className="font-bold">الطريقة</TableHead><TableHead className="font-bold">التاريخ</TableHead><TableHead className="font-bold">الحالة</TableHead><TableHead className="text-center font-bold">الإجراءات</TableHead></TableRow></TableHeader>
           <TableBody>{payouts.map(payout => <TableRow key={payout.id}><TableCell><p className="text-sm font-bold">{payout.partner?.user?.firstName} {payout.partner?.user?.lastName}</p><p className="text-xs text-muted-foreground">{payout.partner?.partnerCode}</p></TableCell><TableCell className="font-bold text-red-500">{formatPrice(payout.amount)}</TableCell><TableCell><div className="flex items-center gap-1"><Landmark className="size-4 text-muted-foreground" /><span className="text-sm">{payout.method}</span></div></TableCell><TableCell>{new Date(payout.createdAt).toLocaleDateString()}</TableCell><TableCell><Badge variant={getStatusColor(payout.status)}>{payout.status}</Badge></TableCell><TableCell className="text-center">{payout.status === "PENDING" && <Button variant="ghost" size="icon" onClick={() => { setSelectedPayout(payout); setPayoutDialogOpen(true); }}><Edit className="size-4" /></Button>}</TableCell></TableRow>)}</TableBody></Table>}
@@ -92,6 +94,34 @@ const PlatformPartnerManagement = () => {
           <DialogHeader><DialogTitle>تعديل لقب الشريك</DialogTitle></DialogHeader>
           <div className="space-y-3"><Select value={newTitle} onValueChange={setNewTitle}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PARTNER">Partner</SelectItem><SelectItem value="SENIOR_PARTNER">Senior Partner</SelectItem><SelectItem value="EXECUTIVE_PARTNER">Executive Partner</SelectItem><SelectItem value="REGIONAL_DIRECTOR">Regional Director</SelectItem></SelectContent></Select><Alert><Info className="size-4" /><AlertDescription>اللقب يحدد عمق العمولات (مستوى 1 إلى 4).</AlertDescription></Alert></div>
           <DialogFooter><Button variant="outline" onClick={() => setRankDialogOpen(false)}>إلغاء</Button><Button onClick={async () => { if (!selectedPartner || !newTitle) return; try { const r = await apiClient.put(`/platform-partners/admin/partners/${selectedPartner.id}/title`, { title: newTitle }); if (r.data.status === "success") { toast.success("Partner rank updated"); setRankDialogOpen(false); fetchData(); } } catch (e: any) { toast.error(e.response?.data?.message || "Failed to update rank"); } }}>حفظ التغييرات</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={rateDialogOpen} onOpenChange={setRateDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>نسبة عمولة مخصصة — {selectedPartner?.user?.firstName} {selectedPartner?.user?.lastName}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Alert><Info className="size-4" /><AlertDescription>اترك الحقل فارغاً لاستخدام النسبة العامة للمستوى الأول. النسبة تطبّق على كل فاتورة اشتراك جديدة لهذا الشريك فقط.</AlertDescription></Alert>
+            <div>
+              <Label>نسبة المستوى الأول (L1) %</Label>
+              <div className="flex items-center gap-1 mt-1">
+                <Input type="number" value={newRate} onChange={e => setNewRate(e.target.value)} min={0} max={100} step={0.5} placeholder="مثال: 35" />
+                <span className="text-sm shrink-0">%</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRateDialogOpen(false)}>إلغاء</Button>
+            <Button onClick={async () => {
+              if (!selectedPartner) return;
+              const val = newRate === "" ? null : Number(newRate);
+              if (val !== null && (isNaN(val) || val < 0 || val > 100)) { toast.error("النسبة يجب أن تكون بين 0 و 100"); return; }
+              try {
+                const r = await apiClient.put(`/platform-partners/admin/partners/${selectedPartner.id}/commission-rate`, { rate: val });
+                if (r.data.status === "success") { toast.success("تم تحديث نسبة العمولة"); setRateDialogOpen(false); fetchData(); }
+              } catch (e: any) { toast.error(e.response?.data?.message || "فشل حفظ النسبة"); }
+            }}>حفظ النسبة</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog></div>
   );

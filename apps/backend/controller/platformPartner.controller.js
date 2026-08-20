@@ -65,6 +65,22 @@ exports.updateTitle = async (req, res, next) => {
     }
 };
 
+exports.updateCommissionRate = async (req, res, next) => {
+    try {
+        const { partnerId } = req.params;
+        const { rate } = req.body;
+
+        const updatedPartner = await platformPartnerService.updatePartnerCommissionRate(partnerId, rate);
+
+        res.status(200).json({
+            status: 'success',
+            data: { partner: updatedPartner }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 exports.requestPayout = async (req, res, next) => {
     try {
         const userId = req.user.id;

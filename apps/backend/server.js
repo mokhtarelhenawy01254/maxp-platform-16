@@ -546,6 +546,45 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "15mb", verify: captureRawJsonBody }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cookieParser());
+
+// ─────────────────────────────────────────────────────────────────────────
+// Platform Partner Attribution Window
+// Captures ?partner=CODE on ANY request (most importantly the register page
+// visit) and persists it for 30 days via an httpOnly cookie, with a short-lived
+// server-side session fallback. The code is later read on registration.
+// ─────────────────────────────────────────────────────────────────────────
+const PARTNER_ATTR_COOKIE = "pp_ref";
+const PARTNER_ATTR_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+app.use((req, res, next) => {
+  try {
+    const code =
+      req.query?.partner ||
+      req.query?.partnerCode ||
+      req.body?.partnerCode ||
+      req.cookies?.[PARTNER_ATTR_COOKIE];
+
+    if (code && typeof code === "string" && code.trim()) {
+      const clean = code.trim().toUpperCase().slice(0, 32);
+      // Only set if different / missing to avoid resetting the 30-day timer
+      if (req.cookies?.[PARTNER_ATTR_COOKIE] !== clean) {
+        res.cookie(PARTNER_ATTR_COOKIE, clean, {
+          httpOnly: true,
+          sameSite: "lax",
+          maxAge: PARTNER_ATTR_MAX_AGE,
+          path: "/",
+        });
+      }
+      req.partnerCode = clean;
+    } else if (req.cookies?.[PARTNER_ATTR_COOKIE]) {
+      req.partnerCode = req.cookies[PARTNER_ATTR_COOKIE];
+    }
+  } catch (_) {
+    /* never break registration because of attribution */
+  }
+  next();
+});
+
 app.use(sanitizeInput);
 
 // Tenant Context Extraction

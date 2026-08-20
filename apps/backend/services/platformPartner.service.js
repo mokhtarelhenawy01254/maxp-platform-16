@@ -181,7 +181,12 @@ class PlatformPartnerService {
       const maxDepth = allowedDepthMap[partner.title] || 1;
 
       if (level <= maxDepth) {
-        const rate = rates[level - 1];
+        // Level 1 (direct partner) honors a per-partner custom rate override.
+        // Levels 2-4 always use the global network rates (team-building incentive).
+        let rate = rates[level - 1];
+        if (level === 1 && partner.customCommissionRate != null && !isNaN(partner.customCommissionRate)) {
+          rate = partner.customCommissionRate;
+        }
         const commissionAmount = (Number(billing.amount) * rate) / 100;
 
         if (commissionAmount > 0) {
@@ -383,6 +388,30 @@ class PlatformPartnerService {
         title: title,
         maxAllowedDepth: depthMap[title],
       },
+    });
+  }
+
+  /**
+   * SUPER ADMIN: Update a partner's custom L1 commission rate (null = use global)
+   */
+  async updatePartnerCommissionRate(partnerId, rate) {
+    const prisma = getSharedPrismaClient();
+
+    // null / undefined => clear override, revert to global setting
+    const data = {};
+    if (rate === null || rate === undefined || rate === "") {
+      data.customCommissionRate = null;
+    } else {
+      const num = Number(rate);
+      if (isNaN(num) || num < 0 || num > 100) {
+        throw new Error("Commission rate must be a number between 0 and 100");
+      }
+      data.customCommissionRate = num;
+    }
+
+    return await prisma.platformPartner.update({
+      where: { id: partnerId },
+      data,
     });
   }
 
