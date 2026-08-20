@@ -1,0 +1,121 @@
+﻿model BotAutomationSettings {
+  id                  String    @id @default(cuid())
+  companyId           String    @unique
+  welcomeEnabled      Boolean   @default(false)
+  welcomeMessage      String?   @db.Text
+  defaultReplyEnabled Boolean   @default(false)
+  defaultReply        String?   @db.Text
+  channels            String?   @db.Text // JSON: {"WHATSAPP":true,"FACEBOOK":true}
+  widgetEnabled       Boolean   @default(false)
+  widgetColor         String    @default("#4f46e5")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  company             Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("bot_automation_settings")
+}
+
+model BotAutomationRule {
+  id                   String   @id @default(cuid())
+  companyId            String
+  name                 String
+  channels             String?  @db.Text // JSON array: ["WHATSAPP","FACEBOOK"]
+  matchMode            String   @default("CONTAINS") // CONTAINS | EXACT | REGEX
+  keywords             String?  @db.Text // JSON array of strings (Arabic + English)
+  replyType            String   @default("TEXT") // TEXT | IMAGE | VIDEO
+  replyText            String?  @db.Text
+  mediaUrl             String?
+  buttons              String?  @db.Text // JSON array: [{title, payload}] ΓÇö quick replies
+  priority             Int      @default(0)
+  isEnabled            Boolean  @default(true)
+  stopFurtherProcessing Boolean @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("bot_automation_rules")
+}
+
+model BotConversationStarter {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  channels    String?  @db.Text // JSON array: ["WHATSAPP","FACEBOOK"]
+  message     String?  @db.Text // prefill text sent when the link is opened
+  refCode     String?  // Messenger ref code (?ref=...) for opt-in tracking
+  isEnabled   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("bot_conversation_starters")
+}
+
+model BotPersistentMenu {
+  id          String   @id @default(cuid())
+  companyId   String   @unique
+  pageId      String?  // Facebook page id (FacebookPage.pageId) ΓÇö target for the push
+  items       String?  @db.Text // JSON array of {type:"postback"|"web_url", title, payload?|url?, webview_height_ratio?}
+  isEnabled   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("bot_persistent_menus")
+}
+
+model BotUnsubscribe {
+  id          String   @id @default(cuid())
+  companyId   String
+  customerId  String
+  channel     String   @default("WHATSAPP") // WHATSAPP | FACEBOOK
+  reason      String?
+  createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, customerId, channel])
+  @@index([companyId])
+  @@map("bot_unsubscribes")
+}
+
+model BotCustomField {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  key         String
+  createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, key])
+  @@map("bot_custom_fields")
+}
+
+model BotCustomerFieldValue {
+  id          String   @id @default(cuid())
+  companyId   String
+  customerId  String
+  fieldKey    String
+  value       String   @db.Text
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, customerId, fieldKey])
+  @@index([companyId, customerId])
+  @@map("bot_customer_field_values")
+}
+
+model BotSegment {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  rules       String?  @db.Text // JSON: [{field, op, value}] ΓÇö op: eq|contains|gte|lte
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("bot_segments")
+}

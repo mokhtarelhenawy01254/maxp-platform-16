@@ -19,26 +19,22 @@ export const useFacebookPixel = (
   const [pageViewEnabled, setPageViewEnabled] = useState(false);
   const lastTrackedPathRef = useRef<string>("");
 
+  const facebookPixelEnabled = storefrontSettings?.facebookPixelEnabled ?? false;
+  const facebookPixelId = storefrontSettings?.facebookPixelId ?? null;
+  const gtmEnabled = storefrontSettings?.gtmEnabled ?? false;
+  const gtmSuppressPixels = storefrontSettings?.gtmSuppressPixels ?? false;
+  const pixelTrackPageView = storefrontSettings?.pixelTrackPageView ?? true;
+
   useEffect(() => {
     setIsLoaded(false);
     setPixelId(null);
     setPageViewEnabled(false);
 
-    if (!storefrontSettings) {
+    if (gtmEnabled && gtmSuppressPixels) {
       return;
     }
 
-    if (
-      storefrontSettings.gtmEnabled &&
-      storefrontSettings.gtmSuppressPixels
-    ) {
-      return;
-    }
-
-    if (
-      !storefrontSettings.facebookPixelEnabled ||
-      !storefrontSettings.facebookPixelId
-    ) {
+    if (!facebookPixelEnabled || !facebookPixelId) {
       return;
     }
 
@@ -46,16 +42,16 @@ export const useFacebookPixel = (
     // behavior) so conversion events never miss a fast or non-interacting
     // visitor. The script is small and async, so this has negligible impact
     // on Core Web Vitals.
-    loadFacebookPixel(storefrontSettings.facebookPixelId!);
-    setPixelId(storefrontSettings.facebookPixelId!);
+    loadFacebookPixel(facebookPixelId);
+    setPixelId(facebookPixelId);
     setIsLoaded(true);
-    setPageViewEnabled(storefrontSettings.pixelTrackPageView !== false);
+    setPageViewEnabled(pixelTrackPageView !== false);
   }, [
-    storefrontSettings?.facebookPixelEnabled,
-    storefrontSettings?.facebookPixelId,
-    storefrontSettings?.gtmEnabled,
-    storefrontSettings?.gtmSuppressPixels,
-    storefrontSettings?.pixelTrackPageView,
+    facebookPixelEnabled,
+    facebookPixelId,
+    gtmEnabled,
+    gtmSuppressPixels,
+    pixelTrackPageView,
   ]);
 
   useEffect(() => {
