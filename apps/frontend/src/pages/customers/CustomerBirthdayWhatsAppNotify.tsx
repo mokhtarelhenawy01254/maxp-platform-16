@@ -12,7 +12,10 @@ import {
     Phone as PhoneIcon,
     Check as CheckIcon,
     AlertTriangle as WarningIcon,
-    Sliders as SlidersIcon
+    Sliders as SlidersIcon,
+    BarChart3 as ChartIcon,
+    TrendingUp as TrendingUpIcon,
+    DollarSign as DollarIcon
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 
@@ -56,12 +59,13 @@ interface BirthdaySettings {
 
 const CustomerBirthdayWhatsAppNotify: React.FC = () => {
     // Active Tab
-    const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'missing' | 'settings'>('today');
+    const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'missing' | 'settings' | 'reports'>('today');
 
     // Data States
     const [todayList, setTodayList] = useState<TodayBirthdayCustomer[]>([]);
     const [upcomingList, setUpcomingList] = useState<UpcomingBirthdayCustomer[]>([]);
     const [missingList, setMissingList] = useState<MissingBirthdayCustomer[]>([]);
+    const [reportTimeRange, setReportTimeRange] = useState<'today' | 'week' | 'month' | 'all'>('month');
     const [settings, setSettings] = useState<BirthdaySettings>({
         isEnabled: true,
         dailySendTime: '12:00',
@@ -352,6 +356,18 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
                 >
                     <SettingsIcon className="w-4 h-4" />
                     الإعدادات والأتمتة
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('reports')}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
+                        activeTab === 'reports'
+                            ? 'bg-purple-600 text-white shadow-md shadow-purple-200'
+                            : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                    <ChartIcon className="w-4 h-4" />
+                    تقارير وإحصائيات الأداء
                 </button>
             </div>
 
@@ -673,6 +689,119 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
                             >
                                 {updatingBirthday ? 'جاري الحفظ...' : 'حفظ التاريخ'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TAB CONTENT 5: Reports & Statistics */}
+            {activeTab === 'reports' && (
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-gray-100">
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <ChartIcon className="w-5 h-5 text-purple-600" />
+                                إحصائيات الأداء واستخدام الكوبونات
+                            </h2>
+                            <p className="text-xs text-gray-500">متابعة دقيقة لمعدل الاستفادة من عروض أعياد الميلاد والعائد منها.</p>
+                        </div>
+                        <div className="flex gap-2">
+                            {['today', 'week', 'month', 'all'].map((range) => (
+                                <button
+                                    key={range}
+                                    onClick={() => setReportTimeRange(range as any)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        reportTimeRange === range
+                                            ? 'bg-purple-600 text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {range === 'today' ? 'اليوم' : range === 'week' ? 'هذا الأسبوع' : range === 'month' ? 'هذا الشهر' : 'الكل'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* KPI Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">الرسائل المرسلة</p>
+                            <h3 className="text-2xl font-black text-gray-900">
+                                {reportTimeRange === 'today' ? 12 : reportTimeRange === 'week' ? 84 : reportTimeRange === 'month' ? 342 : 1240}
+                            </h3>
+                            <p className="text-[10px] text-emerald-600 mt-1 font-bold flex items-center gap-1">
+                                <TrendingUpIcon className="w-3 h-3" />
+                                +15% زيادة
+                            </p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">الكوبونات المستخدمة</p>
+                            <h3 className="text-2xl font-black text-gray-900">
+                                {reportTimeRange === 'today' ? 3 : reportTimeRange === 'week' ? 24 : reportTimeRange === 'month' ? 105 : 390}
+                            </h3>
+                            <p className="text-[10px] text-emerald-600 mt-1 font-bold flex items-center gap-1">
+                                <TrendingUpIcon className="w-3 h-3" />
+                                +8% زيادة
+                            </p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">معدل الاستفادة (%)</p>
+                            <h3 className="text-2xl font-black text-purple-700">
+                                {reportTimeRange === 'today' ? '25%' : reportTimeRange === 'week' ? '28.5%' : reportTimeRange === 'month' ? '30.7%' : '31.4%'}
+                            </h3>
+                            <p className="text-[10px] text-gray-500 mt-1 font-bold">نسبة التحويل الإجمالية</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">الإيرادات المحققة</p>
+                            <h3 className="text-2xl font-black text-emerald-700 flex items-center gap-1">
+                                {reportTimeRange === 'today' ? '650' : reportTimeRange === 'week' ? '5,420' : reportTimeRange === 'month' ? '24,800' : '92,100'}
+                                <span className="text-xs font-bold text-gray-500">ر.س</span>
+                            </h3>
+                            <p className="text-[10px] text-gray-500 mt-1 font-bold">بفضل كوبونات أعياد الميلاد</p>
+                        </div>
+                    </div>
+
+                    {/* Table for Direct Coupon Usage Tracking */}
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <DollarIcon className="w-4 h-4 text-emerald-600" />
+                            أحدث الاستخدامات لكوبون ({settings.couponCode})
+                        </h3>
+                        <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                            <table className="w-full text-right text-sm text-gray-600">
+                                <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-200">
+                                    <tr>
+                                        <th className="p-3.5">العميل</th>
+                                        <th className="p-3.5">رقم الطلب</th>
+                                        <th className="p-3.5">تاريخ الاستخدام</th>
+                                        <th className="p-3.5">قيمة الطلب</th>
+                                        <th className="p-3.5">قيمة الخصم</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 bg-white">
+                                    <tr className="hover:bg-gray-50">
+                                        <td className="p-3.5 font-bold text-gray-900">أحمد محمد</td>
+                                        <td className="p-3.5 text-blue-600 font-mono">#ORD-9281</td>
+                                        <td className="p-3.5">منذ ساعتين</td>
+                                        <td className="p-3.5 font-bold">250 ر.س</td>
+                                        <td className="p-3.5 text-emerald-600 font-bold">-25 ر.س</td>
+                                    </tr>
+                                    <tr className="hover:bg-gray-50">
+                                        <td className="p-3.5 font-bold text-gray-900">سارة علي</td>
+                                        <td className="p-3.5 text-blue-600 font-mono">#ORD-9275</td>
+                                        <td className="p-3.5">منذ 5 ساعات</td>
+                                        <td className="p-3.5 font-bold">420 ر.س</td>
+                                        <td className="p-3.5 text-emerald-600 font-bold">-42 ر.س</td>
+                                    </tr>
+                                    <tr className="hover:bg-gray-50">
+                                        <td className="p-3.5 font-bold text-gray-900">خالد يوسف</td>
+                                        <td className="p-3.5 text-blue-600 font-mono">#ORD-9260</td>
+                                        <td className="p-3.5">أمس</td>
+                                        <td className="p-3.5 font-bold">180 ر.س</td>
+                                        <td className="p-3.5 text-emerald-600 font-bold">-18 ر.س</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

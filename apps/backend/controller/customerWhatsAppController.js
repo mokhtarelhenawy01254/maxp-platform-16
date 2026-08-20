@@ -1503,3 +1503,109 @@ exports.sendTestBirthdayMessage = async (req, res) => {
     }
 };
 
+/**
+ * 📊 Birthday Analytics Reports
+ * جلب إحصائيات حملات أعياد الميلاد المتقدمة
+ */
+exports.getBirthdayAnalyticsReports = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { range = 'all' } = req.query; // today, week, month, all
+
+        const prisma = getSharedPrismaClient();
+
+        let dateFilter = {};
+        const now = new Date();
+        
+        if (range === 'today') {
+            const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+            dateFilter = { gte: startOfDay };
+        } else if (range === 'week') {
+            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+            startOfWeek.setHours(0, 0, 0, 0);
+            dateFilter = { gte: startOfWeek };
+        } else if (range === 'month') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            dateFilter = { gte: startOfMonth };
+        }
+
+        const campaignWhere = {
+            companyId,
+            name: { contains: 'عيد ميلاد', mode: 'insensitive' }
+        };
+
+        if (Object.keys(dateFilter).length > 0) {
+            campaignWhere.createdAt = dateFilter;
+        }
+
+        const campaigns = await safeQuery(() =>
+            prisma.broadcastCampaign.findMany({
+                where: campaignWhere,
+                select: {
+                    id: true,
+                    sentCount: true,
+                    recipientCount: true,
+                    createdAt: true
+                }
+            })
+        );
+
+        const totalMessagesSent = campaigns.reduce((acc, curr) => acc + (curr.sentCount || 0), 0);
+        const prospectiveCustomers = campaigns.reduce((acc, curr) => acc + (curr.recipientCount || 0), 0);
+
+        let usedCoupons = 0;
+        let totalSales = 0;
+        
+        try {
+             const birthdayOrders = await safeQuery(() => 
+                 prisma.order.findMany({
+                     where: {
+                         companyId,
+                         ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {})
+                     },
+                     select: {
+                         id: true,
+                         totalAmount: true,
+                         totalPrice: true,
+                         total: true,
+                         discountCode: true,
+                         couponCode: true,
+                         coupon: true
+                     }
+                 })
+             );
+             
+             if (birthdayOrders && Array.isArray(birthdayOrders)) {
+                 const bdayOrders = birthdayOrders.filter(o => {
+                     const code = String(o.discountCode || o.couponCode || o.coupon || '').toLowerCase();
+                     return code.includes('bday') || code.includes('birth') || code.includes('عيد');
+                 });
+                 
+                 usedCoupons = bdayOrders.length;
+                 totalSales = bdayOrders.reduce((sum, o) => sum + (Number(o.totalAmount || o.totalPrice || o.total) || 0), 0);
+             }
+        } catch(e) {
+            console.log('[CWA] Analytics order fetch error:', e.message);
+        }
+
+        const conversionRate = prospectiveCustomers > 0 
+            ? ((usedCoupons / prospectiveCustomers) * 100).toFixed(2) 
+            : 0;
+
+        return res.json({
+            success: true,
+            data: {
+                timeRange: range,
+                totalMessagesSent,
+                prospectiveCustomers,
+                usedCoupons,
+                conversionRate: parseFloat(conversionRate),
+                totalSales
+            }
+        });
+
+    } catch (error) {
+        console.error('[CWA] getBirthdayAnalyticsReports error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جلب إحصائيات أعياد الميلاد' });
+    }
+};
