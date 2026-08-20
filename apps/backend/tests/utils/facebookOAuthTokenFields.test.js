@@ -3,10 +3,9 @@ const {
 } = require("../../utils/facebookOAuthTokenFields");
 
 describe("facebookOAuthTokenFields", () => {
-  test("keeps pixel OAuth tokens out of the page OAuth session", () => {
+  test("keeps pixel OAuth tokens fully isolated from page and ads OAuth sessions", () => {
     expect(buildFacebookTokenUpdateData("pixel-token", "pixel")).toEqual({
       facebookPixelAccessToken: "pixel-token",
-      facebookAdsAccessToken: "pixel-token",
     });
   });
 
