@@ -52,6 +52,17 @@ export const shouldBootstrapStorefront = (
     return false;
   }
 
+  // Exclude customer-portal paths — these are handled by the customer portal,
+  // never by the storefront rendering engine.
+  if (
+    pathname === "/account" ||
+    pathname.startsWith("/account/") ||
+    pathname === "/auth/customer-register" ||
+    pathname.startsWith("/auth/customer-register/")
+  ) {
+    return false;
+  }
+
   if (
     pathname === "/store" ||
     pathname.startsWith("/store/") ||
