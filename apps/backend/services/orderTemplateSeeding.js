@@ -1,14 +1,14 @@
-/**
- * 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3):
- * بذر قوالب الطلبات الافتراضية في DB + ضمان قالب للحدث الجاري.
- * مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates (صفوف DB قابلة للتعديل).
- * مستخرجة من orderStatusController.seedDefaultOrderTemplates لتُستخدم دفاعياً في
- * sendNotification (شركة جديدة لم تفتح الصفحة بعد كانت تفشل بصمت بـ no_template).
+﻿/**
+ * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º2.3):
+ * ╪¿╪░╪▒ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ┘ü┘è DB + ╪╢┘à╪º┘å ┘é╪º┘ä╪¿ ┘ä┘ä╪¡╪»╪½ ╪º┘ä╪¼╪º╪▒┘è.
+ * ┘à╪╡╪»╪▒ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘ê╪¡┘è╪» ┘ç┘ê ╪╡┘ü╪¡╪⌐ /orders/status-templates (╪╡┘ü┘ê┘ü DB ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪¬╪╣╪»┘è┘ä).
+ * ┘à╪│╪¬╪«╪▒╪¼╪⌐ ┘à┘å orderStatusController.seedDefaultOrderTemplates ┘ä╪¬┘Å╪│╪¬╪«╪»┘à ╪»┘ü╪º╪╣┘è╪º┘ï ┘ü┘è
+ * sendNotification (╪┤╪▒┘â╪⌐ ╪¼╪»┘è╪»╪⌐ ┘ä┘à ╪¬┘ü╪¬╪¡ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪¿╪╣╪» ┘â╪º┘å╪¬ ╪¬┘ü╪┤┘ä ╪¿╪╡┘à╪¬ ╪¿┘Ç no_template).
  */
 const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const DEFAULT_ORDER_TEMPLATE_CONTENT = (statusName) => (
-  `أهلًا بحضرتك 👋\nتم تغيير حالة طلبك إلى: ${statusName}\nشكرًا لتعاملك معنا 🙏`
+  `╪ú┘ç┘ä┘ï╪º ╪¿╪¡╪╢╪▒╪¬┘â ≡ƒæï\n╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿┘â ╪Ñ┘ä┘ë: ${statusName}\n╪┤┘â╪▒┘ï╪º ┘ä╪¬╪╣╪º┘à┘ä┘â ┘à╪╣┘å╪º ≡ƒÖÅ`
 );
 
 async function seedDefaultOrderTemplates(companyId, prisma = getSharedPrismaClient()) {
@@ -18,11 +18,11 @@ async function seedDefaultOrderTemplates(companyId, prisma = getSharedPrismaClie
       select: { id: true, code: true, name: true }
     });
 
-    // أحداث الطلبات الإضافية غير المرتبطة بحالة محددة (تُدار من صفحة قوالب الطلبات)
+    // ╪ú╪¡╪»╪º╪½ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪Ñ╪╢╪º┘ü┘è╪⌐ ╪║┘è╪▒ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿╪¡╪º┘ä╪⌐ ┘à╪¡╪»╪»╪⌐ (╪¬┘Å╪»╪º╪▒ ┘à┘å ╪╡┘ü╪¡╪⌐ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬)
     const extraOrderEvents = [
-      { code: 'ORDER_CREATED', name: 'طلب جديد' },
-      { code: 'ORDER_CANCELLED', name: 'إلغاء الطلب' },
-      { code: 'PAYMENT_REMINDER', name: 'تذكير بالدفع' }
+      { code: 'ORDER_CREATED', name: '╪╖┘ä╪¿ ╪¼╪»┘è╪»' },
+      { code: 'ORDER_CANCELLED', name: '╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿' },
+      { code: 'PAYMENT_REMINDER', name: '╪¬╪░┘â┘è╪▒ ╪¿╪º┘ä╪»┘ü╪╣' }
     ];
 
     const allEvents = [
@@ -43,7 +43,7 @@ async function seedDefaultOrderTemplates(companyId, prisma = getSharedPrismaClie
         data: {
           companyId,
           eventType: event.code,
-          name: `قالب ${event.name}`,
+          name: `┘é╪º┘ä╪¿ ${event.name}`,
           category: 'ORDERS',
           content: DEFAULT_ORDER_TEMPLATE_CONTENT(event.name),
           variables: JSON.stringify([
@@ -58,21 +58,21 @@ async function seedDefaultOrderTemplates(companyId, prisma = getSharedPrismaClie
     }
 
     if (created > 0) {
-      console.log(`🌱 [ORDER-TEMPLATES] Created ${created} default order template(s) for company ${companyId}`);
+      console.log(`≡ƒî▒ [ORDER-TEMPLATES] Created ${created} default order template(s) for company ${companyId}`);
     }
     return created;
   } catch (error) {
-    console.error('❌ [ORDER-TEMPLATES] Seed failed:', error.message);
+    console.error('Γ¥î [ORDER-TEMPLATES] Seed failed:', error.message);
     return 0;
   }
 }
 
 /**
- * يضمن وجود قالب للحدث الجاري (يُستدعى عند غياب القالب لأحداث الطلبات):
- * 1) يزرع الافتراضيات لكل الحالات المُعرّفة + الأحداث القياسية.
- * 2) لو ما زال الحدث المحدد بلا قالب (حالة غير مُعرّفة في orderStatusConfig)،
- *    ينشئ صفاً دنياً قابلاً للتعديل من الصفحة.
- * يرجع صف القالب (DB) أو null.
+ * ┘è╪╢┘à┘å ┘ê╪¼┘ê╪» ┘é╪º┘ä╪¿ ┘ä┘ä╪¡╪»╪½ ╪º┘ä╪¼╪º╪▒┘è (┘è┘Å╪│╪¬╪»╪╣┘ë ╪╣┘å╪» ╪║┘è╪º╪¿ ╪º┘ä┘é╪º┘ä╪¿ ┘ä╪ú╪¡╪»╪º╪½ ╪º┘ä╪╖┘ä╪¿╪º╪¬):
+ * 1) ┘è╪▓╪▒╪╣ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪º╪¬ ┘ä┘â┘ä ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘à┘Å╪╣╪▒┘æ┘ü╪⌐ + ╪º┘ä╪ú╪¡╪»╪º╪½ ╪º┘ä┘é┘è╪º╪│┘è╪⌐.
+ * 2) ┘ä┘ê ┘à╪º ╪▓╪º┘ä ╪º┘ä╪¡╪»╪½ ╪º┘ä┘à╪¡╪»╪» ╪¿┘ä╪º ┘é╪º┘ä╪¿ (╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘Å╪╣╪▒┘æ┘ü╪⌐ ┘ü┘è orderStatusConfig)╪î
+ *    ┘è┘å╪┤╪ª ╪╡┘ü╪º┘ï ╪»┘å┘è╪º┘ï ┘é╪º╪¿┘ä╪º┘ï ┘ä┘ä╪¬╪╣╪»┘è┘ä ┘à┘å ╪º┘ä╪╡┘ü╪¡╪⌐.
+ * ┘è╪▒╪¼╪╣ ╪╡┘ü ╪º┘ä┘é╪º┘ä╪¿ (DB) ╪ú┘ê null.
  */
 async function ensureOrderTemplate({ companyId, eventType, fallbackEventType, prisma = getSharedPrismaClient() }) {
   await seedDefaultOrderTemplates(companyId, prisma);
@@ -99,7 +99,7 @@ async function ensureOrderTemplate({ companyId, eventType, fallbackEventType, pr
     data: {
       companyId,
       eventType: targetCode,
-      name: `قالب ${targetCode}`,
+      name: `┘é╪º┘ä╪¿ ${targetCode}`,
       category: 'ORDERS',
       content: DEFAULT_ORDER_TEMPLATE_CONTENT(statusName),
       variables: JSON.stringify([
@@ -110,7 +110,7 @@ async function ensureOrderTemplate({ companyId, eventType, fallbackEventType, pr
       isActive: true
     }
   });
-  console.log(`🌱 [ORDER-TEMPLATES] Auto-created minimal template for ${companyId}/${targetCode}`);
+  console.log(`≡ƒî▒ [ORDER-TEMPLATES] Auto-created minimal template for ${companyId}/${targetCode}`);
   return created;
 }
 

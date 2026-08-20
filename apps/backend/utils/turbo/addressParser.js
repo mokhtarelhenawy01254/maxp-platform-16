@@ -1,6 +1,6 @@
-/**
+﻿/**
  * Turbo Address Parser Utilities
- * دوال تحليل وتنظيف العنوان لشحن Turbo
+ * ╪»┘ê╪º┘ä ╪¬╪¡┘ä┘è┘ä ┘ê╪¬┘å╪╕┘è┘ü ╪º┘ä╪╣┘å┘ê╪º┘å ┘ä╪┤╪¡┘å Turbo
  */
 
 function cleanLocationName(location) {
@@ -80,7 +80,7 @@ function getShippingAddressFields(shippingAddress) {
 
   const city = normalizeText(parsedAddress.city || parsedAddress.town || '', true);
   const governorate = normalizeText(parsedAddress.governorate || parsedAddress.state || parsedAddress.province || parsedAddress.region, true);
-  // The Turbo `area` field means the district/حي. Derive it from the most specific
+  // The Turbo `area` field means the district/╪¡┘è. Derive it from the most specific
   // location key so a district stored under `district`/`neighborhood` is not dropped
   // (previously only `area` was considered, which left the area field empty/wrong).
   const area = normalizeText(parsedAddress.area || parsedAddress.district || parsedAddress.neighborhood || parsedAddress.landmark || '', true);
@@ -188,9 +188,9 @@ function getBestShippingAddressFields(...shippingAddressCandidates) {
   const best = fields[0];
 
   // Merge location fields (city/governorate/area) from ALL candidates, not just
-  // the one chosen for the street. Otherwise the real district/area — which is
+  // the one chosen for the street. Otherwise the real district/area ΓÇö which is
   // often only present in the structured shippingAddress JSON while the street
-  // lives in a plain-text customerAddress — gets dropped and Turbo receives an
+  // lives in a plain-text customerAddress ΓÇö gets dropped and Turbo receives an
   // incorrect (governorate-level) area.
   const nonEmpty = (vals) => vals.find((v) => v && String(v).trim()) || '';
   const mergedArea = nonEmpty(fields.map((f) => f.area || (f.parsedAddress && (f.parsedAddress.area || f.parsedAddress.district || f.parsedAddress.neighborhood)) || ''));
@@ -244,7 +244,7 @@ function extractCleanStreetAddress(addressFields, rawFallback = '', options = {}
     }
   }
 
-  const commonGovWords = ['محافظة القاهره', 'محافظة القاهرة', 'محافظة الجيزة', 'محافظة الاسكندرية', 'أطراف القاهرة والجيزة', 'القاهرة', 'الجيزة', 'الإسكندرية', 'Cairo', 'Giza', 'Alexandria'];
+  const commonGovWords = ['┘à╪¡╪º┘ü╪╕╪⌐ ╪º┘ä┘é╪º┘ç╪▒┘ç', '┘à╪¡╪º┘ü╪╕╪⌐ ╪º┘ä┘é╪º┘ç╪▒╪⌐', '┘à╪¡╪º┘ü╪╕╪⌐ ╪º┘ä╪¼┘è╪▓╪⌐', '┘à╪¡╪º┘ü╪╕╪⌐ ╪º┘ä╪º╪│┘â┘å╪»╪▒┘è╪⌐', '╪ú╪╖╪▒╪º┘ü ╪º┘ä┘é╪º┘ç╪▒╪⌐ ┘ê╪º┘ä╪¼┘è╪▓╪⌐', '╪º┘ä┘é╪º┘ç╪▒╪⌐', '╪º┘ä╪¼┘è╪▓╪⌐', '╪º┘ä╪Ñ╪│┘â┘å╪»╪▒┘è╪⌐', 'Cairo', 'Giza', 'Alexandria'];
   for (const govWord of commonGovWords) {
     const gRegex = new RegExp(govWord.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
     streetText = streetText.replace(gRegex, '');
@@ -253,15 +253,15 @@ function extractCleanStreetAddress(addressFields, rawFallback = '', options = {}
   if (addressFields.city || options.city) {
     const cityName = String(addressFields.city || options.city).trim();
     if (cityName && cityName.length > 2) {
-      const cityRegex = new RegExp(`(مدينة\\s+)?${cityName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`, 'gi');
+      const cityRegex = new RegExp(`(┘à╪»┘è┘å╪⌐\\s+)?${cityName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`, 'gi');
       streetText = streetText.replace(cityRegex, '');
     }
   }
 
   streetText = streetText
     .replace(/[\r\n]+/g, ' ')
-    .replace(/^[,\s\-\:\.\t،]+|[,\s\-\:\.\t،]+$/g, '')
-    .replace(/[،\s]*,[،\s]*,/g, ',')
+    .replace(/^[,\s\-\:\.\t╪î]+|[,\s\-\:\.\t╪î]+$/g, '')
+    .replace(/[╪î\s]*,[╪î\s]*,/g, ',')
     .replace(/\s+/g, ' ')
     .trim();
 

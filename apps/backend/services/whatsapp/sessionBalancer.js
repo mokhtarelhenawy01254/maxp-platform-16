@@ -1,7 +1,7 @@
-/**
- * 🚨 PRODUCTION-FIX (notifications-fix-plan §5.1):
- * موازنة الجلسات + حل الجلسة عند الإرسال (Sticky / Round-Robin / JIT init).
- * مستخرجة من WhatsAppNotificationService.js لتقليل حجم الملف.
+﻿/**
+ * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º5.1):
+ * ┘à┘ê╪º╪▓┘å╪⌐ ╪º┘ä╪¼┘ä╪│╪º╪¬ + ╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ╪╣┘å╪» ╪º┘ä╪Ñ╪▒╪│╪º┘ä (Sticky / Round-Robin / JIT init).
+ * ┘à╪│╪¬╪«╪▒╪¼╪⌐ ┘à┘å WhatsAppNotificationService.js ┘ä╪¬┘é┘ä┘è┘ä ╪¡╪¼┘à ╪º┘ä┘à┘ä┘ü.
  */
 
 const { getSharedPrismaClient, safeQuery } = require('../sharedDatabase');
@@ -27,8 +27,8 @@ async function getOrAssignSession({ companyId, customerId, recipientPhone, conne
     return settings?.defaultSessionId || null;
   }
 
-  // 1. البحث عن جلسة مثبتة (Sticky Session Affinity)
-  // نطبق هذا المنطق فقط إذا كان الخيار مفعلاً في الإعدادات
+  // 1. ╪º┘ä╪¿╪¡╪½ ╪╣┘å ╪¼┘ä╪│╪⌐ ┘à╪½╪¿╪¬╪⌐ (Sticky Session Affinity)
+  // ┘å╪╖╪¿┘é ┘ç╪░╪º ╪º┘ä┘à┘å╪╖┘é ┘ü┘é╪╖ ╪Ñ╪░╪º ┘â╪º┘å ╪º┘ä╪«┘è╪º╪▒ ┘à┘ü╪╣┘ä╪º┘ï ┘ü┘è ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬
   if (settings?.stickySessionEnabled !== false) {
     const connectedSessionIds = connectedSessions.map(s => s.sessionId);
 
@@ -61,21 +61,21 @@ async function getOrAssignSession({ companyId, customerId, recipientPhone, conne
       }
 
       if (existingSessionId) {
-        console.log(`🔗 [WHATSAPP-AFFINITY] Sticky session matched: ${existingSessionId}`);
+        console.log(`≡ƒöù [WHATSAPP-AFFINITY] Sticky session matched: ${existingSessionId}`);
         return existingSessionId;
       }
     } catch (err) {
-      console.error('❌ [WHATSAPP-AFFINITY] Error checking affinity:', err);
+      console.error('Γ¥î [WHATSAPP-AFFINITY] Error checking affinity:', err);
     }
   } else {
-    console.log(`⚖️ [WHATSAPP-LB] Sticky sessions disabled, forcing load balancing for every message.`);
+    console.log(`ΓÜû∩╕Å [WHATSAPP-LB] Sticky sessions disabled, forcing load balancing for every message.`);
   }
 
-  // 2. إذا لم توجد جلسة مثبتة أو الخيار معطل، نستخدم التوزيع الموزون (Weighted Round Robin)
+  // 2. ╪Ñ╪░╪º ┘ä┘à ╪¬┘ê╪¼╪» ╪¼┘ä╪│╪⌐ ┘à╪½╪¿╪¬╪⌐ ╪ú┘ê ╪º┘ä╪«┘è╪º╪▒ ┘à╪╣╪╖┘ä╪î ┘å╪│╪¬╪«╪»┘à ╪º┘ä╪¬┘ê╪▓┘è╪╣ ╪º┘ä┘à┘ê╪▓┘ê┘å (Weighted Round Robin)
   if (connectedSessions.length > 1) {
     let weightedPool = [];
     connectedSessions.forEach(s => {
-      // الأولوية لـ loadBalanceWeight ثم لـ isDefault
+      // ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐ ┘ä┘Ç loadBalanceWeight ╪½┘à ┘ä┘Ç isDefault
       const weight = s.loadBalanceWeight || (s.isDefault ? 3 : 1);
       for (let i = 0; i < weight; i++) {
         weightedPool.push(s.sessionId);
@@ -87,17 +87,17 @@ async function getOrAssignSession({ companyId, customerId, recipientPhone, conne
     setSessionRotation(companyId, nextIndex);
 
     const pickedId = weightedPool[nextIndex];
-    console.log(`⚖️ [LOAD-BALANCER] New assignment via Weighted Round-Robin (Weight Strategy): ${pickedId} (Step ${nextIndex + 1}/${weightedPool.length})`);
+    console.log(`ΓÜû∩╕Å [LOAD-BALANCER] New assignment via Weighted Round-Robin (Weight Strategy): ${pickedId} (Step ${nextIndex + 1}/${weightedPool.length})`);
     return pickedId;
   }
 
-  // إذا كان هناك رقم واحد فقط متصل
+  // ╪Ñ╪░╪º ┘â╪º┘å ┘ç┘å╪º┘â ╪▒┘é┘à ┘ê╪º╪¡╪» ┘ü┘é╪╖ ┘à╪¬╪╡┘ä
   return connectedSessions[0].sessionId;
 }
 
 /**
- * يميّز أخطاء ميتا المتعلقة بنافذة 24 ساعة / القالب عن الأخطاء التانية
- * (فقط هذه الأخطاء تستحق fallback لـ Baileys).
+ * ┘è┘à┘è┘æ╪▓ ╪ú╪«╪╖╪º╪í ┘à┘è╪¬╪º ╪º┘ä┘à╪¬╪╣┘ä┘é╪⌐ ╪¿┘å╪º┘ü╪░╪⌐ 24 ╪│╪º╪╣╪⌐ / ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘å ╪º┘ä╪ú╪«╪╖╪º╪í ╪º┘ä╪¬╪º┘å┘è╪⌐
+ * (┘ü┘é╪╖ ┘ç╪░┘ç ╪º┘ä╪ú╪«╪╖╪º╪í ╪¬╪│╪¬╪¡┘é fallback ┘ä┘Ç Baileys).
  *
  * @param {{code?: string, message?: string}} metaError
  * @returns {boolean}
@@ -118,11 +118,11 @@ function isMetaWindowError(metaError) {
 }
 
 /**
- * يبحث عن Baileys session متصلة في الشركة (مستثنية session الميتا الفاشلة)
- * — يستخدمها sendNotification كـ fallback لما ميتا ترفض الإرسال خارج نافذة 24 ساعة.
+ * ┘è╪¿╪¡╪½ ╪╣┘å Baileys session ┘à╪¬╪╡┘ä╪⌐ ┘ü┘è ╪º┘ä╪┤╪▒┘â╪⌐ (┘à╪│╪¬╪½┘å┘è╪⌐ session ╪º┘ä┘à┘è╪¬╪º ╪º┘ä┘ü╪º╪┤┘ä╪⌐)
+ * ΓÇö ┘è╪│╪¬╪«╪»┘à┘ç╪º sendNotification ┘â┘Ç fallback ┘ä┘à╪º ┘à┘è╪¬╪º ╪¬╪▒┘ü╪╢ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪«╪º╪▒╪¼ ┘å╪º┘ü╪░╪⌐ 24 ╪│╪º╪╣╪⌐.
  *
- * @param {string} companyId - الشركة
- * @param {string} excludeSessionId - الجلسة المستثناة (الميتا الفاشلة)
+ * @param {string} companyId - ╪º┘ä╪┤╪▒┘â╪⌐
+ * @param {string} excludeSessionId - ╪º┘ä╪¼┘ä╪│╪⌐ ╪º┘ä┘à╪│╪¬╪½┘å╪º╪⌐ (╪º┘ä┘à┘è╪¬╪º ╪º┘ä┘ü╪º╪┤┘ä╪⌐)
  * @returns {Promise<{sessionId: string, name: string, phoneNumber: string}|null>}
  */
 async function findAlternativeBaileysSession(companyId, excludeSessionId) {
@@ -139,8 +139,8 @@ async function findAlternativeBaileysSession(companyId, excludeSessionId) {
 
   if (!candidates || candidates.length === 0) return null;
 
-  // فلتر على الـ in-memory connectivity (مثل getOrAssignSession) —
-  // الجلسة لازم تكون فعلاً socket متصلة في الذاكرة، مش بس CONNECTED في DB.
+  // ┘ü┘ä╪¬╪▒ ╪╣┘ä┘ë ╪º┘ä┘Ç in-memory connectivity (┘à╪½┘ä getOrAssignSession) ΓÇö
+  // ╪º┘ä╪¼┘ä╪│╪⌐ ┘ä╪º╪▓┘à ╪¬┘â┘ê┘å ┘ü╪╣┘ä╪º┘ï socket ┘à╪¬╪╡┘ä╪⌐ ┘ü┘è ╪º┘ä╪░╪º┘â╪▒╪⌐╪î ┘à╪┤ ╪¿╪│ CONNECTED ┘ü┘è DB.
   for (const c of candidates) {
     const live = WhatsAppManager.getSession(c.id);
     if (live && live.status === 'connected') {
@@ -169,7 +169,7 @@ async function ensureRuntimeSessionConnected(sessionId, companyId) {
         return session;
       }
 
-      console.log(`🔄 [WHATSAPP-JIT] Session ${sessionId} is CONNECTED in DB but null in memory. Initializing...`);
+      console.log(`≡ƒöä [WHATSAPP-JIT] Session ${sessionId} is CONNECTED in DB but null in memory. Initializing...`);
 
       try {
         await WhatsAppManager.createSession(sessionId, companyId);
@@ -178,7 +178,7 @@ async function ensureRuntimeSessionConnected(sessionId, companyId) {
         while (waitTime < 5000) {
           session = WhatsAppManager.getSession(sessionId);
           if (session && session.status === 'connected') {
-            console.log(`✅ [WHATSAPP-JIT] Session ${sessionId} initialized and connected successfully via JIT`);
+            console.log(`Γ£à [WHATSAPP-JIT] Session ${sessionId} initialized and connected successfully via JIT`);
             return session;
           }
 
@@ -186,7 +186,7 @@ async function ensureRuntimeSessionConnected(sessionId, companyId) {
           waitTime += 1000;
         }
       } catch (err) {
-        console.error(`❌ [WHATSAPP-JIT] Failed to initialize session ${sessionId}:`, err.message);
+        console.error(`Γ¥î [WHATSAPP-JIT] Failed to initialize session ${sessionId}:`, err.message);
       }
 
       return WhatsAppManager.getSession(sessionId);
@@ -196,7 +196,7 @@ async function ensureRuntimeSessionConnected(sessionId, companyId) {
 
     sessionInitializationInFlight.set(sessionId, pendingInitialization);
   } else {
-    console.log(`⏳ [WHATSAPP-JIT] Awaiting in-flight initialization for session ${sessionId}`);
+    console.log(`ΓÅ│ [WHATSAPP-JIT] Awaiting in-flight initialization for session ${sessionId}`);
   }
 
   return pendingInitialization;

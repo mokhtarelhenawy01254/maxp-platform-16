@@ -1,8 +1,8 @@
-/**
- * 🔗 Customer Magic Link Service
- * روابط سريّة تسمح للعميل بفتح بوابة حسابه (صفحته) من غير ما يكتب رقم الموبايل.
- * - بيتم توليد التوكن وقت إرسال رسالة الواتساب (زر "صفحة العميل").
- * - الرابط بيحتوي التوكن + الرقم، والـ endpoint بيتأكد من صحتهم ويصدر JWT.
+﻿/**
+ * ≡ƒöù Customer Magic Link Service
+ * ╪▒┘ê╪º╪¿╪╖ ╪│╪▒┘è┘æ╪⌐ ╪¬╪│┘à╪¡ ┘ä┘ä╪╣┘à┘è┘ä ╪¿┘ü╪¬╪¡ ╪¿┘ê╪º╪¿╪⌐ ╪¡╪│╪º╪¿┘ç (╪╡┘ü╪¡╪¬┘ç) ┘à┘å ╪║┘è╪▒ ┘à╪º ┘è┘â╪¬╪¿ ╪▒┘é┘à ╪º┘ä┘à┘ê╪¿╪º┘è┘ä.
+ * - ╪¿┘è╪¬┘à ╪¬┘ê┘ä┘è╪» ╪º┘ä╪¬┘ê┘â┘å ┘ê┘é╪¬ ╪Ñ╪▒╪│╪º┘ä ╪▒╪│╪º┘ä╪⌐ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ (╪▓╪▒ "╪╡┘ü╪¡╪⌐ ╪º┘ä╪╣┘à┘è┘ä").
+ * - ╪º┘ä╪▒╪º╪¿╪╖ ╪¿┘è╪¡╪¬┘ê┘è ╪º┘ä╪¬┘ê┘â┘å + ╪º┘ä╪▒┘é┘à╪î ┘ê╪º┘ä┘Ç endpoint ╪¿┘è╪¬╪ú┘â╪» ┘à┘å ╪╡╪¡╪¬┘ç┘à ┘ê┘è╪╡╪»╪▒ JWT.
  */
 
 const crypto = require('crypto');
@@ -14,7 +14,7 @@ function generateToken() {
 }
 
 /**
- * إنشاء رابط سري للعميل.
+ * ╪Ñ┘å╪┤╪º╪í ╪▒╪º╪¿╪╖ ╪│╪▒┘è ┘ä┘ä╪╣┘à┘è┘ä.
  * @param {Object} prisma
  * @param {{ companyId: string, customerId: string, phone: string, expiresInDays?: number }} params
  */
@@ -30,8 +30,8 @@ async function createMagicLink(prisma, { companyId, customerId, phone, expiresIn
 }
 
 /**
- * التحقق من الرابط السري + تعليمه كمستخدم.
- * @returns {Promise<Object|null>} سجل الرابط لو صالح، null لو غير صالح.
+ * ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪º┘ä╪▒╪º╪¿╪╖ ╪º┘ä╪│╪▒┘è + ╪¬╪╣┘ä┘è┘à┘ç ┘â┘à╪│╪¬╪«╪»┘à.
+ * @returns {Promise<Object|null>} ╪│╪¼┘ä ╪º┘ä╪▒╪º╪¿╪╖ ┘ä┘ê ╪╡╪º┘ä╪¡╪î null ┘ä┘ê ╪║┘è╪▒ ╪╡╪º┘ä╪¡.
  */
 async function validateMagicLink(prisma, { token, phone, companyId }) {
   if (!token || !phone || !companyId) return null;
@@ -42,18 +42,18 @@ async function validateMagicLink(prisma, { token, phone, companyId }) {
 
   if (!link) return null;
 
-  // تطابق الرقم (بالصيغة المخزنة أو normalized)
+  // ╪¬╪╖╪º╪¿┘é ╪º┘ä╪▒┘é┘à (╪¿╪º┘ä╪╡┘è╪║╪⌐ ╪º┘ä┘à╪«╪▓┘å╪⌐ ╪ú┘ê normalized)
   const { toCanonicalE164 } = require('../utils/phoneNormalization');
   const phoneNorm = toCanonicalE164(phone);
   const linkNorm = toCanonicalE164(link.phone);
   if (phoneNorm && linkNorm && phoneNorm !== linkNorm) return null;
   if ((!phoneNorm || !linkNorm) && String(link.phone).replace(/\D/g, '') !== String(phone || '').replace(/\D/g, '')) return null;
 
-  // انتهاء الصلاحية
+  // ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐
   if (link.expiresAt && new Date(link.expiresAt).getTime() < Date.now()) return null;
 
-  // بمناسبة الاستخدام (لاحظ: الرسالة ممكن تنضغط أكتر من مرة — بنسمح بالاستخدام
-  // المتكرر خلال فترة الصلاحية، بس بنسجّل أول استخدام)
+  // ╪¿┘à┘å╪º╪│╪¿╪⌐ ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à (┘ä╪º╪¡╪╕: ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘à┘à┘â┘å ╪¬┘å╪╢╪║╪╖ ╪ú┘â╪¬╪▒ ┘à┘å ┘à╪▒╪⌐ ΓÇö ╪¿┘å╪│┘à╪¡ ╪¿╪º┘ä╪º╪│╪¬╪«╪»╪º┘à
+  // ╪º┘ä┘à╪¬┘â╪▒╪▒ ╪«┘ä╪º┘ä ┘ü╪¬╪▒╪⌐ ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐╪î ╪¿╪│ ╪¿┘å╪│╪¼┘æ┘ä ╪ú┘ê┘ä ╪º╪│╪¬╪«╪»╪º┘à)
   if (!link.usedAt) {
     await prisma.customerMagicLink.update({
       where: { id: link.id },
@@ -65,8 +65,8 @@ async function validateMagicLink(prisma, { token, phone, companyId }) {
 }
 
 /**
- * بناء رابط بوابة العميل (على ساب دومين الشركة).
- * @param {Object} company — لازم يكون فيه id, slug, customDomain
+ * ╪¿┘å╪º╪í ╪▒╪º╪¿╪╖ ╪¿┘ê╪º╪¿╪⌐ ╪º┘ä╪╣┘à┘è┘ä (╪╣┘ä┘ë ╪│╪º╪¿ ╪»┘ê┘à┘è┘å ╪º┘ä╪┤╪▒┘â╪⌐).
+ * @param {Object} company ΓÇö ┘ä╪º╪▓┘à ┘è┘â┘ê┘å ┘ü┘è┘ç id, slug, customDomain
  * @param {string} token
  * @param {string} phone
  */
