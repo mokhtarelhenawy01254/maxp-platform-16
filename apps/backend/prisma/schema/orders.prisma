@@ -1,4 +1,4 @@
-﻿model Branche {
+model Branche {
   id           String   @id @default(cuid())
   name         String
   address      String?
