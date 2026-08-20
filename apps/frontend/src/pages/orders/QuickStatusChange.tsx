@@ -1,9 +1,18 @@
-import { useTranslation } from 'react-i18next';
-import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import orderWorkflowService, { OrderStatusDefinition } from "../../services/orderWorkflowService";
-import { AlertCircle, AlertTriangle, ArrowRight, Check, CheckCircle, Loader2, Package, RotateCcw, Search } from 'lucide-react';
+import {
+  Search,
+  ArrowRight,
+  Loader2,
+  Package,
+  RotateCcw,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
 import { getStatusDisplay, getSystemStatusOptions } from "../../utils/statusRegistry";
 
 interface OrderData {
@@ -25,6 +34,7 @@ interface ChangeLogEntry {
 }
 
 const StatusBadge: React.FC<{ status: string; label?: string }> = ({ status, label }) => {
+  const { t } = useTranslation();
   const info = getStatusDisplay(status);
   return (
     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${info.colorClass}`}>
@@ -45,8 +55,11 @@ const QuickStatusChange: React.FC = () => {
   const [changeLoading, setChangeLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [duplicateModal, setDuplicateModal] = useState<{ code: string; count: number } | null>(null);
   const [siteStatuses, setSiteStatuses] = useState<{id: string, name: string, code?: string}[]>([]);
   const [workflowEnabled, setWorkflowEnabled] = useState(false);
+  const searchCountsRef = useRef<Record<string, number>>({});
+  const blockedCodesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -77,6 +90,18 @@ const QuickStatusChange: React.FC = () => {
       return;
     }
 
+    const codeKey = code.toLowerCase();
+
+    // Blocked orders (already detected as duplicates) can never be re-entered
+    if (blockedCodesRef.current.has(codeKey)) {
+      const blockMsg = t("quickStatus.orderBlocked", { code });
+      setSearchError(blockMsg);
+      toast.error(blockMsg);
+      setOrderCode("");
+      inputRef.current?.focus();
+      return;
+    }
+
     // Preserve status pre-selected by user before searching
     const preSelectedStatus = selectedStatus;
 
@@ -90,6 +115,20 @@ const QuickStatusChange: React.FC = () => {
       const body = response.data;
       if (body?.success && body?.data) {
         const order = { ...body.data, status: body.data.status?.toUpperCase() };
+
+        // Track repeated code entries ΓÇö a 2nd entry of the same order opens a blocking
+        // modal and blocks that order so it can never be processed again in this session
+        const searchCount = (searchCountsRef.current[codeKey] || 0) + 1;
+        searchCountsRef.current = { ...searchCountsRef.current, [codeKey]: searchCount };
+        if (searchCount > 1) {
+          blockedCodesRef.current.add(codeKey);
+          setCurrentOrder(null);
+          setSelectedStatus("");
+          setOrderCode("");
+          setDuplicateModal({ code: order.orderNumber || code, count: searchCount });
+          return;
+        }
+
         setCurrentOrder(order);
 
         // If user pre-selected a status, keep it; otherwise default to order's current status
@@ -145,7 +184,7 @@ const QuickStatusChange: React.FC = () => {
       if (axiosError.response?.status === 404) {
         setSearchError(t("quickStatus.orderNotFound", { code }));
       } else if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
-        setSearchError("انتهت صلاحية الجلسة — يرجى تسجيل الدخول مجدداً.");
+        setSearchError("╪º┘å╪¬┘ç╪¬ ╪╡┘ä╪º╪¡┘è╪⌐ ╪º┘ä╪¼┘ä╪│╪⌐ ΓÇö ┘è╪▒╪¼┘ë ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä ┘à╪¼╪»╪»╪º┘ï.");
       } else {
         console.error("Search error:", error);
         setSearchError(t("quickStatus.searchError"));
@@ -153,6 +192,10 @@ const QuickStatusChange: React.FC = () => {
 
     } finally {
       setSearchLoading(false);
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
     }
   }, [orderCode, selectedStatus, workflowEnabled, t]);
 
@@ -196,12 +239,20 @@ const QuickStatusChange: React.FC = () => {
       toast.error(msg);
     } finally {
       setChangeLoading(false);
+      setOrderCode("");
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     }
   }, [currentOrder, selectedStatus, workflowEnabled, t]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (duplicateModal) {
+      e.preventDefault();
+      return;
+    }
     if (e.key === "Enter") {
-      // If we already have an order loaded and a different status is selected → change directly
+      // If we already have an order loaded and a different status is selected ΓåÆ change directly
       if (currentOrder && selectedStatus && selectedStatus !== currentOrder.status) {
         handleChangeStatus();
       } else {
@@ -215,7 +266,14 @@ const QuickStatusChange: React.FC = () => {
     setCurrentOrder(null);
     setSelectedStatus("");
     setSearchError("");
+    searchCountsRef.current = {};
     setHasSearched(false);
+    inputRef.current?.focus();
+  };
+
+  const closeDuplicateModal = () => {
+    setDuplicateModal(null);
+    setOrderCode("");
     inputRef.current?.focus();
   };
 
@@ -252,9 +310,9 @@ const QuickStatusChange: React.FC = () => {
                 value={orderCode}
                 onChange={(e) => setOrderCode(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="ابحث برقم الأوردر أو الكود..."
+                placeholder={t("quickStatus.orderCodePlaceholder")}
                 className="w-full px-6 py-5 pr-14 text-2xl border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors tracking-wider font-mono"
-                disabled={searchLoading}
+                disabled={searchLoading || !!duplicateModal}
               />
               <Search
                 className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"
@@ -271,7 +329,7 @@ const QuickStatusChange: React.FC = () => {
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="w-full px-5 py-5 text-xl border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors"
-              disabled={changeLoading}
+              disabled={changeLoading || !!duplicateModal}
             >
               <option value="">
                 {t("quickStatus.selectStatus")}
@@ -293,7 +351,7 @@ const QuickStatusChange: React.FC = () => {
           <div className="flex gap-2 w-full md:w-auto">
             <button
               onClick={handleSearch}
-              disabled={searchLoading || !orderCode.trim()}
+              disabled={searchLoading || !!duplicateModal || !orderCode.trim()}
               className="flex items-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium text-xl"
             >
               {searchLoading ? (
@@ -305,7 +363,7 @@ const QuickStatusChange: React.FC = () => {
             </button>
             <button
               onClick={handleChangeStatus}
-              disabled={changeLoading || !currentOrder || !selectedStatus || selectedStatus === currentOrder?.status}
+              disabled={changeLoading || !!duplicateModal || !currentOrder || !selectedStatus || selectedStatus === currentOrder?.status}
               className="flex items-center gap-2 px-6 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium text-xl"
             >
               {changeLoading ? (
@@ -317,7 +375,7 @@ const QuickStatusChange: React.FC = () => {
             </button>
             <button
               onClick={handleClear}
-              disabled={searchLoading || changeLoading}
+              disabled={searchLoading || changeLoading || !!duplicateModal}
               className="px-6 py-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium text-xl"
             >
               {t("quickStatus.clear")}
@@ -336,6 +394,43 @@ const QuickStatusChange: React.FC = () => {
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 flex items-start gap-3">
           <AlertCircle className="text-red-600 dark:text-red-400 mt-0.5 shrink-0" size={20} />
           <p className="text-red-800 dark:text-red-300">{searchError}</p>
+        </div>
+      )}
+
+      {duplicateModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          dir="rtl"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="duplicate-modal-title"
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border-4 border-amber-400">
+            <div className="mx-auto w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mb-5">
+              <AlertTriangle className="w-11 h-11 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h2
+              id="duplicate-modal-title"
+              className="text-3xl font-bold text-gray-900 dark:text-white mb-3"
+            >
+              {t("quickStatus.duplicateTitle")}
+            </h2>
+            <p className="text-2xl font-mono text-gray-800 dark:text-gray-100 mb-4" dir="ltr">
+              {duplicateModal.code}
+            </p>
+            <p className="text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
+              {t("quickStatus.duplicateOrder", { code: duplicateModal.code, count: duplicateModal.count })}
+            </p>
+            <p className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg p-3 text-sm mb-6">
+              {t("quickStatus.duplicateBlockedNote")}
+            </p>
+            <button
+              onClick={closeDuplicateModal}
+              className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-lg font-semibold transition-colors"
+            >
+              {t("quickStatus.duplicateAcknowledge")}
+            </button>
+          </div>
         </div>
       )}
 
@@ -368,7 +463,7 @@ const QuickStatusChange: React.FC = () => {
                     {t("quickStatus.total")}
                   </p>
                   <span className="text-sm font-bold text-gray-900 dark:text-white">
-                    {Number(currentOrder.total).toFixed(2)} {currentOrder.currency || "ج.م"}
+                    {Number(currentOrder.total).toFixed(2)} {currentOrder.currency || "╪¼.┘à"}
                   </span>
                 </div>
               )}
@@ -388,7 +483,7 @@ const QuickStatusChange: React.FC = () => {
               onClick={() => setChangeLog([])}
               className="text-sm px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
             >
-              مسح السجل
+              ┘à╪│╪¡ ╪º┘ä╪│╪¼┘ä
             </button>
           </div>
           <div className="overflow-x-auto">

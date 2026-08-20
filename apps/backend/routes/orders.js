@@ -1,9 +1,16 @@
-const express = require('express');
+﻿const express = require('express');
 const socketService = require('../services/socketService');
 const { v4: uuidv4 } = require('uuid');
 const verifyToken = require('../utils/verifyToken');
 const router = express.Router();
 const { checkAppAccess } = require('../middleware/checkAppAccess');
+
+const {
+  PRISMA_ORDER_STATUS_ENUM,
+  PREP_FILTER_STATUSES,
+  TURBO_STATUS_ALIASES,
+  parseStatusFilter
+} = require('../utils/orderStatusFilter');
 
 const simpleOrderService = require('../services/simpleOrderService');
 const orderService = require('../services/orderService');
@@ -12,6 +19,58 @@ const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { VALID_ORDER_STATUSES } = require('../utils/constants');
 const preparationQueueService = require('../services/preparationQueueService');
+const {
+  extractAttributionFromCheckoutData
+} = require('../utils/orderAttribution');
+const { detectAbandonReason } = require('../utils/incompleteAbandonReason');
+
+// ΓöÇΓöÇ Dynamic Status Code Cache ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// Loads ALL known status codes (system + custom) from orderStatusConfig
+// so custom statuses like BDONKODTERBO also work in the main page filter.
+let _knownStatusCodes = null;
+let _knownStatusCodesPromise = null;
+
+const loadKnownStatusCodes = async () => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const statuses = await prisma.orderStatusConfig.findMany({
+      where: { isActive: true, statusType: { in: ['order', 'preparation'] } },
+      select: { code: true }
+    });
+    const dbCodes = new Set(statuses.map(s => s.code.toUpperCase()));
+    _knownStatusCodes = new Set([...PRISMA_ORDER_STATUS_ENUM, ...dbCodes]);
+    return _knownStatusCodes;
+  } catch (err) {
+    console.error('[ORDERS] Failed to load status codes, falling back to Prisma enum:', err.message);
+    _knownStatusCodes = PRISMA_ORDER_STATUS_ENUM;
+    return _knownStatusCodes;
+  }
+};
+
+const getKnownStatusCodes = () => {
+  if (_knownStatusCodes) return _knownStatusCodes;
+  if (!_knownStatusCodesPromise) {
+    _knownStatusCodesPromise = loadKnownStatusCodes().catch(() => {
+      _knownStatusCodes = PRISMA_ORDER_STATUS_ENUM;
+    });
+  }
+  return _knownStatusCodes || PRISMA_ORDER_STATUS_ENUM;
+};
+
+// Warm cache on first import (non-blocking)
+loadKnownStatusCodes();
+
+// API endpoint to refresh the cache (called when custom statuses change)
+router.post('/refresh-status-cache', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    _knownStatusCodes = null;
+    _knownStatusCodesPromise = null;
+    await loadKnownStatusCodes();
+    res.json({ success: true, message: 'Status cache refreshed', count: _knownStatusCodes?.size || 0 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 const merchantService = require('../services/merchantService');
 const { validateOrderItems, validateEgyptianPhone } = require('../utils/orderValidation');
 const {
@@ -45,15 +104,24 @@ router.use((req, res, next) => {
     return res.status(403).json({
       success: false,
       code: 'MERCHANT_ORDER_ROUTE_NOT_ALLOWED',
-      message: 'التاجر يستخدم مسار الطلبات الموحد فقط للعرض وتحديث طلبات التنفيذ الخاصة به'
+      message: '╪º┘ä╪¬╪º╪¼╪▒ ┘è╪│╪¬╪«╪»┘à ┘à╪│╪º╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à┘ê╪¡╪» ┘ü┘é╪╖ ┘ä┘ä╪╣╪▒╪╢ ┘ê╪¬╪¡╪»┘è╪½ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¬┘å┘ü┘è╪░ ╪º┘ä╪«╪º╪╡╪⌐ ╪¿┘ç'
     });
   }
 
   return requireOrderCoreAccess(req, res, next);
 });
 
+// Granular RBAC: every order route requires at least orders.view.
+// Merchants keep their dedicated simple-order surface. Mutating endpoints
+// below additionally require their specific permission.
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
+router.use((req, res, next) => {
+  if (isMerchantUser(req.user)) return next();
+  return requireDbPermission('orders.view')(req, res, next);
+});
 
-// const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
+
+// const prisma = getSharedPrismaClient(); // Γ¥î Removed to prevent early loading issues
 
 const toSafeOrderAmount = (value) => {
   const numericValue = Number(value);
@@ -137,17 +205,6 @@ const appendMerchantOrderFilter = (whereClause, guestWhereClause, condition) => 
   blockGuestOrdersForMerchantFilters(guestWhereClause);
 };
 
-const appendCommissionFilter = (whereClause, guestWhereClause, condition) => {
-  if (!condition) return;
-  if (!whereClause.AND) whereClause.AND = [];
-  whereClause.AND.push({
-    commissions: {
-      some: condition
-    }
-  });
-  blockGuestOrdersForMerchantFilters(guestWhereClause);
-};
-
 const buildMerchantOperationWhere = (operationStatus) => {
   switch (operationStatus) {
     case 'PREPARATION':
@@ -180,6 +237,80 @@ const buildMerchantOperationWhere = (operationStatus) => {
       };
     default:
       return null;
+  }
+};
+
+const buildRegularSourceCondition = (source) => {
+  switch (String(source).toLowerCase()) {
+    case 'manual':
+      return {
+        OR: [
+          { extractionMethod: { startsWith: 'manual' } },
+          { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
+          { sourceType: 'manual' },
+          { createdBy: { not: null } },
+          { createdByName: { not: null } },
+          { conversationId: 'manual' }
+        ]
+      };
+    case 'ai_conversation':
+      return {
+        AND: [
+          { sourceType: 'ai_conversation' },
+          { NOT: { extractionMethod: { startsWith: 'manual' } } },
+          { NOT: { extractionMethod: 'manual_admin' } },
+          { NOT: { extractionMethod: 'manual_order_modal' } },
+          { NOT: { conversationId: 'manual' } }
+        ]
+      };
+    case 'storefront':
+      return {
+        OR: [
+          { sourceType: 'storefront' },
+          { metadata: { contains: '"source":"storefront"' } },
+          { metadata: { contains: 'storefront', mode: 'insensitive' } }
+        ]
+      };
+    case 'woocommerce':
+      return {
+        OR: [
+          { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
+          { wooCommerceId: { not: null } },
+          { syncedFromWoo: true }
+        ]
+      };
+    case 'pos':
+      return {
+        OR: [
+          { sourceType: 'pos' },
+          { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
+        ]
+      };
+    case 'api':
+      return {
+        OR: [
+          { sourceType: { in: ['api', 'public_api'] } },
+          { metadata: { contains: '"source":"api"' } },
+          { metadata: { contains: 'api', mode: 'insensitive' } }
+        ]
+      };
+    case 'import':
+      return {
+        OR: [
+          { extractionMethod: 'import' },
+          { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
+          { orderSource: 'INTERNAL_IMPORT' }
+        ]
+      };
+    case 'unknown':
+      return {
+        OR: [
+          { sourceType: null },
+          { sourceType: 'unknown' }
+        ]
+      };
+    default:
+      return { sourceType: String(source).toLowerCase() };
   }
 };
 
@@ -292,6 +423,32 @@ const safeParseOrderMetadata = (rawMetadata, fallback = {}) => {
   return { ...fallback };
 };
 
+// Storefront orders are stored as both a GuestOrder and a mirrored regular
+// Order (for WooCommerce export). The regular Order keeps paymentStatus
+// "PENDING" by default, so wallet payments with a proof screenshot used to show
+// as unpaid even though the customer paid upfront. Whenever a wallet payment
+// includes a proof screenshot (walletPaymentProof.imageUrl) the payment is
+// treated as completed so merchants can tell paid orders at a glance. Meaningful
+// terminal statuses (FAILED / REFUNDED) are never overridden, and a REJECTED
+// proof falls back to the stored status.
+const derivePaymentStatusForDisplay = (order, metadata) => {
+  const stored = String(order?.paymentStatus || '').trim().toLowerCase();
+  const proof = metadata?.walletPaymentProof;
+  const isWalletPayment =
+    String(order?.paymentMethod || '').trim().toLowerCase() === 'wallet';
+  const hasScreenshot = Boolean(proof?.imageUrl);
+  const isRejected = String(proof?.status || '').toUpperCase() === 'REJECTED';
+
+  if (isWalletPayment && hasScreenshot && !isRejected) {
+    if (['failed', 'refunded', 'partially_refunded'].includes(stored)) {
+      return stored;
+    }
+    return 'completed';
+  }
+
+  return stored || 'unavailable';
+};
+
 const serializeMerchantOrderScope = (merchantOrder, order = {}) => {
   if (!merchantOrder) return null;
   const shipment = Array.isArray(merchantOrder.shipments)
@@ -339,7 +496,7 @@ const serializeMerchantOrderScope = (merchantOrder, order = {}) => {
   };
 };
 
-const ORDER_SOURCE_TRACKING_APP_SLUGS = new Set(['order-source-tracking']);
+const ORDER_SOURCE_TRACKING_APP_SLUGS = new Set(['order-source-tracking', 'order-accounting-sources']);
 const ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS = new Set(['campaign-attribution']);
 const ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS = new Set(['order-confirmation-distribution']);
 const ORDER_DETAIL_OPTIONAL_APP_SLUGS = [
@@ -389,6 +546,18 @@ const getOrderDetailFeatureAccess = async (companyId) => {
     campaignAttribution: hasAnyAppSlug(activeSlugs, ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS),
     confirmationDistribution: hasAnyAppSlug(activeSlugs, ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS)
   };
+};
+
+const stripAttributionFromCheckoutData = (checkoutData) => {
+  if (!checkoutData || typeof checkoutData !== 'object' || Array.isArray(checkoutData)) {
+    return checkoutData;
+  }
+
+  const sanitized = { ...checkoutData };
+  delete sanitized.attribution;
+  delete sanitized.campaignAttribution;
+  delete sanitized.orderAttribution;
+  return sanitized;
 };
 
 const sanitizeMerchantOrderScopeForMerchant = (merchantOrderScope) => {
@@ -648,6 +817,107 @@ const resolveGuestOrderAmounts = (guestOrder, shippingZones = []) => {
   };
 };
 
+// ╪¬┘å╪│┘è┘é ╪│┘ä╪⌐ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐ (guestCart) ┘ä╪¬┘å╪º╪│╪¿ ╪┤┘â┘ä ╪╡┘ü ╪º┘ä╪╖┘ä╪¿ ┘ü┘è ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+const formatIncompleteCartRow = (cart, lostThreshold) => {
+  let items = [];
+  try {
+    items = typeof cart.items === 'string' ? JSON.parse(cart.items) : (Array.isArray(cart.items) ? cart.items : []);
+  } catch (e) {
+    items = [];
+  }
+
+  let checkoutData = {};
+  try {
+    checkoutData = typeof cart.checkoutData === 'string'
+      ? JSON.parse(cart.checkoutData)
+      : (cart.checkoutData && typeof cart.checkoutData === 'object' ? cart.checkoutData : {});
+  } catch (e) {
+    checkoutData = {};
+  }
+
+  const total = typeof cart.total === 'string'
+    ? parseFloat(cart.total) || 0
+    : Number(cart.total || 0);
+
+  const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt || cart.createdAt;
+  const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
+
+  const customerName = checkoutData.guestName
+    || checkoutData.fullName
+    || checkoutData.customerName
+    || checkoutData.customerFullName
+    || checkoutData.name
+    || '';
+  const customerPhone = checkoutData.guestPhone
+    || checkoutData.customerPhone
+    || checkoutData.phoneNumber
+    || checkoutData.mobileNumber
+    || checkoutData.phone
+    || checkoutData.mobile
+    || '';
+  const customerEmail = checkoutData.guestEmail
+    || checkoutData.customerEmail
+    || checkoutData.emailAddress
+    || checkoutData.email
+    || '';
+  const governorate = checkoutData.governorate || checkoutData.gov || '';
+  const city = checkoutData.city || '';
+
+  return {
+    id: cart.cartId,
+    orderNumber: cart.cartId,
+    customerName,
+    customerPhone,
+    customerEmail,
+    customerAddress: checkoutData.address || '',
+    city,
+    governorate,
+    total,
+    subtotal: total,
+    tax: 0,
+    shipping: 0,
+    status: isLost ? 'lost' : 'incomplete',
+    paymentStatus: 'unavailable',
+    paymentMethod: 'cash_on_delivery',
+    shippingAddress: { city, governorate, country: '' },
+    items: Array.isArray(items) ? items.map((item) => {
+      const price = typeof item.price === 'string' ? parseFloat(item.price) || 0 : Number(item.price || 0);
+      const quantity = item.quantity || 1;
+      return {
+        id: item.id || item.productId || '',
+        productId: item.productId || item.id || '',
+        name: item.name || item.productName || item.title || '',
+        productName: item.name || item.productName || item.title || '',
+        price,
+        quantity,
+        total: typeof item.total === 'string' ? parseFloat(item.total) || 0 : Number(item.total || price * quantity),
+        sku: item.sku || item.productSku || '',
+        color: item.color || item.productColor || '',
+        size: item.size || item.productSize || '',
+        image: item.image || item.productImage || '',
+        metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : {}
+      };
+    }) : [],
+    trackingNumber: null,
+    notes: checkoutData.notes || '',
+    createdAt: lastActivity,
+    updatedAt: cart.updatedAt || cart.createdAt,
+    isViewed: true,
+    sourceType: 'storefront',
+    extractionMethod: 'storefront',
+    orderSource: 'GUEST_CART',
+    conversationId: null,
+    conversation: null,
+    affiliateId: null,
+    metadata: {
+      source: 'storefront',
+      isGuestOrder: true,
+      isIncompleteCart: true,
+      cartId: cart.cartId
+    }
+  };
+};
+
 const HIDDEN_REGULAR_ORDER_STATUSES = ['TRASH'];
 const HIDDEN_REGULAR_ORDER_STATUSES_WITH_DUPLICATES = [
   ...HIDDEN_REGULAR_ORDER_STATUSES,
@@ -697,13 +967,20 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'READY_TO_SHIP',
   'STOCK_SHORTAGE',
   'PENDING_STOCK',
-  'ON_HOLD_STOCK'
+  'ON_HOLD_STOCK',
+  'ON_HOLD_PREP'
 ]);
 
-const getMappedRegularOrderStatus = (preparationStatus) =>
-  ['PENDING_PREPARATION', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)
-    ? 'CONFIRMED'
-    : 'PROCESSING';
+// Maps a preparation-queue status to the "regular" order.status value that the
+// rest of the system (dashboards, analytics, WhatsApp, Turbo, confirmations)
+// expects. The detailed prep stage is stored in metadata.preparationStatus and
+// is what the preparation page reads.
+const getMappedRegularOrderStatus = (preparationStatus) => {
+  if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+  if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+  if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+  return 'PROCESSING';
+};
 
 const parseOrderMetadata = (rawMetadata) => {
   if (!rawMetadata) return {};
@@ -736,7 +1013,7 @@ const isCancellationStatus = (status) => {
   return normalizedStatus === 'CANCELLED' || normalizedStatus === 'CANCELED';
 };
 
-const getCancellationReasonError = () => 'سبب إلغاء الطلب مطلوب عند اختيار حالة ملغي';
+const getCancellationReasonError = () => '╪│╪¿╪¿ ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿ ┘à╪╖┘ä┘ê╪¿ ╪╣┘å╪» ╪º╪«╪¬┘è╪º╪▒ ╪¡╪º┘ä╪⌐ ┘à┘ä╪║┘è';
 
 const checkOrderEditPermission = async (req, orderIdentifier) => {
   if (req.user && ['MODERATOR', 'EMPLOYEE'].includes(req.user.role)) {
@@ -792,15 +1069,63 @@ const updateAnyOrderStatus = async ({
           { id: orderIdentifier, companyId },
           { orderNumber: orderIdentifier, companyId }
         ]
-      }
+      },
+      include: { company: { include: { orderWorkflowConfig: true } } }
     });
 
     if (order) {
       const currentMetadata = parseOrderMetadata(order.metadata);
+
       const previousPreparationStatus =
         typeof currentMetadata.preparationStatus === 'string'
           ? currentMetadata.preparationStatus
           : order.status;
+
+      // ≡ƒöÆ Enforce the "problem hold" rules server-side (ON_HOLD_PREP requires
+      // a reason note; a held order cannot move forward until released).
+      const { assertPreparationHoldRule } = preparationQueueService;
+      await assertPreparationHoldRule({
+        currentPreparationStatus: previousPreparationStatus,
+        targetStatus: normalizedStatus,
+        notes,
+        isOverride: options.isOverride || false,
+      });
+
+      // ΓÜÖ∩╕Å Respect the advanced workflow when enabled and transitions exist for
+      // the current stage (fall back to allowing otherwise).
+      if (!skipTransitionValidation) {
+        const workflowConfig = order.company?.orderWorkflowConfig;
+        if (workflowConfig?.enabled) {
+          const orderWorkflowService = require('../services/orderWorkflowService');
+          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const currentStatusDef = await prisma.orderStatusDefinition.findFirst({
+            where: { companyId, code: effectiveStatus },
+            select: { id: true },
+          });
+          const hasConfiguredTransitions = await prisma.orderWorkflowTransition.count({
+            where: {
+              companyId,
+              fromStatusId: currentStatusDef ? currentStatusDef.id : null,
+            },
+          });
+          if (hasConfiguredTransitions > 0) {
+            const workflowOrder = { ...order, status: effectiveStatus };
+            const wfResult = await orderWorkflowService.validateStatusChange(
+              companyId,
+              order.id,
+              userId,
+              normalizedStatus,
+              notes,
+              false,
+              workflowOrder
+            );
+            if (wfResult?.status === 'pending') {
+              return { orderType: 'regular', workflowStatus: 'pending', requestId: wfResult.requestId };
+            }
+          }
+        }
+      }
+
       const mappedStatus = getMappedRegularOrderStatus(normalizedStatus);
       const nextMetadata = {
         ...currentMetadata,
@@ -870,7 +1195,7 @@ const updateAnyOrderStatus = async ({
       return { orderType: 'guest', order: updatedGuestOrder };
     }
 
-    const notFoundError = new Error('الطلب غير موجود');
+    const notFoundError = new Error('╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
     notFoundError.statusCode = 404;
     throw notFoundError;
   }
@@ -1031,13 +1356,13 @@ const permanentlyDeleteAnyOrder = async ({ orderIdentifier, companyId }) => {
   throw createBulkOrderError('Order not found', 404);
 };
 
-// الحصول على الطلبات غير المكتملة (مسودات الشيك آوت)
+// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ (┘à╪│┘ê╪»╪º╪¬ ╪º┘ä╪┤┘è┘â ╪ó┘ê╪¬)
 router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'غير مصرح - يجب تسجيل الدخول'
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
       });
     }
 
@@ -1048,14 +1373,19 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: 'غير مصرح - معرف الشركة مطلوب'
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
       });
     }
+
+    const featureAccess = await getOrderDetailFeatureAccess(companyId);
+    const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const status = (req.query.status || 'all').toString().toLowerCase();
     const search = (req.query.search || '').toString().trim();
+    const sortBy = (req.query.sortBy || '').toString();
+    const sortDir = (req.query.sortDir || 'desc').toString().toLowerCase() === 'asc' ? 'asc' : 'desc';
     const now = new Date();
 
     let lostAfterHours = 24;
@@ -1066,39 +1396,15 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         lostAfterHours = parsed;
       }
     } catch (settingsError) {
-      console.warn('⚠️ [ORDERS] Failed to load incomplete order settings:', settingsError.message);
+      console.warn('ΓÜá∩╕Å [ORDERS] Failed to load incomplete order settings:', settingsError.message);
     }
 
     const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
 
-    const whereClause = {
-      companyId,
-    };
-
-    const andClauses = [];
-
-    if (status === 'active' || status === 'incomplete') {
-      andClauses.push({
-        OR: [
-          { checkoutUpdatedAt: { gte: lostThreshold } },
-          { checkoutStartedAt: { gte: lostThreshold } },
-          { updatedAt: { gte: lostThreshold } }
-        ]
-      });
-    } else if (status === 'expired' || status === 'lost') {
-      andClauses.push({
-        OR: [
-          { checkoutUpdatedAt: { lt: lostThreshold } },
-          { checkoutStartedAt: { lt: lostThreshold } },
-          { updatedAt: { lt: lostThreshold } }
-        ]
-      });
-    }
-
-    const hasPhone = req.query.hasPhone === 'true';
+    const filterClauses = [];
 
     if (search) {
-      andClauses.push({
+      filterClauses.push({
         OR: [
           { cartId: { contains: search } },
           { checkoutData: { contains: search } }
@@ -1106,34 +1412,99 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
+    const hasPhoneParam = (req.query.hasPhone || '').toString();
+    const hasPhone = hasPhoneParam === 'true';
+    const hasNoPhone = hasPhoneParam === 'false';
+
+    // phone keys written by the storefront checkout draft (and legacy variants)
+    const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
+    const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
+    const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
+
     if (hasPhone) {
-      andClauses.push({
-        OR: [
-          { checkoutData: { contains: '"guestPhone"' } },
-          { checkoutData: { contains: '"customerPhone"' } },
-          { checkoutData: { contains: '"phoneNumber"' } },
-          { checkoutData: { contains: '"mobileNumber"' } },
-          { checkoutData: { contains: '"phone"' } },
-          { checkoutData: { contains: '"mobile"' } }
-        ]
-      });
+      // only carts that actually carry a non-empty phone value
+      filterClauses.push({ AND: [phoneKeyClause, { NOT: emptyPhoneClause }] });
+    } else if (hasNoPhone) {
+      // carts that carry no phone key at all, or only empty phone values
+      filterClauses.push({ OR: [{ NOT: phoneKeyClause }, emptyPhoneClause] });
     }
 
-    if (andClauses.length) {
-      whereClause.AND = andClauses;
+    // last activity = most recent of checkoutUpdatedAt / checkoutStartedAt / updatedAt
+    // (matches the per-row isLost computation in the data mapping below)
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+
+    const lostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
+    const statusClause =
+      status === 'active' || status === 'incomplete' ? activeClause
+        : (status === 'expired' || status === 'lost') ? lostClause
+          : null;
+
+    // ╪º┘ä┘é╪º╪╣╪»╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ╪¿╪»┘ê┘å ┘ü┘ä╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ΓÇö ╪╣╪┤╪º┘å ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪¬╪¿┘ê┘è╪¿╪º╪¬ ╪¬┘ü╪╢┘ä ╪½╪º╪¿╪¬╪⌐
+    const buildBaseWhere = () => {
+      return { companyId, ...(filterClauses.length ? { AND: filterClauses } : {}) };
+    };
+    const buildWhere = (extra = []) => {
+      const and = [...filterClauses, ...extra];
+      return { companyId, ...(and.length ? { AND: and } : {}) };
+    };
+
+    const allowedSorts = {
+      total: 'total',
+      checkoutUpdatedAt: 'checkoutUpdatedAt',
+      checkoutStartedAt: 'checkoutStartedAt',
+    };
+    const sortField = allowedSorts[sortBy];
+    let orderBy;
+    if (sortBy === 'priority') {
+      // ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐: ╪º┘ä╪ú╪╣┘ä┘ë ┘é┘è┘à╪⌐ ╪ú┘ê┘ä┘ï╪º╪î ┘ê╪¿┘è┘å ┘å┘ü╪│ ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪ú┘é╪»┘à ┘å╪┤╪º╪╖┘ï╪º ╪ú┘ê┘ä┘ï╪º (╪º┘ä╪ú┘é╪▒╪¿ ┘ä┘ä╪╢┘è╪º╪╣)
+      orderBy = [{ total: 'desc' }, { checkoutUpdatedAt: 'asc' }];
+    } else if (sortField) {
+      orderBy = [{ [sortField]: sortDir }];
+    } else {
+      orderBy = [
+        { checkoutUpdatedAt: 'desc' },
+        { checkoutStartedAt: 'desc' },
+        { updatedAt: 'desc' }
+      ];
     }
 
-    const [totalCount, carts] = await Promise.all([
-      getSharedPrismaClient().guestCart.count({ where: whereClause }),
+    const statusWhere = statusClause ? [statusClause] : [];
+
+    const [totalCount, carts, totalAgg, activeAgg, lostAgg] = await Promise.all([
+      getSharedPrismaClient().guestCart.count({ where: buildWhere(statusWhere) }),
       getSharedPrismaClient().guestCart.findMany({
-        where: whereClause,
-        orderBy: [
-          { checkoutUpdatedAt: 'desc' },
-          { checkoutStartedAt: 'desc' },
-          { updatedAt: 'desc' }
-        ],
+        where: buildWhere(statusWhere),
+        orderBy,
         skip: (page - 1) * limit,
         take: limit
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildBaseWhere(),
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildWhere([activeClause]),
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildWhere([lostClause]),
+        _count: { _all: true },
+        _sum: { total: true }
       })
     ]);
 
@@ -1163,17 +1534,31 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt;
       const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
 
+      const cartAttribution = hideCartAttribution
+        ? null
+        : extractAttributionFromCheckoutData(checkoutData);
+
+      const safeCheckoutData =
+        hideCartAttribution && checkoutData && typeof checkoutData === 'object'
+          ? stripAttributionFromCheckoutData(checkoutData)
+          : checkoutData;
+
       return {
         cartId: cart.cartId,
         items,
         itemsCount: Array.isArray(items) ? items.length : 0,
         total,
-        checkoutData,
+        checkoutData: safeCheckoutData,
+        ...(cartAttribution ? { attribution: cartAttribution } : {}),
         checkoutStartedAt: cart.checkoutStartedAt,
         checkoutUpdatedAt: cart.checkoutUpdatedAt,
         updatedAt: cart.updatedAt,
         expiresAt: cart.expiresAt,
-        status: isLost ? 'lost' : 'incomplete'
+        status: isLost ? 'lost' : 'incomplete',
+        abandonReason: detectAbandonReason(
+          { ...cart, checkoutData: safeCheckoutData, status: isLost ? 'lost' : 'incomplete' },
+          { lostAfterHours },
+        ),
       };
     });
 
@@ -1185,25 +1570,33 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         page,
         limit,
         pages: Math.ceil(totalCount / limit)
+      },
+      stats: {
+        total: totalCount,
+        active: activeAgg._count._all,
+        lost: lostAgg._count._all,
+        totalValue: Number(totalAgg._sum.total || 0),
+        activeValue: Number(activeAgg._sum.total || 0),
+        lostValue: Number(lostAgg._sum.total || 0)
       }
     });
   } catch (error) {
-    console.error('❌ Error fetching incomplete orders:', error);
+    console.error('Γ¥î Error fetching incomplete orders:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الطلبات غير المكتملة',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐',
       error: error.message
     });
   }
 });
 
-// تفاصيل طلب غير مكتمل واحد
-router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res) => {
+// ╪¬┘é╪º╪▒┘è╪▒ ╪º╪│╪¬╪▒╪»╪º╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ (Recovery Pipeline + ╪ú╪»╪º╪í ╪º┘ä┘ü╪▒┘è┘é)
+router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'غير مصرح - يجب تسجيل الدخول'
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
       });
     }
 
@@ -1214,15 +1607,248 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: 'غير مصرح - معرف الشركة مطلوب'
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
       });
     }
+
+    const prisma = getSharedPrismaClient();
+    const now = new Date();
+
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      const parsed = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        lostAfterHours = parsed;
+      }
+    } catch (settingsError) {
+      console.warn('ΓÜá∩╕Å [ORDERS] reports: failed to load incomplete settings:', settingsError.message);
+    }
+
+    const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+    const lostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
+    // ┘ü╪¬╪▒╪⌐ ╪▓┘à┘å┘è╪⌐: ╪Ñ┘à╪º days (╪ó╪«╪▒ N ┘è┘ê┘à) ╪ú┘ê from/to ┘à╪«╪╡╪╡
+    const fromRaw = (req.query.from || '').toString();
+    const toRaw = (req.query.to || '').toString();
+    let since;
+    let toDate = null;
+    if (fromRaw) {
+      since = new Date(fromRaw);
+      if (Number.isNaN(since.getTime())) {
+        since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+    } else {
+      const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
+      since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    }
+    if (toRaw) {
+      const parsedTo = new Date(toRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        // ┘è╪┤┘à┘ä ╪º┘ä┘è┘ê┘à ┘â╪º┘à┘ä╪º┘ï ╪¡╪¬┘ë ╪ó╪«╪▒ ┘ä╪¡╪╕╪⌐
+        toDate = new Date(parsedTo.getTime() + 24 * 60 * 60 * 1000 - 1);
+      }
+    }
+    const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
+
+    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow] = await Promise.all([
+      prisma.guestCart.aggregate({
+        where: { companyId },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.guestCart.aggregate({
+        where: { companyId, ...activeClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.guestCart.aggregate({
+        where: { companyId, ...lostClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.cartConversionLog.findMany({
+        where: { companyId, convertedAt: timeRange },
+        orderBy: { convertedAt: 'desc' },
+        select: {
+          cartId: true,
+          orderId: true,
+          orderNumber: true,
+          employeeId: true,
+          employeeName: true,
+          cartValue: true,
+          governorate: true,
+          convertedAt: true,
+          channel: true
+        }
+      }),
+      prisma.cartContactLog.findMany({
+        where: { companyId, createdAt: timeRange },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          cartId: true,
+          employeeId: true,
+          employeeName: true,
+          method: true,
+          result: true,
+          createdAt: true
+        }
+      })
+    ]);
+
+    const total = totalAgg._count._all || 0;
+    const converted = convWindow.length;
+    const convertedValue = convWindow.reduce((s, c) => s + Number(c.cartValue || 0), 0);
+    const naturalConverted = convWindow.filter((c) => !c.employeeId && c.channel === 'natural').length;
+    const byTeamConverted = converted - naturalConverted;
+
+    // trend by day (JS aggregation over the window rows)
+    const dayMap = new Map();
+    convWindow.forEach((c) => {
+      const day = c.convertedAt ? new Date(c.convertedAt).toISOString().slice(0, 10) : 'unknown';
+      const entry = dayMap.get(day) || { date: day, conversions: 0, value: 0 };
+      entry.conversions += 1;
+      entry.value += Number(c.cartValue || 0);
+      dayMap.set(day, entry);
+    });
+    const trend = Array.from(dayMap.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    // team performance by employee (skips natural conversions - no employee)
+    const teamMap = new Map();
+    convWindow.forEach((c) => {
+      if (!c.employeeId) return;
+      const key = c.employeeId;
+      const entry = teamMap.get(key) || {
+        employeeId: c.employeeId,
+        employeeName: c.employeeName || '╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü',
+        conversions: 0,
+        value: 0,
+        contacts: 0,
+        responses: 0,
+      };
+      entry.conversions += 1;
+      entry.value += Number(c.cartValue || 0);
+      teamMap.set(key, entry);
+    });
+
+    // add contact/response stats per employee
+    contactWindow.forEach((ct) => {
+      if (!ct.employeeId) return;
+      const key = ct.employeeId;
+      let entry = teamMap.get(key);
+      if (!entry) {
+        entry = {
+          employeeId: ct.employeeId,
+          employeeName: ct.employeeName || '╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü',
+          conversions: 0,
+          value: 0,
+          contacts: 0,
+          responses: 0,
+        };
+        teamMap.set(key, entry);
+      }
+      entry.contacts += 1;
+      if ((ct.result || '').toString().toLowerCase() === 'answered') {
+        entry.responses += 1;
+      }
+    });
+
+    const team = Array.from(teamMap.values())
+      .map((e) => ({
+        ...e,
+        avgValue: e.conversions ? e.value / e.conversions : 0,
+        responseRate: e.contacts ? (e.responses / e.contacts) * 100 : 0,
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    res.json({
+      success: true,
+      data: {
+        periodDays: fromRaw ? null : (parseInt(req.query.days, 10) || 30),
+        from: since ? since.toISOString() : null,
+        to: toDate ? toDate.toISOString() : null,
+        pipeline: {
+          total,
+          active: activeAgg._count._all || 0,
+          lost: lostAgg._count._all || 0,
+          totalValue: Number(totalAgg._sum.total || 0),
+          activeValue: Number(activeAgg._sum.total || 0),
+          lostValue: Number(lostAgg._sum.total || 0),
+        },
+        recovery: {
+          converted,
+          convertedValue,
+          avgConvertedValue: converted ? convertedValue / converted : 0,
+          recoveryRate: total ? (converted / total) * 100 : 0,
+          byTeam: byTeamConverted,
+          natural: naturalConverted,
+        },
+        team,
+        trend,
+        recent: convWindow.slice(0, 20).map((c) => ({
+          cartId: c.cartId,
+          orderNumber: c.orderNumber,
+          employeeName: c.employeeName,
+          value: Number(c.cartValue || 0),
+          governorate: c.governorate,
+          convertedAt: c.convertedAt,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('Γ¥î Error fetching incomplete orders reports:', error);
+    res.status(500).json({
+      success: false,
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐',
+      error: error.message
+});
+  }
+});
+
+// تقارير استرداد الطلبات غير المكتملة (Recovery Pipeline + أداء الفريق)
+
+// تفاصيل طلب غير مكتمل واحد
+router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
+      });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
+      });
+    }
+
+    const featureAccess = await getOrderDetailFeatureAccess(companyId);
+    const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
 
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
       return res.status(400).json({
         success: false,
-        message: 'معرف السلة مطلوب'
+        message: '┘à╪╣╪▒┘ü ╪º┘ä╪│┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿'
       });
     }
 
@@ -1234,7 +1860,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
         lostAfterHours = parsed;
       }
     } catch (settingsError) {
-      console.warn('⚠️ [ORDERS] Failed to load incomplete order settings:', settingsError.message);
+      console.warn('ΓÜá∩╕Å [ORDERS] Failed to load incomplete order settings:', settingsError.message);
     }
 
     const now = new Date();
@@ -1250,7 +1876,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     if (!cart) {
       return res.status(404).json({
         success: false,
-        message: 'الطلب غير موجود'
+        message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»'
       });
     }
 
@@ -1279,6 +1905,15 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt;
     const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
 
+    const cartAttribution = hideCartAttribution
+      ? null
+      : extractAttributionFromCheckoutData(checkoutData);
+
+    const safeCheckoutData =
+      hideCartAttribution && checkoutData && typeof checkoutData === 'object'
+        ? stripAttributionFromCheckoutData(checkoutData)
+        : checkoutData;
+
     res.json({
       success: true,
       data: {
@@ -1286,29 +1921,34 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
         items,
         itemsCount: Array.isArray(items) ? items.length : 0,
         total,
-        checkoutData,
+        checkoutData: safeCheckoutData,
+        ...(cartAttribution ? { attribution: cartAttribution } : {}),
         checkoutStartedAt: cart.checkoutStartedAt,
         checkoutUpdatedAt: cart.checkoutUpdatedAt,
         updatedAt: cart.updatedAt,
         expiresAt: cart.expiresAt,
-        status: isLost ? 'lost' : 'incomplete'
+        status: isLost ? 'lost' : 'incomplete',
+        abandonReason: detectAbandonReason(
+          { ...cart, checkoutData: safeCheckoutData, status: isLost ? 'lost' : 'incomplete' },
+          { lostAfterHours },
+        ),
       }
     });
   } catch (error) {
-    console.error('❌ Error fetching incomplete order details:', error);
+    console.error('Γ¥î Error fetching incomplete order details:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب تفاصيل الطلب غير المكتمل',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä',
       error: error.message
     });
   }
 });
 
-// تحويل طلب غير مكتمل إلى طلب حقيقي
+// ╪¬╪¡┘ê┘è┘ä ╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä ╪Ñ┘ä┘ë ╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è
 router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
+      return res.status(401).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä' });
     }
 
     const merchant = isMerchantUser(req.user)
@@ -1316,12 +1956,12 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       : null;
     const companyId = merchant?.companyId || req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
-      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
+      return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪│┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     const cart = await getSharedPrismaClient().guestCart.findFirst({
@@ -1329,7 +1969,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     });
 
     if (!cart) {
-      return res.status(404).json({ success: false, message: 'السلة غير موجودة' });
+      return res.status(404).json({ success: false, message: '╪º┘ä╪│┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
     }
 
     let checkoutData = {};
@@ -1350,7 +1990,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       items = [];
     }
 
-    const guestName = checkoutData.guestName || checkoutData.fullName || checkoutData.customerName || checkoutData.name || 'عميل';
+    const guestName = checkoutData.guestName || checkoutData.fullName || checkoutData.customerName || checkoutData.name || '╪╣┘à┘è┘ä';
     const guestPhone = checkoutData.guestPhone || checkoutData.customerPhone || checkoutData.phoneNumber || checkoutData.mobileNumber || checkoutData.phone || checkoutData.mobile || '';
     const guestEmail = checkoutData.guestEmail || checkoutData.customerEmail || checkoutData.emailAddress || checkoutData.email || '';
     const governorate = checkoutData.governorate || checkoutData.city || checkoutData.gov || '';
@@ -1358,10 +1998,12 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const notes = checkoutData.notes || '';
 
     if (!guestPhone) {
-      return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لتحويل الطلب' });
+      return res.status(400).json({ success: false, message: '╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ┘à╪╖┘ä┘ê╪¿ ┘ä╪¬╪¡┘ê┘è┘ä ╪º┘ä╪╖┘ä╪¿' });
     }
 
     const total = typeof cart.total === 'string' ? parseFloat(cart.total) || 0 : Number(cart.total || 0);
+
+    const cartAttribution = extractAttributionFromCheckoutData(checkoutData);
 
     const orderPayload = {
       guestName,
@@ -1376,6 +2018,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
         address,
         addressLine1: address,
       },
+      ...(cartAttribution ? { attribution: cartAttribution } : {}),
       _skipPixel: true,
     };
 
@@ -1394,35 +2037,105 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const result = createResponse.data;
 
     if (result?.success && result?.data) {
+      // ╪│╪¼┘ä ╪ú╪½╪▒ ╪º┘ä╪¬╪¡┘ê┘è┘ä ┘é╪¿┘ä ╪¡╪░┘ü ╪º┘ä┘Ç GuestCart (╪¿┘è╪¬┘à ╪º┘ä╪¡╪░┘ü ╪¼┘ê┘ç ╪º┘ä┘Ç internal API)
+      try {
+        const employee = req.user || {};
+        await getSharedPrismaClient().cartConversionLog.create({
+          data: {
+            cartId,
+            orderId: result.data?.id || null,
+            orderNumber: result.data?.orderNumber || null,
+            employeeId: employee.id || null,
+            employeeName: employee.name || employee.username || employee.email || null,
+            companyId,
+            cartValue: total,
+            governorate: governorate || null,
+            channel: 'admin-convert',
+          },
+        });
+      } catch (logError) {
+        console.error('ΓÜá∩╕Å [ORDERS] Failed to record cart conversion log:', logError.message);
+      }
+
       return res.json({
         success: true,
-        message: 'تم تحويل الطلب غير المكتمل إلى طلب حقيقي',
+        message: '╪¬┘à ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä ╪Ñ┘ä┘ë ╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è',
         data: result.data,
       });
     }
 
-    throw new Error(result?.message || 'فشل إنشاء الطلب');
+    throw new Error(result?.message || '┘ü╪┤┘ä ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿');
   } catch (error) {
-    console.error('❌ Error converting incomplete order:', error.message);
+    console.error('Γ¥î Error converting incomplete order:', error.message);
     const detail = error.response?.data?.message || error.response?.data?.error || error.message;
     return res.status(500).json({
       success: false,
-      message: detail || 'خطأ في تحويل الطلب غير المكتمل',
+      message: detail || '╪«╪╖╪ú ┘ü┘è ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä',
     });
   }
 });
 
-// الحصول على الطلبات البسيطة
-// الحصول على الطلبات البسيطة (مع Pagination & Filtering)
+// ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪¬┘ê╪º╪╡┘ä (╪º╪¬╪╡╪º┘ä/┘ê╪º╪¬╪│╪º╪¿/╪Ñ┘è┘à┘è┘ä) ╪╣┘ä┘ë ╪│┘ä╪⌐ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐
+router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä' });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+    }
+
+    const cartId = (req.params.cartId || '').toString().trim();
+    if (!cartId) {
+      return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪│┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+    }
+
+    const allowedMethods = ['call', 'whatsapp', 'email'];
+    const method = (req.body?.method || 'call').toString().toLowerCase();
+    if (!allowedMethods.includes(method)) {
+      return res.status(400).json({ success: false, message: '╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪¬┘ê╪º╪╡┘ä ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+    }
+
+    const result = (req.body?.result || '').toString().trim().slice(0, 80) || null;
+    const note = (req.body?.note || '').toString().trim().slice(0, 500) || null;
+    const employee = req.user || {};
+
+    const log = await getSharedPrismaClient().cartContactLog.create({
+      data: {
+        cartId,
+        companyId,
+        employeeId: employee.id || null,
+        employeeName: employee.name || employee.username || employee.email || null,
+        method,
+        result,
+        note,
+      },
+      select: { id: true, cartId: true, method: true, result: true, createdAt: true },
+    });
+
+    return res.json({ success: true, message: '╪¬┘à ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪¬┘ê╪º╪╡┘ä', data: log });
+  } catch (error) {
+    console.error('Γ¥î Error logging incomplete cart contact:', error.message);
+    return res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪¬┘ê╪º╪╡┘ä' });
+  }
+});
+
+// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¿╪│┘è╪╖╪⌐
+// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¿╪│┘è╪╖╪⌐ (┘à╪╣ Pagination & Filtering)
 router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
   try {
-    // الحصول على companyId من المستخدم المصادق عليه
-    // التأكد من وجود req.user و companyId (verifyToken.authenticateToken يجب أن يضمن ذلك)
+    // ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë companyId ┘à┘å ╪º┘ä┘à╪│╪¬╪«╪»┘à ╪º┘ä┘à╪╡╪º╪»┘é ╪╣┘ä┘è┘ç
+    // ╪º┘ä╪¬╪ú┘â╪» ┘à┘å ┘ê╪¼┘ê╪» req.user ┘ê companyId (verifyToken.authenticateToken ┘è╪¼╪¿ ╪ú┘å ┘è╪╢┘à┘å ╪░┘ä┘â)
     if (!req.user) {
       console.error(`[ORDERS] /simple - req.user is null/undefined`);
       return res.status(401).json({
         success: false,
-        message: 'غير مصرح - يجب تسجيل الدخول'
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
       });
     }
 
@@ -1441,7 +2154,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       console.error(`[ORDERS] /simple - Missing companyId. req.user:`, req.user);
       return res.status(403).json({
         success: false,
-        message: 'غير مصرح - معرف الشركة مطلوب',
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿',
         debug: process.env.NODE_ENV !== 'production' ? {
           hasUser: !!req.user,
           userId: req.user?.id,
@@ -1454,7 +2167,39 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const orderDetailFeatureAccess = await getOrderDetailFeatureAccess(companyId);
 
-    // استخراج معاملات الفلترة والصفحات
+    // ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬: ╪╣╪▒╪╢ ╪º┘ä╪│┘ä╪º┘ä ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ ╪»╪º╪«┘ä ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+    let showIncompleteCarts = false;
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      showIncompleteCarts = Boolean(settings?.showIncompleteCartsInOrders);
+      const parsedLost = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsedLost) && parsedLost > 0) {
+        lostAfterHours = parsedLost;
+      }
+    } catch (settingsError) {
+      console.warn('ΓÜá∩╕Å [ORDERS] /simple failed to load order settings:', settingsError.message);
+    }
+    if (req.query.includeIncomplete === 'true') showIncompleteCarts = true;
+
+    const nowSimple = new Date();
+    const lostThreshold = new Date(nowSimple.getTime() - lostAfterHours * 60 * 60 * 1000);
+    const cartActiveClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+    const cartLostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
+    // ╪º╪│╪¬╪«╪▒╪º╪¼ ┘à╪╣╪º┘à┘ä╪º╪¬ ╪º┘ä┘ü┘ä╪¬╪▒╪⌐ ┘ê╪º┘ä╪╡┘ü╪¡╪º╪¬
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const status = req.query.status;
@@ -1464,27 +2209,38 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const startDate = req.query.startDate;
     const endDate = req.query.endDate;
     const onlyUnseen = req.query.onlyUnseen === 'true';
-    const requestedMerchantId = normalizeOrderRouteCode(req.query.merchantId) === 'ALL'
-      ? ''
-      : String(req.query.merchantId || '').trim();
-    const requestedFulfillmentSource = normalizeOrderRouteCode(req.query.fulfillmentSource);
-    const requestedMerchantOperationStatus = normalizeOrderRouteCode(req.query.merchantOperationStatus);
-    const requestedMerchantSettlementStatus = normalizeOrderRouteCode(req.query.merchantSettlementStatus);
+    const requestedMerchantIds = normalizeOrderRouteCode(req.query.merchantId) === 'ALL'
+      ? []
+      : String(req.query.merchantId || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const requestedFulfillmentSources = String(req.query.fulfillmentSource || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
+    const requestedMerchantOperationStatuses = String(req.query.merchantOperationStatus || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
+    const requestedMerchantSettlementStatuses = String(req.query.merchantSettlementStatus || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
 
     // "Fetch Top N" Strategy:
-    // لجلب الصفحة رقم P، نحتاج لجلب أول (P * limit) عنصر من الجدولين
-    // ثم دمجهم، ترتيبهم، وأخذ الشريحة المناسبة.
-    // تحسين: إذا كانت الصفحة الأولى، لا نحتاج لجلب أكثر من limit لكل جدول.
+    // ┘ä╪¼┘ä╪¿ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪▒┘é┘à P╪î ┘å╪¡╪¬╪º╪¼ ┘ä╪¼┘ä╪¿ ╪ú┘ê┘ä (P * limit) ╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä╪¼╪»┘ê┘ä┘è┘å
+    // ╪½┘à ╪»┘à╪¼┘ç┘à╪î ╪¬╪▒╪¬┘è╪¿┘ç┘à╪î ┘ê╪ú╪«╪░ ╪º┘ä╪┤╪▒┘è╪¡╪⌐ ╪º┘ä┘à┘å╪º╪│╪¿╪⌐.
+    // ╪¬╪¡╪│┘è┘å: ╪Ñ╪░╪º ┘â╪º┘å╪¬ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë╪î ┘ä╪º ┘å╪¡╪¬╪º╪¼ ┘ä╪¼┘ä╪¿ ╪ú┘â╪½╪▒ ┘à┘å limit ┘ä┘â┘ä ╪¼╪»┘ê┘ä.
     const fetchLimit = Math.max(limit, (page * limit) + limit);
 
     // Log only in development
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`📦 [ORDERS] Fetching page ${page} (limit ${limit}) for company: ${companyId}`);
+      console.log(`≡ƒôª [ORDERS] Fetching page ${page} (limit ${limit}) for company: ${companyId}`);
     }
 
-    // بناء شروط البحث (Where Clause)
+    // ╪¿┘å╪º╪í ╪┤╪▒┘ê╪╖ ╪º┘ä╪¿╪¡╪½ (Where Clause)
     const whereClause = { companyId };
     const guestWhereClause = { companyId };
+
+    // ≡ƒÜº ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐ ┘ä╪│╪¿╪¿ ╪¬╪¡╪╡┘è┘ä ╪º┘ä╪▒╪╡┘è╪» (billing hold) ┘à╪«┘ü┘è╪⌐ ┘à┘å ╪º┘ä┘é╪º╪ª┘à╪⌐
+    // ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï ╪¡╪¬┘ë ┘è┘Å╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪» ┘ê┘è╪¬┘à ╪º┘ä╪«╪╡┘à ╪¬┘ä┘é╪º╪ª┘è╪º┘ï. ┘è┘à┘â┘å ┘â╪┤┘ü┘ç╪º ╪╣╪¿╪▒ includeHeld=true
+    const includeHeldOrders = req.query.includeHeld === 'true';
+    if (!includeHeldOrders) {
+      whereClause.billingHoldAt = null;
+    }
+
     const appendAnd = (clause, condition) => {
       if (!condition) return;
       if (!clause.AND) clause.AND = [];
@@ -1496,16 +2252,17 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     addMerchantOrderScope(whereClause, merchant);
     disableGuestOrderScope(guestWhereClause, merchant);
 
-    // 🕵️ Affiliate Filtering Logic
-    let affiliateId = req.query.affiliateId;
+    // ≡ƒò╡∩╕Å Affiliate Filtering Logic (`affiliateId` may be a comma-separated list)
+    let affiliateIds = String(req.query.affiliateId || '')
+      .split(',').map((s) => s.trim()).filter(Boolean);
 
-    // 🔒 Security: If user is an AFFILIATE, enforce their own affiliateId
+    // ≡ƒöÆ Security: If user is an AFFILIATE, enforce their own affiliateId
     if (req.user.role === 'AFFILIATE') {
       const affiliate = await getSharedPrismaClient().affiliate.findUnique({
         where: { userId: req.user.id }
       });
       if (affiliate) {
-        affiliateId = affiliate.id;
+        affiliateIds = [affiliate.id];
       } else {
         // If user is affiliate role but no affiliate profile, return empty
         return res.json({
@@ -1516,9 +2273,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
-    if (affiliateId) {
-      whereClause.affiliateId = affiliateId;
-      guestWhereClause.affiliateId = affiliateId;
+    if (affiliateIds.length > 0) {
+      const affiliateFilter = affiliateIds.length === 1
+        ? affiliateIds[0]
+        : { in: affiliateIds };
+      whereClause.affiliateId = affiliateFilter;
+      guestWhereClause.affiliateId = affiliateFilter;
     }
 
     // Filter by Creator (if specified)
@@ -1528,65 +2288,92 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // guestWhereClause.createdBy = req.query.createdBy; 
     }
 
-    console.log('🔍 [ORDERS-GET] Filters:', {
+    console.log('≡ƒöì [ORDERS-GET] Filters:', {
       role: req.user.role,
       userId: req.user.id,
       affiliateIdArg: req.query.affiliateId,
       createdByArg: req.query.createdBy,
-      resolvedAffiliateId: affiliateId,
+      resolvedAffiliateId: affiliateIds,
       merchantId: merchant?.id || null,
-      requestedMerchantId,
-      requestedFulfillmentSource,
-      requestedMerchantOperationStatus,
-      requestedMerchantSettlementStatus,
+      requestedMerchantIds,
+      requestedFulfillmentSources,
+      requestedMerchantOperationStatuses,
+      requestedMerchantSettlementStatuses,
       whereClause
     });
 
     const merchantOrderFilterConditions = [];
-    const commissionFilterConditions = [];
+    const settlementFilterConditions = [];
     const queueMerchantOrderFilter = (condition) => {
       if (condition) merchantOrderFilterConditions.push(condition);
     };
-    const queueCommissionFilter = (condition) => {
-      if (condition) commissionFilterConditions.push(condition);
-    };
 
-    if (!merchant && requestedMerchantId) {
-      queueMerchantOrderFilter({ merchantId: requestedMerchantId });
+    const merchantIdList = requestedMerchantIds.length > 0 ? requestedMerchantIds : null;
+
+    if (!merchant && merchantIdList) {
+      queueMerchantOrderFilter({ merchantId: { in: merchantIdList } });
     }
 
-    if (MERCHANT_FULFILLMENT_SOURCES.has(requestedFulfillmentSource)) {
-      queueMerchantOrderFilter({ fulfillmentSource: requestedFulfillmentSource });
+    const fulfillmentSources = requestedFulfillmentSources.filter(
+      (s) => MERCHANT_FULFILLMENT_SOURCES.has(s)
+    );
+    if (fulfillmentSources.length > 0) {
+      queueMerchantOrderFilter({ fulfillmentSource: { in: fulfillmentSources } });
     }
 
-    if (MERCHANT_OPERATION_FILTERS.has(requestedMerchantOperationStatus)) {
-      queueMerchantOrderFilter(
-        buildMerchantOperationWhere(requestedMerchantOperationStatus)
-      );
+    const operationStatuses = requestedMerchantOperationStatuses.filter(
+      (s) => MERCHANT_OPERATION_FILTERS.has(s)
+    );
+    if (operationStatuses.length > 0) {
+      const operationWheres = operationStatuses
+        .map(buildMerchantOperationWhere)
+        .filter(Boolean);
+      if (operationWheres.length === 1) {
+        queueMerchantOrderFilter(operationWheres[0]);
+      } else if (operationWheres.length > 1) {
+        queueMerchantOrderFilter({ OR: operationWheres });
+      }
     }
 
-    if (MERCHANT_SETTLEMENT_FILTERS.has(requestedMerchantSettlementStatus)) {
-      switch (requestedMerchantSettlementStatus) {
+    // Settlement statuses combine with OR semantics across the underlying
+    // conditions (each maps to a different merchantOrder/commission shape).
+    const settlementStatuses = requestedMerchantSettlementStatuses.filter(
+      (s) => MERCHANT_SETTLEMENT_FILTERS.has(s)
+    );
+    for (const settlementStatus of settlementStatuses) {
+      switch (settlementStatus) {
         case 'PAID':
-          queueCommissionFilter({
-            merchantId: { not: null },
-            status: 'PAID',
-            ...(requestedMerchantId ? { merchantId: requestedMerchantId } : {})
+          settlementFilterConditions.push({
+            commissions: {
+              some: {
+                merchantId: { not: null },
+                status: 'PAID',
+                ...(merchantIdList ? { merchantId: { in: merchantIdList } } : {})
+              }
+            }
           });
           break;
         case 'PAYABLE':
         case 'PENDING':
-          queueCommissionFilter({
-            merchantId: { not: null },
-            status: { in: ['CONFIRMED', 'PENDING'] },
-            ...(requestedMerchantId ? { merchantId: requestedMerchantId } : {})
+          settlementFilterConditions.push({
+            commissions: {
+              some: {
+                merchantId: { not: null },
+                status: { in: ['CONFIRMED', 'PENDING'] },
+                ...(merchantIdList ? { merchantId: { in: merchantIdList } } : {})
+              }
+            }
           });
           break;
-        case 'NOT_PAYABLE':
-          queueMerchantOrderFilter(
-            buildMerchantOperationWhere('NOT_DELIVERED')
-          );
+        case 'NOT_PAYABLE': {
+          const notDeliveredWhere = buildMerchantOperationWhere('NOT_DELIVERED');
+          if (notDeliveredWhere) {
+            settlementFilterConditions.push({
+              merchantOrders: { some: notDeliveredWhere }
+            });
+          }
           break;
+        }
         default:
           break;
       }
@@ -1598,10 +2385,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    if (commissionFilterConditions.length > 0) {
-      appendCommissionFilter(whereClause, guestWhereClause, {
-        AND: commissionFilterConditions
-      });
+    if (settlementFilterConditions.length > 0) {
+      if (!whereClause.AND) whereClause.AND = [];
+      whereClause.AND.push({ OR: settlementFilterConditions });
+      blockGuestOrdersForMerchantFilters(guestWhereClause);
     }
 
     // 0. Filter by Viewed Status
@@ -1610,59 +2397,89 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       guestWhereClause.isViewed = false;
     }
 
-    // 1. Filter by Status (Safely handle Prisma OrderStatus enums and Turbo shipping aliases)
-    const TURBO_STATUS_ALIASES = {
-      'active': ['turbo_saved', 'turbo_sent', 'processing', 'out_for_delivery', 'delayed', 'status_1', 'status_2', 'status_3', 'status_4', 'status_13', '1', '2', '3', '4', '13'],
-      'merchant_preparing': ['turbo_saved', 'turbo_sent', 'status_1', 'status_2', '1', '2'],
-      'preparing': ['turbo_saved', 'turbo_sent', 'processing', 'status_1', 'status_2', 'status_3', 'created', '1', '2', '3'],
-      'turbo_saved': ['turbo_saved', 'status_1', '1'],
-      'turbo_sent': ['turbo_sent', 'status_2', '2'],
-      'processing': ['processing', 'status_3', 'created', '3'],
-      'out_for_delivery': ['out_for_delivery', 'status_4', '4'],
-      'returned_to_company': ['returned_to_company', 'status_5', 'status_14', '5', '14'],
-      'cancelled': ['cancelled', 'status_6', '6'],
-      'delivered': ['delivered', 'status_7', '7'],
-      'remitted': ['remitted', 'status_8', 'status_19', '8', '19'],
-      'archived': ['archived', 'status_9', '9'],
-      'returned_resent': ['returned_resent', 'status_10', 'status_15', '10', '15'],
-      'returned_missing': ['returned_missing', 'status_11', 'status_16', '11', '16'],
-      'returned_destroyed': ['returned_destroyed', 'status_12', 'status_17', '12', '17'],
-      'delayed': ['delayed', 'status_13', '13']
-    };
+    // 1. Filter by Status (Safely handle Prisma OrderStatus enums, prep metadata,
+    // and Turbo shipping aliases). `status` may be a comma-separated list so
+    // users can combine multiple statuses at once.
+    const knownCodes = getKnownStatusCodes();
+    const {
+      incompleteFilterStatus,
+      realStatusList,
+      plainEnumStatuses,
+      customStatuses,
+      turboAliasValues,
+      guestStatusValues,
+      ignored: ignoredStatuses
+    } = parseStatusFilter(status, knownCodes);
 
-    if (status && status !== 'all') {
-      const rawStatus = String(status).trim();
-      const upperStatus = rawStatus.toUpperCase();
-      const lowerStatus = rawStatus.toLowerCase();
+    for (const raw of ignoredStatuses) {
+      console.warn(`[ORDERS] Ignoring unrecognized status filter: "${raw}"`);
+    }
 
-      const isValidPrismaEnum = [
-        'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
-        'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED',
-        'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED', 'DRAFT', 'TRASH',
-        'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST',
-        'PENDING_PREPARATION', 'PREPARING', 'READY'
-      ].includes(upperStatus);
+    if (realStatusList.length > 0) {
+      // Multiple statuses combine with OR semantics: an order matches if it has
+      // ANY of the selected statuses, across order.status / prep metadata / turbo.
+      const statusOrBranches = [];
+      if (plainEnumStatuses.length > 0) {
+        statusOrBranches.push({ status: { in: plainEnumStatuses } });
+      }
+      if (turboAliasValues.length > 0) {
+        statusOrBranches.push({
+          turboShipmentStatus: { in: [...new Set(turboAliasValues)], mode: 'insensitive' },
+        });
+      }
+      if (customStatuses.length > 0) {
+        // Prep/custom statuses are resolved to IDs via raw SQL later (they need
+        // COALESCE(preparationStatus, status) matching), then merged into the OR.
+        whereClause._customStatusFilter = customStatuses;
+      }
+      if (statusOrBranches.length === 1) {
+        Object.assign(whereClause, statusOrBranches[0]);
+      } else if (statusOrBranches.length > 1) {
+        whereClause.OR = statusOrBranches;
+      }
 
-      if (isValidPrismaEnum) {
-        whereClause.status = upperStatus;
-        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
-      } else if (TURBO_STATUS_ALIASES[lowerStatus] || lowerStatus.startsWith('turbo_') || lowerStatus.startsWith('returned_') || lowerStatus === 'remitted' || lowerStatus === 'merchant_preparing') {
-        const aliases = TURBO_STATUS_ALIASES[lowerStatus] || [lowerStatus, upperStatus];
-        whereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
-        guestWhereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
-      } else {
-        whereClause.status = upperStatus;
-        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
+      // Guest orders carry statuses on a separate table ΓÇö mirror the OR across
+      // order.status and turboShipmentStatus.
+      const guestStatusBranches = [];
+      if (guestStatusValues.length > 0) {
+        guestStatusBranches.push({ status: { in: [...new Set(guestStatusValues)] } });
+      }
+      if (turboAliasValues.length > 0) {
+        guestStatusBranches.push({
+          turboShipmentStatus: { in: [...new Set(turboAliasValues)], mode: 'insensitive' },
+        });
+      }
+      if (guestStatusBranches.length === 1) {
+        Object.assign(guestWhereClause, guestStatusBranches[0]);
+      } else if (guestStatusBranches.length > 1) {
+        guestWhereClause.OR = guestStatusBranches;
       }
     } else {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
       guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
     }
+    const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts;
+    if (incompleteOnlyView) {
+      // ╪╣┘å╪» ╪º┘ä┘ü┘ä╪¬╪▒╪⌐ ╪¿┘Ç "╪║┘è╪▒ ┘à┘â╪¬┘à┘ä" ┘å╪╣╪▒╪╢ ╪º┘ä╪│┘ä╪º┘ä ╪º┘ä┘å╪┤╪╖╪⌐ ┘ü┘é╪╖ (╪¿╪»┘ê┘å ╪╖┘ä╪¿╪º╪¬ ╪¡┘é┘è┘é┘è╪⌐)
+      whereClause.id = '__incomplete_carts_only__';
+      guestWhereClause.id = '__incomplete_carts_only__';
+    }
+    if (incompleteFilterStatus === 'incomplete' && !showIncompleteCarts) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { total: 0, page, limit, pages: 0 },
+        meta: { showIncompleteCartsInOrders: false }
+      });
+    }
 
-    // 2. Filter by Payment Status
+    // 2. Filter by Payment Status (may be a comma-separated list)
     if (paymentStatus && paymentStatus !== 'all') {
-      const normalizedPaymentStatus = String(paymentStatus).toUpperCase();
-      whereClause.paymentStatus = normalizedPaymentStatus;
+      const paymentStatuses = String(paymentStatus)
+        .split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+      whereClause.paymentStatus = paymentStatuses.length === 1
+        ? paymentStatuses[0]
+        : { in: paymentStatuses };
       // Guest orders do not persist a payment-status field in the current Prisma client,
       // so including them in filtered payment views produces misleading results.
       appendAnd(guestWhereClause, {
@@ -1806,106 +2623,86 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       Object.assign(guestWhereClause, { OR: guestOrFields });
     }
 
-    // 5. Filter by Source Type (مصدر الطلب)
-    if (sourceType) {
-      const normalizedSource = String(sourceType).toLowerCase();
-      let regularSourceCondition = null;
-      let guestSourceCondition = null;
-
-      switch (normalizedSource) {
-        case 'manual':
-          regularSourceCondition = {
-            OR: [
-              { extractionMethod: { startsWith: 'manual' } },
-              { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
-              { sourceType: 'manual' },
-              { createdBy: { not: null } },
-              { createdByName: { not: null } },
-              { conversationId: 'manual' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'ai_conversation':
-          regularSourceCondition = {
-            AND: [
-              { sourceType: 'ai_conversation' },
-              { NOT: { extractionMethod: { startsWith: 'manual' } } },
-              { NOT: { extractionMethod: 'manual_admin' } },
-              { NOT: { extractionMethod: 'manual_order_modal' } },
-              { NOT: { conversationId: 'manual' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'storefront':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: 'storefront' },
-              { metadata: { contains: '"source":"storefront"' } },
-              { metadata: { contains: 'storefront', mode: 'insensitive' } }
-            ]
-          };
-          // Guest orders are storefront by default
-          break;
-        case 'woocommerce':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
-              { wooCommerceId: { not: null } },
-              { syncedFromWoo: true }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'pos':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: 'pos' },
-              { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'api':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: { in: ['api', 'public_api'] } },
-              { metadata: { contains: '"source":"api"' } },
-              { metadata: { contains: 'api', mode: 'insensitive' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'import':
-          regularSourceCondition = {
-            OR: [
-              { extractionMethod: 'import' },
-              { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
-              { orderSource: 'INTERNAL_IMPORT' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'unknown':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: null },
-              { sourceType: 'unknown' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        default:
-          regularSourceCondition = { sourceType: normalizedSource };
-          guestSourceCondition = { id: '__none__' };
+    // 5. Filter by Source Type (┘à╪╡╪»╪▒ ╪º┘ä╪╖┘ä╪¿) ΓÇö may be a comma-separated list
+    const sourceTypes = String(sourceType || '')
+      .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (sourceTypes.length > 0) {
+      const regularSourceConditions = sourceTypes
+        .map(buildRegularSourceCondition)
+        .filter(Boolean);
+      if (regularSourceConditions.length === 1) {
+        appendAnd(whereClause, regularSourceConditions[0]);
+      } else if (regularSourceConditions.length > 1) {
+        appendAnd(whereClause, { OR: regularSourceConditions });
       }
-
-      appendAnd(whereClause, regularSourceCondition);
-      appendAnd(guestWhereClause, guestSourceCondition);
+      // Guests are storefront by default; any non-storefront source excludes them.
+      const excludesGuests = sourceTypes.some((s) => s !== 'storefront');
+      if (excludesGuests) {
+        appendAnd(guestWhereClause, { id: '__none__' });
+      }
     }
 
-    // تنفيذ الاستعلامات (Top N)
+    // ╪¿┘å╪º╪í ┘ü┘ä╪¬╪▒ ╪º┘ä╪│┘ä╪º┘ä ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ (guestCart) ΓÇö ╪¬┘Å╪»┘à╪¼ ┘ü┘è ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪╣┘å╪» ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪Ñ╪╣╪»╪º╪»
+    const includeIncompleteCarts =
+      showIncompleteCarts &&
+      !onlyUnseen &&
+      (!status || String(status).toLowerCase() === 'all' || Boolean(incompleteFilterStatus));
+    let cartQueryWhere = null;
+    if (includeIncompleteCarts) {
+      cartQueryWhere = { companyId };
+      const cartAnd = [];
+      if (incompleteFilterStatus === 'incomplete') {
+        cartAnd.push(cartActiveClause);
+      } else if (incompleteFilterStatus === 'lost') {
+        cartAnd.push(cartLostClause);
+      }
+      if (search) {
+        const searchTerms = String(search).trim();
+        if (searchTerms) {
+          cartAnd.push({
+            OR: [
+              { cartId: { contains: searchTerms } },
+              { checkoutData: { contains: searchTerms } }
+            ]
+          });
+        }
+      }
+      if (startDate || endDate) {
+        const createdAtFilter = {};
+        if (startDate) createdAtFilter.gte = new Date(startDate);
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          createdAtFilter.lte = end;
+        }
+        cartAnd.push({ createdAt: createdAtFilter });
+      }
+      // ╪º╪│╪¬╪¿╪╣╪º╪» ╪º┘ä╪│┘ä╪º┘ä ╪º┘ä┘ä┘è ╪º╪¬╪¡┘ê┘ä╪¬ ╪¿╪º┘ä┘ü╪╣┘ä ┘ä╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è (┘ü╪┤┘ä ╪¡╪░┘ü┘ç╪º ┘ê┘é╪¬ ╪º┘ä╪¬╪¡┘ê┘è┘ä)
+      // ╪¡╪¬┘ë ┘ä╪º ╪¬╪╕┘ç╪▒ ╪º┘ä╪│┘ä╪⌐ + ╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪¡┘ê┘ä ┘â╪│╪╖╪▒┘è┘å ┘à╪¬┘â╪▒╪▒┘è┘å ┘ü┘è ╪º┘ä┘é╪º╪ª┘à╪⌐.
+      try {
+        const convertedCarts = await getSharedPrismaClient().cartConversionLog.findMany({
+          where: {
+            companyId,
+            convertedAt: { gte: lostThreshold }
+          },
+          select: { cartId: true },
+          distinct: ['cartId']
+        });
+        const convertedCartIds = convertedCarts
+          .map((c) => c.cartId)
+          .filter(Boolean);
+        if (convertedCartIds.length > 0) {
+          cartAnd.push({ cartId: { notIn: convertedCartIds } });
+        }
+      } catch (convErr) {
+        console.warn('ΓÜá∩╕Å [ORDERS] Failed to load converted cart ids:', convErr.message);
+      }
+      if (cartAnd.length > 0) {
+        cartQueryWhere.AND = cartAnd;
+      }
+    }
+
+    // ╪¬┘å┘ü┘è╪░ ╪º┘ä╪º╪│╪¬╪╣┘ä╪º┘à╪º╪¬ (Top N)
     // Debug: Log query structure before execution (development only)
     if (process.env.NODE_ENV !== 'production') {
       console.log('[ORDERS-DEBUG] Query structure:', JSON.stringify({
@@ -1920,12 +2717,63 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }, null, 2));
     }
 
+    // ΓöÇΓöÇ Custom status filter (BDONKODTERBO etc.) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Prisma's typed enum rejects values not in the OrderStatus enum,
+    // so we fetch IDs via raw SQL first, then use typed Prisma queries.
+    const customStatusFilter = whereClause._customStatusFilter;
+    let customStatusOrderIds = null;
+    let customStatusTotal = 0;
+
+    if (Array.isArray(customStatusFilter) && customStatusFilter.length > 0) {
+      delete whereClause._customStatusFilter;
+      const prisma = getSharedPrismaClient();
+      // Prep statuses are stored under their mapped order.status while the real
+      // stage lives in metadata.preparationStatus ΓÇö match both so filtering by
+      // e.g. PREPARING also finds orders persisted as PROCESSING.
+      // But exclude orders whose order.status is already terminal (e.g.
+      // DELIVERED) ΓÇö their stale metadata.preparationStatus from the prep phase
+      // must not pull them back into a prep-stage filter.
+      const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
+      const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
+      const statusPlaceholders = customStatusFilter
+        .map((_, index) => `$${index + 2}`)
+        .join(', ');
+      const matchExpr = `(UPPER(${effectiveStatusExpr}) IN (${statusPlaceholders}) AND NOT (${statusIsTerminalExpr}))`;
+      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
+      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
+      const params = [companyId, ...customStatusFilter];
+      if (whereClause.createdAt?.gte) {
+        countSql += ` AND "createdAt" >= $3`;
+        fetchSql += ` AND "createdAt" >= $3`;
+        params.push(whereClause.createdAt.gte);
+      }
+      if (whereClause.createdAt?.lte) {
+        const n = params.length + 1;
+        countSql += ` AND "createdAt" <= $${n}`;
+        fetchSql += ` AND "createdAt" <= $${n}`;
+        params.push(whereClause.createdAt.lte);
+      }
+      const [countRow] = await prisma.$queryRawUnsafe(countSql, ...params);
+      customStatusTotal = Number(countRow?.cnt || 0);
+      fetchSql += ` ORDER BY "createdAt" DESC LIMIT ${Number(fetchLimit) || 20}`;
+      const rows = await prisma.$queryRawUnsafe(fetchSql, ...params);
+      customStatusOrderIds = rows.map(r => r.id);
+
+      if (Array.isArray(whereClause.OR)) {
+        // The custom-status branch participates in the status OR (e.g. when the
+        // user also selected plain enum / turbo statuses).
+        whereClause.OR.push({ id: { in: customStatusOrderIds } });
+      } else {
+        whereClause.id = { in: customStatusOrderIds };
+      }
+    }
+
     const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
       // Fetch Regular Orders
       getSharedPrismaClient().order.findMany({
         where: whereClause,
         take: fetchLimit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         include: {
           customer: {
             select: { id: true, firstName: true, lastName: true, phone: true, email: true }
@@ -1978,16 +2826,36 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       getSharedPrismaClient().guestOrder.findMany({
         where: guestWhereClause,
         take: fetchLimit,
-        orderBy: { createdAt: 'desc' }
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
       }),
       // Count Total Regular (for pagination metadata)
-      getSharedPrismaClient().order.count({ where: whereClause }),
+      customStatusFilter && !Array.isArray(whereClause.OR) && !whereClause.status && !whereClause.turboShipmentStatus
+        ? customStatusTotal
+        : getSharedPrismaClient().order.count({ where: whereClause }),
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);
 
+    // ΓöÇΓöÇ ╪º┘ä╪│┘ä╪º┘ä ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ (guestCart) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    let formattedIncompleteCarts = [];
+    let totalIncomplete = 0;
+    if (cartQueryWhere) {
+      const [carts, cartCount] = await Promise.all([
+        getSharedPrismaClient().guestCart.findMany({
+          where: cartQueryWhere,
+          take: fetchLimit,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
+        }),
+        getSharedPrismaClient().guestCart.count({ where: cartQueryWhere })
+      ]);
+      totalIncomplete = cartCount || 0;
+      formattedIncompleteCarts = carts.map((cart) => formatIncompleteCartRow(cart, lostThreshold));
+    }
+
     let shadowedGuestOrderNumberSet = new Set();
     let shadowedGuestTotal = 0;
+
+    const normalizeOrderKey = (value) => String(value || '').trim().toLowerCase();
 
     if (totalGuest > 0) {
       const filteredGuestOrderNumberRows = await getSharedPrismaClient().guestOrder.findMany({
@@ -2003,19 +2871,25 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         .filter(Boolean);
 
       if (filteredGuestOrderNumbers.length > 0) {
+        const matchingRegularOrderNumbers = await getSharedPrismaClient().order.findMany({
+          where: {
+            companyId,
+            // mode insensitive ╪╣╪┤╪º┘å ┘è┘à╪│┘â ┘å┘ü╪│ ╪º┘ä╪▒┘é┘à ╪¿╪╡┘è╪║ ┘à╪«╪¬┘ä┘ü╪⌐ (╪¡╪▒┘ê┘ü ┘â╪¿┘è╪▒╪⌐/╪╡╪║┘è╪▒╪⌐)
+            orderNumber: { in: filteredGuestOrderNumbers, mode: 'insensitive' }
+          },
+          distinct: ['orderNumber'],
+          select: {
+            orderNumber: true
+          }
+        });
+
+        const regularNormalizedKeys = new Set(
+          matchingRegularOrderNumbers.map((order) => normalizeOrderKey(order.orderNumber))
+        );
+
+        // ┘å╪¡╪¬┘ü╪╕ ╪¿╪ú╪▒┘é╪º┘à ╪º┘ä╪╢┘è┘ü ╪º┘ä┘ä┘è ┘ä┘è┘ç╪º ┘à┘é╪º╪¿┘ä ┘ü┘è ╪¼╪»┘ê┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣╪º╪»┘è╪⌐ (normalized)
         shadowedGuestOrderNumberSet = new Set(
-          (
-            await getSharedPrismaClient().order.findMany({
-              where: {
-                companyId,
-                orderNumber: { in: filteredGuestOrderNumbers }
-              },
-              distinct: ['orderNumber'],
-              select: {
-                orderNumber: true
-              }
-            })
-          ).map((order) => order.orderNumber)
+          filteredGuestOrderNumbers.filter((n) => regularNormalizedKeys.has(normalizeOrderKey(n)))
         );
 
         if (shadowedGuestOrderNumberSet.size > 0) {
@@ -2025,7 +2899,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
                 guestWhereClause,
                 {
                   orderNumber: {
-                    in: Array.from(shadowedGuestOrderNumberSet)
+                    in: Array.from(shadowedGuestOrderNumberSet),
+                    mode: 'insensitive'
                   }
                 }
               ]
@@ -2045,12 +2920,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           })
         : [];
 
-    console.log(`📦 [ORDERS] Found ${regularOrders.length} regular, ${guestOrders.length} guest (Top ${fetchLimit})`);
+    console.log(`≡ƒôª [ORDERS] Found ${regularOrders.length} regular, ${guestOrders.length} guest (Top ${fetchLimit})`);
 
     // Debug: Log items for first few orders BEFORE mapping
     if (regularOrders.length > 0) {
       const firstOrder = regularOrders[0];
-      console.log(`🔍 [ORDERS-DEBUG] First order BEFORE mapping:`, {
+      console.log(`≡ƒöì [ORDERS-DEBUG] First order BEFORE mapping:`, {
         orderNumber: firstOrder.orderNumber,
         orderId: firstOrder.id,
         itemsCount: firstOrder.orderItems ? firstOrder.orderItems.length : 0,
@@ -2061,10 +2936,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       const itemsCount = await getSharedPrismaClient().orderItem.count({
         where: { orderId: firstOrder.id }
       });
-      console.log(`🔍 [ORDERS-DEBUG] Items count in database for order ${firstOrder.orderNumber}:`, itemsCount);
+      console.log(`≡ƒöì [ORDERS-DEBUG] Items count in database for order ${firstOrder.orderNumber}:`, itemsCount);
     }
 
-    // تحويل البيانات (Mapping)
+    // ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬ (Mapping)
     const formattedRegularOrders = regularOrders.map(order => {
       const merchantOrderScope = serializeMerchantOrderScope(order.merchantOrders?.[0], order);
       const orderMetadata = safeParseOrderMetadata(order.metadata);
@@ -2097,7 +2972,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Debug logging for all orders to help diagnose the issue
       const orderIndex = regularOrders.indexOf(order);
       if (orderIndex < 5) {
-        console.log(`📦 [ORDER-API] Order #${orderIndex + 1} - ${order.orderNumber}:`, {
+        console.log(`≡ƒôª [ORDER-API] Order #${orderIndex + 1} - ${order.orderNumber}:`, {
           hasCustomer: !!order.customer,
           customerId: order.customerId,
           customerFirstName: order.customer?.firstName || 'N/A',
@@ -2109,7 +2984,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
       // Debug: Log items for first few orders
       if (regularOrders.indexOf(order) < 3) {
-        console.log(`📦 [ORDER-ITEMS] Order ${order.orderNumber}:`, {
+        console.log(`≡ƒôª [ORDER-ITEMS] Order ${order.orderNumber}:`, {
           hasItems: !!order.orderItems,
           itemsIsArray: Array.isArray(order.orderItems),
           itemsLength: order.orderItems?.length || 0,
@@ -2138,7 +3013,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         tax: order.tax,
         shipping: order.shipping,
         status: (order.status || 'PENDING').toLowerCase(),
-        paymentStatus: (order.paymentStatus || 'PENDING').toLowerCase(),
+        paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
         shippingAddress: shippingAddress,
         items: Array.isArray(order.orderItems) && order.orderItems.length > 0 ? order.orderItems.map(item => {
@@ -2146,8 +3021,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           return {
             id: item.id,
             productId: item.productId,
-            name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
-            productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
+            name: item.productName || item.product?.name || parsedMetadata.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
+            productName: item.productName || item.product?.name || parsedMetadata.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
             price: item.price,
             quantity: item.quantity,
             total: item.total,
@@ -2225,7 +3100,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         tax: 0,
         shipping: guestAmounts.shipping,
         status: order.status?.toLowerCase() || 'pending',
-        paymentStatus: order.paymentStatus?.toLowerCase() || 'unavailable',
+        paymentStatus: derivePaymentStatusForDisplay(order, metadata),
         paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
         shippingAddress: shippingAddress,
         items: Array.isArray(items) ? items.map(item => ({
@@ -2251,36 +3126,58 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     });
 
     const regularOrderNumberSet = new Set([
-      ...formattedRegularOrders.map(order => order.orderNumber),
+      ...formattedRegularOrders.map((order) => normalizeOrderKey(order.orderNumber)),
       ...shadowedGuestOrderNumberSet
     ]);
     const filteredGuestOrders = formattedGuestOrders.filter(
-      order => !regularOrderNumberSet.has(order.orderNumber)
+      (order) => !regularOrderNumberSet.has(normalizeOrderKey(order.orderNumber))
     );
 
     if (filteredGuestOrders.length !== formattedGuestOrders.length) {
-      console.log('🧹 [ORDERS] Deduped guest orders:', {
+      console.log('≡ƒº╣ [ORDERS] Deduped guest orders:', {
         removed: formattedGuestOrders.length - filteredGuestOrders.length,
         remaining: filteredGuestOrders.length,
         shadowedByRegularOrders: shadowedGuestOrderNumberSet.size
       });
     }
 
-    // دمج وترتيب (Merge & Sort)
-    const allFetchedOrders = [...formattedRegularOrders, ...filteredGuestOrders]
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // ╪»┘à╪¼ ┘ê╪¬╪▒╪¬┘è╪¿ (Merge & Sort) ΓÇö ╪º┘ä╪¬╪▒╪¬┘è╪¿ ┘ä╪º╪▓┘à ┘è╪╖╪º╪¿┘é ╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪¼┘ä╪¿ ┘à┘å ╪º┘ä╪»╪º╪¬╪º╪¿┘è╪▓
+    // (createdAt desc ╪½┘à id desc) ╪╣╪┤╪º┘å ╪º┘ä╪┤╪▒┘è╪¡╪⌐ (slice) ╪¬┘ü╪╢┘ä ╪½╪º╪¿╪¬╪⌐ ╪¿┘è┘å ╪º┘ä╪╡┘ü╪¡╪º╪¬
+    // ┘ê╪¬┘à┘å╪╣ ╪¬┘â╪▒╪º╪▒/┘ü┘é╪»╪º┘å ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪╣┘å╪» ╪¬╪│╪º┘ê┘è ╪º┘ä╪¬┘ê╪º╪▒┘è╪« ╪ú┘ê ╪╣┘å╪» ┘ê╪╡┘ê┘ä ╪╖┘ä╪¿╪º╪¬ ╪¼╪»┘è╪»╪⌐.
+    const allFetchedOrders = [...formattedRegularOrders, ...filteredGuestOrders, ...formattedIncompleteCarts]
+      .sort((a, b) => {
+        const timeDiff = new Date(b.createdAt) - new Date(a.createdAt);
+        if (timeDiff !== 0) return timeDiff;
+        return String(b.id || '').localeCompare(String(a.id || ''));
+      });
 
-    // تطبيق Pagination (Slice)
-    // بما أننا جلبنا Top N، فالصفحة المطلوبة هي آخر (limit) عنصر في المصفوفة المدمجة
-    // ولكن يجب أن نأخذ في الاعتبار الـ offset
-    // الـ offset الحقيقي في المصفوفة المدمجة هو (page - 1) * limit
+    // ╪¬╪╖╪¿┘è┘é Pagination (Slice)
+    // ╪¿┘à╪º ╪ú┘å┘å╪º ╪¼┘ä╪¿┘å╪º Top N╪î ┘ü╪º┘ä╪╡┘ü╪¡╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ ┘ç┘è ╪ó╪«╪▒ (limit) ╪╣┘å╪╡╪▒ ┘ü┘è ╪º┘ä┘à╪╡┘ü┘ê┘ü╪⌐ ╪º┘ä┘à╪»┘à╪¼╪⌐
+    // ┘ê┘ä┘â┘å ┘è╪¼╪¿ ╪ú┘å ┘å╪ú╪«╪░ ┘ü┘è ╪º┘ä╪º╪╣╪¬╪¿╪º╪▒ ╪º┘ä┘Ç offset
+    // ╪º┘ä┘Ç offset ╪º┘ä╪¡┘é┘è┘é┘è ┘ü┘è ╪º┘ä┘à╪╡┘ü┘ê┘ü╪⌐ ╪º┘ä┘à╪»┘à╪¼╪⌐ ┘ç┘ê (page - 1) * limit
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
-    const paginatedOrders = allFetchedOrders.slice(startIndex, endIndex);
+    const slicedOrders = allFetchedOrders.slice(startIndex, endIndex);
 
-    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal, 0);
+    // ╪┤╪¿┘â╪⌐ ╪ú┘à╪º┘å ┘å┘ç╪º╪ª┘è╪⌐: ╪Ñ╪▓╪º┘ä╪⌐ ╪ú┘è ╪¬┘â╪▒╪º╪▒ ╪¡╪│╪¿ ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿/╪º┘ä┘à╪╣╪▒┘ü ╪»╪º╪«┘ä ┘å┘ü╪│ ╪º┘ä╪╡┘ü╪¡╪⌐
+    // (┘è╪║╪╖┘è ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘ä┘è ╪º┘ä╪║╪▒╪¿┘ä╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ┘à╪ú┘à╪┤╪¬┘ç╪º ╪¿╪│╪¿╪¿ ╪º╪«╪¬┘ä╪º┘ü ╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪¡╪▒┘ü/╪º┘ä┘à╪│╪º┘ü╪º╪¬
+    // ╪ú┘ê ┘ê╪¼┘ê╪» ╪º┘ä╪│┘ä╪⌐ ┘à╪¡┘ê┘ä╪⌐ + ╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è ╪¿┘å┘ü╪│ ╪º┘ä┘à╪╣╪▒┘ü). ┘å╪¡╪¬┘ü╪╕ ╪¿╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë (╪º┘ä╪ú╪¡╪»╪½).
+    const seenKeys = new Set();
+    const paginatedOrders = [];
+    for (const order of slicedOrders) {
+      const dedupKey = String(order.orderNumber || order.id || '').trim().toLowerCase();
+      if (!dedupKey) {
+        paginatedOrders.push(order);
+        continue;
+      }
+      if (seenKeys.has(dedupKey)) continue;
+      seenKeys.add(dedupKey);
+      paginatedOrders.push(order);
+    }
 
-    console.log(`📊 [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
+    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal + (cartQueryWhere ? totalIncomplete : 0), 0);
+
+    console.log(`≡ƒôè [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
 
     res.json({
       success: true,
@@ -2290,14 +3187,17 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         page: page,
         limit: limit,
         pages: Math.ceil(totalOrders / limit)
+      },
+      meta: {
+        showIncompleteCartsInOrders: Boolean(showIncompleteCarts)
       }
     });
 
   } catch (error) {
-    console.error('❌ Error fetching simple orders:', error);
+    console.error('Γ¥î Error fetching simple orders:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الطلبات',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
       error: error.message
     });
   }
@@ -2312,25 +3212,25 @@ router.get('/preparation/queue', verifyToken.authenticateToken, async (req, res)
 
     res.json(payload);
   } catch (error) {
-    console.error('❌ Error fetching preparation orders:', error);
+    console.error('Γ¥î Error fetching preparation orders:', error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.statusCode ? error.message : 'خطأ في جلب قائمة تجهيز الطلبات',
+      message: error.statusCode ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪¬╪¼┘ç┘è╪▓ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
       error: error.message
     });
   }
 });
 
-// إحصائيات الطلبات البسيطة
+// ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¿╪│┘è╪╖╪⌐
 router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
   try {
-    // ✅ الحصول على companyId من المستخدم المصادق عليه
+    // Γ£à ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë companyId ┘à┘å ╪º┘ä┘à╪│╪¬╪«╪»┘à ╪º┘ä┘à╪╡╪º╪»┘é ╪╣┘ä┘è┘ç
     const companyId = req.user?.companyId || null;
 
-    // ✅ الحصول على معاملات التاريخ (dateFrom و dateTo)
+    // Γ£à ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ┘à╪╣╪º┘à┘ä╪º╪¬ ╪º┘ä╪¬╪º╪▒┘è╪« (dateFrom ┘ê dateTo)
     const { dateFrom, dateTo } = req.query;
 
-    console.log(`📊 [ORDERS-STATS] Request from user:`, {
+    console.log(`≡ƒôè [ORDERS-STATS] Request from user:`, {
       userId: req.user?.id,
       email: req.user?.email,
       companyId: companyId,
@@ -2339,16 +3239,16 @@ router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
     });
 
     if (!companyId) {
-      console.error('❌ [ORDERS-STATS] No companyId found in request');
+      console.error('Γ¥î [ORDERS-STATS] No companyId found in request');
       return res.status(400).json({
         success: false,
-        message: 'معرف الشركة مطلوب'
+        message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
       });
     }
 
     const stats = await simpleOrderService.getSimpleStats(companyId, dateFrom || null, dateTo || null);
 
-    console.log(`✅ [ORDERS-STATS] Stats sent for companyId: ${companyId}`, {
+    console.log(`Γ£à [ORDERS-STATS] Stats sent for companyId: ${companyId}`, {
       totalOrders: stats.totalOrders,
       totalRevenue: stats.totalRevenue,
       dateFrom,
@@ -2361,16 +3261,16 @@ router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching simple stats:', error);
+    console.error('Γ¥î Error fetching simple stats:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الإحصائيات',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬',
       error: error.message
     });
   }
 });
 
-// تحديث حالة الطلب البسيط
+// ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪º┘ä╪¿╪│┘è╪╖
 router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -2378,7 +3278,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
 
     // Debug logging
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 [ORDER-STATUS-UPDATE] Request received:', {
+      console.log('≡ƒöì [ORDER-STATUS-UPDATE] Request received:', {
         orderNumber,
         hasUser: !!req.user,
         userId: req.user?.id,
@@ -2390,13 +3290,13 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     const initialCompanyId = req.user?.companyId || req.user?.effectiveCompanyId;
 
     if (!initialCompanyId) {
-      console.error('❌ [ORDER-STATUS-UPDATE] Missing companyId:', {
+      console.error('Γ¥î [ORDER-STATUS-UPDATE] Missing companyId:', {
         hasUser: !!req.user,
         user: req.user
       });
       return res.status(403).json({
         success: false,
-        message: 'غير مصرح - معرف الشركة مطلوب',
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿',
         debug: process.env.NODE_ENV !== 'production' ? {
           hasUser: !!req.user,
           userId: req.user?.id,
@@ -2411,12 +3311,12 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     if (!status) {
       return res.status(400).json({
         success: false,
-        message: 'حالة الطلب مطلوبة'
+        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘à╪╖┘ä┘ê╪¿╪⌐'
       });
     }
 
-    // 🔧 Use OrderService for proper auto-shipping logic
-    console.log('🔧 [ORDER-STATUS-UPDATE] Using OrderService for proper Turbo integration...');
+    // ≡ƒöº Use OrderService for proper auto-shipping logic
+    console.log('≡ƒöº [ORDER-STATUS-UPDATE] Using OrderService for proper Turbo integration...');
 
     const userId = req.user?.id;
     const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
@@ -2435,7 +3335,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
       : null;
     const companyId = merchant?.companyId || initialCompanyId;
     
-    // 🚀 SPEED OPTIMIZATION: Fetch order once with necessary relations
+    // ≡ƒÜÇ SPEED OPTIMIZATION: Fetch order once with necessary relations
     const order = await getSharedPrismaClient().order.findFirst({
       where: {
         OR: [
@@ -2474,14 +3374,14 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
         if (!merchantOrder) {
           return res.status(404).json({
             success: false,
-            message: 'هذا الطلب غير مسند لهذا التاجر'
+            message: '┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘å╪» ┘ä┘ç╪░╪º ╪º┘ä╪¬╪º╪¼╪▒'
           });
         }
 
         if (String(merchantOrder.fulfillmentSource || '').toUpperCase() !== 'MERCHANT') {
           return res.status(403).json({
             success: false,
-            message: 'الشركة هي المسؤولة عن تجهيز هذا الطلب، أدوات التجهيز غير متاحة للتاجر'
+            message: '╪º┘ä╪┤╪▒┘â╪⌐ ┘ç┘è ╪º┘ä┘à╪│╪ñ┘ê┘ä╪⌐ ╪╣┘å ╪¬╪¼┘ç┘è╪▓ ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿╪î ╪ú╪»┘ê╪º╪¬ ╪º┘ä╪¬╪¼┘ç┘è╪▓ ╪║┘è╪▒ ┘à╪¬╪º╪¡╪⌐ ┘ä┘ä╪¬╪º╪¼╪▒'
           });
         }
         scopedMerchantOrder = merchantOrder;
@@ -2493,6 +3393,72 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           typeof currentMetadata.preparationStatus === 'string'
             ? currentMetadata.preparationStatus
             : order.status;
+
+        // ≡ƒöÆ Enforce the "problem hold" rules server-side so they cannot be
+        // bypassed with a direct API call: ON_HOLD_PREP requires a reason note,
+        // and a held order cannot move forward until it is released.
+        await preparationQueueService.assertPreparationHoldRule({
+          currentPreparationStatus: previousPreparationStatus,
+          targetStatus: statusUpper,
+          notes: statusNotes,
+          isOverride: req.body.isOverride || false,
+        });
+
+        // ΓÜÖ∩╕Å Respect the advanced workflow when enabled (transition rules +
+        // approvals). We only enforce it here when the company has actually
+        // configured transitions for the current stage ΓÇö otherwise we fall back
+        // to allowing the move so an empty workflow config never locks the queue.
+        const workflowConfig = order.company?.orderWorkflowConfig;
+        if (workflowConfig?.enabled) {
+          const orderWorkflowService = require('../services/orderWorkflowService');
+          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const currentStatusDef = await getSharedPrismaClient().orderStatusDefinition.findFirst({
+            where: { companyId, code: effectiveStatus },
+            select: { id: true },
+          });
+          const hasConfiguredTransitions = await getSharedPrismaClient().orderWorkflowTransition.count({
+            where: {
+              companyId,
+              fromStatusId: currentStatusDef ? currentStatusDef.id : null,
+            },
+          });
+          if (hasConfiguredTransitions > 0) {
+            const workflowOrder = { ...order, status: effectiveStatus };
+            const wfResult = await orderWorkflowService.validateStatusChange(
+              companyId,
+              order.id,
+              userId,
+              statusUpper,
+              statusNotes,
+              false,
+              workflowOrder
+            );
+            if (wfResult?.status === 'pending') {
+              return res.json({
+                success: true,
+                message: '╪¬┘à ╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐.',
+                data: {
+                  orderType: 'regular',
+                  orderNumber,
+                  workflowStatus: 'pending',
+                  requestId: wfResult.requestId,
+                },
+              });
+            }
+          }
+        }
+
+        // ≡ƒöÆ Enforce the "requireStockBeforePreparing" rule server-side so it
+        // cannot be bypassed with a direct API call.
+        const companySettings = parseOrderMetadata(order.company?.settings);
+        const prepSettings = companySettings.orderPreparation || {};
+        await preparationQueueService.assertPreparationStockRule({
+          orderId: order.id,
+          companyId,
+          targetStatus: statusUpper,
+          prepSettings,
+        });
+
         const mappedStatus = getMappedRegularOrderStatus(statusUpper);
         const nextMetadata = {
           ...currentMetadata,
@@ -2519,7 +3485,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           }
         });
 
-        // 🧾 Auto Invoice Generation (background)
+        // ≡ƒº╛ Auto Invoice Generation (background)
         (async () => {
           try {
             const prisma = getSharedPrismaClient();
@@ -2532,17 +3498,17 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
               if (targetStatuses.includes(statusUpper) || targetStatuses.includes(mappedStatus) || targetStatuses.includes('*')) {
                 const { generateInvoiceForOrder } = require('../services/orderInvoiceService');
                 await generateInvoiceForOrder(order.id, userId);
-                console.log(`✅ [INVOICE-AUTO] Auto-generated invoice for order ${orderNumber} on preparation status ${statusUpper}`);
+                console.log(`Γ£à [INVOICE-AUTO] Auto-generated invoice for order ${orderNumber} on preparation status ${statusUpper}`);
               }
             }
           } catch (invoiceError) {
-            console.error('⚠️ [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
+            console.error('ΓÜá∩╕Å [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
           }
         })();
 
         return res.json({
           success: true,
-          message: 'تم تحديث حالة التجهيز بنجاح',
+          message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪¬╪¼┘ç┘è╪▓ ╪¿┘å╪¼╪º╪¡',
           data: {
             orderType: 'regular',
             orderNumber,
@@ -2566,7 +3532,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
       if (updatedOrder?.workflowStatus === 'pending') {
         return res.json({
           success: true,
-          message: 'تم تقديم طلب تغيير الحالة للمراجعة.',
+          message: '╪¬┘à ╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐.',
           data: {
             orderType: 'regular',
             orderNumber,
@@ -2586,7 +3552,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
 
       return res.json({
         success: true,
-        message: 'تم تحديث حالة الطلب بنجاح',
+        message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
         data: {
           orderType: 'regular',
           orderNumber,
@@ -2600,7 +3566,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     if (merchant) {
       return res.status(404).json({
         success: false,
-        message: 'هذا الطلب غير مسند لهذا التاجر'
+        message: '┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘å╪» ┘ä┘ç╪░╪º ╪º┘ä╪¬╪º╪¼╪▒'
       });
     }
 
@@ -2616,9 +3582,19 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     if (!guestOrder) {
       return res.status(404).json({
         success: false,
-        message: 'الطلب غير موجود'
+        message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»'
       });
     }
+
+    // ≡ƒöÆ Enforce the "problem hold" rules for guest orders too.
+    const guestMetadata = parseOrderMetadata(guestOrder.metadata);
+    await preparationQueueService.assertPreparationHoldRule({
+      currentPreparationStatus:
+        guestMetadata.preparationStatus || guestOrder.status,
+      targetStatus: statusUpper,
+      notes: statusNotes,
+      isOverride: req.body.isOverride || false,
+    });
 
     const updatedGuestOrder = await orderService.updateGuestOrderStatus(
       orderNumber,
@@ -2632,7 +3608,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
 
     return res.json({
       success: true,
-      message: 'تم تحديث حالة الطلب بنجاح',
+      message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
       data: {
         orderType: 'guest',
         orderNumber,
@@ -2641,16 +3617,16 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     });
 
   } catch (error) {
-    console.error('❌ Error updating simple order status:', error);
+    console.error('Γ¥î Error updating simple order status:', error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.statusCode && error.statusCode < 500 ? error.message : 'خطأ في تحديث حالة الطلب',
+      message: error.statusCode && error.statusCode < 500 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
 });
 
-// تسجيل محاولة اتصال
+// ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º╪¬╪╡╪º┘ä
 router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -2679,7 +3655,7 @@ router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, 
     });
 
     if (!order) {
-      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+      return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
     }
 
     const [log, updatedOrder] = await getSharedPrismaClient().$transaction([
@@ -2702,7 +3678,7 @@ router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, 
 
     res.json({
       success: true,
-      message: 'تم تسجيل محاولة الاتصال بنجاح',
+      message: '╪¬┘à ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘å╪¼╪º╪¡',
       data: {
         callAttempts: updatedOrder.callAttempts,
         lastCallAttemptAt: updatedOrder.lastCallAttemptAt
@@ -2710,11 +3686,11 @@ router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, 
     });
   } catch (error) {
     console.error('Error logging call attempt:', error);
-    res.status(500).json({ success: false, message: 'خطأ في تسجيل محاولة الاتصال' });
+    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä' });
   }
 });
 
-// تعليم الطلب كمقروء
+// ╪¬╪╣┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿ ┘â┘à┘é╪▒┘ê╪í
 router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -2724,7 +3700,7 @@ router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async 
     const companyId = merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     const order = await getSharedPrismaClient().order.findFirst({
@@ -2752,13 +3728,13 @@ router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async 
         where: { id: order.id },
         data: { isViewed: true }
       });
-      return res.json({ success: true, message: 'تم تعليم الطلب كمقروء' });
+      return res.json({ success: true, message: '╪¬┘à ╪¬╪╣┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿ ┘â┘à┘é╪▒┘ê╪í' });
     }
 
     if (merchant) {
       return res.status(404).json({
         success: false,
-        message: 'هذا الطلب غير مسند لهذا التاجر'
+        message: '┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘å╪» ┘ä┘ç╪░╪º ╪º┘ä╪¬╪º╪¼╪▒'
       });
     }
 
@@ -2776,23 +3752,23 @@ router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async 
         where: { id: guestOrder.id },
         data: { isViewed: true }
       });
-      return res.json({ success: true, message: 'تم تعليم الطلب كمقروء' });
+      return res.json({ success: true, message: '╪¬┘à ╪¬╪╣┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿ ┘â┘à┘é╪▒┘ê╪í' });
     }
 
-    return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
 
   } catch (error) {
     console.error('Error marking order as viewed:', error);
-    res.status(500).json({ success: false, message: 'خطأ في العملية' });
+    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪º┘ä╪╣┘à┘ä┘è╪⌐' });
   }
 });
 
-// جلب عدد الطلبات الجديدة غير المقروءة
+// ╪¼┘ä╪¿ ╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪║┘è╪▒ ╪º┘ä┘à┘é╪▒┘ê╪í╪⌐
 router.get('/simple/new-count', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
@@ -2825,16 +3801,16 @@ router.get('/simple/new-count', verifyToken.authenticateToken, async (req, res) 
     });
   } catch (error) {
     console.error('Error fetching new orders count:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب عدد الطلبات الجديدة' });
+    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐' });
   }
 });
 
-// جلب قائمة الطلبات الجديدة غير المقروءة
+// ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪║┘è╪▒ ╪º┘ä┘à┘é╪▒┘ê╪í╪⌐
 router.get('/simple/new-list', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     const limit = parseInt(req.query.limit) || 10;
@@ -2907,16 +3883,16 @@ router.get('/simple/new-list', verifyToken.authenticateToken, async (req, res) =
     });
   } catch (error) {
     console.error('Error fetching new orders list:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب قائمة الطلبات الجديدة' });
+    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐' });
   }
 });
 
-// تعليم كل الطلبات كمقروءة
+// ╪¬╪╣┘ä┘è┘à ┘â┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘â┘à┘é╪▒┘ê╪í╪⌐
 router.post('/simple/mark-all-viewed', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
@@ -2943,16 +3919,16 @@ router.post('/simple/mark-all-viewed', verifyToken.authenticateToken, async (req
 
     res.json({
       success: true,
-      message: `تم تعليم ${totalUpdated} طلب كمقروء`,
+      message: `╪¬┘à ╪¬╪╣┘ä┘è┘à ${totalUpdated} ╪╖┘ä╪¿ ┘â┘à┘é╪▒┘ê╪í`,
       data: { updated: totalUpdated }
     });
   } catch (error) {
     console.error('Error marking all orders as viewed:', error);
-    res.status(500).json({ success: false, message: 'خطأ في تعليم الطلبات كمقروءة' });
+    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¬╪╣┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘â┘à┘é╪▒┘ê╪í╪⌐' });
   }
 });
 
-// تحديث حالة الدفع للطلب البسيط
+// ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ┘ä┘ä╪╖┘ä╪¿ ╪º┘ä╪¿╪│┘è╪╖
 router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -2960,7 +3936,7 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
 
     // Debug logging
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 [PAYMENT-STATUS-UPDATE] Request received:', {
+      console.log('≡ƒöì [PAYMENT-STATUS-UPDATE] Request received:', {
         orderNumber,
         hasUser: !!req.user,
         userId: req.user?.id,
@@ -2975,13 +3951,13 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
     const companyId = merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
-      console.error('❌ [PAYMENT-STATUS-UPDATE] Missing companyId:', {
+      console.error('Γ¥î [PAYMENT-STATUS-UPDATE] Missing companyId:', {
         hasUser: !!req.user,
         user: req.user
       });
       return res.status(403).json({
         success: false,
-        message: 'غير مصرح - معرف الشركة مطلوب',
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿',
         debug: process.env.NODE_ENV !== 'production' ? {
           hasUser: !!req.user,
           userId: req.user?.id,
@@ -2995,14 +3971,14 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
     if (isMerchantUser(req.user)) {
       return res.status(403).json({
         success: false,
-        message: 'صلاحيات التاجر لا تسمح بتعديل حالة الدفع من شاشة الطلبات'
+        message: '╪╡┘ä╪º╪¡┘è╪º╪¬ ╪º┘ä╪¬╪º╪¼╪▒ ┘ä╪º ╪¬╪│┘à╪¡ ╪¿╪¬╪╣╪»┘è┘ä ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ┘à┘å ╪┤╪º╪┤╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬'
       });
     }
 
     if (!paymentStatus) {
       return res.status(400).json({
         success: false,
-        message: 'حالة الدفع مطلوبة'
+        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ┘à╪╖┘ä┘ê╪¿╪⌐'
       });
     }
 
@@ -3046,7 +4022,7 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
             changedBy: userId
           });
         } catch (e) {
-          console.error('❌ [CASHBACK] Failed to apply cashback for paid order:', {
+          console.error('Γ¥î [CASHBACK] Failed to apply cashback for paid order:', {
             orderId: existingRegularOrder.id,
             companyId,
             error: e?.message
@@ -3054,10 +4030,10 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
         }
       }
 
-      console.log(`✅ [PAYMENT-STATUS-UPDATE] Updated regular order: ${orderNumber}`);
+      console.log(`Γ£à [PAYMENT-STATUS-UPDATE] Updated regular order: ${orderNumber}`);
       return res.json({
         success: true,
-        message: 'تم تحديث حالة الدفع بنجاح',
+        message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ╪¿┘å╪¼╪º╪¡',
         data: { orderType: 'regular', orderNumber, paymentStatus: paymentStatus.toUpperCase() }
       });
     }
@@ -3075,51 +4051,138 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
     if (existingGuestOrder) {
       return res.status(400).json({
         success: false,
-        message: 'حالة الدفع غير متاحة حالياً لطلبات الضيوف'
+        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ┘à╪¬╪º╪¡╪⌐ ╪¡╪º┘ä┘è╪º┘ï ┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ê┘ü'
       });
     }
 
     // If neither order type found
     return res.status(404).json({
       success: false,
-      message: 'الطلب غير موجود'
+      message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»'
     });
 
     const orderType = regularOrder.count > 0 ? 'regular' : 'guest';
-    console.log(`✅ [PAYMENT-STATUS-UPDATE] Updated ${orderType} order: ${orderNumber}`);
+    console.log(`Γ£à [PAYMENT-STATUS-UPDATE] Updated ${orderType} order: ${orderNumber}`);
 
     res.json({
       success: true,
-      message: 'تم تحديث حالة الدفع بنجاح',
+      message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ╪¿┘å╪¼╪º╪¡',
       data: { orderType, orderNumber, paymentStatus: paymentStatus.toUpperCase() }
     });
 
   } catch (error) {
-    console.error('❌ Error updating payment status:', error);
+    console.error('Γ¥î Error updating payment status:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في تحديث حالة الدفع',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣',
       error: error.message
     });
   }
 });
 
-// الحصول على جميع الطلبات
+/**
+ * ≡ƒÜº ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐ ╪¿╪º┘å╪¬╪╕╪º╪▒ ╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪» (billing hold) ΓÇö ╪¿╪¿┘è╪º┘å╪º╪¬ ┘à┘é┘å┘æ╪╣╪⌐
+ * GET /api/v1/orders-new/billing-holds
+ */
+router.get('/billing-holds', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+    }
+
+    const maskName = (name) => {
+      const s = String(name || '').trim();
+      if (!s) return '';
+      return `${s.charAt(0)}***`;
+    };
+
+    const maskPhone = (phone) => {
+      const s = String(phone || '').trim();
+      if (s.length <= 5) return s;
+      return `${s.slice(0, 3)}***${s.slice(-2)}`;
+    };
+
+    const heldOrders = await getSharedPrismaClient().order.findMany({
+      where: { companyId, billingHoldAt: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        _count: { select: { orderItems: true } },
+      },
+    });
+
+    const data = heldOrders.map((order) => {
+      const parsedMeta = (() => {
+        if (!order.metadata) return {};
+        try {
+          const parsed = JSON.parse(order.metadata);
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      })();
+      const holdReason =
+        parsedMeta?.billingHold?.reason === 'subscription_expired'
+          ? 'subscription_expired'
+          : 'insufficient_balance';
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        status: order.status,
+        itemCount: order._count.orderItems,
+        billingHoldAmount: order.billingHoldAmount !== null && order.billingHoldAmount !== undefined
+          ? Number(order.billingHoldAmount)
+          : null,
+        holdReason,
+        heldAt: parsedMeta?.billingHold?.heldAt || order.billingHoldAt,
+        customerName: maskName(order.customerName),
+        customerPhone: maskPhone(order.customerPhone),
+      };
+    });
+
+    const totalAmount = data.reduce(
+      (sum, o) => sum + (o.holdReason === 'insufficient_balance' ? o.billingHoldAmount || 0 : 0),
+      0,
+    );
+    const subscriptionCount = data.filter((o) => o.holdReason === 'subscription_expired').length;
+
+    res.json({
+      success: true,
+      data: {
+        count: data.length,
+        totalAmount,
+        subscriptionCount,
+        orders: data,
+      },
+    });
+  } catch (error) {
+    console.error('Γ¥î [BILLING-HOLDS] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐',
+      error: error.message,
+    });
+  }
+});
+
+// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪¼┘à┘è╪╣ ╪º┘ä╪╖┘ä╪¿╪º╪¬
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, status, customerId } = req.query;
     const skip = (page - 1) * limit;
-
-    // التأكد من وجود companyId من المستخدم المصادق عليه
     const companyId = req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: 'غير مصرح بالوصول - معرف الشركة مطلوب'
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ ╪¿╪º┘ä┘ê╪╡┘ê┘ä - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
       });
     }
 
-    const where = { companyId }; // فلترة بـ companyId
+    const where = { companyId }; // ┘ü┘ä╪¬╪▒╪⌐ ╪¿┘Ç companyId
     const duplicateSettings = await orderService.getDuplicateSettings(companyId);
     if (status) where.status = status;
     else where.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
@@ -3186,16 +4249,16 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching orders:', error);
+    console.error('Γ¥î Error fetching orders:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الطلبات',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
       error: error.message
     });
   }
 });
 
-// إضافة ملاحظة للطلب
+// ╪Ñ╪╢╪º┘ü╪⌐ ┘à┘ä╪º╪¡╪╕╪⌐ ┘ä┘ä╪╖┘ä╪¿
 router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -3205,11 +4268,11 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
     const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
+      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     if (!content || !content.trim()) {
-      return res.status(400).json({ success: false, message: 'محتوى الملاحظة مطلوب' });
+      return res.status(400).json({ success: false, message: '┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     // 1. Try to find regular order by id OR orderNumber
@@ -3223,6 +4286,10 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
     });
 
     if (regularOrder) {
+      // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪Ñ╪╢╪º┘ü╪⌐ ┘à┘ä╪º╪¡╪╕╪⌐ ╪¬╪╣╪»┘æ┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿.
+      const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.status);
+
       const note = await getSharedPrismaClient().orderNote.create({
         data: {
           id: uuidv4(),
@@ -3238,7 +4305,7 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
         }
       });
 
-      console.log(`✅ [ORDER-NOTE] Added note to regular order: ${orderNumber}`);
+      console.log(`Γ£à [ORDER-NOTE] Added note to regular order: ${orderNumber}`);
       return res.json({ success: true, data: note });
     }
 
@@ -3253,6 +4320,10 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
     });
 
     if (guestOrder) {
+      // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐) ΓÇö ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ê┘ü.
+      const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.status);
+
       const note = await getSharedPrismaClient().orderNote.create({
         data: {
           id: uuidv4(),
@@ -3268,20 +4339,22 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
         }
       });
 
-      console.log(`✅ [ORDER-NOTE] Added note to guest order: ${orderNumber}`);
+      console.log(`Γ£à [ORDER-NOTE] Added note to guest order: ${orderNumber}`);
       return res.json({ success: true, data: note });
     }
 
     // Order not found
-    return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
 
   } catch (error) {
-    console.error('❌ Error adding note:', error);
-    res.status(500).json({ success: false, message: 'خطأ في إضافة الملاحظة', error: error.message });
+    console.error('Γ¥î Error adding note:', error);
+    const statusCode = error.statusCode || 500;
+    const message = statusCode === 403 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐';
+    res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
 
-// تعديل ملاحظة طلب
+// ╪¬╪╣╪»┘è┘ä ┘à┘ä╪º╪¡╪╕╪⌐ ╪╖┘ä╪¿
 router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { noteId } = req.params;
@@ -3291,36 +4364,41 @@ router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req,
     const userRole = req.user?.role;
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
+      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     if (!content || !content.trim()) {
-      return res.status(400).json({ success: false, message: 'محتوى الملاحظة مطلوب' });
+      return res.status(400).json({ success: false, message: '┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     // Find the note with its order/guestOrder to verify company ownership
     const existingNote = await getSharedPrismaClient().orderNote.findUnique({
       where: { id: noteId },
       include: {
-        order: { select: { companyId: true } },
-        guestOrder: { select: { companyId: true } },
+        order: { select: { companyId: true, status: true } },
+        guestOrder: { select: { companyId: true, status: true } },
       }
     });
 
     if (!existingNote) {
-      return res.status(404).json({ success: false, message: 'الملاحظة غير موجودة' });
+      return res.status(404).json({ success: false, message: '╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
     }
 
     // Verify company ownership through related order or guestOrder
     const noteCompanyId = existingNote.order?.companyId || existingNote.guestOrder?.companyId;
     if (!noteCompanyId || noteCompanyId !== companyId) {
-      return res.status(403).json({ success: false, message: 'غير مصرح - الملاحظة لا تنتمي لشركتك' });
+      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘ä╪º ╪¬┘å╪¬┘à┘è ┘ä╪┤╪▒┘â╪¬┘â' });
     }
 
     // Permission check: only the author or admins can edit
     if (existingNote.authorId !== userId && userRole !== 'COMPANY_ADMIN' && userRole !== 'SUPER_ADMIN') {
-      return res.status(403).json({ success: false, message: 'يمكنك تعديل ملاحظاتك فقط' });
+      return res.status(403).json({ success: false, message: '┘è┘à┘â┘å┘â ╪¬╪╣╪»┘è┘ä ┘à┘ä╪º╪¡╪╕╪º╪¬┘â ┘ü┘é╪╖' });
     }
+
+    // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪¬╪╣╪»┘è┘ä ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘è╪╣╪»┘æ┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿.
+    const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+    const lockStatus = existingNote.order?.status || existingNote.guestOrder?.status;
+    await assertOrderStatusEditable(getSharedPrismaClient(), companyId, lockStatus);
 
     const updatedNote = await getSharedPrismaClient().orderNote.update({
       where: { id: noteId },
@@ -3332,16 +4410,18 @@ router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req,
       }
     });
 
-    console.log(`✅ [ORDER-NOTE] Updated note: ${noteId}`);
+    console.log(`Γ£à [ORDER-NOTE] Updated note: ${noteId}`);
     return res.json({ success: true, data: updatedNote });
 
   } catch (error) {
-    console.error('❌ Error updating note:', error);
-    res.status(500).json({ success: false, message: 'خطأ في تعديل الملاحظة', error: error.message });
+    console.error('Γ¥î Error updating note:', error);
+    const statusCode = error.statusCode || 500;
+    const message = statusCode === 403 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¬╪╣╪»┘è┘ä ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐';
+    res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
 
-// حذف ملاحظة طلب
+// ╪¡╪░┘ü ┘à┘ä╪º╪¡╪╕╪⌐ ╪╖┘ä╪¿
 router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { noteId } = req.params;
@@ -3350,62 +4430,57 @@ router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req
     const userRole = req.user?.role;
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
+      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
     }
 
     // Find the note with its order/guestOrder to verify company ownership
     const existingNote = await getSharedPrismaClient().orderNote.findUnique({
       where: { id: noteId },
       include: {
-        order: { select: { companyId: true } },
-        guestOrder: { select: { companyId: true } },
+        order: { select: { companyId: true, status: true } },
+        guestOrder: { select: { companyId: true, status: true } },
       }
     });
 
     if (!existingNote) {
-      return res.status(404).json({ success: false, message: 'الملاحظة غير موجودة' });
+      return res.status(404).json({ success: false, message: '╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
     }
 
     // Verify company ownership through related order or guestOrder
     const noteCompanyId = existingNote.order?.companyId || existingNote.guestOrder?.companyId;
     if (!noteCompanyId || noteCompanyId !== companyId) {
-      return res.status(403).json({ success: false, message: 'غير مصرح - الملاحظة لا تنتمي لشركتك' });
+      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘ä╪º ╪¬┘å╪¬┘à┘è ┘ä╪┤╪▒┘â╪¬┘â' });
     }
 
     // Permission check: only the author or admins can delete
     if (existingNote.authorId !== userId && userRole !== 'COMPANY_ADMIN' && userRole !== 'SUPER_ADMIN') {
-      return res.status(403).json({ success: false, message: 'يمكنك حذف ملاحظاتك فقط' });
+      return res.status(403).json({ success: false, message: '┘è┘à┘â┘å┘â ╪¡╪░┘ü ┘à┘ä╪º╪¡╪╕╪º╪¬┘â ┘ü┘é╪╖' });
     }
+
+    // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪¡╪░┘ü ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘è╪╣╪»┘æ┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿.
+    const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+    const lockStatus = existingNote.order?.status || existingNote.guestOrder?.status;
+    await assertOrderStatusEditable(getSharedPrismaClient(), companyId, lockStatus);
 
     await getSharedPrismaClient().orderNote.delete({ where: { id: noteId } });
 
-    console.log(`✅ [ORDER-NOTE] Deleted note: ${noteId}`);
-    return res.json({ success: true, message: 'تم حذف الملاحظة بنجاح' });
+    console.log(`Γ£à [ORDER-NOTE] Deleted note: ${noteId}`);
+    return res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ╪¿┘å╪¼╪º╪¡' });
 
   } catch (error) {
-    console.error('❌ Error deleting note:', error);
-    res.status(500).json({ success: false, message: 'خطأ في حذف الملاحظة', error: error.message });
+    console.error('Γ¥î Error deleting note:', error);
+    const statusCode = error.statusCode || 500;
+    const message = statusCode === 403 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐';
+    res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
 
-// الحصول على طلب بسيط محدد بالرقم
-router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
+// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪╖┘ä╪¿ ╪¿╪│┘è╪╖ ┘à╪¡╪»╪» ╪¿╪º┘ä╪▒┘é┘à
+// Verify / reject a wallet payment proof uploaded by the customer at checkout
+router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticateToken, async (req, res) => {
   try {
-    const { orderNumber } = req.params;
-
-    // التأكد من وجود req.user (verifyToken.authenticateToken يجب أن يضمن ذلك)
     if (!req.user) {
-      console.error('❌ [ORDER-DETAIL] req.user is null/undefined');
-      return res.status(401).json({
-        success: false,
-        message: 'غير مصرح - يجب تسجيل الدخول'
-      });
-    }
-
-    // Debug logging (development only)
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 [ORDER-DETAIL] Request for order:', orderNumber);
-      console.log('🔍 [ORDER-DETAIL] req.user:', { id: req.user.id, email: req.user.email, companyId: req.user.companyId });
+      return res.status(401).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä' });
     }
 
     const merchant = isMerchantUser(req.user)
@@ -3414,14 +4489,149 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
     const companyId = merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
-      console.error('❌ [ORDER-DETAIL] Missing companyId!', {
+      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+    }
+
+    const { orderNumber } = req.params;
+    const { action, rejectReason } = req.body || {};
+    const normalizedAction = String(action || '').toUpperCase();
+
+    if (!['VERIFY', 'REJECT'].includes(normalizedAction)) {
+      return res.status(400).json({ success: false, message: '╪º┘ä╪Ñ╪¼╪▒╪º╪í ┘è╪¼╪¿ ╪ú┘å ┘è┘â┘ê┘å VERIFY ╪ú┘ê REJECT' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const [guestOrder, regularOrder] = await Promise.all([
+      prisma.guestOrder.findFirst({
+        where: {
+          OR: [{ id: orderNumber, companyId }, { orderNumber, companyId }],
+        },
+        select: { id: true, metadata: true },
+      }),
+      prisma.order.findFirst({
+        where: {
+          OR: [{ id: orderNumber, companyId }, { orderNumber, companyId }],
+        },
+        select: { id: true, metadata: true, paymentStatus: true },
+      }),
+    ]);
+
+    if (!guestOrder && !regularOrder) {
+      return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    }
+
+    let verifiedProof = null;
+    let matched = false;
+
+    // Guest order ΓÇö storefront orders are stored as guest orders. Update its proof.
+    if (guestOrder) {
+      const metadata = safeParseOrderMetadata(guestOrder.metadata);
+      const proof = metadata?.walletPaymentProof;
+      if (proof) {
+        const nextProof = {
+          ...proof,
+          status: normalizedAction === 'VERIFY' ? 'VERIFIED' : 'REJECTED',
+          verifiedBy: req.user.id || null,
+          verifiedAt: new Date().toISOString(),
+          ...(normalizedAction === 'REJECT'
+            ? { rejectReason: String(rejectReason || '').slice(0, 500) || null }
+            : {}),
+        };
+        await prisma.guestOrder.update({
+          where: { id: guestOrder.id },
+          data: { metadata: JSON.stringify({ ...metadata, walletPaymentProof: nextProof }) },
+        });
+        verifiedProof = nextProof;
+        matched = true;
+      }
+    }
+
+    // Regular order mirror ΓÇö same proof, and when VERIFYing also mark the
+    // payment as completed so the payment column reflects the approval.
+    if (regularOrder) {
+      const metadata = safeParseOrderMetadata(regularOrder.metadata);
+      const proof = metadata?.walletPaymentProof;
+      if (proof) {
+        const nextProof = {
+          ...proof,
+          status: normalizedAction === 'VERIFY' ? 'VERIFIED' : 'REJECTED',
+          verifiedBy: req.user.id || null,
+          verifiedAt: new Date().toISOString(),
+          ...(normalizedAction === 'REJECT'
+            ? { rejectReason: String(rejectReason || '').slice(0, 500) || null }
+            : {}),
+        };
+        const currentPaymentStatus = String(regularOrder.paymentStatus || '').toUpperCase();
+        const isNeutralStatus =
+          !currentPaymentStatus ||
+          currentPaymentStatus === 'PENDING' ||
+          currentPaymentStatus === 'UNAVAILABLE' ||
+          currentPaymentStatus === 'UNKNOWN';
+        await prisma.order.update({
+          where: { id: regularOrder.id },
+          data: {
+            metadata: JSON.stringify({ ...metadata, walletPaymentProof: nextProof }),
+            ...(normalizedAction === 'VERIFY' && isNeutralStatus
+              ? { paymentStatus: 'COMPLETED' }
+              : {}),
+          },
+        });
+        verifiedProof = verifiedProof || nextProof;
+        matched = true;
+      }
+    }
+
+    if (!matched) {
+      return res.status(400).json({ success: false, message: '┘ä╪º ┘è┘ê╪¼╪» ╪Ñ╪½╪¿╪º╪¬ ╪»┘ü╪╣ ┘à╪¡┘ü╪╕╪⌐ ┘ä┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿' });
+    }
+
+    return res.json({
+      success: true,
+      message:
+        normalizedAction === 'VERIFY'
+          ? '╪¬┘à ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪Ñ╪½╪¿╪º╪¬ ╪º┘ä╪»┘ü╪╣ ┘ê╪º╪╣╪¬┘à╪º╪» ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣'
+          : '╪¬┘à ╪▒┘ü╪╢ ╪Ñ╪½╪¿╪º╪¬ ╪º┘ä╪»┘ü╪╣',
+      data: { walletPaymentProof: verifiedProof },
+    });
+  } catch (error) {
+    console.error('Γ¥î [WALLET-PROOF] Verify error:', error?.message);
+    return res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪Ñ╪½╪¿╪º╪¬ ╪º┘ä╪»┘ü╪╣' });
+  }
+});
+
+router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+
+    // ╪º┘ä╪¬╪ú┘â╪» ┘à┘å ┘ê╪¼┘ê╪» req.user (verifyToken.authenticateToken ┘è╪¼╪¿ ╪ú┘å ┘è╪╢┘à┘å ╪░┘ä┘â)
+    if (!req.user) {
+      console.error('Γ¥î [ORDER-DETAIL] req.user is null/undefined');
+      return res.status(401).json({
+        success: false,
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
+      });
+    }
+
+    // Debug logging (development only)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('≡ƒöì [ORDER-DETAIL] Request for order:', orderNumber);
+      console.log('≡ƒöì [ORDER-DETAIL] req.user:', { id: req.user.id, email: req.user.email, companyId: req.user.companyId });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+
+    if (!companyId) {
+      console.error('Γ¥î [ORDER-DETAIL] Missing companyId!', {
         user: req.user,
         hasUser: !!req.user,
         orderNumber
       });
       return res.status(403).json({
         success: false,
-        message: 'غير مصرح - معرف الشركة مطلوب',
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿',
         debug: process.env.NODE_ENV !== 'production' ? {
           hasUser: !!req.user,
           userId: req.user?.id,
@@ -3434,7 +4644,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
     const orderDetailFeatureAccess = await getOrderDetailFeatureAccess(companyId);
 
-    console.log('🔍 [ORDER-DETAIL] Searching for order:', {
+    console.log('≡ƒöì [ORDER-DETAIL] Searching for order:', {
       orderNumber,
       companyId,
       merchantId: merchant?.id || null
@@ -3510,10 +4720,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             id: true,
             productId: true,
             productName: true,
-            productColor: true,  // ✅ FIX: Include color
-            productSize: true,   // ✅ FIX: Include size
-            productSku: true,    // ✅ FIX: Include SKU
-            productDetails: true, // ✅ FIX: Include details
+            productColor: true,  // Γ£à FIX: Include color
+            productSize: true,   // Γ£à FIX: Include size
+            productSku: true,    // Γ£à FIX: Include SKU
+            productDetails: true, // Γ£à FIX: Include details
             price: true,
             quantity: true,
             total: true,
@@ -3521,10 +4731,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             productVariant: {
               select: {
                 id: true,
-                name: true,  // ✅ Correct: Variant name (e.g. "Red / L")
-                type: true,  // ✅ Correct: Variant type
+                name: true,  // Γ£à Correct: Variant name (e.g. "Red / L")
+                type: true,  // Γ£à Correct: Variant type
                 sku: true,
-                metadata: true // ✅ Correct: JSON metadata
+                metadata: true // Γ£à Correct: JSON metadata
               }
             },
             product: {
@@ -3609,11 +4819,11 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       if (merchant) {
         return res.status(404).json({
           success: false,
-          message: 'هذا الطلب غير مسند لهذا التاجر'
+          message: '┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘å╪» ┘ä┘ç╪░╪º ╪º┘ä╪¬╪º╪¼╪▒'
         });
       }
 
-      console.log('🔍 [ORDER-DETAIL] Regular order not found, trying guest order...');
+      console.log('≡ƒöì [ORDER-DETAIL] Regular order not found, trying guest order...');
       guestOrder = await getSharedPrismaClient().guestOrder.findFirst({
         where: {
           OR: [
@@ -3645,7 +4855,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
               }
             }
           },
-          orderNotes: { // ✅ FIX: GuestOrder uses orderNotes (camelCase)
+          orderNotes: { // Γ£à FIX: GuestOrder uses orderNotes (camelCase)
             include: {
               user: {
                 select: {
@@ -3670,13 +4880,13 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
       if (guestOrder) {
         isGuestOrder = true;
-        console.log('✅ [ORDER-DETAIL] Found guest order:', orderNumber);
+        console.log('Γ£à [ORDER-DETAIL] Found guest order:', orderNumber);
       }
     }
 
     // If neither found, return 404
     if (!order && !guestOrder) {
-      console.error('❌ [ORDER-DETAIL] Order not found:', {
+      console.error('Γ¥î [ORDER-DETAIL] Order not found:', {
         orderNumber,
         companyId,
         searchedRegular: true,
@@ -3684,7 +4894,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       });
       return res.status(404).json({
         success: false,
-        message: 'الطلب غير موجود',
+        message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»',
         orderNumber,
         companyId
       });
@@ -3692,7 +4902,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
     // Debug: Log items for regular order
     if (order) {
-      console.log(`🔍 [ORDER-DETAIL] Regular order found:`, {
+      console.log(`≡ƒöì [ORDER-DETAIL] Regular order found:`, {
         orderNumber: order.orderNumber,
         orderId: order.id,
         hasItems: !!order.orderItems,
@@ -3713,8 +4923,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       const itemsCount = await getSharedPrismaClient().orderItem.count({
         where: { orderId: order.id }
       });
-      console.log(`🔍 [ORDER-DETAIL] Items count in database for order ${order.orderNumber}:`, itemsCount);
-      console.log(`📝 [ORDER-DETAIL] Notes found:`, order.orderNotes?.length || 0); // DEBUG LOG
+      console.log(`≡ƒöì [ORDER-DETAIL] Items count in database for order ${order.orderNumber}:`, itemsCount);
+      console.log(`≡ƒô¥ [ORDER-DETAIL] Notes found:`, order.orderNotes?.length || 0); // DEBUG LOG
     }
 
     const prisma = getSharedPrismaClient();
@@ -3764,7 +4974,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         try { shippingAddress = JSON.parse(shippingAddress); } catch (e) { shippingAddress = {}; }
       }
 
-      // ✅ FIX: Batch-fetch all missing variant details in ONE query (avoid N+1)
+      // Γ£à FIX: Batch-fetch all missing variant details in ONE query (avoid N+1)
       const validItems = Array.isArray(items) ? items : [];
       const missingVariantIds = validItems
         .filter(item => {
@@ -3799,7 +5009,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         shipping: guestAmounts.shipping,
         discount: guestAmounts.discount,
         status: guestOrder.status?.toLowerCase() || 'pending',
-        paymentStatus: 'unavailable',
+        paymentStatus: derivePaymentStatusForDisplay(
+          guestOrder,
+          safeParseOrderMetadata(guestOrder.metadata),
+        ),
         paymentMethod: guestOrder.paymentMethod?.toLowerCase() || 'cash_on_delivery',
         shippingAddress: shippingAddress,
         items: validItems.map((item) => {
@@ -3843,8 +5056,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
           return {
             id: item.productId || item.id || '',
             productId: item.productId || '',
-            productName: item.name || item.productName || 'منتج غير محدد',
-            name: item.name || item.productName || 'منتج غير محدد',
+            productName: item.name || item.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
+            name: item.name || item.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
             productColor: color,
             productSize: size,
             productDetails: details,
@@ -3852,6 +5065,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             price: item.price || 0,
             quantity: item.quantity || 1,
             total: (item.price || 0) * (item.quantity || 1),
+            productSku: item.sku || item.productSku || (item.metadata && item.metadata.sku) || '',
             metadata: {
               ...(item.metadata || {}),
               color: color,
@@ -3866,13 +5080,27 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         createdAt: guestOrder.createdAt,
         updatedAt: guestOrder.updatedAt,
         isViewed: guestOrder.isViewed ?? false,
-        metadata: { source: 'storefront', isGuestOrder: true },
-        // ✅ Turbo Shipping Fields - Get from GuestOrder
+        metadata: {
+          source: 'storefront',
+          isGuestOrder: true,
+          ...safeParseOrderMetadata(guestOrder.metadata),
+        },
+        // Γ£à Wallet payment proof (screenshot + transfer details) for manual verification
+        walletPaymentProof:
+          safeParseOrderMetadata(guestOrder.metadata)?.walletPaymentProof || null,
+        // Γ£à Turbo Shipping Fields - Get from GuestOrder
         turboShipmentId: guestOrder.turboShipmentId || null,
         turboTrackingNumber: guestOrder.turboTrackingNumber || null,
         turboShipmentStatus: guestOrder.turboShipmentStatus || null,
         turboLabelUrl: guestOrder.turboLabelUrl || null,
         turboMetadata: guestOrder.turboMetadata || null,
+        turboCaptainName: guestOrder.turboCaptainName || null,
+        turboCaptainPhone: guestOrder.turboCaptainPhone || null,
+        turboBranchName: guestOrder.turboBranchName || null,
+        turboBranchPhone: guestOrder.turboBranchPhone || null,
+        turboDelayReason: guestOrder.turboDelayReason || null,
+        turboReturnReason: guestOrder.turboReturnReason || null,
+        turboExpectedBranch: guestOrder.turboExpectedBranch || null,
         createdBy: guestOrder.createdBy || null,
         createdByName: guestOrder.createdByName || null,
         createdByUser: guestOrder.user || null,
@@ -3890,7 +5118,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         statusHistory: guestOrder.OrderStatusHistory || []
       };
 
-      console.log('📦 [ORDER-DETAIL] GuestOrder Turbo fields:', {
+      console.log('≡ƒôª [ORDER-DETAIL] GuestOrder Turbo fields:', {
         turboShipmentId: formattedOrder.turboShipmentId,
         turboTrackingNumber: formattedOrder.turboTrackingNumber,
         turboShipmentStatus: formattedOrder.turboShipmentStatus,
@@ -3922,7 +5150,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         // Keep as string if parsing fails
       }
 
-      // تحويل البيانات للصيغة المتوافقة مع الـ frontend
+      // ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ┘ä┘ä╪╡┘è╪║╪⌐ ╪º┘ä┘à╪¬┘ê╪º┘ü┘é╪⌐ ┘à╪╣ ╪º┘ä┘Ç frontend
       // PRIORITY: Use order.customerName from WooCommerce first
       let finalCustomerName = '';
 
@@ -3958,7 +5186,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         shipping: order.shipping,
         discount: order.discount,
         status: (order.status || 'PENDING').toLowerCase(),
-        paymentStatus: (order.paymentStatus || 'PENDING').toLowerCase(),
+        paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
         shippingAddress: shippingAddress,
         items: order.orderItems.map(item => {
@@ -3966,9 +5194,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
           return {
             id: item.id,
             productId: item.productId,
-            name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
-            productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
-            // ✅ FIX: Add productColor, productSize, and productDetails directly for frontend
+            name: item.productName || item.product?.name || parsedMetadata.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
+            productName: item.productName || item.product?.name || parsedMetadata.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
+            // Γ£à FIX: Add productColor, productSize, and productDetails directly for frontend
             productColor: item.productColor || parsedMetadata.color || parsedMetadata.productColor || parsedMetadata.originalData?.productColor || '',
             productSize: item.productSize || parsedMetadata.size || parsedMetadata.productSize || parsedMetadata.originalData?.productSize || '',
             productDetails: item.productDetails || parsedMetadata.details || parsedMetadata.productDetails || '',
@@ -3984,6 +5212,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             price: item.price,
             quantity: item.quantity,
             total: item.total,
+            productSku: item.productSku || item.productVariant?.sku || parsedMetadata.sku || '',
             metadata: {
               ...parsedMetadata,
               color: item.productColor || parsedMetadata.color || parsedMetadata.productColor,
@@ -4009,6 +5238,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             }
           : orderMetadata,
         merchantOrder: merchantOrderScope || undefined,
+        // Γ£à Wallet payment proof (screenshot + transfer details) for manual verification
+        walletPaymentProof:
+          orderMetadata?.walletPaymentProof || null,
         // Turbo Shipping Fields
         turboShipmentId: order.turboShipmentId,
         turboTrackingNumber: order.turboTrackingNumber,
@@ -4016,6 +5248,13 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         turboLabelUrl: order.turboLabelUrl,
         turboMetadata: order.turboMetadata,
         turboBranchId: order.turboBranchId,
+        turboCaptainName: order.turboCaptainName,
+        turboCaptainPhone: order.turboCaptainPhone,
+        turboBranchName: order.turboBranchName,
+        turboBranchPhone: order.turboBranchPhone,
+        turboDelayReason: order.turboDelayReason,
+        turboReturnReason: order.turboReturnReason,
+        turboExpectedBranch: order.turboExpectedBranch,
         // Source & Meta Fields
         sourceType: order.sourceType || 'unknown',
         extractionMethod: order.extractionMethod || 'unknown',
@@ -4047,7 +5286,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         statusHistory: order.statusHistory || []
       };
 
-      console.log('📦 [ORDER-DETAIL] Regular Order Turbo fields:', {
+      console.log('≡ƒôª [ORDER-DETAIL] Regular Order Turbo fields:', {
         turboShipmentId: formattedOrder.turboShipmentId,
         turboTrackingNumber: formattedOrder.turboTrackingNumber,
         turboShipmentStatus: formattedOrder.turboShipmentStatus,
@@ -4068,16 +5307,16 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
     });
 
   } catch (error) {
-    console.error('❌ Error fetching simple order:', error);
+    console.error('Γ¥î Error fetching simple order:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الطلب',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
 });
 
-// الحصول على طلب محدد
+// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪╖┘ä╪¿ ┘à╪¡╪»╪»
 router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -4087,7 +5326,7 @@ router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: 'الطلب غير موجود'
+        message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»'
       });
     }
 
@@ -4097,18 +5336,18 @@ router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching order:', error);
+    console.error('Γ¥î Error fetching order:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الطلب',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
 });
 
-// تحديث حالة الطلب
+// ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿
 router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
-  console.log(`🔍 [ORDERS-ROUTE-DEBUG] PATCH /:orderNumber/status called:`);
+  console.log(`≡ƒöì [ORDERS-ROUTE-DEBUG] PATCH /:orderNumber/status called:`);
   console.log(`   - Order Number: ${req.params.orderNumber}`);
   console.log(`   - New Status: ${req.body.status}`);
   console.log(`   - Company ID: ${req.user?.companyId}`);
@@ -4119,10 +5358,10 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     const { status, notes, isOverride = false } = req.body;
 
     if (!status) {
-      console.log(`❌ [ORDERS-ROUTE-DEBUG] Missing status`);
+      console.log(`Γ¥î [ORDERS-ROUTE-DEBUG] Missing status`);
       return res.status(400).json({
         success: false,
-        message: 'حالة الطلب مطلوبة'
+        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘à╪╖┘ä┘ê╪¿╪⌐'
       });
     }
 
@@ -4149,10 +5388,10 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     } catch (_) { /* fallback to built-in list */ }
 
     if (!validStatuses.has(normalizedStatus)) {
-      console.log(`❌ [ORDERS-ROUTE-DEBUG] Invalid status: ${status}`);
+      console.log(`Γ¥î [ORDERS-ROUTE-DEBUG] Invalid status: ${status}`);
       return res.status(400).json({
         success: false,
-        message: 'حالة الطلب غير صحيحة'
+        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐'
       });
     }
 
@@ -4161,12 +5400,12 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: 'ليس لديك صلاحية لتعديل أو تأكيد هذا الطلب لأنك لست من قام بتسجيله'
+        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¬╪ú┘â┘è╪» ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ┘ä╪ú┘å┘â ┘ä╪│╪¬ ┘à┘å ┘é╪º┘à ╪¿╪¬╪│╪¼┘è┘ä┘ç'
       });
     }
     // ----------------------------
 
-    console.log(`📞 [ORDERS-ROUTE-DEBUG] Calling orderService.updateOrderStatus...`);
+    console.log(`≡ƒô₧ [ORDERS-ROUTE-DEBUG] Calling orderService.updateOrderStatus...`);
     const userId = req.user?.id;
     const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
     const order = await orderService.updateOrderStatus(orderNumber, companyId, normalizedStatus, statusNotes, userId, userName, null, isOverride);
@@ -4174,7 +5413,7 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     if (order?.workflowStatus === 'pending') {
       return res.json({
         success: true,
-        message: 'تم تقديم طلب تغيير الحالة للمراجعة.',
+        message: '╪¬┘à ╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐.',
         data: {
           workflowStatus: 'pending',
           requestId: order.workflowRequestId
@@ -4184,21 +5423,21 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
 
     res.json({
       success: true,
-      message: 'تم تحديث حالة الطلب بنجاح',
+      message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
       data: order
     });
 
   } catch (error) {
-    console.error('❌ Error updating order status:', error);
+    console.error('Γ¥î Error updating order status:', error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.statusCode && error.statusCode < 500 ? error.message : 'خطأ في تحديث حالة الطلب',
+      message: error.statusCode && error.statusCode < 500 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
 });
 
-// تأكيد الطلب
+// ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿
 router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -4211,7 +5450,7 @@ router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, 
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: 'ليس لديك صلاحية لتعديل أو تأكيد هذا الطلب لأنك لست من قام بتسجيله'
+        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¬╪ú┘â┘è╪» ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ┘ä╪ú┘å┘â ┘ä╪│╪¬ ┘à┘å ┘é╪º┘à ╪¿╪¬╪│╪¼┘è┘ä┘ç'
       });
     }
     // ----------------------------
@@ -4220,21 +5459,21 @@ router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, 
 
     res.json({
       success: true,
-      message: 'تم تأكيد الطلب بنجاح',
+      message: '╪¬┘à ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
       data: order
     });
 
   } catch (error) {
-    console.error('❌ Error confirming order:', error);
+    console.error('Γ¥î Error confirming order:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في تأكيد الطلب',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
 });
 
-// إلغاء الطلب
+// ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿
 router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -4247,7 +5486,7 @@ router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, r
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: 'ليس لديك صلاحية لتعديل أو تأكيد هذا الطلب لأنك لست من قام بتسجيله'
+        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¬╪ú┘â┘è╪» ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ┘ä╪ú┘å┘â ┘ä╪│╪¬ ┘à┘å ┘é╪º┘à ╪¿╪¬╪│╪¼┘è┘ä┘ç'
       });
     }
     // ----------------------------
@@ -4256,21 +5495,21 @@ router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, r
 
     res.json({
       success: true,
-      message: 'تم إلغاء الطلب بنجاح',
+      message: '╪¬┘à ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
       data: order
     });
 
   } catch (error) {
-    console.error('❌ Error cancelling order:', error);
+    console.error('Γ¥î Error cancelling order:', error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.statusCode && error.statusCode < 500 ? error.message : 'خطأ في إلغاء الطلب',
+      message: error.statusCode && error.statusCode < 500 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
 });
 
-// إحصائيات الطلبات
+// ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬
 router.get('/stats/summary', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { days = 30, companyId } = req.query;
@@ -4278,7 +5517,7 @@ router.get('/stats/summary', verifyToken.authenticateToken, async (req, res) => 
     if (!companyId) {
       return res.status(400).json({
         success: false,
-        message: 'معرف الشركة مطلوب'
+        message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
       });
     }
 
@@ -4290,16 +5529,16 @@ router.get('/stats/summary', verifyToken.authenticateToken, async (req, res) => 
     });
 
   } catch (error) {
-    console.error('❌ Error fetching order stats:', error);
+    console.error('Γ¥î Error fetching order stats:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب إحصائيات الطلبات',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
       error: error.message
     });
   }
 });
 
-// طلبات العميل
+// ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä
 router.get('/customer/:customerId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { customerId } = req.params;
@@ -4315,16 +5554,16 @@ router.get('/customer/:customerId', verifyToken.authenticateToken, async (req, r
     });
 
   } catch (error) {
-    console.error('❌ Error fetching customer orders:', error);
+    console.error('Γ¥î Error fetching customer orders:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب طلبات العميل',
+      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä',
       error: error.message
     });
   }
 });
 
-// إنشاء طلب بسيط من المحادثة (باستخدام EnhancedOrderService)
+// ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ╪¿╪│┘è╪╖ ┘à┘å ╪º┘ä┘à╪¡╪º╪»╪½╪⌐ (╪¿╪º╪│╪¬╪«╪»╪º┘à EnhancedOrderService)
 router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     const EnhancedOrderService = require('../services/enhancedOrderService');
@@ -4332,11 +5571,11 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const companyId = req.user?.companyId;
 
-    // 🔍 Check if user has an affiliate profile (regardless of role)
+    // ≡ƒöì Check if user has an affiliate profile (regardless of role)
     let affiliateId = null;
     let orderSource = 'manual';
 
-    console.log('🔍 [ORDER-DEBUG] Checking affiliate for userId:', req.user?.id, 'Role:', req.user?.role);
+    console.log('≡ƒöì [ORDER-DEBUG] Checking affiliate for userId:', req.user?.id, 'Role:', req.user?.role);
 
     try {
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
@@ -4345,7 +5584,7 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
         where: { userId: req.user.id }
       });
 
-      console.log('🔍 [ORDER-DEBUG] Affiliate query result:', affiliate ? `Found ID: ${affiliate.id}` : 'Not Found');
+      console.log('≡ƒöì [ORDER-DEBUG] Affiliate query result:', affiliate ? `Found ID: ${affiliate.id}` : 'Not Found');
 
       // Only set affiliateId if one exists AND the user explicitly wants to act as affiliate
       // OR if they are strictly an AFFILIATE role
@@ -4353,10 +5592,10 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       if (affiliate) {
         affiliateId = affiliate.id;
         orderSource = 'AFFILIATE_DIRECT';
-        console.log('✅ [ORDER-DEBUG] Affiliate detected:', { affiliateId, userId: req.user.id, role: req.user.role });
+        console.log('Γ£à [ORDER-DEBUG] Affiliate detected:', { affiliateId, userId: req.user.id, role: req.user.role });
       }
     } catch (affiliateError) {
-      console.error('⚠️ [ORDER-DEBUG] Error fetching affiliate:', affiliateError);
+      console.error('ΓÜá∩╕Å [ORDER-DEBUG] Error fetching affiliate:', affiliateError);
     }
 
     const {
@@ -4378,24 +5617,37 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: 'غير مصرح - معرف الشركة مطلوب'
+        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
       });
     }
 
-    // التحقق من البيانات المطلوبة
+    // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐
     if (!items || items.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'بيانات الطلب غير مكتملة'
+        message: '╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐'
       });
     }
 
-    // ✨ Logging للبيانات المستلمة من Frontend
-    console.log('🔍 [ORDER-DEBUG] Received items from Frontend:', JSON.stringify(items, null, 2));
+    // ╪º┘ä┘ê╪╢╪╣ ╪º┘ä╪│┘ç┘ä: ┘é╪▒╪º╪í╪⌐ ╪Ñ╪╣╪»╪º╪» ╪º╪│╪¬┘è╪▒╪º╪» ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä╪¬┘ä┘é╪º╪ª┘è
+    let easyWarehouseMode = false;
+    try {
+      const { getSharedPrismaClient: getPrisma } = require('../services/sharedDatabase');
+      const storeSettings = await getPrisma().storefrontSettings.findUnique({
+        where: { companyId },
+        select: { easyWarehouseMode: true }
+      });
+      easyWarehouseMode = storeSettings?.easyWarehouseMode === true;
+    } catch (settingsError) {
+      easyWarehouseMode = false;
+    }
 
-    // تحويل items للصيغة المتوافقة مع EnhancedOrderService
+    // Γ£¿ Logging ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪│╪¬┘ä┘à╪⌐ ┘à┘å Frontend
+    console.log('≡ƒöì [ORDER-DEBUG] Received items from Frontend:', JSON.stringify(items, null, 2));
+
+    // ╪¬╪¡┘ê┘è┘ä items ┘ä┘ä╪╡┘è╪║╪⌐ ╪º┘ä┘à╪¬┘ê╪º┘ü┘é╪⌐ ┘à╪╣ EnhancedOrderService
     const products = items.map(item => {
-      console.log(`🔍 [ORDER-DEBUG] Processing item:`, {
+      console.log(`≡ƒöì [ORDER-DEBUG] Processing item:`, {
         productName: item.productName,
         productColor: item.productColor,
         productSize: item.productSize,
@@ -4405,8 +5657,8 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       return {
         productId: item.productId,
         productName: item.productName,
-        productColor: item.productColor,
-        productSize: item.productSize,
+        productColor: item.productColor ? String(item.productColor) : null,
+        productSize: item.productSize != null ? String(item.productSize) : null,
         price: parseFloat(item.price),
         quantity: item.quantity,
         total: parseFloat(item.total),
@@ -4414,39 +5666,42 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       };
     });
 
-    console.log('✅ [ORDER-DEBUG] Converted products:', JSON.stringify(products, null, 2));
+    console.log('Γ£à [ORDER-DEBUG] Converted products:', JSON.stringify(products, null, 2));
 
-    // تحضير بيانات الطلب بنفس صيغة خدمة الطلبات المحسنة
+    // ╪¬╪¡╪╢┘è╪▒ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿ ╪¿┘å┘ü╪│ ╪╡┘è╪║╪⌐ ╪«╪»┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¡╪│┘å╪⌐
     const orderData = {
       companyId,
       customerId,
       conversationId,
 
-      // معلومات المنتجات
+      // ┘à╪╣┘ä┘ê┘à╪º╪¬ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬
       productName: products.map(p => p.productName).join(', '),
       productColor: products[0]?.productColor,
       productSize: products[0]?.productSize,
       productPrice: products[0]?.price,
       quantity: products.reduce((sum, p) => sum + p.quantity, 0),
 
-      // معلومات الشحن
+      // ┘à╪╣┘ä┘ê┘à╪º╪¬ ╪º┘ä╪┤╪¡┘å
       customerAddress: address || shippingAddress || '',
-      city: city || 'غير محدد',
+      city: city || '╪║┘è╪▒ ┘à╪¡╪»╪»',
       governorate: governorate || '',
       customerPhone: customerPhone || '',
 
-      // التكاليف
+      // ╪º┘ä╪¬┘â╪º┘ä┘è┘ü
       subtotal: parseFloat(subtotal) || 0,
       shipping: parseFloat(shipping) || 0,
       total: parseFloat(total) || 0,
 
-      // ملاحظات
+      // ┘à┘ä╪º╪¡╪╕╪º╪¬
       notes: notes || '',
 
-      // الحالة
+      // ╪º┘ä╪¡╪º┘ä╪⌐
       status: status || undefined,
 
-      // معلومات الاستخراج
+      // ╪º┘ä┘ê╪╢╪╣ ╪º┘ä╪│┘ç┘ä: ╪º╪│╪¬┘è╪▒╪º╪» ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è┘ï╪º
+      easyWarehouseMode,
+
+      // ┘à╪╣┘ä┘ê┘à╪º╪¬ ╪º┘ä╪º╪│╪¬╪«╪▒╪º╪¼
       extractionMethod: 'manual_order_modal',
       confidence: 1.0,
       sourceType: 'manual',
@@ -4458,11 +5713,11 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       createdBy: req.user.id,
       createdByName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email,
 
-      // المنتجات للحفظ في OrderItems
+      // ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ┘ä┘ä╪¡┘ü╪╕ ┘ü┘è OrderItems
       products: products
     };
 
-    console.log('📝 [ORDER-DEBUG] Final orderData:', {
+    console.log('≡ƒô¥ [ORDER-DEBUG] Final orderData:', {
       companyId,
       customerId,
       conversationId,
@@ -4479,17 +5734,17 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       }))
     });
 
-    // إنشاء الطلب باستخدام خدمة الطلبات المحسنة
+    // ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿╪º╪│╪¬╪«╪»╪º┘à ╪«╪»┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¡╪│┘å╪⌐
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
 
     await enhancedOrderService.disconnect();
 
     if (result.success) {
-      console.log('✅ Order created successfully:', result.order.orderNumber);
+      console.log('Γ£à Order created successfully:', result.order.orderNumber);
 
       res.status(201).json({
         success: true,
-        message: 'تم إنشاء الطلب بنجاح',
+        message: '╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
         data: result.order
       });
     } else {
@@ -4497,41 +5752,41 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
     }
 
   } catch (error) {
-    console.error('❌ Error creating order:', error);
+    console.error('Γ¥î Error creating order:', error);
     if (error.payload && error.statusCode) {
       return res.status(error.statusCode).json(error.payload);
     }
 
     res.status(500).json({
       success: false,
-      message: 'خطأ في إنشاء الطلب',
+      message: '╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
 });
 
-// إنشاء طلب بسيط (للاختبار)
+// ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ╪¿╪│┘è╪╖ (┘ä┘ä╪º╪«╪¬╪¿╪º╪▒)
 router.post('/create-simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     const orderData = req.body;
 
-    // التحقق من البيانات المطلوبة
+    // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐
     const requiredFields = ['productName', 'productPrice'];
     for (const field of requiredFields) {
       if (!orderData[field]) {
         return res.status(400).json({
           success: false,
-          message: `${field} مطلوب`
+          message: `${field} ┘à╪╖┘ä┘ê╪¿`
         });
       }
     }
 
     const result = await simpleOrderService.createSimpleOrder(orderData);
 
-    // حفظ الطلب في ملف
+    // ╪¡┘ü╪╕ ╪º┘ä╪╖┘ä╪¿ ┘ü┘è ┘à┘ä┘ü
     await simpleOrderService.saveOrderToFile(result.order);
 
-    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    // ≡ƒô▒ ╪Ñ╪▒╪│╪º┘ä ╪Ñ╪┤╪╣╪º╪▒ WhatsApp ╪¬┘ä┘é╪º╪ª┘è ┘ä┘ä╪╖┘ä╪¿ ╪º┘ä╪¼╪»┘è╪»
     try {
       const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
@@ -4547,50 +5802,50 @@ router.post('/create-simple', verifyToken.authenticateToken, async (req, res) =>
         },
         total: result.order.total,
         currency: 'EGP',
-        items: result.order.items || result.order.orderItems || [] // ✅ Include items for WhatsApp notification
+        items: result.order.items || result.order.orderItems || [] // Γ£à Include items for WhatsApp notification
       };
 
       await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
-      console.log('✅ [WHATSAPP] Order notification sent for:', result.order.orderNumber);
+      console.log('Γ£à [WHATSAPP] Order notification sent for:', result.order.orderNumber);
     } catch (whatsappError) {
-      console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
+      console.log('ΓÜá∩╕Å [WHATSAPP] Failed to send notification:', whatsappError.message);
     }
 
     res.status(201, {
       success: true,
-      message: 'تم إنشاء الطلب بنجاح',
+      message: '╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
       data: result.order
     });
 
   } catch (error) {
-    console.error('❌ Error creating simple order:', error);
+    console.error('Γ¥î Error creating simple order:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في إنشاء الطلب',
+      message: '╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
 });
 
-// إنشاء طلب يدوي (للاختبار)
+// ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ┘è╪»┘ê┘è (┘ä┘ä╪º╪«╪¬╪¿╪º╪▒)
 router.post('/create', verifyToken.authenticateToken, async (req, res) => {
   try {
     const orderData = req.body;
 
-    // التحقق من البيانات المطلوبة
+    // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐
     const requiredFields = ['customerId', 'companyId', 'productName', 'productPrice'];
     for (const field of requiredFields) {
       if (!orderData[field]) {
         return res.status(400).json({
           success: false,
-          message: `${field} مطلوب`
+          message: `${field} ┘à╪╖┘ä┘ê╪¿`
         });
       }
     }
 
     const order = await orderService.createOrderFromConversation(orderData);
 
-    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    // ≡ƒô▒ ╪Ñ╪▒╪│╪º┘ä ╪Ñ╪┤╪╣╪º╪▒ WhatsApp ╪¬┘ä┘é╪º╪ª┘è ┘ä┘ä╪╖┘ä╪¿ ╪º┘ä╪¼╪»┘è╪»
     try {
       const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
@@ -4606,30 +5861,30 @@ router.post('/create', verifyToken.authenticateToken, async (req, res) => {
         },
         total: order.total,
         currency: 'EGP',
-        items: order.items || order.orderItems || [] // ✅ Include items for WhatsApp notification
+        items: order.items || order.orderItems || [] // Γ£à Include items for WhatsApp notification
       };
 
       await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
-      console.log('✅ [WHATSAPP] Order notification sent for:', order.orderNumber);
+      console.log('Γ£à [WHATSAPP] Order notification sent for:', order.orderNumber);
     } catch (whatsappError) {
-      console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
+      console.log('ΓÜá∩╕Å [WHATSAPP] Failed to send notification:', whatsappError.message);
     }
 
     res.status(201).json({
       success: true,
-      message: 'تم إنشاء الطلب بنجاح',
+      message: '╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
       data: order
     });
 
   } catch (error) {
-    console.error('❌ Error creating order:', error);
+    console.error('Γ¥î Error creating order:', error);
     if (error.payload && error.statusCode) {
       return res.status(error.statusCode).json(error.payload);
     }
 
     res.status(500).json({
       success: false,
-      message: 'خطأ في إنشاء الطلب',
+      message: '╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿',
       error: error.message
     });
   }
@@ -4690,7 +5945,7 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: `تم تحديث ${successCount} طلب بنجاح`,
+      message: `╪¬┘à ╪¬╪¡╪»┘è╪½ ${successCount} ╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡`,
       data: {
         totalRequested: orderIds.length,
         successCount,
@@ -4699,8 +5954,49 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error bulk updating orders:', error);
+    console.error('Γ¥î Error bulk updating orders:', error);
     res.status(500).json({ success: false, message: 'Failed to update orders', error: error.message });
+  }
+});
+
+// Bulk Status Update by Filters (apply to all matching filters)
+router.post('/bulk/status/by-filters', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { status, notes, filters } = req.body;
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Status required' });
+    }
+
+    const userId = req.user?.id;
+    const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
+
+    const result = await preparationQueueService.bulkUpdateByFilters({
+      user: req.user,
+      query: filters || {},
+      targetStatus: status,
+      notes,
+      userId,
+      userName,
+    });
+
+    res.json({
+      success: true,
+      message: `╪¬┘à ╪¬╪¡╪»┘è╪½ ${result.successCount} ╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Γ¥î Error bulk updating orders by filters:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.statusCode ? error.message : 'Failed to update orders by filters',
+      error: error.message
+    });
   }
 });
 
@@ -4770,7 +6066,7 @@ router.post('/bulk/delete', verifyToken.authenticateToken, verifyToken.requireRo
     });
 
   } catch (error) {
-    console.error('❌ Error deleting orders:', error);
+    console.error('Γ¥î Error deleting orders:', error);
     res.status(500).json({ success: false, message: 'Failed to delete orders', error: error.message });
   }
 });
@@ -4911,7 +6207,7 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
     res.send(buffer);
 
   } catch (error) {
-    console.error('❌ Error exporting orders:', error);
+    console.error('Γ¥î Error exporting orders:', error);
     res.status(500).json({ success: false, message: 'Export failed', error: error.message });
   }
 });
@@ -4932,7 +6228,7 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: 'ليس لديك صلاحية لتعديل أو تأكيد هذا الطلب لأنك لست من قام بتسجيله'
+        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¬╪ú┘â┘è╪» ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ┘ä╪ú┘å┘â ┘ä╪│╪¬ ┘à┘å ┘é╪º┘à ╪¿╪¬╪│╪¼┘è┘ä┘ç'
       });
     }
     // ----------------------------
@@ -4957,43 +6253,80 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         socketService.getIO().to(`company_${companyId}`).emit('order:updated', result.socketPayload);
       }
     } catch (socketError) {
-      console.error('❌ [ORDER-UPDATE] Error emitting socket update:', socketError);
+      console.error('Γ¥î [ORDER-UPDATE] Error emitting socket update:', socketError);
     }
 
     // --- LOG MODIFICATION ---
     try {
-      if (result.orderType === 'regular') {
-        const order = await getSharedPrismaClient().order.findUnique({
-          where: { id: result.orderId },
-          select: { id: true, status: true }
-        });
-        if (order) {
+      const changedFields = result.updatedFields || [];
+      const fieldLabels = {
+        shippingAddress: '╪º┘ä╪╣┘å┘ê╪º┘å',
+        customerName: '╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä',
+        customerPhone: '╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü',
+        alternativePhone: '╪º┘ä╪▒┘é┘à ╪º┘ä╪¿╪»┘è┘ä',
+        city: '╪º┘ä┘à╪»┘è┘å╪⌐',
+        governorate: '╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐',
+        notes: '╪º┘ä┘à┘ä╪º╪¡╪╕╪º╪¬',
+        metadataPatch: '╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪╢╪º┘ü┘è╪⌐',
+      };
+      const mappedFields = changedFields
+        .map((f) => fieldLabels[f] || f)
+        .filter(Boolean);
+
+      let reason = '╪¬╪╣╪»┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ┘ä┘ä╪╖┘ä╪¿';
+      if (mappedFields.length > 0) {
+        reason = `╪¬╪╣╪»┘è┘ä: ${mappedFields.join('╪î ')}`;
+      } else if (changedFields.length === 0) {
+        reason = null;
+      }
+
+      if (reason) {
+        const userName = req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : '╪º┘ä┘å╪╕╪º┘à';
+
+        if (result.orderType === 'regular') {
+          const order = await getSharedPrismaClient().order.findUnique({
+            where: { id: result.orderId },
+            select: { id: true, status: true },
+          });
+          if (order) {
+            await getSharedPrismaClient().orderStatusHistory.create({
+              data: {
+                orderId: order.id,
+                status: order.status,
+                oldStatus: order.status,
+                reason,
+                changedBy: req.user.id,
+                userName: userName || '╪º┘ä┘å╪╕╪º┘à',
+              },
+            });
+          }
+        } else if (result.orderType === 'guest') {
           await getSharedPrismaClient().orderStatusHistory.create({
             data: {
-              orderId: order.id,
-              status: order.status,
-              oldStatus: order.status,
-              reason: 'تعديل البيانات الأساسية للطلب',
+              guestOrderId: result.orderId,
+              status: 'PENDING',
+              oldStatus: 'PENDING',
+              reason,
               changedBy: req.user.id,
-              userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'النظام'
-            }
+              userName: userName || '╪º┘ä┘å╪╕╪º┘à',
+            },
           });
         }
       }
     } catch (logError) {
-      console.error('❌ [ORDER-UPDATE] Error logging modification:', logError);
+      console.error('Γ¥î [ORDER-UPDATE] Error logging modification:', logError);
     }
     // ------------------------
 
     return res.json({ success: true, message: 'Order updated successfully' });
 
   } catch (error) {
-    console.error('❌ [ORDER-UPDATE] Error updating order:', error);
+    console.error('Γ¥î [ORDER-UPDATE] Error updating order:', error);
     if (error.stack) console.error(error.stack);
     const statusCode = error.statusCode || 500;
-    const message = statusCode === 400 || statusCode === 404
+    const message = statusCode === 400 || statusCode === 404 || statusCode === 403
       ? error.message
-      : 'Failed to update order';
+      : '┘ü╪┤┘ä ╪¬╪¡╪»┘è╪½ ╪º┘ä╪ú┘ê╪▒╪»╪▒';
     res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
@@ -5012,12 +6345,12 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
 
 
 
-    // ✅ Validation: Check items
+    // Γ£à Validation: Check items
     const itemsValidation = validateOrderItems(items);
     if (!itemsValidation.isValid) {
       return res.status(400).json({
         success: false,
-        message: itemsValidation.error || 'يوجد خطأ في المنتجات'
+        message: itemsValidation.error || '┘è┘ê╪¼╪» ╪«╪╖╪ú ┘ü┘è ╪º┘ä┘à┘å╪¬╪¼╪º╪¬'
       });
     }
 
@@ -5032,6 +6365,11 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
     });
 
     if (regularOrder) {
+      // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪¬╪╣╪»┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬/╪º┘ä╪ú╪│╪╣╪º╪▒ ΓÇö ┘ä┘ê
+      // ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ ╪║┘è╪▒ ┘à╪│┘à┘ê╪¡ ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬┘ç╪º╪î ┘å╪▒┘ü╪╢.
+      const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.status);
+
       // Transaction: Delete old items, Create new items, Update totals
       await getSharedPrismaClient().$transaction(async (prisma) => {
         // Delete existing items
@@ -5041,7 +6379,7 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
 
         // Create new items
         for (const item of items) {
-          // التحقق من وجود المنتج قبل إضافته
+          // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ┘ê╪¼┘ê╪» ╪º┘ä┘à┘å╪¬╪¼ ┘é╪¿┘ä ╪Ñ╪╢╪º┘ü╪¬┘ç
           let validProductId = null;
           if (item.productId) {
             try {
@@ -5050,28 +6388,28 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
                 select: { id: true, companyId: true }
               });
 
-              // التأكد من أن المنتج موجود وأنه تابع لنفس الشركة
+              // ╪º┘ä╪¬╪ú┘â╪» ┘à┘å ╪ú┘å ╪º┘ä┘à┘å╪¬╪¼ ┘à┘ê╪¼┘ê╪» ┘ê╪ú┘å┘ç ╪¬╪º╪¿╪╣ ┘ä┘å┘ü╪│ ╪º┘ä╪┤╪▒┘â╪⌐
               if (product && product.companyId === companyId) {
                 validProductId = item.productId;
               } else {
-                console.log(`⚠️ [ORDER-UPDATE] Product ${item.productId} not found or belongs to different company, using null`);
+                console.log(`ΓÜá∩╕Å [ORDER-UPDATE] Product ${item.productId} not found or belongs to different company, using null`);
               }
             } catch (productError) {
-              console.log(`⚠️ [ORDER-UPDATE] Error checking product ${item.productId}:`, productError.message);
+              console.log(`ΓÜá∩╕Å [ORDER-UPDATE] Error checking product ${item.productId}:`, productError.message);
             }
           }
 
           await prisma.orderItem.create({
             data: {
               orderId: regularOrder.id,
-              productId: validProductId, // null إذا لم يكن المنتج موجوداً
+              productId: validProductId, // null ╪Ñ╪░╪º ┘ä┘à ┘è┘â┘å ╪º┘ä┘à┘å╪¬╪¼ ┘à┘ê╪¼┘ê╪»╪º┘ï
               quantity: item.quantity,
               price: item.price,
               total: item.total,
-              productName: item.productName || item.name || null, // ✅ FIX: Persist product details
-              productColor: item.productColor || item.color || null, // ✅ FIX: Persist product details
-              productSize: item.productSize || item.size || null, // ✅ FIX: Persist product details
-              productDetails: item.productDetails || item.details || null, // ✅ FIX: Persist product details
+              productName: item.productName || item.name || null, // Γ£à FIX: Persist product details
+              productColor: item.productColor || item.color || null, // Γ£à FIX: Persist product details
+              productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null), // Γ£à FIX: Persist product details
+              productDetails: item.productDetails || item.details || null, // Γ£à FIX: Persist product details
               productSku: item.productSku || item.sku || null,
               metadata: JSON.stringify(item.metadata || {})
             }
@@ -5111,13 +6449,13 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
             orderId: regularOrder.id,
             status: regularOrder.status,
             oldStatus: regularOrder.status,
-            reason: 'تعديل منتجات الطلب',
+            reason: '╪¬╪╣╪»┘è┘ä ┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä╪╖┘ä╪¿',
             changedBy: req.user.id,
-            userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'النظام'
+            userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : '╪º┘ä┘å╪╕╪º┘à'
           }
         });
       } catch (logError) {
-        console.error('❌ [ORDER-UPDATE] Error logging items modification:', logError);
+        console.error('Γ¥î [ORDER-UPDATE] Error logging items modification:', logError);
       }
       // ------------------------
 
@@ -5130,6 +6468,10 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
     });
 
     if (guestOrder) {
+      // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐) ΓÇö ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ê┘ü (┘à┘å╪¬╪¼╪º╪¬/╪ú╪│╪╣╪º╪▒).
+      const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.status);
+
       const nextSubtotal = toSafeOrderAmount(subtotal);
       const nextShipping = toSafeOrderAmount(shipping);
       const nextFinalTotal = Number.isFinite(Number(total))
@@ -5164,8 +6506,12 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
     res.status(404).json({ success: false, message: 'Order not found' });
 
   } catch (error) {
-    console.error('❌ Error updating order items:', error);
-    res.status(500).json({ success: false, message: 'Failed to update order items', error: error.message });
+    console.error('Γ¥î Error updating order items:', error);
+    const statusCode = error.statusCode || 500;
+    const message = statusCode === 403
+      ? error.message
+      : '┘ü╪┤┘ä ╪¬╪¡╪»┘è╪½ ┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒';
+    res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
 
@@ -5185,7 +6531,7 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: 'ليس لديك صلاحية لتعديل هذا الطلب'
+        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿'
       });
     }
 
@@ -5201,16 +6547,22 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
     });
 
     if (!order) {
-      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+      return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
     }
 
+    // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪º┘ä╪¬╪ú╪¼┘è┘ä ┘è╪╣╪»┘æ┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿
+    // (╪¬╪º╪▒┘è╪« ╪º┘ä╪¬╪│┘ä┘è┘à/┘à┘ä╪º╪¡╪╕╪º╪¬ ╪º┘ä╪¼╪»┘ê┘ä╪⌐) ΓÇö ┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ ╪║┘è╪▒ ┘à╪│┘à┘ê╪¡ ╪¬╪╣╪»┘è┘ä
+    // ╪¿┘è╪º┘å╪º╪¬┘ç╪º╪î ┘å╪▒┘ü╪╢.
+    const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+    await assertOrderStatusEditable(prisma, companyId, order.status);
+
     if (!scheduledDeliveryDate) {
-      return res.status(400).json({ success: false, message: 'تاريخ التسليم مطلوب' });
+      return res.status(400).json({ success: false, message: '╪¬╪º╪▒┘è╪« ╪º┘ä╪¬╪│┘ä┘è┘à ┘à╪╖┘ä┘ê╪¿' });
     }
 
     const deliveryDate = new Date(scheduledDeliveryDate);
     if (isNaN(deliveryDate.getTime())) {
-      return res.status(400).json({ success: false, message: 'تاريخ التسليم غير صالح' });
+      return res.status(400).json({ success: false, message: '╪¬╪º╪▒┘è╪« ╪º┘ä╪¬╪│┘ä┘è┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
     }
 
     const updateData = {
@@ -5235,10 +6587,10 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
         status: updateData.status || order.status,
         oldStatus: order.status,
         changedBy: req.user?.id,
-        userName: req.user?.firstName ? `${req.user.firstName} ${req.user.lastName || ''}`.trim() : 'النظام',
+        userName: req.user?.firstName ? `${req.user.firstName} ${req.user.lastName || ''}`.trim() : '╪º┘ä┘å╪╕╪º┘à',
         reason: scheduledNotes
-          ? `تأجيل الطلب إلى ${deliveryDate.toLocaleDateString('ar-EG')} - ${scheduledNotes}`
-          : `تأجيل الطلب إلى ${deliveryDate.toLocaleDateString('ar-EG')}`
+          ? `╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪Ñ┘ä┘ë ${deliveryDate.toLocaleDateString('ar-EG')} - ${scheduledNotes}`
+          : `╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪Ñ┘ä┘ë ${deliveryDate.toLocaleDateString('ar-EG')}`
       }
     });
 
@@ -5253,13 +6605,15 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
         });
       }
     } catch (socketError) {
-      console.error('❌ [ORDER-SCHEDULE] Socket error:', socketError);
+      console.error('Γ¥î [ORDER-SCHEDULE] Socket error:', socketError);
     }
 
-    return res.json({ success: true, message: 'تم تأجيل الطلب بنجاح' });
+    return res.json({ success: true, message: '╪¬┘à ╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡' });
   } catch (error) {
-    console.error('❌ [ORDER-SCHEDULE] Error:', error);
-    res.status(500).json({ success: false, message: 'فشل تأجيل الطلب', error: error.message });
+    console.error('Γ¥î [ORDER-SCHEDULE] Error:', error);
+    const statusCode = error.statusCode || 500;
+    const message = statusCode === 403 ? error.message : '┘ü╪┤┘ä ╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿';
+    res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import InvoiceContent, { getInvoicePages, type InvoiceData } from "../../components/orders/InvoiceContent";
@@ -76,6 +76,109 @@ function toInvoiceData(inv: Invoice): InvoiceData {
   };
 }
 
+/**
+ * ╪º┘ä╪┤┘â┘ä ╪º┘ä┘ä┘è ╪¿┘è╪▒╪¼╪╣┘ç bulk-generate ┘ä┘â┘ä ╪╖┘ä╪¿ ╪╢┘è┘ü (┘à╪╖╪º╪¿┘é ┘ä┘Ç mapGuestOrderForPrint ┘ü┘è ╪º┘ä┘Ç backend).
+ * ╪¿┘å╪«╪▓┘æ┘å┘ç ┘ü┘è sessionStorage ┘ê┘å╪¿┘å┘è ┘à┘å┘ç InvoiceData ╪¿╪»┘ê┘å ╪º┘ä╪¡╪º╪¼╪⌐ ┘ä╪╡┘ü DB.
+ */
+interface GuestOrderPrint {
+  id: string;
+  orderNumber: string;
+  customerName?: string;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  customerAddress?: string | null;
+  city?: string | null;
+  governorate?: string | null;
+  status?: string;
+  paymentStatus?: string;
+  paymentMethod?: string | null;
+  currency?: string;
+  subtotal?: number;
+  tax?: number;
+  shipping?: number;
+  discount?: number;
+  total?: number;
+  turboTrackingNumber?: string | null;
+  items?: Array<{
+    productName?: string;
+    productSku?: string | null;
+    productColor?: string | null;
+    productSize?: string | null;
+    price?: number;
+    quantity?: number;
+    total?: number;
+  }>;
+}
+
+/** ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪┤╪▒┘â╪⌐ ╪º┘ä┘ä┘è ╪¿╪¬╪¬╪▒┘â╪¿ ┘à╪╣ ┘â┘ä ╪╖┘ä╪¿ ╪╢┘è┘ü (┘à┘ü┘è┘ç╪º╪┤ ╪┤╪▒┘â╪⌐ ┘ü┘è ╪¼╪»┘ê┘ä ╪º┘ä╪╢┘è┘ü) */
+export interface GuestPrintCompanyInfo {
+  companyName: string;
+  companyPhone?: string | null;
+  companyLogo?: string | null;
+}
+
+/** ╪¡┘à┘ê┘ä╪⌐ ╪º┘ä┘Ç sessionStorage ╪¬╪¡╪¬ ┘à┘ü╪¬╪º╪¡ guestKey: { company, orders } */
+export interface GuestPrintPayload {
+  company: GuestPrintCompanyInfo;
+  orders: GuestOrderPrint[];
+}
+
+/** ┘à┘ü╪¬╪º╪¡ prefix ┘à┘ê╪¡┘æ╪» ┘ä╪¬╪¿╪º╪»┘ä ╪¡┘à┘ê┘ä╪⌐ ╪╖╪¿╪º╪╣╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ╪╣╪¿╪▒ sessionStorage */
+export const GUEST_PRINT_STORAGE_PREFIX = "maxp:print-guest:";
+/** ╪ú┘å╪┤╪ª ┘à┘ü╪¬╪º╪¡╪º┘ï ┘ü╪▒┘è╪»╪º┘ï ┘ä╪»┘ü╪╣╪⌐ ╪╖╪¿╪º╪╣╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪╢┘è┘ü */
+export function makeGuestPrintKey(): string {
+  return `${GUEST_PRINT_STORAGE_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** ╪«╪▓┘æ┘å ╪¡┘à┘ê┘ä╪⌐ ╪╖╪¿╪º╪╣╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ┘ü┘è sessionStorage ┘ê╪º╪▒╪¼╪╣ ╪º┘ä┘à┘ü╪¬╪º╪¡ */
+export function storeGuestPrintPayload(payload: GuestPrintPayload): string {
+  const key = makeGuestPrintKey();
+  try {
+    sessionStorage.setItem(key, JSON.stringify(payload));
+  } catch (e) {
+    console.error("Failed storing guest print payload:", e);
+  }
+  return key;
+}
+
+/** Convert a guest order (from bulk-generate) to InvoiceData using company info */
+function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintCompanyInfo): InvoiceData {
+  return {
+    id: guest.id,
+    invoiceNumber: guest.orderNumber,
+    companyName: company.companyName,
+    companyPhone: company.companyPhone,
+    companyLogo: company.companyLogo,
+    customerName: guest.customerName || "╪╣┘à┘è┘ä ╪║┘è╪▒ ┘à╪¡╪»╪»",
+    customerPhone: guest.customerPhone,
+    customerEmail: guest.customerEmail,
+    customerAddress: guest.customerAddress,
+    city: guest.city,
+    governorate: guest.governorate,
+    paymentMethod: guest.paymentMethod,
+    paymentStatus: guest.paymentStatus || "PENDING",
+    currency: guest.currency || "EGP",
+    subtotal: Number(guest.subtotal || 0),
+    tax: Number(guest.tax || 0),
+    shipping: Number(guest.shipping || 0),
+    discount: Number(guest.discount || 0),
+    totalAmount: Number(guest.total || 0),
+    order: {
+      orderNumber: guest.orderNumber,
+      turboTrackingNumber: guest.turboTrackingNumber,
+      orderItems: (guest.items || []).map((item) => ({
+        productName: item.productName || "┘à┘å╪¬╪¼",
+        quantity: Number(item.quantity || 1),
+        price: Number(item.price || 0),
+        total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
+        productSku: item.productSku,
+        productColor: item.productColor,
+        productSize: item.productSize,
+      })),
+    },
+  };
+}
+
 /** Represents one slot on a printed sheet */
 interface PageSlot {
   invoiceData: InvoiceData;
@@ -85,9 +188,9 @@ interface PageSlot {
 
 /**
  * Print layout modes:
- *  - "single"  → one invoice per A5 page   (1 slot / sheet, no grid)
- *  - "2up"     → two invoices per A4 page   (2 slots / sheet, stacked vertically)
- *  - "grid"    → four invoices per A4 page  (2×2 grid)
+ *  - "single"  ΓåÆ one invoice per A5 page   (1 slot / sheet, no grid)
+ *  - "2up"     ΓåÆ two invoices per A4 page   (2 slots / sheet, stacked vertically)
+ *  - "grid"    ΓåÆ four invoices per A4 page  (2├ù2 grid)
  */
 type PrintLayout = "single" | "2up" | "grid";
 
@@ -108,6 +211,8 @@ const SLOTS_PER_SHEET: Record<PrintLayout, number> = {
 const PrintMultipleInvoices: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  // ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ╪º┘ä┘à╪¡┘ê┘æ┘ä╪⌐ ┘ä┘Ç InvoiceData (┘à╪╡╪»╪▒┘ç╪º sessionStorage╪î ┘à╪┤ DB)
+  const [guestSlots, setGuestSlots] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { settings } = useInvoiceSettings();
@@ -117,26 +222,51 @@ const PrintMultipleInvoices: React.FC = () => {
   const fetchInvoices = useCallback(async () => {
     try {
       const ids = searchParams.get("ids");
-      if (!ids) {
-        setError("لم يتم تحديد فواتير");
-        setLoading(false);
-        return;
-      }
-      const invoiceIds = ids.split(",");
-      const fetched: Invoice[] = [];
-      for (const id of invoiceIds) {
+      const guestKey = searchParams.get("guestKey");
+
+      // ╪¡┘à┘æ┘ä ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ┘à┘å sessionStorage ┘ä┘ê ┘à┘ê╪¼┘ê╪»╪⌐
+      let guests: InvoiceData[] = [];
+      if (guestKey) {
         try {
-          const response = await apiClient.get(`/order-invoices/${id}`);
-          if (response.data.success) fetched.push(response.data.data);
-        } catch (err) {
-          console.error(`Error fetching invoice ${id}:`, err);
+          const raw = sessionStorage.getItem(guestKey);
+          if (raw) {
+            const payload = JSON.parse(raw) as GuestPrintPayload;
+            guests = (payload.orders || []).map((g) =>
+              guestOrderToInvoiceData(g, payload.company || { companyName: "" }),
+            );
+          }
+        } catch (e) {
+          console.error("Failed reading guest print payload:", e);
+        } finally {
+          // ┘å╪╕┘æ┘ü ╪º┘ä┘à┘ü╪¬╪º╪¡ ╪╣╪┤╪º┘å ┘à┘è╪¬lera┘æ┘â╪┤
+          try { sessionStorage.removeItem(guestKey); } catch { /* ignore */ }
+        }
+        setGuestSlots(guests);
+      }
+
+      // ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒ ╪º┘ä╪╣╪º╪»┘è╪⌐ ┘à┘å DB
+      const fetched: Invoice[] = [];
+      if (ids) {
+        const invoiceIds = ids.split(",");
+        for (const id of invoiceIds) {
+          try {
+            const response = await apiClient.get(`/order-invoices/${id}`);
+            if (response.data.success) fetched.push(response.data.data);
+          } catch (err) {
+            console.error(`Error fetching invoice ${id}:`, err);
+          }
         }
       }
       setInvoices(fetched);
+
+      // ┘ä┘ê ┘à┘ü┘è╪┤ ┘ü┘ê╪º╪¬┘è╪▒ ┘ê┘ä╪º ╪╖┘ä╪¿╪º╪¬ ╪╢┘è┘ü ΓåÆ ╪«╪╖╪ú
+      if (fetched.length === 0 && guests.length === 0) {
+        setError("┘ä┘à ┘è╪¬┘à ╪¬╪¡╪»┘è╪» ┘ü┘ê╪º╪¬┘è╪▒");
+      }
       setLoading(false);
     } catch (err: unknown) {
       console.error("Error fetching invoices:", err);
-      setError("خطأ في جلب الفواتير");
+      setError("╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒");
       setLoading(false);
     }
   }, [searchParams]);
@@ -144,6 +274,7 @@ const PrintMultipleInvoices: React.FC = () => {
   useEffect(() => { void fetchInvoices(); }, [fetchInvoices]);
 
   // Expand every invoice into its page chunks, collect all slots
+  // (┘è╪»┘à╪¼ ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒ ╪º┘ä╪╣╪º╪»┘è╪⌐ + ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ┘ü┘è ┘é╪º╪ª┘à╪⌐ ╪╣╪▒╪╢ ┘ê╪º╪¡╪»╪⌐)
   const allSlots: PageSlot[] = useMemo(() => {
     const slots: PageSlot[] = [];
     invoices.forEach((inv) => {
@@ -153,8 +284,14 @@ const PrintMultipleInvoices: React.FC = () => {
         slots.push({ invoiceData: data, page, key: `${inv.id}-p${page.pageIndex}` });
       });
     });
+    guestSlots.forEach((data, idx) => {
+      const pages = getInvoicePages(data);
+      pages.forEach((page) => {
+        slots.push({ invoiceData: data, page, key: `guest-${idx}-p${page.pageIndex}` });
+      });
+    });
     return slots;
-  }, [invoices]);
+  }, [invoices, guestSlots]);
 
   // Auto-set layout once slots are known (only if user hasn't overridden)
   useEffect(() => {
@@ -163,7 +300,7 @@ const PrintMultipleInvoices: React.FC = () => {
     }
   }, [allSlots, loading, autoLayout]);
 
-  // Increment print count for all invoices (fire once per page load)
+  // Increment print count for DB invoices only (skip guest orders ΓÇö ┘ä╪º ┘è┘ê╪¼╪» ┘ä┘ç╪º ╪│╪¼┘ä ┘ü╪º╪¬┘ê╪▒╪⌐)
   const printedRef = useRef(false);
   useEffect(() => {
     if (!loading && invoices.length > 0 && !printedRef.current) {
@@ -310,7 +447,7 @@ const PrintMultipleInvoices: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري تحميل الفواتير...</p>
+          <p className="text-gray-600">╪¼╪º╪▒┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒...</p>
         </div>
       </div>
     );
@@ -346,13 +483,13 @@ const PrintMultipleInvoices: React.FC = () => {
         }
       `}</style>
 
-      {/* ── Controls ── */}
+      {/* ΓöÇΓöÇ Controls ΓöÇΓöÇ */}
       <div className="no-print fixed top-4 right-4 z-50 flex items-center gap-3 bg-white p-3 rounded-xl shadow-xl border border-gray-200" dir="rtl">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-bold text-gray-700">
-            تنسيق الطباعة:
+            ╪¬┘å╪│┘è┘é ╪º┘ä╪╖╪¿╪º╪╣╪⌐:
             {autoLayout && (
-              <span className="ml-1 text-blue-500 text-[10px] font-normal">(تلقائي)</span>
+              <span className="ml-1 text-blue-500 text-[10px] font-normal">(╪¬┘ä┘é╪º╪ª┘è)</span>
             )}
           </label>
           <select
@@ -363,12 +500,12 @@ const PrintMultipleInvoices: React.FC = () => {
             }}
             className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
           >
-            <option value="grid">4 فواتير في A4 (توفير ورق)</option>
-            <option value="2up">2 فواتير في A4 (أوسع)</option>
-            <option value="single">فاتورة كاملة (A5 / حراري)</option>
+            <option value="grid">4 ┘ü┘ê╪º╪¬┘è╪▒ ┘ü┘è A4 (╪¬┘ê┘ü┘è╪▒ ┘ê╪▒┘é)</option>
+            <option value="2up">2 ┘ü┘ê╪º╪¬┘è╪▒ ┘ü┘è A4 (╪ú┘ê╪│╪╣)</option>
+            <option value="single">┘ü╪º╪¬┘ê╪▒╪⌐ ┘â╪º┘à┘ä╪⌐ (A5 / ╪¡╪▒╪º╪▒┘è)</option>
           </select>
           <span className="text-[10px] text-gray-400">
-            {allSlots.length} فاتورة · {sheets.length} ورقة
+            {allSlots.length} ┘ü╪º╪¬┘ê╪▒╪⌐ ┬╖ {sheets.length} ┘ê╪▒┘é╪⌐
           </span>
         </div>
         <button
@@ -380,7 +517,7 @@ const PrintMultipleInvoices: React.FC = () => {
               d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
             />
           </svg>
-          طباعة ({invoices.length})
+          ╪╖╪¿╪º╪╣╪⌐ ({invoices.length + guestSlots.length})
         </button>
       </div>
 

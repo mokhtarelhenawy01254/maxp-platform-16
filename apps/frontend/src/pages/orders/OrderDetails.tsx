@@ -1,14 +1,12 @@
-import { RefreshCw as ArrowPathIcon, CreditCard as CreditCardIcon, Circle as CalendarDaysIcon, Truck as TruckIcon, X as XCircleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/utils/formatters';
-import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+﻿import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-;
+import { ArrowPathIcon, CreditCardIcon, CalendarDaysIcon, TruckIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
@@ -31,8 +29,7 @@ import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useTurboShipping } from "./hooks/useTurboShipping";
 import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
-import { printPreparationSlip } from "../../utils/printPreparationSlip";
-import { printOrderInvoice } from "../../utils/printOrderInvoice";
+import { printSingleShippingLabel } from "../../utils/printShippingLabel";
 import { apiClient } from "../../services/apiClient";
 import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import tokenManager from "../../utils/tokenManager";
@@ -107,6 +104,7 @@ const OrderDetails: React.FC = () => {
     handleGovernmentChange,
     updateStatus,
     updatePaymentStatus,
+    verifyWalletProof,
     addNote,
     updateNote,
     deleteNote,
@@ -142,6 +140,18 @@ const OrderDetails: React.FC = () => {
   useEffect(() => {
     if (order?.id) fetchBostaShipment();
   }, [order?.id]);
+
+  // Auto-enter edit mode when opened with ?edit=1 (e.g. from WhatsApp chat order code)
+  const [searchParams] = useSearchParams();
+  const openInEditMode = searchParams.get("edit") === "1";
+  const didAutoEnterEditRef = useRef(false);
+
+  useEffect(() => {
+    if (openInEditMode && order && !isEditing && !didAutoEnterEditRef.current) {
+      didAutoEnterEditRef.current = true;
+      setIsEditing(true);
+    }
+  }, [openInEditMode, order, isEditing, setIsEditing]);
 
   // Local UI State (Modals)
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -319,16 +329,11 @@ const OrderDetails: React.FC = () => {
     }
 
     const printDirectInvoice = async () => {
-      const invoiceSettingsResponse = await apiClient
-        .get("/order-invoice-settings")
-        .catch(() => null);
-
-      await printOrderInvoice({
+      await printSingleShippingLabel({
         order,
         companyName: user?.company?.name,
         companyLogoUrl: user?.company?.logo || null,
         printWindow,
-        invoiceSettings: invoiceSettingsResponse?.data?.data,
       });
     };
 
@@ -381,7 +386,16 @@ const OrderDetails: React.FC = () => {
     if (!order) return;
 
     try {
-      await printPreparationSlip(order.orderNumber);
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        throw new Error("┘ü╪┤┘ä ┘ü┘è ┘ü╪¬╪¡ ┘å╪º┘ü╪░╪⌐ ╪¼╪»┘è╪»╪⌐ ┘ä┘ä╪╖╪¿╪º╪╣╪⌐");
+      }
+      await printSingleShippingLabel({
+        order,
+        companyName: user?.company?.name,
+        companyLogoUrl: user?.company?.logo || null,
+        printWindow,
+      });
     } catch (error: any) {
       console.error("Error generating preparation slip HTML:", error);
       alert(t("orderDetails.preparationSlipError", { error: error.message }));
@@ -561,7 +575,7 @@ const OrderDetails: React.FC = () => {
   };
 
   const handleProductSelect = (product: any, variant?: any) => {
-    // ✅ Extract variant data properly
+    // Γ£à Extract variant data properly
     let productColor = "";
     let productSize = "";
     let actualPrice = product.price;
@@ -601,11 +615,11 @@ const OrderDetails: React.FC = () => {
 
           // Extract from attributeValues
           if (variantMeta.attributeValues) {
-            if (variantMeta.attributeValues["اللون"] && !productColor) {
-              productColor = variantMeta.attributeValues["اللون"];
+            if (variantMeta.attributeValues["╪º┘ä┘ä┘ê┘å"] != null && !productColor) {
+              productColor = String(variantMeta.attributeValues["╪º┘ä┘ä┘ê┘å"]);
             }
-            if (variantMeta.attributeValues["المقاس"] && !productSize) {
-              productSize = variantMeta.attributeValues["المقاس"];
+            if (variantMeta.attributeValues["╪º┘ä┘à┘é╪º╪│"] != null && !productSize) {
+              productSize = String(variantMeta.attributeValues["╪º┘ä┘à┘é╪º╪│"]);
             }
           }
         } catch (e) {
@@ -626,7 +640,7 @@ const OrderDetails: React.FC = () => {
           if (!productColor) productColor = name.trim();
         } else {
           // Handle both hyphen and pipe separators
-          const parts = name.split(/\s*[-–|]\s*/).filter((p: any) => p.trim());
+          const parts = name.split(/\s*[-ΓÇô|]\s*/).filter((p: any) => p.trim());
 
           if (parts.length >= 2) {
             // Assumption: Color is often first, Size is often last
@@ -646,13 +660,13 @@ const OrderDetails: React.FC = () => {
       }
     }
 
-    // ✅ Validate price
+    // Γ£à Validate price
     if (actualPrice <= 0) {
       alert(t("orderDetails.priceMustBeGreaterThanZero"));
       return;
     }
 
-    // ✅ Check for duplicates
+    // Γ£à Check for duplicates
     const isDuplicate = editForm.items.some(
       (item: any) =>
         item.productId === product.id &&
@@ -665,7 +679,7 @@ const OrderDetails: React.FC = () => {
       return;
     }
 
-    // ✅ Extract Image
+    // Γ£à Extract Image
     let productImage = "";
 
     // Helper to get first image from string or array
@@ -693,6 +707,8 @@ const OrderDetails: React.FC = () => {
       getFirstImage(product.image) ||
       "";
 
+    const itemSku = variant?.sku || product.sku;
+
     const newItem = {
       productId: variant?.id || product.id,
       productName: product.name,
@@ -700,13 +716,14 @@ const OrderDetails: React.FC = () => {
       quantity: 1,
       total: actualPrice,
       productColor,
-      productSize,
-      productImage, // ✅ ADDED: Image field
+      productSize: productSize != null ? String(productSize) : "",
+      productImage, // Γ£à ADDED: Image field
+      productSku: itemSku,
       metadata: {
         ...metadata,
         image: productImage, // Add to metadata as backup
         variantId: variant?.id,
-        sku: variant?.sku || product.sku,
+        sku: itemSku,
         originalProductId: product.id,
       },
     };
@@ -716,7 +733,7 @@ const OrderDetails: React.FC = () => {
       items: [...prev.items, newItem],
     }));
     setShowAddProductModal(false);
-    // تم إضافة المنتج بنجاح
+    // ╪¬┘à ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡
   };
 
   const handleItemChange = (index: number, field: string, value: any) => {
@@ -831,26 +848,26 @@ const OrderDetails: React.FC = () => {
     : orderStatuses;
 
   const formatOptionalDate = (value?: string | null) =>
-    value ? formatDate(value) : "—";
+    value ? formatDate(value) : "ΓÇö";
 
   const confirmedByName = order.confirmedByUser
     ? `${order.confirmedByUser.firstName || ""} ${order.confirmedByUser.lastName || ""}`.trim()
-    : order.confirmedBy || "—";
+    : order.confirmedBy || "ΓÇö";
 
   const assignedToName = order.assignedToUser
     ? `${order.assignedToUser.firstName || ""} ${order.assignedToUser.lastName || ""}`.trim()
-    : order.assignedTo || "—";
+    : order.assignedTo || "ΓÇö";
 
   const assignedByName = order.assignedByUser
     ? `${order.assignedByUser.firstName || ""} ${order.assignedByUser.lastName || ""}`.trim()
-    : order.assignedBy || "—";
+    : order.assignedBy || "ΓÇö";
 
   const isCurrentlyPending = ["PENDING", "PENDING_STOCK", "ON_HOLD_STOCK", "CANCELLED", "TRASH", "WOO_TAGHEZ"].includes(order.status?.toUpperCase() || "");
   const confirmationStatusLabel =
     (!isCurrentlyPending && order.confirmedAt) || order.status === "CONFIRMED" ? t("orderDetails.confirmedStatus") : t("orderDetails.notConfirmedStatus");
   const assignmentStatusLabel = order.assignedTo ? t("orderDetails.distributed") : t("orderDetails.notDistributed");
 
-  console.log("🔍 Order Status Debug:", {
+  console.log("≡ƒöì Order Status Debug:", {
     orderStatus: order.status,
     orderStatuses: orderStatuses,
     currentStatusConfig: currentStatusConfig,
@@ -1013,6 +1030,33 @@ const OrderDetails: React.FC = () => {
           {showOrderSourceCard && <OrderSourceCard order={order} />}
           {showOrderAttributionCard && <OrderAttributionCard order={order} />}
 
+          {(() => {
+            const meta = typeof order.metadata === 'string' ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })() : (order.metadata || {});
+            const returnAmt = meta.returnAmount || null;
+            const shippingCost = parseFloat(order.shipping || order.shippingCost || '0');
+            const displayAmount = returnAmt ? parseFloat(returnAmt) : shippingCost;
+            return displayAmount > 0 ? (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t("orderDetails.returnCollectionLabel")}</span>
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                    {t("orderDetails.returnAmount", { amount: displayAmount.toFixed(2) })}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
+                  {returnAmt ? t("orderDetails.returnCustomValue") : t("orderDetails.returnDefaultValue")} ΓÇö {t("orderDetails.returnDescription")}
+                </p>
+              </div>
+            ) : null;
+          })()}
+
+          {(order as any)?.walletPaymentProof ? (
+            <WalletPaymentProofCard
+              proof={(order as any).walletPaymentProof}
+              onVerify={verifyWalletProof}
+            />
+          ) : null}
+
           {isCancellationStatus(order.status) && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-5 shadow-sm dark:border-red-900/50 dark:bg-red-950/20">
               <h3 className="text-base font-semibold text-red-900 dark:text-red-100">
@@ -1048,7 +1092,7 @@ const OrderDetails: React.FC = () => {
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.confirmedBy")}
                 </span>
-                <span>{confirmedByName || "—"}</span>
+                <span>{confirmedByName || "ΓÇö"}</span>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3" />
               <div className="flex items-center justify-between">
@@ -1061,13 +1105,13 @@ const OrderDetails: React.FC = () => {
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.distributedToLabel")}
                 </span>
-                <span>{assignedToName || "—"}</span>
+                <span>{assignedToName || "ΓÇö"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.distributionMethod")}
                 </span>
-                <span>{order.assignmentStrategy || "—"}</span>
+                <span>{order.assignmentStrategy || "ΓÇö"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
@@ -1079,7 +1123,7 @@ const OrderDetails: React.FC = () => {
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.distributedByLabel")}
                 </span>
-                <span>{assignedByName || "—"}</span>
+                <span>{assignedByName || "ΓÇö"}</span>
               </div>
               {order.confirmationNotes && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-3 text-sm">
@@ -1537,3 +1581,97 @@ const OrderDetails: React.FC = () => {
 };
 
 export default OrderDetails;
+
+interface WalletPaymentProof {
+  imageUrl?: string;
+  walletNumber?: string;
+  transferRef?: string;
+  status?: string;
+  submittedAt?: string;
+  verifiedAt?: string;
+  rejectReason?: string;
+}
+
+const WalletPaymentProofCard: React.FC<{
+  proof: WalletPaymentProof;
+  onVerify: (action: "VERIFY" | "REJECT", reason?: string) => Promise<boolean>;
+}> = ({ proof, onVerify }) => {
+  const status = String(proof.status || "PENDING").toUpperCase();
+  const statusLabel =
+    status === "VERIFIED"
+      ? "Γ£à ╪¬┘à ╪º┘ä╪¬╪¡┘é┘é"
+      : status === "REJECTED"
+        ? "Γ¥î ┘à╪▒┘ü┘ê╪╢"
+        : "ΓÅ│ ╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐";
+  const statusCls =
+    status === "VERIFIED"
+      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+      : status === "REJECTED"
+        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+        : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+
+  return (
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+          ╪Ñ╪½╪¿╪º╪¬ ╪º┘ä╪»┘ü╪╣ ╪¿╪º┘ä┘à╪¡┘ü╪╕╪⌐
+        </span>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${statusCls}`}>
+          {statusLabel}
+        </span>
+      </div>
+
+      {proof.imageUrl ? (
+        <a href={proof.imageUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <img src={proof.imageUrl} alt="╪Ñ┘è╪╡╪º┘ä ╪º┘ä╪¬╪¡┘ê┘è┘ä" className="max-h-48 w-full object-cover" />
+        </a>
+      ) : null}
+
+      <div className="space-y-1.5 text-sm text-gray-700 dark:text-gray-200">
+        {proof.walletNumber ? (
+          <div className="flex justify-between gap-2">
+            <span className="text-gray-500 dark:text-gray-400">╪▒┘é┘à ╪º┘ä┘à╪¡┘ü╪╕╪⌐</span>
+            <span dir="ltr" className="font-semibold">{proof.walletNumber}</span>
+          </div>
+        ) : null}
+        {proof.transferRef ? (
+          <div className="flex justify-between gap-2">
+            <span className="text-gray-500 dark:text-gray-400">╪▒┘é┘à ╪º┘ä╪╣┘à┘ä┘è╪⌐</span>
+            <span className="font-semibold">{proof.transferRef}</span>
+          </div>
+        ) : null}
+        {proof.submittedAt ? (
+          <div className="flex justify-between gap-2">
+            <span className="text-gray-500 dark:text-gray-400">╪¬╪º╪▒┘è╪« ╪º┘ä╪▒┘ü╪╣</span>
+            <span className="font-semibold">{new Date(proof.submittedAt).toLocaleString("ar-EG")}</span>
+          </div>
+        ) : null}
+        {proof.rejectReason ? (
+          <div className="mt-1 rounded-md bg-red-50 dark:bg-red-950/20 px-2.5 py-1.5 text-xs text-red-700 dark:text-red-300">
+            ╪│╪¿╪¿ ╪º┘ä╪▒┘ü╪╢: {proof.rejectReason}
+          </div>
+        ) : null}
+      </div>
+
+      {status === "PENDING" ? (
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={() => void onVerify("VERIFY")}
+            className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+          >
+            ╪¬╪ú┘â┘è╪» ╪º┘ä╪»┘ü╪╣
+          </button>
+          <button
+            onClick={() => {
+              const reason = window.prompt("╪º┘â╪¬╪¿ ╪│╪¿╪¿ ╪º┘ä╪▒┘ü╪╢ (╪º╪«╪¬┘è╪º╪▒┘è)");
+              if (reason !== null) void onVerify("REJECT", reason || undefined);
+            }}
+            className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
+          >
+            ╪▒┘ü╪╢
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+};
