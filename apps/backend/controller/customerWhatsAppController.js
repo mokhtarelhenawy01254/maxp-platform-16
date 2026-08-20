@@ -1505,102 +1505,199 @@ exports.sendTestBirthdayMessage = async (req, res) => {
 
 /**
  * 📊 Birthday Analytics Reports
- * جلب إحصائيات حملات أعياد الميلاد المتقدمة
+ * جلب إحصائيات حملات أعياد الميلاد المتقدمة من مصادر حقيقية
+ *
+ * Query params:
+ *   range : 'today' | 'week' | 'month' | 'all' | 'custom'
+ *   from  : ISO date (YYYY-MM-DD) — required when range=custom
+ *   to    : ISO date (YYYY-MM-DD) — required when range=custom
  */
 exports.getBirthdayAnalyticsReports = async (req, res) => {
     try {
         const { companyId } = req.user;
-        const { range = 'all' } = req.query; // today, week, month, all
+        const { range = 'all', from, to } = req.query;
 
         const prisma = getSharedPrismaClient();
-
-        let dateFilter = {};
         const now = new Date();
-        
-        if (range === 'today') {
-            const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-            dateFilter = { gte: startOfDay };
+
+        // ── Resolve date window ──────────────────────────────
+        let fromDate = null;
+        let toDate = null;
+
+        if (range === 'custom' && from && to) {
+            fromDate = new Date(`${String(from).split('T')[0]}T00:00:00.000Z`);
+            toDate = new Date(`${String(to).split('T')[0]}T23:59:59.999Z`);
+        } else if (range === 'today') {
+            const start = new Date(now);
+            start.setHours(0, 0, 0, 0);
+            fromDate = start;
+            toDate = new Date(now);
+            toDate.setHours(23, 59, 59, 999);
         } else if (range === 'week') {
-            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-            startOfWeek.setHours(0, 0, 0, 0);
-            dateFilter = { gte: startOfWeek };
+            const start = new Date(now);
+            const day = start.getDay();
+            start.setDate(start.getDate() - day);
+            start.setHours(0, 0, 0, 0);
+            fromDate = start;
+            toDate = new Date();
         } else if (range === 'month') {
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            dateFilter = { gte: startOfMonth };
+            fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            toDate = new Date();
+        } else {
+            // 'all' — no lower bound
+            toDate = new Date();
         }
 
-        const campaignWhere = {
-            companyId,
-            name: { contains: 'عيد ميلاد', mode: 'insensitive' }
-        };
+        const dateFilter = {};
+        if (fromDate) dateFilter.gte = fromDate;
+        if (toDate) dateFilter.lte = toDate;
 
-        if (Object.keys(dateFilter).length > 0) {
-            campaignWhere.createdAt = dateFilter;
-        }
-
-        const campaigns = await safeQuery(() =>
-            prisma.broadcastCampaign.findMany({
-                where: campaignWhere,
-                select: {
-                    id: true,
-                    sentCount: true,
-                    recipientCount: true,
-                    createdAt: true
+        // ── 1) Targeted customers (prospective) ───────────────
+        // Count customers whose birthday falls inside the window.
+        let prospectiveCustomers = 0;
+        try {
+            if (range === 'today' || range === 'custom') {
+                // iterate day-by-day across the window
+                const start = fromDate || new Date(now.getFullYear(), now.getMonth(), 1);
+                const end = toDate || now;
+                const cursor = new Date(start);
+                while (cursor <= end) {
+                    const iso = cursor.toISOString().split('T')[0];
+                    const { customers } = await getBirthdayAudienceCustomers(companyId, iso);
+                    prospectiveCustomers += customers.length;
+                    cursor.setDate(cursor.getDate() + 1);
+                    if (prospectiveCustomers > 5_000_000) break; // safety
                 }
-            })
-        );
+            } else {
+                // for week/month/all we approximate prospective via campaign recipient totals
+                const campaigns = await safeQuery(() =>
+                    prisma.broadcastCampaign.findMany({
+                        where: {
+                            companyId,
+                            targetAudience: 'birthday',
+                            ...(Object.keys(dateFilter).length ? { createdAt: dateFilter } : {})
+                        },
+                        select: { recipientCount: true }
+                    })
+                );
+                prospectiveCustomers = (campaigns || []).reduce((acc, c) => acc + (c.recipientCount || 0), 0);
+            }
+        } catch (e) {
+            console.log('[CWA] Analytics prospective fetch error:', e.message);
+        }
 
-        const totalMessagesSent = campaigns.reduce((acc, curr) => acc + (curr.sentCount || 0), 0);
-        const prospectiveCustomers = campaigns.reduce((acc, curr) => acc + (curr.recipientCount || 0), 0);
+        // ── 2) Sent / failed messages (real campaigns) ────────
+        let totalMessagesSent = 0;
+        let failedMessages = 0;
+        try {
+            const campaigns = await safeQuery(() =>
+                prisma.broadcastCampaign.findMany({
+                    where: {
+                        companyId,
+                        targetAudience: 'birthday',
+                        ...(Object.keys(dateFilter).length ? { createdAt: dateFilter } : {})
+                    },
+                    select: { sentCount: true, failedCount: true, recipientCount: true }
+                })
+            );
+            if (campaigns && Array.isArray(campaigns)) {
+                totalMessagesSent = campaigns.reduce((acc, c) => acc + (c.sentCount || 0), 0);
+                failedMessages = campaigns.reduce((acc, c) => acc + (c.failedCount || 0), 0);
+            }
+        } catch (e) {
+            console.log('[CWA] Analytics campaigns fetch error:', e.message);
+        }
+
+        // ── 3) Coupon usage (option A: couponCode from settings) ─
+        let couponCode = null;
+        try {
+            const storeSetting = await prisma.storeSetting.findFirst({
+                where: { companyId, key: 'whatsapp_birthday_automation' }
+            });
+            if (storeSetting && storeSetting.value) {
+                const s = typeof storeSetting.value === 'string'
+                    ? JSON.parse(storeSetting.value)
+                    : storeSetting.value;
+                couponCode = (s.couponCode || '').trim();
+            }
+        } catch (e) {
+            console.log('[CWA] Analytics settings fetch error:', e.message);
+        }
 
         let usedCoupons = 0;
         let totalSales = 0;
-        
-        try {
-             const birthdayOrders = await safeQuery(() => 
-                 prisma.order.findMany({
-                     where: {
-                         companyId,
-                         ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {})
-                     },
-                     select: {
-                         id: true,
-                         totalAmount: true,
-                         totalPrice: true,
-                         total: true,
-                         discountCode: true,
-                         couponCode: true,
-                         coupon: true
-                     }
-                 })
-             );
-             
-             if (birthdayOrders && Array.isArray(birthdayOrders)) {
-                 const bdayOrders = birthdayOrders.filter(o => {
-                     const code = String(o.discountCode || o.couponCode || o.coupon || '').toLowerCase();
-                     return code.includes('bday') || code.includes('birth') || code.includes('عيد');
-                 });
-                 
-                 usedCoupons = bdayOrders.length;
-                 totalSales = bdayOrders.reduce((sum, o) => sum + (Number(o.totalAmount || o.totalPrice || o.total) || 0), 0);
-             }
-        } catch(e) {
-            console.log('[CWA] Analytics order fetch error:', e.message);
+        let couponUsages = [];
+        if (couponCode) {
+            let coupon = null;
+            try {
+                coupon = await safeQuery(() =>
+                    prisma.coupon.findFirst({
+                        where: { companyId, code: { equals: couponCode, mode: 'insensitive' } },
+                        select: { id: true }
+                    })
+                );
+            } catch (e) {
+                console.log('[CWA] Analytics coupon lookup error:', e.message);
+            }
+
+            if (coupon && coupon.id) {
+                try {
+                    couponUsages = await safeQuery(() =>
+                        prisma.couponUsage.findMany({
+                            where: {
+                                companyId,
+                                couponId: coupon.id,
+                                ...(Object.keys(dateFilter).length ? { usedAt: dateFilter } : {})
+                            },
+                            select: {
+                                id: true,
+                                customerId: true,
+                                orderId: true,
+                                discountAmount: true,
+                                orderAmount: true,
+                                usedAt: true
+                            },
+                            orderBy: { usedAt: 'desc' },
+                            take: 50
+                        })
+                    );
+                    if (couponUsages && Array.isArray(couponUsages)) {
+                        usedCoupons = couponUsages.length;
+                        totalSales = couponUsages.reduce(
+                            (sum, u) => sum + (Number(u.orderAmount) || 0), 0
+                        );
+                    }
+                } catch (e) {
+                    console.log('[CWA] Analytics coupon usage fetch error:', e.message);
+                }
+            }
         }
 
-        const conversionRate = prospectiveCustomers > 0 
-            ? ((usedCoupons / prospectiveCustomers) * 100).toFixed(2) 
+        const conversionRate = prospectiveCustomers > 0
+            ? ((usedCoupons / prospectiveCustomers) * 100).toFixed(2)
             : 0;
 
         return res.json({
             success: true,
             data: {
                 timeRange: range,
-                totalMessagesSent,
+                from: fromDate ? fromDate.toISOString() : null,
+                to: toDate ? toDate.toISOString() : null,
+                couponCode,
                 prospectiveCustomers,
+                totalMessagesSent,
+                failedMessages,
                 usedCoupons,
                 conversionRate: parseFloat(conversionRate),
-                totalSales
+                totalSales: Number(totalSales.toFixed(2)),
+                couponUsages: (couponUsages || []).map(u => ({
+                    id: u.id,
+                    customerId: u.customerId,
+                    orderId: u.orderId,
+                    discountAmount: Number(u.discountAmount) || 0,
+                    orderAmount: Number(u.orderAmount) || 0,
+                    usedAt: u.usedAt
+                }))
             }
         });
 
