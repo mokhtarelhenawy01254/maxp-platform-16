@@ -1,4 +1,17 @@
-import { isChunkLoadError } from "../chunkLoadRecovery";
+import {
+  isChunkLoadError,
+  recoverFromChunkLoadError,
+  resetChunkLoadRecovery,
+} from "../chunkLoadRecovery";
+import { clearAllSWCaches } from "../swCacheFlush";
+
+jest.mock("../swCacheFlush", () => ({
+  clearAllSWCaches: jest.fn().mockResolvedValue(true),
+}));
+
+const flushKeys = () => {
+  window.sessionStorage.clear();
+};
 
 describe("chunkLoadRecovery", () => {
   it("detects Vite dynamic import fetch failures", () => {
@@ -31,5 +44,58 @@ describe("chunkLoadRecovery", () => {
     expect(isChunkLoadError(new Error("Cannot read properties of undefined"))).toBe(
       false,
     );
+  });
+
+  describe("auto-reload budget", () => {
+    const chunkError = new TypeError(
+      "Failed to fetch dynamically imported module: https://maxp.online/assets/route-auth-DELETED.js",
+    );
+
+    const originalLocation = window.location;
+
+    beforeEach(() => {
+      resetChunkLoadRecovery();
+      flushKeys();
+      (clearAllSWCaches as jest.Mock).mockClear();
+    });
+
+    afterEach(() => {
+      window.location = originalLocation;
+    });
+
+    it("allows exactly one automatic recovery reload per failure episode", () => {
+      const reloadMock = jest.fn();
+      Object.defineProperty(window, "location", {
+        value: { ...originalLocation, reload: reloadMock },
+        writable: true,
+        configurable: true,
+      });
+
+      expect(recoverFromChunkLoadError(chunkError, "bootstrap")).toBe(true);
+
+      // Simulate the 15s guard window having passed: only the attempt
+      // timestamp is stale, the reload budget must still hold.
+      window.sessionStorage.removeItem("maxp:chunk-load-recovery:last-attempt");
+
+      expect(recoverFromChunkLoadError(chunkError, "bootstrap")).toBe(false);
+      expect(clearAllSWCaches).toHaveBeenCalledTimes(1);
+    });
+
+    it("re-arms the budget after resetChunkLoadRecovery (healthy boot)", () => {
+      const reloadMock = jest.fn();
+      Object.defineProperty(window, "location", {
+        value: { ...originalLocation, reload: reloadMock },
+        writable: true,
+        configurable: true,
+      });
+
+      expect(recoverFromChunkLoadError(chunkError, "vite-preload")).toBe(true);
+      window.sessionStorage.removeItem("maxp:chunk-load-recovery:last-attempt");
+      expect(recoverFromChunkLoadError(chunkError, "vite-preload")).toBe(false);
+
+      resetChunkLoadRecovery();
+
+      expect(recoverFromChunkLoadError(chunkError, "vite-preload")).toBe(true);
+    });
   });
 });

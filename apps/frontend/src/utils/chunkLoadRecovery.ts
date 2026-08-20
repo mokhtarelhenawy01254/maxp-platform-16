@@ -2,7 +2,13 @@ import { clearAllSWCaches } from "./swCacheFlush";
 
 const RECOVERY_ATTEMPT_KEY = "maxp:chunk-load-recovery:last-attempt";
 const RECOVERY_SOURCE_KEY = "maxp:chunk-load-recovery:last-source";
+const RECOVERY_COUNT_KEY = "maxp:chunk-load-recovery:count";
 const RECOVERY_GUARD_WINDOW_MS = 15_000;
+// One automatic reload per failure episode. If the page fails again after a
+// recovery reload (e.g. assets are mid-deploy), stop auto-reloading and let
+// the error surface instead of looping forever. resetChunkLoadRecovery()
+// re-arms the budget after every healthy boot.
+const RECOVERY_MAX_AUTO_RELOADS = 1;
 
 const CHUNK_LOAD_ERROR_PATTERNS = [
   "failed to fetch dynamically imported module",
@@ -86,6 +92,41 @@ const markRecoveryAttempt = (source: RecoverSource, now: number): void => {
   }
 };
 
+// In-page mirror so storage-disabled browsers still cap repeated storms
+// within a single page lifetime.
+let inMemoryRecoveryCount = 0;
+
+const readRecoveryCount = (): number => {
+  try {
+    const count = window.sessionStorage.getItem(RECOVERY_COUNT_KEY);
+    const parsed = count ? Number(count) : 0;
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.max(parsed, inMemoryRecoveryCount);
+    }
+  } catch {
+    // Session storage can be unavailable in private or locked-down browsers.
+  }
+  return inMemoryRecoveryCount;
+};
+
+const incrementRecoveryCount = (): void => {
+  inMemoryRecoveryCount += 1;
+  try {
+    window.sessionStorage.setItem(RECOVERY_COUNT_KEY, String(inMemoryRecoveryCount));
+  } catch {
+    // Session storage can be unavailable in private or locked-down browsers.
+  }
+};
+
+export const resetChunkLoadRecovery = (): void => {
+  inMemoryRecoveryCount = 0;
+  try {
+    window.sessionStorage.removeItem(RECOVERY_COUNT_KEY);
+  } catch {
+    // Ignore storage failures; the count simply stays stale.
+  }
+};
+
 export const recoverFromChunkLoadError = (
   error: unknown,
   source: RecoverSource,
@@ -100,7 +141,12 @@ export const recoverFromChunkLoadError = (
     return false;
   }
 
+  if (readRecoveryCount() >= RECOVERY_MAX_AUTO_RELOADS) {
+    return false;
+  }
+
   markRecoveryAttempt(source, now);
+  incrementRecoveryCount();
 
   // Purge SW caches to prevent reloading stale or corrupt SW entries
   void clearAllSWCaches();

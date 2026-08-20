@@ -1,7 +1,11 @@
 (function () {
   var RECOVERY_ATTEMPT_KEY = "maxp:chunk-load-recovery:last-attempt";
   var RECOVERY_SOURCE_KEY = "maxp:chunk-load-recovery:last-source";
+  var RECOVERY_COUNT_KEY = "maxp:chunk-load-recovery:count";
   var RECOVERY_GUARD_WINDOW_MS = 15000;
+  // Shared with the TS chunkLoadRecovery module: one automatic reload per
+  // failure episode. The app clears this key after every healthy boot.
+  var RECOVERY_MAX_AUTO_RELOADS = 1;
   var RECOVERY_QUERY_KEY = "__maxp_cache_recovery";
   var CHUNK_LOAD_ERROR_PATTERNS = [
     "failed to fetch dynamically imported module",
@@ -108,6 +112,26 @@
     window.location.replace(url.toString());
   };
 
+  var readRecoveryCount = function () {
+    try {
+      var count = window.sessionStorage.getItem(RECOVERY_COUNT_KEY);
+      var parsed = count ? Number(count) : 0;
+      return Number.isFinite(parsed) ? parsed : 0;
+    } catch (_error) {
+      return 0;
+    }
+  };
+
+  var incrementRecoveryCount = function () {
+    try {
+      window.sessionStorage.setItem(
+        RECOVERY_COUNT_KEY,
+        String(readRecoveryCount() + 1)
+      );
+    } catch (_error) {
+    }
+  };
+
   var recoverFromChunkLoadError = function (source, error, event) {
     var failedResourceUrl = resolveFailedResourceUrl(event, error);
     var recoverySignal = [stringifyError(error), failedResourceUrl].join(" ");
@@ -122,7 +146,12 @@
       return false;
     }
 
+    if (readRecoveryCount() >= RECOVERY_MAX_AUTO_RELOADS) {
+      return false;
+    }
+
     markRecoveryAttempt("early-" + source, now);
+    incrementRecoveryCount();
     refreshFailedResource(failedResourceUrl).finally(function () {
       window.setTimeout(reloadWithCacheBust, 0);
     });

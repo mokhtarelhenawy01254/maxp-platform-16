@@ -4,6 +4,7 @@ import { shouldBootstrapStorefront } from "./bootstrap/requestTarget";
 import {
   installChunkLoadRecovery,
   recoverFromChunkLoadError,
+  resetChunkLoadRecovery,
 } from "./utils/chunkLoadRecovery";
 import { clearAllSWCaches } from "./utils/swCacheFlush";
 
@@ -25,13 +26,10 @@ if (typeof window !== "undefined") {
   }
 }
 
-// Listen for new service worker and auto-refresh when detected
-if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    window.location.reload();
-  });
-}
-
+// No controllerchange auto-reload: an unconditional reload here turned SW
+// updates/migrations into an infinite refresh loop (reload races the
+// "maxp:sw_migrated" flag, so every boot re-triggers SKIP_WAITING -> claim).
+// New service workers now activate silently; the next navigation picks them up.
 const OPTIONAL_GOOGLE_FONTS_ID = "optional-google-fonts";
 const OPTIONAL_GOOGLE_FONTS_HREF =
   "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Montserrat:wght@300;400;500;600&family=Cinzel:wght@400;700&display=swap";
@@ -176,6 +174,13 @@ const renderBootstrapError = (error: unknown): void => {
           حدث خطأ أثناء تحميل الواجهة. راجع Console وملفات البناء قبل إعادة
           النشر.
         </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          إعادة المحاولة
+        </button>
         {import.meta.env.DEV && (
           <pre className="mt-4 overflow-auto rounded-xl bg-red-50 p-3 text-xs text-red-700">
             {details}
@@ -221,6 +226,8 @@ const bootstrapApp = async (): Promise<void> => {
 
 void bootstrapApp()
   .then(() => {
+    // Healthy boot: re-arm one-shot chunk recovery for future deploy cycles.
+    resetChunkLoadRecovery();
     // Remove loading screen after a tiny delay to let the initial React render paint
     setTimeout(removeLoadingScreen, 50);
   })
@@ -262,15 +269,6 @@ if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MOD
         }
       });
     });
-  });
-
-  // Auto-reload when new controller takes over
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
   });
 }
 
