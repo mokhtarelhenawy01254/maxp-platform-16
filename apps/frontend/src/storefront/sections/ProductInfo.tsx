@@ -9229,15 +9229,14 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                 {inlinePdpQuickOrderBeforeDescription}
               </div>
             ) : null}
-            {/* Accordions */}
-            {!shouldHideDuplicateDescriptionSection || inlinePdpQuickOrderAfterDescription || showGuarantees ? (
+            {/* Accordions - always render to preserve hooks order */}
               <div className={accordionWrapperClassName}>
-                {!shouldHideDuplicateDescriptionSection ? (
-                  <Accordion
-                    title={descriptionTitle}
-                    tone={isCutlineClub ? 'cutline' : 'default'}
-                    defaultOpen={!shouldCollapseDescriptionByDefault}
-                  >
+                <Accordion
+                  title={descriptionTitle}
+                  tone={isCutlineClub ? 'cutline' : 'default'}
+                  defaultOpen={!shouldCollapseDescriptionByDefault}
+                >
+                  {shouldHideDuplicateDescriptionSection ? null : (
                     <ProductDescription
                       safeDescription={safeDescription}
                       emptyText={
@@ -9246,8 +9245,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                           : 'No description is available for this product yet.'
                       }
                     />
-                  </Accordion>
-                ) : null}
+                  )}
+                </Accordion>
                 {isWomenUtilityRail ? (
                   <div className="py-4">
                     {womenUtilityRail}
@@ -9302,18 +9301,17 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                     ) : null}
                   </Accordion>
                 ) : null}
-                {showGuarantees ? (
-                  <Accordion title={guaranteesTitle} tone={isCutlineClub ? 'cutline' : 'default'}>
-                     <ConfigurableTrustBadges
-                        title=""
-                        subtitle={guaranteesSubtitle}
-                        items={guaranteeItems.length ? guaranteeItems : undefined}
-                        variant={guaranteeStyle}
-                     />
-                  </Accordion>
-                ) : null}
+                <Accordion title={guaranteesTitle} tone={isCutlineClub ? 'cutline' : 'default'}>
+                  {showGuarantees ? (
+                    <ConfigurableTrustBadges
+                       title=""
+                       subtitle={guaranteesSubtitle}
+                       items={guaranteeItems.length ? guaranteeItems : undefined}
+                       variant={guaranteeStyle}
+                    />
+                  ) : null}
+                </Accordion>
               </div>
-            ) : null}
           </>
         ) : (
           <>
