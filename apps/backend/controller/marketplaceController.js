@@ -210,13 +210,6 @@ function normalizeMarketplaceAppForApi(app) {
   };
 }
 
-function createRequiredAppsError(requiredApps) {
-  const error = new Error('هذه الأداة تتطلب تفعيل أدوات أخرى أولاً');
-  error.code = 'REQUIRED_APPS_MISSING';
-  error.requiredApps = requiredApps;
-  return error;
-}
-
 function createAlreadyInstalledError(existing) {
   const error = new Error('الأداة مفعلة بالفعل بنفس نظام الدفع');
   error.code = 'APP_ALREADY_INSTALLED';
@@ -250,13 +243,18 @@ async function ensureCompanyAppInstalled(tx, {
       onlyPublic: true
     });
 
+    // Tolerate stale required-app references. Deprecated/removed slugs
+    // (e.g. store-basic/store-pro/ecommerce-basic merged into `store`) can
+    // linger in the DB even though the app row no longer resolves as an
+    // active, public app. Blocking the install over a stale prerequisite
+    // bricks every dependent app, so log it and continue — the feature-level
+    // gate (checkAppAccess) still enforces access independently.
     if (requiredResolution.missingSlugs.length > 0) {
-      throw createRequiredAppsError(
-        requiredResolution.missingSlugs.map((requiredSlug) => ({
-          slug: requiredSlug,
-          name: requiredSlug
-        }))
-      );
+      for (const missingSlug of requiredResolution.missingSlugs) {
+        console.warn(
+          `[marketplace] Required app '${missingSlug}' for '${normalizedSlug}' is not an active/public app — skipping stale requirement.`
+        );
+      }
     }
 
     for (const requiredApp of requiredResolution.apps) {

@@ -575,7 +575,11 @@ describe("Marketplace Controller Hybrid", () => {
         update: jest.fn().mockResolvedValue({})
       },
       companyWallet: {
-        upsert: jest.fn().mockResolvedValue({})
+        findUnique: jest.fn().mockResolvedValue({ id: "wallet-1", balance: 5000, currency: "EGP" }),
+        update: jest.fn().mockResolvedValue({})
+      },
+      transaction: {
+        create: jest.fn().mockResolvedValue({})
       }
     };
 
@@ -714,7 +718,11 @@ describe("Marketplace Controller Hybrid", () => {
         update: jest.fn().mockResolvedValue({})
       },
       companyWallet: {
-        upsert: jest.fn().mockResolvedValue({})
+        findUnique: jest.fn().mockResolvedValue({ id: "wallet-1", balance: 5000, currency: "EGP" }),
+        update: jest.fn().mockResolvedValue({})
+      },
+      transaction: {
+        create: jest.fn().mockResolvedValue({})
       }
     };
 
@@ -744,6 +752,76 @@ describe("Marketplace Controller Hybrid", () => {
     expect(res.payload.data.autoInstalledRequiredApps).toEqual([
       { slug: "store-basic", name: "Store Basic" }
     ]);
+  });
+
+  test("installApp skips stale/unresolvable required apps instead of failing", async () => {
+    const dbApp = {
+      id: "db-app-manual-orders-pro",
+      slug: "manual-orders-pro",
+      name: "Manual Orders Pro",
+      description: "Manual orders app",
+      category: "ECOMMERCE",
+      pricingModel: "SUBSCRIPTION",
+      monthlyPrice: 99,
+      yearlyPrice: 999,
+      trialDays: 14,
+      icon: null,
+      requiredApps: ["store-basic"],
+      isActive: true,
+      isPublic: true
+    };
+
+    const tx = {
+      companyApp: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        update: jest.fn(),
+        create: jest.fn().mockResolvedValue({
+          id: "inst-manual",
+          companyId: "company-1",
+          appId: "db-app-manual-orders-pro",
+          activePricingModel: "SUBSCRIPTION",
+          status: "ACTIVE"
+        })
+      },
+      marketplaceApp: {
+        update: jest.fn().mockResolvedValue({})
+      },
+      companyWallet: {
+        findUnique: jest.fn().mockResolvedValue({ id: "wallet-1", balance: 1000, currency: "EGP" }),
+        update: jest.fn().mockResolvedValue({})
+      },
+      transaction: {
+        create: jest.fn().mockResolvedValue({})
+      }
+    };
+
+    mockPrisma.marketplaceApp.findUnique
+      .mockResolvedValueOnce(dbApp)
+      .mockResolvedValueOnce(null);
+    mockPrisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    mockCatalogService.getAppBySlug.mockResolvedValue(null);
+
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+    const req = {
+      params: { slug: "manual-orders-pro" },
+      body: { pricingModel: "SUBSCRIPTION" },
+      user: { companyId: "company-1" }
+    };
+    const res = createResponseMock();
+
+    await marketplaceController.installApp(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(res.payload.data.app.slug).toBe("manual-orders-pro");
+    expect(res.payload.data.autoInstalledRequiredApps).toEqual([]);
+    expect(tx.companyApp.create).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("store-basic")
+    );
+
+    warnSpy.mockRestore();
   });
 
   test("subscribeToBundle resolves file bundle and syncs apps before transaction", async () => {

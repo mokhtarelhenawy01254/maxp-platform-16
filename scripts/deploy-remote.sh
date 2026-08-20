@@ -454,6 +454,11 @@ NODE_ENV=production npm run catalog:sync-target -- --only-missing --fail-on-miss
     exit 1
 }
 
+echo "🧹 Repairing stale required-app references in marketplace apps..."
+NODE_ENV=production node scripts/repair_stale_marketplace_required_apps.js || {
+    echo "⚠️ Required-app reference repair had issues, continuing..."
+}
+
 echo "🧹 Deactivating deprecated marketplace apps..."
 NODE_ENV=production node scripts/deactivate_old_marketplace_apps.js || {
     echo "⚠️ Deprecated app deactivation had issues, continuing..."
