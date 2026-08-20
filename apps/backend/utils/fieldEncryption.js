@@ -1,4 +1,4 @@
-﻿const crypto = require('crypto');
+const crypto = require('crypto');
 
 const PREFIX = 'enc:v1:';
 const IV_LENGTH = 12;
@@ -13,7 +13,7 @@ function getEncryptionKey() {
   const secret = dedicated || process.env.JWT_SECRET;
 
   if (!secret) {
-    const msg = '[FIELD-ENCRYPTION] No DATA_ENCRYPTION_KEY/JWT_SECRET configured ΓÇö cannot encrypt WhatsApp authState/Meta tokens. Set DATA_ENCRYPTION_KEY.';
+    const msg = '[FIELD-ENCRYPTION] No DATA_ENCRYPTION_KEY/JWT_SECRET configured — cannot encrypt WhatsApp authState/Meta tokens. Set DATA_ENCRYPTION_KEY.';
     if (isProd) {
       throw new Error(msg);
     }
@@ -26,7 +26,7 @@ function getEncryptionKey() {
 
   if (!dedicated && isProd && !warnedUsingJwtFallback) {
     warnedUsingJwtFallback = true;
-    console.warn('[FIELD-ENCRYPTION] Using JWT_SECRET as encryption key in production ΓÇö set a dedicated DATA_ENCRYPTION_KEY so the signing key is not reused for at-rest encryption.');
+    console.warn('[FIELD-ENCRYPTION] Using JWT_SECRET as encryption key in production — set a dedicated DATA_ENCRYPTION_KEY so the signing key is not reused for at-rest encryption.');
   }
 
   return crypto.createHash('sha256').update('maxp-field-encryption-v1:' + secret).digest();

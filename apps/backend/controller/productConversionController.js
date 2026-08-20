@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { sanitizeImageCollection } = require('../utils/productMediaUtils');
 const {
   buildPresentationResponse,
@@ -12,8 +12,8 @@ const {
 } = require('../utils/merchantAccountScope');
 
 /**
- * ┘è╪¡┘ê┘æ┘ä ┘à┘å╪¬╪¼╪º┘ï ┘ê╪º╪¡╪»╪º┘ï (┘à┘â╪▒╪▒) ╪Ñ┘ä┘ë ╪╣╪▒╪╢ ╪¬┘é╪»┘è┘à┘è ╪¬╪º╪¿╪╣ ┘ä┘à┘å╪¬╪¼ ┘ç╪»┘ü.
- * ╪¿┘è╪»┘æ┘è { success, data } ╪ú┘ê { success: false, error: { status, message } }.
+ * يحوّل منتجاً واحداً (مكرر) إلى عرض تقديمي تابع لمنتج هدف.
+ * بيدّي { success, data } أو { success: false, error: { status, message } }.
  */
 async function performSingleConversion(prisma, companyId, sourceId, targetProductId, user) {
   const source = await prisma.product.findFirst({
@@ -33,7 +33,7 @@ async function performSingleConversion(prisma, companyId, sourceId, targetProduc
     },
   });
   if (!source) {
-    return { success: false, error: { status: 404, message: '╪º┘ä┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' } };
+    return { success: false, error: { status: 404, message: 'المنتج غير موجود' } };
   }
 
   const target = await prisma.product.findFirst({
@@ -45,14 +45,14 @@ async function performSingleConversion(prisma, companyId, sourceId, targetProduc
     },
   });
   if (!target) {
-    return { success: false, error: { status: 404, message: '╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' } };
+    return { success: false, error: { status: 404, message: 'المنتج الهدف غير موجود' } };
   }
 
   if (source.id === target.id) {
-    return { success: false, error: { status: 400, message: '┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼ ╪Ñ┘ä┘ë ┘å┘ü╪│┘ç' } };
+    return { success: false, error: { status: 400, message: 'لا يمكن تحويل المنتج إلى نفسه' } };
   }
 
-  // ╪¼┘à┘è╪╣ ╪º┘ä╪«╪╖┘ê╪º╪¬ ╪»╪º╪«┘ä ┘à╪╣╪º┘à┘ä╪⌐ ┘ê╪º╪¡╪»╪⌐ ╪¡╪¬┘ë ┘ä╪º ╪¬╪¿┘é┘ë ╪¿┘è╪º┘å╪º╪¬ ┘è╪¬┘è┘à╪⌐ ┘ä┘ê ┘ü╪┤┘ä ╪ú┘è ╪«╪╖┘ê╪⌐
+  // جميع الخطوات داخل معاملة واحدة حتى لا تبقى بيانات يتيمة لو فشل أي خطوة
   const result = await prisma.$transaction(async (tx) => {
     const presentationSlug = await findUniquePresentationSlug(
       tx,
@@ -148,12 +148,12 @@ async function performSingleConversion(prisma, companyId, sourceId, targetProduc
           mergedStock = true;
         } else {
           console.warn(
-            `ΓÜá∩╕Å [convertProductToPresentation] No inventory rows to merge for merchant-managed source ${source.id}`,
+            `⚠️ [convertProductToPresentation] No inventory rows to merge for merchant-managed source ${source.id}`,
           );
         }
       }
     } catch (stockError) {
-      console.error('ΓÜá∩╕Å [convertProductToPresentation] Stock merge skipped:', stockError.message);
+      console.error('⚠️ [convertProductToPresentation] Stock merge skipped:', stockError.message);
     }
 
     const movedOrderItems = await tx.orderItem.updateMany({
@@ -194,14 +194,14 @@ const convertProductToPresentation = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ ╪¿╪º┘ä┘ê╪╡┘ê┘ä - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول - معرف الشركة مطلوب' });
     }
 
     const { id } = req.params;
     const { targetProductId } = req.body || {};
 
     if (!targetProductId) {
-      return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, message: 'معرف المنتج الهدف مطلوب' });
     }
 
     const prisma = getSharedPrismaClient();
@@ -216,34 +216,34 @@ const convertProductToPresentation = async (req, res) => {
 
     return res.json({
       success: true,
-      message: '╪¬┘à ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼ ╪Ñ┘ä┘ë ╪╣╪▒╪╢ ╪¬┘é╪»┘è┘à┘è ╪¿┘å╪¼╪º╪¡',
+      message: 'تم تحويل المنتج إلى عرض تقديمي بنجاح',
       data: outcome.data,
     });
   } catch (error) {
-    console.error('Γ¥î [convertProductToPresentation] Error:', error);
-    return res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼' });
+    console.error('❌ [convertProductToPresentation] Error:', error);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحويل المنتج' });
   }
 };
 
 /**
- * ╪¬╪¡┘ê┘è┘ä ╪¼┘à╪º╪╣┘è: ┘â┘ä ┘à┘å╪¬╪¼ ┘à┘å ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘è╪¬╪¡┘ê┘ä ┘ä╪╣╪▒╪╢ ╪¬┘é╪»┘è┘à┘è ╪¬╪º╪¿╪╣ ┘ä┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü.
- * ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪║┘è╪▒ ╪º┘ä╪╡╪º┘ä╪¡╪⌐ ╪¬┘Å╪¬╪«╪╖┘ë ┘ê╪¬┘Å╪│╪¼┘æ┘ä ┘ü┘è ╪º┘ä╪¬┘é╪▒┘è╪▒ (┘ä╪º ╪¬┘ê┘é┘ü ╪º┘ä╪¿╪º┘é┘è).
+ * تحويل جماعي: كل منتج من القائمة يتحول لعرض تقديمي تابع للمنتج الهدف.
+ * المنتجات غير الصالحة تُتخطى وتُسجّل في التقرير (لا توقف الباقي).
  */
 const convertBulkProductsToPresentations = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ ╪¿╪º┘ä┘ê╪╡┘ê┘ä - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول - معرف الشركة مطلوب' });
     }
 
     const { sourceProductIds, targetProductId } = req.body || {};
 
     if (!Array.isArray(sourceProductIds) || sourceProductIds.length === 0) {
-      return res.status(400).json({ success: false, message: '╪º╪«╪¬╪▒ ┘à┘å╪¬╪¼╪º┘ï ┘ê╪º╪¡╪»╪º┘ï ╪╣┘ä┘ë ╪º┘ä╪ú┘é┘ä ┘ä┘ä╪¬╪¡┘ê┘è┘ä' });
+      return res.status(400).json({ success: false, message: 'اختر منتجاً واحداً على الأقل للتحويل' });
     }
 
     if (!targetProductId) {
-      return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, message: 'معرف المنتج الهدف مطلوب' });
     }
 
     const prisma = getSharedPrismaClient();
@@ -252,7 +252,7 @@ const convertBulkProductsToPresentations = async (req, res) => {
       select: { id: true, slug: true },
     });
     if (!target) {
-      return res.status(404).json({ success: false, message: '╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(404).json({ success: false, message: 'المنتج الهدف غير موجود' });
     }
 
     const uniqueIds = Array.from(new Set(sourceProductIds.map(String)));
@@ -261,7 +261,7 @@ const convertBulkProductsToPresentations = async (req, res) => {
 
     for (const sourceId of uniqueIds) {
       if (sourceId === targetProductId) {
-        skipped.push({ productId: sourceId, reason: '┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼ ╪Ñ┘ä┘ë ┘å┘ü╪│┘ç' });
+        skipped.push({ productId: sourceId, reason: 'لا يمكن تحويل المنتج إلى نفسه' });
         continue;
       }
 
@@ -285,14 +285,14 @@ const convertBulkProductsToPresentations = async (req, res) => {
       } catch (err) {
         skipped.push({
           productId: sourceId,
-          reason: err?.message || '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪º┘ä╪¬╪¡┘ê┘è┘ä',
+          reason: err?.message || 'حدث خطأ أثناء التحويل',
         });
       }
     }
 
     return res.json({
       success: true,
-      message: `╪¬┘à ╪¬╪¡┘ê┘è┘ä ${converted.length} ┘à┘å╪¬╪¼ ╪Ñ┘ä┘ë ╪╣╪▒┘ê╪╢ ╪¬┘é╪»┘è┘à┘è╪⌐╪î ┘ê╪¬┘à ╪¬╪«╪╖┘è ${skipped.length}`,
+      message: `تم تحويل ${converted.length} منتج إلى عروض تقديمية، وتم تخطي ${skipped.length}`,
       data: {
         converted,
         skipped,
@@ -302,8 +302,8 @@ const convertBulkProductsToPresentations = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Γ¥î [convertBulkProductsToPresentations] Error:', error);
-    return res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪º┘ä╪¬╪¡┘ê┘è┘ä ╪º┘ä╪¼┘à╪º╪╣┘è' });
+    console.error('❌ [convertBulkProductsToPresentations] Error:', error);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء التحويل الجماعي' });
   }
 };
 

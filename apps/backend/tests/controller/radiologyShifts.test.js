@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -46,7 +46,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -56,7 +56,7 @@ const req = (overrides = {}) => ({
 const makeShift = (overrides = {}) => ({
   id: 'shift-1',
   companyId: 'company-1',
-  cashierName: '╪┤╪▒┘ê┘é',
+  cashierName: 'شروق',
   status: 'OPEN',
   openedAt: new Date('2026-08-12T10:00:00.000Z'),
   ...overrides,
@@ -76,7 +76,7 @@ describe('radiologyShiftsController', () => {
       await controller.listShifts(req({ user: {} }), res);
 
       expect(res.statusCode).toBe(403);
-      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+      expect(res.payload.error).toBe('غير مصرح');
       expect(prisma.radiologyShift.findMany).not.toHaveBeenCalled();
     });
   });
@@ -134,7 +134,7 @@ describe('radiologyShiftsController', () => {
         'PAYMENT',
         300,
         'BANK',
-        '╪¬╪¡╪╡┘è┘ä ┘à┘å ╪º┘ä╪ú┘ç╪▒╪º┘à',
+        'تحصيل من الأهرام',
         'INSURANCE',
         'inv-1'
       );
@@ -154,7 +154,7 @@ describe('radiologyShiftsController', () => {
           type: 'PAYMENT',
           amount: 300,
           method: 'BANK',
-          note: '╪¬╪¡╪╡┘è┘ä ┘à┘å ╪º┘ä╪ú┘ç╪▒╪º┘à',
+          note: 'تحصيل من الأهرام',
         },
       });
       expect(result.id).toBe('sp-1');
@@ -248,7 +248,7 @@ describe('radiologyShiftsController', () => {
       await controller.closeShift(req({ params: { id: 'shift-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘ê╪▒╪»┘è╪⌐ ┘à╪║┘ä┘é╪⌐ ╪¿╪º┘ä┘ü╪╣┘ä');
+      expect(res.payload.error).toBe('الوردية مغلقة بالفعل');
       expect(prisma.radiologyShift.update).not.toHaveBeenCalled();
     });
 
@@ -261,7 +261,7 @@ describe('radiologyShiftsController', () => {
       await controller.closeShift(req({ params: { id: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä┘ê╪▒╪»┘è╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الوردية غير موجودة');
     });
   });
 });

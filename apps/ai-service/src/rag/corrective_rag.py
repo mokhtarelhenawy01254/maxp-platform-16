@@ -13,7 +13,6 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import get_settings
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL
 
 logger = structlog.get_logger(__name__)
@@ -525,8 +524,9 @@ class CorrectiveRAGEngine:
         if len(documents) < 2:
             return documents
         try:
-            settings = get_settings()
-            api_key = settings.google_api_key
+            from src.llm.key_resolver import get_active_key
+
+            api_key = await get_active_key("GOOGLE")
             if not api_key:
                 return documents
 

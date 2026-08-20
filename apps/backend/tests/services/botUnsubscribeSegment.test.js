@@ -1,4 +1,4 @@
-﻿const {
+const {
   isUnsubscribeText,
   isUnsubscribed,
   recordUnsubscribe,
@@ -30,14 +30,14 @@ describe('botUnsubscribeService isUnsubscribeText', () => {
   test('detects English STOP and Arabic variants', () => {
     expect(isUnsubscribeText('STOP')).toBe(true);
     expect(isUnsubscribeText('stop')).toBe(true);
-    expect(isUnsubscribeText('╪Ñ┘è┘é╪º┘ü ╪º┘ä╪▒╪│╪º╪ª┘ä')).toBe(true);
-    expect(isUnsubscribeText('╪º┘ä╪║╪º╪í ╪º┘ä╪º╪┤╪¬╪▒╪º┘â')).toBe(true);
-    expect(isUnsubscribeText('┘à╪┤ ╪╣╪º┘è╪▓ ╪▒╪│╪º┘è┘ä')).toBe(true);
+    expect(isUnsubscribeText('إيقاف الرسائل')).toBe(true);
+    expect(isUnsubscribeText('الغاء الاشتراك')).toBe(true);
+    expect(isUnsubscribeText('مش عايز رسايل')).toBe(true);
   });
 
   test('ignores normal text', () => {
-    expect(isUnsubscribeText('┘â╪º┘à ╪º┘ä╪│╪╣╪▒')).toBe(false);
-    expect(isUnsubscribeText('┘à╪▒╪¡╪¿╪º')).toBe(false);
+    expect(isUnsubscribeText('كام السعر')).toBe(false);
+    expect(isUnsubscribeText('مرحبا')).toBe(false);
     expect(isUnsubscribeText('')).toBe(false);
   });
 });
@@ -63,9 +63,9 @@ describe('botUnsubscribeService record/isUnsubscribed', () => {
 
 describe('botSegmentService compareValue', () => {
   test('eq and contains work', () => {
-    expect(compareValue('╪ú╪¡┘à╪»', '╪ú╪¡┘à╪»', 'eq')).toBe(true);
-    expect(compareValue('┘à╪¡┘à╪» ╪ú╪¡┘à╪»', '╪ú╪¡┘à╪»', 'contains')).toBe(true);
-    expect(compareValue('┘à╪¡┘à╪»', '╪╣┘ä┘è', 'eq')).toBe(false);
+    expect(compareValue('أحمد', 'أحمد', 'eq')).toBe(true);
+    expect(compareValue('محمد أحمد', 'أحمد', 'contains')).toBe(true);
+    expect(compareValue('محمد', 'علي', 'eq')).toBe(false);
   });
 
   test('numeric gte/lte work', () => {
@@ -87,8 +87,8 @@ describe('botSegmentService evaluateSegment', () => {
 
   test('matches customers by rule', async () => {
     prisma.customer.findMany.mockResolvedValue([
-      { id: 'c1', firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '0101', totalOrdersCount: 5, successScore: 0, totalDelivered: 0, status: 'CUSTOMER', createdAt: new Date() },
-      { id: 'c2', firstName: '┘à╪¡┘à╪»', lastName: '╪¡╪│┘å', phone: '0102', totalOrdersCount: 1, successScore: 0, totalDelivered: 0, status: 'CUSTOMER', createdAt: new Date() },
+      { id: 'c1', firstName: 'أحمد', lastName: 'علي', phone: '0101', totalOrdersCount: 5, successScore: 0, totalDelivered: 0, status: 'CUSTOMER', createdAt: new Date() },
+      { id: 'c2', firstName: 'محمد', lastName: 'حسن', phone: '0102', totalOrdersCount: 1, successScore: 0, totalDelivered: 0, status: 'CUSTOMER', createdAt: new Date() },
     ]);
     prisma.botCustomerFieldValue.findMany.mockResolvedValue([]);
 
@@ -99,20 +99,20 @@ describe('botSegmentService evaluateSegment', () => {
 
   test('uses custom field values in matching', async () => {
     prisma.customer.findMany.mockResolvedValue([
-      { id: 'c1', firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '0101', totalOrdersCount: 0, successScore: 0, totalDelivered: 0, status: 'CUSTOMER', createdAt: new Date() },
+      { id: 'c1', firstName: 'أحمد', lastName: 'علي', phone: '0101', totalOrdersCount: 0, successScore: 0, totalDelivered: 0, status: 'CUSTOMER', createdAt: new Date() },
     ]);
     prisma.botCustomerFieldValue.findMany.mockResolvedValue([
-      { customerId: 'c1', fieldKey: 'city', value: '╪º┘ä┘à┘å╪╡┘ê╪▒╪⌐' },
+      { customerId: 'c1', fieldKey: 'city', value: 'المنصورة' },
     ]);
 
-    const segment = { rules: JSON.stringify([{ field: 'city', op: 'contains', value: '┘à┘å╪╡┘ê╪▒╪⌐' }]) };
+    const segment = { rules: JSON.stringify([{ field: 'city', op: 'contains', value: 'منصورة' }]) };
     const result = await evaluateSegment('co-1', segment);
     expect(result).toHaveLength(1);
   });
 
   test('empty rules returns all customers', async () => {
     prisma.customer.findMany.mockResolvedValue([
-      { id: 'c1', firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '0101', createdAt: new Date(), totalOrdersCount: 0 },
+      { id: 'c1', firstName: 'أحمد', lastName: 'علي', phone: '0101', createdAt: new Date(), totalOrdersCount: 0 },
     ]);
     const result = await evaluateSegment('co-1', { rules: null });
     expect(result).toHaveLength(1);

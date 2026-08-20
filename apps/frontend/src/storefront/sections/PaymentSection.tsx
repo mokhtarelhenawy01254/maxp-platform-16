@@ -14,6 +14,7 @@ import { trackConversionSuiteUsage } from '../utils/conversionSuiteTracking';
 import { getOrderAttributionPayload } from '../utils/orderAttribution';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { useCheckoutShippingQuote } from '../hooks/useCheckoutShippingQuote';
+import TierProgressBanner from '../components/TierProgressBanner';
 
 interface PaymentSectionProps {
   section?: {
@@ -200,10 +201,56 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [usePoints, setUsePoints] = useState(false);
+  const [useCashback, setUseCashback] = useState(false);
   const trackedCheckoutFingerprintRef = useRef('');
   const checkoutDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const walletPaymentSettings =
+    (storefrontSettings?.storefront?.settings as any)?.walletPaymentSettings || null;
+  const walletEnabled =
+    Boolean(walletPaymentSettings?.walletNumber?.trim());
+  const walletDiscountEnabled = Boolean(walletPaymentSettings?.discountEnabled);
+  const walletDiscountPercent = Math.max(
+    0,
+    Number(walletPaymentSettings?.discountPercent || 0),
+  );
+  const showWalletDiscountBadge = walletPaymentSettings?.showDiscountBadge !== false;
+  const walletDiscountActive = walletDiscountEnabled && walletDiscountPercent > 0;
+  const [walletProofImageUrl, setWalletProofImageUrl] = useState('');
+  const [walletProofUploading, setWalletProofUploading] = useState(false);
+  const [walletTransferRef, setWalletTransferRef] = useState('');
+  const walletFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleWalletProofFile = async (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setValidationErrors(['صيغة الملف يجب أن تكون صورة (JPG/PNG).']);
+      return;
+    }
+    setWalletProofUploading(true);
+    try {
+      const res = await storefrontApi.uploadWalletProof(file);
+      const url = res?.data?.imageUrl || res?.imageUrl;
+      if (!url) {
+        setValidationErrors(['فشل رفع صورة الإيصال. حاول مرة أخرى.']);
+        return;
+      }
+      setWalletProofImageUrl(String(url));
+      setValidationErrors((prev) => prev.filter((e) => !e.includes('صورة')));
+    } catch (err) {
+      console.error('[WALLET-PROOF] Upload failed:', err);
+      setValidationErrors(['فشل رفع صورة الإيصال. حاول مرة أخرى.']);
+    } finally {
+      setWalletProofUploading(false);
+    }
+  };
+
   const subtotal = getSubtotal();
+  const walletDiscount =
+    walletDiscountActive && (paymentMethod === 'wallet' || paymentMethod === 'card')
+      ? (Number(subtotal) || 0) * (walletDiscountPercent / 100)
+      : 0;
   const activeCoupon =
     appliedCoupon && isSameAmount(Number(appliedCoupon.orderAmount || 0), subtotal)
       ? appliedCoupon
@@ -396,7 +443,45 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       : 'Shipping will be calculated once storefront details finish loading.',
   });
   const shipping = shippingCost;
-  const total = Math.max(0, subtotal + shipping - couponDiscount);
+
+  // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي) — كل نظام مستقل (ممكن يشتغلوا مع بعض)
+  const tierProgress = useCheckoutStore((s) => s.tierProgress);
+  const tiersEnabled = tierProgress?.tiersEnabled === true;
+  const autoDiscountEnabled = tierProgress?.autoDiscountEnabled === true;
+  const loyaltyFreeShipping = tiersEnabled ? Boolean(tierProgress?.rewards?.freeShipping) : false;
+  const loyaltyDiscountPercent = tiersEnabled ? Number(tierProgress?.rewards?.discountPercent || 0) : 0;
+  let loyaltyDiscount =
+    loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
+  let voucherDiscount =
+    autoDiscountEnabled && tierProgress?.activeVoucher
+      ? (Number(subtotal) || 0) * (Number(tierProgress.activeVoucher.percent) / 100)
+      : 0;
+  // مطابقة منطق الباك-إند: دمج الخصم حسب discountCombination + حد أقصى
+  const combination = tierProgress?.discountCombination || 'ADDITIVE';
+  const maxTotalPct = Number(tierProgress?.maxTotalDiscountPercent || 0);
+  const base = Number(subtotal) || 0;
+  let combined = 0;
+  if (combination === 'BEST') {
+    combined = Math.max(loyaltyDiscount, voucherDiscount);
+  } else if (combination === 'COMPOUND') {
+    const lp = base > 0 ? (loyaltyDiscount / base) * 100 : 0;
+    const vp = base > 0 ? (voucherDiscount / base) * 100 : 0;
+    combined = base * (1 - (1 - lp / 100) * (1 - vp / 100));
+  } else {
+    combined = loyaltyDiscount + voucherDiscount;
+  }
+  if (maxTotalPct > 0) {
+    const cap = base * (maxTotalPct / 100);
+    if (combined > cap) combined = cap;
+  }
+  if (combined !== loyaltyDiscount + voucherDiscount) {
+    loyaltyDiscount = combined;
+    voucherDiscount = 0;
+  }
+  const effectiveShipping =
+    loyaltyFreeShipping && Number(shipping) > 0 ? 0 : Number(shipping);
+
+  const total = Math.max(0, subtotal + effectiveShipping - couponDiscount - loyaltyDiscount - voucherDiscount - walletDiscount);
   const summaryShippingValueText = (() => {
     if (isShippingLoading) {
       return calculatingText;
@@ -404,6 +489,10 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
     if (quantityOfferFreeShippingActive) {
       return quantityOfferFreeShippingText.replace(/\.$/, '');
+    }
+
+    if (loyaltyFreeShipping && Number(shipping) > 0) {
+      return 'مجاني (مستوى الولاء)';
     }
 
     if (!trimmedGovernorate) {
@@ -735,6 +824,13 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
   const handlePlaceOrder = async () => {
     const errors = validateForm();
+    if (paymentMethod === 'wallet') {
+      if (walletProofUploading) {
+        errors.push('جارٍ رفع صورة الإيصال، انتظر قليلًا.');
+      } else if (!walletProofImageUrl) {
+        errors.push('يرجى رفع صورة إيصال التحويل لإتمام الدفع بالمحفظة.');
+      }
+    }
     if (errors.length > 0) {
       setValidationErrors(errors);
       return;
@@ -746,10 +842,11 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       metadata: {
         paymentMethod,
         subtotal,
-        shippingCost: shipping,
-        discountAmount: couponDiscount,
+        shippingCost: effectiveShipping,
+        discountAmount: couponDiscount + loyaltyDiscount + walletDiscount,
         total,
         couponApplied: Boolean(activeCoupon?.code),
+        loyaltyTier: tierProgress?.tier?.nameAr || tierProgress?.tier?.name || null,
       },
     });
 
@@ -757,9 +854,21 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       ...formData,
       paymentMethod,
       couponCode: activeCoupon?.code,
-      shippingCost: shipping,
+      shippingCost: effectiveShipping,
       subtotal,
       total,
+      redeemPoints: usePoints,
+      useWallet: useCashback,
+      walletAmount: useCashback ? Math.min(Number(tierProgress?.walletBalance || 0), subtotal + effectiveShipping) : 0,
+      ...(paymentMethod === 'wallet' && walletProofImageUrl
+        ? {
+            walletProof: {
+              imageUrl: walletProofImageUrl,
+              walletNumber: walletPaymentSettings?.walletNumber || undefined,
+              transferRef: walletTransferRef.trim() || undefined,
+            },
+          }
+        : {}),
     });
   };
 
@@ -803,19 +912,17 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
     },
     {
       id: 'wallet',
-      label: (sectionSettings?.walletLabel as string) || 'محفظة إلكترونية',
+      label:
+        (sectionSettings?.walletLabel as string) ||
+        (walletPaymentSettings?.recipientName
+          ? `تحويل على ${walletPaymentSettings.recipientName}`
+          : 'الدفع بالمحفظة (تحويل + رفع إيصال)'),
       icon: '📱',
       desc:
         (sectionSettings?.walletDesc as string) ||
-        (isBiteRush
-          ? 'أسرع تأكيد للطلبات المستعجلة من الموبايل'
-          : isMarketPayment
-            ? 'مرنة وسريعة للطلبات الخفيفة والتأكيد من الهاتف'
-          : hasNaturePaymentTone
-            ? 'خيار بسيط من الموبايل مع متابعة واضحة بعد التأكيد'
-          : isCommandPayment
-            ? 'تحويل سريع من الموبايل مع متابعة واضحة وتأكيد على نفس اليوم'
-          : 'فودافون كاش، إنستاباي، أو أي محفظة إلكترونية'),
+        (walletPaymentSettings?.walletNumber
+          ? `حوّل المبلغ على ${walletPaymentSettings.walletNumber} ثم ارفع صورة الإيصال`
+          : 'حوّل المبلغ على رقم المحفظة ثم ارفع صورة الإيصال لإثبات الدفع'),
     },
   ];
 
@@ -827,7 +934,11 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   const enabledIds: string[] =
     enabledMethods.length > 0 ? enabledMethods : ['cod'];
 
-  const methodOptions = allMethodOptions.filter((method) => enabledIds.includes(method.id));
+  const methodOptions = allMethodOptions.filter((method) =>
+    method.id === 'wallet'
+      ? enabledIds.includes('wallet') && walletEnabled
+      : enabledIds.includes(method.id),
+  );
 
   useEffect(() => {
     const firstMethod = methodOptions[0];
@@ -952,6 +1063,11 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
                     ) : null}
                   </div>
                   <p className="text-xs text-muted-foreground">{method.desc}</p>
+                  {walletDiscountActive && showWalletDiscountBadge && (method.id === 'wallet' || method.id === 'card') ? (
+                    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                      🎁 خصم {walletDiscountPercent}% {method.id === 'wallet' ? 'عند الدفع بالمحفظة' : 'عند الدفع بالبطاقة'}
+                    </p>
+                  ) : null}
                 </div>
                 <div
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
@@ -967,8 +1083,117 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
           ))}
         </div>
 
+        {paymentMethod === 'wallet' && walletEnabled ? (
+          <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-800/60 dark:bg-emerald-950/20">
+            <div className="flex items-start gap-2 text-sm">
+              <span className="text-lg">💳</span>
+              <div className="text-emerald-900 dark:text-emerald-100">
+                <p className="font-bold">حوّل المبلغ على رقم المحفظة ثم ارفع إيصال التحويل</p>
+                <p className="mt-1 text-emerald-800 dark:text-emerald-200">
+                  رقم المحفظة: <span className="font-black" dir="ltr">{walletPaymentSettings.walletNumber}</span>
+                  {walletPaymentSettings.recipientName ? (
+                    <> · المستلم: <span className="font-bold">{walletPaymentSettings.recipientName}</span></>
+                  ) : null}
+                </p>
+                {walletPaymentSettings.instructions ? (
+                  <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">{walletPaymentSettings.instructions}</p>
+                ) : null}
+                {walletDiscountActive && showWalletDiscountBadge ? (
+                  <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                    🎁 هتاخد خصم {walletDiscountPercent}% على طلبك بالدفع بالمحفظة
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-emerald-900 dark:text-emerald-100">
+                صورة إيصال التحويل <span className="text-red-600">*</span>
+              </label>
+              <input
+                ref={walletFileInputRef}
+                type="file"
+                accept="image/*"
+                disabled={walletProofUploading}
+                onChange={(e) => void handleWalletProofFile(e.target.files?.[0])}
+                className="block w-full text-xs text-emerald-900 file:mr-2 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700 disabled:opacity-50 dark:text-emerald-100"
+              />
+              {walletProofUploading ? (
+                <p className="mt-1 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+                  جارٍ رفع الإيصال...
+                </p>
+              ) : walletProofImageUrl ? (
+                <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  تم رفع الإيصال بنجاح
+                  <button type="button" onClick={() => walletFileInputRef.current?.click()} className="text-emerald-800 underline dark:text-emerald-200">
+                    استبدال
+                  </button>
+                </p>
+              ) : null}
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-emerald-900 dark:text-emerald-100">
+                رقم العملية / مرجع التحويل (اختياري)
+              </label>
+              <input
+                type="text"
+                value={walletTransferRef}
+                onChange={(e) => setWalletTransferRef(e.target.value)}
+                placeholder="مثال: 123456789"
+                className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:border-emerald-700 dark:bg-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {tierProgress?.activeVoucher ? (
+          <div className="flex items-start gap-3 rounded-xl border border-emerald-300 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3">
+            <span className="text-xl">🎁</span>
+            <div className="text-sm text-emerald-800 dark:text-emerald-200">
+              <p className="font-bold">عندك خصم {tierProgress.activeVoucher.percent}% جاهز على طلبك</p>
+              <p className="text-emerald-700 dark:text-emerald-300">
+                بيتخصم تلقائياً ✓ · صالح حتى {new Date(tierProgress.activeVoucher.expiresAt).toLocaleDateString('ar-EG')}
+              </p>
+            </div>
+          </div>
+        ) : Number(tierProgress?.walletBalance) > 0 ? (
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-emerald-300 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-sm">
+            <span className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
+              <input
+                type="checkbox"
+                checked={useCashback}
+                onChange={(e) => setUseCashback(e.target.checked)}
+                className="h-4 w-4 accent-emerald-600"
+              />
+              استخدم كاش باكي في الدفع
+            </span>
+            <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatStorefrontCurrency(Number(tierProgress.walletBalance), currency)}</span>
+          </label>
+        ) : null}
+
+        {tierProgress?.method === 'POINTS' && Number(tierProgress.currentMetric) > 0 ? (
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+            <span className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <input
+                type="checkbox"
+                checked={usePoints}
+                onChange={(e) => setUsePoints(e.target.checked)}
+                className="h-4 w-4 accent-amber-500"
+              />
+              استخدم نقاطي في خصم الطلب
+            </span>
+            <span className="font-bold text-amber-700 dark:text-amber-300">{tierProgress.currentMetric} نقطة</span>
+          </label>
+        ) : null}
+
         {showSummaryCard ? (
           <div className={summaryWrapperClassName}>
+            <div className="mb-3">
+              <TierProgressBanner />
+            </div>
             <div className="space-y-1">
               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                 {summaryTitle}
@@ -985,7 +1210,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
               <span className="text-muted-foreground">{shippingLabel}</span>
               <span
                 className={`font-medium ${
-                  checkoutFreeShippingActive && trimmedGovernorate && !isShippingLoading
+                  (checkoutFreeShippingActive || loyaltyFreeShipping) && trimmedGovernorate && !isShippingLoading
                     ? 'text-emerald-600'
                     : 'text-foreground'
                 }`}
@@ -993,6 +1218,26 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
                 {summaryShippingValueText}
               </span>
             </div>
+            {loyaltyDiscount > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {tiersEnabled ? 'خصم مستوى ' : ''}{loyaltyDiscountPercent}%
+                </span>
+                <span className="font-medium text-emerald-600">
+                  -{formatStorefrontCurrency(loyaltyDiscount, currency)}
+                </span>
+              </div>
+            ) : null}
+            {voucherDiscount > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  خصم الكوبون ({tierProgress?.activeVoucher?.percent}%)
+                </span>
+                <span className="font-medium text-emerald-600">
+                  -{formatStorefrontCurrency(voucherDiscount, currency)}
+                </span>
+              </div>
+            ) : null}
             {couponDiscount > 0 ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
@@ -1000,6 +1245,16 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
                 </span>
                 <span className="font-medium text-emerald-600">
                   -{formatStorefrontCurrency(couponDiscount, currency)}
+                </span>
+              </div>
+            ) : null}
+            {walletDiscount > 0 && showWalletDiscountBadge ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  خصم الدفع الإلكتروني ({walletDiscountPercent}%)
+                </span>
+                <span className="font-medium text-emerald-600">
+                  -{formatStorefrontCurrency(walletDiscount, currency)}
                 </span>
               </div>
             ) : null}
@@ -1084,7 +1339,9 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
                 <p className="mt-1 font-bold text-foreground">
                   {couponDiscount > 0
                     ? `-${formatStorefrontCurrency(couponDiscount, currency)}`
-                    : 'لا يوجد'}
+                    : walletDiscount > 0 && showWalletDiscountBadge
+                      ? `-${formatStorefrontCurrency(walletDiscount, currency)}`
+                      : 'لا يوجد'}
                 </p>
               </div>
             </div>

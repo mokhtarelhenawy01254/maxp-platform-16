@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Building, Building2 } from 'lucide-react';
+import { Building2 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import AIChatPage from "../admin/AIChatPage";
 

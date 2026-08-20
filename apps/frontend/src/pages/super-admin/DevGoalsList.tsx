@@ -1,11 +1,28 @@
-import { Plus as PlusIcon, Circle as FlagIcon, Filter as FunnelIcon, Search as MagnifyingGlassIcon, Activity as ChartBarIcon, Circle as CalendarDaysIcon, User as UserIcon, Check as CheckCircleIcon, Clock as ClockIcon, AlertTriangle as ExclamationTriangleIcon, Circle as ArrowTrendingUpIcon, Eye as EyeIcon, Trash2 as TrashIcon, X as XMarkIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Link as LinkIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  PlusIcon,
+  FlagIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  ChartBarIcon,
+  CalendarDaysIcon,
+  UserIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  ArrowTrendingUpIcon,
+  EyeIcon,
+  TrashIcon,
+  XMarkIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  LinkIcon,
+} from "@heroicons/react/24/outline";
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
@@ -153,10 +170,10 @@ const DevGoalsList: React.FC = () => {
         setDeleteConfirm(null);
         fetchData();
       } else {
-        alert(data.error || "فشل حذف الهدف");
+        alert(data.error || i18n.t("DevGoalsList.failed_delete_5bfb"));
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("DevGoalsList.msg_6e3a"));
     }
   };
 

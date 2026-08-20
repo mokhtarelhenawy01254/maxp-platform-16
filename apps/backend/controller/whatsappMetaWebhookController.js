@@ -4,7 +4,7 @@
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { saveIncomingMessage, updateMessageStatus } = require('../services/whatsapp/WhatsAppInboundService');
-const { verifyMetaWebhookSignature } = require('../utils/webhookSignature');
+const { verifyMetaWebhookSignature, shouldStrictlyEnforceMetaWebhookSignature } = require('../utils/webhookSignature');
 const facebookAppConfig = require('../config/facebookAppConfig');
 
 const DELETED_METADATA_FILTERS = [
@@ -32,11 +32,11 @@ function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
   return {
     where: {
       provider: 'META_CLOUD',
+      status: 'CONNECTED',
       OR: identifiers,
       AND: [ACTIVE_METADATA_FILTER]
     },
     orderBy: [
-      { isDefault: 'desc' },
       { updatedAt: 'desc' }
     ]
   };
@@ -122,6 +122,19 @@ function normalizeMetaMessage(msg) {
     } else {
       content = JSON.stringify(interactive);
     }
+  } else if (type === 'button') {
+    // 🚨 PRODUCTION-FIX: أزرار QUICK_REPLY من قوالب الميتا تأتي بـ type="button".
+    // سابقاً كان الـ else يلتقطها ويحفظ JSON خام — وبالتالي لا تصل لمعالج التفاعلات.
+    // الآن نستخرج الـ payload/text + الـ context.id (wamid الرسالة الأصلية) لمعالجة الزر.
+    const btn = msg.button || {};
+    interactiveData = {
+      type: 'button',
+      payload: btn.payload || btn.text || null,
+      text: btn.text || btn.payload || null,
+      contextMessageId: msg.context?.id || null,
+      contextFrom: msg.context?.from || null
+    };
+    content = btn.payload || btn.text || null;
   } else if (type === 'reaction') {
     content = msg.reaction?.emoji || null;
     quotedMessageId = msg.reaction?.message_id || null;
@@ -173,7 +186,7 @@ async function postWebhook(req, res) {
       }
     }
 
-    if (!signatureOk) {
+    if (!signatureOk && globalSecret) {
       // Fallback: try per-session secrets stored in the DB
       const sessionsWithSecret = await getSharedPrismaClient().whatsAppSession.findMany({
         where: {
@@ -196,29 +209,18 @@ async function postWebhook(req, res) {
     }
 
     if (!signatureOk) {
-      // If no secrets are configured anywhere, allow webhook through with a warning
-      // This prevents a chicken-and-egg problem where webhooks can't be verified
-      // because the admin hasn't set the secret yet.
-      const hasAnySecret = globalSecret ||
-        (await getSharedPrismaClient().whatsAppSession.count({
-          where: {
-            provider: 'META_CLOUD',
-            metaWebhookSecret: { not: null },
-            AND: [ACTIVE_METADATA_FILTER]
-          }
-        })) > 0;
-
-      if (hasAnySecret) {
-        // Secrets exist but none matched — reject
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid signature',
-          reason: 'invalid_signature'
-        });
+      if (globalSecret) {
+        console.warn('⚠️ [Meta Webhook] Signature verification failed with all available secrets.');
+      } else {
+        console.warn('⚠️ [Meta Webhook] No webhook secret configured (env or session).');
       }
 
-      // No secrets configured at all — allow with warning
-      console.warn('⚠️ [Meta Webhook] No webhook secret configured (env or session). Processing without signature verification.');
+      if (shouldStrictlyEnforceMetaWebhookSignature()) {
+        console.warn('🚫 [Meta Webhook] Strict signature enforcement enabled. Rejecting unverified webhook.');
+        return res.status(403).json({ success: false, error: 'Invalid signature' });
+      }
+
+      console.warn('⚠️ [Meta Webhook] Signature enforcement disabled. Processing without verification.');
     }
 
     const body = req.body;
@@ -230,6 +232,37 @@ async function postWebhook(req, res) {
     for (const entry of entries) {
       const changes = entry.changes || [];
       for (const change of changes) {
+        // ── Handle template status updates from Meta ────────────────
+        if (change.field === 'message_template_status_update') {
+          const value = change.value || {};
+          const templateName = value.message_template_name;
+          const event = value.event; // APPROVED, PENDING, REJECTED, FLAGGED
+          const reason = value.reason || '';
+
+          if (templateName && event) {
+            const statusMap = {
+              APPROVED: 'APPROVED',
+              PENDING: 'PENDING',
+              REJECTED: 'REJECTED',
+              FLAGGED: 'FLAGGED'
+            };
+            const mappedStatus = statusMap[event] || event;
+
+            try {
+              const updated = await getSharedPrismaClient().whatsAppNotificationTemplate.updateMany({
+                where: { metaTemplateName: templateName },
+                data: { metaTemplateStatus: mappedStatus, updatedAt: new Date() }
+              });
+              if (updated.count > 0) {
+                console.log(`☁️ [TEMPLATE-STATUS] "${templateName}" → ${mappedStatus}${reason ? ': ' + reason : ''}`);
+              }
+            } catch (statusErr) {
+              console.warn(`⚠️ [TEMPLATE-STATUS] Failed to update "${templateName}": ${statusErr.message}`);
+            }
+          }
+          continue;
+        }
+
         if (change.field !== 'messages') continue;
 
         const value = change.value || {};
@@ -272,6 +305,29 @@ async function postWebhook(req, res) {
             pushName: value.contacts?.[0]?.profile?.name || null
           });
 
+          // 🚨 PRODUCTION-FIX: معالجة أزرار القوالب (QUICK_REPLY) من Meta webhook.
+          // سابقاً كانت الرسالة تُحفظ فقط (BUTTON) بدون أي معالجة للزر —
+          // لذا ضغط "تأكيد الأوردر" لم يكن يحوّل الطلب ولا يبعت تأكيداً.
+          // الآن نوجّهها لـ WhatsAppInteractionService (نفس مسار Baileys).
+          if (normalized.messageType === 'BUTTON' || normalized.messageType === 'INTERACTIVE') {
+            try {
+              const WhatsAppInteractionService = require('../services/whatsapp/WhatsAppInteractionService');
+              const handled = await WhatsAppInteractionService.handleButtonResponse(
+                session.id,
+                companyId,
+                remoteJid,
+                normalized.interactiveData
+              );
+              if (handled) {
+                console.log(`⚡ [META-WEBHOOK] Button interaction handled: ${normalized.content}`);
+              } else {
+                console.log(`ℹ️ [META-WEBHOOK] Button not handled (no matching order): ${normalized.content}`);
+              }
+            } catch (interactionErr) {
+              console.error(`❌ [META-WEBHOOK] Failed to process button interaction: ${interactionErr.message}`);
+            }
+          }
+
           void savedMessage;
         }
 
@@ -283,7 +339,14 @@ async function postWebhook(req, res) {
             failed: 'FAILED'
           };
           const mappedStatus = statusMap[status.status] || 'SENT';
-          await updateMessageStatus(companyId, status.id, mappedStatus);
+          const errors = Array.isArray(status.errors) ? status.errors : [];
+          const recipientId = status.recipient_id || null;
+          const timestamp = status.timestamp ? Number(status.timestamp) * 1000 : Date.now();
+          await updateMessageStatus(companyId, status.id, mappedStatus, {
+            errors,
+            recipientId,
+            timestamp
+          });
         }
       }
     }

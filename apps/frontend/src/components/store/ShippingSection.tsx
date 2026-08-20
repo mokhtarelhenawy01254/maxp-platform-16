@@ -1,6 +1,12 @@
-import { Truck as TruckIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Clock as ClockIcon, DollarSign as CurrencyDollarIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  TruckIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+} from "@heroicons/react/24/outline";
 import { ShippingZone } from "../../services/storeSettingsService";
 
 interface ShippingSectionProps {

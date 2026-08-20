@@ -1,8 +1,8 @@
-import { X as XMarkIcon, Trash2 as TrashIcon } from 'lucide-react';
 import { useState } from "react";
-;
+import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import { BookingBranch, BranchFormData, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, DAYS } from "./shared";
+import { tToast } from "../../../utils/i18n-toast";
+import { BookingBranch, BranchFormData, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, DAYS, DAY_NAMES, FACILITY_TYPES } from "./shared";
 
 const compressImage = (file: File, maxW = 1200, quality = 0.8): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -40,7 +40,12 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
     if (!form.name.trim()) e.name = "الاسم مطلوب";
     if (!form.address.trim()) e.address = "العنوان مطلوب";
     if (!(form.workingDays || "").split(",").filter(Boolean).length) e.workingDays = "اختر يوم عمل على الأقل";
-    
+    for (const day of (form.workingDays || "").split(",").filter(Boolean)) {
+      const h = form.dayHours[day];
+      if (!h || !h.start || !h.end) { e.workingDays = `حدد وقت العمل ليوم ${DAY_NAMES[day] || day}`; break; }
+      if (h.start >= h.end) { e.workingDays = `وقت النهاية يجب أن يكون بعد البداية ليوم ${DAY_NAMES[day] || day}`; break; }
+    }
+
     const validPhones = (form.phones || []).map(p => p.trim()).filter(Boolean);
     const phoneRegex = /^[0-9+\-\s]+$/;
     for (const p of validPhones) {
@@ -49,37 +54,59 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
         break;
       }
     }
-    
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
+  const parseBranchWorkingDays = (): { list: string[]; hours: Record<string, { start: string; end: string }> } => {
+    const wd = branch?.workingDays;
+    if (wd && typeof wd === 'object') {
+      const obj = wd as Record<string, string>;
+      const dayKeys = Object.keys(obj).filter(k => obj[k]);
+      const hours: Record<string, { start: string; end: string }> = {};
+      dayKeys.forEach(k => {
+        const [s, e] = (obj[k] || "").split('-');
+        hours[k] = { start: s || "09:00", end: e || "22:00" };
+      });
+      return { list: dayKeys, hours };
+    }
+    return { list: [], hours: {} };
+  };
   const initForm = () => {
-    const defaults = { name: "", address: "", phones: [] as string[], workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", maleDays: [] as string[], femaleDays: [] as string[], isActive: true, maxBookingsPerSlot: 1 };
+    const { list: savedDays, hours } = parseBranchWorkingDays();
+    const defaults = { name: "", address: "", phones: [] as string[], workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", dayHours: {} as Record<string, { start: string; end: string }>, maleDays: [] as string[], femaleDays: [] as string[], isActive: true, maxBookingsPerSlot: 1, facilityType: "clinic" };
     let initialPhones = (branch?.phones || []).filter(Boolean);
     if (initialPhones.length === 0 && branch?.phone) initialPhones = [branch.phone];
-    if (!branch?.workingDays || typeof branch.workingDays === 'string') {
-      const gd = tryParseGenderDays(branch?.genderDays);
-      return { ...defaults, ...branch, phones: initialPhones, maleDays: gd?.male || [], femaleDays: gd?.female || [] };
-    }
-    const obj = branch.workingDays as Record<string, string>;
-    const dayKeys = Object.keys(obj).filter(k => obj[k]);
-    const times = dayKeys.length > 0 && dayKeys[0] ? (obj[dayKeys[0]] || "").split('-') : [];
-    const gd = tryParseGenderDays(branch.genderDays);
+    const workingDays = savedDays.length > 0 ? savedDays.join(",") : defaults.workingDays;
+    const dayHours: Record<string, { start: string; end: string }> = { ...hours };
+    workingDays.split(",").filter(Boolean).forEach(d => { if (!dayHours[d]) dayHours[d] = { start: "09:00", end: "22:00" }; });
+    const gd = tryParseGenderDays(branch?.genderDays);
     return {
       ...defaults, ...branch,
-      workingDays: dayKeys.join(","),
-      workStart: times[0] || "09:00",
-      workEnd: times[1] || "22:00",
+      workingDays,
+      dayHours,
       phones: initialPhones,
       maleDays: gd?.male || [],
       femaleDays: gd?.female || [],
+      facilityType: branch?.facilityType || defaults.facilityType,
     };
   };
   const [form, setForm] = useState<BranchFormData>(() => initForm() as unknown as BranchFormData);
   const toggleWorkingDay = (d: string) => {
     const current = ((form.workingDays as string) || "").split(",").filter(Boolean);
+    const dayHours = { ...form.dayHours };
     const next = current.includes(d) ? current.filter((x: string) => x !== d) : [...current, d];
-    setForm({ ...form, workingDays: next.join(",") });
+    if (!next.includes(d)) delete dayHours[d];
+    else dayHours[d] = { start: form.workStart, end: form.workEnd };
+    setForm({ ...form, workingDays: next.join(","), dayHours });
+  };
+  const applyToAllDays = () => {
+    const dayHours = { ...form.dayHours };
+    ((form.workingDays as string) || "").split(",").filter(Boolean).forEach(d => { dayHours[d] = { start: form.workStart, end: form.workEnd }; });
+    setForm({ ...form, dayHours });
+  };
+  const setDayHour = (d: string, field: "start" | "end", value: string) => {
+    setForm({ ...form, dayHours: { ...form.dayHours, [d]: { ...(form.dayHours[d] || { start: "09:00", end: "22:00" }), [field]: value } } });
   };
   const toggleGenderDay = (type: "male" | "female", d: string) => {
     const key = type === "male" ? "maleDays" : "femaleDays";
@@ -96,6 +123,12 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
         </div>
         <div className="space-y-4">
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); if (errors.name) setErrors({ ...errors, name: "" }); }} />{errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}</div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع المنشأة</label>
+            <select className={MODAL_INPUT_CLS} value={form.facilityType} onChange={e => setForm({ ...form, facilityType: e.target.value })}>
+              {FACILITY_TYPES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+            </select>
+          </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><textarea className={MODAL_INPUT_CLS} rows={3} placeholder="مثال: ١٢ شارع النيل، الدور الثالث، بجوار الصيدلية" value={form.address || ""} onChange={e => { setForm({ ...form, address: e.target.value }); if (errors.address) setErrors({ ...errors, address: "" }); }} />{errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}</div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الموقع</label><input className={MODAL_INPUT_CLS} placeholder="رابط الخريطة أو عنوان الموقع" value={form.location || ""} onChange={e => setForm({ ...form, location: e.target.value })} /></div>
           <div>
@@ -104,10 +137,10 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
               <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={async e => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                if (file.size > 2 * 1024 * 1024) { toast.error('الصورة كبيرة جدًا. الحد الأقصى 2MB'); return; }
-                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error('يرجى اختيار صورة JPG أو PNG أو WEBP'); return; }
+                if (file.size > 2 * 1024 * 1024) { tToast.error("BranchModal.msg_d137"); return; }
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { tToast.error("BranchModal.msg_b798"); return; }
                 try { setForm({ ...form, landmarkImage: await compressImage(file) }); }
-                catch { toast.error('فشل معالجة الصورة'); }
+                catch { tToast.error("BranchModal.msg_6f5e"); }
               }} />
               <span className="text-gray-400 dark:text-gray-500 text-2xl">📸</span>
               <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">انقر هنا لاختيار صورة</span>
@@ -148,10 +181,30 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">بداية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workStart} onChange={e => setForm({ ...form, workStart: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نهاية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workEnd} onChange={e => setForm({ ...form, workEnd: e.target.value })} /></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوقت الافتراضي</label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">يُطبق على كل الأيام المختارة، ويمكنك ضبط وقت مخصص لكل يوم بعده.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">بداية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workStart} onChange={e => setForm({ ...form, workStart: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نهاية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workEnd} onChange={e => setForm({ ...form, workEnd: e.target.value })} /></div>
+            </div>
+            <button type="button" onClick={applyToAllDays} className="mt-2 text-sm text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700">تطبيق الوقت الافتراضي على كل الأيام</button>
           </div>
+          {(form.workingDays || "").split(",").filter(Boolean).length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">توقيت مخصص لكل يوم</label>
+              <div className="space-y-2">
+                {(form.workingDays || "").split(",").filter(Boolean).map(day => (
+                  <div key={day} className="flex items-center gap-2">
+                    <span className="w-20 text-sm text-gray-700 dark:text-gray-300">{DAY_NAMES[day] || day}</span>
+                    <input type="time" className={`${MODAL_INPUT_CLS} flex-1`} value={form.dayHours[day]?.start || form.workStart} onChange={e => setDayHour(day, "start", e.target.value)} />
+                    <span className="text-gray-400">—</span>
+                    <input type="time" className={`${MODAL_INPUT_CLS} flex-1`} value={form.dayHours[day]?.end || form.workEnd} onChange={e => setDayHour(day, "end", e.target.value)} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="border-t dark:border-gray-700 pt-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">فصل الحجز حسب الجنس (اختياري)</label>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">اتركهم فاضيين لو الفرع بيستقبل الرجال والسيدات في كل الأيام.</p>

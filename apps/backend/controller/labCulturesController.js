@@ -1,16 +1,16 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const normalizePrice = (value) => {
   if (value === undefined || value === null || value === '') return { value: undefined, error: null };
   const n = Number(value);
-  if (!Number.isFinite(n) || n < 0) return { value: null, error: '╪º┘ä╪│╪╣╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' };
+  if (!Number.isFinite(n) || n < 0) return { value: null, error: 'السعر غير صحيح' };
   return { value: n, error: null };
 };
 
 const normalizeSortOrder = (value) => {
   if (value === undefined || value === null || value === '') return { value: undefined, error: null };
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 0) return { value: null, error: '╪¬╪▒╪¬┘è╪¿ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' };
+  if (!Number.isInteger(n) || n < 0) return { value: null, error: 'ترتيب غير صحيح' };
   return { value: n, error: null };
 };
 
@@ -25,12 +25,12 @@ const normalizeText = (value) => {
   return s === '' ? null : s;
 };
 
-const childLabel = (kind) => (kind === 'organism' ? '╪º┘ä┘â╪º╪ª┘å ╪º┘ä╪»┘é┘è┘é' : '╪º┘ä┘à╪╢╪º╪» ╪º┘ä╪¡┘è┘ê┘è');
+const childLabel = (kind) => (kind === 'organism' ? 'الكائن الدقيق' : 'المضاد الحيوي');
 
 const validateChildInput = (raw, { requireName, kind }) => {
   const item = raw || {};
   if (requireName && (item.name === undefined || item.name === null || !String(item.name).trim())) {
-    return { value: null, error: `╪º╪│┘à ${childLabel(kind)} ┘à╪╖┘ä┘ê╪¿` };
+    return { value: null, error: `اسم ${childLabel(kind)} مطلوب` };
   }
   const sortOrder = normalizeSortOrder(item.sortOrder);
   if (sortOrder.error) return { value: null, error: sortOrder.error };
@@ -46,7 +46,7 @@ const validateChildInput = (raw, { requireName, kind }) => {
 
 const collectChildren = (rawChildren, kind, res) => {
   if (rawChildren === undefined || rawChildren === null) return { value: null, error: null };
-  if (!Array.isArray(rawChildren)) return { value: null, error: `${childLabel(kind)} ┘è╪¼╪¿ ╪ú┘å ╪¬┘â┘ê┘å ┘à╪╡┘ü┘ê┘ü╪⌐` };
+  if (!Array.isArray(rawChildren)) return { value: null, error: `${childLabel(kind)} يجب أن تكون مصفوفة` };
   const list = [];
   for (const raw of rawChildren) {
     const check = validateChildInput(raw, { requireName: true, kind });
@@ -77,7 +77,7 @@ const buildDetailInclude = () => ({
 const getAllCultures = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, category, page, limit, includeInactive } = req.query;
     const where = { companyId };
@@ -117,36 +117,36 @@ const getAllCultures = async (req, res) => {
     res.json({ success: true, data, total, page: pageNum, limit: limitNum });
   } catch (error) {
     console.error('Error fetching lab cultures:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à╪▓╪º╪▒╪╣' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب المزارع' });
   }
 };
 
 const getCultureById = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const culture = await getSharedPrismaClient().labCulture.findFirst({
       where: { id, companyId },
       include: buildDetailInclude(),
     });
-    if (!culture) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▓╪▒╪╣╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!culture) return res.status(404).json({ success: false, error: 'المزرعة غير موجودة' });
 
     res.json({ success: true, data: culture });
   } catch (error) {
     console.error('Error fetching lab culture:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à╪▓╪▒╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب المزرعة' });
   }
 };
 
 const createCulture = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { name, category, sampleType, price, organisms, antibiotics } = req.body || {};
-    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘à╪▓╪▒╪╣╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم المزرعة مطلوب' });
 
     const priceCheck = normalizePrice(price);
     if (priceCheck.error) return res.status(400).json({ success: false, error: priceCheck.error });
@@ -176,24 +176,24 @@ const createCulture = async (req, res) => {
     res.json({ success: true, data: culture });
   } catch (error) {
     console.error('Error creating lab culture:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘à╪▓╪▒╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء المزرعة' });
   }
 };
 
 const updateCulture = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.labCulture.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▓╪▒╪╣╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!existing) return res.status(404).json({ success: false, error: 'المزرعة غير موجودة' });
 
     const data = {};
     if (body.name !== undefined) {
-      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘à╪▓╪▒╪╣╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم المزرعة مطلوب' });
       data.name = String(body.name).trim();
     }
     if (body.category !== undefined) data.category = normalizeText(body.category);
@@ -245,37 +245,37 @@ const updateCulture = async (req, res) => {
     res.json({ success: true, data: culture });
   } catch (error) {
     console.error('Error updating lab culture:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪▓╪▒╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث المزرعة' });
   }
 };
 
 const deleteCulture = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.labCulture.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▓╪▒╪╣╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!existing) return res.status(404).json({ success: false, error: 'المزرعة غير موجودة' });
 
     const culture = await prisma.labCulture.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä┘à╪▓╪▒╪╣╪⌐', data: culture });
+    res.json({ success: true, message: 'تم حذف المزرعة', data: culture });
   } catch (error) {
     console.error('Error deleting lab culture:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘à╪▓╪▒╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف المزرعة' });
   }
 };
 
 const addChild = async (req, res, kind) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const culture = await prisma.labCulture.findFirst({ where: { id, companyId } });
-    if (!culture) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▓╪▒╪╣╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!culture) return res.status(404).json({ success: false, error: 'المزرعة غير موجودة' });
 
     const check = validateChildInput(req.body || {}, { requireName: true, kind });
     if (check.error) return res.status(400).json({ success: false, error: check.error });
@@ -298,32 +298,32 @@ const addChild = async (req, res, kind) => {
     res.json({ success: true, data: item });
   } catch (error) {
     console.error(`Error adding lab culture ${kind}:`, error);
-    res.status(500).json({ success: false, error: `╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ╪╢╪º┘ü╪⌐ ${childLabel(kind)}` });
+    res.status(500).json({ success: false, error: `حدث خطأ في إضافة ${childLabel(kind)}` });
   }
 };
 
 const removeChild = async (req, res, kind) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const culture = await prisma.labCulture.findFirst({ where: { id, companyId } });
-    if (!culture) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▓╪▒╪╣╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!culture) return res.status(404).json({ success: false, error: 'المزرعة غير موجودة' });
 
     const childId = kind === 'organism' ? req.params.organismId : req.params.antibioticId;
     const model = kind === 'organism' ? prisma.labCultureOrganism : prisma.labCultureAntibiotic;
     const existing = await model.findFirst({
       where: { id: childId, cultureId: id, companyId },
     });
-    if (!existing) return res.status(404).json({ success: false, error: `${childLabel(kind)} ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»` });
+    if (!existing) return res.status(404).json({ success: false, error: `${childLabel(kind)} غير موجود` });
 
     await model.delete({ where: { id: childId } });
-    res.json({ success: true, message: `╪¬┘à ╪¡╪░┘ü ${childLabel(kind)}`, data: existing });
+    res.json({ success: true, message: `تم حذف ${childLabel(kind)}`, data: existing });
   } catch (error) {
     console.error(`Error removing lab culture ${kind}:`, error);
-    res.status(500).json({ success: false, error: `╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ${childLabel(kind)}` });
+    res.status(500).json({ success: false, error: `حدث خطأ في حذف ${childLabel(kind)}` });
   }
 };
 

@@ -1,7 +1,6 @@
-import { Image as PhotoIcon, Plus as PlusIcon } from 'lucide-react';
 import React from "react";
 import { Link } from "react-router-dom";
-;
+import { PhotoIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 interface ProductsEmptyStateProps {
   isMerchant?: boolean;

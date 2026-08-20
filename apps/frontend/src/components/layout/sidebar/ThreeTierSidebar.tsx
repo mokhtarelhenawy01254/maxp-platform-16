@@ -1,7 +1,12 @@
-import { ChevronRight as ChevronRightIcon, Search as MagnifyingGlassIcon, X as XMarkIcon, ShieldCheck as ShieldCheckIcon, Circle as ArrowRightOnRectangleIcon } from 'lucide-react';
 import React, { useEffect, useId, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-;
+import {
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  ShieldCheckIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 import { SidebarSection } from "../../../types/layout";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { useTheme } from "../../../hooks/useTheme";
@@ -10,6 +15,7 @@ import { buildStoreUrl } from "../../../utils/storeUrl";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { CompanyLogo } from "@/components/ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
+import SidebarOrderSearch from "./SidebarOrderSearch";
 
 interface ThreeTierSidebarProps {
   isCollapsed: boolean;
@@ -299,7 +305,17 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                 title={user?.company?.name || t("sidebar.platformName")}
                 companyName={user?.company?.name}
               >
-                <img src="/logo.png" alt="MAX-P" className="h-10 w-10 object-contain rounded-xl shadow-md" />
+                <div 
+                  className="business-brand-glyph" 
+                  title={user?.company?.name || t("sidebar.platformName")}
+                  data-admin={user?.role === "SUPER_ADMIN" ? "true" : "false"}
+                >
+                  {user?.role === "SUPER_ADMIN" ? (
+                    <ShieldCheckIcon className="h-6 w-6 text-white" />
+                  ) : (
+                    user?.company?.name?.charAt(0) || "M"
+                  )}
+                </div>
               </CompanyLogo>
             </Link>
           </div>
@@ -350,7 +366,9 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                 className="business-sidebar-company-logo"
                 companyName={user?.company?.name}
               >
-                <img src="/logo.png" alt="MAX-P" className="h-9 w-9 object-contain rounded-lg shadow-md" />
+                <div className="business-brand-glyph business-brand-glyph--small">
+                  {user?.company?.name?.charAt(0) || "M"}
+                </div>
               </CompanyLogo>
 
               <div className="business-sidebar-company-copy">
@@ -461,14 +479,21 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                     <div className="business-sidebar-mobile-group-items">
                       {section.visibleItems.map((item) => (
                         <div key={getSidebarItemKey(item)} className="space-y-1">
-                          <NavLink
-                            to={item.to}
-                            icon={item.icon}
-                            external={!!item.external}
-                            badge={item.badge}
-                          >
-                            {item.label}
-                          </NavLink>
+                          {item.kind === "order-search" ? (
+                            <SidebarOrderSearch
+                              mobileMode={mobileMode}
+                              onNavigate={toggleSidebar}
+                            />
+                          ) : (
+                            <NavLink
+                              to={item.to}
+                              icon={item.icon}
+                              external={!!item.external}
+                              badge={item.badge}
+                            >
+                              {item.label}
+                            </NavLink>
+                          )}
 
                           {item.children ? (
                             <div className="business-sidebar-children">
@@ -551,14 +576,21 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
           <div className="business-sidebar-links">
             {(activeSection?.visibleItems ?? []).map((item) => (
               <div key={getSidebarItemKey(item)} className="space-y-1">
-                <NavLink
-                  to={item.to}
-                  icon={item.icon}
-                  external={!!item.external}
-                  badge={item.badge}
-                >
-                  {item.label}
-                </NavLink>
+                {item.kind === "order-search" ? (
+                  <SidebarOrderSearch
+                    mobileMode={mobileMode}
+                    onNavigate={toggleSidebar}
+                  />
+                ) : (
+                  <NavLink
+                    to={item.to}
+                    icon={item.icon}
+                    external={!!item.external}
+                    badge={item.badge}
+                  >
+                    {item.label}
+                  </NavLink>
+                )}
 
                 {item.children ? (
                   <div className="business-sidebar-children">

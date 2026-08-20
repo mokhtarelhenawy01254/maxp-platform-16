@@ -24,6 +24,14 @@ interface Customer {
   };
   successScore?: number;
   customerRating?: string;
+  autoDiscountStatus?: string | null;
+  loyaltyTier?: {
+    id: string;
+    name: string;
+    nameAr?: string;
+    color?: string;
+    icon?: string;
+  } | null;
 }
 
 interface CustomerNote {

@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/orderMovementCore', () => ({
+jest.mock('../../../services/orderMovementCore', () => ({
   normalizeDateRange: jest.fn(({ startDate, endDate } = {}) => ({
     start: startDate ? new Date(startDate) : null,
     end: endDate ? new Date(endDate) : null
@@ -139,7 +139,7 @@ describe('statusMatrixController', () => {
     await invoke({ user: { id: 'u1' }, query: baseQuery }, res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
     expect(sql.fetchTransitionAggregates).not.toHaveBeenCalled();
   });
 

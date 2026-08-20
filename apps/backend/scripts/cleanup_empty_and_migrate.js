@@ -1,4 +1,4 @@
-﻿const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const p = new PrismaClient();
 async function main() {
     const c = await p.company.findUnique({ where: { slug: 'flora' } });
@@ -24,7 +24,7 @@ async function main() {
                 select: { content: true, messageType: true }
             });
             if (lastMsg) {
-                const preview = lastMsg.content || (lastMsg.messageType === 'AUDIO' ? '╪▒╪│╪º┘ä╪⌐ ╪╡┘ê╪¬┘è╪⌐' : lastMsg.messageType);
+                const preview = lastMsg.content || (lastMsg.messageType === 'AUDIO' ? 'رسالة صوتية' : lastMsg.messageType);
                 await p.whatsAppContact.update({ where: { id: contact.id }, data: { lastMessagePreview: preview } });
             }
         }

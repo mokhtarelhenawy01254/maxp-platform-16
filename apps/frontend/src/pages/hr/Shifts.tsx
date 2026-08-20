@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { AlertCircle, AlertTriangle, CheckSquare, Clipboard, Clock, Copy, Edit, Grid, LayoutGrid, MoreVertical, Plus, Search, Table as TableIcon, Trash2, TrendingUp, Users, X } from 'lucide-react';
+import {
+  Clock, Plus, Users, Edit, Trash2, Search,
+  TrendingUp, LayoutGrid, Table as TableIcon,
+  Copy, MoreVertical, CheckSquare, X, AlertCircle
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -40,6 +44,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { toast } from 'sonner';
+import { tToast } from "../../utils/i18n-toast";
 import ShiftsSkeleton from '../../components/hr/ShiftsSkeleton';
 import ShiftsTableView from '../../components/hr/ShiftsTableView';
 import AssignShiftDialog from '../../components/hr/AssignShiftDialog';
@@ -150,7 +155,7 @@ const Shifts: React.FC = () => {
     if (!validateForm()) return;
     try {
       await api.post('/hr/shifts', formData);
-      toast.success('تم إنشاء المناوبة بنجاح');
+      tToast.success("Shifts.success_create_c830");
       setDialogOpen(false);
       resetForm();
       fetchShifts();
@@ -163,7 +168,7 @@ const Shifts: React.FC = () => {
     if (!editingShift || !validateForm()) return;
     try {
       await api.put(`/hr/shifts/${editingShift.id}`, formData);
-      toast.success('تم تحديث المناوبة بنجاح');
+      tToast.success("Shifts.success_update_bb31");
       setDialogOpen(false);
       resetForm();
       fetchShifts();
@@ -180,7 +185,7 @@ const Shifts: React.FC = () => {
       toast.success(currentStatus ? 'تم تعطيل المناوبة' : 'تم تفعيل المناوبة');
     } catch (error) {
       setShifts(prev => prev.map(s => s.id === shiftId ? { ...s, isActive: currentStatus } : s));
-      toast.error('فشل في تغيير حالة المناوبة');
+      tToast.error("Shifts.msg_744f");
     }
   };
 
@@ -206,13 +211,13 @@ const Shifts: React.FC = () => {
         setSelectedShifts([]);
       } else {
         await api.delete(`/hr/shifts/${shiftToDelete}`);
-        toast.success('تم حذف المناوبة بنجاح');
+        tToast.success("Shifts.success_delete_06fc");
       }
       setDeleteDialogOpen(false);
       setShiftToDelete(null);
       fetchShifts();
     } catch (error) {
-      toast.error('فشل في حذف المناوبة');
+      tToast.error("Shifts.failed_delete_901a");
     }
   };
 

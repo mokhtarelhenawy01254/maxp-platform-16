@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, ArrowLeft, Building, Building2, CheckCircle2, Clock, Loader2, MessageCircle, Sparkles, Star, Users } from 'lucide-react';
+import { Building2, Sparkles, Clock, AlertTriangle, Users, CheckCircle2, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { tokenManager } from "../../utils/tokenManager";
@@ -14,6 +14,7 @@ import { enrichCompanies, computeQuickStats, getCount } from "../SuperAdminCompa
 import { CompaniesTable } from "../SuperAdminCompaniesV2/components/CompaniesTable";
 import { FOLLOW_UP_SAVED_VIEWS } from "../SuperAdminCompaniesV2/constants";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 const VIEW_TABS = FOLLOW_UP_SAVED_VIEWS.filter((v) => v.value !== "ALL");
 
@@ -39,7 +40,7 @@ export default function SuperAdminFollowUp() {
 
   const handleOpenWhatsApp = (company: import("../SuperAdminCompaniesV2/types").Company) => {
     const phone = company.phone?.replace(/\s+/g, "").replace(/^0+/, "");
-    if (!phone) { toast.error("لا يوجد رقم هاتف"); return; }
+    if (!phone) { tToast.error("index.msg_f7bf"); return; }
     const full = phone.startsWith("+") ? phone.slice(1) : phone.startsWith("20") ? phone : `20${phone}`;
     window.open(`https://wa.me/${full}`, "_blank", "noopener,noreferrer");
   };

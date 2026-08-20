@@ -1,6 +1,15 @@
-import { Circle as BugAntIcon, Star as SparklesIcon, Circle as WrenchScrewdriverIcon, Tag as TagIcon, Circle as ClipboardDocumentListIcon, AlertTriangle as ExclamationTriangleIcon, Clock as ClockIcon, Check as CheckCircleIcon, Circle as ArrowTrendingUpIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  BugAntIcon,
+  SparklesIcon,
+  WrenchScrewdriverIcon,
+  TagIcon,
+  ClipboardDocumentListIcon,
+  ExclamationTriangleIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ArrowTrendingUpIcon,
+} from "@heroicons/react/24/outline";
 
 export const TASK_TYPES: Record<
   string,

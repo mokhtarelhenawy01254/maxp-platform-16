@@ -1,4 +1,4 @@
-﻿const mockEnsureWithinPlanLimit = jest.fn();
+const mockEnsureWithinPlanLimit = jest.fn();
 
 const mockPrisma = {
   product: {
@@ -90,7 +90,7 @@ describe('wooCommerceController import dedup', () => {
     expect(body.data.skipped).toBe(1);
     expect(body.data.created).toBe(0);
     expect(body.data.updated).toBe(0);
-    expect(body.data.details.skipped[0].reason).toBe('╪º┘ä┘à┘å╪¬╪¼ ┘à┘ê╪¼┘ê╪» ╪¿╪º┘ä┘ü╪╣┘ä (┘å┘ü╪│ SKU)');
+    expect(body.data.details.skipped[0].reason).toBe('المنتج موجود بالفعل (نفس SKU)');
     expect(mockPrisma.product.create).not.toHaveBeenCalled();
     expect(mockPrisma.product.update).not.toHaveBeenCalled();
   });
@@ -115,7 +115,7 @@ describe('wooCommerceController import dedup', () => {
 
     const body = res.json.mock.calls[0][0];
     expect(body.data.skipped).toBe(1);
-    expect(body.data.details.skipped[0].reason).toBe('╪º┘ä┘à┘å╪¬╪¼ ┘à┘ê╪¼┘ê╪» ╪¿╪º┘ä┘ü╪╣┘ä (┘å┘ü╪│ SKU)');
+    expect(body.data.details.skipped[0].reason).toBe('المنتج موجود بالفعل (نفس SKU)');
     expect(mockPrisma.product.create).not.toHaveBeenCalled();
   });
 

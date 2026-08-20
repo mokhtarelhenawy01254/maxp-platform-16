@@ -382,6 +382,10 @@ const PUBLIC_ROUTES = [
   'POST /api/v1/webhooks/*',
   'GET /api/v1/whatsapp/meta/webhook',
   'POST /api/v1/whatsapp/meta/webhook',
+  'GET /api/v1/tiktok/messaging/webhook',
+  'POST /api/v1/tiktok/messaging/webhook',
+  'GET /api/v1/tiktok/messaging/webhook/*',
+  'POST /api/v1/tiktok/messaging/webhook/*',
   'GET /api/v1/whatsapp-meta',
   'GET /api/v1/whatsapp-meta/*',
   'POST /api/v1/whatsapp-meta',
@@ -391,7 +395,6 @@ const PUBLIC_ROUTES = [
   // Facebook OAuth callback routes (NO AUTHENTICATION - Facebook redirects here directly)
   'GET /api/v1/facebook-oauth/callback',
   'GET /api/v1/facebook-oauth/pixel-callback',
-  'GET /api/v1/facebook-oauth/popup-close.js',
 
   // Image proxy routes (للصور الخارجية)
   'GET /api/proxy-image',
@@ -493,6 +496,12 @@ const PUBLIC_ROUTES = [
 
   // Parent Portal (public login endpoint)
   'POST /api/v1/education/parent-portal/login',
+
+  // Booking Doctor Portal (public login endpoint)
+  'POST /api/v1/booking/doctor-portal/login',
+
+  // Booking Patient Portal (public login endpoint)
+  'POST /api/v1/booking/patient-portal/login',
 
   // Public Support
   'GET /api/v1/support/faq',

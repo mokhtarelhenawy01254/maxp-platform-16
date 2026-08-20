@@ -1,10 +1,12 @@
-import { Filter as FunnelIcon, X as XCircleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
-;
+import { useTranslation } from "react-i18next";
+import { FunnelIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 interface FunnelStats {
   funnelSteps: Array<{
@@ -28,14 +30,18 @@ const FunnelAnalytics: React.FC = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<FunnelStats | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await analyticsService.getFunnelAnalytics(period);
+      const response = await analyticsService.getFunnelAnalytics(
+        range?.period,
+        range?.startDate,
+        range?.endDate,
+      );
       if (response.success && response.data) {
         setStats(response.data);
       } else {
@@ -53,57 +59,61 @@ const FunnelAnalytics: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [period, t]);
+  }, [range, t]);
 
   useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+    if (range) {
+      void fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range]);
+
+  const header = (
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {t("funnelAnalytics.title")}
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
+          {t("funnelAnalytics.subtitle")}
+        </p>
+      </div>
+      <PeriodSelector onRangeChange={setRange} />
+    </div>
+  );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="space-y-6" dir="rtl">
+        {header}
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-        <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button
-          onClick={fetchData}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-        >
-          {t("funnelAnalytics.retry")}
-        </button>
+      <div className="space-y-6" dir="rtl">
+        {header}
+        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
+          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <button
+            onClick={fetchData}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            {t("funnelAnalytics.retry")}
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t("funnelAnalytics.title")}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {t("funnelAnalytics.subtitle")}
-          </p>
-        </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">{t("funnelAnalytics.last7Days")}</option>
-          <option value="30">{t("funnelAnalytics.last30Days")}</option>
-          <option value="90">{t("funnelAnalytics.last90Days")}</option>
-          <option value="365">{t("funnelAnalytics.lastYear")}</option>
-        </select>
-      </div>
+      {header}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-4 mb-6">

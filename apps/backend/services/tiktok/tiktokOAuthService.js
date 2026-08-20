@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tiktokOAuthService.js
  * Shared OAuth/token/config helpers for all TikTok integrations.
  * Base domain: https://open.tiktokapis.com
@@ -133,7 +133,7 @@ async function getValidAccessToken(account, companyId) {
       return newToken;
     }
   } catch (err) {
-    console.error('Γ¥î [TikTok OAuth] Refresh failed:', err.response?.data || err.message);
+    console.error('❌ [TikTok OAuth] Refresh failed:', err.response?.data || err.message);
   }
   return account.accessToken || null;
 }

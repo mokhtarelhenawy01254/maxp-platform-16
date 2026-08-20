@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { MagnifyingGlassIcon, CheckCircleIcon, FunnelIcon, XMarkIcon, XCircleIcon, PhoneIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
@@ -139,31 +139,31 @@ const OrderRow = React.memo(({
           )}
         </div>
         <div className="text-sm text-gray-500 mt-1">
-          {order.customerName} ΓÇó {order.customerPhone || t('orders.noPhone')}
+          {order.customerName} • {order.customerPhone || t('orders.noPhone')}
         </div>
         <div className="text-xs text-gray-400 mt-1">
-          {formatDate(order.createdAt)} ΓÇó {order.sourceType}
+          {formatDate(order.createdAt)} • {order.sourceType}
         </div>
         <div className="text-xs text-gray-400 mt-1">
           {t('orders.distributedTo')} {order.assignedToName || order.assignedTo || t('orders.unassigned')}
           {order.assignmentStrategy
-            ? ` ΓÇó ${strategyLabelMap[order.assignmentStrategy] || order.assignmentStrategy}`
+            ? ` • ${strategyLabelMap[order.assignmentStrategy] || order.assignmentStrategy}`
             : ''}
         </div>
         </div>
       </div>
       <div className="flex flex-col items-start gap-1 text-sm">
         <span className="font-bold text-gray-800 dark:text-gray-200">
-          {t('orders.amountDue', '╪º┘ä┘à╪│╪¬╪¡┘é')}: {formatPrice(amountDue)}
+          {t('orders.amountDue', 'المستحق')}: {formatPrice(amountDue)}
         </span>
         <span className="text-xs text-gray-500 dark:text-gray-400">
           {formatPrice(Number(order.total) || 0)}
-          {shipping > 0 && ` + ${formatPrice(shipping)} ${t('orders.shippingShort', '╪┤╪¡┘å')}`}
-          {deposit > 0 && ` - ${formatPrice(deposit)} ${t('orders.depositShort', '╪╣╪▒╪¿┘ê┘å')}`}
+          {shipping > 0 && ` + ${formatPrice(shipping)} ${t('orders.shippingShort', 'شحن')}`}
+          {deposit > 0 && ` - ${formatPrice(deposit)} ${t('orders.depositShort', 'عربون')}`}
         </span>
         {callAttempts > 0 && (
           <span className={`text-xs px-2 py-0.5 rounded-full ${callBlocked ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600 dark:bg-gray-900/50 dark:text-gray-300'}`}>
-            {t('orders.callAttemptsCount', '┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º┘ä╪º╪¬╪╡╪º┘ä')}: {callAttempts}/{maxCallsNoAnswer > 0 ? maxCallsNoAnswer : 'Γê₧'}
+            {t('orders.callAttemptsCount', 'محاولات الاتصال')}: {callAttempts}/{maxCallsNoAnswer > 0 ? maxCallsNoAnswer : '∞'}
           </span>
         )}
       </div>
@@ -199,12 +199,12 @@ const OrderRow = React.memo(({
           onClick={() => onLogCall(order, 'unreached')}
           disabled={isCancelled || callBlocked || callingId === order.id}
           title={waitingForNextCall && nextCallAllowedAt
-            ? `${t('orders.nextCallAfter', '╪º╪¬╪╡┘ä ╪¿╪╣╪»')}: ${new Intl.DateTimeFormat('ar-EG', { hour: '2-digit', minute: '2-digit' }).format(nextCallAllowedAt)}`
-            : callsLimitReached ? String(t('orders.callsLimitReached', '┘ê╪╡┘ä╪¬ ┘ä╪ú┘é╪╡┘ë ┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º┘ä╪º╪¬╪╡╪º┘ä')) : undefined}
+            ? `${t('orders.nextCallAfter', 'اتصل بعد')}: ${new Intl.DateTimeFormat('ar-EG', { hour: '2-digit', minute: '2-digit' }).format(nextCallAllowedAt)}`
+            : callsLimitReached ? String(t('orders.callsLimitReached', 'وصلت لأقصى محاولات الاتصال')) : undefined}
           className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300"
         >
           <PhoneIcon className="w-4 h-4" />
-          {callingId === order.id ? t('orders.loggingCall', '╪¼╪º╪▒┘è ╪º┘ä╪¬╪│╪¼┘è┘ä...') : t('orders.noAnswer', '┘ä╪º ╪▒╪»')}
+          {callingId === order.id ? t('orders.loggingCall', 'جاري التسجيل...') : t('orders.noAnswer', 'لا رد')}
         </button>
         <button
           onClick={() => onPostpone(order)}
@@ -212,7 +212,7 @@ const OrderRow = React.memo(({
           className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 text-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
         >
           <CalendarDaysIcon className="w-4 h-4" />
-          {t('orders.postponeOrderTitle', '╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿')}
+          {t('orders.postponeOrderTitle', 'تأجيل الطلب')}
         </button>
         <button
           onClick={() => onConfirm(order.id)}
@@ -426,8 +426,8 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
 
   const statsSummaryLabel = useMemo(() => {
     if (statsStartDate || statsEndDate) {
-      const fromLabel = statsStartDate ? formatDate(statsStartDate) : 'ΓÇö';
-      const toLabel = statsEndDate ? formatDate(statsEndDate) : 'ΓÇö';
+      const fromLabel = statsStartDate ? formatDate(statsStartDate) : '—';
+      const toLabel = statsEndDate ? formatDate(statsEndDate) : '—';
       const base = t('orders.summaryFromTo', { from: fromLabel, to: toLabel });
       return statsStrategy ? `${base} ${t('orders.summaryStrategy', { strategy: strategyLabel })}` : base;
     }
@@ -517,14 +517,14 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       setCallingId(order.id);
       const res = await orderConfirmationService.logCall(order.id, result, null);
       const attempts = res?.data?.callAttempts ?? order.callAttempts;
-      toast.success(t('orders.callLogged', '╪¬┘à ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä'));
+      toast.success(t('orders.callLogged', 'تم تسجيل محاولة الاتصال'));
       setOrders((prev) => prev.map((o) =>
         o.id === order.id
           ? { ...o, callAttempts: attempts, lastCallAttemptAt: res?.data?.order?.lastCallAttemptAt || res?.data?.order?.lastCallAt || o.lastCallAttemptAt }
           : o
       ));
     } catch (error: any) {
-      toast.error(error?.message || t('orders.logCallFailed', '╪¬╪╣╪░╪▒ ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä'));
+      toast.error(error?.message || t('orders.logCallFailed', 'تعذر تسجيل محاولة الاتصال'));
       setRefreshKey((prev) => prev + 1);
     } finally {
       setCallingId(null);
@@ -542,11 +542,11 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
         autoTransitionEnabled: data.autoTransitionEnabled,
         changeStatusToScheduled: true
       });
-      toast.success(t('orders.orderPostponed', '╪¬┘à ╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿'));
+      toast.success(t('orders.orderPostponed', 'تم تأجيل الطلب'));
       setPostponeTarget(null);
       setRefreshKey((prev) => prev + 1);
     } catch (error: any) {
-      toast.error(error?.message || t('orders.postponeFailed', '╪¬╪╣╪░╪▒ ╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿'));
+      toast.error(error?.message || t('orders.postponeFailed', 'تعذر تأجيل الطلب'));
     } finally {
       setPostponeLoading(false);
     }

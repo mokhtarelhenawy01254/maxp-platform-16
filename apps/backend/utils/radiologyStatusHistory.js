@@ -1,4 +1,4 @@
-﻿const RADIOLOGY_ORDER_STATUSES = ['PENDING', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+const RADIOLOGY_ORDER_STATUSES = ['PENDING', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 
 function deriveRadiologyOrderStatus({ appointment = null, study = null } = {}) {
   if (appointment && appointment.status === 'CANCELLED') return 'CANCELLED';

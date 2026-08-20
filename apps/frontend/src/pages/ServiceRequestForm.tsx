@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { tToast } from "../utils/i18n-toast";
 import { uploadService } from "../services/uploadService";
 
 export default function ServiceRequestForm() {
@@ -57,7 +58,7 @@ export default function ServiceRequestForm() {
 
   const submit = async () => {
     if (!form.customerName?.trim() || !form.phone?.trim() || !form.serviceId) {
-      return toast.error("يرجى إكمال جميع الحقول المطلوبة");
+      return tToast.error("ServiceRequestForm.msg_a413");
     }
     setSubmitting(true);
     const referenceFiles = await uploadFiles();
@@ -69,9 +70,9 @@ export default function ServiceRequestForm() {
         body: JSON.stringify({ ...form, referenceFiles }),
       });
       const d = await r.json();
-      if (d.success) { setDone(true); toast.success("تم إرسال الطلب"); }
+      if (d.success) { setDone(true); tToast.success("ServiceRequestForm.success_send_7517"); }
       else toast.error(d.error);
-    } catch (e) { toast.error("حدث خطأ في الإرسال"); }
+    } catch (e) { tToast.error("ServiceRequestForm.error_error_7eca"); }
     finally { setSubmitting(false); }
   };
 

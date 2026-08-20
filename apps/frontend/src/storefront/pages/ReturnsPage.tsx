@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getApiUrl } from "../../config/environment";
 import { getCompanyId } from "../../utils/storefrontApi";
@@ -42,7 +42,7 @@ const ReturnsPage: React.FC = () => {
           setReasons(data.reasons);
         }
       } catch {
-        toast.error(isRTL ? "┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪ú╪│╪¿╪º╪¿ ╪º┘ä╪Ñ╪▒╪¼╪º╪╣" : "Failed to load return reasons");
+        toast.error(isRTL ? "فشل تحميل أسباب الإرجاع" : "Failed to load return reasons");
       } finally {
         setLoadingReasons(false);
       }
@@ -53,15 +53,15 @@ const ReturnsPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orderNumber.trim()) {
-      toast.error(isRTL ? "┘è╪▒╪¼┘ë ╪Ñ╪»╪«╪º┘ä ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿" : "Please enter order number");
+      toast.error(isRTL ? "يرجى إدخال رقم الطلب" : "Please enter order number");
       return;
     }
     if (!emailOrPhone.trim()) {
-      toast.error(isRTL ? "┘è╪▒╪¼┘ë ╪Ñ╪»╪«╪º┘ä ╪º┘ä╪¿╪▒┘è╪» ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è ╪ú┘ê ╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü" : "Please enter email or phone");
+      toast.error(isRTL ? "يرجى إدخال البريد الإلكتروني أو رقم الهاتف" : "Please enter email or phone");
       return;
     }
     if (!reasonId) {
-      toast.error(isRTL ? "┘è╪▒╪¼┘ë ╪º╪«╪¬┘è╪º╪▒ ╪│╪¿╪¿ ╪º┘ä╪Ñ╪▒╪¼╪º╪╣" : "Please select a return reason");
+      toast.error(isRTL ? "يرجى اختيار سبب الإرجاع" : "Please select a return reason");
       return;
     }
 
@@ -74,12 +74,12 @@ const ReturnsPage: React.FC = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || (isRTL ? "┘ü╪┤┘ä ╪¬┘é╪»┘è┘à ╪º┘ä╪╖┘ä╪¿" : "Request failed"));
+        throw new Error(data.error || (isRTL ? "فشل تقديم الطلب" : "Request failed"));
       }
       setSuccess(true);
-      toast.success(isRTL ? "╪¬┘à ╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪º┘ä╪Ñ╪▒╪¼╪º╪╣ ╪¿┘å╪¼╪º╪¡" : "Return request submitted successfully");
+      toast.success(isRTL ? "تم تقديم طلب الإرجاع بنجاح" : "Return request submitted successfully");
     } catch (err: any) {
-      toast.error(err.message || (isRTL ? "╪¡╪»╪½ ╪«╪╖╪ú" : "An error occurred"));
+      toast.error(err.message || (isRTL ? "حدث خطأ" : "An error occurred"));
     } finally {
       setSubmitting(false);
     }
@@ -93,11 +93,11 @@ const ReturnsPage: React.FC = () => {
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-8 text-center">
           <div className="text-5xl mb-4">&#10003;</div>
           <h2 className="text-2xl font-bold text-green-800 dark:text-green-200 mb-2">
-            {isRTL ? "╪¬┘à ╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪º┘ä╪Ñ╪▒╪¼╪º╪╣ ╪¿┘å╪¼╪º╪¡" : "Return Request Submitted"}
+            {isRTL ? "تم تقديم طلب الإرجاع بنجاح" : "Return Request Submitted"}
           </h2>
           <p className="text-green-600 dark:text-green-400">
             {isRTL
-              ? "╪│┘å┘é┘ê┘à ╪¿┘à╪▒╪º╪¼╪╣╪⌐ ╪╖┘ä╪¿┘â ┘ê╪º┘ä╪¬┘ê╪º╪╡┘ä ┘à╪╣┘â ┘é╪▒┘è╪¿╪º┘ï"
+              ? "سنقوم بمراجعة طلبك والتواصل معك قريباً"
               : "We will review your request and contact you soon"}
           </p>
         </div>
@@ -109,11 +109,11 @@ const ReturnsPage: React.FC = () => {
     <div className={containerClasses} dir={dir}>
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {isRTL ? "╪╖┘ä╪¿ ╪Ñ╪▒╪¼╪º╪╣" : "Return Request"}
+          {isRTL ? "طلب إرجاع" : "Return Request"}
         </h1>
         <p className="text-gray-500 dark:text-gray-400">
           {isRTL
-            ? "┘è╪▒╪¼┘ë ╪Ñ╪»╪«╪º┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿ ╪º┘ä╪░┘è ╪¬╪▒╪║╪¿ ┘ü┘è ╪Ñ╪▒╪¼╪º╪╣┘ç"
+            ? "يرجى إدخال بيانات الطلب الذي ترغب في إرجاعه"
             : "Please enter the details of the order you wish to return"}
         </p>
       </div>
@@ -121,13 +121,13 @@ const ReturnsPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {isRTL ? "╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿" : "Order Number"}
+            {isRTL ? "رقم الطلب" : "Order Number"}
           </label>
           <input
             type="text"
             value={orderNumber}
             onChange={(e) => setOrderNumber(e.target.value)}
-            placeholder={isRTL ? "╪ú╪»╪«┘ä ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿" : "Enter order number"}
+            placeholder={isRTL ? "أدخل رقم الطلب" : "Enter order number"}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
             required
           />
@@ -135,13 +135,13 @@ const ReturnsPage: React.FC = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {isRTL ? "╪º┘ä╪¿╪▒┘è╪» ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è ╪ú┘ê ╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü" : "Email or Phone Number"}
+            {isRTL ? "البريد الإلكتروني أو رقم الهاتف" : "Email or Phone Number"}
           </label>
           <input
             type="text"
             value={emailOrPhone}
             onChange={(e) => setEmailOrPhone(e.target.value)}
-            placeholder={isRTL ? "╪º┘ä╪¿╪▒┘è╪» ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è ╪ú┘ê ╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ╪º┘ä┘à╪│╪¼┘ä ┘ü┘è ╪º┘ä╪╖┘ä╪¿" : "Email or phone used in the order"}
+            placeholder={isRTL ? "البريد الإلكتروني أو رقم الهاتف المسجل في الطلب" : "Email or phone used in the order"}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
             required
           />
@@ -149,12 +149,12 @@ const ReturnsPage: React.FC = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {isRTL ? "╪│╪¿╪¿ ╪º┘ä╪Ñ╪▒╪¼╪º╪╣" : "Return Reason"}
+            {isRTL ? "سبب الإرجاع" : "Return Reason"}
           </label>
           {loadingReasons ? (
-            <div className="px-4 py-3 text-gray-400">{isRTL ? "╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä..." : "Loading..."}</div>
+            <div className="px-4 py-3 text-gray-400">{isRTL ? "جاري التحميل..." : "Loading..."}</div>
           ) : reasons.length === 0 ? (
-            <div className="px-4 py-3 text-gray-400">{isRTL ? "┘ä╪º ╪¬┘ê╪¼╪» ╪ú╪│╪¿╪º╪¿ ┘à╪¬╪º╪¡╪⌐" : "No reasons available"}</div>
+            <div className="px-4 py-3 text-gray-400">{isRTL ? "لا توجد أسباب متاحة" : "No reasons available"}</div>
           ) : (
             <select
               value={reasonId}
@@ -162,7 +162,7 @@ const ReturnsPage: React.FC = () => {
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
               required
             >
-              <option value="">{isRTL ? "╪º╪«╪¬╪▒ ╪º┘ä╪│╪¿╪¿" : "Select reason"}</option>
+              <option value="">{isRTL ? "اختر السبب" : "Select reason"}</option>
               {reasons.map((reason) => (
                 <option key={reason.id} value={reason.id}>
                   {reason.reason}
@@ -175,13 +175,13 @@ const ReturnsPage: React.FC = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {isRTL ? "┘à┘ä╪º╪¡╪╕╪º╪¬ ╪Ñ╪╢╪º┘ü┘è╪⌐" : "Additional Notes"}
+            {isRTL ? "ملاحظات إضافية" : "Additional Notes"}
           </label>
           <textarea
             value={customerNotes}
             onChange={(e) => setCustomerNotes(e.target.value)}
             rows={4}
-            placeholder={isRTL ? "╪ú┘è ╪¬┘ü╪º╪╡┘è┘ä ╪Ñ╪╢╪º┘ü┘è╪⌐ ╪╣┘å ╪│╪¿╪¿ ╪º┘ä╪Ñ╪▒╪¼╪º╪╣" : "Any additional details about the return"}
+            placeholder={isRTL ? "أي تفاصيل إضافية عن سبب الإرجاع" : "Any additional details about the return"}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
           />
         </div>
@@ -192,8 +192,8 @@ const ReturnsPage: React.FC = () => {
           className="w-full py-3 px-6 bg-primary text-primary-foreground disabled:opacity-50 font-medium rounded-[var(--radius)] transition-colors hover:opacity-90"
         >
           {submitting
-            ? (isRTL ? "╪¼╪º╪▒┘è ╪º┘ä╪Ñ╪▒╪│╪º┘ä..." : "Submitting...")
-            : (isRTL ? "╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪º┘ä╪Ñ╪▒╪¼╪º╪╣" : "Submit Return Request")}
+            ? (isRTL ? "جاري الإرسال..." : "Submitting...")
+            : (isRTL ? "تقديم طلب الإرجاع" : "Submit Return Request")}
         </button>
       </form>
     </div>

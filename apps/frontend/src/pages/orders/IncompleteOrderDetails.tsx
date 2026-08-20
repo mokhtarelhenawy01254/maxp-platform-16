@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import { Link, useParams, useNavigate } from "react-router-dom";
@@ -431,7 +431,7 @@ const IncompleteOrderDetails: React.FC = () => {
                               {name}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {quantity} ├ù {formatPrice(price)}
+                              {quantity} × {formatPrice(price)}
                             </div>
                           </div>
                           <div className="text-sm font-semibold text-gray-900 dark:text-white shrink-0">

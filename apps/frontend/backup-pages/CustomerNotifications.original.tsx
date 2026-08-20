@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -55,7 +55,7 @@ import {
   Image,
 } from "lucide-react";
 
-// ΓöÇΓöÇ Shared Types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Shared Types ────────────────────────────────────
 type Channel = "AUTO" | "BAILEYS" | "META_CLOUD";
 
 interface TemplateItem {
@@ -105,7 +105,7 @@ interface MetaTemplateOption {
   components?: Array<{ type: string; text?: string; example?: string }>;
 }
 
-// ΓöÇΓöÇ Event groups for the template tabs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Event groups for the template tabs ─────────────
 const EVENT_GROUPS: Record<string, string[]> = {
   loyalty: [
     "LOYALTY_POINTS_AWARDED",
@@ -120,9 +120,9 @@ const EVENT_GROUPS: Record<string, string[]> = {
 };
 
 const CHANNEL_LABELS: Record<Channel, string> = {
-  AUTO: "╪¬┘ä┘é╪º╪ª┘è",
-  BAILEYS: "┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è",
-  META_CLOUD: "┘à┘è╪¬╪º (┘é╪º┘ä╪¿ ┘à╪╣╪¬┘à╪»)",
+  AUTO: "تلقائي",
+  BAILEYS: "واتساب عادي",
+  META_CLOUD: "ميتا (قالب معتمد)",
 };
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -195,7 +195,7 @@ const CustomerNotifications: React.FC = () => {
     setExpandedPreviews((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  // ΓöÇΓöÇ Meta flows state ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Meta flows state ──────────────────────────────
   const [selectedMetaSession, setSelectedMetaSession] = useState("");
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [resubmittingMeta, setResubmittingMeta] = useState(false);
@@ -257,7 +257,7 @@ const CustomerNotifications: React.FC = () => {
       setMetaSessionId(meta?.id || "");
     } catch (error) {
       console.error("Error loading customer notifications:", error);
-      toast.error("╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í");
+      toast.error("تعذر تحميل بيانات إشعارات العملاء");
     } finally {
       setLoading(false);
     }
@@ -279,14 +279,14 @@ const CustomerNotifications: React.FC = () => {
         delayUnit: editing.delayUnit,
       });
       if (res.data?.success) {
-        toast.success("╪¬┘à ╪¡┘ü╪╕ ╪º┘ä╪¼╪»┘ê┘ä ╪¿┘å╪¼╪º╪¡");
+        toast.success("تم حفظ الجدول بنجاح");
         setEditing(null);
         await fetchAll();
       } else {
-        toast.error(res.data?.error || "┘ü╪┤┘ä ╪º┘ä╪¡┘ü╪╕");
+        toast.error(res.data?.error || "فشل الحفظ");
       }
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ╪º┘ä╪¡┘ü╪╕");
+      toast.error(e?.response?.data?.error || "فشل الحفظ");
     } finally {
       setSavingEvent("");
     }
@@ -294,11 +294,11 @@ const CustomerNotifications: React.FC = () => {
 
   const openTemplateDialog = async (eventType: string, slot: string) => {
     const existing = slotTemplate(eventType, slot) || emptyTemplate(eventType, slot);
-    // ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï ┘ü╪ª╪⌐ CUSTOMER (╪¬╪¬╪▒╪¼┘à ┘ä┘Ç UTILITY ╪╣┘ä┘ë ┘à┘è╪¬╪º = ╪ú╪│┘ç┘ä ┘ü┘è ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐)
+    // افتراضياً فئة CUSTOMER (تترجم لـ UTILITY على ميتا = أسهل في الموافقة)
     const defaultCategory = slot === "META_CLOUD" ? "CUSTOMER" : "CUSTOMER";
     setTemplateDialog({ eventType, slot, template: { ...existing }, category: defaultCategory });
 
-    // ╪¼┘ä╪¿ ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪¬╪º╪¡╪⌐ ┘ä┘ä╪▒╪¿╪╖ ╪╣┘å╪» ┘ü╪¬╪¡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º
+    // جلب قوالب ميتا المتاحة للربط عند فتح قالب ميتا
     if (slot === "META_CLOUD") {
       const metaId = selectedMetaSession || metaSessionId || sessions.find((s) => String(s.provider || "").toUpperCase() === "META_CLOUD")?.id;
       if (metaId && !selectedMetaSession) setSelectedMetaSession(metaId);
@@ -323,17 +323,17 @@ const CustomerNotifications: React.FC = () => {
     }
   };
 
-  // ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è ╪º┘ä╪¡╪º┘ä┘è ┘ü┘è ╪º┘ä╪»┘è╪º┘ä┘ê╪¼ ┘ê╪Ñ╪▒╪¼╪º╪╣ id
+  // حفظ القالب المحلي الحالي في الديالوج وإرجاع id
   const persistLocalTemplate = async (): Promise<string | null> => {
     if (!templateDialog) return null;
     const { eventType, slot, template, category } = templateDialog;
     if (!template.content.trim()) {
-      toast.error("┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ┘à╪╖┘ä┘ê╪¿");
+      toast.error("محتوى القالب مطلوب");
       return null;
     }
 
     const payload: Record<string, unknown> = {
-      name: template.name.trim() || (slot === "META_CLOUD" ? "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º" : "┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿"),
+      name: template.name.trim() || (slot === "META_CLOUD" ? "قالب ميتا" : "قالب واتساب"),
       category: category || "CUSTOMER",
       eventType,
       content: template.content,
@@ -357,13 +357,13 @@ const CustomerNotifications: React.FC = () => {
       );
       const newId = res.data?.template?.id;
       if (!newId) {
-        toast.error("┘ü╪┤┘ä ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º┘ä╪¿");
+        toast.error("فشل إنشاء القالب");
         return null;
       }
       setTemplateDialog((d) => (d ? { ...d, template: { ...d.template, id: newId } } : d));
       return newId;
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿");
+      toast.error(e?.response?.data?.error || "فشل حفظ القالب");
       return null;
     }
   };
@@ -371,7 +371,7 @@ const CustomerNotifications: React.FC = () => {
   const uploadHeaderMedia = async (file: File) => {
     const metaId = selectedMetaSession || metaSessionId || metaSessions[0]?.id;
     if (!metaId) {
-      toast.error("╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï");
+      toast.error("اختر جلسة ميتا أولاً");
       return;
     }
     setUploadingHeader(true);
@@ -398,12 +398,12 @@ const CustomerNotifications: React.FC = () => {
               }
             : d,
         );
-        toast.success("╪¬┘à ╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒╪⌐ ΓÇö ╪│╪¬┘Å╪│╪¬╪«╪»┘à ┘â┘ç┘è╪»╪▒ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘å╪» ╪º┘ä┘å╪┤╪▒");
+        toast.success("تم رفع الصورة — ستُستخدم كهيدر القالب عند النشر");
       } else {
-        toast.error(data?.error || "┘ü╪┤┘ä ╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒╪⌐");
+        toast.error(data?.error || "فشل رفع الصورة");
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "┘ü╪┤┘ä ╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒╪⌐ ╪Ñ┘ä┘ë ┘à┘è╪¬╪º");
+      toast.error(err?.response?.data?.error || "فشل رفع الصورة إلى ميتا");
     } finally {
       setUploadingHeader(false);
     }
@@ -412,7 +412,7 @@ const CustomerNotifications: React.FC = () => {
   const publishToMeta = async (templateId: string) => {
     const metaId = selectedMetaSession || metaSessionId || metaSessions[0]?.id;
     if (!metaId) {
-      toast.error("╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï");
+      toast.error("اختر جلسة ميتا أولاً");
       return;
     }
     setPublishingId(templateId);
@@ -420,12 +420,12 @@ const CustomerNotifications: React.FC = () => {
       await apiClient.post<SimpleResponse>(`/whatsapp-notifications/templates/${templateId}/publish`, {
         sessionId: metaId,
       });
-      toast.success("╪¬┘à ╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘é╪º┘ä╪¿ ╪Ñ┘ä┘ë ┘à┘è╪¬╪º ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐");
-      // ╪Ñ╪╣╪º╪»╪⌐ ╪¼┘ä╪¿ ╪º┘ä┘é┘ê╪º┘ä╪¿ ╪º┘ä┘à╪¬╪º╪¡╪⌐ ┘ä╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪▒╪¿╪╖
+      toast.success("تم إرسال القالب إلى ميتا للمراجعة");
+      // إعادة جلب القوالب المتاحة لتحديث حالة الربط
       await openTemplateDialog(templateDialog?.eventType || "", "META_CLOUD");
       await fetchAll();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ╪º┘ä┘å╪┤╪▒ ╪╣┘ä┘ë ┘à┘è╪¬╪º");
+      toast.error(e?.response?.data?.error || "فشل النشر على ميتا");
     } finally {
       setPublishingId(null);
     }
@@ -434,11 +434,11 @@ const CustomerNotifications: React.FC = () => {
   const createMetaTemplate = async () => {
     if (!templateDialog) return;
     if (!selectedMetaSession && !metaSessionId) {
-      toast.error("╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï");
+      toast.error("اختر جلسة ميتا أولاً");
       return;
     }
     if (!templateDialog.template.content.trim()) {
-      toast.error("┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ┘à╪╖┘ä┘ê╪¿");
+      toast.error("محتوى القالب مطلوب");
       return;
     }
     const templateId = await persistLocalTemplate();
@@ -450,7 +450,7 @@ const CustomerNotifications: React.FC = () => {
     if (!templateDialog?.template.id) return;
     const metaId = selectedMetaSession || metaSessionId;
     if (!metaId) {
-      toast.error("╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï");
+      toast.error("اختر جلسة ميتا أولاً");
       return;
     }
     const saved = await persistLocalTemplate();
@@ -463,17 +463,17 @@ const CustomerNotifications: React.FC = () => {
       );
       const data = res.data;
       if (data?.applied && data?.success) {
-        toast.success(data.message || "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º ΓÇö ╪º┘ä╪¡╪º┘ä╪⌐ ┘é┘è╪» ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐");
+        toast.success(data.message || "تم تحديث القالب على ميتا — الحالة قيد المراجعة");
       } else if (data?.success && data?.metaTemplateName) {
-        toast.success(data.message || "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º ΓÇö ╪│┘è╪¬┘à ╪¬┘ü╪╣┘è┘ä┘ç ╪¿╪╣╪» ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐");
+        toast.success(data.message || "تم تحديث القالب على ميتا — سيتم تفعيله بعد الموافقة");
       } else if (data?.applied === false) {
-        toast.warning(data.applyReason || "┘à┘è╪¬╪º ┘ä╪│┘ç ╪┤╪º┘è┘ä╪⌐ ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪»┘è┘à ΓÇö ╪¼╪▒╪¿ ╪¬╪º┘å┘è ╪¿╪╣╪» ╪┤┘ê┘è╪⌐");
+        toast.warning(data.applyReason || "ميتا لسه شايلة المحتوى القديم — جرب تاني بعد شوية");
       } else {
-        toast.warning(data?.applyReason || "╪¬┘à ╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘é╪º┘ä╪¿ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë");
+        toast.warning(data?.applyReason || "تم إرسال القالب للمراجعة مرة أخرى");
       }
       await fetchAll();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º");
+      toast.error(e?.response?.data?.error || "فشل تحديث القالب على ميتا");
     } finally {
       setResubmittingMeta(false);
     }
@@ -482,7 +482,7 @@ const CustomerNotifications: React.FC = () => {
   const syncMetaStatuses = async () => {
     const metaId = selectedMetaSession || metaSessionId;
     if (!metaId) {
-      toast.error("╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï");
+      toast.error("اختر جلسة ميتا أولاً");
       return;
     }
     setSyncingStatus(true);
@@ -490,10 +490,10 @@ const CustomerNotifications: React.FC = () => {
       const res = await apiClient.post<SimpleResponse>("/whatsapp-notifications/templates/sync-status", {
         sessionId: metaId,
       });
-      toast.success(res.data?.success ? "╪¬┘à╪¬ ┘à╪▓╪º┘à┘å╪⌐ ╪¡╪º┘ä╪º╪¬ ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º" : "╪¬╪╣╪░╪▒╪¬ ╪º┘ä┘à╪▓╪º┘à┘å╪⌐");
+      toast.success(res.data?.success ? "تمت مزامنة حالات قوالب ميتا" : "تعذرت المزامنة");
       await fetchAll();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ┘à╪▓╪º┘à┘å╪⌐ ╪¡╪º┘ä╪º╪¬ ┘à┘è╪¬╪º");
+      toast.error(e?.response?.data?.error || "فشل مزامنة حالات ميتا");
     } finally {
       setSyncingStatus(false);
     }
@@ -503,7 +503,7 @@ const CustomerNotifications: React.FC = () => {
     if (!templateDialog) return;
     const { eventType, slot, template, category } = templateDialog;
     if (!template.name.trim() || !template.content.trim()) {
-      toast.error("╪º╪│┘à ╪º┘ä┘é╪º┘ä╪¿ ┘ê╪º┘ä┘à╪¡╪¬┘ê┘ë ┘à╪╖┘ä┘ê╪¿╪º┘å");
+      toast.error("اسم القالب والمحتوى مطلوبان");
       return;
     }
 
@@ -520,28 +520,28 @@ const CustomerNotifications: React.FC = () => {
     try {
       if (template.id) {
         await apiClient.put<SimpleResponse>(`/whatsapp-notifications/templates/${template.id}`, payload);
-        toast.success("╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘å╪¼╪º╪¡");
+        toast.success("تم تحديث القالب بنجاح");
       } else {
         await apiClient.post<SimpleResponse>("/whatsapp-notifications/templates", payload);
-        toast.success("╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘å╪¼╪º╪¡");
+        toast.success("تم إنشاء القالب بنجاح");
       }
       setTemplateDialog(null);
       await fetchAll();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿");
+      toast.error(e?.response?.data?.error || "فشل حفظ القالب");
     }
   };
 
   const deleteTemplate = async (template: TemplateItem) => {
     if (!template.id) return;
-    if (!window.confirm("┘ç┘ä ╪¬╪▒┘è╪» ╪¡╪░┘ü ┘ç╪░╪º ╪º┘ä┘é╪º┘ä╪¿╪ƒ")) return;
+    if (!window.confirm("هل تريد حذف هذا القالب؟")) return;
     try {
       await apiClient.delete<SimpleResponse>(`/whatsapp-notifications/templates/${template.id}`);
-      toast.success("╪¬┘à ╪¡╪░┘ü ╪º┘ä┘é╪º┘ä╪¿");
+      toast.success("تم حذف القالب");
       setTemplateDialog(null);
       await fetchAll();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ╪¡╪░┘ü ╪º┘ä┘é╪º┘ä╪¿");
+      toast.error(e?.response?.data?.error || "فشل حذف القالب");
     }
   };
 
@@ -549,10 +549,10 @@ const CustomerNotifications: React.FC = () => {
     if (!templateDialog) return;
     const metaId = selectedMetaSession || metaSessionId || metaSessions[0]?.id;
     if (!metaId) {
-      toast.error("╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï");
+      toast.error("اختر جلسة ميتا أولاً");
       return;
     }
-    // ┘ä┘ê ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è ┘ä╪│┘ç ┘à┘ü┘è╪┤ id╪î ┘å╪¡┘ü╪╕┘ç ╪º┘ä╪ú┘ê┘ä
+    // لو القالب المحلي لسه مفيش id، نحفظه الأول
     let templateId = templateDialog.template.id;
     if (!templateId) {
       templateId = await persistLocalTemplate();
@@ -564,36 +564,36 @@ const CustomerNotifications: React.FC = () => {
         metaTemplateName: metaName,
         metaTemplateLanguage: "ar",
       });
-      toast.success("╪¬┘à ╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º");
+      toast.success("تم ربط القالب بقالب ميتا");
       setTemplateDialog((d) =>
         d ? { ...d, template: { ...d.template, id: templateId, metaTemplateName: metaName } } : d,
       );
       await fetchAll();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ╪▒╪¿╪╖ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º");
+      toast.error(e?.response?.data?.error || "فشل ربط قالب ميتا");
     }
   };
 
   const confirmUnbind = async (template: TemplateItem) => {
     if (!template.id) return;
-    if (!window.confirm("┘ç┘ä ╪¬╪▒┘è╪» ┘ü┘â ╪▒╪¿╪╖ ┘ç╪░╪º ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º╪ƒ")) return;
+    if (!window.confirm("هل تريد فك ربط هذا القالب بقالب ميتا؟")) return;
     try {
       await apiClient.put<SimpleResponse>(`/whatsapp-notifications/templates/${template.id}`, {
         metaTemplateName: null,
         metaTemplateId: null,
         metaTemplateStatus: null,
       });
-      toast.success("╪¬┘à ┘ü┘â ╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿");
+      toast.success("تم فك ربط القالب");
       setTemplateDialog(null);
       await fetchAll();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "┘ü╪┤┘ä ┘ü┘â ╪º┘ä╪▒╪¿╪╖");
+      toast.error(e?.response?.data?.error || "فشل فك الربط");
     }
   };
 
   const sendTest = async () => {
     if (!testPhone.trim() || !testEvent) {
-      toast.error("╪ú╪»╪«┘ä ╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ┘ê╪º╪«╪¬╪▒ ╪º┘ä╪¡╪»╪½");
+      toast.error("أدخل رقم الهاتف واختر الحدث");
       return;
     }
     setTesting(true);
@@ -602,10 +602,10 @@ const CustomerNotifications: React.FC = () => {
         phone: testPhone.trim(),
         eventType: testEvent,
       });
-      if (res.data?.success) toast.success("╪¬┘à ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ╪º┘ä╪¬╪¼╪▒┘è╪¿┘è");
-      else toast.error(res.data?.message || res.data?.error || "┘ü╪┤┘ä ╪º┘ä╪Ñ╪▒╪│╪º┘ä");
+      if (res.data?.success) toast.success("تم إرسال الإشعار التجريبي");
+      else toast.error(res.data?.message || res.data?.error || "فشل الإرسال");
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.response?.data?.error || "┘ü╪┤┘ä ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪¬╪¼╪▒┘è╪¿┘è");
+      toast.error(e?.response?.data?.message || e?.response?.data?.error || "فشل الإرسال التجريبي");
     } finally {
       setTesting(false);
     }
@@ -627,29 +627,29 @@ const CustomerNotifications: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-6" dir="rtl">
-      {/* ΓöÇΓöÇ Header ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* ── Header ─────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Bell className="h-6 w-6 text-indigo-600" />
-            ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í
+            إشعارات العملاء
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            ╪Ñ╪»╪º╪▒╪⌐ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘ê┘ä╪º╪í ┘ê╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ┘ê╪¬┘é╪│┘è┘à ╪º┘ä╪╣┘à┘ä╪º╪í ΓÇö ╪º┘ä┘é┘ê╪º┘ä╪¿ ┘ê┘à┘ê╪º╪╣┘è╪» ╪º┘ä╪Ñ╪▒╪│╪º┘ä
+            إدارة إشعارات الولاء والكاش باك وتقسيم العملاء — القوالب ومواعيد الإرسال
           </p>
         </div>
         <Button variant="outline" onClick={fetchAll}>
           <RefreshCw className="h-4 w-4 ml-1" />
-          ╪¬╪¡╪»┘è╪½
+          تحديث
         </Button>
       </div>
 
-      {/* ΓöÇΓöÇ Test sender strip ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* ── Test sender strip ──────────────────── */}
       <Card>
         <CardContent className="p-4">
           <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] items-end">
             <div>
-              <Label className="text-xs text-gray-500">╪Ñ╪▒╪│╪º┘ä ╪¬╪¼╪▒┘è╪¿┘è (╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü)</Label>
+              <Label className="text-xs text-gray-500">إرسال تجريبي (رقم الهاتف)</Label>
               <Input
                 dir="ltr"
                 className="mt-1"
@@ -659,19 +659,19 @@ const CustomerNotifications: React.FC = () => {
               />
             </div>
             <div>
-              <Label className="text-xs text-gray-500">╪º┘ä╪¡╪»╪½</Label>
+              <Label className="text-xs text-gray-500">الحدث</Label>
               <select
                 className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                 value={testEvent}
                 onChange={(e) => setTestEvent(e.target.value)}
               >
-                <option value="">╪º╪«╪¬╪▒ ╪º┘ä╪¡╪»╪½...</option>
+                <option value="">اختر الحدث...</option>
                 {eventOptions}
               </select>
             </div>
             <Button onClick={sendTest} disabled={testing} className="gap-1">
               <TestTube2 className="h-4 w-4" />
-              {testing ? "╪¼╪º╪▒┘ì ╪º┘ä╪Ñ╪▒╪│╪º┘ä..." : "╪Ñ╪▒╪│╪º┘ä ╪¬╪¼╪▒┘è╪¿┘è"}
+              {testing ? "جارٍ الإرسال..." : "إرسال تجريبي"}
             </Button>
           </div>
         </CardContent>
@@ -680,38 +680,38 @@ const CustomerNotifications: React.FC = () => {
       <Tabs defaultValue="schedule">
         <TabsList className="flex-wrap">
           <TabsTrigger value="schedule" className="gap-1">
-            <CalendarClock className="h-4 w-4" /> ╪¼╪»┘ê┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬
+            <CalendarClock className="h-4 w-4" /> جدول الإشعارات
           </TabsTrigger>
           <TabsTrigger value="loyalty" className="gap-1">
-            <Gift className="h-4 w-4" /> ┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ê┘ä╪º╪í
+            <Gift className="h-4 w-4" /> قوالب الولاء
           </TabsTrigger>
           <TabsTrigger value="cashback" className="gap-1">
-            <Wallet className="h-4 w-4" /> ┘é┘ê╪º┘ä╪¿ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â
+            <Wallet className="h-4 w-4" /> قوالب الكاش باك
           </TabsTrigger>
           <TabsTrigger value="quality" className="gap-1">
-            <Star className="h-4 w-4" /> ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪¬┘é╪│┘è┘à
+            <Star className="h-4 w-4" /> قوالب التقسيم
           </TabsTrigger>
         </TabsList>
 
-        {/* ΓöÇΓöÇ Schedule tab ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+        {/* ── Schedule tab ─────────────────────── */}
         <TabsContent value="schedule" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>╪¼╪»┘ê┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬</CardTitle>
+              <CardTitle>جدول الإشعارات</CardTitle>
               <CardDescription>
-                ╪¡╪»╪» ┘ä┘â┘ä ╪¡╪»╪½: ┘ç┘ä ┘è╪¬╪¿╪╣╪¬╪î ╪º┘ä┘é┘å╪º╪⌐ ╪º┘ä┘å╪┤╪╖╪⌐╪î ┘ê┘à╪¬┘ë ┘è╪¬╪¿╪╣╪¬ (╪¿╪╣╪» ┘é╪» ╪Ñ┘è┘ç)
+                حدد لكل حدث: هل يتبعت، القناة النشطة، ومتى يتبعت (بعد قد إيه)
               </CardDescription>
             </CardHeader>
             <CardContent className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
-                    <th className="py-3 px-2 text-right font-medium">╪º┘ä╪¡╪»╪½</th>
-                    <th className="py-3 px-2 text-right font-medium">┘è╪¬╪¿╪╣╪¬ ╪º┘à╪¬┘è</th>
-                    <th className="py-3 px-2 text-right font-medium">╪¿╪╣╪» ┘é╪» ╪º┘è┘ç</th>
-                    <th className="py-3 px-2 text-right font-medium">╪º┘ä┘é┘å╪º╪⌐ ╪º┘ä┘å╪┤╪╖╪⌐</th>
-                    <th className="py-3 px-2 text-right font-medium">╪º┘ä┘é┘ê╪º┘ä╪¿</th>
-                    <th className="py-3 px-2 text-right font-medium">┘à┘ü╪╣┘æ┘ä</th>
+                    <th className="py-3 px-2 text-right font-medium">الحدث</th>
+                    <th className="py-3 px-2 text-right font-medium">يتبعت امتي</th>
+                    <th className="py-3 px-2 text-right font-medium">بعد قد ايه</th>
+                    <th className="py-3 px-2 text-right font-medium">القناة النشطة</th>
+                    <th className="py-3 px-2 text-right font-medium">القوالب</th>
+                    <th className="py-3 px-2 text-right font-medium">مفعّل</th>
                     <th className="py-3 px-2" />
                   </tr>
                 </thead>
@@ -754,17 +754,17 @@ const CustomerNotifications: React.FC = () => {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="HOURS">╪│╪º╪╣╪⌐</SelectItem>
-                                  <SelectItem value="DAYS">┘è┘ê┘à</SelectItem>
+                                  <SelectItem value="HOURS">ساعة</SelectItem>
+                                  <SelectItem value="DAYS">يوم</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                           ) : row.delayValue > 0 ? (
                             <span className="text-gray-700 dark:text-gray-200">
-                              {row.delayValue} {row.delayUnit === "DAYS" ? "┘è┘ê┘à" : "╪│╪º╪╣╪⌐"}
+                              {row.delayValue} {row.delayUnit === "DAYS" ? "يوم" : "ساعة"}
                             </span>
                           ) : (
-                            <span className="text-gray-400">┘ü┘ê╪▒┘è</span>
+                            <span className="text-gray-400">فوري</span>
                           )}
                         </td>
                         <td className="py-3 px-2">
@@ -779,9 +779,9 @@ const CustomerNotifications: React.FC = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="AUTO">╪¬┘ä┘é╪º╪ª┘è (┘à┘è╪¬╪º ΓåÉ ╪╣╪º╪»┘è)</SelectItem>
-                                <SelectItem value="BAILEYS">┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è</SelectItem>
-                                <SelectItem value="META_CLOUD">┘à┘è╪¬╪º ┘ü┘é╪╖</SelectItem>
+                                <SelectItem value="AUTO">تلقائي (ميتا ← عادي)</SelectItem>
+                                <SelectItem value="BAILEYS">واتساب عادي</SelectItem>
+                                <SelectItem value="META_CLOUD">ميتا فقط</SelectItem>
                               </SelectContent>
                             </Select>
                           ) : (
@@ -793,14 +793,14 @@ const CustomerNotifications: React.FC = () => {
                         <td className="py-3 px-2">
                           <div className="flex gap-1 flex-wrap">
                             <Badge variant="outline">
-                              ╪╣╪º╪»┘è: {normalTpl ? (normalTpl.name || "╪º┘ü╪¬╪▒╪º╪╢┘è") : "╪║┘è╪▒ ┘à╪¡╪»╪»"}
+                              عادي: {normalTpl ? (normalTpl.name || "افتراضي") : "غير محدد"}
                             </Badge>
                             <Badge
                               variant="outline"
                               className={metaTpl?.metaTemplateStatus === "APPROVED" ? "border-blue-400 text-blue-600" : ""}
                             >
-                              ┘à┘è╪¬╪º: {metaTpl ? metaTpl.name || "╪║┘è╪▒ ┘à╪│┘à┘æ┘ë" : "╪║┘è╪▒ ┘à╪¡╪»╪»"}
-                              {metaTpl?.metaTemplateStatus === "APPROVED" ? " (┘à╪╣╪¬┘à╪»)" : ""}
+                              ميتا: {metaTpl ? metaTpl.name || "غير مسمّى" : "غير محدد"}
+                              {metaTpl?.metaTemplateStatus === "APPROVED" ? " (معتمد)" : ""}
                             </Badge>
                           </div>
                         </td>
@@ -832,10 +832,10 @@ const CustomerNotifications: React.FC = () => {
                                 className="gap-1"
                               >
                                 <Save className="h-3.5 w-3.5" />
-                                ╪¡┘ü╪╕
+                                حفظ
                               </Button>
                               <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
-                                ╪Ñ┘ä╪║╪º╪í
+                                إلغاء
                               </Button>
                             </div>
                           ) : (
@@ -852,7 +852,7 @@ const CustomerNotifications: React.FC = () => {
                                 })
                               }
                             >
-                              ╪¬╪╣╪»┘è┘ä
+                              تعديل
                             </Button>
                           )}
                         </td>
@@ -865,7 +865,7 @@ const CustomerNotifications: React.FC = () => {
           </Card>
         </TabsContent>
 
-        {/* ΓöÇΓöÇ Template tabs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+        {/* ── Template tabs ─────────────────────── */}
         {(["loyalty", "cashback", "quality"] as const).map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-4">
             <Card>
@@ -873,21 +873,21 @@ const CustomerNotifications: React.FC = () => {
                 <div>
                   <CardTitle>
                     {tab === "loyalty"
-                      ? "┘é┘ê╪º┘ä╪¿ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘ê┘ä╪º╪í"
+                      ? "قوالب إشعارات الولاء"
                       : tab === "cashback"
-                        ? "┘é┘ê╪º┘ä╪¿ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â"
-                        : "┘é┘ê╪º┘ä╪¿ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪¬┘é╪│┘è┘à"}
+                        ? "قوالب إشعارات الكاش باك"
+                        : "قوالب إشعارات التقسيم"}
                   </CardTitle>
                   <CardDescription>
-                    ┘ä┘â┘ä ╪¡╪»╪½ ┘é╪º┘ä╪¿╪º┘å (┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è + ┘à┘è╪¬╪º) ΓÇö ╪╣╪»┘æ┘ä ╪º┘ä┘é╪º┘ä╪¿┘è┘å ┘ê╪¡╪»╪» ╪º┘ä┘ü╪╣┘æ╪º┘ä ┘à┘å ╪¼╪»┘ê┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬
+                    لكل حدث قالبان (واتساب عادي + ميتا) — عدّل القالبين وحدد الفعّال من جدول الإشعارات
                   </CardDescription>
                 </div>
                 {sessions.some((s) => String(s.provider || "").toUpperCase() === "META_CLOUD") && (
                   <div className="w-64">
-                    <Label className="text-xs text-gray-500">╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ┘ä┘ä╪▒╪¿╪╖</Label>
+                    <Label className="text-xs text-gray-500">جلسة ميتا للربط</Label>
                     <Select value={metaSessionId} onValueChange={(v) => v && setMetaSessionId(v)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º" />
+                        <SelectValue placeholder="اختر جلسة ميتا" />
                       </SelectTrigger>
                       <SelectContent>
                         {sessions
@@ -913,12 +913,12 @@ const CustomerNotifications: React.FC = () => {
                             {row?.label || eventType}
                           </h3>
                           <p className="text-xs text-gray-500">
-                            {row?.trigger} ΓÇö <span className="font-mono" dir="ltr">{eventType}</span>
+                            {row?.trigger} — <span className="font-mono" dir="ltr">{eventType}</span>
                           </p>
                         </div>
                         {row && (
                           <Badge className={CHANNEL_COLORS[row.activeChannel]}>
-                            ╪º┘ä┘é┘å╪º╪⌐: {CHANNEL_LABELS[row.activeChannel]}
+                            القناة: {CHANNEL_LABELS[row.activeChannel]}
                           </Badge>
                         )}
                       </div>
@@ -951,7 +951,7 @@ const CustomerNotifications: React.FC = () => {
         ))}
       </Tabs>
 
-      {/* ΓöÇΓöÇ Template editor dialog ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* ── Template editor dialog ───────────────── */}
       <Dialog
         open={!!templateDialog}
         onOpenChange={(open) => !open && setTemplateDialog(null)}
@@ -968,7 +968,7 @@ const CustomerNotifications: React.FC = () => {
                   }`}
                 >
                   {templateDialog.slot === "META_CLOUD" ? <Globe className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-                  {templateDialog.slot === "META_CLOUD" ? "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º" : "┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è"}
+                  {templateDialog.slot === "META_CLOUD" ? "قالب ميتا" : "واتساب عادي"}
                 </span>
               )}
               <DialogTitle className="text-base">
@@ -987,7 +987,7 @@ const CustomerNotifications: React.FC = () => {
           {templateDialog && (
             <div className="space-y-4">
               <div className="space-y-1">
-                <Label>╪º╪│┘à ╪º┘ä┘é╪º┘ä╪¿</Label>
+                <Label>اسم القالب</Label>
                 <Input
                   value={templateDialog.template.name}
                   onChange={(e) =>
@@ -995,14 +995,14 @@ const CustomerNotifications: React.FC = () => {
                       d ? { ...d, template: { ...d.template, name: e.target.value } } : d,
                     )
                   }
-                  placeholder={templateDialog.slot === "META_CLOUD" ? "┘à╪½╪º┘ä: ┘â╪│╪¿ ┘å┘é╪º╪╖ ┘ê┘ä╪º╪í" : "┘à╪½╪º┘ä: ╪Ñ╪┤╪╣╪º╪▒ ┘â╪│╪¿ ┘å┘é╪º╪╖"}
+                  placeholder={templateDialog.slot === "META_CLOUD" ? "مثال: كسب نقاط ولاء" : "مثال: إشعار كسب نقاط"}
                 />
               </div>
 
-              {/* ┘ü╪ª╪⌐ ╪º┘ä┘é╪º┘ä╪¿ ΓÇö ╪¬╪¡╪»╪» ╪¬╪╡┘å┘è┘ü ┘à┘è╪¬╪º ╪╣┘å╪» ╪º┘ä┘å╪┤╪▒ */}
+              {/* فئة القالب — تحدد تصنيف ميتا عند النشر */}
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">
-                  ┘å┘ê╪╣/┘ü╪ª╪⌐ ╪º┘ä╪▒╪│╪º┘ä╪⌐ ΓÇö ╪¿╪¬╪¡╪»╪» ╪¬╪╡┘å┘è┘ü ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪╣┘å╪» ╪º┘ä┘å╪┤╪▒
+                  نوع/فئة الرسالة — بتحدد تصنيف قالب ميتا عند النشر
                 </Label>
                 <div className="flex items-center gap-2">
                   <Select
@@ -1015,24 +1015,24 @@ const CustomerNotifications: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CUSTOMER">UTILITY (┘à┘Å┘ê╪╡┘ë ╪¿┘ç ┘ä┘ä┘ê┘ä╪º╪í)</SelectItem>
-                      <SelectItem value="SYSTEM">UTILITY (┘å╪╕╪º┘à┘è)</SelectItem>
-                      <SelectItem value="MARKETING">MARKETING (╪¬╪▒┘ê┘è╪¼┘è)</SelectItem>
-                      <SelectItem value="GENERAL">UTILITY (╪╣╪º┘à)</SelectItem>
+                      <SelectItem value="CUSTOMER">UTILITY (مُوصى به للولاء)</SelectItem>
+                      <SelectItem value="SYSTEM">UTILITY (نظامي)</SelectItem>
+                      <SelectItem value="MARKETING">MARKETING (ترويجي)</SelectItem>
+                      <SelectItem value="GENERAL">UTILITY (عام)</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-[11px] leading-relaxed text-gray-400">
-                    <strong>UTILITY</strong> ┘è╪¬╪▒╪¼┘à ┘ä┘Ç UTILITY ╪╣┘ä┘ë ┘à┘è╪¬╪º = ┘à┘ê╪º┘ü┘é╪⌐ ╪ú╪│╪▒╪╣.
-                    <strong> MARKETING</strong> ┘à╪¡╪¬╪º╪¼ opt-in ┘à┘å ╪º┘ä╪╣┘à┘è┘ä ┘ê┘à╪▒╪º╪¼╪╣╪⌐ ╪ú╪┤╪».
+                    <strong>UTILITY</strong> يترجم لـ UTILITY على ميتا = موافقة أسرع.
+                    <strong> MARKETING</strong> محتاج opt-in من العميل ومراجعة أشد.
                   </p>
                 </div>
               </div>
 
-              {/* ╪╡┘ê╪▒╪⌐ ╪º┘ä╪▒╪ú╪│ (┘à┘è╪¬╪º ┘ü┘é╪╖) */}
+              {/* صورة الرأس (ميتا فقط) */}
               {templateDialog.slot === "META_CLOUD" && (
                 <div className="space-y-1.5 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                   <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                    ╪╡┘ê╪▒╪⌐ ╪º┘ä╪▒╪ú╪│ (HEADER) ΓÇö ╪º╪«╪¬┘è╪º╪▒┘è
+                    صورة الرأس (HEADER) — اختياري
                   </Label>
                   {templateDialog.template.headerMediaHandle ? (
                     <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-800">
@@ -1049,13 +1049,13 @@ const CustomerNotifications: React.FC = () => {
                         }
                         className="shrink-0 text-[11px] font-medium text-red-500 hover:text-red-600"
                       >
-                        ╪Ñ╪▓╪º┘ä╪⌐
+                        إزالة
                       </button>
                     </div>
                   ) : (
                     <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
                       <Image className="size-4" />
-                      {uploadingHeader ? "╪¼╪º╪▒┘è ╪º┘ä╪▒┘ü╪╣ ╪Ñ┘ä┘ë ┘à┘è╪¬╪º..." : "╪º╪«╪¬╪▒ ╪╡┘ê╪▒╪⌐ ┘ä┘ä╪▒╪ú╪│"}
+                      {uploadingHeader ? "جاري الرفع إلى ميتا..." : "اختر صورة للرأس"}
                       <input
                         type="file"
                         accept="image/*"
@@ -1070,16 +1070,16 @@ const CustomerNotifications: React.FC = () => {
                     </label>
                   )}
                   <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                    ┘à┘è╪¬╪º ╪¬╪¬╪╖┘ä╪¿ sample media ┘ä┘ç┘è╪»╪▒ IMAGE ΓÇö ╪¬┘Å╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒╪⌐ ┘ê╪¬┘Å╪│╪¬╪«╪»┘à ┘ü┘è ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘å╪» ╪º┘ä┘å╪┤╪▒.
+                    ميتا تتطلب sample media لهيدر IMAGE — تُرفع الصورة وتُستخدم في القالب عند النشر.
                   </p>
                 </div>
               )}
 
-              {/* ╪º┘ä┘à╪¡╪▒╪▒ + ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪¼┘å╪¿ ╪¿╪╣╪╢ */}
+              {/* المحرر + المعاينة جنب بعض */}
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿</Label>
+                    <Label>محتوى القالب</Label>
                     <span
                       className={`text-[10px] font-medium tabular-nums ${
                         templateDialog.slot === "META_CLOUD" &&
@@ -1088,7 +1088,7 @@ const CustomerNotifications: React.FC = () => {
                           : "text-gray-400"
                       }`}
                     >
-                      {templateDialog.template.content.length} / {templateDialog.slot === "META_CLOUD" ? 1024 : "Γê₧"}
+                      {templateDialog.template.content.length} / {templateDialog.slot === "META_CLOUD" ? 1024 : "∞"}
                     </span>
                   </div>
                   <Textarea
@@ -1100,10 +1100,10 @@ const CustomerNotifications: React.FC = () => {
                         d ? { ...d, template: { ...d.template, content: e.target.value } } : d,
                       )
                     }
-                    placeholder="╪º┘â╪¬╪¿ ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘ç┘å╪º... ╪º╪│╪¬╪«╪»┘à {╪º┘ä┘à╪¬╪║┘è╪▒} ┘ä┘ä┘à╪¬╪║┘è╪▒╪º╪¬"
+                    placeholder="اكتب الرسالة هنا... استخدم {المتغير} للمتغيرات"
                   />
                   <p className="text-xs text-gray-400">
-                    ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬: <code>{extractVariables(templateDialog.template.content).map((v) => `{${v}}`).join(" ")}</code>
+                    المتغيرات: <code>{extractVariables(templateDialog.template.content).map((v) => `{${v}}`).join(" ")}</code>
                   </p>
                 </div>
 
@@ -1118,15 +1118,15 @@ const CustomerNotifications: React.FC = () => {
                 onClick={() => setShowVariables(!showVariables)}
                 className="text-[11px] text-indigo-600 hover:text-indigo-700"
               >
-                {showVariables ? "╪Ñ╪«┘ü╪º╪í ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐" : "╪╣╪▒╪╢ ┘â┘ä ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐"}
+                {showVariables ? "إخفاء المتغيرات المتاحة" : "عرض كل المتغيرات المتاحة"}
               </button>
               {showVariables && (
                 <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className="bg-gray-50 text-right dark:bg-gray-800">
-                        <th className="px-2 py-1 font-medium text-gray-500">╪º┘ä┘à╪¬╪║┘è╪▒</th>
-                        <th className="px-2 py-1 font-medium text-gray-500">╪º┘ä┘ê╪╡┘ü</th>
+                        <th className="px-2 py-1 font-medium text-gray-500">المتغير</th>
+                        <th className="px-2 py-1 font-medium text-gray-500">الوصف</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -1145,7 +1145,7 @@ const CustomerNotifications: React.FC = () => {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Label>┘é╪º┘ä╪¿ ┘ü╪╣╪º┘ä</Label>
+                  <Label>قالب فعال</Label>
                   <Switch
                     checked={templateDialog.template.isActive}
                     onCheckedChange={(v) =>
@@ -1157,29 +1157,29 @@ const CustomerNotifications: React.FC = () => {
                 </div>
                 {templateDialog.template.id && (
                   <Button size="sm" variant="ghost" className="text-red-600" onClick={() => deleteTemplate(templateDialog.template)}>
-                    ╪¡╪░┘ü
+                    حذف
                   </Button>
                 )}
               </div>
 
               {templateDialog.slot === "META_CLOUD" && (
                 <div className="space-y-3">
-                  {/* ╪¬┘ê╪╢┘è╪¡ ╪│┘ä┘ê┘â ╪º┘ä┘é┘å╪º╪⌐ */}
+                  {/* توضيح سلوك القناة */}
                   <div className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-[11px] leading-relaxed text-blue-800 dark:border-blue-800/40 dark:bg-blue-900/20 dark:text-blue-300">
-                    Γÿü∩╕Å <strong>┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪» (APPROVED) ┘ç┘ê ╪º┘ä┘ä┘è ╪¿┘è╪¬╪¿╪╣╪¬ ┘ä┘ä╪╣┘à┘è┘ä</strong> ╪╣┘å╪»┘à╪º ╪¬┘â┘ê┘å ╪º┘ä╪¼┘ä╪│╪⌐
-                    ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ Meta Cloud ┘ê╪º┘ä┘é┘å╪º╪⌐ ╪º┘ä┘å╪┤╪╖╪⌐ ┘ü┘è ╪º┘ä╪¼╪»┘ê┘ä "┘à┘è╪¬╪º ┘ü┘é╪╖" ╪ú┘ê "╪¬┘ä┘é╪º╪ª┘è".
-                    ╪º┘ä┘å╪╡ ╪º┘ä┘ä┘è ╪¿╪¬┘â╪¬╪¿┘ç ┘ç┘å╪º ┘ç┘ê ╪º┘ä┘à╪▒╪¼╪╣ ┘ä┘ä╪▒╪¿╪╖/╪º┘ä┘å╪┤╪▒ ╪╣┘ä┘ë ┘à┘è╪¬╪º.
+                    ☁️ <strong>قالب ميتا المعتمد (APPROVED) هو اللي بيتبعت للعميل</strong> عندما تكون الجلسة
+                    الأساسية Meta Cloud والقناة النشطة في الجدول "ميتا فقط" أو "تلقائي".
+                    النص اللي بتكتبه هنا هو المرجع للربط/النشر على ميتا.
                   </div>
 
-                  {/* ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º */}
+                  {/* جلسة ميتا */}
                   <div className="space-y-1">
-                    <Label className="text-xs text-gray-500">╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ┘ä┘ä╪▒╪¿╪╖/╪º┘ä┘å╪┤╪▒</Label>
+                    <Label className="text-xs text-gray-500">جلسة ميتا للربط/النشر</Label>
                     <Select
                       value={selectedMetaSession || metaSessionId}
                       onValueChange={(v) => v && setSelectedMetaSession(v)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º" />
+                        <SelectValue placeholder="اختر جلسة ميتا" />
                       </SelectTrigger>
                       <SelectContent>
                         {metaSessions.map((s) => (
@@ -1191,7 +1191,7 @@ const CustomerNotifications: React.FC = () => {
                     </Select>
                   </div>
 
-                  {/* ┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä╪¡╪º┘ä╪º╪¬ ┘à╪╣ ┘à┘è╪¬╪º */}
+                  {/* مزامنة الحالات مع ميتا */}
                   {templateDialog.template.metaTemplateName && (
                     <Button
                       size="sm"
@@ -1201,11 +1201,11 @@ const CustomerNotifications: React.FC = () => {
                       onClick={syncMetaStatuses}
                     >
                       {syncingStatus ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                      ┘à╪▓╪º┘à┘å╪⌐ ╪¡╪º┘ä╪⌐ ╪º┘ä┘é╪º┘ä╪¿ ┘à╪╣ ┘à┘è╪¬╪º
+                      مزامنة حالة القالب مع ميتا
                     </Button>
                   )}
 
-                  {/* ╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¼╪»┘è╪» */}
+                  {/* إنشاء قالب ميتا جديد */}
                   <Button
                     size="sm"
                     variant="outline"
@@ -1214,17 +1214,17 @@ const CustomerNotifications: React.FC = () => {
                     onClick={createMetaTemplate}
                   >
                     {publishingId ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                    {publishingId ? "╪¼╪º╪▒┘ì ╪º┘ä┘å╪┤╪▒ ╪╣┘ä┘ë ┘à┘è╪¬╪º..." : "╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¼╪»┘è╪» ┘ê┘å╪┤╪▒┘ç"}
+                    {publishingId ? "جارٍ النشر على ميتا..." : "إنشاء قالب ميتا جديد ونشره"}
                   </Button>
 
-                  {/* ╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪» ┘à┘ê╪¼┘ê╪» */}
+                  {/* ربط بقالب ميتا معتمد موجود */}
                   <div className="border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                       <Link2 className="h-4 w-4 text-blue-600" />
-                      ╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪» ┘à┘ê╪¼┘ê╪»
+                      ربط بقالب ميتا معتمد موجود
                     </div>
                     {templateDialog.metaLoading ? (
-                      <p className="text-xs text-gray-400">╪¼╪º╪▒┘ì ╪¼┘ä╪¿ ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º...</p>
+                      <p className="text-xs text-gray-400">جارٍ جلب قوالب ميتا...</p>
                     ) : templateDialog.metaOptions && templateDialog.metaOptions.length > 0 ? (
                       <div className="space-y-1.5">
                         <select
@@ -1246,7 +1246,7 @@ const CustomerNotifications: React.FC = () => {
                             );
                           }}
                         >
-                          <option value="">╪º╪«╪¬╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º...</option>
+                          <option value="">اختر قالب ميتا...</option>
                           {templateDialog.metaOptions
                             .filter(
                               (m) =>
@@ -1256,25 +1256,25 @@ const CustomerNotifications: React.FC = () => {
                             .map((m) => (
                               <option key={m.name} value={m.name}>
                                 {m.name} {m.category ? `(${m.category})` : ""}
-                                {m.boundToEventType ? ` - ┘à╪▒╪¿┘ê╪╖ ╪¿┘Ç ${m.boundToEventType}` : ""}
+                                {m.boundToEventType ? ` - مربوط بـ ${m.boundToEventType}` : ""}
                               </option>
                             ))}
                         </select>
                         {templateDialog.template.metaTemplateName && (
                           <Button size="sm" className="w-full" onClick={() => bindMetaTemplate(templateDialog.template.metaTemplateName!)}>
                             <Link2 className="h-3.5 w-3.5" />
-                            ╪¡┘ü╪╕ ╪º┘ä╪▒╪¿╪╖
+                            حفظ الربط
                           </Button>
                         )}
                       </div>
                     ) : (
                       <p className="text-xs text-amber-600">
-                        ┘ä╪º ╪¬┘ê╪¼╪» ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪»╪⌐ ┘à╪¬╪º╪¡╪⌐ ΓÇö ╪ú┘å╪┤╪ª ┘é╪º┘ä╪¿╪º┘ï ┘à┘å ╪º┘ä╪▓╪▒ ╪ú╪╣┘ä╪º┘ç ╪ú┘ê ╪¬╪ú┘â╪» ┘à┘å ╪º╪¬╪╡╪º┘ä ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º
+                        لا توجد قوالب ميتا معتمدة متاحة — أنشئ قالباً من الزر أعلاه أو تأكد من اتصال جلسة ميتا
                       </p>
                     )}
                   </div>
 
-                  {/* ╪¬╪╖╪º╪¿┘é ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬: {{1}} ΓåÉ ╪º┘ä┘à╪¬╪║┘è╪▒ ╪º┘ä┘à╪¡┘ä┘è */}
+                  {/* تطابق المتغيرات: {{1}} ← المتغير المحلي */}
                   <VariableMappingTable template={templateDialog.template} metaOptions={templateDialog.metaOptions || []} />
                 </div>
               )}
@@ -1290,15 +1290,15 @@ const CustomerNotifications: React.FC = () => {
                 onClick={handleResubmitMeta}
               >
                 {resubmittingMeta ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                ╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»
+                إرسال للمراجعة من جديد
               </Button>
             )}
             <Button variant="outline" onClick={() => setTemplateDialog(null)}>
-              ╪Ñ┘ä╪║╪º╪í
+              إلغاء
             </Button>
             <Button onClick={saveTemplate} className="gap-1">
               <Save className="h-4 w-4" />
-              ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿
+              حفظ القالب
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1312,17 +1312,17 @@ const extractVariables = (content: string): string[] => {
   return Array.from(new Set(matches.map((m) => m.slice(1, -1))));
 };
 
-// ┘é┘è┘à ┘å┘à┘ê╪░╪¼┘è╪⌐ ┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ┘ü┘è ┘â╪▒┘ê╪¬ ╪º┘ä┘é┘ê╪º┘ä╪¿
+// قيم نموذجية لمعاينة المتغيرات في كروت القوالب
 const PREVIEW_VARIABLES: Record<string, string> = {
-  customerName: "╪╣┘à┘è┘ä┘å╪º ╪º┘ä┘â╪▒┘è┘à",
+  customerName: "عميلنا الكريم",
   points: "50",
   currentPoints: "120",
-  reason: "╪╖┘ä╪¿ #10025",
-  tierName: "╪░┘ç╪¿┘è",
+  reason: "طلب #10025",
+  tierName: "ذهبي",
   expiryDate: "2026-09-01",
-  programName: "╪¿╪▒┘å╪º┘à╪¼ ╪º┘ä┘ê┘ä╪º╪í",
+  programName: "برنامج الولاء",
   cashAmount: "25.00",
-  currency: "╪¼.┘à",
+  currency: "ج.م",
   orderNumber: "10025",
   balance: "75.00",
   qualityTier: "VIP",
@@ -1333,8 +1333,8 @@ function resolveVariablesForPreview(content: string): string {
   return content.replace(/\{(\w+)\}/g, (_, name) => PREVIEW_VARIABLES[name] || name);
 }
 
-// ╪º╪│╪¬╪«╪▒╪º╪¼ ╪ú╪│┘à╪º╪í ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¡┘ä┘è╪⌐ ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪░┘è ╪¬╪╕┘ç╪▒ ╪¿┘ç ┘ü┘è ╪º┘ä┘à╪¡╪¬┘ê┘ë
-// ┘è┘Å╪│╪¬╪«╪»┘à ┘ä╪▒╪¿╪╖ ┘â┘ä ┘à╪¬╪║┘è╪▒ ┘à╪¡┘ä┘è {customerName} ╪¿╪▒┘é┘à ┘à┘è╪¬╪º {{1}}╪î {{2}}... ╪¿╪╡╪▒┘è╪º┘ï
+// استخراج أسماء المتغيرات المحلية بالترتيب الذي تظهر به في المحتوى
+// يُستخدم لربط كل متغير محلي {customerName} برقم ميتا {{1}}، {{2}}... بصرياً
 function extractLocalVariableOrder(content: string): string[] {
   const seen = new Set<string>();
   const order: string[] = [];
@@ -1352,51 +1352,51 @@ function extractLocalVariableOrder(content: string): string[] {
 }
 
 const VARIABLE_DESCRIPTIONS: Record<string, string> = {
-  customerName: "╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä",
-  points: "╪╣╪»╪» ╪º┘ä┘å┘é╪º╪╖ ╪º┘ä┘à┘â╪¬╪│╪¿╪⌐/╪º┘ä┘à╪│╪¬╪¿╪»┘ä╪⌐",
-  currentPoints: "╪▒╪╡┘è╪» ╪º┘ä┘å┘é╪º╪╖ ╪º┘ä╪¡╪º┘ä┘è",
-  reason: "╪│╪¿╪¿ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐/╪º┘ä╪«╪╡┘à",
-  tierName: "╪º╪│┘à ╪º┘ä┘à╪│╪¬┘ê┘ë ╪º┘ä╪¼╪»┘è╪»",
-  expiryDate: "╪¬╪º╪▒┘è╪« ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐",
-  programName: "╪º╪│┘à ╪¿╪▒┘å╪º┘à╪¼ ╪º┘ä┘ê┘ä╪º╪í",
-  cashAmount: "┘é┘è┘à╪⌐ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â/╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä",
-  currency: "╪º┘ä╪╣┘à┘ä╪⌐ (╪¼.┘à)",
-  orderNumber: "╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿",
-  balance: "╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐ ╪º┘ä╪¡╪º┘ä┘è",
-  qualityTier: "╪¬╪╡┘å┘è┘ü ╪º┘ä╪¼┘ê╪»╪⌐ (VIP/╪╣╪º┘ä┘è/┘à╪¬┘ê╪│╪╖/┘à┘å╪«┘ü╪╢)",
-  score: "╪»╪▒╪¼╪⌐ ╪º┘ä╪¼┘ê╪»╪⌐ ┘à┘å 100",
+  customerName: "اسم العميل",
+  points: "عدد النقاط المكتسبة/المستبدلة",
+  currentPoints: "رصيد النقاط الحالي",
+  reason: "سبب الإضافة/الخصم",
+  tierName: "اسم المستوى الجديد",
+  expiryDate: "تاريخ انتهاء الصلاحية",
+  programName: "اسم برنامج الولاء",
+  cashAmount: "قيمة الكاش باك/الاستبدال",
+  currency: "العملة (ج.م)",
+  orderNumber: "رقم الطلب",
+  balance: "رصيد المحفظة الحالي",
+  qualityTier: "تصنيف الجودة (VIP/عالي/متوسط/منخفض)",
+  score: "درجة الجودة من 100",
 };
 
-// ┘à╪╣╪º┘è┘å╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐ ╪╣┘ä┘ë ╪┤┘â┘ä ┘ü┘é╪º╪╣╪⌐ ┘ê╪º╪¬╪│╪º╪¿
+// معاينة مباشرة على شكل فقاعة واتساب
 function WhatsAppBubblePreview({ content, isMeta }: { content: string; isMeta?: boolean }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-[#e5ddd5] p-3 dark:border-gray-700 dark:bg-slate-900/70">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          ┘à╪╣╪º┘è┘å╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐
+          معاينة مباشرة
         </p>
-        <span className="text-[9px] text-gray-400">┘à╪¬╪¼╪▒┘â</span>
+        <span className="text-[9px] text-gray-400">متجرك</span>
       </div>
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-[#d9fdd3] px-3 py-2 shadow-sm dark:bg-green-900/40">
           <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-gray-800 dark:text-gray-100">
-            {content.trim() ? content : "╪º┘â╪¬╪¿ ╪º┘ä┘à╪¡╪¬┘ê┘ë ┘ä╪¬╪▒┘ë ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ┘ç┘å╪º..."}
+            {content.trim() ? content : "اكتب المحتوى لترى المعاينة هنا..."}
           </p>
           <p className="mt-1 text-right text-[9px] text-gray-500 dark:text-gray-400" dir="ltr">
-            {new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })} Γ£ôΓ£ô
+            {new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })} ✓✓
           </p>
         </div>
       </div>
       {isMeta && (
         <p className="mt-2 rounded bg-blue-100 px-2 py-1 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-          Γÿü∩╕Å ╪│┘è┘Å╪▒╪│┘ä ╪╣╪¿╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»
+          ☁️ سيُرسل عبر قالب ميتا المعتمد
         </p>
       )}
     </div>
   );
 }
 
-// ΓöÇΓöÇ Template slot card (┘å┘ü╪│ ╪¬┘é╪│┘è┘à╪⌐ ╪╡┘ü╪¡╪⌐ ╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬) ΓöÇΓöÇ
+// ── Template slot card (نفس تقسيمة صفحة حالات الطلبات) ──
 interface TemplateSlotCardProps {
   slot: "BAILEYS" | "META_CLOUD";
   eventType: string;
@@ -1454,27 +1454,27 @@ function TemplateSlotCard({
   const statusLabel = isMeta
     ? bound
       ? metaStatus === "APPROVED"
-        ? "Γ£à ┘à╪╣╪¬┘à╪»"
+        ? "✅ معتمد"
         : metaStatus === "REJECTED"
-          ? "Γ¥î ┘à╪▒┘ü┘ê╪╢"
+          ? "❌ مرفوض"
           : metaStatus
-            ? `ΓÅ│ ${metaStatus}`
-            : "┘é┘è╪» ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐"
+            ? `⏳ ${metaStatus}`
+            : "قيد المراجعة"
       : template
-        ? "┘à╪¡┘ü┘ê╪╕ (╪¿╪»┘ê┘å ╪▒╪¿╪╖)"
-        : "╪¿╪»┘ê┘å ┘é╪º┘ä╪¿"
+        ? "محفوظ (بدون ربط)"
+        : "بدون قالب"
     : template
       ? template.isActive === false
-        ? "ΓÅ╕ ┘à╪¬┘ê┘é┘ü"
-        : "┘è┘ê╪¼╪» ┘é╪º┘ä╪¿"
-      : "╪¿╪»┘ê┘å ┘é╪º┘ä╪¿";
+        ? "⏸ متوقف"
+        : "يوجد قالب"
+      : "بدون قالب";
 
   return (
     <div data-testid={`${slot}-slot-${eventType}`} className={`rounded-lg border p-3 ${colors.border} ${colors.bg}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${colors.badge}`}>
           {isMeta ? <Globe className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-          {isMeta ? "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º" : "┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è"}
+          {isMeta ? "قالب ميتا" : "واتساب عادي"}
         </span>
         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadge}`}>
           {isMeta && bound ? <CheckCircle2 className="h-3 w-3" /> : null}
@@ -1492,8 +1492,8 @@ function TemplateSlotCard({
         {template ? (
           <>
             <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-              {template.name || "┘é╪º┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘à┘æ┘ë"}
-              {template.isDefault ? " (╪º┘ü╪¬╪▒╪º╪╢┘è)" : ""}
+              {template.name || "قالب غير مسمّى"}
+              {template.isDefault ? " (افتراضي)" : ""}
             </p>
             {hasContent && (
               <p className="mt-0.5 line-clamp-2 whitespace-pre-wrap break-words text-xs text-slate-600 dark:text-slate-400">
@@ -1503,7 +1503,7 @@ function TemplateSlotCard({
           </>
         ) : (
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {isMeta ? "┘ä╪º ┘è┘ê╪¼╪» ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘ä┘ç╪░╪º ╪º┘ä╪¡╪»╪½" : "┘ä╪º ┘è┘ê╪¼╪» ┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è ΓÇö ╪º╪│╪¬╪«╪»┘à ╪▓╪▒ ╪º┘ä╪Ñ┘å╪┤╪º╪í"}
+            {isMeta ? "لا يوجد قالب ميتا لهذا الحدث" : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
           </p>
         )}
       </div>
@@ -1515,7 +1515,7 @@ function TemplateSlotCard({
             className="flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition hover:bg-white dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20"
           >
             <FileText className="h-3 w-3" />
-            {isPreviewExpanded ? "╪Ñ╪«┘ü╪º╪í" : "┘à╪╣╪º┘è┘å╪⌐"}
+            {isPreviewExpanded ? "إخفاء" : "معاينة"}
           </button>
         )}
         <button
@@ -1523,7 +1523,7 @@ function TemplateSlotCard({
           className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${colors.accent}`}
         >
           {template ? <Pencil className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-          {template ? (isMeta ? "╪¬╪╣╪»┘è┘ä ╪º┘ä╪▒╪¿╪╖" : "╪¬╪╣╪»┘è┘ä") : "╪Ñ┘å╪┤╪º╪í"}
+          {template ? (isMeta ? "تعديل الربط" : "تعديل") : "إنشاء"}
         </button>
         {isMeta && bound && onUnbind && template && (
           <button
@@ -1531,7 +1531,7 @@ function TemplateSlotCard({
             className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
           >
             <Unlink className="h-3 w-3" />
-            ┘ü┘â ╪º┘ä╪▒╪¿╪╖
+            فك الربط
           </button>
         )}
       </div>
@@ -1539,7 +1539,7 @@ function TemplateSlotCard({
       {hasContent && isPreviewExpanded && (
         <div className="mt-2 rounded-md bg-white/70 p-2 dark:bg-white/5">
           <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘â╪º┘à┘ä╪⌐
+            المعاينة الكاملة
           </p>
           <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
             {resolveVariablesForPreview(template!.content)}
@@ -1550,7 +1550,7 @@ function TemplateSlotCard({
   );
 }
 
-// ╪¼╪»┘ê┘ä ╪¬╪╖╪º╪¿┘é ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬: {{1}} ┘ü┘è ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ΓåÉ ╪º┘ä┘à╪¬╪║┘è╪▒ ╪º┘ä┘à╪¡┘ä┘è ┘ü┘è ╪º┘ä┘é╪º┘ä╪¿
+// جدول تطابق المتغيرات: {{1}} في قالب ميتا ← المتغير المحلي في القالب
 const META_BODY_CHAR_LIMIT = 1024;
 
 function VariableMappingTable({
@@ -1568,10 +1568,10 @@ function VariableMappingTable({
 
   return (
     <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-      {/* ╪╣╪»╪º╪» ╪¡╪▒┘ê┘ü ┘à┘è╪¬╪º */}
+      {/* عداد حروف ميتا */}
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-          ╪¡╪» ╪¡╪▒┘ê┘ü ┘à┘è╪¬╪º
+          حد حروف ميتا
         </span>
         <span
           className={`text-[10px] font-medium tabular-nums ${
@@ -1583,21 +1583,21 @@ function VariableMappingTable({
       </div>
       {isOverLimit && (
         <p className="text-[11px] text-red-600 dark:text-red-400" role="alert">
-          ΓÜá∩╕Å ╪º┘ä┘å╪╡ ╪ú╪╖┘ê┘ä ┘à┘å ╪¡╪» ┘à┘è╪¬╪º ({META_BODY_CHAR_LIMIT} ╪¡╪▒┘ü) ΓÇö ╪º┘ä┘é╪º┘ä╪¿ ┘ç┘è╪¬╪▒┘ü╪╢ ╪╣┘å╪» ╪º┘ä┘å╪┤╪▒ ╪╣┘ä┘ë Meta Cloud API.
+          ⚠️ النص أطول من حد ميتا ({META_BODY_CHAR_LIMIT} حرف) — القالب هيترفض عند النشر على Meta Cloud API.
         </p>
       )}
 
       {selectedMeta ? (
         <>
           <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            ┘à╪¡╪¬┘ê┘ë ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪¡╪»╪» ({selectedMeta.name})
+            محتوى قالب ميتا المحدد ({selectedMeta.name})
           </p>
           <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">{metaBody}</p>
 
           {metaNums.length > 0 ? (
             <div className="space-y-1">
               <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                ╪¬╪╖╪º╪¿┘é ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬
+                تطابق المتغيرات
               </p>
               {metaNums.map((n, i) => {
                 const local = localVars[i];
@@ -1608,7 +1608,7 @@ function VariableMappingTable({
                     <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                       {`{{${numLabel}}}`}
                     </span>
-                    <span className="text-slate-400">ΓåÉ</span>
+                    <span className="text-slate-400">←</span>
                     <span
                       className={`rounded px-1.5 py-0.5 font-mono ${
                         matched
@@ -1616,14 +1616,14 @@ function VariableMappingTable({
                           : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
                       }`}
                     >
-                      {local ? `{${local}}` : "ΓÇö"}
+                      {local ? `{${local}}` : "—"}
                     </span>
                     {local && (
                       <span className="text-slate-500">{VARIABLE_DESCRIPTIONS[local] || ""}</span>
                     )}
                     {!matched && (
                       <span className="text-red-500">
-                        ┘å╪º┘é╪╡ ΓÇö ╪▒╪¬╪¿ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ┘ü┘è ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪¡╪│╪¿ ╪¬╪▒╪¬┘è╪¿ {`{{${numLabel}}}`}
+                        ناقص — رتب المتغيرات في المحتوى حسب ترتيب {`{{${numLabel}}}`}
                       </span>
                     )}
                   </div>
@@ -1631,30 +1631,30 @@ function VariableMappingTable({
               })}
               {localVars.length > metaNums.length && (
                 <p className="text-[11px] text-amber-600">
-                  ΓÜá∩╕Å ╪╣┘å╪»┘â ┘à╪¬╪║┘è╪▒╪º╪¬ ┘à╪¡┘ä┘è╪⌐ ╪▓┘è╪º╪»╪⌐ ({localVars.slice(metaNums.length).map((v) => `{${v}}`).join(", ")}) ΓÇö
-                  ┘à┘è╪¬╪º ┘à╪┤ ┘ç╪¬╪╣╪▒╪╢┘ç┘à (╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪¿╪¬╪¬╪▒╪¬╪¿ ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ ╪¿╪│).
+                  ⚠️ عندك متغيرات محلية زيادة ({localVars.slice(metaNums.length).map((v) => `{${v}}`).join(", ")}) —
+                  ميتا مش هتعرضهم (المتغيرات بتترتب بالترتيب بس).
                 </p>
               )}
               {localVars.length < metaNums.length && (
                 <p className="text-[11px] text-red-600">
-                  Γ¥î ╪╣╪»╪» ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪ú┘é┘ä ┘à┘å ╪º┘ä┘à╪╖┘ä┘ê╪¿ ΓÇö ╪ú╪╢┘ü {metaNums.length - localVars.length} ┘à╪¬╪║┘è╪▒ ╪Ñ╪╢╪º┘ü┘è ┘ä┘ä┘à╪¡╪¬┘ê┘ë ┘é╪¿┘ä ╪º┘ä╪¡┘ü╪╕.
+                  ❌ عدد المتغيرات أقل من المطلوب — أضف {metaNums.length - localVars.length} متغير إضافي للمحتوى قبل الحفظ.
                 </p>
               )}
             </div>
           ) : (
             <p className="text-xs text-slate-500">
-              ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪»┘ç ┘à┘å ╪║┘è╪▒ ┘à╪¬╪║┘è╪▒╪º╪¬ ΓÇö ╪º┘ä┘à╪¬┘å╪º╪│┘é ╪¬┘à╪º┘à╪º┘ï. ┘ä┘ê ╪╣╪º┘è╪▓ ┘à╪¬╪║┘è╪▒╪º╪¬╪î ╪º┘â╪¬╪¿┘ç╪º ┘ü┘è ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à╪¡┘ä┘è
-              (╪▓┘è <code>{`{customerName}`}</code>) ┘ê╪│┘è╪¿ ┘à┘è╪¬╪º ┘è╪¿┘å┘è┘ç╪º ╪¿╪¬╪▒╪¬┘è╪¿ ╪╕┘ç┘ê╪▒┘ç╪º.
+              قالب ميتا ده من غير متغيرات — المتناسق تماماً. لو عايز متغيرات، اكتبها في المحتوى المحلي
+              (زي <code>{`{customerName}`}</code>) وسيب ميتا يبنيها بترتيب ظهورها.
             </p>
           )}
         </>
       ) : template.metaTemplateName && metaOptions.length === 0 ? (
-        <p className="text-xs text-slate-500">╪º┘ä┘é╪º┘ä╪¿ ┘à╪▒╪¿┘ê╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ΓÇö ╪¡╪»┘æ╪½ ╪º┘ä┘é┘ê╪º┘ä╪¿ ╪º┘ä┘à╪¬╪º╪¡╪⌐ ┘ä┘à╪┤╪º┘ç╪»╪⌐ ╪º┘ä╪¬╪╖╪º╪¿┘é.</p>
+        <p className="text-xs text-slate-500">القالب مربوط بقالب ميتا — حدّث القوالب المتاحة لمشاهدة التطابق.</p>
       ) : (
         <p className="text-xs text-slate-500">
-          ≡ƒÆí <strong>╪Ñ╪▓╪º┘è ╪¬╪╣╪▒┘ü ┘à╪¬╪║┘è╪▒╪º╪¬ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º╪ƒ</strong> ┘à┘è╪¬╪º ╪¿╪¬╪│╪¬╪«╪»┘à ╪ú╪▒┘é╪º┘à ({`{{1}}, {{2}}`}...) ┘à╪┤ ╪ú╪│┘à╪º╪í.
-          ╪º┘ä╪¬╪▒╪¬┘è╪¿ ╪¿┘è╪¬╪¡╪»╪» ┘à┘å <strong>╪¬╪▒╪¬┘è╪¿ ╪╕┘ç┘ê╪▒ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ┘ü┘è ┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è</strong>: ╪ú┘ê┘ä{" "}
-          <code>{`{customerName}`}</code> = {`{{1}}`}╪î ╪º┘ä╪¬╪º┘å┘è = {`{{2}}`} ┘ê┘ç┘â╪░╪º. ╪º╪«╪¬╪º╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à┘å ┘ü┘ê┘é ┘ê╪┤┘ê┘ü ╪º┘ä╪¬╪╖╪º╪¿┘é ┘ç┘å╪º.
+          💡 <strong>إزاي تعرف متغيرات قالب ميتا؟</strong> ميتا بتستخدم أرقام ({`{{1}}, {{2}}`}...) مش أسماء.
+          الترتيب بيتحدد من <strong>ترتيب ظهور المتغيرات في محتوى القالب المحلي</strong>: أول{" "}
+          <code>{`{customerName}`}</code> = {`{{1}}`}، التاني = {`{{2}}`} وهكذا. اختار قالب ميتا من فوق وشوف التطابق هنا.
         </p>
       )}
     </div>

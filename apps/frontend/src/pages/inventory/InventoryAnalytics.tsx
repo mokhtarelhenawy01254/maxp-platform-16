@@ -1,6 +1,12 @@
-import { Circle as CubeIcon, RefreshCw as ArrowPathIcon, AlertTriangle as ExclamationTriangleIcon, DollarSign as CurrencyDollarIcon, Circle as ArrowTrendingUpIcon, Table as TableCellsIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  CubeIcon,
+  ArrowPathIcon,
+  ExclamationTriangleIcon,
+  CurrencyDollarIcon,
+  ArrowTrendingUpIcon,
+  TableCellsIcon,
+} from "@heroicons/react/24/outline";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import { useCurrency } from "../../hooks/useCurrency";
 import {

@@ -1,4 +1,4 @@
-﻿const mockCompanyFindUnique = jest.fn();
+const mockCompanyFindUnique = jest.fn();
 
 jest.mock('axios', () => ({
   post: jest.fn(),
@@ -89,7 +89,7 @@ describe('TurboApiClient', () => {
       await expect(client.getApiKey()).rejects.toThrow('Turbo is not enabled for this company');
       // Should log as warn (config error), not error
       expect(warnSpy).toHaveBeenCalledWith(
-        'ΓÜá∩╕Å [TURBO] API key unavailable:',
+        '⚠️ [TURBO] API key unavailable:',
         expect.objectContaining({ companyId: 'comp-disabled' })
       );
       expect(errorSpy).not.toHaveBeenCalled();
@@ -106,7 +106,7 @@ describe('TurboApiClient', () => {
       const client = new TurboApiClient(null, 'comp-db-err');
       await expect(client.getApiKey()).rejects.toThrow('DB connection lost');
       expect(errorSpy).toHaveBeenCalledWith(
-        'Γ¥î [TURBO] Error fetching API key:',
+        '❌ [TURBO] Error fetching API key:',
         expect.objectContaining({ message: 'DB connection lost' })
       );
     });

@@ -1546,6 +1546,105 @@ async function getEmployees(req, res) {
 }
 
 /**
+ * جلب الفريق المتواجد حالياً (الموظفين الموجودين على الموقع)
+ * GET /api/hr/online-team
+ */
+async function getOnlineTeam(req, res) {
+  try {
+    const { companyId, role } = req.user;
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: "يجب أن يكون المستخدم مرتبطاً بشركة لعرض الفريق المتواجد",
+      });
+    }
+
+    const socketService = require("../services/socketService");
+    const prisma = getSharedPrismaClient();
+
+    // جلب المستخدمين المتصلين حالياً لهذه الشركة
+    const onlineUsers = socketService.getCompanyOnlineUsers(companyId) || [];
+    const onlineUserIds = new Set(onlineUsers.map((u) => u.userId));
+    const onlineMap = new Map(onlineUsers.map((u) => [u.userId, u]));
+
+    // جلب جميع موظفي الشركة (بحد أقصى معقول للعرض)
+    const userWhere = {
+      employeeNumber: { not: null },
+      OR: [
+        { companyId },
+        { userCompanies: { some: { companyId, isActive: true } } },
+      ],
+    };
+
+    const employees = await prisma.user.findMany({
+      where: userWhere,
+      select: {
+        id: true,
+        employeeNumber: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        avatar: true,
+        isActive: true,
+        lastLoginAt: true,
+        departmentRelation: {
+          select: { id: true, name: true, color: true },
+        },
+        positionRelation: {
+          select: { id: true, title: true, level: true },
+        },
+        userCompanies: {
+          where: { companyId },
+          select: { role: true, isActive: true },
+          take: 1,
+        },
+      },
+      orderBy: { firstName: "asc" },
+    });
+
+    const formattedEmployees = employees.map((emp) => {
+      const onlineInfo = onlineMap.get(emp.id);
+      const userRole = emp.userCompanies?.[0]?.role || emp.role || null;
+      return {
+        id: emp.id,
+        userId: emp.id,
+        employeeNumber: emp.employeeNumber,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        email: emp.email,
+        phone: emp.phone,
+        avatar: emp.avatar,
+        isActive: emp.isActive,
+        status: emp.isActive ? "ACTIVE" : "INACTIVE",
+        department: emp.departmentRelation,
+        position: emp.positionRelation,
+        role: userRole,
+        lastLoginAt: emp.lastLoginAt,
+        isOnline: onlineUserIds.has(emp.id),
+        onlineSince: onlineInfo ? onlineInfo.connectedAt : null,
+      };
+    });
+
+    const onlineEmployees = formattedEmployees.filter((e) => e.isOnline);
+    const onlineUserCount = onlineUserIds.size;
+
+    res.json({
+      success: true,
+      data: {
+        onlineCount: onlineUserCount,
+        totalCount: formattedEmployees.length,
+        onlineEmployees,
+        employees: formattedEmployees,
+      },
+    });
+  } catch (error) {
+    console.error("❌ [HR] Error getting online team:", error.message);
+    res.status(500).json({ error: error.message || "حدث خطأ أثناء جلب الفريق المتواجد" });
+  }
+}
+
+/**
  * جلب موظف بالـ ID
  * GET /api/hr/employees/:id
  */
@@ -2860,6 +2959,74 @@ async function getAttendanceReport(req, res) {
     res.status(500).json({
       success: false,
       error: error.message || "حدث خطأ أثناء جلب تقرير الحضور",
+    });
+  }
+}
+
+/**
+ * تقرير أيام الغياب التفصيلي
+ * GET /api/hr/reports/absent-days
+ */
+async function getAbsentDaysReport(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { month, year, employeeId, departmentId } = req.query;
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        error: "يجب تحديد الشهر والسنة",
+      });
+    }
+
+    const report = await attendanceService.getAbsentDaysReport(
+      companyId,
+      parseInt(year),
+      parseInt(month),
+      employeeId || null,
+      departmentId || null,
+    );
+
+    res.json({ success: true, report });
+  } catch (error) {
+    console.error("❌ Error getting absent days report:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "حدث خطأ أثناء جلب تقرير أيام الغياب",
+    });
+  }
+}
+
+/**
+ * كشف الحضور الشهري التفصيلي (موظف × يوم)
+ * GET /api/hr/reports/attendance-sheet
+ */
+async function getAttendanceSheetReport(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { month, year, employeeId, departmentId } = req.query;
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        error: "يجب تحديد الشهر والسنة",
+      });
+    }
+
+    const report = await attendanceService.getMonthlyAttendanceSheet(
+      companyId,
+      parseInt(year),
+      parseInt(month),
+      employeeId || null,
+      departmentId || null,
+    );
+
+    res.json({ success: true, report });
+  } catch (error) {
+    console.error("❌ Error getting attendance sheet report:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "حدث خطأ أثناء جلب كشف الحضور الشهري",
     });
   }
 }
@@ -6726,6 +6893,7 @@ module.exports = {
   // Employees
   createEmployee,
   getEmployees,
+  getOnlineTeam,
   getEmployeeById,
   updateEmployee,
   deleteEmployee,
@@ -6784,6 +6952,8 @@ module.exports = {
 
   // Reports
   getAttendanceReport,
+  getAbsentDaysReport,
+  getAttendanceSheetReport,
   getPerformanceReport,
   getLeaveReport,
   getPayrollReport,

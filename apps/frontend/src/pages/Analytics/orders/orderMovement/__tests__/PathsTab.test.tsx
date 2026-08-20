@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import PathsTab from "../tabs/PathsTab";
 
 jest.mock("../orderMovementShared", () => require("../testSupport").buildSharedMock());
@@ -22,7 +22,7 @@ const pathsData = {
   },
   topPaths: [
     {
-      path: "PENDINGΓåÆDELIVERED",
+      path: "PENDING→DELIVERED",
       orderCount: 6,
       percent: 60,
       avgHours: 24,
@@ -44,10 +44,10 @@ describe("PathsTab", () => {
 
     render(<PathsTab {...props} />);
 
-    await waitFor(() => expect(screen.getByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¡╪▒┘â╪⌐")).toBeInTheDocument());
-    expect(screen.getByText("╪╣╪»╪» ╪º┘ä┘à╪│╪º╪▒╪º╪¬")).toBeInTheDocument();
-    expect(screen.getByText("╪¡╪╡┘è┘ä╪⌐ ╪º┘ä┘å╪¬╪º╪ª╪¼")).toBeInTheDocument();
-    expect(screen.getByText("╪ú┘â╪½╪▒ ╪º┘ä┘à╪│╪º╪▒╪º╪¬ ╪¬┘â╪▒╪º╪▒╪º┘ï")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("إجمالي الطلبات المحركة")).toBeInTheDocument());
+    expect(screen.getByText("عدد المسارات")).toBeInTheDocument();
+    expect(screen.getByText("حصيلة النتائج")).toBeInTheDocument();
+    expect(screen.getByText("أكثر المسارات تكراراً")).toBeInTheDocument();
     expect(screen.getByText("DELIVERED")).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith("paths", { startDate: "2026-05-01", endDate: "2026-08-11", mode: "all" });
   });
@@ -61,7 +61,7 @@ describe("PathsTab", () => {
   });
 
   test("renders error state on failure", async () => {
-    mockFetch.mockRejectedValue(new Error("┘ü╪┤┘ä"));
+    mockFetch.mockRejectedValue(new Error("فشل"));
 
     render(<PathsTab {...props} />);
 

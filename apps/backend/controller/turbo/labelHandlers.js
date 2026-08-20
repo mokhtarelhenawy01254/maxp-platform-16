@@ -1,4 +1,4 @@
-﻿const TurboService = require('../../services/turboService');
+const TurboService = require('../../services/turboService');
 const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
 const { findOrderByNumber } = require('./helpers');
 const { normalizeGuestShippingAddress } = require('../../utils/turbo/addressParser');
@@ -25,7 +25,7 @@ const printLabel = async (req, res) => {
     else if (result.labelUrl) res.json({ success: true, data: { labelUrl: result.labelUrl } });
     else res.status(500).json({ success: false, error: 'Failed to generate label' });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error printing label:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error printing label:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to print label' });
   }
 };
@@ -57,11 +57,11 @@ const printWaybill = async (req, res) => {
     const result = await turboService.printWaybill(shipmentId, orderData);
     if (result.waybillPdf) { const buf = Buffer.from(result.waybillPdf, 'base64'); res.setHeader('Content-Type', 'application/pdf'); res.setHeader('Content-Disposition', `attachment; filename="waybill-${order.orderNumber || orderId}.pdf"`); res.setHeader('Content-Length', buf.length); return res.send(buf); }
     const waybillData = result.waybillData || result;
-    if (req.headers.accept?.includes('application/pdf')) return res.status(404).json({ success: false, error: '╪º┘ä╪¿┘ê┘ä┘è╪╡╪⌐ ╪║┘è╪▒ ┘à╪¬┘ê┘ü╪▒╪⌐ ╪¿╪╡┘è╪║╪⌐ PDF' });
+    if (req.headers.accept?.includes('application/pdf')) return res.status(404).json({ success: false, error: 'البوليصة غير متوفرة بصيغة PDF' });
     if (req.query.format === 'html' || req.headers.accept?.includes('text/html')) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.send(generateWaybillHTML(waybillData)); }
-    res.json({ success: true, message: '╪¬┘à ╪¼┘ä╪¿ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪¿┘ê┘ä┘è╪╡╪⌐', data: { waybillData, fromApi: result.fromApi || false } });
+    res.json({ success: true, message: 'تم جلب بيانات البوليصة', data: { waybillData, fromApi: result.fromApi || false } });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error printing waybill:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error printing waybill:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to print waybill' });
   }
 };

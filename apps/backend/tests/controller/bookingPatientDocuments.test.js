@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -30,12 +30,12 @@ describe('bookingPatientDocumentsController', () => {
     test('returns documents for a patient in the company, ordered by uploadedAt desc', async () => {
       const mockPrisma = {
         patient: {
-          findFirst: jest.fn().mockResolvedValue({ id: 'p1', companyId: 'c1', firstName: '╪ú╪¡┘à╪»' })
+          findFirst: jest.fn().mockResolvedValue({ id: 'p1', companyId: 'c1', firstName: 'أحمد' })
         },
         patientDocument: {
           findMany: jest.fn().mockResolvedValue([
-            { id: 'doc-1', patientId: 'p1', documentType: 'PRESCRIPTION', name: '┘ê╪╡┘ü╪⌐', fileData: 'data:image/png;base64,xxx', mimeType: 'image/png', uploadedAt: '2026-01-02T00:00:00Z', patient: { firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è' } },
-            { id: 'doc-2', patientId: 'p1', documentType: 'IMAGE', name: '╪ú╪┤╪╣╪⌐', fileData: 'data:image/png;base64,yyy', mimeType: 'image/png', uploadedAt: '2026-01-01T00:00:00Z', patient: { firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è' } }
+            { id: 'doc-1', patientId: 'p1', documentType: 'PRESCRIPTION', name: 'وصفة', fileData: 'data:image/png;base64,xxx', mimeType: 'image/png', uploadedAt: '2026-01-02T00:00:00Z', patient: { firstName: 'أحمد', lastName: 'علي' } },
+            { id: 'doc-2', patientId: 'p1', documentType: 'IMAGE', name: 'أشعة', fileData: 'data:image/png;base64,yyy', mimeType: 'image/png', uploadedAt: '2026-01-01T00:00:00Z', patient: { firstName: 'أحمد', lastName: 'علي' } }
           ])
         }
       };
@@ -52,7 +52,7 @@ describe('bookingPatientDocumentsController', () => {
         orderBy: { uploadedAt: 'desc' }
       });
       expect(res.payload.data).toHaveLength(2);
-      expect(res.payload.data[0].patient.firstName).toBe('╪ú╪¡┘à╪»');
+      expect(res.payload.data[0].patient.firstName).toBe('أحمد');
     });
 
     test('returns 404 when the patient does not belong to the company', async () => {
@@ -87,13 +87,13 @@ describe('bookingPatientDocumentsController', () => {
 
       const res = createResponse();
       await controller.addPatientDocument(
-        { user: { companyId: 'c1', firstName: '┘à╪¡┘à╪»', lastName: '╪¡╪│┘å' }, body: { patientId: 'p1', name: '┘ê╪╡┘ü╪⌐ ╪╖╪¿┘è╪⌐', fileData: 'data:application/pdf;base64,abc' } },
+        { user: { companyId: 'c1', firstName: 'محمد', lastName: 'حسن' }, body: { patientId: 'p1', name: 'وصفة طبية', fileData: 'data:application/pdf;base64,abc' } },
         res
       );
 
       expect(res.statusCode).toBe(200);
       expect(mockPrisma.patientDocument.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ companyId: 'c1', patientId: 'p1', documentType: 'OTHER', uploadedBy: '┘à╪¡┘à╪» ╪¡╪│┘å' })
+        data: expect.objectContaining({ companyId: 'c1', patientId: 'p1', documentType: 'OTHER', uploadedBy: 'محمد حسن' })
       }));
     });
 
@@ -121,7 +121,7 @@ describe('bookingPatientDocumentsController', () => {
 
       const res = createResponse();
       await controller.addPatientDocument(
-        { user: { companyId: 'c1' }, body: { patientId: 'p1', documentType: 'prescription', name: '┘ê╪╡┘ü╪⌐' } },
+        { user: { companyId: 'c1' }, body: { patientId: 'p1', documentType: 'prescription', name: 'وصفة' } },
         res
       );
 
@@ -133,7 +133,7 @@ describe('bookingPatientDocumentsController', () => {
 
     test('requires patientId', async () => {
       const res = createResponse();
-      await controller.addPatientDocument({ user: { companyId: 'c1' }, body: { name: '┘à╪│╪¬┘å╪»' } }, res);
+      await controller.addPatientDocument({ user: { companyId: 'c1' }, body: { name: 'مستند' } }, res);
       expect(res.statusCode).toBe(400);
       expect(res.payload.success).toBe(false);
     });

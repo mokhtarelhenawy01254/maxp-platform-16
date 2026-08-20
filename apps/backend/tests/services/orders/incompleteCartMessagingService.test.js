@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/whatsapp/WhatsAppNotificationService', () => ({
+jest.mock('../../../services/whatsapp/WhatsAppNotificationService', () => ({
   sendNotification: jest.fn().mockResolvedValue({ success: true }),
   isDuplicateNotification: jest.fn().mockResolvedValue(false),
 }));
@@ -25,7 +25,7 @@ const baseCart = {
   companyId: 'company-1',
   items: JSON.stringify([{ productId: 'p1', quantity: 2 }]),
   total: '500',
-  checkoutData: JSON.stringify({ customerName: '╪ú╪¡┘à╪»', phone: '01001234567' }),
+  checkoutData: JSON.stringify({ customerName: 'أحمد', phone: '01001234567' }),
 };
 
 describe('incompleteCartMessagingService.handleCartCreated', () => {
@@ -62,7 +62,7 @@ describe('incompleteCartMessagingService.handleCartCreated', () => {
   });
 
   test('skips when the cart has no phone', async () => {
-    const cart = { ...baseCart, checkoutData: JSON.stringify({ customerName: '╪ú╪¡┘à╪»' }) };
+    const cart = { ...baseCart, checkoutData: JSON.stringify({ customerName: 'أحمد' }) };
     const result = await handleCartCreated(cart);
     expect(result).toEqual({ success: false, reason: 'no_phone' });
     expect(sendNotification).not.toHaveBeenCalled();
@@ -89,7 +89,7 @@ describe('incompleteCartMessagingService.handleCartCreated', () => {
     const args = sendNotification.mock.calls[0][0];
     expect(args.companyId).toBe('company-1');
     expect(args.recipientPhone).toBe('01001234567');
-    expect(args.recipientName).toBe('╪ú╪¡┘à╪»');
+    expect(args.recipientName).toBe('أحمد');
     expect(args.category).toBe('ABANDONED_CART');
     expect(args.eventType).toBe('INCOMPLETE_CART_FIRST_APPEARANCE');
     expect(args.cartId).toBe('cart-123');

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { Loader2, Zap, CheckCircle, Settings2 } from "lucide-react";
 
@@ -9,9 +9,9 @@ interface AutoDiscountSettingsProps {
 }
 
 /**
- * ╪Ñ╪╣╪»╪º╪»╪º╪¬ ┘å╪╕╪º┘à "╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è":
- * ┘â┘ê╪¿┘ê┘å ╪«╪╡┘à % ╪╣┘ä┘ë ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪º┘ä╪¼╪º┘è╪î ╪╡┘ä╪º╪¡┘è╪¬┘ç ╪ú┘è╪º┘à╪î ┘ê┘è╪¬╪¡┘ê┘ä ┘ä┘â╪º╪┤ ╪¿╪º┘â ╪╣┘å╪» ╪º┘ä╪º┘å╪¬┘ç╪º╪í.
- * ≡ƒåò ╪º┘ä╪¬┘ü╪╣┘è┘ä ┘à╪│╪¬┘é┘ä ╪╣┘å ┘å╪╕╪º┘à ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ (┘à┘à┘â┘å ╪º┘ä╪º╪¬┘å┘è┘å ┘è╪┤╪¬╪║┘ä┘ê╪º ┘à╪╣ ╪¿╪╣╪╢).
+ * إعدادات نظام "الخصم التلقائي":
+ * كوبون خصم % على الأوردر الجاي، صلاحيته أيام، ويتحول لكاش باك عند الانتهاء.
+ * 🆕 التفعيل مستقل عن نظام المستويات (ممكن الاتنين يشتغلوا مع بعض).
  */
 const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) => {
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         enabled: true,
       }));
     } catch (e: any) {
-      setErrorMsg(e?.response?.data?.error || "┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬");
+      setErrorMsg(e?.response?.data?.error || "فشل تحميل الإعدادات");
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
   }, []);
 
   const saveActivation = async (enabled: boolean) => {
-    if (!enabled && !window.confirm("┘ç┘ä ╪¬╪▒┘è╪» ╪Ñ┘è┘é╪º┘ü ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è╪ƒ")) return;
+    if (!enabled && !window.confirm("هل تريد إيقاف تفعيل نظام الخصم التلقائي؟")) return;
     setSaving(true);
     setSavedMsg("");
     setErrorMsg("");
@@ -91,10 +91,10 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         maxTotalDiscountPercent:
           ad.maxTotalDiscountPercent !== undefined ? Number(ad.maxTotalDiscountPercent) : prev.maxTotalDiscountPercent,
       }));
-      setSavedMsg(enabled ? "╪¬┘à ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è Γ£ô" : "╪¬┘à ╪Ñ┘è┘é╪º┘ü ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è Γ£ô");
+      setSavedMsg(enabled ? "تم تفعيل نظام الخصم التلقائي ✓" : "تم إيقاف تفعيل نظام الخصم التلقائي ✓");
       onSaved?.(res.data?.data);
     } catch (e: any) {
-      setErrorMsg(e?.response?.data?.error || (enabled ? "┘ü╪┤┘ä ╪º┘ä╪¬┘ü╪╣┘è┘ä" : "┘ü╪┤┘ä ╪Ñ┘è┘é╪º┘ü ╪º┘ä╪¬┘ü╪╣┘è┘ä"));
+      setErrorMsg(e?.response?.data?.error || (enabled ? "فشل التفعيل" : "فشل إيقاف التفعيل"));
     } finally {
       setSaving(false);
     }
@@ -122,10 +122,10 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         maxTotalDiscountPercent:
           ad.maxTotalDiscountPercent !== undefined ? Number(ad.maxTotalDiscountPercent) : prev.maxTotalDiscountPercent,
       }));
-      setComboMsg("╪¬┘à ╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪»┘à╪¼ Γ£ô");
+      setComboMsg("تم حفظ إعدادات الدمج ✓");
       onSaved?.(res.data?.data);
     } catch (e: any) {
-      setComboErr(e?.response?.data?.error || "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪»┘à╪¼");
+      setComboErr(e?.response?.data?.error || "فشل حفظ إعدادات الدمج");
     } finally {
       setComboSaving(false);
     }
@@ -145,9 +145,9 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
           <Zap className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">الخصم التلقائي</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            ╪¿╪╣╪» ┘â┘ä ╪ú┘ê╪▒╪»╪▒ ┘à╪│┘ä┘æ┘à ╪º┘ä╪╣┘à┘è┘ä ╪¿┘è╪º╪«╪» ╪«╪╡┘à % ╪╣┘ä┘ë ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪º┘ä╪¼╪º┘è╪î ┘ê┘ä┘ê ╪«┘ä╪╡╪¬ ╪º┘ä┘à╪»╪⌐ ┘à┘å ╪║┘è╪▒ ╪º╪│╪¬╪«╪»╪º┘à ╪¿┘è╪¬╪¡┘ê┘ä ┘â╪º╪┤ ╪¿╪º┘â ┘ü┘è ┘à╪¡┘ü╪╕╪¬┘ç.
+            بعد كل أوردر مسلّم العميل بياخد خصم % على الأوردر الجاي، ولو خلصت المدة من غير استخدام بيتحول كاش باك في محفظته.
           </p>
         </div>
       </div>
@@ -159,30 +159,30 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-4">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <input type="checkbox" checked={isActivated} onChange={(e) => saveActivation(e.target.checked)} className="h-4 w-4 accent-amber-500" />
-              ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è
+              تفعيل نظام الخصم التلقائي
             </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500">┘å╪│╪¿╪⌐ ╪º┘ä╪«╪╡┘à %</label>
+                <label className="text-xs text-gray-500">نسبة الخصم %</label>
                 <input type="number" min="0" max="100" value={cfg.discountPercent} onChange={(e) => set("discountPercent", Number(e.target.value))} className={inputCls + " mt-1"} />
               </div>
               <div>
-                <label className="text-xs text-gray-500">┘à╪»╪⌐ ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐ (╪ú┘è╪º┘à)</label>
+                <label className="text-xs text-gray-500">مدة الصلاحية (أيام)</label>
                 <input type="number" min="1" value={cfg.validityDays} onChange={(e) => set("validityDays", Number(e.target.value))} className={inputCls + " mt-1"} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500">╪¬╪º╪▒┘è╪« ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à</label>
+                <label className="text-xs text-gray-500">تاريخ تفعيل نظام الخصم</label>
                 <input
                   type="date"
                   value={cfg.loyaltyActivatedAt ? cfg.loyaltyActivatedAt.slice(0, 10) : ""}
                   onChange={(e) => set("loyaltyActivatedAt", e.target.value ? new Date(e.target.value + "T00:00:00").toISOString() : null)}
                   className={inputCls + " mt-1"}
                 />
-                <p className="text-[10px] text-gray-400 mt-1">╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘ä┘è ╪º╪¬╪│┘ä┘à╪¬ ┘é╪¿┘ä ╪º┘ä╪¬╪º╪▒┘è╪« ╪»┘ç ┘à╪┤ ╪¿╪¬╪º╪«╪» ┘â┘ê╪¿┘ê┘å ╪«╪╡┘à ┘ê╪¿╪¬╪¬┘ê╪╡┘ü "┘é╪¿┘ä ╪¬┘ü╪╣┘è┘ä ╪º┘ä┘å╪╕╪º┘à".</p>
+                <p className="text-[10px] text-gray-400 mt-1">الأوردرات اللي اتسلمت قبل التاريخ ده مش بتاخد كوبون خصم وبتتوصف "قبل تفعيل النظام".</p>
               </div>
             </div>
 
@@ -190,15 +190,15 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
               <label className="flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
                 <input type="checkbox" checked={Boolean(cfg.convertExpiredToCashback)} onChange={(e) => set("convertExpiredToCashback", e.target.checked)} className="h-4 w-4 accent-amber-500 mt-0.5" />
                 <span>
-                  ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘â┘ê╪¿┘ê┘å ╪º┘ä┘à┘å╪¬┘ç┘è ┘ä┘â╪º╪┤ ╪¿╪º┘â
-                  <span className="block text-[10px] font-normal text-gray-400 mt-0.5">╪º┘ä┘â┘ê╪¿┘ê┘å ╪º┘ä┘ä┘è ╪«┘ä╪╡╪¬ ┘à╪»╪¬┘ç ┘à┘å ╪║┘è╪▒ ╪º╪│╪¬╪«╪»╪º┘à ╪¿┘è╪¬╪¡┘ê┘æ┘ä ┘ä╪▒╪╡┘è╪» ┘â╪º╪┤ ╪¿╪º┘â ┘ü┘è ┘à╪¡┘ü╪╕╪⌐ ╪º┘ä╪╣┘à┘è┘ä.</span>
+                  تحويل الكوبون المنتهي لكاش باك
+                  <span className="block text-[10px] font-normal text-gray-400 mt-0.5">الكوبون اللي خلصت مدته من غير استخدام بيتحوّل لرصيد كاش باك في محفظة العميل.</span>
                 </span>
               </label>
               <label className="flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
                 <input type="checkbox" checked={Boolean(cfg.redeemPointsEnabled)} onChange={(e) => set("redeemPointsEnabled", e.target.checked)} className="h-4 w-4 accent-amber-500 mt-0.5" />
                 <span>
-                  ╪º╪│╪¬╪¿╪»╪º┘ä ╪º┘ä┘å┘é╪º╪╖ ╪¿╪º┘ä╪«╪╡┘à
-                  <span className="block text-[10px] font-normal text-gray-400 mt-0.5">╪º┘ä╪╣┘à┘è┘ä ┘è┘é╪»╪▒ ┘è╪│╪¬╪¿╪»┘ä ╪º┘ä┘å┘é╪º╪╖ ╪º┘ä┘ä┘è ╪¼┘à╪╣┘ç╪º ╪¿╪«╪╡┘à ╪╣┘ä┘ë ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪º┘ä╪¼╪º┘è.</span>
+                  استبدال النقاط بالخصم
+                  <span className="block text-[10px] font-normal text-gray-400 mt-0.5">العميل يقدر يستبدل النقاط اللي جمعها بخصم على الأوردر الجاي.</span>
                 </span>
               </label>
             </div>
@@ -209,7 +209,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
               <button
                 onClick={() => saveActivation(!isActivated)}
                 disabled={saving}
-                title={isActivated ? "╪º╪╢╪║╪╖ ┘ä╪Ñ┘è┘é╪º┘ü ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è" : "╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è"}
+                title={isActivated ? "اضغط لإيقاف تفعيل نظام الخصم التلقائي" : "تفعيل نظام الخصم التلقائي"}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
                   isActivated
                     ? "bg-amber-500 text-white hover:bg-amber-600"
@@ -217,44 +217,44 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
                 } disabled:opacity-50`}
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : isActivated ? <CheckCircle className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
-                {isActivated ? "╪¬┘à ╪º┘ä╪¬┘ü╪╣┘è┘ä" : "╪¬┘ü╪╣┘è┘ä ╪º┘ä┘å╪╕╪º┘à"}
+                {isActivated ? "تم التفعيل" : "تفعيل النظام"}
               </button>
             </div>
             {isActivated && (
               <p className="text-xs text-emerald-600 dark:text-emerald-400 -mt-2">
-                ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘à┘ü╪╣┘æ┘ä ΓÇö ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪¿╪¬╪¬╪¡┘ü╪╕ ╪ú┘ê╪¬┘ê┘à╪º╪¬┘è┘â┘è╪º┘ï ╪╣┘å╪» ╪ú┘è ╪¬╪╣╪»┘è┘ä╪î ┘ê╪¿╪º╪»╪¼ "╪«╪╡┘à ┘à╪¬╪º╪¡" ╪¿┘è╪╕┘ç╪▒ ┘ä┘ä╪╣┘à┘ä╪º╪í.
+                نظام الخصم التلقائي مفعّل — الإعدادات بتتحفظ أوتوماتيكياً عند أي تعديل، وبادج "خصم متاح" بيظهر للعملاء.
               </p>
             )}
           </div>
 
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-200">
-            <p className="font-semibold">┘à┘ä╪º╪¡╪╕╪⌐:</p>
-            <p>┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘à╪│╪¬┘é┘ä ΓÇö ┘à┘à┘â┘å ┘è╪┤╪¬╪║┘ä ┘à╪╣ ┘å╪╕╪º┘à ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ ┘ü┘è ┘å┘ü╪│ ╪º┘ä┘ê┘é╪¬. ┘à┘å ┘é╪│┘à "╪»┘à╪¼ ╪º┘ä╪«╪╡┘à" ╪¬╪¡╪¬ ┘è┘à┘â┘å┘â ╪¬╪¡╪»┘è╪» ╪Ñ╪▓╪º┘è ╪º┘ä╪º╪¬┘å┘è┘å ┘è╪¬╪╖╪¿┘æ┘é┘ê╪º ┘à╪╣ ╪¿╪╣╪╢ (╪¼┘à╪╣ / ╪ú╪╣┘ä┘ë ╪«╪╡┘à / ┘à╪▒┘â┘æ╪¿) ┘ê╪¬╪¡╪╖ ╪¡╪» ╪ú┘é╪╡┘ë ┘ä╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪«╪╡┘à.</p>
+            <p className="font-semibold">ملاحظة:</p>
+            <p>نظام الخصم التلقائي مستقل — ممكن يشتغل مع نظام المستويات في نفس الوقت. من قسم "دمج الخصم" تحت يمكنك تحديد إزاي الاتنين يتطبّقوا مع بعض (جمع / أعلى خصم / مركّب) وتحط حد أقصى لإجمالي الخصم.</p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-4 border-t-2 border-indigo-200 dark:border-indigo-700">
             <div className="flex items-center gap-2">
               <Settings2 className="h-5 w-5 text-indigo-500" />
-              <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">╪»┘à╪¼ ╪º┘ä╪«╪╡┘à (╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ + ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è)</h4>
+              <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">دمج الخصم (المستويات + الخصم التلقائي)</h4>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              ┘ä┘ê ╪º┘ä╪º╪¬┘å┘è┘å ┘à┘ü╪╣┘æ┘ä┘è┘å ┘à╪╣ ╪¿╪╣╪╢╪î ╪º╪«╪¬╪▒ ╪Ñ╪▓╪º┘è ┘è╪¬╪╖╪¿┘æ┘é┘ê╪º ╪╣┘ä┘ë ╪º┘ä╪ú┘ê╪▒╪»╪▒╪î ┘ê╪¡╪╖ ╪¡╪» ╪ú┘é╪╡┘ë ┘ä╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪«╪╡┘à ╪╣╪┤╪º┘å ╪¬╪¡┘à┘è ┘ç╪º┘à╪┤ ╪º┘ä╪▒╪¿╪¡.
+              لو الاتنين مفعّلين مع بعض، اختر إزاي يتطبّقوا على الأوردر، وحط حد أقصى لإجمالي الخصم عشان تحمي هامش الربح.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500">┘ê╪╢╪╣ ╪»┘à╪¼ ╪º┘ä╪«╪╡┘à</label>
+                <label className="text-xs text-gray-500">وضع دمج الخصم</label>
                 <select
                   value={cfg.discountCombination}
                   onChange={(e) => set("discountCombination", e.target.value)}
                   className={inputCls + " mt-1"}
                 >
-                  <option value="ADDITIVE">╪¼┘à╪╣ ╪º┘ä┘å╪│╪¿ (╪º┘ä╪º╪¬┘å┘è┘å ┘à╪╣ ╪¿╪╣╪╢)</option>
-                  <option value="BEST">╪ú╪╣┘ä┘ë ╪«╪╡┘à ╪¿╪│</option>
-                  <option value="COMPOUND">┘à╪▒┘â┘æ╪¿ (╪«╪╡┘à ╪╣┘ä┘ë ╪º┘ä┘à╪¬╪¿┘é┘è)</option>
+                  <option value="ADDITIVE">جمع النسب (الاتنين مع بعض)</option>
+                  <option value="BEST">أعلى خصم بس</option>
+                  <option value="COMPOUND">مركّب (خصم على المتبقي)</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500">╪¡╪» ╪ú┘é╪╡┘ë ┘ä╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪«╪╡┘à % (0 = ╪¿╪»┘ê┘å ╪¡╪»)</label>
+                <label className="text-xs text-gray-500">حد أقصى لإجمالي الخصم % (0 = بدون حد)</label>
                 <input
                   type="number" min="0" max="100"
                   value={cfg.maxTotalDiscountPercent}
@@ -272,7 +272,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
               >
                 {comboSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings2 className="h-4 w-4" />}
-                ╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪»┘à╪¼
+                حفظ إعدادات الدمج
               </button>
             </div>
           </div>

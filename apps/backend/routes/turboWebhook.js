@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Turbo Webhook Routes
- * ╪º╪│╪¬┘é╪¿╪º┘ä ╪¬╪¡╪»┘è╪½╪º╪¬ ┘à┘å Turbo
+ * استقبال تحديثات من Turbo
  */
 
 const express = require('express');
@@ -10,7 +10,7 @@ const { addTurboWebhook } = require('../services/turboWebhookQueue');
 
 /**
  * POST /api/turbo/webhook
- * ╪º╪│╪¬┘é╪¿╪º┘ä webhooks ┘à┘å Turbo
+ * استقبال webhooks من Turbo
  */
 router.post('/webhook', async (req, res) => {
   try {
@@ -18,15 +18,15 @@ router.post('/webhook', async (req, res) => {
     const authHeader = req.headers.authorization || req.headers['authorization'] || req.headers['Authorization'];
     const webhookToken = authHeader ? authHeader.replace(/^Bearer\s+/i, '').trim() : null;
     
-    console.log('≡ƒô¿ [TURBO-WEBHOOK] Received webhook:', JSON.stringify(webhookData, null, 2));
-    console.log('≡ƒöæ [TURBO-WEBHOOK] Webhook token:', webhookToken ? `Token: ${webhookToken.substring(0, 4)}...` : 'No token');
+    console.log('📨 [TURBO-WEBHOOK] Received webhook:', JSON.stringify(webhookData, null, 2));
+    console.log('🔑 [TURBO-WEBHOOK] Webhook token:', webhookToken ? `Token: ${webhookToken.substring(0, 4)}...` : 'No token');
 
-    // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å TOKEN ╪Ñ╪░╪º ┘â╪º┘å ┘à┘ê╪¼┘ê╪»╪º┘ï
+    // التحقق من TOKEN إذا كان موجوداً
     const prisma = getSharedPrismaClient();
     let companyId = null;
     
     if (webhookToken) {
-      console.log('≡ƒöì [TURBO-WEBHOOK] Validating webhook token...');
+      console.log('🔍 [TURBO-WEBHOOK] Validating webhook token...');
       const company = await safeQuery(async () => {
         return await prisma.company.findFirst({
           where: {
@@ -44,15 +44,15 @@ router.post('/webhook', async (req, res) => {
 
       if (company) {
         companyId = company.id;
-        console.log(`Γ£à [TURBO-WEBHOOK] Token validated. Company: ${company.name} (${companyId})`);
+        console.log(`✅ [TURBO-WEBHOOK] Token validated. Company: ${company.name} (${companyId})`);
       } else {
-        console.warn(`ΓÜá∩╕Å [TURBO-WEBHOOK] Token ${webhookToken} not directly matched to company, will search order globally`);
+        console.warn(`⚠️ [TURBO-WEBHOOK] Token ${webhookToken} not directly matched to company, will search order globally`);
       }
     } else {
-      console.log('Γä╣∩╕Å [TURBO-WEBHOOK] No token provided, will search in all companies');
+      console.log('ℹ️ [TURBO-WEBHOOK] No token provided, will search in all companies');
     }
 
-    // ╪º┘ä╪▒╪» ┘ü┘ê╪▒╪º┘ï ┘ä┘Ç Turbo (┘è╪¼╪¿ ╪ú┘å ┘è┘â┘ê┘å ╪«┘ä╪º┘ä 5 ╪½┘ê╪º┘å)
+    // الرد فوراً لـ Turbo (يجب أن يكون خلال 5 ثوان)
     res.status(200).json({ success: true, received: true });
 
     const orderNumber = (webhookData.remote_order_id && webhookData.remote_order_id !== '0' && webhookData.remote_order_id !== 0)
@@ -62,15 +62,15 @@ router.post('/webhook', async (req, res) => {
     const statusCode = webhookData.status;
 
     if (!orderNumber && !turboOrderNumber) {
-      console.warn('ΓÜá∩╕Å [TURBO-WEBHOOK] Missing order_number and remote_order_id in webhook');
+      console.warn('⚠️ [TURBO-WEBHOOK] Missing order_number and remote_order_id in webhook');
       return;
     }
 
     const searchOrderNumber = orderNumber || turboOrderNumber;
 
-    console.log(`≡ƒôª [TURBO-WEBHOOK] Processing webhook for order: ${searchOrderNumber}, Turbo order: ${turboOrderNumber}, Status: ${statusCode}`);
+    console.log(`📦 [TURBO-WEBHOOK] Processing webhook for order: ${searchOrderNumber}, Turbo order: ${turboOrderNumber}, Status: ${statusCode}`);
 
-    // ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä┘Ç webhook ╪Ñ┘ä┘ë Queue ┘à╪╣ Retry (┘è╪¡╪º┘ê┘ä 3 ┘à╪▒╪º╪¬ ┘ä┘ê ┘ü╪┤┘ä)
+    // إضافة الـ webhook إلى Queue مع Retry (يحاول 3 مرات لو فشل)
     const job = await addTurboWebhook({
       orderId: searchOrderNumber,
       orderNumber: searchOrderNumber,
@@ -82,9 +82,9 @@ router.post('/webhook', async (req, res) => {
     });
 
     if (job) {
-      console.log(`Γ£à [TURBO-WEBHOOK] Queued job ${job.id} for order ${searchOrderNumber}`);
+      console.log(`✅ [TURBO-WEBHOOK] Queued job ${job.id} for order ${searchOrderNumber}`);
     } else {
-      console.warn(`ΓÜá∩╕Å [TURBO-WEBHOOK] Queue not available, processing synchronously`);
+      console.warn(`⚠️ [TURBO-WEBHOOK] Queue not available, processing synchronously`);
       const { syncTurboStatusToOrder } = require('../services/turboStatusSyncService');
       const result = await syncTurboStatusToOrder({
         orderId: searchOrderNumber,
@@ -95,20 +95,20 @@ router.post('/webhook', async (req, res) => {
         isGuestOrder: false
       });
       if (result.success) {
-        console.log(`Γ£à [TURBO-WEBHOOK] Successfully synced order ${searchOrderNumber}`);
+        console.log(`✅ [TURBO-WEBHOOK] Successfully synced order ${searchOrderNumber}`);
       } else {
-        console.warn(`ΓÜá∩╕Å [TURBO-WEBHOOK] Could not find order to sync: ${searchOrderNumber}`);
+        console.warn(`⚠️ [TURBO-WEBHOOK] Could not find order to sync: ${searchOrderNumber}`);
       }
     }
 
   } catch (error) {
-    console.error('Γ¥î [TURBO-WEBHOOK] Error processing webhook:', error);
+    console.error('❌ [TURBO-WEBHOOK] Error processing webhook:', error);
   }
 });
 
 /**
  * GET /api/turbo/webhook/verify
- * ╪º┘ä╪¬╪¡┘é┘é ┘à┘å webhook (┘ä┘Ç Turbo verification)
+ * التحقق من webhook (لـ Turbo verification)
  */
 router.get('/webhook/verify', (req, res) => {
   const challenge = req.query.challenge;

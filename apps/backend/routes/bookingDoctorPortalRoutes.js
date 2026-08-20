@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const authController = require('../controller/bookingDoctorAuthController');
 const { authenticateDoctorToken } = require('../utils/verifyDoctorToken');
@@ -18,7 +18,7 @@ router.get('/availability', authenticateDoctorToken, async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('[DoctorPortal] Availability error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪ú┘ê┘é╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب الأوقات المتاحة' });
   }
 });
 
@@ -26,7 +26,7 @@ router.put('/availability', authenticateDoctorToken, async (req, res) => {
   try {
     const { slots } = req.body;
     if (!Array.isArray(slots)) {
-      return res.status(400).json({ success: false, message: '╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê┘é╪º╪¬ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      return res.status(400).json({ success: false, message: 'بيانات الأوقات غير صحيحة' });
     }
 
     const prisma = getSharedPrismaClient();
@@ -51,7 +51,7 @@ router.put('/availability', authenticateDoctorToken, async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('[DoctorPortal] Update availability error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪ú┘ê┘é╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في تحديث الأوقات المتاحة' });
   }
 });
 
@@ -80,7 +80,7 @@ router.get('/appointments', authenticateDoctorToken, async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('[DoctorPortal] Appointments error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à┘ê╪º╪╣┘è╪»' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب المواعيد' });
   }
 });
 
@@ -107,7 +107,7 @@ router.get('/schedule', authenticateDoctorToken, async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('[DoctorPortal] Schedule error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪¼╪»┘ê┘ä' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب الجدول' });
   }
 });
 
@@ -130,7 +130,7 @@ router.get('/patients', authenticateDoctorToken, async (req, res) => {
     res.json({ success: true, data: patients });
   } catch (error) {
     console.error('[DoctorPortal] Patients error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à╪▒╪╢┘ë' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب المرضى' });
   }
 });
 
@@ -172,7 +172,7 @@ router.get('/payments', authenticateDoctorToken, async (req, res) => {
     });
   } catch (error) {
     console.error('[DoctorPortal] Payments error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à╪»┘ü┘ê╪╣╪º╪¬' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب المدفوعات' });
   }
 });
 
@@ -212,7 +212,7 @@ router.get('/dashboard', authenticateDoctorToken, async (req, res) => {
     });
   } catch (error) {
     console.error('[DoctorPortal] Dashboard error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب الإحصائيات' });
   }
 });
 

@@ -1,8 +1,14 @@
-import { formatDate } from '@/utils/formatters';
-import { formatCurrency } from '@/utils/formatters';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, BellRing, Gauge, Navigation, RefreshCw, Send, Sliders, SlidersHorizontal, Trash2 } from 'lucide-react';
+import {
+  BellRing,
+  Gauge,
+  RefreshCw,
+  Send,
+  SlidersHorizontal,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import MiniMetric from "./MiniMetric";
 import SelectFilter from "./SelectFilter";
 import {
@@ -159,18 +165,18 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
 
   const handleCreateBudgetAlert = async () => {
     if (!selectedAdAccountId) {
-      toast.error("اختار حساب إعلاني الأول");
+      tToast.error("budgetAlerts.msg_de0a");
       return;
     }
 
     const recipientPhones = splitAlertPhones(budgetAlertForm.recipientPhones);
     if (recipientPhones.length === 0) {
-      toast.error("اكتب رقم WhatsApp واحد على الأقل");
+      tToast.error("budgetAlerts.msg_5b24");
       return;
     }
 
     if (budgetAlertForm.scope === "CAMPAIGN" && !budgetAlertForm.campaignId) {
-      toast.error("اختار الحملة المراد مراقبتها");
+      tToast.error("budgetAlerts.msg_de51");
       return;
     }
 
@@ -180,7 +186,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
         : Number(budgetAlertForm.thresholdAmount);
 
     if (!Number.isFinite(thresholdAmount)) {
-      toast.error("قيمة التنبيه غير صحيحة");
+      tToast.error("budgetAlerts.msg_d260");
       return;
     }
 
@@ -205,7 +211,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
         recipientPhones: current.recipientPhones,
       }));
       await reloadBudgetAlerts();
-      toast.success("تم إنشاء تنبيه WhatsApp للإعلانات");
+      tToast.success("budgetAlerts.success_create_4d9c");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل إنشاء التنبيه"));
     } finally {
@@ -218,7 +224,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
       setTestingBudgetAlertId(ruleId);
       await facebookAdsService.testBudgetAlertRule(ruleId);
       await reloadBudgetAlerts();
-      toast.success("تم إرسال اختبار التنبيه");
+      tToast.success("budgetAlerts.success_send_4249");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل اختبار التنبيه"));
     } finally {
@@ -243,7 +249,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
     try {
       await facebookAdsService.deleteBudgetAlertRule(ruleId);
       await reloadBudgetAlerts();
-      toast.success("تم حذف التنبيه");
+      tToast.success("budgetAlerts.success_delete_2449");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل حذف التنبيه"));
     }
@@ -254,7 +260,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
       setCheckingBudgetAlerts(true);
       await facebookAdsService.runBudgetAlertRulesNow();
       await reloadBudgetAlerts();
-      toast.success("تم فحص تنبيهات الرصيد الآن");
+      tToast.success("budgetAlerts.msg_914b");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل فحص التنبيهات"));
     } finally {

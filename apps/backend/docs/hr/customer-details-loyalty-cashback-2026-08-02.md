@@ -1,7 +1,7 @@
-﻿# Customer Details: Loyalty Points & Cashback Display
+# Customer Details: Loyalty Points & Cashback Display
 
 **Date**: 2026-08-02
-**Domain**: HR ΓÇö Customer Loyalty / Wallet
+**Domain**: HR — Customer Loyalty / Wallet
 **Type**: Feature
 
 ## Overview
@@ -12,7 +12,7 @@ the eye icon in the customers list.
 
 ## Backend
 
-`apps/backend/controller/customerController.js` ΓÇö `getCustomerDetails` now also
+`apps/backend/controller/customerController.js` — `getCustomerDetails` now also
 returns:
 
 - `loyalty`: array of `CustomerLoyaltyRecord` rows (points, totalEarned,
@@ -27,9 +27,9 @@ returns:
 `apps/frontend/src/pages/customers/CustomerDetails.tsx`:
 
 - Added two stat cards next to the existing ones:
-  - **┘å┘é╪º╪╖ ╪º┘ä┘ê┘ä╪º╪í** (total points across loyalty programs)
-  - **╪º┘ä┘â╪º╪┤ ╪¿╪º┘â (╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐)** (cashback total + wallet balance)
-- Added a **╪º┘ä┘ê┘ä╪º╪í ┘ê╪º┘ä┘å┘é╪º╪╖ / ╪º┘ä┘à╪¡┘ü╪╕╪⌐ ┘ê╪º┘ä┘â╪º╪┤ ╪¿╪º┘â** block inside the Info tab
+  - **نقاط الولاء** (total points across loyalty programs)
+  - **الكاش باك (رصيد المحفظة)** (cashback total + wallet balance)
+- Added a **الولاء والنقاط / المحفظة والكاش باك** block inside the Info tab
   showing per-program points/tier and wallet balance + total cashback.
 
 ## Verification

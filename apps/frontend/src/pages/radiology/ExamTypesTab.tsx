@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, X as XMarkIcon, Search, ScanLine, ChevronRight, ChevronLeft, FolderTree, Loader2 } from "lucide-react";
 import { api, fetchJson, getAuthHeaders, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyExamType, RadiologyExamCategory } from "./shared";
@@ -251,8 +251,8 @@ export default function ExamTypesTab() {
                       {et.name}
                       {et.isAddition ? <span className="mr-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{t("radiology.examTypes.additionBadge")}</span> : null}
                     </td>
-                    <td className="py-3 px-4">{et.examCategory?.name || et.category || "ΓÇö"}</td>
-                    <td className="py-3 px-4">{et.abbreviation || "ΓÇö"}</td>
+                    <td className="py-3 px-4">{et.examCategory?.name || et.category || "—"}</td>
+                    <td className="py-3 px-4">{et.abbreviation || "—"}</td>
                     <td className="py-3 px-4 whitespace-nowrap">{et.price ?? 0} {t("radiology.currency")}</td>
                     <td className="py-3 px-4">
                       {et.isActive ? (

@@ -1,4 +1,4 @@
-﻿const { Pool } = require('pg');
+const { Pool } = require('pg');
 const pool = new Pool({ connectionString: 'postgresql://appuser:mokhtar1234@localhost:5432/maxp' });
 async function main() {
     const res = await pool.query(`

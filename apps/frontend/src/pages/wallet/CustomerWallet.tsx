@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Clock3, CreditCard, CreditCard as WalletIcon, Gift, Sparkles, Star } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Clock3,
+  CreditCard,
+  Gift,
+  Sparkles,
+  Wallet as WalletIcon,
+} from "lucide-react";
 
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
+import { useTranslation } from "react-i18next";
 
 type CustomerWalletData = {
   id: string;
@@ -11,6 +21,10 @@ type CustomerWalletData = {
   totalSpent?: number;
   totalCashback?: number;
   currency?: string;
+  pendingPoints?: number;
+  pendingCashback?: number;
+  availablePoints?: number;
+  availableCashback?: number;
 };
 
 type CustomerWalletTransaction = {
@@ -52,6 +66,7 @@ const formatMoney = (value: number, currency = "EGP") =>
 
 export default function CustomerWallet() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [wallet, setWallet] = useState<CustomerWalletData | null>(null);
   const [transactions, setTransactions] = useState<CustomerWalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,6 +180,54 @@ export default function CustomerWallet() {
             </div>
             <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
               {formatMoney(toNumber(wallet?.totalSpent), currency)}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-3xl border border-gray-200 bg-white p-5 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="flex items-center justify-end gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
+              {t("wallet.availablePoints")}
+              <Gift size={16} className="text-emerald-500" />
+            </div>
+            <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
+              {toNumber(wallet?.availablePoints).toLocaleString("ar-EG")}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-right shadow-sm dark:border-amber-900 dark:bg-amber-950/30">
+            <div className="flex items-center justify-end gap-2 text-sm font-semibold text-amber-600 dark:text-amber-300">
+              {t("wallet.pendingPoints")}
+              <Clock3 size={16} />
+            </div>
+            <div className="mt-3 text-2xl font-black text-amber-700 dark:text-amber-200">
+              {toNumber(wallet?.pendingPoints).toLocaleString("ar-EG")}
+            </div>
+            <div className="mt-2 text-xs leading-5 text-amber-600/80 dark:text-amber-300/80">
+              {t("wallet.pendingHint")}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-gray-200 bg-white p-5 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="flex items-center justify-end gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
+              {t("wallet.availableCashback")}
+              <Sparkles size={16} className="text-pink-500" />
+            </div>
+            <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
+              {formatMoney(toNumber(wallet?.availableCashback), currency)}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-right shadow-sm dark:border-amber-900 dark:bg-amber-950/30">
+            <div className="flex items-center justify-end gap-2 text-sm font-semibold text-amber-600 dark:text-amber-300">
+              {t("wallet.pendingCashback")}
+              <Clock3 size={16} />
+            </div>
+            <div className="mt-3 text-2xl font-black text-amber-700 dark:text-amber-200">
+              {formatMoney(toNumber(wallet?.pendingCashback), currency)}
+            </div>
+            <div className="mt-2 text-xs leading-5 text-amber-600/80 dark:text-amber-300/80">
+              {t("wallet.pendingHint")}
             </div>
           </div>
         </div>

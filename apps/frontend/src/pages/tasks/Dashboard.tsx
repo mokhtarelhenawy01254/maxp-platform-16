@@ -1,6 +1,14 @@
-import { Activity as ChartBarIcon, Circle as ClipboardDocumentListIcon, Folder as FolderIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, Clock as ClockIcon, Circle as ArrowTrendingUpIcon, DollarSign as CurrencyDollarIcon } from 'lucide-react';
 import React from 'react';
-;
+import {
+  ChartBarIcon,
+  ClipboardDocumentListIcon,
+  FolderIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ArrowTrendingUpIcon,
+  CurrencyDollarIcon
+} from '@heroicons/react/24/outline';
 import { buildApiUrl } from '../../utils/urlHelper';
 import { createStorageKey, getWithExpiry, setWithExpiry } from '../../utils/storage';
 

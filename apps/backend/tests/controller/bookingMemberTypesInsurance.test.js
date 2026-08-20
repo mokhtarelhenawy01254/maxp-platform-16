@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -23,7 +23,7 @@ const createResponse = () => {
 };
 
 const baseReq = {
-  user: { id: 'user-1', companyId: 'company-1', firstName: '┘à╪¡┘à╪»', lastName: '╪╣┘ä┘è' }
+  user: { id: 'user-1', companyId: 'company-1', firstName: 'محمد', lastName: 'علي' }
 };
 
 describe('bookingMemberTypesInsuranceController', () => {
@@ -36,8 +36,8 @@ describe('bookingMemberTypesInsuranceController', () => {
       getSharedPrismaClient.mockReturnValue({
         insuranceMemberType: {
           findMany: jest.fn().mockResolvedValue([
-            { id: 'mt-1', companyId: 'company-1', name: '╪º┘ä╪▓┘ê╪¼', coveragePercent: 50, isActive: true, _count: { patients: 2 } },
-            { id: 'mt-2', companyId: 'company-1', name: '╪º┘ä╪▓┘ê╪¼╪⌐', coveragePercent: 25, isActive: true, _count: { patients: 1 } }
+            { id: 'mt-1', companyId: 'company-1', name: 'الزوج', coveragePercent: 50, isActive: true, _count: { patients: 2 } },
+            { id: 'mt-2', companyId: 'company-1', name: 'الزوجة', coveragePercent: 25, isActive: true, _count: { patients: 1 } }
           ])
         }
       });
@@ -66,22 +66,22 @@ describe('bookingMemberTypesInsuranceController', () => {
       getSharedPrismaClient.mockReturnValue({
         insuranceMemberType: {
           create: jest.fn().mockResolvedValue({
-            id: 'mt-1', companyId: 'company-1', name: '╪º┘ä╪▓┘ê╪¼', coveragePercent: 50, isActive: true
+            id: 'mt-1', companyId: 'company-1', name: 'الزوج', coveragePercent: 50, isActive: true
           })
         }
       });
 
       const res = createResponse();
       await memberTypesController.createMemberType(
-        { user: { companyId: 'company-1' }, body: { name: '╪º┘ä╪▓┘ê╪¼', coveragePercent: 50 } },
+        { user: { companyId: 'company-1' }, body: { name: 'الزوج', coveragePercent: 50 } },
         res
       );
 
       expect(res.statusCode).toBe(200);
-      expect(res.payload.data.name).toBe('╪º┘ä╪▓┘ê╪¼');
+      expect(res.payload.data.name).toBe('الزوج');
       expect(res.payload.data.coveragePercent).toBe(50);
       expect(getSharedPrismaClient().insuranceMemberType.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ companyId: 'company-1', name: '╪º┘ä╪▓┘ê╪¼', coveragePercent: 50 })
+        data: expect.objectContaining({ companyId: 'company-1', name: 'الزوج', coveragePercent: 50 })
       }));
     });
 
@@ -134,7 +134,7 @@ describe('bookingMemberTypesInsuranceController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘å╪│╪¿╪⌐ ╪º┘ä╪¬╪║╪╖┘è╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐');
+      expect(res.payload.error).toBe('نسبة التغطية غير صالحة');
       expect(mockPrisma.insuranceMemberType.create).not.toHaveBeenCalled();
     });
 
@@ -148,14 +148,14 @@ describe('bookingMemberTypesInsuranceController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘å╪│╪¿╪⌐ ╪º┘ä╪¬╪║╪╖┘è╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐');
+      expect(res.payload.error).toBe('نسبة التغطية غير صالحة');
     });
 
     test('requires a name', async () => {
       const res = createResponse();
       await memberTypesController.createMemberType({ user: { companyId: 'company-1' }, body: { name: '' } }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ┘å┘ê╪╣ ╪º┘ä╪╣╪╢┘ê┘è╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم نوع العضوية مطلوب');
     });
   });
 
@@ -165,7 +165,7 @@ describe('bookingMemberTypesInsuranceController', () => {
         insuranceMemberType: {
           findFirst: jest.fn().mockResolvedValue({ id: 'mt-1', companyId: 'company-1' }),
           update: jest.fn().mockResolvedValue({
-            id: 'mt-1', companyId: 'company-1', name: '╪º┘ä╪ú╪╖┘ü╪º┘ä', coveragePercent: 30, isActive: false
+            id: 'mt-1', companyId: 'company-1', name: 'الأطفال', coveragePercent: 30, isActive: false
           })
         }
       };
@@ -173,14 +173,14 @@ describe('bookingMemberTypesInsuranceController', () => {
 
       const res = createResponse();
       await memberTypesController.updateMemberType(
-        { user: { companyId: 'company-1' }, params: { id: 'mt-1' }, body: { name: '╪º┘ä╪ú╪╖┘ü╪º┘ä', coveragePercent: 30, isActive: false, evil: 'x' } },
+        { user: { companyId: 'company-1' }, params: { id: 'mt-1' }, body: { name: 'الأطفال', coveragePercent: 30, isActive: false, evil: 'x' } },
         res
       );
 
       expect(res.statusCode).toBe(200);
       expect(mockPrisma.insuranceMemberType.update).toHaveBeenCalledWith({
         where: { id: 'mt-1' },
-        data: { name: '╪º┘ä╪ú╪╖┘ü╪º┘ä', coveragePercent: 30, isActive: false }
+        data: { name: 'الأطفال', coveragePercent: 30, isActive: false }
       });
     });
 
@@ -200,7 +200,7 @@ describe('bookingMemberTypesInsuranceController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘å╪│╪¿╪⌐ ╪º┘ä╪¬╪║╪╖┘è╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐');
+      expect(res.payload.error).toBe('نسبة التغطية غير صالحة');
       expect(mockPrisma.insuranceMemberType.update).not.toHaveBeenCalled();
     });
 
@@ -238,7 +238,7 @@ describe('bookingMemberTypesInsuranceController', () => {
       );
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('┘å┘ê╪╣ ╪º┘ä╪╣╪╢┘ê┘è╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('نوع العضوية غير موجود');
     });
   });
 
@@ -338,7 +338,7 @@ describe('invoice insurance auto-compute', () => {
       const res = createResponse();
       await invoicesController.createInvoice({
         ...baseReq,
-        body: { patientId: 'patient-1', total: 100, discount: 20, discountReason: '╪╣╪▒╪╢', additionAmount: 10, additionReason: '╪«╪»┘à╪⌐' }
+        body: { patientId: 'patient-1', total: 100, discount: 20, discountReason: 'عرض', additionAmount: 10, additionReason: 'خدمة' }
       }, res);
 
       expect(res.statusCode).toBe(200);
@@ -419,10 +419,10 @@ describe('invoice insurance auto-compute', () => {
 
   describe('createInvoiceFromAppointment', () => {
     const appointment = {
-      id: 'appt-1', patientId: 'patient-1', companyId: 'company-1', serviceName: '┘â╪┤┘ü',
-      branchId: 'b1', doctorId: 'd1', customerName: '╪│╪º╪▒╪⌐ ╪ú╪¡┘à╪»',
+      id: 'appt-1', patientId: 'patient-1', companyId: 'company-1', serviceName: 'كشف',
+      branchId: 'b1', doctorId: 'd1', customerName: 'سارة أحمد',
       doctor: { id: 'd1', consultationFee: 200 },
-      service: { id: 's1', name: '┘â╪┤┘ü', basePrice: 300, branchServices: [], doctorServices: [] }
+      service: { id: 's1', name: 'كشف', basePrice: 300, branchServices: [], doctorServices: [] }
     };
 
     test('auto-computes insurance from the patient member type', async () => {

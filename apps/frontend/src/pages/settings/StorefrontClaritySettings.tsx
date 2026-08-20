@@ -1,8 +1,19 @@
-import { ExternalLink as ArrowTopRightOnSquareIcon, Activity as ChartBarIcon, Check as CheckCircleIcon, Clipboard as ClipboardDocumentIcon, Circle as CursorArrowRaysIcon, Zap as FireIcon, Filter as FunnelIcon, Info as InformationCircleIcon, Key as KeyIcon, Circle as PlayCircleIcon, X as XCircleIcon, Circle as CheckCircleIconSolid } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useRef, useState } from 'react';
-;
-;
+import { useTranslation } from 'react-i18next';
+import {
+  ArrowTopRightOnSquareIcon,
+  ChartBarIcon,
+  CheckCircleIcon,
+  ClipboardDocumentIcon,
+  CursorArrowRaysIcon,
+  FireIcon,
+  FunnelIcon,
+  InformationCircleIcon,
+  KeyIcon,
+  PlayCircleIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
 import { toast } from 'sonner';
 import {
   storefrontSettingsService,

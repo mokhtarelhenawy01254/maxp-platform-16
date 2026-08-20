@@ -1,0 +1,8 @@
+{
+  "title": "Agent Team Map",
+  "subtitle": "A tree structure showing the manager, direct team, and any agents reporting to other agents.",
+  "manageFiles": "Manage Files",
+  "loadError": "Failed to load agent map.",
+  "emptyState": "No agents yet.",
+  "openAgent": "Open Agent"
+}

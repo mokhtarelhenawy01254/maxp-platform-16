@@ -1,4 +1,4 @@
-﻿import {
+import {
   loadGoogleAnalytics,
   pushGoogleEvent,
   trackGooglePageView,

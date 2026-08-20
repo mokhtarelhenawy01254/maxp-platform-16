@@ -62,11 +62,26 @@ async function ensureLpPagesTable(prisma) {
 }
 
 async function getAllPages(prisma) {
-  await ensureLpPagesTable(prisma);
-  return prisma.$queryRawUnsafe(
-    `SELECT id, slug, title, description, "isActive", "sortOrder", "componentName", "bundleSlug", "activationType"
-     FROM "lp_pages" ORDER BY "sortOrder" ASC`,
-  );
+  try {
+    await ensureLpPagesTable(prisma);
+    return await prisma.$queryRawUnsafe(
+      `SELECT id, slug, title, description, "isActive", "sortOrder", "componentName", "bundleSlug", "activationType"
+       FROM "lp_pages" ORDER BY "sortOrder" ASC`,
+    );
+  } catch (err) {
+    console.error('[lpAdmin] getAllPages DB error, falling back to seed data:', err.message);
+    return SEED_PAGES.map(p => ({
+      id: `seed-${p.slug}`,
+      slug: p.slug,
+      title: p.title,
+      description: null,
+      isActive: true,
+      sortOrder: p.sortOrder,
+      componentName: p.componentName,
+      bundleSlug: p.bundleSlug,
+      activationType: p.activationType,
+    }));
+  }
 }
 
 // ── Public (no auth) ──
@@ -85,16 +100,30 @@ publicRouter.get('/', async (req, res) => {
 publicRouter.get('/:slug', async (req, res) => {
   try {
     const prisma = await getSharedPrismaClientAsync();
-    await ensureLpPagesTable(prisma);
-    const pages = await prisma.$queryRawUnsafe(
-      `SELECT id, slug, title, description, "isActive", "sortOrder", "componentName", "bundleSlug", "activationType"
-       FROM "lp_pages" WHERE "slug" = $1 AND "isActive" = true`,
-      req.params.slug,
-    );
-    if (!pages || pages.length === 0) {
-      return res.status(404).json({ message: 'Page not found' });
+    let page;
+
+    try {
+      await ensureLpPagesTable(prisma);
+      const pages = await prisma.$queryRawUnsafe(
+        `SELECT id, slug, title, description, "isActive", "sortOrder", "componentName", "bundleSlug", "activationType"
+         FROM "lp_pages" WHERE "slug" = $1 AND "isActive" = true`,
+        req.params.slug,
+      );
+      if (pages && pages.length > 0) {
+        page = pages[0];
+      }
+    } catch (dbErr) {
+      console.error('[lpAdmin] public GET /:slug DB error, falling back to seed:', dbErr.message);
     }
-    const page = pages[0];
+
+    if (!page) {
+      const seedPage = SEED_PAGES.find(p => p.slug === req.params.slug);
+      if (!seedPage) {
+        return res.status(404).json({ message: 'Page not found' });
+      }
+      page = { ...seedPage, isActive: true, description: null };
+    }
+
     let bundle = null;
     if (page.bundleSlug) {
       try {

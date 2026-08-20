@@ -1,4 +1,4 @@
-﻿const TurboService = require('../../services/turboService');
+const TurboService = require('../../services/turboService');
 const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
 const { findOrderByNumber } = require('./helpers');
 
@@ -26,11 +26,11 @@ const calculateShippingCost = async (req, res) => {
           if (order.orderNumber) await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboMetadata: JSON.stringify(metadata) } }), 3);
           else if (order.id) await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: { turboMetadata: JSON.stringify(metadata) } }), 3);
         }
-      } catch (saveError) { console.error('Γ¥î [TURBO-CONTROLLER] Error saving actual shipping cost:', saveError); }
+      } catch (saveError) { console.error('❌ [TURBO-CONTROLLER] Error saving actual shipping cost:', saveError); }
     }
     res.json({ success: true, data: { success: true, cost, price: cost, currency: 'EGP' } });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error calculating shipping cost:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error calculating shipping cost:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to calculate shipping cost' });
   }
 };
@@ -51,7 +51,7 @@ const getShippingComparison = async (req, res) => {
     const difference = actualCost - customerCost;
     res.json({ success: true, data: { actualCost, customerCost, difference, orderId: order.id, orderNumber: order.orderNumber, currency: order.currency || 'EGP' } });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting shipping comparison:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting shipping comparison:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to get shipping comparison' });
   }
 };

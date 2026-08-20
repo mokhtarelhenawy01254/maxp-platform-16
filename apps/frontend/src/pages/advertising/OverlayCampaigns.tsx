@@ -1,8 +1,14 @@
-import { Plus as PlusIcon, Trash2 as TrashIcon, Circle as PlayIcon, Image as PhotoIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  PlusIcon,
+  TrashIcon,
+  PlayIcon,
+  PhotoIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 
@@ -57,12 +63,12 @@ const OverlayCampaigns: React.FC = () => {
 
   const handleCreate = async () => {
     if (!form.name || !form.overlayImage) {
-      toast.error("الاسم وصورة الإطار مطلوبان");
+      tToast.error("OverlayCampaigns.msg_47da");
       return;
     }
     try {
       await apiClient.post("/overlay-campaigns", form);
-      toast.success("تم إنشاء الحملة");
+      tToast.success("OverlayCampaigns.success_create_85f3");
       setShowForm(false);
       setForm({ name: "", overlayImage: "", startAt: "", endAt: "" });
       load();
@@ -75,7 +81,7 @@ const OverlayCampaigns: React.FC = () => {
     if (!confirm("حذف الحملة؟")) return;
     try {
       await apiClient.delete(`/overlay-campaigns/${id}`);
-      toast.success("تم الحذف");
+      tToast.success("OverlayCampaigns.msg_1d0b");
       load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل في الحذف");
@@ -86,7 +92,7 @@ const OverlayCampaigns: React.FC = () => {
     try {
       const { data } = await apiClient.post(`/overlay-campaigns/${id}/apply`);
       if (data.data?.processing) {
-        toast.success("جاري تطبيق الإطارات والتزامن مع فيسبوك في الخلفية");
+        tToast.success("OverlayCampaigns.msg_02a0");
       } else {
         toast.success(`تم تطبيق الإطار على ${data.data?.results?.length || 0} منتج`);
       }

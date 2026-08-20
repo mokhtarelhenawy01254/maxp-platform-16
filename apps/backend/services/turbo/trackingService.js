@@ -1,4 +1,4 @@
-﻿const axios = require('axios');
+const axios = require('axios');
 const { handleError, getTurboErrorMessage } = require('../../utils/turbo/errorHandler');
 const { TURBO_STATUS_CODE_MAP } = require('../../utils/turbo/constants');
 const { getSharedPrismaClient, safeQuery } = require('../sharedDatabase');
@@ -19,7 +19,7 @@ class TrackingService {
       try {
         const searchResponse = await axios.post(`${this._client.baseUrl}/search-order`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, search_key: trackingNumberStr }, { headers, timeout: this._client.timeout });
         const searchData = searchResponse.data;
-        console.log(`≡ƒöì [TURBO-TRACK] search-order for ${trackingNumberStr}: success=${searchData?.success}, hasResult=${!!searchData?.result}, hasData=${!!searchData?.data}`);
+        console.log(`🔍 [TURBO-TRACK] search-order for ${trackingNumberStr}: success=${searchData?.success}, hasResult=${!!searchData?.result}, hasData=${!!searchData?.data}`);
         const searchItems = searchData?.result || searchData?.data;
         if (searchData && (searchData.success === 1 || searchData.success === true) && searchItems) {
           const shipment = Array.isArray(searchItems) ? searchItems[0] : searchItems;
@@ -27,7 +27,7 @@ class TrackingService {
         }
         return { success: false, error: 'Shipment not found in Turbo' };
       } catch (searchErr) {
-        console.warn(`ΓÜá∩╕Å [TURBO-TRACK] search-order failed for ${trackingNumberStr}:`, searchErr.response?.status, searchErr.response?.data?.message || searchErr.message);
+        console.warn(`⚠️ [TURBO-TRACK] search-order failed for ${trackingNumberStr}:`, searchErr.response?.status, searchErr.response?.data?.message || searchErr.message);
       }
 
       const today = new Date().toISOString().split('T')[0];
@@ -37,10 +37,10 @@ class TrackingService {
         const found = (statusResp.data?.data || []).find(s => String(s.code) === trackingNumberStr || String(s.bar_code) === trackingNumberStr || String(s.invoice_number) === trackingNumberStr);
         if (found) return { success: true, data: { code: found.code, status: found.status, status_code: found.status_code, internalStatus: found.status, raw: found } };
       } catch (statusErr) {
-        console.warn(`ΓÜá∩╕Å [TURBO-TRACK] get-status fallback failed for ${trackingNumberStr}:`, statusErr.response?.status, statusErr.response?.data?.message || statusErr.message);
+        console.warn(`⚠️ [TURBO-TRACK] get-status fallback failed for ${trackingNumberStr}:`, statusErr.response?.status, statusErr.response?.data?.message || statusErr.message);
       }
 
-      return { success: false, error: 'Shipment not found in Turbo ╪«┘ä╪º┘ä ╪ó╪«╪▒ 90 ┘è┘ê┘à' };
+      return { success: false, error: 'Shipment not found in Turbo خلال آخر 90 يوم' };
     } catch (outerErr) {
       return { success: false, error: outerErr.message || 'Unknown error', trackingNumber: String(trackingNumber || ''), status: null, currentLocation: null, estimatedDelivery: null, history: [], data: null };
     }
@@ -71,7 +71,7 @@ class TrackingService {
       if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
       const shipments = Array.isArray(result.data) ? [...result.data] : [];
 
-      // ≡ƒôè DIAGNOSTIC: Log status distribution from get-status
+      // 📊 DIAGNOSTIC: Log status distribution from get-status
       const statusDist = {};
       shipments.forEach(s => {
         const code = String(s.status_code || '?');
@@ -79,9 +79,9 @@ class TrackingService {
         const key = `${code}(${text})`;
         statusDist[key] = (statusDist[key] || 0) + 1;
       });
-      console.log(`≡ƒôè [TURBO-GETSTATUS] Returned ${shipments.length} orders. Distribution:`, JSON.stringify(statusDist));
+      console.log(`📊 [TURBO-GETSTATUS] Returned ${shipments.length} orders. Distribution:`, JSON.stringify(statusDist));
 
-      // ≡ƒÜ¿ Turbo API /get-status returns only ~20 records (first page, no pagination).
+      // 🚨 Turbo API /get-status returns only ~20 records (first page, no pagination).
       // Fetch remaining non-terminal orders in CONCURRENT batches via /search-order.
       if (this.companyId && shipments.length > 0) {
         const batchCodes = new Set(shipments.map(s => s.code).filter(Boolean));
@@ -128,7 +128,7 @@ class TrackingService {
               }
             }
             if (results.length > 0) {
-              console.log(`≡ƒôè [TURBO-GETSTATUS] Fetched ${results.length} additional orders concurrently via /search-order. Total: ${shipments.length}`);
+              console.log(`📊 [TURBO-GETSTATUS] Fetched ${results.length} additional orders concurrently via /search-order. Total: ${shipments.length}`);
             }
           }
         } catch (_) { /* DB fallback: continue with batch results only */ }

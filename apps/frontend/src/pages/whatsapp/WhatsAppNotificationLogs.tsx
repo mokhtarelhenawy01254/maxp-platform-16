@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -95,34 +95,34 @@ const MESSAGE_TYPE_STYLES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒",
-  QUEUED: "┘ü┘è ╪º┘ä╪╖╪º╪¿┘ê╪▒",
-  SENDING: "╪¼╪º╪▒┘è ╪º┘ä╪Ñ╪▒╪│╪º┘ä",
-  SENT: "╪¬┘à ╪º┘ä╪Ñ╪▒╪│╪º┘ä",
-  DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à",
-  READ: "╪¬┘à ╪º┘ä┘é╪▒╪º╪í╪⌐",
-  FAILED: "┘ü╪┤┘ä",
-  CANCELLED: "┘à┘ä╪║┘è",
+  PENDING: "قيد الانتظار",
+  QUEUED: "في الطابور",
+  SENDING: "جاري الإرسال",
+  SENT: "تم الإرسال",
+  DELIVERED: "تم التسليم",
+  READ: "تم القراءة",
+  FAILED: "فشل",
+  CANCELLED: "ملغي",
 };
 
 const MESSAGE_TYPE_LABELS: Record<string, string> = {
-  TEMPLATE: "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º",
-  BUTTONS: "╪ú╪▓╪▒╪º╪▒",
-  TEXT: "┘å╪╡ ╪¡╪▒",
-  LIST: "┘é╪º╪ª┘à╪⌐",
+  TEMPLATE: "قالب ميتا",
+  BUTTONS: "أزرار",
+  TEXT: "نص حر",
+  LIST: "قائمة",
 };
 
 const EVENT_LABELS: Record<string, string> = {
-  ORDER_CREATED: "╪╖┘ä╪¿ ╪¼╪»┘è╪»",
-  ORDER_CONFIRMED: "╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿",
-  ORDER_PROCESSING: "┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░",
-  ORDER_SHIPPED: "╪¬┘à ╪º┘ä╪┤╪¡┘å",
-  ORDER_DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à",
-  ORDER_CANCELLED: "╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿",
-  ORDER_RETURNED: "╪¬┘à ╪º┘ä╪Ñ╪▒╪¼╪º╪╣",
-  PAYMENT_REMINDER: "╪¬╪░┘â┘è╪▒ ╪¿╪º┘ä╪»┘ü╪╣",
-  ABANDONED_CART: "╪│┘ä╪⌐ ┘à╪¬╪▒┘ê┘â╪⌐",
-  WELCOME_MESSAGE: "╪▒╪│╪º┘ä╪⌐ ╪¬╪▒╪¡┘è╪¿",
+  ORDER_CREATED: "طلب جديد",
+  ORDER_CONFIRMED: "تأكيد الطلب",
+  ORDER_PROCESSING: "قيد التنفيذ",
+  ORDER_SHIPPED: "تم الشحن",
+  ORDER_DELIVERED: "تم التسليم",
+  ORDER_CANCELLED: "إلغاء الطلب",
+  ORDER_RETURNED: "تم الإرجاع",
+  PAYMENT_REMINDER: "تذكير بالدفع",
+  ABANDONED_CART: "سلة متروكة",
+  WELCOME_MESSAGE: "رسالة ترحيب",
 };
 
 const ROWS_PER_PAGE_OPTIONS = [10, 20, 50, 100];
@@ -135,7 +135,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
   const { t, i18n } = useTranslation();
 
   const pageTitle = companyName
-    ? `${t("whatsappNotificationLogs.title")} ┬╖ ${companyName}`
+    ? `${t("whatsappNotificationLogs.title")} · ${companyName}`
     : t("whatsappNotificationLogs.title");
   const backHref =
     superAdminMode && companyId
@@ -144,7 +144,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
   const eyebrow =
     superAdminMode && companyName
       ? i18n.language === "ar"
-        ? `╪┤╪▒┘â╪⌐: ${companyName}`
+        ? `شركة: ${companyName}`
         : `Company: ${companyName}`
       : undefined;
 
@@ -185,7 +185,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
       setTotal((response as any).data.pagination?.total || 0);
     } catch (loadError: any) {
       console.error("Error fetching notification logs:", loadError);
-      setError(loadError?.response?.data?.error || loadError?.message || "╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¼┘ä╪¿ ╪º┘ä╪│╪¼┘ä╪º╪¬");
+      setError(loadError?.response?.data?.error || loadError?.message || "حدث خطأ أثناء جلب السجلات");
     } finally {
       setLoading(false);
     }
@@ -218,7 +218,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
           );
         }
       } catch (e) {
-        // ╪║┘è╪▒ ╪¡╪▒╪¼ ΓÇö ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪¼┘ä╪│╪º╪¬ ╪º╪«╪¬┘è╪º╪▒┘è╪⌐
+        // غير حرج — قائمة الجلسات اختيارية
       }
     })();
     return () => {
@@ -237,7 +237,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
   const to = total === 0 ? 0 : Math.min(total, (page + 1) * rowsPerPage);
 
   const formatDate = (value?: string | null) => {
-    if (!value) return "ΓÇö";
+    if (!value) return "—";
     try {
       return new Date(value).toLocaleString(i18n.language === "ar" ? "ar-EG" : "en-US", {
         dateStyle: "short",
@@ -282,7 +282,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
         </Button>
       }
     >
-      {/* ┘ü┘ä╪º╪¬╪▒ */}
+      {/* فلاتر */}
       <div className="mb-4 grid gap-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="relative">
           <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
@@ -419,7 +419,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
                   <TableCell>
                     <div className="space-y-0.5">
                       <div className="text-sm text-[color:var(--color-foreground)]">
-                        {log.sessionName || "ΓÇö"}
+                        {log.sessionName || "—"}
                       </div>
                       {log.sessionPhone ? (
                         <div className="text-xs text-[color:var(--color-muted-foreground)]" dir="ltr">
@@ -437,7 +437,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
                           MESSAGE_TYPE_STYLES["TEXT"],
                       )}
                     >
-                      {MESSAGE_TYPE_LABELS[log.messageType] || log.messageType || "ΓÇö"}
+                      {MESSAGE_TYPE_LABELS[log.messageType] || log.messageType || "—"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -480,7 +480,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
                         {log.failureReason}
                       </span>
                     ) : (
-                      <span className="text-xs text-[color:var(--color-muted-foreground)]">ΓÇö</span>
+                      <span className="text-xs text-[color:var(--color-muted-foreground)]">—</span>
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-[color:var(--color-muted-foreground)]">
@@ -555,7 +555,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
         </div>
       </div>
 
-      {/* ╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä╪▒╪│╪º┘ä╪⌐ */}
+      {/* تفاصيل الرسالة */}
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -572,7 +572,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
                     {t("whatsappNotificationLogs.recipient")}
                   </div>
                   <div className="mt-1 font-medium">
-                    {selectedLog.recipientName || "ΓÇö"}
+                    {selectedLog.recipientName || "—"}
                   </div>
                   <div className="text-xs text-[color:var(--color-muted-foreground)]" dir="ltr">
                     {selectedLog.recipientPhone}
@@ -582,9 +582,9 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
                   <div className="text-[10px] font-medium uppercase tracking-wider text-[color:var(--color-muted-foreground)]">
                     {t("whatsappNotificationLogs.session")}
                   </div>
-                  <div className="mt-1 font-medium">{selectedLog.sessionName || "ΓÇö"}</div>
+                  <div className="mt-1 font-medium">{selectedLog.sessionName || "—"}</div>
                   <div className="text-xs text-[color:var(--color-muted-foreground)]" dir="ltr">
-                    {selectedLog.sessionPhone || ""} {selectedLog.sessionProvider ? `┬╖ ${selectedLog.sessionProvider}` : ""}
+                    {selectedLog.sessionPhone || ""} {selectedLog.sessionProvider ? `· ${selectedLog.sessionProvider}` : ""}
                   </div>
                 </div>
                 <div className="rounded-xl border border-[color:var(--shell-control-border)] p-3">
@@ -600,7 +600,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
                           MESSAGE_TYPE_STYLES["TEXT"],
                       )}
                     >
-                      {MESSAGE_TYPE_LABELS[selectedLog.messageType] || selectedLog.messageType || "ΓÇö"}
+                      {MESSAGE_TYPE_LABELS[selectedLog.messageType] || selectedLog.messageType || "—"}
                     </Badge>
                   </div>
                 </div>
@@ -628,7 +628,7 @@ const WhatsAppNotificationLogs: React.FC<WhatsAppNotificationLogsProps> = ({
                     {t("whatsappNotificationLogs.template")}
                   </div>
                   <div className="mt-1 text-sm">
-                    {selectedLog.templateName || "ΓÇö"}
+                    {selectedLog.templateName || "—"}
                     {selectedLog.metaTemplateName ? (
                       <span className="mr-2 rounded bg-indigo-50 px-1.5 py-0.5 text-xs font-medium text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400" dir="ltr">
                         {selectedLog.metaTemplateName}

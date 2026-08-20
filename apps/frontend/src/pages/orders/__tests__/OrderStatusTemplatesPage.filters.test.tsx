@@ -1,5 +1,5 @@
-﻿/**
- * ╪¿╪¡╪½ + filter chips + ┘ü╪▒╪▓ ΓÇö ┘â┘ä┘ç┘à ╪¿┘è╪┤╪¬╪║┘ä┘ê╪º ┘à╪╣ ╪¿╪╣╪╢ (AND logic) ╪╣┘ä┘ë ┘å┘ü╪│ ╪º┘ä┘é╪º╪ª┘à╪⌐.
+/**
+ * بحث + filter chips + فرز — كلهم بيشتغلوا مع بعض (AND logic) على نفس القائمة.
  */
 import React from "react";
 import { render, screen } from "@testing-library/react";
@@ -33,7 +33,7 @@ function makeStatus(overrides: Record<string, any>) {
   return {
     id: "st1",
     code: "CONFIRMED",
-    name: "┘à╪ñ┘â╪»",
+    name: "مؤكد",
     color: "#3B82F6",
     sortOrder: 1,
     statusType: "order",
@@ -48,39 +48,39 @@ function makeStatus(overrides: Record<string, any>) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function template(content: string, extra: Record<string, any> = {}): any {
-  return { id: `t-${content.length}`, name: "┘é╪º┘ä╪¿", content, eventType: "EVENT", isActive: true, ...extra };
+  return { id: `t-${content.length}`, name: "قالب", content, eventType: "EVENT", isActive: true, ...extra };
 }
 
 const STATUSES = [
   makeStatus({
     id: "st1",
     code: "CONFIRMED",
-    name: "┘à╪ñ┘â╪»",
+    name: "مؤكد",
     hasTemplate: true,
-    template: template("┘à╪▒╪¡╪¿╪º┘ï {{customerName}} ╪ú┘â╪» ╪╖┘ä╪¿┘â"),
+    template: template("مرحباً {{customerName}} أكد طلبك"),
   }),
   makeStatus({
     id: "st2",
     code: "SHIPPED",
-    name: "╪¬┘à ╪º┘ä╪┤╪¡┘å",
+    name: "تم الشحن",
     statusType: "shipping",
     sortOrder: 2,
     hasTemplate: true,
-    template: template("╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿┘â ╪Ñ┘ä┘ë: ╪¬┘à ╪º┘ä╪┤╪¡┘å", {
+    template: template("تم تغيير حالة طلبك إلى: تم الشحن", {
       metaTemplateName: "shipping_approved",
       metaTemplateStatus: "APPROVED",
     }),
   }),
-  makeStatus({ id: "st3", code: "PAYMENT_PENDING", name: "┘ü┘è ╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä╪»┘ü╪╣", statusType: "payment", sortOrder: 3 }),
+  makeStatus({ id: "st3", code: "PAYMENT_PENDING", name: "في انتظار الدفع", statusType: "payment", sortOrder: 3 }),
   makeStatus({
     id: "st4",
     code: "DELIVERED",
-    name: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à",
+    name: "تم التسليم",
     statusType: "shipping",
     sortOrder: 4,
     notifyCustomer: false,
     hasTemplate: true,
-    template: template("╪¬┘à ╪¬╪│┘ä┘è┘à ╪╖┘ä╪¿┘â ╪¿┘å╪¼╪º╪¡"),
+    template: template("تم تسليم طلبك بنجاح"),
   }),
 ];
 
@@ -121,75 +121,75 @@ describe("OrderStatusTemplatesPage filters", () => {
     jest.clearAllMocks();
   });
 
-  test("╪º┘ä╪¿╪¡╪½ ╪¿┘è┘ü┘ä╪¬╪▒ ╪¿╪º┘ä┘â┘ê╪» case-insensitive", async () => {
+  test("البحث بيفلتر بالكود case-insensitive", async () => {
     mockApi(STATUSES);
     renderPage();
     const user = userEvent.setup();
 
     expect(await screen.findByTestId("status-row-st1")).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText(/╪º╪¿╪¡╪½ ╪¿╪º╪│┘à ╪º┘ä╪¡╪º┘ä╪⌐ ╪ú┘ê ╪º┘ä┘â┘ê╪»/), "shipped");
+    await user.type(screen.getByPlaceholderText(/ابحث باسم الحالة أو الكود/), "shipped");
 
     expect(screen.getByTestId("status-row-st2")).toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st3")).not.toBeInTheDocument();
   });
 
-  test("chip ┘à╪«╪╡╪╡╪⌐ ╪¿┘è┘ü┘ä╪¬╪▒ ╪º┘ä┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ä┘è ┘ü┘è┘ç╪º ┘à╪¬╪║┘è╪▒╪º╪¬ {{ }}", async () => {
+  test("chip مخصصة بيفلتر القوالب اللي فيها متغيرات {{ }}", async () => {
     mockApi(STATUSES);
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(screen.getByRole("button", { name: "┘à╪«╪╡╪╡╪⌐" }));
+    await user.click(screen.getByRole("button", { name: "مخصصة" }));
 
     expect(screen.getByTestId("status-row-st1")).toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st2")).not.toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st3")).not.toBeInTheDocument();
   });
 
-  test("chip ┘à╪▒╪¿┘ê╪╖╪⌐ ╪¿┘à┘è╪¬╪º ╪¿┘è┘ü┘ä╪¬╪▒ ╪¿╪º┘ä┘Ç metaTemplateName", async () => {
+  test("chip مربوطة بميتا بيفلتر بالـ metaTemplateName", async () => {
     mockApi(STATUSES);
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(screen.getByRole("button", { name: "┘à╪▒╪¿┘ê╪╖╪⌐ ╪¿┘à┘è╪¬╪º" }));
+    await user.click(screen.getByRole("button", { name: "مربوطة بميتا" }));
 
     expect(screen.getByTestId("status-row-st2")).toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st3")).not.toBeInTheDocument();
   });
 
-  test("chip ╪¿╪»┘ê┘å ┘é╪º┘ä╪¿ ╪¿┘è┘ü┘ä╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘ä┘è ┘à┘ä┘ç╪º╪┤ ┘é╪º┘ä╪¿", async () => {
+  test("chip بدون قالب بيفلتر الحالات اللي ملهاش قالب", async () => {
     mockApi(STATUSES);
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(screen.getByRole("button", { name: "╪¿╪»┘ê┘å ┘é╪º┘ä╪¿" }));
+    await user.click(screen.getByRole("button", { name: "بدون قالب" }));
 
     expect(screen.getByTestId("status-row-st3")).toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st2")).not.toBeInTheDocument();
   });
 
-  test("chip ┘à╪¬┘ê┘é┘ü╪⌐ ╪¿┘è┘ü┘ä╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘ä┘è notifyCustomer ┘ü┘è┘ç╪º false", async () => {
+  test("chip متوقفة بيفلتر الحالات اللي notifyCustomer فيها false", async () => {
     mockApi(STATUSES);
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(screen.getByRole("button", { name: "┘à╪¬┘ê┘é┘ü╪⌐" }));
+    await user.click(screen.getByRole("button", { name: "متوقفة" }));
 
     expect(screen.getByTestId("status-row-st4")).toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st1")).not.toBeInTheDocument();
   });
 
-  test("╪º┘ä┘ü╪▒╪▓ ╪º┘ä╪ú╪¿╪¼╪»┘è ╪¿┘è╪▒╪¬╪¿ ╪º┘ä┘é╪º╪ª┘à╪⌐", async () => {
+  test("الفرز الأبجدي بيرتب القائمة", async () => {
     mockApi([
-      makeStatus({ id: "st1", code: "A", name: "╪ú╪¡┘à╪»", sortOrder: 2 }),
-      makeStatus({ id: "st2", code: "B", name: "╪¿╪º╪│┘à", sortOrder: 1 }),
+      makeStatus({ id: "st1", code: "A", name: "أحمد", sortOrder: 2 }),
+      makeStatus({ id: "st2", code: "B", name: "باسم", sortOrder: 1 }),
     ]);
     renderPage();
     const user = userEvent.setup();
@@ -201,15 +201,15 @@ describe("OrderStatusTemplatesPage filters", () => {
     expect(visibleRowIds()).toEqual(["status-row-st1", "status-row-st2"]);
   });
 
-  test("╪º┘ä┘Ç chip ┘ê╪º┘ä┘Ç search ╪¿┘è╪┤╪¬╪║┘ä┘ê╪º ┘à╪╣ ╪¿╪╣╪╢ (AND)", async () => {
+  test("الـ chip والـ search بيشتغلوا مع بعض (AND)", async () => {
     mockApi(STATUSES);
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(screen.getByRole("button", { name: "┘à╪«╪╡╪╡╪⌐" }));
-    await user.type(screen.getByPlaceholderText(/╪º╪¿╪¡╪½ ╪¿╪º╪│┘à ╪º┘ä╪¡╪º┘ä╪⌐ ╪ú┘ê ╪º┘ä┘â┘ê╪»/), "SHIPPED");
+    await user.click(screen.getByRole("button", { name: "مخصصة" }));
+    await user.type(screen.getByPlaceholderText(/ابحث باسم الحالة أو الكود/), "SHIPPED");
 
-    expect(await screen.findByText(/┘ä╪º ╪¬┘ê╪¼╪» ╪¡╪º┘ä╪º╪¬ ┘à╪╖╪º╪¿┘é╪⌐ ┘ä╪¿╪¡╪½┘â/)).toBeInTheDocument();
+    expect(await screen.findByText(/لا توجد حالات مطابقة لبحثك/)).toBeInTheDocument();
   });
 });

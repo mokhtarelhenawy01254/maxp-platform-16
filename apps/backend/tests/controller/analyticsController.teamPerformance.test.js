@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/analyticsService', () => ({}));
+jest.mock('../../services/analyticsService', () => ({}));
 
 jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
@@ -82,7 +82,7 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
     expect(where.createdAt).toBeUndefined();
   });
 
-  test('startDate = endDate (╪º┘ä┘è┘ê┘à) filters to end-of-day so today orders are included', async () => {
+  test('startDate = endDate (اليوم) filters to end-of-day so today orders are included', async () => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayOrder = order(
       'order-1',
@@ -100,9 +100,9 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
 
     const where = prismaMock.order.findMany.mock.calls[0][0].where;
     expect(where.createdAt).toBeDefined();
-    // gte = ╪¿╪»╪º┘è╪⌐ ╪º┘ä┘è┘ê┘à (00:00)
+    // gte = بداية اليوم (00:00)
     expect(where.createdAt.gte.getHours()).toBe(0);
-    // lte = ┘å┘ç╪º┘è╪⌐ ╪º┘ä┘è┘ê┘à (23:59:59.999) ΓÇö ╪»┘è ┘â╪º┘å╪¬ ╪º┘ä┘à╪┤┘â┘ä╪⌐ ┘é╪¿┘ä ╪º┘ä╪Ñ╪╡┘ä╪º╪¡
+    // lte = نهاية اليوم (23:59:59.999) — دي كانت المشكلة قبل الإصلاح
     expect(where.createdAt.lte.getHours()).toBe(23);
     expect(where.createdAt.lte.getMinutes()).toBe(59);
 

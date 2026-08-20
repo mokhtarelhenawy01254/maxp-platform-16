@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getWhatsAppPhone, getFacebookPage, waLink, meLink } = require('../services/botLinkService');
 
@@ -29,7 +29,7 @@ router.get('/:companyId', async (req, res) => {
 
     const buttons = [];
     if (channels.includes('WHATSAPP')) {
-      const url = waLink(phone, '┘à╪▒╪¡╪¿╪º┘ï╪î ╪ú╪▒╪║╪¿ ┘ü┘è ╪º┘ä╪¬┘ê╪º╪╡┘ä');
+      const url = waLink(phone, 'مرحباً، أرغب في التواصل');
       if (url) buttons.push({ channel: 'WHATSAPP', label: 'WhatsApp', url });
     }
     if (channels.includes('FACEBOOK')) {

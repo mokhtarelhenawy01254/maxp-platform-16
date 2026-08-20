@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowPathIcon,
   CheckCircleIcon,
@@ -32,10 +32,10 @@ interface BulkConvertModalProps {
 }
 
 const EXPLAINER_TEXT =
-  "╪│┘è╪¬┘à ╪¬╪¡┘ê┘è┘ä ┘â┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä┘à╪¡╪»╪»╪⌐ ╪Ñ┘ä┘ë ╪╣╪▒┘ê╪╢ ╪¬┘é╪»┘è┘à┘è╪⌐ ╪¬╪º╪¿╪╣┘è┘å ┘ä┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è. ┘â┘ä ┘à┘å╪¬╪¼ ╪│┘è╪┤╪º╪▒┘â ┘à╪«╪▓┘ê┘å ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è╪î ┘ê╪¬┘Å╪«┘ü┘ë ╪╡┘ü╪¡╪º╪¬┘ç ╪º┘ä┘à╪│╪¬┘é┘ä╪⌐ ╪╣┘å ╪º┘ä┘â╪¬╪º┘ä┘ê╪¼╪î ┘ê╪¬┘Å╪¡┘ê┘Ä┘æ┘ä ╪╖┘ä╪¿╪º╪¬┘ç ╪º┘ä┘é╪»┘è┘à╪⌐ ┘ä┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è.";
+  "سيتم تحويل كل المنتجات المحددة إلى عروض تقديمية تابعين للمنتج الأصلي. كل منتج سيشارك مخزون المنتج الأصلي، وتُخفى صفحاته المستقلة عن الكتالوج، وتُحوَّل طلباته القديمة للمنتج الأصلي.";
 
 const WARNING_TEXT =
-  "┘ç╪░╪º ╪º┘ä╪Ñ╪¼╪▒╪º╪í ┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪¬╪▒╪º╪¼╪╣ ╪╣┘å┘ç ΓÇö ╪º┘ä╪▒┘ê╪º╪¿╪╖ ╪º┘ä┘é╪»┘è┘à╪⌐ ┘ä┘ä┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä┘à╪¡╪»╪»╪⌐ ╪│╪¬╪¬┘ê┘é┘ü ╪╣┘å ╪º┘ä╪╣┘à┘ä ┘ê╪│╪¬┘Å╪╣╪º╪» ╪¬┘ê╪¼┘è┘ç┘ç╪º ┘ä┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è.";
+  "هذا الإجراء لا يمكن التراجع عنه — الروابط القديمة للمنتجات المحددة ستتوقف عن العمل وستُعاد توجيهها للمنتج الأصلي.";
 
 const mapToOption = (
   raw: Record<string, unknown>,
@@ -101,7 +101,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
           setResults([]);
         }
       } catch {
-        setSearchError("┘ü╪┤┘ä ┘ü┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬");
+        setSearchError("فشل في تحميل المنتجات");
         setResults([]);
       } finally {
         setSearchLoading(false);
@@ -159,13 +159,13 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
           skippedCount: res.data.data.skippedCount,
         });
       } else {
-        setError(res.data?.message || "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬");
+        setError(res.data?.message || "فشل في تحويل المنتجات");
       }
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
           err?.message ||
-          "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪Ñ┘ä┘ë ╪╣╪▒┘ê╪╢ ╪¬┘é╪»┘è┘à┘è╪⌐",
+          "فشل في تحويل المنتجات إلى عروض تقديمية",
       );
     } finally {
       setSubmitting(false);
@@ -188,10 +188,10 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                ╪¬╪¡┘ê┘è┘ä {sourceProductIds.length} ┘à┘å╪¬╪¼ ╪Ñ┘ä┘ë ╪╣╪▒┘ê╪╢ ╪¬┘é╪»┘è┘à┘è╪⌐
+                تحويل {sourceProductIds.length} منتج إلى عروض تقديمية
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                ╪º╪«╪¬╪▒ ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è ╪º┘ä┘ç╪»┘ü
+                اختر المنتج الأصلي الهدف
               </p>
             </div>
           </div>
@@ -199,7 +199,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            aria-label="╪Ñ╪║┘ä╪º┘é"
+            aria-label="إغلاق"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
@@ -220,7 +220,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
           {/* Selected products summary */}
           <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-800 max-h-28 overflow-y-auto">
             <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-              ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä┘à╪¡╪»╪»╪⌐ ┘ä┘ä╪¬╪¡┘ê┘è┘ä ({sourceProducts.length}):
+              المنتجات المحددة للتحويل ({sourceProducts.length}):
             </div>
             <ul className="px-3 pb-2 space-y-1">
               {sourceProducts.map((p) => (
@@ -242,7 +242,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="╪º╪¿╪¡╪½ ╪╣┘å ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è ╪¿╪º┘ä╪º╪│┘à ╪ú┘ê ╪º┘ä┘Ç SKU..."
+              placeholder="ابحث عن المنتج الأصلي بالاسم أو الـ SKU..."
               autoComplete="off"
               className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-900/40"
             />
@@ -257,7 +257,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
           <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800 max-h-52 overflow-y-auto">
             {searchLoading ? (
               <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                ╪¼╪º╪▒┘è ╪º┘ä╪¿╪¡╪½...
+                جاري البحث...
               </div>
             ) : results.length > 0 ? (
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -290,7 +290,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium text-gray-900 dark:text-white">
-                          {product.name || `┘à┘å╪¬╪¼ #${product.id}`}
+                          {product.name || `منتج #${product.id}`}
                         </div>
                         <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                           {product.sku
@@ -314,7 +314,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
               </div>
             ) : (
               <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                ┘ä╪º ╪¬┘ê╪¼╪» ┘à┘å╪¬╪¼╪º╪¬ ┘à╪╖╪º╪¿┘é╪⌐
+                لا توجد منتجات مطابقة
               </div>
             )}
           </div>
@@ -323,10 +323,10 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
             <div className="flex items-center justify-between gap-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 px-4 py-3">
               <div className="min-w-0">
                 <div className="text-xs text-indigo-600 dark:text-indigo-300">
-                  ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è ╪º┘ä┘à╪¡╪»╪»
+                  المنتج الأصلي المحدد
                 </div>
                 <div className="truncate text-sm font-medium text-gray-900 dark:text-white">
-                  {selected.name || `┘à┘å╪¬╪¼ #${selected.id}`}
+                  {selected.name || `منتج #${selected.id}`}
                 </div>
               </div>
               <button
@@ -334,7 +334,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
                 onClick={() => setSelected(null)}
                 className="text-xs text-red-600 dark:text-red-400 hover:underline shrink-0"
               >
-                ╪¬╪║┘è┘è╪▒
+                تغيير
               </button>
             </div>
           )}
@@ -353,7 +353,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
             disabled={submitting}
             className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
           >
-            ╪Ñ┘ä╪║╪º╪í
+            إلغاء
           </button>
           <button
             type="button"
@@ -362,7 +362,7 @@ export const BulkConvertModal: React.FC<BulkConvertModalProps> = ({
             className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
-            ╪¬╪ú┘â┘è╪» ╪º┘ä╪¬╪¡┘ê┘è┘ä ({sourceProductIds.length})
+            تأكيد التحويل ({sourceProductIds.length})
           </button>
         </div>
       </div>

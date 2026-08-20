@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Post-Purchase Message Journeys",
   "subtitle": "Automate customer engagement to boost loyalty and sales",
   "tabs": {
@@ -43,10 +43,10 @@
     "firstName": "First Name",
     "lastName": "Last Name",
     "timeline": "Timeline",
-    "timelineCount": "Flow timeline ┬╖ {{count}} step",
-    "timelineCount_plural": "Flow timeline ┬╖ {{count}} steps",
+    "timelineCount": "Flow timeline · {{count}} step",
+    "timelineCount_plural": "Flow timeline · {{count}} steps",
     "buildSequence": "Build the sequence",
-    "dragHint": "Drag to reorder ┬╖ Click to edit ┬╖ Add delays between messages",
+    "dragHint": "Drag to reorder · Click to edit · Add delays between messages",
     "readonlyHint": "Read-only view",
     "validated": "Validated",
     "errorCount": "{{count}} error",
@@ -121,7 +121,7 @@
     "send": "Send",
     "close": "Close co-pilot",
     "open": "Open AI co-pilot",
-    "hint": "Press Γå╡ to send ┬╖ ΓçºΓå╡ for newline",
+    "hint": "Press ↵ to send · ⇧↵ for newline",
     "poweredBy": "Powered by maxp-ai-service. Suggestions can be applied with one click."
   },
   "hints": {

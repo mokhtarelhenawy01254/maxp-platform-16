@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
@@ -432,20 +432,20 @@ const DEFAULT_ORDER_STATUSES: OrderStatusDefinition[] = [
   { code: "TRASH", name: i18n.t('orders.trash'), color: "#6B7280" },
   { code: "STOCK_SHORTAGE", name: i18n.t('orders.stockShortage'), color: "#F97316" },
   { code: "SHORTAGE_FAILED", name: i18n.t('orders.shortageFailed'), color: "#7C3AED" },
-  // ≡ƒÜÇ ╪¡╪º┘ä╪º╪¬ ╪┤╪¡┘å ╪¬╪▒╪¿┘ê 1..13
-  { code: "turbo_saved", name: "╪¬╪▒╪¿┘ê: ┘à╪¡┘ü┘ê╪╕╪⌐ ┘é╪¿┘ä ╪º┘ä╪┤╪¡┘å (┘â┘ê╪» 1)", color: "#6366F1" },
-  { code: "turbo_sent", name: "╪¬╪▒╪¿┘ê: ┘à╪▒╪│┘ä╪⌐ ┘ä╪┤╪▒┘â╪⌐ ╪¬╪▒╪¿┘ê (┘â┘ê╪» 2)", color: "#3B82F6" },
-  { code: "processing", name: "╪¬╪▒╪¿┘ê: ┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░ ╪¿╪º┘ä┘ü╪▒╪╣ (┘â┘ê╪» 3)", color: "#8B5CF6" },
-  { code: "out_for_delivery", name: "╪¬╪▒╪¿┘ê: ┘à╪│┘ä┘à╪⌐ ┘ä┘ä┘à┘å╪»┘ê╪¿ (┘â┘ê╪» 4)", color: "#06B6D4" },
-  { code: "returned_to_company", name: "╪¬╪▒╪¿┘ê: ┘à╪▒╪¬╪¼╪╣╪º╪¬ ╪¿╪º┘ä╪┤╪▒┘â╪⌐ (┘â┘ê╪» 5)", color: "#991B1B" },
-  { code: "cancelled", name: "╪¬╪▒╪¿┘ê: ┘à┘ä╪║┘è ┘à┘å ╪º┘ä╪┤╪¡┘å (┘â┘ê╪» 6)", color: "#DC2626" },
-  { code: "delivered", name: "╪¬╪▒╪¿┘ê: ╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à (┘â┘ê╪» 7)", color: "#10B981" },
-  { code: "remitted", name: "╪¬╪▒╪¿┘ê: ╪¬┘à ╪º┘ä╪¬┘ê╪▒┘è╪» ┘ê╪¬╪¡╪╡┘è┘ä ╪º┘ä┘à╪¿┘ä╪║ (┘â┘ê╪» 8)", color: "#047857" },
-  { code: "archived", name: "╪¬╪▒╪¿┘ê: ╪┤╪¡┘å╪⌐ ┘à╪¡╪░┘ê┘ü╪⌐ (┘â┘ê╪» 9)", color: "#78716C" },
-  { code: "returned_resent", name: "╪¬╪▒╪¿┘ê: ┘à╪╣╪º╪» ╪Ñ╪▒╪│╪º┘ä┘ç╪º (┘â┘ê╪» 10)", color: "#2563EB" },
-  { code: "returned_missing", name: "╪¬╪▒╪¿┘ê: ┘à╪▒╪¬╪¼╪╣ ┘à┘ü┘é┘ê╪» (┘â┘ê╪» 11)", color: "#7F1D1D" },
-  { code: "returned_destroyed", name: "╪¬╪▒╪¿┘ê: ┘à╪▒╪¬╪¼╪╣ ┘à╪╣╪»┘ê┘à (┘â┘ê╪» 12)", color: "#451A03" },
-  { code: "delayed", name: "╪¬╪▒╪¿┘ê: ┘à╪ñ╪¼┘ä╪⌐ ┘à╪╣ ╪º┘ä┘à┘å╪»┘ê╪¿ (┘â┘ê╪» 13)", color: "#F97316" },
+  // 🚀 حالات شحن تربو 1..13
+  { code: "turbo_saved", name: "تربو: محفوظة قبل الشحن (كود 1)", color: "#6366F1" },
+  { code: "turbo_sent", name: "تربو: مرسلة لشركة تربو (كود 2)", color: "#3B82F6" },
+  { code: "processing", name: "تربو: قيد التنفيذ بالفرع (كود 3)", color: "#8B5CF6" },
+  { code: "out_for_delivery", name: "تربو: مسلمة للمندوب (كود 4)", color: "#06B6D4" },
+  { code: "returned_to_company", name: "تربو: مرتجعات بالشركة (كود 5)", color: "#991B1B" },
+  { code: "cancelled", name: "تربو: ملغي من الشحن (كود 6)", color: "#DC2626" },
+  { code: "delivered", name: "تربو: تم التسليم (كود 7)", color: "#10B981" },
+  { code: "remitted", name: "تربو: تم التوريد وتحصيل المبلغ (كود 8)", color: "#047857" },
+  { code: "archived", name: "تربو: شحنة محذوفة (كود 9)", color: "#78716C" },
+  { code: "returned_resent", name: "تربو: معاد إرسالها (كود 10)", color: "#2563EB" },
+  { code: "returned_missing", name: "تربو: مرتجع مفقود (كود 11)", color: "#7F1D1D" },
+  { code: "returned_destroyed", name: "تربو: مرتجع معدوم (كود 12)", color: "#451A03" },
+  { code: "delayed", name: "تربو: مؤجلة مع المندوب (كود 13)", color: "#F97316" },
 ];
 
 const DEFAULT_PAYMENT_STATUSES: OrderStatusDefinition[] = [
@@ -890,8 +890,8 @@ interface BillingHoldOrder {
 }
 
 const HELD_REASON_LABEL: Record<string, string> = {
-  insufficient_balance: "╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐",
-  subscription_expired: "╪º╪┤╪¬╪▒╪º┘â ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐",
+  insufficient_balance: "رصيد المحفظة",
+  subscription_expired: "اشتراك الطلبات اليدوية",
 };
 
 const HeldOrdersBanner: React.FC = () => {
@@ -933,7 +933,7 @@ const HeldOrdersBanner: React.FC = () => {
         },
       )
       .catch(() => {
-        /* ╪¬╪¼╪º┘ç┘ä - ╪º┘ä╪¿╪º┘å╪▒ ╪º╪«╪¬┘è╪º╪▒┘è */
+        /* تجاهل - البانر اختياري */
       });
   }, [isAdmin]);
 
@@ -966,31 +966,31 @@ const HeldOrdersBanner: React.FC = () => {
     <>
       <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
         <span className="font-semibold">
-          ┘ä╪»┘è┘â {held.count} ╪╖┘ä╪¿ ┘à╪╣┘ä┘æ┘é
+          لديك {held.count} طلب معلّق
           {held.subscriptionCount > 0 && held.subscriptionCount === held.count
-            ? " ╪¿╪│╪¿╪¿ ╪º┘å╪¬┘ç╪º╪í ╪º╪┤╪¬╪▒╪º┘â ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐"
+            ? " بسبب انتهاء اشتراك الطلبات اليدوية"
             : held.subscriptionCount > 0
-              ? " (╪▒╪╡┘è╪» + ╪º╪┤╪¬╪▒╪º┘â)"
-              : " ╪¿╪│╪¿╪¿ ╪º┘å╪«┘ü╪º╪╢ ╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐"}
+              ? " (رصيد + اشتراك)"
+              : " بسبب انخفاض رصيد المحفظة"}
           .
         </span>
         <span className="text-sm">
           {held.amount > 0
-            ? `╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪¬╪¡┘é ${held.amount.toLocaleString("en-US", { maximumFractionDigits: 2 })} ╪¼.┘à ΓÇö `
+            ? `المبلغ المستحق ${held.amount.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م — `
             : ""}
-          ╪º╪┤╪¡┘å ╪▒╪╡┘è╪»┘â ╪ú┘ê ╪¼╪»┘æ╪» ╪º╪┤╪¬╪▒╪º┘â┘â ┘ä┘è┘Å╪«╪╡┘à ╪º┘ä┘à╪¿┘ä╪║ ┘ê╪¬╪╕┘ç╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï.
+          اشحن رصيدك أو جدّد اشتراكك ليُخصم المبلغ وتظهر الطلبات تلقائياً.
         </span>
         <button
           onClick={openMoreInfo}
           className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
         >
-          ┘à╪▓┘è╪» ╪º┘ä┘à╪╣┘ä┘ê┘à╪º╪¬
+          مزيد المعلومات
         </button>
         <Link
           to="/payments"
           className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
         >
-          ╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪»
+          شحن الرصيد
         </Link>
       </div>
 
@@ -1005,36 +1005,36 @@ const HeldOrdersBanner: React.FC = () => {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐ ({heldOrders.length})
+                الطلبات المعلّقة ({heldOrders.length})
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
                 className="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
               >
-                ╪Ñ╪║┘ä╪º┘é
+                إغلاق
               </button>
             </div>
 
             {loadingHeld ? (
               <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                ╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...
+                جاري التحميل...
               </div>
             ) : heldOrders.length === 0 ? (
               <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                ┘ä╪º ╪¬┘ê╪¼╪» ╪╖┘ä╪¿╪º╪¬ ┘à╪╣┘ä┘æ┘é╪⌐.
+                لا توجد طلبات معلّقة.
               </div>
             ) : (
               <>
                 <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                   {heldTotal > 0 ? (
                     <>
-                      ╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪¬╪¡┘é ╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è:{" "}
+                      المبلغ المستحق الإجمالي:{" "}
                       <b className="font-semibold">
-                        {heldTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })} ╪¼.┘à
+                        {heldTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م
                       </b>
                     </>
                   ) : (
-                    "┘ä╪º ╪¬┘ê╪¼╪» ╪▒╪│┘ê┘à ┘à╪│╪¬╪¡┘é╪⌐ ΓÇö ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘à╪╣┘ä┘æ┘é╪⌐ ╪¿╪│╪¿╪¿ ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪º╪┤╪¬╪▒╪º┘â."
+                    "لا توجد رسوم مستحقة — الطلبات معلّقة بسبب انتهاء الاشتراك."
                   )}
                 </div>
                 <div className="max-h-96 space-y-2 overflow-y-auto">
@@ -1054,21 +1054,21 @@ const HeldOrdersBanner: React.FC = () => {
                               : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
                           }`}
                         >
-                          {HELD_REASON_LABEL[o.holdReason] || "┘à╪╣┘ä┘æ┘é"}
+                          {HELD_REASON_LABEL[o.holdReason] || "معلّق"}
                         </span>
                       </div>
                       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {format(new Date(o.createdAt), "dd/MM/yyyy HH:mm")} ΓÇó ╪╣╪»╪» ╪º┘ä┘é╪╖╪╣:{" "}
+                        {format(new Date(o.createdAt), "dd/MM/yyyy HH:mm")} • عدد القطع:{" "}
                         {o.itemCount}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700 dark:text-gray-200">
-                        <span>╪º┘ä╪╣┘à┘è┘ä: {o.customerName || "-"}</span>
-                        <span>╪º┘ä┘ç╪º╪¬┘ü: {o.customerPhone || "-"}</span>
+                        <span>العميل: {o.customerName || "-"}</span>
+                        <span>الهاتف: {o.customerPhone || "-"}</span>
                       </div>
                       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         {o.holdReason === "subscription_expired"
-                          ? "┘à╪╣┘ä┘æ┘é ╪¡╪¬┘ë ╪¬╪¼╪»┘è╪» ╪º╪┤╪¬╪▒╪º┘â ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐"
-                          : `╪▒╪│┘ê┘à ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à ╪º┘ä┘à╪│╪¬╪¡┘é╪⌐: ${(o.billingHoldAmount || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} ╪¼.┘à`}
+                          ? "معلّق حتى تجديد اشتراك الطلبات اليدوية"
+                          : `رسوم الاستخدام المستحقة: ${(o.billingHoldAmount || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م`}
                       </div>
                     </div>
                   ))}
@@ -1078,7 +1078,7 @@ const HeldOrdersBanner: React.FC = () => {
                     to="/payments"
                     className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
                   >
-                    ╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪» / ╪¬╪¼╪»┘è╪» ╪º┘ä╪º╪┤╪¬╪▒╪º┘â ┘ä╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+                    شحن الرصيد / تجديد الاشتراك لإظهار الطلبات
                   </Link>
                 </div>
               </>
@@ -2161,7 +2161,7 @@ const Orders: React.FC = () => {
       return;
     }
 
-    // ┘ä┘ä╪╖╪¿╪º╪╣╪⌐ ╪º┘ä╪¼┘à╪º╪╣┘è╪⌐╪î ┘å┘ü╪¬╪¡ ╪╡┘ü╪¡╪⌐ ┘à┘å┘ü╪╡┘ä╪⌐
+    // للطباعة الجماعية، نفتح صفحة منفصلة
     if (selectedOrders.length > 1) {
       if (!window.confirm(t("orders.confirmPrintInvoices", { count: selectedOrders.length })))
         return;
@@ -2180,8 +2180,8 @@ const Orders: React.FC = () => {
           if (invoiceList.length === 0 && guestList.length === 0) {
             alert(t("orders.invoicePrintError"));
           } else {
-            // ╪º╪¿┘å┘É URL ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖╪¿╪º╪╣╪⌐: ┘ü┘ê╪º╪¬┘è╪▒ DB ╪╣╪¿╪▒ ids╪î ┘ê╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ╪╣╪¿╪▒ sessionStorage
-            // (┘â┘ä╪º ╪º┘ä┘å┘ê╪╣┘è┘å ┘è┘Å╪╣╪▒╪╢ ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪¿┘å┘ü╪│ ╪┤╪▒┘è╪╖ ╪º┘ä╪¬┘é╪│┘è┘à ┘ê┘à┘â┘ê┘æ┘å ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐)
+            // ابنِ URL صفحة الطباعة: فواتير DB عبر ids، وطلبات الضيف عبر sessionStorage
+            // (كلا النوعين يُعرض في نفس الصفحة بنفس شريط التقسيم ومكوّن الفاتورة)
             const params = new URLSearchParams();
             if (invoiceList.length > 0) {
               params.set("ids", invoiceList.map((inv) => inv.id).join(","));
@@ -2213,10 +2213,10 @@ const Orders: React.FC = () => {
         setPrintingInvoices(false);
       }
     } else {
-      // ┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ┘ê╪º╪¡╪»╪⌐╪î ┘å╪╣╪▒╪╢┘ç╪º ┘ü┘è modal
+      // لفاتورة واحدة، نعرضها في modal
       try {
         setPrintingInvoices(true);
-        // ┘ü╪¬╪¡ ┘å╪º┘ü╪░╪⌐ ╪º┘ä╪╖╪¿╪º╪╣╪⌐ ┘ü┘ê╪▒╪º┘ï ╪╢┘à┘å ╪¬┘ü╪º╪╣┘ä ╪º┘ä┘à╪│╪¬╪«╪»┘à ┘ä╪¬╪¼┘å╪¿ ╪¡╪¼╪¿┘ç╪º ╪¿┘ê╪º╪│╪╖╪⌐ ┘à╪º┘å╪╣ ╪º┘ä┘å┘ê╪º┘ü╪░ ╪º┘ä┘à┘å╪¿╪½┘é╪⌐
+        // فتح نافذة الطباعة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
         const printWindow = window.open("", "_blank");
         if (!printWindow) {
           alert(t("orders.invoiceGenerationError"));
@@ -2237,7 +2237,7 @@ const Orders: React.FC = () => {
             printWindow.close();
             setSelectedInvoice(invoices[0]);
           } else if (guestOrders && guestOrders.length > 0) {
-            // ╪╖┘ä╪¿ ╪╢┘è┘ü ┘ê╪º╪¡╪»: ╪º╪╣╪▒╪╢┘ç ┘ü┘è ╪╡┘ü╪¡╪⌐ print-multiple ╪º┘ä┘à┘ê╪¡┘æ╪»╪⌐ (╪¿┘å┘ü╪│ ╪┤╪▒┘è╪╖ ╪º┘ä╪¬┘é╪│┘è┘à ┘ê╪º┘ä╪ú┘â┘ê╪º╪»)
+            // طلب ضيف واحد: اعرضه في صفحة print-multiple الموحّدة (بنفس شريط التقسيم والأكواد)
             printWindow.close();
             const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
             const guestKey = storeGuestPrintPayload({

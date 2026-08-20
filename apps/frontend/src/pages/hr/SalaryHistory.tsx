@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import { TrendingUp, DollarSign, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, DollarSign, ArrowUp, ArrowDown } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 
@@ -11,6 +11,7 @@ import { useParams } from "react-router-dom";
 import api from "../../services/api";
 
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface SalaryHistory {
   id: string;
@@ -69,7 +70,7 @@ const SalaryHistory: React.FC = () => {
     } catch (error) {
       console.error("Error fetching salary history:", error);
 
-      toast.error("فشل في جلب سجل الرواتب");
+      tToast.error("SalaryHistory.failed_fetch_2afd");
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,9 @@
-import { RefreshCw as ArrowPathIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, Circle as UserGroupIcon, Star as SparklesIcon, Filter as FunnelIcon, Phone as PhoneIcon, Activity as ChartBarIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from "react";
-;
+import {
+  ArrowPathIcon, CheckCircleIcon, XCircleIcon,
+  ClockIcon, UserGroupIcon, SparklesIcon,
+  FunnelIcon, PhoneIcon, ChartBarIcon,
+} from "@heroicons/react/24/outline";
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import analyticsService from "../../../services/analyticsService";
 

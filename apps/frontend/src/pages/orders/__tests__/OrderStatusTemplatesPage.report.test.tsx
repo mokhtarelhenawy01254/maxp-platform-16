@@ -1,5 +1,5 @@
-﻿/**
- * ╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬ ΓÇö ╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪¬┘é╪▒┘è╪▒ ╪º┘ä┘è┘ê┘à┘è: ╪º┘ä┘à┘ä╪«╪╡ + ╪¼╪»┘ê┘ä ╪º┘ä╪¡╪º┘ä╪º╪¬ + ╪º┘ä╪¬┘ü╪º╪╡┘è┘ä.
+/**
+ * تقارير الحالات — تبويب التقرير اليومي: الملخص + جدول الحالات + التفاصيل.
  */
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -42,9 +42,9 @@ const REPORT = {
       eventType: "ORDER_CONFIRMED",
       orderId: "o1",
       orderNumber: "ORD-100",
-      customerName: "╪ú╪¡┘à╪»",
+      customerName: "أحمد",
       recipientPhone: "201000000000",
-      templateName: "┘é╪º┘ä╪¿ ╪º┘ä╪¬╪ú┘â┘è╪»",
+      templateName: "قالب التأكيد",
       metaTemplateName: "order_confirm_ar",
       templateChannel: "META_CLOUD",
       headerUsesOrderProduct: true,
@@ -60,9 +60,9 @@ const REPORT = {
       eventType: "ORDER_SHIPPED",
       orderId: "o2",
       orderNumber: "ORD-101",
-      customerName: "┘à╪¡┘à╪»",
+      customerName: "محمد",
       recipientPhone: "201111111111",
-      templateName: "┘é╪º┘ä╪¿ ╪º┘ä╪┤╪¡┘å",
+      templateName: "قالب الشحن",
       metaTemplateName: null,
       templateChannel: "AUTO",
       headerUsesOrderProduct: null,
@@ -84,8 +84,8 @@ function mockApi() {
         data: {
           success: true,
           data: [
-            { id: "st1", code: "CONFIRMED", name: "┘à╪ñ┘â╪»", color: "#3B82F6", sortOrder: 1, statusType: "order", notifyCustomer: true, isSystemStatus: true, hasTemplate: true, isNonNotifiable: false, template: null },
-            { id: "st2", code: "SHIPPED", name: "╪¬┘à ╪º┘ä╪┤╪¡┘å", color: "#10B981", sortOrder: 2, statusType: "shipping", notifyCustomer: true, isSystemStatus: true, hasTemplate: true, isNonNotifiable: false, template: null },
+            { id: "st1", code: "CONFIRMED", name: "مؤكد", color: "#3B82F6", sortOrder: 1, statusType: "order", notifyCustomer: true, isSystemStatus: true, hasTemplate: true, isNonNotifiable: false, template: null },
+            { id: "st2", code: "SHIPPED", name: "تم الشحن", color: "#10B981", sortOrder: 2, statusType: "shipping", notifyCustomer: true, isSystemStatus: true, hasTemplate: true, isNonNotifiable: false, template: null },
           ],
         },
       });
@@ -114,17 +114,17 @@ function renderPage() {
   );
 }
 
-describe("OrderStatusTemplatesPage ╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬", () => {
+describe("OrderStatusTemplatesPage تقارير الحالات", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test("╪º┘ä╪¬╪¿┘ê┘è╪¿ ┘è╪╣╪▒╪╢ ╪º┘ä┘à┘ä╪«╪╡ ┘ê╪╣╪»╪» ╪º┘ä┘à┘è╪¬╪º/╪º┘ä╪╣╪º╪»┘è ┘ê╪╡┘ü┘ê┘ü ╪º┘ä╪¡╪º┘ä╪º╪¬", async () => {
+  test("التبويب يعرض الملخص وعدد الميتا/العادي وصفوف الحالات", async () => {
     mockApi();
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: /╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬/ }));
+    await user.click(await screen.findByRole("button", { name: /تقارير الحالات/ }));
 
     expect(await screen.findByTestId("status-report-tab")).toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledWith(
@@ -133,53 +133,53 @@ describe("OrderStatusTemplatesPage ╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä�
     );
 
     await waitFor(() => {
-      expect(screen.getByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪Ñ╪▒╪│╪º┘ä╪º╪¬")).toBeInTheDocument();
+      expect(screen.getByText("إجمالي الإرسالات")).toBeInTheDocument();
     });
-    expect(screen.getAllByText("┘é╪º┘ä╪¿ ┘à┘è╪¬╪º").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("قالب ميتا").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("واتساب عادي").length).toBeGreaterThanOrEqual(1);
 
-    expect(screen.getByText("┘à╪ñ┘â╪»")).toBeInTheDocument();
-    expect(screen.getByText("╪¬┘à ╪º┘ä╪┤╪¡┘å")).toBeInTheDocument();
+    expect(screen.getByText("مؤكد")).toBeInTheDocument();
+    expect(screen.getByText("تم الشحن")).toBeInTheDocument();
 
-    const orderConfirmedRow = screen.getAllByRole("row").find((r) => r.textContent?.includes("┘à╪ñ┘â╪»"));
+    const orderConfirmedRow = screen.getAllByRole("row").find((r) => r.textContent?.includes("مؤكد"));
     expect(orderConfirmedRow?.textContent).toContain("2");
   });
 
-  test("┘ü╪¬╪¡ ╪¬┘ü╪º╪╡┘è┘ä ╪¡╪º┘ä╪⌐ ┘è╪¼┘è╪¿ ╪º┘ä╪│╪¼┘ä╪º╪¬ ┘ê┘è╪╣╪▒╪╢ ╪┤╪º╪▒╪⌐ ┘à┘è╪¬╪º/╪╣╪º╪»┘è ┘ê╪ú╪▒┘é╪º┘à ╪º┘ä╪╖┘ä╪¿╪º╪¬", async () => {
+  test("فتح تفاصيل حالة يجيب السجلات ويعرض شارة ميتا/عادي وأرقام الطلبات", async () => {
     mockApi();
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: /╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬/ }));
+    await user.click(await screen.findByRole("button", { name: /تقارير الحالات/ }));
     await screen.findByTestId("status-report-tab");
-    await waitFor(() => expect(screen.getByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪Ñ╪▒╪│╪º┘ä╪º╪¬")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("إجمالي الإرسالات")).toBeInTheDocument());
 
-    const row = screen.getAllByRole("row").find((r) => r.textContent?.includes("╪¬┘à ╪º┘ä╪┤╪¡┘å"));
+    const row = screen.getAllByRole("row").find((r) => r.textContent?.includes("تم الشحن"));
     expect(row).toBeTruthy();
     await user.click(row!);
 
     await waitFor(() => {
       expect(screen.getByText("ORD-101")).toBeInTheDocument();
-      expect(screen.getByText("┘à╪¡┘à╪»")).toBeInTheDocument();
+      expect(screen.getByText("محمد")).toBeInTheDocument();
     });
 
-    expect(screen.getAllByText("Γÿü∩╕Å ┘à┘è╪¬╪º").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("≡ƒô▒ ╪╣╪º╪»┘è").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("┘ü╪┤┘ä").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("☁️ ميتا").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("📱 عادي").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("فشل").length).toBeGreaterThanOrEqual(1);
   });
 
-  test("┘ü┘ä╪¬╪▒ ┘à┘è╪¬╪º ╪¿┘è┘é╪╡╪▒ ╪º┘ä╪¼╪»┘ê┘ä ╪╣┘ä┘ë ╪º┘ä╪Ñ╪▒╪│╪º┘ä╪º╪¬ ╪╣╪¿╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º", async () => {
+  test("فلتر ميتا بيقصر الجدول على الإرسالات عبر قالب ميتا", async () => {
     mockApi();
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: /╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬/ }));
+    await user.click(await screen.findByRole("button", { name: /تقارير الحالات/ }));
     await screen.findByTestId("status-report-tab");
-    await waitFor(() => expect(screen.getByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪Ñ╪▒╪│╪º┘ä╪º╪¬")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("إجمالي الإرسالات")).toBeInTheDocument());
 
-    await user.selectOptions(screen.getByRole("combobox", { name: "┘ü┘ä╪¬╪▒╪⌐ ┘å┘ê╪╣ ╪º┘ä╪Ñ╪▒╪│╪º┘ä" }), "meta");
+    await user.selectOptions(screen.getByRole("combobox", { name: "فلترة نوع الإرسال" }), "meta");
 
-    expect(screen.getByText("┘à╪ñ┘â╪»")).toBeInTheDocument();
-    expect(screen.queryByText("╪¬┘à ╪º┘ä╪┤╪¡┘å")).not.toBeInTheDocument();
+    expect(screen.getByText("مؤكد")).toBeInTheDocument();
+    expect(screen.queryByText("تم الشحن")).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-﻿import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BarChart3, ArrowRight, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";

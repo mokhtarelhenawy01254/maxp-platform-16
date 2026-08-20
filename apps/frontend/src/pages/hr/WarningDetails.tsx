@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AlertTriangle, ArrowRight, Calendar, CheckCircle2, Clock, Edit, File, FileText, Trash2, User } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calendar,
+  User,
+  FileText,
+  ArrowRight,
+  Edit,
+  Trash2,
+  Clock,
+  CheckCircle2,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,6 +22,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Warning {
   id: string;
@@ -69,7 +80,7 @@ const WarningDetails: React.FC = () => {
 
     try {
       await api.delete(`/hr/warnings/${id}`);
-      toast.success("تم حذف الإنذار بنجاح");
+      tToast.success("WarningDetails.success_delete_d2a6");
       navigate("/hr/warnings");
     } catch (error: any) {
       console.error("Error deleting warning:", error);

@@ -1,4 +1,3 @@
-import { ArrowLeft as ArrowLeftIcon, Plus as PlusIcon, AlertTriangle as ExclamationCircleIcon } from 'lucide-react';
 /**
  * Create Catalog Page
  *
@@ -7,8 +6,13 @@ import { ArrowLeft as ArrowLeftIcon, Plus as PlusIcon, AlertTriangle as Exclamat
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  ArrowLeftIcon,
+  PlusIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   CreateCatalogData,
@@ -56,7 +60,7 @@ const CreateCatalog: React.FC = () => {
     try {
       setLoading(true);
       await facebookAdsService.createCatalog(formData);
-      toast.success("تم إنشاء Catalog بنجاح");
+      tToast.success("CreateCatalog.success_create_8f33");
       navigate("/advertising/facebook-ads/catalogs");
     } catch (error: any) {
       console.error("Error creating catalog:", error);

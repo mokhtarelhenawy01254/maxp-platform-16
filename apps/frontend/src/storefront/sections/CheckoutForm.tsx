@@ -3,8 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import { useCartStore } from '../store/useCartStore';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
-import { buildStorefrontPath } from '../utils/paths';
 import { isKhemetLuxeTheme } from '../utils/navigationGuards';
+import { useTierProgress } from '../hooks/useTierProgress';
+import TierProgressBanner from '../components/TierProgressBanner';
 
 interface CheckoutFormProps {
   section?: {
@@ -145,6 +146,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
   const { items } = useCartStore();
   const { theme } = useStorefrontTheme();
   const location = useLocation();
+  const { refreshTierProgress } = useTierProgress();
   const variant = normalizeVariant(section?.variant);
   const isAirlume = theme.id === 'airlume-ai';
   const isZenOrganic = theme.id === 'zen-organic';
@@ -169,13 +171,25 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
     governorate: 'checkout-governorate',
     notes: 'checkout-notes',
   } as const;
-  const loginPath = buildStorefrontPath(location.pathname, '/auth/login', location.search);
+  // Customer login (WhatsApp OTP) lives on the main app — NOT under /store.
+  const loginParams = new URLSearchParams(location.search);
+  const loginKeep = new URLSearchParams();
+  ['companyId', 'previewTheme', 'previewSource', 'previewAdminOrigin'].forEach((key) => {
+    const value = loginParams.get(key);
+    if (value) loginKeep.set(key, value);
+  });
+  const loginQuery = loginKeep.toString();
+  const loginPath = `/auth/customer-register${loginQuery ? `?${loginQuery}` : ''}`;
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = event.target;
     updateFormData({ [name]: value });
+  };
+
+  const handlePhoneBlur = () => {
+    refreshTierProgress(formData.phone);
   };
 
   const normalizeArabic = (value: string) =>
@@ -752,6 +766,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    onBlur={handlePhoneBlur}
                     placeholder={phonePlaceholder}
                     autoComplete="tel"
                     required
@@ -759,6 +774,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                     pattern="^01[0-9]{9}$"
                     className={inputClassName}
                   />
+                  <TierProgressBanner />
                 </div>
               </div>
             </>
@@ -798,6 +814,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    onBlur={handlePhoneBlur}
                     placeholder={phonePlaceholder}
                     autoComplete="tel"
                     required
@@ -807,6 +824,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                   />
                 </div>
               </div>
+              <TierProgressBanner />
               <div className="space-y-2">
                 <label
                   htmlFor={fieldIds.email}

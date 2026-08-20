@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { DollarSign, Plus, Check, X, Calendar, ChevronLeft, ChevronRight, TrendingUp, Search, Eye, Edit2, Trash } from 'lucide-react';
+import {
+  DollarSign,
+  Plus,
+  Check,
+  X,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Search,
+  Eye,
+  Edit2,
+  Trash,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +46,7 @@ import {
 import { Progress } from "../../components/ui/progress";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface AdvanceRequest {
   id: string;
@@ -131,7 +145,7 @@ const Advances: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching advances:", error);
-      toast.error("حدث خطأ أثناء جلب البيانات");
+      tToast.error("Advances.error_error_0c59");
       setRequests([]); // تعيين array فاضي في حالة الخطأ
     } finally {
       setLoading(false);
@@ -141,7 +155,7 @@ const Advances: React.FC = () => {
   const handleApprove = async (id: string) => {
     try {
       await api.post(`/hr/advances/${id}/approve`);
-      toast.success("تم الموافقة على الطلب");
+      tToast.success("Advances.msg_0709");
       fetchAdvances();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "حدث خطأ");
@@ -154,7 +168,7 @@ const Advances: React.FC = () => {
       await api.post(`/hr/advances/${selectedRequest.id}/reject`, {
         rejectedReason: rejectionReason || "تم الرفض من قبل الإدارة",
       });
-      toast.success("تم رفض الطلب");
+      tToast.success("Advances.msg_20d9");
       setIsRejectDialogOpen(false);
       setRejectionReason("");
       fetchAdvances();
@@ -196,11 +210,11 @@ const Advances: React.FC = () => {
 
     try {
       await api.delete(`/hr/advances/${id}`);
-      toast.success("تم حذف الطلب بنجاح");
+      tToast.success("Advances.success_delete_c219");
       fetchAdvances();
     } catch (error) {
       console.error("Error deleting advance:", error);
-      toast.error("حدث خطأ أثناء حذف الطلب");
+      tToast.error("Advances.error_error_7491");
     }
   };
 
@@ -240,7 +254,7 @@ const Advances: React.FC = () => {
   const markAsPaid = async (id: string) => {
     try {
       await api.post(`/hr/advances/${id}/mark-paid`);
-      toast.success("تم تعليم السلفة كمسددة");
+      tToast.success("Advances.msg_408c");
       fetchAdvances();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "فشل في تحديث حالة السلفة");

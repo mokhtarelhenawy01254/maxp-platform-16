@@ -1,12 +1,19 @@
-import { DollarSign as CurrencyDollarIcon, Search as MagnifyingGlassIcon, RefreshCw as ArrowPathIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Zap as BoltIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
+import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { getCurrencyByCode } from "../../utils/currency";
 import { toast } from "sonner";
-;
+import { tToast } from "../../utils/i18n-toast";
+import {
+  CurrencyDollarIcon,
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  BoltIcon,
+} from "@heroicons/react/24/outline";
 
 interface Product {
   id: string;
@@ -59,7 +66,7 @@ const AffiliateQuickActions: React.FC = () => {
         setProducts(response.data.data);
       }
     } catch (error) {
-      toast.error("حدث خطأ أثناء تحميل المنتجات");
+      tToast.error("AffiliateQuickActions.error_error_d0bd");
     } finally {
       setLoading(false);
     }
@@ -163,7 +170,7 @@ const AffiliateQuickActions: React.FC = () => {
       setPendingChanges({});
       fetchProducts();
     } catch (error) {
-      toast.error("حدث خطأ أثناء حفظ التعديلات");
+      tToast.error("AffiliateQuickActions.error_error_8409");
     } finally {
       setSaving(false);
     }

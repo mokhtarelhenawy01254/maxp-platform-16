@@ -20,8 +20,11 @@ export { default as ProfitAnalytics } from "./ProfitAnalytics";
 export { default as CODPerformanceAnalytics } from "./CODPerformanceAnalytics";
 export { default as CancellationAnalytics } from "./CancellationAnalytics";
 export { default as DeliveryRateAnalytics } from "./DeliveryRateAnalytics";
+export { default as ProductFulfillmentAnalytics } from "./ProductFulfillmentAnalytics";
+export { default as DeliveryReturnsAnalytics } from "./DeliveryReturnsAnalytics";
 export { default as RegionAnalytics } from "./RegionAnalytics";
 export { default as ReturnsAnalytics } from "./ReturnsAnalytics";
+export { default as ReturnReasonsAnalytics } from "./ReturnReasonsAnalytics";
 export { default as FunnelAnalytics } from "./FunnelAnalytics";
 export { default as ConversionRateAnalytics } from "./ConversionRateAnalytics";
 export { default as TeamPerformanceAnalytics } from "./TeamPerformanceAnalytics";
@@ -29,4 +32,7 @@ export { default as AbandonedCartAnalytics } from "./AbandonedCartAnalytics";
 
 // Today Operations
 export { default as TodayOps } from "./TodayOps";
+
+// Order Movement Analytics
+export { default as OrderMovementPage } from "./orderMovement/OrderMovementPage";
 

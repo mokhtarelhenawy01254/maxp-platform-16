@@ -1,1 +1,128 @@
-﻿const { toCanonicalE164, getPhoneVariants } = require('./phoneNormalization');function phoneFields(phone) {  const canonical = toCanonicalE164(phone);  return {    phone: phone || null,    phoneNormalized: canonical || null,  };}function buildPhoneWhere(phone, companyId) {  const canonical = toCanonicalE164(phone);  if (!canonical) return null;  return {    companyId,    OR: [{ phoneNormalized: canonical }, { phone: { in: getPhoneVariants(phone) } }],  };}async function findCustomerByPhone(prisma, phone, companyId) {  const where = buildPhoneWhere(phone, companyId);  if (!where) return null;  return prisma.customer.findFirst({ where });}// ΓöÇΓöÇ Per-key async mutex ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ// ┘è┘à┘å╪╣ ╪│╪¿╪º┘é (race) check-then-create ┘ä┘å┘ü╪│ ╪º┘ä╪▒┘é┘à ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪┤╪▒┘â╪⌐.// ╪ó┘à┘å ┘ä╪ú┘å ╪º┘ä┘Ç backend ╪¿┘è╪┤╪¬╪║┘ä ┘â╪╣┘à┘ä┘è╪⌐ ┘ê╪º╪¡╪»╪⌐ (PM2 single instance).const keyLocks = new Map();function acquireKeyLock(key) {  const prev = keyLocks.get(key) || Promise.resolve();  let release;  const current = new Promise((r) => (release = r));  keyLocks.set(key, current);  return { gate: prev, release, current };}async function withKeyLock(key, fn) {  const { gate, release, current } = acquireKeyLock(key);  await gate;  try {    return await fn();  } finally {    release();    // ┘ä┘ê ┘à┘ü┘è╪┤ ┘à┘Å╪¬╪╡┘ä ╪¬╪º┘å┘è ┘à╪│╪¼┘æ┘ä (╪¡╪╖┘æ current ╪¼╪»┘è╪») ┘å╪¡╪░┘ü ╪º┘ä┘à┘ü╪¬╪º╪¡ ┘à┘å ╪º┘ä╪«╪▒┘è╪╖╪⌐    if (keyLocks.get(key) === current) {      keyLocks.delete(key);    }  }}/** * ┘è┘å╪┤╪ª ╪╣┘à┘è┘ä╪º┘ï ╪¿╪▒┘é┘à ┘à┘ê╪¿╪º┘è┘ä ╪¿╪┤╪▒╪╖ ╪ú┘ä╪º ┘è╪¬┘â╪▒╪▒ ╪º┘ä╪▒┘é┘à ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪┤╪▒┘â╪⌐. * - ╪¿┘è╪¿╪¡╪½ ╪º┘ä╪ú┘ê┘ä ╪¿╪º┘ä╪▒┘é┘à (╪¿┘â┘ä ╪╡┘è╪║┘ç: phoneNormalized + variants) ΓåÆ ┘ä┘ê ┘à┘ê╪¼┘ê╪» ╪¿┘è╪▒╪¼┘æ╪╣ ╪º┘ä┘à┘ê╪¼┘ê╪». * - ┘ä┘ê ┘à╪┤ ┘à┘ê╪¼┘ê╪» ╪¿┘è╪╣┘à┘ä create ┘ê┘à╪╣╪º┘ç phoneNormalized canonical. * - ┘ä┘ê ╪¡╪╡┘ä ╪│╪¿╪º┘é ┘ê╪╢╪▒╪¿ ╪º┘ä┘Ç unique constraint ╪º┘ä╪¼╪»┘è╪» (P2002) ╪¿┘è╪▒╪¼┘æ╪╣ ╪º┘ä┘ä┘è ╪º╪¬┘æ╪╣┘à┘ä ╪º┘ä╪ú┘ê┘ä. * - ┘ä┘ê phone ┘ü╪º╪╢┘è/null ΓåÆ create ╪╣╪º╪»┘è (┘à┘ü┘è╪┤ dedupe ┘à┘à┘â┘å). * - `data` ┘ä╪º ╪¬╪┤┘à┘ä companyId/phoneNormalized (╪¿┘è╪¬╪╢╪º┘ü┘ê╪º ╪¬┘ä┘é╪º╪ª┘è┘ï╪º). */async function createCustomerByPhone(prisma, { companyId, phone, data = {} }) {  const canonical = toCanonicalE164(phone);  const where = buildPhoneWhere(phone, companyId);  if (!where) {    // ┘à┘ü┘è╪┤ ╪▒┘é┘à ╪╡╪º┘ä╪¡ ΓåÆ create ╪╣╪º╪»┘è (┘à╪╣ P2002 fallback ╪╣┘ä┘ë ╪ú┘è unique ╪¬╪º┘å┘è ╪▓┘è facebookId)    try {      return await prisma.customer.create({ data: { ...data, companyId } });    } catch (err) {      if (err?.code === 'P2002') {        const fallbackWhere = { companyId };        if (data.facebookId) fallbackWhere.facebookId = data.facebookId;        if (data.whatsappId) fallbackWhere.whatsappId = data.whatsappId;        const existing = await prisma.customer.findFirst({ where: fallbackWhere });        if (existing) return existing;      }      throw err;    }  }  const lockKey = `customer:${companyId}:${canonical}`;  return withKeyLock(lockKey, async () => {    let customer = await prisma.customer.findFirst({ where });    if (customer) return customer;    const createData = {      ...data,      companyId,      phone: phone || null,      phoneNormalized: data.phoneNormalized || canonical,    };    try {      return await prisma.customer.create({ data: createData });    } catch (err) {      if (err?.code === 'P2002') {        const found = await prisma.customer.findFirst({ where });        if (found) return found;      }      throw err;    }  });}/** * ┘ä┘ü┘æ╪º┘ü ╪ó┘à┘å: ╪¿┘è╪¡╪º┘ê┘ä create╪î ┘ê┘ä┘ê ╪╢╪▒╪¿ ╪º┘ä┘Ç unique constraint (P2002) ╪¿╪│╪¿╪¿ ╪│╪¿╪º┘é * (╪╣┘à┘è┘ä ╪¿┘å┘ü╪│ ╪º┘ä╪▒┘é┘à ╪º╪¬┘Å╪╣┘à┘É┘ä ┘ü┘è ┘å┘ü╪│ ╪º┘ä┘ä╪¡╪╕╪⌐ ┘à┘å ┘ü┘ä┘ê ╪¬╪º┘å┘è) ╪¿┘è╪▒╪¼┘æ╪╣ ╪º┘ä┘ä┘è ╪º╪¬╪╣┘à┘ä ╪º┘ä╪ú┘ê┘ä * ╪¿╪»┘ä ┘à╪º ┘è╪▒┘à┘è 500 ┘ê┘è┘â╪│╪▒ ╪º┘ä┘ü┘ä┘ê (╪╖┘ä╪¿/┘ü┘ê╪▒┘à/╪¬╪│╪¼┘è┘ä). */async function safeCreateCustomer(prisma, createArgs, fallbackWhere) {  try {    return await prisma.customer.create(createArgs);  } catch (err) {    if (err?.code === 'P2002' && fallbackWhere) {      const existing = await prisma.customer.findFirst({ where: fallbackWhere });      if (existing) return existing;    }    throw err;  }}module.exports = {  phoneFields,  buildPhoneWhere,  findCustomerByPhone,  createCustomerByPhone,  safeCreateCustomer,  withKeyLock,};
+const { toCanonicalE164, getPhoneVariants } = require('./phoneNormalization');
+
+function phoneFields(phone) {
+  const canonical = toCanonicalE164(phone);
+  return {
+    phone: phone || null,
+    phoneNormalized: canonical || null,
+  };
+}
+
+function buildPhoneWhere(phone, companyId) {
+  const canonical = toCanonicalE164(phone);
+  if (!canonical) return null;
+  return {
+    companyId,
+    OR: [{ phoneNormalized: canonical }, { phone: { in: getPhoneVariants(phone) } }],
+  };
+}
+
+async function findCustomerByPhone(prisma, phone, companyId) {
+  const where = buildPhoneWhere(phone, companyId);
+  if (!where) return null;
+  return prisma.customer.findFirst({ where });
+}
+
+// ── Per-key async mutex ──────────────────────────────────────────────
+// يمنع سباق (race) check-then-create لنفس الرقم في نفس الشركة.
+// آمن لأن الـ backend بيشتغل كعملية واحدة (PM2 single instance).
+const keyLocks = new Map();
+
+function acquireKeyLock(key) {
+  const prev = keyLocks.get(key) || Promise.resolve();
+  let release;
+  const current = new Promise((r) => (release = r));
+  keyLocks.set(key, current);
+  return { gate: prev, release, current };
+}
+
+async function withKeyLock(key, fn) {
+  const { gate, release, current } = acquireKeyLock(key);
+  await gate;
+  try {
+    return await fn();
+  } finally {
+    release();
+    // لو مفيش مُتصل تاني مسجّل (حطّ current جديد) نحذف المفتاح من الخريطة
+    if (keyLocks.get(key) === current) {
+      keyLocks.delete(key);
+    }
+  }
+}
+
+/**
+ * ينشئ عميلاً برقم موبايل بشرط ألا يتكرر الرقم في نفس الشركة.
+ * - بيبحث الأول بالرقم (بكل صيغه: phoneNormalized + variants) → لو موجود بيرجّع الموجود.
+ * - لو مش موجود بيعمل create ومعاه phoneNormalized canonical.
+ * - لو حصل سباق وضرب الـ unique constraint الجديد (P2002) بيرجّع اللي اتّعمل الأول.
+ * - لو phone فاضي/null → create عادي (مفيش dedupe ممكن).
+ * - `data` لا تشمل companyId/phoneNormalized (بيتضافوا تلقائيًا).
+ */
+async function createCustomerByPhone(prisma, { companyId, phone, data = {} }) {
+  const canonical = toCanonicalE164(phone);
+  const where = buildPhoneWhere(phone, companyId);
+
+  if (!where) {
+    // مفيش رقم صالح → create عادي (مع P2002 fallback على أي unique تاني زي facebookId)
+    try {
+      return await prisma.customer.create({ data: { ...data, companyId } });
+    } catch (err) {
+      if (err?.code === 'P2002') {
+        const fallbackWhere = { companyId };
+        if (data.facebookId) fallbackWhere.facebookId = data.facebookId;
+        if (data.whatsappId) fallbackWhere.whatsappId = data.whatsappId;
+        const existing = await prisma.customer.findFirst({ where: fallbackWhere });
+        if (existing) return existing;
+      }
+      throw err;
+    }
+  }
+
+  const lockKey = `customer:${companyId}:${canonical}`;
+  return withKeyLock(lockKey, async () => {
+    let customer = await prisma.customer.findFirst({ where });
+    if (customer) return customer;
+
+    const createData = {
+      ...data,
+      companyId,
+      phone: phone || null,
+      phoneNormalized: data.phoneNormalized || canonical,
+    };
+    try {
+      return await prisma.customer.create({ data: createData });
+    } catch (err) {
+      if (err?.code === 'P2002') {
+        const found = await prisma.customer.findFirst({ where });
+        if (found) return found;
+      }
+      throw err;
+    }
+  });
+}
+
+/**
+ * لفّاف آمن: بيحاول create، ولو ضرب الـ unique constraint (P2002) بسبب سباق
+ * (عميل بنفس الرقم اتُعمِل في نفس اللحظة من فلو تاني) بيرجّع اللي اتعمل الأول
+ * بدل ما يرمي 500 ويكسر الفلو (طلب/فورم/تسجيل).
+ */
+async function safeCreateCustomer(prisma, createArgs, fallbackWhere) {
+  try {
+    return await prisma.customer.create(createArgs);
+  } catch (err) {
+    if (err?.code === 'P2002' && fallbackWhere) {
+      const existing = await prisma.customer.findFirst({ where: fallbackWhere });
+      if (existing) return existing;
+    }
+    throw err;
+  }
+}
+
+module.exports = {
+  phoneFields,
+  buildPhoneWhere,
+  findCustomerByPhone,
+  createCustomerByPhone,
+  safeCreateCustomer,
+  withKeyLock,
+};

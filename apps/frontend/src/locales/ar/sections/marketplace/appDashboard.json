@@ -1,0 +1,190 @@
+{
+  "title": "لوحة التطبيقات",
+  "subtitle": "اختر تطبيقاً للبدء",
+  "searchLabel": "البحث في التطبيقات",
+  "searchPlaceholder": "ابحث عن تطبيق…",
+  "categoryFilterLabel": "تصفية التطبيقات",
+  "backToApps": "الرجوع للتطبيقات",
+  "openAppMenu": "فتح قائمة التطبيق",
+  "closeAppMenu": "إغلاق قائمة التطبيق",
+  "appNavigation": "تنقل تطبيق {{appName}}",
+  "toolsCount": "{{count}} أداة داخل هذا القسم",
+  "addToFavorites": "إضافة للمفضلة",
+  "removeFromFavorites": "إزالة من المفضلة",
+  "appNotFound": "التطبيق غير موجود",
+  "skipToContent": "تخطي إلى المحتوى",
+  "noResults": "لا توجد نتائج مطابقة",
+  "noAppsTitle": "لا توجد تطبيقات متاحة",
+  "noAppsDescription": "لا تملك صلاحية الوصول لأي تطبيقات حالياً. تحقق من صلاحيات دورك أو تواصل مع مدير الشركة.",
+  "clearFilters": "مسح الفلترة وعرض الكل",
+  "shortcuts": "اختصارات لوحة المفاتيح",
+  "shortcutFocusSearch": "التركيز على البحث",
+  "shortcutClose": "إغلاق",
+  "category": {
+    "all": "الكل",
+    "favorites": "المفضلة",
+    "main": "رئيسي",
+    "communication": "تواصل",
+    "sales": "مبيعات",
+    "operations": "عمليات",
+    "hr": "موارد بشرية",
+    "analytics": "تحليلات",
+    "marketing": "تسويق",
+    "settings": "إعدادات",
+    "system": "نظام"
+  },
+  "layoutOptions": {
+    "classic": {
+      "name": "الكلاسيكي (Classic)",
+      "description": "القائمة التقليدية"
+    },
+    "threeTier": {
+      "name": "الحديث (Three-Tier)",
+      "description": "قائمة رفيعة + فرعية"
+    },
+    "horizontal": {
+      "name": "الأفقي (Horizontal)",
+      "description": "شريط تنقل علوي"
+    },
+    "floating": {
+      "name": "العائم (Floating)",
+      "description": "قائمة عائمة بتصميم بطاقة"
+    },
+    "minimal": {
+      "name": "المينيمال (Focus)",
+      "description": "أيقونات مع قوائم منبثقة"
+    },
+    "appDashboard": {
+      "name": "لوحة التطبيقات (Apps)",
+      "description": "صفحة التطبيقات مع قائمة فرعية لكل تطبيق"
+    }
+  },
+  "app": {
+    "main": {
+      "description": "لوحة تحكم الشركة وروابط سريعة"
+    },
+    "facebook": {
+      "description": "إدارة صندوق الوارد وتعليقات فيسبوك"
+    },
+    "whatsapp": {
+      "description": "إدارة واتساب والقوالب والتحليلات"
+    },
+    "telegram": {
+      "description": "تليجرام برو والردود التلقائية"
+    },
+    "orders": {
+      "description": "إدارة الطلبات والإحصائيات"
+    },
+    "codDeposit": {
+      "description": "إدارة الدفعة المقدمة COD"
+    },
+    "agentWorkspace": {
+      "description": "مساحة عمل الأجنت — تأكيد الطلبات، إدارة المكالمات، والمتابعات"
+    },
+    "products": {
+      "description": "كتالوج المنتجات والتصنيفات"
+    },
+    "storefront": {
+      "description": "تصميم وتنسيق المتجر"
+    },
+    "customers": {
+      "description": "إدارة العملاء والولاء"
+    },
+    "procurement": {
+      "description": "المشتريات وأوامر الشراء"
+    },
+    "affiliate": {
+      "description": "الافليت والدروب شيبنج"
+    },
+    "inventory": {
+      "description": "إدارة المخزون والمستودعات"
+    },
+    "marketing": {
+      "description": "التسويق والإعلانات"
+    },
+    "myAccount": {
+      "description": "حسابي الشخصي والحضور"
+    },
+    "myCompanies": {
+      "description": "إدارة شركاتي"
+    },
+    "hr": {
+      "description": "الموارد البشرية والموظفين"
+    },
+    "business": {
+      "description": "الأعمال والمواعيد والمهام"
+    },
+    "analytics": {
+      "description": "التقارير والتحليلات المتقدمة"
+    },
+    "support": {
+      "description": "الدعم الفني وتذاكر المساعدة"
+    },
+    "marketplace": {
+      "description": "متجر التطبيقات والقوالب"
+    },
+    "billing": {
+      "description": "الفواتير والاشتراكات"
+    },
+    "notifications": {
+      "description": "الإشعارات والتذكيرات"
+    },
+    "activity": {
+      "description": "سجل النشاطات"
+    },
+    "settings": {
+      "description": "إعدادات النظام"
+    },
+    "aiOperator": {
+      "description": "العميل الذكي والأتمتة"
+    },
+    "admin": {
+      "description": "الإدارة المتقدمة والmonitoring"
+    },
+    "system": {
+      "description": "إدارة النظام"
+    },
+    "company": {
+      "description": "إدارة الشركة والأدوار"
+    },
+    "legal": {
+      "description": "الشروط والأحكام والخصوصية"
+    },
+    "serviceRequests": {
+      "description": "إدارة طلبات الخدمات من العملاء"
+    },
+    "orderAutomation": {
+      "description": "أتمتة تغيير حالات الطلبات تلقائياً"
+    },
+    "bulkSearch": {
+      "description": "بحث مجمع عن الطلبات بالرقم أو التليفون"
+    },
+    "customerBlocks": {
+      "description": "إدارة قائمة حظر العملاء"
+    },
+    "bulkOrders": {
+      "description": "تنفيذ عمليات جماعية على الطلبات"
+    },
+    "quickStatus": {
+      "description": "تغيير سريع لحالة الطلبات"
+    },
+    "statusSummary": {
+      "description": "ملخص توزيع حالات الطلبات"
+    },
+    "returnsSettings": {
+      "description": "إعدادات نظام المرتجعات"
+    },
+    "orderWorkflow": {
+      "description": "تخصيص مسار معالجة الطلبات"
+    },
+    "facebookPost": {
+      "description": "إنشاء ونشر منشورات فيسبوك"
+    },
+    "googleTagManager": {
+      "description": "إعداد حاوية GTM وأكواد التتبع"
+    },
+    "broadcast": {
+      "description": "إرسال حملات ورسائل جماعية للعملاء عبر القنوات المتاحة"
+    }
+  }
+}

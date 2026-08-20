@@ -1,4 +1,4 @@
-﻿jest.mock("../../../../i18n", () => ({
+jest.mock("../../../../i18n", () => ({
   __esModule: true,
   default: { t: (key: string) => key },
 }));
@@ -22,29 +22,29 @@ describe("preparation problem hold helpers", () => {
   test("buildProblemHoldDetails reads preparationHold metadata", () => {
     const details = buildProblemHoldDetails({
       preparationHold: {
-        reason: "╪º┘ä╪╣┘à┘è┘ä ┘ä┘à ┘è╪▒╪» ╪╣┘ä┘ë ╪º┘ä╪╣┘å┘ê╪º┘å",
+        reason: "العميل لم يرد على العنوان",
         heldAt: "2026-08-04T10:00:00.000Z",
         releasedAt: "",
-        heldBy: "╪╣┘ä┘è",
+        heldBy: "علي",
         state: "held",
       },
     });
-    expect(details.reason).toBe("╪º┘ä╪╣┘à┘è┘ä ┘ä┘à ┘è╪▒╪» ╪╣┘ä┘ë ╪º┘ä╪╣┘å┘ê╪º┘å");
-    expect(details.heldBy).toBe("╪╣┘ä┘è");
+    expect(details.reason).toBe("العميل لم يرد على العنوان");
+    expect(details.heldBy).toBe("علي");
   });
 
   test("buildProblemHoldDetails reads released state", () => {
     const details = buildProblemHoldDetails({
       preparationHold: {
-        reason: "╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä┘à┘ê╪▒╪»",
+        reason: "بانتظار المورد",
         heldAt: "2026-08-04T10:00:00.000Z",
         releasedAt: "2026-08-05T10:00:00.000Z",
-        releasedBy: "╪│╪º╪▒╪⌐",
+        releasedBy: "سارة",
         state: "released",
       },
     });
-    expect(details.reason).toBe("╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä┘à┘ê╪▒╪»");
-    expect(details.releasedBy).toBe("╪│╪º╪▒╪⌐");
+    expect(details.reason).toBe("بانتظار المورد");
+    expect(details.releasedBy).toBe("سارة");
     expect(details.state).toBe("released");
   });
 
@@ -52,21 +52,21 @@ describe("preparation problem hold helpers", () => {
     const details = getActiveHoldDetails({
       stage: "ON_HOLD_PREP",
       metadata: {
-        preparationHold: { reason: "┘à╪┤┘â┘ä╪⌐ ┘ü┘è ╪º┘ä╪╣┘å┘ê╪º┘å" },
+        preparationHold: { reason: "مشكلة في العنوان" },
       },
     });
-    expect(details.reason).toBe("┘à╪┤┘â┘ä╪⌐ ┘ü┘è ╪º┘ä╪╣┘å┘ê╪º┘å");
+    expect(details.reason).toBe("مشكلة في العنوان");
   });
 
   test("getActiveHoldDetails picks shortage hold for STOCK_SHORTAGE stage", () => {
     const details = getActiveHoldDetails({
       stage: "STOCK_SHORTAGE",
       metadata: {
-        preparationShortageHold: { reason: "waiting_transfer", owner: "╪«╪º┘ä╪»" },
+        preparationShortageHold: { reason: "waiting_transfer", owner: "خالد" },
       },
     });
     expect(details.reason).toBe("waiting_transfer");
-    expect(details.owner).toBe("╪«╪º┘ä╪»");
+    expect(details.owner).toBe("خالد");
   });
 
   test("isProblemHoldStage recognizes both hold stages", () => {

@@ -357,38 +357,9 @@ class CommissionService {
         // 2. ربح المنصة (السعر الأساسي - سعر التاجر)
         totalPlatformProfit += Math.max(0, basePrice - merchantPrice) * qty;
 
-        // 3. ربح المسوق (سعر البيع للعميل - السعر الأساسي للمنصة)
-        if (order.affiliateId) {
-          // إذا كان المسوق يستخدم نظام الهامش (MARKUP)
-          if (order.affiliate.commissionType === 'MARKUP') {
-            totalAffiliateProfit += (sellPrice - basePrice) * qty;
-          }
-        }
-      }
-
-      // حساب عمولة المسوق إذا لم تكن بنظام الهامش (نسبة مئوية أو مبلغ ثابت)
-      if (order.affiliateId && order.affiliate.commissionType !== 'MARKUP') {
-        const aff = order.affiliate;
-        if (aff.commissionType === 'PERCENTAGE') {
-          const subtotal = Number(order.subtotal || (Number(order.total) - Number(order.shipping || 0)));
-          totalAffiliateProfit = (subtotal * aff.commissionRate) / 100;
-        } else if (aff.commissionType === 'FIXED') {
-          totalAffiliateProfit = aff.commissionRate;
-        } else if (aff.commissionType === 'FIXED_PER_ITEM') {
-          const totalQty = order.orderItems?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) || 0;
-          totalAffiliateProfit = Number(aff.commissionRate) * totalQty;
-        }
-      }
-
-      // إضافة عمولة المسوق للقائمة
-      if (totalAffiliateProfit > 0) {
-        commissions.push({
-          type: 'AFFILIATE',
-          affiliateId: order.affiliateId,
-          amount: Number(totalAffiliateProfit.toFixed(2)),
-          orderTotal: order.total,
-          status: 'CONFIRMED'
-        });
+        // ملاحظة: عمولة المسوق المالية تم استبدالها بنقاط ولاء تُمُنح للمسوق
+        // عند نجاح الإحالة (انظر affiliateService.awardReferralLoyaltyPoints).
+        // لذلك لا يتم إنشاء سجل عمولة من نوع AFFILIATE هنا.
       }
 
       // إضافة عمولات التجار للقائمة

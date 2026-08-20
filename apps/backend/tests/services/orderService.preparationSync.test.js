@@ -1,4 +1,4 @@
-﻿const mockSafeQuery = jest.fn(async (operation) => operation());
+const mockSafeQuery = jest.fn(async (operation) => operation());
 
 const mockPrisma = {
   $queryRaw: jest.fn(),

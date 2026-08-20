@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, BarChart, BarChart3, Bot, Check, ChevronDown, Clock, Globe, LayoutDashboard, Menu, MessageCircle, Phone, SendHorizontal, Shield, Smartphone, Sparkles, Star, Users, X, Zap } from 'lucide-react';
+import {
+  MessageCircle, Bot, Users, BarChart3, Check, ChevronDown,
+  ArrowLeft, Smartphone, LayoutDashboard, X,
+  SendHorizontal, Sparkles, Zap, Shield, Globe, Clock, Menu, Star,
+} from "lucide-react";
 import { usePlatformSiteMetaPixel } from "../../hooks/usePlatformSiteMetaPixel";
 import "./aiInboxLanding.css";
 
@@ -137,7 +142,7 @@ const AiInboxLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}&action=free`);
       return;
     }
-    if (!bundle) { alert("الباقة غير متوفرة"); return; }
+    if (!bundle) { alert(i18n.t("AiInboxLanding.msg_cfb7")); return; }
     setSubscribing(true);
     setActionType("free");
     try {
@@ -150,11 +155,11 @@ const AiInboxLanding: React.FC = () => {
       if (data.success) {
         navigate("/admin/ai-hub?tab=sandbox");
       } else {
-        alert(data.message || "فشل التفعيل");
+        alert(data.message || i18n.t("AiInboxLanding.msg_8228"));
         setSubscribing(false);
       }
     } catch {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("AiInboxLanding.msg_b100"));
       setSubscribing(false);
     }
   };
@@ -165,7 +170,7 @@ const AiInboxLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}&action=paid`);
       return;
     }
-    if (!bundle) { alert("الباقة غير متوفرة"); return; }
+    if (!bundle) { alert(i18n.t("AiInboxLanding.msg_cfb7")); return; }
     setSubscribing(true);
     setActionType("paid");
     try {
@@ -177,12 +182,14 @@ const AiInboxLanding: React.FC = () => {
       const data = await res.json();
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
+      } else if (data.success && data.data?.walletPaid) {
+        navigate("/admin/ai-hub?tab=sandbox");
       } else {
-        alert(data.message || "فشل إنشاء الدفع");
+        alert(data.message || i18n.t("AiInboxLanding.failed_create_0a24"));
         setSubscribing(false);
       }
     } catch {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("AiInboxLanding.msg_b100"));
       setSubscribing(false);
     }
   };

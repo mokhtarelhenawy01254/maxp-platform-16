@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const authController = require('../controller/bookingPatientAuthController');
 const { authenticatePatientToken } = require('../utils/verifyPatientToken');
@@ -28,7 +28,7 @@ router.get('/appointments', authenticatePatientToken, async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('[PatientPortal] Appointments error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à┘ê╪º╪╣┘è╪»' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب المواعيد' });
   }
 });
 
@@ -47,7 +47,7 @@ router.get('/medical-history', authenticatePatientToken, async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('[PatientPortal] Medical history error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪¬╪º╪▒┘è╪« ╪º┘ä╪╖╪¿┘è' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب التاريخ الطبي' });
   }
 });
 
@@ -68,7 +68,7 @@ router.get('/invoices', authenticatePatientToken, async (req, res) => {
     res.json({ success: true, data: formatted });
   } catch (error) {
     console.error('[PatientPortal] Invoices error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب الفواتير' });
   }
 });
 
@@ -100,7 +100,7 @@ router.get('/dashboard', authenticatePatientToken, async (req, res) => {
     });
   } catch (error) {
     console.error('[PatientPortal] Dashboard error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب الإحصائيات' });
   }
 });
 

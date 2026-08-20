@@ -7,12 +7,156 @@ const KashierService = require("../services/kashierService");
 const { marketplaceCatalogService } = require("../services/catalog/marketplaceCatalogService");
 const aiServiceAdminClient = require("../services/aiServiceAdminClient");
 const { getDefaultAgentTemplateSlug, buildDefaultAgentConfig } = require("../utils/getDefaultAgentTemplate");
+const { v4: uuidv4 } = require("uuid");
 
 const getNextBillingDate = () => {
   const nextBillingDate = new Date();
   nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
   return nextBillingDate;
 };
+
+const MESSAGING_APPS_DIRECT = ['ai-chat-basic', 'unified-inbox', 'whatsapp-business'];
+const MESSAGING_APPS_UPGRADE = ['crm-basic', 'whatsapp-business', 'telegram-business'];
+
+/**
+ * دفع اشتراك باقة من رصيد المحفظة إذا كان كافياً.
+ * كل الخطوات تتم في معاملة واحدة (خصم + فاتورة + تفعيل اشتراك + تفعيل تطبيقات)
+ * لضمان الاتساق — لو فشل أي شيء ما بيحصلش خصم.
+ */
+async function payFromWallet(prisma, { companyId, amount, appSlugs, description }) {
+  return executeWithRetry(async () => {
+    return await prisma.$transaction(async (tx) => {
+      // منع الخصم المزدوج: لو فيه اشتراك مدفوع نشط (شهري > 0) مش لسه منتهي → ممنوع خصم أو تحويل لصفحة دفع
+      const existingSub = await tx.platformSubscription.findUnique({ where: { companyId } });
+      if (
+        existingSub &&
+        existingSub.status === 'ACTIVE' &&
+        Number(existingSub.monthlyFee) > 0 &&
+        (!existingSub.nextBillingDate || new Date(existingSub.nextBillingDate) > new Date())
+      ) {
+        return { ok: true, alreadyActive: true, existingSub };
+      }
+
+      let wallet = await tx.companyWallet.findUnique({ where: { companyId } });
+      if (!wallet) {
+        wallet = await tx.companyWallet.create({
+          data: { id: uuidv4(), companyId, balance: 0, currency: 'EGP' },
+        });
+      }
+
+      const balance = Number(wallet.balance);
+      if (balance < amount) {
+        return { ok: false, balance, needed: amount - balance };
+      }
+
+      const referenceId = `billing-wallet-${Date.now()}`;
+      const nextBillingDate = new Date();
+      nextBillingDate.setDate(nextBillingDate.getDate() + 30);
+
+      const billingRecord = await tx.billingHistory.create({
+        data: {
+          companyId,
+          type: 'PLATFORM_FEE',
+          amount,
+          description,
+          status: 'SUCCESS',
+          referenceId,
+        },
+      });
+
+      await tx.companyWallet.update({
+        where: { companyId },
+        data: {
+          balance: { decrement: amount },
+          totalSpent: { increment: amount },
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          id: uuidv4(),
+          walletId: wallet.id,
+          type: 'PAYMENT',
+          amount,
+          description,
+          referenceId,
+        },
+      });
+
+      await tx.platformSubscription.upsert({
+        where: { companyId },
+        update: {
+          status: 'ACTIVE',
+          nextBillingDate,
+          failedAttempts: 0,
+          lastBillingDate: new Date(),
+        },
+        create: {
+          companyId,
+          status: 'ACTIVE',
+          nextBillingDate,
+          billingDay: new Date().getDate(),
+          failedAttempts: 0,
+          lastBillingDate: new Date(),
+          monthlyFee: amount,
+        },
+      });
+
+      const apps = await tx.marketplaceApp.findMany({
+        where: { slug: { in: appSlugs } },
+        select: { id: true, slug: true },
+      });
+      for (const app of apps) {
+        await tx.companyApp.upsert({
+          where: { companyId_appId: { companyId, appId: app.id } },
+          update: { status: 'ACTIVE' },
+          create: { companyId, appId: app.id, status: 'ACTIVE' },
+        });
+      }
+
+      return { ok: true, balance: balance - amount, billingRecord, nextBillingDate };
+    });
+  });
+}
+
+/**
+ * مهام ما بعد تفعيل الاشتراك (غير حرجة — بتشتغل في الخلفية):
+ * إنشاء الوكيل + توزيع عمولات الشركاء + إشعار واتساب.
+ */
+function runBillingPostActivation({ billingId, companyId, planName, monthlyFee, nextBillingDate, isDirectCheckout }) {
+  if (isDirectCheckout) {
+    (async () => {
+      try {
+        const agentCfg = await buildDefaultAgentConfig();
+        await aiServiceAdminClient.spawnAgent({
+          companyId,
+          templateSlug: agentCfg.templateSlug,
+          name: agentCfg.name,
+          icon: agentCfg.icon,
+          config: agentCfg.config,
+        });
+      } catch (e) {
+        console.warn('[BILLING-WALLET] Auto-create agent skipped (non-blocking):', e.message);
+      }
+    })();
+  }
+
+  const platformPartnerService = require("../services/platformPartner.service");
+  platformPartnerService.distributeCommissions(billingId).catch((err) => {
+    console.error("❌ [BILLING-WALLET] Partner commission failed:", err);
+  });
+
+  WhatsAppNotificationService.sendSubscriptionRenewedNotification({
+    companyId,
+    planName,
+    monthlyFee: Number(monthlyFee),
+    currency: 'EGP',
+    billingCycle: 'monthly',
+    nextBillingDate,
+  }).catch((err) => {
+    console.error("❌ [BILLING-WALLET] Notification failed:", err);
+  });
+}
 
 const OPTIONAL_SIGNUP_COMPANY_FIELDS = Object.freeze([
   "signupTrialBonusDays",
@@ -213,6 +357,41 @@ exports.messagingCheckout = async (req, res) => {
     const amount = 999;
     const prisma = getSharedPrismaClient();
 
+    // 1) إذا كان رصيد المحفظة كافياً → دفع من المحفظة وتفعيل مباشر (بدون بوابة فيزا)
+    const walletResult = await payFromWallet(prisma, {
+      companyId,
+      amount,
+      appSlugs: MESSAGING_APPS_DIRECT,
+      description: 'اشتراك باقة AI + Inbox (999 ج.م/شهر) - دفع من المحفظة',
+    });
+
+    if (walletResult.ok) {
+      if (walletResult.alreadyActive) {
+        return res.json({
+          success: true,
+          data: { walletPaid: true, alreadyActive: true, billingId: walletResult.existingSub.id },
+          message: 'الاشتراك مفعّل بالفعل — لم يتم أي خصم',
+        });
+      }
+      runBillingPostActivation({
+        billingId: walletResult.billingRecord.id,
+        companyId,
+        planName: 'MESSAGING',
+        monthlyFee: amount,
+        nextBillingDate: walletResult.nextBillingDate,
+        isDirectCheckout: true,
+      });
+      return res.json({
+        success: true,
+        data: {
+          walletPaid: true,
+          billingId: walletResult.billingRecord.id,
+        },
+        message: 'تم تفعيل باقة AI + Inbox وخصم 999 ج.م من رصيد المحفظة',
+      });
+    }
+
+    // 2) الرصيد غير كافٍ → جلسة دفع كاشير (فيزا/محفظة إلكترونية)
     const billingRecord = await prisma.billingHistory.create({
       data: {
         companyId,
@@ -251,7 +430,15 @@ exports.messagingCheckout = async (req, res) => {
       data: { referenceId: session.sessionId }
     });
 
-    res.json({ success: true, data: { sessionUrl: session.sessionUrl, billingId: billingRecord.id } });
+    res.json({
+      success: true,
+      data: {
+        sessionUrl: session.sessionUrl,
+        billingId: billingRecord.id,
+        walletPaid: false,
+        insufficientBalance: walletResult.needed,
+      },
+    });
   } catch (error) {
     console.error("[MESSAGING-CHECKOUT] Error:", error);
     res.status(500).json({ success: false, message: "خطأ أثناء إنشاء عملية الدفع" });
@@ -272,6 +459,41 @@ exports.messagingUpgrade = async (req, res) => {
     const sub = await prisma.platformSubscription.findUnique({ where: { companyId } });
     if (!sub) return res.status(400).json({ success: false, message: "لا يوجد اشتراك نشط" });
 
+    // 1) إذا كان رصيد المحفظة كافياً → دفع من المحفظة وتفعيل مباشر (بدون بوابة فيزا)
+    const walletResult = await payFromWallet(prisma, {
+      companyId,
+      amount,
+      appSlugs: MESSAGING_APPS_UPGRADE,
+      description: 'ترقية باقة AI + Inbox (دفع من المحفظة)',
+    });
+
+    if (walletResult.ok) {
+      if (walletResult.alreadyActive) {
+        return res.json({
+          success: true,
+          data: { walletPaid: true, alreadyActive: true, billingId: walletResult.existingSub.id },
+          message: 'الاشتراك مفعّل بالفعل — لم يتم أي خصم',
+        });
+      }
+      runBillingPostActivation({
+        billingId: walletResult.billingRecord.id,
+        companyId,
+        planName: 'MESSAGING',
+        monthlyFee: amount,
+        nextBillingDate: walletResult.nextBillingDate,
+        isDirectCheckout: false,
+      });
+      return res.json({
+        success: true,
+        data: {
+          walletPaid: true,
+          billingId: walletResult.billingRecord.id,
+        },
+        message: 'تم تفعيل الاشتراك وخصم 999 ج.م من رصيد المحفظة',
+      });
+    }
+
+    // 2) الرصيد غير كافٍ → جلسة دفع كاشير (فيزا/محفظة إلكترونية)
     const billingRecord = await prisma.billingHistory.create({
       data: {
         companyId,
@@ -310,7 +532,15 @@ exports.messagingUpgrade = async (req, res) => {
       data: { referenceId: session.sessionId }
     });
 
-    res.json({ success: true, data: { sessionUrl: session.sessionUrl, billingId: billingRecord.id } });
+    res.json({
+      success: true,
+      data: {
+        sessionUrl: session.sessionUrl,
+        billingId: billingRecord.id,
+        walletPaid: false,
+        insufficientBalance: walletResult.needed,
+      },
+    });
   } catch (error) {
     console.error("[MESSAGING-UPGRADE] Error:", error);
     res.status(500).json({ success: false, message: "خطأ أثناء إنشاء عملية الدفع" });
@@ -397,6 +627,41 @@ exports.lpCheckout = async (req, res) => {
     const amount = Number(bundle.monthlyPrice);
     const prisma = getSharedPrismaClient();
 
+    // 1) إذا كان رصيد المحفظة كافياً → دفع من المحفظة وتفعيل مباشر (بدون بوابة فيزا)
+    const walletResult = await payFromWallet(prisma, {
+      companyId,
+      amount,
+      appSlugs: bundle.appSlugs || [],
+      description: `اشتراك ${bundle.name} (من صفحة تعريفية) - دفع من المحفظة`,
+    });
+
+    if (walletResult.ok) {
+      if (walletResult.alreadyActive) {
+        return res.json({
+          success: true,
+          data: { walletPaid: true, alreadyActive: true, billingId: walletResult.existingSub.id },
+          message: 'الاشتراك مفعّل بالفعل — لم يتم أي خصم',
+        });
+      }
+      runBillingPostActivation({
+        billingId: walletResult.billingRecord.id,
+        companyId,
+        planName: bundle.name,
+        monthlyFee: amount,
+        nextBillingDate: walletResult.nextBillingDate,
+        isDirectCheckout: false,
+      });
+      return res.json({
+        success: true,
+        data: {
+          walletPaid: true,
+          billingId: walletResult.billingRecord.id,
+        },
+        message: `تم تفعيل ${bundle.name} وخصم ${amount} ج.م من رصيد المحفظة`,
+      });
+    }
+
+    // 2) الرصيد غير كافٍ → جلسة دفع كاشير (فيزا/محفظة إلكترونية)
     const billingRecord = await prisma.billingHistory.create({
       data: {
         companyId,
@@ -435,7 +700,15 @@ exports.lpCheckout = async (req, res) => {
       data: { referenceId: session.sessionId }
     });
 
-    res.json({ success: true, data: { sessionUrl: session.sessionUrl, billingId: billingRecord.id } });
+    res.json({
+      success: true,
+      data: {
+        sessionUrl: session.sessionUrl,
+        billingId: billingRecord.id,
+        walletPaid: false,
+        insufficientBalance: walletResult.needed,
+      },
+    });
   } catch (error) {
     console.error('[LP-CHECKOUT] Error:', error);
     res.status(500).json({ success: false, message: 'خطأ أثناء إنشاء عملية الدفع' });

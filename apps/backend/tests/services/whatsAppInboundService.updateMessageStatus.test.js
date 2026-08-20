@@ -1,9 +1,9 @@
-﻿/**
- * Regression tests for updateMessageStatus ΓåÆ whatsapp_notification_logs sync.
+/**
+ * Regression tests for updateMessageStatus → whatsapp_notification_logs sync.
  *
- * PRODUCTION-FIX: ╪╣┘å╪»┘à╪º ┘è╪▒╪│┘ä Meta webhook status (failed/delivered/read) ╪╣╪¿╪▒
- * `status.id` (= whatsappMessageId)╪î ┘è╪¼╪¿ ╪¬╪¡╪»┘è╪½ ╪º┘ä┘Ç notification log ╪¿╪º┘ä╪¡╪º┘ä╪⌐
- * ╪º┘ä╪¡┘é┘è┘é┘è╪⌐ + ╪ú╪«╪╖╪º╪í Meta (failureReason/errorCode) ╪¿╪»┘ä╪º┘ï ┘à┘å ╪¿┘é╪º╪ª┘ç SENT ╪»╪º╪ª┘à╪º┘ï.
+ * PRODUCTION-FIX: عندما يرسل Meta webhook status (failed/delivered/read) عبر
+ * `status.id` (= whatsappMessageId)، يجب تحديث الـ notification log بالحالة
+ * الحقيقية + أخطاء Meta (failureReason/errorCode) بدلاً من بقائه SENT دائماً.
  */
 jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
@@ -32,7 +32,7 @@ jest.mock('../../services/aiSettingsResolver', () => ({
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const { updateMessageStatus } = require('../../services/whatsapp/WhatsAppInboundService');
 
-describe('updateMessageStatus ΓåÆ notification log sync', () => {
+describe('updateMessageStatus → notification log sync', () => {
   let prisma;
 
   beforeEach(() => {
@@ -114,7 +114,7 @@ describe('updateMessageStatus ΓåÆ notification log sync', () => {
       timestamp: 1782165000000
     });
 
-    // ┘è╪¼╪¿ ╪ú┘ä╪º ┘å╪▒┘é┘æ┘è ┘à┘å FAILED ╪Ñ┘ä┘ë DELIVERED
+    // يجب ألا نرقّي من FAILED إلى DELIVERED
     expect(prisma.whatsAppNotificationLog.updateMany).not.toHaveBeenCalled();
   });
 

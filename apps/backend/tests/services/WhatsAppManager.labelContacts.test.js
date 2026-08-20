@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   whatsAppContact: {
     findMany: jest.fn(),
     count: jest.fn(),

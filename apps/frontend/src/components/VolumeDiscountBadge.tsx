@@ -1,6 +1,5 @@
-import { Tag as TagIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
-;
+import { TagIcon } from "@heroicons/react/24/outline";
 
 interface VolumeDiscount {
   id: string;

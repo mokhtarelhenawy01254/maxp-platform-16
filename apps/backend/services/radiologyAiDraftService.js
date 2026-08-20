@@ -1,4 +1,4 @@
-﻿const PROVIDER_PREFERENCE = [
+const PROVIDER_PREFERENCE = [
   'OPENROUTER',
   'OPENAI',
   'GROQ',
@@ -38,42 +38,42 @@ const MODEL_DEFAULTS = {
 };
 
 const FOCUS_INSTRUCTIONS = {
-  findings: '╪º┘â╪¬╪¿ ┘é╪│┘à ╪º┘ä┘å╪¬╪º╪ª╪¼ ┘ü┘é╪╖.',
-  impression: '╪º┘â╪¬╪¿ ┘é╪│┘à ╪º┘ä╪º┘å╪╖╪¿╪º╪╣ ┘ü┘é╪╖.',
-  full: '╪º┘â╪¬╪¿ ╪º┘ä┘é╪│┘à┘è┘å: ╪º┘ä┘å╪¬╪º╪ª╪¼ ╪½┘à ╪º┘ä╪º┘å╪╖╪¿╪º╪╣.',
+  findings: 'اكتب قسم النتائج فقط.',
+  impression: 'اكتب قسم الانطباع فقط.',
+  full: 'اكتب القسمين: النتائج ثم الانطباع.',
 };
 
 const PATIENT_FLAG_LABELS = {
-  pregnancy: '╪¡┘à┘ä',
-  contrast_allergy: '╪¡╪│╪º╪│┘è╪⌐ ╪¬╪¿╪º┘è┘å',
-  renal: '┘é╪╡┘ê╪▒ ┘â┘ä┘ê┘è',
-  bleeding: '╪º╪╢╪╖╪▒╪º╪¿ ┘å╪▓┘ü ╪»┘à┘ê┘è',
-  diabetic: '╪│┘â╪▒┘è',
-  claustrophobia: '╪▒┘ç╪º╪¿ ╪º┘ä╪ú┘à╪º┘â┘å ╪º┘ä┘à╪║┘ä┘é╪⌐',
-  pacemaker: '╪¼┘ç╪º╪▓ ╪¬┘å╪╕┘è┘à ╪╢╪▒╪¿╪º╪¬ ╪º┘ä┘é┘ä╪¿',
+  pregnancy: 'حمل',
+  contrast_allergy: 'حساسية تباين',
+  renal: 'قصور كلوي',
+  bleeding: 'اضطراب نزف دموي',
+  diabetic: 'سكري',
+  claustrophobia: 'رهاب الأماكن المغلقة',
+  pacemaker: 'جهاز تنظيم ضربات القلب',
 };
 
-const SYSTEM_PROMPT = '╪ú┘å╪¬ ╪ú╪«╪╡╪º╪ª┘è ╪ú╪┤╪╣╪⌐ ┘à╪│╪º╪╣╪» ╪»╪º╪«┘ä ┘å╪╕╪º┘à RIS ╪╖╪¿┘è ┘à╪╡╪▒┘è. ╪º┘â╪¬╪¿ ╪¬┘é╪▒┘è╪▒ ╪ú╪┤╪╣╪⌐ ╪¿╪º┘ä┘ä╪║╪⌐ ╪º┘ä╪╣╪▒╪¿┘è╪⌐ ╪¿┘å┘è╪⌐ ╪º╪¡╪¬╪▒╪º┘ü┘è╪⌐: ┘é╪│┘à ┬½╪º┘ä┘å╪¬╪º╪ª╪¼┬╗ ╪½┘à ┬½╪º┘ä╪º┘å╪╖╪¿╪º╪╣┬╗. ┘ä╪º ╪¬╪░┘â╪▒ ╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢ ╪ú┘ê ╪▒┘é┘à┘ç ╪º┘ä┘é┘ê┘à┘è ┘ü┘è ╪º┘ä┘å╪╡. ┘ä╪º ╪¬╪┤╪«┘æ╪╡ ╪ú┘à╪▒╪º╪╢╪º┘ï ╪«╪º╪▒╪¼ ┘à╪º ╪¬╪»┘ä ╪╣┘ä┘è┘ç ┘à╪╣╪╖┘è╪º╪¬ ╪º┘ä┘ü╪¡╪╡ ╪º┘ä┘à┘é╪»┘à╪⌐. ┘ä╪º ╪¬╪«╪¬┘ä┘é ┘é┘è┘à╪º┘ï ╪Ñ╪┤╪╣╪º╪╣┘è╪⌐ ╪║┘è╪▒ ┘à╪╣╪╖╪º╪⌐. ╪Ñ╪░╪º ┘ä┘à ╪¬╪¬┘ê┘ü╪▒ ╪¿┘è╪º┘å╪º╪¬ ┘â╪º┘ü┘è╪⌐ ╪º┘â╪¬╪¿ ┘ê╪╡┘ü╪º┘ï ╪╣╪º┘à╪º┘ï ╪¬╪¡┘ü╪╕┘è╪º┘ï. ╪º┘ä╪¬╪▓┘à ╪º┘ä╪╖╪º╪¿╪╣ ╪º┘ä╪╖╪¿┘è ╪º┘ä╪▒╪│┘à┘è.';
+const SYSTEM_PROMPT = 'أنت أخصائي أشعة مساعد داخل نظام RIS طبي مصري. اكتب تقرير أشعة باللغة العربية بنية احترافية: قسم «النتائج» ثم «الانطباع». لا تذكر اسم المريض أو رقمه القومي في النص. لا تشخّص أمراضاً خارج ما تدل عليه معطيات الفحص المقدمة. لا تختلق قيماً إشعاعية غير معطاة. إذا لم تتوفر بيانات كافية اكتب وصفاً عاماً تحفظياً. التزم الطابع الطبي الرسمي.';
 
 const normalizeFlags = (patientFlags) => {
-  if (!Array.isArray(patientFlags) || patientFlags.length === 0) return '┘ä╪º ╪¬┘ê╪¼╪»';
+  if (!Array.isArray(patientFlags) || patientFlags.length === 0) return 'لا توجد';
   return patientFlags
     .map((flag) => PATIENT_FLAG_LABELS[String(flag || '').toLowerCase()] || String(flag || ''))
     .filter(Boolean)
-    .join('╪î ') || '┘ä╪º ╪¬┘ê╪¼╪»';
+    .join('، ') || 'لا توجد';
 };
 
 const formatUserPrompt = ({ examName, modality, patientAge, patientGender, patientFlags, imagesCount, existingReportText, focus, additionalContext }) => {
   const instruction = FOCUS_INSTRUCTIONS[focus] || FOCUS_INSTRUCTIONS.full;
   const lines = [
-    `┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡: ${examName || '╪║┘è╪▒ ┘à╪¡╪»╪»'}`,
-    `╪º┘ä┘ê╪╢╪╣ (Modality): ${modality || '╪║┘è╪▒ ┘à╪¡╪»╪»'}`,
-    `╪╣┘à╪▒ ╪º┘ä┘à╪▒┘è╪╢: ${patientAge || '╪║┘è╪▒ ┘à╪¡╪»╪»'}`,
-    `╪¼┘å╪│ ╪º┘ä┘à╪▒┘è╪╢: ${patientGender || '╪║┘è╪▒ ┘à╪¡╪»╪»'}`,
-    `╪ú╪╣┘ä╪º┘à ╪º┘ä┘à╪▒┘è╪╢: ${normalizeFlags(patientFlags)}`,
-    `╪╣╪»╪» ╪º┘ä╪╡┘ê╪▒: ${typeof imagesCount === 'number' ? imagesCount : '╪║┘è╪▒ ┘à╪¡╪»╪»'}`,
-    `┘å╪╡ ╪º┘ä╪¬┘é╪▒┘è╪▒ ╪º┘ä╪│╪º╪¿┘é: ${existingReportText || '┘ä╪º ┘è┘ê╪¼╪» ╪¬┘é╪▒┘è╪▒ ╪│╪º╪¿┘é'}`,
-    `┘à╪╣╪╖┘è╪º╪¬ ╪Ñ╪╢╪º┘ü┘è╪⌐: ${additionalContext || '┘ä╪º ╪¬┘ê╪¼╪»'}`,
+    `نوع الفحص: ${examName || 'غير محدد'}`,
+    `الوضع (Modality): ${modality || 'غير محدد'}`,
+    `عمر المريض: ${patientAge || 'غير محدد'}`,
+    `جنس المريض: ${patientGender || 'غير محدد'}`,
+    `أعلام المريض: ${normalizeFlags(patientFlags)}`,
+    `عدد الصور: ${typeof imagesCount === 'number' ? imagesCount : 'غير محدد'}`,
+    `نص التقرير السابق: ${existingReportText || 'لا يوجد تقرير سابق'}`,
+    `معطيات إضافية: ${additionalContext || 'لا توجد'}`,
     '',
     instruction,
   ];

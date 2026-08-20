@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -47,7 +47,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -58,9 +58,9 @@ const makeStudy = (overrides = {}) => ({
   id: 'study-1',
   companyId: 'company-1',
   studyNumber: 'RAD-20260813-0001',
-  patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+  patientName: 'محمد علي',
   examTypeId: 'et-1',
-  examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐',
+  examTypeName: 'أشعة مقطعية',
   status: 'PENDING_IMAGING',
   orderStatus: 'IN_PROGRESS',
   billingType: 'PATIENT',
@@ -123,7 +123,7 @@ describe('markDelivered payment guard', () => {
     const res = createResponse();
     await controller.markDelivered(req({ params: { id: 'study-1' } }), res);
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toContain('╪│╪»╪º╪»');
+    expect(res.payload.error).toContain('سداد');
     expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
   });
 
@@ -166,7 +166,7 @@ describe('updateAppointment cancel-after-delivery guard', () => {
         : [{ key: 'blockCancelAfterDelivery', value: 'false' }]
     );
     prisma.radiologyAppointment.findFirst.mockResolvedValue({
-      id: 'appt-1', companyId: 'company-1', patientId: 'pat-1', patientName: '┘à╪▒┘è╪╢', status: 'DONE', studyId: 'study-1',
+      id: 'appt-1', companyId: 'company-1', patientId: 'pat-1', patientName: 'مريض', status: 'DONE', studyId: 'study-1',
     });
     prisma.radiologyStudy.findUnique.mockResolvedValue(makeStudy({ status: delivered ? 'DELIVERED' : 'PENDING_IMAGING' }));
     prisma.radiologyAppointment.update.mockResolvedValue({ id: 'appt-1', status: 'CANCELLED' });
@@ -179,7 +179,7 @@ describe('updateAppointment cancel-after-delivery guard', () => {
     const res = createResponse();
     await appointments.updateAppointment(req({ params: { id: 'appt-1' }, body: { status: 'CANCELLED' } }), res);
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toContain('╪Ñ┘ä╪║╪º╪í');
+    expect(res.payload.error).toContain('إلغاء');
     expect(prisma.radiologyAppointment.update).not.toHaveBeenCalled();
   });
 
@@ -202,7 +202,7 @@ describe('getAppointmentDetails', () => {
   const setup = (overrides = {}) => {
     const prisma = createPrisma();
     prisma.radiologyAppointment.findFirst.mockResolvedValue(
-      { id: 'appt-1', companyId: 'company-1', patientName: '┘à╪▒┘è╪╢', status: 'CHECKED_IN', studyId: 'study-1', appointmentDate: '2026-08-13T00:00:00.000Z', ...overrides.appointment }
+      { id: 'appt-1', companyId: 'company-1', patientName: 'مريض', status: 'CHECKED_IN', studyId: 'study-1', appointmentDate: '2026-08-13T00:00:00.000Z', ...overrides.appointment }
     );
     prisma.radiologyStudy.findMany.mockResolvedValue(overrides.studies || []);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -236,7 +236,7 @@ describe('getAppointmentDetails', () => {
     expect(res.statusCode).toBe(200);
     expect(res.payload.data.appointment.id).toBe('appt-1');
     expect(res.payload.data.studies).toHaveLength(1);
-    // study exists ΓåÆ orderStatus becomes IN_PROGRESS, not CHECKED_IN
+    // study exists → orderStatus becomes IN_PROGRESS, not CHECKED_IN
     expect(res.payload.data.orderStatus).toBe('IN_PROGRESS');
     expect(prisma.radiologyStudy.findMany).toHaveBeenCalledWith({ where: { appointmentId: 'appt-1' }, orderBy: { createdAt: 'asc' } });
   });

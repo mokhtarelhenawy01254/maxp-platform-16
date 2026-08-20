@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ContractsTab from "../ContractsTab";
 
@@ -19,11 +19,11 @@ describe("ContractsTab", () => {
 
   test("renders contracts with discount type", async () => {
     (global.fetch as jest.Mock).mockResolvedValue(ok([
-      { id: "c1", name: "╪┤╪▒┘â╪⌐ VIP", region: "6 ╪ú┘â╪¬┘ê╪¿╪▒", governorate: "╪º┘ä╪¼┘è╪▓╪⌐", discountType: "PERCENTAGE", discountPercent: 15, externalSample: true, isActive: true },
+      { id: "c1", name: "شركة VIP", region: "6 أكتوبر", governorate: "الجيزة", discountType: "PERCENTAGE", discountPercent: 15, externalSample: true, isActive: true },
     ]));
 
     render(<ContractsTab />);
-    await waitFor(() => expect(screen.getByText(/╪┤╪▒┘â╪⌐ VIP/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/شركة VIP/)).toBeInTheDocument());
   });
 
   test("creates a contract", async () => {
@@ -32,11 +32,11 @@ describe("ContractsTab", () => {
       return Promise.resolve(ok([]));
     });
     render(<ContractsTab />);
-    await waitFor(() => expect(screen.getByText("╪º┘ä╪¬╪╣╪º┘é╪»╪º╪¬")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("التعاقدات")).toBeInTheDocument());
 
-    await userEvent.click(screen.getByText("╪Ñ╪╢╪º┘ü╪⌐ ╪¬╪╣╪º┘é╪»"));
-    await userEvent.type(screen.getByPlaceholderText(/╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘à┘ä/), "┘à┘è╪» ┘à╪╡╪▒");
-    await userEvent.click(screen.getAllByRole("button").find(b => b.textContent === "╪¡┘ü╪╕")!);
+    await userEvent.click(screen.getByText("إضافة تعاقد"));
+    await userEvent.type(screen.getByPlaceholderText(/شركة الأمل/), "ميد مصر");
+    await userEvent.click(screen.getAllByRole("button").find(b => b.textContent === "حفظ")!);
 
     await waitFor(() => {
       const calls = (global.fetch as jest.Mock).mock.calls as Array<[string, RequestInit | undefined]>;

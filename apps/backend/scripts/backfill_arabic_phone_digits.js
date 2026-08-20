@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { toAsciiDigits, toCanonicalE164 } = require('../utils/phoneNormalization');
 
 const args = process.argv.slice(2);
@@ -14,7 +14,7 @@ const RELATIONS = [
 ];
 
 function hasArabicDigits(phone) {
-  return /[┘á-┘⌐█░-█╣]/.test(String(phone || ''));
+  return /[٠-٩۰-۹]/.test(String(phone || ''));
 }
 
 (async () => {
@@ -42,14 +42,14 @@ function hasArabicDigits(phone) {
       const asciiClean = asciiPhone.replace(/\D/g, '');
 
       if (canonical) {
-        // ╪º┘ä╪¬╪¡┘é┘é ╪º┘ä┘à╪¿╪º╪┤╪▒: ┘ü┘è ╪¡╪» ╪¬╪º┘å┘è (╪Ñ┘å╪¼┘ä┘è╪▓┘è/╪╣╪▒╪¿┘è) ╪╣┘å╪»┘ç ┘å┘ü╪│ ╪º┘ä┘Ç canonical ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪┤╪▒┘â╪⌐╪ƒ
+        // التحقق المباشر: في حد تاني (إنجليزي/عربي) عنده نفس الـ canonical في نفس الشركة؟
         const existingHolder = await prisma.customer.findFirst({
           where: { companyId: row.companyId, phoneNormalized: canonical, id: { not: row.id } },
           select: { id: true },
         });
 
         if (existingHolder) {
-          // ╪¬╪╣╪º╪▒╪╢ ΓåÆ ╪»┘à╪¼ ┘ü┘è ╪º┘ä┘ä┘è ┘à┘ê╪¼┘ê╪» (╪¿┘è╪¡╪º┘ü╪╕ ╪╣┘ä┘ë ╪º┘ä┘Ç unique constraint)
+          // تعارض → دمج في اللي موجود (بيحافظ على الـ unique constraint)
           merged++;
           console.log(`[MERGE] ${row.id} (${row.phone}) -> ${existingHolder.id} (${canonical})`);
           if (!DRY_RUN) {
@@ -77,7 +77,7 @@ function hasArabicDigits(phone) {
                   await prisma.customerWallet.update({ where: { id: dupWallet.id }, data: { customerId: existingHolder.id } }).catch(() => null);
                 }
               }
-            } catch { /* ╪¬╪¼╪º┘ç┘ä */ }
+            } catch { /* تجاهل */ }
             await prisma.customer.update({
               where: { id: row.id },
               data: {
@@ -92,7 +92,7 @@ function hasArabicDigits(phone) {
         }
       }
 
-      // ┘ä╪º ┘è┘ê╪¼╪» ╪¬╪╣╪º╪▒╪╢ ΓåÆ ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪▒┘é┘à + ╪╢╪¿╪╖ phoneNormalized
+      // لا يوجد تعارض → تحويل الرقم + ضبط phoneNormalized
       const updateData = {};
       if (asciiClean && asciiClean !== String(row.phone || '').trim()) {
         updateData.phone = asciiClean;
@@ -107,7 +107,7 @@ function hasArabicDigits(phone) {
       }
     }
 
-    console.log(`\nDone. converted: ${converted}, merged: ${merged}${DRY_RUN ? ' (DRY RUN ΓÇö no changes written)' : ''}.`);
+    console.log(`\nDone. converted: ${converted}, merged: ${merged}${DRY_RUN ? ' (DRY RUN — no changes written)' : ''}.`);
   } catch (e) {
     console.error('Backfill failed:', e.message);
     process.exit(1);

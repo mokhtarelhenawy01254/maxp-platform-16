@@ -1,4 +1,4 @@
-﻿const mockGetAdAccounts = jest.fn();
+const mockGetAdAccounts = jest.fn();
 const constructedServices = [];
 
 jest.mock("../../services/facebookAdsService", () =>

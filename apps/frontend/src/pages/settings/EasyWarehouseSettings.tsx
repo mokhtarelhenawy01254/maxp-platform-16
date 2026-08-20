@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import easyWarehouseService from "../../services/easyWarehouseService";
 
@@ -13,7 +13,7 @@ const EasyWarehouseSettings: React.FC = () => {
         const res = await easyWarehouseService.getSettings();
         setEnabled(res.data?.easyWarehouseMode === true);
       } catch (error: any) {
-        toast.error(error?.message || "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬");
+        toast.error(error?.message || "تعذر تحميل الإعدادات");
       } finally {
         setLoading(false);
       }
@@ -26,33 +26,33 @@ const EasyWarehouseSettings: React.FC = () => {
       setSaving(true);
       const res = await easyWarehouseService.updateSettings(enabled);
       setEnabled(res.data?.easyWarehouseMode === true);
-      toast.success(res.data?.easyWarehouseMode ? "╪¬┘à ╪¬┘ü╪╣┘è┘ä ╪º┘ä┘ê╪╢╪╣ ╪º┘ä╪│┘ç┘ä" : "╪¬┘à ╪Ñ┘è┘é╪º┘ü ╪º┘ä┘ê╪╢╪╣ ╪º┘ä╪│┘ç┘ä");
+      toast.success(res.data?.easyWarehouseMode ? "تم تفعيل الوضع السهل" : "تم إيقاف الوضع السهل");
     } catch (error: any) {
-      toast.error(error?.message || "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬");
+      toast.error(error?.message || "فشل حفظ الإعدادات");
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="p-6">╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...</div>;
+    return <div className="p-6">جاري التحميل...</div>;
   }
 
   return (
     <div className="space-y-6" dir="rtl">
       <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">┘ê╪╢╪╣ ╪º┘ä┘à╪│╪¬┘ê╪»╪╣ ╪º┘ä╪│┘ç┘ä</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">وضع المستودع السهل</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          ╪º╪│╪¬┘è╪▒╪º╪» ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ╪╣┘å╪» ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ┘ä┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪» ┘ü┘è ╪º┘ä┘â╪¬╪º┘ä┘ê╪¼.
+          استيراد المنتجات تلقائيًا عند إنشاء طلب لمنتج غير موجود في الكتالوج.
         </p>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold">╪¬┘ü╪╣┘è┘ä ╪º╪│╪¬┘è╪▒╪º╪» ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è┘ï╪º</h3>
+            <h3 className="font-semibold">تفعيل استيراد المنتجات تلقائيًا</h3>
             <p className="text-xs text-gray-500">
-              ╪╣┘å╪» ╪º┘ä╪¬┘ü╪╣┘è┘ä╪î ╪ú┘è ╪╖┘ä╪¿ ┘è╪¡╪¬┘ê┘è ┘à┘å╪¬╪¼┘ï╪º ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪» ┘ü┘è ┘â╪¬╪º┘ä┘ê╪¼┘â ╪│┘è┘Å┘å╪┤╪ú ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ╪¿╪│╪╣╪▒ ╪º┘ä╪╖┘ä╪¿.
+              عند التفعيل، أي طلب يحتوي منتجًا غير موجود في كتالوجك سيُنشأ تلقائيًا بسعر الطلب.
             </p>
           </div>
           <button
@@ -69,7 +69,7 @@ const EasyWarehouseSettings: React.FC = () => {
             disabled={saving}
             className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold disabled:opacity-60"
           >
-            {saving ? "╪¼╪º╪▒┘è ╪º┘ä╪¡┘ü╪╕..." : "╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬"}
+            {saving ? "جاري الحفظ..." : "حفظ الإعدادات"}
           </button>
         </div>
       </div>

@@ -1,6 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart2, BarChart3, Bot, Calendar, Clock, Inbox, Mail, Megaphone, MessageCircle, MessageSquare, Navigation, RefreshCw, Send, Tag, TrendingUp, User, Volume2 } from 'lucide-react';
+import {
+  BarChart3,
+  MessageSquare,
+  Inbox,
+  Send,
+  Clock,
+  Calendar,
+  RefreshCw,
+  Tag,
+  MessageCircle,
+  TrendingUp,
+  User,
+  Megaphone,
+  Bot,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import {
   BarChart,
@@ -164,7 +179,7 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
   const loadData = async (silent = false) => {
     if (!activeRange.start || !activeRange.end) return;
     if (new Date(activeRange.end) < new Date(activeRange.start)) {
-      toast.error("تاريخ النهاية قبل تاريخ البداية");
+      tToast.error("WhatsAppConversationAnalytics.msg_6297");
       return;
     }
     if (!silent) setLoading(true);
@@ -178,7 +193,7 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
       );
       setData(res.data as AnalyticsResponse);
     } catch {
-      toast.error("فشل في تحميل تحليلات المحادثات");
+      tToast.error("WhatsAppConversationAnalytics.failed_load_eab0");
     } finally {
       setLoading(false);
       setRefreshing(false);

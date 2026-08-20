@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Navigation, Search, Send, User, X } from 'lucide-react';
+import { X, Search, Send, User } from "lucide-react";
 import { getInboxCustomerAvatarUrl } from "../../../utils/imageUrl";
 
 export interface ForwardConversation {

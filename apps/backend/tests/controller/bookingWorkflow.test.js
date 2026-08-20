@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -46,7 +46,7 @@ const makePrisma = () => ({
 const makeAppointment = (overrides = {}) => ({
   id: 'apt-1',
   companyId: 'company-1',
-  customerName: '╪ú╪¡┘à╪» ┘à╪¡┘à╪»',
+  customerName: 'أحمد محمد',
   customerPhone: '01000000000',
   customerEmail: null,
   customerGender: 'male',
@@ -54,7 +54,7 @@ const makeAppointment = (overrides = {}) => ({
   doctorId: null,
   assignedDoctorId: null,
   serviceId: 'svc-1',
-  serviceName: '┘â╪┤┘ü',
+  serviceName: 'كشف',
   appointmentDate: new Date('2026-08-07'),
   startTime: '10:00',
   endTime: '10:30',
@@ -76,9 +76,9 @@ const makeAppointment = (overrides = {}) => ({
   paymentRequired: true,
   paymentStatus: 'pending',
   patientId: 'patient-1',
-  patient: { id: 'patient-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à╪»', phone: '01000000000' },
-  branch: { id: 'branch-1', name: '┘ü╪▒╪╣ ┘ê╪│╪╖ ╪º┘ä╪¿┘ä╪»' },
-  service: { id: 'svc-1', name: '┘â╪┤┘ü' },
+  patient: { id: 'patient-1', firstName: 'أحمد', lastName: 'محمد', phone: '01000000000' },
+  branch: { id: 'branch-1', name: 'فرع وسط البلد' },
+  service: { id: 'svc-1', name: 'كشف' },
   doctor: null,
   assignedDoctor: null,
   ...overrides,
@@ -113,7 +113,7 @@ describe('validateBookingTransition', () => {
 
     const rejected = validateBookingTransition('CONFIRMED', 'PROCEDURE_COMPLETED');
     expect(rejected.valid).toBe(false);
-    expect(rejected.error).toContain('┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä');
+    expect(rejected.error).toContain('لا يمكن الانتقال');
     expect(typeof rejected.error).toBe('string');
   });
 });
@@ -135,7 +135,7 @@ describe('validateReportTransition', () => {
 
     const rejected = validateReportTransition('PENDING', 'APPROVED');
     expect(rejected.valid).toBe(false);
-    expect(rejected.error).toContain('┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä');
+    expect(rejected.error).toContain('لا يمكن الانتقال');
     expect(typeof rejected.error).toBe('string');
   });
 });
@@ -177,7 +177,7 @@ describe('updateBookingStatus', () => {
     );
     expect(res.statusCode).toBe(400);
     expect(res.payload.success).toBe(false);
-    expect(res.payload.error).toContain('┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä');
+    expect(res.payload.error).toContain('لا يمكن الانتقال');
     expect(prisma.appointment.update).not.toHaveBeenCalled();
   });
 
@@ -299,7 +299,7 @@ describe('updateBookingStatus', () => {
     const res = createResponse();
     await updateBookingStatus(
       {
-        user: { id: 'user-1', firstName: '┘à╪¡┘à╪»', lastName: '╪╣┘ä┘è', companyId: 'company-1' },
+        user: { id: 'user-1', firstName: 'محمد', lastName: 'علي', companyId: 'company-1' },
         params: { id: 'apt-1' },
         body: { status: 'CHECKED_IN' },
       },
@@ -313,9 +313,9 @@ describe('updateBookingStatus', () => {
         entityType: 'APPOINTMENT',
         entityId: 'apt-1',
         action: 'UPDATE',
-        description: '╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪¼╪▓ ╪Ñ┘ä┘ë CHECKED_IN',
+        description: 'تغيير حالة الحجز إلى CHECKED_IN',
         userId: 'user-1',
-        userName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+        userName: 'محمد علي',
       }),
     });
   });
@@ -374,7 +374,7 @@ describe('updateReportStatus', () => {
       res,
     );
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toContain('┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä');
+    expect(res.payload.error).toContain('لا يمكن الانتقال');
     expect(prisma.appointment.update).not.toHaveBeenCalled();
   });
 
@@ -449,18 +449,18 @@ describe('assignDoctor', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toContain('┘ä╪º ┘è┘å╪¬┘à┘è');
+    expect(res.payload.error).toContain('لا ينتمي');
     expect(prisma.appointment.update).not.toHaveBeenCalled();
   });
 
   test('assigns doctor to appointment', async () => {
     prisma.appointment.findFirst.mockResolvedValue(makeAppointment());
-    prisma.bookingDoctor.findFirst.mockResolvedValue({ id: 'doc-1', companyId: 'company-1', name: '╪│╪º╪▒╪⌐', title: '╪»┘â╪¬┘ê╪▒', specialty: '╪╣╪╕╪º┘à' });
+    prisma.bookingDoctor.findFirst.mockResolvedValue({ id: 'doc-1', companyId: 'company-1', name: 'سارة', title: 'دكتور', specialty: 'عظام' });
     prisma.appointment.update.mockImplementation(({ where, data }) =>
       Promise.resolve(makeAppointment({
         ...data,
         id: where.id,
-        assignedDoctor: { id: 'doc-1', name: '╪│╪º╪▒╪⌐', title: '╪»┘â╪¬┘ê╪▒', specialty: '╪╣╪╕╪º┘à' },
+        assignedDoctor: { id: 'doc-1', name: 'سارة', title: 'دكتور', specialty: 'عظام' },
       })));
 
     const res = createResponse();
@@ -477,7 +477,7 @@ describe('assignDoctor', () => {
     expect(data.assignedDoctorId).toBe('doc-1');
     expect(data.doctorId).toBe('doc-1');
     expect(data.staffId).toBeUndefined();
-    expect(res.payload.data.assignedDoctorName).toBe('╪»┘â╪¬┘ê╪▒ ╪│╪º╪▒╪⌐');
+    expect(res.payload.data.assignedDoctorName).toBe('دكتور سارة');
   });
 });
 
@@ -584,9 +584,9 @@ describe('receptionQueue', () => {
       }),
     );
     expect(res.payload.data.map((a) => a.id)).toEqual(['apt-3', 'apt-2', 'apt-1']);
-    expect(res.payload.data[0].patient.name).toBe('╪ú╪¡┘à╪» ┘à╪¡┘à╪»');
+    expect(res.payload.data[0].patient.name).toBe('أحمد محمد');
     expect(res.payload.data[0].paymentStatus).toBe('pending');
-    expect(res.payload.data[0].serviceName).toBe('┘â╪┤┘ü');
+    expect(res.payload.data[0].serviceName).toBe('كشف');
   });
 
   test('passes branchId filter when provided', async () => {
@@ -650,7 +650,7 @@ describe('doctorWorklist', () => {
 
   test('returns appointments for the doctor with diagnosis fields', async () => {
     prisma.appointment.findMany.mockResolvedValue([
-      makeAppointment({ id: 'apt-1', doctorId: 'doc-1', bookingStatus: 'PROCEDURE_STARTED', diagnosis: '╪º┘ä╪¬┘ç╪º╪¿ ╪º┘ä╪¡┘ä┘é', treatmentPlan: '┘à╪╢╪º╪» ╪¡┘è┘ê┘è' }),
+      makeAppointment({ id: 'apt-1', doctorId: 'doc-1', bookingStatus: 'PROCEDURE_STARTED', diagnosis: 'التهاب الحلق', treatmentPlan: 'مضاد حيوي' }),
     ]);
 
     const res = createResponse();
@@ -670,7 +670,7 @@ describe('doctorWorklist', () => {
       }),
     );
     expect(res.payload.data[0].id).toBe('apt-1');
-    expect(res.payload.data[0].diagnosis).toBe('╪º┘ä╪¬┘ç╪º╪¿ ╪º┘ä╪¡┘ä┘é');
+    expect(res.payload.data[0].diagnosis).toBe('التهاب الحلق');
   });
 });
 

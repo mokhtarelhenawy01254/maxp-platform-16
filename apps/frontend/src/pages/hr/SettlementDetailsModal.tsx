@@ -9,8 +9,15 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Separator } from "../../components/ui/separator";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import api from "../../services/api";
-import { Banknote, Calculator, Calendar, Check, CheckCircle, DollarSign, Loader2 } from 'lucide-react';
+import {
+  Loader2,
+  Calculator,
+  CheckCircle,
+  Banknote,
+  Calendar,
+} from "lucide-react";
 
 interface SettlementDetailsModalProps {
   isOpen: boolean;
@@ -57,7 +64,7 @@ const SettlementDetailsModal: React.FC<SettlementDetailsModalProps> = ({
       setData(response.data.settlement);
     } catch (error) {
       console.error("Error fetching settlement:", error);
-      toast.error("فشل في جلب تفاصيل المستحقات");
+      tToast.error("SettlementDetailsModal.failed_fetch_bd95");
       onClose();
     } finally {
       setLoading(false);
@@ -72,12 +79,12 @@ const SettlementDetailsModal: React.FC<SettlementDetailsModalProps> = ({
       await api.post(`/hr/resignations/${resignationId}/settlement/approve`, {
         amount: data.finalSettlementAmount,
       });
-      toast.success("تم اعتماد المستحقات وصرفها بنجاح");
+      tToast.success("SettlementDetailsModal.msg_6598");
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Error approving settlement:", error);
-      toast.error("حدث خطأ أثناء اعتماد المستحقات");
+      tToast.error("SettlementDetailsModal.error_error_cfd1");
     } finally {
       setSubmitting(false);
     }

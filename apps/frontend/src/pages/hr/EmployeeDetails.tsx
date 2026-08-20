@@ -1,7 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
-import { AlertTriangle, ArrowRight, Award, Book, Briefcase, Building, Building2, Calendar, Clock, CreditCard, DollarSign, Edit, File, FileText, Folder, Heart, Mail, MapPin, Phone, Pin, ShieldHalf, User, UserCircle } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Briefcase,
+  Building2,
+  DollarSign,
+  Clock,
+  FileText,
+  Award,
+  AlertTriangle,
+  GraduationCap,
+  Edit,
+  ArrowRight,
+  UserCircle,
+  CreditCard,
+  Heart,
+  ShieldHalf,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -10,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import { Progress } from "../../components/ui/progress";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Employee {
   id: string;
@@ -109,7 +130,7 @@ const EmployeeDetails: React.FC = () => {
       setEmployee(response.data.employee);
     } catch (error) {
       console.error("Error fetching employee:", error);
-      toast.error("حدث خطأ أثناء جلب بيانات الموظف");
+      tToast.error("EmployeeDetails.error_error_e639");
     } finally {
       setLoading(false);
     }

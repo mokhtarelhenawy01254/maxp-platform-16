@@ -1,6 +1,19 @@
-import { RefreshCw as ArrowPathIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, AlignLeft as Bars3Icon, CreditCard as CreditCardIcon, Circle as HomeModernIcon, Search as MagnifyingGlassIcon, Image as PhotoIcon, ShoppingBag as ShoppingBagIcon, ShoppingBag as ShoppingCartIcon, Grid as Squares2X2Icon, Tag as TagIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from "react";
-;
+import i18n from "../../i18n";
+import {
+  ArrowPathIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  Bars3Icon,
+  CreditCardIcon,
+  HomeModernIcon,
+  MagnifyingGlassIcon,
+  PhotoIcon,
+  ShoppingBagIcon,
+  ShoppingCartIcon,
+  Squares2X2Icon,
+  TagIcon,
+} from "@heroicons/react/24/outline";
 import {
   DndContext,
   closestCenter,
@@ -3196,11 +3209,11 @@ export const StorefrontPageSectionsEditor: React.FC<
               if (name && name.trim()) {
                 const slug = name.trim().toLowerCase().replace(/\s+/g, "-");
                 if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-                  alert("اسم الصفحة يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطات فقط.");
+                  alert(i18n.t("StorefrontPageSectionsEditor.msg_b0d6"));
                   return;
                 }
                 if (pageOverrides[slug as StorefrontPageKey] || activeTheme.pages[slug]) {
-                  alert("هذه الصفحة موجودة بالفعل.");
+                  alert(i18n.t("StorefrontPageSectionsEditor.msg_8a5e"));
                   return;
                 }
                 const nextOverrides = {

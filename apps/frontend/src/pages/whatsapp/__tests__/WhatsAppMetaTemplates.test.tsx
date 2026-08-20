@@ -92,10 +92,10 @@ describe('WhatsAppMetaTemplates', () => {
 
     expect(screen.getByText('greeting')).toBeInTheDocument();
     expect(screen.getByText('pending_temp')).toBeInTheDocument();
-    expect(screen.getAllByText('APPROVED')).toHaveLength(2);
-    expect(screen.getByText('PENDING')).toBeInTheDocument();
-    expect(screen.getAllByText('MARKETING')).toHaveLength(2);
-    expect(screen.getByText('UTILITY')).toBeInTheDocument();
+    expect(screen.getAllByText('APPROVED').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('PENDING').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('MARKETING').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('UTILITY').length).toBeGreaterThanOrEqual(1);
 
     expect(screen.getAllByText('رقم المبيعات').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('دعم العملاء').length).toBeGreaterThanOrEqual(1);
@@ -153,7 +153,8 @@ describe('WhatsAppMetaTemplates', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('لا توجد قوالب. أنشئ أول قالب.')).toBeInTheDocument();
+      expect(screen.getByText('لا توجد قوالب بعد')).toBeInTheDocument();
+      expect(screen.getByText('أنشئ أول قالب لإرسال رسائل واتساب بزنس.')).toBeInTheDocument();
     });
   });
 

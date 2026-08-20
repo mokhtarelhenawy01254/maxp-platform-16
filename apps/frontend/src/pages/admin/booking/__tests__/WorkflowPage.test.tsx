@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WorkflowPage from "../WorkflowPage";
@@ -11,16 +11,16 @@ jest.mock("../../../../utils/tokenManager", () => ({
 jest.mock("sonner", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 jest.mock("../WorkflowStatusBadge", () => ({
   __esModule: true,
-  default: ({ status }: { status?: string | null }) => <span data-testid="badge">{status || "ΓÇö"}</span>,
+  default: ({ status }: { status?: string | null }) => <span data-testid="badge">{status || "—"}</span>,
 }));
 
 const jsonResponse = (body: unknown) => ({ ok: true, json: async () => body }) as Response;
 
 const row = {
   id: "apt-1",
-  customerName: "┘à╪«╪¬╪º╪▒",
+  customerName: "مختار",
   customerPhone: "0100",
-  serviceName: "┘â╪┤┘ü",
+  serviceName: "كشف",
   startTime: "10:00",
   endTime: "10:30",
   duration: 30,
@@ -35,7 +35,7 @@ const row = {
 };
 
 const doctor = {
-  id: "d1", title: "╪».", name: "╪ú╪¡┘à╪»", branchId: "b1", specialty: "╪¿╪º╪╖┘å╪⌐",
+  id: "d1", title: "د.", name: "أحمد", branchId: "b1", specialty: "باطنة",
   phone: "0100", isActive: true, createdAt: "2024-01-01",
 };
 
@@ -50,7 +50,7 @@ function routeFetch(overrides: { onPut?: () => Promise<Response>; failSecondQueu
     if (u.includes("workflow/queues/reception")) {
       queueCalls += 1;
       if (overrides.failSecondQueueFetch && queueCalls > 1) {
-        return jsonResponse({ success: false, error: "┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬" });
+        return jsonResponse({ success: false, error: "فشل تحميل البيانات" });
       }
       return jsonResponse({ success: true, data: [row] });
     }
@@ -72,9 +72,9 @@ describe("WorkflowPage", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     render(<WorkflowPage />);
-    await screen.findByText("┘à╪«╪¬╪º╪▒");
+    await screen.findByText("مختار");
 
-    const advanceBtn = screen.getAllByTitle(/╪º┘ä╪«╪╖┘ê╪⌐ ╪º┘ä╪¬╪º┘ä┘è╪⌐/)[0];
+    const advanceBtn = screen.getAllByTitle(/الخطوة التالية/)[0];
     await user.click(advanceBtn);
     await user.click(advanceBtn);
 
@@ -96,14 +96,14 @@ describe("WorkflowPage", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     render(<WorkflowPage />);
-    await screen.findByText("┘à╪«╪¬╪º╪▒");
+    await screen.findByText("مختار");
 
-    await user.click(screen.getAllByTitle(/╪º┘ä╪«╪╖┘ê╪⌐ ╪º┘ä╪¬╪º┘ä┘è╪⌐/)[0]);
+    await user.click(screen.getAllByTitle(/الخطوة التالية/)[0]);
     await act(async () => {
       resolvePut(jsonResponse({ success: true, data: {} }));
     });
 
-    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("╪¬┘à ╪º┘ä╪º┘å╪¬┘é╪º┘ä"));
-    expect(toast.error).not.toHaveBeenCalledWith("┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬");
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("تم الانتقال"));
+    expect(toast.error).not.toHaveBeenCalledWith("فشل تحميل البيانات");
   });
 });

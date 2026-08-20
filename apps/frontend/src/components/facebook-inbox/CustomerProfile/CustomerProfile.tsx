@@ -1,8 +1,25 @@
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../../utils/statusRegistry";
-import { Activity, Ban as NoSymbolIcon, Bell, BellOff, Check as CheckCircleIcon, Clock, ExternalLink, Mail, Phone, RefreshCw, ShoppingBag, User, Volume2, VolumeX } from 'lucide-react';
-;
+import {
+  User,
+  Phone,
+  Mail,
+  Clock,
+  ShoppingBag,
+  Activity,
+  RefreshCw,
+  ExternalLink,
+  Bell,
+  BellOff,
+  Volume2,
+  VolumeX,
+  SquarePen,
+  X,
+  Plus,
+  Check,
+} from "lucide-react";
+import { NoSymbolIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
 import { useCustomerProfile } from "../../../hooks/inbox/useCustomerProfile";
@@ -19,6 +36,7 @@ import {
 
 import StatusDropdown from "../StatusDropdown/StatusDropdown";
 import AssignmentDropdown from "../AssignmentDropdown/AssignmentDropdown";
+import EnhancedOrderModal from "../../orders/EnhancedOrderModal";
 
 interface CustomerProfileProps {
   conversation: InboxConversation;
@@ -106,15 +124,52 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>("timeline");
   const [syncingMessages, setSyncingMessages] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneUpdateMessage, setPhoneUpdateMessage] = useState<string | null>(null);
+  const [previewOrder, setPreviewOrder] = useState<any | null>(null);
   const {
     orders,
     activities,
     loading,
     loadCustomerData,
+    updateCustomerPhone,
     calculateLTV,
 
     customer, // Add customer to destructured object
   } = useCustomerProfile();
+
+  const handleStartEditPhone = () => {
+    setPhoneDraft(customer?.phone || "");
+    setEditingPhone(true);
+    setPhoneUpdateMessage(null);
+  };
+
+  const handleSavePhone = async () => {
+    const phone = phoneDraft.trim();
+    if (!phone) {
+      setPhoneUpdateMessage("❌ يرجى إدخال رقم الهاتف");
+      return;
+    }
+    setSavingPhone(true);
+    setPhoneUpdateMessage(null);
+    const result = await updateCustomerPhone(phone);
+    setSavingPhone(false);
+    if (result.success) {
+      setEditingPhone(false);
+      setPhoneUpdateMessage(`✅ ${result.message}`);
+      setTimeout(() => setPhoneUpdateMessage(null), 4000);
+      // إعادة تحميل بيانات العميل والأوردرات فوراً
+      // حتى تظهر طلبات رقم الهاتف الجديد في تبويب الطلبات
+      if (customer?.id) {
+        loadCustomerData(customer.id);
+      }
+    } else {
+      setPhoneUpdateMessage(`❌ ${result.message}`);
+      setTimeout(() => setPhoneUpdateMessage(null), 5000);
+    }
+  };
 
   useEffect(() => {
     if (conversation?.customerId) {
@@ -566,14 +621,126 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                         size={15}
                         style={{ color: "var(--color-muted-foreground)" }}
                       />
-                      <span
-                        className="font-medium font-mono"
-                        style={{ color: "var(--color-foreground)" }}
-                        dir="ltr"
-                      >
-                        {customer?.phone || "غير متوفر"}
-                      </span>
+                      {editingPhone ? (
+                        <input
+                          autoFocus
+                          type="tel"
+                          dir="ltr"
+                          value={phoneDraft}
+                          onChange={(e) => setPhoneDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSavePhone();
+                            if (e.key === "Escape") {
+                              setEditingPhone(false);
+                              setPhoneUpdateMessage(null);
+                            }
+                          }}
+                          className="business-chat-input flex-1 min-w-0 px-2 py-1 text-sm font-medium font-mono"
+                          placeholder="01xxxxxxxxx"
+                          disabled={savingPhone}
+                        />
+                      ) : customer?.phone ? (
+                        <span
+                          className="font-medium font-mono flex-1 min-w-0 truncate"
+                          style={{ color: "var(--color-foreground)" }}
+                          dir="ltr"
+                        >
+                          {customer.phone}
+                        </span>
+                      ) : null}
+                      {editingPhone ? (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={handleSavePhone}
+                            disabled={savingPhone}
+                          className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50"
+                          style={{
+                            color: "#ffffff",
+                            background: "var(--business-success)",
+                            borderColor: "transparent",
+                            boxShadow:
+                              "0 10px 20px -12px color-mix(in srgb, var(--business-success) 70%, transparent)",
+                          }}
+                          title="حفظ رقم الهاتف"
+                          aria-label="حفظ رقم الهاتف"
+                        >
+                          {savingPhone ? (
+                            <div
+                              className="h-4 w-4 animate-spin rounded-full border-2 border-white border-b-transparent"
+                            ></div>
+                          ) : (
+                            <Check size={20} strokeWidth={3} />
+                          )}
+                        </button>
+                          <button
+                            onClick={() => {
+                              setEditingPhone(false);
+                              setPhoneUpdateMessage(null);
+                            }}
+                            disabled={savingPhone}
+                            className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-50"
+                            style={{
+                              color: "var(--business-danger)",
+                              background:
+                                "color-mix(in srgb, var(--business-danger) 12%, white)",
+                              borderColor:
+                                "color-mix(in srgb, var(--business-danger) 30%, transparent)",
+                            }}
+                            title="إلغاء"
+                            aria-label="إلغاء"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      ) : customer?.phone ? (
+                        <button
+                          onClick={handleStartEditPhone}
+                          className="business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
+                          style={{
+                            color: "var(--color-primary)",
+                            background:
+                              "color-mix(in srgb, var(--color-primary) 12%, white)",
+                            borderColor:
+                              "color-mix(in srgb, var(--color-primary) 30%, transparent)",
+                          }}
+                          title="تعديل رقم الهاتف"
+                          aria-label="تعديل رقم الهاتف"
+                        >
+                          <SquarePen size={16} />
+                        </button>
+                      ) : null}
                     </div>
+                    {!customer?.phone && !editingPhone && (
+                      <button
+                        onClick={handleStartEditPhone}
+                        className="business-chip-button w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-bold transition-all"
+                        style={{
+                          color: "#ffffff",
+                          background:
+                            "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                          border: "none",
+                          boxShadow:
+                            "0 18px 34px -22px color-mix(in srgb, var(--color-primary) 65%, transparent)",
+                        }}
+                        title="إضافة رقم الهاتف"
+                        aria-label="إضافة رقم الهاتف"
+                      >
+                        <Plus size={16} />
+                        إضافة رقم الهاتف
+                      </button>
+                    )}
+                    {phoneUpdateMessage && (
+                      <p
+                        className="text-xs"
+                        style={{
+                          color: phoneUpdateMessage.includes("✅")
+                            ? "var(--business-success)"
+                            : "var(--business-danger)",
+                        }}
+                      >
+                        {phoneUpdateMessage}
+                      </p>
+                    )}
                     {customer?.email &&
                       !customer.email.endsWith("@example.com") && (
                         <div className="flex items-center gap-2 text-sm">
@@ -640,6 +807,157 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
             {/* ORDERS TAB */}
             {activeTab === "orders" && (
               <div className="space-y-4">
+                {/* رقم الهاتف - بيظهر دايماً فوق الأوردرات حتى لو مفيش طلبات */}
+                <div
+                  className="p-3 rounded-lg"
+                  style={{
+                    background:
+                      "color-mix(in srgb, var(--color-primary) 7%, white)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
+                  }}
+                >
+                  <h4
+                    className="text-xs font-semibold uppercase mb-2"
+                    style={mutedHeadingStyle}
+                  >
+                    رقم الهاتف
+                  </h4>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone
+                      size={15}
+                      className="shrink-0"
+                      style={{ color: "var(--color-primary)" }}
+                    />
+                    {editingPhone ? (
+                      <input
+                        autoFocus
+                        type="tel"
+                        dir="ltr"
+                        value={phoneDraft}
+                        onChange={(e) => setPhoneDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSavePhone();
+                          if (e.key === "Escape") {
+                            setEditingPhone(false);
+                            setPhoneUpdateMessage(null);
+                          }
+                        }}
+                        className="business-chat-input flex-1 min-w-0 px-2 py-1 text-sm font-medium font-mono"
+                        placeholder="01xxxxxxxxx"
+                        disabled={savingPhone}
+                      />
+                    ) : customer?.phone ? (
+                      <span
+                        className="flex-1 min-w-0 truncate font-mono font-medium"
+                        style={{ color: "var(--color-primary)" }}
+                        dir="ltr"
+                      >
+                        {customer.phone}
+                      </span>
+                    ) : (
+                      <span
+                        className="flex-1 min-w-0 text-xs"
+                        style={{ color: "var(--color-muted-foreground)" }}
+                      >
+                        لم يتم إضافة رقم هاتف بعد
+                      </span>
+                    )}
+                    {editingPhone ? (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={handleSavePhone}
+                          disabled={savingPhone}
+                          className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50"
+                          style={{
+                            color: "#ffffff",
+                            background: "var(--business-success)",
+                            borderColor: "transparent",
+                            boxShadow:
+                              "0 10px 20px -12px color-mix(in srgb, var(--business-success) 70%, transparent)",
+                          }}
+                          title="حفظ رقم الهاتف"
+                          aria-label="حفظ رقم الهاتف"
+                        >
+                          {savingPhone ? (
+                            <div
+                              className="h-4 w-4 animate-spin rounded-full border-2 border-white border-b-transparent"
+                            ></div>
+                          ) : (
+                            <Check size={20} strokeWidth={3} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingPhone(false);
+                            setPhoneUpdateMessage(null);
+                          }}
+                          disabled={savingPhone}
+                          className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-50"
+                          style={{
+                            color: "var(--business-danger)",
+                            background:
+                              "color-mix(in srgb, var(--business-danger) 12%, white)",
+                            borderColor:
+                              "color-mix(in srgb, var(--business-danger) 30%, transparent)",
+                          }}
+                          title="إلغاء"
+                          aria-label="إلغاء"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ) : customer?.phone ? (
+                      <button
+                        onClick={handleStartEditPhone}
+                        className="business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
+                        style={{
+                          color: "var(--color-primary)",
+                          background:
+                            "color-mix(in srgb, var(--color-primary) 12%, white)",
+                          borderColor:
+                            "color-mix(in srgb, var(--color-primary) 30%, transparent)",
+                        }}
+                        title="تعديل رقم الهاتف"
+                        aria-label="تعديل رقم الهاتف"
+                      >
+                        <SquarePen size={16} />
+                      </button>
+                    ) : null}
+                  </div>
+                  {!customer?.phone && !editingPhone && (
+                    <button
+                      onClick={handleStartEditPhone}
+                      className="business-chip-button mt-2 w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-bold transition-all"
+                      style={{
+                        color: "#ffffff",
+                        background:
+                          "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                        border: "none",
+                        boxShadow:
+                          "0 18px 34px -22px color-mix(in srgb, var(--color-primary) 65%, transparent)",
+                      }}
+                      title="إضافة رقم الهاتف"
+                      aria-label="إضافة رقم الهاتف"
+                    >
+                      <Plus size={16} />
+                      إضافة رقم الهاتف
+                    </button>
+                  )}
+                  {phoneUpdateMessage && (
+                    <p
+                      className="text-xs mt-2"
+                      style={{
+                        color: phoneUpdateMessage.includes("✅")
+                          ? "var(--business-success)"
+                          : "var(--business-danger)",
+                      }}
+                    >
+                      {phoneUpdateMessage}
+                    </p>
+                  )}
+                </div>
+
                 {/* Orders Summary Header */}
                 {orders.length > 0 && (
                   <div
@@ -694,6 +1012,18 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div>
+                          {customer?.phone && (
+                            <p
+                              className="text-xs font-medium mb-0.5 flex items-center gap-1"
+                              style={{ color: "var(--color-primary)" }}
+                              dir="ltr"
+                            >
+                              <Phone size={11} className="shrink-0" />
+                              <span className="truncate font-mono">
+                                {customer.phone}
+                              </span>
+                            </p>
+                          )}
                           <p
                             className="font-bold"
                             style={{ color: "var(--color-foreground)" }}
@@ -737,9 +1067,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                       </div>
                       {/* View Order Button */}
                       <button
-                        onClick={() =>
-                          window.open(`/orders/${encodeURIComponent(String(order.id))}`, "_blank")
-                        }
+                        onClick={() => setPreviewOrder(order)}
                         className="business-chip-button w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium"
                         style={{
                           color: "var(--color-primary)",
@@ -1083,6 +1411,15 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* 🆕 Order Preview Modal */}
+      {previewOrder && (
+        <EnhancedOrderModal
+          order={previewOrder}
+          isOpen={Boolean(previewOrder)}
+          onClose={() => setPreviewOrder(null)}
+        />
       )}
     </div>
   );

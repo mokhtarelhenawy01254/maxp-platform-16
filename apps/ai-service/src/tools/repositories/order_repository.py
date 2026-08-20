@@ -36,6 +36,87 @@ class OrderRepository(BaseRepository):
         rows = await self._session.execute(sql, {"oid": order_id})
         return [dict(r._mapping) for r in rows]
 
+    async def get_orders_by_phone(
+        self,
+        company_id: str,
+        phone: str,
+        limit: int = 10,
+        status: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Find orders for a customer by phone number.
+
+        Matches customerPhone (regular orders) and guestPhone (storefront
+        guest orders). Phone matching ignores +20/00/0 national-prefix
+        differences so '01012345678' finds '+201012345678'.
+        """
+        clean_phone = str(phone).strip()
+        if not clean_phone:
+            return []
+
+        digits = "".join(ch for ch in clean_phone if ch.isdigit())
+        patterns = []
+        if digits:
+            patterns.append(f"%{digits}%")
+        if digits.startswith("20"):
+            patterns.append(f"%{digits[2:]}%")
+        if digits.startswith("0"):
+            patterns.append(f"%20{digits[1:]}%")
+        if not patterns:
+            patterns.append(f"%{clean_phone}%")
+
+        status_where = ""
+        guest_status_where = ""
+        params: dict[str, Any] = {
+            "cid": company_id,
+            "lim": max(1, min(limit, 50)),
+        }
+        if status:
+            status_where = 'AND o.status = :status'
+            guest_status_where = 'AND g.status = :status'
+            params["status"] = str(status).upper()
+
+        phone_or = " OR ".join([f'o."customerPhone" LIKE :p{i}' for i in range(len(patterns))])
+        for i, p in enumerate(patterns):
+            params[f"p{i}"] = p
+
+        sql = text(f"""
+            SELECT o.id, o."orderNumber", o.status, o."paymentStatus", o.total,
+                   o."customerName", o."customerPhone", o."createdAt"
+            FROM orders o
+            WHERE o."companyId" = :cid
+              AND ({phone_or})
+              {status_where}
+            ORDER BY o."createdAt" DESC
+            LIMIT :lim
+        """)
+        rows = await self._session.execute(sql, params)
+        regular = [dict(r._mapping) for r in rows]
+
+        guest_phone_or = " OR ".join([f'g."guestPhone" LIKE :g{i}' for i in range(len(patterns))])
+        guest_params: dict[str, Any] = {"cid": company_id, "lim": max(1, min(limit, 50))}
+        if status:
+            guest_params["status"] = str(status).upper()
+        for i, p in enumerate(patterns):
+            guest_params[f"g{i}"] = p
+
+        guest_sql = text(f"""
+            SELECT g.id, g."orderNumber", g.status, g.total,
+                   g."guestName" AS "customerName", g."guestPhone" AS "customerPhone",
+                   g."createdAt"
+            FROM guest_orders g
+            WHERE g."companyId" = :cid
+              AND ({guest_phone_or})
+              {guest_status_where}
+            ORDER BY g."createdAt" DESC
+            LIMIT :lim
+        """)
+        guest_rows = await self._session.execute(guest_sql, guest_params)
+        guest = [dict(r._mapping) for r in guest_rows]
+
+        merged = regular + guest
+        merged.sort(key=lambda o: o.get("createdAt") or "", reverse=True)
+        return merged[:limit]
+
     async def get_order_summary(self, company_id: str, period: str = "today") -> dict[str, Any]:
         start_date = period_start_date(period)
         sql = text("""

@@ -1,4 +1,4 @@
-﻿const {
+const {
   parseTurboMetadata,
   mergeTurboMetadata,
   serializeTurboMetadata,

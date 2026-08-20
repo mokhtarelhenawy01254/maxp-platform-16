@@ -1,4 +1,4 @@
-﻿// Radiology module - exam types and studies
+// Radiology module - exam types and studies
 model RadiologyExamCategory {
   id           String   @id @default(cuid())
   companyId    String?
@@ -28,7 +28,7 @@ model RadiologyExamType {
   categoryId   String?    // RadiologyExamCategory link (category is its denormalized name)
   abbreviation String?
   price        Float    @default(0)
-  isAddition   Boolean  @default(false) // ╪Ñ╪╢╪º┘ü╪⌐ ┘ü╪¡╪╡ (╪╡╪¿╪║╪⌐/┘à╪┤╪▒┘ê╪¿╪º╪¬ ╪¬╪¿╪º┘è┘å...) ΓÇö ╪¬╪╕┘ç╪▒ ┘ü┘è ╪Ñ╪╢╪º┘ü╪º╪¬ ╪º┘ä╪»╪▒╪º╪│╪⌐
+  isAddition   Boolean  @default(false) // إضافة فحص (صبغة/مشروبات تباين...) — تظهر في إضافات الدراسة
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -49,12 +49,12 @@ model RadiologyDevice {
   roomLinks RadiologyRoomDevice[]
 }
 
-/// ┘å╪╕╪º┘à ╪º┘ä╪║╪▒┘ü ΓÇö ┘â┘ä ╪║╪▒┘ü╪⌐ ┘ä┘è┘ç╪º ╪º╪│╪¬┘è╪╣╪º╪¿ ┘ü┘è ╪º┘ä╪│╪º╪╣╪⌐ + ┘à╪¼┘à┘ê╪╣╪⌐ ╪ú╪¼┘ç╪▓╪⌐ ┘ê╪ú╪╖╪¿╪º╪í (┘à╪┤ ╪½╪º╪¿╪¬┘è┘å)
+/// نظام الغرف — كل غرفة ليها استيعاب في الساعة + مجموعة أجهزة وأطباء (مش ثابتين)
 model RadiologyRoom {
   id              String   @id @default(cuid())
   companyId       String?
   name            String
-  capacityPerHour Int      @default(1) // ╪╣╪»╪» ╪º┘ä╪º╪│╪¬┘è╪╣╪º╪¿ ┘ü┘è ╪º┘ä╪│╪º╪╣╪⌐
+  capacityPerHour Int      @default(1) // عدد الاستيعاب في الساعة
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -66,7 +66,7 @@ model RadiologyRoom {
   @@index([companyId])
 }
 
-/// ╪▒╪¿╪╖ ╪º┘ä╪║╪▒┘ü╪⌐ ╪¿╪º┘ä╪ú╪¼┘ç╪▓╪⌐ (╪ú┘â╪¬╪▒ ┘à┘å ╪¼┘ç╪º╪▓ ┘ä┘â┘ä ╪║╪▒┘ü╪⌐)
+/// ربط الغرفة بالأجهزة (أكتر من جهاز لكل غرفة)
 model RadiologyRoomDevice {
   id        String          @id @default(cuid())
   roomId    String
@@ -80,7 +80,7 @@ model RadiologyRoomDevice {
   @@index([deviceId])
 }
 
-/// ╪▒╪¿╪╖ ╪º┘ä╪║╪▒┘ü╪⌐ ╪¿╪º┘ä╪ú╪╖╪¿╪º╪í (╪ú┘â╪¬╪▒ ┘à┘å ╪»┘â╪¬┘ê╪▒ ┘é╪º╪¿┘ä ┘ä┘ä╪¬╪║┘è┘è╪▒)
+/// ربط الغرفة بالأطباء (أكتر من دكتور قابل للتغيير)
 model RadiologyRoomDoctor {
   id            String              @id @default(cuid())
   roomId        String
@@ -103,8 +103,8 @@ model RadiologyStudy {
   patientPhone      String?
   patientGender     String?
   patientAge        String?
-  nationalId        String?    // ╪º┘ä╪▒┘é┘à ╪º┘ä┘é┘ê┘à┘è
-  insuranceNumber   String?    // ╪▒┘é┘à ╪º┘ä╪¬╪ú┘à┘è┘å
+  nationalId        String?    // الرقم القومي
+  insuranceNumber   String?    // رقم التأمين
   patientFlags      Json?      // array of risk flag keys (pregnancy, contrast_allergy, renal, bleeding, diabetic, claustrophobia, pacemaker)
   examTypeId        String?
   examTypeName      String?
@@ -117,19 +117,19 @@ model RadiologyStudy {
   withContrast      Boolean  @default(false)
   referralDoctor    String?
   referringPhysicianId String?  // RadiologyReferringPhysician id
-  referralSourceId  String?    // RadiologyReferralSource id ΓÇö ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐
-  referralSourceName String?   // snapshot ┘à┘å ╪º╪│┘à ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐
-  marketingRepId    String?    // RadiologyMarketingRep id ΓÇö ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ╪º┘ä┘à╪│╪ñ┘ê┘ä
-  marketingRepName  String?    // snapshot ┘à┘å ╪º╪│┘à ╪º┘ä┘à┘å╪»┘ê╪¿
-  isExternalReferral Boolean  @default(false) // ╪▒┘ê╪¬╪º┘å╪º ╪¬┘Å╪¡┘è┘ä ╪º┘ä┘à╪▒┘è╪╢ ┘ä┘ä╪«╪º╪▒╪¼ ┘ä╪¬┘å┘ü┘è╪░ ╪«╪»┘à╪⌐
+  referralSourceId  String?    // RadiologyReferralSource id — جهة الإحالة
+  referralSourceName String?   // snapshot من اسم جهة الإحالة
+  marketingRepId    String?    // RadiologyMarketingRep id — مندوب التسويق المسؤول
+  marketingRepName  String?    // snapshot من اسم المندوب
+  isExternalReferral Boolean  @default(false) // روتانا تُحيل المريض للخارج لتنفيذ خدمة
   externalPartnerId String?    // RadiologyExternalPartner id
-  externalPartnerName String?  // snapshot ┘à┘å ╪º╪│┘à ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä╪«╪º╪▒╪¼┘è
+  externalPartnerName String?  // snapshot من اسم الشريك الخارجي
   additionIds       Json?    // array of RadiologyExamAddition ids
   additionAmount    Float    @default(0) // extra charges (contrast, etc.)
   priceSnapshot     Float    @default(0) // exam price at study creation (entity-resolved)
   billingType       String   @default("PATIENT") // PATIENT pays directly | INSURANCE billed via entity invoice
-  payerType         String   @default("CUSTOMER") // CUSTOMER | INSURANCE | REFERRAL | PARTNER ΓÇö ┘à┘å ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪╣┘å ╪º┘ä╪»┘ü╪╣
-  paymentDestination String  @default("ME") // ME (╪º┘ä╪»┘ü╪╣ ╪╣┘å╪»┘è) | PARTNER (╪º┘ä╪»┘ü╪╣ ╪╣┘å╪» ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä┘à┘å┘ü╪░)
+  payerType         String   @default("CUSTOMER") // CUSTOMER | INSURANCE | REFERRAL | PARTNER — من المسؤول عن الدفع
+  paymentDestination String  @default("ME") // ME (الدفع عندي) | PARTNER (الدفع عند الشريك المنفذ)
   paidAmount        Float    @default(0)
   paymentStatus     String   @default("UNPAID") // UNPAID | PARTIAL | PAID
   notes             String?
@@ -151,7 +151,7 @@ model RadiologyStudy {
   updatedAt         DateTime @updatedAt
   images            RadiologyStudyImage[]
   report            RadiologyReport?
-  appointmentId     String?   // loose link back to the booking (one appointment ΓåÆ possibly many studies)
+  appointmentId     String?   // loose link back to the booking (one appointment → possibly many studies)
   statusHistory     RadiologyStudyStatusHistory[]
 
   @@index([companyId])
@@ -293,13 +293,13 @@ model RadiologyAppointment {
   externalPartnerId    String?
   externalPartnerName  String?
   payerType            String   @default("CUSTOMER") // CUSTOMER | INSURANCE | REFERRAL | PARTNER
-  paymentDestination   String   @default("ME") // ME (╪º┘ä╪»┘ü╪╣ ╪╣┘å╪»┘è) | PARTNER (╪º┘ä╪»┘ü╪╣ ╪╣┘å╪» ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä┘à┘å┘ü╪░)
+  paymentDestination   String   @default("ME") // ME (الدفع عندي) | PARTNER (الدفع عند الشريك المنفذ)
   emergency            Boolean  @default(false)
   appointmentDate  DateTime?
   appointmentTime  String? // HH:MM
   branchId         String?
   status           String   @default("SCHEDULED") // SCHEDULED|CHECKED_IN|DONE|CANCELLED
-  priceSnapshot    Float    @default(0) // total exam prices at booking (entity-resolved) ΓÇö ┘é╪¿┘ä ╪º┘ä╪¬╪¡┘ê┘è┘ä
+  priceSnapshot    Float    @default(0) // total exam prices at booking (entity-resolved) — قبل التحويل
   paidAmount       Float    @default(0) // cash collected on the booking before convert
   paymentStatus    String   @default("UNPAID") // UNPAID | PARTIAL | PAID
   notes            String?
@@ -317,7 +317,7 @@ model RadiologyAppointment {
   @@index([studyId])
 }
 
-/// ╪»┘ü╪╣╪º╪¬ ┘à╪¡╪╡┘æ┘ä╪⌐ ╪╣┘ä┘ë ╪º┘ä╪¡╪¼╪▓ ┘é╪¿┘ä ╪º┘ä╪¬╪¡┘ê┘è┘ä (╪º┘ä╪º╪│╪¬┘é╪¿╪º┘ä) ΓÇö ╪¬┘Å┘å┘é┘ä ┘ä┘ä╪»╪▒╪º╪│╪⌐ ╪╣┘å╪» ╪º┘ä╪¬╪¡┘ê┘è┘ä
+/// دفعات محصّلة على الحجز قبل التحويل (الاستقبال) — تُنقل للدراسة عند التحويل
 model RadiologyAppointmentPayment {
   id            String   @id @default(cuid())
   companyId     String?
@@ -352,7 +352,7 @@ model RadiologyReferringPhysician {
   name            String
   phone           String?
   specialty       String?
-  marketingRepId  String?  // ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪╣┘å ┘ç╪░╪º ╪º┘ä╪╖╪¿┘è╪¿
+  marketingRepId  String?  // مندوب التسويق المسؤول عن هذا الطبيب
   commissionType  String   @default("NONE") // NONE|PERCENTAGE|FIXED
   commissionValue Float    @default(0)
   isActive        Boolean  @default(true)
@@ -373,13 +373,13 @@ model RadiologyExamAddition {
   updatedAt DateTime @updatedAt
 }
 
-/// ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ΓÇö ┘à┘ê╪╕┘ü ╪▒┘ê╪¬╪º┘å╪º ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪╣┘å ╪º┘ä╪ú╪╖╪¿╪º╪í ╪º┘ä┘à╪¡┘ê┘æ┘ä┘è┘å ┘ê/╪ú┘ê ╪¼┘ç╪º╪¬ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐
+/// مندوب التسويق — موظف روتانا المسؤول عن الأطباء المحوّلين و/أو جهات الإحالة
 model RadiologyMarketingRep {
   id        String   @id @default(cuid())
   companyId String?
   name      String
   phone     String?
-  userId    String?    // ╪▒╪¿╪╖ ╪º╪«╪¬┘è╪º╪▒┘è ╪¿╪¡╪│╪º╪¿ ┘à╪│╪¬╪«╪»┘à ╪▒┘ê╪¬╪º┘å╪º
+  userId    String?    // ربط اختياري بحساب مستخدم روتانا
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -387,7 +387,7 @@ model RadiologyMarketingRep {
   @@index([companyId])
 }
 
-/// ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐ ΓÇö ╪º┘ä╪¼┘ç╪⌐ ╪º┘ä╪¬┘è ╪¼╪º╪í ┘à┘å┘ç╪º ╪º┘ä┘à╪▒┘è╪╢ (╪╣┘è╪º╪»╪⌐/┘à╪▒┘â╪▓/┘à╪╣┘à┘ä/┘à╪│╪¬╪┤┘ü┘ë/╪┤╪▒┘â╪⌐/╪┤╪¿┘â╪⌐ ╪╖╪¿┘è╪⌐)
+/// جهة الإحالة — الجهة التي جاء منها المريض (عيادة/مركز/معمل/مستشفى/شركة/شبكة طبية)
 model RadiologyReferralSource {
   id                  String   @id @default(cuid())
   companyId           String?
@@ -395,8 +395,8 @@ model RadiologyReferralSource {
   type                String   @default("OTHER") // CLINIC | MEDICAL_CENTER | LAB | HOSPITAL | COMPANY | MEDICAL_NETWORK | OTHER
   phone               String?
   contactName         String?
-  marketingRepId      String?  // ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪╣┘å ┘ç╪░┘ç ╪º┘ä╪¼┘ç╪⌐
-  insuranceCompanyId  String?  // ╪▒╪º╪¿╪╖ ╪º╪«╪¬┘è╪º╪▒┘è ┘ä╪┤╪▒┘â╪⌐ ╪¬╪ú┘à┘è┘å (┘ä┘ä╪¬╪¡╪╡┘è┘ä/┘à┘å ┘ê╪º┘ä┘è) ΓÇö ┘ä┘è╪│╪¬ ╪¼┘ç╪⌐ ╪Ñ╪¡╪º┘ä╪⌐ ╪¿╪¡╪» ╪░╪º╪¬┘ç╪º
+  marketingRepId      String?  // مندوب التسويق المسؤول عن هذه الجهة
+  insuranceCompanyId  String?  // رابط اختياري لشركة تأمين (للتحصيل/من والي) — ليست جهة إحالة بحد ذاتها
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -406,7 +406,7 @@ model RadiologyReferralSource {
   @@unique([companyId, name])
 }
 
-/// ╪▒╪¿╪╖ ╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä ╪¿╪¼┘ç╪º╪¬ ╪Ñ╪¡╪º┘ä╪¬┘ç (┘è╪╣┘à┘ä ┘ü┘è ╪ú┘â╪½╪▒ ┘à┘å ╪¼┘ç╪⌐)
+/// ربط الطبيب المحوّل بجهات إحالته (يعمل في أكثر من جهة)
 model RadiologyPhysicianSourceLink {
   id          String   @id @default(cuid())
   companyId   String?
@@ -417,7 +417,7 @@ model RadiologyPhysicianSourceLink {
   @@index([sourceId])
 }
 
-/// ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä╪«╪º╪▒╪¼┘è ΓÇö ┘à╪│╪º╪▒ ┘à╪«╪¬┘ä┘ü ╪╣┘å╪»┘à╪º ╪¬┘Å╪¡┘è┘ä ╪▒┘ê╪¬╪º┘å╪º ╪º┘ä┘à╪▒┘è╪╢ ┘ä┘ä╪«╪º╪▒╪¼ ┘ä╪¬┘å┘ü┘è╪░ ╪«╪»┘à╪⌐
+/// الشريك الخارجي — مسار مختلف عندما تُحيل روتانا المريض للخارج لتنفيذ خدمة
 model RadiologyExternalPartner {
   id          String   @id @default(cuid())
   companyId   String?

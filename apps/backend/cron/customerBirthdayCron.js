@@ -1,7 +1,7 @@
-﻿const cron = require('node-cron');
+const cron = require('node-cron');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
-const BIRTHDAY_KEY_PATTERN = /^(birthday|birthDate|birth_date|dateOfBirth|dob|╪¬╪º╪▒┘è╪«.*┘à┘è┘ä╪º╪»|╪¬╪º╪▒┘è╪«_╪º┘ä┘à┘è┘ä╪º╪»)$/i;
+const BIRTHDAY_KEY_PATTERN = /^(birthday|birthDate|birth_date|dateOfBirth|dob|تاريخ.*ميلاد|تاريخ_الميلاد)$/i;
 
 function findBirthdayValue(obj) {
   if (!obj || typeof obj !== 'object') return null;
@@ -34,11 +34,11 @@ function birthdayParts(customer) {
 }
 
 /**
- * ≡ƒÄé ╪ú╪¬┘à╪¬╪⌐ ╪╣┘è╪» ┘à┘è┘ä╪º╪» ╪º┘ä╪╣┘à┘ä╪º╪í: ┘â┘ä ┘è┘ê┘à ╪º┘ä╪│╪º╪╣╪⌐ 10 ╪╡╪¿╪º╪¡╪º┘ï
- * ╪¿┘è╪¿╪╣╪¬ ╪¬┘ç┘å╪ª╪⌐ ┘ä┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘ä┘è ╪╣┘è╪» ┘à┘è┘ä╪º╪»┘ç┘à ╪º┘ä┘å┘ç╪º╪▒╪»┘ç (╪º┘ä┘à╪«╪▓┘æ┘å ┘ü┘è metadata)
+ * 🎂 أتمتة عيد ميلاد العملاء: كل يوم الساعة 10 صباحاً
+ * بيبعت تهنئة للعملاء اللي عيد ميلادهم النهارده (المخزّن في metadata)
  */
 function startCustomerBirthdayScheduler() {
-  console.log('≡ƒÄé [CUSTOMER-BIRTHDAY-CRON] Initializing...');
+  console.log('🎂 [CUSTOMER-BIRTHDAY-CRON] Initializing...');
 
   cron.schedule('0 10 * * *', async () => {
     try {
@@ -47,12 +47,12 @@ function startCustomerBirthdayScheduler() {
       const todayMonth = now.getMonth() + 1;
       const todayDay = now.getDate();
 
-      // ┘â┘ä ╪º┘ä╪┤╪▒┘â╪º╪¬ ╪º┘ä┘å╪┤╪╖╪⌐
+      // كل الشركات النشطة
       const companies = await prisma.company.findMany({ where: { isActive: true }, select: { id: true } });
 
       let totalSent = 0;
       for (const company of companies) {
-        // ╪╣┘à┘ä╪º╪í ┘ä┘è┘ç┘à metadata
+        // عملاء ليهم metadata
         const customers = await prisma.customer.findMany({
           where: { companyId: company.id, status: 'ACTIVE', metadata: { not: null } },
           select: { id: true, phone: true, firstName: true, lastName: true, metadata: true }
@@ -62,7 +62,7 @@ function startCustomerBirthdayScheduler() {
           const bp = birthdayParts(customer);
           if (!bp || bp.month !== todayMonth || bp.day !== todayDay) continue;
 
-          const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || '╪╣╪▓┘è╪▓┘è ╪º┘ä╪╣┘à┘è┘ä';
+          const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
           const phone = customer.phone;
           if (!phone) continue;
 
@@ -81,20 +81,20 @@ function startCustomerBirthdayScheduler() {
             });
 
             if (result.success) totalSent++;
-            else console.log(`ΓÜá∩╕Å [CUSTOMER-BIRTHDAY] ${name} skipped: ${result.reason}`);
+            else console.log(`⚠️ [CUSTOMER-BIRTHDAY] ${name} skipped: ${result.reason}`);
           } catch (sendError) {
-            console.error(`Γ¥î [CUSTOMER-BIRTHDAY] Failed for ${name}:`, sendError.message);
+            console.error(`❌ [CUSTOMER-BIRTHDAY] Failed for ${name}:`, sendError.message);
           }
         }
       }
 
-      console.log(`Γ£à [CUSTOMER-BIRTHDAY-CRON] Done. Sent: ${totalSent}`);
+      console.log(`✅ [CUSTOMER-BIRTHDAY-CRON] Done. Sent: ${totalSent}`);
     } catch (error) {
-      console.error('Γ¥î [CUSTOMER-BIRTHDAY-CRON] Error:', error.message);
+      console.error('❌ [CUSTOMER-BIRTHDAY-CRON] Error:', error.message);
     }
   });
 
-  console.log('Γ£à [CUSTOMER-BIRTHDAY-CRON] Started (runs daily at 10:00)');
+  console.log('✅ [CUSTOMER-BIRTHDAY-CRON] Started (runs daily at 10:00)');
 }
 
 module.exports = { startCustomerBirthdayScheduler };

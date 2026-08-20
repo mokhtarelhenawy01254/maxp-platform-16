@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { ArrowRight, DollarSign } from 'lucide-react';
+import { ArrowRight, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -16,6 +16,7 @@ import {
 } from "../../components/ui/select";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface AdvanceFormData {
   employeeId: string;
@@ -70,7 +71,7 @@ const CreateAdvance: React.FC = () => {
         setSettings(settingsResponse.data.settings);
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("حدث خطأ أثناء جلب البيانات");
+        tToast.error("CreateAdvance.error_error_3c32");
       }
     };
     loadData();
@@ -86,7 +87,7 @@ const CreateAdvance: React.FC = () => {
           data.repaymentType === "INSTALLMENTS" ? data.installmentsCount : 1,
       });
 
-      toast.success("تم إنشاء طلب السلفة بنجاح");
+      tToast.success("CreateAdvance.success_create_6559");
       navigate("/hr/advances");
     } catch (error: any) {
       console.error("Error creating advance:", error);

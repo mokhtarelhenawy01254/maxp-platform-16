@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -259,9 +259,9 @@ const TurboRecords: React.FC = () => {
                 </div>
             </div>
 
-            {/* ≡ƒöÑ ╪º┘ä┘â╪▒┘ê╪¬ ╪º┘ä╪▒╪ª┘è╪│┘è╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ (╪º┘ä┘å╪┤╪╖╪⌐ / ╪¬╪¼┘ç┘è╪▓ ╪º┘ä╪¬╪º╪¼╪▒ / ┘à╪╣╪º┘ä╪¼╪⌐ ╪º┘ä┘ü╪▒╪╣ / ╪º┘ä┘â┘ä) */}
+            {/* 🔥 الكروت الرئيسية المطلوبة (النشطة / تجهيز التاجر / معالجة الفرع / الكل) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {/* 1. ┘â╪º╪▒╪¬ ╪º┘ä╪┤╪¡┘å╪º╪¬ ╪º┘ä┘å╪┤╪╖╪⌐ ┘ü┘è ╪¬╪▒╪¿┘ê */}
+                {/* 1. كارت الشحنات النشطة في تربو */}
                 <button
                     onClick={() => handleFilterChange('active')}
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'active' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 ring-2 ring-amber-400 scale-[1.02]' : 'border-amber-200 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-900/20 hover:bg-amber-50 dark:hover:bg-amber-900/30'}`}
@@ -274,7 +274,7 @@ const TurboRecords: React.FC = () => {
                     <div className="text-xs text-amber-700 dark:text-amber-300 mt-1 font-medium">{t('orders.k_44')}</div>
                 </button>
 
-                {/* 2. ┘â╪º╪▒╪¬ ╪¬╪¼┘ç┘è╪▓ ╪º┘ä╪¬╪º╪¼╪▒ (┘é╪¿┘ä ╪º┘ä╪¿┘è┘â ╪ú╪¿ ┘ê╪º┘ä┘ü╪▒╪╣) */}
+                {/* 2. كارت تجهيز التاجر (قبل البيك أب والفرع) */}
                 <button
                     onClick={() => handleFilterChange('merchant_preparing')}
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'merchant_preparing' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 ring-2 ring-indigo-400 scale-[1.02]' : 'border-indigo-200 dark:border-indigo-700 bg-indigo-50/60 dark:bg-indigo-900/20 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
@@ -287,7 +287,7 @@ const TurboRecords: React.FC = () => {
                     <div className="text-xs text-indigo-700 dark:text-indigo-300 mt-1 font-medium">{t('orders.k_46')}</div>
                 </button>
 
-                {/* 3. ┘â╪º╪▒╪¬ ┘à╪╣╪º┘ä╪¼╪⌐ ╪º┘ä╪┤╪¡┘å ╪¿╪º┘ä┘ü╪▒╪╣ */}
+                {/* 3. كارت معالجة الشحن بالفرع */}
                 <button
                     onClick={() => handleFilterChange('processing')}
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'processing' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 scale-[1.02]' : 'border-purple-200 dark:border-purple-700 bg-purple-50/60 dark:bg-purple-900/20 hover:bg-purple-50 dark:hover:bg-purple-900/30'}`}
@@ -300,7 +300,7 @@ const TurboRecords: React.FC = () => {
                     <div className="text-xs text-purple-700 dark:text-purple-300 mt-1 font-medium">{t('orders.k_48')}</div>
                 </button>
 
-                {/* 4. ┘â╪º╪▒╪¬ ╪Ñ╪¼┘à╪º┘ä┘è ╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪¬╪▒╪¿┘ê */}
+                {/* 4. كارت إجمالي أوردرات تربو */}
                 <button
                     onClick={() => handleFilterChange('all')}
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'all' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-400 scale-[1.02]' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
@@ -316,7 +316,7 @@ const TurboRecords: React.FC = () => {
 
             {/* Structured Status Categories */}
             <div className="space-y-4 mb-6">
-                {/* ╪º┘ä╪¬┘é╪│┘è┘à ╪º┘ä╪¬┘ü╪╡┘è┘ä┘è ┘ä╪¼┘à┘è╪╣ ╪¡╪º┘ä╪º╪¬ ╪¬╪▒╪¿┘ê */}
+                {/* التقسيم التفصيلي لجميع حالات تربو */}
                 <div>
                     <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <TruckIcon className="h-4 w-4 text-blue-500 dark:text-blue-400" />
@@ -457,14 +457,14 @@ const TurboRecords: React.FC = () => {
                                                 {(order.turboLiveStatus || order.turboCaptainName) && (
                                                     <span className="text-xs text-gray-400 dark:text-gray-500">
                                                         {order.turboLiveStatus?.status || order.turboShipmentStatus}
-                                                        {order.turboCaptainName && ` - ┘à┘å╪»┘ê╪¿: ${order.turboCaptainName}`}
+                                                        {order.turboCaptainName && ` - مندوب: ${order.turboCaptainName}`}
                                                         {order.turboCaptainName && order.turboCaptainPhone && ` (${order.turboCaptainPhone})`}
                                                         {!order.turboCaptainName && order.turboLiveStatus?.captain && ` - ${order.turboLiveStatus.captain}`}
                                                     </span>
                                                 )}
                                                 {order.turboBranchName && (
                                                     <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-800 font-medium">
-                                                        ┘ü╪▒╪╣: {order.turboBranchName}{order.turboBranchPhone ? ` (${order.turboBranchPhone})` : ''}
+                                                        فرع: {order.turboBranchName}{order.turboBranchPhone ? ` (${order.turboBranchPhone})` : ''}
                                                     </span>
                                                 )}
                                                 {(order.turboReturnReason || order.turboLiveStatus?.returnReason) && (

@@ -521,6 +521,31 @@ export const STOREFRONT_SECTION_MANIFEST = {
       },
     ],
   },
+  "tiktok-feed": {
+    label: "تيك توك",
+    component: "tiktok-feed",
+    note: "يعرض مقاطع TikTok من حساب المتجر.",
+    fields: [
+      {
+        key: "username",
+        label: "اسم المستخدم على TikTok",
+        type: "text",
+        placeholder: "maxp_store",
+      },
+      {
+        key: "title",
+        label: "العنوان",
+        type: "text",
+        placeholder: "تابعنا على TikTok",
+      },
+      {
+        key: "count",
+        label: "عدد المقاطع (اختياري)",
+        type: "number",
+        placeholder: "6",
+      },
+    ],
+  },
   "hero-sidebar": {
     label: "بنر مع شريط جانبي",
     component: "hero-sidebar",

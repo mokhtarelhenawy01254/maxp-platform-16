@@ -1,5 +1,6 @@
 import type {
   PreparationQueueSettings,
+  ProblemHoldDetails,
   ShortageHoldDetails,
   ShortageReason,
 } from "./types";
@@ -30,16 +31,20 @@ export const DEFAULT_PREPARATION_QUEUE_SETTINGS: PreparationQueueSettings = {
 };
 
 export const SHORTAGE_HOLD_STATUS = "STOCK_SHORTAGE";
+export const SHORTAGE_FAILED_STATUS = "SHORTAGE_FAILED";
 export const SHORTAGE_HOLD_METADATA_KEY = "preparationShortageHold";
+export const PROBLEM_HOLD_STATUS = "ON_HOLD_PREP";
+export const PROBLEM_HOLD_METADATA_KEY = "preparationHold";
 export const PREPARATION_STATUS_METADATA_KEY = "preparationStatus";
 
 export const TERMINAL_NON_PREPARATION_STATUSES = new Set([
-  "PENDING", "DRAFT", "SCHEDULED",
+  "DRAFT", "SCHEDULED",
   "SHIPPED", "DELIVERED",
   "CANCELLED", "RETURNED",
   "REFUNDED", "PARTIALLY_REFUNDED",
   "DUPLICATE_ORDER", "TRASH", "TRASH_ORDER",
   "EXCHANGED", "PARTIALLY_DELIVERED",
+  "SHORTAGE_FAILED",
 ]);
 
 export const SHORTAGE_REASON_OPTIONS: Array<{
@@ -64,7 +69,79 @@ export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
   state: "held",
 };
 
+export const DEFAULT_PROBLEM_HOLD_DETAILS: ProblemHoldDetails = {
+  reason: "",
+  heldAt: "",
+  releasedAt: "",
+  heldBy: "",
+  releasedBy: "",
+  state: "held",
+};
 
+
+
+export const PREPARATION_TABLE_COLUMNS = [
+  "customer",
+  "units",
+  "value",
+  "status",
+  "problem",
+  "warehouse",
+  "readiness",
+  "printStatus",
+  "shippingCode",
+] as const;
+
+export type PreparationTableColumn = (typeof PREPARATION_TABLE_COLUMNS)[number];
+
+export const PREPARATION_COLUMN_LABELS: Record<PreparationTableColumn, string> = {
+  customer: "العميل",
+  units: "القطع",
+  value: "القيمة",
+  status: "الحالة",
+  problem: "مشكلة",
+  warehouse: "المخزن",
+  readiness: "التجهيز",
+  printStatus: "الطباعة",
+  shippingCode: "كود الشحن",
+};
+
+export const PREPARATION_COLUMN_LABEL_KEYS: Record<PreparationTableColumn, string> = {
+  customer: "preparation.columns.customer",
+  units: "preparation.columns.units",
+  value: "preparation.columns.value",
+  status: "preparation.columns.status",
+  problem: "preparation.columns.problem",
+  warehouse: "preparation.columns.warehouse",
+  readiness: "preparation.columns.readiness",
+  printStatus: "preparation.columns.printStatus",
+  shippingCode: "preparation.columns.shippingCode",
+};
+
+export const PREPARATION_FILTER_SECTION_LABEL_KEYS: Record<PreparationFilterSection, string> = {
+  tabs: "preparation.filterSections.tabs",
+  search: "preparation.filterSections.search",
+  toggleButtons: "preparation.filterSections.toggleButtons",
+  advanced: "preparation.filterSections.advanced",
+};
+
+export const VISIBLE_COLUMNS_STORAGE_KEY = "preparation:queue:visible-columns-v1";
+
+export const PREPARATION_FILTER_SECTIONS = [
+  "tabs",
+  "search",
+  "toggleButtons",
+  "advanced",
+] as const;
+
+export type PreparationFilterSection = (typeof PREPARATION_FILTER_SECTIONS)[number];
+
+export const PREPARATION_FILTER_SECTION_LABELS: Record<PreparationFilterSection, string> = {
+  tabs: "شريط التبويبات",
+  search: "البحث",
+  toggleButtons: "أزرار التبديل",
+  advanced: "الفلاتر المتقدمة",
+};
 
 export const SORT_OPTIONS = [
   { value: "createdAt_desc", label: "Newest First", labelKey: "preparation.sortOptions.createdAt_desc" },

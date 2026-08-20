@@ -1,4 +1,4 @@
-﻿const axios = require('axios');
+const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
 
 function parseJsonArray(value) {

@@ -1,8 +1,17 @@
-import { Store as BuildingStorefrontIcon, DollarSign as CurrencyDollarIcon, ShoppingBag as ShoppingBagIcon, RefreshCw as ArrowPathIcon, DollarSign as BanknotesIcon, Clock as ClockIcon, Check as CheckCircleIcon, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-;
+import {
+    BuildingStorefrontIcon,
+    CurrencyDollarIcon,
+    ShoppingBagIcon,
+    ArrowPathIcon,
+    BanknotesIcon,
+    ClockIcon,
+    CheckCircleIcon,
+    ArrowLeftIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import tokenManager from "../../utils/tokenManager";
 
 interface AffiliateData {
@@ -100,7 +109,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 setProvider(result.data.provider);
             }
         } catch {
-            toast.error("فشل تحميل بيانات المسوق");
+            tToast.error("CompanyConsumerDetail.failed_load_23e0");
         } finally {
             setLoading(false);
         }
@@ -120,7 +129,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 setOrdersPage(result.data.page);
             }
         } catch {
-            toast.error("فشل تحميل الطلبات");
+            tToast.error("CompanyConsumerDetail.failed_load_7101");
         } finally {
             setLoadingOrders(false);
         }
@@ -141,7 +150,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 setCommissionsSummary(result.data.summary);
             }
         } catch {
-            toast.error("فشل تحميل العمولات");
+            tToast.error("CompanyConsumerDetail.failed_load_569e");
         } finally {
             setLoadingCommissions(false);
         }
@@ -161,7 +170,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 setPayoutsPage(result.data.page);
             }
         } catch {
-            toast.error("فشل تحميل طلبات السحب");
+            tToast.error("CompanyConsumerDetail.failed_load_8127");
         } finally {
             setLoadingPayouts(false);
         }
@@ -175,7 +184,7 @@ const CompanyConsumerDetail: React.FC = () => {
     const handleRequestPayout = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!paymentMethod) {
-            toast.error("اختر طريقة الدفع");
+            tToast.error("CompanyConsumerDetail.msg_1641");
             return;
         }
         setSubmittingPayout(true);
@@ -187,7 +196,7 @@ const CompanyConsumerDetail: React.FC = () => {
             });
             const result = await resp.json();
             if (result.success) {
-                toast.success("تم إرسال طلب السحب بنجاح");
+                tToast.success("CompanyConsumerDetail.success_send_161a");
                 setShowPayoutModal(false);
                 setPaymentMethod("");
                 setPaymentDetails("");
@@ -198,7 +207,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 toast.error(result.message || "فشل طلب السحب");
             }
         } catch {
-            toast.error("حدث خطأ أثناء إرسال الطلب");
+            tToast.error("CompanyConsumerDetail.error_error_9b4a");
         } finally {
             setSubmittingPayout(false);
         }

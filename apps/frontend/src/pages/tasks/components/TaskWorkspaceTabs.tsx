@@ -1,6 +1,11 @@
-import { Settings as Cog6ToothIcon, Circle as CpuChipIcon, Folder as FolderIcon, Circle as QueueListIcon, Tag as TagIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  Cog6ToothIcon,
+  CpuChipIcon,
+  FolderIcon,
+  QueueListIcon,
+  TagIcon,
+} from "@heroicons/react/24/outline";
 
 import type { TaskPageTab } from "../types";
 

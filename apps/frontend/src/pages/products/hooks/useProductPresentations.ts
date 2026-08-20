@@ -13,6 +13,14 @@ export interface ProductPresentation {
   sortOrder: number;
 }
 
+export interface ConvertPresentationResult {
+  presentation: ProductPresentation;
+  targetProductId: string;
+  presentationSlug: string;
+  movedOrderItems: number;
+  mergedStock: boolean;
+}
+
 export function useProductPresentations(productId: string | null) {
   const [presentations, setPresentations] = useState<ProductPresentation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -100,6 +108,42 @@ export function useProductPresentations(productId: string | null) {
     [productId],
   );
 
+  const convertToPresentation = useCallback(
+    async (
+      targetProductId: string,
+    ): Promise<ConvertPresentationResult | null> => {
+      if (!productId) return null;
+      try {
+        const res = await apiClient.post<{
+          success: boolean;
+          message?: string;
+          data: ConvertPresentationResult;
+        }>(`/products/${productId}/convert-to-presentation`, {
+          targetProductId,
+        });
+        if (res.data?.success && res.data.data) {
+          setPresentations((prev) => {
+            const presentationId = res.data.data.presentation.id;
+            if (
+              presentationId &&
+              prev.some((p) => p.id === presentationId)
+            ) {
+              return prev;
+            }
+            return [...prev, res.data.data.presentation];
+          });
+          return res.data.data;
+        }
+      } catch (err: any) {
+        throw new Error(
+          err?.response?.data?.message || "فشل في تحويل المنتج إلى عرض تقديمي",
+        );
+      }
+      return null;
+    },
+    [productId],
+  );
+
   return {
     presentations,
     loading,
@@ -107,5 +151,6 @@ export function useProductPresentations(productId: string | null) {
     addPresentation,
     updatePresentation,
     deletePresentation,
+    convertToPresentation,
   };
 }

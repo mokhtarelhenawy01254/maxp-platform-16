@@ -1,33 +1,18 @@
 import { useTranslation } from 'react-i18next';
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   returnService,
   ReturnRequest,
   ReviewDisplayConfig,
 } from "../../services/returnService";
 import { toast } from "sonner";
-import { Check, CheckCircle, Clock, Edit, Eye, Filter, Package, Plus, RefreshCw, X, XCircle } from 'lucide-react';
+import { RefreshCw, Clock, Eye, Package, CalendarDays, Copy } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
 
-const getFallbackOrderStatuses = (t: any) => [
-  { code: "PENDING", label: t('returns.k_1') },
-  { code: "CONFIRMED", label: t('returns.k_2') },
-  { code: "SCHEDULED", label: t('returns.k_3') },
-  { code: "PROCESSING", label: t('returns.k_4') },
-  { code: "SHIPPED", label: t('returns.k_5') },
-  { code: "DELIVERED", label: t('returns.k_6') },
-  { code: "CANCELLED", label: t('returns.k_7') },
-  { code: "RETURNED", label: t('returns.k_8') },
-  { code: "REFUNDED", label: t('returns.k_9') },
-  { code: "DUPLICATE_ORDER", label: t('returns.k_10') },
-  { code: "ON_HOLD", label: t('returns.k_11') },
-  { code: "PARTIALLY_DELIVERED", label: t('returns.k_12') },
-];
-
 const ReturnManagementPage: React.FC = () => {
   const { t } = useTranslation();
-  const FALLBACK_ORDER_STATUSES = React.useMemo(() => getFallbackOrderStatuses(t), [t]);
   const [requests, setRequests] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(
@@ -38,55 +23,65 @@ const ReturnManagementPage: React.FC = () => {
   const [displayConfig, setDisplayConfig] =
     useState<ReviewDisplayConfig | null>(null);
 
+  // Categories for responsible party names
+  const [categories, setCategories] = useState<any[]>([]);
+  const responsiblePartyLabel = useMemo(() => {
+    const m: Record<string, string> = {};
+    categories.forEach((cat: any) => {
+      if (!m[cat.defaultRole]) m[cat.defaultRole] = cat.name;
+    });
+    return (role: string) => m[role] || role;
+  }, [categories]);
+
   // Filters & Search
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [orderStatuses, setOrderStatuses] = useState(FALLBACK_ORDER_STATUSES);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") ?? "");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  // Order statuses for secondary filter
+  const [orderStatuses, setOrderStatuses] = useState<{ code: string; label: string }[]>([]);
 
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Create Modal State
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [reasons, setReasons] = useState<any[]>([]);
-  const [creating, setCreating] = useState(false);
-  const [newReturn, setNewReturn] = useState({
-    orderNumber: "",
-    reasonId: "",
-    refundAmount: "",
-    customerNotes: "",
-    adminNotes: "",
-    responsibleParty: "OTHER" as "CUSTOMER" | "STORE" | "SHIPPING" | "OTHER",
-  });
-
-  // Edit Reason Modal State
-  const [showEditReasonModal, setShowEditReasonModal] = useState(false);
-  const [editingRequest, setEditingRequest] = useState<ReturnRequest | null>(
-    null,
+  // Review Tab: "pending" = unreviewed (default), "reviewed" = completed
+  const [reviewTab, setReviewTab] = useState<"pending" | "reviewed">(
+    searchParams.get("tab") === "reviewed" ? "reviewed" : "pending",
   );
-  const [editForm, setEditForm] = useState({
-    reasonId: "",
-    responsibleParty: "OTHER" as "CUSTOMER" | "STORE" | "SHIPPING" | "OTHER",
-    customerNotes: "",
-    adminNotes: "",
-  });
+  // ?preview=1 -> auto-open the details modal (عرض التفاصيل) for the first loaded request
+  const previewRequested = searchParams.get("preview") === "1";
+  const previewAppliedRef = useRef(false);
+
+  const handleReviewTabChange = (tab: "pending" | "reviewed") => {
+    setReviewTab(tab);
+    const next = new URLSearchParams(searchParams);
+    if (tab === "pending") next.delete("tab");
+    else next.set("tab", "reviewed");
+    setSearchParams(next, { replace: true });
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const params: Record<string, any> = { page, limit: 20 };
-      if (statusFilter) params.status = statusFilter;
+      params.isReviewed = reviewTab === "reviewed" ? "true" : "false";
       if (orderStatusFilter) params.orderStatus = orderStatusFilter;
       if (searchTerm) params.search = searchTerm;
+      if (dateFrom) params.dateFrom = dateFrom;
+      if (dateTo) params.dateTo = dateTo;
       if (displayConfig?.ordersStartDate) params.startDate = displayConfig.ordersStartDate;
       const reqRes = await returnService.getRequests(params);
       setRequests(reqRes.data.data);
       setTotal(reqRes.data.total);
       setTotalPages(reqRes.data.totalPages);
+      if (previewRequested && !previewAppliedRef.current && reqRes.data.data.length > 0) {
+        previewAppliedRef.current = true;
+        setSelectedRequest(reqRes.data.data[0]);
+      }
     } catch (error) {
       toast.error("Failed to load data");
     } finally {
@@ -94,42 +89,22 @@ const ReturnManagementPage: React.FC = () => {
     }
   };
 
-  const fetchCategoriesAndReasons = async () => {
-    try {
-      const [catRes, reasonRes] = await Promise.all([
-        returnService.getCategories(),
-        returnService.getReasons(),
-      ]);
-      setCategories(catRes.data);
-      setReasons(reasonRes.data);
-    } catch (error) {
-      console.error("Failed to load categories/reasons:", error);
-    }
-  };
-
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, searchTerm, orderStatusFilter]);
+  }, [searchTerm, orderStatusFilter, dateFrom, dateTo, reviewTab]);
 
   useEffect(() => {
     fetchData();
-  }, [statusFilter, searchTerm, orderStatusFilter, page, displayConfig]);
+  }, [searchTerm, orderStatusFilter, dateFrom, dateTo, page, displayConfig, reviewTab]);
 
-  useEffect(() => {
-    fetchCategoriesAndReasons();
-  }, []);
-
-  // Load order statuses
+  // Load order statuses for secondary filter
   useEffect(() => {
     apiClient.get("/order-status", { _skipErrorToast: true })
       .then((res) => {
         if (res.data?.success && Array.isArray(res.data.data)) {
           const fetched = res.data.data
             .filter((s: any) => s.statusType !== "payment")
-            .map((s: any) => ({
-              code: s.code,
-              label: s.name || s.code,
-            }));
+            .map((s: any) => ({ code: s.code, label: s.name || s.code }));
           if (fetched.length > 0) setOrderStatuses(fetched);
         }
       })
@@ -147,60 +122,17 @@ const ReturnManagementPage: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  const visibleStatuses = useMemo(() => {
-    return [
-      { value: "", label: t('returns.k_13') },
-      ...(displayConfig?.showPendingStatus !== false
-        ? [{ value: "PENDING", label: t('returns.k_1') }]
-        : []),
-      ...(displayConfig?.showApprovedStatus !== false
-        ? [{ value: "APPROVED", label: t('returns.k_14') }]
-        : []),
-      ...(displayConfig?.showRejectedStatus !== false
-        ? [{ value: "REJECTED", label: t('returns.k_15') }]
-        : []),
-      ...(displayConfig?.showCompletedStatus !== false
-        ? [{ value: "COMPLETED", label: t('returns.k_16') }]
-        : []),
-    ];
-  }, [displayConfig]);
+  // Load categories for responsible party names
+  useEffect(() => {
+    returnService.getCategories().then((res) => setCategories(res.data)).catch(() => {});
+  }, []);
 
-  const handleUpdateStatus = async (id: string, newStatus: string) => {
+  const copyTracking = async (value: string) => {
     try {
-      await returnService.updateRequest(id, { status: newStatus });
-      toast.success("Status updated");
-      fetchData();
-    } catch (error) {
-      toast.error("Failed to update status");
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return (
-          <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 flex items-center gap-1">
-            <CheckCircle size={12} /> {t('returns.k_135')}
-          </span>
-        );
-      case "REJECTED":
-        return (
-          <span className="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 flex items-center gap-1">
-            <XCircle size={12} /> {t('returns.k_15')}
-          </span>
-        );
-      case "COMPLETED":
-        return (
-          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 flex items-center gap-1">
-            <CheckCircle size={12} /> {t('returns.k_16')}
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 flex items-center gap-1">
-            <Clock size={12} /> {t('returns.k_1')}
-          </span>
-        );
+      await navigator.clipboard.writeText(value);
+      toast.success(t('returns.k_225'));
+    } catch {
+      toast.error(t('returns.k_226'));
     }
   };
 
@@ -244,88 +176,91 @@ const ReturnManagementPage: React.FC = () => {
             {t('returns.k_140')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            {t('returns.k_141')}
+            {reviewTab === "pending" ? "طلبات الإرجاع التي لم تراجع بعد" : "طلبات الإرجاع التي تمت مراجعتها"}
+            {!loading && ` (${total})`}
           </p>
         </div>
-        {displayConfig?.showCreateButton !== false && (
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 dark:bg-blue-600 dark:hover:bg-blue-700"
-          >
-            <Plus size={18} /> {t('returns.k_142')}
-          </button>
-        )}
+      </div>
+
+      {/* Review Tabs */}
+      <div className="flex gap-1 mb-4 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 w-full sm:w-fit">
+        <button
+          onClick={() => handleReviewTabChange("pending")}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
+            reviewTab === "pending"
+              ? "bg-orange-600 text-white shadow-sm"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+        >
+          ⏳ بانتظار المراجعة
+        </button>
+        <button
+          onClick={() => handleReviewTabChange("reviewed")}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
+            reviewTab === "reviewed"
+              ? "bg-green-600 text-white shadow-sm"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+        >
+          ✅ تمت المراجعة
+        </button>
       </div>
 
       {/* Filters */}
       {displayConfig?.showFilterBar !== false && (
       <div className="flex flex-wrap gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 items-center">
-        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-          <Filter size={18} />
-          <span className="text-sm font-medium">{t('returns.k_17')}</span>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {visibleStatuses.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setStatusFilter(value)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                statusFilter === value
-                  ? "bg-blue-600 dark:bg-blue-500 text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
+
+        {/* Order status filter */}
+        {orderStatuses.length > 0 && (
+          <>
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+              <Package size={16} />
+              <span className="text-xs font-medium whitespace-nowrap">{t('returns.k_18')}</span>
+            </div>
+            <select
+              value={orderStatusFilter}
+              onChange={(e) => setOrderStatusFilter(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
             >
-              {label}
-            </button>
-          ))}
+              <option value="">{t('returns.k_13')}</option>
+              {orderStatuses.map((s) => (
+                <option key={s.code} value={s.code}>{s.label}</option>
+              ))}
+            </select>
+          </>
+        )}
+
+        <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+
+        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+          <CalendarDays size={16} />
+          <span className="text-xs font-medium whitespace-nowrap">{t('returns.k_65')}</span>
         </div>
-        {(() => {
-            const visibleOs = orderStatuses.filter((s) => {
-              if (!displayConfig?.visibleOrderStatuses) return true;
-              return displayConfig.visibleOrderStatuses.includes(s.code);
-            });
-            if (visibleOs.length === 0) return null;
-            return (
-              <>
-                <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
-                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                  <Package size={16} />
-                  <span className="text-xs font-medium whitespace-nowrap">{t('returns.k_18')}</span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => setOrderStatusFilter("")}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      orderStatusFilter === ""
-                        ? "bg-blue-600 dark:bg-blue-500 text-white"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }`}
-                  >
-                    {t('returns.k_13')}
-                  </button>
-                  {visibleOs.map((status) => (
-                    <button
-                      key={status.code}
-                      onClick={() => setOrderStatusFilter(status.code)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                        orderStatusFilter === status.code
-                          ? "bg-blue-600 dark:bg-blue-500 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      {status.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            );
-          })()}
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
+          title={t('returns.k_150')}
+        />
+        <span className="text-gray-400 text-xs">-</span>
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
+          title={t('returns.k_151')}
+        />
+
+        <div className="flex-1" />
+
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder={t('returns.k_19')}
-          className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg max-w-xs mr-auto"
+          className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg max-w-xs"
         />
         <button
           onClick={fetchData}
@@ -338,6 +273,7 @@ const ReturnManagementPage: React.FC = () => {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
@@ -361,14 +297,14 @@ const ReturnManagementPage: React.FC = () => {
                   {t('returns.k_59')}
                 </th>
               )}
-              {displayConfig?.showStatusColumn !== false && (
+              {displayConfig?.showTrackingColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t('returns.k_61')}
+                  {t('returns.k_221')}
                 </th>
               )}
-              {displayConfig?.showReviewColumn !== false && (
+              {displayConfig?.showFinancialColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t('returns.k_63')}
+                  {t('returns.k_227')}
                 </th>
               )}
               {displayConfig?.showDateColumn !== false && (
@@ -395,11 +331,11 @@ const ReturnManagementPage: React.FC = () => {
               </tr>
             ) : requests.length === 0 ? (
               <tr>
-                <td
-                  colSpan={99}
-                  className="text-center py-8 text-gray-500 dark:text-gray-400"
-                >
-                  {t('returns.k_145')}
+                <td colSpan={99} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
+                    <Package size={40} className="opacity-40" />
+                    <span className="text-sm">{t('returns.k_145')}</span>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -477,30 +413,93 @@ const ReturnManagementPage: React.FC = () => {
                               : "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         }`}
                       >
-                        {request.responsibleParty}
+                        {responsiblePartyLabel(request.responsibleParty)}
                       </span>
                     </td>
                   )}
-                  {displayConfig?.showStatusColumn !== false && (
+                  {displayConfig?.showTrackingColumn !== false && (
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(request.status)}
+                      {request.trackingNumber ? (
+                        <div className="flex items-center gap-1.5" dir="ltr">
+                          <span
+                            className="text-sm text-gray-500 dark:text-gray-400 font-mono"
+                            title={t('returns.k_223')}
+                          >
+                            {request.trackingNumber}
+                          </span>
+                          <button
+                            onClick={() =>
+                              copyTracking(request.trackingNumber!)
+                            }
+                            className="text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 transition-colors"
+                            title={t('returns.k_224')}
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400 dark:text-gray-500">
+                          -
+                        </span>
+                      )}
                     </td>
                   )}
-                  {displayConfig?.showReviewColumn !== false && (
+                  {displayConfig?.showFinancialColumn !== false && (
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {request.isReviewed ? (
-                        <span className="text-green-600 dark:text-green-400 text-xs flex items-center gap-1">
-                          <CheckCircle size={14} /> {t('returns.k_147')}
-                        </span>
+                      {request.returnType && (
+                        <div className="mb-1.5 flex items-center gap-1 flex-wrap">
+                          <span
+                            className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30"
+                            title={request.returnType.code}
+                          >
+                            {request.returnType.name}
+                          </span>
+                          {request.shippingCompany?.name && (
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                              {request.shippingCompany.name}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {request.shippingReturnCost !== undefined &&
+                      request.shippingReturnCost !== null ||
+                      (request.settlementAmount !== undefined &&
+                        request.settlementAmount !== null) ? (
+                        <div className="text-xs space-y-0.5">
+                          {request.shippingReturnCost !== undefined &&
+                            request.shippingReturnCost !== null && (
+                              <div className="text-red-600 dark:text-red-400">
+                                {t('returns.k_228')}:{" "}
+                                {request.shippingReturnCost}{" "}
+                                {request.order?.currency || t('returns.k_22')}
+                              </div>
+                            )}
+                          {request.settlementAmount !== undefined &&
+                            request.settlementAmount !== null && (
+                              <div
+                                className={`font-medium ${
+                                  request.settlementAmount >= 0
+                                    ? "text-green-600 dark:text-green-400"
+                                    : "text-red-600 dark:text-red-400"
+                                }`}
+                              >
+                                {t('returns.k_229')}: {request.settlementAmount}{" "}
+                                {request.order?.currency || t('returns.k_22')}
+                              </div>
+                            )}
+                        </div>
                       ) : (
-                        <span className="text-orange-500 dark:text-orange-400 text-xs flex items-center gap-1">
-                          <Clock size={14} /> {t('returns.k_148')}
+                        <span className="text-sm text-gray-400 dark:text-gray-500">
+                          -
                         </span>
                       )}
                     </td>
                   )}
                   {displayConfig?.showDateColumn !== false && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+                      title={t('returns.k_222')}
+                    >
                       {new Date(request.createdAt).toLocaleDateString()}
                     </td>
                   )}
@@ -508,64 +507,13 @@ const ReturnManagementPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium pl-6">
                       <div className="flex justify-end gap-2">
                         <button
-                          onClick={() => {
-                            setEditingRequest(request);
-                            setEditForm({
-                              reasonId: request.reasonId || "",
-                              responsibleParty:
-                                request.responsibleParty || "OTHER",
-                              customerNotes: request.customerNotes || "",
-                              adminNotes: request.adminNotes || "",
-                            });
-                            setShowEditReasonModal(true);
-                          }}
-                          className="text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300"
-                          title={t('returns.k_23')}
-                        >
-                          <Edit size={18} />
-                        </button>
-
-                        <button
                           onClick={() => setSelectedRequest(request)}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 flex items-center gap-1"
                           title={t('returns.k_24')}
                         >
                           <Eye size={18} />
+                          <span className="text-xs">{t('returns.k_24')}</span>
                         </button>
-
-                        {request.status === "PENDING" && (
-                          <>
-                            <button
-                              onClick={() =>
-                                handleUpdateStatus(request.id, "APPROVED")
-                              }
-                              className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
-                              title={t('returns.k_25')}
-                            >
-                              <CheckCircle size={18} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleUpdateStatus(request.id, "REJECTED")
-                              }
-                              className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-                              title={t('returns.k_26')}
-                            >
-                              <XCircle size={18} />
-                            </button>
-                          </>
-                        )}
-                        {request.status === "APPROVED" && (
-                          <button
-                            onClick={() =>
-                              handleUpdateStatus(request.id, "COMPLETED")
-                            }
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
-                            title={t('returns.k_27')}
-                          >
-                            <CheckCircle size={18} />
-                          </button>
-                        )}
                       </div>
                     </td>
                   )}
@@ -574,6 +522,7 @@ const ReturnManagementPage: React.FC = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Pagination */}
@@ -616,420 +565,6 @@ const ReturnManagementPage: React.FC = () => {
             >
               {t('returns.k_151')}
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Create Return Modal */}
-      {showCreateModal && (
-        <div
-          className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50"
-          onClick={() => setShowCreateModal(false)}
-        >
-          <div
-            className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {t('returns.k_152')}
-              </h2>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <XCircle className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Order Number */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_153')}
-                </label>
-                <input
-                  type="text"
-                  value={newReturn.orderNumber}
-                  onChange={(e) =>
-                    setNewReturn({ ...newReturn, orderNumber: e.target.value })
-                  }
-                  placeholder="ORD-20260117-233349-05"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Return Reason */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_154')}
-                </label>
-                <select
-                  value={newReturn.reasonId}
-                  onChange={(e) => {
-                    const selectedReason = reasons.find(
-                      (r) => r.id === e.target.value,
-                    );
-                    setNewReturn({
-                      ...newReturn,
-                      reasonId: e.target.value,
-                      responsibleParty:
-                        selectedReason?.category?.defaultRole || "OTHER",
-                    });
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">{t('returns.k_30')}</option>
-                  {categories.map((cat) => (
-                    <optgroup key={cat.id} label={cat.name}>
-                      {reasons
-                        .filter((r) => r.categoryId === cat.id)
-                        .map((reason) => (
-                          <option key={reason.id} value={reason.id}>
-                            {reason.reason}{" "}
-                            {reason.description && `- ${reason.description}`}
-                          </option>
-                        ))}
-                    </optgroup>
-                  ))}
-                  {/* Reasons without category */}
-                  {reasons.filter((r) => !r.categoryId).length > 0 && (
-                    <optgroup label={t('returns.k_31')}>
-                      {reasons
-                        .filter((r) => !r.categoryId)
-                        .map((reason) => (
-                          <option key={reason.id} value={reason.id}>
-                            {reason.reason}{" "}
-                            {reason.description && `- ${reason.description}`}
-                          </option>
-                        ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
-
-              {/* Responsible Party */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_59')}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {["CUSTOMER", "STORE", "SHIPPING", "OTHER"].map((party) => (
-                    <button
-                      key={party}
-                      type="button"
-                      onClick={() =>
-                        setNewReturn({
-                          ...newReturn,
-                          responsibleParty: party as any,
-                        })
-                      }
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        newReturn.responsibleParty === party
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      {party === "CUSTOMER"
-                        ? t('returns.k_32')
-                        : party === "STORE"
-                          ? t('returns.k_33')
-                          : party === "SHIPPING"
-                            ? t('returns.k_34')
-                            : t('returns.k_31')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Refund Amount */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_155')}
-                </label>
-                <input
-                  type="number"
-                  value={newReturn.refundAmount}
-                  onChange={(e) =>
-                    setNewReturn({ ...newReturn, refundAmount: e.target.value })
-                  }
-                  placeholder="0.00"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Customer Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_156')}
-                </label>
-                <textarea
-                  value={newReturn.customerNotes}
-                  onChange={(e) =>
-                    setNewReturn({
-                      ...newReturn,
-                      customerNotes: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  placeholder={t('returns.k_35')}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Admin Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_157')}
-                </label>
-                <textarea
-                  value={newReturn.adminNotes}
-                  onChange={(e) =>
-                    setNewReturn({ ...newReturn, adminNotes: e.target.value })
-                  }
-                  rows={3}
-                  placeholder={t('returns.k_36')}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                >
-                  {t('returns.k_158')}
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!newReturn.orderNumber || !newReturn.reasonId) {
-                      toast.error(t('returns.k_37'));
-                      return;
-                    }
-                    setCreating(true);
-                    try {
-                      await returnService.createRequest({
-                        orderNumber: newReturn.orderNumber,
-                        reasonId: newReturn.reasonId,
-                        refundAmount: newReturn.refundAmount ? Number(newReturn.refundAmount) : undefined,
-                        customerNotes: newReturn.customerNotes,
-                        adminNotes: newReturn.adminNotes,
-                        responsibleParty: newReturn.responsibleParty,
-                      });
-                      toast.success(t('returns.k_38'));
-                      setShowCreateModal(false);
-                      setNewReturn({
-                        orderNumber: "",
-                        reasonId: "",
-                        refundAmount: "",
-                        customerNotes: "",
-                        adminNotes: "",
-                        responsibleParty: "OTHER",
-                      });
-                      fetchData();
-                    } catch (error: any) {
-                      console.error(error);
-                      toast.error(
-                        error.response?.data?.error ||
-                          t('returns.k_39'),
-                      );
-                    } finally {
-                      setCreating(false);
-                    }
-                  }}
-                  disabled={creating}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {creating ? t('returns.k_40') : t('returns.k_41')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Reason Modal */}
-      {showEditReasonModal && editingRequest && (
-        <div
-          className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50"
-          onClick={() => setShowEditReasonModal(false)}
-        >
-          <div
-            className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {t('returns.k_159')}
-              </h2>
-              <button
-                onClick={() => setShowEditReasonModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <XCircle className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Return Reason */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_154')}
-                </label>
-                <select
-                  value={editForm.reasonId}
-                  onChange={(e) => {
-                    const selectedReason = reasons.find(
-                      (r) => r.id === e.target.value,
-                    );
-                    setEditForm({
-                      ...editForm,
-                      reasonId: e.target.value,
-                      responsibleParty:
-                        selectedReason?.category?.defaultRole ||
-                        editForm.responsibleParty,
-                    });
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">{t('returns.k_30')}</option>
-                  {categories.map((cat) => (
-                    <optgroup key={cat.id} label={cat.name}>
-                      {reasons
-                        .filter((r) => r.categoryId === cat.id)
-                        .map((reason) => (
-                          <option key={reason.id} value={reason.id}>
-                            {reason.reason}{" "}
-                            {reason.description && `- ${reason.description}`}
-                          </option>
-                        ))}
-                    </optgroup>
-                  ))}
-                  {/* Reasons without category */}
-                  {reasons.filter((r) => !r.categoryId).length > 0 && (
-                    <optgroup label={t('returns.k_31')}>
-                      {reasons
-                        .filter((r) => !r.categoryId)
-                        .map((reason) => (
-                          <option key={reason.id} value={reason.id}>
-                            {reason.reason}{" "}
-                            {reason.description && `- ${reason.description}`}
-                          </option>
-                        ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
-
-              {/* Responsible Party */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_59')}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {["CUSTOMER", "STORE", "SHIPPING", "OTHER"].map((party) => (
-                    <button
-                      key={party}
-                      type="button"
-                      onClick={() =>
-                        setEditForm({
-                          ...editForm,
-                          responsibleParty: party as any,
-                        })
-                      }
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        editForm.responsibleParty === party
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      {party === "CUSTOMER"
-                        ? t('returns.k_32')
-                        : party === "STORE"
-                          ? t('returns.k_33')
-                          : party === "SHIPPING"
-                            ? t('returns.k_34')
-                            : t('returns.k_31')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Customer Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_156')}
-                </label>
-                <textarea
-                  value={editForm.customerNotes}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, customerNotes: e.target.value })
-                  }
-                  rows={3}
-                  placeholder={t('returns.k_35')}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Admin Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_157')}
-                </label>
-                <textarea
-                  value={editForm.adminNotes}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, adminNotes: e.target.value })
-                  }
-                  rows={3}
-                  placeholder={t('returns.k_36')}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
-                <button
-                  onClick={() => setShowEditReasonModal(false)}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                >
-                  {t('returns.k_158')}
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!editForm.reasonId) {
-                      toast.error(t('returns.k_42'));
-                      return;
-                    }
-                    setCreating(true);
-                    try {
-                      await returnService.updateRequest(editingRequest.id, {
-                        reasonId: editForm.reasonId,
-                        responsibleParty: editForm.responsibleParty,
-                        customerNotes: editForm.customerNotes,
-                        adminNotes: editForm.adminNotes,
-                      });
-                      toast.success(t('returns.k_43'));
-                      setShowEditReasonModal(false);
-                      setEditingRequest(null);
-                      fetchData();
-                    } catch (error: any) {
-                      console.error(error);
-                      toast.error(
-                        error.response?.data?.error || t('returns.k_44'),
-                      );
-                    } finally {
-                      setCreating(false);
-                    }
-                  }}
-                  disabled={creating}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {creating ? t('returns.k_45') : t('returns.k_46')}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}

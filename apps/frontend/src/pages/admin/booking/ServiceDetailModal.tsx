@@ -1,5 +1,4 @@
-import { X as XMarkIcon, Circle as BuildingOffice2Icon } from 'lucide-react';
-;
+import { XMarkIcon, BuildingOffice2Icon } from "@heroicons/react/24/outline";
 import { BookingService, MODAL_CONTENT_CLS } from "./shared";
 
 interface Props {
@@ -17,9 +16,38 @@ export default function ServiceDetailModal({ service, onClose }: Props) {
             <h3 className="text-lg font-bold">{service.name}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{service.description || "لا يوجد وصف"}</p>
           </div>
-          <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${service.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{service.isActive ? "نشط" : "غير نشط"}</span>
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${service.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{service.isActive ? "نشط" : "غير نشط"}</span>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+          </div>
         </div>
         <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">القسم</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{service.category ? `${service.category.icon ? service.category.icon + " " : ""}${service.category.name}` : "—"}</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">المدة</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{service.durationMinutes ? `${service.durationMinutes} دقيقة` : "—"}</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">السعر الأساسي</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{service.basePrice ? `${service.basePrice} ج.م` : "—"}</p>
+            </div>
+          </div>
+          {service.doctorServices && service.doctorServices.length > 0 && (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h4 className="font-semibold text-sm mb-3">الأطباء المقدمون للخدمة</h4>
+              <div className="flex flex-wrap gap-2">
+                {service.doctorServices.map(ds => (
+                  <span key={ds.id} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">
+                    {ds.doctor?.title} {ds.doctor?.name}{ds.fee ? ` — ${ds.fee} ج.م` : ""}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <h4 className="font-semibold text-sm mb-3 flex items-center gap-2"><BuildingOffice2Icon className="w-4 h-4" />الفروع والباقات</h4>
             {bs.length === 0 ? (

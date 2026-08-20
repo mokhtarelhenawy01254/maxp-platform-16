@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, Check, CheckCircle, Loader2, Save, ShoppingBag } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import { AlertCircle, CheckCircle, Loader2, Save, ShoppingBag } from "lucide-react";
 import { apiClient } from "../../services/api";
 
 interface MinimumOrderSettingsData {
@@ -58,7 +59,7 @@ const MinimumOrderSettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching minimum order settings:", error);
-      toast.error("فشل في جلب إعدادات الحد الأدنى للطلبات");
+      tToast.error("MinimumOrderSettings.failed_fetch_084b");
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,7 @@ const MinimumOrderSettings: React.FC = () => {
     const amount = Number(settings.minimumOrderAmount || 0);
 
     if (settings.minimumOrderEnabled && amount <= 0) {
-      toast.error("يجب إدخال قيمة أكبر من صفر عند تفعيل الحد الأدنى");
+      tToast.error("MinimumOrderSettings.msg_6377");
       return;
     }
 
@@ -92,11 +93,11 @@ const MinimumOrderSettings: React.FC = () => {
           minimumOrderMessage:
             data.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE,
         });
-        toast.success("تم حفظ إعدادات الحد الأدنى للطلبات");
+        tToast.success("MinimumOrderSettings.success_save_d446");
       }
     } catch (error) {
       console.error("Error saving minimum order settings:", error);
-      toast.error("فشل في حفظ إعدادات الحد الأدنى للطلبات");
+      tToast.error("MinimumOrderSettings.failed_save_d041");
     } finally {
       setSaving(false);
     }

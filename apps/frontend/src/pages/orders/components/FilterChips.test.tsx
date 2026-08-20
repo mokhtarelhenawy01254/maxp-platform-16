@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { FilterChips } from "./FilterChips";
 
@@ -30,16 +30,16 @@ describe("FilterChips", () => {
       <FilterChips
         filters={{ ...baseFilters, status: ["pending", "shipped"] }}
         filterableOrderStatuses={[
-          { code: "PENDING", name: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒" },
-          { code: "SHIPPED", name: "╪¬┘à ╪º┘ä╪┤╪¡┘å" },
+          { code: "PENDING", name: "قيد الانتظار" },
+          { code: "SHIPPED", name: "تم الشحن" },
         ]}
         onFilterChange={jest.fn()}
         onClearAdvancedFilters={jest.fn()}
       />,
     );
 
-    expect(screen.getAllByText("┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("╪¬┘à ╪º┘ä╪┤╪¡┘å").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("قيد الانتظار").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("تم الشحن").length).toBeGreaterThan(0);
   });
 
   it("removes a single status without clearing the others", () => {
@@ -48,8 +48,8 @@ describe("FilterChips", () => {
       <FilterChips
         filters={{ ...baseFilters, status: ["pending", "shipped"] }}
         filterableOrderStatuses={[
-          { code: "PENDING", name: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒" },
-          { code: "SHIPPED", name: "╪¬┘à ╪º┘ä╪┤╪¡┘å" },
+          { code: "PENDING", name: "قيد الانتظار" },
+          { code: "SHIPPED", name: "تم الشحن" },
         ]}
         onFilterChange={onFilterChange}
         onClearAdvancedFilters={jest.fn()}
@@ -66,16 +66,16 @@ describe("FilterChips", () => {
       <FilterChips
         filters={{ ...baseFilters, paymentStatus: ["completed", "failed"] }}
         filterablePaymentStatuses={[
-          { code: "COMPLETED", name: "┘à╪»┘ü┘ê╪╣" },
-          { code: "FAILED", name: "┘ü╪┤┘ä ╪º┘ä╪»┘ü╪╣" },
+          { code: "COMPLETED", name: "مدفوع" },
+          { code: "FAILED", name: "فشل الدفع" },
         ]}
         onFilterChange={onFilterChange}
         onClearAdvancedFilters={jest.fn()}
       />,
     );
 
-    expect(screen.getAllByText("┘à╪»┘ü┘ê╪╣").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("┘ü╪┤┘ä ╪º┘ä╪»┘ü╪╣").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("مدفوع").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("فشل الدفع").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getAllByRole("button")[0]);
     expect(onFilterChange).toHaveBeenCalledWith("paymentStatus", ["failed"]);

@@ -133,7 +133,7 @@ export const config = {
     messages: "/messages",
     products: "/products",
     orders: "/orders",
-    reports: "/reports",
+    reports: "/analytics/orders",
     notifications: "/notifications",
     uploads: "/uploads",
   },

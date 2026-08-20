@@ -1,7 +1,6 @@
-import { Info as InformationCircleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React from "react";
-;
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { FooterSettings } from "../../services/footerSettingsService";
 
 interface FooterSettingsSectionProps {

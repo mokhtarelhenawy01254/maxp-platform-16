@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import {
   Save,
@@ -44,7 +44,7 @@ const PointsSettingsPage: React.FC = () => {
       setSettings({ ...DEFAULT_POINTS_SETTINGS, ...data });
     } catch (error) {
       console.error("Error fetching points settings:", error);
-      toast.error("╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¼┘ä╪¿ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘å┘é╪º╪╖");
+      toast.error("حدث خطأ أثناء جلب إعدادات النقاط");
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +65,7 @@ const PointsSettingsPage: React.FC = () => {
 
     for (const field of numericFields) {
       if (!Number.isFinite(settings[field]) || settings[field] < 0) {
-        toast.error("┘à┘å ┘ü╪╢┘ä┘â ╪ú╪»╪«┘ä ┘é┘è┘à╪º┘ï ╪╡╪¡┘è╪¡╪⌐ (╪ú╪▒┘é╪º┘à ┘à┘ê╪¼╪¿╪⌐) ┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘å┘é╪º╪╖");
+        toast.error("من فضلك أدخل قيماً صحيحة (أرقام موجبة) لإعدادات النقاط");
         return;
       }
     }
@@ -73,10 +73,10 @@ const PointsSettingsPage: React.FC = () => {
     try {
       setIsSaving(true);
       await apiClient.put("/hr/customer-loyalty/points/settings", settings);
-      toast.success("╪¬┘à ╪¬╪¡╪»┘è╪½ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘å┘é╪º╪╖ ┘ü┘è ╪¼┘à┘è╪╣ ╪ú┘å╪╕┘à╪⌐ ╪º┘ä┘ê┘ä╪º╪í ╪¿┘å╪¼╪º╪¡");
+      toast.success("تم تحديث إعدادات النقاط في جميع أنظمة الولاء بنجاح");
     } catch (error: any) {
       console.error("Error saving points settings:", error);
-      toast.error(error?.response?.data?.error || "╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘å┘é╪º╪╖");
+      toast.error(error?.response?.data?.error || "حدث خطأ أثناء حفظ إعدادات النقاط");
     } finally {
       setIsSaving(false);
     }
@@ -103,10 +103,10 @@ const PointsSettingsPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘å┘é╪º╪╖
+            إعدادات النقاط
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪╣╪º┘à╪⌐ ╪╣┘ä┘ë ┘à╪│╪¬┘ê┘ë ╪º┘ä╪┤╪▒┘â╪⌐ ΓÇö ╪¬┘Å╪╖╪¿┘Ä┘æ┘é ╪╣┘ä┘ë ╪¼┘à┘è╪╣ ╪ú┘å╪╕┘à╪⌐ ╪º┘ä┘ê┘ä╪º╪í
+            إعدادات عامة على مستوى الشركة — تُطبَّق على جميع أنظمة الولاء
           </p>
         </div>
         <button
@@ -119,7 +119,7 @@ const PointsSettingsPage: React.FC = () => {
           ) : (
             <Save className="w-4 h-4" />
           )}
-          ╪¡┘ü╪╕ ╪º┘ä╪¬╪║┘è┘è╪▒╪º╪¬
+          حفظ التغييرات
         </button>
       </div>
 
@@ -132,10 +132,10 @@ const PointsSettingsPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                ┘é┘ê╪º╪╣╪» ┘â╪│╪¿ ┘ê╪º╪│╪¬╪¿╪»╪º┘ä ╪º┘ä┘å┘é╪º╪╖
+                قواعد كسب واستبدال النقاط
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                ╪º┘ä╪¬╪¡┘â┘à ┘ü┘è ╪ó┘ä┘è╪⌐ ╪º╪¡╪¬╪│╪º╪¿ ╪º┘ä┘å┘é╪º╪╖ ┘ê┘à╪╣╪»┘ä╪º╪¬ ╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä
+                التحكم في آلية احتساب النقاط ومعدلات الاستبدال
               </p>
             </div>
           </div>
@@ -144,7 +144,7 @@ const PointsSettingsPage: React.FC = () => {
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              ┘â┘ä ╪╣┘à┘ä┘è╪⌐ ╪┤╪▒╪º╪í ╪¿┘à╪¿┘ä╪║ (╪╣┘à┘ä╪⌐)
+              كل عملية شراء بمبلغ (عملة)
             </label>
             <input
               type="number"
@@ -154,12 +154,12 @@ const PointsSettingsPage: React.FC = () => {
               onChange={(e) => updateField("pointsPerAmount", Number(e.target.value))}
               className={inputCls}
             />
-            <p className="mt-1.5 text-xs text-gray-500">┘à╪½╪º┘ä: 1 ╪¬╪╣┘å┘è ┘â┘ä 1 ╪╣┘à┘ä╪⌐.</p>
+            <p className="mt-1.5 text-xs text-gray-500">مثال: 1 تعني كل 1 عملة.</p>
           </div>
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              ╪¬╪│╪º┘ê┘è (┘å┘é╪º╪╖)
+              تساوي (نقاط)
             </label>
             <input
               type="number"
@@ -170,13 +170,13 @@ const PointsSettingsPage: React.FC = () => {
               className={inputCls}
             />
             <p className="mt-1.5 text-xs text-gray-500">
-              ╪º┘ä┘å┘é╪º╪╖ ╪º┘ä┘à┘â╪¬╪│╪¿╪⌐ ┘à┘é╪º╪¿┘ä ╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä╪│╪º╪¿┘é.
+              النقاط المكتسبة مقابل المبلغ السابق.
             </p>
           </div>
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              ╪º┘ä┘å┘é╪º╪╖ ╪º┘ä┘à┘â╪¬╪│╪¿╪⌐ ┘ä┘â┘ä ╪Ñ╪¡╪º┘ä╪⌐ ┘å╪º╪¼╪¡╪⌐
+              النقاط المكتسبة لكل إحالة ناجحة
             </label>
             <input
               type="number"
@@ -189,24 +189,24 @@ const PointsSettingsPage: React.FC = () => {
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              ┘à╪╣╪»┘ä ╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä (1 ╪╣┘à┘ä╪⌐ = ┘â┘à ┘å┘é╪╖╪⌐╪ƒ)
+              معدل الاستبدال (1 عملة = كم نقطة؟)
             </label>
             <input
               type="number"
               min="0"
               value={settings.redemptionRate}
               onChange={(e) => updateField("redemptionRate", Number(e.target.value))}
-              placeholder="┘à╪½╪º┘ä: 100 = ┘â┘ä 100 ┘å┘é╪╖╪⌐ ╪¬╪«╪╡┘à 1 ╪╣┘à┘ä╪⌐"
+              placeholder="مثال: 100 = كل 100 نقطة تخصم 1 عملة"
               className={inputCls}
             />
             <p className="mt-1.5 text-xs text-gray-500">
-              ┘à╪½╪º┘ä: 100 ┘è╪╣╪º╪»┘ä ╪ú┘å ┘â┘ä 100 ┘å┘é╪╖╪⌐ ╪¬╪«╪╡┘à 1 ╪╣┘à┘ä╪⌐.
+              مثال: 100 يعادل أن كل 100 نقطة تخصم 1 عملة.
             </p>
           </div>
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              ╪º┘ä╪¡╪» ╪º┘ä╪ú╪»┘å┘ë ┘ä┘ä┘å┘é╪º╪╖ ┘ä╪¿╪»╪í ╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä
+              الحد الأدنى للنقاط لبدء الاستبدال
             </label>
             <input
               type="number"
@@ -219,24 +219,24 @@ const PointsSettingsPage: React.FC = () => {
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              ╪ú┘é╪╡┘ë ┘å┘é╪º╪╖ ╪¿╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘ê╪º╪¡╪»
+              أقصى نقاط بالطلب الواحد
             </label>
             <input
               type="number"
               min="0"
               value={settings.maxPointsPerTransaction}
               onChange={(e) => updateField("maxPointsPerTransaction", Number(e.target.value))}
-              placeholder="0 = ╪¿╪»┘ê┘å ╪¡╪»"
+              placeholder="0 = بدون حد"
               className={inputCls}
             />
             <p className="mt-1.5 text-xs text-gray-500">
-              ╪º╪¬╪▒┘â┘ç 0 ╪Ñ╪░╪º ┘â┘å╪¬ ┘ä╪º ╪¬╪▒┘è╪» ┘ê╪╢╪╣ ╪¡╪» ╪ú┘é╪╡┘ë.
+              اتركه 0 إذا كنت لا تريد وضع حد أقصى.
             </p>
           </div>
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              ╪╡┘ä╪º╪¡┘è╪⌐ ╪º┘ä┘å┘é╪º╪╖ (╪¿╪º┘ä╪ú╪┤┘ç╪▒)
+              صلاحية النقاط (بالأشهر)
             </label>
             <input
               type="number"
@@ -252,9 +252,9 @@ const PointsSettingsPage: React.FC = () => {
       <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
         <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
         <p>
-          <strong>┘à┘ä╪º╪¡╪╕╪⌐:</strong> ┘ç╪░┘ç ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪╣╪º┘à╪⌐ ╪╣┘ä┘ë ┘à╪│╪¬┘ê┘ë ╪º┘ä╪┤╪▒┘â╪⌐. ╪ú┘è ╪¬╪╣╪»┘è┘ä
-          ┘ç┘å╪º ┘è┘Å╪╖╪¿┘Ä┘æ┘é ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪╣┘ä┘ë <strong>╪¼┘à┘è╪╣ ╪ú┘å╪╕┘à╪⌐ ╪º┘ä┘ê┘ä╪º╪í</strong> ╪º┘ä┘à┘ê╪¼┘ê╪»╪⌐
-          (╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬╪î ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è╪î ┘ê╪║┘è╪▒┘ç╪º).
+          <strong>ملاحظة:</strong> هذه الإعدادات عامة على مستوى الشركة. أي تعديل
+          هنا يُطبَّق تلقائياً على <strong>جميع أنظمة الولاء</strong> الموجودة
+          (المستويات، الخصم التلقائي، وغيرها).
         </p>
       </div>
     </div>

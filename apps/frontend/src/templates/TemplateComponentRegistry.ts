@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import type { TemplateSlotName } from "./TemplateSlot";
 
 export type ComponentRegistry = Partial<Record<TemplateSlotName, React.ComponentType<any>>>;

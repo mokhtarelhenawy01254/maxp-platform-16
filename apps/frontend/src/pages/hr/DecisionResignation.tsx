@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { AlertCircle, AlertTriangle, ArrowRight, Calendar, Check, CheckCircle, File, FileText, User, X, XCircle } from 'lucide-react';
+import {
+  FileText,
+  ArrowRight,
+  CheckCircle,
+  XCircle,
+  Calendar,
+  User,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import api from "../../services/api";
 
 import { Button } from "../../components/ui/button";
@@ -39,7 +48,7 @@ const DecisionResignation = () => {
       setResignation(response.data.resignation);
     } catch (error) {
       console.error("Error fetching resignation:", error);
-      toast.error("فشل في تحميل بيانات الاستقالة");
+      tToast.error("DecisionResignation.failed_load_753d");
       navigate("/hr/resignations");
     } finally {
       setLoading(false);

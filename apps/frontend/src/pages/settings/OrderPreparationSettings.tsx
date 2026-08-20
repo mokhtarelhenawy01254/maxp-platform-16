@@ -1,7 +1,17 @@
-import { RefreshCw as ArrowPathIcon, Bell as BellIcon, Store as BuildingStorefrontIcon, Check as CheckCircleIcon, Clock as ClockIcon, Circle as CubeIcon, File as DocumentTextIcon, AlertTriangle as ExclamationTriangleIcon, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-;
+import { tToast } from "../../utils/i18n-toast";
+import {
+  ArrowPathIcon,
+  BellIcon,
+  BuildingStorefrontIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  CubeIcon,
+  DocumentTextIcon,
+  ExclamationTriangleIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -227,7 +237,7 @@ const OrderPreparationSettings: React.FC = () => {
         const ready = nextShip.filter((s) => s.code === "READY_TO_SHIP");
         if (ready.length > 0) setHandoffStatuses(ready);
       } catch {
-        toast.error("تعذر تحميل إعدادات تجهيز الطلبات");
+        tToast.error("OrderPreparationSettings.unable_load_d994");
       } finally {
         setLoading(false);
       }
@@ -250,13 +260,13 @@ const OrderPreparationSettings: React.FC = () => {
     setSettings((prev) => ({ ...prev, slipDocument: { ...prev.slipDocument, [key]: value } }));
 
   const handleSave = async () => {
-    if (!companyId) { toast.error("لا يمكن تحديد الشركة الحالية"); return; }
+    if (!companyId) { tToast.error("OrderPreparationSettings.msg_775a"); return; }
     try {
       setSaving(true);
       await apiClient.put(`/companies/${companyId}`, { settings: { orderPreparation: settings } });
-      toast.success("تم حفظ إعدادات تجهيز الطلبات");
+      tToast.success("OrderPreparationSettings.success_save_1e4d");
     } catch {
-      toast.error("فشل حفظ إعدادات تجهيز الطلبات");
+      tToast.error("OrderPreparationSettings.failed_save_8951");
     } finally {
       setSaving(false);
     }
@@ -264,7 +274,7 @@ const OrderPreparationSettings: React.FC = () => {
 
   const handleReset = () => {
     setSettings(buildSettingsState(DEFAULT_SETTINGS));
-    toast.success("تم استرجاع الإعدادات الافتراضية داخل النموذج");
+    tToast.success("OrderPreparationSettings.msg_a1d9");
   };
 
   if (loading) {

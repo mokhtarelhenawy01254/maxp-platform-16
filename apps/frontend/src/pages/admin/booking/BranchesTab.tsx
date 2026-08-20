@@ -1,7 +1,6 @@
-import { Pencil as PencilIcon, Trash2 as TrashIcon, Check as CheckIcon, Plus as PlusIcon } from 'lucide-react';
 import { useState, useMemo } from "react";
-;
-import { BookingBranch, BranchFormData, DAY_NAMES } from "./shared";
+import { PencilIcon, TrashIcon, CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { BookingBranch, BranchFormData, DAY_NAMES, FACILITY_TYPE_LABEL } from "./shared";
 import BranchModal from "./BranchModal";
 
 interface Props {
@@ -55,6 +54,7 @@ export default function BranchesTab({ branches, selectedBranchId, onEdit, onTogg
               <div>
                 <h3 className="font-bold text-sm">{b.name}</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{b.address || "—"}</p>
+                {b.facilityType && <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">{FACILITY_TYPE_LABEL[b.facilityType] || b.facilityType}</span>}
               </div>
               <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span>
             </div>
@@ -128,7 +128,10 @@ export default function BranchesTab({ branches, selectedBranchId, onEdit, onTogg
           <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الموقع", "الهاتف", "أيام العمل", "الجنس", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
           <tbody>{paged.map(b => (
             <tr key={b.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
-              <td className="py-3 px-4 font-medium">{b.name}</td>
+              <td className="py-3 px-4">
+                <div className="font-medium">{b.name}</div>
+                {b.facilityType && <div className="mt-0.5 text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 w-fit">{FACILITY_TYPE_LABEL[b.facilityType] || b.facilityType}</div>}
+              </td>
               <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{b.address || "—"}</td>
               <td className="py-3 px-4 text-xs">
                 {b.location ? (

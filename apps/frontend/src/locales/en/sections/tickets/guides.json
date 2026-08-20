@@ -1,0 +1,110 @@
+{
+  "help": "Open page guide",
+  "videoNotSupported": "Your browser does not support video playback.",
+  "general": {
+    "title": "Quick Guide For This Page",
+    "description": "Use this guide to understand the current page and its most common workflow.",
+    "step1": "Start with the page title and primary actions to understand the main purpose.",
+    "step2": "Check filters or tabs before taking action so you are working with the right data.",
+    "step3": "For advanced behavior, open the related settings section from the sidebar."
+  },
+  "orders": {
+    "title": "Orders Guide",
+    "description": "Track orders, update statuses, and open order details from one place.",
+    "step1": "Use search and filters to find orders by status, customer, or date.",
+    "step2": "Open an order to review products, customer details, and shipping before changing status.",
+    "step3": "Update the status only after confirming readiness or the reason for a delay.",
+    "step4": "Use reports or printing when you need operational review or shipment preparation."
+  },
+  "products": {
+    "title": "Products Guide",
+    "description": "Add products and manage pricing, stock, variants, and images.",
+    "step1": "Review the product name, price, and images because customers see these first.",
+    "step2": "Set stock and variants such as size or color before activating the product.",
+    "step3": "Use visibility and offer settings to improve the shopping and conversion experience."
+  },
+  "customers": {
+    "title": "Customers Guide",
+    "description": "Manage customer profiles, communication history, and marketing segments.",
+    "step1": "Search by name or phone before creating a new record to avoid duplicates.",
+    "step2": "Open the customer profile to review orders, notes, and conversation history.",
+    "step3": "Use tags or segments to make follow-up and campaigns easier later."
+  },
+  "inbox": {
+    "title": "Inbox Guide",
+    "description": "Manage customer conversations, replies, and team handoffs.",
+    "step1": "Start with open or unread conversations so customer replies are not delayed.",
+    "step2": "Review customer and order context before sending a reply or creating an order.",
+    "step3": "Use transfer or close when the conversation moves to another owner or follow-up ends."
+  },
+  "dashboard": {
+    "title": "Dashboard Guide",
+    "description": "Review company performance, alerts, and daily shortcuts.",
+    "step1": "Check key metrics to understand orders, sales, and important alerts.",
+    "step2": "Use shortcuts to reach the workflows you use most often.",
+    "step3": "Use date ranges or filters when you need to compare performance."
+  },
+  "categories": {
+    "title": "Categories Guide",
+    "description": "Organize products into clear storefront sections.",
+    "step1": "Use category names that customers can understand quickly.",
+    "step2": "Sort categories by sales priority or the most visited sections.",
+    "step3": "Attach products to the right category so filters and pages work correctly."
+  },
+  "whatsapp": {
+    "title": "WhatsApp Guide",
+    "description": "Manage WhatsApp connection, conversations, and related notifications.",
+    "step1": "Confirm connection status before relying on replies or notifications.",
+    "step2": "Review assignment and auto-reply settings so conversations reach the right person.",
+    "step3": "Check alerts and logs when sending or receiving stops."
+  },
+  "advertising": {
+    "title": "Advertising Guide",
+    "description": "Track campaigns, settings, and ad performance from one place.",
+    "step1": "Start by checking connected accounts and pixels before reading performance.",
+    "step2": "Use filters to compare campaigns or ad sets by date range.",
+    "step3": "Review profit and conversion metrics before increasing budget or changing campaigns."
+  },
+  "affiliates": {
+    "title": "Affiliates Guide",
+    "description": "Manage affiliates, commissions, and attributed orders.",
+    "step1": "Review affiliate status before approving or disabling an account.",
+    "step2": "Track orders and commissions to understand each affiliate's real performance.",
+    "step3": "Adjust commission and visibility rules according to company policy."
+  },
+  "hr": {
+    "title": "HR Guide",
+    "description": "Manage employees, attendance, leaves, and payroll from HR.",
+    "step1": "Choose the needed area such as attendance, leaves, or payroll from the menu.",
+    "step2": "Review the employee and date range before approving requests or deductions.",
+    "step3": "Use logs and reports when you need to audit a decision."
+  },
+  "settings": {
+    "title": "Settings Guide",
+    "description": "Configure company, storefront, and channel settings before daily operation.",
+    "step1": "Start with general company settings because they affect multiple screens.",
+    "step2": "Review storefront and channel settings before selling or receiving messages.",
+    "step3": "Save changes and test the related screen to confirm the result."
+  },
+  "tasks": {
+    "title": "Tasks Guide",
+    "description": "Track team work, deadlines, and progress inside the workspace.",
+    "step1": "Use status and priority to identify what needs urgent follow-up.",
+    "step2": "Open a task to review the owner, comments, and attachments before updating it.",
+    "step3": "Move tasks between statuses when progress changes so the team view stays accurate."
+  },
+  "reports": {
+    "title": "Reports Guide",
+    "description": "Analyze performance with filters, metrics, and export when needed.",
+    "step1": "Choose the date range first so numbers are comparable.",
+    "step2": "Use filters to break down results by channel, product, or team.",
+    "step3": "Export or share the report after confirming the data is up to date."
+  },
+  "support": {
+    "title": "Support Guide",
+    "description": "Track support tickets, FAQs, and resolution status.",
+    "step1": "Start with open or high-priority tickets.",
+    "step2": "Review ticket history before replying or changing status.",
+    "step3": "Use categories and FAQs to speed up future replies."
+  }
+}

@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AlertOctagon, Banknote, Clock, Hourglass } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Tooltip, XAxis, YAxis } from "recharts";
 import DeferredResponsiveContainer from "../../../../../components/ui/DeferredResponsiveContainer";
@@ -71,7 +71,7 @@ export default function AgingTab({ startDate, endDate, mode }: MovementFilterPro
       });
       setData(payload);
     } catch {
-      setError("╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪¬╪¡┘ä┘è┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘é╪⌐");
+      setError("تعذر تحميل تحليل الطلبات المعلقة");
     } finally {
       setLoading(false);
     }
@@ -92,34 +92,34 @@ export default function AgingTab({ startDate, endDate, mode }: MovementFilterPro
       <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à╪╣┘ä┘æ┘é"
+          label="إجمالي المعلّق"
           value={formatNumber(summary.totalAged)}
           icon={Hourglass}
         />
         <KpiCard
-          label="╪º┘ä╪ú┘é╪»┘à"
+          label="الأقدم"
           value={formatDuration(summary.oldestHours)}
           icon={Clock}
           gradient="from-amber-500 to-orange-600"
         />
         <KpiCard
-          label="┘é┘è┘à╪⌐ ╪º┘ä┘ü┘ä┘ê╪│ ╪º┘ä┘à╪¡╪¿┘ê╪│╪⌐"
+          label="قيمة الفلوس المحبوسة"
           value={formatCurrency(summary.totalRevenue)}
           icon={Banknote}
           gradient="from-rose-500 to-red-600"
         />
         <KpiCard
-          label="╪ú┘â╪½╪▒ ┘à┘å ╪ú╪│╪¿┘ê╪╣"
+          label="أكثر من أسبوع"
           value={formatNumber(summary.stuckOver7d)}
           icon={AlertOctagon}
           gradient="from-sky-500 to-indigo-600"
-          hint="╪╖┘ä╪¿╪º╪¬ ┘à╪╣┘ä┘é╪⌐ ┘à┘å╪░ ╪ú┘â╪½╪▒ ┘à┘å 7 ╪ú┘è╪º┘à"
+          hint="طلبات معلقة منذ أكثر من 7 أيام"
         />
       </div>
 
       <MovementCard
-        title="╪º┘ä╪¬┘ê╪▓┘è╪╣ ╪¡╪│╪¿ ╪º┘ä╪╣┘à╪▒"
-        subtitle="╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘é╪⌐ ┘ü┘è ┘â┘ä ┘ü╪¬╪▒╪⌐ ╪▓┘à┘å┘è╪⌐"
+        title="التوزيع حسب العمر"
+        subtitle="عدد الطلبات المعلقة في كل فترة زمنية"
       >
         <div className="h-[280px]">
           <DeferredResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -144,10 +144,10 @@ export default function AgingTab({ startDate, endDate, mode }: MovementFilterPro
                         {bucket.label}
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-300">
-                        {formatNumber(bucket.count)} ╪╖┘ä╪¿
+                        {formatNumber(bucket.count)} طلب
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-300">
-                        ╪Ñ┘è╪▒╪º╪» {formatCurrency(bucket.revenue)}
+                        إيراد {formatCurrency(bucket.revenue)}
                       </div>
                     </div>
                   );
@@ -195,21 +195,21 @@ export default function AgingTab({ startDate, endDate, mode }: MovementFilterPro
       </MovementCard>
 
       <MovementCard
-        title="┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘é╪⌐"
-        subtitle="╪ú┘é╪»┘à ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘é╪⌐ ╪ú┘ê┘ä╪º┘ï"
+        title="قائمة الطلبات المعلقة"
+        subtitle="أقدم الطلبات المعلقة أولاً"
       >
         {data.orders.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-right">
               <thead>
                 <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 dark:border-gray-700/60 dark:text-gray-400">
-                  <th className="px-4 py-3">╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿</th>
-                  <th className="px-4 py-3">╪º┘ä╪¡╪º┘ä╪⌐</th>
-                  <th className="px-4 py-3">╪º┘ä╪╣┘à╪▒</th>
-                  <th className="px-4 py-3 text-left">╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è</th>
-                  <th className="px-4 py-3">╪º┘ä╪╣┘à┘è┘ä</th>
-                  <th className="px-4 py-3">╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐</th>
-                  <th className="px-4 py-3">╪ó╪«╪▒ ╪¡╪▒┘â╪⌐</th>
+                  <th className="px-4 py-3">رقم الطلب</th>
+                  <th className="px-4 py-3">الحالة</th>
+                  <th className="px-4 py-3">العمر</th>
+                  <th className="px-4 py-3 text-left">الإجمالي</th>
+                  <th className="px-4 py-3">العميل</th>
+                  <th className="px-4 py-3">المحافظة</th>
+                  <th className="px-4 py-3">آخر حركة</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -256,7 +256,7 @@ export default function AgingTab({ startDate, endDate, mode }: MovementFilterPro
           </div>
         ) : (
           <div className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-            ┘ä╪º ╪¬┘ê╪¼╪» ╪╖┘ä╪¿╪º╪¬ ┘à╪╣┘ä┘é╪⌐ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐
+            لا توجد طلبات معلقة في هذه الفترة
           </div>
         )}
       </MovementCard>

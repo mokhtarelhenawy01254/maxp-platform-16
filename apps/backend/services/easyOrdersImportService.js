@@ -142,6 +142,16 @@ async function importEasyOrdersBatch(prisma, companyId, orders, options = {}) {
 
             // 3. Create or Update
             if (existingOrder) {
+                // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): الاستيراد يعدّل بيانات الطلب
+                // (المنتجات/الأسعار/العميل...). لو الحالة الحالية غير مسموح تعديل
+                // بياناتها، نتخطى تحديث هذا الطلب.
+                const { isOrderStatusEditingLocked } = require('../utils/orderStatusLock');
+                if (await isOrderStatusEditingLocked(prisma, companyId, existingOrder.status)) {
+                    stats.failed++;
+                    console.warn(`🔒 [EASY-ORDER] Order ${existingOrder.orderNumber} is in a locked status — skipping content update.`);
+                    continue;
+                }
+
                 await prisma.order.update({
                     where: { id: existingOrder.id },
                     data: {
@@ -168,6 +178,10 @@ async function importEasyOrdersBatch(prisma, companyId, orders, options = {}) {
                         data: {
                             orderId: newOrder.id,
                             productName: item.name || item.product_name,
+                            productSku: item.sku || item.productSku || null,
+                            productId: item.productId || null,
+                            productColor: item.productColor ? String(item.productColor) : (item.color ? String(item.color) : null),
+                            productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null),
                             quantity: parseInt(item.quantity) || 0,
                             price: parseFloat(item.price) || 0,
                             total: parseFloat(item.total || (item.quantity * item.price) || 0),

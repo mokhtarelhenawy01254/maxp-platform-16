@@ -1,8 +1,8 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
-import { Award, Calendar, DollarSign, Star, Trophy } from 'lucide-react';
+import { Trophy, Calendar, DollarSign, Star } from "lucide-react";
 import api from "../../../services/api";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";

@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { CheckSquare, ArrowRight, Save, Circle, CheckCircle2 } from 'lucide-react';
+import {
+  CheckSquare,
+  ArrowRight,
+  Save,
+  Circle,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import api from "../../services/api";
 
 import { Button } from "../../components/ui/button";
@@ -48,7 +55,7 @@ const ClearanceChecklist = () => {
       setItems(checklistRes.data.items || []);
     } catch (error) {
       console.error("Error fetching clearance data:", error);
-      toast.error("فشل في تحميل بيانات إخلاء الطرف");
+      tToast.error("ClearanceChecklist.failed_load_eca3");
     } finally {
       setLoading(false);
     }
@@ -78,7 +85,7 @@ const ClearanceChecklist = () => {
       );
     } catch (error) {
       console.error("Error updating item:", error);
-      toast.error("فشل في تحديث الحالة");
+      tToast.error("ClearanceChecklist.failed_update_a0ad");
     }
   };
 

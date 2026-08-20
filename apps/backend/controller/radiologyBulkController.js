@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { recordRadiologyStatusHistory, syncStudyOrderStatus, signerDisplayName } = require('../utils/radiologyStatusHistory');
 const radiologyController = require('./radiologyController');
 const appointmentsController = require('./radiologyAppointmentsController');
@@ -34,7 +34,7 @@ const invokeController = async (handler, params, user, body = {}) => {
   const fakeRes = makeFakeRes();
   await handler(fakeReq, fakeRes);
   if (fakeRes.statusCode >= 400) {
-    throw new Error(fakeRes.payload?.error || '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬┘å┘ü┘è╪░ ╪º┘ä╪╣┘à┘ä┘è╪⌐');
+    throw new Error(fakeRes.payload?.error || 'حدث خطأ في تنفيذ العملية');
   }
   return fakeRes.payload?.data;
 };
@@ -53,7 +53,7 @@ const runInChunks = async (ids, chunkSize, task) => {
         await task(id);
         return { ok: true };
       } catch (error) {
-        return { ok: false, id, error: error.message || '╪¡╪»╪½ ╪«╪╖╪ú' };
+        return { ok: false, id, error: error.message || 'حدث خطأ' };
       }
     }));
     for (const result of results) {
@@ -65,13 +65,13 @@ const runInChunks = async (ids, chunkSize, task) => {
 };
 
 const assertBulkIds = (ids) => {
-  if (ids.length > BULK_MAX_IDS) return '╪╣╪»╪» ╪º┘ä╪╣┘å╪º╪╡╪▒ ┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä╪¡╪» ╪º┘ä╪ú┘é╪╡┘ë ╪º┘ä┘à╪│┘à┘ê╪¡ (500)';
+  if (ids.length > BULK_MAX_IDS) return 'عدد العناصر يتجاوز الحد الأقصى المسموح (500)';
   return null;
 };
 
 const bulkConvertAppointments = async (req, res) => {
   const companyId = req.user?.companyId;
-  if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+  if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
   const ids = normalizeIds(req.body?.ids);
   const idsError = assertBulkIds(ids);
@@ -85,7 +85,7 @@ const bulkConvertAppointments = async (req, res) => {
 
 const bulkCheckinAppointments = async (req, res) => {
   const companyId = req.user?.companyId;
-  if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+  if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
   const ids = normalizeIds(req.body?.ids);
   const idsError = assertBulkIds(ids);
@@ -97,8 +97,8 @@ const bulkCheckinAppointments = async (req, res) => {
 
   const { successCount, failed } = await runInChunks(ids, BULK_CHUNK_SIZE, async (id) => {
     const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
-    if (!appointment) throw new Error('╪º┘ä╪¡╪¼╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
-    if (appointment.status !== 'SCHEDULED') throw new Error('┘è┘à┘â┘å ╪¬╪│╪¼┘è┘ä ╪º┘ä╪¡╪╢┘ê╪▒ ┘ä┘ä╪¡╪¼┘ê╪▓╪º╪¬ ╪º┘ä┘à╪¼╪»┘ê┘ä╪⌐ ┘ü┘é╪╖');
+    if (!appointment) throw new Error('الحجز غير موجود');
+    if (appointment.status !== 'SCHEDULED') throw new Error('يمكن تسجيل الحضور للحجوزات المجدولة فقط');
     await prisma.radiologyAppointment.update({ where: { id }, data: { status: 'CHECKED_IN' } });
     if (appointment.studyId) {
       const linkedStudy = await prisma.radiologyStudy.findUnique({ where: { id: appointment.studyId } }).catch(() => null);
@@ -116,7 +116,7 @@ const bulkCheckinAppointments = async (req, res) => {
 
 const bulkAdvanceStudies = async (req, res) => {
   const companyId = req.user?.companyId;
-  if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+  if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
   const ids = normalizeIds(req.body?.ids);
   const prisma = getSharedPrismaClient();
@@ -128,16 +128,16 @@ const bulkAdvanceStudies = async (req, res) => {
         where: { id, companyId },
         select: { id: true, status: true },
       });
-      if (!study) throw new Error('╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      if (!study) throw new Error('الحالة غير موجودة');
       const index = radiologyController.RADIOLOGY_STUDY_CHAIN.indexOf(study.status);
       if (index === -1 || index === radiologyController.RADIOLOGY_STUDY_CHAIN.length - 1) {
-        throw new Error('╪º┘ä╪¡╪º┘ä╪⌐ ┘ü┘è ╪º┘ä┘à╪▒╪¡┘ä╪⌐ ╪º┘ä╪ú╪«┘è╪▒╪⌐ ┘ê┘ä╪º ┘è┘à┘â┘å ╪¬┘é╪»┘è┘à┘ç╪º');
+        throw new Error('الحالة في المرحلة الأخيرة ولا يمكن تقديمها');
       }
       const next = radiologyController.RADIOLOGY_STUDY_CHAIN[index + 1];
       await invokeController(radiologyController.updateStudy, { id }, req.user, { status: next });
       successCount++;
     } catch (error) {
-      failed.push({ id, error: error.message || '╪¡╪»╪½ ╪«╪╖╪ú' });
+      failed.push({ id, error: error.message || 'حدث خطأ' });
     }
   }
   sendBulkResult(res, { successCount, failed });
@@ -145,7 +145,7 @@ const bulkAdvanceStudies = async (req, res) => {
 
 const bulkDeliverStudies = async (req, res) => {
   const companyId = req.user?.companyId;
-  if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+  if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
   const ids = normalizeIds(req.body?.ids);
   const failed = [];
@@ -155,7 +155,7 @@ const bulkDeliverStudies = async (req, res) => {
       await invokeController(radiologyController.markDelivered, { id }, req.user);
       successCount++;
     } catch (error) {
-      failed.push({ id, error: error.message || '╪¡╪»╪½ ╪«╪╖╪ú' });
+      failed.push({ id, error: error.message || 'حدث خطأ' });
     }
   }
   sendBulkResult(res, { successCount, failed });
@@ -163,7 +163,7 @@ const bulkDeliverStudies = async (req, res) => {
 
 const bulkStudiesLabels = async (req, res) => {
   const companyId = req.user?.companyId;
-  if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+  if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
   const ids = normalizeIds(req.body?.ids);
   const prisma = getSharedPrismaClient();
@@ -176,11 +176,11 @@ const bulkStudiesLabels = async (req, res) => {
         where: { id, companyId },
         select: { id: true, studyNumber: true },
       });
-      if (!study) throw new Error('╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      if (!study) throw new Error('الحالة غير موجودة');
       items.push({ id: study.id, studyNumber: study.studyNumber || null });
       successCount++;
     } catch (error) {
-      failed.push({ id, error: error.message || '╪¡╪»╪½ ╪«╪╖╪ú' });
+      failed.push({ id, error: error.message || 'حدث خطأ' });
     }
   }
   sendBulkResult(res, { successCount, failed, extra: { items } });
@@ -188,11 +188,11 @@ const bulkStudiesLabels = async (req, res) => {
 
 const bulkAdvanceReports = async (req, res) => {
   const companyId = req.user?.companyId;
-  if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+  if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
   const action = String(req.body?.action || '').toLowerCase();
   if (!BULK_REPORT_ACTIONS.includes(action)) {
-    return res.status(400).json({ success: false, error: '╪Ñ╪¼╪▒╪º╪í ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+    return res.status(400).json({ success: false, error: 'إجراء غير صحيح' });
   }
 
   const ids = normalizeIds(req.body?.ids);
@@ -203,7 +203,7 @@ const bulkAdvanceReports = async (req, res) => {
       await invokeController(radiologyController.advanceReport, { id, kind: action }, req.user);
       successCount++;
     } catch (error) {
-      failed.push({ id, error: error.message || '╪¡╪»╪½ ╪«╪╖╪ú' });
+      failed.push({ id, error: error.message || 'حدث خطأ' });
     }
   }
   sendBulkResult(res, { successCount, failed });

@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -42,8 +42,8 @@ describe('labSampleTypesController', () => {
     test('returns company-scoped sample types ordered by name asc', async () => {
       const prisma = createMockPrisma();
       prisma.labSampleType.findMany.mockResolvedValue([
-        { id: 'st1', name: '╪»┘à ┘ê╪▒┘è╪»┘è', instructions: '┘è╪ñ╪«╪░ ╪╣┘ä┘ë ┘à╪╣╪»╪⌐ ┘ü╪º╪▒╪║╪⌐', isActive: true },
-        { id: 'st2', name: '╪¿┘ê┘ä', isActive: true }
+        { id: 'st1', name: 'دم وريدي', instructions: 'يؤخذ على معدة فارغة', isActive: true },
+        { id: 'st2', name: 'بول', isActive: true }
       ]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -63,13 +63,13 @@ describe('labSampleTypesController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.getAllSampleTypes({ user: { companyId: 'c1' }, query: { search: '╪»┘à' } }, res);
+      await controller.getAllSampleTypes({ user: { companyId: 'c1' }, query: { search: 'دم' } }, res);
 
       expect(prisma.labSampleType.findMany).toHaveBeenCalledWith({
         where: {
           companyId: 'c1',
           isActive: true,
-          name: { contains: '╪»┘à', mode: 'insensitive' }
+          name: { contains: 'دم', mode: 'insensitive' }
         },
         orderBy: { name: 'asc' }
       });
@@ -104,15 +104,15 @@ describe('labSampleTypesController', () => {
       const res = createResponse();
       await controller.createSampleType({
         user: { companyId: 'c1' },
-        body: { name: '╪»┘à ┘ê╪▒┘è╪»┘è', instructions: '┘è╪ñ╪«╪░ ┘é╪¿┘ä ╪º┘ä╪ú┘â┘ä' }
+        body: { name: 'دم وريدي', instructions: 'يؤخذ قبل الأكل' }
       }, res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.labSampleType.create).toHaveBeenCalledWith({
         data: {
           companyId: 'c1',
-          name: '╪»┘à ┘ê╪▒┘è╪»┘è',
-          instructions: '┘è╪ñ╪«╪░ ┘é╪¿┘ä ╪º┘ä╪ú┘â┘ä'
+          name: 'دم وريدي',
+          instructions: 'يؤخذ قبل الأكل'
         }
       });
       expect(res.payload.data.companyId).toBe('c1');
@@ -125,13 +125,13 @@ describe('labSampleTypesController', () => {
       const res = createResponse();
       await controller.createSampleType({
         user: { companyId: 'c1' },
-        body: { name: '╪¿┘ê┘ä', instructions: '   ' }
+        body: { name: 'بول', instructions: '   ' }
       }, res);
 
       expect(prisma.labSampleType.create).toHaveBeenCalledWith({
         data: {
           companyId: 'c1',
-          name: '╪¿┘ê┘ä',
+          name: 'بول',
           instructions: null
         }
       });
@@ -143,12 +143,12 @@ describe('labSampleTypesController', () => {
       const res = createResponse();
       await controller.createSampleType({ user: { companyId: 'c1' }, body: { name: '' } }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ┘å┘ê╪╣ ╪º┘ä╪╣┘è┘å╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم نوع العينة مطلوب');
     });
 
     test('returns 403 when companyId is missing', async () => {
       const res = createResponse();
-      await controller.createSampleType({ user: {}, body: { name: '╪»┘à' } }, res);
+      await controller.createSampleType({ user: {}, body: { name: 'دم' } }, res);
       expect(res.statusCode).toBe(403);
       expect(res.payload.success).toBe(false);
     });
@@ -157,48 +157,48 @@ describe('labSampleTypesController', () => {
   describe('updateSampleType', () => {
     test('updates whitelisted fields (name, instructions, isActive)', async () => {
       const prisma = createMockPrisma();
-      prisma.labSampleType.findFirst.mockResolvedValueOnce({ id: 'st1', companyId: 'c1', name: '┘é╪»┘è┘à' });
-      prisma.labSampleType.update.mockResolvedValue({ id: 'st1', name: '┘à╪¡╪»╪½', instructions: null, isActive: false });
+      prisma.labSampleType.findFirst.mockResolvedValueOnce({ id: 'st1', companyId: 'c1', name: 'قديم' });
+      prisma.labSampleType.update.mockResolvedValue({ id: 'st1', name: 'محدث', instructions: null, isActive: false });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.updateSampleType({
         user: { companyId: 'c1' },
         params: { id: 'st1' },
-        body: { name: '┘à╪¡╪»╪½', instructions: '', isActive: false }
+        body: { name: 'محدث', instructions: '', isActive: false }
       }, res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.labSampleType.findFirst).toHaveBeenCalledWith({ where: { id: 'st1', companyId: 'c1' } });
       expect(prisma.labSampleType.update).toHaveBeenCalledWith({
         where: { id: 'st1' },
-        data: { name: '┘à╪¡╪»╪½', instructions: null, isActive: false }
+        data: { name: 'محدث', instructions: null, isActive: false }
       });
     });
 
     test('ignores fields outside the whitelist', async () => {
       const prisma = createMockPrisma();
-      prisma.labSampleType.findFirst.mockResolvedValue({ id: 'st1', companyId: 'c1', name: '╪»┘à' });
-      prisma.labSampleType.update.mockResolvedValue({ id: 'st1', name: '╪»┘à' });
+      prisma.labSampleType.findFirst.mockResolvedValue({ id: 'st1', companyId: 'c1', name: 'دم' });
+      prisma.labSampleType.update.mockResolvedValue({ id: 'st1', name: 'دم' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.updateSampleType({
         user: { companyId: 'c1' },
         params: { id: 'st1' },
-        body: { name: '╪»┘à', companyId: 'other', createdAt: '2020-01-01' }
+        body: { name: 'دم', companyId: 'other', createdAt: '2020-01-01' }
       }, res);
 
       expect(prisma.labSampleType.update).toHaveBeenCalledWith({
         where: { id: 'st1' },
-        data: { name: '╪»┘à' }
+        data: { name: 'دم' }
       });
       expect(res.statusCode).toBe(200);
     });
 
     test('requires a non-empty name when updating it', async () => {
       const prisma = createMockPrisma();
-      prisma.labSampleType.findFirst.mockResolvedValue({ id: 'st1', companyId: 'c1', name: '╪»┘à' });
+      prisma.labSampleType.findFirst.mockResolvedValue({ id: 'st1', companyId: 'c1', name: 'دم' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -208,7 +208,7 @@ describe('labSampleTypesController', () => {
         body: { name: '  ' }
       }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ┘å┘ê╪╣ ╪º┘ä╪╣┘è┘å╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم نوع العينة مطلوب');
     });
 
     test('returns 404 for a sample type from another company', async () => {
@@ -229,7 +229,7 @@ describe('labSampleTypesController', () => {
   describe('deleteSampleType', () => {
     test('soft deletes the sample type (isActive=false)', async () => {
       const prisma = createMockPrisma();
-      prisma.labSampleType.findFirst.mockResolvedValue({ id: 'st1', companyId: 'c1', name: '╪»┘à' });
+      prisma.labSampleType.findFirst.mockResolvedValue({ id: 'st1', companyId: 'c1', name: 'دم' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -238,7 +238,7 @@ describe('labSampleTypesController', () => {
       expect(res.statusCode).toBe(200);
       expect(prisma.labSampleType.findFirst).toHaveBeenCalledWith({ where: { id: 'st1', companyId: 'c1' } });
       expect(prisma.labSampleType.update).toHaveBeenCalledWith({ where: { id: 'st1' }, data: { isActive: false } });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ┘å┘ê╪╣ ╪º┘ä╪╣┘è┘å╪⌐');
+      expect(res.payload.message).toBe('تم حذف نوع العينة');
     });
 
     test('returns 404 for a sample type from another company', async () => {

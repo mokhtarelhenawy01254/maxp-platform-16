@@ -32,10 +32,10 @@ jest.mock("../../services/sharedDatabase", () => ({
 
 jest.mock("../../utils/verifyToken", () => ({
   authenticateToken: (req, res, next) => {
-    if (!mockCurrentUser) {
+    if (!mockAuthUser) {
       return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
     }
-    req.user = mockCurrentUser;
+    req.user = mockAuthUser;
     return next();
   },
   requireRole: (roles) => (req, res, next) => {

@@ -1,4 +1,4 @@
-﻿-- Clean up duplicate return requests, keeping the oldest one per (companyId, orderId)
+-- Clean up duplicate return requests, keeping the oldest one per (companyId, orderId)
 -- This must run BEFORE the unique constraint is added
 
 BEGIN;

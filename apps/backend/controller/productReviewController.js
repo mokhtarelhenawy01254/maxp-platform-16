@@ -7,6 +7,7 @@ const {
   saveReviewMedia,
 } = require('../services/productReviewMediaService');
 const { trackStorefrontAppUsage } = require('../services/storefrontAppUsageService');
+const { findConvertedPresentationBySlug } = require('../utils/presentationConversion');
 
 // Helper function to get Prisma client
 function getPrisma() {
@@ -77,7 +78,7 @@ async function resolveProductForCompany(prisma, companyId, productIdOrSlug) {
     return null;
   }
 
-  return prisma.product.findFirst({
+  const direct = await prisma.product.findFirst({
     where: {
       companyId,
       isActive: true,
@@ -90,6 +91,55 @@ async function resolveProductForCompany(prisma, companyId, productIdOrSlug) {
       id: true,
     },
   });
+
+  if (direct) {
+    return direct;
+  }
+
+  const presentation = await prisma.productPresentation.findFirst({
+    where: {
+      slug: productIdOrSlug,
+      isActive: true,
+      product: {
+        companyId,
+        isActive: true,
+        deletedAt: null,
+      },
+    },
+    select: {
+      productId: true,
+    },
+  });
+
+  if (presentation) {
+    return { id: presentation.productId };
+  }
+
+  const converted = await findConvertedPresentationBySlug(
+    prisma,
+    companyId,
+    productIdOrSlug,
+  );
+
+  if (converted?.targetProduct?.id) {
+    const target = await prisma.product.findFirst({
+      where: {
+        id: converted.targetProduct.id,
+        companyId,
+        isActive: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (target) {
+      return target;
+    }
+  }
+
+  return null;
 }
 
 /**

@@ -1,4 +1,4 @@
-﻿const cashbackService = require('../../services/cashbackService');
+const cashbackService = require('../../services/cashbackService');
 const sharedDatabase = require('../../services/sharedDatabase');
 
 jest.mock('../../services/sharedDatabase', () => ({

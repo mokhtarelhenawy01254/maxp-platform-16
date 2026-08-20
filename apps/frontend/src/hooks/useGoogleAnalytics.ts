@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import type { StorefrontSettings } from "../services/storefrontSettingsService";
 import { loadGoogleAnalytics, trackGooglePageView } from "../utils/googleAnalytics";

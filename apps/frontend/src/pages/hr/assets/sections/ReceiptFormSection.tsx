@@ -1,6 +1,18 @@
-import { File as DocumentTextIcon, Printer as PrinterIcon, Download as ArrowDownTrayIcon, Circle as CheckBadgeIcon, Monitor as ComputerDesktopIcon, Camera as CameraIcon, RefreshCw as ArrowPathIcon, Circle as CloudArrowUpIcon, Plus as PlusCircleIcon, Circle as UserGroupIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import i18n from "../../../../i18n";
+import {
+  DocumentTextIcon,
+  PrinterIcon,
+  ArrowDownTrayIcon,
+  CheckBadgeIcon,
+  ComputerDesktopIcon,
+  CameraIcon,
+  ArrowPathIcon,
+  CloudArrowUpIcon,
+  PlusCircleIcon,
+  UserGroupIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
@@ -81,7 +93,7 @@ const ReceiptFormSection: React.FC = () => {
   };
 
   const handleGeneratePDF = () => {
-    alert("جاري توليد ملف PDF وحفظه في سجلات الموظف...");
+    alert(i18n.t("ReceiptFormSection.msg_ad05"));
   };
 
   useEffect(() => {
@@ -133,7 +145,7 @@ const ReceiptFormSection: React.FC = () => {
     console.log("Available Assets:", assets);
 
     if (!selectedEmployee || !selectedAsset) {
-      alert("الرجاء اختيار الموظف والأصل");
+      alert(i18n.t("ReceiptFormSection.msg_c899"));
       return;
     }
 
@@ -144,12 +156,12 @@ const ReceiptFormSection: React.FC = () => {
     console.log("Found Asset:", asset);
 
     if (!employee) {
-      alert("لم يتم العثور على الموظف المختار");
+      alert(i18n.t("ReceiptFormSection.msg_0eef"));
       return;
     }
 
     if (!asset) {
-      alert("لم يتم العثور على الأصل المختار");
+      alert(i18n.t("ReceiptFormSection.msg_3fad"));
       return;
     }
 

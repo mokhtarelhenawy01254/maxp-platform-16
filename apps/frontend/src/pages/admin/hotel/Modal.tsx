@@ -1,5 +1,4 @@
-import { X as XMarkIcon } from 'lucide-react';
-;
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 export const INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
 export const BTN_CLS = "px-4 py-2 rounded-lg text-sm font-medium transition-colors";

@@ -1,6 +1,5 @@
-import { Image as PhotoIcon, Star as StarIcon, List as Bars4Icon, X as XMarkIcon } from 'lucide-react';
 import React from "react";
-;
+import { PhotoIcon, StarIcon, Bars4Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import {
   DndContext,
   closestCenter,

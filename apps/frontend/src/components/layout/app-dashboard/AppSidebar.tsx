@@ -1,11 +1,11 @@
-import { Circle as ArrowUturnLeftIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-;
+import { useTranslation } from 'react-i18next';
+import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import type { SidebarSection } from '../../../types/layout';
 import { useAuth } from '../../../hooks/useAuthSimple';
 import { buildStoreUrl } from '../../../utils/storeUrl';
+import SidebarOrderSearch from '../sidebar/SidebarOrderSearch';
 
 interface AppSidebarProps {
   appName: string;
@@ -168,6 +168,16 @@ const AppSidebarInner: React.FC<AppSidebarProps> = ({
               )}
               {visibleItems.map((item) => {
                 const visibleChildren = item.children?.filter((child) => !child.hidden) ?? [];
+                if (item.kind === "order-search") {
+                  return (
+                    <div key={item.to} className="px-2 py-1">
+                      <SidebarOrderSearch
+                        collapsed={isCollapsed}
+                        onNavigate={onNavigate}
+                      />
+                    </div>
+                  );
+                }
                 const itemContent = (
                   <>
                     {item.icon && React.isValidElement(item.icon)

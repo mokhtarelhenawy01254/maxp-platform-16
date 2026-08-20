@@ -969,6 +969,66 @@ class AnalyticsService {
     }
   }
 
+  async getProductFulfillmentAnalytics(
+    period?: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    try {
+      const params: AnalyticsQueryParams =
+        period && !startDate
+          ? {
+              startDate: (() => {
+                const start = new Date();
+                start.setDate(start.getDate() - (parseInt(period) || 30));
+                return start.toISOString().split("T")[0];
+              })(),
+              endDate: new Date().toISOString().split("T")[0],
+            }
+          : {
+              ...(startDate ? { startDate } : {}),
+              ...(endDate ? { endDate } : {}),
+            };
+      const response = await apiClient.get("/analytics/product-fulfillment", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching product fulfillment analytics:", error);
+      throw error;
+    }
+  }
+
+  async getProductSalesPerformance(
+    period?: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    try {
+      const params: AnalyticsQueryParams =
+        period && !startDate
+          ? {
+              startDate: (() => {
+                const start = new Date();
+                start.setDate(start.getDate() - (parseInt(period) || 30));
+                return start.toISOString().split("T")[0];
+              })(),
+              endDate: new Date().toISOString().split("T")[0],
+            }
+          : {
+              ...(startDate ? { startDate } : {}),
+              ...(endDate ? { endDate } : {}),
+            };
+      const response = await apiClient.get("/analytics/products/sales-performance", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching product sales performance:", error);
+      throw error;
+    }
+  }
+
   async getTeamPerformanceAnalytics(
     period?: string,
     startDate?: string,
@@ -1067,6 +1127,27 @@ class AnalyticsService {
       return response.data;
     } catch (error) {
       console.error("Error fetching returns analytics:", error);
+      throw error;
+    }
+  }
+
+  async getReturnReasonsAnalytics(
+    period?: string,
+    startDate?: string,
+    endDate?: string,
+    category?: string,
+    status?: string,
+  ) {
+    try {
+      const params = this.buildRelativeDateRangeParams(period, startDate, endDate);
+      if (category) params.category = category;
+      if (status) params.status = status;
+      const response = await apiClient.get("/analytics/returns/reasons", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching return reasons analytics:", error);
       throw error;
     }
   }

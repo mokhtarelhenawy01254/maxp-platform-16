@@ -1,6 +1,13 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Building, Building2, ChevronDown, ChevronRight, User, Users } from 'lucide-react';
+import {
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  Users,
+  User,
+  ArrowLeft,
+} from "lucide-react";
 
 interface Department {
   id: string;

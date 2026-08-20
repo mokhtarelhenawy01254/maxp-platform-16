@@ -1,4 +1,4 @@
-﻿const request = require('supertest');
+const request = require('supertest');
 const express = require('express');
 
 const mockAiSdkClient = {
@@ -18,7 +18,7 @@ jest.mock('../../utils/verifyToken', () => ({
 
 const knowledgeQuestionRoutes = require('../../routes/knowledgeQuestionRoutes');
 
-describe('Knowledge Question Routes ΓÇö Train', () => {
+describe('Knowledge Question Routes — Train', () => {
   let app;
 
   beforeEach(() => {

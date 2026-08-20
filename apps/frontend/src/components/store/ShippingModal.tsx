@@ -1,6 +1,5 @@
-import { X as XMarkIcon, Plus as PlusIcon, X as XCircleIcon } from 'lucide-react';
 import React from "react";
-;
+import { XMarkIcon, PlusIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { ShippingZone } from "../../services/storeSettingsService";
 
 interface ShippingModalProps {

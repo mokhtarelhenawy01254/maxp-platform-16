@@ -1,4 +1,4 @@
-﻿-- Add returnTypeId, shippingCompanyId, trackingNumber, receivedStatus, receivedAt, productCondition,
+-- Add returnTypeId, shippingCompanyId, trackingNumber, receivedStatus, receivedAt, productCondition,
 -- shippingReturnCost, settlementAmount columns to return_requests table
 -- Add return_types table
 

@@ -1,9 +1,9 @@
-import { Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/api";
 import { useCompany } from "../../contexts/CompanyContext";
-;
+import { CheckCircleIcon, ArrowPathIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 const COLUMN_OPTIONS = [
   { id: "orderNumber", label: "رقم الطلب", required: true },
@@ -95,14 +95,14 @@ const OrderColumnsSettings: React.FC = () => {
       });
 
       if (response.data?.success) {
-        toast.success("تم تحديث إعداد شريط البحث بنجاح");
+        tToast.success("OrderColumnsSettings.success_update_f41e");
         await refreshCompany(true);
       } else {
-        toast.error("فشل في تحديث إعدادات شريط التنقل");
+        tToast.error("OrderColumnsSettings.failed_update_d0d4");
       }
     } catch (error) {
       console.error("Error updating search toggle:", error);
-      toast.error("حدث خطأ أثناء تحديث الإعدادات");
+      tToast.error("OrderColumnsSettings.error_error_f49e");
     } finally {
       setSavingSearchToggle(false);
     }
@@ -119,10 +119,10 @@ const OrderColumnsSettings: React.FC = () => {
       });
 
       if (response.data?.success) {
-        toast.success("تم حفظ إعدادات الأعمدة بنجاح");
+        tToast.success("OrderColumnsSettings.success_save_ba84");
         await refreshCompany(true);
       } else {
-        toast.error("فشل حفظ الإعدادات");
+        tToast.error("OrderColumnsSettings.failed_save_ed22");
       }
     } catch (error) {
       console.error("Error saving order columns settings:", error);

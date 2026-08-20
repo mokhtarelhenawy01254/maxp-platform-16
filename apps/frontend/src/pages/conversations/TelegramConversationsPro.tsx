@@ -1,11 +1,42 @@
-import { useTranslation } from 'react-i18next';
-import { toast } from 'react-hot-toast';
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { useAuth } from "../../hooks/useAuthSimple";
+import { useTranslation } from "react-i18next";
 import useSocket from "../../hooks/useSocket";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import LinkifiedText from "../../components/common/LinkifiedText";
-import { Bot, Check, CheckCheck, Contact, Download, Edit, File, Forward, Image as ImageIcon, Link, MapPin, MessageCircle, Mic, MoreVertical, Music, Navigation, Paperclip, Pause, Phone, Pin, Play, Reply, Search, Send, Settings, Smile, Trash2, User, Video, Volume2, X } from 'lucide-react';
+import {
+  Send,
+  Paperclip,
+  Smile,
+  MoreVertical,
+  Search,
+  Phone,
+  Check,
+  CheckCheck,
+  MessageCircle,
+  Bot,
+  Settings,
+  User,
+  MapPin,
+  File,
+  Image as ImageIcon,
+  Reply,
+  Forward,
+  Trash2,
+  Mic,
+  X,
+  Video,
+  Music,
+  Map,
+  Contact,
+  Edit,
+  Download,
+  Play,
+  Pause,
+  Volume2,
+} from "lucide-react";
 
 // --- Types ---
 interface Message {
@@ -622,7 +653,7 @@ const TelegramConversationsPro: React.FC = () => {
       toast.success(newStatus ? 'تم تفعيل الرد الآلي' : 'تم إيقاف الرد الآلي');
     } catch (err) {
       console.error(err);
-      toast.error('فشل تحديث حالة الرد الآلي');
+      tToast.error("TelegramConversationsPro.failed_update_status_ffd1");
     }
   };
 

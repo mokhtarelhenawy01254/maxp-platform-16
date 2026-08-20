@@ -14,7 +14,7 @@ import {
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
-import { Eye, Group, Megaphone, Plus, Users, Volume2 } from 'lucide-react';
+import { Plus, Group, Megaphone, UserPlus, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 const TelegramGroups = () => {

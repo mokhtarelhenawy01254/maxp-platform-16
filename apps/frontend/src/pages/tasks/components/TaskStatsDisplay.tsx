@@ -1,6 +1,10 @@
-import { Check as CheckIcon, Circle as ClipboardDocumentListIcon, Clock as ClockIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  CheckIcon,
+  ClipboardDocumentListIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 
 import { BusinessMetricsStrip } from "../../../components/business/BusinessMetrics";
 

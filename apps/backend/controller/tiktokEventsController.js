@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tiktokEventsController.js
  *
  * Company-scoped CRUD + test + track handlers for TikTok Events (Pixel) configs.
@@ -26,7 +26,7 @@ async function listConfigs(req, res) {
     return res.json({ success: true, data: configs.map(sanitizePixelConfig) });
   } catch (error) {
     console.error(LOG_PREFIX, 'listConfigs failed:', error);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ┘ü┘è ╪¼┘ä╪¿ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪¿┘è┘â╪│┘ä TikTok' });
+    return res.status(500).json({ success: false, error: 'فشل في جلب إعدادات بيكسل TikTok' });
   }
 }
 
@@ -35,7 +35,7 @@ async function createConfig(req, res) {
   const { pixelId, pixelName, accessToken, apiEndpoint, testEventCode, isActive } = req.body || {};
 
   if (!pixelId || typeof pixelId !== 'string' || !pixelId.trim()) {
-    return res.status(400).json({ success: false, error: 'pixelId ┘à╪╖┘ä┘ê╪¿' });
+    return res.status(400).json({ success: false, error: 'pixelId مطلوب' });
   }
 
   try {
@@ -54,7 +54,7 @@ async function createConfig(req, res) {
     return res.json({ success: true, data: sanitizePixelConfig(config) });
   } catch (error) {
     console.error(LOG_PREFIX, 'createConfig failed:', error);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪¿┘è┘â╪│┘ä TikTok' });
+    return res.status(500).json({ success: false, error: 'فشل في إنشاء بيكسل TikTok' });
   }
 }
 
@@ -69,7 +69,7 @@ async function updateConfig(req, res) {
       where: { id, companyId },
     });
     if (!existing) {
-      return res.status(404).json({ success: false, error: '╪Ñ╪╣╪»╪º╪» ╪º┘ä╪¿┘è┘â╪│┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(404).json({ success: false, error: 'إعداد البيكسل غير موجود' });
     }
 
     const data = {};
@@ -95,7 +95,7 @@ async function updateConfig(req, res) {
     return res.json({ success: true, data: sanitizePixelConfig(config) });
   } catch (error) {
     console.error(LOG_PREFIX, 'updateConfig failed:', error);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¿┘è┘â╪│┘ä TikTok' });
+    return res.status(500).json({ success: false, error: 'فشل في تحديث بيكسل TikTok' });
   }
 }
 
@@ -109,7 +109,7 @@ async function deleteConfig(req, res) {
       where: { id, companyId },
     });
     if (!existing) {
-      return res.status(404).json({ success: false, error: '╪Ñ╪╣╪»╪º╪» ╪º┘ä╪¿┘è┘â╪│┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(404).json({ success: false, error: 'إعداد البيكسل غير موجود' });
     }
 
     const config = await prisma.tikTokPixelConfig.update({
@@ -119,7 +119,7 @@ async function deleteConfig(req, res) {
     return res.json({ success: true, data: sanitizePixelConfig(config) });
   } catch (error) {
     console.error(LOG_PREFIX, 'deleteConfig failed:', error);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ┘ü┘è ╪¡╪░┘ü ╪¿┘è┘â╪│┘ä TikTok' });
+    return res.status(500).json({ success: false, error: 'فشل في حذف بيكسل TikTok' });
   }
 }
 
@@ -133,7 +133,7 @@ async function testConfig(req, res) {
       where: { id, companyId },
     });
     if (!config) {
-      return res.status(404).json({ success: false, error: '╪Ñ╪╣╪»╪º╪» ╪º┘ä╪¿┘è┘â╪│┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(404).json({ success: false, error: 'إعداد البيكسل غير موجود' });
     }
 
     const service = tiktokEventsManager.buildService(config);
@@ -149,7 +149,7 @@ async function testConfig(req, res) {
     return res.json({ success: true, data: { result, config: sanitizePixelConfig(updated) } });
   } catch (error) {
     console.error(LOG_PREFIX, 'testConfig failed:', error);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ┘ü┘è ╪º╪«╪¬╪¿╪º╪▒ ╪¿┘è┘â╪│┘ä TikTok' });
+    return res.status(500).json({ success: false, error: 'فشل في اختبار بيكسل TikTok' });
   }
 }
 
@@ -158,7 +158,7 @@ async function trackEvent(req, res) {
   const { eventName, userData, properties, eventId } = req.body || {};
 
   if (!eventName || typeof eventName !== 'string' || !eventName.trim()) {
-    return res.status(400).json({ success: false, error: 'eventName ┘à╪╖┘ä┘ê╪¿' });
+    return res.status(400).json({ success: false, error: 'eventName مطلوب' });
   }
 
   try {
@@ -172,7 +172,7 @@ async function trackEvent(req, res) {
     return res.json({ success: true, data: result });
   } catch (error) {
     console.error(LOG_PREFIX, 'trackEvent failed:', error);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ┘ü┘è ╪Ñ╪▒╪│╪º┘ä ╪¡╪»╪½ TikTok' });
+    return res.status(500).json({ success: false, error: 'فشل في إرسال حدث TikTok' });
   }
 }
 

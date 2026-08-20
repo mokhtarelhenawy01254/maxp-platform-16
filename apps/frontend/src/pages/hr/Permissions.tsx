@@ -1,5 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle, AlertTriangle, ArrowRight, Calendar, Check, ChevronLeft, ChevronRight, Clock, Download, Eye, File, FileText, History, Loader2, Plus, Receipt, RefreshCcw, RefreshCw, RotateCcw, Timer, Trash2, X, Zap } from 'lucide-react';
+import {
+  Clock,
+  Plus,
+  Check,
+  X,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Eye,
+  AlertCircle,
+  History,
+  Zap,
+  Timer,
+  Receipt,
+  RefreshCcw,
+  ArrowRight,
+  RotateCcw,
+  Loader2,
+  FileText,
+  Trash2,
+} from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -33,6 +54,7 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { useTranslation } from "react-i18next";
 import api from "../../services/api";
 import { toast } from "sonner";
 
@@ -71,52 +93,53 @@ interface PermissionRequest {
 
 const permissionTypeConfig: Record<
   string,
-  { label: string; icon: any; color: string; description: string }
+  { labelKey: string; icon: any; color: string; descKey: string }
 > = {
   DEDUCTIBLE: {
-    label: "إذن خروج (خصم)",
+    labelKey: "exitDeductible",
     icon: Receipt,
     color: "bg-red-100 text-red-800 border-red-200",
-    description: "إذن مغادرة مخصوم من ساعات العمل الشهرية",
+    descKey: "exitDeductibleDesc",
   },
   NON_DEDUCTIBLE: {
-    label: "إذن طارئ (بدون خصم)",
+    labelKey: "emergencyNonDeductible",
     icon: Zap,
     color: "bg-blue-100 text-blue-800 border-blue-200",
-    description: "إذن مغادرة للحالات الطارئة لا يحتسب كخصم",
+    descKey: "emergencyNonDeductibleDesc",
   },
   FIXED_HOURS: {
-    label: "مأمورية عمل خارجية",
+    labelKey: "externalAssignment",
     icon: Timer,
     color: "bg-purple-100 text-purple-800 border-purple-200",
-    description: "خروج لمهمة عمل رسمية تحتسب ضمن ساعات الدوام",
+    descKey: "externalAssignmentDesc",
   },
   COMPENSATORY: {
-    label: "إذن تعويضي",
+    labelKey: "compensatory",
     icon: RefreshCcw,
     color: "bg-green-100 text-green-800 border-green-200",
-    description: "إذن يتم تعويض ساعاته برصيد إضافي في وقت آخر",
+    descKey: "compensatoryDesc",
   },
 };
 
 const statusConfig: Record<
   string,
-  { label: string; color: string; icon: any }
+  { labelKey: string; color: string; icon: any }
 > = {
   PENDING: {
-    label: "قيد الانتظار",
+    labelKey: "pendingTab",
     color: "bg-yellow-100 text-yellow-800",
     icon: Clock,
   },
   APPROVED: {
-    label: "موافق عليه",
+    labelKey: "approvedStatus",
     color: "bg-green-100 text-green-800",
     icon: Check,
   },
-  REJECTED: { label: "مرفوض", color: "bg-red-100 text-red-800", icon: X },
+  REJECTED: { labelKey: "rejectedStatus", color: "bg-red-100 text-red-800", icon: X },
 };
 
 const Permissions: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const isMyPermissions = location.pathname === "/my-permissions";
 
@@ -206,7 +229,7 @@ const Permissions: React.FC = () => {
       }));
     } catch (error) {
       console.error("Error fetching permissions:", error);
-      toast.error("حدث خطأ أثناء جلب طلبات الأذونات");
+      toast.error(t("employee.permissions.fetchError"));
     } finally {
       setLoading(false);
     }
@@ -234,12 +257,12 @@ const Permissions: React.FC = () => {
   const handleCreate = async () => {
     // Validation
     if (!isMyPermissions && !formData.employeeId) {
-      toast.error("يرجى اختيار الموظف أولاً");
+      toast.error(t("employee.permissions.employeeRequired"));
       return;
     }
 
     if (!formData.reason || formData.reason.trim() === "") {
-      toast.error("يرجى كتابة سبب الاستئذان");
+      toast.error(t("employee.permissions.reasonRequired"));
       return;
     }
 
@@ -260,7 +283,7 @@ const Permissions: React.FC = () => {
       const response = await api.post("/hr/permissions", payload);
 
       if (response.data.success) {
-        toast.success("تم إنشاء طلب الإذن بنجاح");
+        toast.success(t("employee.permissions.createSuccess"));
         setShowAddDialog(false);
         resetForm();
         await Promise.all([fetchPermissions(), fetchStats()]);
@@ -268,7 +291,7 @@ const Permissions: React.FC = () => {
     } catch (error: any) {
       console.error("❌ Error creating permission:", error);
       const errorMessage =
-        error.response?.data?.message || "حدث خطأ أثناء إضافة الطلب";
+        error.response?.data?.message || t("employee.permissions.createError");
 
       if (
         error.response?.data?.errors &&
@@ -279,7 +302,7 @@ const Permissions: React.FC = () => {
           errors[err.field] = err.message;
         });
         setFieldErrors(errors);
-        toast.error("يرجى التحقق من الحقول المطلوبة");
+        toast.error(t("employee.permissions.validationError"));
       } else {
         toast.error(errorMessage);
       }
@@ -291,30 +314,30 @@ const Permissions: React.FC = () => {
   const handleApprove = async (requestId: string) => {
     try {
       await api.post(`/hr/permissions/${requestId}/approve`);
-      toast.success("تمت الموافقة على الإذن");
+      toast.success(t("employee.permissions.approveSuccess"));
       fetchPermissions();
       fetchStats();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء الموافقة");
+      toast.error(error.response?.data?.message || t("employee.permissions.approveError"));
     }
   };
 
   const handleReject = async () => {
     if (!selectedRequest || !rejectionReason) {
-      toast.error("يجب إدخال سبب الرفض");
+      toast.error(t("employee.permissions.rejectReasonRequired"));
       return;
     }
     try {
       await api.post(`/hr/permissions/${selectedRequest.id}/reject`, {
         reason: rejectionReason,
       });
-      toast.success("تم رفض الطلب");
+      toast.success(t("employee.permissions.rejectSuccess"));
       setShowRejectDialog(false);
       setRejectionReason("");
       fetchPermissions();
       fetchStats();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء الرفض");
+      toast.error(error.response?.data?.message || t("employee.permissions.rejectError"));
     }
   };
 
@@ -329,13 +352,13 @@ const Permissions: React.FC = () => {
     try {
       setSubmitting(true);
       await api.delete(`/hr/permissions/${selectedRequest.id}`);
-      toast.success("تم حذف الطلب بنجاح");
+      toast.success(t("employee.permissions.deleteSuccess"));
       setShowDeleteDialog(false);
       setSelectedRequest(null);
       fetchPermissions();
       fetchStats();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء الحذف");
+      toast.error(error.response?.data?.message || t("employee.permissions.deleteError"));
     } finally {
       setSubmitting(false);
     }
@@ -373,11 +396,11 @@ const Permissions: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              أذونات الحضور والانصراف
+              {t("employee.permissions.title")}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
               <History className="h-4 w-4" />
-              {pagination.total} إذن مسجل في النظام
+              {t("employee.permissions.totalRecords", { count: pagination.total })}
             </p>
           </div>
         </div>
@@ -387,14 +410,14 @@ const Permissions: React.FC = () => {
             className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800"
           >
             <Download className="h-4 w-4 ml-2" />
-            تصدير التقارير
+            {t("employee.permissions.export")}
           </Button>
           <Button
             onClick={() => setShowAddDialog(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 dark:shadow-none"
           >
             <Plus className="h-4 w-4 ml-2" />
-            طلب إذن جديد
+            {t("employee.permissions.newPermission")}
           </Button>
         </div>
       </div>
@@ -407,15 +430,15 @@ const Permissions: React.FC = () => {
           </div>
           <CardContent className="p-6 relative">
             <p className="text-amber-100 text-sm font-medium">
-              طلبات في انتظار الموافقة
+              {t("employee.permissions.pendingApproval")}
             </p>
             <div className="flex items-end gap-2 mt-2">
               <h3 className="text-4xl font-bold">{pendingCount}</h3>
-              <span className="text-amber-100 mb-1">طلب</span>
+              <span className="text-amber-100 mb-1">{t("employee.permissions.request")}</span>
             </div>
             <div className="mt-4 flex items-center gap-2 text-xs text-amber-100 bg-white/10 w-fit px-2 py-1 rounded-full">
               <AlertCircle className="h-3 w-3" />
-              يجب الرد عليها بسرعة
+              {t("employee.permissions.respondQuickly")}
             </div>
           </CardContent>
         </Card>
@@ -425,13 +448,13 @@ const Permissions: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                  إجمالي ساعات الاستئذان
+                  {t("employee.permissions.totalHours")}
                 </p>
                 <div className="flex items-end gap-2 mt-2">
                   <h3 className="text-4xl font-bold text-gray-900 dark:text-white">
                     {stats?.totalHours || 0}
                   </h3>
-                  <span className="text-gray-500 mb-1">ساعة</span>
+                  <span className="text-gray-500 mb-1">{t("employee.permissions.hour")}</span>
                 </div>
               </div>
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
@@ -449,7 +472,7 @@ const Permissions: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                  أذونات بخصم
+                  {t("employee.permissions.deductedPermissions")}
                 </p>
                 <h3 className="text-4xl font-bold mt-2 text-red-600 dark:text-red-400">
                   {stats?.byType?.DEDUCTIBLE || 0}
@@ -459,7 +482,7 @@ const Permissions: React.FC = () => {
                 <Receipt className="h-8 w-8 text-red-600 dark:text-red-400" />
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-4">ساعات مخصومة من الراتب</p>
+            <p className="text-xs text-gray-400 mt-4">{t("employee.permissions.deductedFromSalary")}</p>
           </CardContent>
         </Card>
 
@@ -468,7 +491,7 @@ const Permissions: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                  ساعات عمل رسمية
+                  {t("employee.permissions.officialWorkHours")}
                 </p>
                 <h3 className="text-4xl font-bold mt-2 text-purple-600 dark:text-purple-400">
                   {stats?.byType?.FIXED_HOURS || 0}
@@ -478,7 +501,7 @@ const Permissions: React.FC = () => {
                 <Timer className="h-8 w-8 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-4">مأموريات وعمل خارجي</p>
+            <p className="text-xs text-gray-400 mt-4">{t("employee.permissions.assignments")}</p>
           </CardContent>
         </Card>
       </div>
@@ -497,36 +520,36 @@ const Permissions: React.FC = () => {
                   value="all"
                   className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900 data-[state=active]:shadow-sm"
                 >
-                  الكل
+                  {t("employee.permissions.all")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="pending"
                   className="relative data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900 data-[state=active]:shadow-sm"
                 >
-                  قيد الانتظار
+                  {t("employee.permissions.pendingTab")}
                   {pendingCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold ring-2 ring-white dark:ring-gray-900 animate-pulse">
                       {pendingCount}
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="approved">الموافق عليها</TabsTrigger>
-                <TabsTrigger value="rejected">المرفوضة</TabsTrigger>
+                <TabsTrigger value="approved">{t("employee.permissions.approvedTab")}</TabsTrigger>
+                <TabsTrigger value="rejected">{t("employee.permissions.rejectedTab")}</TabsTrigger>
               </TabsList>
             </Tabs>
 
             <div className="flex items-center gap-3">
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-[180px] bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700">
-                  <SelectValue placeholder="نوع الإذن" />
+                  <SelectValue placeholder={t("employee.permissions.typePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">كل الأنواع</SelectItem>
+                  <SelectItem value="all">{t("employee.permissions.allTypes")}</SelectItem>
                   {Object.entries(permissionTypeConfig).map(([key, config]) => (
                     <SelectItem key={key} value={key}>
                       <div className="flex items-center gap-2">
                         <config.icon className="h-4 w-4" />
-                        <span>{config.label}</span>
+                        <span>{t(`employee.permissions.${config.labelKey}`)}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -540,7 +563,7 @@ const Permissions: React.FC = () => {
               <div className="flex flex-col items-center justify-center h-80 gap-3">
                 <div className="animate-spin rounded-full h-10 w-10 border-[3px] border-blue-600 border-t-transparent"></div>
                 <p className="text-gray-500 text-sm animate-pulse">
-                  جاري تحميل البيانات...
+                  {t("employee.permissions.loading")}
                 </p>
               </div>
             ) : requests.length === 0 ? (
@@ -548,9 +571,9 @@ const Permissions: React.FC = () => {
                 <div className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-full mb-4">
                   <Calendar className="h-12 w-12 opacity-20" />
                 </div>
-                <p className="text-lg">لا توجد طلبات أذونات متاحة</p>
+                <p className="text-lg">{t("employee.permissions.noPermissions")}</p>
                 <Button variant="link" onClick={() => setShowAddDialog(true)}>
-                  قم بإنشاء أول طلب إذن الآن
+                  {t("employee.permissions.noPermissionsHint")}
                 </Button>
               </div>
             ) : (
@@ -559,26 +582,26 @@ const Permissions: React.FC = () => {
                   <TableRow className="border-none">
                     {!isMyPermissions && (
                       <TableHead className="text-right font-bold py-4">
-                        الموظف
+                        {t("employee.permissions.colEmployee")}
                       </TableHead>
                     )}
                     <TableHead className="text-right font-bold">
-                      نوع الإذن
+                      {t("employee.permissions.colType")}
                     </TableHead>
                     <TableHead className="text-right font-bold">
-                      التاريخ
+                      {t("employee.permissions.colDate")}
                     </TableHead>
                     <TableHead className="text-right font-bold">
-                      الوقت (من - إلى)
+                      {t("employee.permissions.colTime")}
                     </TableHead>
                     <TableHead className="text-right font-bold">
-                      المدة
+                      {t("employee.permissions.colDuration")}
                     </TableHead>
                     <TableHead className="text-right font-bold">
-                      الحالة
+                      {t("employee.permissions.colStatus")}
                     </TableHead>
                     <TableHead className="text-left font-bold pl-6">
-                      الإجراءات
+                      {t("employee.permissions.colActions")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -612,7 +635,7 @@ const Permissions: React.FC = () => {
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
                                   {request.employee?.department?.name ||
-                                    "بدون قسم"}{" "}
+                                    t("employee.permissions.noDepartment")}{" "}
                                   • {request.employee?.employeeNumber}
                                 </p>
                               </div>
@@ -624,7 +647,7 @@ const Permissions: React.FC = () => {
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit text-xs font-semibold border ${typeConfig.color}`}
                           >
                             <TypeIcon className="h-4 w-4" />
-                            {typeConfig.label}
+                            {t(`employee.permissions.${typeConfig.labelKey}`)}
                           </div>
                         </TableCell>
                         <TableCell className="font-medium">
@@ -639,7 +662,7 @@ const Permissions: React.FC = () => {
                             <span className="font-bold text-gray-900 dark:text-white">
                               {request.startTime}
                             </span>
-                            <span className="text-xs">إلى</span>
+                            <span className="text-xs">{t("employee.permissions.timeDelimiter")}</span>
                             <span className="font-bold text-gray-900 dark:text-white">
                               {request.endTime}
                             </span>
@@ -650,7 +673,7 @@ const Permissions: React.FC = () => {
                             <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded font-bold">
                               {request.totalHours}
                             </span>
-                            <span className="text-xs text-gray-500">ساعة</span>
+                            <span className="text-xs text-gray-500">{t("employee.permissions.hour")}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -658,7 +681,7 @@ const Permissions: React.FC = () => {
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full w-fit text-[10px] uppercase tracking-wider font-bold ${status.color}`}
                           >
                             <status.icon className="h-3.5 w-3.5" />
-                            {status.label}
+                            {t(`employee.permissions.${status.labelKey}`)}
                           </div>
                         </TableCell>
                         <TableCell className="pl-6">
@@ -670,7 +693,7 @@ const Permissions: React.FC = () => {
                                     size="sm"
                                     className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 rounded-lg shadow-sm"
                                     onClick={() => handleApprove(request.id)}
-                                    title="موافقة"
+                                    title={t("employee.permissions.approve")}
                                   >
                                     <Check className="h-4 w-4 text-white" />
                                   </Button>
@@ -682,7 +705,7 @@ const Permissions: React.FC = () => {
                                       setSelectedRequest(request);
                                       setShowRejectDialog(true);
                                     }}
-                                    title="رفض"
+                                    title={t("employee.permissions.reject")}
                                   >
                                     <X className="h-4 w-4 text-white" />
                                   </Button>
@@ -705,7 +728,7 @@ const Permissions: React.FC = () => {
                                 variant="ghost"
                                 className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 rounded-lg"
                                 onClick={() => handleDelete(request)}
-                                title="حذف"
+                                title={t("employee.permissions.delete")}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -724,22 +747,11 @@ const Permissions: React.FC = () => {
           {pagination.totalPages > 1 && (
             <div className="flex items-center justify-between p-6 bg-gray-50/50 dark:bg-gray-800/10 border-t border-gray-100 dark:border-gray-800">
               <p className="text-sm text-gray-500">
-                عرض{" "}
-                <span className="font-bold text-gray-900 dark:text-white">
-                  {(pagination.page - 1) * pagination.limit + 1}
-                </span>{" "}
-                إلى{" "}
-                <span className="font-bold text-gray-900 dark:text-white">
-                  {Math.min(
-                    pagination.page * pagination.limit,
-                    pagination.total,
-                  )}
-                </span>{" "}
-                من أصل{" "}
-                <span className="font-bold text-gray-900 dark:text-white">
-                  {pagination.total}
-                </span>{" "}
-                طلب
+                {t("employee.permissions.showing", {
+                  from: (pagination.page - 1) * pagination.limit + 1,
+                  to: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total,
+                })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -752,7 +764,7 @@ const Permissions: React.FC = () => {
                   }
                 >
                   <ChevronRight className="h-4 w-4 ml-1" />
-                  السابق
+                  {t("employee.permissions.previous")}
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from(
@@ -781,7 +793,7 @@ const Permissions: React.FC = () => {
                     setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
                   }
                 >
-                  التالي
+                  {t("employee.permissions.next")}
                   <ChevronLeft className="h-4 w-4 mr-1" />
                 </Button>
               </div>
@@ -799,10 +811,10 @@ const Permissions: React.FC = () => {
             <div className="relative z-10">
               <DialogTitle className="text-2xl font-bold flex items-center justify-end gap-2">
                 <Plus className="h-6 w-6" />
-                طلب إذن/استئذان جديد
+                {t("employee.permissions.dialogTitle")}
               </DialogTitle>
               <DialogDescription className="text-blue-100 mt-1">
-                يرجى تحديد نوع الإذن وفترة الغياب المطلوبة
+                {t("employee.permissions.dialogDesc")}
               </DialogDescription>
             </div>
             <Clock className="absolute -left-10 -bottom-10 h-40 w-40 text-blue-500 opacity-20 rotate-12" />
@@ -812,7 +824,7 @@ const Permissions: React.FC = () => {
             {!isMyPermissions && (
               <div className="space-y-2">
                 <Label className="text-right block font-bold text-gray-700 dark:text-gray-300">
-                  الموظف
+                  {t("employee.permissions.employeeLabel")}
                 </Label>
                 <Select
                   value={formData.employeeId}
@@ -821,7 +833,7 @@ const Permissions: React.FC = () => {
                   }
                 >
                   <SelectTrigger className="bg-gray-50/50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 h-12 text-right">
-                    <SelectValue placeholder="اختر الموظف" />
+                    <SelectValue placeholder={t("employee.permissions.employeePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[250px] p-2">
                     {employees.map((e) => (
@@ -854,7 +866,7 @@ const Permissions: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 space-y-2">
                 <Label className="text-right block font-bold text-gray-700 dark:text-gray-300">
-                  نوع الإذن
+                  {t("employee.permissions.typeLabel")}
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
                   {Object.entries(permissionTypeConfig).map(([key, config]) => (
@@ -881,10 +893,10 @@ const Permissions: React.FC = () => {
                       <p
                         className={`font-bold text-sm mt-1 ${formData.type === key ? "text-blue-700 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"}`}
                       >
-                        {config.label}
+                        {t(`employee.permissions.${config.labelKey}`)}
                       </p>
                       <p className="text-[10px] text-gray-400 leading-tight">
-                        {config.description}
+                        {t(`employee.permissions.${config.descKey}`)}
                       </p>
                     </div>
                   ))}
@@ -893,7 +905,7 @@ const Permissions: React.FC = () => {
 
               <div className="space-y-2">
                 <Label className="text-right block font-bold text-gray-700 dark:text-gray-300">
-                  التاريخ
+                  {t("employee.permissions.dateLabel")}
                 </Label>
                 <Input
                   type="date"
@@ -907,7 +919,7 @@ const Permissions: React.FC = () => {
 
               <div className="space-y-2">
                 <Label className="text-right block font-bold text-gray-700 dark:text-gray-300">
-                  درجة الأهمية
+                  {t("employee.permissions.urgencyLabel")}
                 </Label>
                 <div className="flex gap-2 h-12">
                   <Button
@@ -918,14 +930,14 @@ const Permissions: React.FC = () => {
                       setFormData({ ...formData, isUrgent: !formData.isUrgent })
                     }
                   >
-                    {formData.isUrgent ? "إذن عاجل جداً" : "إذن عادي"}
+                    {formData.isUrgent ? t("employee.permissions.urgent") : t("employee.permissions.normal")}
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-right block font-bold text-gray-700 dark:text-gray-300">
-                  ساعة الخروج
+                  {t("employee.permissions.exitTime")}
                 </Label>
                 <Input
                   type="time"
@@ -939,7 +951,7 @@ const Permissions: React.FC = () => {
 
               <div className="space-y-2">
                 <Label className="text-right block font-bold text-gray-700 dark:text-gray-300">
-                  ساعة العودة
+                  {t("employee.permissions.returnTime")}
                 </Label>
                 <Input
                   type="time"
@@ -957,7 +969,7 @@ const Permissions: React.FC = () => {
                     {calculateHours(formData.startTime, formData.endTime)}
                   </p>
                   <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">
-                    إجمالي الساعات
+                    {t("employee.permissions.totalHoursLabel")}
                   </p>
                 </div>
                 <Timer className="h-10 w-10 text-gray-200 dark:text-gray-800" />
@@ -965,10 +977,10 @@ const Permissions: React.FC = () => {
 
               <div className="col-span-2 space-y-2">
                 <Label className="text-right block font-bold text-gray-700 dark:text-gray-300">
-                  سبب الاستئذان
+                  {t("employee.permissions.reasonLabel")}
                 </Label>
                 <Textarea
-                  placeholder="يرجى كتابة سبب طلب الإذن بالتفصيل..."
+                  placeholder={t("employee.permissions.reasonPlaceholder")}
                   value={formData.reason}
                   onChange={(e) =>
                     setFormData({ ...formData, reason: e.target.value })
@@ -979,10 +991,10 @@ const Permissions: React.FC = () => {
 
               <div className="col-span-2 space-y-2">
                 <Label className="text-right block font-bold text-gray-700 dark:text-gray-300">
-                  رابط المستندات الداعمة (اختياري)
+                  {t("employee.permissions.documentsLink")}
                 </Label>
                 <Input
-                  placeholder="رابط ملف (Google Drive, Dropbox, إلخ)"
+                  placeholder={t("employee.permissions.documentsPlaceholder")}
                   value={formData.attachments}
                   onChange={(e) =>
                     setFormData({ ...formData, attachments: e.target.value })
@@ -990,7 +1002,7 @@ const Permissions: React.FC = () => {
                   className="h-12 bg-gray-50/50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-right rounded-2xl p-4"
                 />
                 <p className="text-[10px] text-gray-400 text-right pr-2">
-                  يمكنك رفع ملفك والحصول على رابط مشاركة ووضعه هنا لتدعيم طلبك
+                  {t("employee.permissions.documentsHint")}
                 </p>
               </div>
             </div>
@@ -1003,7 +1015,7 @@ const Permissions: React.FC = () => {
               onClick={() => setShowAddDialog(false)}
               disabled={submitting}
             >
-              إلغاء
+              {t("employee.permissions.cancelButton")}
             </Button>
             <Button
               className={`flex-1 h-12 rounded-xl shadow-xl transition-all ${submitting ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none font-bold"}`}
@@ -1013,10 +1025,10 @@ const Permissions: React.FC = () => {
               {submitting ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>جاري الإرسال...</span>
+                  <span>{t("employee.permissions.sending")}</span>
                 </div>
               ) : (
-                "إرسال الطلب الآن"
+                t("employee.permissions.submitButton")
               )}
             </Button>
           </div>
@@ -1039,10 +1051,10 @@ const Permissions: React.FC = () => {
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-4">
                     <Badge className="bg-white/20 hover:bg-white/30 text-white border-none">
-                      {statusConfig[selectedRequest.status].label}
+                      {t(`employee.permissions.${statusConfig[selectedRequest.status].labelKey}`)}
                     </Badge>
                     <DialogTitle className="text-2xl font-bold flex items-center justify-end gap-2">
-                      تفاصيل طلب الإذن
+                      {t("employee.permissions.detailsTitle")}
                     </DialogTitle>
                   </div>
                   <div className="flex items-center gap-4 justify-end">
@@ -1076,7 +1088,7 @@ const Permissions: React.FC = () => {
               <div className="p-6 space-y-6" dir="rtl">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                    <p className="text-xs text-gray-500 mb-1">تاريخ الطلب</p>
+                    <p className="text-xs text-gray-500 mb-1">{t("employee.permissions.requestDate")}</p>
                     <p className="font-bold flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-blue-500" />
                       {new Date(selectedRequest.date).toLocaleDateString(
@@ -1090,14 +1102,14 @@ const Permissions: React.FC = () => {
                     </p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                    <p className="text-xs text-gray-500 mb-1">نوع الإذن</p>
+                    <p className="text-xs text-gray-500 mb-1">{t("employee.permissions.permissionType")}</p>
                     <p className="font-bold flex items-center gap-2">
                       {React.createElement(
                         permissionTypeConfig[selectedRequest.type]?.icon ||
                         History,
                         { className: "h-4 w-4 text-purple-500" },
                       )}
-                      {permissionTypeConfig[selectedRequest.type]?.label}
+                      {t(`employee.permissions.${permissionTypeConfig[selectedRequest.type]?.labelKey}`)}
                     </p>
                   </div>
                 </div>
@@ -1106,19 +1118,19 @@ const Permissions: React.FC = () => {
                   <div className="flex items-center justify-between mb-4">
                     <Timer className="h-5 w-5 text-blue-600" />
                     <p className="font-bold text-blue-900 dark:text-blue-100">
-                      فترة الاستئذان
+                      {t("employee.permissions.permissionPeriod")}
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-8 py-2">
                     <div className="text-center">
-                      <p className="text-xs text-gray-500 mb-1">وقت الخروج</p>
+                      <p className="text-xs text-gray-500 mb-1">{t("employee.permissions.exitTimeLabel")}</p>
                       <p className="text-2xl font-black text-blue-600">
                         {selectedRequest.startTime}
                       </p>
                     </div>
                     <ArrowRight className="h-5 w-5 text-gray-300 rotate-180" />
                     <div className="text-center">
-                      <p className="text-xs text-gray-500 mb-1">وقت العودة</p>
+                      <p className="text-xs text-gray-500 mb-1">{t("employee.permissions.returnTimeLabel")}</p>
                       <p className="text-2xl font-black text-blue-600">
                         {selectedRequest.endTime}
                       </p>
@@ -1126,10 +1138,10 @@ const Permissions: React.FC = () => {
                   </div>
                   <div className="mt-4 pt-4 border-t border-blue-100 dark:border-blue-900/30 flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400 font-medium text-right">
-                      إجمالي الساعات
+                    {t("employee.permissions.totalHoursLabel")}
                     </span>
                     <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                      {selectedRequest.totalHours} ساعة
+                      {selectedRequest.totalHours} {t("employee.permissions.hour")}
                     </span>
                   </div>
                 </div>
@@ -1137,7 +1149,7 @@ const Permissions: React.FC = () => {
                 <div className="space-y-4">
                   <div className="text-right">
                     <Label className="text-gray-500 text-xs mb-2 block">
-                      سبب الاستئذان
+                      {t("employee.permissions.reasonDetail")}
                     </Label>
                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 font-medium leading-relaxed">
                       {selectedRequest.reason}
@@ -1147,7 +1159,7 @@ const Permissions: React.FC = () => {
                   {selectedRequest.attachments && (
                     <div className="text-right">
                       <Label className="text-gray-500 text-xs mb-2 block">
-                        المستندات المرفقة
+                        {t("employee.permissions.attachments")}
                       </Label>
                       <a
                         href={selectedRequest.attachments}
@@ -1156,7 +1168,7 @@ const Permissions: React.FC = () => {
                         className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-bold bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-800 transition-colors"
                       >
                         <FileText className="h-4 w-4" />
-                        عرض الملف المرفق
+                        {t("employee.permissions.viewFile")}
                       </a>
                     </div>
                   )}
@@ -1165,7 +1177,7 @@ const Permissions: React.FC = () => {
                     selectedRequest.rejectionReason && (
                       <div className="text-right">
                         <Label className="text-red-500 text-xs mb-2 block">
-                          سبب الرفض
+                          {t("employee.permissions.rejectReason")}
                         </Label>
                         <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-800 text-red-700 dark:text-red-400 font-bold">
                           {selectedRequest.rejectionReason}
@@ -1176,8 +1188,7 @@ const Permissions: React.FC = () => {
                   {selectedRequest.approvedBy && (
                     <div className="flex items-center justify-end gap-2 text-xs text-gray-500 mt-4">
                       <span>
-                        تمت المراجعة بواسطة: {selectedRequest.approvedBy.firstName}{" "}
-                        {selectedRequest.approvedBy.lastName}
+                        {t("employee.permissions.reviewedBy", { name: `${selectedRequest.approvedBy.firstName} ${selectedRequest.approvedBy.lastName}` })}
                       </span>
                       <Check className="h-3 w-3 text-green-500" />
                     </div>
@@ -1191,7 +1202,7 @@ const Permissions: React.FC = () => {
                   className="flex-1 h-11 rounded-xl"
                   onClick={() => setShowDetailsDialog(false)}
                 >
-                  إغلاق
+                  {t("employee.permissions.closeButton")}
                 </Button>
                 {selectedRequest.status === "PENDING" && !isMyPermissions && (
                   <div className="flex gap-2 flex-[2]">
@@ -1203,7 +1214,7 @@ const Permissions: React.FC = () => {
                         setShowRejectDialog(true);
                       }}
                     >
-                      رفض
+                      {t("employee.permissions.rejectButton")}
                     </Button>
                     <Button
                       className="flex-1 h-11 rounded-xl bg-green-600 hover:bg-green-700 font-bold"
@@ -1212,7 +1223,7 @@ const Permissions: React.FC = () => {
                         setShowDetailsDialog(false);
                       }}
                     >
-                      موافقة
+                      {t("employee.permissions.approveButton")}
                     </Button>
                   </div>
                 )}
@@ -1229,15 +1240,15 @@ const Permissions: React.FC = () => {
               <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
             <DialogTitle className="text-center font-bold text-xl">
-              رفض طلب الإذن
+              {t("employee.permissions.rejectDialogTitle")}
             </DialogTitle>
             <DialogDescription className="text-center">
-              يرجى كتابة سبب الرفض لإخطار الموظف
+              {t("employee.permissions.rejectDialogDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <Textarea
-              placeholder="اكتب سبب الرفض هنا..."
+              placeholder={t("employee.permissions.rejectPlaceholder")}
               className="text-right h-32 rounded-xl bg-gray-50/50 dark:bg-gray-900 border-gray-100 dark:border-gray-800"
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
@@ -1249,14 +1260,14 @@ const Permissions: React.FC = () => {
               className="flex-1 h-11 rounded-xl"
               onClick={handleReject}
             >
-              تأكيد الرفض
+              {t("employee.permissions.confirmReject")}
             </Button>
             <Button
               variant="outline"
               className="flex-1 h-11 rounded-xl"
               onClick={() => setShowRejectDialog(false)}
             >
-              تراجع
+              {t("employee.permissions.backButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1268,10 +1279,10 @@ const Permissions: React.FC = () => {
               <Trash2 className="h-8 w-8 text-red-600" />
             </div>
             <DialogTitle className="text-center font-bold text-xl">
-              حذف طلب الإذن
+              {t("employee.permissions.deleteTitle")}
             </DialogTitle>
             <DialogDescription className="text-center">
-              هل أنت متأكد من رغبتك في حذف هذا الطلب؟ لا يمكن التراجع عن هذه العملية بعد إتمامها.
+              {t("employee.permissions.deleteConfirm")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-row-reverse gap-3 mt-4">
@@ -1284,10 +1295,10 @@ const Permissions: React.FC = () => {
               {submitting ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>جاري الحذف...</span>
+                  <span>{t("employee.permissions.deleting")}</span>
                 </div>
               ) : (
-                "تأكيد الحذف النهائي"
+                t("employee.permissions.confirmDelete")
               )}
             </Button>
             <Button
@@ -1299,7 +1310,7 @@ const Permissions: React.FC = () => {
               }}
               disabled={submitting}
             >
-              إلغاء التراجع
+              {t("employee.permissions.cancelDelete")}
             </Button>
           </DialogFooter>
         </DialogContent>

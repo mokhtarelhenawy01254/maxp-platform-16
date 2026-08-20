@@ -1,6 +1,6 @@
-import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { Globe, Inbox, Loader2, Mail, MapPin, Pin, ShoppingBag, Star, Store } from 'lucide-react';
+import { Loader2, ShoppingBag, MapPin, Store, Globe, Star, Inbox } from 'lucide-react';
 import axios from 'axios';
 
 const platformIcons = {

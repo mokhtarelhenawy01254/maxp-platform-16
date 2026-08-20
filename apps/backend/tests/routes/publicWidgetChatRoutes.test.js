@@ -1,4 +1,4 @@
-﻿const request = require('supertest');
+const request = require('supertest');
 const express = require('express');
 
 jest.mock('../../middleware/subdomainMiddleware', () => ({
@@ -42,19 +42,19 @@ describe('Public Widget Chat Routes', () => {
 
   it('POST /chat calls the AI pipeline with channel web_chat', async () => {
     aiSdkClient.sendChatMessage.mockResolvedValue({
-      reply: '┘à╪▒╪¡╪¿╪º┘ï! ┘â┘è┘ü ╪ú╪│╪º╪╣╪»┘â╪ƒ',
+      reply: 'مرحباً! كيف أساعدك؟',
       threadId: 'thread-1',
       status: 'ok',
     });
 
-    const res = await request(app).post('/chat').send({ message: '┘à╪▒╪¡╪¿╪º' });
+    const res = await request(app).post('/chat').send({ message: 'مرحبا' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.reply).toBe('┘à╪▒╪¡╪¿╪º┘ï! ┘â┘è┘ü ╪ú╪│╪º╪╣╪»┘â╪ƒ');
+    expect(res.body.reply).toBe('مرحباً! كيف أساعدك؟');
     expect(aiSdkClient.sendChatMessage).toHaveBeenCalledWith({
       companyId: 'company-123',
       customerId: expect.stringMatching(/^widget_guest_/),
-      message: '┘à╪▒╪¡╪¿╪º',
+      message: 'مرحبا',
       threadId: null,
       channel: 'web_chat',
     });
@@ -92,7 +92,7 @@ describe('Public Widget Chat Routes', () => {
 
   it('POST /chat propagates AI service errors as 500', async () => {
     aiSdkClient.sendChatMessage.mockRejectedValue(new Error('AI down'));
-    const res = await request(app).post('/chat').send({ message: '┘à╪▒╪¡╪¿╪º' });
+    const res = await request(app).post('/chat').send({ message: 'مرحبا' });
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
   });

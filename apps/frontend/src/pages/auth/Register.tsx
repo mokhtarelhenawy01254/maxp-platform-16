@@ -1,12 +1,11 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Briefcase, Building, Building2, Check, ChevronDown, Eye, EyeOff, Folder, Globe2, Lock, Mail, Phone, User } from 'lucide-react';
+import { Building2, Lock, Mail, Phone, User, Eye, EyeOff, Globe2, Briefcase, ChevronDown, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
-import { getPostAuthDestination } from "../../utils/authRouting";
 import { getApiUrl } from "../../config/environment";
 
 interface BusinessSpecialty {
@@ -139,7 +138,7 @@ const BusinessTypeSelect: React.FC<BusinessTypeSelectProps> = ({
   );
 };
 
-const NEW_ACCOUNT_DESTINATION = "/marketplace";
+const NEW_ACCOUNT_DESTINATION = "/my-apps";
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;
@@ -163,7 +162,7 @@ const copyByLanguage = {
       fullName: "الاسم بالكامل",
       companyName: "اسم الشركة",
       email: "البريد الإلكتروني",
-      phone: "رقم الهاتف (اختياري)",
+      phone: "رقم الهاتف",
       password: "كلمة المرور",
       businessType: "نوع النشاط التجاري",
     },
@@ -179,6 +178,7 @@ const copyByLanguage = {
       companyName: "اسم الشركة مطلوب",
       email: "البريد الإلكتروني مطلوب",
       password: "كلمة المرور مطلوبة",
+      phoneRequired: "رقم الهاتف مطلوب",
       phone: "رقم الهاتف غير صحيح (01xxxxxxxxx)",
       register: "فشل في إنشاء الحساب",
     },
@@ -195,7 +195,7 @@ const copyByLanguage = {
       fullName: "Full name",
       companyName: "Company name",
       email: "Email",
-      phone: "Phone (optional)",
+      phone: "Phone",
       password: "Password",
       businessType: "Business type",
     },
@@ -211,6 +211,7 @@ const copyByLanguage = {
       companyName: "Company name is required",
       email: "Email is required",
       password: "Password is required",
+      phoneRequired: "Phone number is required",
       phone: "Invalid Egyptian phone number (01xxxxxxxxx)",
       register: "Failed to create account",
     },
@@ -284,7 +285,9 @@ const Register: React.FC = () => {
     if (!formData.companyName.trim()) errors.companyName = copy.errors.companyName;
     if (!formData.email.trim()) errors.email = copy.errors.email;
     if (!formData.password) errors.password = copy.errors.password;
-    if (formData.phone) {
+    if (!formData.phone.trim()) {
+      errors.phone = copy.errors.phoneRequired;
+    } else {
       const phoneClean = formData.phone.replace(/\s+/g, "");
       const egyptPhoneRegex = /^(\+20|0020|0)?1[0125][0-9]{8}$/;
       if (!egyptPhoneRegex.test(phoneClean)) errors.phone = copy.errors.phone;
@@ -318,7 +321,14 @@ const Register: React.FC = () => {
       const redirectParam = urlParams.get("redirect");
       const source = urlParams.get("source");
       const action = urlParams.get("action");
-      const postAuthDest = getPostAuthDestination(userData);
+      const postAuthDest =
+        userData?.role === "MERCHANT"
+          ? "/merchant-portal"
+          : userData?.role === "AFFILIATE"
+            ? "/affiliates/dashboard"
+            : userData?.role === "SUPER_ADMIN"
+              ? "/super-admin/dev-dashboard"
+              : NEW_ACCOUNT_DESTINATION;
 
       const SOURCE_TO_BUNDLE: Record<string, string> = {
         messaging: "messaging-bundle",
@@ -446,7 +456,7 @@ const Register: React.FC = () => {
         <div className="elite-input-group">
           <label className="elite-label">{copy.labels.phone}</label>
           <div className="elite-input-wrapper">
-            <input name="phone" type="tel" value={formData.phone} onChange={handleChange} className={`elite-input ${fieldErrors.phone ? "elite-input-error" : ""}`} placeholder={copy.placeholders.phone} disabled={isLoading} />
+            <input name="phone" type="tel" value={formData.phone} onChange={handleChange} required className={`elite-input ${fieldErrors.phone ? "elite-input-error" : ""}`} placeholder={copy.placeholders.phone} disabled={isLoading} />
             <Phone className="elite-input-icon" />
           </div>
           {fieldErrors.phone && <p className="elite-field-error">{fieldErrors.phone}</p>}

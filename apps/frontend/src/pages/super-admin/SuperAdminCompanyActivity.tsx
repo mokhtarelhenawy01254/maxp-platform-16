@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "../../components/ui/button";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { Activity, Building, Building2, ChevronLeft, ChevronRight, RefreshCw, Search, Skull, Zap } from 'lucide-react';
+import { Search, RefreshCw, Building2, Activity, Zap, Skull, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "../../components/ui/input";
 
 const PAGE_SIZE = 25;

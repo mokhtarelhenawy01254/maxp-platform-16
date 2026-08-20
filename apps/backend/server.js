@@ -46,6 +46,7 @@ const FRONTEND_STATIC_PREFIXES = [
   "/landing-pages/",
   "/placeholders/",
   "/previews/",
+  "/sounds/",
 ];
 
 const FRONTEND_STATIC_EXACT_PATHS = new Set([
@@ -64,6 +65,13 @@ const createFrontendStaticFallback = () => {
       index: false,
       maxAge: "30d",
       immutable: false,
+      // Service worker files must never be cached aggressively by the CDN/browser,
+      // otherwise clients stay pinned to a stale build (old precache) for up to 30d.
+      setHeaders: (res, filePath) => {
+        if (/sw\.js$/.test(filePath)) {
+          res.setHeader("Cache-Control", "no-cache");
+        }
+      },
     }),
   );
 
@@ -107,6 +115,7 @@ const {
   getReasonMessage,
   isWhatsAppBaileysConnectionClosed,
   isGramJsResolveError,
+  countSwallowedRejection,
 } = require("./utils/recoverableUnhandledRejection");
 
 
@@ -128,11 +137,17 @@ process.on("uncaughtException", async (error) => {
 process.on("unhandledRejection", async (reason, promise) => {
   const msg = getReasonMessage(reason);
   if (isWhatsAppBaileysConnectionClosed(reason)) {
-    console.warn("⚠️ [SERVER] Recoverable WhatsApp socket rejection ignored:", msg);
+    const total = countSwallowedRejection();
+    if (total) {
+      console.warn(`⚠️ [SERVER] Swallowed ${total} WhatsApp socket rejections in the last minute (recoverable, but watch for a half-dead socket)`);
+    }
     return;
   }
   if (isGramJsResolveError(reason)) {
-    console.warn("⚠️ [SERVER] Recoverable GramJS resolve rejection ignored:", msg);
+    const total = countSwallowedRejection();
+    if (total) {
+      console.warn(`⚠️ [SERVER] Swallowed ${total} GramJS resolve rejections in the last minute`);
+    }
     return;
   }
 
@@ -195,6 +210,38 @@ const bookingServicesRoutes = require("./routes/bookingServicesRoutes");
 const bookingAppointmentsRoutes = require("./routes/bookingAppointmentsRoutes");
 const bookingDraftRoutes = require("./routes/bookingDraftRoutes");
 const bookingReportsRoutes = require("./routes/bookingReportsRoutes");
+const bookingPatientsRoutes = require("./routes/bookingPatientsRoutes");
+const bookingReferringPhysiciansRoutes = require("./routes/bookingReferringPhysiciansRoutes");
+const bookingInvoicesRoutes = require("./routes/bookingInvoicesRoutes");
+const bookingDoctorAvailabilityRoutes = require("./routes/bookingDoctorAvailabilityRoutes");
+const bookingDoctorPortalRoutes = require("./routes/bookingDoctorPortalRoutes");
+const bookingPatientPortalRoutes = require("./routes/bookingPatientPortalRoutes");
+const bookingPriceListsRoutes = require("./routes/bookingPriceListsRoutes");
+const bookingWorkflowRoutes = require("./routes/bookingWorkflowRoutes");
+const bookingOperationsRoutes = require("./routes/bookingOperationsRoutes");
+const bookingInsuranceCompaniesRoutes = require("./routes/bookingInsuranceCompaniesRoutes");
+const bookingInsuranceMemberTypesRoutes = require("./routes/bookingInsuranceMemberTypesRoutes");
+const bookingPatientDocumentsRoutes = require("./routes/bookingPatientDocumentsRoutes");
+const labTestsRoutes = require("./routes/labTestsRoutes");
+const labOrdersRoutes = require("./routes/labOrdersRoutes");
+const labCulturesRoutes = require("./routes/labCulturesRoutes");
+const labContractsRoutes = require("./routes/labContractsRoutes");
+const labHomeVisitsRoutes = require("./routes/labHomeVisitsRoutes");
+const labSampleTypesRoutes = require("./routes/labSampleTypesRoutes");
+const radiologyRoutes = require("./routes/radiologyRoutes");
+const radiologyInsuranceRoutes = require("./routes/radiologyInsuranceRoutes");
+const radiologyQuoteRoutes = require("./routes/radiologyQuoteRoutes");
+const radiologyRadiologistsRoutes = require("./routes/radiologyRadiologistsRoutes");
+const radiologyReportRolesRoutes = require("./routes/radiologyReportRolesRoutes");
+const radiologyTagsRoutes = require("./routes/radiologyTagsRoutes");
+const radiologyLabelsRoutes = require("./routes/radiologyLabelsRoutes");
+const radiologyAdminRoutes = require("./routes/radiologyAdminRoutes");
+const radiologyAiReportRoutes = require("./routes/radiologyAiReportRoutes");
+const radiologyCriticalFindingsRoutes = require("./routes/radiologyCriticalFindingsRoutes");
+const radiologyBulkRoutes = require("./routes/radiologyBulkRoutes");
+const radiologyQueueRoutes = require("./routes/radiologyQueueRoutes");
+const radiologyIntelligenceRoutes = require("./routes/radiologyIntelligenceRoutes");
+const radiologyReferralRoutes = require("./routes/radiologyReferralRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -293,7 +340,6 @@ const kashierRoutes = require("./routes/kashierRoutes");
 const codDepositRoutes = require("./routes/codDepositRoutes");
 const promotionSettingsRoutes = require("./routes/promotionSettingsRoutes");
 const policyCrudRoutes = require("./routes/policy");
-const policyRoutes = require("./routes/policyRoutes");
 const productReviewRoutes = require("./routes/productReviewRoutes");
 const publicProductReviewRoutes = require("./routes/publicProductReviewRoutes");
 const productLandingPagesRoutes = require("./routes/productLandingPagesRoutes");
@@ -310,6 +356,8 @@ const schedulerRoutes = require("./routes/schedulerRoutes");
 const securityRoutes = require("./routes/securityRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
 const smartRepliesRoutes = require("./routes/smartRepliesRoutes");
+const botAutomationRoutes = require("./routes/botAutomationRoutes");
+const publicBotWidgetRoutes = require("./routes/publicBotWidgetRoutes");
 const shippingZoneRoutes = require("./routes/shippingZoneRoutes");
 const storePagesRoutes = require("./routes/storePagesRoutes");
 
@@ -328,6 +376,9 @@ const textGalleryRoutes = require("./routes/textGalleryRoutes");
 const turboRoutes = require("./routes/turboRoutes");
 const bostaRoutes = require("./routes/bostaRoutes");
 const shippingCompaniesRoutes = require("./routes/shippingCompaniesRoutes");
+const shippingSettlementRoutes = require("./routes/shippingSettlementRoutes");
+const bulkStatusUpdateRoutes = require("./routes/bulkStatusUpdateRoutes");
+const easyWarehouseRoutes = require("./routes/easyWarehouseRoutes");
 const turboWebhookRoutes = require("./routes/turboWebhook");
 const bostaWebhookRoutes = require("./routes/bostaWebhook");
 const walletPaymentRoutes = require("./routes/walletPayment");
@@ -391,6 +442,7 @@ const {
   extractSubdomainMiddleware,
 } = require("./middleware/subdomainMiddleware");
 const storefrontHtmlController = require("./controller/storefrontHtmlController");
+const { handlePlatformSeo } = require("./middleware/platformSeoMiddleware");
 const {
   securityHeaders,
   sanitizeRequest,
@@ -559,6 +611,9 @@ app.use(
   require("./routes/publicCustomerRoutes"),
 );
 app.use("/api/v1/public/orders", require("./routes/publicOrdersRoutes"));
+app.use("/api/v1/public/loyalty", require("./routes/publicLoyaltyRoutes"));
+app.use("/api/v1/loyalty", require("./routes/loyaltyRoutes"));
+app.use("/api/v1/public/turbo/location", require("./routes/publicTurboLocationRoutes"));
 app.use(
   "/api/v1/public/storefront",
   require("./routes/publicStorefrontRoutes"),
@@ -567,6 +622,7 @@ app.use("/api/v1/public/platform", publicPlatformRoutes);
 app.use("/api/v1/public/affiliates", publicAffiliateRoutes);
 app.use("/api/v1/public/merchants", publicMerchantRoutes);
 app.use("/api/v1/public/booking", require("./routes/publicBookingRoutes"));
+app.use("/api/v1/public/widget", require("./routes/publicWidgetChatRoutes"));
 app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRouter);
 app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettings"));
 app.use("/api/v1/public", publicCouponsRoutes);
@@ -648,6 +704,7 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/company-dashboard", companyDashboardRoutes);
 app.use("/api/v1/company", companyDashboardRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/v1/analytics/order-movement", require("./routes/orderMovementRoutes"));
 app.use("/api/v1/storefront-settings", storefrontSettingsRoutes);
 app.use("/api/v1/checkout-form-settings", checkoutFormSettingsRoutes);
 app.use("/api/v1/footer-settings", footerSettingsRoutes);
@@ -674,7 +731,6 @@ app.use("/api/v1/bulk-orders", bulkOrdersRoutes);
 app.use("/api/v1/wholesale", wholesaleRoutes);
 app.use("/api/v1/returns", returnRoutes);
 app.use("/api/v1/cancellations", cancellationRoutes);
-app.use("/api/v1/policy", policyRoutes);
 app.use("/api/v1/policies", policyCrudRoutes);
 app.use("/api/v1/faqs", faqRoutes);
 
@@ -749,11 +805,43 @@ app.use("/api/v1/bosta", bostaRoutes);
 // Professional Tools
 app.use("/api/v1/appointments", appointmentsRoutes);
 app.use("/api/v1/booking/branches", bookingBranchesRoutes);
+app.use("/api/v1/booking/doctors/availability", bookingDoctorAvailabilityRoutes);
 app.use("/api/v1/booking/doctors", bookingDoctorsRoutes);
 app.use("/api/v1/booking/services", bookingServicesRoutes);
 app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
 app.use("/api/v1/booking/drafts", bookingDraftRoutes);
 app.use("/api/v1/booking/reports", bookingReportsRoutes);
+app.use("/api/v1/booking/patients", bookingPatientsRoutes);
+app.use("/api/v1/booking/referring-physicians", bookingReferringPhysiciansRoutes);
+app.use("/api/v1/booking/invoices", bookingInvoicesRoutes);
+app.use("/api/v1/booking/doctor-portal", bookingDoctorPortalRoutes);
+app.use("/api/v1/booking/patient-portal", bookingPatientPortalRoutes);
+app.use("/api/v1/booking/price-lists", bookingPriceListsRoutes);
+app.use("/api/v1/booking/workflow", bookingWorkflowRoutes);
+app.use("/api/v1/booking/operations", bookingOperationsRoutes);
+app.use("/api/v1/booking/insurance-companies", bookingInsuranceCompaniesRoutes);
+app.use("/api/v1/booking/insurance-member-types", bookingInsuranceMemberTypesRoutes);
+app.use("/api/v1/booking/patient-documents", bookingPatientDocumentsRoutes);
+app.use("/api/v1/lab/tests", labTestsRoutes);
+app.use("/api/v1/lab/orders", labOrdersRoutes);
+app.use("/api/v1/lab/cultures", labCulturesRoutes);
+app.use("/api/v1/lab/contracts", labContractsRoutes);
+app.use("/api/v1/lab/home-visits", labHomeVisitsRoutes);
+app.use("/api/v1/lab/sample-types", labSampleTypesRoutes);
+app.use("/api/v1/radiology", radiologyReportRolesRoutes);
+app.use("/api/v1/radiology", radiologyCriticalFindingsRoutes);
+app.use("/api/v1/radiology", radiologyAiReportRoutes);
+app.use("/api/v1/radiology", radiologyRoutes);
+app.use("/api/v1/radiology", radiologyInsuranceRoutes);
+app.use("/api/v1/radiology", radiologyQuoteRoutes);
+app.use("/api/v1/radiology", radiologyRadiologistsRoutes);
+app.use("/api/v1/radiology", radiologyTagsRoutes);
+app.use("/api/v1/radiology", radiologyLabelsRoutes);
+app.use("/api/v1/radiology", radiologyAdminRoutes);
+app.use("/api/v1/radiology/bulk", radiologyBulkRoutes);
+app.use("/api/v1/radiology/queue", radiologyQueueRoutes);
+app.use("/api/v1/radiology/intelligence", radiologyIntelligenceRoutes);
+app.use("/api/v1/radiology", radiologyReferralRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);
@@ -833,6 +921,9 @@ app.use("/api/v1/reminders", require("./routes/reminderRoutes"));
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/notifications", notificationSettingsRoutes);
 app.use("/api/v1/shipping-companies", shippingCompaniesRoutes);
+app.use("/api/v1/shipping-settlement", shippingSettlementRoutes);
+app.use("/api/v1/orders/bulk-status", bulkStatusUpdateRoutes);
+app.use("/api/v1/easy-warehouse", easyWarehouseRoutes);
 
 // Log all deduction requests
 app.use("/api/v1/hr/deductions", (req, res, next) => {
@@ -847,6 +938,8 @@ app.use("/api/v1/hr/lateness", require("./routes/latenessRoutes"));
 app.use("/api/v1/settings", settingsRoutes);
 app.use("/api/v1/user/settings", require("./routes/userSettingsRoutes"));
 app.use("/api/v1/smart-replies", smartRepliesRoutes);
+app.use("/api/v1/bot-automation", botAutomationRoutes);
+app.use("/api/v1/public/bot-widget", publicBotWidgetRoutes);
 app.use("/api/v1/companies", companyRoutes);
 app.use("/api/v1/permissions", require("./routes/permissionRoutes"));
 app.use("/api/v1/company-connections", companyConnectionRoutes);
@@ -951,6 +1044,18 @@ try {
 } catch (error) {
   console.error(
     "❌ [ATTENDANCE-CRON] Failed to start Attendance Auto Checkout Service:",
+    error,
+  );
+}
+
+// Start Booking Reminder Cron Service (WhatsApp appointment reminders)
+try {
+  const bookingReminderCron = require("./cron/bookingReminderCron");
+  bookingReminderCron.startBookingReminderCron();
+  console.log("✅ [BOOKING-REMINDER-CRON] Booking reminder service started");
+} catch (error) {
+  console.error(
+    "❌ [BOOKING-REMINDER-CRON] Failed to start Booking reminder service:",
     error,
   );
 }
@@ -1093,6 +1198,40 @@ try {
   console.error("❌ [ORDER-STATUS-AUTO-CHANGE-CRON] Failed to start order status auto-change cron:", error);
 }
 
+// Start Auto-Discount voucher expiry conversion cron
+try {
+  const { startAutoDiscountVoucherCron } = require("./cron/autoDiscountVoucherCron");
+  startAutoDiscountVoucherCron();
+} catch (error) {
+  console.error("❌ [AUTO-DISCOUNT-CRON] Failed to start voucher conversion cron:", error);
+}
+
+// Start customer birthday automation cron
+try {
+  const { startCustomerBirthdayScheduler } = require("./cron/customerBirthdayCron");
+  startCustomerBirthdayScheduler();
+} catch (error) {
+  console.error("❌ [CUSTOMER-BIRTHDAY-CRON] Failed to start customer birthday cron:", error);
+}
+
+// Start scheduled occasion campaign cron
+try {
+  const { startOccasionCampaignScheduler } = require("./cron/occasionCampaignCron");
+  startOccasionCampaignScheduler();
+} catch (error) {
+  console.error("❌ [OCCASION-CRON] Failed to start occasion campaign cron:", error);
+}
+
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب
+// (BullMQ إن توفر Redis، وإلا fallback polling كل 60 ثانية)
+try {
+  const { startNotificationQueueWorker } = require("./services/whatsapp/notificationQueueWorker");
+  startNotificationQueueWorker();
+  console.log("✅ [NOTIF-QUEUE] WhatsApp notification queue worker registered");
+} catch (error) {
+  console.error("❌ [NOTIF-QUEUE] Failed to start notification queue worker:", error);
+}
+
 
 // AI Provider Health Check — delegated to Python ai-service
 try {
@@ -1117,6 +1256,7 @@ try {
 app.get(
   "*",
   extractSubdomainMiddleware,
+  handlePlatformSeo,
   storefrontHtmlController.handleStorefrontShell,
 );
 
@@ -1201,6 +1341,14 @@ app.get("/api/v1/permissions", (req, res) => {
     },
   });
 });
+
+// TikTok integrations (publish / shop / auth / display / events)
+app.use("/api/v1/tiktok/publish", require("./routes/tiktokPublishRoutes"));
+app.use("/api/v1/tiktok/shop", require("./routes/tiktokShopRoutes"));
+app.use("/api/v1/tiktok/auth", require("./routes/tiktokAuthRoutes"));
+app.use("/api/v1/tiktok/display", require("./routes/tiktokDisplayRoutes"));
+app.use("/api/v1/tiktok/events", require("./routes/tiktokEventsRoutes"));
+app.use("/api/v1/tiktok/messaging", require("./routes/tiktokMessagingRoutes"));
 
 // 404 Handler - Must return JSON, not HTML
 app.use((req, res, next) => {
@@ -1343,6 +1491,9 @@ async function shutdownGracefully(signal) {
     const sessionCount = WhatsAppManager.getAllSessions()?.length || 0;
     if (sessionCount > 0) {
       console.log(`📱 [SERVER] Disconnecting ${sessionCount} WhatsApp session(s)...`);
+      if (typeof WhatsAppManager.flushAllAuthStates === 'function') {
+        await WhatsAppManager.flushAllAuthStates();
+      }
       await WhatsAppManager.disconnectAllSessions();
       console.log('✅ [SERVER] All WhatsApp sessions disconnected');
     }
@@ -1357,6 +1508,21 @@ async function shutdownGracefully(signal) {
 
 process.on('SIGTERM', () => shutdownGracefully('SIGTERM'));
 process.on('SIGINT', () => shutdownGracefully('SIGINT'));
+
+// 🚨 PRODUCTION-FIX (H2): flush auth state عند exit طبيعي (بدون SIGTERM) حتى
+// لا نفقد آخر creds/pre-keys (كانت تسبب "Bad MAC" بعد إعادة التشغيل).
+let authFlushOnExitDone = false;
+process.on('beforeExit', async () => {
+  if (authFlushOnExitDone) return;
+  authFlushOnExitDone = true;
+  try {
+    if (typeof WhatsAppManager?.flushAllAuthStates === 'function') {
+      await WhatsAppManager.flushAllAuthStates();
+    }
+  } catch (e) {
+    console.error('⚠️ [SERVER] Error flushing auth states on beforeExit:', e.message);
+  }
+});
 
 if (require.main === module) {
   startMemoryMonitor();

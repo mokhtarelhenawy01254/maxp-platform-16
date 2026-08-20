@@ -1,4 +1,4 @@
-﻿import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -275,13 +275,13 @@ export default function StudiesTab() {
   const statusBadge = (value?: string) => {
     const meta = value ? RadiologyStatusMap[value] : undefined;
     if (meta) return <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${meta.color}`}>{t(meta.label)}</span>;
-    return <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "ΓÇö"}</span>;
+    return <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "—"}</span>;
   };
 
   const submissionBadge = (value?: string) => {
     const meta = value ? RadiologySubmissionStatusMap[value] : undefined;
     if (meta) return <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${meta.color}`}>{t(meta.label)}</span>;
-    return <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "ΓÇö"}</span>;
+    return <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "—"}</span>;
   };
 
   const criticalBadge = (r?: RadiologyReport | null) => {
@@ -374,7 +374,7 @@ export default function StudiesTab() {
     }
   };
 
-  const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "ΓÇö");
+  const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "—");
 
   const renderStudyRow = (s: StudyWithRadiologist) => (
     <Fragment key={s.id}>
@@ -382,7 +382,7 @@ export default function StudiesTab() {
         <td className="py-3 px-4 w-8">
           <input type="checkbox" className="w-4 h-4" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} />
         </td>
-        <td className="py-3 px-4 whitespace-nowrap" dir="ltr">{s.bookingNo ? String(s.bookingNo).padStart(4, "0") : "ΓÇö"}</td>
+        <td className="py-3 px-4 whitespace-nowrap" dir="ltr">{s.bookingNo ? String(s.bookingNo).padStart(4, "0") : "—"}</td>
         <td className="py-3 px-4 font-medium" dir="ltr">{s.studyNumber || s.id.slice(0, 8)}</td>
         <td className="py-3 px-4 font-medium">
           {s.patientName}
@@ -392,7 +392,7 @@ export default function StudiesTab() {
             return meta ? <span key={f} className={`mr-1.5 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap inline-block align-middle ${meta.color}`}>{meta.label}</span> : null;
           })}
         </td>
-        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "ΓÇö"}</td>
+        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "—"}</td>
         <td className="py-3 px-4">
           <div className="flex flex-col gap-1 min-w-[150px]">
             <select
@@ -683,7 +683,7 @@ export default function StudiesTab() {
               <div className="mb-4 max-h-32 overflow-y-auto">
                 {payModal.payments.map(p => (
                   <div key={p.id} className="flex justify-between text-sm border-b dark:border-gray-700/50 py-1.5">
-                    <span>{p.method || "CASH"} {p.note ? `ΓÇö ${p.note}` : ""}</span>
+                    <span>{p.method || "CASH"} {p.note ? `— ${p.note}` : ""}</span>
                     <b className="text-green-600">{p.amount.toFixed(0)} {t("radiology.currency")}</b>
                   </div>
                 ))}

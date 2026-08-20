@@ -11,7 +11,8 @@ const ORDER_STATUS_VALUES = new Set([
   'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED',
   'WOO_TAGHEZ', 'DRAFT', 'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED',
   'OUT_FOR_DELIVERY', 'LOST', 'PENDING_PREPARATION', 'PREPARING', 'READY',
-  'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED'
+  'QUALITY_CHECK', 'PACKAGED',   'ON_HOLD_PREP', 'PARTIALLY_DELIVERED',
+  'STOCK_SHORTAGE', 'SHORTAGE_FAILED'
 ]);
 
 const normalizeAnalyticsDateInput = (value, { endOfDay = false } = {}) => {
@@ -1005,6 +1006,33 @@ const getProductAnalytics = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في جلب إحصائيات المنتجات',
+      error: error.message
+    });
+  }
+};
+
+const getProductSalesPerformance = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { startDate, endDate, period } = req.query;
+    const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
+
+    const data = await analyticsService.getProductSalesPerformance(companyId, start, end);
+
+    res.json({
+      success: true,
+      data,
+      period: { start, end }
+    });
+  } catch (error) {
+    console.error('Error in getProductSalesPerformance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب تقرير مبيعات المنتجات',
       error: error.message
     });
   }
@@ -2685,15 +2713,15 @@ const getReturnAnalytics = async (req, res) => {
     const { startDate, endDate } = req.query;
     const prisma = getSharedPrismaClient();
 
-    // Handle date parameters - if startDate is a number (days), calculate actual dates
+    // Handle date parameters - if startDate is a simple number (days), calculate actual dates
     let dateFilter = {};
     if (startDate && endDate) {
       try {
-        // Check if startDate is a number of days
-        const daysAgo = parseInt(startDate);
-        if (!isNaN(daysAgo) && daysAgo > 0) {
+        // Check if startDate is a plain days-number (no hyphens, no 'T') vs an ISO date string
+        const isDaysNumber = /^\d+$/.test(startDate);
+        if (isDaysNumber && parseInt(startDate) > 0) {
           const now = new Date();
-          const start = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+          const start = new Date(now.getTime() - (parseInt(startDate) * 24 * 60 * 60 * 1000));
           dateFilter = {
             createdAt: {
               gte: start,
@@ -2824,6 +2852,469 @@ const getReturnAnalytics = async (req, res) => {
   }
 };
 
+// تحليل أسباب المرتجعات (التوزيع حسب السبب والتصنيف والحالة والمنتج مع اتجاه يومي)
+const createEmptyReturnReasonsAnalytics = () => ({
+  summary: {
+    totalReturns: 0,
+    totalOrders: 0,
+    returnRate: 0,
+    totalRefundValue: 0,
+    avgReturnValue: 0,
+    withReasonCount: 0,
+    withoutReasonCount: 0,
+    resolvedCount: 0,
+    resolutionRate: 0,
+    topReason: null,
+    topCategory: null,
+  },
+  reasonBreakdown: [],
+  categoryBreakdown: [],
+  statusBreakdown: [],
+  dailyTrend: [],
+  byProduct: [],
+  recentReturns: [],
+});
+
+const aggregateReturnReasonsAnalytics = (requests, start, end, limit) => {
+  const totalReturns = requests.length;
+  const totalRefundValue = requests.reduce(
+    (sum, request) => sum + toAnalyticsAmount(request.refundAmount ?? request.order?.total ?? 0),
+    0,
+  );
+
+  const reasonMap = new Map();
+  const categoryMap = new Map();
+  const statusMap = new Map();
+  const productMap = new Map();
+  const dailyMap = new Map();
+
+  for (let current = new Date(start); current <= end; current = new Date(current.getTime() + ANALYTICS_DAY_MS)) {
+    const key = current.toISOString().slice(0, 10);
+    dailyMap.set(key, { date: key, count: 0, refundAmount: 0 });
+  }
+
+  const resolvedStatuses = new Set(['COMPLETED', 'APPROVED']);
+
+  requests.forEach((request) => {
+    const reasonId = request.returnReason?.id || 'without-reason';
+    const reasonName = request.returnReason?.reason?.trim() || 'بدون سبب محدد';
+    const categoryName = request.returnReason?.returnReasonCategory?.name?.trim() || 'غير مصنف';
+    const status = request.status || 'PENDING';
+    const refund = toAnalyticsAmount(request.refundAmount ?? request.order?.total ?? 0);
+    const dateKey = toAnalyticsDateKey(request.createdAt) || new Date(start).toISOString().slice(0, 10);
+
+    if (!reasonMap.has(reasonId)) {
+      reasonMap.set(reasonId, {
+        id: reasonId,
+        reason: reasonName,
+        category: categoryName,
+        count: 0,
+        refundAmount: 0,
+        latestAt: null,
+      });
+    }
+    const reasonRow = reasonMap.get(reasonId);
+    reasonRow.count += 1;
+    reasonRow.refundAmount += refund;
+    if (!reasonRow.latestAt || new Date(request.createdAt) > new Date(reasonRow.latestAt)) {
+      reasonRow.latestAt = toIsoDateTime(request.createdAt);
+    }
+
+    if (!categoryMap.has(categoryName)) {
+      categoryMap.set(categoryName, { category: categoryName, count: 0, refundAmount: 0 });
+    }
+    const categoryRow = categoryMap.get(categoryName);
+    categoryRow.count += 1;
+    categoryRow.refundAmount += refund;
+
+    statusMap.set(status, (statusMap.get(status) || 0) + 1);
+
+    const dailyRow = dailyMap.get(dateKey);
+    if (dailyRow) {
+      dailyRow.count += 1;
+      dailyRow.refundAmount += refund;
+    }
+
+    const items = request.order?.orderItems || [];
+    items.forEach((item) => {
+      const productName = item.product?.name || item.productName || 'منتج غير معروف';
+      if (!productMap.has(productName)) {
+        productMap.set(productName, { product: productName, count: 0, refundAmount: 0 });
+      }
+      const productRow = productMap.get(productName);
+      productRow.count += item.quantity || 1;
+      productRow.refundAmount += (refund * (item.quantity || 1)) / Math.max(items.length, 1);
+    });
+  });
+
+  const withoutReasonCount = reasonMap.get('without-reason')?.count || 0;
+  const withReasonCount = Math.max(totalReturns - withoutReasonCount, 0);
+  const resolvedCount = requests.filter((request) => resolvedStatuses.has(request.status)).length;
+
+  const reasonBreakdown = Array.from(reasonMap.values())
+    .map((row) => ({
+      ...row,
+      percentage: totalReturns > 0 ? roundAnalyticsNumber((row.count / totalReturns) * 100) : 0,
+      refundAmount: roundAnalyticsNumber(row.refundAmount),
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+
+  const categoryBreakdown = Array.from(categoryMap.values())
+    .map((row) => ({
+      ...row,
+      percentage: totalReturns > 0 ? roundAnalyticsNumber((row.count / totalReturns) * 100) : 0,
+      refundAmount: roundAnalyticsNumber(row.refundAmount),
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+
+  const statusBreakdown = Array.from(statusMap.entries())
+    .map(([status, count]) => ({
+      status,
+      count,
+      percentage: totalReturns > 0 ? roundAnalyticsNumber((count / totalReturns) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const dailyTrend = Array.from(dailyMap.values()).map((row) => ({
+    ...row,
+    refundAmount: roundAnalyticsNumber(row.refundAmount),
+  }));
+
+  const byProduct = Array.from(productMap.values())
+    .map((row) => ({ ...row, refundAmount: roundAnalyticsNumber(row.refundAmount) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  const topReasonRow = reasonBreakdown[0] || null;
+  const topCategoryRow = categoryBreakdown[0] || null;
+
+  return {
+    summary: {
+      totalReturns,
+      totalOrders: 0,
+      returnRate: 0,
+      totalRefundValue: roundAnalyticsNumber(totalRefundValue),
+      avgReturnValue: totalReturns > 0 ? roundAnalyticsNumber(totalRefundValue / totalReturns) : 0,
+      withReasonCount,
+      withoutReasonCount,
+      resolvedCount,
+      resolutionRate: totalReturns > 0 ? roundAnalyticsNumber((resolvedCount / totalReturns) * 100) : 0,
+      topReason: topReasonRow
+        ? { reason: topReasonRow.reason, count: topReasonRow.count, percentage: topReasonRow.percentage }
+        : null,
+      topCategory: topCategoryRow
+        ? { category: topCategoryRow.category, count: topCategoryRow.count, percentage: topCategoryRow.percentage }
+        : null,
+    },
+    reasonBreakdown,
+    categoryBreakdown,
+    statusBreakdown,
+    dailyTrend,
+    byProduct,
+    recentReturns: [],
+  };
+};
+
+const getReturnReasonsAnalytics = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { start, end } = parseAnalyticsDateRange(req.query || {});
+    const requestedLimit = Number.parseInt(req.query?.limit, 10);
+    const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 12, 1), 50);
+    const prisma = getSharedPrismaClient();
+    const companyScope = String(companyId);
+
+    const whereClause = {
+      companyId: companyScope,
+      createdAt: { gte: start, lte: end },
+    };
+
+    const categoryFilter = String(req.query?.categoryId || '').trim();
+    const categoryNameFilter = String(req.query?.category || '').trim();
+    const statusFilter = String(req.query?.status || '').trim();
+    if (categoryFilter) {
+      whereClause.returnReason = { is: { categoryId: categoryFilter } };
+    } else if (categoryNameFilter) {
+      whereClause.returnReason = {
+        is: { returnReasonCategory: { is: { name: categoryNameFilter } } },
+      };
+    }
+    if (statusFilter) {
+      whereClause.status = statusFilter;
+    }
+
+    const [requests, totalOrders] = await Promise.all([
+      prisma.returnRequest.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: 2000,
+        include: {
+          returnReason: {
+            include: {
+              returnReasonCategory: true,
+            },
+          },
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              total: true,
+              governorate: true,
+              city: true,
+              orderItems: {
+                select: {
+                  quantity: true,
+                  price: true,
+                  productName: true,
+                  product: { select: { name: true } },
+                },
+              },
+            },
+          },
+          customer: {
+            select: {
+              firstName: true,
+              lastName: true,
+              phone: true,
+            },
+          },
+        },
+      }),
+      prisma.order.count({
+        where: { companyId: companyScope, createdAt: { gte: start, lte: end } },
+      }),
+    ]);
+
+    const data = aggregateReturnReasonsAnalytics(requests, start, end, limit);
+    data.summary.totalOrders = totalOrders;
+    data.summary.returnRate = totalOrders > 0 ? roundAnalyticsNumber((requests.length / totalOrders) * 100) : 0;
+
+    data.recentReturns = requests.slice(0, 20).map((request) => ({
+      id: request.id,
+      orderNumber: request.order?.orderNumber || request.orderId,
+      customerName: [request.customer?.firstName, request.customer?.lastName].filter(Boolean).join(' ') || 'عميل غير محدد',
+      customerPhone: request.customer?.phone || '',
+      region: request.order?.governorate || request.order?.city || 'غير محدد',
+      total: roundAnalyticsNumber(request.order?.total ?? 0),
+      refundAmount: roundAnalyticsNumber(request.refundAmount ?? request.order?.total ?? 0),
+      reason: request.returnReason?.reason?.trim() || 'بدون سبب محدد',
+      category: request.returnReason?.returnReasonCategory?.name?.trim() || 'غير مصنف',
+      status: request.status,
+      receivedStatus: request.receivedStatus,
+      createdAt: toIsoDateTime(request.createdAt),
+      reviewUrl: `/returns?highlight=${encodeURIComponent(request.id)}`,
+    }));
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error in getReturnReasonsAnalytics:', error);
+    res.status(200).json({
+      success: true,
+      data: createEmptyReturnReasonsAnalytics(),
+      error: error.message,
+    });
+  }
+};
+
+// تحليل تنفيذ المنتجات (تسليم / إلغاء / مرتجع) لكل منتج اتطلب في الفترة
+const getProductFulfillmentAnalytics = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { startDate, endDate, period } = req.query;
+    const prisma = getSharedPrismaClient();
+    const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
+
+    const orderItems = await prisma.orderItem.findMany({
+      where: {
+        order: {
+          is: {
+            companyId: String(companyId),
+            createdAt: { gte: start, lte: end }
+          }
+        }
+      },
+      select: {
+        quantity: true,
+        price: true,
+        total: true,
+        productId: true,
+        productName: true,
+        productSku: true,
+        productImage: true,
+        order: {
+          select: {
+            id: true,
+            status: true
+          }
+        },
+        product: {
+          select: {
+            name: true,
+            sku: true,
+            mainImage: true
+          }
+        }
+      }
+    });
+
+    const productMap = {};
+    const distinctOrders = new Set();
+
+    orderItems.forEach(item => {
+      const orderId = item.order?.id;
+      if (orderId) distinctOrders.add(orderId);
+      const status = (item.order?.status || 'PENDING').toUpperCase().trim();
+
+      const key = item.productId || item.product?.name || item.productName || item.productSku || 'unknown';
+      const name = item.product?.name || item.productName || 'منتج غير معروف';
+      const sku = item.product?.sku || item.productSku || null;
+      const image = item.product?.mainImage || item.productImage || null;
+
+      if (!productMap[key]) {
+        productMap[key] = {
+          productId: item.productId || null,
+          productName: name,
+          productSku: sku,
+          productImage: image,
+          totalItems: 0,
+          totalQuantity: 0,
+          totalRevenue: 0,
+          deliveredItems: 0,
+          deliveredQuantity: 0,
+          deliveredRevenue: 0,
+          cancelledItems: 0,
+          cancelledQuantity: 0,
+          cancelledRevenue: 0,
+          returnedItems: 0,
+          returnedQuantity: 0,
+          returnedRevenue: 0,
+          otherItems: 0,
+          deliveredOrders: new Set(),
+          cancelledOrders: new Set(),
+          returnedOrders: new Set()
+        };
+      }
+
+      const row = productMap[key];
+      const quantity = item.quantity || 0;
+      const revenue = parseFloat(item.total) || (parseFloat(item.price) || 0) * quantity || 0;
+
+      row.totalItems += 1;
+      row.totalQuantity += quantity;
+      row.totalRevenue += revenue;
+
+      if (DELIVERED_ORDER_STATUSES.has(status)) {
+        row.deliveredItems += 1;
+        row.deliveredQuantity += quantity;
+        row.deliveredRevenue += revenue;
+        if (orderId) row.deliveredOrders.add(orderId);
+      } else if (CANCELLED_ORDER_STATUSES.has(status)) {
+        row.cancelledItems += 1;
+        row.cancelledQuantity += quantity;
+        row.cancelledRevenue += revenue;
+        if (orderId) row.cancelledOrders.add(orderId);
+      } else if (RETURNED_ORDER_STATUSES.has(status) || ['PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'RETURNED_TO_COMPANY'].includes(status)) {
+        row.returnedItems += 1;
+        row.returnedQuantity += quantity;
+        row.returnedRevenue += revenue;
+        if (orderId) row.returnedOrders.add(orderId);
+      } else {
+        row.otherItems += 1;
+      }
+    });
+
+    const products = Object.values(productMap)
+      .map(row => {
+        const total = row.totalItems;
+        const delivered = row.deliveredItems;
+        const cancelled = row.cancelledItems;
+        const returned = row.returnedItems;
+        const lostRevenue = row.cancelledRevenue + row.returnedRevenue;
+
+        return {
+          productId: row.productId,
+          productName: row.productName,
+          productSku: row.productSku,
+          productImage: row.productImage,
+          totalItems: row.totalItems,
+          totalQuantity: row.totalQuantity,
+          totalRevenue: round2(row.totalRevenue),
+          deliveredItems: delivered,
+          deliveredQuantity: row.deliveredQuantity,
+          deliveredRevenue: round2(row.deliveredRevenue),
+          cancelledItems: cancelled,
+          cancelledQuantity: row.cancelledQuantity,
+          returnedItems: returned,
+          returnedQuantity: row.returnedQuantity,
+          otherItems: row.otherItems,
+          deliveredOrders: row.deliveredOrders.size,
+          cancelledOrders: row.cancelledOrders.size,
+          returnedOrders: row.returnedOrders.size,
+          deliveryRate: pct(delivered, total),
+          cancellationRate: pct(cancelled, total),
+          returnRate: pct(returned, total),
+          lostRevenue: round2(lostRevenue)
+        };
+      })
+      .filter(p => p.totalItems > 0)
+      .sort((a, b) => b.totalItems - a.totalItems);
+
+    const totalItems = products.reduce((sum, p) => sum + p.totalItems, 0);
+    const deliveredItems = products.reduce((sum, p) => sum + p.deliveredItems, 0);
+    const cancelledItems = products.reduce((sum, p) => sum + p.cancelledItems, 0);
+    const returnedItems = products.reduce((sum, p) => sum + p.returnedItems, 0);
+    const totalRevenue = products.reduce((sum, p) => sum + p.totalRevenue, 0);
+    const deliveredRevenue = products.reduce((sum, p) => sum + p.deliveredRevenue, 0);
+    const lostRevenue = products.reduce((sum, p) => sum + p.lostRevenue, 0);
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalProducts: products.length,
+          totalOrders: distinctOrders.size,
+          totalItems,
+          totalQuantity: products.reduce((sum, p) => sum + p.totalQuantity, 0),
+          deliveredItems,
+          cancelledItems,
+          returnedItems,
+          pendingItems: totalItems - deliveredItems - cancelledItems - returnedItems,
+          deliveryRate: pct(deliveredItems, totalItems),
+          cancellationRate: pct(cancelledItems, totalItems),
+          returnRate: pct(returnedItems, totalItems),
+          totalRevenue: round2(totalRevenue),
+          deliveredRevenue: round2(deliveredRevenue),
+          lostRevenue: round2(lostRevenue)
+        },
+        products
+      }
+    });
+  } catch (error) {
+    console.error('Error in getProductFulfillmentAnalytics:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب تحليل تنفيذ المنتجات', error: error.message });
+  }
+};
+
+const round2 = (value) => {
+  const num = Number(value) || 0;
+  return Math.round(num * 100) / 100;
+};
+
+const pct = (part, total) => {
+  if (!total || !part) return 0;
+  return Math.round((part / total) * 1000) / 10;
+};
+
 // Get Team Performance Analytics
 const getTeamPerformanceAnalytics = async (req, res) => {
   try {
@@ -2842,9 +3333,11 @@ const getTeamPerformanceAnalytics = async (req, res) => {
 
     if (startDate && endDate) {
       try {
+        // endDate ياخد آخر اليوم (23:59:59.999) — قبل كده كان بياخد بداية اليوم فكان فلتر "اليوم" بيرجع صفر
+        const { start, end } = parseAnalyticsDateRange({ startDate, endDate });
         whereClause.createdAt = {
-          gte: new Date(startDate),
-          lte: new Date(endDate)
+          gte: start,
+          lte: end
         };
       } catch (err) {
         console.error('Date parsing error:', err);
@@ -3752,21 +4245,26 @@ const getAvailableStatuses = async (req, res) => {
 
     let finalStatuses = [];
 
-    if (statusType === 'order' || !statusType) {
-      const { DEFAULT_ORDER_STATUSES } = require('./orderStatusController');
+    if (statusType === 'order' || statusType === 'order,preparation' || !statusType) {
+      const { DEFAULT_ORDER_STATUSES, DEFAULT_PREPARATION_STATUSES } = require('./orderStatusController');
       
-      // 1. Get standard statuses
+      // 1. Get standard order statuses
       const standardMap = new Map();
       if (DEFAULT_ORDER_STATUSES) {
         DEFAULT_ORDER_STATUSES.forEach(s => standardMap.set(s.code, s));
       }
 
-      // 2. Get statuses configured in the DB for this company
+      // 1b. Get standard preparation statuses (for status-summary to include Stock Shortage etc.)
+      if (DEFAULT_PREPARATION_STATUSES) {
+        DEFAULT_PREPARATION_STATUSES.forEach(s => standardMap.set(s.code, s));
+      }
+
+      // 2. Get statuses configured in the DB for this company (both order and preparation)
       const dbStatuses = await prisma.orderStatusConfig.findMany({
         where: {
           companyId: String(companyId),
           isActive: true,
-          statusType: 'order'
+          statusType: { in: ['order', 'preparation'] }
         },
         select: {
           code: true,
@@ -3863,54 +4361,77 @@ const getStatusSummaryReport = async (req, res) => {
       if (endDate) dateFilter.createdAt.lte = new Date(endDate);
     }
 
-    const orders = await prisma.order.findMany({
-      where: {
-        companyId: String(companyId),
-        status: { in: filteredStatusCodes },
-        ...dateFilter
-      },
-      include: {
-        orderItems: {
-          select: {
-            quantity: true,
-            total: true,
-            price: true
-          }
-        }
-      }
-    });
+    // Build date conditions for raw SQL
+    const dateConditions = [];
+    const queryParams = [String(companyId)];
+    if (startDate) {
+      dateConditions.push(`o."createdAt" >= $${queryParams.length + 1}`);
+      queryParams.push(new Date(startDate));
+    }
+    if (endDate) {
+      dateConditions.push(`o."createdAt" <= $${queryParams.length + 1}`);
+      queryParams.push(new Date(endDate));
+    }
+    const dateClause = dateConditions.length ? dateConditions.join(' AND ') : 'TRUE';
 
-    // Group by status
+    // Build status placeholders
+    const statusPlaceholders = filteredStatusCodes.map((_, i) => `$${queryParams.length + 1 + i}`).join(', ');
+    queryParams.push(...filteredStatusCodes);
+
+    // Query using effective status (metadata.preparationStatus takes precedence over order.status)
+    const orders = await prisma.$queryRawUnsafe(`
+      SELECT o.id, o.status, o.metadata, o.shipping, o."createdAt",
+             oi.oi_quantity, oi.oi_total
+      FROM "orders" o
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(SUM(oi_inner.quantity), 0)::int AS oi_quantity,
+               COALESCE(SUM(oi_inner.total), 0)::numeric AS oi_total
+        FROM "order_items" oi_inner
+        WHERE oi_inner."orderId" = o.id
+      ) oi ON true
+      WHERE o."companyId" = $1
+        AND ${dateClause}
+        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${statusPlaceholders})
+    `, ...queryParams);
+
+    // Group by effective status
     const statusMap = {};
     for (const order of orders) {
-      if (!statusMap[order.status]) {
-        statusMap[order.status] = {
-          status: order.status,
+      const effectiveStatus = (() => {
+        try {
+          const meta = order.metadata ? JSON.parse(order.metadata) : {};
+          return (meta.preparationStatus || order.status).toUpperCase();
+        } catch {
+          return order.status.toUpperCase();
+        }
+      })();
+      
+      if (!statusMap[effectiveStatus]) {
+        statusMap[effectiveStatus] = {
+          status: effectiveStatus,
           ordersCount: 0,
           itemsCount: 0,
           productsValue: 0,
           shippingValue: 0
         };
       }
-      statusMap[order.status].ordersCount += 1;
-      statusMap[order.status].shippingValue += Number(order.shipping) || 0;
-      
-      for (const item of order.orderItems) {
-        statusMap[order.status].itemsCount += item.quantity;
-        statusMap[order.status].productsValue += Number(item.total) || 0;
-      }
+      statusMap[effectiveStatus].ordersCount += 1;
+      statusMap[effectiveStatus].shippingValue += Number(order.shipping) || 0;
+      statusMap[effectiveStatus].itemsCount += Number(order.oi_quantity) || 0;
+      statusMap[effectiveStatus].productsValue += Number(order.oi_total) || 0;
     }
 
-    // Build per-status rows
-    const statusRows = filteredStatusCodes
-      .filter(code => statusMap[code])
-      .map(code => ({
+    // Build per-status rows (include all selected statuses, even with 0 orders)
+    const statusRows = filteredStatusCodes.map(code => {
+      const data = statusMap[code];
+      return {
         status: code,
-        ordersCount: statusMap[code].ordersCount,
-        itemsCount: statusMap[code].itemsCount,
-        productsValue: Number(statusMap[code].productsValue.toFixed(2)),
-        shippingValue: Number(statusMap[code].shippingValue.toFixed(2))
-      }));
+        ordersCount: data ? data.ordersCount : 0,
+        itemsCount: data ? data.itemsCount : 0,
+        productsValue: data ? Number(data.productsValue.toFixed(2)) : 0,
+        shippingValue: data ? Number(data.shippingValue.toFixed(2)) : 0
+      };
+    });
 
     // Grand totals
     const grandTotal = {
@@ -3970,56 +4491,105 @@ const getStatusSummaryOrders = async (req, res) => {
       if (endDate) dateFilter.createdAt.lte = new Date(endDate);
     }
 
-    const where = {
-      companyId: String(companyId),
-      status: { in: filteredStatusCodes },
-      ...dateFilter
-    };
+    // Build raw SQL with effective status for orders
+    const oQueryParams = [String(companyId)];
+    const oDateConditions = [];
+    if (startDate) {
+      oDateConditions.push(`o."createdAt" >= $${oQueryParams.length + 1}`);
+      oQueryParams.push(new Date(startDate));
+    }
+    if (endDate) {
+      oDateConditions.push(`o."createdAt" <= $${oQueryParams.length + 1}`);
+      oQueryParams.push(new Date(endDate));
+    }
+    const oDateClause = oDateConditions.length ? oDateConditions.join(' AND ') : 'TRUE';
+    const oStatusPlaceholders = filteredStatusCodes.map((_, i) => `$${oQueryParams.length + 1 + i}`).join(', ');
+    oQueryParams.push(...filteredStatusCodes);
 
-    const [orders, totalCount] = await Promise.all([
-      prisma.order.findMany({
-        where,
-        select: {
-          id: true,
-          orderNumber: true,
-          status: true,
-          total: true,
-          shipping: true,
-          subtotal: true,
-          customerId: true,
-          governorate: true,
-          city: true,
-          paymentMethod: true,
-          sourceType: true,
-          createdAt: true,
-          customer: { select: { firstName: true, lastName: true, phone: true } },
-          orderItems: {
-            select: {
-              id: true,
-              quantity: true,
-              price: true,
-              total: true,
-              productName: true,
-              productColor: true,
-              productSize: true,
-              productSku: true,
-              product: {
-                select: { name: true, sku: true }
-              }
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limitNum
-      }),
-      prisma.order.count({ where })
-    ]);
+    const oCountQueryParams = [...oQueryParams];
+    const oCountSql = `
+      SELECT COUNT(*)::int AS total
+      FROM "orders" o
+      WHERE o."companyId" = $1
+        AND ${oDateClause}
+        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${oStatusPlaceholders})
+    `;
+    const [countResult] = await prisma.$queryRawUnsafe(oCountSql, ...oCountQueryParams);
+    const totalCount = countResult.total;
+
+    const oLimitClause = limitNum ? `LIMIT ${limitNum}` : '';
+    const oOffsetClause = skip ? `OFFSET ${skip}` : '';
+    const ordersSql = `
+      SELECT o.id, o."orderNumber", o.status, o.metadata, o.total, o.shipping,
+             o.subtotal, o."customerId", o.governorate, o.city, o."paymentMethod",
+             o."sourceType", o."createdAt",
+             c."firstName", c."lastName", c.phone
+      FROM "orders" o
+      LEFT JOIN "customers" c ON c.id = o."customerId"
+      WHERE o."companyId" = $1
+        AND ${oDateClause}
+        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${oStatusPlaceholders})
+      ORDER BY o."createdAt" DESC
+      ${oLimitClause} ${oOffsetClause}
+    `;
+    const orders = await prisma.$queryRawUnsafe(ordersSql, ...oQueryParams);
+
+    // Attach order items for each order
+    const orderIds = orders.map(o => o.id);
+    let itemsMap = {};
+    if (orderIds.length > 0) {
+      const itemPlaceholders = orderIds.map((_, i) => `$${i + 1}`).join(', ');
+      const orderItems = await prisma.$queryRawUnsafe(`
+        SELECT oi."orderId", oi.id, oi.quantity, oi.price, oi.total,
+               oi."productName", oi."productColor", oi."productSize", oi."productSku",
+               p.name AS p_name, p.sku AS p_sku
+        FROM "order_items" oi
+        LEFT JOIN "products" p ON p.id = oi."productId"
+        WHERE oi."orderId" IN (${itemPlaceholders})
+      `, ...orderIds);
+      itemsMap = {};
+      for (const item of orderItems) {
+        if (!itemsMap[item.orderId]) itemsMap[item.orderId] = [];
+        itemsMap[item.orderId].push(item);
+      }
+    }
+
+    const enrichedOrders = orders.map(o => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      status: (() => {
+        try {
+          const meta = o.metadata ? JSON.parse(o.metadata) : {};
+          return meta.preparationStatus || o.status;
+        } catch { return o.status; }
+      })(),
+      total: o.total,
+      shipping: o.shipping,
+      subtotal: o.subtotal,
+      customerId: o.customerId,
+      governorate: o.governorate,
+      city: o.city,
+      paymentMethod: o.paymentMethod,
+      sourceType: o.sourceType,
+      createdAt: o.createdAt,
+      customer: o.firstName ? { firstName: o.firstName, lastName: o.lastName, phone: o.phone } : null,
+      orderItems: (itemsMap[o.id] || []).map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+        productName: item.productName,
+        productColor: item.productColor,
+        productSize: item.productSize,
+        productSku: item.productSku,
+        product: item.p_name ? { name: item.p_name, sku: item.p_sku } : null
+      }))
+    }));
 
     res.json({
       success: true,
       data: {
-        orders,
+        orders: enrichedOrders,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -4064,68 +4634,74 @@ const getStatusSummaryItems = async (req, res) => {
     const limitNum = Math.max(1, parseInt(limit) || 50);
     const skip = (pageNum - 1) * limitNum;
 
-    const dateFilter = {};
-    if (startDate || endDate) {
-      dateFilter.createdAt = {};
-      if (startDate) dateFilter.createdAt.gte = new Date(startDate);
-      if (endDate) dateFilter.createdAt.lte = new Date(endDate);
+    // Build raw SQL with effective status for items
+    const iQueryParams = [String(companyId)];
+    const iDateConditions = [];
+    if (startDate) {
+      iDateConditions.push(`o."createdAt" >= $${iQueryParams.length + 1}`);
+      iQueryParams.push(new Date(startDate));
     }
+    if (endDate) {
+      iDateConditions.push(`o."createdAt" <= $${iQueryParams.length + 1}`);
+      iQueryParams.push(new Date(endDate));
+    }
+    const iDateClause = iDateConditions.length ? iDateConditions.join(' AND ') : 'TRUE';
+    const iStatusPlaceholders = filteredStatusCodes.map((_, i) => `$${iQueryParams.length + 1 + i}`).join(', ');
+    iQueryParams.push(...filteredStatusCodes);
 
-    const where = {
-      order: {
-        companyId: String(companyId),
-        status: { in: filteredStatusCodes },
-        ...dateFilter
-      }
-    };
+    const iLimitClause = limitNum ? `LIMIT ${limitNum}` : '';
+    const iOffsetClause = skip ? `OFFSET ${skip}` : '';
 
-    const items = await prisma.orderItem.findMany({
-      where,
-      select: {
-        id: true,
-        quantity: true,
-        price: true,
-        total: true,
-        productName: true,
-        productColor: true,
-        productSize: true,
-        productSku: true,
-        product: {
-          select: {
-            name: true,
-            sku: true
-          }
-        },
-        order: {
-          select: {
-            id: true,
-            orderNumber: true,
-            status: true,
-            createdAt: true
-          }
-        }
-      },
-      orderBy: { order: { createdAt: 'desc' } },
-      skip,
-      take: limitNum
+    const itemsSql = `
+      SELECT oi.id, oi.quantity, oi.price, oi.total,
+             oi."productName", oi."productColor", oi."productSize", oi."productSku",
+             o.id AS o_id, o."orderNumber", o.status, o.metadata, o."createdAt",
+             p.name AS p_name, p.sku AS p_sku
+      FROM "order_items" oi
+      JOIN "orders" o ON o.id = oi."orderId"
+      LEFT JOIN "products" p ON p.id = oi."productId"
+      WHERE o."companyId" = $1
+        AND ${iDateClause}
+        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${iStatusPlaceholders})
+      ORDER BY o."createdAt" DESC, oi.id
+      ${iLimitClause} ${iOffsetClause}
+    `;
+    const items = await prisma.$queryRawUnsafe(itemsSql, ...iQueryParams);
+
+    const flatItems = items.map(item => {
+      const effectiveStatus = (() => {
+        try {
+          const meta = item.metadata ? JSON.parse(item.metadata) : {};
+          return meta.preparationStatus || item.status;
+        } catch { return item.status; }
+      })();
+      return {
+        orderId: item.o_id || '',
+        orderNumber: item.orderNumber || 'غير معروف',
+        orderStatus: effectiveStatus || 'UNKNOWN',
+        createdAt: item.createdAt || new Date(),
+        itemId: item.id,
+        productName: item.productName || item.p_name || 'منتج غير معروف',
+        productColor: item.productColor,
+        productSize: item.productSize,
+        productSku: item.productSku || item.p_sku,
+        quantity: item.quantity,
+        price: Number(item.price) || 0,
+        total: Number(item.total) || 0
+      };
     });
 
-    const flatItems = items.map(item => ({
-      orderId: item.order?.id || '',
-      orderNumber: item.order?.orderNumber || 'غير معروف',
-      orderStatus: item.order?.status || 'UNKNOWN',
-      createdAt: item.order?.createdAt || new Date(),
-      itemId: item.id,
-      productName: item.productName || item.product?.name || 'منتج غير معروف',
-      productColor: item.productColor,
-      productSize: item.productSize,
-      productSku: item.productSku || item.product?.sku,
-      quantity: item.quantity,
-      price: Number(item.price) || 0,
-      total: Number(item.total) || 0
-    }));
-
-    const totalItems = await prisma.orderItem.count({ where });
+    // Count total items matching the filter
+    const countItemsSql = `
+      SELECT COUNT(*)::int AS total
+      FROM "order_items" oi
+      JOIN "orders" o ON o.id = oi."orderId"
+      WHERE o."companyId" = $1
+        AND ${iDateClause}
+        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${iStatusPlaceholders})
+    `;
+    const [totalResult] = await prisma.$queryRawUnsafe(countItemsSql, ...iQueryParams);
+    const totalItems = totalResult.total;
 
     res.json({
       success: true,
@@ -4321,6 +4897,9 @@ module.exports = {
   getOrderStatusTimeAnalytics,
   getProductHealthScore,
   getReturnAnalytics,
+  getReturnReasonsAnalytics,
+  getProductFulfillmentAnalytics,
+  getProductSalesPerformance,
   getTeamPerformanceAnalytics,
   getFunnelAnalytics,
   getStockForecastAnalytics,

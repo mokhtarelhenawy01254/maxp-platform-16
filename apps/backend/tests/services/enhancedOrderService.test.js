@@ -194,3 +194,68 @@ describe("EnhancedOrderService affiliate merchant post creation", () => {
     });
   });
 });
+
+describe("EnhancedOrderService findOrCreateCustomer phone matching", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("searches by all phone variants so a WhatsApp international number matches a storefront local one", async () => {
+    mockPrisma.customer.findFirst.mockResolvedValue({
+      id: "wa-customer",
+      phone: "201019046551",
+      status: "LEAD",
+    });
+    mockPrisma.customer.update.mockResolvedValue({
+      id: "wa-customer",
+      phone: "201019046551",
+      status: "ACTIVE",
+    });
+
+    const service = new EnhancedOrderService();
+    const result = await service.findOrCreateCustomer({
+      customerPhone: "01019046551",
+      companyId: "company-1",
+    });
+
+    expect(mockPrisma.customer.findFirst).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { phoneNormalized: "+201019046551" },
+          {
+            phone: {
+              in: expect.arrayContaining(["01019046551", "1019046551", "201019046551"]),
+            },
+          },
+        ],
+        companyId: "company-1",
+      },
+    });
+    // العميل الموجود يبقى ACTIVE + phoneNormalized بعد أول طلب
+    expect(mockPrisma.customer.update).toHaveBeenCalledWith({
+      where: { id: "wa-customer" },
+      data: { status: "ACTIVE", phoneNormalized: "+201019046551" },
+    });
+    expect(result.status).toBe("ACTIVE");
+  });
+
+  test("creates a new customer when no phone variant matches", async () => {
+    mockPrisma.customer.findFirst.mockResolvedValue(null);
+    mockPrisma.customer.create.mockResolvedValue({
+      id: "new-customer",
+      firstName: "Heba",
+      lastName: "Mohamed",
+      status: "LEAD",
+    });
+
+    const service = new EnhancedOrderService();
+    const result = await service.findOrCreateCustomer({
+      customerName: "Heba Mohamed",
+      customerPhone: "01019046551",
+      companyId: "company-1",
+    });
+
+    expect(mockPrisma.customer.create).toHaveBeenCalled();
+    expect(result.id).toBe("new-customer");
+  });
+});

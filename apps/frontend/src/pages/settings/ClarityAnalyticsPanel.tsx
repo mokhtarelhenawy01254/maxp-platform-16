@@ -1,7 +1,19 @@
-import { RefreshCw as ArrowPathIcon, Activity as ChartBarIcon, Circle as CursorArrowRaysIcon, AlertTriangle as ExclamationTriangleIcon, Zap as FireIcon, Globe as GlobeAltIcon, Circle as PlayCircleIcon, Signal as SignalIcon, Users as UsersIcon, Phone as DevicePhoneMobileIcon, Search as MagnifyingGlassIcon, ChevronUp as ChevronUpIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-;
+import { useTranslation } from 'react-i18next';
+import {
+  ArrowPathIcon,
+  ChartBarIcon,
+  CursorArrowRaysIcon,
+  ExclamationTriangleIcon,
+  FireIcon,
+  GlobeAltIcon,
+  PlayCircleIcon,
+  SignalIcon,
+  UsersIcon,
+  DevicePhoneMobileIcon,
+  MagnifyingGlassIcon,
+  ChevronUpIcon,
+} from '@heroicons/react/24/outline';
 import { apiClient } from '../../services/apiClient';
 
 type ClarityMetric = {

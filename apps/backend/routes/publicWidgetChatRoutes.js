@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { randomUUID } = require('crypto');
 const fs = require('fs');
@@ -22,19 +22,19 @@ function loadWidgetScript() {
   try {
     widgetScriptCache = fs.readFileSync(WIDGET_SCRIPT_PATH, 'utf8');
   } catch (error) {
-    console.error('Γ¥î [PUBLIC-WIDGET-CHAT] cannot read widget script:', error.message);
+    console.error('❌ [PUBLIC-WIDGET-CHAT] cannot read widget script:', error.message);
     widgetScriptCache = '';
   }
   return widgetScriptCache;
 }
 
 router.use((req, res, next) => {
-  console.log(`≡ƒîÉ [PUBLIC-WIDGET-CHAT] ${req.method} ${req.path}`);
+  console.log(`🌐 [PUBLIC-WIDGET-CHAT] ${req.method} ${req.path}`);
   next();
 });
 
 /**
- * GET /script.js ΓÇö serve the embeddable widget script.
+ * GET /script.js — serve the embeddable widget script.
  */
 router.get('/script.js', (req, res) => {
   const script = loadWidgetScript();
@@ -58,7 +58,7 @@ const widgetChatLimiter = createRateLimiter({
 });
 
 /**
- * POST /chat ΓÇö send a guest chat message to the company's AI agent.
+ * POST /chat — send a guest chat message to the company's AI agent.
  * Body: { message: string, visitorId?: string, threadId?: string }
  * Uses channel 'web_chat' so routing/admin can target it like other channels.
  * The visitorId (minted client-side and persisted in localStorage) becomes the
@@ -99,8 +99,8 @@ router.post('/chat', widgetChatLimiter, async (req, res) => {
       status: result.status || 'ok',
     });
   } catch (error) {
-    console.error('Γ¥î [PUBLIC-WIDGET-CHAT] error:', error.message);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ┘ü┘è ┘à╪╣╪º┘ä╪¼╪⌐ ╪º┘ä╪▒╪│╪º┘ä╪⌐' });
+    console.error('❌ [PUBLIC-WIDGET-CHAT] error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل في معالجة الرسالة' });
   }
 });
 

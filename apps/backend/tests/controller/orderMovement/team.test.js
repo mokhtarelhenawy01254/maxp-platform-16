@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/orderMovementCore', () => ({
+jest.mock('../../../services/orderMovementCore', () => ({
   fetchOrderMovementData: jest.fn(),
   buildTransitions: jest.fn(),
   normalizeDateRange: jest.fn(),
@@ -70,11 +70,11 @@ const buildFixtureOrders = () => [
     total: 500,
     createdAt: new Date('2026-05-01T08:00:00.000Z'),
     statusHistory: [
-      { status: 'PENDING', oldStatus: null, changedBy: 'user-1', userName: '╪ú╪¡┘à╪»', createdAt: new Date('2026-05-01T08:00:00.000Z') },
-      { status: 'CONFIRMED', oldStatus: 'PENDING', changedBy: 'user-1', userName: '╪ú╪¡┘à╪»', createdAt: new Date('2026-05-01T10:00:00.000Z') },
+      { status: 'PENDING', oldStatus: null, changedBy: 'user-1', userName: 'أحمد', createdAt: new Date('2026-05-01T08:00:00.000Z') },
+      { status: 'CONFIRMED', oldStatus: 'PENDING', changedBy: 'user-1', userName: 'أحمد', createdAt: new Date('2026-05-01T10:00:00.000Z') },
       { status: 'SHIPPED', oldStatus: 'CONFIRMED', changedBy: 'SYSTEM_AUTO', userName: null, createdAt: new Date('2026-05-02T09:00:00.000Z') },
-      { status: 'DELIVERED', oldStatus: 'SHIPPED', changedBy: 'user-2', userName: '┘à╪▒┘è┘à', createdAt: new Date('2026-05-02T12:00:00.000Z') },
-      { status: 'INVALID_STATUS', oldStatus: 'CONFIRMED', changedBy: 'user-1', userName: '╪ú╪¡┘à╪»', createdAt: new Date('2026-05-02T13:00:00.000Z') }
+      { status: 'DELIVERED', oldStatus: 'SHIPPED', changedBy: 'user-2', userName: 'مريم', createdAt: new Date('2026-05-02T12:00:00.000Z') },
+      { status: 'INVALID_STATUS', oldStatus: 'CONFIRMED', changedBy: 'user-1', userName: 'أحمد', createdAt: new Date('2026-05-02T13:00:00.000Z') }
     ]
   },
   {
@@ -84,9 +84,9 @@ const buildFixtureOrders = () => [
     total: 300,
     createdAt: new Date('2026-05-02T06:00:00.000Z'),
     statusHistory: [
-      { status: 'CONFIRMED', oldStatus: 'PENDING', changedBy: 'user-1', userName: '╪ú╪¡┘à╪»', createdAt: new Date('2026-05-02T09:00:00.000Z') },
-      { status: 'CANCELLED', oldStatus: 'CONFIRMED', changedBy: 'user-2', userName: '┘à╪▒┘è┘à', createdAt: new Date('2026-05-02T15:00:00.000Z') },
-      { status: 'DELIVERED', oldStatus: 'CANCELLED', changedBy: 'user-2', userName: '┘à╪▒┘è┘à', createdAt: new Date('2026-05-02T18:00:00.000Z') }
+      { status: 'CONFIRMED', oldStatus: 'PENDING', changedBy: 'user-1', userName: 'أحمد', createdAt: new Date('2026-05-02T09:00:00.000Z') },
+      { status: 'CANCELLED', oldStatus: 'CONFIRMED', changedBy: 'user-2', userName: 'مريم', createdAt: new Date('2026-05-02T15:00:00.000Z') },
+      { status: 'DELIVERED', oldStatus: 'CANCELLED', changedBy: 'user-2', userName: 'مريم', createdAt: new Date('2026-05-02T18:00:00.000Z') }
     ]
   },
   {
@@ -150,12 +150,12 @@ describe('orderMovement teamController', () => {
     });
 
     const members = res.payload.data.members;
-    expect(members.map((m) => m.name)).toEqual(['╪ú╪¡┘à╪»', '┘à╪▒┘è┘à', '╪º┘ä┘å╪╕╪º┘à (╪¬┘ä┘é╪º╪ª┘è)']);
+    expect(members.map((m) => m.name)).toEqual(['أحمد', 'مريم', 'النظام (تلقائي)']);
 
     const ahmed = members[0];
     expect(ahmed).toEqual({
-      name: '╪ú╪¡┘à╪»',
-      changedBy: '╪ú╪¡┘à╪»',
+      name: 'أحمد',
+      changedBy: 'أحمد',
       transitions: 4,
       manualTransitions: 4,
       autoTransitions: 0,
@@ -171,8 +171,8 @@ describe('orderMovement teamController', () => {
 
     const maryam = members[1];
     expect(maryam).toEqual({
-      name: '┘à╪▒┘è┘à',
-      changedBy: '┘à╪▒┘è┘à',
+      name: 'مريم',
+      changedBy: 'مريم',
       transitions: 3,
       manualTransitions: 3,
       autoTransitions: 0,
@@ -188,7 +188,7 @@ describe('orderMovement teamController', () => {
 
     const systemMember = members[2];
     expect(systemMember).toEqual({
-      name: '╪º┘ä┘å╪╕╪º┘à (╪¬┘ä┘é╪º╪ª┘è)',
+      name: 'النظام (تلقائي)',
       changedBy: 'SYSTEM_AUTO',
       transitions: 2,
       manualTransitions: 0,
@@ -232,7 +232,7 @@ describe('orderMovement teamController', () => {
     await handler({ user: { id: 'user-1' }, query: {} }, res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
     expect(core.fetchOrderMovementData).not.toHaveBeenCalled();
     expect(core.getSharedPrismaClient).not.toHaveBeenCalled();
   });
@@ -256,7 +256,7 @@ describe('orderMovement teamController', () => {
       autoTransitions: 0,
       activeMembers: 2
     });
-    expect(res.payload.data.members.map((m) => m.name)).toEqual(['╪ú╪¡┘à╪»', '┘à╪▒┘è┘à']);
+    expect(res.payload.data.members.map((m) => m.name)).toEqual(['أحمد', 'مريم']);
     expect(res.payload.data.members.some((m) => m.isSystem)).toBe(false);
   });
 
@@ -281,7 +281,7 @@ describe('orderMovement teamController', () => {
     });
     expect(res.payload.data.members).toHaveLength(1);
     expect(res.payload.data.members[0]).toEqual({
-      name: '╪º┘ä┘å╪╕╪º┘à (╪¬┘ä┘é╪º╪ª┘è)',
+      name: 'النظام (تلقائي)',
       changedBy: 'SYSTEM_AUTO',
       transitions: 2,
       manualTransitions: 0,

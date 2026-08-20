@@ -1,4 +1,4 @@
-﻿const mockGetProductSalesPerformance = jest.fn();
+const mockGetProductSalesPerformance = jest.fn();
 
 jest.mock('../../services/analyticsService', () => ({
   getProductSalesPerformance: (...args) => mockGetProductSalesPerformance(...args)
@@ -39,7 +39,7 @@ describe('analyticsController.getProductSalesPerformance', () => {
   test('returns product sales performance with summary', async () => {
     mockGetProductSalesPerformance.mockResolvedValue({
       products: [
-        { productId: 'prod-1', productName: '┘à┘å╪¬╪¼ ╪¬╪¼╪▒┘è╪¿┘è', quantitySold: 10, orderCount: 4, revenue: 1000, averagePrice: 100, unitsPerOrder: 2.5 }
+        { productId: 'prod-1', productName: 'منتج تجريبي', quantitySold: 10, orderCount: 4, revenue: 1000, averagePrice: 100, unitsPerOrder: 2.5 }
       ],
       summary: {
         totalProducts: 1,

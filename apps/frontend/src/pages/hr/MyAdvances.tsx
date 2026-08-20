@@ -1,8 +1,8 @@
-import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import {
@@ -32,8 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { Loader2, PlusIcon, DollarSign as BanknotesIcon } from 'lucide-react';
-;
+import { Loader2, PlusIcon } from "lucide-react";
+import { BanknotesIcon } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../hooks/useDateFormat";
 
 const MyAdvances: React.FC = () => {
@@ -79,7 +79,7 @@ const MyAdvances: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching advances:", error);
-      toast.error("فشل في جلب بيانات السلف");
+      tToast.error("MyAdvances.failed_fetch_10f6");
     } finally {
       setLoadingAdvances(false);
     }
@@ -87,7 +87,7 @@ const MyAdvances: React.FC = () => {
 
   const handleAdvanceSubmit = async () => {
     if (!advanceForm.amount || !advanceForm.reason) {
-      toast.error("يرجى تعبئة جميع الحقول المطلوبة");
+      tToast.error("MyAdvances.msg_aa97");
       return;
     }
 
@@ -104,7 +104,7 @@ const MyAdvances: React.FC = () => {
       const response = await api.post("/hr/advances", payload);
 
       if (response.data && response.data.success) {
-        toast.success("تم إرسال طلب السلفة بنجاح");
+        tToast.success("MyAdvances.success_send_a21b");
         setIsAdvanceDialogOpen(false);
         setAdvanceForm({
           amount: "",

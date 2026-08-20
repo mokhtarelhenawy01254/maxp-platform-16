@@ -4,12 +4,16 @@ model Customer {
   lastName                       String
   email                          String?
   phone                          String?
+  phoneNormalized                String?
   password                      String?  /// Hashed password for parent portal login
+  tierMethod                     String?
+  tierBenefits                   String?
   avatar                         String?
   facebookId                     String?
   instagramId                    String?
   whatsappId                     String?
   telegramId                     String?
+  tiktokId                       String?
   status                         CustomersStatus                 @default(LEAD)
   tags                           String?
   notes                          String?
@@ -22,14 +26,18 @@ model Customer {
   deliveryRate                   Float                           @default(0)
   totalDelivered                 Int                             @default(0)
   totalOrdersCount               Int                             @default(0)
+  lastNotifiedQualityTier        String?
   activities                     Activity[]
   affiliate_referrals            AffiliateReferral[]
+  affiliates                     Affiliate[]                     @relation("AffiliateCustomer")
   aiInteractions                 AiInteraction[]
   appointments                   Appointment[]
   blockedCustomersOnPages        BlockedCustomersOnPage[]
   conversationOutcomes           ConversationOutcome[]
   conversations                  Conversation[]
   customerLoyaltyRecords         CustomerLoyaltyRecord[]
+  loyaltyActivities              LoyaltyActivity[]
+  customerLoyaltyVouchers        CustomerLoyaltyVoucher[]
   customerNotes                  CustomerNote[]
   customerNotificationPreference CustomerNotificationPreference?
   customerWallets                CustomerWallet?
@@ -46,15 +54,20 @@ model Customer {
     wholesaleCustomer              WholesaleCustomer?
     educationStudents               EducationStudent[]
      formSubmissions                 FormSubmission[]
+     patients                        Patient[]
  
      @@unique([facebookId, companyId])
   @@unique([instagramId, companyId])
   @@unique([telegramId, companyId])
   @@unique([whatsappId, companyId])
+  @@unique([tiktokId, companyId])
+  @@unique([companyId, phoneNormalized])
   @@index([companyId])
   @@index([companyId, status])
   @@index([facebookId])
   @@index([instagramId])
+  @@index([tiktokId])
+  @@index([phoneNormalized])
   @@index([status])
   @@map("customers")
 }
@@ -191,6 +204,7 @@ model Coupon {
   createdBy         String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  allowWithLoyalty  Boolean       @default(true) // allow combining with loyalty wallet/points — السماح بالدمج مع نقاط الولاء
   couponUsages      CouponUsage[]
   company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -475,6 +489,7 @@ model CustomerLoyaltyProgram {
   minimumPoints           Decimal                       @default(100.00) @db.Decimal(10, 2)
   maxPointsPerTransaction Decimal?                      @db.Decimal(10, 2)
   expiryMonths            Int                           @default(12)
+  defaultTierMethod       String                        @default("POINTS")
   rules                   String?
   createdBy               String
   createdAt               DateTime                      @default(now())
@@ -504,6 +519,12 @@ model CustomerLoyaltyRecord {
   lastPointsEarned       DateTime?
   lastPointsRedeemed     DateTime?
   metadata               String?
+  pendingPoints          Decimal                      @default(0.00) @db.Decimal(10, 2)
+  pendingCashback        Decimal                      @default(0.00) @db.Decimal(10, 2)
+  releasedAt             DateTime?
+  cancelledAt            DateTime?
+  lastCheckInAt          DateTime?
+  checkInStreak          Int                          @default(0)
   createdAt              DateTime                     @default(now())
   updatedAt              DateTime                     @updatedAt
   company                Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -518,6 +539,9 @@ model CustomerLoyaltyRecord {
   @@index([programId])
   @@index([status])
   @@index([tierId])
+  @@index([releasedAt])
+  @@index([cancelledAt])
+  @@index([lastCheckInAt])
   @@map("customer_loyalty_records")
 }
 
@@ -527,8 +551,13 @@ model CustomerLoyaltyTier {
   programId              String
   name                   String
   nameAr                 String?
-   minPoints              Decimal?                @db.Decimal(10, 2)
-   maxPoints              Decimal?                @db.Decimal(10, 2)
+  calculationType        String                  @default("POINTS")
+  minPoints              Decimal?                @db.Decimal(10, 2)
+  maxPoints              Decimal?                @db.Decimal(10, 2)
+  minSpent               Decimal?                @db.Decimal(10, 2)
+  maxSpent               Decimal?                @db.Decimal(10, 2)
+  minItems               Int?
+  maxItems               Int?
   benefits               String?
   color                  String                  @default("#6366f1")
   icon                   String                  @default("crown")
@@ -543,6 +572,35 @@ model CustomerLoyaltyTier {
   @@index([minPoints])
   @@index([programId])
   @@map("customer_loyalty_tiers")
+}
+
+/// كوبون الخصم التلقائي (نظام "الخصم التلقائي"): يصدر بعد كل أوردر مسلّم،
+/// صالح لمدة محددة، وعند انتهائه يتحول لكاش باك في المحفظة.
+model CustomerLoyaltyVoucher {
+  id                    String    @id @default(cuid())
+  companyId             String
+  customerId            String
+  sourceOrderId         String
+  orderNumber           String
+  percent               Decimal   @default(10.00) @db.Decimal(5, 2)
+  amount                Decimal   @default(0.00) @db.Decimal(10, 2)
+  status                String    @default("ACTIVE") // ACTIVE | USED | EXPIRED | CONVERTED | CANCELLED
+  expiresAt             DateTime
+  usedAt                DateTime?
+  convertedAt           DateTime?
+  convertedWalletTxId   String?
+  lastExpiryWarnedAt    DateTime?
+  metadata              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer              Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("customer_loyalty_vouchers")
 }
 
 model CustomerNotificationPreference {
@@ -671,6 +729,9 @@ model Shipment {
   serviceLevel           String?
   cost                   Decimal?         @db.Decimal(10, 2)
   currency               String           @default("EGP")
+  settlementStatus       String?          @default("PENDING")
+  settledAt              DateTime?
+  settledBy              String?
   destinationGovernorate String?
   destinationCity        String?
   destinationAddress     String?
@@ -743,4 +804,43 @@ model ShippingMethod {
   @@index([isEnabled])
   @@index([zoneId])
   @@map("shipping_methods")
+}
+
+/// رابط سري لمرة واحدة لفتح بوابة العميل (زر "صفحة العميل" في رسائل واتساب).
+/// بيتولّد وقت الإرسال، وبيسمح للعميل يدخل صفحته من غير ما يكتب رقم الموبايل.
+model CustomerMagicLink {
+  id         String    @id @default(cuid())
+  companyId  String
+  customerId String
+  phone      String
+  token      String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([companyId, customerId])
+  @@map("customer_magic_links")
+}
+
+model LoyaltyActivity {
+  id          String   @id @default(cuid())
+  companyId   String
+  customerId  String
+  type        String   // REVIEW_WITH_PHOTO | PROFILE_COMPLETE | DAILY_CHECKIN | REFERRAL_GRANT | ORDER_POINTS
+  points      Decimal  @default(0.00) @db.Decimal(10, 2)
+  status      String   @default("PENDING") // PENDING | APPROVED | CANCELLED
+  referenceId String?
+  approvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([type])
+  @@index([status])
+  @@map("loyalty_activities")
 }

@@ -1,6 +1,6 @@
-﻿/**
- * resolveVariablesForPreview ╪¿┘è╪¡┘ä ┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘é┘è┘à ┘å┘à┘ê╪░╪¼┘è╪⌐ ╪╣╪┤╪º┘å ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪¬┘â┘ê┘å ┘ê╪º┘é╪╣┘è╪⌐.
- * ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘ä┘è ┘à╪┤ ┘à╪╣╪▒┘ê┘ü╪⌐ ╪¿╪¬╪╕┘ç╪▒ ╪¿╪º╪│┘à┘ç╪º ╪¿┘è┘å ╪ú┘é┘ê╪º╪│ [name].
+/**
+ * resolveVariablesForPreview بيحل متغيرات القالب بقيم نموذجية عشان المعاينة تكون واقعية.
+ * المتغيرات اللي مش معروفة بتظهر باسمها بين أقواس [name].
  */
 import React from "react";
 import { render, screen } from "@testing-library/react";
@@ -30,34 +30,34 @@ const { apiClient } = require("../../../services/apiClient") as {
 };
 
 describe("resolveVariablesForPreview", () => {
-  test("┘è╪¡┘ä ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪╣╪▒┘ê┘ü╪⌐ ╪¿┘é┘è┘à ┘å┘à┘ê╪░╪¼┘è╪⌐", () => {
-    const result = resolveVariablesForPreview("┘à╪▒╪¡╪¿╪º┘ï {{customerName}}");
-    expect(result).toContain("╪ú╪¡┘à╪» ┘à╪¡┘à╪»");
+  test("يحل المتغيرات المعروفة بقيم نموذجية", () => {
+    const result = resolveVariablesForPreview("مرحباً {{customerName}}");
+    expect(result).toContain("أحمد محمد");
     expect(result).not.toContain("{{customerName}}");
   });
 
-  test("╪º┘ä┘à╪¬╪║┘è╪▒ ╪║┘è╪▒ ╪º┘ä┘à╪╣╪▒┘ê┘ü ╪¿┘è╪╕┘ç╪▒ ╪¿╪º╪│┘à┘ç ╪¿┘è┘å ╪ú┘é┘ê╪º╪│", () => {
-    expect(resolveVariablesForPreview("┘â┘ê╪» {{unknownVar}}")).toContain("[unknownVar]");
+  test("المتغير غير المعروف بيظهر باسمه بين أقواس", () => {
+    expect(resolveVariablesForPreview("كود {{unknownVar}}")).toContain("[unknownVar]");
   });
 
-  test("╪º┘ä┘å╪╡ ╪¿╪»┘ê┘å ┘à╪¬╪║┘è╪▒╪º╪¬ ╪¿┘è╪¿┘é┘ë ╪▓┘è ┘à╪º ┘ç┘ê", () => {
-    expect(resolveVariablesForPreview("┘à╪▒╪¡╪¿╪º")).toBe("┘à╪▒╪¡╪¿╪º");
+  test("النص بدون متغيرات بيبقى زي ما هو", () => {
+    expect(resolveVariablesForPreview("مرحبا")).toBe("مرحبا");
   });
 
-  test("╪º┘ä┘å╪╡ ╪º┘ä┘ü╪º╪▒╪║ ╪¿┘è╪▒╪¼╪╣ ┘å╪╡ ┘ü╪º╪▒╪║", () => {
+  test("النص الفارغ بيرجع نص فارغ", () => {
     expect(resolveVariablesForPreview("")).toBe("");
   });
 
-  test("╪¿┘è╪¡┘ä ╪ú┘â╪¬╪▒ ┘à┘å ┘à╪¬╪║┘è╪▒ ┘ü┘è ┘å┘ü╪│ ╪º┘ä┘å╪╡", () => {
-    const result = resolveVariablesForPreview("╪╖┘ä╪¿┘â {{orderNumber}} ╪¿┘é┘è┘à╪⌐ {{total}}");
+  test("بيحل أكتر من متغير في نفس النص", () => {
+    const result = resolveVariablesForPreview("طلبك {{orderNumber}} بقيمة {{total}}");
     expect(result).toContain("ORD-12345");
     expect(result).toContain("500");
   });
 });
 
 describe("buildLocalContentFromMetaBody", () => {
-  test("╪¿┘è╪¡┘ê┘æ┘ä {{1}} {{2}} ╪Ñ┘ä┘ë ┘à╪¬╪║┘è╪▒╪º╪¬ ┘à╪¡┘ä┘è╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐", () => {
-    const result = buildLocalContentFromMetaBody("╪ú┘ç┘ä┘ï╪º {{1}} ≡ƒæï\n╪╖┘ä╪¿┘â {{2}} ╪¿┘é┘è┘à╪⌐ {{3}}");
+  test("بيحوّل {{1}} {{2}} إلى متغيرات محلية افتراضية", () => {
+    const result = buildLocalContentFromMetaBody("أهلًا {{1}} 👋\nطلبك {{2}} بقيمة {{3}}");
     expect(result).toContain("{{customerName}}");
     expect(result).toContain("{{orderNumber}}");
     expect(result).toContain("{{orderItems}}");
@@ -65,16 +65,16 @@ describe("buildLocalContentFromMetaBody", () => {
     expect(result).not.toContain("{{2}}");
   });
 
-  test("╪¿┘è╪¡╪º┘ü╪╕ ╪╣┘ä┘ë ╪º┘ä┘å╪╡ ╪º┘ä╪½╪º╪¿╪¬ ┘à┘å ╪║┘è╪▒ ┘à╪¬╪║┘è╪▒╪º╪¬", () => {
-    const result = buildLocalContentFromMetaBody("┘à╪▒╪¡╪¿╪º ╪¿┘â ┘ü┘è ╪¬╪╖╪¿┘è┘é┘å╪º");
-    expect(result).toBe("┘à╪▒╪¡╪¿╪º ╪¿┘â ┘ü┘è ╪¬╪╖╪¿┘è┘é┘å╪º");
+  test("بيحافظ على النص الثابت من غير متغيرات", () => {
+    const result = buildLocalContentFromMetaBody("مرحبا بك في تطبيقنا");
+    expect(result).toBe("مرحبا بك في تطبيقنا");
   });
 
-  test("╪¿┘è╪▒╪¼┘æ╪╣ ┘å╪╡ ┘ü╪º╪╢┘è ┘ä┘ê ╪º┘ä┘å╪╡ ┘ü╪º╪╢┘è", () => {
+  test("بيرجّع نص فاضي لو النص فاضي", () => {
     expect(buildLocalContentFromMetaBody("")).toBe("");
   });
 
-  test("╪¿┘è╪¡╪╖ ╪▒┘é┘à ┘à┘è╪¬╪º ╪▓┘è ┘à╪º ┘ç┘ê ┘ä┘ê ╪º┘ä╪╣╪»┘æ╪º╪» ┘ü╪º┘è╪¬ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐", () => {
+  test("بيحط رقم ميتا زي ما هو لو العدّاد فايت المتغيرات المتاحة", () => {
     const result = buildLocalContentFromMetaBody("{{1}} {{2}} {{3}} {{4}} {{5}} {{6}} {{7}} {{8}} {{9}} {{10}} {{11}} {{12}} {{13}} {{14}} {{15}}");
     expect(result).toContain("{{customerName}}");
     expect(result).toContain("{{reason}}");
@@ -87,7 +87,7 @@ describe("OrderStatusTemplatesPage preview UI", () => {
     jest.clearAllMocks();
   });
 
-  test("╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪¿╪¬╪╣╪▒╪╢ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ┘à╪¡┘ä┘ê┘ä╪⌐ ┘à╪┤ ┘à┘â╪¬┘ê╪¿╪⌐ ╪¿╪º┘ä┘å┘è╪º╪¿╪⌐", async () => {
+  test("المعاينة بتعرض المتغيرات محلولة مش مكتوبة بالنيابة", async () => {
     apiClient.get.mockImplementation((url: string) => {
       if (url === "/order-status/with-templates") {
         return Promise.resolve({
@@ -97,7 +97,7 @@ describe("OrderStatusTemplatesPage preview UI", () => {
               {
                 id: "st1",
                 code: "CONFIRMED",
-                name: "┘à╪ñ┘â╪»",
+                name: "مؤكد",
                 color: "#3B82F6",
                 sortOrder: 1,
                 statusType: "order",
@@ -108,7 +108,7 @@ describe("OrderStatusTemplatesPage preview UI", () => {
                 template: {
                   id: "t1",
                   name: "t1",
-                  content: "╪ú┘ç┘ä╪º┘ï {{customerName}}╪î ╪╖┘ä╪¿┘â {{orderNumber}} ┘ü┘è ╪º┘ä╪╖╪▒┘è┘é",
+                  content: "أهلاً {{customerName}}، طلبك {{orderNumber}} في الطريق",
                   eventType: "CONFIRMED",
                   isActive: true,
                 },
@@ -137,9 +137,9 @@ describe("OrderStatusTemplatesPage preview UI", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(screen.getByRole("button", { name: /^┘à╪╣╪º┘è┘å╪⌐/ }));
+    await user.click(screen.getByRole("button", { name: /^معاينة/ }));
 
-    expect(screen.getAllByText(/╪ú╪¡┘à╪» ┘à╪¡┘à╪»/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/أحمد محمد/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ORD-12345/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/customerName/)).not.toBeInTheDocument();
   });

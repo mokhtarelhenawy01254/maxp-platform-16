@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 interface Slot {
   id?: string;
@@ -8,7 +8,7 @@ interface Slot {
   isAvailable: boolean;
 }
 
-const DAYS = ['╪º┘ä╪ú╪¡╪»', '╪º┘ä╪Ñ╪½┘å┘è┘å', '╪º┘ä╪½┘ä╪º╪½╪º╪í', '╪º┘ä╪ú╪▒╪¿╪╣╪º╪í', '╪º┘ä╪«┘à┘è╪│', '╪º┘ä╪¼┘à╪╣╪⌐', '╪º┘ä╪│╪¿╪¬'];
+const DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
 const DoctorAvailabilityPage: React.FC = () => {
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -54,9 +54,9 @@ const DoctorAvailabilityPage: React.FC = () => {
         body: JSON.stringify({ slots })
       });
       const json = await res.json();
-      if (json.success) setMessage("╪¬┘à ╪¡┘ü╪╕ ╪º┘ä╪ú┘ê┘é╪º╪¬ ╪¿┘å╪¼╪º╪¡");
-      else setMessage(json.message || '╪¡╪»╪½ ╪«╪╖╪ú');
-    } catch { setMessage('┘ü╪┤┘ä ╪º┘ä╪º╪¬╪╡╪º┘ä'); }
+      if (json.success) setMessage("تم حفظ الأوقات بنجاح");
+      else setMessage(json.message || 'حدث خطأ');
+    } catch { setMessage('فشل الاتصال'); }
     finally { setSaving(false); }
   };
 
@@ -64,11 +64,11 @@ const DoctorAvailabilityPage: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">╪ú┘ê┘é╪º╪¬ ╪º┘ä╪╣┘à┘ä</h1>
-      <p className="text-gray-500 mb-6">╪¡╪»╪» ╪ú┘è╪º┘à ┘ê╪ú┘ê┘é╪º╪¬ ╪º┘ä╪╣┘à┘ä ╪º┘ä┘à╪¬╪º╪¡╪⌐ ┘ä╪»┘è┘â ΓÇö ╪│┘è╪▒╪º╪╣┘è┘ç╪º ╪º┘ä┘å╪╕╪º┘à ╪╣┘å╪» ╪╣╪▒╪╢ ┘à┘ê╪º╪╣┘è╪»┘â ╪╣┘ä┘ë ╪º┘ä┘à╪▒╪╢┘ë.</p>
+      <h1 className="text-2xl font-bold mb-6">أوقات العمل</h1>
+      <p className="text-gray-500 mb-6">حدد أيام وأوقات العمل المتاحة لديك — سيراعيها النظام عند عرض مواعيدك على المرضى.</p>
 
       {message && (
-        <div className={`p-4 rounded-lg mb-6 ${message.includes('┘å╪¼╪º╪¡') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+        <div className={`p-4 rounded-lg mb-6 ${message.includes('نجاح') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
           {message}
         </div>
       )}
@@ -86,7 +86,7 @@ const DoctorAvailabilityPage: React.FC = () => {
               <input type="time" value={slot.startTime}
                 onChange={e => updateSlot(i, 'startTime', e.target.value)}
                 className="border rounded-lg px-3 py-2 text-sm" disabled={!slot.isAvailable} />
-              <span className="text-gray-400">ΓÇö</span>
+              <span className="text-gray-400">—</span>
               <input type="time" value={slot.endTime}
                 onChange={e => updateSlot(i, 'endTime', e.target.value)}
                 className="border rounded-lg px-3 py-2 text-sm" disabled={!slot.isAvailable} />
@@ -97,7 +97,7 @@ const DoctorAvailabilityPage: React.FC = () => {
 
       <button onClick={handleSave} disabled={saving}
         className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
-        {saving ? '╪¼╪º╪▒┘è ╪º┘ä╪¡┘ü╪╕...' : '╪¡┘ü╪╕ ╪º┘ä╪ú┘ê┘é╪º╪¬'}
+        {saving ? 'جاري الحفظ...' : 'حفظ الأوقات'}
       </button>
     </div>
   );

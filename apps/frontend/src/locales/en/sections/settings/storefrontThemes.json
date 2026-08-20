@@ -1,4 +1,4 @@
-﻿{
+{
   "loading": "Initializing Engine...",
   "title": "Storefront Matrix",
   "version": "v2.0",
@@ -38,7 +38,7 @@
   "applyError": "Failed to apply theme",
   "copyNoCompany": "Could not identify company for link copy",
   "copySuccess": "Preview link copied!",
-  "copyError": "Failed to copy link ΓÇö try again",
+  "copyError": "Failed to copy link — try again",
   "previewBlocked": "Browser blocked the preview tab. Allow popups and try again.",
   "previewNoCompany": "Could not identify company for preview"
 }

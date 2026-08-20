@@ -1,5 +1,5 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { changeLanguage } from "../../i18n";
 
 interface LanguageSwitcherProps {

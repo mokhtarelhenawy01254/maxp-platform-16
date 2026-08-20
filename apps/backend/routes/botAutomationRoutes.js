@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const verifyToken = require('../utils/verifyToken');
 const { normalizeKeywordList } = require('../services/botRuleEngine');
@@ -180,7 +180,7 @@ router.post('/rules', verifyToken.authenticateToken, async (req, res) => {
     }
     const { errors, data } = validateRuleInput(req.body);
     if (errors.length > 0) {
-      return res.status(400).json({ success: false, error: errors.join(' ΓÇö ') });
+      return res.status(400).json({ success: false, error: errors.join(' — ') });
     }
     const rule = await getSharedPrismaClient().botAutomationRule.create({
       data: {
@@ -219,7 +219,7 @@ router.put('/rules/:id', verifyToken.authenticateToken, async (req, res) => {
     }
     const { errors, data } = validateRuleInput(req.body);
     if (errors.length > 0) {
-      return res.status(400).json({ success: false, error: errors.join(' ΓÇö ') });
+      return res.status(400).json({ success: false, error: errors.join(' — ') });
     }
     await getSharedPrismaClient().botAutomationRule.update({
       where: { id: existing.id },
@@ -265,7 +265,7 @@ router.delete('/rules/:id', verifyToken.authenticateToken, async (req, res) => {
   }
 });
 
-// ΓöÇΓöÇ Conversation Starters ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Conversation Starters ───────────────────────────────────────────────────
 
 router.get('/starters', verifyToken.authenticateToken, async (req, res) => {
   try {
@@ -345,7 +345,7 @@ router.post('/starters', verifyToken.authenticateToken, async (req, res) => {
     }
     const { errors, data } = validateStarterInput(req.body);
     if (errors.length > 0) {
-      return res.status(400).json({ success: false, error: errors.join(' ΓÇö ') });
+      return res.status(400).json({ success: false, error: errors.join(' — ') });
     }
     const starter = await getSharedPrismaClient().botConversationStarter.create({
       data: {
@@ -379,7 +379,7 @@ router.put('/starters/:id', verifyToken.authenticateToken, async (req, res) => {
     }
     const { errors, data } = validateStarterInput(req.body);
     if (errors.length > 0) {
-      return res.status(400).json({ success: false, error: errors.join(' ΓÇö ') });
+      return res.status(400).json({ success: false, error: errors.join(' — ') });
     }
     await getSharedPrismaClient().botConversationStarter.update({
       where: { id: existing.id },
@@ -420,7 +420,7 @@ router.delete('/starters/:id', verifyToken.authenticateToken, async (req, res) =
   }
 });
 
-// ΓöÇΓöÇ Persistent Menu (Messenger) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Persistent Menu (Messenger) ─────────────────────────────────────────────
 
 router.get('/menu', verifyToken.authenticateToken, async (req, res) => {
   try {
@@ -532,7 +532,7 @@ router.delete('/menu', verifyToken.authenticateToken, async (req, res) => {
   }
 });
 
-// ΓöÇΓöÇ Audience: Unsubscribers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Audience: Unsubscribers ────────────────────────────────────────────────
 
 router.get('/audience/unsubscribers', verifyToken.authenticateToken, async (req, res) => {
   try {
@@ -563,7 +563,7 @@ router.delete('/audience/unsubscribers/:customerId', verifyToken.authenticateTok
   }
 });
 
-// ΓöÇΓöÇ Audience: Custom Fields ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Audience: Custom Fields ────────────────────────────────────────────────
 
 router.get('/audience/fields', verifyToken.authenticateToken, async (req, res) => {
   try {
@@ -621,7 +621,7 @@ router.delete('/audience/fields/:id', verifyToken.authenticateToken, async (req,
   }
 });
 
-// ΓöÇΓöÇ Audience: Segments ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Audience: Segments ─────────────────────────────────────────────────────
 
 router.get('/audience/segments', verifyToken.authenticateToken, async (req, res) => {
   try {

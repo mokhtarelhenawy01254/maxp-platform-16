@@ -1,4 +1,4 @@
-﻿const TurboService = require('../../services/turboService');
+const TurboService = require('../../services/turboService');
 const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
 
 const getGovernments = async (req, res) => {
@@ -10,7 +10,7 @@ const getGovernments = async (req, res) => {
     const result = await turboService.getGovernments();
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting governments:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting governments:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to get governments' });
   }
 };
@@ -28,7 +28,7 @@ const getAreas = async (req, res) => {
     const result = await turboService.getAreas(governmentId);
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting areas:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting areas:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to get areas' });
   }
 };
@@ -45,7 +45,7 @@ const getBranches = async (req, res) => {
     const result = await turboService.getBranches(city, governorate);
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting branches:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting branches:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to get branches' });
   }
 };
@@ -63,7 +63,7 @@ const searchAreaByText = async (req, res) => {
     const result = await turboService.searchAreaByText(q, { limit });
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error searching area:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error searching area:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to search area' });
   }
 };
@@ -81,7 +81,7 @@ const searchAreaByTextPublic = async (req, res) => {
     const result = await turboService.searchAreaByText(q, { limit });
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error searching area (public):', error);
+    console.error('❌ [TURBO-CONTROLLER] Error searching area (public):', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to search area' });
   }
 };

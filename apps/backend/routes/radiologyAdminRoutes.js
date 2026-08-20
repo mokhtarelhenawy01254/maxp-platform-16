@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const appointments = require('../controller/radiologyAppointmentsController');
 const physicians = require('../controller/radiologyReferringPhysiciansController');
@@ -26,7 +26,7 @@ router.get('/studies/:id/payment', payments.getStudyPayment);
 router.post('/studies/:id/payment', verifyToken.requireRole(MANAGER_ROLES), payments.recordStudyPayment);
 router.post('/studies/:id/payment/refund', verifyToken.requireRole(MANAGER_ROLES), payments.refundStudyPayment);
 
-// Appointment (booking) payments ΓÇö collected at reception before convert
+// Appointment (booking) payments — collected at reception before convert
 router.get('/appointments/:id/payment', payments.getAppointmentPayment);
 router.post('/appointments/:id/payment', verifyToken.requireRole(MANAGER_ROLES), payments.recordAppointmentPayment);
 router.post('/appointments/:id/payment/refund', verifyToken.requireRole(MANAGER_ROLES), payments.refundAppointmentPayment);
@@ -67,7 +67,7 @@ router.put('/id-settings', verifyToken.requireRole(MANAGER_ROLES), settings.upda
 router.get('/guards', settings.listGuards);
 router.put('/guards', verifyToken.requireRole(MANAGER_ROLES), settings.updateGuards);
 
-// Medical risk indicators (┘à╪ñ╪┤╪▒╪º╪¬ ╪º┘ä╪«╪╖╪▒ ╪º┘ä╪╖╪¿┘è)
+// Medical risk indicators (مؤشرات الخطر الطبي)
 router.get('/risk-flags', settings.listRiskFlags);
 router.put('/risk-flags', verifyToken.requireRole(MANAGER_ROLES), settings.updateRiskFlags);
 

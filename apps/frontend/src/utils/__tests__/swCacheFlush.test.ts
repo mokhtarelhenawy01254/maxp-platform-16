@@ -1,4 +1,4 @@
-﻿import { clearAllSWCaches, flushSWCacheAndReload } from "../swCacheFlush";
+import { clearAllSWCaches, flushSWCacheAndReload } from "../swCacheFlush";
 
 describe("swCacheFlush", () => {
   const originalCaches = window.caches;

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   getDisplaySettings,
@@ -23,7 +23,7 @@ const TikTokSettings: React.FC = () => {
         setEnabled(Boolean(settings.storefrontEnabled));
       })
       .catch(() => {
-        if (active) toast.error("╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ TikTok");
+        if (active) toast.error("تعذر تحميل إعدادات TikTok");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -42,9 +42,9 @@ const TikTokSettings: React.FC = () => {
       });
       setUsername(saved.storefrontUsername || "");
       setEnabled(Boolean(saved.storefrontEnabled));
-      toast.success("╪¬┘à ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪¿┘å╪¼╪º╪¡");
+      toast.success("تم حفظ الإعدادات بنجاح");
     } catch {
-      toast.error("┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬");
+      toast.error("فشل حفظ الإعدادات");
     } finally {
       setSaving(false);
     }
@@ -52,30 +52,30 @@ const TikTokSettings: React.FC = () => {
 
   return (
     <div dir="rtl" className="mx-auto max-w-4xl space-y-6 p-6">
-      <h1 className="text-2xl font-bold text-gray-900">╪Ñ╪╣╪»╪º╪»╪º╪¬ TikTok</h1>
+      <h1 className="text-2xl font-bold text-gray-900">إعدادات TikTok</h1>
 
       <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="mb-1 text-lg font-semibold text-gray-900">
-          ╪╣╪▒╪╢ ┘ü┘è╪»┘è┘ê┘ç╪º╪¬ TikTok ┘ü┘è ╪º┘ä┘à╪¬╪¼╪▒
+          عرض فيديوهات TikTok في المتجر
         </h2>
         <p className="mb-4 text-sm text-gray-500">
-          ╪¡╪»╪» ╪º╪│┘à ╪¡╪│╪º╪¿ TikTok ┘ä┘è╪╕┘ç╪▒ ┘à╪¡╪¬┘ê╪º┘ç ┘ü┘è ┘à╪¬╪¼╪▒┘â ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è
+          حدد اسم حساب TikTok ليظهر محتواه في متجرك الإلكتروني
         </p>
 
         {loading ? (
-          <p className="text-sm text-gray-400">╪¼╪º╪▒┘É ╪º┘ä╪¬╪¡┘à┘è┘ä...</p>
+          <p className="text-sm text-gray-400">جارِ التحميل...</p>
         ) : (
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
-                ╪º╪│┘à ╪º┘ä┘à╪│╪¬╪«╪»┘à ╪╣┘ä┘ë TikTok
+                اسم المستخدم على TikTok
               </label>
               <input
                 type="text"
                 dir="ltr"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="┘à╪½╪º┘ä: maxp_store"
+                placeholder="مثال: maxp_store"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black focus:ring-1 focus:ring-black"
               />
             </div>
@@ -86,14 +86,14 @@ const TikTokSettings: React.FC = () => {
                 onChange={(e) => setEnabled(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              ╪¬┘ü╪╣┘è┘ä ╪╣╪▒╪╢ ╪º┘ä┘à╪¡╪¬┘ê┘ë ┘ü┘è ╪º┘ä┘à╪¬╪¼╪▒
+              تفعيل عرض المحتوى في المتجر
             </label>
             <button
               onClick={handleSave}
               disabled={saving}
               className="rounded-lg bg-black px-5 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
             >
-              {saving ? "╪¼╪º╪▒┘É ╪º┘ä╪¡┘ü╪╕..." : "╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬"}
+              {saving ? "جارِ الحفظ..." : "حفظ الإعدادات"}
             </button>
           </div>
         )}

@@ -1,9 +1,16 @@
-import { Bell as BellIcon, Check as CheckIcon, Clock as ClockIcon, MessageSquare as ChatBubbleLeftIcon, Circle as UserPlusIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
-;
+import {
+  BellIcon,
+  CheckIcon,
+  ClockIcon,
+  ChatBubbleLeftIcon,
+  UserPlusIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 
 interface Notification {
   id: string;

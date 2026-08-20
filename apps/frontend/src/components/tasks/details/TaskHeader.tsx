@@ -1,7 +1,19 @@
-import { ArrowRight as ArrowRightIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Circle as PlayIcon, Circle as StopIcon, Circle as PauseIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Circle as DocumentDuplicateIcon, Share as ShareIcon, Check as CheckIcon, Calendar as CalendarIcon } from 'lucide-react';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  ArrowRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PlayIcon,
+  StopIcon,
+  PauseIcon,
+  PencilIcon,
+  TrashIcon,
+  DocumentDuplicateIcon,
+  ShareIcon,
+  CheckIcon,
+  CalendarIcon,
+} from "@heroicons/react/24/outline";
 import { Task } from "../../../types/tasks";
 
 interface TaskHeaderProps {

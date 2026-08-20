@@ -1,7 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, BarChart, BarChart3, Clipboard, ClipboardList, Eye, FilePlus2, PenSquare, Search, Sparkles, Star, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  BarChart3,
+  ClipboardList,
+  Eye,
+  FilePlus2,
+  PenSquare,
+  Search,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { buildMessagingPreset } from "./catalog";
 import { formatArabicDateTime } from "./utils";
@@ -37,7 +48,7 @@ const WorkReportFormsDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching work report forms:", error);
-      toast.error("تعذر تحميل فورمات التقارير");
+      tToast.error("WorkReportFormsDashboard.unable_load_2c82");
     } finally {
       setLoading(false);
     }
@@ -106,11 +117,11 @@ const WorkReportFormsDashboard: React.FC = () => {
 
     try {
       await companyAwareApi.delete(`/hr/reporting/forms/${formId}`);
-      toast.success("تم حذف الفورم");
+      tToast.success("WorkReportFormsDashboard.success_delete_06ce");
       fetchForms();
     } catch (error) {
       console.error("Error deleting form:", error);
-      toast.error("تعذر حذف الفورم");
+      tToast.error("WorkReportFormsDashboard.unable_delete_2762");
     }
   };
 

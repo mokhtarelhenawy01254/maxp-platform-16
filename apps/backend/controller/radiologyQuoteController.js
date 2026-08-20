@@ -1,16 +1,16 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const previewQuote = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { examTypeIds, priceListId, insuranceCompanyId } = req.body || {};
     const ids = Array.isArray(examTypeIds)
       ? examTypeIds.map(String).filter(Boolean)
       : [];
     if (ids.length === 0) {
-      return res.status(400).json({ success: false, error: '┘è╪¼╪¿ ╪º╪«╪¬┘è╪º╪▒ ┘å┘ê╪╣ ┘ü╪¡╪╡ ┘ê╪º╪¡╪» ╪╣┘ä┘ë ╪º┘ä╪ú┘é┘ä' });
+      return res.status(400).json({ success: false, error: 'يجب اختيار نوع فحص واحد على الأقل' });
     }
 
     const prisma = getSharedPrismaClient();
@@ -19,7 +19,7 @@ const previewQuote = async (req, res) => {
     });
 
     if (examTypes.length === 0) {
-      return res.status(400).json({ success: false, error: '╪ú┘å┘ê╪º╪╣ ╪º┘ä┘ü╪¡┘ê╪╡╪º╪¬ ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'أنواع الفحوصات المختارة غير صالحة' });
     }
 
     // Per-entity prices for the selected insurance company (if any)
@@ -63,14 +63,14 @@ const previewQuote = async (req, res) => {
     }
 
     if (items.length === 0) {
-      return res.status(400).json({ success: false, error: '╪ú┘å┘ê╪º╪╣ ╪º┘ä┘ü╪¡┘ê╪╡╪º╪¬ ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'أنواع الفحوصات المختارة غير صالحة' });
     }
 
     const total = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
     res.json({ success: true, data: { items, total } });
   } catch (error) {
     console.error('Error previewing radiology quote:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪│╪º╪¿ ╪╣╪▒╪╢ ╪º┘ä╪│╪╣╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حساب عرض السعر' });
   }
 };
 

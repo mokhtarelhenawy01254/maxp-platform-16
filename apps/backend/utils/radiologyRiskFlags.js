@@ -1,5 +1,5 @@
-﻿/**
- * Configurable medical risk indicators (┘à╪ñ╪┤╪▒╪º╪¬ ╪º┘ä╪«╪╖╪▒ ╪º┘ä╪╖╪¿┘è) for radiology
+/**
+ * Configurable medical risk indicators (مؤشرات الخطر الطبي) for radiology
  * bookings, stored per company as a JSON array under RadiologySetting key
  * `riskFlags`.
  *
@@ -12,13 +12,13 @@
 const RISK_FLAGS_KEY = 'riskFlags';
 
 const DEFAULT_RISK_FLAGS = [
-  { value: 'pregnancy', label: '╪¡┘à┘ä', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' },
-  { value: 'contrast_allergy', label: '╪¡╪│╪º╪│┘è╪⌐ ╪¬╪¿╪º┘è┘å', color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
-  { value: 'renal', label: '┘é╪╡┘ê╪▒ ┘â┘ä┘ê┘è', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
-  { value: 'bleeding', label: '╪│┘è┘ê┘ä╪⌐', color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
-  { value: 'diabetic', label: '╪│┘â╪▒', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
-  { value: 'claustrophobia', label: '╪«┘ê┘ü ┘à┘å ╪º┘ä╪ú┘à╪º┘â┘å ╪º┘ä┘à╪║┘ä┘é╪⌐', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
-  { value: 'pacemaker', label: '┘à┘å╪╕┘à ╪╢╪▒╪¿╪º╪¬ ╪º┘ä┘é┘ä╪¿', color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  { value: 'pregnancy', label: 'حمل', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' },
+  { value: 'contrast_allergy', label: 'حساسية تباين', color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  { value: 'renal', label: 'قصور كلوي', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
+  { value: 'bleeding', label: 'سيولة', color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  { value: 'diabetic', label: 'سكر', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
+  { value: 'claustrophobia', label: 'خوف من الأماكن المغلقة', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
+  { value: 'pacemaker', label: 'منظم ضربات القلب', color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
 ];
 
 const MAX_FLAGS = 100;

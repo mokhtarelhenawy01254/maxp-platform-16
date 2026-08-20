@@ -1,4 +1,4 @@
-﻿// In-memory store factory
+// In-memory store factory
 const mockMakeStore = () => {
     const data = new Map();
     return {
@@ -68,7 +68,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         return sid;
     }
 
-    // ΓöÇΓöÇ 1. REQUESTED ΓåÆ IN_PROGRESS ΓöÇΓöÇ
+    // ── 1. REQUESTED → IN_PROGRESS ──
     test('REQUESTED transitions to IN_PROGRESS on first valid batch', async () => {
         const sid = await seed('REQUESTED');
         syncTx(sid);
@@ -92,7 +92,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(updated.startedAt).toBeDefined();
     });
 
-    // ΓöÇΓöÇ 2. isLatest=false ΓåÆ counters only ΓöÇΓöÇ
+    // ── 2. isLatest=false → counters only ──
     test('isLatest=false updates counters only, no COMPLETED', async () => {
         const sid = await seed('IN_PROGRESS');
 
@@ -108,7 +108,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(r.lastProgress).toBe(0.5);
     });
 
-    // ΓöÇΓöÇ 3. isLatest=true + success ΓåÆ COMPLETED ΓöÇΓöÇ
+    // ── 3. isLatest=true + success → COMPLETED ──
     test('isLatest=true with success sets COMPLETED, disables syncFullHistory', async () => {
         const sid = await seed('IN_PROGRESS');
 
@@ -122,7 +122,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(r.completedAt).toBeDefined();
     });
 
-    // ΓöÇΓöÇ 4. DB failure ΓåÆ FAILED ΓöÇΓöÇ
+    // ── 4. DB failure → FAILED ──
     test('DB failure sets FAILED with safe lastError', async () => {
         const sid = await seed('IN_PROGRESS');
 
@@ -138,24 +138,24 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(r.lastError).not.toContain('secret');
     });
 
-    // ΓöÇΓöÇ 5. Restore IN_PROGRESS syncFullHistory=true ΓöÇΓöÇ
+    // ── 5. Restore IN_PROGRESS syncFullHistory=true ──
     test('restore IN_PROGRESS syncFullHistory=true', () => {
         expect(__testing.shouldEnableSyncOnRestore('IN_PROGRESS')).toBe(true);
         expect(__testing.shouldEnableSyncOnRestore('REQUESTED')).toBe(true);
     });
 
-    // ΓöÇΓöÇ 6. Restore COMPLETED syncFullHistory=false ΓöÇΓöÇ
+    // ── 6. Restore COMPLETED syncFullHistory=false ──
     test('restore COMPLETED syncFullHistory=false', () => {
         expect(__testing.shouldEnableSyncOnRestore('COMPLETED')).toBe(false);
     });
 
-    // ΓöÇΓöÇ 7. Restore FAILED no auto sync ΓöÇΓöÇ
+    // ── 7. Restore FAILED no auto sync ──
     test('restore FAILED does NOT re-enable sync', () => {
         expect(__testing.shouldEnableSyncOnRestore('FAILED')).toBe(false);
         expect(__testing.shouldEnableSyncOnRestore('NOT_REQUESTED')).toBe(false);
     });
 
-    // ΓöÇΓöÇ 8. Fallback metadata only when model query fails ΓöÇΓöÇ
+    // ── 8. Fallback metadata only when model query fails ──
     test('fallback metadata only when HistoryImport query fails', () => {
         expect(__testing.shouldEnableSyncOnRestore('COMPLETED')).toBe(false);
         const meta = JSON.stringify({ importHistoryOnLink: true });
@@ -165,7 +165,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(__testing.getFallbackEnableHistorySync('QR_PENDING', '{}')).toBe(false);
     });
 
-    // ΓöÇΓöÇ 9. No duplicates on backfill ΓöÇΓöÇ
+    // ── 9. No duplicates on backfill ──
     test('no duplicate records for same sessionId', async () => {
         const sid = await seed('REQUESTED');
         await seed('REQUESTED');
@@ -174,14 +174,14 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(r.status).toBe('REQUESTED');
     });
 
-    // ΓöÇΓöÇ 10. Null for unknown ΓöÇΓöÇ
+    // ── 10. Null for unknown ──
     test('getSessionHistoryImportState null for unknown', async () => {
         const prisma = getSharedPrismaClient();
         const s = await __testing.getSessionHistoryImportState(prisma, 'nonexistent');
         expect(s).toBeNull();
     });
 
-    // ΓöÇΓöÇ 11. Returns status/lastError ΓöÇΓöÇ
+    // ── 11. Returns status/lastError ──
     test('getSessionHistoryImportState returns status and lastError', async () => {
         const sid = await seed('FAILED', { lastError: 'test error' });
         const prisma = getSharedPrismaClient();
@@ -190,26 +190,26 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(s.lastError).toBe('test error');
     });
 
-    // ΓöÇΓöÇ 12. Sprint 1: monotonic safeguard ΓöÇΓöÇ
+    // ── 12. Sprint 1: monotonic safeguard ──
     test('Sprint 1 regression: monotonic timestamp safeguard', () => {
         const newer = new Date('2026-07-28T12:00:00Z');
         const older = new Date('2026-07-27T12:00:00Z');
         expect(newer > older).toBe(true);
     });
 
-    // ΓöÇΓöÇ 13. Sprint 1: upsertType guard with importHistory ΓöÇΓöÇ
+    // ── 13. Sprint 1: upsertType guard with importHistory ──
     test('Sprint 1 regression: shouldProcessMessageUpsertType', async () => {
         const r = await __testing.shouldProcessMessageUpsertType('append', false, 'msg-1', { importHistory: true });
         expect(r).toBe(true);
     });
 
-    // ΓöÇΓöÇ 14. syncFullHistory gate ΓöÇΓöÇ
+    // ── 14. syncFullHistory gate ──
     test('syncFullHistory gate works', () => {
         expect(true).toBe(true);
     });
 
-    // ΓöÇΓöÇ 15. Full lifecycle ΓöÇΓöÇ
-    test('full lifecycle NOT_REQUESTEDΓåÆREQUESTEDΓåÆIN_PROGRESSΓåÆCOMPLETED', async () => {
+    // ── 15. Full lifecycle ──
+    test('full lifecycle NOT_REQUESTED→REQUESTED→IN_PROGRESS→COMPLETED', async () => {
         const prisma = getSharedPrismaClient();
         const sid = 'full-cycle';
 
@@ -236,12 +236,12 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(__testing.shouldEnableSyncOnRestore(state.status)).toBe(false);
     });
 
-    // ΓöÇΓöÇ 16. Sprint 3: HISTORY_BATCH_SIZE default ΓöÇΓöÇ
+    // ── 16. Sprint 3: HISTORY_BATCH_SIZE default ──
     test('HISTORY_BATCH_SIZE defaults to 100', () => {
         expect(__testing.HISTORY_BATCH_SIZE).toBe(100);
     });
 
-    // ΓöÇΓöÇ 17. Sprint 3: batch processing distributes messages ΓöÇΓöÇ
+    // ── 17. Sprint 3: batch processing distributes messages ──
     test('batch processing distributes messages across batches', () => {
         const batchSize = 100;
         const total = 250;
@@ -255,7 +255,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(batches[2]).toBe(50);
     });
 
-    // ΓöÇΓöÇ 18. Sprint 3: historyYield resolves ΓöÇΓöÇ
+    // ── 18. Sprint 3: historyYield resolves ──
     test('historyYield resolves without error', async () => {
         await __testing.historyYield();
         expect(true).toBe(true);
@@ -268,7 +268,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(__testing.normalizeHistoryProgress(null)).toBeNull();
     });
 
-    // ΓöÇΓöÇ 19. Sprint 3: batch failure ΓåÆ FAILED, no COMPLETED ΓöÇΓöÇ
+    // ── 19. Sprint 3: batch failure → FAILED, no COMPLETED ──
     test('batch failure transitions to FAILED, not COMPLETED', async () => {
         const sid = await seed('IN_PROGRESS');
         await mockStore.update({
@@ -280,27 +280,27 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(r.lastError).toContain('connection lost');
     });
 
-    // ΓöÇΓöÇ 20. Sprint 3: no debug_incoming_msg during history import ΓöÇΓöÇ
+    // ── 20. Sprint 3: no debug_incoming_msg during history import ──
     test('importHistory suppresses debug_incoming_msg', () => {
         // Verified by code: line 2143 checks `if (!importHistory)` before logging
         expect(true).toBe(true);
     });
 
-    // ΓöÇΓöÇ 21. Sprint 3: replay does not double counters ΓöÇΓöÇ
+    // ── 21. Sprint 3: replay does not double counters ──
     test('replay of same batch does not double counters', async () => {
         const sid = await seed('IN_PROGRESS');
-        // ╪ú┘ê┘ä ┘à╪▒╪⌐: import 100 ╪▒╪│╪º┘ä╪⌐
+        // أول مرة: import 100 رسالة
         await mockStore.update({ where: { sessionId: sid }, data: { importedMessages: 100 } });
         let r = await mockStore.findUnique({ where: { sessionId: sid } });
         expect(r.importedMessages).toBe(100);
 
-        // Replay ┘å┘ü╪│ ╪º┘ä┘Ç batch: ╪º┘ä┘à┘ü╪▒┘ê╪╢ ┘à╪º ┘è╪¬╪╢╪º╪╣┘ü╪┤ (╪º┘ä┘Ç upsert ╪¿┘è┘à┘å╪╣ ╪¬┘â╪▒╪º╪▒ ╪º┘ä╪▒╪│╪º┘ä╪⌐)
+        // Replay نفس الـ batch: المفروض ما يتضاعفش (الـ upsert بيمنع تكرار الرسالة)
         await mockStore.update({ where: { sessionId: sid }, data: { importedMessages: 100 } });
         r = await mockStore.findUnique({ where: { sessionId: sid } });
-        expect(r.importedMessages).toBe(100); // ┘å┘ü╪│ ╪º┘ä┘é┘è┘à╪⌐╪î ┘à╪┤ 200
+        expect(r.importedMessages).toBe(100); // نفس القيمة، مش 200
     });
 
-    // ΓöÇΓöÇ 22. Sprint 3.3: reconnect coordinator state machine ΓöÇΓöÇ
+    // ── 22. Sprint 3.3: reconnect coordinator state machine ──
     test('getReconnectState creates idle state on first access', () => {
         const state = __testing.getReconnectState('session-rc-1');
         expect(state.phase).toBe('idle');
@@ -308,13 +308,13 @@ describe('WhatsAppManager history import lifecycle', () => {
         __testing.releaseReconnectLock('session-rc-1');
     });
 
-    // ΓöÇΓöÇ 23. Sprint 3.3: hasPendingReconnect false when idle ΓöÇΓöÇ
+    // ── 23. Sprint 3.3: hasPendingReconnect false when idle ──
     test('hasPendingReconnect returns false when idle', () => {
         expect(__testing.hasPendingReconnect('session-rc-2')).toBe(false);
     });
 
-    // ΓöÇΓöÇ 24. Sprint 3.3: coordinator state transitions manually ΓöÇΓöÇ
-    test('coordinator transitions: idle ΓåÆ scheduled ΓåÆ reconnecting ΓåÆ idle', () => {
+    // ── 24. Sprint 3.3: coordinator state transitions manually ──
+    test('coordinator transitions: idle → scheduled → reconnecting → idle', () => {
         const sid = 'session-rc-3';
         const state = __testing.getReconnectState(sid);
         expect(state.phase).toBe('idle');
@@ -334,7 +334,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(state.phase).toBe('idle');
     });
 
-    // ΓöÇΓöÇ 25. Sprint 3.3: second request is coalesced when pending ΓöÇΓöÇ
+    // ── 25. Sprint 3.3: second request is coalesced when pending ──
     test('hasPendingReconnect prevents redundant scheduling', () => {
         const sid = 'session-rc-4';
         const state = __testing.getReconnectState(sid);
@@ -349,7 +349,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         __testing.releaseReconnectLock(sid);
     });
 
-    // ΓöÇΓöÇ 26. Sprint 3.3: releaseReconnectLock resets state ΓöÇΓöÇ
+    // ── 26. Sprint 3.3: releaseReconnectLock resets state ──
     test('releaseReconnectLock resets phase to idle', () => {
         const sid = 'session-rc-5';
         const state = __testing.getReconnectState(sid);
@@ -358,7 +358,7 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(state.phase).toBe('idle');
     });
 
-    // ΓöÇΓöÇ 27. Sprint 3.3: socket generation ΓöÇΓöÇ
+    // ── 27. Sprint 3.3: socket generation ──
     test('socket generation tracking works', () => {
         const sid = 'session-rc-6';
         expect(__testing.getSocketGeneration(sid)).toBe(0);

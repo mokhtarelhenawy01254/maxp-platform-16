@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import { TrendingUp, Star, Target, Award, DollarSign, Gift, RefreshCw, Users } from 'lucide-react';
+import {
+  TrendingUp,
+  Star,
+  Target,
+  Award,
+  DollarSign,
+  Gift,
+  RefreshCw,
+  Users,
+} from "lucide-react";
 
 interface CustomerLoyaltyProgram {
   id: string;

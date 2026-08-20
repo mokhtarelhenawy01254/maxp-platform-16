@@ -1,4 +1,3 @@
-import { ArrowLeft as ArrowLeftIcon, RefreshCw as ArrowPathIcon, Zap as BoltIcon, Activity as ChartBarIcon, Check as CheckCircleIcon, Circle as CursorArrowRaysIcon, AlertTriangle as ExclamationTriangleIcon, Eye as EyeIcon, Link as LinkIcon, Star as SparklesIcon } from 'lucide-react';
 /**
  * Ad Details Page
  *
@@ -7,8 +6,20 @@ import { ArrowLeft as ArrowLeftIcon, RefreshCw as ArrowPathIcon, Zap as BoltIcon
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-;
+import {
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  BoltIcon,
+  ChartBarIcon,
+  CheckCircleIcon,
+  CursorArrowRaysIcon,
+  ExclamationTriangleIcon,
+  EyeIcon,
+  LinkIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookAdDetailResponse,
@@ -238,7 +249,7 @@ const AdDetails: React.FC = () => {
     setRefreshing(true);
     await loadDetails({ silent: true });
     setRefreshing(false);
-    toast.success("تم تحديث تفاصيل الإعلان");
+    tToast.success("AdDetails.success_update_b872");
   };
 
   const handleSync = async () => {
@@ -252,7 +263,7 @@ const AdDetails: React.FC = () => {
         dateRange.endDate,
       );
       await loadDetails({ silent: true });
-      toast.success("تمت مزامنة أداء الإعلان");
+      tToast.success("AdDetails.msg_39be");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في مزامنة الإعلان"));
     } finally {
@@ -262,7 +273,7 @@ const AdDetails: React.FC = () => {
 
   const handlePreview = async () => {
     if (!details?.ad.facebookAdId) {
-      toast.error("الإعلان غير مربوط بمعرف Meta للمعاينة");
+      tToast.error("AdDetails.msg_d051");
       return;
     }
 

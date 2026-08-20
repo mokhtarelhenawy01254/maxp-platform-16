@@ -1,4 +1,4 @@
-﻿-- Add billing-hold columns to orders
+-- Add billing-hold columns to orders
 -- Orders are hidden from the orders list while pending wallet top-up,
 -- then auto-released once the pending PPU charge is collected.
 

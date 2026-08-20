@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   UserIcon,
@@ -38,26 +38,26 @@ const blockReasonOptions: Array<{
   value: CustomerBlockReasonCode;
   label: string;
 }> = [
-  { value: "FAKE_ORDERS", label: "╪╖┘ä╪¿╪º╪¬ ┘ê┘ç┘à┘è╪⌐" },
-  { value: "REPEATED_REFUSAL", label: "╪▒┘ü╪╢ ╪º╪│╪¬┘ä╪º┘à ┘à╪¬┘â╪▒╪▒" },
-  { value: "ABUSE", label: "╪Ñ╪│╪º╪í╪⌐ ┘ä┘ä╪»╪╣┘à" },
-  { value: "FRAUD", label: "╪º╪¡╪¬┘è╪º┘ä" },
-  { value: "WRONG_DATA", label: "╪¿┘è╪º┘å╪º╪¬ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐" },
-  { value: "OTHER", label: "╪│╪¿╪¿ ╪ó╪«╪▒" },
+  { value: "FAKE_ORDERS", label: "طلبات وهمية" },
+  { value: "REPEATED_REFUSAL", label: "رفض استلام متكرر" },
+  { value: "ABUSE", label: "إساءة للدعم" },
+  { value: "FRAUD", label: "احتيال" },
+  { value: "WRONG_DATA", label: "بيانات غير صحيحة" },
+  { value: "OTHER", label: "سبب آخر" },
 ];
 
 const blockActionOptions: Array<{
   value: CustomerBlockAction;
   label: string;
 }> = [
-  { value: "BLOCK_ORDERS", label: "┘à┘å╪╣ ╪º┘ä╪╖┘ä╪¿╪º╪¬" },
-  { value: "REQUIRE_MANAGER_APPROVAL", label: "┘à┘ê╪º┘ü┘é╪⌐ ┘à╪»┘è╪▒ ┘é╪¿┘ä ╪º┘ä╪╖┘ä╪¿" },
-  { value: "BLOCK_COD_ONLY", label: "┘à┘å╪╣ ╪º┘ä╪»┘ü╪╣ ╪╣┘å╪» ╪º┘ä╪º╪│╪¬┘ä╪º┘à ┘ü┘é╪╖" },
+  { value: "BLOCK_ORDERS", label: "منع الطلبات" },
+  { value: "REQUIRE_MANAGER_APPROVAL", label: "موافقة مدير قبل الطلب" },
+  { value: "BLOCK_COD_ONLY", label: "منع الدفع عند الاستلام فقط" },
 ];
 
 const getBlockActionLabel = (action?: string | null) =>
   blockActionOptions.find((item) => item.value === action)?.label ||
-  "┘à┘å╪╣ ╪º┘ä╪╖┘ä╪¿╪º╪¬";
+  "منع الطلبات";
 
 const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
   order,
@@ -161,12 +161,12 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
       setCustomerBlock({
         blocked: true,
         action: rule.action,
-        message: "┘ç╪░╪º ╪º┘ä╪╣┘à┘è┘ä ┘à╪¡╪╕┘ê╪▒ ┘à┘å ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿╪º╪¬",
+        message: "هذا العميل محظور من إنشاء الطلبات",
         rule,
       });
       setShowBlockModal(false);
     } catch (error: any) {
-      alert(error.response?.data?.message || error.message || "┘ü╪┤┘ä ┘ü┘è ╪¡╪╕╪▒ ╪º┘ä╪╣┘à┘è┘ä");
+      alert(error.response?.data?.message || error.message || "فشل في حظر العميل");
     } finally {
       setSavingBlock(false);
     }
@@ -180,11 +180,11 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
     try {
       await customerBlocklistService.liftRule(
         ruleId,
-        `╪¬┘à ┘ü┘â ╪º┘ä╪¡╪╕╪▒ ┘à┘å ╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä╪╖┘ä╪¿ ${order.orderNumber}`,
+        `تم فك الحظر من تفاصيل الطلب ${order.orderNumber}`,
       );
       setCustomerBlock(null);
     } catch (error: any) {
-      alert(error.response?.data?.message || error.message || "┘ü╪┤┘ä ┘ü┘è ┘ü┘â ╪º┘ä╪¡╪╕╪▒");
+      alert(error.response?.data?.message || error.message || "فشل في فك الحظر");
     } finally {
       setSavingBlock(false);
     }
@@ -253,7 +253,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60 dark:border-red-800 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20"
               >
                 <CheckCircleIcon className="h-4 w-4" />
-                {savingBlock ? "╪¼╪º╪▒┘è..." : "┘ü┘â ╪º┘ä╪¡╪╕╪▒"}
+                {savingBlock ? "جاري..." : "فك الحظر"}
               </button>
             ) : (
               <button
@@ -263,7 +263,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30"
               >
                 <NoSymbolIcon className="h-4 w-4" />
-                {checkingBlock ? "┘ü╪¡╪╡..." : "╪¡╪╕╪▒ ╪º┘ä╪╣┘à┘è┘ä"}
+                {checkingBlock ? "فحص..." : "حظر العميل"}
               </button>
             )
           )}
@@ -274,9 +274,9 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             <div className="flex items-start gap-2">
               <NoSymbolIcon className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
-                <p className="font-semibold">╪º┘ä╪╣┘à┘è┘ä ┘à╪¡╪╕┘ê╪▒</p>
+                <p className="font-semibold">العميل محظور</p>
                 <p className="mt-0.5">
-                  ╪º┘ä╪ú┘â╪┤┘å:{" "}
+                  الأكشن:{" "}
                   {getBlockActionLabel(
                     customerBlock.action || customerBlock.rule?.action,
                   )}
@@ -512,10 +512,10 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  ╪¡╪╕╪▒ ╪º┘ä╪╣┘à┘è┘ä ┘à┘å ╪º┘ä╪╖┘ä╪¿
+                  حظر العميل من الطلب
                 </h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  ╪│┘è╪¬┘à ╪¬╪╖╪¿┘è┘é ╪º┘ä╪¡╪╕╪▒ ╪╣┘ä┘ë ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿.
+                  سيتم تطبيق الحظر على بيانات العميل المرتبطة بهذا الطلب.
                 </p>
               </div>
             </div>
@@ -523,7 +523,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             <div className="space-y-4">
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ╪º┘ä╪ú┘â╪┤┘å
+                  الأكشن
                 </span>
                 <select
                   value={blockForm.action}
@@ -545,7 +545,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ╪º┘ä╪│╪¿╪¿
+                  السبب
                 </span>
                 <select
                   value={blockForm.reasonCode}
@@ -567,7 +567,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ┘è┘å╪¬┘ç┘è ┘ü┘è
+                  ينتهي في
                 </span>
                 <input
                   type="date"
@@ -584,7 +584,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ┘à┘ä╪º╪¡╪╕╪⌐ ╪º┘ä╪│╪¿╪¿
+                  ملاحظة السبب
                 </span>
                 <textarea
                   value={blockForm.reasonNote}
@@ -607,7 +607,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 disabled={savingBlock}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
               >
-                ╪Ñ┘ä╪║╪º╪í
+                إلغاء
               </button>
               <button
                 type="button"
@@ -620,7 +620,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 ) : (
                   <NoSymbolIcon className="h-4 w-4" />
                 )}
-                ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╕╪▒
+                تأكيد الحظر
               </button>
             </div>
           </div>

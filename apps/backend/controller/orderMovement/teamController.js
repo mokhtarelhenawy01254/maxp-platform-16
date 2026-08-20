@@ -1,4 +1,4 @@
-﻿const core = require('../../services/orderMovementCore');
+const core = require('../../services/orderMovementCore');
 
 const filterByMode = (transitions, mode) =>
   mode === 'manual'
@@ -27,7 +27,7 @@ const handler = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
 
     const { startDate, endDate, mode } = req.query;
@@ -127,12 +127,12 @@ const handler = async (req, res) => {
     const autoTransitions = transitions.filter((t) => t.auto);
 
     for (const t of manualTransitions) {
-      const key = t.userName || t.changedBy || '╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü';
+      const key = t.userName || t.changedBy || 'غير معروف';
       applyTransition(getMember(key, key), t, false);
     }
 
     if (autoTransitions.length) {
-      const systemMember = getMember('SYSTEM_AUTO', '╪º┘ä┘å╪╕╪º┘à (╪¬┘ä┘é╪º╪ª┘è)');
+      const systemMember = getMember('SYSTEM_AUTO', 'النظام (تلقائي)');
       systemMember.isSystem = true;
       for (const t of autoTransitions) {
         applyTransition(systemMember, t, true);
@@ -180,7 +180,7 @@ const handler = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¡╪│╪º╪¿ ╪¬╪¡┘ä┘è┘ä╪º╪¬ ╪ú╪»╪º╪í ╪º┘ä┘ü╪▒┘è┘é' });
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء حساب تحليلات أداء الفريق' });
   }
 };
 

@@ -1,19 +1,19 @@
-﻿let parsePhoneNumberFromString = null;
+let parsePhoneNumberFromString = null;
 try {
   ({ parsePhoneNumberFromString } = require('libphonenumber-js'));
 } catch (e) {
-  // libphonenumber-js ╪║┘è╪▒ ┘à╪½╪¿┘æ╪¬ ΓÇö ┘å┘ü╪╢┘ä ╪º┘ä┘Ç heuristics ╪º┘ä┘à╪╡╪▒┘è╪⌐
+  // libphonenumber-js غير مثبّت — نفضل الـ heuristics المصرية
 }
 
-// ╪º┘ä╪ú╪▒┘é╪º┘à ╪º┘ä┘à┘â╪¬┘ê╪¿╪⌐ ╪¿╪ú╪▒┘é╪º┘à ╪╣╪▒╪¿┘è╪⌐/┘ü╪º╪▒╪│┘è╪⌐ (┘á┘í┘ó┘ú / █░█▒█▓█│) ╪¿╪¬╪¬╪¡┘ê┘ä ┘ä╪Ñ┘å╪¼┘ä┘è╪▓┘è╪⌐ (0123)
-// ╪╣╪┤╪º┘å ╪º┘ä┘Ç normalization ┘ê╪º┘ä╪¿╪¡╪½ ╪╣┘å ╪º┘ä╪╣┘à┘ä╪º╪í ┘è╪┤╪¬╪║┘ä┘ê╪º ╪╡╪¡ ╪╣┘ä┘ë ┘â┘ä ╪º┘ä╪╡┘è╪║.
-const ARABIC_INDIC_0 = 0x0660; // ┘á-┘⌐
-const EXTENDED_ARABIC_0 = 0x06F0; // █░-█╣
+// الأرقام المكتوبة بأرقام عربية/فارسية (٠١٢٣ / ۰۱۲۳) بتتحول لإنجليزية (0123)
+// عشان الـ normalization والبحث عن العملاء يشتغلوا صح على كل الصيغ.
+const ARABIC_INDIC_0 = 0x0660; // ٠-٩
+const EXTENDED_ARABIC_0 = 0x06F0; // ۰-۹
 
 function toAsciiDigits(value) {
   return String(value || '')
-    .replace(/[┘á-┘⌐]/g, (d) => String(d.charCodeAt(0) - ARABIC_INDIC_0))
-    .replace(/[█░-█╣]/g, (d) => String(d.charCodeAt(0) - EXTENDED_ARABIC_0));
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - ARABIC_INDIC_0))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - EXTENDED_ARABIC_0));
 }
 
 function stripPhone(value) {
@@ -72,17 +72,17 @@ function toCanonicalE164(value) {
     digits = digits.slice(2);
   }
 
-  // 1) libphonenumber: ╪▒┘é┘à ╪»┘ê┘ä┘è ╪╡╪º┘ä╪¡ (╪╣┘å╪»┘ç country code) ΓåÆ ┘è╪¿┘é┘ë E.164 ╪╡╪¡┘è╪¡ ┘ä╪ú┘è ╪»┘ê┘ä╪⌐
-  //    (┘à╪┤ ╪¿╪│ ┘à╪╡╪▒). ╪»┘ç ╪¿┘è╪╡┘ä╪¡ ╪º┘ä╪ú╪▒┘é╪º┘à ╪║┘è╪▒ ╪º┘ä┘à╪╡╪▒┘è╪⌐ ╪º┘ä┘ä┘è ┘â╪º┘å╪¬ ╪¿╪¬╪¬╪¿┘ç╪»┘ä ╪¿╪º┘ä┘Ç heuristics.
+  // 1) libphonenumber: رقم دولي صالح (عنده country code) → يبقى E.164 صحيح لأي دولة
+  //    (مش بس مصر). ده بيصلح الأرقام غير المصرية اللي كانت بتتبهدل بالـ heuristics.
   if (parsePhoneNumberFromString) {
     try {
       const parsed = parsePhoneNumberFromString('+' + digits);
       if (parsed && parsed.isValid()) {
         return parsed.number;
       }
-    } catch (e) { /* not parseable ΓÇö fall through */ }
+    } catch (e) { /* not parseable — fall through */ }
 
-    // 2) ╪▒┘é┘à ┘à╪¡┘ä┘è ┘à╪╡╪▒┘è (01...) ΓåÆ +20xxxxxxxxxx
+    // 2) رقم محلي مصري (01...) → +20xxxxxxxxxx
     try {
       const parsedEg = parsePhoneNumberFromString(digits, 'EG');
       if (parsedEg && parsedEg.isValid()) {
@@ -91,7 +91,7 @@ function toCanonicalE164(value) {
     } catch (e) { /* fall through */ }
   }
 
-  // 3) Fallback: heuristics ┘à╪╡╪▒┘è╪⌐ ┘é╪»┘è┘à╪⌐ (┘ä┘ä╪ú╪▒┘é╪º┘à ╪º┘ä┘ä┘è libphonenumber ┘à╪┤ ┘é╪º╪»╪▒ ┘è╪╡┘å┘ü┘ç╪º)
+  // 3) Fallback: heuristics مصرية قديمة (للأرقام اللي libphonenumber مش قادر يصنفها)
   if (digits.startsWith('2001') && digits.length === 13) {
     digits = '20' + digits.slice(3);
   } else if (digits.startsWith('01') && digits.length === 11) {

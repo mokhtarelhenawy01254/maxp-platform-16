@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 import TestsTab from "../TestsTab";
 
@@ -12,10 +12,10 @@ const jsonResponse = (body: unknown) => ({ ok: true, json: async () => body }) a
 
 const labTest = {
   id: "t1",
-  name: "┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å",
-  category: "╪»┘à",
+  name: "هيموجلوبين",
+  category: "دم",
   abbreviation: "HGB",
-  sampleType: "╪»┘à ┘ê╪▒┘è╪»┘è",
+  sampleType: "دم وريدي",
   price: 50,
   isActive: true,
   parameterCount: 2,
@@ -46,9 +46,9 @@ describe("TestsTab", () => {
 
     render(<TestsTab />);
 
-    expect(await screen.findByText("┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å")).toBeInTheDocument();
-    expect(screen.getByText("╪╣╪▒╪╢ 1 ┘à┘å 1 ╪º╪«╪¬╪¿╪º╪▒")).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "╪»┘à" })).toBeInTheDocument();
-    expect(screen.getByText("50 ╪¼.┘à")).toBeInTheDocument();
+    expect(await screen.findByText("هيموجلوبين")).toBeInTheDocument();
+    expect(screen.getByText("عرض 1 من 1 اختبار")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "دم" })).toBeInTheDocument();
+    expect(screen.getByText("50 ج.م")).toBeInTheDocument();
   });
 });

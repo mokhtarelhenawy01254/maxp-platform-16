@@ -1,4 +1,4 @@
-﻿const core = require('../../services/orderMovementCore');
+const core = require('../../services/orderMovementCore');
 const sql = require('../../services/orderMovementSql');
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -7,7 +7,7 @@ const handler = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
 
     const { startDate, endDate, mode = 'all' } = req.query;
@@ -92,7 +92,7 @@ const handler = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¡╪│╪º╪¿ ╪º┘ä┘å╪¬╪º╪ª╪¼ ╪º┘ä┘å┘ç╪º╪ª┘è╪⌐' });
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء حساب النتائج النهائية' });
   }
 };
 

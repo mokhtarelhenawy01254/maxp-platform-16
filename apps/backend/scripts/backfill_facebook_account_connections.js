@@ -1,9 +1,9 @@
 const axios = require("axios");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
-const { getMetaGraphApiBaseUrl } = require("../config/metaApi");
+const { getMetaGraphApiVersion, getMetaGraphApiBaseUrl } = require("../config/metaApi");
 
 async function resolveFacebookUser(accessToken) {
-  const url = `${getMetaGraphApiBaseUrl()}/me`;
+  const url = `${getMetaGraphApiBaseUrl()}/${getMetaGraphApiVersion()}/me`;
   const response = await axios.get(url, {
     params: { access_token: accessToken, fields: "id,name,email" },
     timeout: 8000,

@@ -1,4 +1,4 @@
-﻿const autoDiscountService = require('../../services/autoDiscountService');
+const autoDiscountService = require('../../services/autoDiscountService');
 const sharedDatabase = require('../../services/sharedDatabase');
 
 jest.mock('../../services/sharedDatabase', () => ({
@@ -13,7 +13,7 @@ jest.mock('../../services/walletService', () => ({
   addCashbackWithTx: jest.fn(async () => ({ transaction: { id: 'tx-1' } })),
 }));
 
-describe('autoDiscountService ΓÇö expiry warnings & notification hooks', () => {
+describe('autoDiscountService — expiry warnings & notification hooks', () => {
   let prisma;
 
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe('autoDiscountService ΓÇö expiry warnings & notification hooks', () =
     sharedDatabase.getSharedPrismaClient.mockReturnValue(prisma);
   });
 
-  test('sendExpiryWarnings ┘è╪▒╪│┘ä ╪¬┘å╪¿┘è┘ç ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐ ┘ê┘è╪╣┘ä┘æ┘à ╪º┘ä┘â┘ê╪¿┘ê┘å ╪ú┘å┘ç ╪ú┘Å┘å╪░╪▒', async () => {
+  test('sendExpiryWarnings يرسل تنبيه انتهاء الصلاحية ويعلّم الكوبون أنه أُنذر', async () => {
     prisma.customerLoyaltyVoucher.findMany.mockResolvedValue([
       {
         id: 'v-1',
@@ -62,8 +62,8 @@ describe('autoDiscountService ΓÇö expiry warnings & notification hooks', () =
     );
   });
 
-  test('sendExpiryWarnings ┘ä╪º ┘è╪▒╪│┘ä ┘ä┘ä┘â┘ê╪¿┘ê┘å╪º╪¬ ╪º┘ä╪¬┘è ╪│╪¿┘é ╪Ñ┘å╪░╪º╪▒┘ç╪º', async () => {
-    // ┘à╪¡╪º┘â╪º╪⌐ ╪º┘ä┘Ç where: ╪º┘ä┘â┘ê╪¿┘ê┘å ╪º┘ä┘à┘Å┘å╪░╪▒ (lastExpiryWarnedAt ╪║┘è╪▒ null) ┘ä╪º ┘è╪╕┘ç╪▒ ┘ü┘è ╪º┘ä┘å╪¬╪º╪ª╪¼
+  test('sendExpiryWarnings لا يرسل للكوبونات التي سبق إنذارها', async () => {
+    // محاكاة الـ where: الكوبون المُنذر (lastExpiryWarnedAt غير null) لا يظهر في النتائج
     prisma.customerLoyaltyVoucher.findMany.mockImplementation(({ where }) => {
       if (where.lastExpiryWarnedAt === null) return Promise.resolve([]);
       return Promise.resolve([]);

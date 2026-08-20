@@ -21,7 +21,8 @@ import { Separator } from "../../components/ui/separator";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { toast } from "sonner";
-import { CreditCard, Edit, History, Info, Landmark, Save, Settings, TrendingUp, Users, Wallet } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import { Edit, Info, TrendingUp, Users, Wallet, History, Landmark, Settings, Save } from "lucide-react";
 
 const PlatformPartnerManagement = () => {
   const { formatPrice } = useCurrency();
@@ -44,7 +45,7 @@ const PlatformPartnerManagement = () => {
   useEffect(() => { fetchData(); }, [activeTab]);
 
   const fetchData = async () => {
-    try { setLoading(true); const [statsRes, partnersRes, payoutsRes, settingsRes] = await Promise.all([apiClient.get("/platform-partners/admin/stats"), apiClient.get("/platform-partners/admin/partners"), apiClient.get("/platform-partners/admin/payouts"), apiClient.get("/platform-partners/admin/settings")]); if (statsRes.data.status === "success") setStats(statsRes.data.data.stats); if (partnersRes.data.status === "success") setPartners(partnersRes.data.data.partners); if (payoutsRes.data.status === "success") setPayouts(payoutsRes.data.data.payouts); if (settingsRes.data.status === "success") { const s = settingsRes.data.data.settings; setSettings(s); setSettingsForm({ level1Rate: s.level1Rate, level2Rate: s.level2Rate, level3Rate: s.level3Rate, level4Rate: s.level4Rate, minimumPayoutAmount: Number(s.minimumPayoutAmount), termsAndConditions: s.termsAndConditions || "" }); } } catch { toast.error("خطأ في تحميل البيانات"); } finally { setLoading(false); }
+    try { setLoading(true); const [statsRes, partnersRes, payoutsRes, settingsRes] = await Promise.all([apiClient.get("/platform-partners/admin/stats"), apiClient.get("/platform-partners/admin/partners"), apiClient.get("/platform-partners/admin/payouts"), apiClient.get("/platform-partners/admin/settings")]); if (statsRes.data.status === "success") setStats(statsRes.data.data.stats); if (partnersRes.data.status === "success") setPartners(partnersRes.data.data.partners); if (payoutsRes.data.status === "success") setPayouts(payoutsRes.data.data.payouts); if (settingsRes.data.status === "success") { const s = settingsRes.data.data.settings; setSettings(s); setSettingsForm({ level1Rate: s.level1Rate, level2Rate: s.level2Rate, level3Rate: s.level3Rate, level4Rate: s.level4Rate, minimumPayoutAmount: Number(s.minimumPayoutAmount), termsAndConditions: s.termsAndConditions || "" }); } } catch { tToast.error("PlatformPartnerManagement.error_load_1fe0"); } finally { setLoading(false); }
   };
 
   const getStatusColor = (status: string) => { switch (status) { case "ACTIVE": return "success"; case "PENDING": return "warning"; case "COMPLETED": return "success"; case "REJECTED": return "destructive"; default: return "outline"; } };
@@ -82,7 +83,7 @@ const PlatformPartnerManagement = () => {
             <div><Label>الحد الأدنى لطلب السحب</Label><div className="flex items-center gap-1"><Input type="number" value={settingsForm.minimumPayoutAmount} onChange={e => setSettingsForm(p => ({ ...p, minimumPayoutAmount: Number(e.target.value) }))} min={0} step={10} /><span className="text-sm shrink-0">ج.م</span></div></div>
             <div><Label>الشروط والأحكام</Label><Textarea value={settingsForm.termsAndConditions} onChange={e => setSettingsForm(p => ({ ...p, termsAndConditions: e.target.value }))} rows={3} placeholder="أدخل شروط وأحكام برنامج الشركاء هنا..." /></div>
           </div>
-          <Button className="bg-purple-600 hover:bg-purple-700 px-4" disabled={savingSettings} onClick={async () => { try { setSavingSettings(true); const r = await apiClient.put("/platform-partners/admin/settings", settingsForm); if (r.data.status === "success") { toast.success("تم حفظ الإعدادات ✅"); fetchData(); } } catch (e: any) { toast.error(e.response?.data?.message || "فشل حفظ الإعدادات"); } finally { setSavingSettings(false); } }}>{savingSettings ? <LoadingSpinner size="sm" /> : <Save className="size-4" />} حفظ الإعدادات</Button>
+          <Button className="bg-purple-600 hover:bg-purple-700 px-4" disabled={savingSettings} onClick={async () => { try { setSavingSettings(true); const r = await apiClient.put("/platform-partners/admin/settings", settingsForm); if (r.data.status === "success") { tToast.success("PlatformPartnerManagement.success_save_3c98"); fetchData(); } } catch (e: any) { toast.error(e.response?.data?.message || "فشل حفظ الإعدادات"); } finally { setSavingSettings(false); } }}>{savingSettings ? <LoadingSpinner size="sm" /> : <Save className="size-4" />} حفظ الإعدادات</Button>
         </div>}
       </div>
 

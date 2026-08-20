@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tiktokPublishService.js
  * TikTok Content Posting (Direct Post) helpers.
  * Uses the shared tiktokOAuthService for token + API access.
@@ -47,11 +47,11 @@ function buildHeaders(accessToken) {
 async function getPostAccessToken(post) {
   const account = await getAccount(post.companyId);
   if (!account) {
-    throw { code: 'NO_ACCOUNT', message: '┘ä╪º ┘è┘ê╪¼╪» ╪¡╪│╪º╪¿ TikTok ┘à╪▒╪¬╪¿╪╖ ╪¿┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐' };
+    throw { code: 'NO_ACCOUNT', message: 'لا يوجد حساب TikTok مرتبط بهذه الشركة' };
   }
   const accessToken = await getValidAccessToken(account, post.companyId);
   if (!accessToken) {
-    throw { code: 'NO_ACCESS_TOKEN', message: '┘ä╪º ┘è┘ê╪¼╪» ╪¬┘ê┘â┘å ╪╡╪º┘ä╪¡ ┘ä╪¡╪│╪º╪¿ TikTok' };
+    throw { code: 'NO_ACCESS_TOKEN', message: 'لا يوجد توكن صالح لحساب TikTok' };
   }
   return accessToken;
 }
@@ -60,14 +60,14 @@ async function initPublish({ companyId, account, videoUrl, caption, privacyLevel
   const prisma = getSharedPrismaClient();
 
   if (!isValidVideoUrl(videoUrl)) {
-    throw { code: 'INVALID_VIDEO_URL', message: '╪▒╪º╪¿╪╖ ╪º┘ä┘ü┘è╪»┘è┘ê ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪î ┘è╪¼╪¿ ╪ú┘å ┘è┘â┘ê┘å ╪▒╪º╪¿╪╖ http(s) ╪╡╪º┘ä╪¡╪º┘ï' };
+    throw { code: 'INVALID_VIDEO_URL', message: 'رابط الفيديو غير صالح، يجب أن يكون رابط http(s) صالحاً' };
   }
 
   const finalPrivacyLevel = PRIVACY_LEVELS.includes(privacyLevel) ? privacyLevel : 'SELF_ONLY';
 
   const accessToken = await getValidAccessToken(account, companyId);
   if (!accessToken) {
-    throw { code: 'NO_ACCESS_TOKEN', message: '┘ä╪º ┘è┘ê╪¼╪» ╪¬┘ê┘â┘å ╪╡╪º┘ä╪¡ ┘ä╪¡╪│╪º╪¿ TikTok╪î ╪ú╪╣╪» ╪▒╪¿╪╖ ╪º┘ä╪¡╪│╪º╪¿' };
+    throw { code: 'NO_ACCESS_TOKEN', message: 'لا يوجد توكن صالح لحساب TikTok، أعد ربط الحساب' };
   }
 
   let apiRes;
@@ -83,13 +83,13 @@ async function initPublish({ companyId, account, videoUrl, caption, privacyLevel
       },
     });
   } catch (err) {
-    const apiError = extractApiError(err?.response?.data, '┘ü╪┤┘ä ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘Ç TikTok ╪ú╪½┘å╪º╪í ╪¿╪»╪í ╪º┘ä┘å╪┤╪▒');
+    const apiError = extractApiError(err?.response?.data, 'فشل الاتصال بـ TikTok أثناء بدء النشر');
     throw { code: apiError.code, message: apiError.message };
   }
 
   const publishId = apiRes?.data?.publish_id;
   if (!publishId) {
-    const apiError = extractApiError(apiRes, '┘ä┘à ┘è╪¬┘à ╪Ñ╪▒╪¼╪º╪╣ publish_id ┘à┘å TikTok');
+    const apiError = extractApiError(apiRes, 'لم يتم إرجاع publish_id من TikTok');
     throw { code: apiError.code, message: apiError.message };
   }
 
@@ -125,7 +125,7 @@ async function pollStatus(prisma, post) {
       data: { publish_id: post.publishId },
     });
   } catch (err) {
-    const apiError = extractApiError(err?.response?.data, '┘ü╪┤┘ä ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘Ç TikTok ╪ú╪½┘å╪º╪í ╪¼┘ä╪¿ ╪º┘ä╪¡╪º┘ä╪⌐');
+    const apiError = extractApiError(err?.response?.data, 'فشل الاتصال بـ TikTok أثناء جلب الحالة');
     throw { code: apiError.code, message: apiError.message };
   }
 
@@ -139,7 +139,7 @@ async function pollStatus(prisma, post) {
     updates.publishedAt = new Date();
   } else if (mappedStatus === 'FAILED') {
     updates.status = 'FAILED';
-    updates.errorMessage = data?.fail_reason || data?.error?.message || '┘ü╪┤┘ä ╪º┘ä┘å╪┤╪▒ ╪╣┘ä┘ë TikTok';
+    updates.errorMessage = data?.fail_reason || data?.error?.message || 'فشل النشر على TikTok';
   } else if (mappedStatus === 'PROCESSING') {
     updates.status = 'PROCESSING';
   }
@@ -155,7 +155,7 @@ async function refreshStatus({ companyId, postId }) {
   const prisma = getSharedPrismaClient();
   const post = await prisma.tikTokPost.findFirst({ where: { id: postId, companyId } });
   if (!post) {
-    throw { code: 'NOT_FOUND', message: '╪º┘ä┘à┘å╪┤┘ê╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' };
+    throw { code: 'NOT_FOUND', message: 'المنشور غير موجود' };
   }
   return pollStatus(prisma, post);
 }

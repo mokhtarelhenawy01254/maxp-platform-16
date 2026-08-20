@@ -1,6 +1,6 @@
-﻿/**
- * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º5.4 ΓÇö delivery preview):
- * regression tests for getTemplatesDeliveryPreview ΓÇö the admin must see the
+/**
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §5.4 — delivery preview):
+ * regression tests for getTemplatesDeliveryPreview — the admin must see the
  * expected delivery fate per template (provider + template approval status),
  * and risk levels must be computed correctly per scenario.
  */
@@ -48,10 +48,10 @@ describe('GET /templates/delivery-preview', () => {
     jest.clearAllMocks();
   });
 
-  test('┘è╪▒╪¼╪╣ baileys_free_text ┘ä┘ê default Baileys', async () => {
+  test('يرجع baileys_free_text لو default Baileys', async () => {
     const prisma = buildPrisma({
       templates,
-      sessions: [{ id: 's1', name: '╪¼┘ä╪│╪⌐ ╪¿╪º┘è┘ä╪▓', provider: 'BAILEYS', phoneNumber: '201000000000', status: 'CONNECTED' }],
+      sessions: [{ id: 's1', name: 'جلسة بايلز', provider: 'BAILEYS', phoneNumber: '201000000000', status: 'CONNECTED' }],
       defaultSessionId: 's1',
     });
     const { req, res } = makeReqRes(prisma);
@@ -63,10 +63,10 @@ describe('GET /templates/delivery-preview', () => {
     expect(body.hasBaileysBackup).toBe(true);
   });
 
-  test('┘è╪▒╪¼╪╣ meta_approved ┘ä┘ê ┘à┘è╪¬╪º + ┘é╪º┘ä╪¿ ┘à╪╣╪¬┘à╪»', async () => {
+  test('يرجع meta_approved لو ميتا + قالب معتمد', async () => {
     const prisma = buildPrisma({
       templates,
-      sessions: [{ id: 's2', name: '╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º', provider: 'META_CLOUD', phoneNumber: '201000000000', status: 'CONNECTED' }],
+      sessions: [{ id: 's2', name: 'جلسة ميتا', provider: 'META_CLOUD', phoneNumber: '201000000000', status: 'CONNECTED' }],
       defaultSessionId: 's2',
     });
     const { req, res } = makeReqRes(prisma);
@@ -84,7 +84,7 @@ describe('GET /templates/delivery-preview', () => {
     expect(confirmed.riskLevel).toBe('warning');
   });
 
-  test('┘è╪▒╪¼╪╣ no_session ╪¿╪«╪╖╪▒ danger ┘ä┘ê ┘à┘ü┘è╪┤ sessions', async () => {
+  test('يرجع no_session بخطر danger لو مفيش sessions', async () => {
     const prisma = buildPrisma({ templates, sessions: [], defaultSessionId: null });
     const { req, res } = makeReqRes(prisma);
     await getTemplatesDeliveryPreview(req, res);
@@ -95,13 +95,13 @@ describe('GET /templates/delivery-preview', () => {
     expect(body.preview.every(p => p.deliveryStatus === 'no_session' && p.riskLevel === 'danger')).toBe(true);
   });
 
-  test('╪¡╪»╪½ ┘ä┘è┘ç ┘é╪º┘ä╪¿╪º┘å (╪╣╪º╪»┘è + ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪») ╪╣┘ä┘ë ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ΓåÆ ┘è╪▒╪¼╪╣ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¿╪│ (dedup)', async () => {
+  test('حدث ليه قالبان (عادي + ميتا معتمد) على جلسة ميتا → يرجع قالب ميتا بس (dedup)', async () => {
     const prisma = buildPrisma({
       templates: [
         { id: 'r1', eventType: 'CONFIRMED', category: 'ORDER', channel: 'AUTO', metaTemplateName: null, metaTemplateStatus: null, metaTemplateLanguage: 'ar' },
         { id: 'm1', eventType: 'CONFIRMED', category: 'ORDER', channel: 'META_CLOUD', metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', metaTemplateLanguage: 'ar' },
       ],
-      sessions: [{ id: 's2', name: '╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º', provider: 'META_CLOUD', phoneNumber: '201000000000', status: 'CONNECTED' }],
+      sessions: [{ id: 's2', name: 'جلسة ميتا', provider: 'META_CLOUD', phoneNumber: '201000000000', status: 'CONNECTED' }],
       defaultSessionId: 's2',
     });
     const { req, res } = makeReqRes(prisma);
@@ -114,13 +114,13 @@ describe('GET /templates/delivery-preview', () => {
     expect(confirmedItems[0].riskLevel).toBe('none');
   });
 
-  test('╪¡╪»╪½ ┘ä┘è┘ç ┘é╪º┘ä╪¿╪º┘å ╪╣┘ä┘ë ╪¼┘ä╪│╪⌐ Baileys ΓåÆ ┘è╪▒╪¼╪╣ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º╪»┘è ╪¿╪│ (dedup)', async () => {
+  test('حدث ليه قالبان على جلسة Baileys → يرجع القالب العادي بس (dedup)', async () => {
     const prisma = buildPrisma({
       templates: [
         { id: 'm1', eventType: 'SHIPPED', category: 'ORDER', channel: 'META_CLOUD', metaTemplateName: 'ship_ar', metaTemplateStatus: 'APPROVED', metaTemplateLanguage: 'ar' },
         { id: 'r1', eventType: 'SHIPPED', category: 'ORDER', channel: 'AUTO', metaTemplateName: null, metaTemplateStatus: null, metaTemplateLanguage: 'ar' },
       ],
-      sessions: [{ id: 's1', name: '╪¼┘ä╪│╪⌐ ╪¿╪º┘è┘ä╪▓', provider: 'BAILEYS', phoneNumber: '201000000000', status: 'CONNECTED' }],
+      sessions: [{ id: 's1', name: 'جلسة بايلز', provider: 'BAILEYS', phoneNumber: '201000000000', status: 'CONNECTED' }],
       defaultSessionId: 's1',
     });
     const { req, res } = makeReqRes(prisma);

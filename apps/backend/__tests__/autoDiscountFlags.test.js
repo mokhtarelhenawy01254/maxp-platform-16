@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Regression test: independent loyalty-system toggles
- * Verifies that tiers and auto-discount are no longer mutually exclusive ΓÇö
+ * Verifies that tiers and auto-discount are no longer mutually exclusive —
  * each has its own flag (tiersEnabled / autoDiscountEnabled) and they can be
  * enabled together. Also verifies fresh companies default to all-off.
  */

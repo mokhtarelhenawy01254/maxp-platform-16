@@ -1,4 +1,4 @@
-﻿/**
+/**
  * View Transitions API helpers. Used to give the orders section a smooth
  * fade between routes (orders list, details, preparation, etc).
  *

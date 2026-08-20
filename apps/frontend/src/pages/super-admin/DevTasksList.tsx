@@ -1,4 +1,3 @@
-import { Plus as PlusIcon, Filter as FunnelIcon, Search as MagnifyingGlassIcon, Grid as ViewColumnsIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Circle as ClipboardDocumentListIcon, AlertTriangle as ExclamationTriangleIcon, Circle as CalendarDaysIcon, MessageSquare as ChatBubbleLeftIcon, Circle as PaperClipIcon, Eye as EyeIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, Download as ArrowDownTrayIcon, Check as CheckCircleIcon, ChevronUp as ChevronUpIcon, ChevronDown as ChevronDownIcon, Tag as TagIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
@@ -15,7 +14,29 @@ import {
   TableHead,
   TableCell,
 } from "../../components/ui/table";
-;
+import {
+  PlusIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  ViewColumnsIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ClipboardDocumentListIcon,
+  ExclamationTriangleIcon,
+  CalendarDaysIcon,
+  ChatBubbleLeftIcon,
+  PaperClipIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  XMarkIcon,
+  ArrowDownTrayIcon,
+  CheckCircleIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  TagIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 
 interface Task {
   id: string;

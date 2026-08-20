@@ -1,12 +1,17 @@
-import { Check as CheckCircleIcon, X as XCircleIcon, Trash2 as TrashIcon, Star as StarIcon, Search as MagnifyingGlassIcon, Circle as StarSolidIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../utils/storeUrl";
-;
-;
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  TrashIcon,
+  StarIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
+import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 
 interface Review {
   id: string;

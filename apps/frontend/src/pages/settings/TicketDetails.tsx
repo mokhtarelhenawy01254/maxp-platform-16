@@ -1,8 +1,17 @@
-import { ArrowLeft as ArrowLeftIcon, MessageSquare as ChatBubbleLeftRightIcon, Clock as ClockIcon, User as UserIcon, AlertTriangle as ExclamationCircleIcon, Circle as PaperAirplaneIcon, Image as PhotoIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-;
+import {
+  ArrowLeftIcon,
+  ChatBubbleLeftRightIcon,
+  ClockIcon,
+  UserIcon,
+  ExclamationCircleIcon,
+  PaperAirplaneIcon,
+  PhotoIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface Message {
@@ -76,7 +85,7 @@ const TicketDetails: React.FC = () => {
 
       if (!ticketResponse.data.success) {
         throw new Error(
-          ticketResponse.data.message || "فشل تحميل تفاصيل التذكرة",
+          ticketResponse.data.message || i18n.t("TicketDetails.failed_load_cd6e"),
         );
       }
 
@@ -128,7 +137,7 @@ const TicketDetails: React.FC = () => {
           error.message ||
           "فشل تحميل تفاصيل التذكرة",
       );
-      toast.error("فشل تحميل تفاصيل التذكرة");
+      tToast.error("TicketDetails.failed_load_cd6e");
     } finally {
       setLoading(false);
     }
@@ -178,12 +187,12 @@ const TicketDetails: React.FC = () => {
     e.preventDefault();
 
     if (!replyMessage.trim() && !replyImage) {
-      toast.error("يرجى إدخال رسالة أو رفع صورة");
+      tToast.error("TicketDetails.msg_0d3f");
       return;
     }
 
     if (!ticketId) {
-      toast.error("معرف التذكرة غير موجود");
+      tToast.error("TicketDetails.msg_8919");
       return;
     }
 
@@ -210,13 +219,13 @@ const TicketDetails: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم إرسال الرد بنجاح");
+        tToast.success("TicketDetails.success_send_02a0");
         setReplyMessage("");
         setReplyImage(null);
         // إعادة تحميل تفاصيل التذكرة لتحديث الرسائل
         loadTicketDetails();
       } else {
-        throw new Error(response.data.message || "فشل إرسال الرد");
+        throw new Error(response.data.message || i18n.t("TicketDetails.failed_send_234e"));
       }
     } catch (error: any) {
       console.error("❌ Error sending reply:", error);
@@ -233,12 +242,12 @@ const TicketDetails: React.FC = () => {
     if (file) {
       // التحقق من نوع الملف
       if (!file.type.startsWith("image/")) {
-        toast.error("يرجى رفع ملف صورة فقط");
+        tToast.error("TicketDetails.msg_47f7");
         return;
       }
       // التحقق من حجم الملف (10MB)
       if (file.size > 10 * 1024 * 1024) {
-        toast.error("حجم الصورة يجب أن يكون أقل من 10MB");
+        tToast.error("TicketDetails.msg_ff96");
         return;
       }
       setReplyImage(file);

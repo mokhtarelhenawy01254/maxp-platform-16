@@ -211,6 +211,18 @@ router.post('/ad-accounts/save', facebookAdsController.saveAdAccount);
 
 /**
  * ============================================
+ * Isolated Ads Connection Routes
+ * ============================================
+ */
+
+// GET /api/v1/facebook-ads/connection/status - حالة الربط المعزول (بلا توكنات)
+router.get('/connection/status', facebookAdsController.getAdsConnectionStatus);
+
+// DELETE /api/v1/facebook-ads/connection/sources/:sourceId - فصل مصدر إعلانات
+router.delete('/connection/sources/:sourceId', facebookAdsController.disconnectAdsConnectionSource);
+
+/**
+ * ============================================
  * Audiences Routes
  * ============================================
  */

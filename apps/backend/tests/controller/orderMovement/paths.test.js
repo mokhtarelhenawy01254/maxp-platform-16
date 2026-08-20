@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/orderMovementCore', () => ({
+jest.mock('../../../services/orderMovementCore', () => ({
   fetchOrderMovementData: jest.fn(),
   buildTransitions: jest.fn(),
   normalizeDateRange: jest.fn(({ startDate, endDate } = {}) => ({
@@ -138,7 +138,7 @@ describe('orderMovement pathsController', () => {
       pendingPathCount: 1
     });
 
-    const delivered = data.topPaths.find((p) => p.path === 'CONFIRMEDΓåÆSHIPPEDΓåÆDELIVERED');
+    const delivered = data.topPaths.find((p) => p.path === 'CONFIRMED→SHIPPED→DELIVERED');
     expect(delivered).toMatchObject({
       orderCount: 1,
       percent: 33.3,
@@ -177,7 +177,7 @@ describe('orderMovement pathsController', () => {
     await pathsController({ user: { id: 'user-1' }, query: {} }, res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
     expect(core.fetchOrderMovementData).not.toHaveBeenCalled();
   });
 

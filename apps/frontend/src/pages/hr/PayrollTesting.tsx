@@ -1,5 +1,28 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { AlertCircle, AlertTriangle, Banknote, Calculator, Calendar, Check, CheckCircle, ChevronRight, Clock, DollarSign, Download, File, FileCheck, FileText, MinusCircle, Percent, Plus, Printer, RefreshCw, Save, Search, Settings, ShieldCheck, Trash2, Users, Zap } from 'lucide-react';
+import {
+  Users,
+  Search,
+  Calculator,
+  AlertCircle,
+  Save,
+  Printer,
+  Trash2,
+  Plus,
+  Zap,
+  ShieldCheck,
+  Calendar,
+  Clock,
+  Banknote,
+  MinusCircle,
+  CheckCircle,
+  RefreshCw,
+  ChevronRight,
+  FileText,
+  Percent,
+  FileCheck,
+  Settings,
+  Download,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
@@ -26,6 +49,7 @@ import {
 import { Checkbox } from "../../components/ui/checkbox";
 import { Separator } from "../../components/ui/separator";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { numberToArabicWords } from "../../lib/tafqeet";
 import api from "../../services/api";
 import { Slider } from "../../components/ui/slider";
@@ -455,7 +479,7 @@ const PayrollTesting: React.FC = () => {
       });
     } catch (error) {
       console.error("Error calculating payroll:", error);
-      toast.error("فشل في حساب الراتب");
+      tToast.error("PayrollTesting.failed_account_1ffd");
     } finally {
       setCalculating(false);
     }
@@ -492,7 +516,7 @@ const PayrollTesting: React.FC = () => {
       setFilteredEmployees(response.data.employees);
     } catch (error) {
       console.error("Error fetching employees:", error);
-      toast.error("فشل في جلب قائمة الموظفين");
+      tToast.error("PayrollTesting.failed_fetch_8a11");
     } finally {
       setLoadingEmployees(false);
     }
@@ -2567,7 +2591,7 @@ const PayrollTesting: React.FC = () => {
                           className="flex-1"
                           onClick={() => {
                             // Generate PDF
-                            toast.success("جاري تحضير ملف PDF...");
+                            tToast.success("PayrollTesting.msg_98c4");
                           }}
                         >
                           <Download className="h-4 w-4 ml-2" />
@@ -2580,7 +2604,7 @@ const PayrollTesting: React.FC = () => {
                           className="flex-1"
                           onClick={() => {
                             // Print payslip
-                            toast.success("جاري فتح نافذة الطباعة...");
+                            tToast.success("PayrollTesting.msg_f478");
                           }}
                         >
                           <Printer className="h-4 w-4 ml-2" />

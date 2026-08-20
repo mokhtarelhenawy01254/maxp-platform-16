@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Bot,
@@ -68,7 +68,7 @@ export default function TeamTab({ startDate, endDate, mode }: MovementFilterProp
       const result = await fetchMovement<TeamData>("team", { startDate, endDate, mode });
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬");
+      setError(err instanceof Error ? err.message : "حدث خطأ أثناء تحميل البيانات");
     } finally {
       setLoading(false);
     }
@@ -93,20 +93,20 @@ export default function TeamTab({ startDate, endDate, mode }: MovementFilterProp
       <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
-          label="╪¡╪▒┘â╪º╪¬ ┘è╪»┘ê┘è╪⌐"
+          label="حركات يدوية"
           value={formatNumber(data.summary.manualTransitions)}
           icon={MousePointerClick}
           gradient="from-indigo-500 to-violet-600"
-          hint={`${formatNumber(data.summary.totalTransitions)} ╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪¡╪▒┘â╪º╪¬`}
+          hint={`${formatNumber(data.summary.totalTransitions)} إجمالي الحركات`}
         />
         <KpiCard
-          label="╪¡╪▒┘â╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è╪⌐"
+          label="حركات تلقائية"
           value={formatNumber(data.summary.autoTransitions)}
           icon={Bot}
           gradient="from-violet-500 to-fuchsia-600"
         />
         <KpiCard
-          label="╪ú╪╣╪╢╪º╪í ┘å╪┤╪╖┘ê┘å"
+          label="أعضاء نشطون"
           value={formatNumber(data.summary.activeMembers)}
           icon={Users}
           gradient="from-sky-500 to-indigo-600"
@@ -114,15 +114,15 @@ export default function TeamTab({ startDate, endDate, mode }: MovementFilterProp
       </div>
 
       <MovementCard
-        title="╪º┘ä╪¡╪▒┘â╪º╪¬ ╪¡╪│╪¿ ╪º┘ä╪╣╪╢┘ê"
-        subtitle="╪º┘ä╪¡╪▒┘â╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐ ┘ê╪º┘ä╪¬┘ä┘é╪º╪ª┘è╪⌐ ┘ä┘â┘ä ╪╣╪╢┘ê"
+        title="الحركات حسب العضو"
+        subtitle="الحركات اليدوية والتلقائية لكل عضو"
         action={
           <div className="flex items-center gap-4 text-xs">
             <span className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-              <span className="h-2.5 w-2.5 rounded-sm bg-indigo-500" /> ┘è╪»┘ê┘è
+              <span className="h-2.5 w-2.5 rounded-sm bg-indigo-500" /> يدوي
             </span>
             <span className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-              <span className="h-2.5 w-2.5 rounded-sm bg-violet-500" /> ╪¬┘ä┘é╪º╪ª┘è
+              <span className="h-2.5 w-2.5 rounded-sm bg-violet-500" /> تلقائي
             </span>
           </div>
         }
@@ -134,23 +134,23 @@ export default function TeamTab({ startDate, endDate, mode }: MovementFilterProp
               <XAxis type="number" stroke="#9CA3AF" fontSize={12} allowDecimals={false} />
               <YAxis type="category" dataKey="name" stroke="#9CA3AF" fontSize={12} width={150} />
               <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={{ fill: "rgba(99,102,241,0.06)" }} />
-              <Bar dataKey="manual" name="┘è╪»┘ê┘è" fill="#6366F1" stackId="transitions" />
-              <Bar dataKey="auto" name="╪¬┘ä┘é╪º╪ª┘è" fill="#8B5CF6" stackId="transitions" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="manual" name="يدوي" fill="#6366F1" stackId="transitions" />
+              <Bar dataKey="auto" name="تلقائي" fill="#8B5CF6" stackId="transitions" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </MovementCard>
 
       <MovementCard
-        title="╪¬╪▒╪¬┘è╪¿ ╪º┘ä┘ü╪▒┘è┘é"
-        subtitle="╪ú╪»╪º╪í ┘â┘ä ╪╣╪╢┘ê ╪¡╪│╪¿ ╪º┘ä╪¡╪▒┘â╪º╪¬ ┘ê╪º┘ä╪Ñ┘è╪▒╪º╪»"
+        title="ترتيب الفريق"
+        subtitle="أداء كل عضو حسب الحركات والإيراد"
         action={
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/20 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-300">
-              <CheckCircle2 className="h-3 w-3" /> ╪¬╪ú┘â┘è╪»
+              <CheckCircle2 className="h-3 w-3" /> تأكيد
             </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-300">
-              <XCircle className="h-3 w-3" /> ╪Ñ┘ä╪║╪º╪í
+              <XCircle className="h-3 w-3" /> إلغاء
             </span>
           </div>
         }
@@ -161,43 +161,43 @@ export default function TeamTab({ startDate, endDate, mode }: MovementFilterProp
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="py-3 pr-4 pl-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center gap-1.5">
-                    <Trophy className="h-3.5 w-3.5" /> ╪º┘ä╪¬╪▒╪¬┘è╪¿
+                    <Trophy className="h-3.5 w-3.5" /> الترتيب
                   </span>
                 </th>
                 <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5" /> ╪º┘ä╪╣╪╢┘ê
+                    <Users className="h-3.5 w-3.5" /> العضو
                   </span>
                 </th>
                 <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center gap-1.5">
-                    <PackageCheck className="h-3.5 w-3.5" /> ╪º┘ä╪¡╪▒┘â╪º╪¬
+                    <PackageCheck className="h-3.5 w-3.5" /> الحركات
                   </span>
                 </th>
                 <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> ╪¬╪ú┘â┘è╪»
+                    <CheckCircle2 className="h-3.5 w-3.5" /> تأكيد
                   </span>
                 </th>
                 <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center gap-1.5">
-                    <XCircle className="h-3.5 w-3.5" /> ╪Ñ┘ä╪║╪º╪í
+                    <XCircle className="h-3.5 w-3.5" /> إلغاء
                   </span>
                 </th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">╪¬╪│┘ä┘è┘à</th>
+                <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">تسليم</th>
                 <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center gap-1.5">
-                    <AlertTriangle className="h-3.5 w-3.5" /> ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐
+                    <AlertTriangle className="h-3.5 w-3.5" /> غير صالحة
                   </span>
                 </th>
                 <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center gap-1.5">
-                    <Clock3 className="h-3.5 w-3.5" /> ┘à╪¬┘ê╪│╪╖ ╪º┘ä╪¬╪ú┘â┘è╪»
+                    <Clock3 className="h-3.5 w-3.5" /> متوسط التأكيد
                   </span>
                 </th>
                 <th className="py-3 pl-4 pr-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center gap-1.5">
-                    <Wallet className="h-3.5 w-3.5" /> ╪º┘ä╪Ñ┘è╪▒╪º╪»
+                    <Wallet className="h-3.5 w-3.5" /> الإيراد
                   </span>
                 </th>
               </tr>

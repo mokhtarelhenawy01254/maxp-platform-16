@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Central registry that maps protected frontend routes to the permissions
  * (or roles) required to view them. Used to validate post-auth destinations
  * BEFORE navigating (so users never land on a page they cannot open) and by
@@ -90,6 +90,6 @@ export const isPathAllowedForUser = (
     );
   }
 
-  // Unguarded app route ΓÇö let the page-level guard decide on render.
+  // Unguarded app route — let the page-level guard decide on render.
   return true;
 };

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tiktokDisplayRoutes.js
  * TikTok Embed + Display API routes.
  * Orchestrator mounts this router at /api/v1/tiktok/display.

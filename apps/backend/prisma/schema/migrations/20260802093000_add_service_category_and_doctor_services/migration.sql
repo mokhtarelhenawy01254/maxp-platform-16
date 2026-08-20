@@ -1,4 +1,4 @@
-﻿-- Service categories (departments: Urology, Dental, ...)
+-- Service categories (departments: Urology, Dental, ...)
 CREATE TABLE IF NOT EXISTS booking_service_categories (
   "id" TEXT NOT NULL,
   "companyId" TEXT NOT NULL,

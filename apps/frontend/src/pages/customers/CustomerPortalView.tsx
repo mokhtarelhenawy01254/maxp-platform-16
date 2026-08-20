@@ -1,4 +1,4 @@
-﻿import { useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import { useCustomerLoyaltySummary } from "../../hooks/useCustomerLoyaltySummary";
 import CustomerAccountDashboard from "../account/CustomerAccountDashboard";

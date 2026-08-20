@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GraduationCap, Loader2, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ const TOPICS = [
 ] as const;
 
 /**
- * AgentTrainingPage ΓÇö teach the agent your business in plain words.
+ * AgentTrainingPage — teach the agent your business in plain words.
  * The backend splits the free-form text into knowledge embeddings the agent
  * retrieves when answering customers (same index as FAQ/Policy answers).
  */
@@ -120,7 +120,7 @@ export default function AgentTrainingPage() {
           <ul className="space-y-1.5">
             {lastResult.statements.map((s, i) => (
               <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                <span className="text-green-600 shrink-0">Γ£ô</span>
+                <span className="text-green-600 shrink-0">✓</span>
                 <span>{s.statement}</span>
               </li>
             ))}

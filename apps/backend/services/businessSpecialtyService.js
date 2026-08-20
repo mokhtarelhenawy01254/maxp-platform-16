@@ -16,7 +16,6 @@ const DEFAULT_SPECIALTIES = [
     icon: 'ShoppingBag',
     sortOrder: 10,
     appSlugs: [
-      'ecommerce-basic',
       'store-basic',
       'quantity-offers-pro',
       'commerce-advanced',
@@ -61,7 +60,7 @@ const DEFAULT_SPECIALTIES = [
     icon: 'Workflow',
     sortOrder: 30,
     appSlugs: [
-      'ecommerce-basic',
+      'store-basic',
       'procurement-pro',
       'order-confirmation-distribution',
       'notification-automation',
@@ -85,7 +84,7 @@ const DEFAULT_SPECIALTIES = [
       'notification-automation',
       'order-confirmation-distribution',
       'analytics-basic',
-      'ecommerce-basic',
+      'store-basic',
     ],
   },
 ];
@@ -438,6 +437,7 @@ function buildDbAppPayloadFromCatalog(catalogApp) {
     pricingModel: String(catalogApp?.pricingModel || (monthlyPrice === 0 ? 'FREE' : 'SUBSCRIPTION')).toUpperCase(),
     unitPrice: unitPriceRaw === null || unitPriceRaw === undefined ? null : toSafeNumber(unitPriceRaw, 0),
     unitName: catalogApp?.unitName || null,
+    ppuBillingMethod: catalogApp?.ppuBillingMethod || "PER_ORDER",
     features: catalogApp?.features && typeof catalogApp.features === 'object' ? catalogApp.features : {},
     isActive: catalogApp?.isActive !== false,
     isPublic: catalogApp?.isPublic !== false,
@@ -497,6 +497,7 @@ async function ensureMarketplaceAppsBySlugs(slugs, options = {}) {
           pricingModel: createPayload.pricingModel,
           unitPrice: createPayload.unitPrice,
           unitName: createPayload.unitName,
+          ppuBillingMethod: createPayload.ppuBillingMethod,
           features: createPayload.features,
           isActive: createPayload.isActive,
           isPublic: createPayload.isPublic,

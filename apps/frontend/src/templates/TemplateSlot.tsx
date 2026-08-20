@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useTemplate } from "./useTemplate";
 
 export type TemplateSlotName = "sidebar" | "header" | "layoutShell";

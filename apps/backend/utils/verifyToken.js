@@ -4,9 +4,7 @@ const {
   getSharedPrismaClientAsync,
   executeWithRetry,
 } = require('../services/sharedDatabase');
-const tenantContext = require('../services/tenantContext');
 const { getJwtSecret, isMissingAuthSecretError } = require('./jwtSecret');
-
 /**
  * Load user permissions from the new Role-based permission system
  * Falls back gracefully if the Permission table doesn't exist yet
@@ -125,7 +123,7 @@ const hasLegacyPrimaryCompanyAccess = async (prisma, userId, targetCompanyId, pr
 };
 
 const runWithoutTenantContext = (operation) =>
-  tenantContext.run(null, operation);
+  require('../services/tenantContext').run(null, operation);
 
 function getAiServiceToken() {
   return process.env.AI_SERVICE_TOKEN || process.env.MAXP_SERVICE_TOKEN || '';
@@ -180,7 +178,7 @@ const authenticateToken = async (req, res, next) => {
       service: true
     };
 
-    return tenantContext.run(companyId, () => next());
+    return require('../services/tenantContext').run(companyId, () => next());
   }
 
   try {
@@ -194,6 +192,65 @@ const authenticateToken = async (req, res, next) => {
         message: 'رمز المصادقة غير صحيح',
         code: 'INVALID_TOKEN_PAYLOAD'
       });
+    }
+
+    // 👤 [CUSTOMER] Customer portal tokens resolve against the Customer table,
+    // not the platform User table (customers are not platform users). The token
+    // is scoped to a single company — we never allow company override for customers.
+    if (decoded.role === 'CUSTOMER') {
+      const customerId = decoded.customerId || decoded.userId || decoded.id;
+      const customerCompanyId = decoded.companyId;
+
+      if (!customerId || !customerCompanyId) {
+        return res.status(401).json({
+          success: false,
+          message: 'رمز المصادقة غير صحيح',
+          code: 'INVALID_TOKEN_PAYLOAD'
+        });
+      }
+
+      const prisma = await getSharedPrismaClientAsync();
+      const customer = await executeWithRetry(async () =>
+        prisma.customer.findFirst({
+          where: { id: customerId, companyId: customerCompanyId },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            phoneNormalized: true,
+            companyId: true,
+            status: true,
+            tags: true
+          }
+        })
+      );
+
+      if (!customer) {
+        return res.status(401).json({
+          success: false,
+          message: 'العميل غير موجود',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      req.user = {
+        ...decoded,
+        id: customer.id,
+        customerId: customer.id,
+        userId: customer.id,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone || decoded.phone,
+        role: 'CUSTOMER',
+        companyId: customerCompanyId,
+        effectiveCompanyId: customerCompanyId,
+        userPermissions: []
+      };
+
+      return require('../services/tenantContext').run(customerCompanyId, () => next());
     }
 
     // 🛡️ [SAAS] Secure Company Context Resolution
@@ -269,7 +326,7 @@ const authenticateToken = async (req, res, next) => {
     let effectiveCompanyId = companyId || user.companyId || null;
     let effectiveRole = user.role || decoded.role;
 
-    if (user.role !== 'SUPER_ADMIN' && effectiveCompanyId && typeof effectiveCompanyId === 'string' && effectiveCompanyId.length > 5) {
+    if (user.role !== 'SUPER_ADMIN' && effectiveCompanyId && typeof effectiveCompanyId === 'string') {
       const membership = await executeWithRetry(async () =>
         prisma.userCompany.findUnique({
           where: {
@@ -296,9 +353,12 @@ const authenticateToken = async (req, res, next) => {
         );
 
         if (!allowLegacyPrimary) {
-          console.warn(`⚠️ [VERIFY-TOKEN] User ${user.id} has no active membership for company ${effectiveCompanyId} — continuing for downstream authorization checks (path=${req.path})`);
-          // Do NOT block here — let downstream middleware (requireCompanyAccess, requireOwnerRole, requireRole)
-          // handle authorization. This allows owner routes to check ALL companies, not just the JWT context.
+          console.error(`🚫 [VERIFY-TOKEN] 403 ACCESS_REVOKED | userId=${user.id} | companyId=${effectiveCompanyId} | path=${req.path}`);
+          return res.status(403).json({
+            success: false,
+            message: 'ليس لديك صلاحية للوصول لهذه الشركة',
+            code: 'ACCESS_REVOKED'
+          });
         }
       } else {
         effectiveRole = membership.roleRef?.key || membership.role || effectiveRole;

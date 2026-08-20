@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   getAccountStatus,
   createPublish,
@@ -14,16 +14,16 @@ const POLL_INTERVAL_MS = 8000;
 const MAX_POLL_TRIES = 8;
 
 const PRIVACY_OPTIONS: { value: TikTokPrivacyLevel; label: string }[] = [
-  { value: "PUBLIC_TO_EVERYONE", label: "╪╣╪º┘à" },
-  { value: "FOLLOWERS", label: "┘ä┘ä┘à╪¬╪º╪¿╪╣┘è┘å" },
-  { value: "SELF_ONLY", label: "┘ä┘å┘ü╪│┘è" },
+  { value: "PUBLIC_TO_EVERYONE", label: "عام" },
+  { value: "FOLLOWERS", label: "للمتابعين" },
+  { value: "SELF_ONLY", label: "لنفسي" },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "┘ü┘è ╪º┘ä╪º┘å╪¬╪╕╪º╪▒",
-  PROCESSING: "┘é┘è╪» ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐",
-  PUBLISHED: "┘à┘å╪┤┘ê╪▒",
-  FAILED: "┘ü╪┤┘ä",
+  PENDING: "في الانتظار",
+  PROCESSING: "قيد المعالجة",
+  PUBLISHED: "منشور",
+  FAILED: "فشل",
 };
 
 const STATUS_BADGE_CLASSES: Record<string, string> = {
@@ -44,9 +44,9 @@ const secondaryBtnClass =
   "rounded-lg border border-blue-600 px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50";
 
 function formatDate(value?: string | null): string {
-  if (!value) return "ΓÇö";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "ΓÇö";
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("ar-EG", {
     day: "numeric",
     month: "short",
@@ -64,7 +64,7 @@ function extractError(err: unknown): string {
     if (errField && typeof errField === "object" && errField.message) return errField.message;
     if (e.message) return e.message;
   }
-  return "╪¡╪»╪½ ╪«╪╖╪ú ╪║┘è╪▒ ┘à╪¬┘ê┘é╪╣";
+  return "حدث خطأ غير متوقع";
 }
 
 export default function TikTokPublish() {
@@ -151,11 +151,11 @@ export default function TikTokPublish() {
   const handlePublish = async () => {
     setError("");
     if (!videoUrl.trim()) {
-      setError("┘è╪▒╪¼┘ë ╪Ñ╪»╪«╪º┘ä ╪▒╪º╪¿╪╖ ╪º┘ä┘ü┘è╪»┘è┘ê");
+      setError("يرجى إدخال رابط الفيديو");
       return;
     }
     if (!account?.connected) {
-      setError("╪º╪▒╪¿╪╖ ╪¡╪│╪º╪¿ TikTok ╪ú┘ê┘ä╪º┘ï ┘à┘å ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪¡╪│╪º╪¿╪º╪¬");
+      setError("اربط حساب TikTok أولاً من إدارة الحسابات");
       return;
     }
     setPublishing(true);
@@ -191,10 +191,10 @@ export default function TikTokPublish() {
   return (
     <div dir="rtl" className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="mb-1 text-2xl font-bold text-gray-900">
-        ┘å╪┤╪▒ ┘à╪¡╪¬┘ê┘ë ╪╣┘ä┘ë TikTok
+        نشر محتوى على TikTok
       </h1>
       <p className="mb-6 text-sm text-gray-500">
-        ╪º┘å╪┤╪▒ ┘ü┘è╪»┘è┘ê┘ç╪º╪¬ ┘à╪¿╪º╪┤╪▒╪⌐ ╪╣┘ä┘ë ╪¡╪│╪º╪¿┘â ┘ü┘è TikTok
+        انشر فيديوهات مباشرة على حسابك في TikTok
       </p>
 
       {error && (
@@ -206,14 +206,14 @@ export default function TikTokPublish() {
       {/* Account status card */}
       <section className={`${cardClass} mb-6`}>
         <h2 className="mb-3 text-sm font-semibold text-gray-900">
-          ╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪│╪º╪¿
+          حالة الحساب
         </h2>
         {account?.connected ? (
           <div className="flex items-center gap-4">
             {account.avatarUrl ? (
               <img
                 src={account.avatarUrl}
-                alt={account.displayName || "╪¡╪│╪º╪¿ TikTok"}
+                alt={account.displayName || "حساب TikTok"}
                 className="h-12 w-12 rounded-full object-cover"
               />
             ) : (
@@ -223,23 +223,23 @@ export default function TikTokPublish() {
             )}
             <div>
               <div className="font-semibold text-gray-900">
-                {account.displayName || "╪¡╪│╪º╪¿ TikTok"}
+                {account.displayName || "حساب TikTok"}
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                  ┘à╪¬╪╡┘ä
+                  متصل
                 </span>
                 <span className="text-xs text-gray-500">
                   {account.tokenExpiresAt
-                    ? `╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪¬┘ê┘â┘å: ${formatDate(account.tokenExpiresAt)}`
-                    : "╪º┘ä╪¬┘ê┘â┘å ╪»╪º╪ª┘à"}
+                    ? `انتهاء التوكن: ${formatDate(account.tokenExpiresAt)}`
+                    : "التوكن دائم"}
                 </span>
               </div>
             </div>
           </div>
         ) : (
           <div className="text-sm text-gray-600">
-            ╪║┘è╪▒ ┘à╪¬╪╡┘ä ΓÇö ╪º╪▒╪¿╪╖ ╪¡╪│╪º╪¿ TikTok ┘à┘å ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪¡╪│╪º╪¿╪º╪¬
+            غير متصل — اربط حساب TikTok من إدارة الحسابات
           </div>
         )}
       </section>
@@ -247,12 +247,12 @@ export default function TikTokPublish() {
       {/* Publish form */}
       <section className={`${cardClass} mb-6`}>
         <h2 className="mb-4 text-sm font-semibold text-gray-900">
-          ┘à┘å╪┤┘ê╪▒ ╪¼╪»┘è╪»
+          منشور جديد
         </h2>
         <div className="space-y-4">
           <div>
             <label htmlFor="videoUrl" className={labelClass}>
-              ╪▒╪º╪¿╪╖ ╪º┘ä┘ü┘è╪»┘è┘ê
+              رابط الفيديو
             </label>
             <input
               id="videoUrl"
@@ -266,20 +266,20 @@ export default function TikTokPublish() {
           </div>
           <div>
             <label htmlFor="caption" className={labelClass}>
-              ╪º┘ä┘ê╪╡┘ü
+              الوصف
             </label>
             <textarea
               id="caption"
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder="╪º┘â╪¬╪¿ ┘ê╪╡┘ü ╪º┘ä┘ü┘è╪»┘è┘ê ┘ç┘å╪º"
+              placeholder="اكتب وصف الفيديو هنا"
               rows={3}
               className={inputClass}
             />
           </div>
           <div>
             <label htmlFor="privacyLevel" className={labelClass}>
-              ╪º┘ä╪«╪╡┘ê╪╡┘è╪⌐
+              الخصوصية
             </label>
             <select
               id="privacyLevel"
@@ -302,7 +302,7 @@ export default function TikTokPublish() {
             disabled={publishing || !account?.connected}
             className={primaryBtnClass}
           >
-            {publishing ? "╪¼╪º╪▒┘è ╪º┘ä┘å╪┤╪▒..." : "┘å╪┤╪▒"}
+            {publishing ? "جاري النشر..." : "نشر"}
           </button>
         </div>
       </section>
@@ -310,32 +310,32 @@ export default function TikTokPublish() {
       {/* Posts list */}
       <section className={cardClass}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">╪º┘ä┘à┘å╪┤┘ê╪▒╪º╪¬</h2>
+          <h2 className="text-sm font-semibold text-gray-900">المنشورات</h2>
           {pagination && (
             <span className="text-xs text-gray-500">
-              ╪Ñ╪¼┘à╪º┘ä┘è {pagination.total} ┘à┘å╪┤┘ê╪▒
+              إجمالي {pagination.total} منشور
             </span>
           )}
         </div>
 
         {loading ? (
           <div className="py-8 text-center text-sm text-gray-500">
-            ╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...
+            جاري التحميل...
           </div>
         ) : posts.length === 0 ? (
           <div className="py-8 text-center text-sm text-gray-500">
-            ┘ä╪º ╪¬┘ê╪¼╪» ┘à┘å╪┤┘ê╪▒╪º╪¬ ╪¿╪╣╪»
+            لا توجد منشورات بعد
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-right text-xs text-gray-500">
-                  <th className="px-3 py-2 font-medium">╪º┘ä┘ê╪╡┘ü</th>
-                  <th className="px-3 py-2 font-medium">╪º┘ä╪¡╪º┘ä╪⌐</th>
-                  <th className="px-3 py-2 font-medium">╪º┘ä╪«╪╖╪ú</th>
-                  <th className="px-3 py-2 font-medium">╪º┘ä╪¬╪º╪▒┘è╪«</th>
-                  <th className="px-3 py-2 font-medium">╪Ñ╪¼╪▒╪º╪í</th>
+                  <th className="px-3 py-2 font-medium">الوصف</th>
+                  <th className="px-3 py-2 font-medium">الحالة</th>
+                  <th className="px-3 py-2 font-medium">الخطأ</th>
+                  <th className="px-3 py-2 font-medium">التاريخ</th>
+                  <th className="px-3 py-2 font-medium">إجراء</th>
                 </tr>
               </thead>
               <tbody>
@@ -343,7 +343,7 @@ export default function TikTokPublish() {
                   <tr key={post.id} className="border-b border-gray-100">
                     <td className="px-3 py-3">
                       <div className="max-w-[280px] truncate text-gray-900">
-                        {post.caption || "╪¿╪»┘ê┘å ┘ê╪╡┘ü"}
+                        {post.caption || "بدون وصف"}
                       </div>
                       <div className="mt-1 text-xs text-gray-400">
                         {post.account?.displayName || "TikTok"}
@@ -360,7 +360,7 @@ export default function TikTokPublish() {
                       </span>
                     </td>
                     <td className="max-w-[200px] truncate px-3 py-3 text-xs text-red-600">
-                      {post.errorMessage || "ΓÇö"}
+                      {post.errorMessage || "—"}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-xs text-gray-500">
                       {formatDate(post.createdAt)}
@@ -373,8 +373,8 @@ export default function TikTokPublish() {
                         className={secondaryBtnClass}
                       >
                         {refreshingId === post.id
-                          ? "╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡╪»┘è╪½..."
-                          : "╪¬╪¡╪»┘è╪½ ╪º┘ä╪¡╪º┘ä╪⌐"}
+                          ? "جاري التحديث..."
+                          : "تحديث الحالة"}
                       </button>
                     </td>
                   </tr>

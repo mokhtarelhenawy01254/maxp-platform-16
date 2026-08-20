@@ -1,9 +1,14 @@
-import { Check as CheckIcon, Eye as EyeIcon, EyeOff as EyeSlashIcon, Lock as LockClosedIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
-;
+import {
+  CheckIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  LockClosedIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
@@ -67,7 +72,7 @@ const ResetPassword: React.FC = () => {
 
   useEffect(() => {
     if (!token) {
-      toast.error("رمز إعادة التعيين غير صحيح");
+      tToast.error("ResetPassword.msg_db5c");
       navigate("/auth/forgot-password");
     }
   }, [navigate, token]);
@@ -82,7 +87,7 @@ const ResetPassword: React.FC = () => {
       });
 
       setIsSuccess(true);
-      toast.success("تم إعادة تعيين كلمة المرور بنجاح");
+      tToast.success("ResetPassword.msg_75cd");
       setTimeout(() => navigate("/auth/login"), 2000);
     } catch (error: any) {
       const message =

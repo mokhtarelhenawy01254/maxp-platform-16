@@ -1,8 +1,19 @@
-import { Circle as ArrowLongDownIcon, Circle as ArrowLongUpIcon, Calendar as CalendarIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Circle as ClipboardDocumentListIcon, Circle as DocumentDuplicateIcon, Eye as EyeIcon, Folder as FolderIcon, Pencil as PencilIcon, Trash2 as TrashIcon, User as UserIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-;
+import {
+  ArrowLongDownIcon,
+  ArrowLongUpIcon,
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ClipboardDocumentListIcon,
+  DocumentDuplicateIcon,
+  EyeIcon,
+  FolderIcon,
+  PencilIcon,
+  TrashIcon,
+  UserIcon,
+} from "@heroicons/react/24/outline";
 
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";

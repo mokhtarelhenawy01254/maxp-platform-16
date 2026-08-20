@@ -18,11 +18,13 @@ const appSchema = z.object({
   logo: z.string().max(500).nullish(),
   icon: z.string().max(200).nullish(),
   coverImage: z.string().max(500).nullish(),
+  images: z.union([z.array(z.string().max(500)), z.string().max(2000)]).nullish(),
   mainRoute: z.string().max(200).nullish(),
   adminRoute: z.string().max(200).nullish(),
   pricingModel: z.enum(['FREE', 'SUBSCRIPTION', 'PAY_PER_USE']).nullish(),
   unitPrice: z.number().min(0).nullish(),
   unitName: z.string().max(100).nullish(),
+  ppuBillingMethod: z.enum(['PER_ORDER', 'PER_ITEM', 'PERCENTAGE']).nullish(),
   features: z.union([z.string(), z.array(z.string())]).nullish(),
   requiredApps: z.array(z.string()).nullish(),
 });
@@ -53,7 +55,7 @@ const enterprisePlanSchema = z.object({
   description: z.string().max(2000).nullish(),
   price: z.number().min(0).nullish(),
   isActive: z.boolean().nullish(),
-  features: z.union([z.string(), z.array(z.string())]).nullish(),
+  features: z.union([z.string(), z.array(z.string()), z.record(z.unknown())]).nullish(),
 });
 
 function validate(schema) {

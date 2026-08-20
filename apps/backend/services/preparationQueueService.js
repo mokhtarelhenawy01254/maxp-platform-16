@@ -12,6 +12,8 @@ const {
 
 const PREPARATION_STATUS_METADATA_KEY = 'preparationStatus';
 const PREPARATION_SHORTAGE_HOLD_METADATA_KEY = 'preparationShortageHold';
+const PREPARATION_HOLD_METADATA_KEY = 'preparationHold';
+const PREPARATION_HOLD_STAGES = new Set(['STOCK_SHORTAGE', 'ON_HOLD_PREP']);
 const PREPARATION_SHORTAGE_REASONS = new Set([
   'stock_shortage',
   'waiting_transfer',
@@ -47,10 +49,177 @@ const PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY = {
 };
 const PREPARATION_DB_TERMINAL_STATUSES = [...PREPARATION_TERMINAL_STATUSES].filter(
   (status) => status !== 'TRASH'
-);
+).concat(['PENDING', 'DRAFT', 'SCHEDULED', 'TRASH_ORDER', 'EXCHANGED', 'PARTIALLY_DELIVERED']);
 const PREPARATION_BATCH_SIZE = 150;
 
 const toPreparationUpper = (value) => String(value || '').trim().toUpperCase();
+
+const PREPARATION_ONLY_STATUSES = new Set([
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK',
+  'ON_HOLD_PREP'
+]);
+
+// Maps a preparation-queue status to the "regular" order.status value that the
+// rest of the system expects (dashboards/analytics/WhatsApp/Turbo). The prep
+// stage itself is stored in metadata.preparationStatus.
+const getMappedRegularOrderStatus = (preparationStatus) => {
+  if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+  if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+  if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+  return 'PROCESSING';
+};
+
+const updatePreparationOrderStatus = async ({
+  orderIdentifier,
+  companyId,
+  status,
+  notes,
+  userId,
+  userName,
+}) => {
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+  const prisma = getSharedPrismaClient();
+
+  if (!PREPARATION_ONLY_STATUSES.has(normalizedStatus)) {
+    const customStatus = await prisma.orderStatusConfig.findFirst({
+      where: { companyId, code: normalizedStatus, statusType: 'preparation', isActive: true },
+    });
+    if (!customStatus) {
+      const error = new Error(`الحالة "${normalizedStatus}" غير مسموح بها في قائمة التجهيز`);
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        { id: orderIdentifier, companyId },
+        { orderNumber: orderIdentifier, companyId }
+      ]
+    }
+  });
+
+  if (order) {
+    const currentMetadata = parsePreparationJsonObject(order.metadata);
+    const previousPreparationStatus =
+      typeof currentMetadata.preparationStatus === 'string'
+        ? currentMetadata.preparationStatus
+        : order.status;
+
+    await assertPreparationHoldRule({
+      currentPreparationStatus: previousPreparationStatus,
+      targetStatus: normalizedStatus,
+      notes,
+      isOverride: false,
+    });
+
+    const mappedStatus = getMappedRegularOrderStatus(normalizedStatus);
+    const nextMetadata = {
+      ...currentMetadata,
+      preparationStatus: normalizedStatus,
+      preparationStatusUpdatedAt: new Date().toISOString()
+    };
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        status: mappedStatus,
+        notes: notes || undefined,
+        metadata: JSON.stringify(nextMetadata),
+        statusHistory: {
+          create: {
+            status: normalizedStatus,
+            oldStatus: previousPreparationStatus,
+            reason: notes || 'Bulk preparation queue update',
+            changedBy: userId,
+            userName
+          }
+        },
+        updatedAt: new Date()
+      }
+    });
+
+    return { orderType: 'regular', order: updatedOrder };
+  }
+
+  const guestOrder = await prisma.guestOrder.findFirst({
+    where: {
+      OR: [
+        { id: orderIdentifier, companyId },
+        { orderNumber: orderIdentifier, companyId }
+      ]
+    },
+    select: { id: true, status: true, metadata: true }
+  });
+
+  if (guestOrder) {
+    const currentMetadata = parsePreparationJsonObject(guestOrder.metadata);
+    const previousPreparationStatus =
+      typeof currentMetadata.preparationStatus === 'string'
+        ? currentMetadata.preparationStatus
+        : guestOrder.status;
+
+    await assertPreparationHoldRule({
+      currentPreparationStatus: previousPreparationStatus,
+      targetStatus: normalizedStatus,
+      notes,
+      isOverride: false,
+    });
+
+    const nextMetadata = {
+      ...currentMetadata,
+      preparationStatus: normalizedStatus,
+      preparationStatusUpdatedAt: new Date().toISOString()
+    };
+
+    const updatedGuestOrder = await prisma.guestOrder.update({
+      where: { id: guestOrder.id },
+      data: {
+        status: normalizedStatus,
+        notes: notes || undefined,
+        metadata: JSON.stringify(nextMetadata),
+        OrderStatusHistory: {
+          create: {
+            status: normalizedStatus,
+            oldStatus: guestOrder.status,
+            reason: notes || 'Bulk preparation queue update',
+            changedBy: userId,
+            userName
+          }
+        },
+        updatedAt: new Date()
+      }
+    });
+
+    return { orderType: 'guest', order: updatedGuestOrder };
+  }
+
+  const notFoundError = new Error('الطلب غير موجود');
+  notFoundError.statusCode = 404;
+  throw notFoundError;
+};
+
+const getBulkStatusNote = (status) => {
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+
+  if (normalizedStatus === 'TRASH') {
+    return 'Bulk trash';
+  }
+
+  if (normalizedStatus === 'RESTORE') {
+    return 'Bulk restore';
+  }
+
+  return 'Bulk status update';
+};
 const toPreparationNumber = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -110,6 +279,32 @@ const buildPreparationShortageHoldDetails = (metadata) => {
   };
 };
 
+const buildPreparationProblemHoldDetails = (metadata) => {
+  const metadataObject = parsePreparationJsonObject(metadata);
+  const rawDetails = parsePreparationJsonObject(
+    metadataObject[PREPARATION_HOLD_METADATA_KEY]
+  );
+
+  return {
+    reason: typeof rawDetails.reason === 'string' ? rawDetails.reason : '',
+    heldAt: typeof rawDetails.heldAt === 'string' ? rawDetails.heldAt : '',
+    releasedAt: typeof rawDetails.releasedAt === 'string' ? rawDetails.releasedAt : '',
+    heldBy: typeof rawDetails.heldBy === 'string' ? rawDetails.heldBy : '',
+    releasedBy: typeof rawDetails.releasedBy === 'string' ? rawDetails.releasedBy : '',
+    state: rawDetails.state === 'released' ? 'released' : 'held'
+  };
+};
+
+// Returns the active hold details object for an order based on its stage. Used
+// by follow-up/owner filters and sorting so both STOCK_SHORTAGE and
+// ON_HOLD_PREP orders follow the same "hold" rules.
+const getOrderHoldDetails = (order) => {
+  if (order.stage === 'STOCK_SHORTAGE') return order.shortageHoldDetails;
+  if (order.stage === 'ON_HOLD_PREP') return order.problemHoldDetails;
+  // problemHoldDetails لم يعد يحمل owner/followUpDate — الـ default موحّد مع الشكل الجديد
+  return { reason: '', state: 'released' };
+};
+
 const getEffectivePreparationStatus = (status, metadata) => {
   const normalizedStatus = toPreparationUpper(status);
   if (PREPARATION_TERMINAL_STATUSES.has(normalizedStatus)) {
@@ -154,14 +349,14 @@ const normalizePreparationStage = (status) => {
 };
 
 const isPreparationShortageFollowUpToday = (followUpDate, stage) => {
-  if (stage !== 'STOCK_SHORTAGE' || !followUpDate) return false;
+  if (!PREPARATION_HOLD_STAGES.has(stage) || !followUpDate) return false;
 
   const today = new Date().toISOString().slice(0, 10);
   return normalizePreparationDateInputValue(followUpDate) === today;
 };
 
 const isPreparationShortageFollowUpOverdue = (followUpDate, stage) => {
-  if (stage !== 'STOCK_SHORTAGE' || !followUpDate) return false;
+  if (!PREPARATION_HOLD_STAGES.has(stage) || !followUpDate) return false;
 
   const parsedDate = new Date(
     followUpDate.length <= 10 ? `${followUpDate}T00:00:00` : followUpDate
@@ -175,7 +370,7 @@ const isPreparationShortageFollowUpOverdue = (followUpDate, stage) => {
 };
 
 const getPreparationShortageFollowUpState = (followUpDate, stage) => {
-  if (stage !== 'STOCK_SHORTAGE') return 'none';
+  if (!PREPARATION_HOLD_STAGES.has(stage)) return 'none';
   if (!followUpDate) return 'without_date';
   if (isPreparationShortageFollowUpOverdue(followUpDate, stage)) return 'overdue';
   if (isPreparationShortageFollowUpToday(followUpDate, stage)) return 'today';
@@ -373,6 +568,7 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
             return {
               id: item.id,
               productId: item.productId,
+              variantId: item.variantId || null,
               name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
               productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
               price: item.price,
@@ -402,7 +598,23 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
     tax: hasLimitedMerchantView ? 0 : order.tax,
     shipping: hasLimitedMerchantView ? 0 : order.shipping,
     status: (order.status || 'PENDING').toLowerCase(),
-    paymentStatus: (order.paymentStatus || 'PENDING').toLowerCase(),
+    paymentStatus: (() => {
+      const stored = String(order.paymentStatus || '').toLowerCase();
+      const proof = parsePreparationJsonObject(order.metadata)?.walletPaymentProof;
+      const isWalletPayment =
+        String(order.paymentMethod || '').toLowerCase() === 'wallet';
+      const hasScreenshot = Boolean(proof && proof.imageUrl);
+      const isRejected = String((proof && proof.status) || '').toUpperCase() === 'REJECTED';
+      if (
+        isWalletPayment &&
+        hasScreenshot &&
+        !isRejected &&
+        !['failed', 'refunded', 'partially_refunded'].includes(stored)
+      ) {
+        return 'completed';
+      }
+      return stored || 'pending';
+    })(),
     paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
     shippingAddress: hasLimitedMerchantView ? null : shippingAddress,
     items,
@@ -539,6 +751,7 @@ const buildPreparationOrderSummary = (
   }
 
   const shortageHoldDetails = buildPreparationShortageHoldDetails(order.metadata);
+  const problemHoldDetails = buildPreparationProblemHoldDetails(order.metadata);
   const itemInsights = (Array.isArray(order.items) ? order.items : []).map((item) => {
     const summary = inventorySummaryByProduct.get(String(item.productId || ''));
     const scopedWarehouses = selectedWarehouseId
@@ -562,9 +775,16 @@ const buildPreparationOrderSummary = (
         typeof item.metadata.productName === 'string'
         ? item.metadata.productName
         : '';
+    const itemMetadata = typeof item.metadata === 'object' && item.metadata && !Array.isArray(item.metadata) ? item.metadata : {};
+    const color = item.color || itemMetadata.color || itemMetadata.productColor || '';
+    const size = item.size || itemMetadata.size || itemMetadata.productSize || '';
 
     return {
+      productId: String(item.productId || ''),
+      variantId: item.variantId || null,
       displayName: item.productName || item.name || metadataProductName || 'منتج غير محدد',
+      color,
+      size,
       quantityNumber,
       availableInScope,
       reservedInScope,
@@ -587,6 +807,8 @@ const buildPreparationOrderSummary = (
     normalizedStatus,
     stage,
     shortageHoldDetails,
+    problemHoldDetails,
+    hasProblem: stage === 'STOCK_SHORTAGE' || stage === 'ON_HOLD_PREP',
     itemInsights,
     missingItemsCount,
     totalUnits,
@@ -617,9 +839,12 @@ const createEmptyPreparationQueueResponse = (page, limit) => ({
     readyCount: 0,
     shortageCount: 0,
     shortageHoldCount: 0,
+    onHoldPrepCount: 0,
     overdueShortageFollowUpCount: 0,
+    overdueProblemFollowUpCount: 0,
     readyToShipCount: 0,
-    allOverdueShortageFollowUpCount: 0
+    allOverdueShortageFollowUpCount: 0,
+    allOverdueProblemFollowUpCount: 0
   },
   shortageOwnerOptions: []
 });
@@ -640,16 +865,20 @@ const VALID_SORT_BY = new Set(['createdAt', 'totalUnits', 'totalValue']);
 
 const comparePreparationOrders = (left, right, prioritizeShortageOrders, sortByField = 'createdAt', sortOrderDir = 'desc') => {
   if (sortByField === 'createdAt' && sortOrderDir === 'desc') {
-    if (left.stage === 'STOCK_SHORTAGE' && right.stage === 'STOCK_SHORTAGE') {
+    const leftIsHold = PREPARATION_HOLD_STAGES.has(left.stage);
+    const rightIsHold = PREPARATION_HOLD_STAGES.has(right.stage);
+    if (leftIsHold && rightIsHold) {
+      const leftHold = getOrderHoldDetails(left);
+      const rightHold = getOrderHoldDetails(right);
       const leftPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
         getPreparationShortageFollowUpState(
-          left.shortageHoldDetails.followUpDate,
+          leftHold.followUpDate,
           left.stage
         )
       ];
       const rightPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
         getPreparationShortageFollowUpState(
-          right.shortageHoldDetails.followUpDate,
+          rightHold.followUpDate,
           right.stage
         )
       ];
@@ -681,8 +910,10 @@ const stripPreparationTransientFields = ({
   warehouseMatch,
   recommendedWarehouseName,
   shortageHoldDetails,
+  problemHoldDetails,
   normalizedStatus,
   stage,
+  hasProblem,
   createdAtMs,
   ...order
 }) => order;
@@ -710,6 +941,9 @@ const matchesPreparationHaystackSearch = (order, searchQuery) => {
   return haystack.includes(searchQuery);
 };
 
+const hasShipmentTracking = (order) =>
+  (order.shipments || []).some((s) => s.trackingNumber);
+
 const matchesPreparationFilters = ({
   order,
   stockFilter,
@@ -717,15 +951,28 @@ const matchesPreparationFilters = ({
   shortageOwnerQuery,
   shortageFollowUpFilter,
   itemCountFilter,
-  searchQuery
+  searchQuery,
+  notPrinted,
+  noShippingCode,
+  productFilter,
+  colorFilter,
+  sizeFilter,
+  productIdFilter,
+  variantIdFilter,
 }) => {
   if (!order.warehouseMatch) return false;
 
   if (itemCountFilter === 'single' && order.itemInsights.length !== 1) return false;
   if (itemCountFilter === 'multiple' && order.itemInsights.length <= 1) return false;
 
+  if (notPrinted && (order.printCount || 0) > 0) return false;
+  if (noShippingCode && (order.turboTrackingNumber || hasShipmentTracking(order))) return false;
+
   const hasShortageContext =
     order.missingItemsCount > 0 || order.stage === 'STOCK_SHORTAGE';
+  const hasHoldContext =
+    order.stage === 'STOCK_SHORTAGE' || order.stage === 'ON_HOLD_PREP';
+  const activeHoldDetails = getOrderHoldDetails(order);
 
   if (stockFilter === 'ready' && !order.isReady) return false;
   if (stockFilter === 'shortage' && order.missingItemsCount === 0) {
@@ -740,30 +987,60 @@ const matchesPreparationFilters = ({
   }
 
   if (shortageOwnerQuery) {
-    if (!hasShortageContext) return false;
-    if (!order.shortageHoldDetails.owner.trim().toLowerCase().includes(shortageOwnerQuery)) {
+    if (!hasHoldContext) return false;
+    // 🚨 PRODUCTION-FIX: problemHoldDetails لم يعد يحمل owner (اتشال في refactor
+    // الميزة) — لا نجري .trim() على undefined.
+    if (!(activeHoldDetails.owner || '').trim().toLowerCase().includes(shortageOwnerQuery)) {
       return false;
     }
   }
 
   if (shortageFollowUpFilter !== 'all') {
-    if (!hasShortageContext) return false;
+    if (!hasHoldContext) return false;
 
     if (shortageFollowUpFilter === 'without_date') {
-      if (order.shortageHoldDetails.followUpDate) return false;
+      if (activeHoldDetails.followUpDate) return false;
     }
 
     if (shortageFollowUpFilter === 'today') {
-      if (!isPreparationShortageFollowUpToday(order.shortageHoldDetails.followUpDate, order.stage)) {
+      if (!isPreparationShortageFollowUpToday(activeHoldDetails.followUpDate, order.stage)) {
         return false;
       }
     }
 
     if (shortageFollowUpFilter === 'overdue') {
-      if (!isPreparationShortageFollowUpOverdue(order.shortageHoldDetails.followUpDate, order.stage)) {
+      if (!isPreparationShortageFollowUpOverdue(activeHoldDetails.followUpDate, order.stage)) {
         return false;
       }
     }
+  }
+
+  if (productFilter || colorFilter || sizeFilter || productIdFilter || variantIdFilter) {
+    const matchesProduct = (order.itemInsights || []).some(
+      (item) => {
+        let match = true;
+        if (productIdFilter) {
+          match = match && (item.productId && item.productId === productIdFilter);
+        }
+        if (variantIdFilter) {
+          const itemVariantId = String(item.variantId || '');
+          match = match && (itemVariantId === variantIdFilter);
+        }
+        if (productFilter) {
+          match = match && ((item.displayName && item.displayName.toLowerCase().includes(productFilter)) ||
+          (item.color && item.color.toLowerCase().includes(productFilter)) ||
+          (item.size && item.size.toLowerCase().includes(productFilter)));
+        }
+        if (colorFilter) {
+          match = match && (item.color && item.color.toLowerCase() === colorFilter);
+        }
+        if (sizeFilter) {
+          match = match && (item.size && item.size.toLowerCase() === sizeFilter);
+        }
+        return match;
+      }
+    );
+    if (!matchesProduct) return false;
   }
 
   return matchesPreparationHaystackSearch(order, searchQuery);
@@ -1020,7 +1297,8 @@ const fetchPreparationBatchOrders = async (candidateRows, { merchantId } = {}) =
           },
           orderItems: {
             include: {
-              product: { select: { id: true, name: true, images: true } }
+              product: { select: { id: true, name: true, images: true } },
+              productVariant: { select: { id: true, name: true, type: true } }
             }
           },
           orderInvoice: {
@@ -1107,9 +1385,16 @@ const getPreparationQueue = async ({ user, query }) => {
   const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
   const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
   const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
+  const notPrinted = query.notPrinted === 'true';
+  const noShippingCode = query.noShippingCode === 'true';
   const prioritizeShortageOrders = query.prioritizeShortageOrders !== 'false';
   const sortByField = VALID_SORT_BY.has(query.sortBy) ? query.sortBy : 'createdAt';
   const sortOrderDir = query.sortOrder === 'asc' ? 'asc' : 'desc';
+  const productFilter = String(query.productFilter || '').trim().toLowerCase();
+  const colorFilter = String(query.colorFilter || '').trim().toLowerCase();
+  const sizeFilter = String(query.sizeFilter || '').trim().toLowerCase();
+  const productIdFilter = (query.productId || '').trim();
+  const variantIdFilter = (query.variantId || '').trim();
 
   let affiliateId = query.affiliateId;
   let merchantId = null;
@@ -1148,9 +1433,12 @@ const getPreparationQueue = async ({ user, query }) => {
   let readyCount = 0;
   let shortageCount = 0;
   let shortageHoldCount = 0;
+  let onHoldPrepCount = 0;
   let overdueShortageFollowUpCount = 0;
+  let overdueProblemFollowUpCount = 0;
   let readyToShipCount = 0;
   let allOverdueShortageFollowUpCount = 0;
+  let allOverdueProblemFollowUpCount = 0;
   let candidateOffset = 0;
 
   while (true) {
@@ -1211,9 +1499,9 @@ const getPreparationQueue = async ({ user, query }) => {
 
     batchPreparationOrders.forEach((order) => {
       if (order.warehouseMatch) {
-        const ownerName = order.shortageHoldDetails.owner.trim();
-        if (ownerName) {
-          shortageOwnerSet.add(ownerName);
+        const shortageOwner = order.shortageHoldDetails.owner.trim();
+        if (shortageOwner) {
+          shortageOwnerSet.add(shortageOwner);
         }
 
         if (isPreparationShortageFollowUpOverdue(
@@ -1231,7 +1519,14 @@ const getPreparationQueue = async ({ user, query }) => {
         shortageOwnerQuery,
         shortageFollowUpFilter,
         itemCountFilter,
-        searchQuery
+        searchQuery,
+        notPrinted,
+        noShippingCode,
+        productFilter,
+        colorFilter,
+        sizeFilter,
+        productIdFilter,
+        variantIdFilter,
       });
 
       if (!matchesFilters) {
@@ -1255,6 +1550,10 @@ const getPreparationQueue = async ({ user, query }) => {
 
       if (order.normalizedStatus === 'STOCK_SHORTAGE') {
         shortageHoldCount += 1;
+      }
+
+      if (order.normalizedStatus === 'ON_HOLD_PREP') {
+        onHoldPrepCount += 1;
       }
 
       if (isPreparationShortageFollowUpOverdue(
@@ -1313,14 +1612,323 @@ const getPreparationQueue = async ({ user, query }) => {
       readyCount,
       shortageCount,
       shortageHoldCount,
+      onHoldPrepCount,
       overdueShortageFollowUpCount,
+      overdueProblemFollowUpCount,
       readyToShipCount,
-      allOverdueShortageFollowUpCount
+      allOverdueShortageFollowUpCount,
+      allOverdueProblemFollowUpCount
     },
     shortageOwnerOptions
   };
 };
 
+const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, userName }) => {
+  if (!user) {
+    const error = new Error('غير مصرح - يجب تسجيل الدخول');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  let companyId = user.companyId || user.effectiveCompanyId;
+  if (!companyId) {
+    const error = new Error('غير مصرح - معرف الشركة مطلوب');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const activeStage = toPreparationUpper(query.stage || 'ALL');
+  const resolvedStage = activeStage === 'ALL' ? 'ALL' : normalizePreparationStage(activeStage) || activeStage;
+  const searchTerm = String(query.search || '').trim();
+  const searchQuery = searchTerm.toLowerCase();
+  const selectedWarehouseId = String(query.warehouseId || '').trim();
+  const stockFilter = String(query.stockFilter || 'all').trim().toLowerCase();
+  const shortageReasonFilter = String(query.shortageReason || 'all').trim();
+  const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
+  const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
+  const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
+  const notPrinted = query.notPrinted === 'true';
+  const noShippingCode = query.noShippingCode === 'true';
+  const productFilter = String(query.productFilter || '').trim().toLowerCase();
+  const colorFilter = String(query.colorFilter || '').trim().toLowerCase();
+  const sizeFilter = String(query.sizeFilter || '').trim().toLowerCase();
+  const productIdFilter = (query.productId || '').trim();
+  const variantIdFilter = (query.variantId || '').trim();
+
+  const normalizedStatus = String(targetStatus || '').trim().toUpperCase();
+  if (!normalizedStatus) {
+    const error = new Error('حالة الطلب مطلوبة');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let affiliateId = query.affiliateId;
+  let merchantId = null;
+
+  if (isMerchantUser(user)) {
+    const merchant = await requireMerchantAccountForUser(user);
+    merchantId = merchant.id;
+    companyId = merchant.companyId;
+  }
+
+  if (user.role === 'AFFILIATE') {
+    const affiliate = await getSharedPrismaClient().affiliate.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (!affiliate) {
+      return { totalRequested: 0, successCount: 0, results: [] };
+    }
+    affiliateId = affiliate.id;
+  }
+
+  if (affiliateId) {
+    affiliateId = String(affiliateId).trim();
+  }
+
+  const batchSize = PREPARATION_BATCH_SIZE;
+  let candidateOffset = 0;
+  const matchingOrderNumbers = [];
+
+  while (true) {
+    const candidateRows = await fetchPreparationCandidateRows({
+      companyId,
+      affiliateId,
+      merchantId,
+      offset: candidateOffset,
+      limit: batchSize,
+      activeStage: 'ALL',
+      search: searchQuery,
+    });
+
+    if (!candidateRows.length) {
+      break;
+    }
+
+    candidateOffset += candidateRows.length;
+
+    const batchOrders = await fetchPreparationBatchOrders(candidateRows, { merchantId });
+    if (!batchOrders.length) {
+      continue;
+    }
+
+    const inventoryProductIds = [...new Set(
+      batchOrders
+        .flatMap((order) => (Array.isArray(order.items) ? order.items : []))
+        .map((item) => String(item.productId || '').trim())
+        .filter(Boolean)
+    )];
+
+    const inventoryRecords = inventoryProductIds.length > 0
+      ? await getSharedPrismaClient().inventory.findMany({
+        where: {
+          productId: { in: inventoryProductIds },
+          warehouse: {
+            companyId,
+            ...(merchantId ? { merchantId } : {})
+          }
+        },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          product: { select: { id: true, name: true, sku: true } }
+        }
+      })
+      : [];
+
+    const inventorySummaryByProduct = buildPreparationInventorySummary(inventoryRecords);
+    const batchPreparationOrders = batchOrders
+      .map((order) =>
+        buildPreparationOrderSummary(order, inventorySummaryByProduct, selectedWarehouseId)
+      )
+      .filter(Boolean);
+
+    batchPreparationOrders.forEach((order) => {
+      const matchesFilters = matchesPreparationFilters({
+        order,
+        stockFilter,
+        shortageReasonFilter,
+        shortageOwnerQuery,
+        shortageFollowUpFilter,
+        itemCountFilter,
+        searchQuery,
+        notPrinted,
+        noShippingCode,
+        productFilter,
+        colorFilter,
+        sizeFilter,
+        productIdFilter,
+        variantIdFilter,
+      });
+
+      if (!matchesFilters) return;
+
+      if (resolvedStage === 'ALL' || order.stage === resolvedStage) {
+        matchingOrderNumbers.push(order.orderNumber);
+      }
+    });
+  }
+
+  if (matchingOrderNumbers.length === 0) {
+    return { totalRequested: 0, successCount: 0, results: [] };
+  }
+
+  const bulkNote = notes || getBulkStatusNote(normalizedStatus);
+  const results = [];
+
+  for (const orderNumber of matchingOrderNumbers) {
+    try {
+      const updateResult = await updatePreparationOrderStatus({
+        orderIdentifier: orderNumber,
+        companyId,
+        status: normalizedStatus,
+        notes: bulkNote,
+        userId,
+        userName,
+      });
+      results.push({ id: orderNumber, success: true, orderType: updateResult.orderType });
+    } catch (err) {
+      results.push({ id: orderNumber, success: false, error: err.message });
+    }
+  }
+
+  const successCount = results.filter(r => r.success).length;
+
+  return {
+    totalRequested: matchingOrderNumbers.length,
+    successCount,
+    results
+  };
+};
+
+/**
+ * Server-side enforcement of the "requireStockBeforePreparing" rule.
+ *
+ * Mirrors the frontend `validateTransition` stock check so the rule cannot be
+ * bypassed with a direct API call. When `requireStockBeforePreparing` is on and
+ * `allowPartialPreparation` is off, moving an order forward (to QUALITY_CHECK /
+ * PACKAGED / handoff) while items are missing is rejected.
+ *
+ * Returns an Error with statusCode 400 when the move is blocked, otherwise null.
+ */
+const assertPreparationStockRule = async ({
+  orderId,
+  companyId,
+  targetStatus,
+  prepSettings = {},
+}) => {
+  const normalizedTarget = String(targetStatus || '').trim().toUpperCase();
+  const handoffStatus = String(prepSettings.handoffStatus || 'READY_TO_SHIP').trim().toUpperCase();
+
+  const stockBlockedStages = ['QUALITY_CHECK', 'PACKAGED', handoffStatus];
+  if (!stockBlockedStages.includes(normalizedTarget)) {
+    return null;
+  }
+
+  if (prepSettings.requireStockBeforePreparing !== true) {
+    return null;
+  }
+  if (prepSettings.allowPartialPreparation === true) {
+    return null;
+  }
+
+  const prisma = getSharedPrismaClient();
+  const order = await prisma.order.findUnique({
+    where: { id: orderId, companyId },
+    include: {
+      orderItems: { include: { product: { select: { id: true, name: true, sku: true } } } },
+    },
+  });
+  if (!order) {
+    const err = new Error('الطلب غير موجود');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const productIds = [...new Set(
+    order.orderItems
+      .map((item) => String(item.productId || '').trim())
+      .filter(Boolean)
+  )];
+
+  const inventoryRecords = productIds.length > 0
+    ? await prisma.inventory.findMany({
+        where: { productId: { in: productIds }, warehouse: { companyId } },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          product: { select: { id: true, name: true, sku: true } },
+        },
+      })
+    : [];
+
+  const simpleOrder = mapRegularOrderToSimple(order);
+  const inventorySummary = buildPreparationInventorySummary(inventoryRecords);
+  const summary = buildPreparationOrderSummary(simpleOrder, inventorySummary, null);
+
+  if (summary && summary.missingItemsCount > 0) {
+    const err = new Error(
+      prepSettings.allowCrossWarehouseTransfer
+        ? 'الطلب يحتوي على عناصر ناقصة المخزون. قم بتوفيرها أو تحويلها من مخزن آخر قبل المتابعة'
+        : 'الطلب يحتوي على عناصر ناقصة المخزون ولا يمكن المتابعة قبل اكتمال الكميات'
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  return null;
+};
+
+const PREPARATION_HOLD_FORWARD_BLOCKED = new Set([
+  'PREPARING',
+  'PROCESSING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'PACKED',
+  'READY',
+  'READY_TO_SHIP'
+]);
+
+/**
+ * Mirrors the frontend `validateTransition` hold rules so they cannot be
+ * bypassed with a direct API call:
+ *  1. Putting an order on hold (ON_HOLD_PREP) requires a reason note.
+ *  2. A held order cannot move directly to a forward preparation stage
+ *     (including the handoff READY_TO_SHIP) without being released first —
+ *     unless an OWNER/COMPANY_ADMIN/MANAGER overrides with isOverride.
+ *
+ * Returns an Error with statusCode 400 when the move is blocked, otherwise null.
+ */
+const assertPreparationHoldRule = async ({
+  currentPreparationStatus,
+  targetStatus,
+  notes,
+  isOverride = false,
+}) => {
+  const normalizedTarget = String(targetStatus || '').trim().toUpperCase();
+  const normalizedNote = String(notes || '').trim();
+
+  if (normalizedTarget === 'ON_HOLD_PREP' && !normalizedNote) {
+    const error = new Error('سبب تعليق الطلب مطلوب — اكتب المشكلة التي سيتم حلها قبل التعليق');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (isOverride) return null;
+
+  const currentStatus = String(currentPreparationStatus || '').trim().toUpperCase();
+  if (currentStatus !== 'ON_HOLD_PREP') return null;
+
+  if (PREPARATION_HOLD_FORWARD_BLOCKED.has(normalizedTarget)) {
+    const error = new Error('الطلب معلق بانتظار حل المشكلة — يجب إرجاعه للتجهيز أو إزالة التعليق قبل المتابعة');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return null;
+};
+
 module.exports = {
-  getPreparationQueue
+  getPreparationQueue,
+  bulkUpdateByFilters,
+  assertPreparationStockRule,
+  assertPreparationHoldRule
 };

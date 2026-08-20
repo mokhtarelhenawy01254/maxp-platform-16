@@ -1,5 +1,5 @@
-﻿/**
- * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º5.2) ΓÇö regression tests:
+/**
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §5.2) — regression tests:
  * syncPreparationMetadata keeps metadata.preparationStatus in sync for orders
  * that move through paths bypassing orderService.updateOrderStatus (e.g. the
  * advanced workflow's raw prisma.order.update). It must only write for
@@ -57,8 +57,8 @@ jest.mock('../../utils/planLimitPayloads', () => ({
 const orderService = require('../../services/orderService');
 
 // syncPreparationMetadata(orderId, status, prismaClient) accepts a prisma client
-// directly ΓÇö we pass a focused mock (no sharedDatabase dependency needed).
-describe('orderService.syncPreparationMetadata (┬º5.2)', () => {
+// directly — we pass a focused mock (no sharedDatabase dependency needed).
+describe('orderService.syncPreparationMetadata (§5.2)', () => {
   let focusedPrisma;
 
   beforeEach(() => {
@@ -111,7 +111,7 @@ describe('orderService.syncPreparationMetadata (┬º5.2)', () => {
     expect(second).toEqual(first);
   });
 
-  test('order not found ΓåÆ no update, returns null', async () => {
+  test('order not found → no update, returns null', async () => {
     focusedPrisma.order.findUnique.mockResolvedValue(null);
     const result = await orderService.syncPreparationMetadata('missing', 'PROCESSING', focusedPrisma);
     expect(focusedPrisma.order.update).not.toHaveBeenCalled();

@@ -18,35 +18,12 @@ DEFAULT_EMBEDDING_MODEL = "gemini-embedding-2"
 EMBEDDING_PROVIDER_GEMINI = "gemini"
 EMBEDDING_PROVIDER_PSEUDO = "pseudo"
 
-_cached_google_db_key: str | None = None
-
 
 async def _get_google_api_key() -> str | None:
-    """Return Google API key from env, falling back to an active DB key."""
-    key = get_settings().google_api_key
-    if key:
-        return key
-    global _cached_google_db_key
-    if _cached_google_db_key:
-        return _cached_google_db_key
-    try:
-        from src.db.session import async_session
-        from sqlalchemy import text as _text
-        async with async_session() as db:
-            row = await db.execute(
-                _text(
-                    "SELECT \"apiKey\" FROM public.ai_keys "
-                    "WHERE provider = 'GOOGLE' AND \"isActive\" = true "
-                    "ORDER BY \"createdAt\" DESC LIMIT 1"
-                )
-            )
-            result = row.fetchone()
-            if result and result[0]:
-                _cached_google_db_key = result[0]
-                return _cached_google_db_key
-    except Exception as exc:
-        logger.warning("embedding: failed to fetch Google key from DB", error=str(exc))
-    return None
+    """Return Google API key from the DB (ai_keys table)."""
+    from src.llm.key_resolver import get_active_key
+
+    return await get_active_key("GOOGLE")
 
 
 class EpisodicMemoryService:

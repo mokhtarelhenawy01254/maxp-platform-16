@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Backfill productSku for existing OrderItems
  * Fills the productSku field from:
  *   1. Product relation SKU

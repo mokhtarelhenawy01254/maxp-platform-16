@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const BOOKING_NOTIFICATION_EVENTS = {
   APPOINTMENT_BOOKED: 'booking_appointment_booked',
@@ -8,45 +8,45 @@ const BOOKING_NOTIFICATION_EVENTS = {
 };
 
 const NOTIFICATION_TEMPLATES = {
-  [BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_BOOKED]: `╪ú┘ç┘ä╪º┘ï {patientName} ≡ƒæï
+  [BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_BOOKED]: `أهلاً {patientName} 👋
 
-╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪¡╪¼╪▓┘â ╪¿┘å╪¼╪º╪¡ Γ£à
+تم استلام حجزك بنجاح ✅
 
-≡ƒÅÑ ╪º┘ä┘ü╪▒╪╣: {branchName}
-≡ƒôï ╪º┘ä╪«╪»┘à╪⌐: {serviceName}
-≡ƒôà ╪º┘ä╪¬╪º╪▒┘è╪«: {appointmentDate}
-ΓÅ░ ╪º┘ä┘ê┘é╪¬: {startTime}
+🏥 الفرع: {branchName}
+📋 الخدمة: {serviceName}
+📅 التاريخ: {appointmentDate}
+⏰ الوقت: {startTime}
 
-╪│┘è╪¬┘à ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪¼╪▓ ┘à┘å ┘é╪¿┘ä┘å╪º. ┘å╪┤┘â╪▒┘â ┘ä╪½┘é╪¬┘â! ≡ƒîƒ`,
+سيتم تأكيد الحجز من قبلنا. نشكرك لثقتك! 🌟`,
 
-  [BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_CONFIRMED]: `╪¬┘à ╪¬╪ú┘â┘è╪» ┘à┘ê╪╣╪»┘â Γ£à
+  [BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_CONFIRMED]: `تم تأكيد موعدك ✅
 
-╪ú┘ç┘ä╪º┘ï {patientName}╪î ╪¬┘à ╪¬╪ú┘â┘è╪» ╪¡╪¼╪▓┘â:
+أهلاً {patientName}، تم تأكيد حجزك:
 
-≡ƒÅÑ {branchName}
-≡ƒôï {serviceName}
-≡ƒæ¿ΓÇìΓÜò∩╕Å {doctorName}
-≡ƒôà {appointmentDate}
-ΓÅ░ {startTime}
+🏥 {branchName}
+📋 {serviceName}
+👨‍⚕️ {doctorName}
+📅 {appointmentDate}
+⏰ {startTime}
 
-┘ü┘è ╪¡╪º┘ä ╪¬╪ú╪«╪▒┘â ┘è╪▒╪¼┘ë ╪Ñ╪¿┘ä╪º╪║┘å╪º. ┘å╪¬╪┤╪▒┘ü ╪¿╪▓┘è╪º╪▒╪¬┘â!`,
+في حال تأخرك يرجى إبلاغنا. نتشرف بزيارتك!`,
 
-  [BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_CANCELLED]: `╪¬┘à ╪Ñ┘ä╪║╪º╪í ┘à┘ê╪╣╪»┘â Γ¥î
+  [BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_CANCELLED]: `تم إلغاء موعدك ❌
 
-╪ú┘ç┘ä╪º┘ï {patientName}╪î ╪¬┘à ╪Ñ┘ä╪║╪º╪í ┘à┘ê╪╣╪»┘â ╪º┘ä┘à┘é╪▒╪▒ ┘è┘ê┘à {appointmentDate} ╪º┘ä╪│╪º╪╣╪⌐ {startTime}.
+أهلاً {patientName}، تم إلغاء موعدك المقرر يوم {appointmentDate} الساعة {startTime}.
 
-┘è┘à┘â┘å┘â ╪¡╪¼╪▓ ┘à┘ê╪╣╪» ╪¼╪»┘è╪» ┘ü┘è ╪ú┘è ┘ê┘é╪¬. ┘à╪╣ ╪º┘ä╪º╪╣╪¬╪░╪º╪▒ ╪╣┘å ╪ú┘è ╪Ñ╪▓╪╣╪º╪¼.`,
+يمكنك حجز موعد جديد في أي وقت. مع الاعتذار عن أي إزعاج.`,
 
-  [BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_REMINDER]: `╪¬╪░┘â┘è╪▒ ╪¿┘à┘ê╪╣╪»┘â ΓÅ░
+  [BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_REMINDER]: `تذكير بموعدك ⏰
 
-╪ú┘ç┘ä╪º┘ï {patientName}╪î ╪║╪»╪º┘ï ┘à┘ê╪╣╪»┘â:
+أهلاً {patientName}، غداً موعدك:
 
-≡ƒÅÑ {branchName}
-≡ƒôï {serviceName}
-≡ƒôà {appointmentDate}
-ΓÅ░ {startTime}
+🏥 {branchName}
+📋 {serviceName}
+📅 {appointmentDate}
+⏰ {startTime}
 
-≡ƒôî ┘ä╪º ╪¬┘å╪│┘Ä ╪º┘ä╪¡╪╢┘ê╪▒ ┘ü┘è ╪º┘ä┘à┘ê╪╣╪» ╪º┘ä┘à╪¡╪»╪»!` ,
+📌 لا تنسَ الحضور في الموعد المحدد!` ,
 };
 
 function replaceVariables(template, vars) {
@@ -59,9 +59,9 @@ function replaceVariables(template, vars) {
 
 function buildVars(appointment) {
   return {
-    patientName: appointment.customerName || '╪╣┘à┘è┘ä┘å╪º ╪º┘ä╪╣╪▓┘è╪▓',
-    branchName: appointment.branch?.name || appointment.branchName || '┘ü╪▒╪╣┘å╪º',
-    serviceName: appointment.serviceName || '┘à┘ê╪╣╪»',
+    patientName: appointment.customerName || 'عميلنا العزيز',
+    branchName: appointment.branch?.name || appointment.branchName || 'فرعنا',
+    serviceName: appointment.serviceName || 'موعد',
     doctorName: appointment.doctor ? `${appointment.doctor.title || ''} ${appointment.doctor.name || ''}`.trim() : (appointment.doctorName || ''),
     appointmentDate: appointment.appointmentDate instanceof Date
       ? appointment.appointmentDate.toISOString().split('T')[0]
@@ -84,7 +84,7 @@ async function sendBookingNotification({ companyId, eventType, appointment, reci
     return await sendNotification({
       companyId,
       recipientPhone,
-      recipientName: recipientName || appointment.customerName || '╪╣┘à┘è┘ä┘å╪º ╪º┘ä╪╣╪▓┘è╪▓',
+      recipientName: recipientName || appointment.customerName || 'عميلنا العزيز',
       recipientType: 'CUSTOMER',
       category: 'booking',
       eventType,
@@ -123,7 +123,7 @@ async function notifyAppointmentCancelled(companyId, appointment) {
 
 /**
  * Send reminders for tomorrow's confirmed appointments.
- * @param {string|null} companyId ΓÇö optional filter; null = all companies
+ * @param {string|null} companyId — optional filter; null = all companies
  */
 async function sendAppointmentReminders(companyId = null) {
   const prisma = getSharedPrismaClient();

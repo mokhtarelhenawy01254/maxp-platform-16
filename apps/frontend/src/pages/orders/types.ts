@@ -77,6 +77,15 @@ export interface OrderDetailsType {
   status: string;
   paymentStatus: "PENDING" | "COMPLETED" | "FAILED" | "UNAVAILABLE";
   paymentMethod: string;
+  walletPaymentProof?: {
+    imageUrl?: string;
+    walletNumber?: string;
+    transferRef?: string;
+    status?: string;
+    submittedAt?: string;
+    verifiedAt?: string;
+    rejectReason?: string;
+  } | null;
   items: OrderItem[];
   subtotal: number;
   discount: number;
@@ -151,6 +160,13 @@ export interface OrderDetailsType {
   turboShipmentStatus?: string;
   turboLabelUrl?: string;
   turboBranchId?: string;
+  turboCaptainName?: string;
+  turboCaptainPhone?: string;
+  turboBranchName?: string;
+  turboBranchPhone?: string;
+  turboDelayReason?: string;
+  turboReturnReason?: string;
+  turboExpectedBranch?: string;
 
   // Scheduled Order Fields
   isScheduled?: boolean;

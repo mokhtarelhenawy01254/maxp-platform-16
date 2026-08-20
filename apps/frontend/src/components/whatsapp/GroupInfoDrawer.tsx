@@ -1,6 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, Clipboard, Copy, Link, Loader2, LogOut, Pencil, Plus, Save, Shield, ShieldOff, Users, X } from 'lucide-react';
+import {
+  Check,
+  Copy,
+  Link,
+  Loader2,
+  LogOut,
+  Pencil,
+  Plus,
+  Save,
+  Shield,
+  ShieldOff,
+  Users,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -98,7 +113,7 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
       }
     } catch (error) {
       console.error("Error fetching group metadata:", error);
-      toast.error("فشل جلب بيانات المجموعة");
+      tToast.error("groupInfoDrawer.failed_fetch_9a86");
     } finally {
       setLoading(false);
     }
@@ -137,10 +152,10 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
         setting,
         value,
       });
-      toast.success("تم تحديث إعدادات المجموعة");
+      tToast.success("groupInfoDrawer.success_update_094b");
       await fetchGroupMetadata();
     } catch {
-      toast.error("فشل تحديث إعدادات المجموعة");
+      tToast.error("groupInfoDrawer.failed_update_8a12");
     }
   };
 
@@ -154,17 +169,17 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
         setInviteDialogOpen(true);
       }
     } catch {
-      toast.error("فشل جلب رابط الدعوة");
+      tToast.error("groupInfoDrawer.failed_fetch_951a");
     }
   };
 
   const revokeInviteCode = async () => {
     try {
       await api.post(`/whatsapp/groups/${groupJid}/revoke-invite`, { sessionId });
-      toast.success("تم إلغاء رابط الدعوة");
+      tToast.success("groupInfoDrawer.msg_ea61");
       await fetchInviteCode();
     } catch {
-      toast.error("فشل إلغاء رابط الدعوة");
+      tToast.error("groupInfoDrawer.msg_af8c");
     }
   };
 
@@ -174,11 +189,11 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
         sessionId,
         subject: newSubject,
       });
-      toast.success("تم تحديث اسم المجموعة");
+      tToast.success("groupInfoDrawer.success_update_name_3dac");
       setEditingSubject(false);
       await fetchGroupMetadata();
     } catch {
-      toast.error("فشل تحديث اسم المجموعة");
+      tToast.error("groupInfoDrawer.failed_update_name_6554");
     }
   };
 
@@ -188,11 +203,11 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
         sessionId,
         description: newDesc,
       });
-      toast.success("تم تحديث وصف المجموعة");
+      tToast.success("groupInfoDrawer.success_update_334d");
       setEditingDesc(false);
       await fetchGroupMetadata();
     } catch {
-      toast.error("فشل تحديث وصف المجموعة");
+      tToast.error("groupInfoDrawer.failed_update_359b");
     }
   };
 
@@ -203,10 +218,10 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
 
     try {
       await api.post(`/whatsapp/groups/${groupJid}/leave`, { sessionId });
-      toast.success("تم مغادرة المجموعة");
+      tToast.success("groupInfoDrawer.msg_fdee");
       onClose();
     } catch {
-      toast.error("فشل مغادرة المجموعة");
+      tToast.error("groupInfoDrawer.msg_6d2b");
     }
   };
 
@@ -220,10 +235,10 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
         participants: [participantId],
         action,
       });
-      toast.success("تم تنفيذ الإجراء بنجاح");
+      tToast.success("groupInfoDrawer.msg_9d7c");
       await fetchGroupMetadata();
     } catch {
-      toast.error("فشل تنفيذ الإجراء");
+      tToast.error("groupInfoDrawer.msg_e073");
     }
   };
 
@@ -234,12 +249,12 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
         participants: selectedContactsToAdd,
         action: "add",
       });
-      toast.success("تم إضافة المشاركين");
+      tToast.success("groupInfoDrawer.success_add_9bf2");
       setAddParticipantOpen(false);
       setSelectedContactsToAdd([]);
       await fetchGroupMetadata();
     } catch {
-      toast.error("فشل إضافة المشاركين");
+      tToast.error("groupInfoDrawer.failed_add_d449");
     }
   };
 
@@ -344,7 +359,7 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
                     </div>
                   ) : (
                     <p className="rounded-[18px] bg-white/75 px-3 py-3 text-sm leading-6 text-[color:var(--color-muted-foreground)]">
-                      {metadata.desc || "لا يوجد وصف"}
+                      {metadata.desc || i18n.t("groupInfoDrawer.msg_fd2e")}
                     </p>
                   )}
                 </section>
@@ -362,7 +377,7 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
                       size="sm"
                       onClick={() => {
                         navigator.clipboard.writeText(metadata.id);
-                        toast.success("تم نسخ المعرف");
+                        tToast.success("groupInfoDrawer.msg_6845");
                       }}
                     >
                       <Copy className="size-4" />
@@ -615,7 +630,7 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
                 onClick={() => {
                   if (inviteCode) {
                     navigator.clipboard.writeText(`https://chat.whatsapp.com/${inviteCode}`);
-                    toast.success("تم نسخ الرابط");
+                    tToast.success("groupInfoDrawer.msg_6c41");
                   }
                 }}
               >

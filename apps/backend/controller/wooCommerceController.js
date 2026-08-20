@@ -3,6 +3,13 @@ const { createWooClient } = require('../services/wooCommerceClientService');
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
+const { validateStock } = require('../utils/stockValidation');
+
+/** قصّ المخزون للسقف المنطقي (يمنع أرقام تجريبية مثل 99914). */
+const clampWooStock = (value) => {
+  const result = validateStock(value);
+  return result.ok ? (parseInt(value, 10) || 0) : 0;
+};
 
 /**
  * تحديد نوع الـ attribute (لون، مقاس، مادة، إلخ)
@@ -560,6 +567,7 @@ const importSelectedProducts = async (req, res) => {
 
         // ✨ التحقق من وجود المنتج مسبقاً
         let existingProduct = null;
+        let matchedBySku = false;
         if (wooCommerceId) {
           existingProduct = await getSharedPrismaClient().product.findFirst({
             where: {
@@ -570,6 +578,19 @@ const importSelectedProducts = async (req, res) => {
           });
         }
 
+        // ✨ فالش باك: مطابقة بالـ SKU حتى لو الـ wooCommerceId غير موجود (يمنع التكرار)
+        if (!existingProduct && productData.sku) {
+          existingProduct = await getSharedPrismaClient().product.findFirst({
+            where: {
+              sku: productData.sku,
+              companyId,
+              deletedAt: null
+            },
+            include: { productVariants: true }
+          });
+          matchedBySku = Boolean(existingProduct);
+        }
+
         let product;
         let isUpdate = false;
 
@@ -577,7 +598,9 @@ const importSelectedProducts = async (req, res) => {
           if (!updateExisting) {
             results.skipped.push({
               product: productData,
-              reason: 'المنتج موجود بالفعل',
+              reason: matchedBySku
+                ? 'المنتج موجود بالفعل (نفس SKU)'
+                : 'المنتج موجود بالفعل',
               existingProduct
             });
             continue;
@@ -593,7 +616,7 @@ const importSelectedProducts = async (req, res) => {
               description: productData.description || existingProduct.description,
               price: parseFloat(productData.price),
               comparePrice: productData.comparePrice ? parseFloat(productData.comparePrice) : existingProduct.comparePrice,
-              stock: productData.stock !== undefined ? parseInt(productData.stock) : existingProduct.stock,
+              stock: productData.stock !== undefined ? clampWooStock(productData.stock) : existingProduct.stock,
               trackInventory: productData.trackInventory !== undefined ? Boolean(productData.trackInventory) : existingProduct.trackInventory,
               categoryId: categoryId || existingProduct.categoryId,
               images: processedImages.length > 0 ? JSON.stringify(processedImages) : existingProduct.images,
@@ -631,7 +654,7 @@ const importSelectedProducts = async (req, res) => {
               cost: productData.cost ? parseFloat(productData.cost) : null,
               sku: productData.sku || null,
               barcode: productData.barcode || null,
-              stock: productData.stock !== undefined ? parseInt(productData.stock) : 0,
+              stock: clampWooStock(productData.stock),
               trackInventory: productData.trackInventory !== undefined ? Boolean(productData.trackInventory) : true,
               companyId,
               categoryId,

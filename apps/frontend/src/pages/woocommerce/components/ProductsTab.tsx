@@ -1,6 +1,14 @@
-import { RefreshCw as ArrowPathIcon, Download as ArrowDownTrayIcon, ChevronDown as ChevronDownIcon, ChevronRight as ChevronRightIcon, Check as CheckIcon, Filter as FunnelIcon, ShoppingBag as ShoppingBagIcon, X as XMarkIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  ArrowPathIcon,
+  ArrowDownTrayIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CheckIcon,
+  FunnelIcon,
+  ShoppingBagIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { useWooCommerceProducts } from "../hooks/useWooCommerceProducts";
 import { Settings } from "../types";

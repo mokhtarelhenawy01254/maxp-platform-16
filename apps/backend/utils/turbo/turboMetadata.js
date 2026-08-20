@@ -1,10 +1,10 @@
-﻿/**
- * Turbo metadata helpers ΓÇö single source for safely merging turboMetadata.
+/**
+ * Turbo metadata helpers — single source for safely merging turboMetadata.
  *
  * Turbo shipment writers must MERGE onto existing metadata instead of
  * replacing it. Several flows (auto-create on confirmation, manual create,
  * bulk create, cancel, manual track) used to write `JSON.stringify(patch)`,
- * which silently wiped every existing key ΓÇö including the settlement state
+ * which silently wiped every existing key — including the settlement state
  * (`settlementStatus`/`settledAt`/`settledBy`) written by the shipping
  * settlement flow and the `actualShippingCost` written by the Turbo report.
  */
@@ -26,7 +26,7 @@ const parseTurboMetadata = (raw) => {
  *
  * Settlement state is owned by the settlement flow only: when the existing
  * metadata carries a settlement, generic Turbo writers are never allowed to
- * alter it ΓÇö even if the patch happens to include a settlement key.
+ * alter it — even if the patch happens to include a settlement key.
  *
  * @param {string|object|null} existing - existing turboMetadata
  * @param {object} patch - new metadata to merge in

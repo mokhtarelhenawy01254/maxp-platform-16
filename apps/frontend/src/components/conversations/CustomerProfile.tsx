@@ -1,7 +1,14 @@
-import { X as XMarkIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Calendar as CalendarIcon, Ban as NoSymbolIcon, Check as CheckCircleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-;
+import i18n from "../../i18n";
+import {
+  XMarkIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  CalendarIcon,
+  NoSymbolIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { apiService } from "../../services/apiService";
 
 interface Customer {
@@ -99,7 +106,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
 
   const handleBlockCustomer = async () => {
     if (!pageId) {
-      alert("معرف الصفحة غير متوفر");
+      alert(i18n.t("CustomerProfile.msg_bf82"));
       return;
     }
 
@@ -113,7 +120,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
       setIsBlocked(true);
       setShowBlockModal(false);
       setBlockReason("");
-      alert("تم حظر العميل على الصفحة بنجاح");
+      alert(i18n.t("CustomerProfile.msg_8262"));
     } catch (error: any) {
       alert(error.message || "فشل حظر العميل");
     } finally {
@@ -123,7 +130,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
 
   const handleUnblockCustomer = async () => {
     if (!pageId) {
-      alert("معرف الصفحة غير متوفر");
+      alert(i18n.t("CustomerProfile.msg_bf82"));
       return;
     }
 
@@ -135,7 +142,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
       setBlocking(true);
       await apiService.unblockCustomerOnPage(customerId, pageId);
       setIsBlocked(false);
-      alert("تم إلغاء حظر العميل بنجاح");
+      alert(i18n.t("CustomerProfile.msg_b667"));
     } catch (error: any) {
       alert(error.message || "فشل إلغاء حظر العميل");
     } finally {

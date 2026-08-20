@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 export const buildSharedMock = () => ({
   fetchMovement: jest.fn(),
@@ -6,9 +6,9 @@ export const buildSharedMock = () => ({
   getStatusColorClass: () => "bg-gray-100",
   statusChartColor: (_code: string, index = 0) => `#${(index + 1).toString(16).padStart(6, "0")}`,
   formatNumber: (value: number | null | undefined) => String(Number(value || 0)),
-  formatCurrency: (value: number | null | undefined) => `${String(Number(value || 0))} ╪¼.┘à`,
+  formatCurrency: (value: number | null | undefined) => `${String(Number(value || 0))} ج.م`,
   formatPercent: (value: number | null | undefined, digits = 1) => `${Number(value || 0).toFixed(digits)}%`,
-  formatDuration: (hours: number | null | undefined) => `${Math.round(Number(hours || 0))}╪│`,
+  formatDuration: (hours: number | null | undefined) => `${Math.round(Number(hours || 0))}س`,
   formatDate: (value: string | null | undefined) => (value ? "date" : "-"),
   formatDateTime: (value: string | null | undefined) => (value ? "datetime" : "-"),
   CHART_TOOLTIP_STYLE: { borderRadius: "8px" } as const,
@@ -26,7 +26,7 @@ export const buildSharedMock = () => ({
     </div>
   ),
   StatusPill: ({ code }: { code: string }) => <span data-testid="status-pill">{code}</span>,
-  AutoBadge: ({ auto }: { auto: boolean }) => <span>{auto ? "╪¬┘ä┘é╪º╪ª┘è" : "┘è╪»┘ê┘è"}</span>,
+  AutoBadge: ({ auto }: { auto: boolean }) => <span>{auto ? "تلقائي" : "يدوي"}</span>,
   LoadingState: () => <div data-testid="loading">loading</div>,
   ErrorState: ({ message }: { message: string }) => <div data-testid="error">{message}</div>,
   EmptyState: () => <div data-testid="empty">empty</div>,

@@ -12,7 +12,7 @@ jest.mock("sonner", () => ({ toast: { success: jest.fn(), error: jest.fn() } }))
 
 const mockImage = { onload: null as (() => void) | null, onerror: null as (() => void) | null, src: "" };
 beforeAll(() => {
-  (globalThis as Record<string, unknown>).Image = jest.fn(() => mockImage);
+  (globalThis as unknown as Record<string, unknown>).Image = jest.fn(() => mockImage);
   HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
     drawImage: jest.fn(), toDataURL: jest.fn(() => "data:image/jpeg;base64,mock"),
   })) as unknown as typeof HTMLCanvasElement.prototype.getContext;

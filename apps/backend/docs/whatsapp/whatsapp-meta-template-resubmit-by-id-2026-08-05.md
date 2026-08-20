@@ -1,19 +1,19 @@
-﻿# WhatsApp Meta Template Resubmit Fix ΓÇö Create New Template on Edit
+# WhatsApp Meta Template Resubmit Fix — Create New Template on Edit
 
 **Date:** 2026-08-05
 
 ## Problem
 
-When a user edits the local template content for a status (e.g. "┘à╪ñ┘â╪» / CONFIRMED") and clicks **"╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»"** on `/orders/status-templates`, the resubmit always failed with:
+When a user edits the local template content for a status (e.g. "مؤكد / CONFIRMED") and clicks **"إرسال للمراجعة من جديد"** on `/orders/status-templates`, the resubmit always failed with:
 
 ```
-Invalid parameter ΓÇö ┘è┘ê╪¼╪» ┘à╪¡╪¬┘ê┘ë ╪¿┘ç╪░┘ç ╪º┘ä┘ä╪║╪⌐ ╪¿╪º┘ä┘ü╪╣┘ä ΓÇö ┘è┘ê╪¼╪» ╪¿╪º┘ä┘ü╪╣┘ä ┘à╪¡╪¬┘ê┘ë ╪¿╪º┘ä┘ä╪║╪⌐ Arabic ┘ä┘ç╪░╪º ╪º┘ä┘é╪º┘ä╪¿.
-┘è┘à┘â┘å┘â ╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ╪¼╪»┘è╪» ┘ê╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐. ΓÇö (code: 100) ΓÇö (subcode: 2388024)
+Invalid parameter — يوجد محتوى بهذه اللغة بالفعل — يوجد بالفعل محتوى باللغة Arabic لهذا القالب.
+يمكنك إنشاء قالب جديد وإعادة المحاولة. — (code: 100) — (subcode: 2388024)
 ```
 
 ## Root Cause
 
-Meta **locks the content (body/header/footer) of approved message templates** once they are `APPROVED`. It is not possible to edit an approved template's content in the same language ΓÇö Meta returns:
+Meta **locks the content (body/header/footer) of approved message templates** once they are `APPROVED`. It is not possible to edit an approved template's content in the same language — Meta returns:
 
 - `code 100 / subcode 2388024` ("Content In This Language Already Exists") when POSTing to the collection endpoint (`message_templates?name=X` or a create with the same name), because the name+language pair already exists.
 - `code 2500` ("Unknown path components") when trying `POST /message_templates/{templateId}`, because the Cloud API has no such edit sub-path for template content.
@@ -39,6 +39,6 @@ The only supported way to change the content of an approved template is to **cre
 
 ## Verification
 
-- Diagnostic on production confirmed: `POST /message_templates/{id}` ΓåÆ `2500 Unknown path components`; `POST /message_templates?name=X` ΓåÆ `100/2388024`. Only **create** is accepted by Meta.
+- Diagnostic on production confirmed: `POST /message_templates/{id}` → `2500 Unknown path components`; `POST /message_templates?name=X` → `100/2388024`. Only **create** is accepted by Meta.
 - `POST /templates/:id/resubmit-meta` now returns `200` with a newly created Meta template in `PENDING`, and the local template re-bound to it.
 - `resubmitMeta`, `metaTemplatePayload` and `deliveryPreview` test suites pass.

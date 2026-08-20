@@ -3,7 +3,8 @@ export type NotificationChannelId =
   | "email"
   | "sms"
   | "inApp"
-  | "browser";
+  | "browser"
+  | "sound";
 
 export interface NotificationTypePreference {
   enabled: boolean;
@@ -49,6 +50,16 @@ export interface NotificationSettingsData {
       enabled: boolean;
       showPreview: boolean;
       requireInteraction: boolean;
+    };
+    sound: {
+      enabled: boolean;
+      volume: number;
+      pattern: string;
+    };
+    incompleteSound: {
+      enabled: boolean;
+      volume: number;
+      pattern: string;
     };
   };
   typeSettings: Record<string, NotificationTypePreference>;
@@ -160,4 +171,77 @@ export const shouldShowBrowserNotificationForType = (
   }
 
   return typeSettings.channels.includes("browser");
+};
+
+export const shouldPlayOrderSound = (
+  settings: NotificationSettingsData | null | undefined,
+) => {
+  if (!settings) {
+    return true;
+  }
+
+  if (!settings.globalEnabled) {
+    return false;
+  }
+
+  if (isQuietHoursActive(settings)) {
+    return false;
+  }
+
+  return settings.channels.sound?.enabled ?? true;
+};
+
+export const getOrderSoundVolume = (
+  settings: NotificationSettingsData | null | undefined,
+) => {
+  if (!settings) {
+    return 1;
+  }
+
+  const volume = settings.channels.sound?.volume;
+  if (typeof volume !== "number" || !Number.isFinite(volume)) {
+    return 1;
+  }
+
+  return Math.min(100, Math.max(0, volume)) / 100;
+};
+
+export const shouldPlayIncompleteOrderSound = (
+  settings: NotificationSettingsData | null | undefined,
+) => {
+  if (!settings) {
+    return true;
+  }
+
+  if (!settings.globalEnabled) {
+    return false;
+  }
+
+  if (isQuietHoursActive(settings)) {
+    return false;
+  }
+
+  return settings.channels.incompleteSound?.enabled ?? true;
+};
+
+export const getIncompleteOrderSoundVolume = (
+  settings: NotificationSettingsData | null | undefined,
+) => {
+  if (!settings) {
+    return 1;
+  }
+
+  const volume = settings.channels.incompleteSound?.volume;
+  if (typeof volume !== "number" || !Number.isFinite(volume)) {
+    return 1;
+  }
+
+  return Math.min(100, Math.max(0, volume)) / 100;
+};
+
+export const getIncompleteOrderSoundPattern = (
+  settings: NotificationSettingsData | null | undefined,
+) => {
+  const pattern = settings?.channels?.incompleteSound?.pattern;
+  return pattern || "coins";
 };

@@ -1,10 +1,10 @@
-﻿-- Migration: 20260819_loyalty_modernization
--- Loyalty / Rewards modernization ΓÇö Part 1 (DB & Schema layer)
+-- Migration: 20260819_loyalty_modernization
+-- Loyalty / Rewards modernization — Part 1 (DB & Schema layer)
 -- Adds wallet transaction release lifecycle, customer loyalty pending/release fields,
 -- coupon loyalty stacking flag, company loyalty settings, and the loyalty_activities table.
 
 -- ---------------------------------------------------------------------------
--- 1. wallet_transactions ΓÇö release lifecycle
+-- 1. wallet_transactions — release lifecycle
 -- ---------------------------------------------------------------------------
 ALTER TABLE "wallet_transactions"
   ADD COLUMN IF NOT EXISTS "status"        TEXT   NOT NULL DEFAULT 'RELEASED';
@@ -19,7 +19,7 @@ CREATE INDEX IF NOT EXISTS "wallet_transactions_status_idx"        ON "wallet_tr
 CREATE INDEX IF NOT EXISTS "wallet_transactions_referenceId_idx"   ON "wallet_transactions" ("referenceId");
 
 -- ---------------------------------------------------------------------------
--- 2. customer_loyalty_records ΓÇö pending/release + check-in gamification
+-- 2. customer_loyalty_records — pending/release + check-in gamification
 -- ---------------------------------------------------------------------------
 ALTER TABLE "customer_loyalty_records"
   ADD COLUMN IF NOT EXISTS "pendingPoints"    DECIMAL(10,2) NOT NULL DEFAULT 0.00;
@@ -39,13 +39,13 @@ CREATE INDEX IF NOT EXISTS "customer_loyalty_records_cancelledAt_idx"    ON "cus
 CREATE INDEX IF NOT EXISTS "customer_loyalty_records_lastCheckInAt_idx"  ON "customer_loyalty_records" ("lastCheckInAt");
 
 -- ---------------------------------------------------------------------------
--- 3. coupons ΓÇö loyalty stacking flag
+-- 3. coupons — loyalty stacking flag
 -- ---------------------------------------------------------------------------
 ALTER TABLE "coupons"
   ADD COLUMN IF NOT EXISTS "allowWithLoyalty" BOOLEAN NOT NULL DEFAULT TRUE;
 
 -- ---------------------------------------------------------------------------
--- 4. companies ΓÇö loyalty modernization settings
+-- 4. companies — loyalty modernization settings
 -- ---------------------------------------------------------------------------
 ALTER TABLE "companies"
   ADD COLUMN IF NOT EXISTS "maxDiscountCap"           DOUBLE PRECISION;
@@ -59,7 +59,7 @@ ALTER TABLE "companies" ALTER COLUMN "maxDiscountCap"           SET DEFAULT 0.25
 ALTER TABLE "companies" ALTER COLUMN "cashbackReturnWindowDays" SET DEFAULT 14;
 
 -- ---------------------------------------------------------------------------
--- 5. loyalty_activities ΓÇö new table
+-- 5. loyalty_activities — new table
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "loyalty_activities" (
   "id"          TEXT        NOT NULL,

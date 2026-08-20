@@ -1,7 +1,22 @@
-import { useTranslation } from 'react-i18next';
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AlertCircle, AlertTriangle, BarChart2, BarChart3, Check, CheckCircle, Clock, Edit, Eye, Layout, MessageSquare, Navigation, Package, Plus, RefreshCw, Search, Send, Sparkles, Star, Trash2, TrendingUp, Users, X, Zap } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import {
+  AlertCircle,
+  CheckCircle,
+  ChevronLeft,
+  Edit,
+  GitBranch,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+  Search,
+  Send,
+  Sparkles,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -16,7 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -29,35 +44,66 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { apiClient } from "../../services/apiClient";
-import {
-  WhatsAppMetricCard,
-  WhatsAppPageShell,
-  WhatsAppSurfaceCard,
-} from "./components/WhatsAppPageShell";
+import { useAuth } from "../../hooks/useAuthSimple";
+import { WhatsAppSurfaceCard } from "./components/WhatsAppPageShell";
+import { FlowCanvas, type FlowStep } from "./components/journey/FlowCanvas";
+import ButtonsEditor from "../automation/components/ButtonsEditor";
+import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotDrawer";
+
+const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
+
+/**
+ * Slim top bar used in place of the gradient WhatsAppPageShell header.
+ * Keeps navigation (back) and primary actions accessible without the
+ * eyebrow / title / subtitle that the shell renders by default.
+ */
+function PageTopBar({
+  backHref,
+  backLabel,
+  isRtl,
+  actions,
+}: {
+  backHref: string;
+  backLabel: string;
+  isRtl: boolean;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-3 py-2 shadow-soft sm:rounded-3xl sm:px-4 sm:py-2.5">
+      <Link
+        to={backHref}
+        aria-label={backLabel}
+        className={cn(
+          buttonVariants({ variant: "outline", size: "icon-sm" }),
+          "shrink-0 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-background)] text-[color:var(--color-foreground)] hover:bg-[color:var(--color-muted)]",
+        )}
+      >
+        <ChevronLeft
+          className={cn("size-4", isRtl && "rotate-180")}
+        />
+      </Link>
+
+      {actions ? (
+        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+          {actions}
+        </div>
+      ) : (
+        <span />
+      )}
+    </div>
+  );
+}
 
 interface Flow {
   id: string;
   name: string;
   isEnabled: boolean;
   createdAt: string;
+  channels?: string[];
   _count?: {
     steps: number;
     journeys: number;
@@ -65,13 +111,8 @@ interface Flow {
   };
 }
 
-interface Step {
-  id?: string;
+interface Step extends FlowStep {
   flowId: string;
-  delayDays: number;
-  content: string;
-  mediaUrl?: string;
-  stepOrder: number;
 }
 
 interface Journey {
@@ -102,15 +143,6 @@ type DeleteTarget =
     }
   | null;
 
-type TabId = "flows" | "monitoring";
-
-const flowStatusClasses = {
-  enabled:
-    "border-emerald-300/70 bg-emerald-500/10 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200",
-  disabled:
-    "border-slate-300/70 bg-slate-500/10 text-slate-700 dark:border-slate-500/40 dark:text-slate-200",
-} as const;
-
 const journeyStatusClasses: Record<string, string> = {
   ACTIVE:
     "border-emerald-300/70 bg-emerald-500/10 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200",
@@ -123,6 +155,18 @@ const journeyStatusClasses: Record<string, string> = {
   NOT_STARTED:
     "border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200",
 };
+
+const journeyStatusTranslationKey: Record<string, string> = {
+  ACTIVE: "active",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+  FAILED: "failed",
+  NOT_STARTED: "notStarted",
+  INACTIVE: "inactive",
+};
+
+const getJourneyStatusKey = (status: string) =>
+  journeyStatusTranslationKey[status.toUpperCase()] || "inactive";
 
 const noticeStyles: Record<NoticeTone, string> = {
   success:
@@ -149,12 +193,6 @@ const previewBackgroundStyle: React.CSSProperties = {
 const floatingNoticeBaseClass =
   "rounded-2xl border shadow-[0_18px_40px_rgba(15,27,45,0.12)] backdrop-blur";
 
-const primaryActionClassName =
-  "rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90";
-
-const outlineActionClassName =
-  "rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75 hover:bg-[color:var(--color-card)]";
-
 const isNotFoundError = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("response" in error)) {
     return false;
@@ -172,8 +210,8 @@ function parseInteger(value: string, fallback: number) {
 
 function replaceVariables(content: string) {
   return content
-    .replace(/{firstName}/g, "Ahmed")
-    .replace(/{lastName}/g, "Mohamed")
+    .replace(/{firstName}/g, "أحمد")
+    .replace(/{lastName}/g, "محمد")
     .replace(/{orderNumber}/g, "ORD-2024")
     .replace(/{totalPrice}/g, "1250");
 }
@@ -190,15 +228,15 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/45 px-6 py-10 text-center">
-      <div className="flex size-16 items-center justify-center rounded-3xl bg-primary/10 text-[color:var(--color-primary)]">
-        <Icon className="size-8" />
+    <div className="flex min-h-[16rem] flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:color-mix(in_srgb,var(--color-card)_40%,transparent)] px-6 py-10 text-center">
+      <div className="flex size-12 items-center justify-center rounded-2xl bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-[color:var(--color-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
+        <Icon className="size-6" />
       </div>
-      <div className="space-y-2">
-        <p className="text-lg font-semibold text-[color:var(--color-foreground)]">
+      <div className="space-y-1">
+        <p className="text-base font-semibold text-[color:var(--color-foreground)]">
           {title}
         </p>
-        <p className="mx-auto max-w-xl text-sm leading-6 text-[color:var(--color-muted-foreground)]">
+        <p className="mx-auto max-w-sm text-sm leading-6 text-[color:var(--color-muted-foreground)]">
           {description}
         </p>
       </div>
@@ -227,11 +265,12 @@ function MessagePreview({ content }: { content: string }) {
 
 const WhatsAppCustomerJourney: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const isRtl = i18n.dir() === "rtl";
-  const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
+  const isAdmin = user?.role ? adminRoles.has(user.role) : false;
 
-  const [activeTab, setActiveTab] = useState<TabId>("flows");
+  const copilot = useCopilotShortcut();
+
   const [flows, setFlows] = useState<Flow[]>([]);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
@@ -249,6 +288,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const [currentFlow, setCurrentFlow] = useState<Partial<Flow>>({
     name: "",
     isEnabled: true,
+    channels: ["WHATSAPP", "FACEBOOK"],
   });
 
   const [stepDialogOpen, setStepDialogOpen] = useState(false);
@@ -259,6 +299,11 @@ const WhatsAppCustomerJourney: React.FC = () => {
   });
 
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
+
+  const selectedFlowIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    selectedFlowIdRef.current = selectedFlow?.id || null;
+  }, [selectedFlow?.id]);
 
   const showNotice = useCallback(
     (message: string, tone: NoticeTone = "success") => {
@@ -286,7 +331,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
         const response = await apiClient.get(
           `/whatsapp/automation/flows/${flowId}/steps`,
         );
-        setSteps(response.data.data ?? []);
+        setSteps((response.data as { data?: Step[] }).data ?? []);
       } catch (error) {
         setSteps([]);
         if (!isNotFoundError(error)) {
@@ -302,11 +347,11 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const fetchFlows = useCallback(async () => {
     try {
       const response = await apiClient.get("/whatsapp/automation/flows");
-      const nextFlows = response.data.data ?? [];
+      const nextFlows = (response.data as { data?: Flow[] }).data ?? [];
       setFlows(nextFlows);
 
       const nextSelected =
-        nextFlows.find((flow: Flow) => flow.id === selectedFlow?.id) ??
+        nextFlows.find((flow: Flow) => flow.id === selectedFlowIdRef.current) ??
         nextFlows[0] ??
         null;
 
@@ -325,12 +370,12 @@ const WhatsAppCustomerJourney: React.FC = () => {
         showNotice(t("common.error"), "error");
       }
     }
-  }, [fetchSteps, selectedFlow?.id, showNotice, t]);
+  }, [fetchSteps, showNotice, t]);
 
   const fetchJourneys = useCallback(async () => {
     try {
       const response = await apiClient.get("/whatsapp/automation/journeys");
-      setJourneys(response.data.data ?? []);
+      setJourneys((response.data as { data?: Journey[] }).data ?? []);
     } catch (error) {
       setJourneys([]);
       if (!isNotFoundError(error)) {
@@ -504,58 +549,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
     return flows.filter((flow) => flow.name.toLowerCase().includes(query));
   }, [flows, searchTerm]);
 
-  const stats = useMemo(() => {
-    const activeCount = journeys.filter((journey) => journey.status === "ACTIVE")
-      .length;
-    const completedCount = journeys.filter(
-      (journey) => journey.status === "COMPLETED",
-    ).length;
-    const totalJourneys = journeys.length;
-    const completionRate =
-      totalJourneys > 0
-        ? Math.round((completedCount / totalJourneys) * 100)
-        : 0;
-    const totalSent = journeys.reduce(
-      (sum, journey) => sum + (journey.currentStep || 0),
-      0,
-    );
-
-    const needsAttention = totalJourneys > 0 && completionRate < 20 && activeCount > 10;
-
-    return {
-      activeCount,
-      completedCount,
-      totalJourneys,
-      completionRate,
-      totalSent,
-      healthLabel: needsAttention ? t("common.warning") : t("common.success"),
-      healthTone: needsAttention ? "danger" : "success",
-    };
-  }, [journeys, t]);
-
-  const formatDate = (value?: string) => {
-    if (!value) {
-      return "-";
-    }
-
-    return new Date(value).toLocaleDateString(locale, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const formatTime = (value?: string) => {
-    if (!value) {
-      return "-";
-    }
-
-    return new Date(value).toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const flowDeleteTitle =
     deleteTarget?.type === "flow"
       ? t("whatsappJourney.dialogs.deleteFlowTitle")
@@ -567,55 +560,63 @@ const WhatsAppCustomerJourney: React.FC = () => {
 
   if (loading) {
     return (
-      <WhatsAppPageShell
-        title={t("whatsappJourney.title")}
-        description={t("whatsappJourney.subtitle")}
-        icon={Sparkles}
-        backHref="/whatsapp/notifications"
-        backLabel={t("common.back")}
+      <section
+        dir={i18n.dir()}
+        className="min-h-full space-y-space-4 overflow-x-hidden px-space-1 py-space-2 pb-[calc(var(--space-4)+env(safe-area-inset-bottom))] sm:space-y-space-6 sm:px-space-6 sm:py-space-4 lg:px-space-8"
       >
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-36 rounded-3xl" />
-          ))}
+        <PageTopBar
+          backHref="/whatsapp/notifications"
+          backLabel={t("common.back") as string}
+          isRtl={isRtl}
+        />
+        <div className="space-y-4">
+          <Skeleton className="h-[26rem] rounded-2xl sm:rounded-3xl" />
+          <Skeleton className="h-[22rem] rounded-2xl sm:rounded-3xl" />
+          <Skeleton className="h-56 rounded-2xl sm:rounded-3xl" />
         </div>
-        <Skeleton className="h-14 rounded-full" />
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.6fr)]">
-          <div className="space-y-4">
-            <Skeleton className="h-[28rem] rounded-3xl" />
-            <Skeleton className="h-64 rounded-3xl" />
-          </div>
-          <Skeleton className="h-[38rem] rounded-3xl" />
-        </div>
-      </WhatsAppPageShell>
+      </section>
     );
   }
 
   return (
-    <WhatsAppPageShell
-      title={t("whatsappJourney.title")}
-      description={t("whatsappJourney.subtitle")}
-      icon={Sparkles}
-      backHref="/whatsapp/notifications"
-      backLabel={t("common.back")}
-      actions={
-        <>
-          <Button
-            variant="outline"
-            className={outlineActionClassName}
-            disabled={refreshing}
-            onClick={() => void handleRefreshWorkspace()}
-          >
-            <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
-            {t("common.refresh")}
-          </Button>
-          <Button className={primaryActionClassName} onClick={openCreateFlowDialog}>
-            <Plus className="size-4" />
-            {t("whatsappJourney.flows.addNew")}
-          </Button>
-        </>
-      }
+    <section
+      dir={i18n.dir()}
+      className="min-h-full space-y-space-4 overflow-x-hidden px-space-1 py-space-2 pb-[calc(var(--space-4)+env(safe-area-inset-bottom))] sm:space-y-space-6 sm:px-space-6 sm:py-space-4 lg:px-space-8"
     >
+      <PageTopBar
+        backHref="/whatsapp/notifications"
+        backLabel={t("common.back") as string}
+        isRtl={isRtl}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={refreshing}
+              onClick={() => void handleRefreshWorkspace()}
+            >
+              <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
+              {t("common.refresh")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => copilot.setOpen(true)}
+              title={t("whatsappJourney.copilot.open") + " (⌘K)"}
+            >
+              <Sparkles className="size-4" />
+              {t("whatsappJourney.copilot.title")}
+            </Button>
+            {isAdmin && (
+              <Button size="sm" onClick={openCreateFlowDialog}>
+                <Plus className="size-4" />
+                {t("whatsappJourney.flows.addNew")}
+              </Button>
+            )}
+          </>
+        }
+      />
+
       {notice ? (
         <div className="fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
           <Alert
@@ -638,547 +639,366 @@ const WhatsAppCustomerJourney: React.FC = () => {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <WhatsAppMetricCard
-          label={t("whatsappJourney.stats.activeJourneys")}
-          value={stats.activeCount}
-          icon={Users}
-          tone="primary"
-        />
-        <WhatsAppMetricCard
-          label={t("whatsappJourney.stats.totalSent")}
-          value={stats.totalSent}
-          icon={Send}
-          tone="success"
-        />
-        <WhatsAppMetricCard
-          label={t("whatsappJourney.stats.completionRate")}
-          value={`${stats.completionRate}%`}
-          icon={TrendingUp}
-          tone="info"
-        />
-        <WhatsAppMetricCard
-          label={t("whatsappJourney.stats.deliveryStatus")}
-          value={stats.healthLabel}
-          icon={Zap}
-          tone={stats.healthTone as "success" | "danger"}
-        />
-      </div>
-
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => setActiveTab(value as TabId)}
-        className="space-y-4"
-      >
-        <TabsList className="h-auto rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-1">
-          <TabsTrigger className="rounded-full px-4 py-2" value="flows">
-            <Layout className="size-4" />
-            {t("whatsappJourney.tabs.flows")}
-          </TabsTrigger>
-          <TabsTrigger className="rounded-full px-4 py-2" value="monitoring">
-            <BarChart3 className="size-4" />
-            {t("whatsappJourney.tabs.monitoring")}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="flows" className="space-y-4">
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.6fr)]">
-            <div className="space-y-4">
-              <WhatsAppSurfaceCard
-                title={t("whatsappJourney.tabs.flows")}
-                description={t("whatsappJourney.flows.emptyDesc")}
+      {/* ─────────── MASTER-DETAIL: flows + steps editor side by side ─────────── */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.55fr)]">
+        {/* LEFT: Flows list — compact */}
+        <div className="space-y-4">
+          <WhatsAppSurfaceCard
+            title={t("whatsappJourney.tabs.flows") as string}
+            description={t("whatsappJourney.flows.count", { count: flows.length }) as string}
+            action={
+              <Badge
+                variant="outline"
+                className="gap-1.5 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2.5 py-1 text-xs"
               >
-                <div className="space-y-4">
-                  <div className="relative">
-                    <Search
-                      className={cn(
-                        "pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]",
-                        isRtl ? "right-3" : "left-3",
-                      )}
-                    />
-                    <Input
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder={t("common.search")}
-                      className={cn(
-                        "h-11 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75",
-                        isRtl ? "pr-10" : "pl-10",
-                      )}
-                    />
-                  </div>
-
-                  {filteredFlows.length > 0 ? (
-                    <div className="space-y-3">
-                      {filteredFlows.map((flow) => {
-                        const selected = selectedFlow?.id === flow.id;
-
-                        return (
-                          <div
-                            key={flow.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleFlowClick(flow)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                handleFlowClick(flow);
-                              }
-                            }}
-                            className={cn(
-                              "rounded-3xl border px-4 py-4 shadow-sm transition-all",
-                              "cursor-pointer bg-[color:var(--color-card)]/70 hover:-translate-y-0.5 hover:bg-[color:var(--color-card)]",
-                              selected
-                                ? "border-[color:var(--business-success)] bg-[color:color-mix(in_srgb,var(--business-success)_8%,white)] shadow-md"
-                                : "border-[color:var(--shell-control-border)]",
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="min-w-0 space-y-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="truncate text-base font-semibold text-[color:var(--color-foreground)]">
-                                    {flow.name}
-                                  </p>
-                                  <Badge
-                                    variant="outline"
-                                    className={cn(
-                                      flow.isEnabled
-                                        ? flowStatusClasses.enabled
-                                        : flowStatusClasses.disabled,
-                                    )}
-                                  >
-                                    {flow.isEnabled
-                                      ? t("whatsappJourney.flows.enabled")
-                                      : t("whatsappJourney.flows.disabled")}
-                                  </Badge>
-                                  {flow._count?.categories && flow._count.categories > 0 ? (
-                                    <Badge variant="outline" className="rounded-full border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200">
-                                      <Sparkles className="size-3" />
-                                      تصنيف
-                                    </Badge>
-                                  ) : null}
-                                </div>
-                                <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                                  {t("whatsappJourney.flows.activeCustomers", {
-                                    count: flow._count?.journeys || 0,
-                                  })}
-                                </p>
-                              </div>
-
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="rounded-full"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    openEditFlowDialog(flow);
-                                  }}
-                                >
-                                  <Edit className="size-4" />
-                                  <span className="sr-only">{t("common.edit")}</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="rounded-full text-[color:var(--color-destructive)] hover:text-[color:var(--color-destructive)]"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setDeleteTarget({ type: "flow", id: flow.id });
-                                  }}
-                                >
-                                  <Trash2 className="size-4" />
-                                  <span className="sr-only">{t("common.delete")}</span>
-                                </Button>
-                              </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3">
-                              <div className="flex items-center gap-2 text-sm text-[color:var(--color-muted-foreground)]">
-                                <MessageSquare className="size-4" />
-                                <span>{flow._count?.steps || 0}</span>
-                              </div>
-                              <div className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
-                                {formatDate(flow.createdAt)}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={Layout}
-                      title={t("whatsappJourney.flows.empty")}
-                      description={
-                        flows.length > 0
-                          ? t("common.no_data")
-                          : t("whatsappJourney.flows.emptyDesc")
-                      }
-                      action={
-                        flows.length === 0 ? (
-                          <Button
-                            className={primaryActionClassName}
-                            onClick={openCreateFlowDialog}
-                          >
-                            <Plus className="size-4" />
-                            {t("whatsappJourney.flows.addNew")}
-                          </Button>
-                        ) : undefined
-                      }
-                    />
-                  )}
-                </div>
-              </WhatsAppSurfaceCard>
-
-              <WhatsAppSurfaceCard
-                className="border-transparent bg-[linear-gradient(135deg,color-mix(in_srgb,var(--color-foreground)_88%,transparent)_0%,color-mix(in_srgb,var(--color-foreground)_96%,transparent)_100%)] text-white shadow-[0_26px_60px_rgba(15,27,45,0.18)]"
-                contentClassName="px-5 py-5 sm:px-6"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-2xl bg-[color:var(--color-card)]/10 text-[color:var(--business-warning)]">
-                      <Zap className="size-5" />
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold">
-                        {t("whatsappJourney.hints.title")}
-                      </p>
-                      <p className="text-sm text-white/70">
-                        {t("whatsappJourney.subtitle")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((index) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-3 rounded-xl border border-white/10 bg-[color:var(--color-card)]/6 px-4 py-3"
-                      >
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-card)]/10 text-xs font-semibold text-white">
-                          {index}
-                        </div>
-                        <p className="text-sm leading-6 text-white/82">
-                          {t(`whatsappJourney.hints.tip${index}`)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </WhatsAppSurfaceCard>
-            </div>
-
-            <WhatsAppSurfaceCard
-              title={selectedFlow?.name || t("whatsappJourney.steps.title")}
-              description={
-                selectedFlow
-                  ? t("whatsappJourney.subtitle")
-                  : t("whatsappJourney.flows.emptyDesc")
-              }
-              action={
-                selectedFlow ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      className={outlineActionClassName}
-                      disabled={stepsLoading}
-                      onClick={() => void fetchSteps(selectedFlow.id)}
-                    >
-                      <RefreshCw
-                        className={cn("size-4", stepsLoading && "animate-spin")}
-                      />
-                      {t("common.refresh")}
-                    </Button>
-                    <Button
-                      className={primaryActionClassName}
-                      onClick={openCreateStepDialog}
-                    >
-                      <Plus className="size-4" />
-                      {t("whatsappJourney.steps.add")}
-                    </Button>
-                  </div>
-                ) : undefined
-              }
-              className="min-h-[40rem]"
-            >
-              {!selectedFlow ? (
-                <EmptyState
-                  icon={Sparkles}
-                  title={t("whatsappJourney.flows.empty")}
-                  description={t("whatsappJourney.flows.emptyDesc")}
-                  action={
-                    <Button
-                      className={primaryActionClassName}
-                      onClick={openCreateFlowDialog}
-                    >
-                      <Plus className="size-4" />
-                      {t("whatsappJourney.flows.addNew")}
-                    </Button>
-                  }
-                />
-              ) : stepsLoading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <Skeleton
-                      key={index}
-                      className="h-48 rounded-3xl border border-[color:var(--shell-control-border)]"
-                    />
-                  ))}
-                </div>
-              ) : steps.length > 0 ? (
-                <div
+                <GitBranch className="size-3.5 text-[color:var(--color-muted-foreground)]" />
+                {flows.length}
+              </Badge>
+            }
+            contentClassName="px-3 pb-3 sm:px-4 sm:pb-4"
+          >
+            <div className="space-y-2">
+              <div className="relative">
+                <Search
                   className={cn(
-                    "relative space-y-5",
-                    isRtl ? "pr-14" : "pl-14",
+                    "pointer-events-none absolute top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]",
+                    isRtl ? "right-2.5" : "left-2.5",
                   )}
-                >
-                  <div
-                    className={cn(
-                      "absolute bottom-2 top-2 w-px bg-[linear-gradient(180deg,color-mix(in_srgb,var(--business-success)_55%,transparent),color-mix(in_srgb,var(--color-secondary)_38%,transparent))]",
-                      isRtl ? "right-5" : "left-5",
-                    )}
-                  />
-                  {steps.map((step, index) => (
-                    <div key={step.id || `${step.stepOrder}-${index}`} className="relative">
-                      <div
+                />
+                <Input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder={t("common.search") as string}
+                  className={cn(
+                    "h-8 bg-[color:var(--color-card)]/75 text-xs",
+                    isRtl ? "pr-8 pl-3" : "pl-8 pr-3",
+                  )}
+                />
+              </div>
+
+              {filteredFlows.length > 0 ? (
+                <div className="space-y-1">
+                  {filteredFlows.map((flow) => {
+                    const selected = selectedFlow?.id === flow.id;
+
+                    return (
+                      <button
+                        key={flow.id}
+                        type="button"
+                        onClick={() => handleFlowClick(flow)}
                         className={cn(
-                          "absolute top-4 flex size-10 items-center justify-center rounded-full border border-[color:var(--business-success)] bg-[var(--app-panel-bg)] text-sm font-semibold text-[color:var(--business-success)] shadow-sm",
-                          isRtl ? "-right-14" : "-left-14",
+                          "group relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-start transition-all duration-200",
+                          selected
+                            ? "bg-[color:var(--journey-accent-soft)]"
+                            : "bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)]",
                         )}
+                        style={
+                          selected
+                            ? {
+                                boxShadow: `inset 0 0 0 1.5px var(--journey-accent), 0 0 12px -2px var(--journey-accent-glow)`,
+                              }
+                            : undefined
+                        }
                       >
-                        {index + 1}
-                      </div>
+                        {/* Status dot — left rail accent */}
+                        <span
+                          className={cn(
+                            "size-1.5 shrink-0 rounded-full transition-all",
+                            flow.isEnabled
+                              ? "bg-[color:var(--business-success)] shadow-[0_0_0_2.5px_color-mix(in_srgb,var(--business-success)_22%,transparent)]"
+                              : "bg-[color:var(--color-muted-foreground)] opacity-50",
+                          )}
+                          aria-hidden
+                        />
 
-                      <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/72 p-5 shadow-md">
-                        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.85fr)]">
-                          <div className="space-y-4">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge
-                                variant="outline"
-                                className="rounded-full border-emerald-300/70 bg-emerald-500/10 px-3 py-1 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200"
-                              >
-                                <Clock className="size-3.5" />
-                                {t("whatsappJourney.steps.delay", {
-                                  days: step.delayDays,
-                                })}
-                              </Badge>
-                              <Badge
-                                variant="outline"
-                                className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 px-3 py-1 text-[color:var(--color-muted-foreground)]"
-                              >
-                                {t("whatsappJourney.steps.title")}
-                              </Badge>
-                            </div>
-
-                            <p className="whitespace-pre-wrap text-sm leading-7 text-[color:var(--color-foreground)]">
-                              {step.content}
-                            </p>
-
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                className={outlineActionClassName}
-                                onClick={() => openEditStepDialog(step)}
-                              >
-                                <Edit className="size-4" />
-                                {t("common.edit")}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200"
-                                onClick={() =>
-                                  setDeleteTarget({
-                                    type: "step",
-                                    id: step.id || "",
-                                  })
-                                }
-                              >
-                                <Trash2 className="size-4" />
-                                {t("common.delete")}
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
-                              <MessageSquare className="size-3.5" />
-                              {t("whatsappJourney.steps.preview")}
-                            </div>
-                            <MessagePreview content={step.content} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-[color:var(--color-foreground)]">
+                            {flow.name}
+                          </p>
+                          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[color:var(--color-muted-foreground)]">
+                            <span className="flex items-center gap-0.5">
+                              <MessageSquare className="size-2.5" />
+                              {flow._count?.steps || 0}
+                            </span>
+                            {flow._count?.journeys ? (
+                              <>
+                                <span aria-hidden>·</span>
+                                <span>
+                                  {t("whatsappJourney.flows.activeCustomers", {
+                                    count: flow._count.journeys,
+                                  })}
+                                </span>
+                              </>
+                            ) : null}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
+
+                        {isAdmin && (
+                          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                            <button
+                              type="button"
+                              className="flex size-6 items-center justify-center rounded-md text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openEditFlowDialog(flow);
+                              }}
+                              aria-label={t("common.edit") as string}
+                            >
+                              <Edit className="size-3" />
+                            </button>
+                            <button
+                              type="button"
+                              className="flex size-6 items-center justify-center rounded-md text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-destructive)_12%,transparent)] hover:text-[color:var(--color-destructive)]"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setDeleteTarget({ type: "flow", id: flow.id });
+                              }}
+                              aria-label={t("common.delete") as string}
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <EmptyState
-                  icon={MessageSquare}
-                  title={t("whatsappJourney.steps.title")}
-                  description={t("whatsappJourney.steps.add")}
+                  icon={GitBranch}
+                  title={t("whatsappJourney.flows.empty")}
+                  description={
+                    flows.length > 0
+                      ? t("common.no_data")
+                      : t("whatsappJourney.flows.emptyDesc")
+                  }
                   action={
-                    <Button
-                      className={primaryActionClassName}
-                      onClick={openCreateStepDialog}
-                    >
-                      <Plus className="size-4" />
-                      {t("whatsappJourney.steps.add")}
-                    </Button>
+                    flows.length === 0 && isAdmin ? (
+                      <Button size="sm" onClick={openCreateFlowDialog}>
+                        <Plus className="size-4" />
+                        {t("whatsappJourney.flows.addNew")}
+                      </Button>
+                    ) : undefined
                   }
                 />
               )}
-            </WhatsAppSurfaceCard>
-          </div>
-        </TabsContent>
+            </div>
+          </WhatsAppSurfaceCard>
+        </div>
 
-        <TabsContent value="monitoring" className="space-y-4">
+        {/* RIGHT: Steps editor */}
+        <div className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappJourney.tabs.monitoring")}
-            description={t("whatsappJourney.subtitle")}
+            title={
+              selectedFlow
+                ? selectedFlow.name
+                : (t("whatsappJourney.steps.title") as string)
+            }
+            description={
+              selectedFlow
+                ? (t("whatsappJourney.flows.editing") as string)
+                : (t("whatsappJourney.flows.selectPrompt") as string)
+            }
             action={
-              <Button
-                variant="outline"
-                className={outlineActionClassName}
-                disabled={refreshing}
-                onClick={() => void handleRefreshWorkspace()}
-              >
-                <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
-                {t("common.refresh")}
-              </Button>
+              selectedFlow ? (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "gap-1.5 rounded-full px-2.5 py-1 text-xs",
+                    selectedFlow.isEnabled
+                      ? "border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,var(--color-foreground))]"
+                      : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      selectedFlow.isEnabled
+                        ? "bg-[color:var(--business-success)]"
+                        : "bg-[color:var(--color-muted-foreground)] opacity-50",
+                    )}
+                  />
+                  {selectedFlow.isEnabled
+                    ? t("whatsappJourney.flows.enabled")
+                    : t("whatsappJourney.flows.disabled")}
+                </Badge>
+              ) : undefined
             }
           >
-            {journeys.length > 0 ? (
-              <div className="overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70">
-                <Table>
-                  <TableHeader className="bg-[color:var(--color-muted)]">
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead>{t("whatsappJourney.monitoring.customer")}</TableHead>
-                      <TableHead>
-                        {t("whatsappJourney.monitoring.currentStep")}
-                      </TableHead>
-                      <TableHead>
-                        {t("whatsappJourney.monitoring.nextMessage")}
-                      </TableHead>
-                      <TableHead>{t("whatsappJourney.monitoring.status")}</TableHead>
-                      <TableHead className="text-right">
-                        {t("common.actions")}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {journeys.map((journey) => {
-                      const statusKey = journey.status.toUpperCase();
-                      const initials = `${journey.customer.firstName[0] || ""}${journey.customer.lastName[0] || ""}`;
-
-                      return (
-                        <TableRow
-                          key={journey.id}
-                          className="border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-transparent hover:bg-[color:color-mix(in_srgb,var(--color-primary)_4%,white)]"
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-sm font-semibold text-[color:var(--color-primary)]">
-                                {initials}
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                                  {journey.customer.firstName} {journey.customer.lastName}
-                                </p>
-                                <div className="flex flex-wrap items-center gap-2 text-sm text-[color:var(--color-muted-foreground)]">
-                                  <Badge
-                                    variant="outline"
-                                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70"
-                                  >
-                                    <Package className="size-3.5" />
-                                    #{journey.order.orderNumber}
-                                  </Badge>
-                                  <span>{journey.customer.phone}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                                {t("whatsappJourney.monitoring.step", {
-                                  current: journey.currentStep + 1,
-                                  total: journey.flow.steps?.length || "?",
-                                })}
-                              </p>
-                              <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                                {journey.flow.name}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {statusKey === "ACTIVE" ? (
-                              <div className="space-y-1">
-                                <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                                  {formatDate(journey.nextSendAt)}
-                                </p>
-                                <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                                  {formatTime(journey.nextSendAt)}
-                                </p>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-[color:var(--color-muted-foreground)]">
-                                -
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "rounded-full",
-                                journeyStatusClasses[statusKey] ||
-                                  journeyStatusClasses.CANCELLED,
-                              )}
-                            >
-                              {t(
-                                `whatsappJourney.monitoring.${statusKey.toLowerCase()}`,
-                              ) || statusKey}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              {journey.whatsappContactId && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="rounded-full text-sky-600 hover:text-sky-700"
-                                  onClick={() => navigate('/whatsapp')}
-                                  title="فتح المحادثة"
-                                >
-                                  <MessageSquare className="size-4" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="rounded-full"
-                                onClick={() => setSelectedJourney(journey)}
-                              >
-                                <Eye className="size-4" />
-                                <span className="sr-only">{t("common.actions")}</span>
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+            {!selectedFlow ? (
+              <EmptyState
+                icon={Sparkles}
+                title={t("whatsappJourney.flows.empty")}
+                description={t("whatsappJourney.flows.selectPrompt")}
+                action={
+                  isAdmin ? (
+                    <Button size="sm" onClick={openCreateFlowDialog}>
+                      <Plus className="size-4" />
+                      {t("whatsappJourney.flows.addNew")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : stepsLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton
+                    key={index}
+                    className="h-40 rounded-2xl border border-[color:var(--shell-control-border)]"
+                  />
+                ))}
               </div>
             ) : (
-              <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70">
-                <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
-                <AlertTitle>{t("whatsappJourney.tabs.monitoring")}</AlertTitle>
-                <AlertDescription>{t("common.no_data")}</AlertDescription>
-              </Alert>
+              <FlowCanvas
+                steps={steps}
+                isAdmin={isAdmin}
+                onOpenCopilot={() => copilot.setOpen(true)}
+                onReorder={(next) => {
+                  setSteps(next as Step[]);
+                }}
+                onEdit={openEditStepDialog as (step: FlowStep) => void}
+                onAdd={openCreateStepDialog}
+                onDelete={(step) =>
+                  setDeleteTarget({ type: "step", id: step.id || "" })
+                }
+              />
             )}
           </WhatsAppSurfaceCard>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
+
+      {/* ─────────── MONITORING — full width below ─────────── */}
+      <WhatsAppSurfaceCard
+        title={t("whatsappJourney.tabs.monitoring") as string}
+        description={t("whatsappJourney.monitoring.liveMonitor") as string}
+      >
+        {journeys.length > 0 ? (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <AnimatePresence>
+              {journeys.slice(0, 9).map((journey) => {
+                const statusKey = journey.status.toUpperCase();
+                const totalSteps = journey.flow.steps?.length || 0;
+                const initials = `${journey.customer.firstName[0] || ""}${journey.customer.lastName[0] || ""}`.toUpperCase();
+                const progressPct = totalSteps > 0 ? Math.min(100, Math.round((journey.currentStep / totalSteps) * 100)) : 0;
+                const isActive = statusKey === "ACTIVE";
+                const isFailed = statusKey === "FAILED";
+
+                return (
+                  <motion.button
+                    key={journey.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25 }}
+                    type="button"
+                    onClick={() => setSelectedJourney(journey)}
+                    className="flex items-center gap-3 rounded-xl bg-[color:var(--color-card)] p-3 text-start transition-all duration-200 hover:bg-[color:var(--color-muted)]"
+                  >
+                        {/* Avatar with status indicator */}
+                        <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-xs font-semibold text-[color:var(--color-primary)]">
+                          {initials}
+                          {/* Live pulse dot */}
+                          {(isActive || isFailed) && (
+                            <span className="absolute -end-0.5 -top-0.5 size-2.5">
+                              <span
+                                className={cn(
+                                  "absolute inset-0 animate-journey-dot-ring rounded-full",
+                                  isActive
+                                    ? "bg-[color:var(--business-success)]"
+                                    : "bg-[color:var(--color-destructive)]",
+                                )}
+                                aria-hidden
+                              />
+                              <span
+                                className={cn(
+                                  "relative block size-full rounded-full ring-2 ring-[color:var(--color-card)]",
+                                  isActive
+                                    ? "bg-[color:var(--business-success)] animate-journey-glow-pulse"
+                                    : "bg-[color:var(--color-destructive)] animate-pulse",
+                                )}
+                              />
+                            </span>
+                          )}
+                          {!isActive && !isFailed && statusKey === "COMPLETED" && (
+                            <span className="absolute -end-0.5 -top-0.5 flex size-2.5 items-center justify-center rounded-full bg-[color:var(--business-success)] ring-2 ring-[color:var(--color-card)]">
+                              <CheckCircle className="size-1.5 text-white" />
+                            </span>
+                          )}
+                        </span>
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-[color:var(--color-foreground)]">
+                            {journey.customer.firstName} {journey.customer.lastName}
+                          </p>
+                          {/* Mini progress bar */}
+                          {totalSteps > 0 && (
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <div className="h-1 flex-1 overflow-hidden rounded-full bg-[color:var(--color-muted)]">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${progressPct}%` }}
+                                  transition={{ duration: 0.6, ease: "easeOut" }}
+                                  className={cn(
+                                    "h-full rounded-full",
+                                    progressPct >= 80
+                                      ? "bg-[color:var(--business-success)]"
+                                      : progressPct >= 40
+                                        ? "bg-[color:var(--color-primary)]"
+                                        : progressPct > 0
+                                          ? "bg-[color:var(--color-warning)]"
+                                          : "bg-[color:var(--color-muted-foreground)]/30",
+                                  )}
+                                />
+                              </div>
+                              <span className="shrink-0 text-[10px] font-medium tabular-nums text-[color:var(--color-muted-foreground)]">
+                                {journey.currentStep}/{totalSteps}
+                              </span>
+                            </div>
+                          )}
+                          {totalSteps === 0 && (
+                            <p className="truncate text-xs text-[color:var(--color-muted-foreground)]">
+                              {journey.flow.name}
+                            </p>
+                          )}
+                        </div>
+
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                            journeyStatusClasses[statusKey] ||
+                              journeyStatusClasses["CANCELLED"],
+                          )}
+                        >
+                          {t(
+                            `whatsappJourney.monitoring.${getJourneyStatusKey(statusKey)}`,
+                          )}
+                        </Badge>
+                      </motion.button>
+                    );
+                  })}
+                </AnimatePresence>
+                {journeys.length > 9 && (
+                  <p className="col-span-full pt-1 text-center text-xs text-[color:var(--color-muted-foreground)]">
+                    {journeys.length - 9}+
+                  </p>
+                )}
+              </div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center gap-2 py-6 text-center"
+              >
+                <Users className="size-7 text-[color:var(--color-muted-foreground)] opacity-40" />
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">
+                  {t("common.no_data")}
+                </p>
+              </motion.div>
+            )}
+          </WhatsAppSurfaceCard>
+
+      {/* ─────────── DIALOGS ─────────── */}
 
       <Dialog open={!!selectedJourney} onOpenChange={(open) => !open && setSelectedJourney(null)}>
         <DialogContent className="max-w-[calc(100%-2rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-2xl">
@@ -1212,18 +1032,18 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       className={cn(
                         "rounded-full",
                         journeyStatusClasses[selectedJourney.status] ||
-                          journeyStatusClasses.CANCELLED,
+                          journeyStatusClasses["CANCELLED"],
                       )}
                     >
                       {t(
-                        `whatsappJourney.monitoring.${selectedJourney.status.toLowerCase()}`,
-                      ) || selectedJourney.status}
+                        `whatsappJourney.monitoring.${getJourneyStatusKey(selectedJourney.status)}`,
+                      )}
                     </Badge>
                     <Badge
                       variant="outline"
                       className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70"
                     >
-                      <Package className="size-3.5" />
+                      <GitBranch className="size-3.5" />
                       #{selectedJourney.order.orderNumber}
                     </Badge>
                   </div>
@@ -1236,7 +1056,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-[color:var(--color-foreground)]">
                   <RefreshCw className="size-4" />
-                  Activity History
+                  {t("whatsappJourney.monitoring.details")}
                 </div>
                 <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
                   {selectedJourney.logs?.trim() ? (
@@ -1267,7 +1087,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
           <DialogFooter className="px-6">
             <Button
               variant="outline"
-              className={outlineActionClassName}
               onClick={() => setSelectedJourney(null)}
             >
               {t("common.close")}
@@ -1300,7 +1119,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     name: event.target.value,
                   }))
                 }
-                placeholder="Post-delivery feedback sequence"
+                placeholder={t("whatsappJourney.flows.name") as string}
                 className="h-11 bg-[color:var(--color-card)]/75"
               />
             </div>
@@ -1326,18 +1145,56 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 />
               </div>
             </div>
+
+            <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 px-4 py-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                  {t("whatsappJourney.flows.channels")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(["WHATSAPP", "FACEBOOK"] as const).map((channel) => {
+                    const active = (currentFlow.channels ?? ["WHATSAPP", "FACEBOOK"]).includes(channel);
+                    return (
+                      <button
+                        key={channel}
+                        type="button"
+                        onClick={() =>
+                          setCurrentFlow((previous) => {
+                            const current = previous.channels ?? ["WHATSAPP", "FACEBOOK"];
+                            return {
+                              ...previous,
+                              channels: active
+                                ? current.filter((c) => c !== channel)
+                                : [...current, channel],
+                            };
+                          })
+                        }
+                        className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
+                          active
+                            ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[color:var(--color-primary)]"
+                            : "border-[color:var(--shell-control-border)] text-[color:var(--color-muted-foreground)]"
+                        }`}
+                      >
+                        {channel === "WHATSAPP" ? "WhatsApp" : "Messenger"}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                  {t("whatsappJourney.flows.channelsHint")}
+                </p>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="px-6">
             <Button
               variant="outline"
-              className={outlineActionClassName}
               onClick={() => setFlowDialogOpen(false)}
             >
               {t("common.cancel")}
             </Button>
             <Button
-              className={primaryActionClassName}
               disabled={!currentFlow.name?.trim() || submitting}
               onClick={() => void handleSaveFlow()}
             >
@@ -1417,6 +1274,91 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              <div className="space-y-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                      {t("whatsappJourney.steps.expectReply")}
+                    </p>
+                    <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                      {t("whatsappJourney.steps.expectReplyHint")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={Boolean(currentStep.expectReply)}
+                    onCheckedChange={(checked) =>
+                      setCurrentStep((previous) => ({
+                        ...previous,
+                        expectReply: checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                {currentStep.expectReply && (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label>{t("whatsappJourney.steps.replyKeywords")}</Label>
+                      <Input
+                        type="text"
+                        value={(currentStep.replyKeywords ?? []).join("، ")}
+                        onChange={(event) =>
+                          setCurrentStep((previous) => ({
+                            ...previous,
+                            replyKeywords: event.target.value
+                              .split(/[،,]/)
+                              .map((k) => k.trim())
+                              .filter(Boolean),
+                          }))
+                        }
+                        placeholder={t("whatsappJourney.steps.replyKeywordsPlaceholder") as string}
+                        className="h-10 bg-[color:var(--color-card)]/75"
+                      />
+                    </div>
+                    {steps.length > 0 && (
+                      <div className="space-y-1">
+                        <Label>{t("whatsappJourney.steps.nextStep")}</Label>
+                        <select
+                          value={currentStep.nextStepId ?? ""}
+                          onChange={(event) =>
+                            setCurrentStep((previous) => ({
+                              ...previous,
+                              nextStepId: event.target.value || undefined,
+                            }))
+                          }
+                          className="h-10 w-full rounded-lg border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75 px-3 text-sm text-[color:var(--color-foreground)]"
+                        >
+                          <option value="">{t("whatsappJourney.steps.nextStepAuto")}</option>
+                          {steps
+                            .filter((s) => s.id !== currentStep.id)
+                            .map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.stepOrder} — {s.content.slice(0, 40)}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <Label>{t("whatsappJourney.steps.timeout")}</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={currentStep.timeoutHours ?? ""}
+                        onChange={(event) =>
+                          setCurrentStep((previous) => ({
+                            ...previous,
+                            timeoutHours: event.target.value ? Math.max(1, Number(event.target.value)) : undefined,
+                          }))
+                        }
+                        placeholder="24"
+                        className="h-10 bg-[color:var(--color-card)]/75"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-5">
@@ -1433,7 +1375,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       content: event.target.value,
                     }))
                   }
-                  placeholder="Hi {firstName}, how was your order #{orderNumber}?"
+                  placeholder={t("whatsappJourney.steps.content") as string}
                   className="min-h-[14rem] bg-[color:var(--color-card)]/75"
                 />
               </div>
@@ -1444,19 +1386,29 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 </p>
                 <MessagePreview content={currentStep.content || ""} />
               </div>
+
+              <div className="space-y-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
+                <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                  {t("whatsappJourney.steps.buttons")}
+                </p>
+                <ButtonsEditor
+                  buttons={currentStep.buttons ?? []}
+                  onChange={(buttons) =>
+                    setCurrentStep((previous) => ({ ...previous, buttons }))
+                  }
+                />
+              </div>
             </div>
           </div>
 
           <DialogFooter className="px-6">
             <Button
               variant="outline"
-              className={outlineActionClassName}
               onClick={() => setStepDialogOpen(false)}
             >
               {t("common.cancel")}
             </Button>
             <Button
-              className={primaryActionClassName}
               disabled={!currentStep.content?.trim() || submitting}
               onClick={() => void handleSaveStep()}
             >
@@ -1507,7 +1459,24 @@ const WhatsAppCustomerJourney: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </WhatsAppPageShell>
+
+      <CopilotDrawer
+        open={copilot.open}
+        onClose={() => copilot.setOpen(false)}
+        flowId={selectedFlow?.id}
+        flowName={selectedFlow?.name}
+        onApplySuggestion={(s) => {
+          if (s.kind === "create-step") {
+            openCreateStepDialog();
+          } else if (s.kind === "edit-step" && s.payload) {
+            const target = steps.find(
+              (st) => st.id === s.payload?.["stepId"],
+            );
+            if (target) openEditStepDialog(target);
+          }
+        }}
+      />
+    </section>
   );
 };
 

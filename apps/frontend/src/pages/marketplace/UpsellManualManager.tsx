@@ -1,7 +1,20 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, ExternalLink, Link2, Loader2, Mail, Package, Search, ShoppingBag, ShoppingCart, Sparkles, Star, X } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ExternalLink,
+  Link2,
+  Loader2,
+  Mail,
+  Package,
+  Search,
+  ShoppingCart,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 type JsonRecord = Record<string, unknown>;
@@ -319,7 +332,7 @@ export default function UpsellManualManager({ active }: UpsellManualManagerProps
       setActiveRelation("related");
     } catch (error) {
       console.error("Failed to load product relations", error);
-      toast.error("تعذر تحميل ربط المنتجات لهذا المنتج");
+      tToast.error("UpsellManualManager.unable_load_6178");
     } finally {
       setProductLoading(false);
     }
@@ -381,7 +394,7 @@ export default function UpsellManualManager({ active }: UpsellManualManagerProps
 
   const saveRelations = async () => {
     if (!selectedProduct?.id) {
-      toast.error("اختر المنتج الأساسي أولًا");
+      tToast.error("UpsellManualManager.msg_11d8");
       return;
     }
 
@@ -400,10 +413,10 @@ export default function UpsellManualManager({ active }: UpsellManualManagerProps
 
       setSelectedMetadata(nextMetadata);
       setInitialRelationBuckets(cloneRelationBuckets(relationBuckets));
-      toast.success("تم حفظ روابط الـ upsell لهذا المنتج");
+      tToast.success("UpsellManualManager.success_save_00ab");
     } catch (error) {
       console.error("Failed to save upsell relations", error);
-      toast.error("تعذر حفظ روابط المنتجات");
+      tToast.error("UpsellManualManager.unable_save_5607");
     } finally {
       setSaving(false);
     }

@@ -1,0 +1,19 @@
+{
+  "title": "تحليلات معدل التوصيل",
+  "subtitle": "رفع نسبة التسليم الناجح",
+  "fetchError": "حدث خطأ في جلب البيانات",
+  "retry": "إعادة المحاولة",
+  "last7Days": "آخر 7 أيام",
+  "last30Days": "آخر 30 يوم",
+  "last90Days": "آخر 90 يوم",
+  "lastYear": "آخر سنة",
+  "totalDeliveries": "إجمالي التوصيلات",
+  "successRate": "معدل التوصيل الناجح",
+  "avgDeliveryTime": "متوسط وقت التوصيل",
+  "day": "يوم",
+  "failedDeliveries": "التوصيلات الفاشلة",
+  "deliveryRateOverTime": "معدل التوصيل عبر الزمن",
+  "deliveryRatePercentage": "معدل التوصيل %",
+  "performanceByRegion": "الأداء حسب المنطقة",
+  "shippingCompanyPerformance": "أداء شركات الشحن"
+}

@@ -1,5 +1,5 @@
-﻿/**
- * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º5.4 ΓÇö delivery preview UI):
+/**
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §5.4 — delivery preview UI):
  * OrderStatusTemplatesPage must show the admin the expected delivery fate per
  * status (provider badge + risk badge) so they aren't blind to Meta failures.
  */
@@ -64,14 +64,14 @@ function mockApi({
             {
               id: "st1",
               code: "CANCELLED",
-              name: "┘à┘ä╪║┘è",
+              name: "ملغي",
               color: "#ef4444",
               sortOrder: 1,
               statusType: "order",
               notifyCustomer: true,
               isSystemStatus: true,
               hasTemplate: true,
-              template: { id: "t1", name: "┘é╪º┘ä╪¿", content: "┘à╪▒╪¡╪¿╪º", eventType: "CANCELLED", isActive: true },
+              template: { id: "t1", name: "قالب", content: "مرحبا", eventType: "CANCELLED", isActive: true },
             },
           ],
         },
@@ -113,9 +113,9 @@ describe("OrderStatusTemplatesPage delivery preview", () => {
     jest.clearAllMocks();
   });
 
-  test("┘è╪╣╪▒╪╢ ╪▓╪▒ ╪º╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘ä┘ä╪┤╪º╪▒╪⌐ ╪º┘ä╪¡┘à╪▒╪º (┘à┘è╪¬╪º ╪¿╪»┘ê┘å ┘é╪º┘ä╪¿ ┘à╪╣╪¬┘à╪»)", async () => {
+  test("يعرض زر اربط بقالب ميتا للشارة الحمرا (ميتا بدون قالب معتمد)", async () => {
     mockApi({
-      defaultSession: { id: "s2", name: "╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º", provider: "META_CLOUD" },
+      defaultSession: { id: "s2", name: "جلسة ميتا", provider: "META_CLOUD" },
       preview: [
         {
           templateId: "t1",
@@ -123,19 +123,19 @@ describe("OrderStatusTemplatesPage delivery preview", () => {
           provider: "META_CLOUD",
           deliveryStatus: "meta_no_template",
           riskLevel: "danger",
-          message: "┘à┘è╪¬╪º ╪¿╪»┘ê┘å ┘é╪º┘ä╪¿ ┘à╪╣╪¬┘à╪» ΓÇö ╪│┘è┘ü╪┤┘ä ╪«╪º╪▒╪¼ ┘å╪º┘ü╪░╪⌐ 24 ╪│╪º╪╣╪⌐",
+          message: "ميتا بدون قالب معتمد — سيفشل خارج نافذة 24 ساعة",
         },
       ],
     });
 
     renderPage();
-    const bindButton = await screen.findByRole("button", { name: /╪º╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º/ });
+    const bindButton = await screen.findByRole("button", { name: /اربط بقالب ميتا/ });
     expect(bindButton).toBeInTheDocument();
-    expect(screen.getByText(/≡ƒö┤/)).toBeInTheDocument();
-    expect(screen.getByTitle(/┘à┘è╪¬╪º ╪¿╪»┘ê┘å ┘é╪º┘ä╪¿ ┘à╪╣╪¬┘à╪»/)).toBeInTheDocument();
+    expect(screen.getByText(/🔴/)).toBeInTheDocument();
+    expect(screen.getByTitle(/ميتا بدون قالب معتمد/)).toBeInTheDocument();
   });
 
-  test("┘è╪╣╪▒╪╢ ╪▓╪▒ ╪º╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘ä┘ê ┘à┘ü┘è╪┤ ╪¼┘ä╪│╪⌐ ┘à╪¬╪╡┘ä╪⌐", async () => {
+  test("يعرض زر اربط بقالب ميتا لو مفيش جلسة متصلة", async () => {
     mockApi({
       defaultSession: null,
       preview: [
@@ -145,27 +145,27 @@ describe("OrderStatusTemplatesPage delivery preview", () => {
           provider: null,
           deliveryStatus: "no_session",
           riskLevel: "danger",
-          message: "┘ä╪º ╪¬┘ê╪¼╪» ╪¼┘ä╪│╪⌐ ┘ê╪º╪¬╪│╪º╪¿ ┘à╪¬╪╡┘ä╪⌐",
+          message: "لا توجد جلسة واتساب متصلة",
         },
       ],
     });
 
     renderPage();
-    expect(await screen.findByRole("button", { name: /╪º╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º/ })).toBeInTheDocument();
-    expect(screen.getByTitle(/┘ä╪º ╪¬┘ê╪¼╪» ╪¼┘ä╪│╪⌐ ┘ê╪º╪¬╪│╪º╪¿ ┘à╪¬╪╡┘ä╪⌐/)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /اربط بقالب ميتا/ })).toBeInTheDocument();
+    expect(screen.getByTitle(/لا توجد جلسة واتساب متصلة/)).toBeInTheDocument();
   });
 
-  test("┘è╪╣╪▒╪╢ ╪¿╪▒┘ê┘ü╪º┘è╪»╪▒ ╪º┘ä┘Ç default session ╪¼┘å╪¿ dropdown ┘ü┘è ╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬", async () => {
+  test("يعرض بروفايدر الـ default session جنب dropdown في تبويب الإعدادات", async () => {
     mockApi({
-      defaultSession: { id: "s2", name: "╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º", provider: "META_CLOUD" },
+      defaultSession: { id: "s2", name: "جلسة ميتا", provider: "META_CLOUD" },
       preview: [],
     });
 
     renderPage();
     const user = userEvent.setup();
     await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
-    await user.click(screen.getByRole("button", { name: /╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬/ }));
+    await user.click(screen.getByRole("button", { name: /الإعدادات/ }));
     expect(await screen.findByText(/Meta Cloud API/)).toBeInTheDocument();
-    expect(screen.getByText(/╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪¡╪º┘ä┘è╪⌐/)).toBeInTheDocument();
+    expect(screen.getByText(/طريقة الإرسال الحالية/)).toBeInTheDocument();
   });
 });

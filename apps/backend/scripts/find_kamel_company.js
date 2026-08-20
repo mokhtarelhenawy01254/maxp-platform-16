@@ -1,12 +1,12 @@
-﻿const { PrismaClient } = require('../generated/postgresql_v2');
+const { PrismaClient } = require('../generated/postgresql_v2');
 const p = new PrismaClient();
 async function main() {
-  // Search for ┘â╪º┘à┘ä (Arabic) in company names
+  // Search for كامل (Arabic) in company names
   const companiesAr = await p.company.findMany({
-    where: { name: { contains: '┘â╪º┘à┘ä', mode: 'insensitive' } },
+    where: { name: { contains: 'كامل', mode: 'insensitive' } },
     select: { id: true, name: true, slug: true }
   });
-  console.log('=== Companies containing "┘â╪º┘à┘ä" (Arabic):', companiesAr.length);
+  console.log('=== Companies containing "كامل" (Arabic):', companiesAr.length);
   console.log(JSON.stringify(companiesAr, null, 2));
 
   // Search for "kamel" case-insensitive
@@ -21,7 +21,7 @@ async function main() {
   const companiesSlug = await p.company.findMany({
     where: { OR: [
       { slug: { contains: 'kamel', mode: 'insensitive' } },
-      { slug: { contains: '┘â╪º┘à┘ä', mode: 'insensitive' } }
+      { slug: { contains: 'كامل', mode: 'insensitive' } }
     ]},
     select: { id: true, name: true, slug: true }
   });

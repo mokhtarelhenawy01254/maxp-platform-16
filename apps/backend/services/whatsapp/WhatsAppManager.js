@@ -27,20 +27,27 @@ const {
 } = require('../whatsappRealtimeAudienceService');
 const telegramAlertService = require('../telegramAlertService');
 const MetaCloudProvider = require('./providers/MetaCloudProvider');
+const { buildConversationMetadata } = require('../whatsappInboxMetadata');
 const getIO = () => socketService.getIO();
 
 // Dynamic import for Baileys
-let makeWASocket, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, Browsers, isJidNewsletter;
+let makeWASocket, DisconnectReason, baileysDefaultVersion, downloadMediaMessage, Browsers, isJidNewsletter, S_WHATSAPP_NET, MessageProtocolType;
 const initBaileys = async () => {
     const baileys = await import('@whiskeysockets/baileys');
     makeWASocket = baileys.makeWASocket;
     DisconnectReason = baileys.DisconnectReason;
-    fetchLatestBaileysVersion = baileys.fetchLatestBaileysVersion;
+    // نسخة الواتساب المدمجة مع نسخة المكتبة المثبتة.
+    // ملاحظة: fetchLatestBaileysVersion تجلب النسخة من master برانش (v7) — مش متوافقة مع إصدار مثبت ثابت.
+    baileysDefaultVersion = baileys.DEFAULT_CONNECTION_CONFIG?.version || [2, 3000, 1043857760];
     downloadMediaMessage = baileys.downloadMediaMessage;
     Browsers = baileys.Browsers;
     isJidNewsletter = baileys.isJidNewsletter;
+    S_WHATSAPP_NET = baileys.S_WHATSAPP_NET;
+    MessageProtocolType = baileys.proto?.Message?.ProtocolMessage?.Type || {};
 };
+const crypto = require('crypto');
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
+const { decryptField } = require('../../utils/fieldEncryption');
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
 const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql://');
 const quoteSqlIdentifier = (identifier) =>
@@ -52,10 +59,46 @@ const reconnectTimers = new Map();
 const manualLogoutSessions = new Set();
 const sessionHealthChecks = new Map(); // sessionId -> last health check result
 const companySessionMap = new Map(); // companyId -> Set<sessionId>
+const historySyncQueues = new Map(); // sessionId -> Promise
+const historyMediaSyncJobs = new Map(); // sessionId -> Promise
+const historySyncCompletionRequested = new Set();
+
+// Cache لصور البروفايل: كانت `sock.profilePictureUrl()` (نداء شبكة لواتساب) بتتنفذ
+// على كل رسالة واردة — صورة البروفايل نادراً ما تتغير، فـ TTL طويل (ساعة) آمن.
+const profilePicCache = new Map(); // `${sessionId}:${jid}` -> { url, expiresAt }
+const PROFILE_PIC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour (نجاح)
+const PROFILE_PIC_MISS_TTL_MS = 10 * 60 * 1000; // 10 min (مفيش صورة — retry دوري)
+
+// منع تشغيل جلب صور البروفايل مرتين على نفس الجلسة في نفس الوقت
+const profilePicFetchRunning = new Set(); // sessionId
 
 // ponytail: global reconnect throttle, per-session cooldowns if cycling persists
 const lastReconnectTime = new Map();
 const RECONNECT_COOLDOWN_MS = 30000;
+
+// 🚨 PRODUCTION-FIX: سقف لمحاولات إعادة الاتصال المتتالية الفاشلة.
+// بعدها الجلسة auth state محطّمة على الأرجح — نوقف التكرار (الذي يستدعي
+// rate-limit/block من واتساب)، نمسح auth state ونحوّل لـ QR_PENDING مع تنبيه.
+const MAX_RECONNECT_ATTEMPTS = 10;
+
+// عداد تراكمي دائم عبر إعادة إنشاء sessionData — لا يُعاد لأي سبب إلا عند نجاح
+// اتصال فعلي (open). لازم دائم لأنه sessionData/state.attempt بيتعملهم reset
+// عند كل requestReconnect وكل إعادة إنشاء جلسة.
+const consecutiveReconnectFailures = new Map(); // sessionId -> count
+
+function getReconnectFailureCount(sessionId) {
+    return consecutiveReconnectFailures.get(sessionId) || 0;
+}
+
+function incrementReconnectFailureCount(sessionId) {
+    const count = getReconnectFailureCount(sessionId) + 1;
+    consecutiveReconnectFailures.set(sessionId, count);
+    return count;
+}
+
+function resetReconnectFailures(sessionId) {
+    consecutiveReconnectFailures.delete(sessionId);
+}
 
 // Health check configuration
 const HEALTH_CHECK_INTERVAL = 25000; // 25 seconds
@@ -85,26 +128,192 @@ const WA_LOG = {
     restore: (msg, data) => console.log(`♻️ [WA-RESTORE] ${msg}`, data || ''),
 };
 
+// ====== Sprint 3.3: Per-session reconnect coordinator ======
+// يقوم بجدولة وتنفيذ reconnect بشكل حصري لكل session
+const reconnectCoordinator = new Map(); // sessionId -> { phase, timer, reason, requestedAt, sockGeneration, attempt, syncFullHistory }
+
+function getReconnectState(sessionId) {
+    let state = reconnectCoordinator.get(sessionId);
+    if (!state) {
+        state = { phase: 'idle', timer: null, reason: null, requestedAt: null, sockGeneration: 0, attempt: 0, syncFullHistory: false };
+        reconnectCoordinator.set(sessionId, state);
+    }
+    return state;
+}
+
 function clearReconnectTimer(sessionId) {
+    const state = reconnectCoordinator.get(sessionId);
+    if (state && state.timer) {
+        clearTimeout(state.timer);
+        state.timer = null;
+    }
     if (reconnectTimers.has(sessionId)) {
         clearTimeout(reconnectTimers.get(sessionId));
         reconnectTimers.delete(sessionId);
     }
 }
 
-// ponytail: simple lock prevents concurrent reconnect for same session
-const reconnectInProgress = new Set();
-
-function isReconnecting(sessionId) {
-    return reconnectInProgress.has(sessionId);
+function hasPendingReconnect(sessionId) {
+    const state = reconnectCoordinator.get(sessionId);
+    return !!(state && (state.phase === 'scheduled' || state.phase === 'reconnecting'));
 }
 
-function markReconnecting(sessionId) {
-    reconnectInProgress.add(sessionId);
+function releaseReconnectLock(sessionId) {
+    const state = reconnectCoordinator.get(sessionId);
+    if (state) {
+        if (state.timer) {
+            clearTimeout(state.timer);
+            state.timer = null;
+        }
+        state.phase = 'idle';
+        state.attempt = 0;
+    }
+    if (reconnectTimers.has(sessionId)) {
+        clearTimeout(reconnectTimers.get(sessionId));
+        reconnectTimers.delete(sessionId);
+    }
 }
 
-function clearReconnecting(sessionId) {
-    reconnectInProgress.delete(sessionId);
+// Reconnect coordinator — المسار الوحيد لجدولة reconnect
+// أول من يصل يثبت options والـ timer؛ أي سبب تاني يتم تسجيله كـ coalesced بدون تأثير
+async function requestReconnect(sessionId, companyId, source, options = {}, delayMs = 1000) {
+    const state = getReconnectState(sessionId);
+    
+    if (state.phase === 'scheduled' || state.phase === 'reconnecting') {
+        WA_LOG.reconnect(sessionId, `reconnect_coalesced sessionId=${sessionId} reason=${source} phase=${state.phase} existingReason=${state.reason}`);
+        return; // لا نغير timer أو options الحالية
+    }
+
+    state.phase = 'scheduled';
+    state.reason = source;
+    state.requestedAt = new Date();
+    state.attempt = 0;
+
+    // استنتاج history sync من durable state
+    let syncFullHistory = false;
+    try {
+        const prisma = getSharedPrismaClient();
+        const imp = await prisma.whatsAppSessionHistoryImport.findUnique({
+            where: { sessionId },
+            select: { status: true }
+        });
+        syncFullHistory = imp && (imp.status === 'REQUESTED' || imp.status === 'IN_PROGRESS');
+    } catch (e) { /* model may not exist yet */ }
+
+    WA_LOG.reconnect(sessionId, `reconnect_scheduled sessionId=${sessionId} reason=${source} historySyncEnabled=${syncFullHistory} delay=${delayMs}ms`);
+
+    _scheduleReconnect(sessionId, companyId, { syncFullHistory }, delayMs, source);
+}
+
+function _scheduleReconnect(sessionId, companyId, options, delayMs, source) {
+    const state = getReconnectState(sessionId);
+    clearReconnectTimer(sessionId);
+
+    const lastTime = lastReconnectTime.get(sessionId);
+    const elapsed = lastTime ? Date.now() - lastTime : Infinity;
+    const cooldownRemaining = Math.max(0, RECONNECT_COOLDOWN_MS - elapsed);
+    const baseDelay = Math.max(delayMs, cooldownRemaining);
+    const maxDelay = 300000;
+    const jitter = Math.random() * Math.min(baseDelay * 0.3, 3000);
+    const actualDelay = Math.min(baseDelay + jitter, maxDelay);
+
+    const timer = setTimeout(async () => {
+        state.phase = 'reconnecting';
+        state.timer = null;
+        state.attempt++;
+        lastReconnectTime.set(sessionId, Date.now());
+
+        WA_LOG.reconnect(sessionId, `reconnect_started sessionId=${sessionId} reason=${source} attempt=${state.attempt} historySyncEnabled=${options.syncFullHistory}`);
+
+        try {
+            await reconnectSession(sessionId, companyId, state.attempt - 1, options);
+            WA_LOG.reconnect(sessionId, `reconnect_completed sessionId=${sessionId} reason=${source} attempt=${state.attempt}`);
+            releaseReconnectLock(sessionId);
+        } catch (error) {
+            WA_LOG.reconnect(sessionId, `reconnect_failed sessionId=${sessionId} reason=${source} attempt=${state.attempt} error=${error.message}`);
+
+            if (state.attempt >= MAX_RECONNECT_ATTEMPTS || getReconnectFailureCount(sessionId) >= MAX_RECONNECT_ATTEMPTS) {
+                await giveUpOnReconnect(sessionId, companyId);
+                return;
+            }
+
+            const nextDelay = Math.min(baseDelay * 1.5, maxDelay);
+            _scheduleReconnect(sessionId, companyId, options, nextDelay, source);
+        }
+    }, actualDelay);
+
+    state.timer = timer;
+    reconnectTimers.set(sessionId, timer);
+}
+
+// For backward compatibility: existing callers that pass options should use requestReconnect instead
+// but we keep this as internal helper (not exported)
+function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 5000, attempt = 0) {
+    const state = getReconnectState(sessionId);
+    if (state.phase === 'scheduled' || state.phase === 'reconnecting') return;
+    state.phase = 'scheduled';
+    state.reason = 'legacy';
+    _scheduleReconnect(sessionId, companyId, options, delayMs, 'legacy');
+}
+
+async function giveUpOnReconnect(sessionId, companyId, phoneNumber) {
+    WA_LOG.error(sessionId, `Reconnect attempts exceeded (${MAX_RECONNECT_ATTEMPTS}). Giving up: clearing auth state + QR_PENDING.`);
+    resetReconnectFailures(sessionId);
+
+    // تنظيف الجلسة (لو لسه موجودة) قبل مسح auth state
+    const existing = activeSessions.get(sessionId);
+    if (existing) {
+        activeSessions.delete(sessionId);
+        if (existing.sock) {
+            cleanupSocketListeners(existing.sock);
+            await endSocketQuietly(existing.sock, 'Reconnect exhausted');
+            existing.sock = null;
+        }
+        cleanupSessionState(sessionId, existing.companyId || companyId);
+    }
+    sessionHealthChecks.delete(sessionId);
+
+    try {
+        await clearDatabaseAuthState(sessionId);
+    } catch (authErr) {
+        WA_LOG.error(sessionId, `Failed to clear auth state after reconnect exhaustion:`, authErr.message);
+    }
+    try {
+        await safeQuery(async () => {
+            const prisma = getSharedPrismaClient();
+            await prisma.whatsAppSession.update({
+                where: { id: sessionId },
+                data: { status: 'QR_PENDING', updatedAt: new Date() }
+            });
+        }, 3);
+    } catch (dbErr) {
+        WA_LOG.error(sessionId, `Failed to update DB status to QR_PENDING after reconnect exhaustion:`, dbErr.message);
+    }
+    releaseReconnectLock(sessionId);
+    queueWhatsAppDisconnectAlert({
+        sessionId,
+        companyId,
+        phoneNumber: phoneNumber || existing?.phoneNumber,
+        errorMessage: `Reconnect failed ${MAX_RECONNECT_ATTEMPTS} times in a row — clearing auth state, QR re-link required`,
+        shouldReconnect: false,
+        nextDbStatus: 'QR_PENDING',
+        source: 'reconnect_give_up'
+    });
+    getIO()?.to(`company_${companyId}`).emit('whatsapp:connection', {
+        sessionId,
+        status: 'qr_pending',
+        reason: 'reconnect_give_up'
+    });
+}
+
+function getSocketGeneration(sessionId) {
+    const state = reconnectCoordinator.get(sessionId);
+    return state ? state.sockGeneration : 0;
+}
+
+function incrementSocketGeneration(sessionId) {
+    const state = getReconnectState(sessionId);
+    return ++state.sockGeneration;
 }
 
 function cleanupSocketListeners(sock) {
@@ -131,6 +340,7 @@ function cleanupSessionState(sessionId, companyId) {
     lastReconnectTime.delete(sessionId);
     sessionHealthChecks.delete(sessionId);
     untrackCompanySession(companyId, sessionId);
+    releaseReconnectLock(sessionId);
     for (const key of whatsappDisconnectAlertTimestamps.keys()) {
         if (key.startsWith(`${sessionId}:`)) {
             whatsappDisconnectAlertTimestamps.delete(key);
@@ -229,6 +439,17 @@ function emitAllSessionStatuses() {
 }
 
 /**
+ * يسجّل نشاطًا واصلًا من socket (رسائل/إيصالات/حضور) — يغذّي فحص الـ staleness
+ * (classifySessionSocketHealth يقرأ sock.lastReceivedMessageTimestamp).
+ */
+function markSocketActivity(sock) {
+    if (!sock) return;
+    try {
+        sock.lastReceivedMessageTimestamp = Date.now();
+    } catch (e) { /* best-effort */ }
+}
+
+/**
  * Verify if a session's Baileys socket is actually connected
  * Performs multi-layer health check: WebSocket → Baileys Socket → Connection State
  */
@@ -295,6 +516,26 @@ async function runHealthCheck() {
     isHealthCheckRunning = true;
 
     try {
+        // Batch DB status read: 1 query instead of N findUnique per tick
+        const sessionIds = Array.from(activeSessions.keys());
+        let dbStatusMap = new Map();
+        if (sessionIds.length > 0) {
+            try {
+                const dbRecords = await safeQuery(async () => {
+                    const prisma = getSharedPrismaClient();
+                    return await prisma.whatsAppSession.findMany({
+                        where: { id: { in: sessionIds } },
+                        select: { id: true, status: true }
+                    });
+                }, 3);
+                dbStatusMap = new Map((dbRecords || []).map(r => [r.id, r.status]));
+            } catch (dbErr) {
+                WA_LOG.error(null, `Health check batch status read failed:`, dbErr.message);
+            }
+        }
+
+        const statusDiffs = [];
+
         for (const [sessionId, session] of activeSessions) {
             try {
                 if (!session || !session.sock) continue;
@@ -333,9 +574,7 @@ async function runHealthCheck() {
                             source: 'health_check'
                         });
 
-                        scheduleReconnectSession(sessionId, companyId, {
-                            syncFullHistory: session.syncFullHistory || false
-                        }, 1000);
+                        requestReconnect(sessionId, companyId, 'health_check');
                     }
                 } else if (session.status === 'connecting') {
                     // Check if we've been connecting too long
@@ -355,35 +594,38 @@ async function runHealthCheck() {
                             session.sock = null;
                         }
                         cleanupSessionState(sessionId, session.companyId);
-                        scheduleReconnectSession(sessionId, companyId, {}, 500);
+                        requestReconnect(sessionId, companyId, 'health_check_stuck', {}, 500);
                     } else if (elapsed > HEALTH_CHECK_WARN_THRESHOLD) {
                         WA_LOG.health(sessionId, `Still connecting after ${Math.round(elapsed/1000)}s`);
                     }
                 }
 
-                // Update DB status to match in-memory if they differ
-                const currentDbStatus = await safeQuery(async () => {
-                    const prisma = getSharedPrismaClient();
-                    const record = await prisma.whatsAppSession.findUnique({
-                        where: { id: sessionId },
-                        select: { status: true }
-                    });
-                    return record?.status;
-                }, 3);
-
+                // Update DB status to match in-memory if they differ (collected & applied in one transaction)
+                const currentDbStatus = dbStatusMap.get(sessionId);
                 const inMemoryStatus = session.status?.toUpperCase();
                 if (currentDbStatus && currentDbStatus !== inMemoryStatus && inMemoryStatus) {
                     WA_LOG.health(sessionId, `Syncing DB status: ${currentDbStatus} -> ${inMemoryStatus}`);
-                    await safeQuery(async () => {
-                        const prisma = getSharedPrismaClient();
-                        return await prisma.whatsAppSession.update({
-                            where: { id: sessionId },
-                            data: { status: inMemoryStatus }
-                        });
-                    }, 3);
+                    statusDiffs.push({ id: sessionId, status: inMemoryStatus });
                 }
             } catch (sessionErr) {
                 WA_LOG.error(sessionId, `Health check error:`, sessionErr.message);
+            }
+        }
+
+        // Apply rare status diffs in a single transaction
+        if (statusDiffs.length > 0) {
+            try {
+                await safeQuery(async () => {
+                    const prisma = getSharedPrismaClient();
+                    await prisma.$transaction(
+                        statusDiffs.map(d => prisma.whatsAppSession.update({
+                            where: { id: d.id },
+                            data: { status: d.status }
+                        }))
+                    );
+                }, 3);
+            } catch (diffErr) {
+                WA_LOG.error(null, `Health check status sync failed:`, diffErr.message);
             }
         }
     } catch (err) {
@@ -417,45 +659,8 @@ function stopSessionHealthCheck() {
     }
 }
 
-function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 5000, attempt = 0) {
-    if (isReconnecting(sessionId)) {
-        return;
-    }
-    clearReconnectTimer(sessionId);
-
-    // Enforce minimum cooldown between reconnects
-    const lastTime = lastReconnectTime.get(sessionId);
-    const elapsed = lastTime ? Date.now() - lastTime : Infinity;
-    const cooldownRemaining = Math.max(0, RECONNECT_COOLDOWN_MS - elapsed);
-
-    // Exponential backoff with jitter for stability
-    const baseDelay = Math.max(delayMs, cooldownRemaining);
-    const maxDelay = 300000; // Cap at 5 minutes to keep attempting indefinitely without overloading
-    const jitter = Math.random() * Math.min(baseDelay * 0.3, 3000);
-    const actualDelay = Math.min(baseDelay + jitter, maxDelay);
-
-    WA_LOG.reconnect(sessionId, `Scheduling reconnect attempt ${attempt + 1} in ${Math.round(actualDelay)}ms (base: ${baseDelay}ms)`, { 
-        resetAuth: !!options.resetAuth,
-        usePairingCode: !!options.usePairingCode
-    });
-
-    const timer = setTimeout(() => {
-        reconnectTimers.delete(sessionId);
-        lastReconnectTime.set(sessionId, Date.now());
-        markReconnecting(sessionId);
-        reconnectSession(sessionId, companyId, attempt, options).catch((error) => {
-            WA_LOG.error(sessionId, `Scheduled reconnect failed: ${error.message}`);
-            clearReconnecting(sessionId);
-            // Indefinite reconnect for production SaaS stability, capped at maxDelay (5m)
-            const nextDelay = Math.min(baseDelay * 1.5, maxDelay);
-            scheduleReconnectSession(sessionId, companyId, options, nextDelay, attempt + 1);
-        }).finally(() => {
-            clearReconnecting(sessionId);
-        });
-    }, actualDelay);
-
-    reconnectTimers.set(sessionId, timer);
-}
+// Legacy callers that still call scheduleReconnectSession directly
+// are redirected through the coordinator internally from _scheduleReconnect
 
 function normalizePhoneNumber(value) {
     const cleaned = String(value || '').replace(/\D/g, '');
@@ -804,6 +1009,24 @@ async function resolveLinkedDeviceRemoteJid(sessionId, remoteJid, msg, options =
     return await findPhoneJidForLinkedDeviceJid(sessionId, normalizedJid) || normalizedJid;
 }
 
+/**
+ * تحويل JID وجهة الإرسال إلى JID فعلي قابل للإرسال.
+ * الـ LID (Linked Device ID) لا يُرسَل إليه مباشرة — نفضّه عبر الـ mapping
+ * (ما تبعتش في فراغ). يرجع null لو LID غير محلول.
+ */
+async function resolveOutgoingRemoteJid(sessionId, to) {
+    const { normalizedJid } = normalizeWhatsAppContactIdentity(to);
+    if (!sessionId || !isLinkedDeviceJid(normalizedJid)) {
+        return normalizedJid;
+    }
+
+    const persisted = await getPersistedLidMapping(sessionId, normalizedJid);
+    if (persisted) return persisted;
+
+    const heuristic = await findPhoneJidForLinkedDeviceJid(sessionId, normalizedJid);
+    return heuristic || null;
+}
+
 async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, options = {}) {
     const normalizedLidJid = normalizeWhatsAppContactIdentity(lidJid).normalizedJid;
     const normalizedPhoneJid = normalizePhoneJid(phoneJid);
@@ -844,6 +1067,20 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
                     updatedAt: new Date()
                 }
             });
+
+            // Sync the CRM Conversation metadata (remoteJid) from the LID jid to the resolved phone jid
+            const affectedConversations = await tx.conversation.findMany({
+                where: {
+                    metadata: { contains: `"remoteJid":"${normalizedLidJid}"` }
+                },
+                select: { id: true, metadata: true }
+            });
+            for (const conv of affectedConversations) {
+                await tx.conversation.update({
+                    where: { id: conv.id },
+                    data: { metadata: buildConversationMetadata(conv.metadata, { remoteJid: normalizedPhoneJid }) }
+                });
+            }
 
             const [totalMessages, unreadCount, lastMessage] = await Promise.all([
                 tx.whatsAppMessage.count({
@@ -945,10 +1182,65 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
     }
 }
 
+function isHistorySystemMessage(msg) {
+    const message = msg?.message || {};
+    return Boolean(
+        msg?.messageStubType ||
+        message.protocolMessage ||
+        message.senderKeyDistributionMessage ||
+        message.messageContextInfo
+    );
+}
+
+async function persistHistoryLidMappings(sessionId, mappings = []) {
+    const prisma = getSharedPrismaClient();
+    if (!prisma.whatsAppLidMapping || !Array.isArray(mappings)) return {};
+
+    const resolved = {};
+    for (const mapping of mappings) {
+        const lidJid = String(mapping?.lidJid || '').trim();
+        const phoneJid = normalizePhoneJid(mapping?.pnJid);
+        if (!lidJid || !phoneJid) continue;
+
+        await prisma.whatsAppLidMapping.upsert({
+            where: { sessionId_lidJid: { sessionId, lidJid } },
+            create: { sessionId, lidJid, phoneJid },
+            update: { phoneJid, updatedAt: new Date() }
+        });
+
+        resolved[lidJid] = phoneJid;
+        await mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid);
+    }
+
+    return resolved;
+}
+
+async function getPersistedLidMapping(sessionId, lidJid) {
+    const prisma = getSharedPrismaClient();
+    if (!prisma.whatsAppLidMapping || !sessionId || !lidJid) return null;
+
+    const mapping = await prisma.whatsAppLidMapping.findUnique({
+        where: { sessionId_lidJid: { sessionId, lidJid } },
+        select: { phoneJid: true }
+    });
+
+    return normalizePhoneJid(mapping?.phoneJid);
+}
+
 async function shouldProcessMessageUpsertType(type, fromMe, messageId, options = {}) {
     if (type === 'notify') return true;
 
-    if (options.importHistory && type === 'append') return true;
+    // Check duplicate BEFORE importHistory shortcut to avoid bypassing dedup
+    if (options.importHistory && type === 'append') {
+        if (messageId) {
+            const existing = await getSharedPrismaClient().whatsAppMessage.findUnique({
+                where: { messageId },
+                select: { id: true }
+            });
+            if (existing) return false;
+        }
+        return true;
+    }
 
     // Own outgoing messages delivered as append (e.g. from another linked device).
     if (type === 'append' && Boolean(fromMe)) return true;
@@ -982,23 +1274,27 @@ const MESSAGE_STATUS_RANK = {
     PENDING: 0,
     SENT: 1,
     DELIVERED: 2,
-    READ: 3
+    READ: 3,
+    FAILED: 4
 };
 
 function getMessageStatusFromBaileysStatus(baileysStatus) {
     const statusMap = {
+        0: 'FAILED', // WAMessageStatus.ERROR — الإيصال صار خطأ فعلًا
         1: 'PENDING',
         2: 'SENT',
         3: 'DELIVERED',
-        4: 'READ'
+        4: 'READ',
+        5: 'READ' // PLAYED → READ
     };
     const parsedStatus = Number(baileysStatus);
 
-    if (statusMap[parsedStatus]) {
+    if (Number.isFinite(parsedStatus) && statusMap[parsedStatus] !== undefined) {
         return statusMap[parsedStatus];
     }
 
     const statusNameMap = {
+        ERROR: 'FAILED',
         PENDING: 'PENDING',
         SERVER_ACK: 'SENT',
         DELIVERY_ACK: 'DELIVERED',
@@ -1011,6 +1307,11 @@ function getMessageStatusFromBaileysStatus(baileysStatus) {
 }
 
 function shouldApplyMessageStatus(currentStatus, nextStatus) {
+    // FAILED is terminal-ish: never let a later DELIVERED/READ receipt flip it back,
+    // and never overwrite an already DELIVERED/READ message with FAILED.
+    if (nextStatus === 'FAILED') {
+        return currentStatus !== 'DELIVERED' && currentStatus !== 'READ';
+    }
     const currentRank = MESSAGE_STATUS_RANK[currentStatus] ?? 0;
     const nextRank = MESSAGE_STATUS_RANK[nextStatus] ?? 0;
 
@@ -1091,6 +1392,8 @@ function getSessionPath(sessionId) {
  * @param {object} options - خيارات إضافية (usePairingCode, phoneNumber)
  */
 async function createSession(sessionId, companyId, options = {}) {
+    /** 🛡️ PRODUCTION-FIX: declared outside try so catch can clean up on error */
+    let sock = null;
     try {
         // Exclude META_CLOUD sessions from Baileys manager
         const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({
@@ -1138,15 +1441,9 @@ async function createSession(sessionId, companyId, options = {}) {
         // تحميل حالة المصادقة من قاعدة البيانات
         const { state, saveCreds } = await useDatabaseAuthState(sessionId);
 
-        // الحصول على أحدث إصدار من Baileys مع fallback للنسخة المخزنة
-        let version;
-        try {
-            const fetched = await fetchLatestBaileysVersion();
-            version = fetched.version;
-        } catch {
-            version = [6, 7, 23];
-            WA_LOG.warn(sessionId, `Failed to fetch latest Baileys version, using fallback ${version.join('.')}`);
-        }
+        // استخدام نسخة الواتساب المدمجة مع نسخة المكتبة المثبتة (متوافقة دائماً مع الكود الفعلي).
+        // fetchLatestBaileysVersion تجلب من master برانش — تتسبب في mismatch مع إصدار مثبت ثابت.
+        const version = baileysDefaultVersion || [2, 3000, 1043857760];
         console.log(`📦 Using Baileys version: ${version.join('.')}`);
 
         // إعدادات Socket
@@ -1168,9 +1465,24 @@ async function createSession(sessionId, companyId, options = {}) {
                     const prisma = getSharedPrismaClient();
                     const msg = await prisma.whatsAppMessage.findUnique({
                         where: { messageId: key.id },
-                        select: { metadata: true }
+                        select: { metadata: true, content: true, messageType: true, remoteJid: true, fromMe: true }
                     });
-                    if (msg?.metadata) return JSON.parse(msg.metadata);
+                    if (msg?.metadata) {
+                        try {
+                            const parsed = JSON.parse(msg.metadata);
+                            if (parsed && (parsed.key || parsed.message)) return parsed;
+                        } catch { /* malformed metadata — fall through to fallback */ }
+                    }
+                    // Fallback: بناء رسالة صغرى من الحقول المحفوظة حتى يتمكن بايليز
+                    // من إعادة الإرسال/الإصلاح (retry) للرسائل الخارجة التي لا تتوفر
+                    // لها الـ WAMessage الكاملة في metadata.
+                    if (msg?.content && (!msg.messageType || msg.messageType === 'TEXT')) {
+                        return {
+                            key: { remoteJid: msg.remoteJid || key.remoteJid, fromMe: true, id: key.id },
+                            message: { conversation: msg.content },
+                            messageTimestamp: Math.floor(Date.now() / 1000)
+                        };
+                    }
                 } catch { /* return undefined */ }
                 return undefined;
             },
@@ -1187,7 +1499,7 @@ async function createSession(sessionId, companyId, options = {}) {
         };
 
         // إنشاء Socket
-        const sock = makeWASocket(socketOptions);
+        sock = makeWASocket(socketOptions);
 
         // حفظ الجلسة في الذاكرة
         const sessionData = {
@@ -1206,7 +1518,10 @@ async function createSession(sessionId, companyId, options = {}) {
             loadBalanceWeight: options.loadBalanceWeight || 1,
             createdAt: new Date(),
             lastQRTimestamp: null,
-            creds: state.creds
+            creds: state.creds,
+            saveCreds,
+            labels: new Map(), // cache للتصنيفات: labelId -> { id, name, color, deleted, predefinedId }
+            labelAssociations: new Map() // labelId -> Set<chatJid>
         };
         activeSessions.set(sessionId, sessionData);
         trackCompanySession(companyId, sessionId);
@@ -1295,6 +1610,7 @@ async function createSession(sessionId, companyId, options = {}) {
 
         // معالجة الرسائل الواردة
         sock.ev.on('messages.upsert', async (m) => {
+            markSocketActivity(sock);
             try {
                 await handleIncomingMessages(sessionId, companyId, m, sock);
             } catch (err) {
@@ -1303,8 +1619,9 @@ async function createSession(sessionId, companyId, options = {}) {
         });
 
         sock.ev.on('messaging-history.set', async (history) => {
+            markSocketActivity(sock);
             try {
-                await handleMessagingHistorySet(sessionId, companyId, history, sock);
+                await enqueueMessagingHistorySet(sessionId, companyId, history, sock);
             } catch (err) {
                 console.error(`❌ [WhatsApp] Critical error in messaging-history.set for ${sessionId}:`, err.message);
             }
@@ -1312,36 +1629,92 @@ async function createSession(sessionId, companyId, options = {}) {
 
         // معالجة تحديث حالة الرسائل
         sock.ev.on('messages.update', async (updates) => {
+            markSocketActivity(sock);
             await handleMessageStatusUpdate(sessionId, companyId, updates);
         });
 
         sock.ev.on('message-receipt.update', async (updates) => {
+            markSocketActivity(sock);
             await handleMessageReceiptUpdate(sessionId, companyId, updates);
         });
 
         // معالجة أحداث المجموعات
         sock.ev.on('groups.update', async (updates) => {
+            markSocketActivity(sock);
             await handleGroupsUpdate(sessionId, companyId, updates);
         });
 
         // معالجة أحداث جهات الاتصال
         sock.ev.on('contacts.update', async (updates) => {
+            markSocketActivity(sock);
             await handleContactsUpdate(sessionId, companyId, updates);
         });
 
         // معالجة أحداث الحضور (typing, online, etc.)
         sock.ev.on('presence.update', async (update) => {
+            markSocketActivity(sock);
             await handlePresenceUpdate(sessionId, companyId, update);
         });
 
         // معالجة أحداث المكالمات
         sock.ev.on('call.update', async (update) => {
+            markSocketActivity(sock);
             await handleCallUpdate(sessionId, companyId, update);
+        });
+
+        // معالجة أحداث التصنيفات
+        sock.ev.on('labels.edit', (label) => {
+            const sd = activeSessions.get(sessionId);
+            if (!sd) return;
+            if (label.deleted) {
+                sd.labels.delete(label.id);
+            } else {
+                sd.labels.set(label.id, { id: label.id, name: label.name, color: label.color, predefinedId: label.predefinedId });
+            }
+            // 💾 حفظ تعريف التصنيف في الداتابيز عشان يفضل موجود بعد إعادة التشغيل
+            persistLabelDefinition(sessionId, label).catch(() => {});
+        });
+
+        sock.ev.on('labels.association', ({ type, association }) => {
+            const sd = activeSessions.get(sessionId);
+            if (!sd) return;
+            if (association.type === 'label_jid') {
+                if (!sd.labelAssociations.has(association.labelId)) {
+                    sd.labelAssociations.set(association.labelId, new Set());
+                }
+                if (type === 'add') {
+                    sd.labelAssociations.get(association.labelId).add(association.chatId);
+                } else {
+                    sd.labelAssociations.get(association.labelId).delete(association.chatId);
+                }
+                // 💾 Persist to DB
+                persistLabelAssociation(sessionId, association.chatId, association.labelId, type === 'add').catch(() => {});
+            }
         });
 
         return sessionData;
     } catch (error) {
         console.error(`❌ Error creating session ${sessionId}:`, error);
+
+        // 🛡️ PRODUCTION-FIX: Clean up partial session state to prevent memory leak
+        // The previous code threw without cleanup, leaving orphaned sockets,
+        // 10+ event listeners, and ~2MB of Baileys crypto keys (native Buffers)
+        // in closure chains — causing RSS to balloon to 6.2GB over time.
+        try {
+            activeSessions.delete(sessionId);
+            if (sock) {
+                cleanupSocketListeners(sock);
+                await endSocketQuietly(sock, 'Session creation failed');
+            }
+        } catch (cleanupErr) {
+            console.warn(`⚠️ [WA] Cleanup error during failed session creation:`, cleanupErr.message);
+        }
+        cleanupSessionState(sessionId, companyId);
+        // ⚠️ IMPORTANT: Must also clean up any auth state that was loaded from DB
+        if (options?.resetAuth) {
+            try { await clearDatabaseAuthState(sessionId); } catch {}
+        }
+
         throw error;
     }
 }
@@ -1500,6 +1873,15 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
             // إعادة الاتصال إذا لزم الأمر
             if (shouldReconnect) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (shouldReconnect=true)`);
+                // 🚨 PRODUCTION-FIX: عداد فشل تراكمي عبر إعادة الإنشاء —
+                // لو بلغ السقف نستسلم (مسح auth + QR_PENDING + تنبيه) بدل
+                // إعادة محاولة لا نهائية تعرّض الرقم لـ rate-limit/block.
+                const failureCount = incrementReconnectFailureCount(sessionId);
+                if (failureCount >= MAX_RECONNECT_ATTEMPTS) {
+                    await giveUpOnReconnect(sessionId, companyId, sessionData?.phoneNumber);
+                    return;
+                }
+                WA_LOG.reconnect(sessionId, `Reconnect failure count ${failureCount}/${MAX_RECONNECT_ATTEMPTS}`);
                 const currentData = sessionData ? { syncFullHistory: sessionData.syncFullHistory } : { syncFullHistory: false };
                 activeSessions.delete(sessionId);
                 if (sessionData?.sock) {
@@ -1509,11 +1891,14 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                 }
                 cleanupSessionState(sessionId, companyId);
                 sessionHealthChecks.delete(sessionId);
-                // 440 = connectionReplaced — back off harder to break the death spiral
-                const reconnectDelay = statusCode === 440 ? 30000 : 3000;
-                scheduleReconnectSession(sessionId, companyId, {
-                    syncFullHistory: currentData.syncFullHistory
-                }, reconnectDelay);
+                // 440 = connectionReplaced, 515 = stream error, 428 = connection closed —
+                // كلها عابرة: backoff موحّد 30s (بدل 3s) + jitter يوزّع عبر الجلسات
+                // لتفادي thundering herd وقت أعطال واتساب.
+                const TRANSIENT_CLOSE_CODES = new Set([440, 515, 428, 500, 502, 503, 504]);
+                const transientBackoffBase = TRANSIENT_CLOSE_CODES.has(statusCode) ? 30000 : 5000;
+                const jitteredBackoff = transientBackoffBase + Math.round(Math.random() * Math.min(transientBackoffBase * 0.3, 3000));
+                const reconnectDelay = jitteredBackoff;
+                requestReconnect(sessionId, companyId, 'socket_close', {}, reconnectDelay);
             } else if (requiresFreshLink) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (requiresFreshLink=true) - will show QR`);
                 const storedPhoneNumber = normalizePhoneNumber(sessionData?.phoneNumber);
@@ -1549,6 +1934,8 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
         } else if (connection === 'open') {
             WA_LOG.ok(sessionId, `WhatsApp connection OPEN`);
             clearReconnectTimer(sessionId);
+            // 🚨 PRODUCTION-FIX: أي اتصال ناجح فعلي يصفّر عداد الفشل التراكمي
+            resetReconnectFailures(sessionId);
 
             // الحصول على معلومات المستخدم
             const user = sock.user;
@@ -1609,6 +1996,9 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
             // ✅ Sync Profile Automatically
             syncProfile(sessionId).catch(err => WA_LOG.warn(sessionId, `Profile sync failed: ${err.message}`));
 
+            // ✅ Fetch missing contact profile pictures in background
+            fetchMissingProfilePics(sessionId).catch(err => WA_LOG.warn(sessionId, `Fetch missing profile pics failed: ${err.message}`));
+
             // ✅ Migrate old history if an older session for same phone number exists
             if (phoneNumber) {
                 migrateOldSessionHistory(companyId, phoneNumber, sessionId).catch(err => WA_LOG.warn(sessionId, `History migration failed: ${err.message}`));
@@ -1641,6 +2031,9 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
             WA_LOG.event(sessionId, 'connecting_state_received');
             const sessionData = activeSessions.get(sessionId);
             if (sessionData) {
+                const wasAlreadyConnecting =
+                    sessionData.status === 'connecting' ||
+                    sessionData.status === 'authenticating';
                 // If we had QR and now connecting, the user scanned the QR - show "authenticating"
                 if (sessionData.status === 'qr_pending' || sessionData.status === 'QR_PENDING') {
                     sessionData.status = 'authenticating';
@@ -1654,7 +2047,12 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                 } else {
                     sessionData.status = 'connecting';
                 }
-                sessionData.createdAt = new Date();
+                // 🚨 PRODUCTION-FIX: ما نعملش reset لـ createdAt إلا عند الدخول
+                // الفعلي لحالة connecting من حالة أخرى — تكرار حدث connecting أثناء
+                // نفس المحاولة كان يخفي الجلسات العالقة عن الفحص الصحي (elapsed دايماً < 120s).
+                if (!wasAlreadyConnecting) {
+                    sessionData.createdAt = new Date();
+                }
             }
             if (io) {
                 io.to(`company_${companyId}`).emit('whatsapp:connection', {
@@ -1688,7 +2086,13 @@ async function upsertHistoryContact(sessionId, jid, options = {}) {
     }
 
     if (lastMessageAt) {
-        updateData.lastMessageAt = lastMessageAt;
+        const existing = await getSharedPrismaClient().whatsAppContact.findUnique({
+            where: { sessionId_jid: { sessionId, jid: normalizedJid } },
+            select: { lastMessageAt: true }
+        });
+        if (!existing?.lastMessageAt || lastMessageAt >= existing.lastMessageAt) {
+            updateData.lastMessageAt = lastMessageAt;
+        }
     }
 
     return await prisma.whatsAppContact.upsert({
@@ -1715,6 +2119,70 @@ async function upsertHistoryContact(sessionId, jid, options = {}) {
     });
 }
 
+const HISTORY_BATCH_SIZE = parseInt(process.env.WHATSAPP_HISTORY_BATCH_SIZE || '100', 10);
+
+// Yield to event loop between history batches so the Node.js event loop can breathe
+const historyYield = () => new Promise(resolve => setImmediate(resolve));
+
+function normalizeHistoryProgress(progress) {
+    if (progress === null || progress === undefined || progress === '') return null;
+    const value = Number(progress);
+    if (!Number.isFinite(value)) return null;
+    return Math.max(0, Math.min(value > 1 ? value : value * 100, 100));
+}
+
+function enqueueMessagingHistorySet(sessionId, companyId, history, sock) {
+    const previous = historySyncQueues.get(sessionId) || Promise.resolve();
+    const next = previous
+        .catch(() => {})
+        .then(() => handleMessagingHistorySet(sessionId, companyId, history, sock));
+
+    historySyncQueues.set(sessionId, next);
+    next.finally(() => {
+        if (historySyncQueues.get(sessionId) === next) {
+            historySyncQueues.delete(sessionId);
+            if (historySyncCompletionRequested.delete(sessionId)) {
+                void finalizeHistoryImport(sessionId, companyId).catch((error) => {
+                    console.error(`❌ [HISTORY] Failed to finalize import for ${sessionId}:`, error.message);
+                });
+            }
+        }
+    }).catch(() => {});
+
+    return next;
+}
+
+async function finalizeHistoryImport(sessionId, companyId) {
+    const sessionData = activeSessions.get(sessionId);
+    if (sessionData) sessionData.syncFullHistory = false;
+
+    const prisma = getSharedPrismaClient();
+    const session = await prisma.whatsAppSession.findUnique({
+        where: { id: sessionId },
+        select: { metadata: true }
+    });
+    await prisma.$transaction([
+        prisma.whatsAppSessionHistoryImport.update({
+            where: { sessionId },
+            data: { status: 'COMPLETED', completedAt: new Date(), lastProgress: 100 }
+        }),
+        prisma.whatsAppSession.update({
+            where: { id: sessionId },
+            data: {
+                metadata: JSON.stringify({
+                    ...parseJsonSafely(session?.metadata, {}),
+                    importHistoryOnLink: false,
+                    historySyncedAt: new Date().toISOString()
+                }),
+                updatedAt: new Date()
+            }
+        })
+    ]);
+    void syncPendingHistoryMedia(sessionId, companyId).catch((mediaError) => {
+        console.warn(`⚠️ [HISTORY] Media sync could not start for ${sessionId}:`, mediaError.message);
+    });
+}
+
 async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     const sessionData = activeSessions.get(sessionId);
     if (!sessionData?.syncFullHistory) {
@@ -1735,50 +2203,193 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     };
 
     console.log(`📜 [WHATSAPP-HISTORY] Importing history for session ${sessionId}:`, summary);
-    sessionData.historySync = {
-        ...summary,
-        updatedAt: new Date()
-    };
+    sessionData.historySync = { ...summary, updatedAt: new Date() };
 
-    for (const contact of contacts) {
-        try {
-            await upsertHistoryContact(sessionId, contact.jid || contact.id || contact.lid, {
-                name: contact.name || contact.notify || contact.verifiedName
+    // ====== Sprint 2: Durable Import Lifecycle ======
+    const prisma = getSharedPrismaClient();
+    try {
+        await prisma.$transaction(async (tx) => {
+            const imp = await tx.whatsAppSessionHistoryImport.findUnique({
+                where: { sessionId }
             });
-        } catch (error) {
-            console.warn(`⚠️ Failed to import WhatsApp history contact for ${sessionId}:`, error.message);
-        }
+            if (imp && !['REQUESTED', 'IN_PROGRESS'].includes(imp.status)) {
+                console.log(`⏭️ [HISTORY] Session ${sessionId} history import status is ${imp.status}, skipping batch`);
+                throw new Error('__SKIP_BATCH__');
+            }
+            if (!imp || imp.status === 'NOT_REQUESTED') {
+                await tx.whatsAppSessionHistoryImport.upsert({
+                    where: { sessionId },
+                    create: { sessionId, status: 'IN_PROGRESS', startedAt: new Date(), requestedAt: new Date() },
+                    update: { status: 'IN_PROGRESS', startedAt: new Date(), lastError: null }
+                });
+            } else if (imp.status === 'REQUESTED') {
+                await tx.whatsAppSessionHistoryImport.update({
+                    where: { sessionId },
+                    data: { status: 'IN_PROGRESS', startedAt: new Date(), lastError: null }
+                });
+            }
+        });
+    } catch (e) {
+        if (e.message === '__SKIP_BATCH__') return;
+        throw e;
+    }
+    // ====== End Sprint 2 ======
+
+    // بناء mapping من LID → رقم تلفون (من protobuf الرسمي)
+    const lidToPhoneMap = await persistHistoryLidMappings(
+        sessionId,
+        history?.phoneNumberToLidMappings || []
+    );
+    if (Object.keys(lidToPhoneMap).length > 0) {
+        console.log(`📜 [WHATSAPP-HISTORY] Found ${Object.keys(lidToPhoneMap).length} LID→Phone mappings`);
     }
 
+    // نخزن بس الـ chats اللي عندهم timestamp (محادثات حقيقية) — مش address book
+    const contactsByJid = {};
+    for (const c of contacts) {
+        if (c.id) contactsByJid[c.id] = c;
+        if (c.lid) contactsByJid[c.lid] = c;
+    }
+    let importedChats = 0;
     for (const chat of chats) {
+        const chatTimestamp = chat.conversationTimestamp || chat.lastMessageRecvTimestamp;
+        if (!chatTimestamp) continue;
+        const contactMeta = contactsByJid[chat.id] || contactsByJid[chat.lidJid] || {};
         try {
             await upsertHistoryContact(sessionId, chat.id, {
-                name: chat.name,
-                lastMessageAt: timestampToDate(chat.conversationTimestamp || chat.lastMessageRecvTimestamp)
+                name: contactMeta.name || chat.name || contactMeta.notify || contactMeta.verifiedName,
+                lastMessageAt: timestampToDate(chatTimestamp)
             });
+            importedChats++;
         } catch (error) {
             console.warn(`⚠️ Failed to import WhatsApp history chat for ${sessionId}:`, error.message);
         }
     }
 
-    if (messages.length > 0) {
-        await handleIncomingMessages(sessionId, companyId, {
-            messages,
-            type: 'append'
-        }, sock, {
-            importHistory: true,
-            skipRealtimeEvents: true,
-            skipNotifications: true,
-            skipAI: true,
-            skipCrmSync: true,
-            skipMediaDownload: true
-        });
+    // تخزين جهات اتصال الـ history كلها (بالأسماء) حتى يمكن عرض اسم الراسل
+    // داخل رسائل الجروبات (المرسل يصل بصيغة LID أو رقم تلفون).
+    let importedContacts = 0;
+    const contactImportQueue = [];
+    for (const c of contacts) {
+        const contactJid = c.id || c.lid;
+        if (!contactJid || contactJid === 'status@broadcast' || isJidNewsletter?.(contactJid)) continue;
+        contactImportQueue.push(() => upsertHistoryContact(sessionId, contactJid, {
+            name: c.name || c.notify || c.verifiedName
+        }));
     }
+    for (let i = 0; i < contactImportQueue.length; i += HISTORY_BATCH_SIZE) {
+        const chunk = contactImportQueue.slice(i, i + HISTORY_BATCH_SIZE);
+        const results = await Promise.allSettled(chunk.map(run => run()));
+        importedContacts += results.filter(r => r.status === 'fulfilled').length;
+        await historyYield();
+    }
+    if (importedContacts > 0) {
+        console.log(`📜 [WHATSAPP-HISTORY] Imported ${importedContacts} contact names for session ${sessionId}`);
+    }
+
+    // ====== Sprint 3: Batch processing with bounded chunks ======
+    const totalMessages = messages.length;
+    let batchStart = 0;
+    let batchNumber = 0;
+    let totalImported = 0;
+    let totalUnsupported = 0;
+    let totalSkipped = 0;
+    let totalFailed = 0;
+    let cumulativeDurationMs = 0;
+
+    while (batchStart < totalMessages) {
+        const batchEnd = Math.min(batchStart + HISTORY_BATCH_SIZE, totalMessages);
+        const batch = messages.slice(batchStart, batchEnd);
+        batchNumber++;
+        const batchStartTime = Date.now();
+
+        try {
+            const batchResult = await handleIncomingMessages(sessionId, companyId, {
+                messages: batch,
+                type: 'append',
+                lidToPhoneMap
+            }, sock, {
+                importHistory: true,
+                skipRealtimeEvents: true,
+                skipNotifications: true,
+                skipAI: true,
+                skipCrmSync: true,
+                skipMediaDownload: true
+            });
+
+            const batchDuration = Date.now() - batchStartTime;
+            cumulativeDurationMs += batchDuration;
+            totalImported += batchResult.created;
+            totalUnsupported += batchResult.unsupported;
+            totalSkipped += batchResult.skipped;
+            totalFailed += batchResult.failed;
+            const progress = totalMessages > 0 ? Math.min(batchEnd / totalMessages, 1.0) : 1.0;
+
+            // Aggregate telemetry لكل batch بدل per-message logs
+            console.log(`📊 [HISTORY-BATCH] session=${sessionId} batch=${batchNumber}/${Math.ceil(totalMessages / HISTORY_BATCH_SIZE)} received=${batch.length} created=${batchResult.created} total=${totalImported} progress=${(progress * 100).toFixed(1)}% duration=${batchDuration}ms`);
+
+            // تحديث counters في DB بعد كل batch
+            try {
+                await prisma.whatsAppSessionHistoryImport.update({
+                    where: { sessionId },
+                    data: {
+                        importedMessages: { increment: batchResult.created },
+                        unsupportedMessages: { increment: batchResult.unsupported },
+                        skippedMessages: { increment: batchResult.skipped },
+                        failedMessages: { increment: batchResult.failed },
+                        lastProgress: normalizeHistoryProgress(history?.progress) ?? (progress * 100)
+                    }
+                });
+            } catch (counterErr) {
+                console.warn(`⚠️ [HISTORY] Failed to update batch counters for ${sessionId}:`, counterErr.message);
+            }
+
+            // Yield للـ event loop
+            await historyYield();
+        } catch (batchErr) {
+            console.error(`❌ [HISTORY] Batch ${batchNumber} failed for session ${sessionId}:`, batchErr.message);
+            await prisma.whatsAppSessionHistoryImport.update({
+                where: { sessionId },
+                data: { status: 'FAILED', failedAt: new Date(), lastError: `Batch ${batchNumber} failed: ${batchErr.message?.substring(0, 200)}` }
+            }).catch(() => {});
+            return; // لا نكمل باقي الـ batches
+        }
+
+        batchStart = batchEnd;
+    }
+    // ====== End Sprint 3 ======
 
     io?.to(`company_${companyId}`).emit('whatsapp:history_sync', {
         sessionId,
         ...summary
     });
+
+    // ====== Sprint 2: تحديث counters + completion (final update) ======
+    try {
+        await prisma.whatsAppSessionHistoryImport.update({
+            where: { sessionId },
+            data: {
+                chatsCount: { increment: importedChats },
+                contactsCount: { increment: importedChats },
+                lastProgress: history?.isLatest ? 100 : (normalizeHistoryProgress(history?.progress) ?? 0)
+            }
+        });
+
+        if (history?.isLatest) {
+            console.log(`✅ [HISTORY] Session ${sessionId} final batch received: ${totalMessages} msgs in ${batchNumber} batches, ${cumulativeDurationMs}ms total`);
+            historySyncCompletionRequested.add(sessionId);
+        }
+    } catch (error) {
+        console.error(`❌ [HISTORY] Failed to update import state for ${sessionId}:`, error.message);
+        try {
+            await prisma.whatsAppSessionHistoryImport.update({
+                where: { sessionId },
+                data: { status: 'FAILED', failedAt: new Date(), lastError: error.message?.substring(0, 500) }
+            });
+        } catch (e2) {
+            console.error(`❌ [HISTORY] Failed to mark import as FAILED for ${sessionId}:`, e2.message);
+        }
+    }
 
     await logEvent(sessionId, companyId, 'history_sync_imported', summary);
 }
@@ -1787,59 +2398,83 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
  * معالجة الرسائل الواردة
  */
 async function handleIncomingMessages(sessionId, companyId, m, sock, options = {}) {
-    const { messages, type } = m;
+    const { messages, type, lidToPhoneMap } = m;
     const io = getIO();
     const importHistory = Boolean(options.importHistory);
+    const result = { created: 0, unsupported: 0, skipped: 0, failed: 0 };
 
-    if (!Array.isArray(messages) || messages.length === 0) return;
+    if (!Array.isArray(messages) || messages.length === 0) return result;
 
     for (const msg of messages) {
         try {
             let remoteJid = msg.key.remoteJid;
             const fromMe = Boolean(msg.key.fromMe);
             const messageId = msg.key.id;
+            // في إصدارات Baileys الحديثة قد يكون راسل رسالة الجروب في msg.participant (المستوى الأعلى)
+            // بدلاً من msg.key.participant — نقرأ من الاتنين لنضمن تخزين الراسل دائماً.
+            const messageParticipant = msg?.key?.participant || msg?.participant || null;
 
             // Move messageId check BEFORE the upsert-type gate so we can feed it to the filter.
             if (!messageId) {
                 console.warn(`⚠️ Skipping WhatsApp message without id in session ${sessionId}`);
+                result.skipped++;
                 continue;
             }
 
             if (!(await shouldProcessMessageUpsertType(type, fromMe, messageId, { importHistory }))) {
+                result.skipped++;
                 continue;
             }
 
             if (!shouldProcessIncomingMessage(msg)) {
                 console.warn(`⚠️ Skipping WhatsApp message with future timestamp in session ${sessionId}`);
+                result.skipped++;
                 continue;
             }
 
             const messageTimestampSeconds = getIncomingMessageTimestampSeconds(msg) || (Date.now() / 1000);
             const messageTimestamp = new Date(messageTimestampSeconds * 1000);
 
-            // DEBUG: Log incoming message key
-            await logEvent(sessionId, companyId, 'debug_incoming_msg', {
-                key: msg.key,
-                pushName: msg.pushName
-            });
+            // DEBUG: Log incoming message key — opt-in عبر env flag بس.
+            // كان بيـ INSERT row في whatsAppEventLog على كل رسالة (حمل على الـ DB في البرودكشن).
+            // فعّله فقط عند الحاجة للـ debugging: WHATSAPP_DEBUG_INCOMING_EVENTS=true
+            if (!importHistory && toBooleanOption(process.env.WHATSAPP_DEBUG_INCOMING_EVENTS)) {
+                await logEvent(sessionId, companyId, 'debug_incoming_msg', {
+                    key: msg.key,
+                    pushName: msg.pushName
+                });
+            }
 
             // Handle @lid (Linked Device ID) by folding it into the phone JID when we know the mapping.
             if (remoteJid && isLinkedDeviceJid(remoteJid)) {
                 const lidJid = normalizeWhatsAppContactIdentity(remoteJid).normalizedJid;
-                const resolvedJid = await resolveLinkedDeviceRemoteJid(sessionId, remoteJid, msg, { fromMe });
-
-                if (resolvedJid && resolvedJid !== lidJid) {
-                    await mergeLinkedDeviceConversation(sessionId, lidJid, resolvedJid, {
+                // 1. Use official PhoneNumberToLIDMapping from WhatsApp protobuf (fastest, most reliable)
+                const mappedPhone =
+                    lidToPhoneMap?.[lidJid] ||
+                    lidToPhoneMap?.[remoteJid] ||
+                    await getPersistedLidMapping(sessionId, lidJid);
+                if (mappedPhone) {
+                    await mergeLinkedDeviceConversation(sessionId, lidJid, mappedPhone, {
                         pushName: msg.pushName
                     });
-                    remoteJid = resolvedJid;
-                } else if (fromMe) {
-                    // A first outgoing linked-device message can arrive before any phone mapping exists.
-                    // Keep it temporarily; the next inbound with senderPn will merge it back.
-                    console.log(`⚠️ Outgoing message to unresolved LID ${remoteJid}. Keeping LID until a phone mapping is known.`);
+                    remoteJid = mappedPhone;
                 } else {
-                    console.log(`⚠️ Skipping message from LID without participant/senderPn: ${remoteJid}`);
-                    continue;
+                    // 2. Fall back to heuristic search in message metadata
+                    const resolvedJid = await resolveLinkedDeviceRemoteJid(sessionId, remoteJid, msg, { fromMe });
+                    if (resolvedJid && resolvedJid !== lidJid) {
+                        await mergeLinkedDeviceConversation(sessionId, lidJid, resolvedJid, {
+                            pushName: msg.pushName
+                        });
+                        remoteJid = resolvedJid;
+                    } else if (fromMe) {
+                        console.log(`⚠️ Outgoing message to unresolved LID ${remoteJid}. Keeping LID until a phone mapping is known.`);
+                    } else if (importHistory) {
+                        // في history sync، نخزن الرسالة مع LID بدل ما نسكت — عشان نرجع نresolveها بعدين
+                        console.log(`⚠️ History message from unresolved LID ${remoteJid}. Storing with LID for later resolution.`);
+                    } else {
+                        console.log(`⚠️ Skipping message from LID without participant/senderPn: ${remoteJid}`);
+                        continue;
+                    }
                 }
             }
 
@@ -1859,14 +2494,91 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             const messageContent = await extractMessageContent(msg, sock, sessionId, {
                 skipMediaDownload: Boolean(options.skipMediaDownload)
             });
-            if (!messageContent) continue;
+            if (!messageContent) {
+                // Handle REVOKE (delete-for-everyone) و edits — وصلوا كرسائل protocolMessage/مخفية
+                const proto = msg?.message?.protocolMessage;
+                if (proto) {
+                    if (proto.type === MessageProtocolType?.REVOKE) {
+                        const revokedId = proto.key?.id || msg.key?.id;
+                        if (revokedId) {
+                            await handleRevokedMessage(sessionId, companyId, revokedId, remoteJid);
+                        }
+                        result.skipped++;
+                        continue;
+                    }
+                    if (proto.type === MessageProtocolType?.MESSAGE_EDIT) {
+                        const editedId = msg.key?.id || proto.key?.id;
+                        if (editedId) {
+                            await handleEditedMessage(sessionId, companyId, editedId, remoteJid, proto.message || msg.message);
+                        }
+                        result.skipped++;
+                        continue;
+                    }
+                }
+                // edits ممكن توصل كرسالة فيها messageSecret (من غير protocolMessage)
+                if (msg?.message?.messageContextInfo?.messageSecret) {
+                    const editedId = msg.key?.id;
+                    if (editedId) {
+                        await handleEditedMessage(sessionId, companyId, editedId, remoteJid, msg.message);
+                    }
+                    result.skipped++;
+                    continue;
+                }
+
+                if (importHistory) {
+                    const prisma = getSharedPrismaClient();
+                    const isHidden = isHistorySystemMessage(msg);
+                    const existingMsg = await prisma.whatsAppMessage.findUnique({
+                        where: { messageId },
+                        select: { id: true }
+                    });
+                    const isNew = !existingMsg;
+                    await prisma.whatsAppMessage.upsert({
+                        where: { messageId },
+                        update: {
+                            remoteJid,
+                            fromMe,
+                            messageType: isHidden ? 'HISTORY_SYSTEM' : 'UNSUPPORTED',
+                            content: isHidden ? null : 'رسالة غير مدعومة',
+                            isHidden,
+                            metadata: JSON.stringify(msg),
+                            updatedAt: new Date()
+                        },
+                        create: {
+                            sessionId,
+                            messageId,
+                            remoteJid,
+                            fromMe,
+                            messageType: isHidden ? 'HISTORY_SYSTEM' : 'UNSUPPORTED',
+                            content: isHidden ? null : 'رسالة غير مدعومة',
+                            isHidden,
+                            metadata: JSON.stringify(msg),
+                            timestamp: messageTimestamp,
+                            status: fromMe ? 'SENT' : 'DELIVERED',
+                            updatedAt: new Date()
+                        }
+                    });
+                    if (!isHidden) {
+                        await updateOrCreateContact(sessionId, remoteJid, msg, sock, {
+                            isOutgoing: fromMe,
+                            suppressUnread: true,
+                            incrementCounters: isNew,
+                            lastMessageAt: messageTimestamp,
+                            lastMessagePreview: 'رسالة غير مدعومة',
+                            skipProfilePic: true
+                        });
+                        result.unsupported += isNew ? 1 : 0;
+                    }
+                    result.created += isNew ? 1 : 0;
+                }
+                continue;
+            }
 
             const messageStatusFromPayload = getMessageStatusFromBaileysStatus(msg.status);
             const initialMessageStatus = messageStatusFromPayload || (fromMe ? 'SENT' : 'DELIVERED');
 
             // console.log(`📩 New message in session ${sessionId}: ${messageContent.type} from ${remoteJid}`);
 
-            // حفظ الرسالة في قاعدة البيانات
             // حفظ الرسالة في قاعدة البيانات
             const prisma = getSharedPrismaClient();
             const existingMessage = await prisma.whatsAppMessage.findUnique({
@@ -1888,7 +2600,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     quotedMessageId: messageContent.quotedId,
                     quotedContent: messageContent.quotedText,
                     metadata: JSON.stringify(msg),
-                    participant: msg.key.participant, // تحديث المشارك
+                    participant: messageParticipant, // تحديث المشارك
                     updatedAt: new Date()
                 },
                 create: {
@@ -1896,7 +2608,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     remoteJid,
                     messageId,
                     fromMe,
-                    participant: msg.key.participant, // حفظ المشارك
+                    participant: messageParticipant, // حفظ المشارك
                     messageType: messageContent.type,
                     content: messageContent.text,
                     mediaUrl: messageContent.mediaUrl,
@@ -1911,6 +2623,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     updatedAt: new Date()
                 }
             });
+            result.created += isNewMessage ? 1 : 0;
 
             if (messageStatusFromPayload) {
                 const updatedCount = await updateMessageDeliveryStatus(messageId, messageStatusFromPayload);
@@ -1929,6 +2642,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                         sessionId,
                         remoteJid,
                         {
+                            messageId,
                             type: messageContent.type,
                             content: messageContent.text,
                             mediaUrl: messageContent.mediaUrl,
@@ -1938,7 +2652,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             timestamp: messageTimestamp,
                             pushName: msg.pushName
                         },
-                        !fromMe // isIncoming
+                        !fromMe, // isIncoming
+                        isNewMessage
                     );
                     syncedCustomer = syncResult?.customer;
                     syncedConversation = syncResult?.conversation;
@@ -1948,24 +2663,31 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             }
 
             // تحديث أو إنشاء جهة الاتصال
+            const previewText = messageContent.text || (messageContent.type === 'AUDIO' ? '🎵 رسالة صوتية' : messageContent.type === 'IMAGE' ? '🖼️ صورة' : messageContent.type === 'VIDEO' ? '🎬 فيديو' : messageContent.type === 'DOCUMENT' ? '📄 مستند' : messageContent.type);
             const contact = await updateOrCreateContact(sessionId, remoteJid, msg, sock, {
                 isOutgoing: fromMe,
                 customerId: syncedCustomer?.id,
                 suppressUnread: importHistory || !isNewMessage,
                 incrementCounters: isNewMessage,
                 lastMessageAt: messageTimestamp,
+                lastMessagePreview: previewText,
                 skipProfilePic: importHistory
             });
 
             // إذا كانت رسالة مجموعة، نحفظ المرسل كجهة اتصال أيضاً
-            if (!importHistory && remoteJid.endsWith('@g.us') && msg.key.participant) {
-                await updateOrCreateContact(sessionId, msg.key.participant, msg, sock, {
-                    isOutgoing: false,
-                    isGroupParticipant: true,
-                    // Group participants might need their own customer entry? 
-                    // For now, we skip syncing group participants to CRM customers implicitly 
-                    // unless they send a direct message.
-                });
+            // (بدون جلب صورة البروفايل في كل رسالة — الأداء أولاً)
+            if (remoteJid.endsWith('@g.us') && messageParticipant && !fromMe) {
+                try {
+                    await updateOrCreateContact(sessionId, messageParticipant, msg, sock, {
+                        isOutgoing: false,
+                        isGroupParticipant: true,
+                        incrementCounters: false, // ألا يظهر عضو الجروب في قائمة المحادثات
+                        skipProfilePic: true, // لا نجلب صور البروفايل لكل عضو في كل رسالة
+                        // نحفظ المرسل حتى أثناء استيراد التاريخ ليظهر اسمه في رسائل الجروبات
+                    });
+                } catch (e) {
+                    console.warn(`⚠️ Failed to upsert group participant contact ${messageParticipant}:`, e.message);
+                }
             }
 
             if (!options.skipRealtimeEvents && isNewMessage) {
@@ -2216,10 +2938,13 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             }
 
         } catch (error) {
+            result.failed++;
             console.error(`❌ Error processing message:`, error);
             await logEvent(sessionId, companyId, 'message_error', { error: error.message }, 'error');
         }
     }
+
+    return result;
 }
 
 /**
@@ -2531,6 +3256,7 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
             suppressUnread = false,
             incrementCounters = true,
             lastMessageAt,
+            lastMessagePreview,
             skipProfilePic = false
         } = options;
 
@@ -2557,13 +3283,34 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
             pushName = undefined;
         }
 
-        // محاولة الحصول على صورة البروفايل
+        // محاولة الحصول على صورة البروفايل — مع cache (كانت بتنفذ لكل رسالة)
         let profilePicUrl = null;
         if (!skipProfilePic) {
-            try {
-                profilePicUrl = await sock.profilePictureUrl(remoteJid, 'image');
-            } catch (e) {
-                // تجاهل الخطأ إذا لم تكن الصورة متاحة
+            const profileCacheKey = `${sessionId}:${remoteJid}`;
+            const cachedPic = profilePicCache.get(profileCacheKey);
+            if (cachedPic && cachedPic.expiresAt > Date.now()) {
+                profilePicUrl = cachedPic.url;
+            } else {
+                try {
+                    profilePicUrl = await sock.profilePictureUrl(remoteJid, 'image');
+                    if (profilePicCache.size > 10000) {
+                        const picNow = Date.now();
+                        for (const [key, entry] of profilePicCache) {
+                            if (entry.expiresAt <= picNow) profilePicCache.delete(key);
+                        }
+                    }
+                    // مفيش صورة (null) → cache قصير (10 دقايق) عشان نعيد المحاولة بشكل دوري
+                    // من غير ما ننفذ نداء الشبكة على كل رسالة. صورة ناجحة → ساعة.
+                    const ttl = profilePicUrl
+                        ? PROFILE_PIC_CACHE_TTL_MS
+                        : PROFILE_PIC_MISS_TTL_MS;
+                    profilePicCache.set(profileCacheKey, {
+                        url: profilePicUrl,
+                        expiresAt: Date.now() + ttl
+                    });
+                } catch (e) {
+                    // تجاهل الخطأ إذا لم تكن الصورة متاحة
+                }
             }
         }
 
@@ -2587,7 +3334,28 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
 
         // Only update chat metadata if it's NOT a background participant update
         if (!isGroupParticipant) {
-            updateData.lastMessageAt = lastMessageAt || new Date();
+            // Monotonic update: لا نحدث lastMessageAt/preview لو الرسالة الجديدة أقدم من الموجودة.
+            // (بدون transaction لكل رسالة — الـ read والـ upsert كانوا خارج بعض أصلًا، فمفيش atomicity
+            // حقيقية نضيعها، والـ BEGIN/COMMIT لكل رسالة كان عبء على الـ DB في الـ bursts)
+            if (lastMessageAt) {
+                const prisma = getSharedPrismaClient();
+                const existing = await prisma.whatsAppContact.findUnique({
+                    where: { sessionId_jid: { sessionId, jid: remoteJid } },
+                    select: { lastMessageAt: true }
+                });
+                if (existing?.lastMessageAt && existing.lastMessageAt > lastMessageAt) {
+                    updateData.lastMessageAt = existing.lastMessageAt;
+                } else {
+                    updateData.lastMessageAt = lastMessageAt;
+                    updateData.lastMessageIsFromMe = isOutgoing;
+                    if (lastMessagePreview !== undefined) {
+                        updateData.lastMessagePreview = lastMessagePreview;
+                    }
+                }
+            } else {
+                updateData.lastMessageAt = new Date();
+                updateData.lastMessageIsFromMe = isOutgoing;
+            }
             if (incrementCounters) {
                 updateData.totalMessages = { increment: 1 };
             }
@@ -2604,6 +3372,7 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
             pushName: pushName || null,
             profilePicUrl,
             lastMessageAt: lastMessageAt || new Date(),
+            lastMessageIsFromMe: isOutgoing,
             unreadCount: (!isOutgoing && !isGroupParticipant && !suppressUnread) ? 1 : 0,
             totalMessages: incrementCounters ? 1 : 0,
             isGroup
@@ -2645,6 +3414,153 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
 /**
  * معالجة تحديث حالة الرسائل
  */
+function extractEditedText(message) {
+    let m = message;
+    while (m) {
+        if (m.ephemeralMessage) m = m.ephemeralMessage.message;
+        else if (m.viewOnceMessage) m = m.viewOnceMessage.message;
+        else if (m.viewOnceMessageV2) m = m.viewOnceMessageV2.message;
+        else break;
+    }
+    if (!m) return null;
+    if (m.conversation) return m.conversation;
+    if (m.extendedTextMessage?.text) return m.extendedTextMessage.text;
+    if (m.imageMessage?.caption) return m.imageMessage.caption;
+    if (m.videoMessage?.caption) return m.videoMessage.caption;
+    return null;
+}
+
+// يساعد في تقسيم البحث عن رسائل الـ CRM: يلاقي الـ conversation المرتبط بـ (sessionId, remoteJid)
+// — من غير full-table scan على الـ messages ولا scan للمetadata لكل محادثات الشركة.
+async function findCrmConversationIdForJid(tx, companyId, sessionId, remoteJid) {
+    if (!companyId || !remoteJid) return null;
+
+    // 1) المسار المفهرس: WhatsAppContact (sessionId, jid) → customerId → conversation (companyId, customerId)
+    try {
+        const contact = await tx.whatsAppContact.findUnique({
+            where: { sessionId_jid: { sessionId, jid: remoteJid } },
+            select: { customerId: true }
+        });
+        if (contact?.customerId) {
+            const conv = await tx.conversation.findFirst({
+                where: { companyId, customerId: contact.customerId, channel: 'WHATSAPP' },
+                select: { id: true },
+                orderBy: { updatedAt: 'desc' }
+            });
+            if (conv) return conv.id;
+        }
+    } catch (e) { /* fall through to metadata scan */ }
+
+    // 2) Fallback: metadata scan (فقط لو الـ contact مش مرتبط بـ customer)
+    const conversation = await tx.conversation.findFirst({
+        where: {
+            companyId,
+            channel: 'WHATSAPP',
+            metadata: { contains: `"remoteJid":"${remoteJid}"` }
+        },
+        select: { id: true },
+        orderBy: { updatedAt: 'desc' }
+    });
+    return conversation?.id || null;
+}
+
+async function findCrmMessagesForWhatsAppId(tx, companyId, sessionId, remoteJid, messageId) {
+    const conversationId = await findCrmConversationIdForJid(tx, companyId, sessionId, remoteJid);
+    const where = conversationId
+        ? { conversationId, metadata: { contains: `"whatsAppMessageId":"${messageId}"` } }
+        : { metadata: { contains: `"whatsAppMessageId":"${messageId}"` } };
+    return tx.message.findMany({ where, select: { id: true } });
+}
+
+async function handleRevokedMessage(sessionId, companyId, messageId, remoteJid) {
+    const prisma = getSharedPrismaClient();
+    try {
+        await executeWithRetry(async () => {
+            await prisma.$transaction(async (tx) => {
+                const updated = await tx.whatsAppMessage.updateMany({
+                    where: { messageId, isHidden: false },
+                    data: {
+                        isHidden: true,
+                        content: null,
+                        messageType: 'DELETED',
+                        updatedAt: new Date()
+                    }
+                });
+                if (updated.count === 0) return;
+
+                const crmMessages = await findCrmMessagesForWhatsAppId(tx, companyId, sessionId, remoteJid, messageId);
+                if (crmMessages.length > 0) {
+                    await tx.message.updateMany({
+                        where: { id: { in: crmMessages.map(m => m.id) } },
+                        data: {
+                            content: '[تم حذف الرسالة]',
+                            metadata: JSON.stringify({ deleted: true, whatsAppMessageId: messageId, deletedAt: new Date().toISOString() })
+                        }
+                    });
+                }
+            });
+        });
+
+        const io = getIO();
+        const audience = await getConversationAudience({
+            companyId,
+            sessionId,
+            remoteJid: remoteJid
+        });
+        emitToAudience(io, {
+            companyId,
+            userIds: audience.userIds,
+            eventName: 'whatsapp:message:deleted',
+            payload: { sessionId, messageId, remoteJid }
+        });
+        console.log(`🗑️ [WA-REVOKE:${sessionId}] Message ${messageId} revoked and hidden`);
+    } catch (error) {
+        console.error('❌ Error handling revoked message:', error.message);
+    }
+}
+
+async function handleEditedMessage(sessionId, companyId, messageId, remoteJid, editedMessage) {
+    const prisma = getSharedPrismaClient();
+    try {
+        const text = extractEditedText(editedMessage);
+        if (text === null) return;
+
+        await executeWithRetry(async () => {
+            await prisma.$transaction(async (tx) => {
+                const updated = await tx.whatsAppMessage.updateMany({
+                    where: { messageId, isHidden: false },
+                    data: { content: text, updatedAt: new Date() }
+                });
+                if (updated.count === 0) return;
+
+                const crmMessages = await findCrmMessagesForWhatsAppId(tx, companyId, sessionId, remoteJid, messageId);
+                if (crmMessages.length > 0) {
+                    await tx.message.updateMany({
+                        where: { id: { in: crmMessages.map(m => m.id) } },
+                        data: { content: text, updatedAt: new Date() }
+                    });
+                }
+            });
+        });
+
+        const io = getIO();
+        const audience = await getConversationAudience({
+            companyId,
+            sessionId,
+            remoteJid
+        });
+        emitToAudience(io, {
+            companyId,
+            userIds: audience.userIds,
+            eventName: 'whatsapp:message:edited',
+            payload: { sessionId, messageId, remoteJid, content: text }
+        });
+        console.log(`✏️ [WA-EDIT:${sessionId}] Message ${messageId} edited`);
+    } catch (error) {
+        console.error('❌ Error handling edited message:', error.message);
+    }
+}
+
 async function handleMessageStatusUpdate(sessionId, companyId, updates) {
     const io = getIO();
 
@@ -2652,8 +3568,27 @@ async function handleMessageStatusUpdate(sessionId, companyId, updates) {
         try {
             const { key, update: statusUpdate } = update;
 
+            // REVOKE (delete for everyone)
+            if (statusUpdate?.message?.protocolMessage?.type === MessageProtocolType?.REVOKE) {
+                await handleRevokedMessage(sessionId, companyId, key.id, key.remoteJid);
+                continue;
+            }
+
+            // EDIT — Baileys يبعت التعديل إما كـ protocolMessage(MESSAGE_EDIT) أو كرسالة فيها messageSecret
+            const isEdit =
+                statusUpdate?.message?.protocolMessage?.type === MessageProtocolType?.MESSAGE_EDIT ||
+                statusUpdate?.message?.messageContextInfo?.messageSecret;
+            if (isEdit) {
+                const editedContent = statusUpdate?.message?.protocolMessage?.message || statusUpdate?.message;
+                await handleEditedMessage(sessionId, companyId, key.id, key.remoteJid, editedContent);
+                continue;
+            }
+
             if (statusUpdate.status) {
-                const status = getMessageStatusFromBaileysStatus(statusUpdate.status) || 'SENT';
+                // 🚨 PRODUCTION-FIX (M1): الأكواد غير المعروفة كانت تتحول لـ 'SENT' (إخفاء فشل).
+                // الآن نتخطى الإيصالات غير المعروفة بدل كتابة حالة زائفة.
+                const status = getMessageStatusFromBaileysStatus(statusUpdate.status);
+                if (!status) continue;
 
                 const updatedCount = await updateMessageDeliveryStatus(key.id, status);
 
@@ -2752,20 +3687,96 @@ async function handleContactsUpdate(sessionId, companyId, updates) {
     for (const update of updates) {
         try {
             if (update.id) {
-                await getSharedPrismaClient().whatsAppContact.updateMany({
-                    where: {
-                        sessionId,
-                        jid: update.id
-                    },
-                    data: {
-                        name: update.notify || update.name,
-                        profilePicUrl: update.imgUrl
-                    }
-                });
+                const data = {};
+                if (update.notify || update.name) data.name = update.notify || update.name;
+                if (update.imgUrl) data.profilePicUrl = update.imgUrl;
+
+                if (Object.keys(data).length > 0) {
+                    await getSharedPrismaClient().whatsAppContact.updateMany({
+                        where: { sessionId, jid: update.id },
+                        data
+                    });
+                }
             }
         } catch (error) {
             console.error('❌ Error updating contact:', error);
         }
+    }
+}
+
+/**
+ * جلب صور البروفايل المفقودة لجهات الاتصال
+ * بيمشي على كل الكونطاكت اللي معندهاش صورة (على دفعات) مع rate limit.
+ * عنده guard بيشغله مرة واحدة لكل جلسة في نفس الوقت.
+ */
+async function fetchMissingProfilePics(sessionId) {
+    const session = getSession(sessionId);
+    if (!session || session.status !== 'connected' || !session.sock) {
+        WA_LOG.warn(sessionId, 'Cannot fetch missing profile pics: session not connected');
+        return;
+    }
+
+    if (profilePicFetchRunning.has(sessionId)) {
+        WA_LOG.info(sessionId, 'Profile pic fetch already running — skipping');
+        return;
+    }
+    profilePicFetchRunning.add(sessionId);
+
+    const BATCH_SIZE = 50;
+    const RATE_LIMIT_MS = 200;
+
+    try {
+        const prisma = getSharedPrismaClient();
+        let offset = 0;
+        let fetched = 0;
+        let checked = 0;
+
+        while (true) {
+            const contacts = await prisma.whatsAppContact.findMany({
+                where: {
+                    sessionId,
+                    profilePicUrl: null,
+                    jid: { endsWith: '@s.whatsapp.net' }
+                },
+                select: { id: true, jid: true },
+                skip: offset,
+                take: BATCH_SIZE
+            });
+
+            if (contacts.length === 0) break;
+            offset += contacts.length;
+
+            for (const contact of contacts) {
+                checked++;
+                try {
+                    const url = await session.sock.profilePictureUrl(contact.jid, 'image');
+                    if (url) {
+                        await prisma.whatsAppContact.update({
+                            where: { id: contact.id },
+                            data: { profilePicUrl: url, updatedAt: new Date() }
+                        });
+                        fetched++;
+                    }
+                } catch {
+                    // No profile pic or unavailable — skip
+                }
+                // Rate limit: wait between requests
+                await new Promise(r => setTimeout(r, RATE_LIMIT_MS));
+            }
+
+            // لو باقي كونطاكت كتير (أكتر من دفعة) نكمل على طول
+            if (contacts.length < BATCH_SIZE) break;
+        }
+
+        if (fetched > 0) {
+            WA_LOG.ok(sessionId, `Fetched ${fetched}/${checked} missing profile pics`);
+        } else if (checked > 0) {
+            WA_LOG.info(sessionId, `No new profile pics to fetch (${checked} checked)`);
+        }
+    } catch (error) {
+        WA_LOG.error(sessionId, `Error fetching missing profile pics: ${error.message}`);
+    } finally {
+        profilePicFetchRunning.delete(sessionId);
     }
 }
 
@@ -2889,21 +3900,182 @@ async function reconnectSession(sessionId, companyId, attempt = 0, options = {})
     }
 }
 
+async function requestHistorySync(sessionId, companyId) {
+    const prisma = getSharedPrismaClient();
+    const session = await prisma.whatsAppSession.findFirst({
+        where: { id: sessionId, companyId },
+        select: { id: true, provider: true, metadata: true }
+    });
+
+    if (!session) throw new Error('Session not found');
+    if (session.provider === 'META_CLOUD') throw new Error('History sync is only available for Baileys sessions');
+
+    const outcome = await prisma.$transaction(async (tx) => {
+        const current = await tx.whatsAppSessionHistoryImport.findUnique({
+            where: { sessionId },
+            select: { status: true }
+        });
+        if (current && ['REQUESTED', 'IN_PROGRESS'].includes(current.status)) {
+            return { alreadyRunning: true, status: current.status };
+        }
+
+        const metadata = parseJsonSafely(session.metadata, {});
+        metadata.importHistoryOnLink = true;
+
+        await tx.whatsAppSession.update({
+            where: { id: sessionId },
+            data: { metadata: JSON.stringify(metadata), updatedAt: new Date() }
+        });
+        await tx.whatsAppSessionHistoryImport.upsert({
+            where: { sessionId },
+            create: { sessionId, status: 'REQUESTED', requestedAt: new Date() },
+            update: {
+                status: 'REQUESTED',
+                requestedAt: new Date(),
+                startedAt: null,
+                completedAt: null,
+                failedAt: null,
+                lastError: null,
+                importedMessages: 0,
+                unsupportedMessages: 0,
+                skippedMessages: 0,
+                failedMessages: 0,
+                chatsCount: 0,
+                contactsCount: 0,
+                lastProgress: 0
+            }
+        });
+        return { alreadyRunning: false, status: 'REQUESTED' };
+    });
+
+    if (!outcome.alreadyRunning) {
+        await requestReconnect(sessionId, companyId, 'manual_history_sync', {}, 250);
+    }
+
+    return outcome;
+}
+
+async function syncPendingHistoryMedia(sessionId, companyId) {
+    if (historyMediaSyncJobs.has(sessionId)) {
+        return { alreadyRunning: true };
+    }
+
+    const job = (async () => {
+        const session = activeSessions.get(sessionId);
+        if (!session || session.status !== 'connected') {
+            throw new Error('Session is not connected');
+        }
+
+        const prisma = getSharedPrismaClient();
+        const limit = Math.max(1, Math.min(Number(process.env.WHATSAPP_HISTORY_MEDIA_SYNC_LIMIT || 1000), 2000));
+        const concurrency = Math.max(1, Math.min(Number(process.env.WHATSAPP_HISTORY_MEDIA_SYNC_CONCURRENCY || 2), 4));
+        const pending = await prisma.whatsAppMessage.findMany({
+            where: {
+                sessionId,
+                mediaUrl: null,
+                messageType: { in: ['IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'STICKER'] }
+            },
+            select: { id: true, metadata: true },
+            orderBy: { timestamp: 'asc' },
+            take: limit
+        });
+        const WhatsAppMediaHandler = require('./WhatsAppMediaHandler');
+        let downloaded = 0;
+        let failed = 0;
+
+        for (let index = 0; index < pending.length; index += concurrency) {
+            const group = pending.slice(index, index + concurrency);
+            const outcomes = await Promise.all(group.map(async (storedMessage) => {
+                const rawMessage = parseJsonSafely(storedMessage.metadata, null);
+                if (!rawMessage) return false;
+
+                try {
+                    const media = await WhatsAppMediaHandler.downloadMedia(rawMessage, sessionId);
+                    if (!media) return false;
+                    await prisma.whatsAppMessage.update({
+                        where: { id: storedMessage.id },
+                        data: {
+                            mediaUrl: media.url,
+                            mediaType: media.type,
+                            mediaMimeType: media.mimetype,
+                            mediaFileName: media.fileName,
+                            mediaSize: media.size
+                        }
+                    });
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            }));
+
+            downloaded += outcomes.filter(Boolean).length;
+            failed += outcomes.filter((outcome) => !outcome).length;
+            await historyYield();
+        }
+
+        getIO()?.to(`company_${companyId}`).emit('whatsapp:history_media_sync', {
+            sessionId,
+            total: pending.length,
+            downloaded,
+            failed
+        });
+        await logEvent(sessionId, companyId, 'history_media_sync_finished', { total: pending.length, downloaded, failed });
+        return { total: pending.length, downloaded, failed };
+    })();
+
+    historyMediaSyncJobs.set(sessionId, job);
+    try {
+        return await job;
+    } finally {
+        historyMediaSyncJobs.delete(sessionId);
+    }
+}
+
 /**
  * إرسال رسالة نصية
  */
-async function sendTextMessage(sessionId, to, text, options = {}) {
-    const session = activeSessions.get(sessionId);
+const SEND_MESSAGE_TIMEOUT_MS = 30000;
+
+function withSendTimeout(sendFn, sessionId, label) {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(Object.assign(new Error(`${label} timed out after ${SEND_MESSAGE_TIMEOUT_MS}ms`), {
+                code: 'WA_SEND_TIMEOUT',
+                retryable: true,
+            }));
+        }, SEND_MESSAGE_TIMEOUT_MS);
+    });
+    return Promise.race([sendFn(), timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
+function assertSocketReady(session, sessionId) {
     if (!session || session.status !== 'connected') {
         throw new Error('Session not connected');
     }
+    if (getSocketReadyState(session.sock) !== 1) {
+        throw new Error('Session socket not ready');
+    }
+}
+
+async function sendTextMessage(sessionId, to, text, options = {}) {
+    const session = activeSessions.get(sessionId);
+    assertSocketReady(session, sessionId);
 
     const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
 
-    const result = await session.sock.sendMessage(jid, {
-        text,
-        ...options
-    });
+    let result;
+    try {
+        result = await withSendTimeout(() => session.sock.sendMessage(jid, {
+            text,
+            ...options
+        }), sessionId, 'sendTextMessage');
+    } catch (sendErr) {
+        if (sendErr?.code === 'WA_SEND_TIMEOUT') {
+            requestReconnect(sessionId, session?.companyId, 'send_timeout');
+        }
+        throw sendErr;
+    }
 
     // إذا تم تمرير userId، قم بتحديث الرسالة
     if (options.userId && result.key.id) {
@@ -2936,13 +4108,19 @@ async function sendTextMessage(sessionId, to, text, options = {}) {
  */
 async function sendMediaMessage(sessionId, to, media, options = {}) {
     const session = activeSessions.get(sessionId);
-    if (!session || session.status !== 'connected') {
-        throw new Error('Session not connected');
-    }
+    assertSocketReady(session, sessionId);
 
     const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
 
-    const result = await session.sock.sendMessage(jid, media, options);
+    let result;
+    try {
+        result = await withSendTimeout(() => session.sock.sendMessage(jid, media, options), sessionId, 'sendMediaMessage');
+    } catch (sendErr) {
+        if (sendErr?.code === 'WA_SEND_TIMEOUT') {
+            requestReconnect(sessionId, session?.companyId, 'send_timeout');
+        }
+        throw sendErr;
+    }
 
     // إذا تم تمرير userId، قم بتحديث الرسالة
     if (options.userId && result.key.id) {
@@ -3386,7 +4564,7 @@ async function restoreAllSessions() {
         // For QR_PENDING: only restore if they have valid auth state (someone scanned but not yet connected)
         const validQrPending = [];
         for (const s of qrPendingSessions) {
-            const authState = parseJsonSafely(s.authState, null);
+            const authState = parseJsonSafely(decryptField(s.authState), null);
             if (authState?.creds?.registered || authState?.creds?.me) {
                 validQrPending.push(s);
                 WA_LOG.restore(`Keeping QR_PENDING session ${s.id}: has valid auth state`);
@@ -3411,9 +4589,20 @@ async function restoreAllSessions() {
         for (const session of toRestore) {
             try {
                 const weight = session.isDefault ? 3 : 1;
-                const metadata = parseJsonSafely(session.metadata, {});
 
-                const enableHistorySync = session.status === 'QR_PENDING' && metadata.importHistoryOnLink === true;
+                // Sprint 2: نستخدم HistoryImport state بدل metadata.importHistoryOnLink
+                let enableHistorySync = false;
+                try {
+                    const historyImport = await getSharedPrismaClient().whatsAppSessionHistoryImport.findUnique({
+                        where: { sessionId: session.id },
+                        select: { status: true }
+                    });
+                    enableHistorySync = historyImport && ['REQUESTED', 'IN_PROGRESS'].includes(historyImport.status);
+                } catch (e) {
+                    // Fallback للجلسات القديمة (backfill خلصها)
+                    const metadata = parseJsonSafely(session.metadata, {});
+                    enableHistorySync = metadata.importHistoryOnLink === true && (session.status === 'QR_PENDING' || session.status === 'CONNECTING');
+                }
 
                 WA_LOG.restore(`Restoring session ${session.id} (status=${session.status}, phone=${session.phoneNumber || '?'})`);
 
@@ -3892,6 +5081,25 @@ async function getBroadcastLists(sessionId) {
 
 // ==================== Labels Features ====================
 
+// خريطة تحويل ألوان الهيكس إلى أرقام LabelColor المدعومة من واتساب (0-19)
+const LABEL_COLORS = [
+    '#FF5722', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
+    '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50',
+    '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800',
+];
+const HEX_TO_LABEL_COLOR_INDEX = Object.fromEntries(
+    LABEL_COLORS.map((hex, i) => [hex.toUpperCase(), i])
+);
+const resolveLabelColor = (color) => {
+    if (typeof color === 'number' && color >= 0 && color <= 19) return color;
+    if (typeof color === 'string') {
+        const idx = HEX_TO_LABEL_COLOR_INDEX[color.toUpperCase()];
+        if (idx !== undefined) return idx;
+    }
+    return 0;
+};
+const formatLabelColor = (colorIndex) => LABEL_COLORS[colorIndex] || LABEL_COLORS[0];
+
 /**
  * إضافة علامة للمحادثة
  */
@@ -3904,32 +5112,264 @@ async function labelChat(sessionId, jid, labelId) {
     }
 
     try {
-        await session.sock.labelChat(jid, labelId);
-        console.log(`🏷️ Chat labeled: ${jid}`);
+        const result = await session.sock.addChatLabel(jid, labelId);
+        console.log(`🏷️ Chat labeled: ${jid} label=${labelId}`, result ? JSON.stringify(result) : '');
         return { success: true };
     } catch (error) {
-        console.error('❌ Error labeling chat:', error);
+        console.error(`❌ Error labeling chat: ${jid} label=${labelId}`);
+        console.error(`   [BAILEYS-ERR] ${error?.message} | code=${error?.output?.statusCode} | stack=${error?.stack?.split('\n').slice(0, 3).join(' | ')}`);
         throw error;
     }
 }
 
 /**
- * جلب العلامات
+ * جلب العلامات (من cache session + الداتابيز كـ fallback)
  */
 async function getLabels(sessionId) {
     const session = getSession(sessionId);
-    if (!session) {
-        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
-        if (dbSession?.provider === 'META_CLOUD') return [];
-        throw new Error('Session not found');
-    }
 
     try {
-        const labels = await session.sock.getLabels();
-        return labels;
+        let labels = [];
+        if (session) {
+            labels = Array.from(session.labels.values());
+        }
+
+        // لو الـ cache فاضي (مثلاً بعد إعادة تشغيل السيرفر) — نجيب من الداتابيز
+        if (labels.length === 0) {
+            try {
+                const prisma = getSharedPrismaClient();
+                if (prisma.whatsAppLabel) {
+                    const dbLabels = await prisma.whatsAppLabel.findMany({
+                        where: { sessionId, deleted: false }
+                    });
+                    labels = dbLabels.map(l => ({
+                        id: l.id,
+                        name: l.name,
+                        color: l.color,
+                        predefinedId: l.predefinedId
+                    }));
+                    // نرجع نملّي الـ cache لو الجلسة موجودة
+                    if (session) {
+                        for (const l of labels) {
+                            session.labels.set(l.id, l);
+                        }
+                    }
+                }
+            } catch (dbErr) {
+                console.error('❌ Error loading labels from DB:', dbErr.message);
+            }
+        }
+
+        return labels.map(label => ({
+            id: label.id,
+            name: label.name,
+            color: formatLabelColor(label.color),
+            predefinedId: label.predefinedId,
+            chatCount: session?.labelAssociations.get(label.id)?.size || 0
+        }));
     } catch (error) {
         console.error('❌ Error getting labels:', error);
         throw error;
+    }
+}
+
+/**
+ * حفظ/إزالة تصنيف لمحادثة في الداتابيز
+ */
+async function persistLabelAssociation(sessionId, chatJid, labelId, isAdd) {
+    try {
+        const prisma = getSharedPrismaClient();
+        const contact = await prisma.whatsAppContact.findFirst({
+            where: { sessionId, jid: chatJid }
+        });
+        if (!contact) return;
+        const current = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
+        const updated = isAdd
+            ? (current.includes(labelId) ? current : [...current, labelId])
+            : current.filter(id => id !== labelId);
+        await prisma.whatsAppContact.update({
+            where: { id: contact.id },
+            data: { labels: JSON.stringify(updated) }
+        });
+    } catch (err) {
+        console.error('❌ Error persisting label association:', err.message);
+    }
+}
+
+/**
+ * حفظ تعريف تصنيف في الداتابيز
+ */
+async function persistLabelDefinition(sessionId, label) {
+    try {
+        const prisma = getSharedPrismaClient();
+        if (!prisma.whatsAppLabel) return;
+        if (label.deleted) {
+            await prisma.whatsAppLabel.deleteMany({
+                where: { sessionId, id: label.id }
+            });
+        } else {
+            await prisma.whatsAppLabel.upsert({
+                where: { sessionId_id: { sessionId, id: label.id } },
+                create: {
+                    id: label.id,
+                    sessionId,
+                    name: label.name || '',
+                    color: parseInt(label.color) || 0,
+                    predefinedId: label.predefinedId ? String(label.predefinedId) : null,
+                    deleted: false
+                },
+                update: {
+                    name: label.name || '',
+                    color: parseInt(label.color) || 0,
+                    predefinedId: label.predefinedId ? String(label.predefinedId) : null,
+                    deleted: false
+                }
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error persisting label definition:', err.message);
+    }
+}
+
+/**
+ * مزامنة يدوية للتصنيفات — يطلب من واتساب إعادة مزامنة الـ app state
+ * Baileys v6 لا يدعم IQ query للتصنيفات مباشرة.
+ * الحل: نستخدم resyncAppState('regular') لإعادة جلب الـ sync actions
+ * بما فيها label_edit و label_jid، وأحداث labels.edit / labels.association
+ * هتملأ session.labels و session.labelAssociations تلقائياً.
+ */
+async function syncLabels(sessionId) {
+    const session = getSession(sessionId);
+    if (!session) {
+        return [];
+    }
+
+    try {
+        // نجرب نزامن من واتساب، لكن مع timeout حماية عشان ميحبسش الطلب
+        if (session.sock?.resyncAppState) {
+            try {
+                const myKeyId = session.sock.authState?.creds?.myAppStateKeyId;
+                console.log(`🔍 [SYNC-LABELS] myAppStateKeyId present=${!!myKeyId} value=${myKeyId || 'NONE'}`);
+                // جملة reset للـ app-state-sync-version عشان نجبر واتساب يبعت snapshot كامل
+                // (الـ resync من غير reset بيجيب patches زيادة بس — ومفيش patches جديدة فبيرجع فاضي)
+                const keys = session.sock.authState?.keys;
+                if (keys?.get && keys?.set) {
+                    try {
+                        // الـ makeCacheableSignalKeyStore عنده cache داخلي (TTL) — بنضربه عشان الـ get يقرا من الـ DB
+                        if (typeof keys.clear === 'function') {
+                            try { await keys.clear(); } catch { /* clear may not be supported */ }
+                        }
+                        const before = await keys.get('app-state-sync-version', ['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low']);
+                        console.log(`🔍 [SYNC-LABELS] Current app-state versions:`, JSON.stringify(Object.keys(before).map(k => ({ c: k, v: before[k]?.version }))));
+                        await keys.set({
+                            'app-state-sync-version': {
+                                regular: null,
+                                regular_high: null,
+                                regular_low: null,
+                                critical_block: null,
+                                critical_unblock_low: null
+                            }
+                        });
+                        console.log('🔍 [SYNC-LABELS] Reset app-state-sync-version to force full snapshot');
+                    } catch (keyErr) {
+                        console.log('⚠️ Failed to reset app-state-sync-version:', keyErr.message);
+                    }
+                } else {
+                    console.log('🔍 [SYNC-LABELS] keys unavailable:', !!keys, keys && Object.keys(keys));
+                }
+                await Promise.race([
+                    session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], true),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 30000))
+                ]);
+                console.log(`🔍 [SYNC-LABELS] After resyncAppState: ${session.labels.size} labels, ${session.labelAssociations.size} associations`);
+            } catch (resyncErr) {
+                console.log('⚠️ resyncAppState failed, using existing cache:', resyncErr.message);
+            }
+        }
+        // حفظ associations في الداتابيز
+        try {
+            const prisma = getSharedPrismaClient();
+            const allContacts = await prisma.whatsAppContact.findMany({
+                where: { sessionId },
+                select: { id: true, jid: true, labels: true }
+            });
+            for (const contact of allContacts) {
+                const assignedLabels = [];
+                for (const [labelId, jids] of session.labelAssociations) {
+                    if (jids.has(contact.jid)) {
+                        assignedLabels.push(labelId);
+                    }
+                }
+                const dbLabels = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
+                const merged = Array.from(new Set([...assignedLabels, ...dbLabels]));
+                if (JSON.stringify(merged) !== contact.labels) {
+                    await prisma.whatsAppContact.update({
+                        where: { id: contact.id },
+                        data: { labels: JSON.stringify(merged) }
+                    });
+                }
+            }
+            console.log(`💾 Labels persisted to DB for session: ${sessionId}`);
+        } catch (dbErr) {
+            console.error('❌ Error persisting labels to DB:', dbErr.message);
+        }
+
+        let labels = Array.from(session.labels.values());
+
+        // من غير reconnect — بندفع الـ app state sync ونستنى الـ events من غير ما نقطع الاتصال
+        let activeSession = session;
+        try {
+            if (session.sock?.resyncAppState) {
+                await Promise.race([
+                    session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], false),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 15000))
+                ]);
+            }
+            // نستنى شوية عشان الـ labels.edit events تيجي من غير ما نقطع الاتصال
+            for (let i = 0; i < 6; i++) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                const refreshed = getSession(sessionId);
+                if (refreshed && refreshed.labels.size > labels.length) {
+                    activeSession = refreshed;
+                    labels = Array.from(refreshed.labels.values());
+                    console.log(`🔍 [SYNC-LABELS] Got ${labels.length} labels after app-state sync (attempt ${i + 1})`);
+                    break;
+                }
+            }
+        } catch (resyncErr) {
+            console.log('⚠️ app-state sync failed during label sync:', resyncErr.message);
+        }
+
+        // لو لسه فاضي — نجيب من الداتابيز
+        if (labels.length === 0) {
+            try {
+                const prisma = getSharedPrismaClient();
+                if (prisma.whatsAppLabel) {
+                    const dbLabels = await prisma.whatsAppLabel.findMany({
+                        where: { sessionId, deleted: false }
+                    });
+                    labels = dbLabels.map(l => ({ id: l.id, name: l.name, color: l.color, predefinedId: l.predefinedId }));
+                    for (const l of labels) {
+                        activeSession.labels.set(l.id, l);
+                    }
+                }
+            } catch (dbErr) {
+                console.error('❌ Error loading labels from DB on sync:', dbErr.message);
+            }
+        }
+
+        console.log(`🔄 Labels sync completed for session: ${sessionId} (${labels.length} labels)`);
+
+        return labels.map(label => ({
+            id: label.id,
+            name: label.name,
+            color: formatLabelColor(label.color),
+            predefinedId: label.predefinedId,
+            chatCount: activeSession.labelAssociations.get(label.id)?.size || 0
+        }));
+    } catch (error) {
+        console.error('❌ Error syncing labels:', error);
+        return getLabels(sessionId);
     }
 }
 
@@ -3945,13 +5385,72 @@ async function createLabel(sessionId, name, color) {
     }
 
     try {
-        const label = await session.sock.createLabel(name, color);
-        console.log(`🏷️ Label created: ${name}`);
-        return label;
+        const labelId = crypto.randomUUID();
+        const colorIndex = resolveLabelColor(color);
+
+        // 💾 Store in-memory cache first (so it's available immediately)
+        const colorHex = formatLabelColor(colorIndex);
+        session.labels.set(labelId, {
+            id: labelId,
+            name,
+            color: colorIndex,
+        });
+
+        // 📡 Try Baileys sync (non-blocking - don't fail if disconnected)
+        try {
+            const addResult = await session.sock.addLabel(labelId, { id: labelId, name, color: colorIndex });
+            console.log(`🏷️ Label created via Baileys: ${name} (${labelId})`, addResult ? JSON.stringify(addResult) : '');
+        } catch (baileysErr) {
+            console.log(`⚠️ Label saved locally (Baileys unavailable): ${name} (${labelId})`);
+            console.log(`   [BAILEYS-ERR] ${baileysErr?.message} | code=${baileysErr?.output?.statusCode} | stack=${baileysErr?.stack?.split('\n').slice(0, 3).join(' | ')}`);
+        }
+
+        return { id: labelId, name, color: colorHex };
     } catch (error) {
         console.error('❌ Error creating label:', error);
         throw error;
     }
+}
+
+/**
+ * استعادة التصنيفات الافتراضية القديمة (اللي كانت موجودة على حساب واتساب سابق)
+ * بيعمل create لكل تصنيف مش موجود حالياً في الجلسة
+ */
+const DEFAULT_LABELS = [
+    { name: 'زبون جديد', color: '#2196F3' },
+    { name: 'مهم', color: '#FF5722' },
+    { name: 'متدربة جديده', color: '#4CAF50' },
+    { name: 'اوردرات واتساب', color: '#9C27B0' },
+    { name: 'تواريخ ميلاد', color: '#FF9800' },
+    { name: 'غير مقروءة', color: '#607D8B' },
+    { name: 'المفضلة', color: '#E91E63' },
+    { name: 'المجموعات', color: '#00BCD4' },
+    { name: '000', color: '#795548' },
+];
+
+async function restoreDefaultLabels(sessionId) {
+    const session = getSession(sessionId);
+    if (!session) {
+        throw new Error('Session not found');
+    }
+
+    const existingNames = new Set(
+        Array.from(session.labels.values()).map(l => String(l.name || '').trim())
+    );
+
+    const created = [];
+    for (const def of DEFAULT_LABELS) {
+        if (existingNames.has(def.name)) continue;
+        try {
+            const result = await createLabel(sessionId, def.name, def.color);
+            created.push({ name: def.name, id: result.id });
+        } catch (err) {
+            console.error(`❌ Error restoring label ${def.name}:`, err.message);
+        }
+    }
+
+    console.log(`🏷️ Restore labels: created ${created.length} labels for session ${sessionId}`);
+    return { created, total: DEFAULT_LABELS.length };
 }
 
 /**
@@ -3966,13 +5465,144 @@ async function deleteLabel(sessionId, labelId) {
     }
 
     try {
-        await session.sock.deleteLabel(labelId);
-        console.log(`🏷️ Label deleted: ${labelId}`);
+        // 💾 Remove from in-memory cache first
+        session.labels.delete(labelId);
+        session.labelAssociations.delete(labelId);
+
+        // 📡 Try Baileys sync (non-blocking)
+        try {
+            await session.sock.addLabel(labelId, { id: labelId, deleted: true });
+            console.log(`🏷️ Label deleted via Baileys: ${labelId}`);
+        } catch (baileysErr) {
+            console.log(`⚠️ Label removed locally (Baileys unavailable): ${labelId}`);
+        }
+
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting label:', error);
         throw error;
     }
+}
+
+/**
+ * إزالة تصنيف من محادثة
+ */
+async function removeChatLabel(sessionId, jid, labelId) {
+    const session = getSession(sessionId);
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return { success: true };
+        throw new Error('Session not found');
+    }
+
+    try {
+        await session.sock.removeChatLabel(jid, labelId);
+        console.log(`🏷️ Label removed from chat: ${jid}`);
+        return { success: true };
+    } catch (error) {
+        console.error('❌ Error removing label from chat:', error);
+        throw error;
+    }
+}
+
+/**
+ * جلب عملاء تصنيف معين (من الداتابيز + الذاكرة للمزامنة اللحظية)
+ */
+async function getLabelContacts(sessionId, labelId, options = {}) {
+    const { page = 1, limit = 50, search = '' } = options;
+    const prisma = getSharedPrismaClient();
+
+    const where = {
+        sessionId,
+        labels: { contains: `"${labelId}"` },
+        NOT: { jid: { contains: '@lid' } }
+    };
+    if (search) {
+        where.OR = [
+            { name: { contains: search } },
+            { pushName: { contains: search } },
+            { phoneNumber: { contains: search } }
+        ];
+    }
+
+    const select = {
+        id: true,
+        sessionId: true,
+        jid: true,
+        phoneNumber: true,
+        name: true,
+        pushName: true,
+        profilePicUrl: true,
+        isGroup: true,
+        customerId: true,
+        lastMessageAt: true,
+        lastMessagePreview: true,
+        totalMessages: true
+    };
+
+    const session = getSession(sessionId);
+    const inMemoryJids = session?.labelAssociations?.get(labelId);
+
+    // المصدر الأساسي: الارتباطات اللحظية من الذاكرة (الموجودة من أحداث واتساب)
+    // الـ DB لوحده مش كفاية لأن الـ associations بتتخزن فيه بعد ما الـ contacts نفسها تتخزن.
+    const sourceJids = inMemoryJids && inMemoryJids.size > 0
+        ? [...inMemoryJids].filter(jid => !String(jid).includes('@lid'))
+        : [];
+
+    // لو في بحث، نرشح الـ jids على الـ contact details من الداتابيز
+    let contacts = [];
+    let total = 0;
+    if (sourceJids.length > 0) {
+        let dbContacts = await prisma.whatsAppContact.findMany({
+            where: { sessionId, jid: { in: sourceJids } },
+            select
+        });
+        const knownJids = new Set(dbContacts.map(c => c.jid));
+
+        // الـ jids اللي لسه متتخزنش في الداتابيز — نضيفهم بأبسط بيانات (jid فقط)
+        const missingJids = sourceJids.filter(jid => !knownJids.has(jid));
+        if (missingJids.length > 0) {
+            dbContacts = [
+                ...dbContacts,
+                ...missingJids.map(jid => ({ id: null, sessionId, jid, phoneNumber: String(jid).split('@')[0], name: null, pushName: null, profilePicUrl: null, isGroup: String(jid).includes('@g.us'), customerId: null, lastMessageAt: null, lastMessagePreview: null, totalMessages: 0 }))
+            ];
+        }
+
+        if (search) {
+            const q = search.toLowerCase();
+            dbContacts = dbContacts.filter(c =>
+                (c.name?.toLowerCase() || '').includes(q) ||
+                (c.pushName?.toLowerCase() || '').includes(q) ||
+                (c.phoneNumber || '').includes(q)
+            );
+        }
+
+        dbContacts.sort((a, b) => (b.lastMessageAt?.getTime?.() || 0) - (a.lastMessageAt?.getTime?.() || 0));
+        total = dbContacts.length;
+        contacts = dbContacts.slice((page - 1) * limit, (page - 1) * limit + limit);
+    } else {
+        // Fallback: لو مفيش associations في الذاكرة، نستخدم الداتابيز
+        const [dbContacts, dbTotal] = await Promise.all([
+            prisma.whatsAppContact.findMany({
+                where,
+                orderBy: [{ lastMessageAt: 'desc' }],
+                skip: (page - 1) * limit,
+                take: limit,
+                select
+            }),
+            prisma.whatsAppContact.count({ where })
+        ]);
+        contacts = dbContacts;
+        total = dbTotal;
+    }
+
+    return {
+        contacts,
+        total,
+        page,
+        limit,
+        sessionConnected: Boolean(session)
+    };
 }
 
 // ==================== Starred Messages Features ====================
@@ -4411,6 +6041,22 @@ async function disconnectAllSessions() {
     whatsappDisconnectAlertTimestamps.clear();
 }
 
+async function flushAllAuthStates() {
+    let flushed = 0;
+    for (const [sessionId, session] of activeSessions) {
+        try {
+            if (session?.saveCreds?.flush) {
+                await session.saveCreds.flush();
+                flushed++;
+            }
+        } catch (error) {
+            WA_LOG.warn(sessionId, `Auth flush on shutdown failed: ${error.message}`);
+        }
+    }
+    WA_LOG.restore(`Flushed auth state for ${flushed} session(s)`);
+    return flushed;
+}
+
 async function migrateOldSessionHistory(companyId, phoneNumber, newSessionId) {
     if (!companyId || !phoneNumber || !newSessionId) return;
 
@@ -4516,10 +6162,13 @@ module.exports = {
     getAllSessions,
     getAllActiveSessions,
     disconnectAllSessions,
+    flushAllAuthStates,
 
     // Connection
     restoreAllSessions,
     reconnectSession,
+    requestHistorySync,
+    syncPendingHistoryMedia,
     emitSessionStatusesForCompany,
     emitAllSessionStatuses,
     verifySessionHealth,
@@ -4546,10 +6195,14 @@ module.exports = {
     markChatUnread,
     clearChat,
 
+    // Profile Pics
+    fetchMissingProfilePics,
+
     // Contacts
     updateContact,
     blockContact,
     unblockContact,
+    resolveOutgoingRemoteJid,
 
     // Groups
     createGroup,
@@ -4585,8 +6238,12 @@ module.exports = {
     // Labels
     labelChat,
     getLabels,
+    syncLabels,
     createLabel,
     deleteLabel,
+    removeChatLabel,
+    getLabelContacts,
+    restoreDefaultLabels,
 
     // Starred Messages
     starMessage,
@@ -4628,6 +6285,36 @@ module.exports = {
         shouldApplyMessageStatus,
         classifySessionSocketHealth,
         getSocketReadyState,
-        getProfileSessionSnapshot
+        getProfileSessionSnapshot,
+        isHistorySystemMessage,
+        // Sprint 2: History import lifecycle helpers
+        HISTORY_BATCH_SIZE,
+        historyYield,
+        normalizeHistoryProgress,
+        requestReconnect,
+        getReconnectState,
+        hasPendingReconnect,
+        releaseReconnectLock,
+        getReconnectFailureCount,
+        incrementReconnectFailureCount,
+        resetReconnectFailures,
+        giveUpOnReconnect,
+        getSocketGeneration,
+        getSessionHistoryImportState: async (prisma, sessionId) => {
+            try {
+                const imp = await prisma.whatsAppSessionHistoryImport.findUnique({
+                    where: { sessionId },
+                    select: { status: true, lastError: true }
+                });
+                return imp ? { status: imp.status, lastError: imp.lastError } : null;
+            } catch (e) { return null; }
+        },
+        shouldEnableSyncOnRestore: (historyImportStatus) => {
+            return historyImportStatus === 'REQUESTED' || historyImportStatus === 'IN_PROGRESS';
+        },
+        getFallbackEnableHistorySync: (sessionStatus, metadata) => {
+            const meta = typeof metadata === 'string' ? (() => { try { return JSON.parse(metadata); } catch (e) { return {}; } })() : (metadata || {});
+            return meta.importHistoryOnLink === true && (sessionStatus === 'QR_PENDING' || sessionStatus === 'CONNECTING');
+        }
     }
 };

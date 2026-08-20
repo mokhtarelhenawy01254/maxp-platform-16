@@ -1,6 +1,6 @@
-﻿-- Migration: Add turbo captain, branch, delay/return reason fields
--- ╪¬╪º╪▒┘è╪«: 2026-07-27
--- ╪º┘ä┘ê╪╡┘ü: ╪Ñ╪╢╪º┘ü╪⌐ ╪ú╪╣┘à╪»╪⌐ ┘ä┘ä┘à┘å╪»┘ê╪¿╪î ╪º┘ä┘ü╪▒╪╣╪î ╪ú╪│╪¿╪º╪¿ ╪º┘ä╪¬╪ú╪«┘è╪▒ ┘ê╪º┘ä╪º╪▒╪¬╪¼╪º╪╣ ┘ä┘ä╪╖┘ä╪¿╪º╪¬
+-- Migration: Add turbo captain, branch, delay/return reason fields
+-- تاريخ: 2026-07-27
+-- الوصف: إضافة أعمدة للمندوب، الفرع، أسباب التأخير والارتجاع للطلبات
 
 -- =============================================
 -- Orders table
@@ -30,22 +30,22 @@ ALTER TABLE guest_orders
 -- =============================================
 -- Comments
 -- =============================================
-COMMENT ON COLUMN orders."turboCaptainName" IS '╪º╪│┘à ╪º┘ä┘à┘å╪»┘ê╪¿/╪º┘ä┘â╪º╪¿╪¬┘å ┘à┘å Turbo';
-COMMENT ON COLUMN orders."turboCaptainPhone" IS '╪▒┘é┘à ╪º┘ä┘à┘å╪»┘ê╪¿ ┘à┘å Turbo';
-COMMENT ON COLUMN orders."turboBranchName" IS '╪º╪│┘à ╪º┘ä┘ü╪▒╪╣ ┘à┘å Turbo';
-COMMENT ON COLUMN orders."turboBranchPhone" IS '╪▒┘é┘à ╪º┘ä┘ü╪▒╪╣ ┘à┘å Turbo';
-COMMENT ON COLUMN orders."turboDelayReason" IS '╪│╪¿╪¿ ╪º┘ä╪¬╪ú╪«┘è╪▒ ┘à┘å Turbo';
-COMMENT ON COLUMN orders."turboReturnReason" IS '╪│╪¿╪¿ ╪º┘ä╪º╪▒╪¬╪¼╪º╪╣ ┘à┘å Turbo';
-COMMENT ON COLUMN orders."turboExpectedBranch" IS '╪º┘ä┘ü╪▒╪╣ ╪º┘ä┘à╪¬┘ê┘é╪╣ ┘ä┘ä╪¬╪│┘ä┘è┘à ┘à┘å Turbo';
+COMMENT ON COLUMN orders."turboCaptainName" IS 'اسم المندوب/الكابتن من Turbo';
+COMMENT ON COLUMN orders."turboCaptainPhone" IS 'رقم المندوب من Turbo';
+COMMENT ON COLUMN orders."turboBranchName" IS 'اسم الفرع من Turbo';
+COMMENT ON COLUMN orders."turboBranchPhone" IS 'رقم الفرع من Turbo';
+COMMENT ON COLUMN orders."turboDelayReason" IS 'سبب التأخير من Turbo';
+COMMENT ON COLUMN orders."turboReturnReason" IS 'سبب الارتجاع من Turbo';
+COMMENT ON COLUMN orders."turboExpectedBranch" IS 'الفرع المتوقع للتسليم من Turbo';
 
-COMMENT ON COLUMN guest_orders."turboCaptainName" IS '╪º╪│┘à ╪º┘ä┘à┘å╪»┘ê╪¿/╪º┘ä┘â╪º╪¿╪¬┘å ┘à┘å Turbo';
-COMMENT ON COLUMN guest_orders."turboCaptainPhone" IS '╪▒┘é┘à ╪º┘ä┘à┘å╪»┘ê╪¿ ┘à┘å Turbo';
-COMMENT ON COLUMN guest_orders."turboBranchName" IS '╪º╪│┘à ╪º┘ä┘ü╪▒╪╣ ┘à┘å Turbo';
-COMMENT ON COLUMN guest_orders."turboBranchPhone" IS '╪▒┘é┘à ╪º┘ä┘ü╪▒╪╣ ┘à┘å Turbo';
-COMMENT ON COLUMN guest_orders."turboBranchId" IS '┘à╪╣╪▒┘ü ╪º┘ä┘ü╪▒╪╣ ┘à┘å Turbo';
-COMMENT ON COLUMN guest_orders."turboDelayReason" IS '╪│╪¿╪¿ ╪º┘ä╪¬╪ú╪«┘è╪▒ ┘à┘å Turbo';
-COMMENT ON COLUMN guest_orders."turboReturnReason" IS '╪│╪¿╪¿ ╪º┘ä╪º╪▒╪¬╪¼╪º╪╣ ┘à┘å Turbo';
-COMMENT ON COLUMN guest_orders."turboExpectedBranch" IS '╪º┘ä┘ü╪▒╪╣ ╪º┘ä┘à╪¬┘ê┘é╪╣ ┘ä┘ä╪¬╪│┘ä┘è┘à ┘à┘å Turbo';
+COMMENT ON COLUMN guest_orders."turboCaptainName" IS 'اسم المندوب/الكابتن من Turbo';
+COMMENT ON COLUMN guest_orders."turboCaptainPhone" IS 'رقم المندوب من Turbo';
+COMMENT ON COLUMN guest_orders."turboBranchName" IS 'اسم الفرع من Turbo';
+COMMENT ON COLUMN guest_orders."turboBranchPhone" IS 'رقم الفرع من Turbo';
+COMMENT ON COLUMN guest_orders."turboBranchId" IS 'معرف الفرع من Turbo';
+COMMENT ON COLUMN guest_orders."turboDelayReason" IS 'سبب التأخير من Turbo';
+COMMENT ON COLUMN guest_orders."turboReturnReason" IS 'سبب الارتجاع من Turbo';
+COMMENT ON COLUMN guest_orders."turboExpectedBranch" IS 'الفرع المتوقع للتسليم من Turbo';
 
 -- =============================================
 -- Indexes for better query performance
@@ -57,7 +57,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_turbo_return_reason ON orders("turboReturn
 CREATE INDEX IF NOT EXISTS idx_orders_turbo_expected_branch ON orders("turboExpectedBranch");
 
 -- =============================================
--- ╪¬╪│╪¼┘è┘ä ╪º┘ä┘à┘ç┘à╪⌐ ┘ü┘è ╪º┘ä╪│╪¼┘ä
+-- تسجيل المهمة في السجل
 -- =============================================
 INSERT INTO migration_logs (name, executed_at, description) 
 VALUES ('20260727_add_turbo_captain_branch_fields', NOW(), 'Added captain, branch, delay/return reason fields for Turbo shipping')

@@ -1,9 +1,20 @@
-import { Circle as DocumentDuplicateIcon, Plus as PlusIcon, ArrowLeft as ArrowLeftIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, Clipboard as ClipboardDocumentIcon, Tag as TagIcon, Clock as ClockIcon, Folder as FolderIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link, useNavigate } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
-;
+import {
+  DocumentDuplicateIcon,
+  PlusIcon,
+  ArrowLeftIcon,
+  PencilIcon,
+  TrashIcon,
+  XMarkIcon,
+  ClipboardDocumentIcon,
+  TagIcon,
+  ClockIcon,
+  FolderIcon,
+} from "@heroicons/react/24/outline";
 
 interface TaskTemplate {
   id: string;
@@ -117,7 +128,7 @@ const TaskTemplates: React.FC = () => {
 
   const createTemplate = async () => {
     if (!newTemplate.name.trim() || !newTemplate.taskTitle.trim()) {
-      alert("اسم القالب وعنوان المهمة مطلوبان");
+      alert(i18n.t("TaskTemplates.msg_e4d8"));
       return;
     }
 
@@ -137,13 +148,13 @@ const TaskTemplates: React.FC = () => {
         fetchTemplates();
         setShowCreateModal(false);
         resetForm();
-        alert("تم إنشاء القالب بنجاح");
+        alert(i18n.t("TaskTemplates.success_create_c37f"));
       } else {
-        alert(data.error || "فشل في إنشاء القالب");
+        alert(data.error || i18n.t("TaskTemplates.failed_create_7f8d"));
       }
     } catch (error) {
       console.error("Error creating template:", error);
-      alert("فشل في إنشاء القالب");
+      alert(i18n.t("TaskTemplates.failed_create_7f8d"));
     }
   };
 
@@ -169,13 +180,13 @@ const TaskTemplates: React.FC = () => {
         fetchTemplates();
         setShowEditModal(false);
         setEditingTemplate(null);
-        alert("تم تحديث القالب بنجاح");
+        alert(i18n.t("TaskTemplates.success_update_85c7"));
       } else {
-        alert(data.error || "فشل في تحديث القالب");
+        alert(data.error || i18n.t("TaskTemplates.failed_update_bf44"));
       }
     } catch (error) {
       console.error("Error updating template:", error);
-      alert("فشل في تحديث القالب");
+      alert(i18n.t("TaskTemplates.failed_update_bf44"));
     }
   };
 
@@ -195,13 +206,13 @@ const TaskTemplates: React.FC = () => {
       const data = await response.json();
       if (data.success) {
         fetchTemplates();
-        alert("تم حذف القالب بنجاح");
+        alert(i18n.t("TaskTemplates.success_delete_746e"));
       } else {
-        alert(data.error || "فشل في حذف القالب");
+        alert(data.error || i18n.t("TaskTemplates.failed_delete_3434"));
       }
     } catch (error) {
       console.error("Error deleting template:", error);
-      alert("فشل في حذف القالب");
+      alert(i18n.t("TaskTemplates.failed_delete_3434"));
     }
   };
 

@@ -1,5 +1,5 @@
-﻿/**
- * Regression tests for getStatusReport ΓÇö the daily order-status report.
+/**
+ * Regression tests for getStatusReport — the daily order-status report.
  * Aggregates whatsAppNotificationLog by eventType + messageType (TEMPLATE = meta / else regular)
  * + delivery status, and returns drill-down items with order/customer/template info.
  */
@@ -25,7 +25,7 @@ function makeLog(overrides = {}) {
     templateId: 'tpl-1',
     sessionId: 's1',
     recipientPhone: '201000000000',
-    recipientName: '╪ú╪¡┘à╪»',
+    recipientName: 'أحمد',
     category: 'ORDERS',
     eventType: 'ORDER_CONFIRMED',
     content: 'msg',
@@ -38,13 +38,13 @@ function makeLog(overrides = {}) {
     failureReason: null,
     errorCode: null,
     whatsapp_notification_templates: {
-      name: '┘é╪º┘ä╪¿ ╪º┘ä╪¬╪ú┘â┘è╪»',
+      name: 'قالب التأكيد',
       metaTemplateName: 'order_confirm_ar',
       channel: 'META_CLOUD',
       headerUsesOrderProduct: true,
     },
     order: { orderNumber: 'ORD-100' },
-    customer: { firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à╪»' },
+    customer: { firstName: 'أحمد', lastName: 'محمد' },
     ...overrides,
   };
 }
@@ -73,7 +73,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     jest.clearAllMocks();
   });
 
-  test('┘è╪¼┘à┘æ╪╣ ╪º┘ä╪│╪¼┘ä╪º╪¬ ╪¡╪│╪¿ ╪º┘ä╪¡╪º┘ä╪⌐ ┘ê┘è┘à┘è┘æ╪▓ ┘à┘è╪¬╪º (TEMPLATE) ╪╣┘å ╪╣╪º╪»┘è (TEXT)', async () => {
+  test('يجمّع السجلات حسب الحالة ويميّز ميتا (TEMPLATE) عن عادي (TEXT)', async () => {
     const prisma = buildPrisma({
       logs: [
         makeLog({ id: 'a', eventType: 'ORDER_CONFIRMED', messageType: 'TEMPLATE', status: 'DELIVERED' }),
@@ -107,7 +107,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(body.byStatus).toHaveLength(2);
   });
 
-  test('┘è╪▒╪¼╪╣ ╪¬┘ü╪º╪╡┘è┘ä drill-down ╪¿╪ú╪▒┘é╪º┘à ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ê╪ú╪│┘à╪º╪í ╪º┘ä┘é┘ê╪º┘ä╪¿ ┘ê┘å┘ê╪╣ ╪º┘ä╪Ñ╪▒╪│╪º┘ä', async () => {
+  test('يرجع تفاصيل drill-down بأرقام الطلبات وأسماء القوالب ونوع الإرسال', async () => {
     const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
     const { req, res } = makeReqRes(prisma);
     await getStatusReport(req, res);
@@ -116,14 +116,14 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(body.items).toHaveLength(1);
     const item = body.items[0];
     expect(item.orderNumber).toBe('ORD-100');
-    expect(item.customerName).toBe('╪ú╪¡┘à╪»');
-    expect(item.templateName).toBe('┘é╪º┘ä╪¿ ╪º┘ä╪¬╪ú┘â┘è╪»');
+    expect(item.customerName).toBe('أحمد');
+    expect(item.templateName).toBe('قالب التأكيد');
     expect(item.metaTemplateName).toBe('order_confirm_ar');
     expect(item.messageType).toBe('TEMPLATE');
     expect(item.headerUsesOrderProduct).toBe(true);
   });
 
-  test('┘è┘ü┘ä╪¬╪▒ ╪¡╪│╪¿ eventType ┘ä┘ê ╪º╪¬╪▒╪│┘ä ┘ü┘è ╪º┘ä┘Ç query', async () => {
+  test('يفلتر حسب eventType لو اترسل في الـ query', async () => {
     const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
     const { req, res } = makeReqRes(prisma, { eventType: 'ORDER_CONFIRMED' });
     await getStatusReport(req, res);
@@ -134,7 +134,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(where.createdAt.lte).toBeInstanceOf(Date);
   });
 
-  test('┘è╪»╪╣┘à ┘ü┘ä╪¬╪▒╪⌐ eventTypes (┘à┘ü╪╡┘ê┘ä╪⌐ ╪¿┘ü┘ê╪º╪╡┘ä) ┘ä╪¬┘é┘è┘è╪» ╪º┘ä╪¬┘é╪▒┘è╪▒ ╪╣┘ä┘ë ╪ú╪¡╪»╪º╪½ ┘à╪¡╪»╪»╪⌐', async () => {
+  test('يدعم فلترة eventTypes (مفصولة بفواصل) لتقييد التقرير على أحداث محددة', async () => {
     const prisma = buildPrisma({ logs: [makeLog({ eventType: 'LOYALTY_POINTS_AWARDED' })], total: 1 });
     const { req, res } = makeReqRes(prisma, { eventTypes: 'LOYALTY_POINTS_AWARDED,CASHBACK_CREDITED' });
     await getStatusReport(req, res);
@@ -145,7 +145,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(where.OR).toBeUndefined();
   });
 
-  test('eventTypes ┘ä┘ç ╪ú┘ê┘ä┘ê┘è╪⌐ ╪╣┘ä┘ë category ┘ä┘ê ╪º╪¬╪¿╪╣╪¬ ╪º┘ä╪º╪¬┘å┘è┘å', async () => {
+  test('eventTypes له أولوية على category لو اتبعت الاتنين', async () => {
     const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
     const { req, res } = makeReqRes(prisma, { eventTypes: 'LOYALTY_POINTS_AWARDED', category: 'MARKETING' });
     await getStatusReport(req, res);
@@ -155,7 +155,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(where.category).toBeUndefined();
   });
 
-  test('┘è╪¿┘å┘è eventType ╪╡╪º┘ä╪¡ ┘à┘å mixed list (╪¿┘è╪┤┘è┘ä ╪º┘ä┘é┘è┘à ╪º┘ä┘ä┘è ┘à╪┤ enum ╪╣╪┤╪º┘å ╪¬┘à┘å╪╣ 500)', async () => {
+  test('يبني eventType صالح من mixed list (بيشيل القيم اللي مش enum عشان تمنع 500)', async () => {
     const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
     const { req, res } = makeReqRes(prisma, { eventTypes: 'LOYALTY_POINTS_AWARDED,AUTO_DISCOUNT_COUPON_GRANTED,__INVALID__' });
     await getStatusReport(req, res);
@@ -164,7 +164,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(where.eventType).toEqual({ in: ['LOYALTY_POINTS_AWARDED'] });
   });
 
-  test('eventTypes ┘â┘ä┘ç╪º ┘à╪┤ ╪╡╪º┘ä╪¡╪⌐ ΓåÆ ╪¿┘è╪¬╪▒╪┤╪¡ ┘ä┘ä┘ü╪ª╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ╪¿╪»┘ä 500', async () => {
+  test('eventTypes كلها مش صالحة → بيترشح للفئات الافتراضية بدل 500', async () => {
     const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
     const { req, res } = makeReqRes(prisma, { eventTypes: 'AUTO_DISCOUNT_COUPON_GRANTED,AUTO_DISCOUNT_COUPON_EXPIRING' });
     await getStatusReport(req, res);
@@ -174,7 +174,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(Array.isArray(where.OR)).toBe(true);
   });
 
-  test('┘è╪»╪╣┘à ┘ü┘ä╪¬╪▒╪⌐ category ┘à╪«╪╡╪╡╪⌐ (┘à┘ü╪╡┘ê┘ä╪⌐ ╪¿┘ü┘ê╪º╪╡┘ä) ╪¿╪»┘ä ┘ü╪ª╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ΓÇö ┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í', async () => {
+  test('يدعم فلترة category مخصصة (مفصولة بفواصل) بدل فئات الطلبات — لإشعارات العملاء', async () => {
     const prisma = buildPrisma({ logs: [makeLog({ category: 'MARKETING', eventType: 'LOYALTY_POINTS_AWARDED' })], total: 1 });
     const { req, res } = makeReqRes(prisma, { category: 'MARKETING,CUSTOMER' });
     await getStatusReport(req, res);
@@ -184,7 +184,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(where.OR).toBeUndefined();
   });
 
-  test('┘ü┘ä╪¬╪▒╪⌐ category ┘ü╪º╪▒╪║╪⌐ ╪¬╪▒╪¼╪╣ ┘ä┘ä┘ü╪ª╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ┘ä┘ä╪╖┘ä╪¿╪º╪¬', async () => {
+  test('فلترة category فارغة ترجع للفئات الافتراضية للطلبات', async () => {
     const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
     const { req, res } = makeReqRes(prisma, { category: '' });
     await getStatusReport(req, res);
@@ -194,7 +194,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(Array.isArray(where.OR)).toBe(true);
   });
 
-  test('╪º┘ä┘ü┘ä╪¬╪▒╪⌐ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ╪¿╪¬╪│╪¬╪«╪»┘à category ┘ü┘é╪╖ (┘à┘à┘å┘ê╪╣ startsWith ╪╣┘ä┘ë enum eventType)', async () => {
+  test('الفلترة الافتراضية بتستخدم category فقط (ممنوع startsWith على enum eventType)', async () => {
     const prisma = buildPrisma({ logs: [makeLog()], total: 1 });
     const { req, res } = makeReqRes(prisma);
     await getStatusReport(req, res);
@@ -208,7 +208,7 @@ describe('GET /whatsapp/notifications/status-report', () => {
     expect(usesEnumStartsWith).toBe(false);
   });
 
-  test('╪¿┘è╪▒╪¼╪╣ ┘å╪¬┘è╪¼╪⌐ ┘ü╪º╪▒╪║╪⌐ ┘ä┘ê ╪¼╪»┘ê┘ä ╪º┘ä╪│╪¼┘ä╪º╪¬ ┘à╪┤ ┘à┘ê╪¼┘ê╪» (P2021) ╪¿╪»┘ä 500', async () => {
+  test('بيرجع نتيجة فارغة لو جدول السجلات مش موجود (P2021) بدل 500', async () => {
     const prisma = {
       whatsAppNotificationLog: {
         findMany: jest.fn().mockRejectedValue({ code: 'P2021', message: 'table does not exist' }),

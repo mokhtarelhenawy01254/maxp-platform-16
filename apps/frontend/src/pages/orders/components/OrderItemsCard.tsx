@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   PlusIcon,
@@ -156,11 +156,11 @@ const normalizeVariantBadges = (
     }
 
     if (itemMetadata.attributeValues) {
-      if (!displayColor && itemMetadata.attributeValues["╪º┘ä┘ä┘ê┘å"]) {
-        displayColor = itemMetadata.attributeValues["╪º┘ä┘ä┘ê┘å"] as string;
+      if (!displayColor && itemMetadata.attributeValues["اللون"]) {
+        displayColor = itemMetadata.attributeValues["اللون"] as string;
       }
-      if (!displaySize && itemMetadata.attributeValues["╪º┘ä┘à┘é╪º╪│"]) {
-        displaySize = itemMetadata.attributeValues["╪º┘ä┘à┘é╪º╪│"] as string;
+      if (!displaySize && itemMetadata.attributeValues["المقاس"]) {
+        displaySize = itemMetadata.attributeValues["المقاس"] as string;
       }
     }
 
@@ -220,15 +220,15 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
 
   const handleDeleteClick = (index: number, item: OrderItem) => {
     const details = [];
-    if (item.productColor) details.push(`╪º┘ä┘ä┘ê┘å: ${item.productColor}`);
-    if (item.productSize) details.push(`╪º┘ä┘à┘é╪º╪│: ${item.productSize}`);
-    if (item.quantity) details.push(`╪º┘ä┘â┘à┘è╪⌐: ${item.quantity}`);
+    if (item.productColor) details.push(`اللون: ${item.productColor}`);
+    if (item.productSize) details.push(`المقاس: ${item.productSize}`);
+    if (item.quantity) details.push(`الكمية: ${item.quantity}`);
 
     setDeleteModal({
       isOpen: true,
       index,
       itemName: item.productName,
-      itemDetails: details.join(" ΓÇó "),
+      itemDetails: details.join(" • "),
     });
     setOpenMenuIndex(null);
   };
@@ -359,10 +359,10 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
         (typeof quantityOffer.offerLabel === "string"
           ? quantityOffer.offerLabel
           : "") ||
-        (typeof metadata.attributeValues?.["╪╣╪▒╪╢ ╪º┘ä┘â┘à┘è╪⌐"] === "string"
-          ? metadata.attributeValues["╪╣╪▒╪╢ ╪º┘ä┘â┘à┘è╪⌐"]
+        (typeof metadata.attributeValues?.["عرض الكمية"] === "string"
+          ? metadata.attributeValues["عرض الكمية"]
           : "") ||
-        "╪╣╪▒╪╢ ┘â┘à┘è╪º╪¬",
+        "عرض كميات",
       offerQuantity:
         Number.isFinite(offerQuantity) && offerQuantity > 0
           ? offerQuantity
@@ -446,12 +446,12 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
       <div className="flex items-center gap-2 flex-wrap">
         {variantValues.color && (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-sm font-semibold border border-blue-200 dark:border-blue-800">
-            ≡ƒÄ¿ {variantValues.color}
+            🎨 {variantValues.color}
           </span>
         )}
         {variantValues.size && (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md text-sm font-semibold border border-purple-200 dark:border-purple-800">
-            ≡ƒôÅ {variantValues.size}
+            📏 {variantValues.size}
           </span>
         )}
       </div>
@@ -522,10 +522,10 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                       }`}
                     >
                       {stockInfo.status === "available"
-                        ? "≡ƒƒó ┘à╪¬┘ê┘ü╪▒"
+                        ? "🟢 متوفر"
                         : stockInfo.status === "low"
-                          ? `≡ƒƒí ┘à╪¬╪¿┘é┘è ${stockInfo.stock}`
-                          : "≡ƒö┤ ┘å┘ü╪░"}
+                          ? `🟡 متبقي ${stockInfo.stock}`
+                          : "🔴 نفذ"}
                     </span>
                   )}
                 </div>
@@ -533,14 +533,14 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                 {quantityOfferSummary ? (
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
-                      ╪╣╪▒╪╢ ┘â┘à┘è╪º╪¬
+                      عرض كميات
                     </span>
                     <span className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                       {quantityOfferSummary.offerLabel}
                     </span>
                     {quantityOfferSummary.freeShipping ? (
                       <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-sm font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
-                        ╪┤╪¡┘å ┘à╪¼╪º┘å┘è
+                        شحن مجاني
                       </span>
                     ) : null}
                   </div>
@@ -572,7 +572,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                           className="w-full px-4 py-2 text-right text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                         >
                           <TrashIcon className="w-4 h-4" />
-                          <span>╪¡╪░┘ü ╪º┘ä┘à┘å╪¬╪¼</span>
+                          <span>حذف المنتج</span>
                         </button>
                       </div>
                     </>
@@ -584,7 +584,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
             <div className="grid grid-cols-3 gap-4 items-end">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                  ≡ƒÆ░ ╪º┘ä╪│╪╣╪▒
+                  💰 السعر
                 </label>
                 {isEditing ? (
                   <div>
@@ -617,7 +617,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                  ≡ƒôª ╪º┘ä┘â┘à┘è╪⌐
+                  📦 الكمية
                 </label>
                 {isEditing ? (
                   <div>
@@ -673,7 +673,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                  ≡ƒÆ╡ ╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è
+                  💵 الإجمالي
                 </label>
                 <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
                   {formatPrice(itemTotal)}
@@ -701,7 +701,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
           </div>
           {!isEditing && groupedQuantityOffers.groups.length > 0 ? (
             <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-              {groupedQuantityOffers.groups.length} ╪╣╪▒┘ê╪╢ ┘â┘à┘è╪º╪¬ ┘à╪¼┘à╪╣╪⌐
+              {groupedQuantityOffers.groups.length} عروض كميات مجمعة
             </span>
           ) : null}
           {isEditing && (
@@ -710,7 +710,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors shadow-sm"
             >
               <PlusIcon className="w-4 h-4" />
-              <span>╪Ñ╪╢╪º┘ü╪⌐ ┘à┘å╪¬╪¼</span>
+              <span>إضافة منتج</span>
             </button>
           )}
         </div>
@@ -722,7 +722,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
           <div className="px-6 py-12 text-center">
             <PhotoIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
             <p className="text-gray-500 dark:text-gray-400 font-medium">
-              ┘ä╪º ╪¬┘ê╪¼╪» ┘à┘å╪¬╪¼╪º╪¬ ┘ü┘è ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿
+              لا توجد منتجات في هذا الطلب
             </p>
           </div>
         ) : (
@@ -737,24 +737,24 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                     <div className="space-y-2 text-right">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
-                          ╪╣╪▒╪╢ ┘â┘à┘è╪º╪¬
+                          عرض كميات
                         </span>
                         <span className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                           {group.offerLabel}
                         </span>
                         {group.freeShipping ? (
                           <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-sm font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
-                            ╪┤╪¡┘å ┘à╪¼╪º┘å┘è
+                            شحن مجاني
                           </span>
                         ) : null}
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                         <span className="font-medium">
-                          {group.selectedPieces}/{group.offerQuantity || group.selectedPieces} ┘é╪╖╪╣ ┘à╪«╪¬╪º╪▒╪⌐
+                          {group.selectedPieces}/{group.offerQuantity || group.selectedPieces} قطع مختارة
                         </span>
-                        <span>ΓÇó</span>
+                        <span>•</span>
                         <span>
-                          ╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╣╪▒╪╢:{" "}
+                          إجمالي العرض:{" "}
                           <span className="font-bold text-amber-700 dark:text-amber-300">
                             {formatPrice(group.total)}
                           </span>
@@ -763,7 +763,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                     </div>
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center dark:border-amber-900/40 dark:bg-amber-900/20">
                       <div className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                        ╪╣╪»╪» ╪º┘ä┘é╪╖╪╣
+                        عدد القطع
                       </div>
                       <div className="mt-1 text-2xl font-black text-amber-800 dark:text-amber-200">
                         {group.offerQuantity || group.selectedPieces}
@@ -812,7 +812,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                                       </span>
                                     )}
                                     <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
-                                      ╪º┘ä┘é╪╖╪╣╪⌐ {slotIndex || itemPosition + 1}
+                                      القطعة {slotIndex || itemPosition + 1}
                                     </span>
                                   </div>
                                   <div className="mt-2">
@@ -821,13 +821,13 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                                 </div>
                                 <div className="text-left">
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    ╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è
+                                    الإجمالي
                                   </div>
                                   <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                                     {formatPrice(lineTotal)}
                                   </div>
                                   <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    ╪º┘ä┘â┘à┘è╪⌐: {item.quantity || 1}
+                                    الكمية: {item.quantity || 1}
                                   </div>
                                 </div>
                               </div>
@@ -854,14 +854,14 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
           <div className="space-y-2 max-w-sm mr-auto">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">
-                ╪º┘ä┘à╪¼┘à┘ê╪╣ ╪º┘ä┘ü╪▒╪╣┘è:
+                المجموع الفرعي:
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100">
                 {formatPrice(totals.subtotal)}
               </span>
             </div>
             <div className="flex justify-between text-sm items-center">
-              <span className="text-gray-600 dark:text-gray-400">╪º┘ä╪┤╪¡┘å:</span>
+              <span className="text-gray-600 dark:text-gray-400">الشحن:</span>
               {isEditing && onShippingChange ? (
                 <input
                   type="number"
@@ -879,7 +879,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
               )}
             </div>
             <div className="flex justify-between text-sm items-center">
-              <span className="text-gray-600 dark:text-gray-400">╪º┘ä╪╢╪▒┘è╪¿╪⌐:</span>
+              <span className="text-gray-600 dark:text-gray-400">الضريبة:</span>
               {isEditing && onTaxChange ? (
                 <input
                   type="number"
@@ -896,7 +896,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
             </div>
             {totals.discount > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">╪º┘ä╪«╪╡┘à:</span>
+                <span className="text-gray-600 dark:text-gray-400">الخصم:</span>
                 <span className="font-semibold text-red-600 dark:text-red-400">
                   -{formatPrice(totals.discount)}
                 </span>
@@ -905,7 +905,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
             <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
               <div className="flex justify-between">
                 <span className="text-base font-bold text-gray-900 dark:text-gray-100">
-                  ╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è:
+                  الإجمالي:
                 </span>
                 <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
                   {formatPrice(totals.total)}
@@ -918,7 +918,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
             <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg">
               <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
               <span>
-                ╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è ┘è╪¬┘à ╪¡╪│╪º╪¿┘ç ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪¿┘å╪º╪í┘ï ╪╣┘ä┘ë ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ┘ê╪º┘ä╪┤╪¡┘å ┘ê╪º┘ä╪╢╪▒╪º╪ª╪¿
+                الإجمالي يتم حسابه تلقائياً بناءً على المنتجات والشحن والضرائب
               </span>
             </div>
           )}

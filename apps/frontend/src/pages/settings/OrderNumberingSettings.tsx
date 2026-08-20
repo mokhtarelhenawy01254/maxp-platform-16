@@ -1,9 +1,13 @@
-import { Settings as Cog6ToothIcon, Check as CheckCircleIcon, X as XCircleIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/api";
 import { toast } from "sonner";
-;
+import {
+  Cog6ToothIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 
 interface OrderSettings {
   enableSequentialOrders: boolean;
@@ -25,6 +29,7 @@ const OrderNumberingSettings: React.FC = () => {
   const [resetNumber, setResetNumber] = useState("");
   const [previewNumber, setPreviewNumber] = useState("ORD-000001");
   const [applyToPastOrders, setApplyToPastOrders] = useState(false);
+  const [prefixWarning, setPrefixWarning] = useState("");
 
   // Fetch settings on mount
   useEffect(() => {
@@ -180,19 +185,32 @@ const OrderNumberingSettings: React.FC = () => {
             type="text"
             autoComplete="off"
             value={settings.orderPrefix}
-            onChange={(e) =>
+            onChange={(e) => {
+              const raw = e.target.value;
+              const upper = raw.toUpperCase();
+              const hasNonAscii = /[^\x20-\x7E]/.test(raw);
+              setPrefixWarning(
+                hasNonAscii
+                  ? "⚠️ الباركود (CODE128) لا يدعم الأحرف العربية أو الرموز الخاصة. استخدم أحرف إنجليزية وأرقام فقط."
+                  : ""
+              );
               setSettings({
                 ...settings,
-                orderPrefix: e.target.value.toUpperCase(),
-              })
-            }
+                orderPrefix: upper.replace(/[^\x20-\x7E]/g, ""),
+              });
+            }}
             maxLength={10}
             className="w-full max-w-xs px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
             placeholder="ORD"
             disabled={!settings.enableSequentialOrders}
           />
+          {prefixWarning && (
+            <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+              {prefixWarning}
+            </p>
+          )}
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            الأحرف أو الكلمة التي تظهر قبل الرقم (حد أقصى 10 أحرف)
+            ملاحظة: باركود CODE128 يقبل فقط أحرف إنجليزية وأرقام ورموز (ASCII). تجنب الحروف العربية.
           </p>
         </div>
 

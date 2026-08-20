@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle, AlertTriangle, ArrowLeft, Loader2, Save, Search } from 'lucide-react';
+import { Save, Search, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -23,6 +23,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api"; // Ensure this path is correct based on your project structure
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Employee {
   id: string;
@@ -75,7 +76,7 @@ const SalaryUpdates: React.FC = () => {
       fetchSalaryHistory();
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast.error("فشل في جلب البيانات");
+      tToast.error("SalaryUpdates.failed_fetch_4bd4");
     } finally {
       setLoading(false);
     }
@@ -171,7 +172,7 @@ const SalaryUpdates: React.FC = () => {
       );
 
       if (updatesList.length === 0) {
-        toast.info("لا توجد تغييرات فعلية للحفظ");
+        tToast.info("SalaryUpdates.msg_f4a3");
         return;
       }
 
@@ -180,7 +181,7 @@ const SalaryUpdates: React.FC = () => {
         (e) => !reasons[e.id] || reasons[e.id].trim() === "",
       );
       if (missingReason) {
-        toast.error("يجب كتابة سبب التعديل لكل موظف تم تغيير راتبه");
+        tToast.error("SalaryUpdates.msg_bdbc");
         return;
       }
 

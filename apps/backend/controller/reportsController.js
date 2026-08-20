@@ -672,19 +672,26 @@ const getDetailedOrderReport = async (req, res) => {
                 createdAt: { gte: start, lte: end }
             },
             select: {
+                id: true,
+                orderNumber: true,
                 status: true,
                 total: true,
                 governorate: true,
                 createdAt: true,
-                paymentMethod: true
+                paymentMethod: true,
+                orderItems: {
+                    select: { quantity: true }
+                }
             }
         });
 
         // إحصائيات الحالات
         const statusDistribution = {};
+        const statusPiecesDistribution = {};
         const governorateStats = {};
         const paymentStats = {};
         let totalRevenue = 0;
+        let totalPieces = 0;
 
         orders.forEach(order => {
             statusDistribution[order.status] = (statusDistribution[order.status] || 0) + 1;
@@ -695,13 +702,44 @@ const getDetailedOrderReport = async (req, res) => {
             totalRevenue += parseFloat(order.total);
         });
 
+        // إحصائيات القطع (items/quantity)
+        const orderPieceData = orders.map(order => {
+            const pieces = (order.orderItems || []).reduce(
+                (sum, item) => sum + (parseInt(item.quantity, 10) || 0),
+                0
+            );
+            totalPieces += pieces;
+            statusPiecesDistribution[order.status] =
+                (statusPiecesDistribution[order.status] || 0) + pieces;
+            return { orderNumber: order.orderNumber, pieces };
+        });
+
+        // متوسط الطلبات في اليوم (عدد الأيام التقويمية داخل الفترة)
+        const dayMs = 24 * 60 * 60 * 1000;
+        const daysInPeriod = Math.max(1, Math.round((end - start) / dayMs));
+
+        const orderPieceShare = orderPieceData
+            .map(o => ({
+                orderNumber: o.orderNumber,
+                pieces: o.pieces,
+                sharePct: totalPieces > 0 ? Number(((o.pieces / totalPieces) * 100).toFixed(1)) : 0
+            }))
+            .sort((a, b) => b.pieces - a.pieces)
+            .slice(0, 10);
+
         res.json({
             success: true,
             data: {
                 totalOrders: orders.length,
                 totalRevenue,
                 avgOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
+                totalPieces,
+                avgPiecesPerOrder: orders.length > 0 ? Number((totalPieces / orders.length).toFixed(1)) : 0,
+                avgOrdersPerDay: orders.length > 0 ? Number((orders.length / daysInPeriod).toFixed(1)) : 0,
+                daysInPeriod,
+                orderPieceShare,
                 statusDistribution,
+                statusPiecesDistribution,
                 governorateStats,
                 paymentStats
             }
@@ -852,6 +890,194 @@ const getReports = async (req, res) => {
     }
 }
 
+// تقرير تحليل حالات الطلبات — يركز علىSHORTAGE_FAILED
+const getOrderStatusAnalytics = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { startDate, endDate, status } = req.query;
+
+        const company = await getSharedPrismaClient().company.findUnique({
+            where: { id: companyId },
+            select: { timezone: true }
+        });
+        const timeZone = company?.timezone || 'Africa/Cairo';
+
+        const start = startDate ? startOfDay(fromZonedTime(startDate, timeZone)) : subDays(new Date(), 90);
+        const end = endDate ? endOfDay(fromZonedTime(endDate, timeZone)) : new Date();
+
+        const where = {
+            companyId,
+            createdAt: { gte: start, lte: end }
+        };
+
+        if (status) {
+            where.status = status.toUpperCase();
+        }
+
+        const prisma = getSharedPrismaClient();
+
+        // تحقق من قيمة الحالة قبل الاستعلام لتجنب خطأ Prisma (400 بدلاً من 500)
+        const VALID_ORDER_STATUSES = new Set([
+            'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
+            'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED',
+            'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED',
+            'WOO_TAGHEZ', 'DRAFT', 'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED',
+            'OUT_FOR_DELIVERY', 'LOST', 'PENDING_PREPARATION', 'PREPARING', 'READY',
+            'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED',
+            'STOCK_SHORTAGE', 'SHORTAGE_FAILED', 'PENDING_CANCELLATION'
+        ]);
+
+        if (status && !VALID_ORDER_STATUSES.has(String(status).toUpperCase())) {
+            return res.status(400).json({ success: false, error: `Invalid status filter: ${status}` });
+        }
+
+        // تجميع كامل على مستوى قاعدة البيانات (بدون حد 5000 الذي كان يبتُر النتائج)
+        const [totalOrders, revenueAgg, shortageAgg, statusGroups, govGroups, payGroups, srcGroups, recentShortage, trendRows, hourRows] = await Promise.all([
+            prisma.order.count({ where }),
+            prisma.order.aggregate({ where, _sum: { total: true } }),
+            prisma.order.aggregate({ where: { ...where, status: 'SHORTAGE_FAILED' }, _sum: { total: true } }),
+            prisma.order.groupBy({ by: ['status'], where, _count: { _all: true } }),
+            prisma.order.groupBy({ by: ['governorate'], where, _count: { _all: true }, orderBy: { _count: { governorate: 'desc' } }, take: 10 }),
+            prisma.order.groupBy({ by: ['paymentMethod'], where, _count: { _all: true } }),
+            prisma.order.groupBy({ by: ['sourceType'], where, _count: { _all: true } }),
+            prisma.order.findMany({
+                where: { ...where, status: 'SHORTAGE_FAILED' },
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    customerName: true,
+                    customerPhone: true,
+                    governorate: true,
+                    total: true,
+                    createdAt: true
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 50
+            }),
+            prisma.$queryRawUnsafe(
+                `SELECT to_char("createdAt" AT TIME ZONE $4, 'YYYY-MM-DD') AS day, status, COUNT(*)::int AS cnt
+                 FROM "orders"
+                 WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3${status ? ' AND "status" = $5' : ''}
+                 GROUP BY day, status ORDER BY day`,
+                companyId, start, end, timeZone, ...(status ? [String(status).toUpperCase()] : [])
+            ),
+            prisma.$queryRawUnsafe(
+                `SELECT EXTRACT(HOUR FROM ("createdAt" AT TIME ZONE $4))::int AS hour, COUNT(*)::int AS cnt
+                 FROM "orders"
+                 WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3${status ? ' AND "status" = $5' : ''}
+                 GROUP BY hour ORDER BY hour`,
+                companyId, start, end, timeZone, ...(status ? [String(status).toUpperCase()] : [])
+            )
+        ]);
+
+        const totalRevenue = parseFloat(revenueAgg._sum.total || 0);
+        const shortageFailedRevenue = parseFloat(shortageAgg._sum.total || 0);
+        const shortageFailedCount = (statusGroups.find(g => g.status === 'SHORTAGE_FAILED')?._count?._all) || 0;
+
+        // توزيع الحالات
+        const statusDistribution = statusGroups
+            .map(g => ({ status: g.status, count: g._count._all }))
+            .sort((a, b) => b.count - a.count)
+            .map(row => ({ ...row, percentage: totalOrders > 0 ? ((row.count / totalOrders) * 100).toFixed(1) : '0.0' }));
+
+        // الاتجاه اليومي (حسب منطقة زمنية للشركة)
+        const dailyStatusTrend = {};
+        (trendRows || []).forEach(r => {
+            if (!r.day) return;
+            dailyStatusTrend[r.day] = dailyStatusTrend[r.day] || {};
+            dailyStatusTrend[r.day][r.status] = (dailyStatusTrend[r.day][r.status] || 0) + r.cnt;
+        });
+        const trendData = Object.entries(dailyStatusTrend)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .slice(-30)
+            .map(([date, statuses]) => ({ date, ...statuses }));
+
+        // التوزيع الساعي (حسب منطقة زمنية للشركة)
+        const hourlyMap = {};
+        (hourRows || []).forEach(r => { hourlyMap[Number(r.hour)] = r.cnt; });
+        const hourlyData = Array.from({ length: 24 }, (_, i) => ({
+            hour: `${i.toString().padStart(2, '0')}:00`,
+            count: hourlyMap[i] || 0
+        }));
+
+        // توزيع العجز النهائي حسب المنتج (أعلى المنتجات المتسببة في العجز النهائي)
+        const shortageByProductRows = await prisma.$queryRawUnsafe(
+            `SELECT COALESCE(oi."productName", 'غير محدد') AS product,
+                    COUNT(DISTINCT o.id)::int AS ordersCount,
+                    SUM(oi.quantity)::int AS units,
+                    SUM(oi.total)::numeric AS revenue
+             FROM "orders" o
+             JOIN "order_items" oi ON oi."orderId" = o.id
+             WHERE o."companyId" = $1 AND o.status = 'SHORTAGE_FAILED'
+               AND o."createdAt" >= $2 AND o."createdAt" <= $3
+             GROUP BY product
+             ORDER BY revenue DESC
+             LIMIT 15`,
+            companyId, start, end
+        );
+        const shortageByProduct = (shortageByProductRows || []).map(r => ({
+            product: r.product,
+            ordersCount: Number(r.ordersCount || 0),
+            units: Number(r.units || 0),
+            revenue: parseFloat(r.revenue || 0)
+        }));
+
+        // أعلى المحافظات
+        const topGovernorates = (govGroups || [])
+            .filter(g => g.governorate)
+            .map(g => ({ name: g.governorate, count: g._count._all }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+
+        // طرق الدفع والمصادر
+        const paymentStats = (payGroups || [])
+            .filter(g => g.paymentMethod)
+            .map(g => ({ method: g.paymentMethod, count: g._count._all }))
+            .sort((a, b) => b.count - a.count);
+        const sourceStats = (srcGroups || [])
+            .filter(g => g.sourceType)
+            .map(g => ({ source: g.sourceType, count: g._count._all }))
+            .sort((a, b) => b.count - a.count);
+
+        res.json({
+            success: true,
+            data: {
+                summary: {
+                    totalOrders,
+                    totalRevenue,
+                    avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+                    shortageFailedCount,
+                    shortageFailedRevenue,
+                    shortageFailedPercentage: totalOrders > 0 ? ((shortageFailedCount / totalOrders) * 100).toFixed(1) : '0.0',
+                    dateRange: {
+                        start: startDate || start.toISOString().slice(0, 10),
+                        end: endDate || end.toISOString().slice(0, 10)
+                    }
+                },
+                statusDistribution,
+                trendData,
+                hourlyData,
+                topGovernorates,
+                paymentStats,
+                sourceStats,
+                shortageByProduct,
+                recentShortageFailed: (recentShortage || []).map(o => ({
+                    id: o.id,
+                    orderNumber: o.orderNumber,
+                    customerName: o.customerName,
+                    customerPhone: o.customerPhone,
+                    total: parseFloat(o.total || 0),
+                    governorate: o.governorate,
+                    createdAt: o.createdAt
+                }))
+            }
+        });
+    } catch (error) {
+        console.error('Error in getOrderStatusAnalytics:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 module.exports = {
     getReports,
     getSalesReport,
@@ -863,5 +1089,6 @@ module.exports = {
     getDetailedOrderReport,
     getDetailedInventoryReport,
     getProfitLossReport,
-    getModeratorsReport
+    getModeratorsReport,
+    getOrderStatusAnalytics
 }

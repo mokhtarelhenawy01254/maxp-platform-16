@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Menu, X, Bell, User, Search, Settings } from 'lucide-react';
+import { Menu, X, Bell, User, Search, Settings } from "lucide-react";
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -34,7 +34,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
     { name: "العملاء", href: "/customers", icon: "👥" },
     { name: "المنتجات", href: "/products", icon: "🛍️" },
     { name: "الطلبات", href: "/orders", icon: "📦" },
-    { name: "التقارير", href: "/reports", icon: "📈" },
+    { name: "التقارير", href: "/analytics/orders", icon: "📈" },
     { name: "الأسئلة الشائعة", href: "/admin/faqs", icon: "❓" },
     { name: "السياسات", href: "/admin/policies", icon: "📋" },
     { name: "الإعدادات", href: "/settings", icon: "⚙️" },

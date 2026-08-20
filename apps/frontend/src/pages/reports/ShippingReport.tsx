@@ -1,5 +1,3 @@
-import { Download as ArrowDownTrayIcon, Calendar as CalendarIcon, Activity as ChartBarIcon, Pencil as PencilIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -7,7 +5,13 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
-;
+import { tToast } from "../../utils/i18n-toast";
+import {
+  ArrowDownTrayIcon,
+  CalendarIcon,
+  ChartBarIcon,
+  PencilIcon,
+} from "@heroicons/react/24/outline";
 
 interface ShippingReportData {
   orderId: string;
@@ -106,7 +110,7 @@ const ShippingReport: React.FC = () => {
         orderId: editModal.orderId,
         actualCost: parseFloat(editModal.newCost),
       });
-      toast.success("تم تحديث التكلفة الفعلية");
+      tToast.success("ShippingReport.success_update_531b");
       setEditModal({ ...editModal, open: false, newCost: "" });
       fetchReport();
     } catch (error: any) {
@@ -146,7 +150,7 @@ const ShippingReport: React.FC = () => {
         setGovCostsForm(form);
       }
     } catch (e: any) {
-      toast.error("فشل تحميل إعدادات المحافظات");
+      tToast.error("ShippingReport.failed_load_dc84");
     } finally {
       setGovCostsLoading(false);
     }
@@ -166,7 +170,7 @@ const ShippingReport: React.FC = () => {
         if (!isNaN(num) && num >= 0) costs[gov] = num;
       }
       await apiClient.put("/turbo/reports/shipping/governorate-costs", { costs, applyRetroactive: govCostsRetroactive, retroactiveFrom: govCostsRetroactiveFrom || undefined });
-      toast.success("تم حفظ تكاليف المحافظات");
+      tToast.success("ShippingReport.success_save_9691");
       setGovCostModal(false);
       fetchReport();
     } catch (e: any) {
@@ -202,7 +206,7 @@ const ShippingReport: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
       console.error("Error exporting CSV:", error);
-      toast.error("فشل تصدير التقرير");
+      tToast.error("ShippingReport.msg_c494");
     }
   };
 

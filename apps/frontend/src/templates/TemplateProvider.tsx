@@ -1,4 +1,4 @@
-﻿import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import { templateRegistries, type ComponentRegistry } from "./TemplateComponentRegistry";
 import { templateMetas, type TemplateMeta } from "../config/templates";
 

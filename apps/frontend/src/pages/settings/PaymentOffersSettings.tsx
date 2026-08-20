@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDirection } from "../../i18n";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -68,7 +68,7 @@ const PaymentOffersSettings: React.FC = () => {
           showDiscountBadge: parsed?.showDiscountBadge !== false,
         });
       } catch {
-        toast.error("╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪╣╪▒┘ê╪╢ ╪º┘ä╪»┘ü╪╣");
+        toast.error("تعذر تحميل إعدادات عروض الدفع");
       } finally {
         if (active) setLoading(false);
       }
@@ -97,10 +97,10 @@ const PaymentOffersSettings: React.FC = () => {
         },
       } as Parameters<typeof storefrontSettingsService.updateSettings>[0]);
       if (result?.data) {
-        toast.success("╪¬┘à ╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪╣╪▒┘ê╪╢ ╪º┘ä╪»┘ü╪╣ ╪¿┘å╪¼╪º╪¡");
+        toast.success("تم حفظ إعدادات عروض الدفع بنجاح");
       }
     } catch (error) {
-      toast.error("╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪º┘ä╪¡┘ü╪╕: " + ((error as { message?: string })?.message || "╪«╪╖╪ú ╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü"));
+      toast.error("حدث خطأ أثناء الحفظ: " + ((error as { message?: string })?.message || "خطأ غير معروف"));
     } finally {
       setSaving(false);
     }
@@ -114,16 +114,16 @@ const PaymentOffersSettings: React.FC = () => {
             type="button"
             onClick={() => navigate("/")}
             className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
-            aria-label="╪▒╪¼┘ê╪╣"
+            aria-label="رجوع"
           >
             <ArrowLeftIcon className="h-5 w-5 rtl:rotate-180" />
           </button>
           <div>
             <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              ╪╣╪▒┘ê╪╢ ╪º┘ä╪»┘ü╪╣
+              عروض الدفع
             </h2>
             <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-              ╪«╪╡┘ê┘à╪º╪¬ ╪¬┘Å╪╖╪¿┘æ┘é ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪╣┘ä┘ë ╪º┘ä╪»┘ü╪╣ ╪¿╪º┘ä╪¿╪╖╪º┘é╪⌐ ╪ú┘ê ╪¿╪º┘ä┘à╪¡┘ü╪╕╪⌐ ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪⌐ ┘ü┘è ┘à╪¬╪¼╪▒┘â ╪¿╪º┘ä┘â╪º┘à┘ä.
+              خصومات تُطبّق تلقائياً على الدفع بالبطاقة أو بالمحفظة الإلكترونية في متجرك بالكامل.
             </p>
           </div>
         </div>
@@ -131,7 +131,7 @@ const PaymentOffersSettings: React.FC = () => {
 
       {loading ? (
         <div className={CARD_CLS}>
-          <p className="text-sm text-gray-500 dark:text-gray-400">╪¼╪º╪▒┘ì ╪¬╪¡┘à┘è┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪╣╪▒┘ê╪╢ ╪º┘ä╪»┘ü╪╣...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">جارٍ تحميل إعدادات عروض الدفع...</p>
         </div>
       ) : (
         <div className={CARD_CLS}>
@@ -139,10 +139,10 @@ const PaymentOffersSettings: React.FC = () => {
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  ╪«╪╡┘à ╪º┘ä╪»┘ü╪╣ ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è ≡ƒÄü
+                  خصم الدفع الإلكتروني 🎁
                 </p>
                 <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-                  ┘ä┘ê ╪º┘ä╪╣┘à┘è┘ä ╪»┘ü╪╣ ╪¿╪º┘ä╪¿╪╖╪º┘é╪⌐ ╪ú┘ê ╪¿╪º┘ä┘à╪¡┘ü╪╕╪⌐ ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪⌐╪î ┘è╪¡╪╡┘ä ╪╣┘ä┘ë ╪«╪╡┘à ╪╣┘ä┘ë ┘é┘è┘à╪⌐ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬. ┘ü╪╣┘æ┘ä ╪º┘ä╪«╪╡┘à ┘ê╪¡╪»╪» ┘å╪│╪¿╪¬┘ç ╪¿╪º┘ä╪ú╪│┘ü┘ä.
+                  لو العميل دفع بالبطاقة أو بالمحفظة الإلكترونية، يحصل على خصم على قيمة المنتجات. فعّل الخصم وحدد نسبته بالأسفل.
                 </p>
               </div>
               <Switch
@@ -155,7 +155,7 @@ const PaymentOffersSettings: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className={LABEL_CLS}>
-                    ┘å╪│╪¿╪⌐ ╪º┘ä╪«╪╡┘à (%)
+                    نسبة الخصم (%)
                   </label>
                   <input
                     type="number"
@@ -170,20 +170,20 @@ const PaymentOffersSettings: React.FC = () => {
                     }
                     className={INPUT_CLS}
                     dir="ltr"
-                    placeholder="┘à╪½╪º┘ä: 10"
+                    placeholder="مثال: 10"
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    ┘è┘Å╪¡╪│╪¿ ╪º┘ä╪«╪╡┘à ╪╣┘ä┘ë ╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ (┘é╪¿┘ä ╪º┘ä╪┤╪¡┘å). ┘à╪½╪º┘ä: ┘ä┘ê ┘â╪¬╪¿╪¬ 10╪î ╪º┘ä╪╣┘à┘è┘ä ┘è╪¡╪╡┘ä ╪╣┘ä┘ë ╪«╪╡┘à 10%.
+                    يُحسب الخصم على إجمالي المنتجات (قبل الشحن). مثال: لو كتبت 10، العميل يحصل على خصم 10%.
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between gap-3 rounded-lg bg-white px-3.5 py-3 dark:bg-gray-900">
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      ╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä╪«╪╡┘à ┘ä┘ä╪╣┘à┘è┘ä
+                      إظهار الخصم للعميل
                     </p>
                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      ┘è╪╕┘ç╪▒ ╪¿╪¼╪º┘å╪¿ ╪╖╪▒┘é ╪º┘ä╪»┘ü╪╣ ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪⌐ ┘ê┘ü┘è ┘à┘ä╪«╪╡ ╪º┘ä╪┤┘è┘â ╪ú┘ê╪¬.
+                      يظهر بجانب طرق الدفع الإلكترونية وفي ملخص الشيك أوت.
                     </p>
                   </div>
                   <Switch
@@ -201,7 +201,7 @@ const PaymentOffersSettings: React.FC = () => {
               disabled={saving || loading}
               className={PRIMARY_BTN_CLS}
             >
-              {saving ? "╪¼╪º╪▒┘ì ╪º┘ä╪¡┘ü╪╕..." : "╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪╣╪▒┘ê╪╢ ╪º┘ä╪»┘ü╪╣"}
+              {saving ? "جارٍ الحفظ..." : "حفظ إعدادات عروض الدفع"}
             </button>
           </div>
         </div>

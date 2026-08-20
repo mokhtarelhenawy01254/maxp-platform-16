@@ -1,4 +1,3 @@
-import { ArrowLeft as ArrowLeftIcon, Check as CheckCircleIcon, Search as MagnifyingGlassIcon, X as XMarkIcon, Circle as UserGroupIcon, Pin as MapPinIcon, Heart as HeartIcon, Phone as DevicePhoneMobileIcon, Globe as GlobeAltIcon, Star as SparklesIcon, Activity as ChartBarIcon } from 'lucide-react';
 /**
  * Create AdSet Page - Enhanced with Full Targeting Options
  *
@@ -20,8 +19,21 @@ import { ArrowLeft as ArrowLeftIcon, Check as CheckCircleIcon, Search as Magnify
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-;
+import {
+  ArrowLeftIcon,
+  CheckCircleIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  UserGroupIcon,
+  MapPinIcon,
+  HeartIcon,
+  DevicePhoneMobileIcon,
+  GlobeAltIcon,
+  SparklesIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   CreateAdSetData,
@@ -223,7 +235,7 @@ const CreateAdSet: React.FC = () => {
       setLookalikeAudiences(lookalike.filter((a) => a.status === "ACTIVE"));
     } catch (error: unknown) {
       console.error("Error loading audiences:", error);
-      toast.error("فشل في تحميل الجماهير");
+      tToast.error("CreateAdSet.failed_load_3afc");
     } finally {
       setLoadingAudiences(false);
     }
@@ -328,13 +340,13 @@ const CreateAdSet: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          toast.error("يرجى إدخال اسم مجموعة الإعلانات");
+          tToast.error("CreateAdSet.please_name_c33c");
           return false;
         }
         return true;
       case 2:
         if (!formData.budgetAmount || formData.budgetAmount <= 0) {
-          toast.error("يرجى إدخال ميزانية صحيحة");
+          tToast.error("CreateAdSet.msg_bdb9");
           return false;
         }
         if (
@@ -342,7 +354,7 @@ const CreateAdSet: React.FC = () => {
           (formData.targeting?.regions || []).length === 0 &&
           (formData.targeting?.cities || []).length === 0
         ) {
-          toast.error("اختر دولة أو محافظة أو مدينة واحدة على الأقل");
+          tToast.error("CreateAdSet.msg_a209");
           return false;
         }
         return true;
@@ -382,7 +394,7 @@ const CreateAdSet: React.FC = () => {
           locations: usesLocalGeo ? [] : formData.targeting?.locations || [],
         },
       });
-      toast.success("تم إنشاء مجموعة الإعلانات بنجاح");
+      tToast.success("CreateAdSet.success_create_52e7");
       navigate(`/advertising/facebook-ads/campaigns/${campaignId}`);
     } catch (error: unknown) {
       console.error("Error creating ad set:", error);

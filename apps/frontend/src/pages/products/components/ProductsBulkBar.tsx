@@ -1,6 +1,11 @@
-import { Trash2 as TrashIcon, X as XMarkIcon, EyeOff as EyeSlashIcon, Eye as EyeIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  TrashIcon,
+  XMarkIcon,
+  EyeSlashIcon,
+  EyeIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 
 interface ProductsBulkBarProps {
   selectedCount: number;
@@ -8,6 +13,7 @@ interface ProductsBulkBarProps {
   onClear: () => void;
   onHide: () => void;
   onUnhide: () => void;
+  onConvertToPresentations: () => void;
 }
 
 const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
@@ -16,6 +22,7 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
   onClear,
   onHide,
   onUnhide,
+  onConvertToPresentations,
 }) => {
   if (selectedCount === 0) return null;
 
@@ -25,6 +32,13 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
         تم تحديد {selectedCount} منتج
       </span>
       <div className="flex items-center space-x-3 space-x-reverse">
+        <button
+          onClick={onConvertToPresentations}
+          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors shadow-sm"
+        >
+          <ArrowPathIcon className="h-4 w-4 ml-1" />
+          حوّل إلى عروض تقديمية
+        </button>
         <button
           onClick={onHide}
           className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm"

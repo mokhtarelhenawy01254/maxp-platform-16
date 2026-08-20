@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CalendarDays, Clock, Users, Wallet, ClipboardList } from "lucide-react";
 
 interface DashboardData {
@@ -24,8 +24,8 @@ const DoctorDashboardPage: React.FC = () => {
         });
         const json = await res.json();
         if (json.success) setData(json.data);
-        else setError(json.message || '╪¡╪»╪½ ╪«╪╖╪ú');
-      } catch { setError('┘ü╪┤┘ä ╪º┘ä╪º╪¬╪╡╪º┘ä'); }
+        else setError(json.message || 'حدث خطأ');
+      } catch { setError('فشل الاتصال'); }
       finally { setLoading(false); }
     };
     fetchDashboard();
@@ -36,16 +36,16 @@ const DoctorDashboardPage: React.FC = () => {
   if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
 
   const stats = [
-    { label: '┘à┘ê╪º╪╣┘è╪» ╪º┘ä┘è┘ê┘à', value: data?.todayAppointments ?? 0, icon: CalendarDays, color: 'text-blue-600 bg-blue-100' },
-    { label: '╪º┘ä┘à┘ê╪º╪╣┘è╪» ╪º┘ä┘é╪º╪»┘à╪⌐', value: data?.upcomingAppointments ?? 0, icon: Clock, color: 'text-green-600 bg-green-100' },
-    { label: '╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à┘ê╪º╪╣┘è╪»', value: data?.totalAppointments ?? 0, icon: ClipboardList, color: 'text-purple-600 bg-purple-100' },
-    { label: '┘à╪▒╪╢╪º┘è', value: data?.totalPatients ?? 0, icon: Users, color: 'text-cyan-600 bg-cyan-100' },
-    { label: '┘ü┘ê╪º╪¬┘è╪▒ ╪║┘è╪▒ ┘à╪│╪»╪»╪⌐', value: data?.unpaidInvoices ?? 0, icon: Wallet, color: 'text-amber-600 bg-amber-100' },
+    { label: 'مواعيد اليوم', value: data?.todayAppointments ?? 0, icon: CalendarDays, color: 'text-blue-600 bg-blue-100' },
+    { label: 'المواعيد القادمة', value: data?.upcomingAppointments ?? 0, icon: Clock, color: 'text-green-600 bg-green-100' },
+    { label: 'إجمالي المواعيد', value: data?.totalAppointments ?? 0, icon: ClipboardList, color: 'text-purple-600 bg-purple-100' },
+    { label: 'مرضاي', value: data?.totalPatients ?? 0, icon: Users, color: 'text-cyan-600 bg-cyan-100' },
+    { label: 'فواتير غير مسددة', value: data?.unpaidInvoices ?? 0, icon: Wallet, color: 'text-amber-600 bg-amber-100' },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">┘ä┘ê╪¡╪⌐ ╪º┘ä╪¬╪¡┘â┘à</h1>
+      <h1 className="text-2xl font-bold mb-6">لوحة التحكم</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {stats.map((s, i) => {
           const Icon = s.icon;

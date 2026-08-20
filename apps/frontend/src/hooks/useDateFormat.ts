@@ -1,4 +1,3 @@
-import { formatDate } from '@/utils/formatters';
 // frontend/src/hooks/useDateFormat.ts
 // Hook for managing date format preferences
 

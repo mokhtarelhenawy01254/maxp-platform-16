@@ -1,7 +1,16 @@
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { BadgePercent, Gift, PackageCheck, RefreshCcw, RefreshCw, Save, Sparkles, Star, Truck, Wand2 } from 'lucide-react';
+import {
+  BadgePercent,
+  Gift,
+  PackageCheck,
+  RefreshCcw,
+  Save,
+  Sparkles,
+  Truck,
+  Wand2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

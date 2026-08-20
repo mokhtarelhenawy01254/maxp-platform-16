@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowPathIcon,
@@ -154,22 +154,22 @@ const STATUS_META: Record<
   { label: string; color: string; pill: string }
 > = {
   PENDING: {
-    label: "┘à╪╣┘ä┘é",
+    label: "معلق",
     color: "#F59E0B",
     pill: "border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-600 dark:text-amber-300 dark:bg-amber-900/30",
   },
   APPROVED: {
-    label: "┘à╪╣╪¬┘à╪»",
+    label: "معتمد",
     color: "#0EA5E9",
     pill: "border-sky-300 text-sky-700 bg-sky-50 dark:border-sky-600 dark:text-sky-300 dark:bg-sky-900/30",
   },
   REJECTED: {
-    label: "┘à╪▒┘ü┘ê╪╢",
+    label: "مرفوض",
     color: "#F43F5E",
     pill: "border-rose-300 text-rose-700 bg-rose-50 dark:border-rose-600 dark:text-rose-300 dark:bg-rose-900/30",
   },
   COMPLETED: {
-    label: "┘à┘â╪¬┘à┘ä",
+    label: "مكتمل",
     color: "#10B981",
     pill: "border-emerald-300 text-emerald-700 bg-emerald-50 dark:border-emerald-600 dark:text-emerald-300 dark:bg-emerald-900/30",
   },
@@ -216,7 +216,7 @@ const getStatusMeta = (status: string) =>
   };
 
 const truncateLabel = (value: string, max = 26) =>
-  value.length > max ? `${value.slice(0, max - 1)}ΓÇª` : value;
+  value.length > max ? `${value.slice(0, max - 1)}…` : value;
 
 const ChartTooltip: React.FC<any> = ({ active, payload, label, formatter }) => {
   if (!active || !payload?.length) {
@@ -302,7 +302,7 @@ const SectionCard: React.FC<{
               onClick={() => setOpen((value) => !value)}
               className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               aria-expanded={open}
-              aria-label={open ? `╪Ñ╪«┘ü╪º╪í ${title}` : `╪Ñ╪╕┘ç╪º╪▒ ${title}`}
+              aria-label={open ? `إخفاء ${title}` : `إظهار ${title}`}
             >
               <ChevronDownIcon
                 className={`h-4 w-4 transition-transform duration-200 ${
@@ -329,70 +329,70 @@ const StatsBar: React.FC<{ summary: ReturnReasonAnalyticsSummary }> = ({
       <div className="col-span-2 bg-gradient-to-l from-rose-600 to-rose-500 p-4 text-white md:col-span-4 xl:col-span-2">
         <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-rose-100">
           <SparklesIcon className="h-3.5 w-3.5" />
-          ╪ú┘ç┘à ┘à╪º ┘è╪¡╪»╪½
+          أهم ما يحدث
         </div>
         {topReason ? (
           <p className="mt-1.5 text-sm font-bold leading-snug">
-            ┬½{topReason.reason}┬╗ ╪º┘ä╪ú┘â╪½╪▒ ╪¿┘å╪│╪¿╪⌐ {topReason.percentage}% ┬╖{" "}
-            {formatNumber(topReason.count)} ╪¡╪º┘ä╪⌐
+            «{topReason.reason}» الأكثر بنسبة {topReason.percentage}% ·{" "}
+            {formatNumber(topReason.count)} حالة
           </p>
         ) : (
           <p className="mt-1.5 text-sm font-bold">
-            ┘ä╪º ╪¬┘ê╪¼╪» ┘à╪▒╪¬╪¼╪╣╪º╪¬ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐
+            لا توجد مرتجعات في هذه الفترة
           </p>
         )}
         <p className="mt-1 text-[11px] text-rose-100">
           {topCategory
-            ? `╪ú╪╣┘ä┘ë ╪¬╪╡┘å┘è┘ü: ${topCategory.category} (${topCategory.percentage}%)`
+            ? `أعلى تصنيف: ${topCategory.category} (${topCategory.percentage}%)`
             : ""}
         </p>
       </div>
 
       <div className="bg-white p-4 dark:bg-gray-800">
         <p className="text-[11px] text-gray-400 dark:text-gray-500">
-          ╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬
+          إجمالي المرتجعات
         </p>
         <p className="mt-0.5 truncate text-lg font-extrabold text-gray-900 dark:text-white">
           {formatNumber(summary.totalReturns)}
         </p>
         <p className="text-[11px] text-gray-400">
-          {summary.returnRate}% ┘à┘å {formatNumber(summary.totalOrders)} ╪╖┘ä╪¿
+          {summary.returnRate}% من {formatNumber(summary.totalOrders)} طلب
         </p>
       </div>
 
       <div className="bg-white p-4 dark:bg-gray-800">
         <p className="text-[11px] text-gray-400 dark:text-gray-500">
-          ┘é┘è┘à╪⌐ ╪º┘ä╪º╪│╪¬╪▒╪»╪º╪»
+          قيمة الاسترداد
         </p>
         <p className="mt-0.5 truncate text-lg font-extrabold text-amber-600 dark:text-amber-400">
           {formatPrice(summary.totalRefundValue)}
         </p>
         <p className="text-[11px] text-gray-400">
-          ┘à╪¬┘ê╪│╪╖ {formatPrice(summary.avgReturnValue)}
+          متوسط {formatPrice(summary.avgReturnValue)}
         </p>
       </div>
 
       <div className="bg-white p-4 dark:bg-gray-800">
         <p className="text-[11px] text-gray-400 dark:text-gray-500">
-          ╪¬┘à╪¬ ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐
+          تمت المعالجة
         </p>
         <p className="mt-0.5 truncate text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
           {summary.resolutionRate}%
         </p>
         <p className="text-[11px] text-gray-400">
-          {formatNumber(summary.resolvedCount)} ╪º┘â╪¬┘à┘ä/╪º╪╣╪¬┘Å┘à╪»
+          {formatNumber(summary.resolvedCount)} اكتمل/اعتُمد
         </p>
       </div>
 
       <div className="bg-white p-4 dark:bg-gray-800">
         <p className="text-[11px] text-gray-400 dark:text-gray-500">
-          ╪¿╪»┘ê┘å ╪│╪¿╪¿
+          بدون سبب
         </p>
         <p className="mt-0.5 truncate text-lg font-extrabold text-indigo-600 dark:text-indigo-400">
           {formatNumber(summary.withoutReasonCount)}
         </p>
         <p className="text-[11px] text-gray-400">
-          {summary.withReasonCount} ╪¿╪│╪¿╪¿ ┘à╪│╪¼┘ä
+          {summary.withReasonCount} بسبب مسجل
         </p>
       </div>
     </div>
@@ -427,7 +427,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
       setData(result?.success && result.data ? result.data : emptyData);
     } catch (err) {
       console.error("ReturnReasonsAnalytics error:", err);
-      setError("╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪¬╪¡┘ä┘è┘ä ╪ú╪│╪¿╪º╪¿ ╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬");
+      setError("تعذر تحميل تحليل أسباب المرتجعات");
       setData(emptyData);
     } finally {
       setLoading(false);
@@ -478,7 +478,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
         <div className="flex flex-col items-center gap-3">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-rose-200 border-t-rose-600 dark:border-rose-900 dark:border-t-rose-400" />
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            ╪¼╪º╪▒┘ì ╪¬╪¡┘ä┘è┘ä ╪ú╪│╪¿╪º╪¿ ╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬ΓÇª
+            جارٍ تحليل أسباب المرتجعات…
           </p>
         </div>
       </div>
@@ -499,7 +499,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700"
           >
             <ArrowPathIcon className="h-4 w-4" />
-            ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐
+            إعادة المحاولة
           </button>
         </div>
       </div>
@@ -521,11 +521,11 @@ const ReturnReasonsAnalytics: React.FC = () => {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-gray-900 dark:text-white">
-            ╪ú╪│╪¿╪º╪¿ ╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬
+            أسباب المرتجعات
           </h1>
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-            ┘ä┘à╪º╪░╪º ╪¬┘Å╪▒╪¼╪╣ ╪º┘ä╪╖┘ä╪¿╪º╪¬╪ƒ ╪¬┘ê╪▓┘è╪╣ ╪º┘ä╪ú╪│╪¿╪º╪¿ ┘ê╪º┘ä╪¬╪╡┘å┘è┘ü╪º╪¬ ┘ê╪º┘ä╪¡╪º┘ä╪º╪¬ ┘ä╪¡┘ä┘æ┘ç╪º ┘à┘å
-            ╪¼╪░╪▒┘ç╪º
+            لماذا تُرجع الطلبات؟ توزيع الأسباب والتصنيفات والحالات لحلّها من
+            جذرها
           </p>
         </div>
 
@@ -536,9 +536,9 @@ const ReturnReasonsAnalytics: React.FC = () => {
             value={status}
             onChange={(event) => setStatus(event.target.value)}
             className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-rose-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-            aria-label="╪¬╪╡┘ü┘è╪⌐ ╪¡╪│╪¿ ╪º┘ä╪¡╪º┘ä╪⌐"
+            aria-label="تصفية حسب الحالة"
           >
-            <option value="">┘â┘ä ╪º┘ä╪¡╪º┘ä╪º╪¬</option>
+            <option value="">كل الحالات</option>
             {statusOptions.map((option) => (
               <option key={option} value={option}>
                 {getStatusMeta(option).label}
@@ -550,9 +550,9 @@ const ReturnReasonsAnalytics: React.FC = () => {
             value={category}
             onChange={(event) => setCategory(event.target.value)}
             className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-rose-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-            aria-label="╪¬╪╡┘ü┘è╪⌐ ╪¡╪│╪¿ ╪º┘ä╪¬╪╡┘å┘è┘ü"
+            aria-label="تصفية حسب التصنيف"
           >
-            <option value="">┘â┘ä ╪º┘ä╪¬╪╡┘å┘è┘ü╪º╪¬</option>
+            <option value="">كل التصنيفات</option>
             {categoryOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
@@ -568,8 +568,8 @@ const ReturnReasonsAnalytics: React.FC = () => {
       {/* Reasons + Categories */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <SectionCard
-          title="╪ú┘â╪½╪▒ ╪º┘ä╪ú╪│╪¿╪º╪¿ ╪¬┘â╪▒╪º╪▒╪º┘ï"
-          subtitle="╪ú╪╣┘ä┘ë 8 ╪ú╪│╪¿╪º╪¿"
+          title="أكثر الأسباب تكراراً"
+          subtitle="أعلى 8 أسباب"
           className="xl:col-span-2"
           collapsible
         >
@@ -608,7 +608,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                           const row = data.reasonBreakdown.find(
                             (r) => r.reason === entry.payload.tooltipLabel,
                           );
-                          return `${formatNumber(value)} ╪¡╪º┘ä╪⌐ ┬╖ ${
+                          return `${formatNumber(value)} حالة · ${
                             row?.percentage ?? 0
                           }%`;
                         }}
@@ -617,7 +617,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                   />
                   <Bar
                     dataKey="count"
-                    name="╪╣╪»╪» ╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬"
+                    name="عدد المرتجعات"
                     fill="#E11D48"
                     radius={[0, 5, 5, 0]}
                     barSize={18}
@@ -627,13 +627,13 @@ const ReturnReasonsAnalytics: React.FC = () => {
             ) : (
               <EmptyState
                 icon={ShoppingBagIcon}
-                message="┘ä╪º ╪¬┘ê╪¼╪» ╪ú╪│╪¿╪º╪¿ ┘ü┘è ╪º┘ä┘ü╪¬╪▒╪⌐ ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐"
+                message="لا توجد أسباب في الفترة المختارة"
               />
             )}
           </div>
         </SectionCard>
 
-        <SectionCard title="╪º┘ä╪¬╪╡┘å┘è┘ü╪º╪¬" subtitle="╪¬╪¼┘à┘è╪╣ ╪º┘ä╪ú╪│╪¿╪º╪¿" collapsible>
+        <SectionCard title="التصنيفات" subtitle="تجميع الأسباب" collapsible>
           {data.categoryBreakdown.length > 0 ? (
             <div className="space-y-3">
               {data.categoryBreakdown.slice(0, 8).map((row, index) => (
@@ -664,24 +664,24 @@ const ReturnReasonsAnalytics: React.FC = () => {
               ))}
             </div>
           ) : (
-            <EmptyState icon={TagIcon} message="┘ä╪º ╪¬┘ê╪¼╪» ╪¬╪╡┘å┘è┘ü╪º╪¬ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐" />
+            <EmptyState icon={TagIcon} message="لا توجد تصنيفات في هذه الفترة" />
           )}
         </SectionCard>
       </div>
 
       {/* Tabs: status / trend / products */}
       <SectionCard
-        title="╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬"
+        title="تفاصيل المرتجعات"
         action={
           <div className="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700">
             <button type="button" className={tabButtonClass(tab === "status")} onClick={() => setTab("status")}>
-              ╪º┘ä╪¡╪º┘ä╪⌐
+              الحالة
             </button>
             <button type="button" className={tabButtonClass(tab === "trend")} onClick={() => setTab("trend")}>
-              ╪º┘ä╪º╪¬╪¼╪º┘ç
+              الاتجاه
             </button>
             <button type="button" className={tabButtonClass(tab === "products")} onClick={() => setTab("products")}>
-              ╪º┘ä┘à┘å╪¬╪¼╪º╪¬
+              المنتجات
             </button>
           </div>
         }
@@ -720,7 +720,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                 <span className="text-lg font-extrabold text-gray-900 dark:text-white">
                   {formatNumber(summary.totalReturns)}
                 </span>
-                <span className="text-[10px] text-gray-400">┘à╪▒╪¬╪¼╪╣</span>
+                <span className="text-[10px] text-gray-400">مرتجع</span>
               </div>
             </div>
             <div className="w-full space-y-1.5">
@@ -749,7 +749,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                   );
                 })
               ) : (
-                <EmptyState icon={NoSymbolIcon} message="┘ä╪º ╪¬┘ê╪¼╪» ╪¡╪º┘ä╪º╪¬" />
+                <EmptyState icon={NoSymbolIcon} message="لا توجد حالات" />
               )}
             </div>
           </div>
@@ -795,8 +795,8 @@ const ReturnReasonsAnalytics: React.FC = () => {
                       <ChartTooltip
                         formatter={(value: number, entry: any) =>
                           entry.dataKey === "count"
-                            ? `${formatNumber(value)} ┘à╪▒╪¬╪¼╪╣`
-                            : `${formatNumber(value)} ╪¼.┘à`
+                            ? `${formatNumber(value)} مرتجع`
+                            : `${formatNumber(value)} ج.م`
                         }
                       />
                     }
@@ -804,7 +804,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="count"
-                    name="┘à╪▒╪¬╪¼╪╣╪º╪¬"
+                    name="مرتجعات"
                     stroke="#E11D48"
                     strokeWidth={2}
                     fill="url(#retGradient)"
@@ -813,7 +813,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <EmptyState icon={NoSymbolIcon} message="┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘è┘ê┘à┘è╪⌐" />
+              <EmptyState icon={NoSymbolIcon} message="لا توجد بيانات يومية" />
             )}
           </div>
         ) : null}
@@ -857,7 +857,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                       />
                     </div>
                     <p className="mt-1 text-[10px] text-gray-400">
-                      {formatPrice(row.refundAmount)} ╪º╪│╪¬╪▒╪»╪º╪»
+                      {formatPrice(row.refundAmount)} استرداد
                     </p>
                   </div>
                 );
@@ -865,7 +865,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
             ) : (
               <EmptyState
                 icon={FolderIcon}
-                message="┘ä╪º ╪¬┘ê╪¼╪» ┘à┘å╪¬╪¼╪º╪¬ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐"
+                message="لا توجد منتجات في هذه الفترة"
               />
             )}
           </div>
@@ -874,14 +874,14 @@ const ReturnReasonsAnalytics: React.FC = () => {
 
       {/* Recent returns */}
       <SectionCard
-        title="╪ú╪¡╪»╪½ ╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐"
-        subtitle={`╪ó╪«╪▒ ${formatNumber(data.recentReturns.length)} ┘à╪▒╪¬╪¼╪╣ ┘ü┘è ╪º┘ä┘ü╪¬╪▒╪⌐ ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐`}
+        title="أحدث المرتجعات للمراجعة"
+        subtitle={`آخر ${formatNumber(data.recentReturns.length)} مرتجع في الفترة المختارة`}
         action={
           <Link
             to="/returns"
             className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-1 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-900/20"
           >
-            ┘â┘ä ╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬
+            كل المرتجعات
             <ArrowRightIcon className="h-3 w-3" />
           </Link>
         }
@@ -892,14 +892,14 @@ const ReturnReasonsAnalytics: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
               <thead>
                 <tr className="text-right text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                  <th className="whitespace-nowrap px-2 py-2">╪º┘ä╪╖┘ä╪¿</th>
-                  <th className="whitespace-nowrap px-2 py-2">╪º┘ä╪╣┘à┘è┘ä</th>
-                  <th className="whitespace-nowrap px-2 py-2">╪º┘ä┘à┘å╪╖┘é╪⌐</th>
-                  <th className="min-w-[200px] px-2 py-2">╪º┘ä╪│╪¿╪¿</th>
-                  <th className="whitespace-nowrap px-2 py-2">╪º┘ä╪¡╪º┘ä╪⌐</th>
-                  <th className="whitespace-nowrap px-2 py-2">╪º┘ä┘é┘è┘à╪⌐</th>
-                  <th className="whitespace-nowrap px-2 py-2">╪º┘ä╪¬╪º╪▒┘è╪«</th>
-                  <th className="whitespace-nowrap px-2 py-2">┘à╪▒╪º╪¼╪╣╪⌐</th>
+                  <th className="whitespace-nowrap px-2 py-2">الطلب</th>
+                  <th className="whitespace-nowrap px-2 py-2">العميل</th>
+                  <th className="whitespace-nowrap px-2 py-2">المنطقة</th>
+                  <th className="min-w-[200px] px-2 py-2">السبب</th>
+                  <th className="whitespace-nowrap px-2 py-2">الحالة</th>
+                  <th className="whitespace-nowrap px-2 py-2">القيمة</th>
+                  <th className="whitespace-nowrap px-2 py-2">التاريخ</th>
+                  <th className="whitespace-nowrap px-2 py-2">مراجعة</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -950,7 +950,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                           {formatPrice(row.refundAmount)}
                         </div>
                         <div className="text-[10px] text-gray-400">
-                          {formatPrice(row.total)} ┘ä┘ä╪╖┘ä╪¿
+                          {formatPrice(row.total)} للطلب
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-2 py-2 text-xs text-gray-600 dark:text-gray-300">
@@ -962,7 +962,7 @@ const ReturnReasonsAnalytics: React.FC = () => {
                           className="inline-flex items-center gap-1 rounded-md border border-sky-200 px-2 py-1 text-[10px] font-semibold text-sky-700 transition-colors hover:bg-sky-50 dark:border-sky-800 dark:text-sky-300 dark:hover:bg-sky-900/20"
                         >
                           <EyeIcon className="h-3 w-3" />
-                          ┘à╪▒╪º╪¼╪╣╪⌐
+                          مراجعة
                         </Link>
                       </td>
                     </tr>
@@ -975,10 +975,10 @@ const ReturnReasonsAnalytics: React.FC = () => {
           <div className="rounded-lg bg-gray-50 p-6 text-center dark:bg-gray-700/30">
             <ShoppingBagIcon className="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600" />
             <p className="mt-2 text-xs font-semibold text-gray-500 dark:text-gray-300">
-              ┘ä╪º ╪¬┘ê╪¼╪» ┘à╪▒╪¬╪¼╪╣╪º╪¬ ┘ü┘è ╪º┘ä┘ü╪¬╪▒╪⌐ ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐
+              لا توجد مرتجعات في الفترة المختارة
             </p>
             <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
-              ╪¼╪▒┘æ╪¿ ╪¬╪║┘è┘è╪▒ ╪º┘ä┘ü╪¬╪▒╪⌐ ╪ú┘ê ╪Ñ╪▓╪º┘ä╪⌐ ╪╣┘ê╪º┘à┘ä ╪º┘ä╪¬╪╡┘ü┘è╪⌐
+              جرّب تغيير الفترة أو إزالة عوامل التصفية
             </p>
           </div>
         )}

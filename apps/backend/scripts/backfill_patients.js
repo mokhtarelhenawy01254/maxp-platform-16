@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Backfill: link existing appointments (without patientId) to Patient records.
  * Creates a Patient from customerName + customerPhone (+gender/email), deduped by phone.
  * Usage: node scripts/backfill_patients.js [--dry-run] [--companyId=<id>]
@@ -44,7 +44,7 @@ const companyFilter = args.find(a => a.startsWith('--companyId='))?.split('=')[1
         }
       } catch (e) {
         failed++;
-        console.error(`  Γ£ù appointment ${apt.id}: ${e.message}`);
+        console.error(`  ✗ appointment ${apt.id}: ${e.message}`);
       }
     }
 

@@ -1,4 +1,3 @@
-import { Plus as PlusIcon, Trash2 as TrashIcon, Eye as EyeIcon, Circle as UserGroupIcon, Star as SparklesIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 /**
  * Audiences Management Page
  *
@@ -7,8 +6,16 @@ import { Plus as PlusIcon, Trash2 as TrashIcon, Eye as EyeIcon, Circle as UserGr
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  PlusIcon,
+  TrashIcon,
+  EyeIcon,
+  UserGroupIcon,
+  SparklesIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookCustomAudience,
@@ -53,7 +60,7 @@ const AudiencesManagement: React.FC = () => {
     setRefreshing(true);
     await loadAudiences();
     setRefreshing(false);
-    toast.success("تم تحديث البيانات");
+    tToast.success("AudiencesManagement.success_update_1209");
   };
 
   const handleCreateCustomAudience = () => {
@@ -73,7 +80,7 @@ const AudiencesManagement: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCustomAudience(id);
-      toast.success("تم حذف الجمهور بنجاح");
+      tToast.success("AudiencesManagement.success_delete_e963");
       await loadAudiences();
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "فشل في حذف الجمهور");

@@ -1,5 +1,5 @@
-﻿/**
- * Tests for custom-status ΓåÆ enum resolution (PRODUCTION-FIX custom-status-enum).
+/**
+ * Tests for custom-status → enum resolution (PRODUCTION-FIX custom-status-enum).
  * Custom statuses (e.g. DELAYED-WITH-CAPTAIN) are not in the OrderStatus enum, so they
  * must be stored via their mapsToSystem while keeping the custom code for display/notification.
  */
@@ -22,7 +22,7 @@ describe('orderStatusEnum util', () => {
     expect(prismaMock.orderStatusConfig.findFirst).not.toHaveBeenCalled();
   });
 
-  test('custom status with valid mapsToSystem ΓåÆ stored = mapped enum, notify = custom code', async () => {
+  test('custom status with valid mapsToSystem → stored = mapped enum, notify = custom code', async () => {
     prismaMock.orderStatusConfig.findFirst.mockResolvedValue({ mapsToSystem: 'ON_HOLD' });
 
     const res = await resolveOrderStatusForStorage(prismaMock, 'comp_1', 'DELAYED-WITH-CAPTAIN');
@@ -33,7 +33,7 @@ describe('orderStatusEnum util', () => {
     expect(res).toEqual({ stored: 'ON_HOLD', notify: 'DELAYED-WITH-CAPTAIN' });
   });
 
-  test('custom status WITHOUT valid mapsToSystem ΓåÆ stored = null (cannot be stored)', async () => {
+  test('custom status WITHOUT valid mapsToSystem → stored = null (cannot be stored)', async () => {
     prismaMock.orderStatusConfig.findFirst.mockResolvedValue({ mapsToSystem: '' });
     const res = await resolveOrderStatusForStorage(prismaMock, 'comp_1', 'MY_CUSTOM_STATUS');
     expect(res).toEqual({ stored: null, notify: 'MY_CUSTOM_STATUS' });

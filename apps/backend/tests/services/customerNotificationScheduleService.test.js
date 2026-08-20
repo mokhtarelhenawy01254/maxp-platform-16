@@ -1,4 +1,4 @@
-﻿const scheduleService = require('../../services/hr/customerNotificationScheduleService');
+const scheduleService = require('../../services/hr/customerNotificationScheduleService');
 const sharedDatabase = require('../../services/sharedDatabase');
 
 jest.mock('../../services/sharedDatabase', () => ({
@@ -80,13 +80,13 @@ describe('customerNotificationScheduleService', () => {
     it('rejects an invalid channel', async () => {
       await expect(
         scheduleService.updateSchedule(companyId, eventType, { activeChannel: 'FOO' }),
-      ).rejects.toThrow('┘é┘å╪º╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐');
+      ).rejects.toThrow('قناة غير صالحة');
     });
 
     it('rejects an unknown event', async () => {
       await expect(
         scheduleService.updateSchedule(companyId, 'NOT_A_REAL_EVENT', {}),
-      ).rejects.toThrow('╪¡╪»╪½ ╪Ñ╪┤╪╣╪º╪▒ ╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü');
+      ).rejects.toThrow('حدث إشعار غير معروف');
     });
   });
 
@@ -190,7 +190,7 @@ describe('customerNotificationScheduleService', () => {
         eventType,
         customer: { id: 'c-1', phone: '01000000000', firstName: 'Ahmed' },
       });
-      // ╪¿╪»┘ê┘å ┘é╪º┘ä╪¿ ┘ü┘è DB ┘è╪▒┘ê╪¡ ┘ä┘ä┘é╪º┘ä╪¿ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è ╪╣╪¿╪▒ sendNotification (preferredTemplateId ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»)
+      // بدون قالب في DB يروح للقالب الافتراضي عبر sendNotification (preferredTemplateId غير موجود)
       const callArgs = WhatsAppNotificationService.sendNotification.mock.calls[0][0];
       expect(callArgs.preferredTemplateId).toBeUndefined();
       expect(callArgs.channel).toBeNull();

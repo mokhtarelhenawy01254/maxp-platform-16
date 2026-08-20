@@ -1,9 +1,9 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const normalizePrice = (value) => {
   if (value === undefined || value === null || value === '') return { value: undefined, error: null };
   const n = Number(value);
-  if (!Number.isFinite(n) || n < 0) return { value: null, error: '╪º┘ä╪│╪╣╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' };
+  if (!Number.isFinite(n) || n < 0) return { value: null, error: 'السعر غير صحيح' };
   return { value: n, error: null };
 };
 
@@ -17,7 +17,7 @@ const normalizeResultOptions = (value) => {
       options = value.split(',').map(s => s.trim()).filter(Boolean);
     }
   }
-  if (!Array.isArray(options)) return { value: null, error: '╪«┘è╪º╪▒╪º╪¬ ╪º┘ä┘å╪¬╪º╪ª╪¼ ┘è╪¼╪¿ ╪ú┘å ╪¬┘â┘ê┘å ┘à╪╡┘ü┘ê┘ü╪⌐' };
+  if (!Array.isArray(options)) return { value: null, error: 'خيارات النتائج يجب أن تكون مصفوفة' };
   const strings = options.map(o => String(o).trim()).filter(o => o !== '');
   return { value: strings.length ? strings : null, error: null };
 };
@@ -25,7 +25,7 @@ const normalizeResultOptions = (value) => {
 const normalizeSortOrder = (value) => {
   if (value === undefined || value === null || value === '') return { value: undefined, error: null };
   const n = Number(value);
-  if (!Number.isInteger(n)) return { value: null, error: '╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' };
+  if (!Number.isInteger(n)) return { value: null, error: 'ترتيب الباراميتر غير صحيح' };
   return { value: n, error: null };
 };
 
@@ -43,7 +43,7 @@ const normalizeText = (value) => {
 const validateParameterInput = (raw, { requireName }) => {
   const param = raw || {};
   if (requireName && (param.name === undefined || param.name === null || !String(param.name).trim())) {
-    return { value: null, error: '╪º╪│┘à ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒ ┘à╪╖┘ä┘ê╪¿' };
+    return { value: null, error: 'اسم الباراميتر مطلوب' };
   }
   const options = normalizeResultOptions(param.resultOptions);
   if (options.error) return { value: null, error: options.error };
@@ -70,7 +70,7 @@ const buildParameterInclude = () => ({
 const getAllTests = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, category, page, limit, includeInactive } = req.query;
     const where = { companyId };
@@ -109,43 +109,43 @@ const getAllTests = async (req, res) => {
     res.json({ success: true, data, total, page: pageNum, limit: limitNum });
   } catch (error) {
     console.error('Error fetching lab tests:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪º╪«╪¬╪¿╪º╪▒╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الاختبارات' });
   }
 };
 
 const getTestById = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const test = await getSharedPrismaClient().labTest.findFirst({
       where: { id, companyId },
       include: buildParameterInclude(),
     });
-    if (!test) return res.status(404).json({ success: false, error: '╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!test) return res.status(404).json({ success: false, error: 'الاختبار غير موجود' });
 
     res.json({ success: true, data: test });
   } catch (error) {
     console.error('Error fetching lab test:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪º╪«╪¬╪¿╪º╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الاختبار' });
   }
 };
 
 const createTest = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { name, category, abbreviation, sampleType, price, parameters } = req.body || {};
-    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ┘à╪╖┘ä┘ê╪¿' });
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم الاختبار مطلوب' });
 
     const priceCheck = normalizePrice(price);
     if (priceCheck.error) return res.status(400).json({ success: false, error: priceCheck.error });
 
     let paramData = null;
     if (parameters !== undefined && parameters !== null) {
-      if (!Array.isArray(parameters)) return res.status(400).json({ success: false, error: '╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒╪º╪¬ ┘è╪¼╪¿ ╪ú┘å ╪¬┘â┘ê┘å ┘à╪╡┘ü┘ê┘ü╪⌐' });
+      if (!Array.isArray(parameters)) return res.status(400).json({ success: false, error: 'الباراميترات يجب أن تكون مصفوفة' });
       paramData = [];
       for (const raw of parameters) {
         const check = validateParameterInput(raw, { requireName: true });
@@ -170,24 +170,24 @@ const createTest = async (req, res) => {
     res.json({ success: true, data: test });
   } catch (error) {
     console.error('Error creating lab test:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪º╪«╪¬╪¿╪º╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الاختبار' });
   }
 };
 
 const updateTest = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.labTest.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الاختبار غير موجود' });
 
     const data = {};
     if (body.name !== undefined) {
-      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ┘à╪╖┘ä┘ê╪¿' });
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم الاختبار مطلوب' });
       data.name = String(body.name).trim();
     }
     if (body.category !== undefined) data.category = normalizeText(body.category);
@@ -202,7 +202,7 @@ const updateTest = async (req, res) => {
 
     let replacementParams = null;
     if (body.parameters !== undefined && body.parameters !== null) {
-      if (!Array.isArray(body.parameters)) return res.status(400).json({ success: false, error: '╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒╪º╪¬ ┘è╪¼╪¿ ╪ú┘å ╪¬┘â┘ê┘å ┘à╪╡┘ü┘ê┘ü╪⌐' });
+      if (!Array.isArray(body.parameters)) return res.status(400).json({ success: false, error: 'الباراميترات يجب أن تكون مصفوفة' });
       replacementParams = [];
       for (const raw of body.parameters) {
         const check = validateParameterInput(raw, { requireName: true });
@@ -230,37 +230,37 @@ const updateTest = async (req, res) => {
     res.json({ success: true, data: test });
   } catch (error) {
     console.error('Error updating lab test:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪º╪«╪¬╪¿╪º╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الاختبار' });
   }
 };
 
 const deleteTest = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.labTest.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الاختبار غير موجود' });
 
     const test = await prisma.labTest.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä╪º╪«╪¬╪¿╪º╪▒', data: test });
+    res.json({ success: true, message: 'تم حذف الاختبار', data: test });
   } catch (error) {
     console.error('Error deleting lab test:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä╪º╪«╪¬╪¿╪º╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف الاختبار' });
   }
 };
 
 const addParameter = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const test = await prisma.labTest.findFirst({ where: { id, companyId } });
-    if (!test) return res.status(404).json({ success: false, error: '╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!test) return res.status(404).json({ success: false, error: 'الاختبار غير موجود' });
 
     const check = validateParameterInput(req.body || {}, { requireName: true });
     if (check.error) return res.status(400).json({ success: false, error: check.error });
@@ -281,29 +281,29 @@ const addParameter = async (req, res) => {
     res.json({ success: true, data: parameter });
   } catch (error) {
     console.error('Error adding lab test parameter:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إضافة الباراميتر' });
   }
 };
 
 const updateParameter = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id, parameterId } = req.params;
     const prisma = getSharedPrismaClient();
     const test = await prisma.labTest.findFirst({ where: { id, companyId } });
-    if (!test) return res.status(404).json({ success: false, error: '╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!test) return res.status(404).json({ success: false, error: 'الاختبار غير موجود' });
 
     const parameter = await prisma.labTestParameter.findFirst({
       where: { id: parameterId, testId: id, companyId },
     });
-    if (!parameter) return res.status(404).json({ success: false, error: '╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!parameter) return res.status(404).json({ success: false, error: 'الباراميتر غير موجود' });
 
     const body = req.body || {};
     const data = {};
     if (body.name !== undefined) {
-      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒ ┘à╪╖┘ä┘ê╪¿' });
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم الباراميتر مطلوب' });
       data.name = String(body.name).trim();
     }
     if (body.unit !== undefined) data.unit = normalizeText(body.unit);
@@ -325,30 +325,30 @@ const updateParameter = async (req, res) => {
     res.json({ success: true, data: updated });
   } catch (error) {
     console.error('Error updating lab test parameter:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الباراميتر' });
   }
 };
 
 const removeParameter = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id, parameterId } = req.params;
     const prisma = getSharedPrismaClient();
     const test = await prisma.labTest.findFirst({ where: { id, companyId } });
-    if (!test) return res.status(404).json({ success: false, error: '╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!test) return res.status(404).json({ success: false, error: 'الاختبار غير موجود' });
 
     const parameter = await prisma.labTestParameter.findFirst({
       where: { id: parameterId, testId: id, companyId },
     });
-    if (!parameter) return res.status(404).json({ success: false, error: '╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!parameter) return res.status(404).json({ success: false, error: 'الباراميتر غير موجود' });
 
     const updated = await prisma.labTestParameter.update({ where: { id: parameterId }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒', data: updated });
+    res.json({ success: true, message: 'تم حذف الباراميتر', data: updated });
   } catch (error) {
     console.error('Error removing lab test parameter:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف الباراميتر' });
   }
 };
 

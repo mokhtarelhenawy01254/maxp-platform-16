@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import JsBarcode from "jsbarcode";
 
+const stripNonAscii = (v: string): string =>
+  v.replace(/[^\x20-\x7E]/g, "").trim() || "N/A";
+
 interface InvoiceBarcodeProps {
   value: string;
   label: string;
@@ -18,10 +21,12 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
+  const safeValue = stripNonAscii(value);
+
   useEffect(() => {
-    if (svgRef.current && value) {
+    if (svgRef.current && safeValue) {
       try {
-        JsBarcode(svgRef.current, value, {
+        JsBarcode(svgRef.current, safeValue, {
           format: "CODE128",
           width,
           height,
@@ -31,10 +36,10 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
           margin: 0,
         });
       } catch {
-        console.warn("Failed to generate barcode for:", value);
+        console.warn("Failed to generate barcode for:", safeValue);
       }
     }
-  }, [value, height, width]);
+  }, [safeValue, height, width]);
 
   return (
     <div className="flex flex-col items-center gap-0.5" style={{ textAlign: "center", lineHeight: 1 }}>
@@ -42,8 +47,13 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
         {label}
       </div>
       <svg ref={svgRef} style={{ maxWidth: "100%", height: `${height}px` }} />
-      <span style={{ fontSize: compact ? "9px" : "10px", color: "#000", fontFamily: "monospace", marginTop: "2px", fontWeight: 900 }}>
-        {value}
+      {value !== safeValue && (
+        <span style={{ fontSize: "7px", color: "#ef4444", fontFamily: "monospace", marginTop: "1px" }}>
+          {value}
+        </span>
+      )}
+      <span style={{ fontSize: compact ? "9px" : "10px", color: "#000", fontFamily: "monospace", marginTop: value !== safeValue ? "1px" : "2px", fontWeight: 900 }}>
+        {safeValue}
       </span>
     </div>
   );

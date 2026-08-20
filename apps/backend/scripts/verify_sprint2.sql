@@ -1,4 +1,4 @@
-﻿-- 1. Check table exists
+-- 1. Check table exists
 SELECT table_name FROM information_schema.tables WHERE table_name = 'whatsapp_session_history_imports';
 
 -- 2. Check columns

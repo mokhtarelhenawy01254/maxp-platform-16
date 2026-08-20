@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PatientModal from "../PatientModal";
@@ -27,8 +27,8 @@ describe("PatientModal", () => {
     const onClose = jest.fn();
     const { container } = render(<PatientModal patient={{}} onClose={onClose} onSave={onSave} />);
     const firstName = container.querySelectorAll<HTMLInputElement>("input")[0];
-    await user.type(firstName, "╪ú╪¡┘à╪»");
-    const saveBtn = screen.getByText("╪¡┘ü╪╕");
+    await user.type(firstName, "أحمد");
+    const saveBtn = screen.getByText("حفظ");
     await user.click(saveBtn);
     await user.click(saveBtn);
     expect(onSave).toHaveBeenCalledTimes(1);
@@ -38,13 +38,13 @@ describe("PatientModal", () => {
   test("onSave rejection keeps the modal open and shows an error toast", async () => {
     const user = userEvent.setup();
     global.fetch = jest.fn(resolveFetch([])) as unknown as typeof fetch;
-    const onSave = jest.fn(() => Promise.reject(new Error("┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä┘à╪▒┘è╪╢")));
+    const onSave = jest.fn(() => Promise.reject(new Error("فشل حفظ المريض")));
     const onClose = jest.fn();
     const { container } = render(<PatientModal patient={{}} onClose={onClose} onSave={onSave} />);
     const firstName = container.querySelectorAll<HTMLInputElement>("input")[0];
-    await user.type(firstName, "╪ú╪¡┘à╪»");
-    await user.click(screen.getByText("╪¡┘ü╪╕"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä┘à╪▒┘è╪╢"));
+    await user.type(firstName, "أحمد");
+    await user.click(screen.getByText("حفظ"));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("فشل حفظ المريض"));
     expect(onClose).not.toHaveBeenCalled();
   });
 });

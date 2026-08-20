@@ -1,12 +1,21 @@
-import { Plus as PlusIcon, Calendar as CalendarIcon, Activity as ChartBarIcon, Circle as UserGroupIcon, Settings as Cog6ToothIcon, Circle as MegaphoneIcon, Clock as ClockIcon, Circle as ArrowTrendingUpIcon, Eye as EyeIcon, MessageSquare as ChatBubbleLeftRightIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import CreateCampaign from "./CreateCampaign";
 import ScheduledCampaigns from "./ScheduledCampaigns";
 import CampaignAnalytics from "./CampaignAnalytics";
 import CustomerListsManager from "./CustomerListsManager";
 import BroadcastSettings from "./BroadcastSettings";
-;
+import {
+  PlusIcon,
+  CalendarIcon,
+  ChartBarIcon,
+  UserGroupIcon,
+  Cog6ToothIcon,
+  MegaphoneIcon,
+  ClockIcon,
+  ArrowTrendingUpIcon,
+  EyeIcon,
+  ChatBubbleLeftRightIcon,
+} from "@heroicons/react/24/outline";
 import { broadcastService, Campaign } from "../../services/broadcastService";
 import { socketService } from "../../services/socketService";
 import { useDateFormat } from "../../hooks/useDateFormat";

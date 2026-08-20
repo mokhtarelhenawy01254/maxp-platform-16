@@ -1,9 +1,22 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Activity, AlertTriangle, Book, BookOpen, Check, ChevronDown, ChevronRight, ChevronUp, Clipboard, Copy, Cpu, Route, Server, Settings, Trash2, Wrench } from 'lucide-react';
+import {
+  Wrench,
+  Activity,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  AlertTriangle,
+  Route,
+  Cpu,
+  BookOpen,
+  Check,
+  Copy
+} from "lucide-react";
 import type {
   SandboxTraceSummary,
   ToolDefinition,

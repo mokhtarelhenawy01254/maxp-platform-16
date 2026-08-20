@@ -1,6 +1,6 @@
-﻿/**
+/**
  * tiktokMessagingService.js
- * TikTok Business Messaging (DM) helpers ΓÇö sends text messages to TikTok users
+ * TikTok Business Messaging (DM) helpers — sends text messages to TikTok users
  * via the Business Messaging API, using the per-company TikTokBusinessAccount.
  */
 
@@ -45,12 +45,12 @@ async function sendTextMessage({ companyId, toOpenId, text }) {
 
     const account = await getBusinessAccount(companyId);
     if (!account) {
-      return { success: false, message: '┘ä╪º ┘è┘ê╪¼╪» ╪¡╪│╪º╪¿ TikTok Business ┘à╪▒╪¬╪¿╪╖ ╪¿┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐' };
+      return { success: false, message: 'لا يوجد حساب TikTok Business مرتبط بهذه الشركة' };
     }
 
     const accessToken = await getValidAccessToken(account, companyId);
     if (!accessToken) {
-      return { success: false, message: '┘ä╪º ┘è┘ê╪¼╪» ╪¬┘ê┘â┘å ╪╡╪º┘ä╪¡ ┘ä╪¡╪│╪º╪¿ TikTok' };
+      return { success: false, message: 'لا يوجد توكن صالح لحساب TikTok' };
     }
 
     const res = await axios.post(
@@ -68,7 +68,7 @@ async function sendTextMessage({ companyId, toOpenId, text }) {
 
     const body = res?.data || {};
     if (body?.error) {
-      const apiError = extractApiError(body, '┘ü╪┤┘ä ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪╣┘ä┘ë TikTok');
+      const apiError = extractApiError(body, 'فشل إرسال الرسالة على TikTok');
       return { success: false, error: apiError.message, code: apiError.code };
     }
 
@@ -79,7 +79,7 @@ async function sendTextMessage({ companyId, toOpenId, text }) {
       message: messageId ? 'sent' : 'sent',
     };
   } catch (err) {
-    const apiError = extractApiError(err?.response?.data, err?.message || '┘ü╪┤┘ä ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘Ç TikTok');
+    const apiError = extractApiError(err?.response?.data, err?.message || 'فشل الاتصال بـ TikTok');
     return { success: false, error: apiError.message, code: apiError.code };
   }
 }

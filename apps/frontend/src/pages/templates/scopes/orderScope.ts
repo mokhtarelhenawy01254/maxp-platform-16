@@ -1,36 +1,36 @@
-﻿import type { ApiLike } from "../types";
+import type { ApiLike } from "../types";
 import type { TemplateScopeConfig, EventRow } from "../types";
 
 /**
- * ┘å╪╖╪º┘é ╪º┘ä╪ú┘ê╪▒╪»╪▒╪▓ ΓÇö /orders/status-templates
- * ╪¿┘è╪¡╪º┘ü╪╕ ╪╣┘ä┘ë ┘å┘ü╪│ ╪º┘ä╪│┘ä┘ê┘â ┘ê╪º┘ä┘Ç endpoints ╪º┘ä╪¡╪º┘ä┘è╪⌐ ╪¿╪º┘ä╪╢╪¿╪╖.
+ * نطاق الأوردرز — /orders/status-templates
+ * بيحافظ على نفس السلوك والـ endpoints الحالية بالضبط.
  */
 
 const INCOMPLETE_CART_EVENT_TYPE = "INCOMPLETE_CART_FIRST_APPEARANCE";
 
 const ORDER_VARIABLES = [
-  { var: "{{customerName}}", desc: "╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä" },
-  { var: "{{customerPhone}}", desc: "╪▒┘é┘à ┘ç╪º╪¬┘ü ╪º┘ä╪╣┘à┘è┘ä" },
-  { var: "{{orderNumber}}", desc: "╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{orderDate}}", desc: "╪¬╪º╪▒┘è╪« ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{orderItems}}", desc: "╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ (╪º┘ä╪º╪│┘à╪î ╪º┘ä┘ä┘ê┘å╪î ╪º┘ä┘à┘é╪º╪│╪î ╪º┘ä┘â┘à┘è╪⌐)" },
-  { var: "{{status}}", desc: "╪º╪│┘à ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘å╪╡┘è (┘à╪½╪º┘ä: ┘é┘è╪» ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐)" },
-  { var: "{{total}}", desc: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{subtotal}}", desc: "╪º┘ä┘à╪¼┘à┘ê╪╣ ╪º┘ä┘ü╪▒╪╣┘è" },
-  { var: "{{shipping}}", desc: "┘é┘è┘à╪⌐ ╪º┘ä╪┤╪¡┘å" },
-  { var: "{{currency}}", desc: "╪º┘ä╪╣┘à┘ä╪⌐ (┘à╪½╪º┘ä: EGP)" },
-  { var: "{{trackingNumber}}", desc: "╪▒┘é┘à ╪º┘ä╪¬╪¬╪¿╪╣" },
-  { var: "{{trackingLink}}", desc: "╪▒╪º╪¿╪╖ ╪¬╪¬╪¿╪╣ ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{estimatedDays}}", desc: "╪º┘ä╪ú┘è╪º┘à ╪º┘ä╪¬┘é╪»┘è╪▒┘è╪⌐ ┘ä┘ä╪┤╪¡┘å" },
-  { var: "{{reason}}", desc: "╪│╪¿╪¿ ╪º┘ä╪Ñ┘ä╪║╪º╪í ╪ú┘ê ╪º┘ä╪▒┘ü╪╢" },
+  { var: "{{customerName}}", desc: "اسم العميل" },
+  { var: "{{customerPhone}}", desc: "رقم هاتف العميل" },
+  { var: "{{orderNumber}}", desc: "رقم الطلب" },
+  { var: "{{orderDate}}", desc: "تاريخ الطلب" },
+  { var: "{{orderItems}}", desc: "تفاصيل المنتجات (الاسم، اللون، المقاس، الكمية)" },
+  { var: "{{status}}", desc: "اسم الحالة النصي (مثال: قيد المعالجة)" },
+  { var: "{{total}}", desc: "إجمالي الطلب" },
+  { var: "{{subtotal}}", desc: "المجموع الفرعي" },
+  { var: "{{shipping}}", desc: "قيمة الشحن" },
+  { var: "{{currency}}", desc: "العملة (مثال: EGP)" },
+  { var: "{{trackingNumber}}", desc: "رقم التتبع" },
+  { var: "{{trackingLink}}", desc: "رابط تتبع الطلب" },
+  { var: "{{estimatedDays}}", desc: "الأيام التقديرية للشحن" },
+  { var: "{{reason}}", desc: "سبب الإلغاء أو الرفض" },
 ];
 
-const DEFAULT_TEMPLATE_CONTENT = `┘à╪▒╪¡╪¿╪º┘ï {{customerName}} ≡ƒæï
+const DEFAULT_TEMPLATE_CONTENT = `مرحباً {{customerName}} 👋
 
-┘å┘ê╪» ╪Ñ╪╣┘ä╪º┘à┘â ╪ú┘å ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿┘â ╪▒┘é┘à {{orderNumber}} ┘é╪» ╪¬╪║┘è╪▒╪¬ ╪Ñ┘ä┘ë: *{{status}}*
+نود إعلامك أن حالة طلبك رقم {{orderNumber}} قد تغيرت إلى: *{{status}}*
 
 {{orderItems}}
-╪┤┘â╪▒╪º┘ï ┘ä╪¬╪╣╪º┘à┘ä┘â ┘à╪╣┘å╪º! Γ£¿`;
+شكراً لتعاملك معنا! ✨`;
 
 const META_TO_LOCAL_DEFAULT_ORDER: string[] = [
   "customerName",
@@ -69,20 +69,20 @@ function eventLabel(eventType: string): string {
 
 export const orderScopeConfig: TemplateScopeConfig = {
   scope: "orders",
-  documentTitle: "┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪¡╪º┘ä╪º╪¬",
-  title: "┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪¡╪º┘ä╪º╪¬",
-  description: "╪Ñ╪»╪º╪▒╪⌐ ┘é┘ê╪º┘ä╪¿ ╪▒╪│╪º╪ª┘ä ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬",
+  documentTitle: "قوالب الواتساب للحالات",
+  title: "قوالب الواتساب للحالات",
+  description: "إدارة قوالب رسائل الواتساب المرتبطة بحالات الطلبات",
   variableSyntax: "double",
   variables: ORDER_VARIABLES,
   sampleVariables: {
-    customerName: "╪ú╪¡┘à╪» ┘à╪¡┘à╪»",
+    customerName: "أحمد محمد",
     orderNumber: "ORD-12345",
     customerPhone: "01001234567",
     total: "500",
     currency: "EGP",
     itemCount: "3",
-    orderItems: "1. ╪¬┘è╪┤┘è╪▒╪¬ ╪ú╪¡┘à╪▒ | ╪º┘ä┘à┘é╪º╪│: L | ╪º┘ä┘â┘à┘è╪⌐: 2",
-    status: "┘é┘è╪» ╪º┘ä╪¬╪¼┘ç┘è╪▓",
+    orderItems: "1. تيشيرت أحمر | المقاس: L | الكمية: 2",
+    status: "قيد التجهيز",
     trackingNumber: "TRK-98765",
     trackingLink: "https://maxp.online/track/TRK-98765",
     estimatedDays: "2-3",
@@ -117,18 +117,18 @@ export const orderScopeConfig: TemplateScopeConfig = {
 
   gateCreateOnNotify: true,
 
-  // ┘ü╪ª╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ┘ä╪¬┘é╪▒┘è╪▒ ╪º┘ä╪▒╪│╪º╪ª┘ä (┘å┘ü╪│ ╪│┘ä┘ê┘â ╪º┘ä┘Ç backend ╪º┘ä╪ú╪╡┘ä┘è)
+  // فئات الطلبات الافتراضية لتقرير الرسائل (نفس سلوك الـ backend الأصلي)
   reportCategories: ["ORDERS", "ORDER", "ABANDONED_CART"],
 
   tabs: [
-    { key: "all", label: "╪º┘ä┘â┘ä", kind: "list", count: (rows) => rows.filter((r) => !r.isNonNotifiable).length },
-    { key: "order", label: "╪º┘ä╪╖┘ä╪¿╪º╪¬", kind: "list", filter: (r) => r.statusType === "order", count: (rows) => rows.filter((r) => r.statusType === "order" && !r.isNonNotifiable).length },
-    { key: "payment", label: "╪º┘ä╪»┘ü╪╣", kind: "list", filter: (r) => r.statusType === "payment", count: (rows) => rows.filter((r) => r.statusType === "payment" && !r.isNonNotifiable).length },
-    { key: "preparation", label: "╪º┘ä╪¬╪¼┘ç┘è╪▓", kind: "list", filter: (r) => r.statusType === "preparation", count: (rows) => rows.filter((r) => r.statusType === "preparation" && !r.isNonNotifiable).length },
-    { key: "shipping", label: "╪º┘ä╪┤╪¡┘å", kind: "list", filter: (r) => r.statusType === "shipping", count: (rows) => rows.filter((r) => r.statusType === "shipping" && !r.isNonNotifiable).length },
-    { key: "incomplete", label: "╪▒╪│╪º╪ª┘ä ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä", kind: "list", filter: (r) => r.statusType === "incomplete", count: (rows) => rows.filter((r) => r.statusType === "incomplete" && !r.isNonNotifiable).length },
-    { key: "reports", label: "╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬", kind: "reports", isSpecial: true },
-    { key: "settings", label: "╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬", kind: "settings", isSpecial: true },
+    { key: "all", label: "الكل", kind: "list", count: (rows) => rows.filter((r) => !r.isNonNotifiable).length },
+    { key: "order", label: "الطلبات", kind: "list", filter: (r) => r.statusType === "order", count: (rows) => rows.filter((r) => r.statusType === "order" && !r.isNonNotifiable).length },
+    { key: "payment", label: "الدفع", kind: "list", filter: (r) => r.statusType === "payment", count: (rows) => rows.filter((r) => r.statusType === "payment" && !r.isNonNotifiable).length },
+    { key: "preparation", label: "التجهيز", kind: "list", filter: (r) => r.statusType === "preparation", count: (rows) => rows.filter((r) => r.statusType === "preparation" && !r.isNonNotifiable).length },
+    { key: "shipping", label: "الشحن", kind: "list", filter: (r) => r.statusType === "shipping", count: (rows) => rows.filter((r) => r.statusType === "shipping" && !r.isNonNotifiable).length },
+    { key: "incomplete", label: "رسائل الأوردر غير المكتمل", kind: "list", filter: (r) => r.statusType === "incomplete", count: (rows) => rows.filter((r) => r.statusType === "incomplete" && !r.isNonNotifiable).length },
+    { key: "reports", label: "تقارير الحالات", kind: "reports", isSpecial: true },
+    { key: "settings", label: "الإعدادات", kind: "settings", isSpecial: true },
   ],
 
   features: {

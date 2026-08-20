@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   conversation: {
     groupBy: jest.fn(),
     findMany: jest.fn(),

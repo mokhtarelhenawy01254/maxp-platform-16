@@ -1,9 +1,17 @@
-import { Bell as BellIcon, Check as CheckIcon, Eye as EyeIcon, Trash2 as TrashIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, X as XCircleIcon, Check as CheckCircleIcon, Circle as BellSolidIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../services/apiClient";
 import { useAuth } from "../hooks/useAuthSimple";
-;
-;
+import {
+  BellIcon,
+  CheckIcon,
+  EyeIcon,
+  TrashIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  XCircleIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
+import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
 
 interface NotificationItem {
   id: string;

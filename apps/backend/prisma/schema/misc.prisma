@@ -247,6 +247,10 @@ model WalletTransaction {
   orderId       String?
   description   String
   metadata      String?
+  status        String                @default("RELEASED") // RELEASED | PENDING_RELEASE | CANCELLED
+  releasedAt    DateTime?
+  cancelledAt   DateTime?
+  referenceId   String?
   createdAt     DateTime              @default(now())
   order         Order?                @relation(fields: [orderId], references: [id])
   wallet        CustomerWallet        @relation(fields: [walletId], references: [id], onDelete: Cascade)
@@ -254,6 +258,8 @@ model WalletTransaction {
   @@index([walletId])
   @@index([type])
   @@index([createdAt])
+  @@index([status])
+  @@index([referenceId])
   @@map("wallet_transactions")
 }
 
@@ -262,6 +268,7 @@ model Appointment {
   id              String    @id @default(cuid())
   companyId       String
   customerId      String?
+  patientId       String?
   customerName    String
   customerEmail   String?
   customerPhone   String?
@@ -287,6 +294,23 @@ model Appointment {
   source          String?   /// whatsapp/facebook/chat/dashboard
   paymentRequired Boolean   @default(false)
   paymentStatus   String?
+  /// Medical fields
+  diagnosis       String?
+  treatmentPlan   String?
+  prescription    String?
+  vitals          Json?     /// {"pressure":"120/80","weight":75,"temp":37}
+  followUpDate    DateTime? @db.Date
+  /// Clinic workflow fields (adapted from RIS)
+  bookingStatus    String?  /// UNCONFIRMED|CONFIRMED|CHECKED_IN|PROCEDURE_STARTED|PROCEDURE_COMPLETED|CHECKED_OUT|CANCELLED|MISSED
+  reportStatus     String?  /// PENDING|NOTES_IN_PROGRESS|NOTES_COMPLETED|UNDER_REVIEW|APPROVED
+  accessionNumber  String?
+  ticketNumber     String?
+  room             String?  /// Clinic room / resource
+  preparationNote  String?  /// Patient prep instructions
+  deliveredWithoutReport Boolean @default(false)
+  resultDelivered  Boolean  @default(false) /// Result handed to patient
+  labelPrinted     Boolean  @default(false) /// Barcode label printed
+  assignedDoctorId String?
   createdById     String?
   createdByType   String?   /// ai_service / user (human dashboard user)
   createdByName   String?
@@ -295,12 +319,18 @@ model Appointment {
   updatedAt       DateTime  @updatedAt
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer        Customer? @relation(fields: [customerId], references: [id])
+  patient         Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
   branch          BookingBranch? @relation(fields: [branchId], references: [id])
   doctor          BookingDoctor? @relation(fields: [doctorId], references: [id])
+  assignedDoctor  BookingDoctor? @relation("AssignedDoctor", fields: [assignedDoctorId], references: [id])
   service         BookingService? @relation(fields: [serviceId], references: [id])
+  invoices        MedicalInvoice[]
+  labels          ExamLabel[]
+  deliveries      ReportDelivery[]
 
   @@index([companyId])
   @@index([customerId])
+  @@index([patientId])
   @@index([staffId])
   @@index([appointmentDate])
   @@index([status])
@@ -308,6 +338,8 @@ model Appointment {
   @@index([doctorId])
   @@index([serviceId])
   @@index([customerGender])
+  @@index([bookingStatus])
+  @@index([reportStatus])
   @@map("appointments")
 }
 

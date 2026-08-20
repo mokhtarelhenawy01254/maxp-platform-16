@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import OrderModal from "../../../components/common/OrderModal";
@@ -31,7 +31,7 @@ const DeleteItemConfirmModal: React.FC<DeleteItemConfirmModalProps> = ({
       icon={ExclamationTriangleIcon}
       tone="danger"
       size="sm"
-      cancelLabel={t("orders.cancel", { defaultValue: "╪Ñ┘ä╪║╪º╪í" })}
+      cancelLabel={t("orders.cancel", { defaultValue: "إلغاء" })}
       primaryAction={{
         label: t("orders.deleteItemConfirmAction"),
         onClick: () => {

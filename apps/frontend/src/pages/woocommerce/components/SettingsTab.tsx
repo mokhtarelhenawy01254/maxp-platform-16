@@ -1,7 +1,17 @@
-import { RefreshCw as ArrowPathIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Globe as GlobeAltIcon, Key as KeyIcon, Zap as BoltIcon, Settings as Cog6ToothIcon, Plus as PlusIcon, Circle as Square2StackIcon } from 'lucide-react';
 import React from "react";
 import { toast } from "sonner";
-;
+import { tToast } from "../../../utils/i18n-toast";
+import {
+  ArrowPathIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  GlobeAltIcon,
+  KeyIcon,
+  BoltIcon,
+  Cog6ToothIcon,
+  PlusIcon,
+  Square2StackIcon,
+} from "@heroicons/react/24/outline";
 import { Settings } from "../types";
 
 interface SettingsTabProps {
@@ -283,7 +293,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(settings.webhookUrl || "");
-                                toast.success("تم نسخ الرابط");
+                                tToast.success("SettingsTab.msg_b231");
                               }}
                               className="p-1.5 text-gray-400 hover:text-purple-600 border border-gray-200 dark:border-gray-700 rounded hover:bg-white transition-colors"
                               title="نسخ الرابط"
@@ -309,7 +319,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                               <button
                                 onClick={() => {
                                   navigator.clipboard.writeText(settingsForm.webhookSecret || "");
-                                  toast.success("تم نسخ المفتاح السري");
+                                  tToast.success("SettingsTab.msg_65a3");
                                 }}
                                 className="p-1.5 text-gray-400 hover:text-purple-600 border border-gray-200 dark:border-gray-700 rounded hover:bg-white transition-colors"
                                 title="نسخ المفتاح السري"

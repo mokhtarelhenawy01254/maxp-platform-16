@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, CalendarDays, CheckCircle2, Lock, Save, Sigma, Sparkles, Star } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Lock,
+  Save,
+  Sigma,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { WorkReportFillContext, WorkReportField, WorkReportFieldValue } from "./types";
 import {
@@ -147,7 +156,7 @@ const WorkReportSubmissionPage: React.FC = () => {
         reportDate,
         values: buildSubmitPayload(),
       });
-      toast.success("تم حفظ التقرير");
+      tToast.success("WorkReportSubmissionPage.success_save_2d7a");
       fetchContext();
     } catch (error: any) {
       console.error("Error submitting report:", error);

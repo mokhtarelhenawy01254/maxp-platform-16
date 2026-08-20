@@ -236,8 +236,6 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
   });
 
   test("archives selected storefront themes without deleting them", async () => {
-    const confirmSpy = jest.spyOn(window, "confirm").mockReturnValue(true);
-
     render(
       <SubscriptionCenter
         storefrontThemesOnly
@@ -258,7 +256,7 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /أرشفة المحدد/i }));
 
-    await waitFor(() => expect(confirmSpy).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /^أرشفة$/i }));
     await waitFor(() => expect(mockedAxios.put).toHaveBeenCalledTimes(2));
 
     expect(mockedAxios.put).toHaveBeenCalledWith(
@@ -272,14 +270,10 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
     expect(mockedToast.success).toHaveBeenCalledWith(
       "تمت أرشفة القوالب المحددة",
     );
-
-    confirmSpy.mockRestore();
   });
 
 
   test("sets a storefront theme as the default for new stores", async () => {
-    const confirmSpy = jest.spyOn(window, "confirm").mockReturnValue(true);
-
     render(
       <SubscriptionCenter
         storefrontThemesOnly
@@ -294,6 +288,8 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
       screen.getAllByRole("button", { name: /تعيين كافتراضي/i })[0],
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /^تعيين$/i }));
+
     await waitFor(() => expect(mockedAxios.post).toHaveBeenCalledTimes(1));
     expect(mockedAxios.post).toHaveBeenCalledWith(
       "super-admin/storefront-theme-catalog/bold-fashion/default",
@@ -303,8 +299,6 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
     expect(mockedToast.success).toHaveBeenCalledWith(
       "تم تعيين القالب الافتراضي للمتاجر الجديدة",
     );
-
-    confirmSpy.mockRestore();
   });
 
 });

@@ -1,9 +1,13 @@
-import { Circle as AcademicCapIcon, Circle as BookOpenIcon, Circle as GiftIcon, Circle as UserGroupIcon, Users as UsersIcon, Clock as ClockIcon, Circle as ChartBarSquareIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, Check as CheckIcon, Search as MagnifyingGlassIcon, Phone as PhoneIcon, Eye as EyeIcon } from 'lucide-react';
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-;
+import {
+  AcademicCapIcon, BookOpenIcon, GiftIcon, UserGroupIcon,
+  UsersIcon, ClockIcon, ChartBarSquareIcon, PlusIcon,
+  PencilIcon, TrashIcon, XMarkIcon, CheckIcon,
+  MagnifyingGlassIcon, PhoneIcon, EyeIcon
+} from "@heroicons/react/24/outline";
 
 const getCompanyId = (): string | null => {
   try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }
@@ -340,9 +344,9 @@ export default function EducationManagementPage() {
                 <td className={CELL_CLS}><span className={`px-2 py-0.5 rounded-full text-xs ${s.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{s.isActive ? "نشط" : "غير نشط"}</span></td>
                 <td className={CELL_CLS}>
                   <div className="flex gap-1">
-                    <button onClick={() => setSubjectModal(s)} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
-                    <button onClick={() => handleToggleSubject(s.id, s.isActive)} className={`min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg ${s.isActive ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30" : "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30"}`}><CheckIcon className="w-4 h-4" /></button>
-                    <button onClick={() => handleDeleteSubject(s.id)} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="حذف"><TrashIcon className="w-4 h-4" /></button>
+                    <button onClick={() => setSubjectModal(s)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
+                    <button onClick={() => handleToggleSubject(s.id, s.isActive)} className={`p-1.5 rounded ${s.isActive ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30" : "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30"}`}><CheckIcon className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteSubject(s.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"><TrashIcon className="w-4 h-4" /></button>
                   </div>
                 </td>
               </tr>

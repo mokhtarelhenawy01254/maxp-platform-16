@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { DEFAULT_SETTINGS, getRadiologyIdSettings } = require('../utils/radiologyNumbering');
 const { getRadiologyGuards } = require('../utils/radiologyGuards');
 const { DEFAULT_DELIVERY, getRadiologyDeliverySettings } = require('../utils/radiologyDeliverySettings');
@@ -9,21 +9,21 @@ const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
 const listSettings = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const prisma = getSharedPrismaClient();
     const settings = await getRadiologyIdSettings(prisma, companyId);
     res.json({ success: true, data: settings });
   } catch (error) {
     console.error('Error listing radiology id settings:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الإعدادات' });
   }
 };
 
 const updateSettings = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
@@ -57,27 +57,27 @@ const updateSettings = async (req, res) => {
     res.json({ success: true, data: settings });
   } catch (error) {
     console.error('Error updating radiology id settings:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الإعدادات' });
   }
 };
 
 const listGuards = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const guards = await getRadiologyGuards(getSharedPrismaClient(), companyId);
     res.json({ success: true, data: guards });
   } catch (error) {
     console.error('Error listing radiology guards:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪¡╪▒╪º╪│╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الحراسات' });
   }
 };
 
 const updateGuards = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
@@ -101,52 +101,52 @@ const updateGuards = async (req, res) => {
     res.json({ success: true, data: await getRadiologyGuards(prisma, companyId) });
   } catch (error) {
     console.error('Error updating radiology guards:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¡╪▒╪º╪│╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الحراسات' });
   }
 };
 
 const listRiskFlags = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const flags = await getRadiologyRiskFlags(getSharedPrismaClient(), companyId);
     res.json({ success: true, data: flags });
   } catch (error) {
     console.error('Error listing radiology risk flags:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘à╪ñ╪┤╪▒╪º╪¬ ╪º┘ä╪«╪╖╪▒ ╪º┘ä╪╖╪¿┘è' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب مؤشرات الخطر الطبي' });
   }
 };
 
 const updateRiskFlags = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const flags = await saveRadiologyRiskFlags(getSharedPrismaClient(), companyId, req.body?.flags);
     res.json({ success: true, data: flags });
   } catch (error) {
     console.error('Error updating radiology risk flags:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ┘à╪ñ╪┤╪▒╪º╪¬ ╪º┘ä╪«╪╖╪▒ ╪º┘ä╪╖╪¿┘è' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث مؤشرات الخطر الطبي' });
   }
 };
 
 const listDeliverySettings = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
     const settings = await getRadiologyDeliverySettings(getSharedPrismaClient(), companyId);
     res.json({ success: true, data: settings });
   } catch (error) {
     console.error('Error listing radiology delivery settings:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪¬┘ê╪╡┘è┘ä' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب إعدادات التوصيل' });
   }
 };
 
 const updateDeliverySettings = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
@@ -170,7 +170,7 @@ const updateDeliverySettings = async (req, res) => {
     res.json({ success: true, data: await getRadiologyDeliverySettings(prisma, companyId) });
   } catch (error) {
     console.error('Error updating radiology delivery settings:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪¬┘ê╪╡┘è┘ä' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث إعدادات التوصيل' });
   }
 };
 

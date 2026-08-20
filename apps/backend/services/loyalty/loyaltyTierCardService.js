@@ -1,10 +1,10 @@
-﻿/**
- * ≡ƒÆÄ Loyalty Tier Card Service
- * ╪¬┘ê┘ä┘è╪» ┘â╪º╪▒╪¬ ╪╣╪╢┘ê┘è╪⌐ ┘ü╪º╪«╪▒ (PNG) ┘ä┘â┘ä ╪╣┘à┘è┘ä ┘è╪╡┘ä ┘ä┘à╪│╪¬┘ê┘ë ┘ê┘ä╪º╪í╪î
- * ┘ê╪╣╪▒╪╢┘ç ┘ü┘è ╪¡╪│╪º╪¿ ╪º┘ä╪╣┘à┘è┘ä ┘ê╪Ñ╪▒╪│╪º┘ä┘ç ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪╣╪¿╪▒ WhatsApp ╪╣┘å╪» ╪º┘ä╪¬╪▒┘é┘è╪⌐.
+/**
+ * 💎 Loyalty Tier Card Service
+ * توليد كارت عضوية فاخر (PNG) لكل عميل يصل لمستوى ولاء،
+ * وعرضه في حساب العميل وإرساله تلقائياً عبر WhatsApp عند الترقية.
  *
- * ╪º┘ä╪▒┘å╪»╪▒ ┘è╪¬┘à ╪╣╪¿╪▒ @napi-rs/canvas (Skia) ΓÇö ┘è╪»╪╣┘à ╪¬╪┤┘â┘è┘ä ╪º┘ä╪╣╪▒╪¿┘è╪⌐ (HarfBuzz)
- * ┘ê╪º┘ä╪¬╪»╪▒╪¼╪º╪¬ ┘ê╪º┘ä╪Ñ╪╢╪º╪í╪⌐╪î ╪¿╪╡┘ü╪▒ ╪¬╪¿╪╣┘è╪º╪¬ ┘å╪╕╪º┘à╪î ┘ê┘è╪╣┘à┘ä ╪╣┘ä┘ë Windows.
+ * الرندر يتم عبر @napi-rs/canvas (Skia) — يدعم تشكيل العربية (HarfBuzz)
+ * والتدرجات والإضاءة، بصفر تبعيات نظام، ويعمل على Windows.
  */
 
 const fs = require('fs');
@@ -27,9 +27,9 @@ function requireCanvas() {
   return require('@napi-rs/canvas');
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// ≡ƒÄ¿ ╪ú╪»┘ê╪º╪¬ ╪º┘ä╪ú┘ä┘ê╪º┘å
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🎨 أدوات الألوان
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function parseColor(hex, fallback = '#6366f1') {
   let h = String(hex || '').trim();
@@ -63,12 +63,12 @@ function mixColor(color, targetHex, t) {
 }
 
 function shade(color, t) {
-  // t ┘ü┘è [0,1] ┘å╪¡┘ê ╪º┘ä╪ú╪│┘ê╪»
+  // t في [0,1] نحو الأسود
   return mixColor(color, '#000000', t);
 }
 
 function tint(color, t) {
-  // t ┘ü┘è [0,1] ┘å╪¡┘ê ╪º┘ä╪ú╪¿┘è╪╢
+  // t في [0,1] نحو الأبيض
   return mixColor(color, '#ffffff', t);
 }
 
@@ -80,9 +80,9 @@ function contrastTextColor(color) {
   return luminance(color) > 0.5 ? '#111827' : '#ffffff';
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// ≡ƒôÉ ┘à╪│╪º╪╣╪»╪º╪¬ ╪º┘ä╪▒╪│┘à
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ═══════════════════════════════════════════════════════════════════════════════
+// 📐 مساعدات الرسم
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function roundedRectPath(ctx, x, y, w, h, r) {
   const radius = Math.min(r, w / 2, h / 2);
@@ -112,8 +112,8 @@ function tracePoints(ctx, pts) {
 }
 
 /**
- * ╪┤╪╣╪º╪▒ ╪º┘ä┘à╪│╪¬┘ê┘ë (╪¬╪º╪¼ / ┘à┘è╪»╪º┘ä┘è╪⌐ / ╪¼┘ê┘ç╪▒╪⌐ / ┘â╪ú╪│ / ┘å╪¼┘à╪⌐) ┘à╪▒╪│┘ê┘à ┘ç┘å╪»╪│┘è╪º┘ï
- * ╪¿╪¬╪»╪▒╪¼ ┘à┘å ┘ä┘ê┘å ╪º┘ä┘à╪│╪¬┘ê┘ë ΓÇö ┘è╪¿┘é┘ë ┘à┘à┘è╪▓╪º┘ï ┘ä┘â┘ä ┘à╪│╪¬┘ê┘ë.
+ * شعار المستوى (تاج / ميدالية / جوهرة / كأس / نجمة) مرسوم هندسياً
+ * بتدرج من لون المستوى — يبقى مميزاً لكل مستوى.
  */
 function drawEmblem(ctx, icon, cx, cy, s, color) {
   const grad = ctx.createLinearGradient(cx - s / 2, cy - s / 2, cx + s / 2, cy + s / 2);
@@ -140,7 +140,7 @@ function drawEmblem(ctx, icon, cx, cy, s, color) {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    // ┘â╪▒╪º╪¬ ┘ü┘ê┘é ╪º┘ä┘é┘à┘à
+    // كرات فوق القمم
     ctx.fillStyle = rgba(tint(color, 0.7), 1);
     ctx.strokeStyle = 'rgba(255,255,255,0.5)';
     const peaks = [
@@ -166,7 +166,7 @@ function drawEmblem(ctx, icon, cx, cy, s, color) {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    // ┘å╪¼┘à╪⌐ ╪»╪º╪«┘ä
+    // نجمة داخل
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
     tracePoints(ctx, starPoints(cx, cy - s * 0.08, s * 0.2, s * 0.09, 5));
     ctx.fill();
@@ -179,7 +179,7 @@ function drawEmblem(ctx, icon, cx, cy, s, color) {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    // ┘ä┘à╪╣╪º┘å ╪ú╪╣┘ä┘ë
+    // لمعان أعلى
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
     ctx.beginPath();
     ctx.moveTo(cx, cy - s * 0.5);
@@ -189,7 +189,7 @@ function drawEmblem(ctx, icon, cx, cy, s, color) {
     ctx.closePath();
     ctx.fill();
   } else if (key === 'trophy') {
-    // ┘â╪ú╪│: ┘é╪º╪╣╪»╪⌐ + ╪¼╪│┘à ┘à┘é┘ê╪│ + ┘à┘é╪¿╪╢╪º┘å
+    // كأس: قاعدة + جسم مقوس + مقبضان
     ctx.beginPath();
     ctx.moveTo(cx - s * 0.42, cy + s * 0.18);
     ctx.lineTo(cx + s * 0.42, cy + s * 0.18);
@@ -206,7 +206,7 @@ function drawEmblem(ctx, icon, cx, cy, s, color) {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    // ┘à┘é╪¿╪╢╪º┘å
+    // مقبضان
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -216,7 +216,7 @@ function drawEmblem(ctx, icon, cx, cy, s, color) {
     ctx.arc(cx + s * 0.34, cy - s * 0.06, s * 0.16, Math.PI / 2, -Math.PI / 2);
     ctx.stroke();
   } else {
-    // award / ┘å╪¼┘à╪⌐
+    // award / نجمة
     tracePoints(ctx, starPoints(cx, cy, s * 0.5, s * 0.22, 5));
     ctx.fill();
     ctx.stroke();
@@ -227,7 +227,7 @@ function isArabicText(text) {
   return /[\u0600-\u06FF]/.test(String(text || ''));
 }
 
-// ┘è╪╢╪¿╪╖ ╪¡╪¼┘à ╪º┘ä╪«╪╖ ┘ä┘è┘ä╪º╪ª┘à ╪º┘ä╪╣╪▒╪╢ ╪º┘ä┘à╪¬╪º╪¡ (╪╣╪┤╪º┘å ╪º┘ä╪ú╪│┘à╪º╪í ╪º┘ä╪╖┘ê┘è┘ä╪⌐ ┘à╪º ╪¬┘ü┘è╪╢╪┤)
+// يضبط حجم الخط ليلائم العرض المتاح (عشان الأسماء الطويلة ما تفيضش)
 function fitFontSize(ctx, text, baseSize, maxWidth) {
   let size = baseSize;
   ctx.font = `${size}px ${FONT_FAMILY}`;
@@ -256,10 +256,10 @@ function drawFancyText(ctx, text, x, y, opts = {}) {
   ctx.fillStyle = color;
   try {
     ctx.direction = 'rtl';
-  } catch (e) { /* ╪║┘è╪▒ ┘à╪»╪╣┘ê┘à ΓÇö ┘å╪▒╪│┘à ┘è┘à┘è┘å╪º┘ï ╪╣╪¿╪▒ textAlign */ }
+  } catch (e) { /* غير مدعوم — نرسم يميناً عبر textAlign */ }
   const str = String(text);
-  // ╪º┘ä╪¬╪¿╪º╪╣╪» ┘è┘Å╪╖╪¿┘Ä┘æ┘é ┘ü┘é╪╖ ╪╣┘ä┘ë ╪º┘ä┘å╪╡ ╪║┘è╪▒ ╪º┘ä╪╣╪▒╪¿┘è (╪ú╪▒┘é╪º┘à/╪Ñ┘å╪¼┘ä┘è╪▓┘è) ΓÇö ╪▒╪│┘à ┘â┘ä ╪¡╪▒┘ü ┘ä┘ê╪¡╪»┘ç
-  // ╪¿┘è┘â╪│╪▒ ╪º╪¬╪╡╪º┘ä ╪º┘ä╪¡╪▒┘ê┘ü ╪º┘ä╪╣╪▒╪¿┘è╪⌐ (╪¬╪┤┘â┘è┘ä Skia).
+  // التباعد يُطبَّق فقط على النص غير العربي (أرقام/إنجليزي) — رسم كل حرف لوحده
+  // بيكسر اتصال الحروف العربية (تشكيل Skia).
   if (letterSpacing > 0 && !isArabicText(str)) {
     const chars = str.split('');
     const widths = chars.map((ch) => ctx.measureText(ch).width);
@@ -277,9 +277,9 @@ function drawFancyText(ctx, text, x, y, opts = {}) {
   ctx.restore();
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// ≡ƒùä∩╕Å ╪¬╪«╪▓┘è┘å / ╪¿┘è╪º┘å╪º╪¬
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🗄️ تخزين / بيانات
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function cardFileName(customerId, tierId) {
   const safeCustomer = String(customerId).replace(/[^a-zA-Z0-9_-]/g, '');
@@ -296,7 +296,7 @@ function cardFilePath(companyId, customerId, tierId) {
 }
 
 /**
- * ╪▒┘é┘à ╪╣╪╢┘ê┘è╪⌐ ╪½╪º╪¿╪¬ ┘ê┘à╪│╪¬┘é╪▒ ┘à╪┤╪¬┘é ┘à┘å ┘à╪╣╪▒┘æ┘ü ╪│╪¼┘ä ╪º┘ä┘ê┘ä╪º╪í (┘à╪«╪¬╪╡╪▒ ┘ê╪│┘ç┘ä ╪º┘ä╪¬╪░┘â╪▒).
+ * رقم عضوية ثابت ومستقر مشتق من معرّف سجل الولاء (مختصر وسهل التذكر).
  */
 function membershipNumberFromId(recordId) {
   const hash = crypto.createHash('sha1').update(String(recordId || '')).digest();
@@ -325,8 +325,8 @@ function parseBenefits(raw) {
     if (Array.isArray(parsed)) return parsed.map(String).filter((b) => b.trim() !== '');
     if (parsed && typeof parsed === 'object') {
       const out = [];
-      if (parsed.freeShipping) out.push('╪┤╪¡┘å ┘à╪¼╪º┘å┘è');
-      if (Number(parsed.discountPercent) > 0) out.push(`╪«╪╡┘à ${parsed.discountPercent}%`);
+      if (parsed.freeShipping) out.push('شحن مجاني');
+      if (Number(parsed.discountPercent) > 0) out.push(`خصم ${parsed.discountPercent}%`);
       if (parsed.customText) out.push(String(parsed.customText));
       return out;
     }
@@ -336,15 +336,15 @@ function parseBenefits(raw) {
   }
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// ≡ƒû╝∩╕Å ╪▒╪│┘à ╪º┘ä┘â╪º╪▒╪¬
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🖼️ رسم الكارت
+// ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * ┘è╪▒╪│┘à ┘â╪º╪▒╪¬ ╪º┘ä╪╣╪╢┘ê┘è╪⌐ ┘ê┘è╪╣┘è╪» Buffer PNG.
+ * يرسم كارت العضوية ويعيد Buffer PNG.
  * @param {Object} data { customer, tier, record, company, points, metricLabel }
  */
-// ╪┤╪▒┘è╪¡╪⌐ EMV (┘à╪½┘ä ┘â╪▒┘ê╪¬ ╪º┘ä╪¿┘å┘ê┘â) ΓÇö ┘ä┘à╪│╪⌐ "┘â╪º╪▒╪¬ ╪¡┘é┘è┘é┘è ┘ü╪«┘à"
+// شريحة EMV (مثل كروت البنوك) — لمسة "كارت حقيقي فخم"
 function drawChip(ctx, cx, cy, w, h, color) {
   ctx.save();
   ctx.globalAlpha = 0.92;
@@ -378,7 +378,7 @@ function renderTierCard(data) {
     try {
       GlobalFonts.registerFromPath(FONT_REGULAR, FONT_FAMILY);
     } catch (e) {
-      console.warn('ΓÜá∩╕Å [TIER-CARD] Font registration failed:', e.message);
+      console.warn('⚠️ [TIER-CARD] Font registration failed:', e.message);
     }
   }
 
@@ -389,9 +389,9 @@ function renderTierCard(data) {
   const main = tierColor;
   const deep = shade(main, 0.55);
   const light = tint(main, 0.28);
-  const gold = '#d8b45a'; // ┘ä┘à╪│╪⌐ ╪░┘ç╪¿┘è╪⌐ ┘â┘ä╪º╪│┘è┘â┘è╪⌐ ┘ä┘ä╪Ñ╪╖╪º╪▒
+  const gold = '#d8b45a'; // لمسة ذهبية كلاسيكية للإطار
 
-  // 1) ┘é╪º╪╣╪»╪⌐ ╪»╪º┘â┘å╪⌐ ╪╣┘à┘è┘é╪⌐ (┘â╪▒┘ê╪¬ ╪¿┘ä╪º╪│╪¬┘è┘å┘ê┘à/╪¿┘ä╪º╪¬┘è┘å┘è╪⌐)
+  // 1) قاعدة داكنة عميقة (كروت بلاستينوم/بلاتينية)
   const bg = ctx.createLinearGradient(0, 0, CARD_W, CARD_H);
   bg.addColorStop(0, '#0b0d12');
   bg.addColorStop(0.5, '#12161f');
@@ -400,7 +400,7 @@ function renderTierCard(data) {
   roundedRectPath(ctx, 0, 0, CARD_W, CARD_H, 40);
   ctx.fill();
 
-  // 2) ╪¬┘ê┘ç╪¼ ┘ä┘ê┘å┘è ┘à┘å ┘ä┘ê┘å ╪º┘ä┘à╪│╪¬┘ê┘ë (╪ú╪│┘ü┘ä ┘è┘à┘è┘å + ╪ú╪╣┘ä┘ë ┘è╪│╪º╪▒)
+  // 2) توهج لوني من لون المستوى (أسفل يمين + أعلى يسار)
   const glow = ctx.createRadialGradient(CARD_W * 0.92, CARD_H * 1.05, 20, CARD_W * 0.92, CARD_H * 1.05, CARD_W * 0.9);
   glow.addColorStop(0, rgba(main, 0.55));
   glow.addColorStop(0.45, rgba(main, 0.16));
@@ -414,7 +414,7 @@ function renderTierCard(data) {
   ctx.fillStyle = glow2;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
 
-  // 3) ┘å╪│┘è╪¼ ╪«╪╖┘ê╪╖ ┘é╪╖╪▒┘è╪⌐ ╪«┘ü┘è┘ü╪⌐ ╪¼╪»╪º┘ï (╪╣┘à┘é ╪«┘ü┘è)
+  // 3) نسيج خطوط قطرية خفيفة جداً (عمق خفي)
   ctx.save();
   ctx.globalAlpha = 0.03;
   ctx.translate(CARD_W / 2, CARD_H / 2);
@@ -425,7 +425,7 @@ function renderTierCard(data) {
   }
   ctx.restore();
 
-  // 4) ┘ä┘à╪╣╪⌐ ┘é╪╖╪▒┘è╪⌐ ┘å╪º╪╣┘à╪⌐ (tone mapping)
+  // 4) لمعة قطرية ناعمة (tone mapping)
   ctx.save();
   ctx.globalAlpha = 0.07;
   ctx.translate(CARD_W * 0.5, CARD_H * 0.5);
@@ -438,7 +438,7 @@ function renderTierCard(data) {
   ctx.fillRect(-CARD_W * 0.2, -CARD_H * 0.9, CARD_W * 0.4, CARD_H * 1.8);
   ctx.restore();
 
-  // 5) ╪Ñ╪╖╪º╪▒ ┘à╪▓╪»┘ê╪¼: ╪«╪º╪▒╪¼┘è ┘å╪º╪╣┘à + ╪»╪º╪«┘ä┘è ╪░┘ç╪¿┘è ╪▒┘ü┘è╪╣ (╪º┘ä┘ü╪«╪º┘à╪⌐)
+  // 5) إطار مزدوج: خارجي ناعم + داخلي ذهبي رفيع (الفخامة)
   ctx.strokeStyle = 'rgba(255,255,255,0.12)';
   ctx.lineWidth = 1.5;
   roundedRectPath(ctx, 10, 10, CARD_W - 20, CARD_H - 20, 34);
@@ -452,11 +452,11 @@ function renderTierCard(data) {
   const muted = 'rgba(255,255,255,0.55)';
   const goldSoft = 'rgba(216,180,90,0.8)';
 
-  // 6) ╪º┘ä╪¬╪▒┘ê┘è╪│╪⌐: ╪º╪│┘à ╪º┘ä╪┤╪▒┘â╪⌐ ┘è┘à┘è┘å + ╪┤╪º╪▒╪⌐ ┘ü╪º╪«╪▒╪⌐ ┘è╪│╪º╪▒
+  // 6) الترويسة: اسم الشركة يمين + شارة فاخرة يسار
   drawFancyText(ctx, data.companyName, CARD_W - PAD, 74, { size: 29, color: textColor, align: 'right' });
   drawFancyText(ctx, 'MEMBER  CARD', PAD, 70, { size: 14, color: goldSoft, align: 'left', letterSpacing: 4 });
 
-  // ╪«╪╖ ╪░┘ç╪¿┘è ╪¬╪¡╪¬ ╪º┘ä╪¬╪▒┘ê┘è╪│╪⌐ (┘è┘à╪¬╪» ╪¬╪¡╪¬ ╪º╪│┘à ╪º┘ä╪┤╪▒┘â╪⌐)
+  // خط ذهبي تحت الترويسة (يمتد تحت اسم الشركة)
   ctx.strokeStyle = 'rgba(216,180,90,0.5)';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -464,12 +464,12 @@ function renderTierCard(data) {
   ctx.lineTo(CARD_W - PAD, 94);
   ctx.stroke();
 
-  // 7) ╪º┘ä╪┤╪╣╪º╪▒ ┘ü┘è ╪¡┘ä┘é╪⌐ ┘à╪╣╪»┘å┘è╪⌐ + ╪º╪│┘à ╪º┘ä┘à╪│╪¬┘ê┘ë + ╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä
+  // 7) الشعار في حلقة معدنية + اسم المستوى + اسم العميل
   const emblemR = 118;
   const emblemCx = CARD_W - PAD - 126;
   const emblemCy = 258;
 
-  // ┘ç╪º┘ä╪⌐
+  // هالة
   const halo = ctx.createRadialGradient(emblemCx, emblemCy, 8, emblemCx, emblemCy, emblemR * 1.6);
   halo.addColorStop(0, rgba(light, 0.55));
   halo.addColorStop(0.4, rgba(main, 0.2));
@@ -479,7 +479,7 @@ function renderTierCard(data) {
   ctx.arc(emblemCx, emblemCy, emblemR * 1.6, 0, Math.PI * 2);
   ctx.fill();
 
-  // ╪¡┘ä┘é╪⌐ ┘à╪╣╪»┘å┘è╪⌐ (tier color metallic)
+  // حلقة معدنية (tier color metallic)
   const ring = ctx.createLinearGradient(emblemCx - emblemR, emblemCy - emblemR, emblemCx + emblemR, emblemCy + emblemR);
   ring.addColorStop(0, rgba(tint(main, 0.6), 1));
   ring.addColorStop(0.45, rgba(main, 1));
@@ -500,12 +500,12 @@ function renderTierCard(data) {
   drawEmblem(ctx, data.tier?.icon, emblemCx, emblemCy, emblemR * 0.66, main);
 
   const tierName = data.tier?.nameAr || data.tier?.name || '';
-  const customerName = [data.customer?.firstName, data.customer?.lastName].filter(Boolean).join(' ') || '╪╣┘à┘è┘ä┘å╪º ╪º┘ä╪╣╪▓┘è╪▓';
+  const customerName = [data.customer?.firstName, data.customer?.lastName].filter(Boolean).join(' ') || 'عميلنا العزيز';
   const tierX = emblemCx - 175;
 
-  drawFancyText(ctx, '╪¿╪╖╪º┘é╪⌐ ╪╣╪╢┘ê┘è╪⌐', tierX, 178, { size: 18, color: goldSoft, align: 'right' });
+  drawFancyText(ctx, 'بطاقة عضوية', tierX, 178, { size: 18, color: goldSoft, align: 'right' });
   const tierSize = fitFontSize(ctx, tierName, 58, emblemCx - 175 - 130);
-  // ╪╕┘ä ╪«┘ü┘è┘ü ┘ä╪º╪│┘à ╪º┘ä┘à╪│╪¬┘ê┘ë
+  // ظل خفيف لاسم المستوى
   ctx.save();
   ctx.font = `${tierSize + 2}px ${FONT_FAMILY}`;
   ctx.textAlign = 'right';
@@ -516,7 +516,7 @@ function renderTierCard(data) {
   ctx.restore();
   drawFancyText(ctx, tierName, tierX, 252, { size: tierSize, color: textColor, align: 'right' });
 
-  // ╪«╪╖ ╪░┘ç╪¿┘è ╪¬╪¡╪¬ ╪º╪│┘à ╪º┘ä┘à╪│╪¬┘ê┘ë
+  // خط ذهبي تحت اسم المستوى
   ctx.font = `${tierSize}px ${FONT_FAMILY}`;
   ctx.textAlign = 'right';
   const tierW = ctx.measureText(String(tierName)).width;
@@ -527,13 +527,13 @@ function renderTierCard(data) {
   const nameSize = fitFontSize(ctx, customerName, 31, emblemCx - 175 - 60);
   drawFancyText(ctx, customerName, tierX, 318, { size: nameSize, color: 'rgba(255,255,255,0.92)', align: 'right' });
 
-  // 8) ╪«╪¬┘à ┘à╪º╪ª┘è ╪«┘ü┘è┘ü (╪┤╪╣╪º╪▒ ┘â╪¿┘è╪▒ ╪┤┘ü╪º┘ü) ╪ú╪│┘ü┘ä ┘è╪│╪º╪▒
+  // 8) ختم مائي خفيف (شعار كبير شفاف) أسفل يسار
   ctx.save();
   ctx.globalAlpha = 0.05;
   drawEmblem(ctx, data.tier?.icon, 200, 500, 230, main);
   ctx.restore();
 
-  // 9) ┘ü╪º╪╡┘ä ┘å╪º╪╣┘à
+  // 9) فاصل ناعم
   ctx.strokeStyle = 'rgba(255,255,255,0.10)';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -541,7 +541,7 @@ function renderTierCard(data) {
   ctx.lineTo(CARD_W - PAD, 398);
   ctx.stroke();
 
-  // 10) ╪º┘ä┘à╪▓╪º┘è╪º (chips) ΓÇö ╪¡╪»┘ê╪» ╪░┘ç╪¿┘è╪⌐ ╪▒┘ü┘è╪╣╪⌐
+  // 10) المزايا (chips) — حدود ذهبية رفيعة
   const benefits = parseBenefits(data.tier?.benefits);
   if (benefits.length > 0) {
     ctx.font = `22px ${FONT_FAMILY}`;
@@ -565,11 +565,11 @@ function renderTierCard(data) {
     }
   }
 
-  // 11) ╪º┘ä╪¬╪░┘è┘è┘ä: ╪▒┘é┘à ╪º┘ä╪╣╪╢┘ê┘è╪⌐ + ╪┤╪▒┘è╪¡╪⌐ EMV ┘è┘à┘è┘å / ╪º┘ä╪▒╪╡┘è╪» ┘è╪│╪º╪▒
-  // ╪┤╪▒┘è╪¡╪⌐ ╪╡╪║┘è╪▒╪⌐ (EMV chip) ΓÇö ┘è╪│╪º╪▒ ╪▒┘é┘à ╪º┘ä╪╣╪╢┘ê┘è╪⌐ (╪¿╪╣┘è╪»╪⌐ ╪╣┘å┘ç)
+  // 11) التذييل: رقم العضوية + شريحة EMV يمين / الرصيد يسار
+  // شريحة صغيرة (EMV chip) — يسار رقم العضوية (بعيدة عنه)
   drawChip(ctx, CARD_W - PAD - 305, 558, 52, 38, main);
 
-  drawFancyText(ctx, '╪▒┘é┘à ╪º┘ä╪╣╪╢┘ê┘è╪⌐', CARD_W - PAD, 514, { size: 15, color: muted, align: 'right' });
+  drawFancyText(ctx, 'رقم العضوية', CARD_W - PAD, 514, { size: 15, color: muted, align: 'right' });
   ctx.save();
   ctx.font = `30px ${FONT_FAMILY}`;
   ctx.textAlign = 'right';
@@ -579,28 +579,28 @@ function renderTierCard(data) {
   ctx.fillText(data.membershipNumber, CARD_W - PAD, 556);
   ctx.restore();
 
-  const pointsLabel = data.metricLabel || '┘å┘é╪╖╪⌐';
+  const pointsLabel = data.metricLabel || 'نقطة';
   const pointsText = `${Number(data.points || 0).toLocaleString('ar-EG')} ${pointsLabel}`;
-  drawFancyText(ctx, '╪▒╪╡┘è╪»┘â', PAD, 514, { size: 15, color: muted, align: 'left' });
+  drawFancyText(ctx, 'رصيدك', PAD, 514, { size: 15, color: muted, align: 'left' });
   drawFancyText(ctx, pointsText, PAD, 556, { size: 28, color: textColor, align: 'left' });
   drawFancyText(ctx, 'MAXP', PAD, 596, { size: 14, color: goldSoft, align: 'left', letterSpacing: 5 });
 
   return canvas.toBuffer('image/png');
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// ≡ƒÜÇ API ╪º┘ä╪«╪»┘à╪⌐
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🚀 API الخدمة
+// ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * ╪¬┘ê┘ä┘è╪»/╪¼┘ä╪¿ ┘â╪º╪▒╪¬ ╪º┘ä┘à╪│╪¬┘ê┘ë ┘ä┘ä╪╣┘à┘è┘ä.
+ * توليد/جلب كارت المستوى للعميل.
  * @param {Object} params { companyId, customerId, programId?, tierId?, force? }
  * @returns {Promise<{ url, filePath, generated, membershipNumber, tierId }>}
  */
 async function getOrGenerateTierCard({ companyId, customerId, programId, tierId, force = false }) {
   const prisma = getSharedPrismaClient();
 
-  // 1) ╪¬╪¡╪»┘è╪» ╪│╪¼┘ä ╪º┘ä┘ê┘ä╪º╪í + ╪º┘ä┘à╪│╪¬┘ê┘ë
+  // 1) تحديد سجل الولاء + المستوى
   let record = null;
   let tier = null;
 
@@ -656,7 +656,7 @@ async function getOrGenerateTierCard({ companyId, customerId, programId, tierId,
       companyName: company?.name || 'Store',
       membershipNumber,
       points: record ? parseFloat(record.currentPoints || 0) : 0,
-      metricLabel: tier.calculationType === 'SPENT' ? '╪¼.┘à' : tier.calculationType === 'ITEMS' ? '┘é╪╖╪╣╪⌐' : tier.calculationType === 'ORDER_COUNT' ? '╪ú┘ê╪▒╪»╪▒' : '┘å┘é╪╖╪⌐'
+      metricLabel: tier.calculationType === 'SPENT' ? 'ج.م' : tier.calculationType === 'ITEMS' ? 'قطعة' : tier.calculationType === 'ORDER_COUNT' ? 'أوردر' : 'نقطة'
     });
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, png);
@@ -673,8 +673,8 @@ async function getOrGenerateTierCard({ companyId, customerId, programId, tierId,
 }
 
 /**
- * ╪Ñ╪▒╪│╪º┘ä ╪╡┘ê╪▒╪⌐ ┘â╪º╪▒╪¬ ╪º┘ä╪╣╪╢┘ê┘è╪⌐ ╪╣╪¿╪▒ WhatsApp (best-effort).
- * ┘è┘ü╪╢┘æ┘ä ╪¼┘ä╪│╪⌐ Baileys ┘à╪¬╪╡┘ä╪⌐ (╪▒╪│╪º┘è┘ä ╪º┘ä╪╡┘ê╪▒ ╪¬╪╣┘à┘ä ╪»╪º╪ª┘à╪º┘ï ╪«╪º╪▒╪¼ ┘å╪º┘ü╪░╪⌐ 24 ╪│╪º╪╣╪⌐).
+ * إرسال صورة كارت العضوية عبر WhatsApp (best-effort).
+ * يفضّل جلسة Baileys متصلة (رسايل الصور تعمل دائماً خارج نافذة 24 ساعة).
  */
 async function sendTierCardImage({ companyId, customer, filePath, caption }) {
   const phone = formatPhoneNumber(customer?.phone);
@@ -685,12 +685,12 @@ async function sendTierCardImage({ companyId, customer, filePath, caption }) {
     const WhatsAppManager = require('../whatsapp/WhatsAppManager');
     const WhatsAppMessageHandler = require('../whatsapp/WhatsAppMessageHandler');
 
-    // 1) ╪¼┘ä╪│╪⌐ Baileys ┘à╪¬╪╡┘ä╪⌐ ┘ü┘è ╪º┘ä╪░╪º┘â╪▒╪⌐ ╪ú┘ê┘ä╪º┘ï
+    // 1) جلسة Baileys متصلة في الذاكرة أولاً
     let session = (WhatsAppManager.getCompanySessions(companyId) || []).find(
       (s) => s.status === 'connected' && s.provider !== 'META_CLOUD'
     );
 
-    // 2) ┘à┘å ┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¿┘è╪º┘å╪º╪¬
+    // 2) من قاعدة البيانات
     if (!session) {
       const prisma = getSharedPrismaClient();
       const dbSession = await prisma.whatsAppSession.findFirst({
@@ -711,12 +711,12 @@ async function sendTierCardImage({ companyId, customer, filePath, caption }) {
       session.id || session.sessionId,
       phone,
       { filePath, mimetype: 'image/png' },
-      caption || '╪¿╪╖╪º┘é╪⌐ ╪╣╪╢┘ê┘è╪¬┘â ╪º┘ä╪¼╪»┘è╪»╪⌐ ≡ƒÄû∩╕Å'
+      caption || 'بطاقة عضويتك الجديدة 🎖️'
     );
 
     return { success: true, result };
   } catch (error) {
-    console.error('Γ¥î [TIER-CARD] Failed to send card image:', error.message);
+    console.error('❌ [TIER-CARD] Failed to send card image:', error.message);
     return { success: false, reason: 'error', error: error.message };
   }
 }

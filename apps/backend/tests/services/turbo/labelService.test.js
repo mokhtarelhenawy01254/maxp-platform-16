@@ -1,4 +1,4 @@
-﻿jest.mock('axios', () => ({
+jest.mock('axios', () => ({
   post: jest.fn(),
   get: jest.fn(),
 }));
@@ -71,10 +71,10 @@ describe('LabelService', () => {
       const err404b = new Error('Not Found');
       err404b.response = { status: 404, data: null };
 
-      // /print-label ΓåÆ 404 POST, 404 GET
+      // /print-label → 404 POST, 404 GET
       axios.post.mockRejectedValueOnce(err404);
       axios.get.mockRejectedValueOnce(err404b);
-      // /get-label ΓåÆ succeeds
+      // /get-label → succeeds
       axios.post.mockResolvedValueOnce({ data: pdfBuf, headers: {} });
 
       const result = await service.printLabel('TURBO-001');
@@ -109,9 +109,9 @@ describe('LabelService', () => {
       axios.get.mockRejectedValue(err);
 
       const orderData = {
-        orderId: 'ord-1', orderNumber: 'ORD-001', customerName: '╪ú╪¡┘à╪»',
-        customerPhone: '01011111111', city: '╪º┘ä┘é╪º┘ç╪▒╪⌐', governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
-        items: [{ name: '┘à┘å╪¬╪¼', quantity: 1, weight: 1, price: 100 }],
+        orderId: 'ord-1', orderNumber: 'ORD-001', customerName: 'أحمد',
+        customerPhone: '01011111111', city: 'القاهرة', governorate: 'القاهرة',
+        items: [{ name: 'منتج', quantity: 1, weight: 1, price: 100 }],
         totalWeight: 1, totalValue: 100, shipping: 20,
       };
 
@@ -120,7 +120,7 @@ describe('LabelService', () => {
       expect(result.success).toBe(true);
       expect(result.fromApi).toBe(false);
       expect(result.waybillData).toBeDefined();
-      expect(result.waybillData.receiverName).toBe('╪ú╪¡┘à╪»');
+      expect(result.waybillData.receiverName).toBe('أحمد');
     });
 
     test('throws when API fails and no orderData provided', async () => {
@@ -138,18 +138,18 @@ describe('LabelService', () => {
       const orderData = {
         orderId: 'ord-1',
         orderNumber: 'ORD-100',
-        customerName: '╪│╪º╪▒╪⌐ ┘à╪¡┘à╪»',
+        customerName: 'سارة محمد',
         customerPhone: '01099999999',
         customerEmail: 'sara@test.com',
-        city: '╪º┘ä╪¼┘è╪▓╪⌐',
-        governorate: '╪º┘ä╪¼┘è╪▓╪⌐',
+        city: 'الجيزة',
+        governorate: 'الجيزة',
         items: [
-          { name: '┘ü╪│╪¬╪º┘å', quantity: 2, weight: 0.5, price: 200 },
+          { name: 'فستان', quantity: 2, weight: 0.5, price: 200 },
         ],
         totalWeight: 1,
         totalValue: 400,
         shipping: 40,
-        notes: '┘ç╪»┘è╪⌐',
+        notes: 'هدية',
         createdAt: '2026-07-24T10:00:00Z',
       };
 
@@ -158,22 +158,22 @@ describe('LabelService', () => {
       expect(waybill.turboOrderCode).toBe('TURBO-999');
       expect(waybill.orderId).toBe('ord-1');
       expect(waybill.orderNumber).toBe('ORD-100');
-      expect(waybill.receiverName).toBe('╪│╪º╪▒╪⌐ ┘à╪¡┘à╪»');
+      expect(waybill.receiverName).toBe('سارة محمد');
       expect(waybill.receiverPhone).toBe('01099999999');
       expect(waybill.receiverEmail).toBe('sara@test.com');
-      expect(waybill.receiverState).toBe('╪º┘ä╪¼┘è╪▓╪⌐');
+      expect(waybill.receiverState).toBe('الجيزة');
       expect(waybill.receiverCountry).toBe('Egypt');
-      expect(waybill.items[0].name).toBe('┘ü╪│╪¬╪º┘å');
+      expect(waybill.items[0].name).toBe('فستان');
       expect(waybill.items[0].quantity).toBe(2);
       expect(waybill.items[0].total).toBe(400);
-      expect(waybill.notes).toBe('┘ç╪»┘è╪⌐');
+      expect(waybill.notes).toBe('هدية');
       expect(waybill.shippingCost).toBe(40);
     });
 
     test('cleans city name that contains colon prefix', () => {
       const orderData = {
         city: '4021:Giza',
-        governorate: '╪º┘ä╪¼┘è╪▓╪⌐',
+        governorate: 'الجيزة',
         items: [],
         totalWeight: 0, totalValue: 0, shipping: 0,
       };

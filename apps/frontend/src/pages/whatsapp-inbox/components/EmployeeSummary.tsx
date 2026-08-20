@@ -1,5 +1,5 @@
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Eye, Users } from 'lucide-react';
 import type { Employee, PreviewResult, RoutingMode, WorkspaceNumber } from '../types';
 

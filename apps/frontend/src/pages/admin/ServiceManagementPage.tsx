@@ -1,7 +1,7 @@
-import { Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Circle as MusicalNoteIcon, Image as PhotoIcon, Video as VideoCameraIcon, File as DocumentTextIcon, X as XMarkIcon } from 'lucide-react';
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-;
+import { tToast } from "../../utils/i18n-toast";
+import { PlusIcon, PencilIcon, TrashIcon, MusicalNoteIcon, PhotoIcon, VideoCameraIcon, DocumentTextIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { uploadService } from "../../services/uploadService";
 
 const CATEGORIES = [
@@ -46,7 +46,7 @@ export default function ServiceManagementPage() {
   };
 
   const save = async () => {
-    if (!modal.name?.trim()) return toast.error("اسم الخدمة مطلوب");
+    if (!modal.name?.trim()) return tToast.error("ServiceManagementPage.name_required_6f37");
     const isNew = !modal.id;
     const samples = await uploadNewSamples();
     try {
@@ -58,7 +58,7 @@ export default function ServiceManagementPage() {
       const d = await r.json();
       if (d.success) { toast.success(isNew ? "تمت الإضافة" : "تم التحديث"); setModal(null); setSampleFiles([]); fetchServices(); }
       else toast.error(d.error);
-    } catch (e) { toast.error("حدث خطأ"); }
+    } catch (e) { tToast.error("ServiceManagementPage.error_error_0d92"); }
   };
 
   const remove = async (id: string) => {
@@ -66,8 +66,8 @@ export default function ServiceManagementPage() {
     try {
       const r = await fetch(`/api/v1/services/${id}`, { method: "DELETE", headers: authHeaders() as any });
       const d = await r.json();
-      if (d.success) { toast.success("تم الحذف"); fetchServices(); }
-    } catch (e) { toast.error("حدث خطأ"); }
+      if (d.success) { tToast.success("ServiceManagementPage.msg_9174"); fetchServices(); }
+    } catch (e) { tToast.error("ServiceManagementPage.error_error_0d92"); }
   };
 
   if (loading) return <div className="p-8 text-center text-gray-500">جاري التحميل...</div>;

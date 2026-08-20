@@ -1,6 +1,11 @@
 import { io, Socket } from "socket.io-client";
 import { buildWsUrl } from "../utils/urlHelper";
 import { tokenManager } from "../utils/tokenManager";
+import {
+  buildPatternEvents,
+  getOrderSoundAudioUrl,
+  type OrderSoundPattern,
+} from "./orderSoundPatterns";
 
 interface Message {
   id: string;
@@ -62,6 +67,7 @@ interface SocketEvents {
   }) => void;
   turbo_shipment_update: (data: any) => void;
   "order:updated": (data: any) => void;
+  "order:incomplete:new": (data: any) => void;
   "campaign:progress": (data: any) => void;
   // WhatsApp real-time events
   "whatsapp:qr": (data: { sessionId: string; qr: string; companyId?: string; refreshed?: boolean }) => void;
@@ -98,16 +104,23 @@ interface SocketEmitEvents {
   join_company_room: (data: { companyId: string }) => void;
 }
 
+export type { OrderSoundPattern } from "./orderSoundPatterns";
+export { ORDER_SOUND_PATTERNS } from "./orderSoundPatterns";
+
 class SocketService {
   private socket: Socket<SocketEvents, SocketEmitEvents> | null = null;
   private baseURL = buildWsUrl();
   private audioContext: AudioContext | null = null;
   private isAudioInitialized: boolean = false;
   private isConnecting: boolean = false;
+  private alarmStopTimer: ReturnType<typeof setTimeout> | null = null;
+  private alarmSources: Array<{ stop: () => void }> = [];
+  private audioBufferCache: Map<string, AudioBuffer> = new Map();
 
   constructor() {
     // تهيئة Audio Context (سيتم تفعيله بعد أول user interaction)
     this.initAudioContext();
+    this.setupAudioUnlock();
   }
 
   // تهيئة Audio Context
@@ -200,6 +213,318 @@ class SocketService {
           console.warn("⚠️ [SOUND] Failed to enable audio context:", error);
         });
     }
+  }
+
+  // فتح الصوت مرة واحدة عند أول تفاعل (متطلب المتصفح لسياسة autoplay)
+  private setupAudioUnlock() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const unlock = () => {
+      this.enableSound();
+      this.isAudioInitialized = true;
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("click", unlock);
+    };
+
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    window.addEventListener("touchstart", unlock);
+    window.addEventListener("click", unlock);
+  }
+
+  private getAudioContext(): AudioContext | null {
+    if (!this.audioContext) {
+      try {
+        // @ts-ignore - للتوافق مع جميع المتصفحات
+        const AudioContextClass =
+          window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          this.audioContext = new AudioContextClass();
+        }
+      } catch (error) {
+        console.error("❌ [SOUND] Failed to create audio context:", error);
+        return null;
+      }
+    }
+
+    return this.audioContext;
+  }
+
+  // إنذار عالي لتنبيه أي حد في المكان بأن طلباً جديداً وصل
+  playOrderAlarm(options?: {
+    volume?: number;
+    durationMs?: number;
+    pattern?: OrderSoundPattern;
+  }) {
+    const audioContext = this.getAudioContext();
+    if (!audioContext) {
+      console.warn("⚠️ [SOUND] Audio context not available");
+      return;
+    }
+
+    const runAlarm = () => {
+      this.stopOrderAlarm();
+
+      const volume = Math.min(1, Math.max(0, options?.volume ?? 1));
+      const durationMs = options?.durationMs ?? 7000;
+      const pattern = options?.pattern ?? "alarm";
+      const audioUrl = getOrderSoundAudioUrl(pattern);
+
+      const masterGain = audioContext.createGain();
+      masterGain.gain.setValueAtTime(0.001, audioContext.currentTime);
+      masterGain.gain.exponentialRampToValueAtTime(
+        0.9 * volume,
+        audioContext.currentTime + 0.15,
+      );
+      masterGain.connect(audioContext.destination);
+
+      const activeSources: Array<{ stop: () => void }> = [];
+
+      const stopAll = () => {
+        for (const source of activeSources) {
+          try {
+            source.stop();
+          } catch (error) {
+            // تجاهل أخطاء الإيقاف
+          }
+        }
+        try {
+          masterGain.disconnect();
+        } catch (error) {
+          // تجاهل
+        }
+      };
+
+      this.alarmSources.push({ stop: stopAll });
+
+      if (audioUrl) {
+        // نغمة مبنية على ملف صوت حقيقي (كاشير / عملات) — بتلعب بحلقة
+        this.playOrderSoundFile(audioUrl, {
+          audioContext,
+          masterGain,
+          volume,
+          durationMs,
+          pattern,
+          registerSource: (stop) => activeSources.push({ stop }),
+        });
+      } else {
+        // نغمة مولّدة بـ Web Audio (الأنماط القديمة)
+        this.playSynthesizedOrderSound({
+          audioContext,
+          masterGain,
+          volume,
+          durationMs,
+          pattern,
+          registerSource: (stop) => activeSources.push({ stop }),
+        });
+      }
+
+      this.alarmStopTimer = setTimeout(stopAll, durationMs + 300);
+      console.log("🚨 [SOUND] Order alarm played (loud)", {
+        pattern,
+        volume,
+        durationMs,
+        audioFile: audioUrl ?? null,
+      });
+    };
+
+    if (audioContext.state === "suspended") {
+      audioContext
+        .resume()
+        .then(runAlarm)
+        .catch((error) => {
+          console.warn("⚠️ [SOUND] Could not resume audio context:", error);
+        });
+    } else {
+      runAlarm();
+    }
+  }
+
+  // تشغيل نغمة من ملف صوتي حقيقي بحلقة مع Fade-in/Fade-out
+  private playOrderSoundFile(
+    url: string,
+    options: {
+      audioContext: AudioContext;
+      masterGain: GainNode;
+      volume: number;
+      durationMs: number;
+      pattern: OrderSoundPattern;
+      registerSource: (stop: () => void) => void;
+    },
+  ) {
+    const {
+      audioContext,
+      masterGain,
+      volume,
+      durationMs,
+      pattern,
+      registerSource,
+    } = options;
+    const startTime = audioContext.currentTime;
+
+    const sourceGain = audioContext.createGain();
+    sourceGain.gain.setValueAtTime(0.0001, startTime);
+    sourceGain.gain.exponentialRampToValueAtTime(1, startTime + 0.15);
+    const fadeOutAt = startTime + Math.max(0.2, durationMs / 1000 - 0.3);
+    sourceGain.gain.setValueAtTime(1, fadeOutAt);
+    sourceGain.gain.exponentialRampToValueAtTime(0.0001, fadeOutAt + 0.3);
+    sourceGain.connect(masterGain);
+
+    const source = audioContext.createBufferSource();
+    source.loop = true;
+    source.connect(sourceGain);
+
+    const stopSource = () => {
+      try {
+        source.stop();
+      } catch (error) {
+        // تجاهل
+      }
+      try {
+        source.disconnect();
+      } catch (error) {
+        // تجاهل
+      }
+      try {
+        sourceGain.disconnect();
+      } catch (error) {
+        // تجاهل
+      }
+    };
+    registerSource(stopSource);
+
+    const startBuffer = (buffer: AudioBuffer) => {
+      source.buffer = buffer;
+      source.start(audioContext.currentTime);
+    };
+
+    const cached = this.audioBufferCache.get(url);
+    if (cached) {
+      startBuffer(cached);
+      return;
+    }
+
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.arrayBuffer();
+      })
+      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
+      .then((buffer) => {
+        this.audioBufferCache.set(url, buffer);
+        startBuffer(buffer);
+      })
+      .catch((error) => {
+        console.error(
+          "❌ [SOUND] Failed to load order sound file, falling back to synthesized tone:",
+          url,
+          error,
+        );
+        // الرجوع للنغمة المولّدة حتى لو فشل تحميل الملف يفضل في صوت
+        stopSource();
+        this.playSynthesizedOrderSound({
+          audioContext,
+          masterGain,
+          volume,
+          durationMs,
+          pattern: "alarm",
+          registerSource,
+        });
+      });
+  }
+
+  // توليد نغمة الطلب عبر Web Audio (الأنماط القديمة: إنذار/عاجل/كلاسيكي...)
+  private playSynthesizedOrderSound(options: {
+    audioContext: AudioContext;
+    masterGain: GainNode;
+    volume: number;
+    durationMs: number;
+    pattern: OrderSoundPattern;
+    registerSource: (stop: () => void) => void;
+  }) {
+    const {
+      audioContext,
+      masterGain,
+      volume,
+      durationMs,
+      pattern,
+      registerSource,
+    } = options;
+
+    const oscillators: OscillatorNode[] = [];
+    registerSource(() => {
+      for (const oscillator of oscillators) {
+        try {
+          oscillator.stop();
+          oscillator.disconnect();
+        } catch (error) {
+          // تجاهل أخطاء الإيقاف
+        }
+      }
+    });
+
+    // بناء نوتات النغمة المختارة وجدولة تشغيلها
+    const events = buildPatternEvents(
+      pattern,
+      audioContext.currentTime,
+      durationMs / 1000,
+    );
+
+    for (const event of events) {
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = event.waveform;
+      oscillator.frequency.setValueAtTime(event.freq, event.start);
+
+      const noteGain = audioContext.createGain();
+      const attack = 0.02;
+      const release = Math.min(0.12, event.duration / 3);
+      noteGain.gain.setValueAtTime(0.0001, event.start);
+      noteGain.gain.exponentialRampToValueAtTime(
+        0.9 * volume,
+        event.start + attack,
+      );
+      noteGain.gain.setValueAtTime(
+        0.9 * volume,
+        event.start + Math.max(attack, event.duration - release),
+      );
+      noteGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        event.start + event.duration,
+      );
+
+      oscillator.connect(noteGain);
+      noteGain.connect(masterGain);
+      oscillator.start(event.start);
+      oscillator.stop(event.start + event.duration + 0.02);
+      oscillators.push(oscillator);
+    }
+  }
+
+  // إيقاف الإنذار فوراً
+  stopOrderAlarm() {
+    if (this.alarmStopTimer) {
+      clearTimeout(this.alarmStopTimer);
+      this.alarmStopTimer = null;
+    }
+    for (const source of this.alarmSources) {
+      try {
+        source.stop();
+      } catch (error) {
+        // تجاهل
+      }
+    }
+    this.alarmSources = [];
+  }
+
+  // اختبار سريع لصوت الطلبات من صفحة الإعدادات
+  testOrderSound(volume = 1, pattern: OrderSoundPattern = "alarm") {
+    this.playOrderAlarm({ volume, durationMs: 1800, pattern });
   }
 
   connect() {

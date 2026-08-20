@@ -1,9 +1,9 @@
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getStatusDisplay } from "../../utils/statusRegistry";
 import { useNavigate, useParams } from 'react-router-dom';
-;
-import { FileIcon, ImageIcon, Link, Music, Paperclip, ShoppingBag, ShoppingBag as ShoppingCartIcon, Video, Volume2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { FileIcon, ImageIcon, Music, Paperclip, ShoppingBag, Video } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
 import LinkifiedText from '../../components/common/LinkifiedText';
@@ -11,6 +11,7 @@ import { formatQueueLabel } from './queuePresentation';
 import { getWhatsAppInboxWorkspaceCopy } from './workspaceCopy';
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
+import ProductImagePickerModal from '../../components/facebook-inbox/ProductImagePicker/ProductImagePickerModal';
 
 type ConversationDetail = {
   id: string;
@@ -123,6 +124,8 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [correctionText, setCorrectionText] = useState('');
+  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
+  const [showProductPicker, setShowProductPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const currentRole = useMemo(() => {
@@ -167,8 +170,8 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
     setLoadingOrders(true);
     try {
       const response = await apiClient.get(`/customers/${customerId}/orders`);
-      if (response.data?.success) {
-        setCustomerOrders(response.data.data || []);
+      if ((response as any).data?.success) {
+        setCustomerOrders((response as any).data.data || []);
       }
     } catch {
       setCustomerOrders([]);
@@ -191,18 +194,34 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
     if (!conversationId) return;
 
     socketService.joinConversation(conversationId);
-    const refresh = () => loadConversation();
-    socketService.on('conversation:updated', refresh);
-    socketService.on('conversation:assignment', refresh);
-    socketService.on('whatsapp:message:new', refresh);
-    socketService.on('whatsapp:message:sent', refresh);
+
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    // Coalesce socket events: نداء واحد بدل نداء لكل رسالة
+    const scheduleRefresh = () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        void loadConversation();
+      }, 800);
+    };
+
+    socketService.on('conversation:updated', scheduleRefresh);
+    socketService.on('conversation:assignment', scheduleRefresh);
+    socketService.on('whatsapp:message:new', scheduleRefresh);
+    socketService.on('whatsapp:message:sent', scheduleRefresh);
 
     return () => {
       socketService.leaveConversation(conversationId);
-      socketService.off('conversation:updated', refresh);
-      socketService.off('conversation:assignment', refresh);
-      socketService.off('whatsapp:message:new', refresh);
-      socketService.off('whatsapp:message:sent', refresh);
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+        refreshTimer = null;
+      }
+      socketService.off('conversation:updated', scheduleRefresh);
+      socketService.off('conversation:assignment', scheduleRefresh);
+      socketService.off('whatsapp:message:new', scheduleRefresh);
+      socketService.off('whatsapp:message:sent', scheduleRefresh);
     };
   }, [conversationId, loadConversation]);
 
@@ -220,6 +239,38 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       });
       setDraft('');
       await loadConversation();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sendProductImages = async (
+    product: { id: string; name: string; price: number | string },
+    images: Array<{ url: string; filename: string }>,
+    includeDetails: boolean,
+  ) => {
+    if (!conversationId || images.length === 0) return;
+    setSaving(true);
+    setShowProductPicker(false);
+    try {
+      if (includeDetails) {
+        await apiClient.post(`${apiBase}/conversations/${conversationId}/messages${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
+          content: `${product.name}\nالسعر: ${product.price} ج.م`,
+          type: 'TEXT',
+        });
+      }
+      for (const image of images) {
+        await apiClient.post(`${apiBase}/conversations/${conversationId}/send-existing-image${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
+          imageUrl: image.url,
+          filename: image.filename,
+        });
+        if (images.length > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+      await loadConversation();
+    } catch (error: any) {
+      alert(error.response?.data?.error || error.message || 'فشل إرسال صور المنتج');
     } finally {
       setSaving(false);
     }
@@ -364,7 +415,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       return (
         <div className="flex items-center gap-2 text-sm italic">
           {mediaHint(typeUpper)}
-          <span>{copy.chat.mediaHint[typeUpper] || message.type}</span>
+          <span>{(copy.chat.mediaHint as Record<string, string>)[typeUpper] || message.type}</span>
         </div>
       );
     },
@@ -383,7 +434,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       'sky': '#0284c7', 'emerald': '#059669', 'pink': '#db2777',
       'stone': '#78716c',
     };
-    const colorName = colorMatch ? colorMatch[1] : 'gray';
+    const colorName = colorMatch ? colorMatch[1]! : 'gray';
     const color = colorMap[colorName] || '#6b7280';
     return {
       background: `color-mix(in srgb, ${color} 12%, white)`,
@@ -610,7 +661,28 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
               placeholder={copy.chat.replyPlaceholder}
               className="min-h-[80px] w-full resize-none bg-transparent px-1 py-1 text-sm text-foreground outline-none"
             />
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowProductPicker(true)}
+                disabled={saving}
+                className="business-icon-button rounded-lg px-3 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                title="اختيار منتج من المتجر وإرسال صوره كرسالة"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 7l9-4 9 4-9 4-9-4zm0 5l9 4 9-4m-9 4v5"
+                  />
+                </svg>
+              </button>
               <button
                 type="button"
                 onClick={sendMessage}
@@ -795,7 +867,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                           </div>
                         </div>
                         <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold" style={{ ...theme }}>
-                          {(() => { const info = getStatusDisplay(order.status); return t(info.labelKey) || info.label; })()}
+                          {(() => { const info = getStatusDisplay(order.status ?? ''); return (t(info.labelKey) as string) || info.label; })()}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
@@ -851,6 +923,12 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       <QuickCreateTaskModal
         isOpen={showQuickCreateTaskModal}
         onClose={() => setShowQuickCreateTaskModal(false)}
+      />
+
+      <ProductImagePickerModal
+        isOpen={showProductPicker}
+        onClose={() => setShowProductPicker(false)}
+        onSendProduct={sendProductImages}
       />
     </div>
   );

@@ -1,13 +1,24 @@
-import { File as DocumentTextIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Eye as EyeIcon, EyeOff as EyeSlashIcon, Globe as GlobeAltIcon, ShieldCheck as ShieldCheckIcon, Info as InformationCircleIcon, ExternalLink as ArrowTopRightOnSquareIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { getApiUrl } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
-;
+import {
+  DocumentTextIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  GlobeAltIcon,
+  ShieldCheckIcon,
+  InformationCircleIcon,
+  ArrowTopRightOnSquareIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import RichTextEditor from "../../components/RichTextEditor";
 import { buildStorefrontPreviewPath } from "../../storefront/utils/paths";
+import { useTranslation } from "react-i18next";
+
 interface StorePage {
   id: string;
   title: string;

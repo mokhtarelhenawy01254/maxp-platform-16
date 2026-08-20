@@ -1,5 +1,5 @@
 import React from "react";
-import { BarChart, BarChart3, Search, Sliders, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, BarChart3 } from "lucide-react";
 
 interface InboxHeaderProps {
   pageName?: string;

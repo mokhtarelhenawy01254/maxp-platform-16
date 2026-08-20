@@ -1,4 +1,3 @@
-import { Plus as PlusIcon, Circle as PlayIcon, Circle as PauseIcon, Trash2 as TrashIcon, Eye as EyeIcon, Activity as ChartBarIcon, Circle as BeakerIcon } from 'lucide-react';
 /**
  * A/B Tests Management Page
  *
@@ -7,8 +6,17 @@ import { Plus as PlusIcon, Circle as PlayIcon, Circle as PauseIcon, Trash2 as Tr
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  PlusIcon,
+  PlayIcon,
+  PauseIcon,
+  TrashIcon,
+  EyeIcon,
+  ChartBarIcon,
+  BeakerIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookAdTest,
@@ -47,7 +55,7 @@ const ABTestsManagement: React.FC = () => {
     e.stopPropagation();
     try {
       await facebookAdsService.startAdTest(id);
-      toast.success("تم بدء الاختبار بنجاح");
+      tToast.success("ABTestsManagement.msg_cba6");
       loadTests();
     } catch (error: any) {
       console.error("Error starting test:", error);
@@ -59,7 +67,7 @@ const ABTestsManagement: React.FC = () => {
     e.stopPropagation();
     try {
       await facebookAdsService.pauseAdTest(id);
-      toast.success("تم إيقاف الاختبار بنجاح");
+      tToast.success("ABTestsManagement.msg_e722");
       loadTests();
     } catch (error: any) {
       console.error("Error pausing test:", error);
@@ -73,7 +81,7 @@ const ABTestsManagement: React.FC = () => {
 
     try {
       await facebookAdsService.deleteAdTest(id);
-      toast.success("تم حذف الاختبار بنجاح");
+      tToast.success("ABTestsManagement.success_delete_414c");
       loadTests();
     } catch (error: any) {
       console.error("Error deleting test:", error);

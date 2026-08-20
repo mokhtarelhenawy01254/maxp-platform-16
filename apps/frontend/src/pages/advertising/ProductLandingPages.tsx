@@ -1,6 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, Clipboard, Copy, ExternalLink, Eye, ImagePlus, Loader2, Pause, Play, Plus, RefreshCw, Save, Search, Trash2 } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  Eye,
+  ExternalLink,
+  ImagePlus,
+  Loader2,
+  Pause,
+  Play,
+  Plus,
+  RefreshCw,
+  Save,
+  Search,
+  Trash2,
+} from "lucide-react";
 import {
   ProductLandingPage,
   ProductLandingProduct,
@@ -188,7 +204,7 @@ const ProductLandingPages: React.FC = () => {
 
   const createPage = async () => {
     if (!createProductId) {
-      toast.error("اختار منتج أولاً");
+      tToast.error("ProductLandingPages.msg_11ec");
       return;
     }
 
@@ -208,7 +224,7 @@ const ProductLandingPages: React.FC = () => {
       setSelectedId(page.id);
       setCreateTitle("");
       setCreateSlug("");
-      toast.success("تم إنشاء المسودة");
+      tToast.success("ProductLandingPages.success_create_88aa");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر إنشاء الصفحة");
     } finally {
@@ -240,7 +256,7 @@ const ProductLandingPages: React.FC = () => {
       setPages((current) =>
         current.map((item) => (item.id === page.id ? page : item)),
       );
-      toast.success("تم الحفظ");
+      tToast.success("ProductLandingPages.msg_d05d");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر الحفظ");
     } finally {
@@ -252,7 +268,7 @@ const ProductLandingPages: React.FC = () => {
     if (!selectedPage) return;
 
     if (status === "PUBLISHED" && editor.slices.length === 0) {
-      toast.error("لا يمكن النشر بدون صور");
+      tToast.error("ProductLandingPages.msg_637e");
       return;
     }
 
@@ -270,7 +286,7 @@ const ProductLandingPages: React.FC = () => {
         current.map((item) => (item.id === page.id ? page : item)),
       );
       setEditor((current) => ({ ...current, status: page.status }));
-      toast.success("تم تحديث الحالة");
+      tToast.success("ProductLandingPages.success_update_7714");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر تحديث الحالة");
     }
@@ -333,12 +349,12 @@ const ProductLandingPages: React.FC = () => {
     if (!customerUrl) return;
 
     if (editor.status !== "PUBLISHED") {
-      toast.error("انشر الصفحة أولاً لنسخ رابط العملاء");
+      tToast.error("ProductLandingPages.msg_51eb");
       return;
     }
 
     await navigator.clipboard.writeText(customerUrl);
-    toast.success("تم نسخ الرابط");
+    tToast.success("ProductLandingPages.msg_eeb5");
   };
 
   return (

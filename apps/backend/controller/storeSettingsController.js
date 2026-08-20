@@ -2,6 +2,7 @@ const {
   getSharedPrismaClientAsync,
   safeQuery,
 } = require('../services/sharedDatabase');
+const { isPlaceholderPhone } = require('../utils/placeholderContact');
 const tenantContext = require('../services/tenantContext');
 const shippingZoneController = require('./shippingZoneController');
 const orderStatusController = require('./orderStatusController');
@@ -137,6 +138,13 @@ exports.createBranch = async (req, res) => {
       });
     }
 
+    if (isPlaceholderPhone(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'رقم الهاتف غير صالح — يرجى إدخال رقم حقيقي'
+      });
+    }
+
     const prisma = await getPrisma();
     const branch = await prisma.branche.create({
       data: {
@@ -186,6 +194,13 @@ exports.updateBranch = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'الفرع غير موجود'
+      });
+    }
+
+    if (phone !== undefined && isPlaceholderPhone(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'رقم الهاتف غير صالح — يرجى إدخال رقم حقيقي'
       });
     }
 

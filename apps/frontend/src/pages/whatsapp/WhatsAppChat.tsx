@@ -1,19 +1,42 @@
-import { useTranslation } from 'react-i18next';
 /**
  * 📱 WhatsApp Chat Page
  * صفحة دردشة WhatsApp
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from 'react';
-import { AlertCircle, AlertTriangle, Ban, BarChart2, BarChart3, Check, CheckCheck, Clipboard, Clock3, Copy, File, FileText, Forward, List as ListIcon, Loader2, MapPin, MousePointerSquare, PanelRightClose, PanelRightOpen, Phone, Pin, Plus, PlusCircle, Reply, ShieldAlert, Smile, SmilePlus, Star, Store, Trash2, X } from 'lucide-react';
+import {
+  Ban,
+  BarChart3,
+  Check,
+  Copy,
+  Forward,
+  List as ListIcon,
+  FileText,
+  Loader2,
+  MapPin,
+  MousePointerSquare,
+  Phone,
+  PlusCircle,
+  Reply,
+  ShieldAlert,
+  SmilePlus,
+  Star,
+  Store,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
+import i18n from '../../i18n';
+import { tToast } from '../../utils/i18n-toast';
+import { useTranslation } from 'react-i18next';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
 import { InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api } from '../../services/apiClient';
 import { indexedDBStorage } from '../../services/indexedDBStorage';
 import useSocket from '../../hooks/useSocket';
+import useDebounce from '../../hooks/useDebounce';
 import CreateGroupDialog from '../../components/whatsapp/CreateGroupDialog';
 import GroupInfoDrawer from '../../components/whatsapp/GroupInfoDrawer';
 import ProfileDialog from '../../components/whatsapp/ProfileDialog';
@@ -26,16 +49,17 @@ import LabelsDialog from '../../components/whatsapp/LabelsDialog';
 import BroadcastDialog from '../../components/whatsapp/BroadcastDialog';
 import PrivacySettingsDialog from '../../components/whatsapp/PrivacySettingsDialog';
 import BusinessProfileDialog from '../../components/whatsapp/BusinessProfileDialog';
-import AudioRecorder from './components/AudioRecorder';
+
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
+import ProductImagePickerModal from '../../components/facebook-inbox/ProductImagePicker/ProductImagePickerModal';
 import { useAuth } from '../../hooks/useAuthSimple';
-import MessageBubble from './components/MessageBubble';
+
 import ChatSidebar from './components/ChatSidebar';
 import ChatWindow from './components/ChatWindow';
 import ChatRightPanel from './components/ChatRightPanel';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { config } from '../../config';
+
 import {
   useWhatsAppSessions,
   useWhatsAppConversations,
@@ -44,7 +68,9 @@ import {
   type Session,
   type Contact,
   type Message,
-  type QuickReply
+  type QuickReply,
+  type WhatsAppSidebarFilter,
+  type WhatsAppConversationCounts,
 } from '../../hooks/useWhatsAppQueries';
 import {
   formatContactPhoneNumber,
@@ -63,10 +89,10 @@ import {
   useMarkAsRead,
   useDeleteConversation,
   useDeleteConversationsBulk,
+  useDeleteAllConversations,
   useArchiveConversation
 } from '../../hooks/useWhatsAppMutations';
 import {
-  useVirtualConversations,
   useVirtualMessages,
   useInfiniteScroll
 } from '../../hooks/useVirtualScroll';
@@ -76,6 +102,7 @@ import {
   AvatarFallback as UiAvatarFallback,
   AvatarImage as UiAvatarImage,
 } from '@/components/ui/avatar';
+import { getInboxExternalImageUrl } from '@/utils/imageUrl';
 import { Button as UiButton } from '@/components/ui/button';
 import {
   Dialog as UiDialog,
@@ -189,12 +216,32 @@ const WhatsAppChatContent: React.FC = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  void messagesEndRef.current;
   const fileInputRef = useRef<HTMLInputElement>(null);
   // const conversationsListRef = useRef<HTMLDivElement>(null); // Moved to ChatSidebar
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Session state
   const [selectedSession, setSelectedSession] = useState<string>('');
+  const [isSyncingHistory, setIsSyncingHistory] = useState(false);
+
+  const handleSyncHistory = async () => {
+    if (!selectedSession || selectedSession === 'all' || isSyncingHistory) return;
+
+    try {
+      setIsSyncingHistory(true);
+      const response = await api.post(`/whatsapp/sessions/${selectedSession}/history-sync`);
+      const message = response.data?.alreadyRunning
+        ? 'المزامنة تعمل بالفعل لهذه الجلسة'
+        : 'تم طلب المزامنة. سيظهر التقدم في إعدادات واتساب.';
+      toast.success(message);
+      await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'sessions'] });
+    } catch (error) {
+      toast.error(getErrorMessage(error, i18n.t("whatsappChat.unable_request_sync_791e")));
+    } finally {
+      setIsSyncingHistory(false);
+    }
+  };
 
   // Contact state
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -203,20 +250,24 @@ const WhatsAppChatContent: React.FC = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   // const [searchQuery, setSearchQuery] = useState(''); // Moved to ChatSidebar
-  const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const [contactMenuAnchor, setContactMenuAnchor] = useState<null | HTMLElement>(null);
+  const [_showQuickReplies, setShowQuickReplies] = useState(false);
+  void setShowQuickReplies;
+  const [_contactMenuAnchor, setContactMenuAnchor] = useState<null | HTMLElement>(null);
+  void setContactMenuAnchor;
   const [showContactInfo, setShowContactInfo] = useState(false);
-  const [showRightPanel, setShowRightPanel] = useState(() => localStorage.getItem('whatsappChatRightPanelVisible') !== 'false');
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [showRightPanel, setShowRightPanel] = useState(() => localStorage.getItem('whatsappChatRightPanelVisible') === 'true');
+  const [_aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  void setAiSuggestion;
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [messageContextMenu, setMessageContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
   const [selectedMessageForMenu, setSelectedMessageForMenu] = useState<Message | null>(null);
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const [editMessageText, setEditMessageText] = useState('');
+  const [_editingMessage, setEditingMessage] = useState<Message | null>(null);
+  void setEditingMessage;
+  const [_editMessageText, _setEditMessageText] = useState('');
   const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
   const [selectedContactsForForward, setSelectedContactsForForward] = useState<string[]>([]);
-  const [messageInfoDialogOpen, setMessageInfoDialogOpen] = useState(false);
-  const [selectedMessageForInfo, setSelectedMessageForInfo] = useState<Message | null>(null);
+  const [_messageInfoDialogOpen, _setMessageInfoDialogOpen] = useState(false);
+  const [_selectedMessageForInfo, _setSelectedMessageForInfo] = useState<Message | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [checkNumberDialogOpen, setCheckNumberDialogOpen] = useState(false);
   const [privacyDialogOpen, setPrivacyDialogOpen] = useState(false);
@@ -224,19 +275,19 @@ const WhatsAppChatContent: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [_highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const pendingScrollMessageIdRef = useRef<string | null>(null);
   const isSearchingForMessageRef = useRef(false);
 
   // — Swipe gesture handler for mobile back navigation —
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const handleChatTouchStart = useCallback((e: ReactTouchEvent) => {
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, time: Date.now() };
+    touchStartRef.current = { x: e.touches[0]!.clientX, y: e.touches[0]!.clientY, time: Date.now() };
   }, []);
   const handleChatTouchEnd = useCallback((e: ReactTouchEvent) => {
     if (!touchStartRef.current || !selectedContact) return;
-    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
-    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
+    const deltaX = e.changedTouches[0]!.clientX - touchStartRef.current.x;
+    const deltaY = Math.abs(e.changedTouches[0]!.clientY - touchStartRef.current.y);
     const elapsed = Date.now() - touchStartRef.current.time;
     // Only trigger on horizontal swipe (>80px), not vertical, within 400ms
     const isRtl = document.documentElement.dir === 'rtl';
@@ -278,13 +329,48 @@ const WhatsAppChatContent: React.FC = () => {
     };
   }, [selectedContact]);
 
+  // — Hash-based navigation: browser back returns to chat list (works in PWA & browser) —
+  useEffect(() => {
+    if (!selectedContact) {
+      if (window.location.hash === '#chat') {
+        window.history.back();
+      }
+      return;
+    }
+    window.location.hash = 'chat';
+    const onHashChange = () => {
+      if (window.location.hash !== '#chat' && selectedContact) {
+        setSelectedContact(null);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [selectedContact]);
+
   // Persist right panel visibility
   useEffect(() => {
     localStorage.setItem('whatsappChatRightPanelVisible', String(showRightPanel));
   }, [showRightPanel]);
 
+  // تحديث صور البروفايل المفقودة من واتساب (مرة كل 30 دقيقة)
+  useEffect(() => {
+    const LAST_KEY = 'whatsappProfilePicsRefreshLast';
+    const INTERVAL_MS = 30 * 60 * 1000;
+    try {
+      const last = Number(localStorage.getItem(LAST_KEY) || 0);
+      if (Date.now() - last < INTERVAL_MS) return;
+      localStorage.setItem(LAST_KEY, String(Date.now()));
+    } catch {
+      // ignore storage errors
+    }
+    api.post('/whatsapp/profile-pics/refresh').catch(() => {
+      // background refresh — fail silently
+    });
+  }, []);
+
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [selectedContactForLabel, setSelectedContactForLabel] = useState<Contact | null>(null);
+  const [labels, setLabels] = useState<{id: string; name: string; color: string}[]>([]);
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
   const [pollData, setPollData] = useState({ question: '', options: ['', ''], selectableCount: 1 });
 
@@ -330,6 +416,9 @@ const WhatsAppChatContent: React.FC = () => {
 
   // Quick Order Modal (same as Facebook inbox)
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
+  const [showProductPicker, setShowProductPicker] = useState(false);
+  const [quickOrderContact, setQuickOrderContact] = useState<Contact | null>(null);
+  const [ordersRefreshToken, setOrdersRefreshToken] = useState(0);
   const [showQuickCreateTaskModal, setShowQuickCreateTaskModal] = useState(false);
   const loadContactsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const markAsReadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -341,7 +430,11 @@ const WhatsAppChatContent: React.FC = () => {
     notificationSound: true,
     browserNotifications: true
   });
-  // const [chatFilter, setChatFilter] = useState('all'); // Moved to ChatSidebar
+  // Chat list filters — server-side على كل المحادثات
+  const [chatFilter, setChatFilter] = useState<WhatsAppSidebarFilter>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState<{ name: string; status: string; profilePicUrl: string } | null>(null);
 
@@ -373,11 +466,20 @@ const WhatsAppChatContent: React.FC = () => {
     hasNextPage: hasMoreConversations,
     isError: conversationsError,
     refetch: refetchConversations,
-  } = useWhatsAppConversations(selectedSession || 'all', 30);
+  } = useWhatsAppConversations(selectedSession || 'all', 30, {
+    filter: chatFilter,
+    search: debouncedSearch,
+    archived: showArchived,
+  });
 
   const conversations = useMemo(() => {
     if (!conversationsData) return [];
     return conversationsData.pages.flatMap(page => page.conversations || []);
+  }, [conversationsData]);
+
+  const conversationCounts = useMemo<WhatsAppConversationCounts>(() => {
+    const counts = conversationsData?.pages?.[0]?.counts;
+    return counts || { all: 0, unread: 0, groups: 0, unreplied: 0, archived: 0 };
   }, [conversationsData]);
 
   const targetSessionId = useMemo(() => {
@@ -410,26 +512,7 @@ const WhatsAppChatContent: React.FC = () => {
     return messages.filter(m => m.messageType !== 'REACTION');
   }, [messages]);
 
-  // Aggregate reactions by original message ID
-  const reactionsMap = useMemo(() => {
-    const map = new Map<string, Array<{ emoji: string, sender: string, fromMe: boolean }>>();
-    messages.forEach(m => {
-      if (m.messageType === 'REACTION' && m.quotedMessageId && m.content) {
-        const targetId = m.quotedMessageId;
-        if (!map.has(targetId)) {
-          map.set(targetId, []);
-        }
-        // Use participant for group members, or derive sender name
-        // For now, we store basic info.
-        map.get(targetId)?.push({
-          emoji: m.content,
-          sender: m.fromMe ? 'You' : (m.participant || m.remoteJid),
-          fromMe: m.fromMe
-        });
-      }
-    });
-    return map;
-  }, [messages]);
+
 
   // Helper to get a valid session ID for API calls (never 'all')
   const activeSessionId = useMemo(() => {
@@ -452,7 +535,7 @@ const WhatsAppChatContent: React.FC = () => {
     return firstReal?.id || '';
   }, [selectedSession, sessions]);
 
-  const { data: quickReplies = [] } = useWhatsAppQuickReplies();
+  const { data: _quickReplies = [] } = useWhatsAppQuickReplies();
 
   // Mutations
   const sendMessageMutation = useSendMessage();
@@ -460,6 +543,7 @@ const WhatsAppChatContent: React.FC = () => {
   const markAsReadMutation = useMarkAsRead();
   const deleteConversationMutation = useDeleteConversation();
   const deleteConversationsBulkMutation = useDeleteConversationsBulk();
+  const deleteAllConversationsMutation = useDeleteAllConversations();
   const archiveConversationMutation = useArchiveConversation();
 
   // Helper functions
@@ -474,6 +558,62 @@ const WhatsAppChatContent: React.FC = () => {
     return bareJid.replace(/\D/g, '');
   }, []);
 
+  // — Deep link: فتح محادثة محددة من رابط مشارك (session + jid) —
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkAppliedRef = useRef(false);
+
+  useEffect(() => {
+    const sessionParam = searchParams.get('session');
+    const jidParam = searchParams.get('jid');
+    if (!sessionParam || !jidParam || deepLinkAppliedRef.current) return;
+
+    if (selectedSession && selectedSession !== 'all' && selectedSession !== sessionParam) {
+      setSelectedSession(sessionParam);
+    }
+    if (!selectedSession) {
+      setSelectedSession(sessionParam);
+    }
+
+    const normalizedTarget = normalizeContactJid(jidParam);
+    const found = conversations.find(
+      (c) => c.sessionId === sessionParam && normalizeContactJid(c.jid) === normalizedTarget
+    );
+
+    if (found) {
+      deepLinkAppliedRef.current = true;
+      setSearchParams({}, { replace: true });
+      setSelectedContact(found);
+      return;
+    }
+
+    if (sessions.length > 0) {
+      const newContact: Contact = {
+        id: jidParam,
+        jid: jidParam,
+        sessionId: sessionParam,
+        phoneNumber: jidParam.replace(/@.*$/, '').replace(/[^\d]/g, ''),
+        name: null,
+        pushName: null,
+        profilePicUrl: null,
+        isGroup: jidParam.includes('@g.us'),
+        isNewsletter: jidParam.includes('@newsletter'),
+        category: null,
+        unreadCount: 0,
+        lastMessageAt: new Date().toISOString(),
+        isArchived: false,
+        isPinned: false,
+        isMuted: false,
+        isBlocked: false,
+        session: { name: '', phoneNumber: '' },
+        customer: null,
+        window: { isOpen: false, remainingSeconds: 0, remainingLabel: '', windowExpiresAt: null },
+      };
+      deepLinkAppliedRef.current = true;
+      setSearchParams({}, { replace: true });
+      setSelectedContact(newContact);
+    }
+  }, [searchParams, conversations, sessions, selectedSession, normalizeContactJid, setSearchParams]);
+
   // Filtered contacts logic moved to ChatSidebar
 
   const handlePostStatus = useCallback(() => {
@@ -485,10 +625,10 @@ const WhatsAppChatContent: React.FC = () => {
         onSuccess: () => {
           setStatusContent('');
           setStatusDialogOpen(false);
-          toast.success('تم نشر الحالة بنجاح');
+          tToast.success("whatsappChat.success_publish_5ce3");
         },
         onError: () => {
-          toast.error('فشل نشر الحالة');
+          tToast.error("whatsappChat.failed_publish_960d");
         }
       }
     );
@@ -499,9 +639,9 @@ const WhatsAppChatContent: React.FC = () => {
 
   const {
     virtualizer: messagesVirtualizer,
-    isAtBottom,
-    scrollToBottom: scrollToBottomFn,
-    scrollToTop: scrollToTopFn
+    isAtBottom: _isAtBottom,
+    scrollToBottom: _scrollToBottomFn,
+    scrollToTop: _scrollToTopFn
   } = useVirtualMessages(
     visibleMessages,
     messagesContainerRef,
@@ -539,6 +679,7 @@ const WhatsAppChatContent: React.FC = () => {
       }
     }
   }, [visibleMessages, messagesVirtualizer, hasMoreMessages, fetchNextMessagesPage]);
+  void handleScrollToMessage;
 
   // Effect: when messages update, check if pending scroll target is now loaded
   useEffect(() => {
@@ -562,14 +703,15 @@ const WhatsAppChatContent: React.FC = () => {
       pendingScrollMessageIdRef.current = null;
       isSearchingForMessageRef.current = false;
     }
+    return undefined;
   }, [visibleMessages, hasMoreMessages, loadingMessages, fetchNextMessagesPage, messagesVirtualizer]);
 
   const fetchUserProfile = useCallback(async () => {
     if (!selectedSession || selectedSession === 'all') return;
     try {
       const response = await api.get('/whatsapp/profile', { params: { sessionId: selectedSession } });
-      if (response.data.success) {
-        const profile = response.data.profile || {};
+      if ((response as any).data.success) {
+        const profile = (response as any).data.profile || {};
         setCurrentUserProfile({
           name: profile.name || profile.profileName || '',
           status: profile.status || profile.profileStatus || '',
@@ -590,9 +732,17 @@ const WhatsAppChatContent: React.FC = () => {
   // Auto-select first session when sessions load
   useEffect(() => {
     if (sessions.length > 0 && !selectedSession) {
-      setSelectedSession(sessions[0].id);
+      setSelectedSession(sessions[0]!.id);
     }
   }, [sessions, selectedSession]);
+
+  // جلب التصنيفات للمستخدم النشط
+  useEffect(() => {
+    if (!activeSessionId) return;
+    api.get('/whatsapp/labels', { params: { sessionId: activeSessionId } })
+      .then(res => setLabels(res.data.labels || []))
+      .catch(err => console.error('Error loading labels:', err));
+  }, [activeSessionId]);
 
   // Load initial data (notification settings)
   useEffect(() => {
@@ -701,6 +851,17 @@ const WhatsAppChatContent: React.FC = () => {
     // Helper to normalize JID for comparison
     const normalizeJid = normalizeContactJid;
 
+    // Find any cached conversation list for a session (any filter variant)
+    const findConversationsCache = (sessionKey: string): ConversationsCache | null => {
+      const entries = queryClient.getQueriesData<ConversationsCache>({
+        queryKey: ['whatsapp', 'conversations', sessionKey],
+      });
+      for (const [, data] of entries) {
+        if (data?.pages?.length) return data;
+      }
+      return null;
+    };
+
     const handleNewMessage = (data: IncomingMessageEvent) => {
       // console.log('🔔 [FRONTEND] Received whatsapp:message:new:', data);
       const { sessionId, message } = data;
@@ -754,7 +915,7 @@ const WhatsAppChatContent: React.FC = () => {
         if (currentSession === 'all' || sessionId === currentSession) {
           // Get contact name from cache
           const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-          const conversationsQuery = queryClient.getQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30]);
+          const conversationsQuery = findConversationsCache(sessionKey);
           const currentContacts = conversationsQuery?.pages?.[0]?.conversations ?? [];
           const contactName = currentContacts.find((c: Contact) => normalizeJid(c.jid) === msgJid)?.name ||
             currentContacts.find((c: Contact) => normalizeJid(c.jid) === msgJid)?.pushName ||
@@ -773,7 +934,7 @@ const WhatsAppChatContent: React.FC = () => {
               label: 'فتح المحادثة',
               onClick: () => {
                 const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-                const conversationsQuery = queryClient.getQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30]);
+                const conversationsQuery = findConversationsCache(sessionKey);
                 const currentContacts = conversationsQuery?.pages?.[0]?.conversations ?? [];
                 const contact = currentContacts.find((c: Contact) => normalizeJid(c.jid) === msgJid);
                 if (contact) {
@@ -797,9 +958,9 @@ const WhatsAppChatContent: React.FC = () => {
           }
         }
       }
-      // Update conversations cache immediately
+      // Update conversations cache immediately (all filter variants)
       const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-      queryClient.setQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30], old => {
+      queryClient.setQueriesData<ConversationsCache>({ queryKey: ['whatsapp', 'conversations', sessionKey] }, old => {
         if (!old || !old.pages || old.pages.length === 0) return old;
         // Update first page (most recent conversations)
         const firstPage = old.pages[0];
@@ -852,7 +1013,7 @@ const WhatsAppChatContent: React.FC = () => {
       const { contactName, message, messageType, soundEnabled, notificationsEnabled, sessionId } = data;
       const currentSession = selectedSessionRef.current;
       const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-      const conversationsQuery = queryClient.getQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30]);
+      const conversationsQuery = findConversationsCache(sessionKey);
       const currentContacts = conversationsQuery?.pages?.[0]?.conversations ?? [];
       const currentNotificationSettings = notificationSettingsRef.current;
 
@@ -958,9 +1119,9 @@ const WhatsAppChatContent: React.FC = () => {
         });
       }
 
-      // Update conversations cache
+      // Update conversations cache (all filter variants)
       const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-      queryClient.setQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30], old => {
+      queryClient.setQueriesData<ConversationsCache>({ queryKey: ['whatsapp', 'conversations', sessionKey] }, old => {
         if (!old || !old.pages || old.pages.length === 0) return old;
         // Update first page (most recent conversations)
         const firstPage = old.pages[0];
@@ -1077,10 +1238,10 @@ const WhatsAppChatContent: React.FC = () => {
 
   const handleToggleAi = useCallback(async (contact: Contact, aiEnabled: boolean) => {
     if (!contact.customer?.conversations || contact.customer.conversations.length === 0) {
-      toast.error('لم يتم العثور على محادثة نشطة لهذا الرقم للتحكم في الرد الآلي');
+      tToast.error("whatsappChat.msg_e1cd");
       return;
     }
-    const conversationId = contact.customer.conversations[0].id;
+    const conversationId = contact.customer.conversations[0]!.id;
     try {
       await api.put(`/conversations/${conversationId}`, {
         aiEnabled,
@@ -1089,7 +1250,8 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(aiEnabled ? 'تم تفعيل الرد الآلي' : 'تم إيقاف الرد الآلي');
       
       // Update selectedContact local state
-      setSelectedContact((prev: Contact | null) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setSelectedContact(((prev: Contact | null) => {
         if (!prev || prev.id !== contact.id) return prev;
         return {
           ...prev,
@@ -1103,14 +1265,14 @@ const WhatsAppChatContent: React.FC = () => {
             ] : []
           } : null
         };
-      });
+      }) as any);
 
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["whatsapp", "conversations"] });
 
     } catch (error) {
       console.error(error);
-      toast.error('فشل تحديث حالة الرد الآلي');
+      tToast.error("whatsappChat.failed_update_status_7075");
     }
   }, [queryClient]);
 
@@ -1119,13 +1281,13 @@ const WhatsAppChatContent: React.FC = () => {
 
     // Check authentication
     if (!user?.id) {
-      toast.error('يجب تسجيل الدخول لإرسال الرسائل');
+      tToast.error("whatsappChat.msg_18a1");
       return;
     }
 
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
     if (!targetSessionId) {
-      toast.error('خطأ: لا يمكن تحديد الجلسة');
+      tToast.error("whatsappChat.msg_1f79");
       return;
     }
 
@@ -1141,7 +1303,7 @@ const WhatsAppChatContent: React.FC = () => {
         setReplyingTo(null);
       },
       onError: (error: unknown) => {
-        toast.error(getErrorMessage(error, 'حدث خطأ أثناء الإرسال'));
+        toast.error(getErrorMessage(error, i18n.t("whatsappChat.error_error_during_d123")));
       }
     });
   };
@@ -1152,7 +1314,7 @@ const WhatsAppChatContent: React.FC = () => {
 
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
     if (!targetSessionId) {
-      toast.error('خطأ: لا يمكن تحديد الجلسة');
+      tToast.error("whatsappChat.msg_1f79");
       return;
     }
 
@@ -1166,11 +1328,57 @@ const WhatsAppChatContent: React.FC = () => {
       userId: user?.id
     }, {
       onError: (error: unknown) => {
-        toast.error(getErrorMessage(error, 'حدث خطأ أثناء رفع الملف'));
+        toast.error(getErrorMessage(error, i18n.t("whatsappChat.error_error_during_be74")));
       }
     });
 
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSendProductImages = async (
+    product: { id: string; name: string; price: number | string },
+    images: Array<{ url: string; filename: string }>,
+    includeDetails: boolean,
+  ) => {
+    if (!selectedContact || images.length === 0) return;
+    const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
+    if (!targetSessionId) {
+      tToast.error("whatsappChat.msg_1f79");
+      return;
+    }
+    setShowProductPicker(false);
+    try {
+      if (includeDetails) {
+        await sendMessageMutation.mutateAsync({
+          sessionId: targetSessionId,
+          to: selectedContact.jid,
+          text: `${product.name}\nالسعر: ${product.price} ج.م`,
+          userId: user?.id,
+        });
+      }
+      for (const image of images) {
+        try {
+          const blob = await fetch(image.url).then((res) => res.blob());
+          const file = new File([blob], image.filename || 'product_image.jpg', {
+            type: blob.type || 'image/jpeg',
+          });
+          await sendMediaMutation.mutateAsync({
+            sessionId: targetSessionId,
+            to: selectedContact.jid,
+            file,
+            caption: '',
+            userId: user?.id,
+          });
+          if (images.length > 1) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        } catch (error: unknown) {
+          console.error('Error sending product image:', error);
+        }
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, i18n.t("whatsappChat.failed_send_8f23")));
+    }
   };
 
 
@@ -1194,7 +1402,7 @@ const WhatsAppChatContent: React.FC = () => {
             });
           }
         } catch (error) {
-          toast.error('فشل مسح المحادثة');
+          tToast.error("whatsappChat.failed_clear_cdd5");
         }
         setConfirmData(prev => ({ ...prev, open: false }));
       }
@@ -1242,12 +1450,34 @@ const WhatsAppChatContent: React.FC = () => {
             setConfirmData(prev => ({ ...prev, open: false }));
           },
           onError: () => {
-            toast.error('فشل حذف المحادثات');
+            tToast.error("whatsappChat.failed_delete_6e98");
           }
         });
       }
     });
   }, [deleteConversationsBulkMutation, selectedContact]);
+
+  const handleDeleteAllChats = useCallback((sessionId?: string) => {
+    setConfirmData({
+      open: true,
+      title: t('whatsapp.dialogs.deleteAllChatsTitle'),
+      content: t('whatsapp.dialogs.deleteAllChatsContent'),
+      onConfirm: () => {
+        deleteAllConversationsMutation.mutate({
+          sessionId
+        }, {
+          onSuccess: () => {
+            setSelectedContact(null);
+            toast.success(t('whatsapp.dialogs.deleteAllChatsSuccess'));
+            setConfirmData(prev => ({ ...prev, open: false }));
+          },
+          onError: () => {
+            tToast.error("whatsappChat.failed_delete_6e98");
+          }
+        });
+      }
+    });
+  }, [deleteAllConversationsMutation, t]);
 
   const handleArchiveChat = async (contact: Contact) => {
     if (!selectedSession) return;
@@ -1270,7 +1500,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(contact.isPinned ? 'تم إلغاء التثبيت' : 'تم التثبيت');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      toast.error('فشل تحديث حالة التثبيت');
+      tToast.error("whatsappChat.failed_update_status_9511");
     }
   };
 
@@ -1285,7 +1515,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(contact.isMuted ? 'تم إلغاء كتم الصوت' : 'تم كتم الصوت');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      toast.error('فشل تحديث حالة كتم الصوت');
+      tToast.error("whatsappChat.failed_update_status_73cc");
     }
   };
 
@@ -1293,10 +1523,10 @@ const WhatsAppChatContent: React.FC = () => {
     if (!selectedSession) return;
     try {
       await api.post(`/whatsapp/chats/unread`, { sessionId: contact.sessionId || selectedSession, jid: contact.jid, unread: true });
-      toast.success('تم تحديد المحادثة كغير مقروءة');
+      tToast.success("whatsappChat.success_select_9a6b");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      toast.error('فشل تحديد حالة القراءة');
+      tToast.error("whatsappChat.failed_select_status_be9a");
     }
   };
 
@@ -1311,12 +1541,12 @@ const WhatsAppChatContent: React.FC = () => {
           messageId: selectedMessageForMenu.messageId
         })
       ));
-      toast.success('تم إعادة توجيه الرسالة');
+      tToast.success("whatsappChat.msg_29a7");
       setForwardDialogOpen(false);
       setSelectedContactsForForward([]);
       setSelectedMessageForMenu(null);
     } catch (error) {
-      toast.error('فشل إعادة توجيه الرسالة');
+      tToast.error("whatsappChat.msg_71a8");
     }
   };
 
@@ -1334,7 +1564,7 @@ const WhatsAppChatContent: React.FC = () => {
           fromMe: selectedMessageForMenu.fromMe
         }
       });
-      toast.success('تم حذف الرسالة');
+      tToast.success("whatsappChat.success_delete_57de");
 
       // Update messages cache
       queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', selectedContact.jid, targetSessionId], old => {
@@ -1349,7 +1579,7 @@ const WhatsAppChatContent: React.FC = () => {
       setMessageContextMenu(null);
       setSelectedMessageForMenu(null);
     } catch (error) {
-      toast.error('فشل حذف الرسالة');
+      tToast.error("whatsappChat.failed_delete_f800");
     }
   };
 
@@ -1364,23 +1594,14 @@ const WhatsAppChatContent: React.FC = () => {
   const handleCopy = () => {
     if (selectedMessageForMenu?.content) {
       navigator.clipboard.writeText(selectedMessageForMenu.content);
-      toast.success('تم نسخ النص');
+      tToast.success("whatsappChat.success_copy_3ea5");
       setMessageContextMenu(null);
       setSelectedMessageForMenu(null);
     }
   };
 
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PENDING': return <Clock3 className="size-4 text-[color:var(--color-muted-foreground)]" />;
-      case 'SENT': return <Check className="size-4 text-[color:var(--color-muted-foreground)]" />;
-      case 'DELIVERED': return <CheckCheck className="size-4 text-[color:var(--color-muted-foreground)]" />;
-      case 'READ': return <CheckCheck className="size-4 text-[color:var(--color-primary)]" />;
-      case 'ERROR': return <AlertCircle className="size-4 text-rose-600" />;
-      default: return <Clock3 className="size-4 text-[color:var(--color-muted-foreground)]" />;
-    }
-  };
+
 
 
   const handleMessageContextMenu = (event: React.MouseEvent, message: Message) => {
@@ -1418,10 +1639,10 @@ const WhatsAppChatContent: React.FC = () => {
   const loadNotificationSettings = async () => {
     try {
       const res = await api.get('/whatsapp/settings');
-      if (res.data.settings) {
+      if ((res as any).data.settings) {
         setNotificationSettings({
-          notificationSound: res.data.settings.notificationSound !== false,
-          browserNotifications: res.data.settings.browserNotifications !== false
+          notificationSound: (res as any).data.settings.notificationSound !== false,
+          browserNotifications: (res as any).data.settings.browserNotifications !== false
         });
       }
     } catch (e) {
@@ -1482,9 +1703,9 @@ const WhatsAppChatContent: React.FC = () => {
         emoji
       });
       setShowReactionPicker(null);
-      toast.success('تم إرسال التفاعل');
+      tToast.success("whatsappChat.success_send_3257");
     } catch (error) {
-      toast.error('فشل إرسال التفاعل');
+      tToast.error("whatsappChat.failed_send_869b");
     }
   };
 
@@ -1503,31 +1724,14 @@ const WhatsAppChatContent: React.FC = () => {
           fromMe: message.fromMe
         }
       });
-      toast.success('تم تمييز الرسالة بنجمة');
+      tToast.success("whatsappChat.msg_6131");
       setMessageContextMenu(null);
     } catch (error) {
-      toast.error('فشل تمييز الرسالة');
+      tToast.error("whatsappChat.msg_5a7e");
     }
   };
 
-  const handleUnstarMessage = async (message: Message) => {
-    if (!selectedSession || !selectedContact) return;
-    const targetSessionId = selectedContact.sessionId || selectedSession;
-    try {
-      await api.post('/whatsapp/messages/unstar', {
-        sessionId: targetSessionId,
-        key: {
-          remoteJid: message.remoteJid,
-          id: message.messageId,
-          fromMe: message.fromMe
-        }
-      });
-      toast.success('تم إلغاء تمييز الرسالة');
-      setMessageContextMenu(null);
-    } catch (error) {
-      toast.error('فشل إلغاء تمييز الرسالة');
-    }
-  };
+
 
   // ==================== Labels ====================
   // const loadLabels = async () => {
@@ -1540,21 +1744,7 @@ const WhatsAppChatContent: React.FC = () => {
   //   }
   // };
 
-  const handleLabelChat = async (labelId: string) => {
-    if (!selectedSession || !selectedContactForLabel) return;
-    try {
-      await api.post('/whatsapp/labels/chat', {
-        sessionId: selectedSession,
-        jid: selectedContactForLabel.jid,
-        labelId
-      });
-      toast.success('تم إضافة العلامة للمحادثة');
-      setLabelDialogOpen(false);
-      setSelectedContactForLabel(null);
-    } catch (error) {
-      toast.error('فشل إضافة العلامة');
-    }
-  };
+
 
   // ==================== Polls ====================
   const handleSendPoll = async () => {
@@ -1562,7 +1752,7 @@ const WhatsAppChatContent: React.FC = () => {
     const targetSessionId = selectedContact.sessionId || selectedSession;
     const validOptions = pollData.options.filter(o => o.trim());
     if (validOptions.length < 2) {
-      toast.warning('يجب إضافة خيارين على الأقل');
+      tToast.warning("whatsappChat.msg_ef4e");
       return;
     }
     try {
@@ -1575,11 +1765,11 @@ const WhatsAppChatContent: React.FC = () => {
           selectableCount: pollData.selectableCount
         }
       });
-      toast.success('تم إرسال الاستطلاع');
+      tToast.success("whatsappChat.success_send_3f0b");
       setPollDialogOpen(false);
       setPollData({ question: '', options: ['', ''], selectableCount: 1 });
     } catch (error) {
-      toast.error('فشل إرسال الاستطلاع');
+      tToast.error("whatsappChat.failed_send_8954");
     }
   };
 
@@ -1589,7 +1779,7 @@ const WhatsAppChatContent: React.FC = () => {
     const targetSessionId = selectedContact.sessionId || selectedSession;
     const validButtons = buttonsData.buttons.filter(b => b.text.trim());
     if (validButtons.length === 0 || validButtons.length > 3) {
-      toast.warning('يجب إضافة 1-3 أزرار');
+      tToast.warning("whatsappChat.msg_292e");
       return;
     }
     try {
@@ -1600,11 +1790,11 @@ const WhatsAppChatContent: React.FC = () => {
         buttons: validButtons.map((b, i) => ({ buttonId: `btn_${i}`, buttonText: { displayText: b.text }, type: 1 })),
         footer: buttonsData.footer || undefined
       });
-      toast.success('تم إرسال الرسالة بالأزرار');
+      tToast.success("whatsappChat.success_send_714a");
       setButtonsDialogOpen(false);
       setButtonsData({ text: '', footer: '', buttons: [{ id: '1', text: '' }] });
     } catch (error) {
-      toast.error('فشل إرسال الرسالة');
+      tToast.error("whatsappChat.failed_send_0a36");
     }
   };
 
@@ -1628,11 +1818,11 @@ const WhatsAppChatContent: React.FC = () => {
           }))
         }))
       });
-      toast.success('تم إرسال القائمة');
+      tToast.success("whatsappChat.success_send_fd2a");
       setListDialogOpen(false);
       setListData({ text: '', buttonText: 'اختر', title: '', sections: [{ title: 'القسم 1', rows: [{ id: '1', title: '', description: '' }] }] });
     } catch (error) {
-      toast.error('فشل إرسال القائمة');
+      tToast.error("whatsappChat.failed_send_6b1d");
     }
   };
 
@@ -1644,7 +1834,7 @@ const WhatsAppChatContent: React.FC = () => {
     if (!selectedSession || selectedSession === 'all') return;
     try {
       const res = await api.get('/whatsapp/catalog/products', { params: { sessionId: selectedSession } });
-      setProducts(res.data.products || []);
+      setProducts((res as any).data.products || []);
     } catch (error) {
       console.error('Error loading products:', error);
     }
@@ -1665,10 +1855,10 @@ const WhatsAppChatContent: React.FC = () => {
           imageUrl: product.imageUrl
         }
       });
-      toast.success('تم إرسال المنتج');
+      tToast.success("whatsappChat.success_send_2909");
       setCatalogDialogOpen(false);
     } catch (error) {
-      toast.error('فشل إرسال المنتج');
+      tToast.error("whatsappChat.failed_send_f8fe");
     }
   };
 
@@ -1680,10 +1870,10 @@ const WhatsAppChatContent: React.FC = () => {
       const res = await api.get('/whatsapp/messages/starred', {
         params: { sessionId: targetSessionId, jid: selectedContact.jid }
       });
-      setStarredMessages(res.data.messages || []);
+      setStarredMessages((res as any).data.messages || []);
       setStarredMessagesOpen(true);
     } catch (error) {
-      toast.error('فشل تحميل الرسائل المميزة');
+      tToast.error("whatsappChat.failed_load_229c");
     }
   };
 
@@ -1697,14 +1887,14 @@ const WhatsAppChatContent: React.FC = () => {
             longitude: position.coords.longitude.toString(),
             address: ''
           });
-          toast.success('تم تحديد موقعك الحالي');
+          tToast.success("whatsappChat.success_select_a6fd");
         },
         (error) => {
-          toast.error('فشل تحديد الموقع: ' + error.message);
+          toast.error(i18n.t("whatsappChat.msg_1fa1", { error: error.message }));
         }
       );
     } else {
-      toast.error('المتصفح لا يدعم تحديد الموقع');
+      tToast.error("whatsappChat.msg_2cdb");
     }
   };
 
@@ -1722,11 +1912,11 @@ const WhatsAppChatContent: React.FC = () => {
           address: locationData.address
         }
       });
-      toast.success('تم إرسال الموقع');
+      tToast.success("whatsappChat.success_send_6ef9");
       setLocationDialogOpen(false);
       setLocationData({ latitude: '', longitude: '', address: '' });
     } catch (error) {
-      toast.error('فشل إرسال الموقع');
+      tToast.error("whatsappChat.failed_send_84ec");
     }
   };
 
@@ -1734,7 +1924,7 @@ const WhatsAppChatContent: React.FC = () => {
     if (!selectedSession) return;
     const sessionId = selectedContact?.sessionId || (selectedSession === 'all' ? null : selectedSession);
     if (!sessionId) {
-      toast.error('الرجاء اختيار جلسة واتساب محددة');
+      tToast.error("whatsappChat.msg_f28c");
       return;
     }
     setTemplateDialogOpen(true);
@@ -1743,10 +1933,10 @@ const WhatsAppChatContent: React.FC = () => {
       const res = await api.get('/whatsapp-templates/templates', {
         params: { sessionId }
       });
-      const allTemplates = res.data?.templates || res.data?.data || [];
+      const allTemplates = (res as any).data?.templates || (res as any).data?.data || [];
       setTemplates(allTemplates.filter((t: any) => t.status === 'APPROVED'));
     } catch (error) {
-      toast.error('فشل تحميل القوالب');
+      tToast.error("whatsappChat.failed_load_055c");
       setTemplates([]);
     } finally {
       setLoadingTemplates(false);
@@ -1773,7 +1963,7 @@ const WhatsAppChatContent: React.FC = () => {
   const handleSendTemplate = async () => {
     if (!selectedSession || !selectedContact || !selectedTemplate) return;
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
-    if (!targetSessionId) return toast.error('الرجاء اختيار جلسة واتساب محددة');
+    if (!targetSessionId) { tToast.error("whatsappChat.msg_f28c"); return; }
     const bodyComponent = selectedTemplate.components?.find((c: any) => c.type === 'BODY');
     const params: Record<string, any> = {
       name: selectedTemplate.name,
@@ -1784,13 +1974,13 @@ const WhatsAppChatContent: React.FC = () => {
       const varParams = Object.keys(templateVariables)
         .sort((a, b) => parseInt(a.replace(/\D/g, '')) - parseInt(b.replace(/\D/g, '')))
         .map((key) => ({ type: 'text', text: templateVariables[key] }));
-      params.components = [{ type: 'BODY', parameters: varParams }];
+      params['components'] = [{ type: 'BODY', parameters: varParams }];
     } else {
-      params.components = [];
+      params['components'] = [];
     }
     const bodyText = bodyComponent?.text || '';
     const templateBody = bodyText && Object.keys(templateVariables).length > 0
-      ? bodyText.replace(/\{\{(\d+)\}\}/g, (_, n) => templateVariables[`{{${n}}}`] || `{{${n}}}`)
+      ? bodyText.replace(/\{\{(\d+)\}\}/g, (_: string, n: string) => templateVariables[`{{${n}}}`] || `{{${n}}}`)
       : bodyText;
     try {
       await sendTemplateMutation.mutateAsync({
@@ -1800,12 +1990,12 @@ const WhatsAppChatContent: React.FC = () => {
         parameters: params,
         templateBody,
       });
-      toast.success('تم إرسال القالب');
+      tToast.success("whatsappChat.success_send_f1a1");
       setTemplateDialogOpen(false);
       setSelectedTemplate(null);
       setTemplateVariables({});
     } catch (error) {
-      toast.error('فشل إرسال القالب');
+      tToast.error("whatsappChat.failed_send_c7f6");
     }
   };
 
@@ -1813,40 +2003,40 @@ const WhatsAppChatContent: React.FC = () => {
     if (!window.confirm(`هل أنت متأكد من حظر ${getContactName(contact)}؟`)) return;
     try {
       await api.post('/whatsapp/contacts/block', { sessionId: contact.sessionId || selectedSession, jid: contact.jid });
-      toast.success('تم حظر جهة الاتصال');
+      tToast.success("whatsappChat.msg_f18b");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       setShowContactInfo(false);
     } catch (error) {
-      toast.error('فشل حظر جهة الاتصال');
+      tToast.error("whatsappChat.msg_0a94");
     }
   };
 
   const handleUnblockContact = async (contact: Contact) => {
     try {
       await api.post('/whatsapp/contacts/unblock', { sessionId: contact.sessionId || selectedSession, jid: contact.jid });
-      toast.success('تم إلغاء حظر جهة الاتصال');
+      tToast.success("whatsappChat.msg_0e02");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       setShowContactInfo(false);
     } catch (error) {
-      toast.error('فشل إلغاء حظر جهة الاتصال');
-    }
+}
   };
 
   // ==================== Group Advanced Features ====================
-  const handleToggleEphemeral = async (duration: number) => {
+
+  const _handleToggleEphemeral = async (duration: number) => {
     if (!selectedSession || !selectedContact?.isGroup) return;
     try {
       await api.post(`/whatsapp/groups/${selectedContact.jid}/ephemeral`, {
         sessionId: selectedSession,
         ephemeral: duration // 0 = off, 86400 = 24h, 604800 = 7 days, 7776000 = 90 days
       });
-      toast.success('تم تحديث إعدادات الرسائل المؤقتة');
+      tToast.success("whatsappChat.success_update_a33f");
     } catch (error) {
-      toast.error('فشل تحديث الإعدادات');
+      tToast.error("whatsappChat.failed_update_a3e3");
     }
   };
 
-  const handleUpdateGroupPicture = async (file: File) => {
+  const _handleUpdateGroupPicture = async (file: File) => {
     if (!selectedSession || !selectedContact?.isGroup) return;
     try {
       const formData = new FormData();
@@ -1855,27 +2045,27 @@ const WhatsAppChatContent: React.FC = () => {
       await api.post(`/whatsapp/groups/${selectedContact.jid}/picture`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      toast.success('تم تحديث صورة المجموعة');
+      tToast.success("whatsappChat.success_update_1cca");
     } catch (error) {
-      toast.error('فشل تحديث الصورة');
+      tToast.error("whatsappChat.failed_update_c47f");
     }
   };
 
-  const handleAcceptGroupInvite = async (inviteCode: string) => {
+  const _handleAcceptGroupInvite = async (inviteCode: string) => {
     if (!selectedSession) return;
     try {
       await api.post('/whatsapp/groups/invite/accept', {
         sessionId: selectedSession,
         inviteCode
       });
-      toast.success('تم قبول الدعوة والانضمام للمجموعة');
+      tToast.success("whatsappChat.msg_6016");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      toast.error('فشل قبول الدعوة');
+      tToast.error("whatsappChat.msg_ae22");
     }
   };
 
-  const handleGetUrlInfo = async (url: string) => {
+  const _handleGetUrlInfo = async (url: string) => {
     if (!selectedSession) return null;
     try {
       const res = await api.get('/whatsapp/url-info', {
@@ -1890,7 +2080,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   // Order/Cart functions removed - using QuickOrderModal (same as Facebook inbox)
 
-  const sendQuickReply = async (qr: QuickReply) => {
+  const _sendQuickReply = async (qr: QuickReply) => {
     if (!selectedSession || !selectedContact) return;
     try {
       await api.post('/whatsapp/messages/send', {
@@ -1904,11 +2094,23 @@ const WhatsAppChatContent: React.FC = () => {
     }
   };
 
+  void _handleToggleEphemeral;
+  void _handleUpdateGroupPicture;
+  void _handleAcceptGroupInvite;
+  void _handleGetUrlInfo;
+  void _sendQuickReply;
+
 
   const getParticipantName = (participantJid: string) => {
+    if (!participantJid) return '';
     // Normalize JID for lookup
     const normalizedJid = participantJid.includes('@') ? participantJid : `${participantJid}@s.whatsapp.net`;
-    const contact = conversations.find(c => c.jid === normalizedJid || c.jid === normalizedJid.split('@')[0] + '@s.whatsapp.net');
+    const bareDigits = normalizeContactJid(participantJid);
+    const contact = conversations.find(c =>
+      c.jid === normalizedJid ||
+      c.jid === normalizedJid.split('@')[0] + '@s.whatsapp.net' ||
+      (bareDigits && normalizeContactJid(c.jid) === bareDigits)
+    );
     if (contact) {
       return getContactName(contact);
     }
@@ -1958,10 +2160,10 @@ const WhatsAppChatContent: React.FC = () => {
   return (
     <div className="whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden">
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
-      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row border-none rounded-none shadow-none bg-[color:var(--color-card)]">
-      {/* Sidebar */}
+      <div className="whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:flex-row border-none rounded-none shadow-none bg-[color:var(--color-card)]">
+      {/* Sidebar — LEFT in LTR, RIGHT in RTL (natural RTL flow) */}
       <ChatSidebar
-        className={cn("wa-panel-sidebar", selectedContact && "max-lg:hidden")}
+        className={cn("wa-panel-sidebar ltr:lg:order-1 rtl:lg:order-1", selectedContact && "max-lg:hidden")}
         sessions={sessions}
         conversations={conversations}
         statuses={statuses}
@@ -1979,6 +2181,8 @@ const WhatsAppChatContent: React.FC = () => {
         onOpenNewGroup={() => setCreateGroupDialogOpen(true)}
         onOpenPrivacySettings={() => setPrivacyDialogOpen(true)}
         onOpenBusinessProfile={() => setBusinessProfileDialogOpen(true)}
+        onSyncHistory={handleSyncHistory}
+        isSyncingHistory={isSyncingHistory}
         onPinChat={handlePinChat}
         onArchiveChat={handleArchiveChat}
         onDeleteChat={handleDeleteChat}
@@ -1991,15 +2195,24 @@ const WhatsAppChatContent: React.FC = () => {
         onAddStatus={() => setStatusDialogOpen(true)}
         onOpenBroadcast={() => setBroadcastDialogOpen(true)}
         onOpenCheckNumber={() => setCheckNumberDialogOpen(true)}
-        onOpenLabels={() => setLabelDialogOpen(true)}
+        onOpenLabels={() => { setSelectedContactForLabel(null); setLabelDialogOpen(true); }}
         onBulkDelete={handleBulkDeleteChats}
+        onDeleteAll={handleDeleteAllChats}
+        labels={labels}
+        filterType={chatFilter}
+        onFilterTypeChange={setChatFilter}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        showArchived={showArchived}
+        onToggleArchived={(archived) => setShowArchived(archived)}
+        counts={conversationCounts}
       />
 
-      <div className="flex min-w-0 flex-1">
+      <div className="relative flex h-full min-h-0 flex-1 overflow-hidden ltr:lg:order-2 rtl:lg:order-2">
         <ChatWindow
           showRightPanel={showRightPanel}
           onToggleRightPanel={() => setShowRightPanel((prev) => !prev)}
-          className={cn("wa-panel-chat", !selectedContact && "max-lg:hidden")}
+          className={cn("wa-panel-chat", !selectedContact && "max-lg:hidden", showRightPanel && "max-lg:hidden")}
           selectedContact={selectedContact}
           messages={visibleMessages}
           loadingMessages={loadingMessages}
@@ -2029,10 +2242,10 @@ const WhatsAppChatContent: React.FC = () => {
               formData.append('ptt', 'true');
               try {
                 await api.post('/whatsapp/messages/upload-send', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-                toast.success('تم إرسال الرسالة الصوتية');
+                tToast.success("whatsappChat.success_send_ba8a");
                 // Messages reload automatically via socket or refetch
               } catch (error) {
-                toast.error('فشل إرسال الرسالة الصوتية');
+                tToast.error("whatsappChat.failed_send_8f23");
               }
             }
           }}
@@ -2048,6 +2261,7 @@ const WhatsAppChatContent: React.FC = () => {
           onOpenOrder={() => setShowQuickOrderModal(true)}
           onOpenTasks={() => setShowQuickCreateTaskModal(true)}
           onOpenTemplate={handleOpenTemplateDialog}
+          onOpenProducts={() => setShowProductPicker(true)}
           onBackToList={() => {
             if (typeof document.startViewTransition === 'function') {
               document.startViewTransition(() => setSelectedContact(null));
@@ -2061,14 +2275,28 @@ const WhatsAppChatContent: React.FC = () => {
           messagesError={messagesError}
           onRetryMessages={() => refetchMessages()}
         />
-        {selectedContact && showRightPanel ? (
-          <ChatRightPanel
-            contact={selectedContact}
-            onOpenOrder={() => setShowQuickOrderModal(true)}
-            onOpenTasks={() => setShowQuickCreateTaskModal(true)}
-            onClose={() => setShowRightPanel(false)}
-          />
-        ) : null}
+        {selectedContact && showRightPanel && (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/20 max-lg:block lg:hidden"
+              onClick={() => setShowRightPanel(false)}
+            />
+            <div className="chat-right-panel-container">
+              <ChatRightPanel
+                contact={selectedContact}
+                labels={labels}
+                refreshToken={ordersRefreshToken}
+                onOpenOrder={() => setShowQuickOrderModal(true)}
+                onOpenTasks={() => setShowQuickCreateTaskModal(true)}
+                onClose={() => setShowRightPanel(false)}
+                onOpenLabels={() => {
+                  setSelectedContactForLabel(selectedContact);
+                  setLabelDialogOpen(true);
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
       </div>
 
@@ -2078,8 +2306,8 @@ const WhatsAppChatContent: React.FC = () => {
         content={confirmData.content}
         onConfirm={confirmData.onConfirm}
         onCancel={() => setConfirmData(prev => ({ ...prev, open: false }))}
-        confirmLabel={t('whatsapp.dialogs.confirm')}
-        cancelLabel={t('whatsapp.dialogs.cancel')}
+        confirmLabel={t('whatsapp.dialogs.confirm') as string}
+        cancelLabel={t('whatsapp.dialogs.cancel') as string}
       />
 
       {messageContextMenu ? (
@@ -2229,7 +2457,7 @@ const WhatsAppChatContent: React.FC = () => {
                   )}
                 >
                   <UiAvatar className="size-11">
-                    <UiAvatarImage src={contact.profilePicUrl || undefined} />
+                    <UiAvatarImage src={getInboxExternalImageUrl(contact.profilePicUrl) || undefined} />
                     <UiAvatarFallback className="bg-primary/10 font-semibold text-[color:var(--color-primary)]">
                       {contactName.slice(0, 2).toUpperCase()}
                     </UiAvatarFallback>
@@ -2284,7 +2512,7 @@ const WhatsAppChatContent: React.FC = () => {
               <UiSheetHeader className="border-b border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-6 py-6 text-start">
                 <div className="flex flex-col items-center gap-4 pt-7">
                   <UiAvatar className="size-28 shadow-[0_18px_40px_rgba(15,27,45,0.12)]">
-                    <UiAvatarImage src={selectedContact.profilePicUrl || undefined} />
+                    <UiAvatarImage src={getInboxExternalImageUrl(selectedContact.profilePicUrl) || undefined} />
                     <UiAvatarFallback className="bg-primary/10 text-2xl font-semibold text-[color:var(--color-primary)]">
                       {getContactInitials(selectedContactName)}
                     </UiAvatarFallback>
@@ -2391,7 +2619,7 @@ const WhatsAppChatContent: React.FC = () => {
                   <UiButton
                     variant="outline"
                     className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-[var(--whatsapp-surface-strong)] text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/[0.12] dark:hover:text-rose-200"
-                    onClick={() => toast.info('قريباً')}
+                    onClick={() => tToast.info("whatsappChat.msg_36fc")}
                   >
                     <span>الإبلاغ عن {selectedContactName}</span>
                     <ShieldAlert className="size-4" />
@@ -2416,7 +2644,7 @@ const WhatsAppChatContent: React.FC = () => {
         onClose={() => setCreateGroupDialogOpen(false)}
         sessionId={activeSessionId}
         contacts={conversations}
-        onGroupCreated={(group) => {
+        onGroupCreated={(_group) => {
           queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
           // Optionally select the new group
           // setSelectedContact(group); 
@@ -2460,7 +2688,9 @@ const WhatsAppChatContent: React.FC = () => {
               isMuted: false,
               isBlocked: false,
               session: { name: '', phoneNumber: '' },
-              customer: null
+              customer: null,
+              isNewsletter: false,
+              window: { isOpen: false, remainingSeconds: 0, remainingLabel: '', windowExpiresAt: null }
             };
             setSelectedContact(newContact);
           }
@@ -2796,7 +3026,7 @@ const WhatsAppChatContent: React.FC = () => {
                           onChange={(e) => {
                             const newSections = [...listData.sections];
                             if (newSections[sIndex]?.rows[rIndex]) {
-                              newSections[sIndex].rows[rIndex] = { ...row, title: e.target.value };
+                              newSections[sIndex]!.rows[rIndex] = { ...row, title: e.target.value };
                               setListData((prev) => ({ ...prev, sections: newSections }));
                             }
                           }}
@@ -2808,7 +3038,7 @@ const WhatsAppChatContent: React.FC = () => {
                           onChange={(e) => {
                             const newSections = [...listData.sections];
                             if (newSections[sIndex]?.rows[rIndex]) {
-                              newSections[sIndex].rows[rIndex] = { ...row, description: e.target.value };
+                              newSections[sIndex]!.rows[rIndex] = { ...row, description: e.target.value };
                               setListData((prev) => ({ ...prev, sections: newSections }));
                             }
                           }}
@@ -2822,7 +3052,7 @@ const WhatsAppChatContent: React.FC = () => {
                             onClick={() => {
                               const newSections = [...listData.sections];
                               if (newSections[sIndex]) {
-                                newSections[sIndex].rows = section.rows.filter((_, itemIndex) => itemIndex !== rIndex);
+                                newSections[sIndex]!.rows = section.rows.filter((_, itemIndex) => itemIndex !== rIndex);
                                 setListData((prev) => ({ ...prev, sections: newSections }));
                               }
                             }}
@@ -2838,7 +3068,7 @@ const WhatsAppChatContent: React.FC = () => {
                       onClick={() => {
                         const newSections = [...listData.sections];
                         if (newSections[sIndex]) {
-                          newSections[sIndex].rows.push({
+                          newSections[sIndex]!.rows.push({
                             id: String(section.rows.length + 1),
                             title: '',
                             description: '',
@@ -3001,11 +3231,14 @@ const WhatsAppChatContent: React.FC = () => {
       {/* Quick Order Modal (same as Facebook inbox - 1:1 copy) */}
       <QuickOrderModal
         isOpen={showQuickOrderModal}
-        onClose={() => setShowQuickOrderModal(false)}
-        customerName={selectedContact ? getContactName(selectedContact) : undefined}
-        customerPhone={selectedContactPhoneNumber || undefined}
-        conversationId={selectedContact?.id}
-        customerId={selectedContact?.id}
+        onClose={() => {
+          setShowQuickOrderModal(false);
+          setQuickOrderContact(null);
+        }}
+        customerName={quickOrderContact ? getContactName(quickOrderContact) : (selectedContact ? getContactName(selectedContact) : undefined)}
+        customerPhone={(quickOrderContact ? getContactPhoneNumber(quickOrderContact) : selectedContactPhoneNumber) || undefined}
+        conversationId={quickOrderContact?.id || selectedContact?.id}
+        customerId={quickOrderContact?.customer?.id || quickOrderContact?.id || selectedContact?.id}
         platform="whatsapp"
         pageName={
           selectedSession && selectedSession !== 'all'
@@ -3014,12 +3247,19 @@ const WhatsAppChatContent: React.FC = () => {
         }
         onOrderCreated={(orderId) => {
           toast.success(t('whatsapp.dialogs.orderCreated', { orderId }));
+          setOrdersRefreshToken((prev) => prev + 1);
         }}
       />
 
       <QuickCreateTaskModal
         isOpen={showQuickCreateTaskModal}
         onClose={() => setShowQuickCreateTaskModal(false)}
+      />
+
+      <ProductImagePickerModal
+        isOpen={showProductPicker}
+        onClose={() => setShowProductPicker(false)}
+        onSendProduct={handleSendProductImages}
       />
 
       {/* Location Dialog */}
@@ -3176,7 +3416,7 @@ const WhatsAppChatContent: React.FC = () => {
                       )}
                       {comp.type === 'BODY' && (
                         <p className="whitespace-pre-wrap text-sm leading-6 text-[color:var(--color-foreground)]">
-                          {comp.text?.replace(/\{\{(\d+)\}\}/g, (_, num) =>
+                          {comp.text?.replace(/\{\{(\d+)\}\}/g, (_: string, num: string) =>
                             templateVariables[`{{${num}}}`] || `{{${num}}}`
                           )}
                         </p>

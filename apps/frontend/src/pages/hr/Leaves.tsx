@@ -1,5 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, ArrowRight, Baby, Book, Calendar, Check, ChevronLeft, ChevronRight, Clock, CreditCard, Download, Eye, File, FileText, GraduationCap, Heart, Palmtree, Plus, RotateCcw, Stethoscope, Trash2, Wallet, X } from 'lucide-react';
+import {
+  Calendar,
+  Plus,
+  Check,
+  X,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Eye,
+  Palmtree,
+  Stethoscope,
+  Baby,
+  Heart,
+  GraduationCap,
+  AlertTriangle,
+  FileText,
+  ArrowRight,
+  RotateCcw,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -33,6 +54,7 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { useTranslation } from "react-i18next";
 import api from "../../services/api";
 import { toast } from "sonner";
 
@@ -66,53 +88,54 @@ interface LeaveRequest {
 
 const leaveTypeConfig: Record<
   string,
-  { label: string; icon: any; color: string }
+  { labelKey: string; icon: any; color: string }
 > = {
   ANNUAL: {
-    label: "سنوية",
+    labelKey: "employee.leaves.annual",
     icon: Palmtree,
     color: "bg-green-100 text-green-800",
   },
-  SICK: { label: "مرضية", icon: Stethoscope, color: "bg-red-100 text-red-800" },
+  SICK: { labelKey: "employee.leaves.sick", icon: Stethoscope, color: "bg-red-100 text-red-800" },
   UNPAID: {
-    label: "بدون راتب",
+    labelKey: "employee.leaves.withoutPay",
     icon: Calendar,
     color: "bg-gray-100 text-gray-800",
   },
-  MATERNITY: { label: "أمومة", icon: Baby, color: "bg-pink-100 text-pink-800" },
-  PATERNITY: { label: "أبوة", icon: Baby, color: "bg-blue-100 text-blue-800" },
+  MATERNITY: { labelKey: "employee.leaves.maternity", icon: Baby, color: "bg-pink-100 text-pink-800" },
+  PATERNITY: { labelKey: "employee.leaves.paternity", icon: Baby, color: "bg-blue-100 text-blue-800" },
   BEREAVEMENT: {
-    label: "عزاء",
+    labelKey: "employee.leaves.funeral",
     icon: Heart,
     color: "bg-purple-100 text-purple-800",
   },
-  MARRIAGE: { label: "زواج", icon: Heart, color: "bg-rose-100 text-rose-800" },
-  HAJJ: { label: "حج", icon: Calendar, color: "bg-amber-100 text-amber-800" },
+  MARRIAGE: { labelKey: "employee.leaves.marriage", icon: Heart, color: "bg-rose-100 text-rose-800" },
+  HAJJ: { labelKey: "employee.leaves.hajj", icon: Calendar, color: "bg-amber-100 text-amber-800" },
   STUDY: {
-    label: "دراسية",
+    labelKey: "employee.leaves.study",
     icon: GraduationCap,
     color: "bg-indigo-100 text-indigo-800",
   },
   EMERGENCY: {
-    label: "طارئة",
+    labelKey: "employee.leaves.emergency",
     icon: AlertTriangle,
     color: "bg-orange-100 text-orange-800",
   },
   OTHER: {
-    label: "أخرى",
+    labelKey: "employee.leaves.other",
     icon: Calendar,
     color: "bg-slate-100 text-slate-800",
   },
 };
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  PENDING: { label: "قيد الانتظار", color: "bg-yellow-100 text-yellow-800" },
-  APPROVED: { label: "موافق عليه", color: "bg-green-100 text-green-800" },
-  REJECTED: { label: "مرفوض", color: "bg-red-100 text-red-800" },
-  CANCELLED: { label: "ملغي", color: "bg-gray-100 text-gray-800" },
+const statusConfig: Record<string, { labelKey: string; color: string }> = {
+  PENDING: { labelKey: "employee.leaves.pendingStatus", color: "bg-yellow-100 text-yellow-800" },
+  APPROVED: { labelKey: "employee.leaves.approvedStatus", color: "bg-green-100 text-green-800" },
+  REJECTED: { labelKey: "employee.leaves.rejectedStatus", color: "bg-red-100 text-red-800" },
+  CANCELLED: { labelKey: "employee.leaves.cancelledStatus", color: "bg-gray-100 text-gray-800" },
 };
 
 const Leaves: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const isMyLeaves = location.pathname === "/my-leaves";
   const [loading, setLoading] = useState(true);
@@ -239,7 +262,7 @@ const Leaves: React.FC = () => {
       }));
     } catch (error) {
       console.error("Error fetching leave requests:", error);
-      toast.error("حدث خطأ أثناء جلب طلبات الإجازات");
+      toast.error(t("employee.leaves.fetchError"));
     } finally {
       setLoading(false);
     }
@@ -248,11 +271,11 @@ const Leaves: React.FC = () => {
   const handleApprove = async (requestId: string) => {
     try {
       await api.post(`/hr/leaves/${requestId}/approve`);
-      toast.success("تمت الموافقة على الطلب");
+      toast.success(t("employee.leaves.approvedSuccess"));
       fetchLeaveRequests();
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "المسؤول ليس له ملف موظف أو حدث خطأ",
+        error.response?.data?.message || t("employee.leaves.approveError"),
       );
     }
   };
@@ -264,14 +287,14 @@ const Leaves: React.FC = () => {
       await api.post(`/hr/leaves/${selectedRequest.id}/reject`, {
         reason: rejectionReason,
       });
-      toast.success("تم رفض الطلب");
+      toast.success(t("employee.leaves.rejectedSuccess"));
       setShowRejectDialog(false);
       setSelectedRequest(null);
       setRejectionReason("");
       fetchLeaveRequests();
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "المسؤول ليس له ملف موظف أو حدث خطأ",
+        error.response?.data?.message || t("employee.leaves.approveError"),
       );
     }
   };
@@ -281,12 +304,12 @@ const Leaves: React.FC = () => {
 
     try {
       await api.post(`/hr/leaves/${selectedRequest.id}/reopen`);
-      toast.success("تم إعادة فتح الطلب");
+      toast.success(t("employee.leaves.reopenedSuccess"));
       setShowReopenDialog(false);
       fetchLeaveRequests();
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "المسؤول ليس له ملف موظف أو حدث خطأ",
+        error.response?.data?.message || t("employee.leaves.reopenError"),
       );
     }
   };
@@ -328,11 +351,11 @@ const Leaves: React.FC = () => {
 
       await api.put(`/hr/leaves/${selectedRequest.id}`, payload);
 
-      toast.success("تم تعديل وإعادة فتح الطلب بنجاح");
+      toast.success(t("employee.leaves.editSuccess"));
       setShowEditDialog(false);
       fetchLeaveRequests();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء تعديل الطلب");
+      toast.error(error.response?.data?.message || t("employee.leaves.editError"));
     }
   };
 
@@ -342,19 +365,19 @@ const Leaves: React.FC = () => {
     try {
       if (newDecision === "APPROVE") {
         await api.post(`/hr/leaves/${selectedRequest.id}/approve`);
-        toast.success("تم تغيير القرار إلى موافقة");
+        toast.success(t("employee.leaves.decisionChangedToApproved"));
       } else if (newDecision === "CANCELLED") {
         await api.post(`/hr/leaves/${selectedRequest.id}/cancel`);
-        toast.success("تم إلغاء الطلب بنجاح");
+        toast.success(t("employee.leaves.cancelledSuccess"));
       } else {
         if (!rejectionReason.trim()) {
-          toast.error("يجب إدخال سبب الرفض");
+          toast.error(t("employee.leaves.rejectReasonRequired"));
           return;
         }
         await api.post(`/hr/leaves/${selectedRequest.id}/reject`, {
           reason: rejectionReason,
         });
-        toast.success("تم تغيير القرار إلى رفض");
+        toast.success(t("employee.leaves.decisionChangedToRejected"));
       }
 
       setShowChangeDecisionDialog(false);
@@ -363,35 +386,35 @@ const Leaves: React.FC = () => {
       fetchLeaveRequests();
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "حدث خطأ أثناء تغيير القرار",
+        error.response?.data?.message || t("employee.leaves.changeDecisionError"),
       );
     }
   };
 
   const handleCancel = async (requestId: string) => {
     try {
-      if (!confirm("هل أنت متأكد من إلغاء هذا الطلب؟")) return;
+      if (!confirm(t("employee.leaves.cancelConfirm"))) return;
 
       await api.post(`/hr/leaves/${requestId}/cancel`);
-      toast.success("تم إلغاء الطلب بنجاح");
+      toast.success(t("employee.leaves.cancelledSuccess"));
       fetchLeaveRequests();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إلغاء الطلب");
+      toast.error(error.response?.data?.message || t("employee.leaves.cancelError"));
     }
   };
 
   const handleDelete = async (request: LeaveRequest) => {
     const employeeName = request.employee
       ? `${request.employee.firstName} ${request.employee.lastName}`.trim()
-      : "هذا الموظف";
+      : t("employee.leaves.thisEmployee");
     const approvalWarning =
       request.status === "APPROVED"
-        ? "\nسيتم كذلك حذف سجلات الإجازة المرتبطة من الحضور والخصومات."
+        ? "\n" + t("employee.leaves.deleteRelatedWarning")
         : "";
 
     if (
       !window.confirm(
-        `هل أنت متأكد من حذف طلب الإجازة الخاص بـ ${employeeName} نهائياً؟${approvalWarning}`,
+        t("employee.leaves.deleteConfirm", { name: employeeName }) + approvalWarning,
       )
     ) {
       return;
@@ -399,14 +422,14 @@ const Leaves: React.FC = () => {
 
     try {
       await api.delete(`/hr/leaves/${request.id}`);
-      toast.success("تم حذف طلب الإجازة نهائياً");
+      toast.success(t("employee.leaves.deleteSuccess"));
       if (selectedRequest?.id === request.id) {
         setShowDetailsDialog(false);
         setSelectedRequest(null);
       }
       fetchLeaveRequests();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء حذف الطلب");
+      toast.error(error.response?.data?.message || t("employee.leaves.deleteError"));
     }
   };
 
@@ -429,8 +452,8 @@ const Leaves: React.FC = () => {
       }
 
       await api.post("/hr/leaves", payload);
-      toast.success("تم إنشاء طلب الإجازة بنجاح", {
-        description: "تم إرسال طلبك بنجاح وسيتم مراجعته قريباً",
+      toast.success(t("employee.leaves.submitSuccess"), {
+        description: t("employee.leaves.submitSuccessDesc"),
         icon: <Check className="h-4 w-4 text-green-500" />,
       });
       setShowAddDialog(false);
@@ -443,18 +466,18 @@ const Leaves: React.FC = () => {
           errors[err.field] = err.message;
         });
         setFieldErrors(errors);
-        toast.error("فشل التحقق من البيانات", {
-          description: "يرجى التأكد من الحقول المميزة باللون الأحمر",
+        toast.error(t("employee.leaves.validationFailed"), {
+          description: t("employee.leaves.validationFailedDesc"),
         });
       } else {
         const message =
-          error.response?.data?.message || "حدث خطأ أثناء إرسال الطلب";
+          error.response?.data?.message || t("employee.leaves.submitError");
         const code = error.response?.data?.code;
 
         toast.error(message, {
           description:
             code === "INSUFFICIENT_LEAVE_BALANCE"
-              ? "حاول طلب عدد أيام أقل أو نوع إجازة آخر"
+              ? t("employee.leaves.submitErrorHint")
               : undefined,
         });
       }
@@ -518,20 +541,20 @@ const Leaves: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {isMyLeaves ? "إجازاتي" : "إدارة الإجازات"}
+            {isMyLeaves ? t("employee.leaves.myLeaves") : t("employee.leaves.manageLeaves")}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {pagination.total} طلب إجازة
+            {t("employee.leaves.totalRequests", { count: pagination.total })}
           </p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline">
             <Download className="h-4 w-4 ml-2" />
-            تصدير
+            {t("employee.leaves.export")}
           </Button>
           <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="h-4 w-4 ml-2" />
-            طلب إجازة جديد
+            {t("employee.leaves.newLeaveRequest")}
           </Button>
         </div>
       </div>
@@ -542,7 +565,7 @@ const Leaves: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-100 text-sm">قيد الانتظار</p>
+                <p className="text-yellow-100 text-sm">{t("employee.leaves.pending")}</p>
                 <h3 className="text-3xl font-bold mt-1">{pendingCount}</h3>
               </div>
               <Clock className="h-10 w-10 opacity-80" />
@@ -554,7 +577,7 @@ const Leaves: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm">موافق عليها</p>
+                <p className="text-gray-500 text-sm">{t("employee.leaves.approved")}</p>
                 <h3 className="text-3xl font-bold mt-1 text-green-600">
                   {requests.filter((r) => r.status === "APPROVED").length}
                 </h3>
@@ -568,7 +591,7 @@ const Leaves: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm">مرفوضة</p>
+                <p className="text-gray-500 text-sm">{t("employee.leaves.rejected")}</p>
                 <h3 className="text-3xl font-bold mt-1 text-red-600">
                   {requests.filter((r) => r.status === "REJECTED").length}
                 </h3>
@@ -582,7 +605,7 @@ const Leaves: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm">إجمالي الأيام</p>
+                <p className="text-gray-500 text-sm">{t("employee.leaves.totalDays")}</p>
                 <h3 className="text-3xl font-bold mt-1 text-blue-600">
                   {requests
                     .filter((r) => r.status === "APPROVED")
@@ -601,9 +624,9 @@ const Leaves: React.FC = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex items-center justify-between flex-wrap gap-4">
               <TabsList>
-                <TabsTrigger value="all">الكل</TabsTrigger>
+                <TabsTrigger value="all">{t("employee.leaves.all")}</TabsTrigger>
                 <TabsTrigger value="pending" className="relative">
-                  قيد الانتظار
+                  {t("employee.leaves.pending")}
                   {pendingCount > 0 && (
                     <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-red-500">
                       {pendingCount}
@@ -615,13 +638,13 @@ const Leaves: React.FC = () => {
               <div className="flex gap-4">
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
                   <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="نوع الإجازة" />
+                    <SelectValue placeholder={t("employee.leaves.leaveType")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">الكل</SelectItem>
+                    <SelectItem value="all">{t("employee.leaves.all")}</SelectItem>
                     {Object.entries(leaveTypeConfig).map(([key, config]) => (
                       <SelectItem key={key} value={key}>
-                        {config.label}
+                        {t(config.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -630,13 +653,13 @@ const Leaves: React.FC = () => {
                 {activeTab === "all" && (
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="الحالة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">الكل</SelectItem>
-                      {Object.entries(statusConfig).map(([key, config]) => (
-                        <SelectItem key={key} value={key}>
-                          {config.label}
+                      <SelectValue placeholder={t("employee.leaves.status")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t("employee.leaves.all")}</SelectItem>
+                        {Object.entries(statusConfig).map(([key, config]) => (
+                          <SelectItem key={key} value={key}>
+                            {t(config.labelKey)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -658,21 +681,21 @@ const Leaves: React.FC = () => {
           ) : requests.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-gray-500">
               <Calendar className="h-12 w-12 mb-4 opacity-50" />
-              <p>لا توجد طلبات إجازات</p>
+              <p>{t("employee.leaves.noLeaveRequests")}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   {!isMyLeaves && (
-                    <TableHead className="text-right">الموظف</TableHead>
+                    <TableHead className="text-right">{t("employee.leaves.employee")}</TableHead>
                   )}
-                  <TableHead className="text-right">نوع الإجازة</TableHead>
-                  <TableHead className="text-right">من</TableHead>
-                  <TableHead className="text-right">إلى</TableHead>
-                  <TableHead className="text-right">المدة</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="text-right">{t("employee.leaves.leaveType")}</TableHead>
+                  <TableHead className="text-right">{t("employee.leaves.from")}</TableHead>
+                  <TableHead className="text-right">{t("employee.leaves.to")}</TableHead>
+                  <TableHead className="text-right">{t("employee.leaves.duration")}</TableHead>
+                  <TableHead className="text-right">{t("employee.leaves.status")}</TableHead>
+                  <TableHead className="text-right">{t("employee.leaves.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -709,7 +732,7 @@ const Leaves: React.FC = () => {
                         <div className="flex flex-col items-end gap-1">
                           <Badge className={typeConfig?.color || "bg-gray-100"}>
                             <TypeIcon className="h-3 w-3 ml-1" />
-                            {typeConfig?.label || request.type}
+                            {t(typeConfig?.labelKey) || request.type}
                           </Badge>
                           <Badge
                             className={`${request.type !== "UNPAID"
@@ -718,8 +741,8 @@ const Leaves: React.FC = () => {
                               }`}
                           >
                             {request.type !== "UNPAID"
-                              ? "مدفوعة الأجر"
-                              : "غير مدفوعة الأجر"}
+                              ? t("employee.leaves.paid")
+                              : t("employee.leaves.unpaid")}
                           </Badge>
                         </div>
                       </TableCell>
@@ -733,13 +756,13 @@ const Leaves: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">{request.totalDays}</span>{" "}
-                        يوم
+                        {t("employee.leaves.day")}
                       </TableCell>
                       <TableCell>
                         <Badge
                           className={statusConfig[request.status]?.color || ""}
                         >
-                          {statusConfig[request.status]?.label ||
+                          {t(statusConfig[request.status]?.labelKey) ||
                             request.status}
                         </Badge>
                       </TableCell>
@@ -774,7 +797,7 @@ const Leaves: React.FC = () => {
                               className="bg-orange-500 hover:bg-orange-600"
                               onClick={() => handleCancel(request.id)}
                             >
-                              إلغاء
+                              {t("employee.leaves.cancel")}
                             </Button>
                           )}
 
@@ -794,7 +817,7 @@ const Leaves: React.FC = () => {
                                   }}
                                 >
                                   <RotateCcw className="h-4 w-4 ml-1" />
-                                  تغيير القرار
+                                  {t("employee.leaves.changeDecision")}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -806,7 +829,7 @@ const Leaves: React.FC = () => {
                                   }}
                                 >
                                   <ArrowRight className="h-4 w-4 ml-1" />
-                                  تعديل البيانات
+                                  {t("employee.leaves.edit")}
                                 </Button>
                               </>
                             )}
@@ -819,7 +842,7 @@ const Leaves: React.FC = () => {
                               onClick={() => handleDelete(request)}
                             >
                               <Trash2 className="h-4 w-4 ml-1" />
-                              حذف
+                              {t("employee.leaves.delete")}
                             </Button>
                           )}
 
@@ -847,9 +870,11 @@ const Leaves: React.FC = () => {
         {pagination.totalPages > 1 && (
           <div className="flex items-center justify-between p-4 border-t">
             <p className="text-sm text-gray-500">
-              عرض {(pagination.page - 1) * pagination.limit + 1} -{" "}
-              {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-              من {pagination.total}
+              {t("employee.leaves.pagination", {
+                from: (pagination.page - 1) * pagination.limit + 1,
+                to: Math.min(pagination.page * pagination.limit, pagination.total),
+                total: pagination.total,
+              })}
             </p>
             <div className="flex gap-2">
               <Button
@@ -883,10 +908,10 @@ const Leaves: React.FC = () => {
           <DialogHeader className="text-right">
             <DialogTitle className="text-2xl font-bold flex items-center justify-end gap-2">
               <Plus className="h-6 w-6 text-primary" />
-              طلب إجازة جديد
+              {t("employee.leaves.dialogTitle")}
             </DialogTitle>
             <DialogDescription className="text-right text-gray-500 dark:text-gray-400">
-              قم بملء النموذج التالي لتقديم طلب إجازة جديد.
+              {t("employee.leaves.dialogDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -894,10 +919,10 @@ const Leaves: React.FC = () => {
             {/* Employee Selector - Hide in My Leaves mode */}
             {!isMyLeaves && (
               <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                  <Eye className="h-4 w-4" />
-                  الموظف
-                </Label>
+                  <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <Eye className="h-4 w-4" />
+                    {t("employee.leaves.employeeLabel")}
+                  </Label>
                 <Select
                   value={formData.employeeId}
                   onValueChange={(value) =>
@@ -905,7 +930,7 @@ const Leaves: React.FC = () => {
                   }
                 >
                   <SelectTrigger className="w-full bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-right dir-rtl">
-                    <SelectValue placeholder="اختر الموظف" />
+                    <SelectValue placeholder={t("employee.leaves.employeePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[200px] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                     {employees.map((emp) => (
@@ -941,7 +966,7 @@ const Leaves: React.FC = () => {
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <Palmtree className="h-4 w-4" />
-                نوع الإجازة
+                {t("employee.leaves.leaveTypeLabel")}
               </Label>
               <Select
                 value={formData.type}
@@ -969,7 +994,7 @@ const Leaves: React.FC = () => {
                         <config.icon
                           className={`h-4 w-4 ${config.color.split(" ")[1]}`}
                         />
-                        <span>{config.label}</span>
+                        <span>{t(config.labelKey)}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -985,7 +1010,7 @@ const Leaves: React.FC = () => {
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <Wallet className="h-4 w-4" />
-                حالة الأجر
+                {t("employee.leaves.payStatusLabel")}
               </Label>
               <Select
                 value={formData.isPaid ? "PAID" : "UNPAID"}
@@ -1002,8 +1027,8 @@ const Leaves: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-                  <SelectItem value="PAID">مدفوعة الأجر</SelectItem>
-                  <SelectItem value="UNPAID">غير مدفوعة الأجر</SelectItem>
+                  <SelectItem value="PAID">{t("employee.leaves.paidOption")}</SelectItem>
+                  <SelectItem value="UNPAID">{t("employee.leaves.unpaidOption")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1012,7 +1037,7 @@ const Leaves: React.FC = () => {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <Calendar className="h-4 w-4" />
-                  من تاريخ
+                  {t("employee.leaves.fromDateLabel")}
                 </Label>
                 <Input
                   type="date"
@@ -1031,7 +1056,7 @@ const Leaves: React.FC = () => {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <Calendar className="h-4 w-4" />
-                  إلى تاريخ
+                  {t("employee.leaves.toDateLabel")}
                 </Label>
                 <Input
                   type="date"
@@ -1065,10 +1090,10 @@ const Leaves: React.FC = () => {
                   )}
                   <span className="font-medium">
                     {totalDaysCount === -1
-                      ? "تاريخ النهاية يجب أن يكون بعد تاريخ البداية"
+                      ? t("employee.leaves.endDateAfterStart")
                       : totalDaysCount === 0
-                        ? "الأيام المحددة هي أيام عطلة (جمعة/سبت)"
-                        : `مدة الإجازة: ${totalDaysCount} يوم`}
+                        ? t("employee.leaves.weekendWarning")
+                        : t("employee.leaves.durationLabel", { days: totalDaysCount })}
                   </span>
                 </div>
               </div>
@@ -1083,9 +1108,9 @@ const Leaves: React.FC = () => {
                     <Clock className="h-4 w-4 text-primary" />
                   </div>
                   <div className="text-right">
-                    <Label className="text-sm font-medium">نصف يوم</Label>
+                    <Label className="text-sm font-medium">{t("employee.leaves.halfDay")}</Label>
                     <p className="text-xs text-gray-500">
-                      تقديم طلب لنصف يوم عمل فقط
+                      {t("employee.leaves.halfDayDesc")}
                     </p>
                   </div>
                 </div>
@@ -1101,7 +1126,7 @@ const Leaves: React.FC = () => {
               {formData.isHalfDay && (
                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
                   <Label className="text-xs text-gray-500 block text-right">
-                    فترة نصف اليوم
+                    {t("employee.leaves.halfDayPeriod")}
                   </Label>
                   <Select
                     value={formData.halfDayPeriod}
@@ -1112,14 +1137,14 @@ const Leaves: React.FC = () => {
                     <SelectTrigger
                       className={`w-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-right ${fieldErrors["halfDayPeriod"] ? "border-red-500" : ""}`}
                     >
-                      <SelectValue placeholder="اختر الفترة" />
+                      <SelectValue placeholder={t("employee.leaves.periodPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                       <SelectItem value="MORNING" className="justify-end">
-                        الفترة الصباحية
+                        {t("employee.leaves.morningPeriod")}
                       </SelectItem>
                       <SelectItem value="AFTERNOON" className="justify-end">
-                        الفترة المسائية
+                        {t("employee.leaves.afternoonPeriod")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -1135,14 +1160,14 @@ const Leaves: React.FC = () => {
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <FileText className="h-4 w-4" />
-                السبب
+                {t("employee.leaves.reasonLabel")}
               </Label>
               <Textarea
                 value={formData.reason}
                 onChange={(e) =>
                   setFormData({ ...formData, reason: e.target.value })
                 }
-                placeholder="أدخل سبب طلب الإجازة..."
+                placeholder={t("employee.leaves.reasonPlaceholder")}
                 rows={3}
                 className={`bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-right ${fieldErrors["reason"] ? "border-red-500" : ""}`}
               />
@@ -1165,14 +1190,14 @@ const Leaves: React.FC = () => {
               }
               className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white w-full sm:w-auto"
             >
-              إرسال الطلب
+              {t("employee.leaves.submitButton")}
             </Button>
             <Button
               variant="outline"
               onClick={() => setShowAddDialog(false)}
               className="w-full sm:w-auto"
             >
-              إلغاء
+              {t("employee.leaves.cancelButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1182,7 +1207,7 @@ const Leaves: React.FC = () => {
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تفاصيل طلب الإجازة</DialogTitle>
+            <DialogTitle>{t("employee.leaves.detailsTitle")}</DialogTitle>
           </DialogHeader>
 
           {selectedRequest && (
@@ -1208,13 +1233,13 @@ const Leaves: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-gray-500">نوع الإجازة</Label>
+                  <Label className="text-gray-500">{t("employee.leaves.leaveType")}</Label>
                   <p className="font-medium">
-                    {leaveTypeConfig[selectedRequest.type]?.label}
+                    {t(leaveTypeConfig[selectedRequest.type]?.labelKey)}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-gray-500">حالة الأجر</Label>
+                  <Label className="text-gray-500">{t("employee.leaves.payStatusLabel")}</Label>
                   <Badge
                     className={
                       selectedRequest.type !== "UNPAID"
@@ -1223,23 +1248,23 @@ const Leaves: React.FC = () => {
                     }
                   >
                     {selectedRequest.type !== "UNPAID"
-                      ? "مدفوعة الأجر"
-                      : "غير مدفوعة الأجر"}
+                      ? t("employee.leaves.paid")
+                      : t("employee.leaves.unpaid")}
                   </Badge>
                 </div>
                 <div>
-                  <Label className="text-gray-500">الحالة</Label>
+                  <Label className="text-gray-500">{t("employee.leaves.status")}</Label>
                   <Badge
                     className={
                       statusConfig[selectedRequest.status]?.color || ""
                     }
                   >
-                    {statusConfig[selectedRequest.status]?.label ||
+                    {t(statusConfig[selectedRequest.status]?.labelKey) ||
                       selectedRequest.status}
                   </Badge>
                 </div>
                 <div>
-                  <Label className="text-gray-500">من</Label>
+                  <Label className="text-gray-500">{t("employee.leaves.from")}</Label>
                   <p className="font-medium">
                     {new Date(selectedRequest.startDate).toLocaleDateString(
                       "ar-EG",
@@ -1247,7 +1272,7 @@ const Leaves: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <Label className="text-gray-500">إلى</Label>
+                  <Label className="text-gray-500">{t("employee.leaves.to")}</Label>
                   <p className="font-medium">
                     {new Date(selectedRequest.endDate).toLocaleDateString(
                       "ar-EG",
@@ -1255,11 +1280,11 @@ const Leaves: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <Label className="text-gray-500">المدة</Label>
-                  <p className="font-medium">{selectedRequest.totalDays} يوم</p>
+                  <Label className="text-gray-500">{t("employee.leaves.duration")}</Label>
+                  <p className="font-medium">{selectedRequest.totalDays} {t("employee.leaves.day")}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-500">تاريخ الطلب</Label>
+                  <Label className="text-gray-500">{t("employee.leaves.requestDate")}</Label>
                   <p className="font-medium">
                     {new Date(selectedRequest.createdAt).toLocaleDateString(
                       "ar-EG",
@@ -1270,14 +1295,14 @@ const Leaves: React.FC = () => {
 
               {selectedRequest.reason && (
                 <div>
-                  <Label className="text-gray-500">السبب</Label>
+                  <Label className="text-gray-500">{t("employee.leaves.reasonLabel")}</Label>
                   <p className="mt-1">{selectedRequest.reason}</p>
                 </div>
               )}
 
               {selectedRequest.rejectionReason && (
                 <div className="p-3 bg-red-50 rounded-lg">
-                  <Label className="text-red-600">سبب الرفض</Label>
+                  <Label className="text-red-600">{t("employee.leaves.rejectReasonLabel")}</Label>
                   <p className="mt-1 text-red-700">
                     {selectedRequest.rejectionReason}
                   </p>
@@ -1286,7 +1311,7 @@ const Leaves: React.FC = () => {
 
               {selectedRequest.approver && (
                 <div>
-                  <Label className="text-gray-500">تمت المراجعة بواسطة</Label>
+                  <Label className="text-gray-500">{t("employee.leaves.reviewedBy")}</Label>
                   <p className="font-medium">
                     {selectedRequest.approver.firstName}{" "}
                     {selectedRequest.approver.lastName}
@@ -1301,7 +1326,7 @@ const Leaves: React.FC = () => {
               variant="outline"
               onClick={() => setShowDetailsDialog(false)}
             >
-              إغلاق
+              {t("employee.leaves.closeButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1311,17 +1336,17 @@ const Leaves: React.FC = () => {
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>رفض طلب الإجازة</DialogTitle>
+            <DialogTitle>{t("employee.leaves.rejectTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <p>هل أنت متأكد من رفض طلب الإجازة؟</p>
+            <p>{t("employee.leaves.rejectConfirm")}</p>
             <div className="space-y-2">
-              <Label>سبب الرفض</Label>
+              <Label>{t("employee.leaves.rejectReasonLabel")}</Label>
               <Textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="أدخل سبب الرفض..."
+                placeholder={t("employee.leaves.rejectReasonPlaceholder")}
                 rows={3}
               />
             </div>
@@ -1332,10 +1357,10 @@ const Leaves: React.FC = () => {
               variant="outline"
               onClick={() => setShowRejectDialog(false)}
             >
-              إلغاء
+              {t("employee.leaves.cancelButton")}
             </Button>
             <Button variant="destructive" onClick={handleReject}>
-              رفض الطلب
+              {t("employee.leaves.rejectButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1345,7 +1370,7 @@ const Leaves: React.FC = () => {
       <Dialog open={showReopenDialog} onOpenChange={setShowReopenDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>إعادة فتح طلب الإجازة</DialogTitle>
+            <DialogTitle>{t("employee.leaves.reopenTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -1353,34 +1378,33 @@ const Leaves: React.FC = () => {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
                 <h3 className="font-medium text-amber-800">
-                  إعادة فتح طلب مرفوض
+                  {t("employee.leaves.reopenRejectedTitle")}
                 </h3>
               </div>
               <p className="mt-2 text-amber-700 text-sm">
-                سيتم إعادة فتح طلب الإجازة المرفوض وتحويله إلى حالة قيد الانتظار
-                مرة أخرى. هل أنت متأكد من المتابعة؟
+                {t("employee.leaves.reopenConfirm")}
               </p>
             </div>
 
             {selectedRequest && (
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500">الموظف:</span>
+                  <span className="text-gray-500">{t("employee.leaves.employee")}:</span>
                   <span className="font-medium">
                     {selectedRequest.employee?.firstName}{" "}
                     {selectedRequest.employee?.lastName}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500">نوع الإجازة:</span>
-                  <span>{leaveTypeConfig[selectedRequest.type]?.label}</span>
+                  <span className="text-gray-500">{t("employee.leaves.leaveType")}:</span>
+                  <span>{t(leaveTypeConfig[selectedRequest.type]?.labelKey)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500">المدة:</span>
-                  <span>{selectedRequest.totalDays} يوم</span>
+                  <span className="text-gray-500">{t("employee.leaves.duration")}:</span>
+                  <span>{selectedRequest.totalDays} {t("employee.leaves.day")}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500">سبب الرفض:</span>
+                  <span className="text-gray-500">{t("employee.leaves.rejectReasonLabel")}:</span>
                   <span className="text-red-600">
                     {selectedRequest.rejectionReason}
                   </span>
@@ -1394,14 +1418,14 @@ const Leaves: React.FC = () => {
               variant="outline"
               onClick={() => setShowReopenDialog(false)}
             >
-              إلغاء
+              {t("employee.leaves.cancelButton")}
             </Button>
             <Button
               variant="default"
               onClick={handleReopenRequest}
               className="bg-amber-600 hover:bg-amber-700"
             >
-              إعادة فتح الطلب
+              {t("employee.leaves.reopenButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1412,11 +1436,11 @@ const Leaves: React.FC = () => {
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
           <DialogHeader className="text-right">
             <DialogTitle className="text-2xl font-bold flex items-center justify-end gap-2">
-              <ArrowRight className="h-6 w-6 text-amber-600" /> {/* AGAIN */}
-              تعديل طلب الإجازة
+              <ArrowRight className="h-6 w-6 text-amber-600" />
+              {t("employee.leaves.editTitle")}
             </DialogTitle>
             <DialogDescription className="text-right text-gray-500 dark:text-gray-400">
-              قم بتعديل بيانات طلب الإجازة ثم اضغط على حفظ التعديلات.
+              {t("employee.leaves.editDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -1426,12 +1450,11 @@ const Leaves: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-amber-600" />
                   <h3 className="font-medium text-amber-800">
-                    تعديل طلب مرفوض
+                    {t("employee.leaves.editRejectedTitle")}
                   </h3>
                 </div>
                 <p className="mt-2 text-amber-700 text-sm">
-                  سيتم إعادة فتح طلب الإجازة المرفوض وتحويله إلى حالة قيد
-                  الانتظار مرة أخرى مع تطبيق التعديلات.
+                  {t("employee.leaves.rejectedEditNote")}
                 </p>
               </div>
             )}
@@ -1439,7 +1462,7 @@ const Leaves: React.FC = () => {
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <Palmtree className="h-4 w-4" />
-                نوع الإجازة
+                {t("employee.leaves.leaveTypeLabel")}
               </Label>
               <Select
                 value={editFormData.type}
@@ -1458,7 +1481,7 @@ const Leaves: React.FC = () => {
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <Wallet className="h-4 w-4" />
-                حالة الأجر
+                {t("employee.leaves.payStatusLabel")}
               </Label>
               <Select
                 value={editFormData.isPaid ? "PAID" : "UNPAID"}
@@ -1475,13 +1498,11 @@ const Leaves: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-                  <SelectItem value="PAID">مدفوعة الأجر</SelectItem>
-                  <SelectItem value="UNPAID">غير مدفوعة الأجر</SelectItem>
+                  <SelectItem value="PAID">{t("employee.leaves.paidOption")}</SelectItem>
+                  <SelectItem value="UNPAID">{t("employee.leaves.unpaidOption")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-
 
                 <SelectContent className="max-h-[200px] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                   {Object.entries(leaveTypeConfig).map(([key, config]) => (
@@ -1494,7 +1515,7 @@ const Leaves: React.FC = () => {
                         <config.icon
                           className={`h-4 w-4 ${config.color.split(" ")[1]}`}
                         />
-                        <span>{config.label}</span>
+                        <span>{t(config.labelKey)}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1506,7 +1527,7 @@ const Leaves: React.FC = () => {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <Calendar className="h-4 w-4" />
-                  من تاريخ
+                  {t("employee.leaves.fromDateLabel")}
                 </Label>
                 <Input
                   type="date"
@@ -1523,7 +1544,7 @@ const Leaves: React.FC = () => {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <Calendar className="h-4 w-4" />
-                  إلى تاريخ
+                  {t("employee.leaves.toDateLabel")}
                 </Label>
                 <Input
                   type="date"
@@ -1542,14 +1563,14 @@ const Leaves: React.FC = () => {
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <FileText className="h-4 w-4" />
-                سبب الإجازة
+                {t("employee.leaves.reasonLabel")}
               </Label>
               <Textarea
                 value={editFormData.reason}
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, reason: e.target.value })
                 }
-                placeholder="أدخل سبب الإجازة..."
+                placeholder={t("employee.leaves.reasonPlaceholder")}
                 rows={3}
                 className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-right dir-rtl"
               />
@@ -1564,9 +1585,9 @@ const Leaves: React.FC = () => {
                     <Clock className="h-4 w-4 text-primary" />
                   </div>
                   <div className="text-right">
-                    <Label className="text-sm font-medium">نصف يوم</Label>
+                    <Label className="text-sm font-medium">{t("employee.leaves.halfDay")}</Label>
                     <p className="text-xs text-gray-500">
-                      تقديم طلب لنصف يوم عمل فقط
+                      {t("employee.leaves.halfDayDesc")}
                     </p>
                   </div>
                 </div>
@@ -1582,7 +1603,7 @@ const Leaves: React.FC = () => {
               {editFormData.isHalfDay && (
                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
                   <Label className="text-xs text-gray-500 block text-right">
-                    فترة نصف اليوم
+                    {t("employee.leaves.halfDayPeriod")}
                   </Label>
                   <Select
                     value={editFormData.halfDayPeriod}
@@ -1591,20 +1612,20 @@ const Leaves: React.FC = () => {
                     }
                   >
                     <SelectTrigger className="w-full bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-right dir-rtl">
-                      <SelectValue placeholder="اختر الفترة" />
+                      <SelectValue placeholder={t("employee.leaves.periodPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem
                         value="MORNING"
                         className="justify-end cursor-pointer"
                       >
-                        الفترة الصباحية
+                        {t("employee.leaves.morningPeriod")}
                       </SelectItem>
                       <SelectItem
                         value="AFTERNOON"
                         className="justify-end cursor-pointer"
                       >
-                        الفترة المسائية
+                        {t("employee.leaves.afternoonPeriod")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -1615,14 +1636,14 @@ const Leaves: React.FC = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              إلغاء
+              {t("employee.leaves.cancelButton")}
             </Button>
             <Button
               variant="default"
               onClick={handleSaveEdit}
               className="bg-amber-600 hover:bg-amber-700"
             >
-              حفظ التعديلات
+              {t("employee.leaves.saveEdit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1643,10 +1664,10 @@ const Leaves: React.FC = () => {
           <DialogHeader className="text-right">
             <DialogTitle className="text-2xl font-bold flex items-center justify-end gap-2">
               <RotateCcw className="h-6 w-6 text-blue-600" />
-              تغيير القرار
+              {t("employee.leaves.changeDecisionTitle")}
             </DialogTitle>
             <DialogDescription className="text-right text-gray-500 dark:text-gray-400">
-              قم بتغيير قرار الموافقة أو الرفض لطلب الإجازة.
+              {t("employee.leaves.changeDecisionDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -1656,28 +1677,28 @@ const Leaves: React.FC = () => {
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900/30">
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">الموظف:</span>
+                    <span className="text-gray-500">{t("employee.leaves.employee")}:</span>
                     <span className="font-medium">
                       {selectedRequest.employee?.firstName}{" "}
                       {selectedRequest.employee?.lastName}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">نوع الإجازة:</span>
-                    <span>{leaveTypeConfig[selectedRequest.type]?.label}</span>
+                    <span className="text-gray-500">{t("employee.leaves.leaveType")}:</span>
+                    <span>{t(leaveTypeConfig[selectedRequest.type]?.labelKey)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">المدة:</span>
-                    <span>{selectedRequest.totalDays} يوم</span>
+                    <span className="text-gray-500">{t("employee.leaves.duration")}:</span>
+                    <span>{selectedRequest.totalDays} {t("employee.leaves.day")}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">الحالة الحالية:</span>
+                    <span className="text-gray-500">{t("employee.leaves.currentStatus")}:</span>
                     <Badge
                       className={
                         statusConfig[selectedRequest.status]?.color || ""
                       }
                     >
-                      {statusConfig[selectedRequest.status]?.label}
+                      {t(statusConfig[selectedRequest.status]?.labelKey)}
                     </Badge>
                   </div>
                 </div>
@@ -1686,7 +1707,7 @@ const Leaves: React.FC = () => {
               {/* اختيار القرار الجديد */}
               <div className="space-y-3">
                 <Label className="text-lg font-semibold">
-                  اختر القرار الجديد:
+                  {t("employee.leaves.newDecisionLabel")}
                 </Label>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -1706,10 +1727,10 @@ const Leaves: React.FC = () => {
                     disabled={selectedRequest.status === "APPROVED"}
                   >
                     <Check className="h-5 w-5 text-green-600" />
-                    <span className="font-medium text-xs">موافقة</span>
+                    <span className="font-medium text-xs">{t("employee.leaves.approveOption")}</span>
                     {selectedRequest.status === "APPROVED" && (
                       <span className="text-[10px] text-gray-500">
-                        (الحالة الحالية)
+                        {t("employee.leaves.currentStatusLabel")}
                       </span>
                     )}
                   </Button>
@@ -1730,10 +1751,10 @@ const Leaves: React.FC = () => {
                     disabled={selectedRequest.status === "REJECTED"}
                   >
                     <X className="h-5 w-5 text-red-600" />
-                    <span className="font-medium text-xs">رفض</span>
+                    <span className="font-medium text-xs">{t("employee.leaves.rejectOption")}</span>
                     {selectedRequest.status === "REJECTED" && (
                       <span className="text-[10px] text-gray-500">
-                        (الحالة الحالية)
+                        {t("employee.leaves.currentStatusLabel")}
                       </span>
                     )}
                   </Button>
@@ -1754,10 +1775,10 @@ const Leaves: React.FC = () => {
                     disabled={selectedRequest.status === "CANCELLED"}
                   >
                     <RotateCcw className="h-5 w-5 text-orange-600" />
-                    <span className="font-medium text-xs">إلغاء الطلب</span>
+                    <span className="font-medium text-xs">{t("employee.leaves.cancelRequest")}</span>
                     {selectedRequest.status === "CANCELLED" && (
                       <span className="text-[10px] text-gray-500">
-                        (الحالة الحالية)
+                        {t("employee.leaves.currentStatusLabel")}
                       </span>
                     )}
                   </Button>
@@ -1768,12 +1789,12 @@ const Leaves: React.FC = () => {
                   <div className="space-y-2 pt-2 animate-in slide-in-from-top-4 duration-300">
                     <Label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                       <FileText className="h-4 w-4" />
-                      سبب الرفض *
+                      {t("employee.leaves.rejectReasonLabel")} *
                     </Label>
                     <Textarea
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="أدخل سبب الرفض..."
+                      placeholder={t("employee.leaves.rejectReasonPlaceholder")}
                       rows={3}
                       className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-right"
                     />
@@ -1783,7 +1804,7 @@ const Leaves: React.FC = () => {
                       onClick={() => handleChangeDecision("REJECT")}
                     >
                       <X className="h-4 w-4 ml-2" />
-                      تأكيد الرفض
+                      {t("employee.leaves.confirmReject")}
                     </Button>
                   </div>
                 )}
@@ -1799,7 +1820,7 @@ const Leaves: React.FC = () => {
                 setRejectionReason("");
               }}
             >
-              إغلاق
+              {t("employee.leaves.closeButton")}
             </Button>
           </DialogFooter>
         </DialogContent>

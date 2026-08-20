@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BellRing, Check, Play, Save, Volume2 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import api from "../../services/api";
@@ -100,7 +100,7 @@ const OrderSoundSettings: React.FC = () => {
         if (!cancelled) {
           setFeedback({
             type: "error",
-            message: "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪╡┘ê╪¬ ╪º┘ä╪ó┘å.",
+            message: "تعذر تحميل إعدادات الصوت الآن.",
           });
         }
       })
@@ -170,7 +170,7 @@ const OrderSoundSettings: React.FC = () => {
       console.error("Error saving order sound settings:", error);
       setFeedback({
         type: "error",
-        message: "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬. ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.",
+        message: "فشل حفظ الإعدادات. حاول مرة أخرى.",
       });
     } finally {
       setSaving(false);
@@ -181,7 +181,7 @@ const OrderSoundSettings: React.FC = () => {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          ╪¼╪º╪▒┘è ╪¬╪¡┘à┘è┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪╡┘ê╪¬...
+          جاري تحميل إعدادات الصوت...
         </p>
       </div>
     );
@@ -212,7 +212,7 @@ const OrderSoundSettings: React.FC = () => {
         ) : (
           <Save className="ml-2 h-4 w-4" />
         )}
-        {saved ? "╪¬┘à ╪º┘ä╪¡┘ü╪╕" : saving ? "╪¼╪º╪▒┘è ╪º┘ä╪¡┘ü╪╕..." : "╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬"}
+        {saved ? "تم الحفظ" : saving ? "جاري الحفظ..." : "حفظ الإعدادات"}
       </button>
 
       {feedback ? (
@@ -263,7 +263,7 @@ const OrderSoundSettings: React.FC = () => {
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              ┘à╪│╪¬┘ê┘ë ╪º┘ä╪╡┘ê╪¬
+              مستوى الصوت
             </span>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               {current.volume}%
@@ -279,7 +279,7 @@ const OrderSoundSettings: React.FC = () => {
               onUpdate("volume", Number(event.target.value))
             }
             className={`w-full ${accentClass.range}`}
-            aria-label="┘à╪│╪¬┘ê┘ë ╪º┘ä╪╡┘ê╪¬"
+            aria-label="مستوى الصوت"
           />
         </div>
 
@@ -287,7 +287,7 @@ const OrderSoundSettings: React.FC = () => {
           <div className="mb-2 flex items-center gap-2">
             <BellRing className={`h-4 w-4 ${accentClass.icon}`} />
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              ╪º┘ä┘å╪║┘à╪⌐
+              النغمة
             </span>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -335,10 +335,10 @@ const OrderSoundSettings: React.FC = () => {
             className={`inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition ${accentClass.button}`}
           >
             <Play className="ml-2 h-4 w-4" />
-            ╪¬╪¼╪▒╪¿╪⌐ ╪º┘ä╪╡┘ê╪¬
+            تجربة الصوت
           </button>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            ╪º╪╢╪║╪╖ ┘ä┘ä╪º╪│╪¬┘à╪º╪╣ ╪Ñ┘ä┘ë ╪º┘ä┘å╪║┘à╪⌐ ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐ ┘é╪¿┘ä ╪º┘ä╪¡┘ü╪╕.
+            اضغط للاستماع إلى النغمة المختارة قبل الحفظ.
           </span>
         </div>
       </div>
@@ -353,11 +353,11 @@ const OrderSoundSettings: React.FC = () => {
             <Volume2 className="ml-3 h-6 w-6 text-amber-600 dark:text-amber-400" />
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ (╪Ñ┘å╪░╪º╪▒ ╪╣╪º┘ä┘è)
+                صوت الطلبات (إنذار عالي)
               </h3>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                ╪╡┘ü┘æ╪º╪▒╪⌐ ╪╣╪º┘ä┘è╪⌐ ╪¬┘Å╪╖┘ä┘é ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪¿┘à╪¼╪▒╪» ┘ê╪╡┘ê┘ä ╪ú┘è ╪╖┘ä╪¿ ╪¼╪»┘è╪» ┘à┘å ╪º┘ä┘à╪¬╪¼╪▒
-                ┘ä╪¬┘å╪¿┘è┘ç ╪º┘ä┘à┘ê╪╕┘ü┘è┘å ┘ü┘è ╪º┘ä┘à┘â╪º┘å ΓÇö ┘ê┘ä┘è╪│ ┘à╪¼╪▒╪» ╪Ñ╪┤╪╣╪º╪▒ ╪╡╪º┘à╪¬.
+                صفّارة عالية تُطلق تلقائياً بمجرد وصول أي طلب جديد من المتجر
+                لتنبيه الموظفين في المكان — وليس مجرد إشعار صامت.
               </p>
             </div>
           </div>
@@ -368,7 +368,7 @@ const OrderSoundSettings: React.FC = () => {
               sound.enabled ? "bg-amber-600" : "bg-gray-300 dark:bg-gray-600"
             }`}
             aria-pressed={sound.enabled}
-            aria-label="╪¬┘ü╪╣┘è┘ä ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬"
+            aria-label="تفعيل صوت الطلبات"
           >
             <span
               className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
@@ -389,11 +389,11 @@ const OrderSoundSettings: React.FC = () => {
             <BellRing className="ml-3 h-6 w-6 text-teal-600 dark:text-teal-400" />
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐
+                صوت الطلبات غير المكتملة
               </h3>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                ╪╡┘ê╪¬ ┘ç╪º╪»╪ª ┘è╪┤╪║┘æ┘ä ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘ä┘à╪º ╪╣┘à┘è┘ä ┘è╪¿╪»╪ú ╪╖┘ä╪¿ ┘ü┘è ╪º┘ä┘à╪¬╪¼╪▒ ┘ê┘è╪│┘è╪¿ ╪¿┘è╪º┘å╪º╪¬┘ç
-                ┘à┘å ╪║┘è╪▒ ┘à╪º ┘è┘â┘à┘æ┘ä (╪│┘ä╪⌐ ┘å╪º┘é╪╡╪⌐) ΓÇö ┘ä╪¬┘å╪¿┘è┘ç ┘ü╪▒┘è┘é ╪º┘ä┘à╪¬╪º╪¿╪╣╪⌐ ╪¿╪│╪▒╪╣╪⌐.
+                صوت هادئ يشغّل تلقائياً لما عميل يبدأ طلب في المتجر ويسيب بياناته
+                من غير ما يكمّل (سلة ناقصة) — لتنبيه فريق المتابعة بسرعة.
               </p>
             </div>
           </div>
@@ -404,7 +404,7 @@ const OrderSoundSettings: React.FC = () => {
               incompleteSound.enabled ? "bg-teal-600" : "bg-gray-300 dark:bg-gray-600"
             }`}
             aria-pressed={incompleteSound.enabled}
-            aria-label="╪¬┘ü╪╣┘è┘ä ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐"
+            aria-label="تفعيل صوت الطلبات غير المكتملة"
           >
             <span
               className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import i18n from "../../../i18n";
 import { uploadService } from "../../../services/uploadService";
-import { Upload, Trash2, ChevronUp, ChevronDown, GripVertical, Image as ImageIcon } from 'lucide-react';
+import { Upload, Trash2, ChevronUp, ChevronDown, GripVertical, Image as ImageIcon } from "lucide-react";
 
 export interface FieldDef {
     key: string;
@@ -73,7 +74,7 @@ const ListItemsEditor: React.FC<ListItemsEditorProps> = ({
             handleUpdateItem(index, key, url);
         } catch (error) {
             console.error("Upload error:", error);
-            alert("حدث خطأ أثناء رفع الصورة");
+            alert(i18n.t("ListItemsEditor.error_error_0ba3"));
         } finally {
             setUploadingIndex(null);
             // Reset input

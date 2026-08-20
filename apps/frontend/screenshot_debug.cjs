@@ -1,4 +1,4 @@
-﻿const playwright = require('playwright');
+const playwright = require('playwright');
 
 (async () => {
   const browser = await playwright.chromium.launch({ headless: true });
@@ -29,7 +29,7 @@
     const buttons = await page.$$('button');
     for (const btn of buttons) {
       const text = await btn.textContent();
-      if (text.includes('╪»╪«┘ê┘ä') || text.includes('Login') || text.includes('╪¬╪│╪¼┘è┘ä')) {
+      if (text.includes('دخول') || text.includes('Login') || text.includes('تسجيل')) {
         await btn.click();
         break;
       }

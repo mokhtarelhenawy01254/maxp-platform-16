@@ -1,6 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarRange, Gift, Plus, RefreshCw, Search, Sparkles, Star, Tag, Ticket, Trash2, Users } from 'lucide-react';
+import {
+  CalendarRange,
+  Gift,
+  Plus,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Ticket,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import {
   BusinessFilterSheet,
@@ -260,7 +271,7 @@ const PlatformSignupCoupons: React.FC = () => {
       setSummary(response.summary);
     } catch (error) {
       console.error("Failed to load platform signup coupons", error);
-      toast.error("فشل تحميل كوبونات التسجيل");
+      tToast.error("PlatformSignupCoupons.failed_load_ccaf");
     } finally {
       setLoading(false);
     }
@@ -355,7 +366,7 @@ const PlatformSignupCoupons: React.FC = () => {
         setCoupons((previous) =>
           previous.filter((coupon) => coupon.id !== couponPendingRemoval.id),
         );
-        toast.success("تم حذف كوبون التسجيل");
+        tToast.success("PlatformSignupCoupons.success_delete_6248");
       } else {
         setCoupons((previous) =>
           previous.map((coupon) =>
@@ -364,7 +375,7 @@ const PlatformSignupCoupons: React.FC = () => {
               : coupon,
           ),
         );
-        toast.success("تم إيقاف الكوبون مع الاحتفاظ بسجل الاستخدام");
+        tToast.success("PlatformSignupCoupons.msg_42c7");
       }
 
       setCouponPendingRemoval(null);

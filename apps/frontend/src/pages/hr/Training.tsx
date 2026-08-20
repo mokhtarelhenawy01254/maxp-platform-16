@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Award, Book, Calendar, Clock, DollarSign, Edit2, GraduationCap, Plus, User } from 'lucide-react';
+import {
+  GraduationCap,
+  Plus,
+  Calendar,
+  DollarSign,
+  Award,
+  Clock,
+  User,
+  Edit2,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Training {
   id: string;
@@ -40,7 +50,7 @@ const Training: React.FC = () => {
       setTrainings(response.data.trainings || []);
     } catch (error) {
       console.error("Error fetching trainings:", error);
-      toast.error("فشل في جلب سجلات التدريب");
+      tToast.error("Training.failed_fetch_8c5b");
     } finally {
       setLoading(false);
     }

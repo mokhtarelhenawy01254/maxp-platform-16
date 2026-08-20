@@ -7,7 +7,20 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Eye, Facebook, Image, Instagram, Layout, Loader2, MessageCircle, Monitor, Phone, RefreshCw, Smartphone } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Eye,
+  Smartphone,
+  Monitor,
+  RefreshCw,
+  Loader2,
+  ArrowLeft,
+  Facebook,
+  Instagram,
+  MessageCircle,
+  Layout,
+  Image,
+} from "lucide-react";
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 type PreviewFormat =
@@ -71,7 +84,7 @@ const AdPreview: React.FC = () => {
 
   const handlePreview = async () => {
     if (!formData.creativeId.trim()) {
-      toast.error("يرجى إدخال معرف الإعلان الإبداعي");
+      tToast.error("AdPreview.msg_068f");
       return;
     }
 
@@ -82,7 +95,7 @@ const AdPreview: React.FC = () => {
         selectedFormat,
       );
       setPreviewData(result);
-      toast.success("تم تحميل المعاينة بنجاح");
+      tToast.success("AdPreview.success_load_bb63");
     } catch (error: any) {
       console.error("Error loading preview:", error);
       toast.error(error?.response?.data?.error || "فشل في تحميل المعاينة");

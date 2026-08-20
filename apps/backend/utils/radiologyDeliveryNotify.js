@@ -1,23 +1,23 @@
-﻿/**
- * ≡ƒô¿ Radiology Delivery Notify ΓÇö ╪Ñ╪┤╪╣╪º╪▒ ╪º┘ä╪¬╪│┘ä┘è┘à (best-effort)
+/**
+ * 📨 Radiology Delivery Notify — إشعار التسليم (best-effort)
  *
- * ╪╣┘å╪» ╪¬╪│┘ä┘è┘à ┘å╪¬┘è╪¼╪⌐ ╪»╪▒╪º╪│╪⌐ ╪ú╪┤╪╣╪⌐╪î ┘è┘Å╪¡╪º┘ê┘ä ╪Ñ╪▒╪│╪º┘ä:
- *   1) PDF ╪¬┘é╪▒┘è╪▒ ╪º┘ä╪ú╪┤╪╣╪⌐ ┘ä┘ä┘à╪▒┘è╪╢ ╪╣╪¿╪▒ WhatsApp (╪Ñ╪░╪º ╪¬┘ê┘ü╪▒ ╪▒┘é┘à ┘ç╪º╪¬┘ü + ╪¬┘é╪▒┘è╪▒).
- *   2) ╪▒╪│╪º┘ä╪⌐ "╪º┘ä┘å╪¬┘è╪¼╪⌐ ╪¼╪º┘ç╪▓╪⌐" ┘ä┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à┘Å╪¡┘è┘ä ╪╣╪¿╪▒ WhatsApp (╪Ñ╪░╪º ┘ê┘Å╪¼╪» ╪▒┘é┘à ┘ç╪º╪¬┘ü┘ç).
+ * عند تسليم نتيجة دراسة أشعة، يُحاول إرسال:
+ *   1) PDF تقرير الأشعة للمريض عبر WhatsApp (إذا توفر رقم هاتف + تقرير).
+ *   2) رسالة "النتيجة جاهزة" للطبيب المُحيل عبر WhatsApp (إذا وُجد رقم هاتفه).
  *
- * ┘ç╪░┘ç ╪º┘ä╪»╪º┘ä╪⌐ ╪Ñ╪▒╪┤╪º╪»┘è╪⌐ ┘ä╪º ╪¬┘Å┘ü╪┤┘ä ╪ú╪¿╪»╪º┘ï ╪º┘ä╪╣┘à┘ä┘è╪⌐ ╪º┘ä╪ú╪╡┘ä┘è╪⌐: ┘â┘ä ╪┤┘è╪í ╪»╪º╪«┘ä try/catch
- * ┘ê╪¬╪╣┘è╪» ┘â╪º╪ª┘å ┘å╪¬╪º╪ª╪¼ ╪¿╪»┘ä╪º┘ï ┘à┘å ╪ú┘å ╪¬╪▒┘à┘è. ╪ú┘è ┘ü╪┤┘ä (╪¼┘ä╪│╪⌐ ╪║┘è╪▒ ┘à╪¬╪╡┘ä╪⌐╪î ╪▒┘é┘à ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪î
- * ┘ü╪┤┘ä ╪¬┘ê┘ä┘è╪» PDF...) ┘è┘Å╪│╪¼┘Ä┘æ┘ä ┘ü┘é╪╖ ╪╣╪¿╪▒ console.log/warn.
+ * هذه الدالة إرشادية لا تُفشل أبداً العملية الأصلية: كل شيء داخل try/catch
+ * وتعيد كائن نتائج بدلاً من أن ترمي. أي فشل (جلسة غير متصلة، رقم غير موجود،
+ * فشل توليد PDF...) يُسجَّل فقط عبر console.log/warn.
  *
- * ┘å┘à╪╖ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘à╪╣╪º╪» ╪º╪│╪¬╪«╪»╪º┘à┘ç: ┘å┘ü╪│ ┘å┘à╪╖ `sendTierCardImage` ┘ü┘è
- * services/loyalty/loyaltyTierCardService.js ΓÇö ╪¼┘ä╪│╪⌐ Baileys ┘à┘å ╪º┘ä╪░╪º┘â╪▒╪⌐ ╪ú┘ê┘ä╪º┘ï ╪½┘à
- * ┘à┘å ┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¿┘è╪º┘å╪º╪¬╪î ╪½┘à ╪º╪│╪¬╪»╪╣╪º╪í WhatsAppMessageHandler.sendDocument / sendText.
+ * نمط الإرسال المعاد استخدامه: نفس نمط `sendTierCardImage` في
+ * services/loyalty/loyaltyTierCardService.js — جلسة Baileys من الذاكرة أولاً ثم
+ * من قاعدة البيانات، ثم استدعاء WhatsAppMessageHandler.sendDocument / sendText.
  */
 
 const { formatPhoneNumber } = require('./phoneFormat');
 
 /**
- * ╪Ñ┘è╪¼╪º╪» ╪¼┘ä╪│╪⌐ Baileys ┘à╪¬╪╡┘ä╪⌐ ┘ä┘ä╪┤╪▒┘â╪⌐ (┘à┘å ╪º┘ä╪░╪º┘â╪▒╪⌐ ╪ú┘ê┘ä╪º┘ï ╪½┘à ┘à┘å ┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¿┘è╪º┘å╪º╪¬).
+ * إيجاد جلسة Baileys متصلة للشركة (من الذاكرة أولاً ثم من قاعدة البيانات).
  */
 async function resolveBaileysSession(prisma, companyId) {
   const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
@@ -36,7 +36,7 @@ async function resolveBaileysSession(prisma, companyId) {
 }
 
 /**
- * ╪Ñ╪▒╪│╪º┘ä ┘å╪╡ ╪╣╪¿╪▒ WhatsApp (best-effort).
+ * إرسال نص عبر WhatsApp (best-effort).
  */
 async function sendWhatsAppText(prisma, companyId, phone, text) {
   const formatted = formatPhoneNumber(phone);
@@ -49,7 +49,7 @@ async function sendWhatsAppText(prisma, companyId, phone, text) {
 }
 
 /**
- * ╪Ñ╪▒╪│╪º┘ä PDF ╪╣╪¿╪▒ WhatsApp (best-effort).
+ * إرسال PDF عبر WhatsApp (best-effort).
  */
 async function sendWhatsAppPdf(prisma, companyId, phone, buffer, fileName, caption) {
   const formatted = formatPhoneNumber(phone);
@@ -68,7 +68,7 @@ async function sendWhatsAppPdf(prisma, companyId, phone, buffer, fileName, capti
 }
 
 /**
- * ╪¡┘ä ╪▒┘é┘à ┘ç╪º╪¬┘ü ╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à┘Å╪¡┘è┘ä: ╪╣╪¿╪▒ referringPhysicianId╪î ╪½┘à ┘à╪¡╪º┘ê┘ä╪⌐ ┘à╪╖╪º╪¿┘é╪⌐ ╪º┘ä╪º╪│┘à.
+ * حل رقم هاتف الطبيب المُحيل: عبر referringPhysicianId، ثم محاولة مطابقة الاسم.
  */
 async function resolvePhysicianPhone(prisma, companyId, study) {
   if (study.referringPhysicianId) {
@@ -93,19 +93,19 @@ async function resolvePhysicianPhone(prisma, companyId, study) {
 }
 
 function buildReadyText(study) {
-  const lines = ['┘å╪¬┘è╪¼╪⌐ ╪º┘ä┘ü╪¡╪╡ ╪¼╪º┘ç╪▓╪⌐ ≡ƒ⌐║', ''];
-  lines.push(`╪º┘ä╪º╪│┘à: ${study.patientName || 'ΓÇö'}`);
-  lines.push(`╪º┘ä┘ü╪¡╪╡: ${study.examTypeName || study.modality || 'ΓÇö'}`);
-  if (study.studyNumber) lines.push(`╪▒┘é┘à ╪º┘ä╪¡╪º┘ä╪⌐: ${study.studyNumber}`);
+  const lines = ['نتيجة الفحص جاهزة 🩺', ''];
+  lines.push(`الاسم: ${study.patientName || '—'}`);
+  lines.push(`الفحص: ${study.examTypeName || study.modality || '—'}`);
+  if (study.studyNumber) lines.push(`رقم الحالة: ${study.studyNumber}`);
   return lines.join('\n');
 }
 
 /**
- * ╪Ñ╪┤╪╣╪º╪▒ ╪¬╪│┘ä┘è┘à ╪»╪▒╪º╪│╪⌐ ╪ú╪┤╪╣╪⌐ (best-effort ΓÇö ┘ä╪º ┘è╪▒┘à┘è ╪ú╪¿╪»╪º┘ï).
- * @param {object} prisma - ╪╣┘à┘è┘ä Prisma ┘à╪┤╪¬╪▒┘â.
- * @param {object} study - ╪»╪▒╪º╪│╪⌐ ╪¿╪╣╪» ╪º┘ä╪¬╪│┘ä┘è┘à (┘è┘Å┘ü╪╢┘æ┘ä ╪ú┘å ╪¬╪¡╪¬┘ê┘è report).
+ * إشعار تسليم دراسة أشعة (best-effort — لا يرمي أبداً).
+ * @param {object} prisma - عميل Prisma مشترك.
+ * @param {object} study - دراسة بعد التسليم (يُفضّل أن تحتوي report).
  * @param {object} options - { companyId }
- * @returns {Promise<{ patientPdf, physicianText }>} ┘å╪¬╪º╪ª╪¼ ╪º┘ä╪Ñ╪▒╪│╪º┘ä (success/reason).
+ * @returns {Promise<{ patientPdf, physicianText }>} نتائج الإرسال (success/reason).
  */
 async function notifyStudyDelivery(prisma, study, { companyId } = {}) {
   const results = { patientPdf: null, physicianText: null };
@@ -125,7 +125,7 @@ async function notifyStudyDelivery(prisma, study, { companyId } = {}) {
     const deliverPatient = settings.deliverSmsPatient === undefined || settings.deliverSmsPatient === 'true';
     const notifyPhysician = settings.notifyReferringDoctor === undefined || settings.notifyReferringDoctor === 'true';
 
-    // 1) PDF ╪º┘ä╪¬┘é╪▒┘è╪▒ ┘ä┘ä┘à╪▒┘è╪╢
+    // 1) PDF التقرير للمريض
     if (deliverPatient && study.patientPhone && study.report) {
       try {
         const { generateStudyReportPdf } = require('../services/radiologyPdfService');
@@ -137,37 +137,37 @@ async function notifyStudyDelivery(prisma, study, { companyId } = {}) {
         }
         const pdfBuffer = await generateStudyReportPdf({ ...study, report: study.report }, company);
         const fileName = `report-${(study.studyNumber || study.id || 'study').replace(/[^a-zA-Z0-9-]/g, '')}.pdf`;
-        const caption = `╪¬┘é╪▒┘è╪▒ ╪º┘ä╪ú╪┤╪╣╪⌐ ╪¼╪º┘ç╪▓ Γ£à${study.studyNumber ? ` ΓÇö ╪¡╪º┘ä╪⌐ ${study.studyNumber}` : ''}`;
+        const caption = `تقرير الأشعة جاهز ✅${study.studyNumber ? ` — حالة ${study.studyNumber}` : ''}`;
         results.patientPdf = await sendWhatsAppPdf(prisma, cid, study.patientPhone, pdfBuffer, fileName, caption);
         console.log(
-          `[RADIOLOGY-NOTIFY] Patient PDF ${results.patientPdf.success ? 'sent' : `skipped (${results.patientPdf.reason})`} ΓÇö study ${study.id}`
+          `[RADIOLOGY-NOTIFY] Patient PDF ${results.patientPdf.success ? 'sent' : `skipped (${results.patientPdf.reason})`} — study ${study.id}`
         );
       } catch (e) {
         console.warn('[RADIOLOGY-NOTIFY] Patient PDF failed (non-blocking):', e?.message || e);
       }
     } else {
       console.log(
-        `[RADIOLOGY-NOTIFY] Patient PDF skipped ΓÇö deliverPatient=${deliverPatient}, missing phone/report (study ${study.id})`
+        `[RADIOLOGY-NOTIFY] Patient PDF skipped — deliverPatient=${deliverPatient}, missing phone/report (study ${study.id})`
       );
     }
 
-    // 2) ╪Ñ╪┤╪╣╪º╪▒ ╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à┘Å╪¡┘è┘ä
+    // 2) إشعار الطبيب المُحيل
     if (notifyPhysician) {
       try {
         const phone = await resolvePhysicianPhone(prisma, cid, study);
         if (phone) {
           results.physicianText = await sendWhatsAppText(prisma, cid, phone, buildReadyText(study));
           console.log(
-            `[RADIOLOGY-NOTIFY] Physician text ${results.physicianText.success ? 'sent' : `skipped (${results.physicianText.reason})`} ΓÇö study ${study.id}`
+            `[RADIOLOGY-NOTIFY] Physician text ${results.physicianText.success ? 'sent' : `skipped (${results.physicianText.reason})`} — study ${study.id}`
           );
         } else {
-          console.log(`[RADIOLOGY-NOTIFY] Physician text skipped ΓÇö no physician phone (study ${study.id})`);
+          console.log(`[RADIOLOGY-NOTIFY] Physician text skipped — no physician phone (study ${study.id})`);
         }
       } catch (e) {
         console.warn('[RADIOLOGY-NOTIFY] Physician notify failed (non-blocking):', e?.message || e);
       }
     } else {
-      console.log(`[RADIOLOGY-NOTIFY] Physician text skipped ΓÇö notifyReferringDoctor=${notifyPhysician} (study ${study.id})`);
+      console.log(`[RADIOLOGY-NOTIFY] Physician text skipped — notifyReferringDoctor=${notifyPhysician} (study ${study.id})`);
     }
   } catch (e) {
     console.warn('[RADIOLOGY-NOTIFY] notifyStudyDelivery failed (non-blocking):', e?.message || e);

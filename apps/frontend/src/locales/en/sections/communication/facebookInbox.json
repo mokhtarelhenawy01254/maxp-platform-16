@@ -1,8 +1,8 @@
-﻿{
+{
   "customer": "Customer",
   "employee": "Employee",
-  "photo": "≡ƒô╖ Photo",
-  "photos": "≡ƒô╖ {{count}} photos",
+  "photo": "📷 Photo",
+  "photos": "📷 {{count}} photos",
   "hideCustomerData": "Hide customer data",
   "showCustomerData": "Show customer data",
   "customerData": "Customer data",
@@ -23,7 +23,7 @@
   "selectConversation": "Select a conversation",
   "selectConversationHint": "Select a conversation from the list",
   "closeCustomerData": "Close customer data",
-  "disconnected": "ΓÜá∩╕Å Disconnected",
+  "disconnected": "⚠️ Disconnected",
   "blockOnFacebook": "Block customer on Facebook page",
   "blockOnFacebookDesc": "This customer will be blocked on the specified Facebook page and their messages will not be received.",
   "blockReason": "Block reason (optional)",
@@ -31,5 +31,5 @@
   "cancel": "Cancel",
   "blocking": "Blocking...",
   "confirmBlock": "Confirm block",
-  "customerBlocked": "ΓÜá∩╕Å This customer is blocked on the Facebook page - their messages will not be received"
+  "customerBlocked": "⚠️ This customer is blocked on the Facebook page - their messages will not be received"
 }

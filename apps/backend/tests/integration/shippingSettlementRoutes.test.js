@@ -1,4 +1,4 @@
-﻿const request = require('supertest');
+const request = require('supertest');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -94,8 +94,8 @@ describe('Shipping Settlement Routes', () => {
         customerName: 'Settle Customer',
         customerPhone: '01000000007',
         customerEmail: customer.email,
-        city: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
-        governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+        city: 'القاهرة',
+        governorate: 'القاهرة',
         sourceType: 'manual'
       }
     });
@@ -127,7 +127,7 @@ describe('Shipping Settlement Routes', () => {
     });
 
     // Turbo shipments live on the Order table (turboShipmentId / turboShipmentStatus),
-    // not on Shipment rows ΓÇö they must surface in settlement as a virtual "TURBO" company.
+    // not on Shipment rows — they must surface in settlement as a virtual "TURBO" company.
     turboOrder = await prisma.order.create({
       data: {
         orderNumber: `ORD-TURBO-${unique}`,
@@ -145,8 +145,8 @@ describe('Shipping Settlement Routes', () => {
         customerName: 'Turbo Customer',
         customerPhone: '01000000008',
         customerEmail: customer.email,
-        city: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
-        governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+        city: 'القاهرة',
+        governorate: 'القاهرة',
         sourceType: 'manual',
         turboShipmentId: `TB-${unique}-01`,
         turboTrackingNumber: `TB-${unique}-01`,
@@ -172,8 +172,8 @@ describe('Shipping Settlement Routes', () => {
         customerName: 'Turbo Pending',
         customerPhone: '01000000009',
         customerEmail: customer.email,
-        city: '╪º┘ä╪¼┘è╪▓╪⌐',
-        governorate: '╪º┘ä╪¼┘è╪▓╪⌐',
+        city: 'الجيزة',
+        governorate: 'الجيزة',
         sourceType: 'manual',
         turboShipmentId: `TB-${unique}-02`,
         turboTrackingNumber: `TB-${unique}-02`,

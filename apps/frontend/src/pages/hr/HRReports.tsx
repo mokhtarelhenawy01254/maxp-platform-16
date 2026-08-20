@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Activity, AlertTriangle, Award, BarChart, Book, BookOpen, Calendar, Check, Clock, DollarSign, Download, File, FileText, PieChart as PieChartIcon, RefreshCw, Shuffle, TrendingDown, TrendingUp, UserCheck, Users, X } from 'lucide-react';
+import {
+  Download,
+  Calendar,
+  Users,
+  Clock,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  FileText,
+  RefreshCw,
+  Check,
+  X,
+  Award,
+  AlertTriangle,
+  BookOpen,
+  Activity,
+  Shuffle,
+  UserCheck,
+  BarChart3,
+  PieChart as PieChartIcon,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Label } from "../../components/ui/label";
@@ -14,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import { Progress } from "../../components/ui/progress";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   PieChart,
   Pie,
@@ -246,7 +267,7 @@ const HRReports: React.FC = () => {
    */
   const handleExport = () => {
     if (!payrollReport && activeTab === "payroll") {
-      toast.error("لا توجد بيانات للتصدير");
+      tToast.error("HRReports.msg_80be");
       return;
     }
 
@@ -277,7 +298,7 @@ const HRReports: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      toast.success("تم تصدير التقرير بنجاح");
+      tToast.success("HRReports.msg_ed25");
     } else {
       // Basic export for other tabs
       let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
@@ -296,7 +317,7 @@ const HRReports: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      toast.success("تم تصدير ملف تجريبي للتقرير");
+      tToast.success("HRReports.msg_4045");
     }
   };
 

@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, safeQuery } = require('../sharedDatabase');
+const { getSharedPrismaClient, safeQuery } = require('../sharedDatabase');
 const {
   sendNotification,
   isDuplicateNotification,
@@ -103,7 +103,7 @@ async function handleCartCreated(cart) {
       eventType: EVENT_TYPE,
       channel: template?.channel || 'AUTO',
       variables: {
-        customerName: name || '╪╣┘à┘è┘ä┘å╪º ╪º┘ä╪╣╪▓┘è╪▓',
+        customerName: name || 'عميلنا العزيز',
         itemCount: (Array.isArray(items) ? items.length : 0).toString(),
         total: total.toString(),
         currency: 'EGP',
@@ -112,7 +112,7 @@ async function handleCartCreated(cart) {
       priority: 3,
     });
   } catch (error) {
-    console.error('Γ¥î [INCOMPLETE-CART-MSG] Failed to send first-appearance message:', error.message);
+    console.error('❌ [INCOMPLETE-CART-MSG] Failed to send first-appearance message:', error.message);
     return { success: false, reason: 'error', error: error.message };
   }
 }

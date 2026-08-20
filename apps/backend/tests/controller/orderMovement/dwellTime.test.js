@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/orderMovementCore', () => ({
+jest.mock('../../../services/orderMovementCore', () => ({
   fetchOrderMovementData: jest.fn(),
   buildTransitions: jest.fn(),
   normalizeDateRange: jest.fn(() => ({ start: null, end: null })),
@@ -283,7 +283,7 @@ describe('dwellTimeController', () => {
     });
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
     expect(core.fetchOrderMovementData).not.toHaveBeenCalled();
   });
 });

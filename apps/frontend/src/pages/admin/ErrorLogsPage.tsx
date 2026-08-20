@@ -1,7 +1,12 @@
-import { Download as ArrowDownTrayIcon, Trash2 as TrashIcon, RefreshCw as ArrowPathIcon, AlertTriangle as ExclamationTriangleIcon, Filter as FunnelIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import errorLogger, { ErrorLog } from "../../utils/errorLogger";
-;
+import {
+  ArrowDownTrayIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  ExclamationTriangleIcon,
+  FunnelIcon,
+} from "@heroicons/react/24/outline";
 
 const ErrorLogsPage: React.FC = () => {
   const [logs, setLogs] = useState<ErrorLog[]>([]);

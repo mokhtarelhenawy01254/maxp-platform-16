@@ -1,10 +1,22 @@
-import { Circle as UserGroupIcon, Clock as ClockIcon, Star as SparklesIcon, List as ListBulletIcon, Activity as ChartBarIcon, Calendar as CalendarIcon, RefreshCw as ArrowPathIcon, AlertTriangle as ExclamationTriangleIcon, Circle as ClipboardDocumentListIcon, Circle as BriefcaseIcon, Users as UsersIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  UserGroupIcon,
+  ClockIcon,
+  SparklesIcon,
+  ListBulletIcon,
+  ChartBarIcon,
+  CalendarIcon,
+  ArrowPathIcon,
+  ExclamationTriangleIcon,
+  ClipboardDocumentListIcon,
+  BriefcaseIcon,
+  UsersIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 import {
   BarChart,
   Bar,

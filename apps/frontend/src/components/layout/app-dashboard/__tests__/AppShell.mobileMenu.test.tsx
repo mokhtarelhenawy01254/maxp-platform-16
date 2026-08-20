@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import AppShell from "../AppShell";

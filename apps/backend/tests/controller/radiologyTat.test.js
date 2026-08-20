@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -29,18 +29,18 @@ const req = (overrides = {}) => ({
   ...overrides,
 });
 
-// ╪»╪▒╪º╪│╪⌐ ┘ê╪º╪¡╪»╪⌐ ┘à╪│┘ä┘æ┘à╪⌐ ╪¿╪¿┘è╪º┘å╪º╪¬ ╪▓┘à┘å┘è╪⌐ ┘à╪╣╪▒┘ê┘ü╪⌐:
-// 08:00 ΓåÆ 09:00 PREP (PENDING_IMAGINGΓåÆIMAGED)    = 1h
-// 09:00 ΓåÆ 11:00 PREP (IMAGEDΓåÆREPORTED)           = 2h
-// 11:00 ΓåÆ 12:00 PREP (REPORTEDΓåÆDELIVERED)        = 1h
-// 10:00 ΓåÆ 10:30 REPORT (DRAFTΓåÆSIGNED)            = 0.5h
-// 10:30 ΓåÆ 12:00 REPORT (SIGNEDΓåÆDELIVERED)        = 1.5h
-// ╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è: createdAt 08:00 ΓåÆ DELIVERED 12:00    = 4h
+// دراسة واحدة مسلّمة ببيانات زمنية معروفة:
+// 08:00 → 09:00 PREP (PENDING_IMAGING→IMAGED)    = 1h
+// 09:00 → 11:00 PREP (IMAGED→REPORTED)           = 2h
+// 11:00 → 12:00 PREP (REPORTED→DELIVERED)        = 1h
+// 10:00 → 10:30 REPORT (DRAFT→SIGNED)            = 0.5h
+// 10:30 → 12:00 REPORT (SIGNED→DELIVERED)        = 1.5h
+// الإجمالي: createdAt 08:00 → DELIVERED 12:00    = 4h
 const deliveredStudy = {
   id: 's1',
   companyId: 'company-1',
   modality: 'CT',
-  assignedRadiologistName: '╪». ╪ú╪¡┘à╪»',
+  assignedRadiologistName: 'د. أحمد',
   emergency: true,
   status: 'DELIVERED',
   createdAt: new Date('2026-08-01T08:00:00.000Z'),
@@ -59,12 +59,12 @@ const stuckEmergency = {
   id: 's2',
   companyId: 'company-1',
   studyNumber: 'RAD-20260801-0002',
-  patientName: '┘à╪▒┘è╪╢ ╪╖╪º╪▒╪ª',
+  patientName: 'مريض طارئ',
   examTypeName: 'MRI',
   modality: 'MR',
   status: 'IMAGED',
   createdAt: new Date('2026-07-20T10:00:00.000Z'),
-  assignedRadiologistName: '╪». ┘à╪¡┘à╪»',
+  assignedRadiologistName: 'د. محمد',
 };
 
 const createPrisma = () => {
@@ -93,7 +93,7 @@ describe('radiologyTatController', () => {
       await controller.getTatStatistics(req({ user: {} }), res);
 
       expect(res.statusCode).toBe(403);
-      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+      expect(res.payload.error).toBe('غير مصرح');
       expect(prisma.radiologyStudy.findMany).not.toHaveBeenCalled();
     });
   });
@@ -137,7 +137,7 @@ describe('radiologyTatController', () => {
 
       expect(overall).toEqual({ count: 1, avgHours: 4, minHours: 4, maxHours: 4 });
       expect(byModality).toEqual([{ modality: 'CT', count: 1, avgHours: 4, minHours: 4, maxHours: 4 }]);
-      expect(byRadiologist).toEqual([{ radiologist: '╪». ╪ú╪¡┘à╪»', count: 1, avgHours: 4, minHours: 4, maxHours: 4 }]);
+      expect(byRadiologist).toEqual([{ radiologist: 'د. أحمد', count: 1, avgHours: 4, minHours: 4, maxHours: 4 }]);
     });
 
     test('returns stuck emergencies from a separate query', async () => {
@@ -152,7 +152,7 @@ describe('radiologyTatController', () => {
       expect(stuckEmergencies[0].id).toBe('s2');
       expect(stuckEmergencies[0].status).toBe('IMAGED');
 
-      // ╪¬╪ú┘â╪» ┘à┘å ╪ú┘å ╪º╪│╪¬╪╣┘ä╪º┘à╪º╪¬ findMany ╪¬┘à╪¬ ┘à╪▒╪¬┘è┘å: ╪º┘ä╪ú┘ê┘ä┘ë ╪¿╪º┘ä╪»╪▒╪º╪│╪º╪¬ + ╪º┘ä╪¬╪º┘ä╪¬╪º╪▒┘è╪«╪î ╪º┘ä╪½╪º┘å┘è╪⌐ ┘ä┘ä╪╖╪º╪▒╪ª╪⌐
+      // تأكد من أن استعلامات findMany تمت مرتين: الأولى بالدراسات + التالتاريخ، الثانية للطارئة
       const calls = prisma.radiologyStudy.findMany.mock.calls.map((c) => c[0]);
       expect(calls.some((c) => c.include?.statusHistory)).toBe(true);
       expect(calls.some((c) => c.where?.status?.notIn)).toBe(true);

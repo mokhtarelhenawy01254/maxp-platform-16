@@ -1245,464 +1245,63 @@ exports.getProductsForNotification = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-// 🎂 Birthday Tracker & Automation Controls
-// ─────────────────────────────────────────────────────────────
-
-const birthdaySettingsStore = new Map();
-
 /**
- * جلب إعدادات أتمتة رسائل اعياد الميلاد
+ * 🎉 جدولة حملة مناسبة (أوتوماتيك) — بتتبعت لوحدها في الموعد المحدد
+ * POST /api/v1/customers/whatsapp-notify/occasions/schedule
  */
-exports.getBirthdayAutomationSettings = async (req, res) => {
-    try {
-        const companyId = req.user.companyId;
-        const prisma = getSharedPrismaClient();
-
-        let settings = birthdaySettingsStore.get(companyId);
-        if (!settings) {
-            // محاولة جلب من DB إن وجد في StoreSetting أو افتراضي
-            try {
-                const storeSetting = await prisma.storeSetting.findFirst({
-                    where: { companyId, key: 'whatsapp_birthday_automation' }
-                });
-                if (storeSetting && storeSetting.value) {
-                    settings = typeof storeSetting.value === 'string' ? JSON.parse(storeSetting.value) : storeSetting.value;
-                }
-            } catch (e) {
-                // Ignore DB error fallback to default
-            }
-        }
-
-        if (!settings) {
-            settings = {
-                isEnabled: true,
-                dailySendTime: '12:00',
-                channel: 'whatsapp_session', // 'meta_api' or 'whatsapp_session'
-                messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\n\nاضغط على الرابط التالي للدخول لصفحتك واستلام هديتك فوراً:\n🔗 {customer_link}\n\nنتمنى لك سنة سعيدة مليئة بالنجاح! ❤️',
-                couponCode: 'HBD10',
-                metaTemplateName: 'birthday_greeting_v1'
-            };
-        }
-
-
-        return res.json({ success: true, data: settings });
-    } catch (error) {
-        console.error('[CWA] getBirthdayAutomationSettings error:', error);
-        return res.status(500).json({ success: false, message: 'فشل في جلب إعدادات اعياد الميلاد' });
-    }
-};
-
-/**
- * حفظ وتحديث إعدادات أتمتة اعياد الميلاد
- */
-exports.saveBirthdayAutomationSettings = async (req, res) => {
-    try {
-        const companyId = req.user.companyId;
-        const { isEnabled, dailySendTime, channel, messageTemplate, couponCode, metaTemplateName } = req.body;
-        const prisma = getSharedPrismaClient();
-
-        const updatedSettings = {
-            isEnabled: Boolean(isEnabled),
-            dailySendTime: dailySendTime || '12:00',
-            channel: channel || 'whatsapp_session',
-            messageTemplate: messageTemplate || '',
-            couponCode: couponCode || '',
-            metaTemplateName: metaTemplateName || 'birthday_greeting_v1',
-            updatedAt: new Date().toISOString()
-        };
-
-        birthdaySettingsStore.set(companyId, updatedSettings);
-
-        try {
-            await prisma.storeSetting.upsert({
-                where: { companyId_key: { companyId, key: 'whatsapp_birthday_automation' } },
-                update: { value: JSON.stringify(updatedSettings) },
-                create: { companyId, key: 'whatsapp_birthday_automation', value: JSON.stringify(updatedSettings) }
-            });
-        } catch (dbErr) {
-            console.log('[CWA] DB save warning for birthday settings:', dbErr.message);
-        }
-
-        return res.json({ success: true, message: 'تم حفظ الإعدادات بنجاح', data: updatedSettings });
-    } catch (error) {
-        console.error('[CWA] saveBirthdayAutomationSettings error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ أثناء حفظ الإعدادات' });
-    }
-};
-
-/**
- * جلب تتبع اعياد ميلاد اليوم (العملاء + حالة الإرسال)
- */
-exports.getTodayBirthdayTrack = async (req, res) => {
+exports.scheduleOccasionCampaign = async (req, res) => {
     try {
         const { companyId } = req.user;
-        const prisma = getSharedPrismaClient();
-        const today = new Date();
-        const currentMonth = today.getMonth() + 1;
-        const currentDay = today.getDate();
+        const { name, message, scheduledAt, targetAudience } = req.body || {};
 
-        const customers = await safeQuery(() =>
-            prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
-                select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true }
-            })
-        );
-
-        const todayBirthdays = [];
-        for (const customer of customers) {
-            const dateParts = extractBirthdayParts(customer);
-            if (dateParts && dateParts.month === currentMonth && dateParts.day === currentDay) {
-                todayBirthdays.push({
-                    id: customer.id,
-                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عميل بدون اسم',
-                    phone: customer.phone,
-                    email: customer.email,
-                    birthday: `${dateParts.year || '----'}-${pad2(dateParts.month)}-${pad2(dateParts.day)}`,
-                    age: dateParts.year ? today.getFullYear() - dateParts.year : null,
-                    scheduledTime: '12:00 PM',
-                    status: 'scheduled', // 'scheduled' | 'sent' | 'failed'
-                    sentAt: null
-                });
-            }
+        if (!message || !String(message).trim()) {
+            return res.status(400).json({ success: false, message: 'الرسالة مطلوبة' });
         }
-
-        return res.json({
-            success: true,
-            totalToday: todayBirthdays.length,
-            data: todayBirthdays
-        });
-    } catch (error) {
-        console.error('[CWA] getTodayBirthdayTrack error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب اعياد ميلاد اليوم' });
-    }
-};
-
-/**
- * جلب اعياد الميلاد القادمة (خلال N يوم)
- */
-exports.getUpcomingBirthdaysTrack = async (req, res) => {
-    try {
-        const { companyId } = req.user;
-        const daysAhead = parseInt(req.query.days || '30', 10);
-        const prisma = getSharedPrismaClient();
-
-        const customers = await safeQuery(() =>
-            prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
-                select: { id: true, firstName: true, lastName: true, phone: true, metadata: true }
-            })
-        );
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const upcoming = [];
-        for (const customer of customers) {
-            const dateParts = extractBirthdayParts(customer);
-            if (!dateParts) continue;
-
-            const nextBday = new Date(today.getFullYear(), dateParts.month - 1, dateParts.day);
-            if (nextBday < today) {
-                nextBday.setFullYear(today.getFullYear() + 1);
-            }
-
-            const diffTime = nextBday.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays >= 0 && diffDays <= daysAhead) {
-                upcoming.push({
-                    id: customer.id,
-                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عميل بدون اسم',
-                    phone: customer.phone,
-                    birthdayDate: `${pad2(dateParts.month)}-${pad2(dateParts.day)}`,
-                    daysRemaining: diffDays,
-                    formattedNextDate: nextBday.toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' })
-                });
-            }
+        if (!scheduledAt) {
+            return res.status(400).json({ success: false, message: 'تاريخ الإرسال مطلوب' });
         }
-
-        upcoming.sort((a, b) => a.daysRemaining - b.daysRemaining);
-
-        return res.json({ success: true, total: upcoming.length, data: upcoming });
-    } catch (error) {
-        console.error('[CWA] getUpcomingBirthdaysTrack error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب اعياد الميلاد القادمة' });
-    }
-};
-
-/**
- * جلب قائمة العملاء بدون تاريخ ميلاد لتنبيه الموظفين
- */
-exports.getMissingBirthdaysTrack = async (req, res) => {
-    try {
-        const { companyId } = req.user;
-        const prisma = getSharedPrismaClient();
-
-        const customers = await safeQuery(() =>
-            prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
-                select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true },
-                take: 100
-            })
-        );
-
-        const missing = [];
-        for (const customer of customers) {
-            const dateParts = extractBirthdayParts(customer);
-            if (!dateParts) {
-                missing.push({
-                    id: customer.id,
-                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عميل بدون اسم',
-                    phone: customer.phone,
-                    email: customer.email,
-                    createdAt: customer.createdAt
-                });
-            }
-        }
-
-        return res.json({ success: true, totalMissing: missing.length, data: missing });
-    } catch (error) {
-        console.error('[CWA] getMissingBirthdaysTrack error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب العملاء الناقص بياناتهم' });
-    }
-};
-
-/**
- * إرسال رسالة تهنئة تجريبية
- */
-exports.sendTestBirthdayMessage = async (req, res) => {
-    try {
-        const { companyId } = req.user;
-        const { testPhone, messageTemplate, couponCode } = req.body;
-
-        if (!testPhone) {
-            return res.status(400).json({ success: false, message: 'يرجى كتابة رقم الهاتف التجريبي' });
-        }
-
-        const formattedMsg = (messageTemplate || 'كل سنة وأنت طيب يا {first_name}!')
-            .replace(/\{first_name\}/g, 'أحمد')
-            .replace(/\{full_name\}/g, 'أحمد محمود')
-            .replace(/\{coupon_code\}/g, couponCode || 'TEST10')
-            .replace(/\{company_name\}/g, 'متجرنا')
-            .replace(/\{customer_link\}/g, 'https://yourdomain.com/customer/profile?token=demo');
-
-
-        const activeSessions = await WhatsAppNotificationService.getConnectedSessions(companyId);
-        if (!activeSessions || activeSessions.length === 0) {
-            return res.status(400).json({ success: false, message: 'لا توجد جلسات واتساب متصلة حالياً لإرسال الاختيار التجريبي' });
-        }
-
-        const sessionId = activeSessions[0].sessionId;
-        await WhatsAppMessageHandler.sendTextMessage(sessionId, testPhone, formattedMsg);
-
-        return res.json({ success: true, message: `تم إرسال الرسالة التجريبية بنجاح إلى الرقم ${testPhone}` });
-    } catch (error) {
-        console.error('[CWA] sendTestBirthdayMessage error:', error);
-        return res.status(500).json({ success: false, message: 'فشل في إرسال الرسالة التجريبية: ' + error.message });
-    }
-};
-
-/**
- * 📊 Birthday Analytics Reports
- * جلب إحصائيات حملات أعياد الميلاد المتقدمة من مصادر حقيقية
- *
- * Query params:
- *   range : 'today' | 'week' | 'month' | 'all' | 'custom'
- *   from  : ISO date (YYYY-MM-DD) — required when range=custom
- *   to    : ISO date (YYYY-MM-DD) — required when range=custom
- */
-exports.getBirthdayAnalyticsReports = async (req, res) => {
-    try {
-        const { companyId } = req.user;
-        const { range = 'all', from, to } = req.query;
 
         const prisma = getSharedPrismaClient();
-        const now = new Date();
-
-        // ── Resolve date window ──────────────────────────────
-        let fromDate = null;
-        let toDate = null;
-
-        if (range === 'custom' && from && to) {
-            fromDate = new Date(`${String(from).split('T')[0]}T00:00:00.000Z`);
-            toDate = new Date(`${String(to).split('T')[0]}T23:59:59.999Z`);
-        } else if (range === 'today') {
-            const start = new Date(now);
-            start.setHours(0, 0, 0, 0);
-            fromDate = start;
-            toDate = new Date(now);
-            toDate.setHours(23, 59, 59, 999);
-        } else if (range === 'week') {
-            const start = new Date(now);
-            const day = start.getDay();
-            start.setDate(start.getDate() - day);
-            start.setHours(0, 0, 0, 0);
-            fromDate = start;
-            toDate = new Date();
-        } else if (range === 'month') {
-            fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            toDate = new Date();
-        } else {
-            // 'all' — no lower bound
-            toDate = new Date();
-        }
-
-        const dateFilter = {};
-        if (fromDate) dateFilter.gte = fromDate;
-        if (toDate) dateFilter.lte = toDate;
-
-        // ── 1) Targeted customers (prospective) ───────────────
-        // Count customers whose birthday falls inside the window.
-        let prospectiveCustomers = 0;
-        try {
-            if (range === 'today' || range === 'custom') {
-                // iterate day-by-day across the window
-                const start = fromDate || new Date(now.getFullYear(), now.getMonth(), 1);
-                const end = toDate || now;
-                const cursor = new Date(start);
-                while (cursor <= end) {
-                    const iso = cursor.toISOString().split('T')[0];
-                    const { customers } = await getBirthdayAudienceCustomers(companyId, iso);
-                    prospectiveCustomers += customers.length;
-                    cursor.setDate(cursor.getDate() + 1);
-                    if (prospectiveCustomers > 5_000_000) break; // safety
-                }
-            } else {
-                // for week/month/all we approximate prospective via campaign recipient totals
-                const campaigns = await safeQuery(() =>
-                    prisma.broadcastCampaign.findMany({
-                        where: {
-                            companyId,
-                            targetAudience: 'birthday',
-                            ...(Object.keys(dateFilter).length ? { createdAt: dateFilter } : {})
-                        },
-                        select: { recipientCount: true }
-                    })
-                );
-                prospectiveCustomers = (campaigns || []).reduce((acc, c) => acc + (c.recipientCount || 0), 0);
-            }
-        } catch (e) {
-            console.log('[CWA] Analytics prospective fetch error:', e.message);
-        }
-
-        // ── 2) Sent / failed messages (real campaigns) ────────
-        let totalMessagesSent = 0;
-        let failedMessages = 0;
-        try {
-            const campaigns = await safeQuery(() =>
-                prisma.broadcastCampaign.findMany({
-                    where: {
-                        companyId,
-                        targetAudience: 'birthday',
-                        ...(Object.keys(dateFilter).length ? { createdAt: dateFilter } : {})
-                    },
-                    select: { sentCount: true, failedCount: true, recipientCount: true }
-                })
-            );
-            if (campaigns && Array.isArray(campaigns)) {
-                totalMessagesSent = campaigns.reduce((acc, c) => acc + (c.sentCount || 0), 0);
-                failedMessages = campaigns.reduce((acc, c) => acc + (c.failedCount || 0), 0);
-            }
-        } catch (e) {
-            console.log('[CWA] Analytics campaigns fetch error:', e.message);
-        }
-
-        // ── 3) Coupon usage (option A: couponCode from settings) ─
-        let couponCode = null;
-        try {
-            const storeSetting = await prisma.storeSetting.findFirst({
-                where: { companyId, key: 'whatsapp_birthday_automation' }
-            });
-            if (storeSetting && storeSetting.value) {
-                const s = typeof storeSetting.value === 'string'
-                    ? JSON.parse(storeSetting.value)
-                    : storeSetting.value;
-                couponCode = (s.couponCode || '').trim();
-            }
-        } catch (e) {
-            console.log('[CWA] Analytics settings fetch error:', e.message);
-        }
-
-        let usedCoupons = 0;
-        let totalSales = 0;
-        let couponUsages = [];
-        if (couponCode) {
-            let coupon = null;
-            try {
-                coupon = await safeQuery(() =>
-                    prisma.coupon.findFirst({
-                        where: { companyId, code: { equals: couponCode, mode: 'insensitive' } },
-                        select: { id: true }
-                    })
-                );
-            } catch (e) {
-                console.log('[CWA] Analytics coupon lookup error:', e.message);
-            }
-
-            if (coupon && coupon.id) {
-                try {
-                    couponUsages = await safeQuery(() =>
-                        prisma.couponUsage.findMany({
-                            where: {
-                                companyId,
-                                couponId: coupon.id,
-                                ...(Object.keys(dateFilter).length ? { usedAt: dateFilter } : {})
-                            },
-                            select: {
-                                id: true,
-                                customerId: true,
-                                orderId: true,
-                                discountAmount: true,
-                                orderAmount: true,
-                                usedAt: true
-                            },
-                            orderBy: { usedAt: 'desc' },
-                            take: 50
-                        })
-                    );
-                    if (couponUsages && Array.isArray(couponUsages)) {
-                        usedCoupons = couponUsages.length;
-                        totalSales = couponUsages.reduce(
-                            (sum, u) => sum + (Number(u.orderAmount) || 0), 0
-                        );
-                    }
-                } catch (e) {
-                    console.log('[CWA] Analytics coupon usage fetch error:', e.message);
-                }
-            }
-        }
-
-        const conversionRate = prospectiveCustomers > 0
-            ? ((usedCoupons / prospectiveCustomers) * 100).toFixed(2)
-            : 0;
-
-        return res.json({
-            success: true,
+        const record = await prisma.broadcastCampaign.create({
             data: {
-                timeRange: range,
-                from: fromDate ? fromDate.toISOString() : null,
-                to: toDate ? toDate.toISOString() : null,
-                couponCode,
-                prospectiveCustomers,
-                totalMessagesSent,
-                failedMessages,
-                usedCoupons,
-                conversionRate: parseFloat(conversionRate),
-                totalSales: Number(totalSales.toFixed(2)),
-                couponUsages: (couponUsages || []).map(u => ({
-                    id: u.id,
-                    customerId: u.customerId,
-                    orderId: u.orderId,
-                    discountAmount: Number(u.discountAmount) || 0,
-                    orderAmount: Number(u.orderAmount) || 0,
-                    usedAt: u.usedAt
-                }))
+                companyId,
+                name: name || 'حملة مناسبة',
+                message: String(message).trim(),
+                channel: 'whatsapp',
+                targetAudience: targetAudience || 'all',
+                scheduledAt: new Date(scheduledAt),
+                status: 'scheduled',
+                creatorId: req.user?.id || null
             }
         });
 
+        return res.json({
+            success: true,
+            data: record,
+            message: 'تمت جدولة الحملة — هتتبعت تلقائياً في الموعد المحدد'
+        });
     } catch (error) {
-        console.error('[CWA] getBirthdayAnalyticsReports error:', error);
-        return res.status(500).json({ success: false, message: 'خطأ في جلب إحصائيات أعياد الميلاد' });
+        console.error('[CWA] scheduleOccasionCampaign error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جدولة الحملة' });
+    }
+};
+
+/**
+ * 📋 قائمة حملات المناسبات المجدولة
+ * GET /api/v1/customers/whatsapp-notify/occasions/scheduled
+ */
+exports.getScheduledOccasionCampaigns = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const prisma = getSharedPrismaClient();
+        const campaigns = await prisma.broadcastCampaign.findMany({
+            where: { companyId, channel: 'whatsapp', status: 'scheduled' },
+            orderBy: { scheduledAt: 'asc' },
+            take: 100
+        });
+        return res.json({ success: true, data: campaigns });
+    } catch (error) {
+        console.error('[CWA] getScheduledOccasionCampaigns error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جلب الحملات المجدولة' });
     }
 };

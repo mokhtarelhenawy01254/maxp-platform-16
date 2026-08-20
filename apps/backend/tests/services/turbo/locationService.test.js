@@ -1,4 +1,4 @@
-﻿jest.mock('axios', () => ({
+jest.mock('axios', () => ({
   post: jest.fn(),
   get: jest.fn(),
 }));
@@ -10,7 +10,7 @@ jest.mock('../../../utils/turbo/errorHandler', () => ({
 const axios = require('axios');
 const { FALLBACK_GOVERNMENTS } = require('../../../utils/turbo/constants');
 
-// LocationService has module-level cache ΓÇö we reset it between tests by
+// LocationService has module-level cache — we reset it between tests by
 // clearing the module registry so each describe block gets a fresh cache.
 let LocationService;
 
@@ -46,8 +46,8 @@ describe('LocationService', () => {
         data: {
           success: 1,
           feed: [
-            { id: '1', name: '╪º┘ä┘é╪º┘ç╪▒╪⌐' },
-            { id: '2', name: '╪º┘ä╪¼┘è╪▓╪⌐' },
+            { id: '1', name: 'القاهرة' },
+            { id: '2', name: 'الجيزة' },
           ],
         },
       });
@@ -57,7 +57,7 @@ describe('LocationService', () => {
 
       expect(result.success).toBe(true);
       expect(result.governments).toHaveLength(2);
-      expect(result.governments[0]).toEqual({ id: '1', name: '╪º┘ä┘é╪º┘ç╪▒╪⌐' });
+      expect(result.governments[0]).toEqual({ id: '1', name: 'القاهرة' });
       expect(result.count).toBe(2);
     });
 
@@ -65,12 +65,12 @@ describe('LocationService', () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValue({
-        data: { success: 1, feed: [{ id: '1', name: '╪º┘ä┘é╪º┘ç╪▒╪⌐' }] },
+        data: { success: 1, feed: [{ id: '1', name: 'القاهرة' }] },
       });
 
       const service = new LocationService(client);
-      await service.getGovernments(); // first call ΓÇö fills cache
-      await service.getGovernments(); // second call ΓÇö should use cache
+      await service.getGovernments(); // first call — fills cache
+      await service.getGovernments(); // second call — should use cache
 
       expect(axiosMock.get).toHaveBeenCalledTimes(1);
       const second = await service.getGovernments();
@@ -108,37 +108,37 @@ describe('LocationService', () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValue({
-        data: { governorates: [{ id: '3', name: '╪º┘ä╪Ñ╪│┘â┘å╪»╪▒┘è╪⌐' }] },
+        data: { governorates: [{ id: '3', name: 'الإسكندرية' }] },
       });
 
       const service = new LocationService(client);
       const result = await service.getGovernments();
-      expect(result.governments[0].name).toBe('╪º┘ä╪Ñ╪│┘â┘å╪»╪▒┘è╪⌐');
+      expect(result.governments[0].name).toBe('الإسكندرية');
     });
 
     test('handles plain array format in response', async () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValue({
-        data: [{ id: '4', name: '╪º┘ä╪»┘é┘ç┘ä┘è╪⌐' }, { id: '5', name: '╪º┘ä╪┤╪▒┘é┘è╪⌐' }],
+        data: [{ id: '4', name: 'الدقهلية' }, { id: '5', name: 'الشرقية' }],
       });
 
       const service = new LocationService(client);
       const result = await service.getGovernments();
       expect(result.governments).toHaveLength(2);
-      expect(result.governments[0].name).toBe('╪º┘ä╪»┘é┘ç┘ä┘è╪⌐');
+      expect(result.governments[0].name).toBe('الدقهلية');
     });
 
     test('normalizes string-only entries', async () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValue({
-        data: { success: 1, feed: ['╪º┘ä┘é╪º┘ç╪▒╪⌐', '╪º┘ä╪¼┘è╪▓╪⌐'] },
+        data: { success: 1, feed: ['القاهرة', 'الجيزة'] },
       });
 
       const service = new LocationService(client);
       const result = await service.getGovernments();
-      expect(result.governments[0]).toEqual({ id: '╪º┘ä┘é╪º┘ç╪▒╪⌐', name: '╪º┘ä┘é╪º┘ç╪▒╪⌐' });
+      expect(result.governments[0]).toEqual({ id: 'القاهرة', name: 'القاهرة' });
     });
   });
 
@@ -149,7 +149,7 @@ describe('LocationService', () => {
       axiosMock.get.mockResolvedValue({
         data: {
           success: 1,
-          feed: [{ id: 'a1', name: '╪º┘ä┘à╪╣╪º╪»┘è' }, { id: 'a2', name: '╪¡┘ä┘ê╪º┘å' }],
+          feed: [{ id: 'a1', name: 'المعادي' }, { id: 'a2', name: 'حلوان' }],
         },
       });
 
@@ -158,7 +158,7 @@ describe('LocationService', () => {
 
       expect(result.success).toBe(true);
       expect(result.areas).toHaveLength(2);
-      expect(result.areas[0].name).toBe('╪º┘ä┘à╪╣╪º╪»┘è');
+      expect(result.areas[0].name).toBe('المعادي');
       expect(result.count).toBe(2);
     });
 
@@ -175,7 +175,7 @@ describe('LocationService', () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValue({
-        data: { success: 1, feed: [{ id: 'a1', name: '╪º┘ä┘à╪╣╪º╪»┘è' }] },
+        data: { success: 1, feed: [{ id: 'a1', name: 'المعادي' }] },
       });
 
       const service = new LocationService(client);
@@ -208,8 +208,8 @@ describe('LocationService', () => {
         data: {
           branches: [
             {
-              id: 'b1', name: '┘ü╪▒╪╣ ╪º┘ä┘é╪º┘ç╪▒╪⌐', address: '╪┤╪º╪▒╪╣ 10',
-              city: '╪º┘ä┘é╪º┘ç╪▒╪⌐', governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐', phone: '0225000000',
+              id: 'b1', name: 'فرع القاهرة', address: 'شارع 10',
+              city: 'القاهرة', governorate: 'القاهرة', phone: '0225000000',
               working_hours: '9am-5pm', is_active: true,
             },
           ],
@@ -217,14 +217,14 @@ describe('LocationService', () => {
       });
 
       const service = new LocationService(client);
-      const result = await service.getBranches('╪º┘ä┘é╪º┘ç╪▒╪⌐', '╪º┘ä┘é╪º┘ç╪▒╪⌐');
+      const result = await service.getBranches('القاهرة', 'القاهرة');
 
       expect(result.success).toBe(true);
       expect(result.branches).toHaveLength(1);
       expect(result.branches[0]).toMatchObject({
         id: 'b1',
-        name: '┘ü╪▒╪╣ ╪º┘ä┘é╪º┘ç╪▒╪⌐',
-        city: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+        name: 'فرع القاهرة',
+        city: 'القاهرة',
         workingHours: '9am-5pm',
         isActive: true,
       });
@@ -236,12 +236,12 @@ describe('LocationService', () => {
       axiosMock.get.mockResolvedValue({ data: { branches: [] } });
 
       const service = new LocationService(client);
-      await service.getBranches('╪º┘ä╪¼┘è╪▓╪⌐', '╪º┘ä╪¼┘è╪▓╪⌐');
+      await service.getBranches('الجيزة', 'الجيزة');
 
       expect(axiosMock.get).toHaveBeenCalledWith(
         expect.stringContaining('/branches'),
         expect.objectContaining({
-          params: { city: '╪º┘ä╪¼┘è╪▓╪⌐', governorate: '╪º┘ä╪¼┘è╪▓╪⌐' },
+          params: { city: 'الجيزة', governorate: 'الجيزة' },
         })
       );
     });
@@ -275,20 +275,20 @@ describe('LocationService', () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValueOnce({
-        data: { success: 1, feed: [{ id: '1', name: '╪º┘ä┘é╪º┘ç╪▒╪⌐' }, { id: '2', name: '╪º┘ä╪¼┘è╪▓╪⌐' }] },
+        data: { success: 1, feed: [{ id: '1', name: 'القاهرة' }, { id: '2', name: 'الجيزة' }] },
       });
       axiosMock.get.mockResolvedValueOnce({
-        data: { success: 1, feed: [{ id: 'a1', name: '╪º┘ä┘à╪╣╪º╪»┘è' }, { id: 'a2', name: '┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒' }] },
+        data: { success: 1, feed: [{ id: 'a1', name: 'المعادي' }, { id: 'a2', name: 'مدينة نصر' }] },
       });
 
       const service = new LocationService(client);
-      const result = await service.searchAreaByText('╪º┘ä┘à╪╣╪º╪»┘è');
+      const result = await service.searchAreaByText('المعادي');
 
       expect(result.success).toBe(true);
       expect(result.count).toBeGreaterThan(0);
       expect(result.matches[0]).toMatchObject({
-        governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
-        area: '╪º┘ä┘à╪╣╪º╪»┘è',
+        governorate: 'القاهرة',
+        area: 'المعادي',
       });
       expect(result.matches[0].confidence).toBe(1);
     });
@@ -297,53 +297,53 @@ describe('LocationService', () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValueOnce({
-        data: { success: 1, feed: [{ id: '1', name: '╪º┘ä┘é╪º┘ç╪▒╪⌐' }, { id: '2', name: '╪º┘ä╪¼┘è╪▓╪⌐' }] },
+        data: { success: 1, feed: [{ id: '1', name: 'القاهرة' }, { id: '2', name: 'الجيزة' }] },
       });
       axiosMock.get.mockResolvedValueOnce({
-        data: { success: 1, feed: [{ id: 'a1', name: '╪º┘ä┘à╪╣╪º╪»┘è' }] },
+        data: { success: 1, feed: [{ id: 'a1', name: 'المعادي' }] },
       });
 
       const service = new LocationService(client);
-      const result = await service.searchAreaByText('╪º┘ä┘é╪º┘ç╪▒╪⌐ ╪º┘ä┘à╪╣╪º╪»┘è');
+      const result = await service.searchAreaByText('القاهرة المعادي');
 
-      // Only ╪º┘ä┘é╪º┘ç╪▒╪⌐ areas are loaded (single get-area call)
+      // Only القاهرة areas are loaded (single get-area call)
       expect(result.count).toBeGreaterThan(0);
-      expect(result.matches[0].governorate).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+      expect(result.matches[0].governorate).toBe('القاهرة');
     });
 
     test('returns governorate-only fallback row when no area matched', async () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValueOnce({
-        data: { success: 1, feed: [{ id: '1', name: '╪º┘ä┘é╪º┘ç╪▒╪⌐' }] },
+        data: { success: 1, feed: [{ id: '1', name: 'القاهرة' }] },
       });
       axiosMock.get.mockResolvedValueOnce({
-        data: { success: 1, feed: [{ id: 'a1', name: '╪¡┘ä┘ê╪º┘å' }] },
+        data: { success: 1, feed: [{ id: 'a1', name: 'حلوان' }] },
       });
 
       const service = new LocationService(client);
-      const result = await service.searchAreaByText('╪º┘ä┘é╪º┘ç╪▒╪⌐ 6 ╪ú┘â╪¬┘ê╪¿╪▒');
+      const result = await service.searchAreaByText('القاهرة 6 أكتوبر');
 
       expect(result.count).toBeGreaterThan(0);
-      expect(result.matches[0].governorate).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+      expect(result.matches[0].governorate).toBe('القاهرة');
     });
 
     test('handles governorate-name-only query with no matched areas', async () => {
       const client = createMockClient();
       const axiosMock = require('axios');
       axiosMock.get.mockResolvedValueOnce({
-        data: { success: 1, feed: [{ id: '3', name: '╪º┘ä╪Ñ╪│┘â┘å╪»╪▒┘è╪⌐' }] },
+        data: { success: 1, feed: [{ id: '3', name: 'الإسكندرية' }] },
       });
       axiosMock.get.mockResolvedValueOnce({
-        data: { success: 1, feed: [{ id: 'a9', name: '╪│┘à┘ê╪¡╪⌐' }] },
+        data: { success: 1, feed: [{ id: 'a9', name: 'سموحة' }] },
       });
 
       const service = new LocationService(client);
-      const result = await service.searchAreaByText('╪│┘à┘ê╪¡╪⌐');
+      const result = await service.searchAreaByText('سموحة');
 
       expect(result.success).toBe(true);
       expect(result.count).toBeGreaterThan(0);
-      expect(result.matches[0].area).toBe('╪│┘à┘ê╪¡╪⌐');
+      expect(result.matches[0].area).toBe('سموحة');
     });
   });
 });

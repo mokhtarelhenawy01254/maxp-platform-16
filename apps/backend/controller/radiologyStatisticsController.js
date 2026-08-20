@@ -1,9 +1,9 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const getStatistics = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { dateFrom, dateTo } = req.query;
     const prisma = getSharedPrismaClient();
@@ -22,7 +22,7 @@ const getStatistics = async (req, res) => {
       prisma.radiologyAppointment.findMany({ where, select: { status: true, studyId: true } }),
     ]);
 
-    // Resolve ids ΓåÆ names for sources and reps (loose scalar refs need a second query)
+    // Resolve ids → names for sources and reps (loose scalar refs need a second query)
     const sourceIds = [...new Set(studies.map((s) => s.referralSourceId).filter(Boolean))];
     const repIds = [...new Set(studies.map((s) => s.marketingRepId).filter(Boolean))];
     const [sources, reps] = await Promise.all([
@@ -53,7 +53,7 @@ const getStatistics = async (req, res) => {
     let externalReferralRevenue = 0;
     for (const s of studies) {
       byStatus[s.status || 'UNKNOWN'] = (byStatus[s.status || 'UNKNOWN'] || 0) + 1;
-      const mod = s.modality || '╪║┘è╪▒ ┘à╪¡╪»╪»';
+      const mod = s.modality || 'غير محدد';
       byModality[mod] = (byModality[mod] || 0) + 1;
       if (s.assignedRadiologistName) byRadiologist[s.assignedRadiologistName] = (byRadiologist[s.assignedRadiologistName] || 0) + 1;
       if (s.referralDoctor) byDoctor[s.referralDoctor] = (byDoctor[s.referralDoctor] || 0) + 1;
@@ -95,7 +95,7 @@ const getStatistics = async (req, res) => {
     });
   } catch (error) {
     console.error('Error computing radiology statistics:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪│╪º╪¿ ╪º┘ä╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حساب الإحصائيات' });
   }
 };
 

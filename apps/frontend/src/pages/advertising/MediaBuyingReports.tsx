@@ -1,6 +1,20 @@
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, BarChart, BarChart3, Calendar, CalendarDays, CheckCircle2, Clock3, Database, Download, Loader2, Play, RefreshCw, Server, Sliders, SlidersHorizontal, Table2 } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  AlertTriangle,
+  BarChart3,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Database,
+  Download,
+  Loader2,
+  Play,
+  RefreshCw,
+  SlidersHorizontal,
+  Table2,
+} from "lucide-react";
 import FacebookAdsAccountContextPanel from "../../components/advertising/FacebookAdsAccountContextPanel";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
@@ -276,12 +290,12 @@ const MediaBuyingReports: React.FC = () => {
 
   const runAsyncReport = async () => {
     if (!fields.length) {
-      toast.error("اختر حقلًا واحدًا على الأقل");
+      tToast.error("MediaBuyingReports.msg_dd34");
       return;
     }
 
     if (dateMode === "range" && (!since || !until)) {
-      toast.error("حدد بداية ونهاية الفترة");
+      tToast.error("MediaBuyingReports.msg_c2d1");
       return;
     }
 
@@ -320,15 +334,15 @@ const MediaBuyingReports: React.FC = () => {
 
   const runSyncReport = async () => {
     if (!selectedAdAccountId) {
-      toast.error("اختر حسابًا إعلانيًا أولًا");
+      tToast.error("MediaBuyingReports.msg_17dc");
       return;
     }
     if (dateMode === "preset") {
-      toast.error("المعاينة السريعة تحتاج فترة مخصصة لأن endpoint الحالي يستقبل start/end");
+      tToast.error("MediaBuyingReports.msg_d8c5");
       return;
     }
     if (!since || !until) {
-      toast.error("حدد بداية ونهاية الفترة");
+      tToast.error("MediaBuyingReports.msg_c2d1");
       return;
     }
 

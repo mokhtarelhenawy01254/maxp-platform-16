@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from "react";
+import React, { useMemo } from "react";
 
 export interface SparklineProps {
   /** Time-series values, oldest to newest. Must contain at least 2 points to render. */
@@ -36,7 +36,7 @@ const toneToFill: Record<NonNullable<SparklineProps["tone"]>, string> = {
 };
 
 /**
- * Lightweight sparkline. No external chart library, no JS animation ΓÇö just an
+ * Lightweight sparkline. No external chart library, no JS animation — just an
  * inline SVG. The gradient under the line uses the same color as the stroke
  * but at low opacity, via a server-side-safe opacity attribute (the parent
  * can override via CSS if it needs theming).

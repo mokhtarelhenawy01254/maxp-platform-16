@@ -1,4 +1,4 @@
-﻿const axios = require('axios');
+const axios = require('axios');
 const { getBestShippingAddressFields, extractCleanStreetAddress, cleanLocationName } = require('../../utils/turbo/addressParser');
 const { getTurboGovernorateName, findGovernmentByCity } = require('../../utils/turbo/governorateMapper');
 const { handleError } = require('../../utils/turbo/errorHandler');
@@ -30,7 +30,7 @@ class ShipmentService {
         if ((data.success === true || data.success === 1) && data.feed) {
           governments = Array.isArray(data.feed) ? data.feed : [];
         }
-      } catch (e) { console.warn('ΓÜá∩╕Å [TURBO] Failed to fetch governments:', e.message); }
+      } catch (e) { console.warn('⚠️ [TURBO] Failed to fetch governments:', e.message); }
 
       let cleanGovernorate;
       let matchedGovId = null;
@@ -56,7 +56,7 @@ class ShipmentService {
         }
       }
 
-      // Use the parsed area (district) when present ΓÇö never fall back to the
+      // Use the parsed area (district) when present — never fall back to the
       // governorate/city as the area, otherwise Turbo receives an incorrect area.
       let cleanArea = cleanLocationName(orderData.area || addressFields.area || addressFields.parsedAddress?.area || city || addressFields.city || '');
 
@@ -75,44 +75,44 @@ class ShipmentService {
               || areas.find(a => a.name.toLowerCase().includes(cl) || cl.includes(a.name.toLowerCase()));
             if (ma) cleanArea = ma.name;
           }
-        } catch (e) { console.warn('ΓÜá∩╕Å [TURBO] Failed area matching:', e.message); }
+        } catch (e) { console.warn('⚠️ [TURBO] Failed area matching:', e.message); }
       }
 
       const secondPhone = orderData.phone2 || addressFields.parsedAddress?.phone2 || addressFields.parsedAddress?.secondPhone || addressFields.secondaryAddressPhone || null;
       const formattedSummary = Array.isArray(items) && items.length > 0
-        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || '┘à┘å╪¬╪¼'}]`).join(' - ')
-        : (notes || `╪╖┘ä╪¿ #${orderNumber}`);
+        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ')
+        : (notes || `طلب #${orderNumber}`);
 
       const rawReqType = String(orderData.requestType || orderData.orderType || orderData.type || '').trim().toLowerCase();
       const shippingFeeVal = parseFloat(shipping || orderData.shipping || orderData.shippingFee || orderData.shippingCost || 0);
-      let isOrderVal = 0, returnAmt = 0, defaultReturnSummary = '┘ä╪º ┘è┘ê╪¼╪» ┘à╪▒╪¬╪¼╪╣';
+      let isOrderVal = 0, returnAmt = 0, defaultReturnSummary = 'لا يوجد مرتجع';
 
-      if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === '╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è') {
-        isOrderVal = 1; returnAmt = shippingFeeVal; defaultReturnSummary = '╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è';
+      if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === 'تسليم جزئي') {
+        isOrderVal = 1; returnAmt = shippingFeeVal; defaultReturnSummary = 'تسليم جزئي';
       } else if (rawReqType === 'return' || rawReqType === 'returned' || orderData.orderType === 'RETURN') {
         isOrderVal = 2; returnAmt = parseFloat(orderData.returnAmount || totalValue || 0); defaultReturnSummary = formattedSummary;
       } else if (rawReqType === 'exchange' || rawReqType === 'exchanged' || orderData.orderType === 'EXCHANGE') {
-        isOrderVal = 1; returnAmt = 0; defaultReturnSummary = '╪╖┘ä╪¿ ╪º╪│╪¬╪¿╪»╪º┘ä';
+        isOrderVal = 1; returnAmt = 0; defaultReturnSummary = 'طلب استبدال';
       } else {
         isOrderVal = 0; returnAmt = parseFloat(orderData.returnAmount || shippingFeeVal || 0);
       }
 
-      const finalReceiver = (customerName || `╪╣┘à┘è┘ä ╪╖┘ä╪¿ #${orderNumber}`).trim();
+      const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
       let rawPhoneDigits = String(customerPhone || addressFields.parsedAddress?.phone || '').replace(/\D/g, '');
       let validPhone = rawPhoneDigits;
       if (validPhone.startsWith('20') && validPhone.length === 12) validPhone = validPhone.slice(2);
       if (validPhone.startsWith('1') && validPhone.length === 10) validPhone = '0' + validPhone;
       if (!validPhone || !validPhone.startsWith('01') || validPhone.length !== 11) {
-        const errMsg = rawPhoneDigits.length > 0 ? `╪▒┘é┘à ┘ç╪º╪¬┘ü ╪º┘ä╪╣┘à┘è┘ä ╪║┘è╪▒ ╪╡╪¡┘è╪¡: ╪º┘ä╪▒┘é┘à ┘à┘â┘ê┘å ┘à┘å ${rawPhoneDigits.length} ╪ú╪▒┘é╪º┘à ╪¿╪»┘ä╪º┘ï ┘à┘å 11 ╪▒┘é┘à╪º┘ï` : '╪▒┘é┘à ┘ç╪º╪¬┘ü ╪º┘ä╪╣┘à┘è┘ä ╪║┘è╪▒ ╪╡╪¡┘è╪¡ ╪ú┘ê ┘à┘ü┘é┘ê╪»';
+        const errMsg = rawPhoneDigits.length > 0 ? `رقم هاتف العميل غير صحيح: الرقم مكون من ${rawPhoneDigits.length} أرقام بدلاً من 11 رقماً` : 'رقم هاتف العميل غير صحيح أو مفقود';
         throw new Error(errMsg);
       }
-      if (!cleanGovernorate) throw new Error('╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ ╪║┘è╪▒ ┘à╪¡╪»╪»╪⌐ ╪ú┘ê ╪║┘è╪▒ ┘à╪╖╪º╪¿┘é╪⌐ ┘ä┘é╪º╪ª┘à╪⌐ ╪º┘ä┘à╪¡╪º┘ü╪╕╪º╪¬ ╪º┘ä┘à╪╣╪¬┘à╪»╪⌐ ┘ü┘è ╪¬╪▒╪¿┘ê.');
+      if (!cleanGovernorate) throw new Error('المحافظة غير محددة أو غير مطابقة لقائمة المحافظات المعتمدة في تربو.');
 
       const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3) ? cleanAddress.trim() : `${cleanArea || cleanGovernorate} - ${cleanGovernorate}`;
       const shipmentData = {
         authentication_key: apiKey, main_client_code: mainClientCode || 37321, remote_order_id: orderNumber || `Order ${orderNumber}`,
         remote_shipment_id: String(orderId || ''), receiver: finalReceiver, phone1: validPhone, phone2: secondPhone,
-        api_followup_phone: senderNumber || validPhone, government: cleanGovernorate, area: cleanArea || cleanGovernorate || '╪º┘ä┘à╪▒┘â╪▓ ╪º┘ä╪▒╪ª┘è╪│┘è',
+        api_followup_phone: senderNumber || validPhone, government: cleanGovernorate, area: cleanArea || cleanGovernorate || 'المركز الرئيسي',
         address: finalAddress, notes: notes || `Order #${orderNumber}`, order_summary: formattedSummary,
         return_summary: orderData.returnSummary || defaultReturnSummary,
         amount_to_be_collected: (isOrderVal === 2 || (paymentMethod && paymentMethod.toUpperCase() === 'PAID')) ? 0 : parseFloat(totalValue || orderData.total || 0),
@@ -199,7 +199,7 @@ class ShipmentService {
         const govResult = await this._client.get(`${this._client.baseUrl}/get-government?main_client_code=${mainClientCode || 37321}&authentication_key=${encodeURIComponent(apiKey)}`);
         const data = govResult.data;
         if ((data.success === true || data.success === 1) && data.feed) governments = Array.isArray(data.feed) ? data.feed : [];
-      } catch (e) { console.warn('ΓÜá∩╕Å [TURBO] Failed to fetch governments for update:', e.message); }
+      } catch (e) { console.warn('⚠️ [TURBO] Failed to fetch governments for update:', e.message); }
 
       let cleanGovernorate = formattedData.governorate || '';
       let matchedGovId = null;
@@ -224,7 +224,7 @@ class ShipmentService {
             const ma = areas.find(a => a.name.toLowerCase() === cl) || areas.find(a => a.name.toLowerCase().includes(cl) || cl.includes(a.name.toLowerCase()));
             if (ma) cleanArea = ma.name;
           }
-        } catch (e) { console.warn('ΓÜá∩╕Å [TURBO] Failed area matching:', e.message); }
+        } catch (e) { console.warn('⚠️ [TURBO] Failed area matching:', e.message); }
       }
 
       const rawReqType = String(formattedData.requestType || formattedData.orderType || formattedData.type || '').trim().toLowerCase();
@@ -232,16 +232,16 @@ class ShipmentService {
       const totalValue = parseFloat(formattedData.totalValue || formattedData.total || 0);
       const items = formattedData.items || formattedData.orderItems || [];
       const formattedSummary = Array.isArray(items) && items.length > 0
-        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || '┘à┘å╪¬╪¼'}]`).join(' - ')
-        : (formattedData.notes || `╪╖┘ä╪¿ #${formattedData.orderNumber || shipmentId}`);
+        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ')
+        : (formattedData.notes || `طلب #${formattedData.orderNumber || shipmentId}`);
 
-      let isOrderVal = 0, returnAmt = 0, defaultReturnSummary = '┘ä╪º ┘è┘ê╪¼╪» ┘à╪▒╪¬╪¼╪╣';
-      if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === '╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è') {
-        isOrderVal = 1; returnAmt = shippingFeeVal; defaultReturnSummary = '╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è';
+      let isOrderVal = 0, returnAmt = 0, defaultReturnSummary = 'لا يوجد مرتجع';
+      if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === 'تسليم جزئي') {
+        isOrderVal = 1; returnAmt = shippingFeeVal; defaultReturnSummary = 'تسليم جزئي';
       } else if (rawReqType === 'return' || rawReqType === 'returned' || formattedData.orderType === 'RETURN') {
         isOrderVal = 2; returnAmt = parseFloat(formattedData.returnAmount || totalValue || 0); defaultReturnSummary = formattedSummary;
       } else if (rawReqType === 'exchange' || rawReqType === 'exchanged' || formattedData.orderType === 'EXCHANGE') {
-        isOrderVal = 1; returnAmt = 0; defaultReturnSummary = '╪╖┘ä╪¿ ╪º╪│╪¬╪¿╪»╪º┘ä';
+        isOrderVal = 1; returnAmt = 0; defaultReturnSummary = 'طلب استبدال';
       } else {
         isOrderVal = 0; returnAmt = parseFloat(formattedData.returnAmount || shippingFeeVal || 0);
       }
@@ -253,7 +253,7 @@ class ShipmentService {
       let validPhone = rawPhoneDigits;
       if (validPhone.startsWith('20') && validPhone.length === 12) validPhone = validPhone.slice(2);
       if (validPhone.startsWith('1') && validPhone.length === 10) validPhone = '0' + validPhone;
-      const finalReceiver = (formattedData.customerName || `╪╣┘à┘è┘ä ╪╖┘ä╪¿ #${formattedData.orderNumber || shipmentId}`).trim();
+      const finalReceiver = (formattedData.customerName || `عميل طلب #${formattedData.orderNumber || shipmentId}`).trim();
 
       const updateData = {
         authentication_key: apiKey, code: String(shipmentId), main_client_code: mainClientCode || 37321,
@@ -336,7 +336,7 @@ class ShipmentService {
         return {
           success: false,
           error: 'Turbo API does not support shipping cost calculation',
-          message: 'Turbo API ┘ä╪º ┘è╪»╪╣┘à ╪¡╪│╪º╪¿ ╪¬┘â┘ä┘ü╪⌐ ╪º┘ä╪┤╪¡┘å ┘à╪¿╪º╪┤╪▒╪⌐',
+          message: 'Turbo API لا يدعم حساب تكلفة الشحن مباشرة',
           cost: null, estimatedDelivery: null, currency: 'EGP',
         };
       }
@@ -354,7 +354,7 @@ class ShipmentService {
         return {
           success: false,
           error: 'Shipping cost calculation not available',
-          message: 'Turbo API ┘ä╪º ┘è╪»╪╣┘à ╪¡╪│╪º╪¿ ╪¬┘â┘ä┘ü╪⌐ ╪º┘ä╪┤╪¡┘å ┘à╪¿╪º╪┤╪▒╪⌐',
+          message: 'Turbo API لا يدعم حساب تكلفة الشحن مباشرة',
           cost: null, estimatedDelivery: null, currency: 'EGP',
         };
       }

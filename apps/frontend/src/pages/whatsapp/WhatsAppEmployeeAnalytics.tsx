@@ -1,5 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, ArrowDown, Award, BarChart2, BarChart3, Calendar, ChevronRight, Clock, Inbox, Layers, LayoutGrid, Mail, MessageSquare, Minus, Navigation, RefreshCw, Send, Target, TrendingDown, TrendingUp, Trophy, UserCheck, Users, UserX, Zap } from 'lucide-react';
+import {
+  BarChart3,
+  Clock,
+  Inbox,
+  MessageSquare,
+  Send,
+  UserCheck,
+  UserX,
+  Users,
+  RefreshCw,
+  Calendar,
+  Trophy,
+  ArrowDown,
+  Activity,
+  Zap,
+  Target,
+  Layers,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from "lucide-react";
 import {
   motion,
   AnimatePresence,
@@ -9,6 +30,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import {
   BarChart,
@@ -399,7 +421,7 @@ const WhatsAppEmployeeAnalytics: React.FC<{
   const loadData = async (silent = false) => {
     if (!activeRange.start || !activeRange.end) return;
     if (new Date(activeRange.end) < new Date(activeRange.start)) {
-      toast.error("تاريخ النهاية قبل تاريخ البداية");
+      tToast.error("WhatsAppEmployeeAnalytics.msg_2f97");
       return;
     }
     if (!silent) setLoading(true);
@@ -416,9 +438,9 @@ const WhatsAppEmployeeAnalytics: React.FC<{
           : Promise.resolve(null),
       ]);
       setData(currRes.data as AnalyticsResponse);
-      setPrevData(prevRes ? (prevRes as AnalyticsResponse) : null);
+      setPrevData(prevRes ? (prevRes as unknown as AnalyticsResponse) : null);
     } catch {
-      toast.error("فشل في تحميل تحليلات الموظفين");
+      tToast.error("WhatsAppEmployeeAnalytics.failed_load_61c5");
     } finally {
       setLoading(false);
       setRefreshing(false);

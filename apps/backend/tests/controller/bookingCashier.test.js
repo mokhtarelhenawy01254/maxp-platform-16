@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -22,10 +22,10 @@ const createResponse = () => {
 };
 
 const baseReq = {
-  user: { id: 'user-1', companyId: 'company-1', firstName: '┘à╪¡┘à╪»', lastName: '╪╣┘ä┘è' }
+  user: { id: 'user-1', companyId: 'company-1', firstName: 'محمد', lastName: 'علي' }
 };
 
-describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
+describe('bookingInvoicesController — clinic cashier & payments', () => {
   let prisma;
 
   beforeEach(() => {
@@ -51,7 +51,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.createInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪│╪¿╪¿ ╪º┘ä╪«╪╡┘à ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('سبب الخصم مطلوب');
       expect(prisma.medicalInvoice.create).not.toHaveBeenCalled();
     });
 
@@ -63,7 +63,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.createInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪│╪¿╪¿ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('سبب الإضافة مطلوب');
     });
 
     test('rejects invalid expenseSplit', async () => {
@@ -74,18 +74,18 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.createInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪¬┘é╪│┘è┘à ╪º┘ä┘à╪╡╪º╪▒┘è┘ü ╪║┘è╪▒ ╪╡╪º┘ä╪¡');
+      expect(res.payload.error).toBe('تقسيم المصاريف غير صالح');
     });
 
     test('rejects initialPayment greater than net', async () => {
-      const req = { ...baseReq, body: { patientId: 'patient-1', total: 100, discount: 20, discountReason: '╪╣╪▒╪╢ ╪«╪º╪╡', initialPayment: 90 } };
+      const req = { ...baseReq, body: { patientId: 'patient-1', total: 100, discount: 20, discountReason: 'عرض خاص', initialPayment: 90 } };
       prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1' });
 
       const res = createResponse();
       await controller.createInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä╪»┘ü╪╣╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä╪╡╪º┘ü┘è');
+      expect(res.payload.error).toBe('الدفعة الأولى أكبر من الصافي');
     });
 
     test('rejects an appointmentId from another company (no cross-tenant appointment write)', async () => {
@@ -97,7 +97,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.createInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('الموعد غير موجود');
       expect(prisma.appointment.findFirst).toHaveBeenCalledWith({
         where: { id: 'appt-foreign', companyId: 'company-1' },
         select: { id: true },
@@ -112,7 +112,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.createInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪º┘ä╪¡');
+      expect(res.payload.error).toBe('المبلغ غير صالح');
       expect(prisma.medicalInvoice.create).not.toHaveBeenCalled();
     });
 
@@ -120,8 +120,8 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       const req = {
         ...baseReq,
         body: {
-          patientId: 'patient-1', total: 100, discount: 20, discountReason: '╪╣╪▒╪╢ ╪«╪º╪╡',
-          additionAmount: 10, additionReason: '╪«╪»┘à╪⌐ ╪Ñ╪╢╪º┘ü┘è╪⌐',
+          patientId: 'patient-1', total: 100, discount: 20, discountReason: 'عرض خاص',
+          additionAmount: 10, additionReason: 'خدمة إضافية',
           insuranceAmount: 30, expenseSplit: 'BOTH', insuranceCompanyId: 'ins-1',
           ticketNumber: 'T-99', method: 'VODAFONE_CASH', initialPayment: 50,
         },
@@ -141,9 +141,9 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       expect(prisma.medicalInvoice.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            discountReason: '╪╣╪▒╪╢ ╪«╪º╪╡',
+            discountReason: 'عرض خاص',
             additionAmount: 10,
-            additionReason: '╪«╪»┘à╪⌐ ╪Ñ╪╢╪º┘ü┘è╪⌐',
+            additionReason: 'خدمة إضافية',
             insuranceAmount: 30,
             expenseSplit: 'BOTH',
             insuranceCompanyId: 'ins-1',
@@ -155,7 +155,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       );
       expect(prisma.medicalPayment.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ amount: 50, method: 'VODAFONE_CASH', cashierName: '┘à╪¡┘à╪» ╪╣┘ä┘è' }),
+          data: expect.objectContaining({ amount: 50, method: 'VODAFONE_CASH', cashierName: 'محمد علي' }),
         })
       );
       expect(res.payload.data.net).toBe(90);
@@ -181,7 +181,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
 
     test('writes INVOICE CREATE and PAYMENT audit logs', async () => {
       const req = { ...baseReq, body: { patientId: 'patient-1', total: 100, initialPayment: 50, method: 'CASH' } };
-      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1', firstName: '╪│╪º╪▒╪⌐', lastName: '╪ú╪¡┘à╪»' });
+      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1', firstName: 'سارة', lastName: 'أحمد' });
       prisma.medicalInvoice.count.mockResolvedValue(0);
       prisma.medicalInvoice.create.mockImplementation(async ({ data }) => ({ id: 'inv-1', ...data }));
       prisma.medicalPayment.create.mockResolvedValue({});
@@ -192,7 +192,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       expect(prisma.transactionLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            entityType: 'INVOICE', entityId: 'inv-1', action: 'CREATE', amount: 100, payer: '╪│╪º╪▒╪⌐ ╪ú╪¡┘à╪»', companyId: 'company-1',
+            entityType: 'INVOICE', entityId: 'inv-1', action: 'CREATE', amount: 100, payer: 'سارة أحمد', companyId: 'company-1',
           }),
         })
       );
@@ -239,7 +239,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.updateInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪│╪¿╪¿ ╪º┘ä╪«╪╡┘à ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('سبب الخصم مطلوب');
     });
 
     test('does not require a reason when discount is removed', async () => {
@@ -260,7 +260,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       prisma.medicalInvoice.findFirst.mockResolvedValue({ id: 'inv-1', companyId: 'company-1', total: 100, discount: 0, additionAmount: 0, amountPaid: 0 });
       prisma.medicalInvoice.update.mockImplementation(async ({ data }) => ({ id: 'inv-1', total: 100, discount: 10, additionAmount: 0, amountPaid: 0, ...data }));
 
-      const req = { ...baseReq, params: { id: 'inv-1' }, body: { discount: 10, discountReason: '╪╣╪▒╪╢' } };
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { discount: 10, discountReason: 'عرض' } };
       const res = createResponse();
       await controller.updateInvoice(req, res);
 
@@ -281,7 +281,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.updateInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('المريض غير موجود');
       expect(prisma.patient.findFirst).toHaveBeenCalledWith({
         where: { id: 'patient-foreign', companyId: 'company-1' },
         select: { id: true },
@@ -293,12 +293,12 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       prisma.medicalInvoice.findFirst.mockResolvedValue({ id: 'inv-1', companyId: 'company-1', total: 100, discount: 0, additionAmount: 0, amountPaid: 80, status: 'PARTIAL' });
       prisma.medicalInvoice.update.mockResolvedValue({});
 
-      const req = { ...baseReq, params: { id: 'inv-1' }, body: { discount: 50, discountReason: '╪¬╪«┘ü┘è╪╢' } };
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { discount: 50, discountReason: 'تخفيض' } };
       const res = createResponse();
       await controller.updateInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪«┘ü╪╢ ╪º┘ä╪╡╪º┘ü┘è ╪Ñ┘ä┘ë ╪ú┘é┘ä ┘à┘å ╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪»╪»');
+      expect(res.payload.error).toBe('لا يمكن خفض الصافي إلى أقل من المبلغ المسدد');
       expect(prisma.medicalInvoice.update).not.toHaveBeenCalled();
     });
   });
@@ -313,7 +313,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.deleteInvoice(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪¡╪░┘ü ┘ü╪º╪¬┘ê╪▒╪⌐ ╪╣┘ä┘è┘ç╪º ╪»┘ü╪╣╪º╪¬ ┘à╪│╪¼┘ä╪⌐');
+      expect(res.payload.error).toBe('لا يمكن حذف فاتورة عليها دفعات مسجلة');
       expect(prisma.medicalInvoice.delete).not.toHaveBeenCalled();
     });
 
@@ -367,7 +367,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.addPayment(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐');
+      expect(res.payload.error).toBe('طريقة الدفع غير صالحة');
       expect(prisma.medicalPayment.create).not.toHaveBeenCalled();
     });
 
@@ -380,7 +380,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.addPayment(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘à╪¿┘ä╪║ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ╪╡╪º┘ä╪¡');
+      expect(res.payload.error).toBe('مبلغ الدفع غير صالح');
       expect(prisma.medicalPayment.create).not.toHaveBeenCalled();
     });
 
@@ -415,7 +415,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.addPayment(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä╪»┘ü╪╣ ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä┘à╪¬╪¿┘é┘è (20.00)');
+      expect(res.payload.error).toBe('الدفع أكبر من المتبقي (20.00)');
       expect(prisma.medicalPayment.create).not.toHaveBeenCalled();
     });
 
@@ -450,7 +450,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.addPayment(req, res);
 
       expect(res.statusCode).toBe(409);
-      expect(res.payload.error).toBe('╪¬╪║┘è┘æ╪▒ ╪▒╪╡┘è╪» ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐╪î ╪ú╪╣╪» ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐');
+      expect(res.payload.error).toBe('تغيّر رصيد الفاتورة، أعد المحاولة');
       expect(prisma.medicalInvoice.updateMany).toHaveBeenCalledWith({
         where: { id: 'inv-1', amountPaid: 0 },
         data: expect.objectContaining({ amountPaid: 100, status: 'PAID' }),
@@ -468,29 +468,29 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.paybackPayment(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪│╪¿╪¿ ╪º┘ä╪º╪│╪¬╪▒╪»╪º╪» ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('سبب الاسترداد مطلوب');
     });
 
     test('rejects payback exceeding amountPaid', async () => {
       prisma.medicalInvoice.findFirst.mockResolvedValue(paidInvoice);
 
-      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 150, method: 'CASH', reason: '╪Ñ┘ä╪║╪º╪í' } };
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 150, method: 'CASH', reason: 'إلغاء' } };
       const res = createResponse();
       await controller.paybackPayment(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä╪º╪│╪¬╪▒╪»╪º╪» ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪»╪»');
+      expect(res.payload.error).toBe('الاسترداد أكبر من المبلغ المسدد');
     });
 
     test('rejects a non-finite payback amount (Infinity)', async () => {
       prisma.medicalInvoice.findFirst.mockResolvedValue(paidInvoice);
 
-      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: Infinity, method: 'CASH', reason: '╪Ñ┘ä╪║╪º╪í' } };
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: Infinity, method: 'CASH', reason: 'إلغاء' } };
       const res = createResponse();
       await controller.paybackPayment(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘à╪¿┘ä╪║ ╪º┘ä╪º╪│╪¬╪▒╪»╪º╪» ╪║┘è╪▒ ╪╡╪º┘ä╪¡');
+      expect(res.payload.error).toBe('مبلغ الاسترداد غير صالح');
       expect(prisma.medicalPayment.create).not.toHaveBeenCalled();
     });
 
@@ -501,7 +501,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 1 });
       prisma.appointment.update.mockResolvedValue({});
 
-      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 100, method: 'CASH', reason: '╪Ñ┘ä╪║╪º╪í ╪º┘ä╪¡╪¼╪▓' } };
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 100, method: 'CASH', reason: 'إلغاء الحجز' } };
       const res = createResponse();
       await controller.paybackPayment(req, res);
 
@@ -510,9 +510,9 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             amount: -100,
-            reason: '╪Ñ┘ä╪║╪º╪í ╪º┘ä╪¡╪¼╪▓',
+            reason: 'إلغاء الحجز',
             paybackOfPaymentId: 'pay-1',
-            cashierName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+            cashierName: 'محمد علي',
           }),
         })
       );
@@ -530,7 +530,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 1 });
       prisma.appointment.update.mockResolvedValue({});
 
-      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 40, method: 'CASH', reason: '╪º╪│╪¬╪▒╪»╪º╪» ╪¼╪▓╪ª┘è' } };
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 40, method: 'CASH', reason: 'استرداد جزئي' } };
       const res = createResponse();
       await controller.paybackPayment(req, res);
 
@@ -548,12 +548,12 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 0 });
       prisma.appointment.update.mockResolvedValue({});
 
-      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 100, method: 'CASH', reason: '╪º╪│╪¬╪▒╪»╪º╪»' } };
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 100, method: 'CASH', reason: 'استرداد' } };
       const res = createResponse();
       await controller.paybackPayment(req, res);
 
       expect(res.statusCode).toBe(409);
-      expect(res.payload.error).toBe('╪¬╪║┘è┘æ╪▒ ╪▒╪╡┘è╪» ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐╪î ╪ú╪╣╪» ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐');
+      expect(res.payload.error).toBe('تغيّر رصيد الفاتورة، أعد المحاولة');
       expect(prisma.appointment.update).not.toHaveBeenCalled();
     });
 
@@ -564,7 +564,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 1 });
       prisma.appointment.update.mockResolvedValue({});
 
-      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 40, method: 'CASH', reason: '╪º╪│╪¬╪▒╪»╪º╪» ╪¼╪▓╪ª┘è' } };
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 40, method: 'CASH', reason: 'استرداد جزئي' } };
       const res = createResponse();
       await controller.paybackPayment(req, res);
 
@@ -573,7 +573,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             entityType: 'PAYBACK', entityId: 'inv-1', action: 'PAYBACK', amount: 40,
-            description: '╪º╪│╪¬╪▒╪»╪º╪» (CASH): ╪º╪│╪¬╪▒╪»╪º╪» ╪¼╪▓╪ª┘è',
+            description: 'استرداد (CASH): استرداد جزئي',
           }),
         })
       );
@@ -584,7 +584,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
     test('opens a shift with opening balance', async () => {
       prisma.cashierShift.findFirst.mockResolvedValue(null);
       prisma.cashierShift.create.mockResolvedValue({
-        id: 'shift-1', companyId: 'company-1', cashierId: 'user-1', cashierName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+        id: 'shift-1', companyId: 'company-1', cashierId: 'user-1', cashierName: 'محمد علي',
         openingBalance: 200, status: 'OPEN', openedAt: new Date(),
       });
 
@@ -598,7 +598,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
           data: expect.objectContaining({
             companyId: 'company-1',
             cashierId: 'user-1',
-            cashierName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+            cashierName: 'محمد علي',
             openingBalance: 200,
             status: 'OPEN',
           }),
@@ -614,7 +614,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.openCashierShift(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘è┘ê╪¼╪» ╪┤┘è┘ü╪¬ ┘à┘ü╪¬┘ê╪¡ ╪¿╪º┘ä┘ü╪╣┘ä ┘ä┘ç╪░╪º ╪º┘ä┘â╪º╪┤┘è╪▒');
+      expect(res.payload.error).toBe('يوجد شيفت مفتوح بالفعل لهذا الكاشير');
     });
 
     test('closes an open shift with closing balance', async () => {
@@ -645,7 +645,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       await controller.closeCashierShift(req, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä╪┤┘è┘ü╪¬ ┘à╪║┘ä┘é ╪¿╪º┘ä┘ü╪╣┘ä');
+      expect(res.payload.error).toBe('الشيفت مغلق بالفعل');
     });
 
     test('returns current open shift or null', async () => {
@@ -666,7 +666,7 @@ describe('bookingInvoicesController ΓÇö clinic cashier & payments', () => {
       prisma.medicalPayment.findMany.mockResolvedValue([
         { amount: 500, method: 'CASH', paybackOfPaymentId: null, reason: null },
         { amount: 200, method: 'CARD', paybackOfPaymentId: null },
-        { amount: -50, method: 'CASH', paybackOfPaymentId: 'pay-1', reason: '╪º╪│╪¬╪▒╪»╪º╪»' },
+        { amount: -50, method: 'CASH', paybackOfPaymentId: 'pay-1', reason: 'استرداد' },
       ]);
       prisma.medicalInvoice.findMany.mockResolvedValue([
         { discount: 20, additionAmount: 10 },

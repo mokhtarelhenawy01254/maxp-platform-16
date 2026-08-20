@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -77,7 +77,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -87,7 +87,7 @@ const req = (overrides = {}) => ({
 const makeEntity = (overrides = {}) => ({
   id: 'ins-1',
   companyId: 'company-1',
-  name: '╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐ ┘ä┘ä╪¬╪ú┘à┘è┘å',
+  name: 'شركة الأهلية للتأمين',
   priceListId: null,
   isActive: true,
   ...overrides,
@@ -96,9 +96,9 @@ const makeEntity = (overrides = {}) => ({
 const makeStudy = (overrides = {}) => ({
   id: 'study-1',
   companyId: 'company-1',
-  patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+  patientName: 'محمد علي',
   examTypeId: 'et-1',
-  examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐',
+  examTypeName: 'أشعة مقطعية',
   status: 'IMAGED',
   ...overrides,
 });
@@ -108,7 +108,7 @@ const makeInvoice = (overrides = {}) => ({
   companyId: 'company-1',
   invoiceNumber: 'INS-20260810-1234',
   insuranceCompanyId: 'ins-1',
-  insuranceCompanyName: '╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐ ┘ä┘ä╪¬╪ú┘à┘è┘å',
+  insuranceCompanyName: 'شركة الأهلية للتأمين',
   totalAmount: 800,
   paidAmount: 0,
   remainingAmount: 800,
@@ -135,7 +135,7 @@ describe('radiologyInsuranceController', () => {
       await controller.createInvoice(req({ user: {}, body: { insuranceCompanyId: 'ins-1' } }), res);
 
       expect(res.statusCode).toBe(403);
-      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+      expect(res.payload.error).toBe('غير مصرح');
       expect(prisma.insuranceCompany.findFirst).not.toHaveBeenCalled();
     });
   });
@@ -164,10 +164,10 @@ describe('radiologyInsuranceController', () => {
       });
       expect(prisma.radiologyStudy.update).toHaveBeenCalledWith({
         where: { id: 'study-1' },
-        data: expect.objectContaining({ insuranceCompanyId: 'ins-1', insuranceCompanyName: '╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐ ┘ä┘ä╪¬╪ú┘à┘è┘å', billingType: 'INSURANCE' }),
+        data: expect.objectContaining({ insuranceCompanyId: 'ins-1', insuranceCompanyName: 'شركة الأهلية للتأمين', billingType: 'INSURANCE' }),
       });
       expect(res.payload.data.insuranceCompanyId).toBe('ins-1');
-      expect(res.payload.data.insuranceCompanyName).toBe('╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐ ┘ä┘ä╪¬╪ú┘à┘è┘å');
+      expect(res.payload.data.insuranceCompanyName).toBe('شركة الأهلية للتأمين');
     });
 
     test('clears the insurance fields when insuranceCompanyId is null', async () => {
@@ -200,7 +200,7 @@ describe('radiologyInsuranceController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('شركة التأمين غير موجودة');
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
     });
 
@@ -216,7 +216,7 @@ describe('radiologyInsuranceController', () => {
       );
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الحالة غير موجودة');
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
     });
   });
@@ -226,8 +226,8 @@ describe('radiologyInsuranceController', () => {
       const prisma = createPrisma();
       prisma.insuranceCompany.findFirst.mockResolvedValue(makeEntity());
       prisma.radiologyStudy.findMany.mockResolvedValue([
-        makeStudy({ id: 's1', patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐' }),
-        makeStudy({ id: 's2', patientName: '╪│╪º╪▒╪⌐', examTypeId: 'et-2', examTypeName: '╪▒┘å┘è┘å ┘à╪║┘å╪º╪╖┘è╪│┘è' }),
+        makeStudy({ id: 's1', patientName: 'محمد علي', examTypeId: 'et-1', examTypeName: 'أشعة مقطعية' }),
+        makeStudy({ id: 's2', patientName: 'سارة', examTypeId: 'et-2', examTypeName: 'رنين مغناطيسي' }),
       ]);
       prisma.radiologyExamType.findMany.mockResolvedValue([
         { id: 'et-1', price: 300 },
@@ -255,7 +255,7 @@ describe('radiologyInsuranceController', () => {
       const createData = prisma.radiologyInsuranceInvoice.create.mock.calls[0][0].data;
       expect(createData.companyId).toBe('company-1');
       expect(createData.insuranceCompanyId).toBe('ins-1');
-      expect(createData.insuranceCompanyName).toBe('╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐ ┘ä┘ä╪¬╪ú┘à┘è┘å');
+      expect(createData.insuranceCompanyName).toBe('شركة الأهلية للتأمين');
       expect(createData.totalAmount).toBe(800);
       expect(createData.paidAmount).toBe(0);
       expect(createData.remainingAmount).toBe(800);
@@ -266,8 +266,8 @@ describe('radiologyInsuranceController', () => {
       expect(itemsData).toHaveLength(2);
       expect(itemsData[0]).toEqual({
         studyId: 's1',
-        patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
-        examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐',
+        patientName: 'محمد علي',
+        examTypeName: 'أشعة مقطعية',
         amount: 300,
         invoiceId: 'inv-1',
       });
@@ -279,8 +279,8 @@ describe('radiologyInsuranceController', () => {
       const prisma = createPrisma();
       prisma.insuranceCompany.findFirst.mockResolvedValue(makeEntity());
       prisma.radiologyStudy.findMany.mockResolvedValue([
-        makeStudy({ id: 's1', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐' }),
-        makeStudy({ id: 's2', examTypeId: 'et-2', examTypeName: '╪¿╪»┘ê┘å ╪│╪╣╪▒' }),
+        makeStudy({ id: 's1', examTypeId: 'et-1', examTypeName: 'أشعة' }),
+        makeStudy({ id: 's2', examTypeId: 'et-2', examTypeName: 'بدون سعر' }),
       ]);
       prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', price: 100 }]);
       prisma.radiologyInsuranceInvoice.create.mockImplementation(({ data }) =>
@@ -302,8 +302,8 @@ describe('radiologyInsuranceController', () => {
       const prisma = createPrisma();
       prisma.insuranceCompany.findFirst.mockResolvedValue(makeEntity());
       prisma.radiologyStudy.findMany.mockResolvedValue([
-        makeStudy({ id: 's1', patientName: '┘à╪¡┘à┘ê╪»', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', priceSnapshot: 850, additionAmount: 150 }),
-        makeStudy({ id: 's2', patientName: '╪│╪º╪▒╪⌐', examTypeId: 'et-2', examTypeName: '╪▒┘å┘è┘å', priceSnapshot: 500, additionAmount: 0 }),
+        makeStudy({ id: 's1', patientName: 'محمود', examTypeId: 'et-1', examTypeName: 'أشعة مقطعية', priceSnapshot: 850, additionAmount: 150 }),
+        makeStudy({ id: 's2', patientName: 'سارة', examTypeId: 'et-2', examTypeName: 'رنين', priceSnapshot: 500, additionAmount: 0 }),
       ]);
       prisma.radiologyInsuranceInvoice.create.mockImplementation(({ data }) => Promise.resolve({ id: 'inv-1', ...data }));
       prisma.radiologyInsuranceInvoiceItem.createMany.mockResolvedValue({ count: 2 });
@@ -324,7 +324,7 @@ describe('radiologyInsuranceController', () => {
       const prisma = createPrisma();
       prisma.insuranceCompany.findFirst.mockResolvedValue(makeEntity());
       prisma.radiologyStudy.findMany.mockResolvedValue([
-        makeStudy({ id: 's1', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐' }),
+        makeStudy({ id: 's1', examTypeId: 'et-1', examTypeName: 'أشعة' }),
       ]);
       prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', price: 300 }]);
       prisma.radiologyInsuranceInvoice.create.mockImplementation(({ data }) => Promise.resolve({ id: 'inv-1', ...data }));
@@ -344,7 +344,7 @@ describe('radiologyInsuranceController', () => {
       const prisma = createPrisma();
       prisma.insuranceCompany.findFirst.mockResolvedValue(makeEntity());
       prisma.radiologyStudy.findMany.mockResolvedValue([
-        makeStudy({ id: 's1', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐' }),
+        makeStudy({ id: 's1', examTypeId: 'et-1', examTypeName: 'أشعة' }),
       ]);
       prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', price: 100 }]);
       prisma.radiologyInsuranceInvoice.create
@@ -373,7 +373,7 @@ describe('radiologyInsuranceController', () => {
       await controller.createInvoice(req({ body: { insuranceCompanyId: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('شركة التأمين غير موجودة');
       expect(prisma.radiologyInsuranceInvoice.create).not.toHaveBeenCalled();
     });
 
@@ -387,7 +387,7 @@ describe('radiologyInsuranceController', () => {
       await controller.createInvoice(req({ body: { insuranceCompanyId: 'ins-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ╪¬┘ê╪¼╪» ╪¡╪º┘ä╪º╪¬ ┘ä╪Ñ┘å╪┤╪º╪í ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐');
+      expect(res.payload.error).toBe('لا توجد حالات لإنشاء الفاتورة');
       expect(prisma.radiologyInsuranceInvoice.create).not.toHaveBeenCalled();
     });
   });
@@ -430,7 +430,7 @@ describe('radiologyInsuranceController', () => {
       await controller.listInvoices(req({ query: { status: 'DONE' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪¡╪º┘ä╪⌐ ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐');
+      expect(res.payload.error).toBe('حالة الفاتورة غير صحيحة');
       expect(prisma.radiologyInsuranceInvoice.findMany).not.toHaveBeenCalled();
     });
   });
@@ -461,7 +461,7 @@ describe('radiologyInsuranceController', () => {
       await controller.getInvoice(req({ params: { id: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الفاتورة غير موجودة');
     });
   });
 
@@ -478,7 +478,7 @@ describe('radiologyInsuranceController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.recordPayment(req({ params: { id: 'inv-1' }, body: { amount: 500, note: '╪»┘ü╪╣╪⌐ ┘å┘ç╪º╪ª┘è╪⌐' } }), res);
+      await controller.recordPayment(req({ params: { id: 'inv-1' }, body: { amount: 500, note: 'دفعة نهائية' } }), res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyInsuranceInvoice.update).toHaveBeenCalledWith({
@@ -489,10 +489,10 @@ describe('radiologyInsuranceController', () => {
       expect(ledgerData).toEqual({
         companyId: 'company-1',
         insuranceCompanyId: 'ins-1',
-        insuranceCompanyName: '╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐ ┘ä┘ä╪¬╪ú┘à┘è┘å',
+        insuranceCompanyName: 'شركة الأهلية للتأمين',
         type: 'PAYMENT',
         amount: 500,
-        note: '╪»┘ü╪╣╪⌐ ┘å┘ç╪º╪ª┘è╪⌐',
+        note: 'دفعة نهائية',
       });
       expect(res.payload.data.status).toBe('PAID');
     });
@@ -530,7 +530,7 @@ describe('radiologyInsuranceController', () => {
 
       const res = createResponse();
       await controller.recordPayment(
-        req({ params: { id: 'inv-1' }, body: { amount: 800, method: 'bank', note: '╪¬╪¡╪╡┘è┘ä ╪┤┘ç╪▒┘è' } }),
+        req({ params: { id: 'inv-1' }, body: { amount: 800, method: 'bank', note: 'تحصيل شهري' } }),
         res
       );
 
@@ -541,7 +541,7 @@ describe('radiologyInsuranceController', () => {
         'PAYMENT',
         800,
         'BANK',
-        '╪¬╪¡╪╡┘è┘ä ╪┤┘ç╪▒┘è',
+        'تحصيل شهري',
         'INSURANCE',
         'inv-1'
       );
@@ -573,7 +573,7 @@ describe('radiologyInsuranceController', () => {
       await controller.recordPayment(req({ params: { id: 'inv-1' }, body: { amount: 0 } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪¡┘è╪¡');
+      expect(res.payload.error).toBe('المبلغ غير صحيح');
       expect(prisma.radiologyInsuranceLedgerEntry.create).not.toHaveBeenCalled();
     });
 
@@ -586,7 +586,7 @@ describe('radiologyInsuranceController', () => {
       await controller.recordPayment(req({ params: { id: 'foreign' }, body: { amount: 100 } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الفاتورة غير موجودة');
       expect(prisma.radiologyInsuranceInvoice.update).not.toHaveBeenCalled();
     });
   });
@@ -621,7 +621,7 @@ describe('radiologyInsuranceController', () => {
       await controller.listLedger(req({ query: { type: 'CASH' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘å┘ê╪╣ ╪º┘ä┘é┘è╪» ╪║┘è╪▒ ╪╡╪¡┘è╪¡');
+      expect(res.payload.error).toBe('نوع القيد غير صحيح');
       expect(prisma.radiologyInsuranceLedgerEntry.findMany).not.toHaveBeenCalled();
     });
   });
@@ -630,9 +630,9 @@ describe('radiologyInsuranceController', () => {
     test('groups invoices per insurance entity', async () => {
       const prisma = createPrisma();
       prisma.radiologyInsuranceInvoice.findMany.mockResolvedValue([
-        { insuranceCompanyId: 'ins-1', insuranceCompanyName: '╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐', totalAmount: 800, paidAmount: 300, remainingAmount: 500 },
-        { insuranceCompanyId: 'ins-1', insuranceCompanyName: '╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐', totalAmount: 200, paidAmount: 200, remainingAmount: 0 },
-        { insuranceCompanyId: 'ins-2', insuranceCompanyName: '╪º┘ä╪¬┘â╪º┘ü┘ä┘è╪⌐', totalAmount: 500, paidAmount: 0, remainingAmount: 500 },
+        { insuranceCompanyId: 'ins-1', insuranceCompanyName: 'شركة الأهلية', totalAmount: 800, paidAmount: 300, remainingAmount: 500 },
+        { insuranceCompanyId: 'ins-1', insuranceCompanyName: 'شركة الأهلية', totalAmount: 200, paidAmount: 200, remainingAmount: 0 },
+        { insuranceCompanyId: 'ins-2', insuranceCompanyName: 'التكافلية', totalAmount: 500, paidAmount: 0, remainingAmount: 500 },
       ]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -651,8 +651,8 @@ describe('radiologyInsuranceController', () => {
         },
       });
       expect(res.payload.data).toEqual([
-        { insuranceCompanyId: 'ins-1', name: '╪┤╪▒┘â╪⌐ ╪º┘ä╪ú┘ç┘ä┘è╪⌐', total: 1000, paid: 500, remaining: 500 },
-        { insuranceCompanyId: 'ins-2', name: '╪º┘ä╪¬┘â╪º┘ü┘ä┘è╪⌐', total: 500, paid: 0, remaining: 500 },
+        { insuranceCompanyId: 'ins-1', name: 'شركة الأهلية', total: 1000, paid: 500, remaining: 500 },
+        { insuranceCompanyId: 'ins-2', name: 'التكافلية', total: 500, paid: 0, remaining: 500 },
       ]);
     });
   });
@@ -664,8 +664,8 @@ describe('radiologyInsuranceController', () => {
         { examTypeId: 'et-1', price: 350 },
       ]);
       prisma.radiologyExamType.findMany.mockResolvedValue([
-        { id: 'et-1', name: '╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒', price: 300 },
-        { id: 'et-2', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', price: 500 },
+        { id: 'et-1', name: 'أشعة الصدر', price: 300 },
+        { id: 'et-2', name: 'أشعة مقطعية', price: 500 },
       ]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -674,8 +674,8 @@ describe('radiologyInsuranceController', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.payload.data).toEqual([
-        { examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒', covered: true, entityPrice: 350, basePrice: 300, status: 'COVERED' },
-        { examTypeId: 'et-2', examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', covered: false, entityPrice: null, basePrice: 500, status: 'NOT_COVERED' },
+        { examTypeId: 'et-1', examTypeName: 'أشعة الصدر', covered: true, entityPrice: 350, basePrice: 300, status: 'COVERED' },
+        { examTypeId: 'et-2', examTypeName: 'أشعة مقطعية', covered: false, entityPrice: null, basePrice: 500, status: 'NOT_COVERED' },
       ]);
     });
 

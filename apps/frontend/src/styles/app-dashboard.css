@@ -1,31 +1,31 @@
 :root {
-  --role-ceo: #6366f1;
-  --role-sales: #10b981;
-  --role-support: #f59e0b;
-  --role-shipping: #3b82f6;
-  --role-inventory: #8b5cf6;
-  --role-marketing: #ec4899;
-  --role-facebook-sales-support: #0ea5e9;
-  --role-default: #64748b;
+  --role-ceo: oklch(0.585 0.204 277.1);
+  --role-sales: oklch(0.696 0.149 162.5);
+  --role-support: oklch(0.769 0.165 70.1);
+  --role-shipping: oklch(0.623 0.188 259.8);
+  --role-inventory: oklch(0.606 0.219 292.7);
+  --role-marketing: oklch(0.656 0.212 354.3);
+  --role-facebook-sales-support: oklch(0.685 0.148 237.3);
+  --role-default: oklch(0.554 0.041 257.4);
   
-  --channel-facebook: #1877f2;
-  --channel-whatsapp: #16a34a;
-  --channel-dashboard: #7c3aed;
+  --channel-facebook: oklch(0.589 0.203 257.9);
+  --channel-whatsapp: oklch(0.627 0.170 149.2);
+  --channel-dashboard: oklch(0.541 0.247 293.0);
 }
 
 .dark {
-  --role-ceo: #818cf8;
-  --role-sales: #34d399;
-  --role-support: #fbbf24;
-  --role-shipping: #60a5fa;
-  --role-inventory: #a78bfa;
-  --role-marketing: #f472b6;
-  --role-facebook-sales-support: #38bdf8;
-  --role-default: #94a3b8;
+  --role-ceo: oklch(0.680 0.158 276.9);
+  --role-sales: oklch(0.773 0.153 163.2);
+  --role-support: oklch(0.837 0.164 84.4);
+  --role-shipping: oklch(0.714 0.143 254.6);
+  --role-inventory: oklch(0.709 0.159 293.5);
+  --role-marketing: oklch(0.725 0.175 349.8);
+  --role-facebook-sales-support: oklch(0.754 0.139 232.7);
+  --role-default: oklch(0.711 0.035 256.8);
   
-  --channel-facebook: #60a5fa;
-  --channel-whatsapp: #4ade80;
-  --channel-dashboard: #a78bfa;
+  --channel-facebook: oklch(0.714 0.143 254.6);
+  --channel-whatsapp: oklch(0.800 0.182 151.7);
+  --channel-dashboard: oklch(0.709 0.159 293.5);
 }
 
 .app-dashboard-root {
@@ -45,11 +45,72 @@
 }
 .app-shell-root {
   display: flex;
+  flex-direction: column;
   flex: 1;
   height: 100%;
   min-height: 0;
   width: 100%;
   overflow: hidden;
+}
+
+.app-shell-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-shell-mobile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-card);
+}
+
+@media (min-width: 1024px) {
+  .app-shell-mobile-header {
+    display: none;
+  }
+}
+
+.app-shell-mobile-header-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.app-shell-mobile-header-button:hover,
+.app-shell-mobile-header-button:focus-visible {
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+.app-shell-mobile-header-button:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.app-shell-mobile-header-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-shell-sidebar {
@@ -105,6 +166,23 @@
   overflow-y: auto;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+  /* Keep absolutely-positioned descendants inside this scroll container */
+  position: relative;
+}
+
+/* Hide the sidebar scrollbar (and its up/down arrows) so no arrow sits next to
+   the main menu */
+.app-shell-sidebar-content {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.app-shell-sidebar-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.app-shell-content::-webkit-scrollbar-button {
+  display: none;
 }
 
 .app-shell-sidebar-item {
@@ -206,19 +284,32 @@
   min-width: 0;
   overflow-y: auto;
   padding: 1.5rem;
+  /* Anchor absolutely-positioned descendants (e.g. sr-only labels) so they are
+     clipped by this scroll container instead of escaping to the document and
+     creating a page-level scrollbar (with arrows) next to the main menu */
+  position: relative;
+}
+
+/* Full-height scrollable apps (WhatsApp, etc.): make the intermediate
+   layout wrapper fill the app-shell so inner scroll containers work. */
+.app-shell-content:has(> .motion-safe\:animate-fade-in > .whatsapp-workspace-root) {
+  overflow: hidden;
+  padding: 0;
+}
+
+.app-shell-content > .motion-safe\:animate-fade-in:has(> .whatsapp-workspace-root) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell-content > .motion-safe\:animate-fade-in > .whatsapp-workspace-root {
+  min-height: 0;
 }
 
 @media (max-width: 1024px) {
-  .app-shell-sidebar {
-    position: fixed;
-    inset-block: 0;
-    z-index: 50;
-    transform: translateX(-100%);
-    transition: transform 200ms ease;
-  }
-  [dir="rtl"] .app-shell-sidebar {
-    transform: translateX(100%);
-  }
   .app-shell-mobile-backdrop {
     position: fixed;
     inset: 0;
@@ -255,6 +346,7 @@ body.app-shell-mobile-open {
   .app-shell-sidebar,
   .app-shell-back-button,
   .app-shell-sidebar-item,
+  .app-shell-mobile-header-button,
   .app-shell-mobile-backdrop,
   .app-card-enter-active {
     transition: none;

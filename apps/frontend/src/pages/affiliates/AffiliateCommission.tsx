@@ -1,9 +1,16 @@
-import { DollarSign as BanknotesIcon, CreditCard as CreditCardIcon, Clock as ClockIcon, Check as CheckCircleIcon, Circle as ArrowTrendingUpIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { toast } from "sonner";
-;
+import { tToast } from "../../utils/i18n-toast";
+import {
+  BanknotesIcon,
+  CreditCardIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ArrowTrendingUpIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 
 interface ApiSuccess<T> {
   success: boolean;
@@ -149,7 +156,7 @@ const AffiliateCommission: React.FC = () => {
     const availablePayoutAmount = toNumber(affiliate?.pendingEarnings);
 
     if (!payoutAmount || !Number.isFinite(requestedAmount) || requestedAmount <= 0) {
-      toast.error("الرجاء إدخال مبلغ صالح");
+      tToast.error("AffiliateCommission.msg_af1c");
       return;
     }
 
@@ -159,7 +166,7 @@ const AffiliateCommission: React.FC = () => {
     }
 
     if (Math.abs(requestedAmount - availablePayoutAmount) > 0.009) {
-      toast.error("يمكن طلب سحب الرصيد المتاح بالكامل فقط حالياً");
+      tToast.error("AffiliateCommission.msg_208d");
       return;
     }
 
@@ -179,7 +186,7 @@ const AffiliateCommission: React.FC = () => {
       });
 
       if (response.data.success) {
-        toast.success("تم إرسال طلب السحب بنجاح");
+        tToast.success("AffiliateCommission.success_send_448b");
         setShowPayoutModal(false);
         setPayoutAmount("");
         setPaymentDetails("");

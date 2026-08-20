@@ -26,6 +26,16 @@ export interface StorefrontSettings {
   gtmDataLayerEnabled?: boolean;
   gtmTrackPageView?: boolean;
   gtmSuppressPixels?: boolean;
+  googleAnalyticsEnabled?: boolean;
+  googleAnalyticsMeasurementId?: string;
+  googleAnalyticsTrackPageView?: boolean;
+  googleAnalyticsTrackViewContent?: boolean;
+  googleAnalyticsTrackAddToCart?: boolean;
+  googleAnalyticsTrackInitiateCheckout?: boolean;
+  googleAnalyticsTrackPurchase?: boolean;
+  googleAnalyticsTrackSearch?: boolean;
+  googleAdsEnabled?: boolean;
+  googleAdsConversionId?: string;
   facebookPixelEnabled?: boolean;
   facebookPixelId?: string;
   pixelTrackPageView?: boolean;
@@ -82,6 +92,25 @@ export interface StorefrontSettings {
     secretKey?: string;
     mode?: string;
   };
+  walletPaymentSettings?: {
+    enabled?: boolean;
+    walletNumber?: string;
+    recipientName?: string;
+    instructions?: string;
+    discountEnabled?: boolean;
+    discountPercent?: number;
+    showDiscountBadge?: boolean;
+  };
+  checkoutAddressSettings?: {
+    mode?: "hybrid" | "ai_parse" | "dropdown";
+    aiEnabled?: boolean;
+    model?: string;
+    confidenceThreshold?: number;
+    showConfirmationToCustomer?: boolean;
+    cacheResults?: boolean;
+    logRawAddress?: boolean;
+    merchantCombobox?: boolean;
+  };
   [key: string]: any;
 }
 
@@ -115,6 +144,16 @@ const buildDefaultSettings = (companyId = ""): StorefrontSettings => ({
   gtmDataLayerEnabled: true,
   gtmTrackPageView: true,
   gtmSuppressPixels: false,
+  googleAnalyticsEnabled: false,
+  googleAnalyticsMeasurementId: "",
+  googleAnalyticsTrackPageView: true,
+  googleAnalyticsTrackViewContent: true,
+  googleAnalyticsTrackAddToCart: true,
+  googleAnalyticsTrackInitiateCheckout: true,
+  googleAnalyticsTrackPurchase: true,
+  googleAnalyticsTrackSearch: true,
+  googleAdsEnabled: false,
+  googleAdsConversionId: "",
   facebookPixelEnabled: false,
   facebookPixelId: "",
   pixelTrackPageView: true,

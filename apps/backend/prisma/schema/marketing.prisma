@@ -7,6 +7,7 @@ model BroadcastCampaign {
   targetAudience      String
   waTemplateName      String?              // WhatsApp template name (when channel=whatsapp)
   waLanguageCode      String?              @default("en")
+  waHeaderMedia       String?              // WhatsApp template media header: image/video/document id or HTTPS link
   whatsAppSessionId   String?
   leadCategoryId      String?
   scheduledAt         DateTime?
@@ -98,6 +99,63 @@ model BroadcastSettings {
   @@map("broadcast_settings")
 }
 
+/// Isolated Facebook Ads OAuth connection source — one per Facebook personal account
+/// that granted ads permissions (business_management, ads_management, ads_read).
+/// Stores the token separately from Messenger/page tokens so ads reconnects
+/// never touch Company.facebookUserAccessToken or FacebookPage.pageAccessToken.
+model FacebookAdsConnectionSource {
+  id                String    @id @default(cuid())
+  companyId         String
+  facebookUserId    String
+  facebookUserName  String?
+  facebookUserEmail String?
+  accessToken       String?
+  status            String    @default("connected")
+  connectedByUserId String?
+  connectedAt       DateTime  @default(now())
+  lastSyncedAt      DateTime?
+  lastError         String?
+  metadata          String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  adAccounts        FacebookAdAccount[]
+
+  @@unique([companyId, facebookUserId])
+  @@index([companyId])
+  @@index([status])
+  @@map("facebook_ads_connection_sources")
+}
+
+/// Facebook page OAuth connection source — one per Facebook personal account
+/// that granted Messenger/page permissions. Stores the user access token per
+/// account so pages from different Facebook accounts can be linked to the same
+/// company and refreshed independently. Page OAuth is the only flow that writes
+/// rows here; it never overwrites another account's token.
+model FacebookAccountConnection {
+  id                String       @id @default(cuid())
+  companyId         String
+  facebookUserId    String
+  facebookUserName  String?
+  facebookUserEmail String?
+  accessToken       String?
+  status            String       @default("connected")
+  connectedByUserId String?
+  connectedAt       DateTime     @default(now())
+  lastSyncedAt      DateTime?
+  lastError         String?
+  metadata          String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  facebookPages     FacebookPage[]
+
+  @@unique([companyId, facebookUserId])
+  @@index([companyId])
+  @@index([status])
+  @@map("facebook_account_connections")
+}
+
 /// UNUSED - Planned feature for Facebook Ads integration
 model FacebookAdAccount {
   id                         String                      @id @default(cuid())
@@ -106,12 +164,14 @@ model FacebookAdAccount {
   name                       String
   currency                   String                      @default("USD")
   timezone                   String?
-  accessToken                String
+  accessToken                String?
   isActive                   Boolean                     @default(true)
   settings                   String?
+  connectionSourceId         String?
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime @updatedAt
   company                    Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  connectionSource           FacebookAdsConnectionSource? @relation(fields: [connectionSourceId], references: [id], onDelete: SetNull)
   budgetAlertLogs            FacebookAdsBudgetAlertLog[]
   budgetAlertRules           FacebookAdsBudgetAlertRule[]
   facebookCampaigns          FacebookCampaign[]
@@ -122,6 +182,7 @@ model FacebookAdAccount {
   @@unique([companyId, accountId])
   @@index([accountId])
   @@index([companyId])
+  @@index([connectionSourceId])
   @@map("facebook_ad_accounts")
 }
 
@@ -739,35 +800,6 @@ model FacebookLookalikeAudience {
   @@map("facebook_lookalike_audiences")
 }
 
-/// Facebook page OAuth connection source — one per Facebook personal account
-/// that granted Messenger/page permissions. Stores the user access token per
-/// account so pages from different Facebook accounts can be linked to the same
-/// company and refreshed independently. Page OAuth is the only flow that writes
-/// rows here; it never overwrites another account's token.
-model FacebookAccountConnection {
-  id                String       @id @default(cuid())
-  companyId         String
-  facebookUserId    String
-  facebookUserName  String?
-  facebookUserEmail String?
-  accessToken       String?
-  status            String       @default("connected")
-  connectedByUserId String?
-  connectedAt       DateTime     @default(now())
-  lastSyncedAt      DateTime?
-  lastError         String?
-  metadata          String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  facebookPages     FacebookPage[]
-
-  @@unique([companyId, facebookUserId])
-  @@index([companyId])
-  @@index([status])
-  @@map("facebook_account_connections")
-}
-
 model FacebookPage {
   id                      String                   @id @default(cuid())
   pageId                  String                   @unique
@@ -787,7 +819,7 @@ model FacebookPage {
   facebookAccountId       String?
   blockedCustomersOnPages BlockedCustomersOnPage[]
   facebookPosts           FacebookPost[]
-  company                 Company?                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company                 Company?                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   facebookAccount         FacebookAccountConnection? @relation(fields: [facebookAccountId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
@@ -937,6 +969,7 @@ model WhatsAppNotificationLog {
   employeeId                      String?
   cartId                          String?
   status                          WhatsAppNotificationLogsStatus        @default(PENDING)
+  messageType                     String                                @default("TEXT")
   sentAt                          DateTime?
   deliveredAt                     DateTime?
   readAt                          DateTime?
@@ -1027,6 +1060,7 @@ model WhatsAppNotificationSettings {
   abandonedCartThirdReminder    Int      @default(72)
   abandonedCartDiscountEnabled  Boolean  @default(false)
   abandonedCartDiscountPercent  Int      @default(10)
+  incompleteCartImmediateMessage Boolean @default(false)
   marketingNotificationsEnabled Boolean  @default(false)
   promotionalEnabled            Boolean  @default(false)
   couponEnabled                 Boolean  @default(false)
@@ -1046,7 +1080,6 @@ model WhatsAppNotificationSettings {
   attendanceReminderEnabled     Boolean  @default(false)
   attendanceConfirmedEnabled    Boolean  @default(false)
   checkoutConfirmedEnabled     Boolean  @default(false)
-  incompleteCartImmediateMessage Boolean @default(false)
   leaveApprovalEnabled          Boolean  @default(false)
   permissionApprovalEnabled     Boolean  @default(false)
   manualDeductionEnabled        Boolean  @default(false)
@@ -1174,14 +1207,19 @@ model WhatsAppNotificationTemplate {
   contentWithMedia           Boolean                                @default(false)
   mediaUrl                   String?
   mediaType                  String?
+  headerFormat               String?                                // META template HEADER format: TEXT|IMAGE|VIDEO|DOCUMENT
+  headerMediaHandle          String?                                // META media id/handle for the header (uploaded via Media API)
+  headerUsesOrderProduct     Boolean                                @default(false) // HEADER = صورة أول منتج من الطلب وقت الإرسال
   hasButtons                 Boolean                                @default(false)
   buttons                    String?
   hasList                    Boolean                                @default(false)
   listData                   String?
   variables                  String?
+  channel                    String                                 @default("AUTO")
   isActive                   Boolean                                @default(true)
   isDefault                  Boolean                                @default(false)
   metaTemplateName           String?
+  metaTemplateId             String?
   metaTemplateLanguage       String?
   metaTemplateStatus         String?
   sentCount                  Int                                    @default(0)
@@ -1251,4 +1289,51 @@ model OverlayCampaignProduct {
   @@index([campaignId])
   @@index([productId])
   @@map("overlay_campaign_products")
+}
+
+/// 📅 جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
+/// يحدد لكل حدث: هل مفعّل؟ القناة النشطة (Auto/عادي/Meta)؟ والتأجيل قبل الإرسال
+model CustomerNotificationSchedule {
+  id            String   @id @default(cuid())
+  companyId     String
+  eventType     String
+  enabled       Boolean  @default(true)
+  activeChannel String   @default("AUTO")
+  delayValue    Int      @default(0)
+  delayUnit     String   @default("HOURS")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, eventType])
+  @@index([companyId])
+  @@map("customer_notification_schedules")
+}
+
+/// 🎉 المناسبات القابلة للإدارة (إضافة/حذف/تكرار + إرسال تلقائي عبر الكرون)
+model Occasion {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String
+  message         String
+  templateId      String? // اختياري: ربط المناسبة بقالب واتساب (محتواه هو الرسالة الحية)
+  mediaUrl        String?
+  scheduledAt     DateTime
+  recurrence      String   @default("none") // none | monthly | yearly
+  customerListIds String   @default("[]")   // JSON array of customerList ids
+  status          String   @default("draft") // draft | scheduled | sent | cancelled
+  lastSentAt      DateTime?
+  lastSentCount   Int      @default(0)
+  totalSent       Int      @default(0) // إجمالي الرسائل المرسلة (تراكمي عبر الجولات)
+  sendLimit       Int      @default(0) // أقصى عدد عملاء للمناسبة (0 = بدون حد)
+  throttlePerRun  Int      @default(0) // أقصى رسائل لكل جولة cron (كل ساعة) (0 = بدون حد)
+  nextRunAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+  @@index([nextRunAt])
+  @@map("occasions")
 }

@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState, memo } from "react";
-import { Trash2, Reply, Forward, Star, Smile, MoreHorizontal } from 'lucide-react';
+import {
+  Trash2,
+  Reply,
+  Forward,
+  Star,
+  Smile,
+  MoreHorizontal,
+} from "lucide-react";
 import ReactionSelector from "../Generic/ReactionSelector";
 import LinkifiedText from "../../common/LinkifiedText";
 import {

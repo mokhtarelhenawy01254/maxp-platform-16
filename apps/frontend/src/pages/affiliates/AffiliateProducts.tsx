@@ -1,11 +1,11 @@
-import { Link as LinkIcon, ShoppingBag as ShoppingBagIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTheme } from "../../hooks/useTheme";
 import { useNavigate } from "react-router-dom";
-;
+import { LinkIcon, ShoppingBagIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   buildAffiliateProductUrl,
   type AffiliateStoreProfile,
@@ -69,7 +69,7 @@ const AffiliateProducts: React.FC = () => {
         setAffiliate(affiliateRes.data.data);
       }
     } catch (error: any) {
-      toast.error("حدث خطأ أثناء جلب المنتجات");
+      tToast.error("AffiliateProducts.error_error_ad12");
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ const AffiliateProducts: React.FC = () => {
   const handleUpdateMarkup = async (productId: string, markup: number) => {
     try {
       if (!Number.isFinite(markup) || markup < 0) {
-        toast.error("برجاء إدخال هامش ربح صالح");
+        tToast.error("AffiliateProducts.msg_f09a");
         return;
       }
 
@@ -90,11 +90,11 @@ const AffiliateProducts: React.FC = () => {
         { markup: number }
       >(`/affiliates/products/${product.id}`, { markup });
       if (response.data.success) {
-        toast.success("تم تحديث الهامش بنجاح");
+        tToast.success("AffiliateProducts.success_update_c846");
         loadProducts();
       }
     } catch (error: any) {
-      toast.error("حدث خطأ أثناء التحديث");
+      tToast.error("AffiliateProducts.error_error_59e1");
     }
   };
 
@@ -104,7 +104,7 @@ const AffiliateProducts: React.FC = () => {
         `/affiliates/products/${affiliateProductId}`,
       );
       if (response.data.success) {
-        toast.success("تم إزالة المنتج من كتالوجك");
+        tToast.success("AffiliateProducts.msg_46fb");
         loadProducts();
       }
     } catch (error: any) {
@@ -241,10 +241,10 @@ const AffiliateProducts: React.FC = () => {
                           );
                           const copied = await copyAffiliateText(link);
                           if (copied) {
-                            toast.success("تم نسخ الرابط!");
+                            tToast.success("AffiliateProducts.msg_0153");
                             return;
                           }
-                          toast.error("لم نتمكن من النسخ تلقائيا، افتح الرابط وانسخه يدويا.");
+                          tToast.error("AffiliateProducts.msg_ccdb");
                         }}
                         className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 text-xs font-bold transition shadow-sm shadow-blue-500/20"
                       >

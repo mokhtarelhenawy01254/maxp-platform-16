@@ -1,11 +1,11 @@
-﻿/**
- * Backfill `lastMessageIsFromMe` ╪╣┘ä┘ë ╪¼╪»┘ê┘ä whatsapp_contacts ┘à┘å ╪ó╪«╪▒ ╪▒╪│╪º┘ä╪⌐ ┘ü╪╣┘ä┘è╪⌐.
+/**
+ * Backfill `lastMessageIsFromMe` على جدول whatsapp_contacts من آخر رسالة فعلية.
  *
- * ╪º┘ä╪¡┘é┘ä ┘â╪º┘å ┘à┘ê╪¼┘ê╪» ┘ü┘è ╪º┘ä┘Ç schema ┘ä┘â┘å ┘à╪┤ ┘â╪º┘å ╪¿┘è╪¬╪¡╪»┘æ╪½ ┘ü┘è ┘â┘ä ┘à╪│╪º╪▒╪º╪¬ ╪º┘ä╪Ñ╪▒╪│╪º┘ä╪î ┘ü╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘é╪»┘è┘à╪⌐
- * ┘â┘ä┘ç╪º false ╪º┘ü╪¬╪▒╪º╪╢┘è. ╪º┘ä┘ü┘ä╪¬╪▒ "╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä╪▒╪»" (unreplied) ╪¿┘è╪╣╪¬┘à╪» ╪╣┘ä┘è┘ç╪î ┘ü┘ä╪º╪▓┘à ┘å╪╣┘à┘ä backfill ┘à╪▒╪⌐
- * ┘ê╪º╪¡╪»╪⌐ ┘é╪¿┘ä ┘à╪º ╪º┘ä┘ü┘ä╪¬╪▒ ┘è╪¿┘é┘ë ╪»┘é┘è┘é ╪╣┘ä┘ë ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘é╪»┘è┘à╪⌐.
+ * الحقل كان موجود في الـ schema لكن مش كان بيتحدّث في كل مسارات الإرسال، فالحالات القديمة
+ * كلها false افتراضي. الفلتر "بانتظار الرد" (unreplied) بيعتمد عليه، فلازم نعمل backfill مرة
+ * واحدة قبل ما الفلتر يبقى دقيق على البيانات القديمة.
  *
- * ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à: node scripts/backfill_whatsapp_lastMessageIsFromMe.js [--dry-run] [--company=COMPANY_ID]
+ * الاستخدام: node scripts/backfill_whatsapp_lastMessageIsFromMe.js [--dry-run] [--company=COMPANY_ID]
  */
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
@@ -25,7 +25,7 @@ async function main() {
       ${companyId ? `AND ${q('sessionId')} IN (SELECT ${q('id')} FROM ${q('whatsapp_sessions')} WHERE ${q('companyId')} = '${companyId}')` : ''}
   `);
   const total = Number(totalContacts[0]?.cnt || 0);
-  console.log(`≡ƒôè Contacts with messages: ${total}${companyId ? ` (company ${companyId})` : ''}`);
+  console.log(`📊 Contacts with messages: ${total}${companyId ? ` (company ${companyId})` : ''}`);
 
   const changed = await prisma.$queryRawUnsafe(`
     SELECT COUNT(*) AS cnt
@@ -39,10 +39,10 @@ async function main() {
         LIMIT 1
       ), wc.${q('lastMessageIsFromMe')}) <> wc.${q('lastMessageIsFromMe')}
   `);
-  console.log(`≡ƒöü Contacts whose last-message-fromMe differs from stored value: ${Number(changed[0]?.cnt || 0)}`);
+  console.log(`🔁 Contacts whose last-message-fromMe differs from stored value: ${Number(changed[0]?.cnt || 0)}`);
 
   if (DRY_RUN) {
-    console.log('Γ£à Dry-run: nothing applied. Remove --dry-run to backfill.');
+    console.log('✅ Dry-run: nothing applied. Remove --dry-run to backfill.');
     await prisma.$disconnect();
     return;
   }
@@ -59,11 +59,11 @@ async function main() {
       ${companyId ? `AND wc.${q('sessionId')} IN (SELECT ${q('id')} FROM ${q('whatsapp_sessions')} WHERE ${q('companyId')} = '${companyId}')` : ''}
   `);
 
-  console.log(`Γ£à Backfilled ${result} contacts.`);
+  console.log(`✅ Backfilled ${result} contacts.`);
   await prisma.$disconnect();
 }
 
 main().catch((e) => {
-  console.error('Γ¥î Failed:', e.message);
+  console.error('❌ Failed:', e.message);
   process.exit(1);
 });

@@ -1,4 +1,3 @@
-import { Circle as PaperAirplaneIcon, MessageSquare as ChatBubbleLeftRightIcon, RefreshCw as ArrowPathIcon, Search as MagnifyingGlassIcon, Image as PhotoIcon } from 'lucide-react';
 import React, {
   useState,
   useEffect,
@@ -39,7 +38,13 @@ if (!_cacheCleanupStarted) {
     5 * 60 * 1000,
   );
 }
-;
+import {
+  PaperAirplaneIcon,
+  ChatBubbleLeftRightIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  PhotoIcon,
+} from "@heroicons/react/24/outline";
 
 interface Chat {
   id: string;

@@ -59,7 +59,8 @@ const userValidationRules = () => {
       .normalizeEmail(),
       
     body('phone')
-      .optional()
+      .notEmpty()
+      .withMessage('رقم الهاتف مطلوب')
       .matches(/^[\+]?[0-9\s\-\(\)]{7,20}$/)
       .withMessage('رقم الهاتف غير صحيح'),
       

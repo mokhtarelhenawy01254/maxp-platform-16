@@ -34,10 +34,20 @@ model BulkOrderItem {
   orderNumber     String?
   customerName    String?
   customerPhone   String?
+  city            String?
+  area            String?
+  governorate     String?
+  address         String?
   productName     String?
+  sku             String?
+  size            String?
+  color           String?
   quantity        Int      @default(1)
   price           Decimal  @default(0) @db.Decimal(10, 2)
   total           Decimal  @default(0) @db.Decimal(10, 2)
+  collectAmount   Decimal  @default(0) @db.Decimal(10, 2)
+  deliverAmount   Decimal  @default(0) @db.Decimal(10, 2)
+  returnContent   String?
   status          String   @default("PENDING")
   notes           String?
   metadata        String?

@@ -5,6 +5,41 @@ const {
   normalizeRoutingMode
 } = require('./whatsappConversationRoutingService');
 
+// Cache للـ audience: بتتغير نادراً (assignment/team/users) لكنها بتتحسب من 3 كويري
+// على كل رسالة → حمل غير ضروري على الـ DB في الـ bursts.
+// TTL قصير (5 ثواني افتراضياً) — الأسوأ لو اتعاد assignment لتوّه: الـ emit الجديد
+// يتأخر ثواني، مش مشكلة حرجة بالمقارنة بتقليل ~6 كويري لكل رسالة.
+const AUDIENCE_CACHE_TTL_MS = Number(process.env.WHATSAPP_AUDIENCE_CACHE_TTL_MS || 5000);
+const audienceCache = new Map(); // key -> { result, expiresAt }
+
+function buildAudienceCacheKey({ companyId, sessionId, conversationId = null, remoteJid = null }) {
+  return `${companyId}:${sessionId}:${conversationId || ''}:${remoteJid || ''}`;
+}
+
+function getCachedAudience(cacheKey) {
+  const entry = audienceCache.get(cacheKey);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    audienceCache.delete(cacheKey);
+    return null;
+  }
+  return entry.result;
+}
+
+function setCachedAudience(cacheKey, result) {
+  if (audienceCache.size > 5000) {
+    const now = Date.now();
+    for (const [key, entry] of audienceCache) {
+      if (entry.expiresAt <= now) audienceCache.delete(key);
+    }
+  }
+  audienceCache.set(cacheKey, { result, expiresAt: Date.now() + AUDIENCE_CACHE_TTL_MS });
+}
+
+function clearConversationAudienceCache() {
+  audienceCache.clear();
+}
+
 function buildSessionMetadataWhere(sessionId, remoteJid) {
   return {
     AND: [
@@ -29,6 +64,12 @@ async function getConversationAudience({
   conversationId = null,
   remoteJid = null
 }) {
+  const cacheKey = buildAudienceCacheKey({ companyId, sessionId, conversationId, remoteJid });
+  const cached = getCachedAudience(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const prisma = getSharedPrismaClient();
 
   const [conversation, assignment, users] = await Promise.all([
@@ -121,11 +162,15 @@ async function getConversationAudience({
     }
   }
 
-  return {
+  const result = {
     conversationId: conversation?.id || null,
     assignedUserId: conversation?.assignedUserId || null,
     userIds: Array.from(audience)
   };
+
+  setCachedAudience(cacheKey, result);
+
+  return result;
 }
 
 function emitToUsers(io, userIds, eventName, payload) {
@@ -164,5 +209,6 @@ function emitToAudience(
 module.exports = {
   getConversationAudience,
   emitToUsers,
-  emitToAudience
+  emitToAudience,
+  clearConversationAudienceCache
 };

@@ -1,4 +1,4 @@
-﻿const mockEnsureWithinPlanLimit = jest.fn();
+const mockEnsureWithinPlanLimit = jest.fn();
 
 const mockPrisma = {
   product: {
@@ -85,9 +85,9 @@ describe('easyOrdersController import dedup', () => {
     expect(body.data.imported).toBe(1);
     expect(body.data.skipped).toBe(1);
     expect(body.data.failed).toBe(0);
-    expect(body.data.details.skipped[0].reason).toBe('┘à┘å╪¬╪¼ ╪¿┘å┘ü╪│ ╪▒┘à╪▓ SKU ┘à┘ê╪¼┘ê╪» ╪¿╪º┘ä┘ü╪╣┘ä');
+    expect(body.data.details.skipped[0].reason).toBe('منتج بنفس رمز SKU موجود بالفعل');
 
-    // Only ONE product should have been created ΓÇö the duplicate must NOT be created or renamed.
+    // Only ONE product should have been created — the duplicate must NOT be created or renamed.
     expect(mockPrisma.product.create).toHaveBeenCalledTimes(1);
     const createArgs = mockPrisma.product.create.mock.calls[0][0];
     expect(createArgs.data.sku).toBe('SKU-DUP');
@@ -150,7 +150,7 @@ describe('easyOrdersController import dedup', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       success: false,
-      message: '╪▒┘à╪▓ SKU ┘à┘ê╪¼┘ê╪» ╪¿╪º┘ä┘ü╪╣┘ä. ┘è╪▒╪¼┘ë ╪º╪│╪¬╪«╪»╪º┘à ╪▒┘à╪▓ ┘à╪«╪¬┘ä┘ü.',
+      message: 'رمز SKU موجود بالفعل. يرجى استخدام رمز مختلف.',
     }));
 
     const skuQuery = mockPrisma.product.findFirst.mock.calls.find(([args]) =>

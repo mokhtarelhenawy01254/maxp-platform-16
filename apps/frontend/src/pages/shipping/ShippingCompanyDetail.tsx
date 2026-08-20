@@ -1,8 +1,7 @@
-import { Truck as TruckIcon, ArrowRight as ArrowRightIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Globe as GlobeAltIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Key as KeyIcon, Link as LinkIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-;
+import { TruckIcon, ArrowRightIcon, PencilIcon, TrashIcon, GlobeAltIcon, PhoneIcon, EnvelopeIcon, KeyIcon, LinkIcon } from '@heroicons/react/24/outline';
 // import { useAuth } from '../../hooks/useAuthSimple';
 import { envConfig } from '../../config/environment';
 

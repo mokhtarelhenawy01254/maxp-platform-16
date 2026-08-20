@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -27,35 +27,35 @@ interface OrderStatusOption {
 }
 
 const TURBO_STATUS_LIST: { key: string; labelAr: string; labelEn: string }[] = [
-  { key: "turbo_saved", labelAr: "╪¬┘à ╪º┘ä╪¡┘ü╪╕ (╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä╪Ñ╪▒╪│╪º┘ä)", labelEn: "Saved (Pending Send)" },
-  { key: "turbo_sent", labelAr: "┘à╪▒╪│┘ä╪⌐ ┘ä╪¬╪▒╪¿┘ê", labelEn: "Sent to Turbo" },
-  { key: "processing", labelAr: "┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░ ╪¿╪º┘ä┘ü╪▒╪╣", labelEn: "Branch Processing" },
-  { key: "out_for_delivery", labelAr: "┘à╪│┘ä┘à╪⌐ ┘ä┘ä┘à┘å╪»┘ê╪¿", labelEn: "Out for Delivery" },
-  { key: "delivered", labelAr: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à", labelEn: "Delivered" },
-  { key: "remitted", labelAr: "╪¬┘à ╪º┘ä╪¬┘ê╪▒┘è╪» ┘ê╪º┘ä╪¬╪¡╪╡┘è┘ä", labelEn: "Remitted" },
-  { key: "returned_to_company", labelAr: "┘à╪▒╪¬╪¼╪╣╪º╪¬ ╪¿╪º┘ä╪┤╪▒┘â╪⌐", labelEn: "Returned to Company" },
-  { key: "returned_received", labelAr: "┘à╪▒╪¬╪¼╪╣╪º╪¬ ┘ê╪╡┘ä╪¬┘å┘è", labelEn: "Returned Received" },
-  { key: "returned_to_customer", labelAr: "┘à╪▒╪¬╪¼╪╣╪⌐ ┘ä┘ä╪╣┘à┘è┘ä", labelEn: "Returned to Customer" },
-  { key: "returned_resent", labelAr: "┘à╪╣╪º╪» ╪Ñ╪▒╪│╪º┘ä┘ç╪º", labelEn: "Returned Resent" },
-  { key: "returned_missing", labelAr: "┘à╪▒╪¬╪¼╪╣ ┘à┘ü┘é┘ê╪»", labelEn: "Returned Missing" },
-  { key: "returned_destroyed", labelAr: "┘à╪▒╪¬╪¼╪╣ ┘à╪╣╪»┘ê┘à", labelEn: "Returned Destroyed" },
-  { key: "cancelled", labelAr: "┘à┘ä╪║┘è", labelEn: "Cancelled" },
-  { key: "delayed", labelAr: "┘à╪ñ╪¼┘ä╪⌐", labelEn: "Delayed" },
-  { key: "incomplete", labelAr: "╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐", labelEn: "Incomplete" },
-  { key: "archived", labelAr: "┘à╪ñ╪▒╪┤┘ü╪⌐", labelEn: "Archived" },
+  { key: "turbo_saved", labelAr: "تم الحفظ (بانتظار الإرسال)", labelEn: "Saved (Pending Send)" },
+  { key: "turbo_sent", labelAr: "مرسلة لتربو", labelEn: "Sent to Turbo" },
+  { key: "processing", labelAr: "قيد التنفيذ بالفرع", labelEn: "Branch Processing" },
+  { key: "out_for_delivery", labelAr: "مسلمة للمندوب", labelEn: "Out for Delivery" },
+  { key: "delivered", labelAr: "تم التسليم", labelEn: "Delivered" },
+  { key: "remitted", labelAr: "تم التوريد والتحصيل", labelEn: "Remitted" },
+  { key: "returned_to_company", labelAr: "مرتجعات بالشركة", labelEn: "Returned to Company" },
+  { key: "returned_received", labelAr: "مرتجعات وصلتني", labelEn: "Returned Received" },
+  { key: "returned_to_customer", labelAr: "مرتجعة للعميل", labelEn: "Returned to Customer" },
+  { key: "returned_resent", labelAr: "معاد إرسالها", labelEn: "Returned Resent" },
+  { key: "returned_missing", labelAr: "مرتجع مفقود", labelEn: "Returned Missing" },
+  { key: "returned_destroyed", labelAr: "مرتجع معدوم", labelEn: "Returned Destroyed" },
+  { key: "cancelled", labelAr: "ملغي", labelEn: "Cancelled" },
+  { key: "delayed", labelAr: "مؤجلة", labelEn: "Delayed" },
+  { key: "incomplete", labelAr: "غير مكتملة", labelEn: "Incomplete" },
+  { key: "archived", labelAr: "مؤرشفة", labelEn: "Archived" },
 ];
 
 const TURBO_STATUS_GROUP_MAP: Record<string, { labelAr: string; keys: string[] }> = {
-  "┘é┘è╪» ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐": {
-    labelAr: "┘é┘è╪» ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐",
+  "قيد المعالجة": {
+    labelAr: "قيد المعالجة",
     keys: ["turbo_saved", "turbo_sent", "processing"],
   },
-  "╪º┘ä╪¬┘ê╪╡┘è┘ä": {
-    labelAr: "╪º┘ä╪¬┘ê╪╡┘è┘ä",
+  "التوصيل": {
+    labelAr: "التوصيل",
     keys: ["out_for_delivery", "delivered", "remitted", "delayed"],
   },
-  "╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬": {
-    labelAr: "╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬",
+  "المرتجعات": {
+    labelAr: "المرتجعات",
     keys: [
       "returned_to_company",
       "returned_received",
@@ -65,8 +65,8 @@ const TURBO_STATUS_GROUP_MAP: Record<string, { labelAr: string; keys: string[] }
       "returned_destroyed",
     ],
   },
-  "╪¡╪º┘ä╪º╪¬ ╪ú╪«╪▒┘ë": {
-    labelAr: "╪¡╪º┘ä╪º╪¬ ╪ú╪«╪▒┘ë",
+  "حالات أخرى": {
+    labelAr: "حالات أخرى",
     keys: ["cancelled", "incomplete", "archived"],
   },
 };
@@ -128,7 +128,7 @@ const TurboStatusMapping: React.FC = () => {
     } catch (error: unknown) {
       console.error("Error saving mapping:", error);
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬");
+      toast.error(err.response?.data?.message || "فشل حفظ الإعدادات");
     } finally {
       setSaving(false);
     }
@@ -152,7 +152,7 @@ const TurboStatusMapping: React.FC = () => {
       <div className="flex items-center justify-center h-96 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">جاري التحميل...</p>
         </div>
       </div>
     );
@@ -167,13 +167,13 @@ const TurboStatusMapping: React.FC = () => {
           className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4"
         >
           <ArrowLeftIcon className="h-5 w-5 ml-2" />
-          ╪º┘ä╪╣┘ê╪»╪⌐ ┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ Turbo
+          العودة لإعدادات Turbo
         </button>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          ╪▒╪¿╪╖ ╪¡╪º┘ä╪º╪¬ Turbo ╪¿╪¡╪º┘ä╪º╪¬ ╪º┘ä┘å╪╕╪º┘à
+          ربط حالات Turbo بحالات النظام
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          ╪¡╪»╪» ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à┘å╪º╪│╪¿╪⌐ ┘ü┘è ╪º┘ä┘å╪╕╪º┘à ┘ä┘â┘ä ╪¡╪º┘ä╪⌐ ┘à┘å ╪¡╪º┘ä╪º╪¬ Turbo Express. ╪╣┘å╪» ┘ê╪╡┘ê┘ä ╪¬╪¡╪»┘è╪½ ┘à┘å Turbo╪î ╪│┘è╪¬┘à ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘ä┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪¡╪»╪»╪⌐.
+          حدد الحالة المناسبة في النظام لكل حالة من حالات Turbo Express. عند وصول تحديث من Turbo، سيتم تحويل الطلب تلقائياً للحالة المحددة.
         </p>
       </div>
 
@@ -183,10 +183,10 @@ const TurboStatusMapping: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                ╪¡╪º┘ä╪º╪¬ Turbo Express
+                حالات Turbo Express
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                ╪º╪«╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à┘é╪º╪¿┘ä╪⌐ ┘ü┘è ╪º┘ä┘å╪╕╪º┘à ┘ä┘â┘ä ╪¡╪º┘ä╪⌐ Turbo
+                اختر الحالة المقابلة في النظام لكل حالة Turbo
               </p>
             </div>
           </div>
@@ -220,7 +220,7 @@ const TurboStatusMapping: React.FC = () => {
                       <div className="flex items-center gap-3 flex-shrink-0">
                         {selectedStatus && (
                           <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
-                            ΓåÉ
+                            ←
                           </span>
                         )}
                         <select
@@ -229,7 +229,7 @@ const TurboStatusMapping: React.FC = () => {
                           className="w-56 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                           dir={isRtl ? "rtl" : "ltr"}
                         >
-                          <option value="">-- ┘ä╪º ┘è┘ê╪¼╪» ╪¬╪║┘è┘è╪▒ --</option>
+                          <option value="">-- لا يوجد تغيير --</option>
                           {orderStatuses
                             .filter((s) => s.code !== "TRASH")
                             .map((s) => (
@@ -253,11 +253,11 @@ const TurboStatusMapping: React.FC = () => {
         <div className="flex items-start gap-3">
           <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-amber-800 dark:text-amber-300">
-            <p className="font-medium mb-1">┘à┘ä╪º╪¡╪╕╪⌐ ┘à┘ç┘à╪⌐</p>
+            <p className="font-medium mb-1">ملاحظة مهمة</p>
             <p>
-              {`╪Ñ╪░╪º ╪¬╪▒┘â╪¬ ╪º┘ä╪¡╪º┘ä╪⌐ "┘ä╪º ┘è┘ê╪¼╪» ╪¬╪║┘è┘è╪▒"╪î ┘ä┘å ┘è╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘ü┘è ╪º┘ä┘å╪╕╪º┘à ╪╣┘å╪» ┘ê╪╡┘ê┘ä ┘ç╪░╪º ╪º┘ä╪¬╪¡╪»┘è╪½ ┘à┘å Turbo.`}
+              {`إذا تركت الحالة "لا يوجد تغيير"، لن يتم تغيير حالة الطلب في النظام عند وصول هذا التحديث من Turbo.`}
               <br />
-              {`╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪¬┘è ┘è╪¬┘à ╪¬╪│┘ä┘è┘à┘ç╪º (Delivered) ╪│╪¬╪¡╪»╪» ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ╪╣┘ä┘ë ╪ú┘å┘ç╪º "┘à┘â╪¬┘à┘ä".`}
+              {`الحالات التي يتم تسليمها (Delivered) ستحدد تلقائياً حالة الدفع على أنها "مكتمل".`}
             </p>
           </div>
         </div>
@@ -273,10 +273,10 @@ const TurboStatusMapping: React.FC = () => {
           {saving ? (
             <span className="flex items-center gap-2">
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ╪¼╪º╪▒┘è ╪º┘ä╪¡┘ü╪╕...
+              جاري الحفظ...
             </span>
           ) : (
-            "╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬"
+            "حفظ الإعدادات"
           )}
         </button>
       </div>

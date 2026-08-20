@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PaymentModal from "../PaymentModal";
@@ -25,17 +25,17 @@ describe("PaymentModal", () => {
     const onSave = jest.fn(() => Promise.resolve());
     const onClose = jest.fn();
     render(<PaymentModal invoice={invoice} onClose={onClose} onSave={onSave} />);
-    await user.click(screen.getByText("╪¬╪│╪¼┘è┘ä ╪º┘ä╪»┘ü╪╣"));
+    await user.click(screen.getByText("تسجيل الدفع"));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
   test("pay path shows an error toast and keeps the modal open when onSave rejects", async () => {
     const user = userEvent.setup();
-    const onSave = jest.fn(() => Promise.reject(new Error("┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪º┘ä╪¡")));
+    const onSave = jest.fn(() => Promise.reject(new Error("مبلغ غير صالح")));
     const onClose = jest.fn();
     render(<PaymentModal invoice={invoice} onClose={onClose} onSave={onSave} />);
-    await user.click(screen.getByText("╪¬╪│╪¼┘è┘ä ╪º┘ä╪»┘ü╪╣"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪º┘ä╪¡"));
+    await user.click(screen.getByText("تسجيل الدفع"));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("مبلغ غير صالح"));
     expect(onClose).not.toHaveBeenCalled();
   });
 });

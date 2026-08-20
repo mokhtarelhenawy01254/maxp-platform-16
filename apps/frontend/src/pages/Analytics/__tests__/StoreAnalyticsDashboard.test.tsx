@@ -3,21 +3,20 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import StoreAnalyticsDashboard from "../StoreAnalyticsDashboard";
 import analyticsService from "../../../services/analyticsService";
 
-jest.mock("react-chartjs-2", () => ({
-  Line: () => <div data-testid="analytics-line-chart" />,
-}));
-
-jest.mock("chart.js", () => ({
-  Chart: { register: jest.fn() },
-  CategoryScale: {},
-  LinearScale: {},
-  PointElement: {},
-  LineElement: {},
-  Title: {},
-  Tooltip: {},
-  Legend: {},
-  Filler: {},
-}));
+jest.mock("recharts", () => {
+  const MockResponsiveContainer = ({ children }: { children: React.ReactNode }) => <div data-testid="analytics-chart">{children}</div>;
+  const MockAreaChart = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
+  return {
+    ResponsiveContainer: MockResponsiveContainer,
+    AreaChart: MockAreaChart,
+    Area: () => null,
+    XAxis: () => null,
+    YAxis: () => null,
+    CartesianGrid: () => null,
+    Tooltip: () => null,
+    Legend: () => null,
+  };
+});
 
 jest.mock("../../../services/analyticsService", () => ({
   __esModule: true,

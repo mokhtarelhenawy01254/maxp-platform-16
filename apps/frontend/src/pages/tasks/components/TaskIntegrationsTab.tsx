@@ -1,9 +1,24 @@
-import { RefreshCw as ArrowPathIcon, ExternalLink as ArrowTopRightOnSquareIcon, Check as CheckCircleIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Clock as ClockIcon, Circle as DocumentDuplicateIcon, AlertTriangle as ExclamationTriangleIcon, EyeOff as EyeSlashIcon, Key as KeyIcon, Link as LinkIcon, Plus as PlusIcon, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
 import { buildApiUrl, buildAppUrl } from "../../../utils/urlHelper";
 import tokenManager from "../../../utils/tokenManager";
-;
+import {
+  ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ClockIcon,
+  DocumentDuplicateIcon,
+  ExclamationTriangleIcon,
+  EyeSlashIcon,
+  KeyIcon,
+  LinkIcon,
+  PlusIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 import { useAuth } from "../../../hooks/useAuthSimple";
 
 type CompanyUser = {
@@ -814,7 +829,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
   const saveOpenClawProfile = async () => {
     const normalizedBaseUrl = openClawQuickSetup.baseUrl.trim();
     if (!normalizedBaseUrl) {
-      toast.error("أدخل Base URL الخاصة بـ OpenClaw أولًا");
+      tToast.error("taskIntegrations.msg_a3c9");
       return;
     }
 
@@ -822,7 +837,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
       !openClawQuickSetup.hookToken.trim() &&
       !currentOpenClawProfile?.hasHookToken
     ) {
-      toast.error("أدخل Hook Token أو استخدم إعدادًا محفوظًا مسبقًا");
+      tToast.error("taskIntegrations.msg_9d3f");
       return;
     }
 
@@ -921,12 +936,12 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
         (await resolveOpenClawQuickSetupState()) || openClawQuickSetup;
       const targetUrl = normalizeOpenClawAgentUrl(quickSetupState.baseUrl);
       if (!targetUrl) {
-        toast.error("أدخل رابط OpenClaw أولًا");
+        tToast.error("taskIntegrations.msg_43bd");
         return null;
       }
 
       if (!quickSetupState.hookToken.trim()) {
-        toast.error("أدخل Hook Token الخاصة بـ OpenClaw");
+        tToast.error("taskIntegrations.msg_a6c0");
         return null;
       }
 
@@ -974,7 +989,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
     setWebhookForm(nextForm);
     setEditingWebhook(null);
     setShowWebhookForm(true);
-    toast.success("تم تجهيز webhook OpenClaw بالكامل. راجع القيم ثم احفظ.");
+    tToast.success("taskIntegrations.msg_e3f1");
   };
 
   const loadCredentials = async () => {
@@ -1085,7 +1100,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
       await navigator.clipboard.writeText(value);
       toast.success(successMessage);
     } catch (_error) {
-      toast.error("تعذر نسخ القيمة تلقائيًا");
+      tToast.error("taskIntegrations.msg_218b");
     }
   };
 
@@ -1109,12 +1124,12 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
 
   const submitCredential = async () => {
     if (!credentialForm.name.trim()) {
-      toast.error("اسم المفتاح مطلوب");
+      tToast.error("taskIntegrations.name_required_d4fe");
       return;
     }
 
     if (credentialForm.scopes.length === 0) {
-      toast.error("اختر صلاحية واحدة على الأقل");
+      tToast.error("taskIntegrations.msg_770f");
       return;
     }
 
@@ -1122,7 +1137,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
       credentialForm.scopes.includes("tasks:write") &&
       !credentialForm.actorUserId.trim()
     ) {
-      toast.error("صلاحية الكتابة تحتاج مستخدمًا مرتبطًا");
+      tToast.error("taskIntegrations.msg_7395");
       return;
     }
 
@@ -1291,17 +1306,17 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
     webhookToEdit: TaskWebhook | null,
   ): Record<string, unknown> | null => {
     if (!formState.name.trim()) {
-      toast.error("اسم الـ webhook مطلوب");
+      tToast.error("taskIntegrations.msg_6566");
       return null;
     }
 
     if (!formState.targetUrl.trim()) {
-      toast.error("رابط الـ webhook مطلوب");
+      tToast.error("taskIntegrations.msg_b920");
       return null;
     }
 
     if (formState.subscribedEvents.length === 0) {
-      toast.error("اختر حدثًا واحدًا على الأقل");
+      tToast.error("taskIntegrations.msg_2cdf");
       return null;
     }
 
@@ -1322,7 +1337,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
     }
 
     if (formState.secretMode === "custom" && !formState.signingSecret.trim()) {
-      toast.error("أدخل قيمة الـ signing secret المخصصة");
+      tToast.error("taskIntegrations.msg_9461");
       return null;
     }
 
@@ -1331,7 +1346,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
       formState.providerConfig.sessionMode === "task-scoped" &&
       !formState.providerConfig.sessionKeyPrefix.trim()
     ) {
-      toast.error("أدخل session key prefix عند اختيار جلسة لكل مهمة");
+      tToast.error("taskIntegrations.msg_e7d5");
       return null;
     }
 
@@ -1341,7 +1356,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
       (!Number.isFinite(Number(formState.providerConfig.timeoutSeconds)) ||
         Number(formState.providerConfig.timeoutSeconds) <= 0)
     ) {
-      toast.error("timeoutSeconds يجب أن تكون رقمًا أكبر من صفر");
+      tToast.error("taskIntegrations.msg_22fd");
       return null;
     }
 

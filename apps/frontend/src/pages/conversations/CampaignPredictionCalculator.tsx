@@ -1,6 +1,21 @@
-import { Circle as CalculatorIcon, Activity as ChartBarIcon, DollarSign as CurrencyDollarIcon, Users as UsersIcon, Star as SparklesIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Info as InformationCircleIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, Circle as ArrowTrendingUpIcon, Circle as LightBulbIcon, Minus as MinusIcon, Circle as SaveIcon } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-;
+import i18n from "../../i18n";
+import {
+  CalculatorIcon,
+  ChartBarIcon,
+  CurrencyDollarIcon,
+  UsersIcon,
+  SparklesIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  InformationCircleIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ArrowTrendingUpIcon,
+  LightBulbIcon,
+  MinusIcon,
+  BookmarkIcon as SaveIcon,
+} from "@heroicons/react/24/outline";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import LineChart from "../../components/charts/LineChart";
@@ -234,7 +249,7 @@ const CampaignPredictionCalculator: React.FC = () => {
 
   const saveScenario = () => {
     if (!inputs.campaignName) {
-      alert("الرجاء إدخال اسم للحملة قبل الحفظ");
+      alert(i18n.t("CampaignPredictionCalculator.msg_1512"));
       return;
     }
 
@@ -249,7 +264,7 @@ const CampaignPredictionCalculator: React.FC = () => {
     const updated = [...savedScenarios, newScenario];
     setSavedScenarios(updated);
     localStorage.setItem("campaignScenarios", JSON.stringify(updated));
-    alert("تم حفظ السيناريو بنجاح!");
+    alert(i18n.t("CampaignPredictionCalculator.success_save_3135"));
   };
 
   // Calculation functions

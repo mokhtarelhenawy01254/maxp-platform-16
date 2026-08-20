@@ -1,8 +1,23 @@
-import { Check as CheckCircleIcon, X as XMarkIcon, Clipboard as ClipboardDocumentIcon, Clock as ClockIcon, User as UserIcon, Phone as PhoneIcon, Pin as MapPinIcon, ShoppingBag as ShoppingBagIcon, Truck as TruckIcon, Grid as QrCodeIcon, Mail as EnvelopeIcon, Printer as PrinterIcon, RefreshCw as ArrowPathIcon, Heart as HeartIcon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-;
+import {
+    CheckCircleIcon,
+    XMarkIcon,
+    ClipboardDocumentIcon,
+    ClockIcon,
+    UserIcon,
+    PhoneIcon,
+    MapPinIcon,
+    ShoppingBagIcon,
+    TruckIcon,
+    QrCodeIcon,
+    EnvelopeIcon,
+    PrinterIcon,
+    ArrowPathIcon,
+    HeartIcon
+} from '@heroicons/react/24/outline';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
+import { tToast } from "../../utils/i18n-toast";
 
 interface OrderItem {
     productName: string;
@@ -92,7 +107,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationProps> = ({
     const copyOrderNumber = () => {
         navigator.clipboard.writeText(orderData.orderNumber);
         setCopied(true);
-        toast.success('تم نسخ رقم الطلب!');
+        tToast.success("OrderConfirmationModal.msg_1966");
         setTimeout(() => setCopied(false), 2000);
     };
 
@@ -376,7 +391,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationProps> = ({
                                             orderId: orderData.id,
                                             email: null
                                         });
-                                        toast.success('تم إرسال نسخة للبريد الإلكتروني!');
+                                        tToast.success("OrderConfirmationModal.success_send_d5ae");
                                     } catch (error: any) {
                                         toast.error(error.response?.data?.error || 'فشل إرسال الإيميل');
                                     }

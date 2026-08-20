@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeftIcon,
@@ -180,14 +180,14 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     const turboInfo = getTurboStatusDisplay(order.turboShipmentStatus);
                     return (
                       <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${turboInfo.colorClass}`}>
-                        ≡ƒÜÜ {turboInfo.label}
+                        🚚 {turboInfo.label}
                       </span>
                     );
                   })()}
                   {canQuickSelectStatus && isStatusMenuOpen && (
                     <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
                       <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200">
-                        ╪º╪«╪¬╪º╪▒┘è ╪º┘ä╪¡╪º┘ä╪⌐
+                        اختاري الحالة
                       </div>
                       <div className="max-h-72 overflow-y-auto py-2">
                         {statusOptions.map((status) => {
@@ -252,7 +252,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                 className="inline-flex items-center px-4 py-2 border border-green-300 dark:border-green-600 text-sm font-medium rounded-lg text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30"
               >
                 <PrinterIcon className="h-4 w-4 ml-2" />
-                ╪╖╪¿╪º╪╣╪⌐ ┘ê╪▒┘é╪⌐ ╪º┘ä╪¬╪¼┘ç┘è╪▓
+                طباعة ورقة التجهيز
               </button>
             )}
           </>

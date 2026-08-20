@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Production seed: creates/fills the company for h@gmail.com
  * with products, categories, customer, orders, tasks, and employee records.
  * Idempotent - safe to re-run.
@@ -17,40 +17,40 @@ const prisma = new PrismaClient({
 const COMPANY_EMAIL = 'h@gmail.com';
 
 const categories = [
-  { name: '╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪º╪¬', nameEn: 'Electronics' },
-  { name: '┘à┘ä╪º╪¿╪│', nameEn: 'Clothing' },
-  { name: '┘à┘å╪▓┘ä', nameEn: 'Home' },
+  { name: 'إلكترونيات', nameEn: 'Electronics' },
+  { name: 'ملابس', nameEn: 'Clothing' },
+  { name: 'منزل', nameEn: 'Home' },
 ];
 
 const productsData = [
-  { name: '╪│┘à╪º╪╣╪⌐ ╪¿┘ä┘ê╪¬┘ê╪½', price: 299, cat: '╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪º╪¬', stock: 50, sku: 'BT-001', desc: '╪│┘à╪º╪╣╪⌐ ╪¿┘ä┘ê╪¬┘ê╪½ ┘ä╪º╪│┘ä┘â┘è╪⌐ ╪¿╪¼┘ê╪»╪⌐ ╪╡┘ê╪¬ ╪╣╪º┘ä┘è╪⌐' },
-  { name: '╪┤╪º╪¡┘å ┘à╪¬┘å┘é┘ä', price: 199, cat: '╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪º╪¬', stock: 100, sku: 'PB-001', desc: '╪┤╪º╪¡┘å ┘à╪¬┘å┘é┘ä 10000mAh ╪│╪╣╪⌐ ┘â╪¿┘è╪▒╪⌐' },
-  { name: '╪│╪º╪╣╪⌐ ╪░┘â┘è╪⌐', price: 650, cat: '╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪º╪¬', stock: 25, sku: 'SW-001', desc: '╪│╪º╪╣╪⌐ ╪░┘â┘è╪⌐ ╪¬╪»╪╣┘à ╪º┘ä┘à┘â╪º┘ä┘à╪º╪¬ ┘ê╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬' },
-  { name: '╪¬┘è╪┤┘è╪▒╪¬ ┘é╪╖┘å┘è', price: 89, cat: '┘à┘ä╪º╪¿╪│', stock: 200, sku: 'TS-001', desc: '╪¬┘è╪┤┘è╪▒╪¬ ┘é╪╖┘å┘è ┘ü╪º╪«╪▒ ╪¿┘à┘é╪º╪│╪º╪¬ ┘à╪¬╪╣╪»╪»╪⌐' },
-  { name: '╪¡╪░╪º╪í ╪▒┘è╪º╪╢┘è', price: 450, cat: '┘à┘ä╪º╪¿╪│', stock: 75, sku: 'SN-001', desc: '╪¡╪░╪º╪í ╪▒┘è╪º╪╢┘è ┘à╪▒┘è╪¡ ┘ä┘ä┘à╪┤┘è ┘ê╪º┘ä╪▒┘è╪º╪╢╪⌐' },
-  { name: '╪¡┘é┘è╪¿╪⌐ ╪╕┘ç╪▒', price: 320, cat: '┘à┘ä╪º╪¿╪│', stock: 40, sku: 'BP-001', desc: '╪¡┘é┘è╪¿╪⌐ ╪╕┘ç╪▒ ╪╣╪╡╪▒┘è╪⌐ ┘à╪¬╪╣╪»╪»╪⌐ ╪º┘ä╪¼┘è┘ê╪¿' },
-  { name: '┘à╪╡╪¿╪º╪¡ ╪╖╪º┘ê┘ä╪⌐', price: 150, cat: '┘à┘å╪▓┘ä', stock: 30, sku: 'TL-001', desc: '┘à╪╡╪¿╪º╪¡ ╪╖╪º┘ê┘ä╪⌐ ╪ú┘å┘è┘é ╪¿╪Ñ╪╢╪º╪í╪⌐ ┘ç╪º╪»╪ª╪⌐' },
-  { name: '╪ú┘â┘ê╪º╪¿ ┘é┘ç┘ê╪⌐ (╪╖┘é┘à)', price: 120, cat: '┘à┘å╪▓┘ä', stock: 60, sku: 'CC-001', desc: '╪╖┘é┘à ╪ú┘â┘ê╪º╪¿ ┘é┘ç┘ê╪⌐ ╪│┘è╪▒╪º┘à┘è┘â ┘ü╪º╪«╪▒' },
+  { name: 'سماعة بلوتوث', price: 299, cat: 'إلكترونيات', stock: 50, sku: 'BT-001', desc: 'سماعة بلوتوث لاسلكية بجودة صوت عالية' },
+  { name: 'شاحن متنقل', price: 199, cat: 'إلكترونيات', stock: 100, sku: 'PB-001', desc: 'شاحن متنقل 10000mAh سعة كبيرة' },
+  { name: 'ساعة ذكية', price: 650, cat: 'إلكترونيات', stock: 25, sku: 'SW-001', desc: 'ساعة ذكية تدعم المكالمات والإشعارات' },
+  { name: 'تيشيرت قطني', price: 89, cat: 'ملابس', stock: 200, sku: 'TS-001', desc: 'تيشيرت قطني فاخر بمقاسات متعددة' },
+  { name: 'حذاء رياضي', price: 450, cat: 'ملابس', stock: 75, sku: 'SN-001', desc: 'حذاء رياضي مريح للمشي والرياضة' },
+  { name: 'حقيبة ظهر', price: 320, cat: 'ملابس', stock: 40, sku: 'BP-001', desc: 'حقيبة ظهر عصرية متعددة الجيوب' },
+  { name: 'مصباح طاولة', price: 150, cat: 'منزل', stock: 30, sku: 'TL-001', desc: 'مصباح طاولة أنيق بإضاءة هادئة' },
+  { name: 'أكواب قهوة (طقم)', price: 120, cat: 'منزل', stock: 60, sku: 'CC-001', desc: 'طقم أكواب قهوة سيراميك فاخر' },
 ];
 
 const tasksData = [
-  { title: '┘à╪▒╪º╪¼╪╣╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å', description: '┘à╪▒╪º╪¼╪╣╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å ╪º┘ä╪┤┘ç╪▒┘è╪⌐ ┘ê╪¬╪¡╪»┘è╪½ ╪º┘ä╪ú╪▒╪╡╪»╪⌐', status: 'IN_PROGRESS', priority: 'HIGH' },
-  { title: '╪¬╪¡╪»┘è╪½ ╪º┘ä╪ú╪│╪╣╪º╪▒', description: '╪¬╪¡╪»┘è╪½ ╪ú╪│╪╣╪º╪▒ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ┘ä┘ä╪╣╪▒┘ê╪╢ ╪º┘ä╪¼╪»┘è╪»╪⌐', status: 'PENDING', priority: 'MEDIUM' },
-  { title: '╪º┘ä╪¬╪│┘ê┘è┘é ┘ä┘ä╪¡┘à┘ä╪⌐ ╪º┘ä╪¼╪»┘è╪»╪⌐', description: '╪Ñ╪╣╪»╪º╪» ╪¡┘à┘ä╪⌐ ╪¬╪│┘ê┘è┘é┘è╪⌐ ┘ä┘ä┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐', status: 'PENDING', priority: 'HIGH' },
-  { title: '┘à╪¬╪º╪¿╪╣╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í', description: '┘à╪¬╪º╪¿╪╣╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í ┘ê╪º┘ä╪¬╪ú┘â╪» ┘à┘å ╪º┘ä╪¬┘ê╪╡┘è┘ä', status: 'COMPLETED', priority: 'MEDIUM' },
+  { title: 'مراجعة المخزون', description: 'مراجعة المخزون الشهرية وتحديث الأرصدة', status: 'IN_PROGRESS', priority: 'HIGH' },
+  { title: 'تحديث الأسعار', description: 'تحديث أسعار المنتجات للعروض الجديدة', status: 'PENDING', priority: 'MEDIUM' },
+  { title: 'التسويق للحملة الجديدة', description: 'إعداد حملة تسويقية للمنتجات الجديدة', status: 'PENDING', priority: 'HIGH' },
+  { title: 'متابعة طلبات العملاء', description: 'متابعة طلبات العملاء والتأكد من التوصيل', status: 'COMPLETED', priority: 'MEDIUM' },
 ];
 
 async function main() {
-  console.log(`≡ƒöì Looking for company: ${COMPANY_EMAIL}...`);
+  console.log(`🔍 Looking for company: ${COMPANY_EMAIL}...`);
   let company = await prisma.company.findFirst({ where: { email: COMPANY_EMAIL } });
 
   let ownerUserId = null;
   if (!company) {
-    console.log('≡ƒÅó Company not found, creating it...');
+    console.log('🏢 Company not found, creating it...');
     const uniqueSlug = 'h-' + Date.now();
     company = await prisma.company.create({
       data: {
-        name: '╪┤╪▒┘â╪⌐ ╪º┘ä┘ç┘è┘à┘ç ┘ä┘ä╪¬╪¼╪º╪▒╪⌐',
+        name: 'شركة الهيمه للتجارة',
         email: COMPANY_EMAIL,
         phone: '01000000000',
         currency: 'EGP',
@@ -61,7 +61,7 @@ async function main() {
         settings: JSON.stringify({ lastSystemChange: new Date().toISOString(), systemChangeBy: 'seed' }),
       },
     });
-    console.log('Γ£à Company created:', company.id, company.name);
+    console.log('✅ Company created:', company.id, company.name);
 
     // Create owner user
     const hashedPassword = await bcrypt.hash('123456', 10);
@@ -82,27 +82,27 @@ async function main() {
     await prisma.userCompany.create({
       data: { userId: owner.id, companyId: company.id, role: 'OWNER', isActive: true, isDefault: true },
     });
-    console.log('Γ£à Owner user created:', owner.email);
+    console.log('✅ Owner user created:', owner.email);
   } else {
-    console.log('≡ƒÅó Company found:', company.id, company.name);
+    console.log('🏢 Company found:', company.id, company.name);
     const owner = await prisma.user.findFirst({ where: { email: COMPANY_EMAIL } });
     ownerUserId = owner ? owner.id : null;
   }
 
   // 1. Categories
-  console.log('\n≡ƒôé Categories...');
+  console.log('\n📂 Categories...');
   const createdCats = {};
   for (const cat of categories) {
     let c = await prisma.category.findFirst({ where: { companyId: company.id, name: cat.name } });
     if (!c) {
       c = await prisma.category.create({ data: { name: cat.name, companyId: company.id, isActive: true } });
-      console.log('  Γ£à Created:', cat.name);
+      console.log('  ✅ Created:', cat.name);
     }
     createdCats[cat.name] = c;
   }
 
   // 2. Products
-  console.log('\n≡ƒôª Products...');
+  console.log('\n📦 Products...');
   const createdProducts = {};
   for (const p of productsData) {
     let product = await prisma.product.findFirst({ where: { companyId: company.id, sku: p.sku } });
@@ -116,34 +116,34 @@ async function main() {
           stock: p.stock,
           isActive: true,
           isFeatured: true,
-          categoryId: createdCats[p.cat]?.id || createdCats['╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪º╪¬'].id,
+          categoryId: createdCats[p.cat]?.id || createdCats['إلكترونيات'].id,
           companyId: company.id,
           trackInventory: true,
         },
       });
-      console.log('  Γ£à Created:', p.name, '-', p.price, 'EGP');
+      console.log('  ✅ Created:', p.name, '-', p.price, 'EGP');
     }
     createdProducts[p.sku] = product;
   }
 
   // 3. Customer
-  console.log('\n≡ƒæñ Customer...');
+  console.log('\n👤 Customer...');
   let customer = await prisma.customer.findFirst({ where: { companyId: company.id, phone: '01123456789' } });
   if (!customer) {
     customer = await prisma.customer.create({
       data: {
         companyId: company.id,
-        firstName: '╪╣┘à┘è┘ä',
-        lastName: '╪¬╪¼╪▒┘è╪¿┘è',
+        firstName: 'عميل',
+        lastName: 'تجريبي',
         phone: '01123456789',
         email: 'customer@demo.com',
       },
     });
-    console.log('  Γ£à Created customer:', customer.id);
+    console.log('  ✅ Created customer:', customer.id);
   }
 
   // 4. Orders
-  console.log('\n≡ƒôï Orders...');
+  console.log('\n📋 Orders...');
   const existingOrder = await prisma.order.findFirst({ where: { companyId: company.id } });
   if (!existingOrder) {
     const statuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED'];
@@ -178,14 +178,14 @@ async function main() {
           productName: product.name,
         },
       });
-      console.log('  Γ£à Created order:', order.orderNumber, '|', statuses[i], '|', price, 'EGP');
+      console.log('  ✅ Created order:', order.orderNumber, '|', statuses[i], '|', price, 'EGP');
     }
   } else {
-    console.log('  ΓÅ¡∩╕Å Orders already exist, skipping');
+    console.log('  ⏭️ Orders already exist, skipping');
   }
 
   // 5. Tasks
-  console.log('\n≡ƒôî Tasks...');
+  console.log('\n📌 Tasks...');
   const existingTask = await prisma.task.findFirst({ where: { companyId: company.id } });
   if (!existingTask) {
     for (const t of tasksData) {
@@ -200,15 +200,15 @@ async function main() {
           companyId: company.id,
         },
       });
-      console.log('  Γ£à Created task:', t.title);
+      console.log('  ✅ Created task:', t.title);
     }
   } else {
-    console.log('  ΓÅ¡∩╕Å Tasks already exist, skipping');
+    console.log('  ⏭️ Tasks already exist, skipping');
   }
 
   // 6. Employees (HR)
-  console.log('\n≡ƒæÑ Employees...');
-  const deptNames = ['╪º┘ä┘à╪¿┘è╪╣╪º╪¬', '╪º┘ä┘à╪«╪▓┘ê┘å', '╪«╪»┘à╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í'];
+  console.log('\n👥 Employees...');
+  const deptNames = ['المبيعات', 'المخزون', 'خدمة العملاء'];
   const deptIds = {};
   for (const dn of deptNames) {
     let d = await prisma.department.findFirst({ where: { companyId: company.id, name: dn } });
@@ -219,9 +219,9 @@ async function main() {
   }
 
   const employees = [
-    { firstName: 'H', lastName: 'User', dept: '╪º┘ä┘à╪¿┘è╪╣╪º╪¬', num: 'EMP001', email: COMPANY_EMAIL },
-    { firstName: '╪ú╪¡┘à╪»', lastName: '┘à┘ê╪╕┘ü', dept: '╪º┘ä┘à╪«╪▓┘ê┘å', num: 'EMP002', email: 'emp1@demo.com' },
-    { firstName: '╪│╪º╪▒╪⌐', lastName: '┘à┘ê╪╕┘ü╪⌐', dept: '╪«╪»┘à╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í', num: 'EMP003', email: 'emp2@demo.com' },
+    { firstName: 'H', lastName: 'User', dept: 'المبيعات', num: 'EMP001', email: COMPANY_EMAIL },
+    { firstName: 'أحمد', lastName: 'موظف', dept: 'المخزون', num: 'EMP002', email: 'emp1@demo.com' },
+    { firstName: 'سارة', lastName: 'موظفة', dept: 'خدمة العملاء', num: 'EMP003', email: 'emp2@demo.com' },
   ];
 
   for (const emp of employees) {
@@ -254,7 +254,7 @@ async function main() {
       where: { userId: user.id },
     });
     if (existing) {
-      console.log('  ΓÅ¡∩╕Å Employee already exists for', emp.email, '| num:', existing.employeeNumber);
+      console.log('  ⏭️ Employee already exists for', emp.email, '| num:', existing.employeeNumber);
       continue;
     }
     await prisma.employee.create({
@@ -270,12 +270,12 @@ async function main() {
         status: 'ACTIVE',
       },
     });
-    console.log('  Γ£à Created employee:', emp.firstName, emp.lastName);
+    console.log('  ✅ Created employee:', emp.firstName, emp.lastName);
   }
 
-  console.log('\n≡ƒÄë Done! Company:', company.id, '| Email:', COMPANY_EMAIL);
+  console.log('\n🎉 Done! Company:', company.id, '| Email:', COMPANY_EMAIL);
 }
 
 main()
-  .catch(e => { console.error('Γ¥î Error:', e.message); process.exit(1); })
+  .catch(e => { console.error('❌ Error:', e.message); process.exit(1); })
   .finally(() => prisma.$disconnect());

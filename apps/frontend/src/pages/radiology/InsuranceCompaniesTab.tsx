@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Building2 } from "lucide-react";
@@ -107,7 +107,7 @@ export default function InsuranceCompaniesTab() {
               {items.map(c => (
                 <tr key={c.id} className="border-b dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="py-3 px-4 font-medium"><span className="flex items-center gap-2"><Building2 className="w-4 h-4 text-gray-400" />{c.name}</span></td>
-                  <td className="py-3 px-4" dir="ltr">{c.phone1 || "ΓÇö"}</td>
+                  <td className="py-3 px-4" dir="ltr">{c.phone1 || "—"}</td>
                   <td className="py-3 px-4">{t("radiology.insuranceCompanies.priceCountValue", { count: priceCounts[c.id] ?? 0 })}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${c.isActive === false ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" : "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"}`}>

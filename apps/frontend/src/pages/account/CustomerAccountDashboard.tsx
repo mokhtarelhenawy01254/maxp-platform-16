@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
@@ -26,9 +26,9 @@ const formatMoney = (value: number, currency = "EGP") =>
   `${value.toFixed(2)} ${currency}`;
 
 const formatDate = (value?: string | null) => {
-  if (!value) return "ΓÇö";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "ΓÇö";
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("ar-EG", {
     year: "numeric",
     month: "short",
@@ -37,13 +37,13 @@ const formatDate = (value?: string | null) => {
 };
 
 const fullName = (data: { customer: { firstName: string; lastName: string } }) =>
-  `${data.customer.firstName} ${data.customer.lastName}`.trim() || "╪╣┘à┘è┘ä┘å╪º ╪º┘ä╪╣╪▓┘è╪▓";
+  `${data.customer.firstName} ${data.customer.lastName}`.trim() || "عميلنا العزيز";
 
 export const CustomerLoadingState = () => (
   <div className="flex min-h-[50vh] items-center justify-center">
     <div className="text-center text-gray-500">
       <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-indigo-600" />
-      <p className="mt-4">╪¼╪º╪▒┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬...</p>
+      <p className="mt-4">جاري تحميل البيانات...</p>
     </div>
   </div>
 );
@@ -62,18 +62,18 @@ const TierCard = ({ data }: { data: CustomerLoyaltySummary }) => {
   const benefits = (tier?.benefits || {}) as Record<string, unknown>;
   const benefitRows: Array<{ label: string; active: boolean }> = [];
   if (benefits.freeShipping === true || benefits.freeShipping === "true") {
-    benefitRows.push({ label: "╪┤╪¡┘å ┘à╪¼╪º┘å┘è", active: true });
+    benefitRows.push({ label: "شحن مجاني", active: true });
   }
   const discountPercent = toNumber(benefits.discountPercent);
   if (discountPercent > 0) {
-    benefitRows.push({ label: `╪«╪╡┘à ${discountPercent}%`, active: true });
+    benefitRows.push({ label: `خصم ${discountPercent}%`, active: true });
   }
   if (rewards?.freeShipping) {
-    benefitRows.push({ label: "╪┤╪¡┘å ┘à╪¼╪º┘å┘è", active: true });
+    benefitRows.push({ label: "شحن مجاني", active: true });
   }
   if (toNumber(rewards?.discountPercent) > 0) {
     benefitRows.push({
-      label: `╪«╪╡┘à ${toNumber(rewards.discountPercent)}%`,
+      label: `خصم ${toNumber(rewards.discountPercent)}%`,
       active: true,
     });
   }
@@ -95,16 +95,16 @@ const TierCard = ({ data }: { data: CustomerLoyaltySummary }) => {
           </div>
           <div>
             <div className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-              ╪º┘ä┘à╪│╪¬┘ê┘ë ╪º┘ä╪¡╪º┘ä┘è
+              المستوى الحالي
             </div>
             <div className="text-xl font-black text-gray-900 dark:text-white">
-              {tier?.nameAr || tier?.name || "╪¿╪»┘ê┘å ┘à╪│╪¬┘ê┘ë"}
+              {tier?.nameAr || tier?.name || "بدون مستوى"}
             </div>
           </div>
         </div>
         <div className="text-left">
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            ╪▒╪╡┘è╪» ╪º┘ä┘à╪│╪¬┘ê┘ë
+            رصيد المستوى
           </div>
           <div className="text-lg font-bold text-gray-900 dark:text-white">
             {currentMetric.toLocaleString("ar-EG")} {metricLabel}
@@ -116,8 +116,8 @@ const TierCard = ({ data }: { data: CustomerLoyaltySummary }) => {
         <div className="mt-6">
           <div className="mb-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>
-              ┘ü╪º╪╢┘ä {nextTier.remainingMetric.toLocaleString("ar-EG")}{" "}
-              {metricLabel} ┘ä┘ä┘ê╪╡┘ê┘ä ╪Ñ┘ä┘ë {nextTier.nameAr || nextTier.name}
+              فاضل {nextTier.remainingMetric.toLocaleString("ar-EG")}{" "}
+              {metricLabel} للوصول إلى {nextTier.nameAr || nextTier.name}
             </span>
             <span>{progressToNext}%</span>
           </div>
@@ -133,7 +133,7 @@ const TierCard = ({ data }: { data: CustomerLoyaltySummary }) => {
         </div>
       ) : (
         <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-          ╪ú┘å╪¬ ┘ü┘è ╪ú╪╣┘ä┘ë ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐ ≡ƒÄë
+          أنت في أعلى المستويات المتاحة 🎉
         </div>
       )}
 
@@ -184,17 +184,17 @@ const MembershipCard = ({ data }: { data: CustomerLoyaltySummary }) => {
           </div>
           <div>
             <div className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-              ╪¿╪╖╪º┘é╪⌐ ╪º┘ä╪╣╪╢┘ê┘è╪⌐
+              بطاقة العضوية
             </div>
             <div className="text-lg font-black text-gray-900 dark:text-white">
-              {tier?.nameAr || tier?.name || "┘â╪º╪▒╪¬ ╪º┘ä┘à╪│╪¬┘ê┘ë"}
+              {tier?.nameAr || tier?.name || "كارت المستوى"}
             </div>
           </div>
         </div>
         {card.membershipNumber ? (
           <div className="text-left">
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              ╪▒┘é┘à ╪º┘ä╪╣╪╢┘ê┘è╪⌐
+              رقم العضوية
             </div>
             <div className="text-base font-bold text-gray-900 dark:text-white" dir="ltr">
               {card.membershipNumber}
@@ -205,14 +205,14 @@ const MembershipCard = ({ data }: { data: CustomerLoyaltySummary }) => {
           onClick={download}
           className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700"
         >
-          ╪¬╪¡┘à┘è┘ä ╪º┘ä┘â╪º╪▒╪¬
+          تحميل الكارت
         </button>
       </div>
 
       <div className="mt-4">
         <img
           src={cardUrl}
-          alt="┘â╪º╪▒╪¬ ╪º┘ä╪╣╪╢┘ê┘è╪⌐"
+          alt="كارت العضوية"
           onError={() => setImageFailed(true)}
           className="w-full rounded-2xl border border-gray-200 shadow-lg dark:border-gray-700"
         />
@@ -228,8 +228,8 @@ const AutoDiscountCard = ({ data }: { data: CustomerLoyaltySummary }) => {
     ? toNumber(voucher.percent)
     : toNumber(autoDiscount?.discountPercent || 0);
 
-  // ╪º┘ä┘â╪º╪▒╪¬ ┘à┘è╪╕┘ç╪▒╪┤ ╪║┘è╪▒ ┘ä┘à╪º ╪º┘ä╪╣┘à┘è┘ä ┘è┘â┘ê┘å ╪╣┘å╪»┘ç ╪«╪╡┘à ┘ü╪╣┘ä┘è (┘â┘ê╪¿┘ê┘å/┘ü╪º╪¬┘ê╪▒╪⌐ ╪¼╪º┘ç╪▓╪⌐).
-  // ┘ä┘ê ┘à┘ü┘è╪┤ ╪«╪╡┘à ΓåÆ ┘à╪«┘ü┘è ╪¬┘à╪º┘à╪º┘ï ╪¿╪»┘ä ┘à╪º ┘è┘â╪¬╪¿ "╪║┘è╪▒ ┘à┘ü╪╣┘æ┘ä".
+  // الكارت ميظهرش غير لما العميل يكون عنده خصم فعلي (كوبون/فاتورة جاهزة).
+  // لو مفيش خصم → مخفي تماماً بدل ما يكتب "غير مفعّل".
   if (!voucher) return null;
 
   return (
@@ -241,10 +241,10 @@ const AutoDiscountCard = ({ data }: { data: CustomerLoyaltySummary }) => {
           </div>
           <div>
             <div className="text-sm font-semibold text-violet-500">
-              ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è
+              الخصم التلقائي
             </div>
             <div className="text-xl font-black text-gray-900 dark:text-white">
-              {discountPercent > 0 ? `╪«╪╡┘à ${discountPercent}%` : "╪║┘è╪▒ ┘à┘ü╪╣┘æ┘ä"}
+              {discountPercent > 0 ? `خصم ${discountPercent}%` : "غير مفعّل"}
             </div>
           </div>
         </div>
@@ -254,27 +254,27 @@ const AutoDiscountCard = ({ data }: { data: CustomerLoyaltySummary }) => {
         <div className="mt-6 rounded-2xl border border-violet-200 bg-white/70 p-4 dark:border-violet-900 dark:bg-gray-900/50">
           <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
             <Ticket size={16} className="text-violet-600" />
-            ╪╣┘å╪»┘â ╪«╪╡┘à {voucher.percent}% ╪¼╪º┘ç╪▓ ╪╣┘ä┘ë ╪╖┘ä╪¿┘â ╪º┘ä┘é╪º╪»┘à
+            عندك خصم {voucher.percent}% جاهز على طلبك القادم
           </div>
           <div className="mt-2 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
             <Clock3 size={14} />
-            ╪╡╪º┘ä╪¡ ╪¡╪¬┘ë {formatDate(voucher.expiresAt)}
+            صالح حتى {formatDate(voucher.expiresAt)}
           </div>
           {voucher.sourceOrderNumber ? (
             <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              ┘à┘å ╪º┘ä╪╖┘ä╪¿ {voucher.sourceOrderNumber}
+              من الطلب {voucher.sourceOrderNumber}
             </div>
           ) : null}
         </div>
       ) : autoDiscount?.status === "PRE_ACTIVATION" ? (
         <div className="mt-6 rounded-2xl border border-dashed border-violet-300 bg-white/60 px-4 py-4 text-sm text-gray-600 dark:border-violet-800 dark:bg-gray-900/40 dark:text-gray-300">
-          ┘ç╪░╪º ╪º┘ä╪╣┘à┘è┘ä ╪╖┘ä╪¿ ┘é╪¿┘ä ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä┘ê┘ä╪º╪í╪î ┘ü╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘à╪┤ ╪¿┘è╪╖╪¿┘é ╪╣┘ä┘è┘ç.
+          هذا العميل طلب قبل تفعيل نظام الولاء، فالخصم التلقائي مش بيطبق عليه.
         </div>
       ) : (
         <div className="mt-6 rounded-2xl border border-dashed border-violet-300 bg-white/60 px-4 py-4 text-sm text-gray-600 dark:border-violet-800 dark:bg-gray-900/40 dark:text-gray-300">
-          ╪º┘ä╪«╪╡┘à ╪¿┘è╪¬┘ü╪╣┘æ┘ä ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ╪¿╪╣╪» ╪¬╪│┘ä┘è┘à ╪╖┘ä╪¿┘â. ┘â┘ä ╪ú┘ê╪▒╪»╪▒ ┘à╪ñ┘ç┘ä ╪¿┘è╪»┘è┘â ┘â┘ê╪¿┘ê┘å
-          ╪«╪╡┘à {autoDiscount?.validityDays || 3} ╪ú┘è╪º┘à╪î ┘ê┘ä┘ê ╪«┘ä╪╡╪¬ ┘à╪»╪¬┘ç ╪¿┘è╪¬╪¡┘ê┘ä ┘ä┘â╪º╪┤
-          ╪¿╪º┘â ┘ü┘è ┘à╪¡┘ü╪╕╪¬┘â.
+          الخصم بيتفعّل تلقائيًا بعد تسليم طلبك. كل أوردر مؤهل بيديك كوبون
+          خصم {autoDiscount?.validityDays || 3} أيام، ولو خلصت مدته بيتحول لكاش
+          باك في محفظتك.
         </div>
       )}
     </div>
@@ -299,7 +299,7 @@ export default function CustomerAccountDashboard({
   if (error || !data) {
     return (
       <div className="mx-auto max-w-6xl">
-        <CustomerErrorState message={error || "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬"} />
+        <CustomerErrorState message={error || "تعذر تحميل البيانات"} />
       </div>
     );
   }
@@ -311,7 +311,7 @@ export default function CustomerAccountDashboard({
       {isAdminView ? (
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
           <ShieldCheck size={16} />
-          ╪ú┘å╪¬ ╪¬╪┤╪º┘ç╪» ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╣┘à┘è┘ä ┘â┘à╪│╪ñ┘ê┘ä ΓÇö ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘ä┘è ╪º┘ä╪╣┘à┘è┘ä ┘å┘ü╪│┘ç ╪┤╪º┘è┘ü┘ç╪º.
+          أنت تشاهد صفحة العميل كمسؤول — البيانات اللي العميل نفسه شايفها.
         </div>
       ) : null}
 
@@ -320,24 +320,24 @@ export default function CustomerAccountDashboard({
           <div className="text-right">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
               <ShieldCheck size={14} />
-              {isAdminView ? "╪╡┘ü╪¡╪⌐ ╪º┘ä╪╣┘à┘è┘ä" : "╪¡╪│╪º╪¿ ╪º┘ä╪╣┘à┘è┘ä"}
+              {isAdminView ? "صفحة العميل" : "حساب العميل"}
             </div>
-            <h1 className="mt-4 text-3xl font-black">╪ú┘ç┘ä╪º┘ï {fullName(data)}</h1>
+            <h1 className="mt-4 text-3xl font-black">أهلاً {fullName(data)}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-white/85">
               {data.company?.nameAr || data.company?.name
-                ? `┘ü┘è ┘à╪¬╪¼╪▒ ${data.company.nameAr || data.company.name}. `
+                ? `في متجر ${data.company.nameAr || data.company.name}. `
                 : ""}
-              ┘ç┘å╪º ┘â┘ä ┘à╪º ┘è╪«╪╡ ╪º┘ä╪╣┘à┘è┘ä: ╪º┘ä┘å┘é╪º╪╖╪î ╪º┘ä╪«╪╡┘ê┘à╪º╪¬╪î ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â╪î ┘ê╪¿┘è╪º┘å╪º╪¬┘ç ╪º┘ä╪┤╪«╪╡┘è╪⌐.
+              هنا كل ما يخص العميل: النقاط، الخصومات، الكاش باك، وبياناته الشخصية.
             </p>
           </div>
 
           <div className="rounded-3xl bg-white/15 px-6 py-5 text-right backdrop-blur-sm">
-            <div className="text-sm text-white/80">╪º┘ä╪▒╪╡┘è╪» ╪º┘ä┘à╪¬╪º╪¡</div>
+            <div className="text-sm text-white/80">الرصيد المتاح</div>
             <div className="mt-2 text-4xl font-black">
               {formatMoney(toNumber(data.wallet?.balance), currency)}
             </div>
             <div className="mt-2 text-xs text-white/75">
-              ┘è┘à┘â┘å ╪º╪│╪¬╪«╪»╪º┘à┘ç ┘ü┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¬┘è ╪¬╪»╪╣┘à ╪º┘ä╪»┘ü╪╣ ┘à┘å ╪º┘ä┘à╪¡┘ü╪╕╪⌐
+              يمكن استخدامه في الطلبات التي تدعم الدفع من المحفظة
             </div>
           </div>
         </div>
@@ -358,10 +358,10 @@ export default function CustomerAccountDashboard({
             </div>
             <div>
               <div className="text-sm font-semibold text-amber-600">
-                ┘å┘é╪º╪╖ ╪º┘ä┘ê┘ä╪º╪í
+                نقاط الولاء
               </div>
               <div className="text-xl font-black text-gray-900 dark:text-white">
-                {data.loyalty.points.current.toLocaleString("ar-EG")} ┘å┘é╪╖╪⌐
+                {data.loyalty.points.current.toLocaleString("ar-EG")} نقطة
               </div>
             </div>
           </div>
@@ -371,7 +371,7 @@ export default function CustomerAccountDashboard({
                 {data.loyalty.points.totalEarned.toLocaleString("ar-EG")}
               </div>
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                ╪Ñ╪¼┘à╪º┘ä┘è ┘à╪º ┘â╪│╪¿╪¬┘ç
+                إجمالي ما كسبته
               </div>
             </div>
             <div className="rounded-2xl bg-white/70 p-3 dark:bg-gray-900/50">
@@ -379,7 +379,7 @@ export default function CustomerAccountDashboard({
                 {data.loyalty.points.totalRedeemed.toLocaleString("ar-EG")}
               </div>
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                ┘à╪º ╪º╪│╪¬╪¿╪»┘ä┘ç
+                ما استبدله
               </div>
             </div>
           </div>
@@ -392,7 +392,7 @@ export default function CustomerAccountDashboard({
             </div>
             <div>
               <div className="text-sm font-semibold text-pink-600">
-                ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ┘ê╪º┘ä┘à╪¡┘ü╪╕╪⌐
+                الكاش باك والمحفظة
               </div>
               <div className="text-xl font-black text-gray-900 dark:text-white">
                 {formatMoney(toNumber(data.wallet?.balance), currency)}
@@ -405,7 +405,7 @@ export default function CustomerAccountDashboard({
                 {formatMoney(toNumber(data.wallet?.totalCashback), currency)}
               </div>
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                ╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â
+                إجمالي الكاش باك
               </div>
             </div>
             <div className="rounded-2xl bg-white/70 p-3 dark:bg-gray-900/50">
@@ -413,7 +413,7 @@ export default function CustomerAccountDashboard({
                 {formatMoney(toNumber(data.wallet?.totalEarned), currency)}
               </div>
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                ╪Ñ╪¼┘à╪º┘ä┘è ┘à╪º ┘â╪│╪¿┘ç
+                إجمالي ما كسبه
               </div>
             </div>
           </div>
@@ -426,7 +426,7 @@ export default function CustomerAccountDashboard({
             </div>
             <div>
               <div className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-                ╪¿┘è╪º┘å╪º╪¬┘ç ╪º┘ä╪┤╪«╪╡┘è╪⌐
+                بياناته الشخصية
               </div>
               <div className="text-xl font-black text-gray-900 dark:text-white">
                 {fullName(data)}
@@ -437,25 +437,25 @@ export default function CustomerAccountDashboard({
             <div className="flex items-center justify-between gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-gray-900/60">
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                 <Phone size={15} />
-                <span>╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü</span>
+                <span>رقم الهاتف</span>
               </div>
               <span className="font-bold text-gray-900 dark:text-white" dir="ltr">
-                {data.customer.phone || "ΓÇö"}
+                {data.customer.phone || "—"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-gray-900/60">
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                 <Mail size={15} />
-                <span>╪º┘ä╪¿╪▒┘è╪» ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è</span>
+                <span>البريد الإلكتروني</span>
               </div>
               <span className="font-bold text-gray-900 dark:text-white" dir="ltr">
-                {data.customer.email || "ΓÇö"}
+                {data.customer.email || "—"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-gray-900/60">
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                 <Sparkles size={15} />
-                <span>╪╣┘à┘è┘ä ┘à┘å╪░</span>
+                <span>عميل منذ</span>
               </div>
               <span className="font-bold text-gray-900 dark:text-white">
                 {formatDate(data.customer.joinedAt)}
@@ -465,7 +465,7 @@ export default function CustomerAccountDashboard({
         </div>
       </div>
 
-      {/* ╪╣╪▒┘ê╪╢ ╪º┘ä┘à╪¬╪¼╪▒ ╪º┘ä╪¬╪▒┘ê┘è╪¼┘è╪⌐ ΓÇö ┘à╪¡┘ü╪▓ ┘ä┘ä╪╖┘ä╪¿ */}
+      {/* عروض المتجر الترويجية — محفز للطلب */}
       {data.storePromotion ? (
         <div className="mt-6 rounded-3xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-6 shadow-sm dark:border-orange-900 dark:from-orange-950/40 dark:to-amber-950/40">
           <div className="flex items-center gap-3">
@@ -473,9 +473,9 @@ export default function CustomerAccountDashboard({
               <BadgePercent size={22} />
             </div>
             <div>
-              <div className="text-sm font-semibold text-orange-600">╪╣╪▒┘ê╪╢ ╪º┘ä┘à╪¬╪¼╪▒</div>
+              <div className="text-sm font-semibold text-orange-600">عروض المتجر</div>
               <div className="text-lg font-black text-gray-900 dark:text-white">
-                {data.storePromotion.title || "╪╣╪▒╪╢ ┘ä┘ü╪¬╪▒╪⌐ ┘à╪¡╪»┘ê╪»╪⌐"}
+                {data.storePromotion.title || "عرض لفترة محدودة"}
               </div>
             </div>
           </div>
@@ -488,7 +488,7 @@ export default function CustomerAccountDashboard({
                 >
                   <Sparkles size={15} className="text-orange-500" />
                   {tier.label ||
-                    `╪º╪┤╪¬╪▒┘É ${tier.items || tier.minQuantity || 2} ┘é╪╖╪╣ ┘ê╪º╪│╪¬┘ü╪» ┘à┘å ╪º┘ä╪╣╪▒╪╢`}
+                    `اشترِ ${tier.items || tier.minQuantity || 2} قطع واستفد من العرض`}
                 </div>
               ))}
             </div>
@@ -496,7 +496,7 @@ export default function CustomerAccountDashboard({
           {data.storePromotion.endDate ? (
             <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               <Clock3 size={14} />
-              ╪º┘ä╪╣╪▒╪╢ ╪╡╪º┘ä╪¡ ╪¡╪¬┘ë {formatDate(data.storePromotion.endDate)}
+              العرض صالح حتى {formatDate(data.storePromotion.endDate)}
             </div>
           ) : null}
           <div className="mt-4">
@@ -504,7 +504,7 @@ export default function CustomerAccountDashboard({
               to="/shop"
               className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-700"
             >
-              ╪º╪╖┘ä╪¿ ╪º┘ä╪ó┘å ┘ê╪º╪│╪¬┘ü╪» ┘à┘å ╪º┘ä╪╣╪▒╪╢
+              اطلب الآن واستفد من العرض
             </Link>
           </div>
         </div>

@@ -1,11 +1,24 @@
-import { Plus as PlusIcon, Filter as FunnelIcon, Search as MagnifyingGlassIcon, MessageSquare as ChatBubbleLeftIcon, Circle as PaperClipIcon, Circle as ClipboardDocumentListIcon, Circle as BugAntIcon, Star as SparklesIcon, Circle as WrenchScrewdriverIcon, AlertTriangle as ExclamationTriangleIcon, Circle as ArrowTrendingUpIcon, Circle as CalendarDaysIcon, Circle as EllipsisVerticalIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  PlusIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  ChatBubbleLeftIcon,
+  PaperClipIcon,
+  ClipboardDocumentListIcon,
+  BugAntIcon,
+  SparklesIcon,
+  WrenchScrewdriverIcon,
+  ExclamationTriangleIcon,
+  ArrowTrendingUpIcon,
+  CalendarDaysIcon,
+  EllipsisVerticalIcon,
+} from "@heroicons/react/24/outline";
 
 interface KanbanTask {
   id: string;

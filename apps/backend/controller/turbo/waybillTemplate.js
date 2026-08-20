@@ -1,4 +1,4 @@
-﻿function generateWaybillHTML(waybillData) {
+function generateWaybillHTML(waybillData) {
   const {
     orderNumber, turboOrderCode, orderDate, receiverName, receiverPhone, receiverPhone2,
     receiverAddress, receiverCity, receiverState, items = [], totalValue, shippingCost,
@@ -8,7 +8,7 @@
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>╪¿┘ê┘ä┘è╪╡╪⌐ ╪┤╪¡┘å - ${orderNumber}</title>
+<title>بوليصة شحن - ${orderNumber}</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f5f5f5; }
@@ -38,33 +38,33 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20
 @media print { body { background: white; padding: 0; } .waybill { box-shadow: none; } .print-btn { display: none; } }
 </style></head>
 <body><div class="waybill">
-<div class="header"><h1>≡ƒÜÜ ╪¿┘ê┘ä┘è╪╡╪⌐ ╪┤╪¡┘å</h1><p style="color: #64748b; margin-top: 5px;">Turbo Shipping Waybill</p></div>
+<div class="header"><h1>🚚 بوليصة شحن</h1><p style="color: #64748b; margin-top: 5px;">Turbo Shipping Waybill</p></div>
 <div class="order-info">
-<div class="info-item"><span class="info-label">╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿</span><span class="info-value">${orderNumber || '╪║┘è╪▒ ┘à╪¡╪»╪»'}</span></div>
-<div class="info-item"><span class="info-label">┘â┘ê╪» ╪º┘ä╪┤╪¡┘å╪⌐</span><span class="info-value">${turboOrderCode || '╪║┘è╪▒ ┘à╪¡╪»╪»'}</span></div>
-<div class="info-item"><span class="info-label">╪¬╪º╪▒┘è╪« ╪º┘ä╪╖┘ä╪¿</span><span class="info-value">${orderDate ? new Date(orderDate).toLocaleDateString('ar-EG') : '╪║┘è╪▒ ┘à╪¡╪»╪»'}</span></div>
-<div class="info-item"><span class="info-label">╪╣╪»╪» ╪º┘ä┘à┘å╪¬╪¼╪º╪¬</span><span class="info-value">${items.length} ┘à┘å╪¬╪¼</span></div>
+<div class="info-item"><span class="info-label">رقم الطلب</span><span class="info-value">${orderNumber || 'غير محدد'}</span></div>
+<div class="info-item"><span class="info-label">كود الشحنة</span><span class="info-value">${turboOrderCode || 'غير محدد'}</span></div>
+<div class="info-item"><span class="info-label">تاريخ الطلب</span><span class="info-value">${orderDate ? new Date(orderDate).toLocaleDateString('ar-EG') : 'غير محدد'}</span></div>
+<div class="info-item"><span class="info-label">عدد المنتجات</span><span class="info-value">${items.length} منتج</span></div>
 </div>
-<div class="section"><div class="section-title">≡ƒôì ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪│╪¬┘ä┘à</div>
+<div class="section"><div class="section-title">📍 بيانات المستلم</div>
 <div class="customer-details">
-<div class="detail-row"><span class="detail-label">╪º┘ä╪º╪│┘à:</span><span class="detail-value">${receiverName || '╪║┘è╪▒ ┘à╪¡╪»╪»'}</span></div>
-<div class="detail-row"><span class="detail-label">╪º┘ä┘ç╪º╪¬┘ü:</span><span class="detail-value">${receiverPhone || '╪║┘è╪▒ ┘à╪¡╪»╪»'}</span></div>
-${receiverPhone2 ? `<div class="detail-row"><span class="detail-label">┘ç╪º╪¬┘ü ╪¿╪»┘è┘ä:</span><span class="detail-value">${receiverPhone2}</span></div>` : ''}
-<div class="detail-row"><span class="detail-label">╪º┘ä╪╣┘å┘ê╪º┘å:</span><span class="detail-value">${receiverAddress || '╪║┘è╪▒ ┘à╪¡╪»╪»'}</span></div>
-<div class="detail-row"><span class="detail-label">╪º┘ä┘à╪»┘è┘å╪⌐:</span><span class="detail-value">${receiverCity || '╪║┘è╪▒ ┘à╪¡╪»╪»'}</span></div>
-<div class="detail-row"><span class="detail-label">╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐:</span><span class="detail-value">${receiverState || '╪║┘è╪▒ ┘à╪¡╪»╪»'}</span></div>
+<div class="detail-row"><span class="detail-label">الاسم:</span><span class="detail-value">${receiverName || 'غير محدد'}</span></div>
+<div class="detail-row"><span class="detail-label">الهاتف:</span><span class="detail-value">${receiverPhone || 'غير محدد'}</span></div>
+${receiverPhone2 ? `<div class="detail-row"><span class="detail-label">هاتف بديل:</span><span class="detail-value">${receiverPhone2}</span></div>` : ''}
+<div class="detail-row"><span class="detail-label">العنوان:</span><span class="detail-value">${receiverAddress || 'غير محدد'}</span></div>
+<div class="detail-row"><span class="detail-label">المدينة:</span><span class="detail-value">${receiverCity || 'غير محدد'}</span></div>
+<div class="detail-row"><span class="detail-label">المحافظة:</span><span class="detail-value">${receiverState || 'غير محدد'}</span></div>
 </div></div>
-<div class="section"><div class="section-title">≡ƒôª ╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä╪┤╪¡┘å╪⌐</div>
-<table class="items-table"><thead><tr><th>╪º┘ä┘à┘å╪¬╪¼</th><th style="width:80px;">╪º┘ä┘â┘à┘è╪⌐</th><th style="width:100px;">╪º┘ä╪│╪╣╪▒</th><th style="width:100px;">╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è</th></tr></thead>
-<tbody>${items.map(item => `<tr><td>${item.name || '┘à┘å╪¬╪¼'}</td><td>${item.quantity || 0}</td><td>${(item.price || 0).toFixed(2)} ╪¼.┘à</td><td>${(item.total || 0).toFixed(2)} ╪¼.┘à</td></tr>`).join('')}</tbody>
+<div class="section"><div class="section-title">📦 تفاصيل الشحنة</div>
+<table class="items-table"><thead><tr><th>المنتج</th><th style="width:80px;">الكمية</th><th style="width:100px;">السعر</th><th style="width:100px;">الإجمالي</th></tr></thead>
+<tbody>${items.map(item => `<tr><td>${item.name || 'منتج'}</td><td>${item.quantity || 0}</td><td>${(item.price || 0).toFixed(2)} ج.م</td><td>${(item.total || 0).toFixed(2)} ج.م</td></tr>`).join('')}</tbody>
 </table>
 <div class="totals">
-<div class="total-row"><span>┘é┘è┘à╪⌐ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬:</span><span>${(totalValue || 0).toFixed(2)} ╪¼.┘à</span></div>
-<div class="total-row"><span>╪¬┘â┘ä┘ü╪⌐ ╪º┘ä╪┤╪¡┘å:</span><span>${(shippingCost || 0).toFixed(2)} ╪¼.┘à</span></div>
-<div class="total-row final"><span>╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪¬╪¡┘é:</span><span>${(amountToCollect || 0).toFixed(2)} ╪¼.┘à</span></div>
+<div class="total-row"><span>قيمة المنتجات:</span><span>${(totalValue || 0).toFixed(2)} ج.م</span></div>
+<div class="total-row"><span>تكلفة الشحن:</span><span>${(shippingCost || 0).toFixed(2)} ج.م</span></div>
+<div class="total-row final"><span>المبلغ المستحق:</span><span>${(amountToCollect || 0).toFixed(2)} ج.م</span></div>
 </div></div>
-${notes ? `<div class="notes"><strong>≡ƒô¥ ┘à┘ä╪º╪¡╪╕╪º╪¬:</strong><br>${notes}</div>` : ''}
-<button class="print-btn" onclick="window.print()">≡ƒû¿∩╕Å ╪╖╪¿╪º╪╣╪⌐ ╪º┘ä╪¿┘ê┘ä┘è╪╡╪⌐</button>
+${notes ? `<div class="notes"><strong>📝 ملاحظات:</strong><br>${notes}</div>` : ''}
+<button class="print-btn" onclick="window.print()">🖨️ طباعة البوليصة</button>
 </div></body></html>`;
 }
 

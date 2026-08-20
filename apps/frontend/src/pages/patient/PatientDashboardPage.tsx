@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CalendarDays, ClipboardList, Wallet, CheckCircle2 } from "lucide-react";
 
 interface DashboardData {
@@ -24,8 +24,8 @@ const PatientDashboardPage: React.FC = () => {
         });
         const json = await res.json();
         if (json.success) setData(json.data);
-        else setError(json.message || '╪¡╪»╪½ ╪«╪╖╪ú');
-      } catch { setError('┘ü╪┤┘ä ╪º┘ä╪º╪¬╪╡╪º┘ä'); }
+        else setError(json.message || 'حدث خطأ');
+      } catch { setError('فشل الاتصال'); }
       finally { setLoading(false); }
     };
     fetchDashboard();
@@ -35,16 +35,16 @@ const PatientDashboardPage: React.FC = () => {
   if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
 
   const stats = [
-    { label: '┘à┘ê╪º╪╣┘è╪» ┘é╪º╪»┘à╪⌐', value: data?.upcomingAppointments ?? 0, icon: CalendarDays, color: 'text-teal-600 bg-teal-100' },
-    { label: '┘à┘ê╪º╪╣┘è╪» ┘à┘â╪¬┘à┘ä╪⌐', value: data?.completedAppointments ?? 0, icon: CheckCircle2, color: 'text-green-600 bg-green-100' },
-    { label: '┘ü┘ê╪º╪¬┘è╪▒ ╪║┘è╪▒ ┘à╪│╪»╪»╪⌐', value: data?.unpaidInvoices ?? 0, icon: Wallet, color: 'text-amber-600 bg-amber-100' },
-    { label: '╪Ñ╪¼┘à╪º┘ä┘è ┘à╪º ╪»┘ü╪╣╪¬┘ç', value: `${data?.totalSpent ?? 0} ╪¼.┘à`, icon: ClipboardList, color: 'text-blue-600 bg-blue-100' },
+    { label: 'مواعيد قادمة', value: data?.upcomingAppointments ?? 0, icon: CalendarDays, color: 'text-teal-600 bg-teal-100' },
+    { label: 'مواعيد مكتملة', value: data?.completedAppointments ?? 0, icon: CheckCircle2, color: 'text-green-600 bg-green-100' },
+    { label: 'فواتير غير مسددة', value: data?.unpaidInvoices ?? 0, icon: Wallet, color: 'text-amber-600 bg-amber-100' },
+    { label: 'إجمالي ما دفعته', value: `${data?.totalSpent ?? 0} ج.م`, icon: ClipboardList, color: 'text-blue-600 bg-blue-100' },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">╪ú┘ç┘ä╪º┘ï╪î {patient.firstName || '╪╣╪▓┘è╪▓┘å╪º'} ≡ƒæï</h1>
-      <p className="text-gray-500 mb-6">┘å╪¬┘à┘å┘ë ┘ä┘â ╪»┘ê╪º┘à ╪º┘ä╪╡╪¡╪⌐ ┘ê╪º┘ä╪╣╪º┘ü┘è╪⌐</p>
+      <h1 className="text-2xl font-bold mb-1">أهلاً، {patient.firstName || 'عزيزنا'} 👋</h1>
+      <p className="text-gray-500 mb-6">نتمنى لك دوام الصحة والعافية</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => {
           const Icon = s.icon;

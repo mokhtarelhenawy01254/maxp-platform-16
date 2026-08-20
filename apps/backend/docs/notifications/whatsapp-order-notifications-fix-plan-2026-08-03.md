@@ -1,158 +1,158 @@
-﻿# ╪«╪╖╪⌐ ╪º┘ä╪Ñ╪╡┘ä╪º╪¡ ╪º┘ä╪┤╪º┘à┘ä ΓÇö ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ┘ê╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿
+# خطة الإصلاح الشامل — إشعارات واتساب للطلبات وحالات الطلب
 
-**╪¬╪º╪▒┘è╪« ╪º┘ä╪Ñ┘å╪┤╪º╪í**: 2026-08-03
-**╪º┘ä┘à╪ñ┘ä┘ü**: AI Audit (┘à╪▒╪º╪¼╪╣╪⌐ ╪┤╪º┘à┘ä╪⌐)
-**╪º┘ä╪¡╪º┘ä╪⌐**: ┘à╪│┘ê╪»╪⌐ ┘à╪╣╪¬┘à╪»╪⌐ ┘ä┘ä╪¬┘å┘ü┘è╪░ ΓÇö ┘à╪«╪╡╪╡╪⌐ ┘ä┘Ç agent ╪¬┘å┘ü┘è╪░┘è
-**╪ó╪«╪▒ ╪¬╪¡╪»┘è╪½**: 2026-08-03
-
----
-
-## 0. ╪º┘é╪▒╪ú ┘ç╪░╪º ╪ú┘ê┘ä╪º┘ï (┘ä┘ä┘Ç agent ╪º┘ä┘à┘å┘ü┘æ╪░)
-
-> ΓÜá∩╕Å **┘ä╪º ╪¬╪«┘ä╪╖ ╪¿┘è┘å ┘ç╪░┘ç ╪º┘ä╪«╪╖╪⌐ ┘ê╪«╪╖╪⌐ ╪º┘ä╪░╪º┘â╪▒╪⌐.** ┘ç╪░┘ç ╪º┘ä┘ê╪½┘è┘é╪⌐ ┘à╪╣┘å┘è╪⌐ ╪¿╪Ñ╪╡┘ä╪º╪¡ **╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪╖┘ä╪¿╪º╪¬** (╪Ñ╪▒╪│╪º┘ä/╪Ñ╪╣╪º╪»╪⌐/╪¬┘â╪▒╪º╪▒/┘é┘ê╪º┘ä╪¿). ╪«╪╖╪⌐ ╪º┘ä╪░╪º┘â╪▒╪⌐ ╪º┘ä┘à┘å┘ü╪╡┘ä╪⌐ (`docs/infrastructure/production-memory-queue-remediation-plan.md`) ┘à╪╣┘å┘è╪⌐ ╪¿┘Ç **╪¬╪│╪▒┘è╪¿ ╪░╪º┘â╪▒╪⌐ Baileys + ╪╖╪º╪¿┘ê╪▒ ┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪¿┘è┘å ╪º┘ä╪┤╪▒┘â╪º╪¬** (`OrderSyncQueue`/`syncQueueService`) ΓÇö ┘ê┘ç┘è ╪╖╪º╪¿┘ê╪▒ **┘à╪«╪¬┘ä┘ü ╪¬┘à╪º┘à╪º┘ï** ╪╣┘å `WhatsAppNotificationQueue` ╪º┘ä╪░┘è ╪¬╪╣╪º┘ä╪¼┘ç ┘ç╪░┘ç ╪º┘ä┘ê╪½┘è┘é╪⌐.
-
-### 0.1 ┘â┘è┘ü ╪¬╪│╪¬╪«╪»┘à ┘ç╪░┘ç ╪º┘ä┘ê╪½┘è┘é╪⌐
-- ┘â┘ä ┘à╪▒╪¡┘ä╪⌐ ┘à╪│╪¬┘é┘ä╪⌐ ┘ê┘è┘à┘â┘å ╪¬┘å┘ü┘è╪░┘ç╪º ╪╣┘ä┘ë ╪¡╪»╪⌐ (╪▒╪º╪¼╪╣ "╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪¬┘å┘ü┘è╪░ ╪º┘ä┘à┘ê╪╡┘ë ╪¿┘ç" ┘ü┘è ┬º6).
-- ┘â┘ä ┘à┘ç┘à╪⌐ ┘ä┘ç╪º: ╪º┘ä┘à┘ä┘ü/╪º┘ä╪│╪╖╪▒ ╪º┘ä╪»┘é┘è┘é╪î ╪º┘ä┘â┘ê╪» ╪º┘ä╪¡╪º┘ä┘è╪î ╪º┘ä┘â┘ê╪» ╪º┘ä┘à┘é╪¬╪▒╪¡╪î ┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡╪î ╪«╪╖╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣.
-- **┘é╪¿┘ä ╪ú┘è ╪¬╪╣╪»┘è┘ä**╪î ╪┤╪║┘æ┘ä `node --check <file>` ╪╣┘ä┘ë ╪º┘ä┘à┘ä┘ü ╪¿╪╣╪» ┘â┘ä ╪¬╪║┘è┘è╪▒╪î ┘ê╪º╪«╪¬╪¿╪▒ ┘à╪¡┘ä┘è╪º┘ï.
-- **╪¿╪╣╪» ┘â┘ä ┘à╪▒╪¡┘ä╪⌐**╪î ╪¡╪»┘æ╪½ ┬º8 (╪│╪¼┘ä ╪º┘ä╪¬┘é╪»┘à) ╪¿╪¬╪º╪▒┘è╪«/┘å╪¬┘è╪¼╪⌐ ╪º┘ä┘à┘ç╪º┘à ╪º┘ä┘à┘å╪¼╪▓╪⌐.
-- ≡ƒƒí **┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐ (2026-08-03)**: ╪╡╪¡┘æ╪¡╪¬ ╪ú╪«╪╖╪º╪í┘ï ╪¬┘é┘å┘è╪⌐ ┘ü┘è ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë (╪¬┘ê┘é┘è╪╣ `updateOrderStatus`╪î ╪¡┘é┘ê┘ä `Company`╪î mapping ╪º┘ä┘Ç enum╪î ╪º╪│┘à ╪º┘ä╪¼╪»┘ê┘ä╪î ┘à┘å╪╖┘é retry╪î guard ╪º┘ä╪¬╪»╪º╪«┘ä) ┘ê╪ú╪╢╪º┘ü╪¬ ┬º5.2 + ┬º5.3. ╪º╪¿╪¡╪½ ╪╣┘å ╪╣┘ä╪º┘à╪⌐ "≡ƒƒí ╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐" ┘ü┘è ╪º┘ä┘å╪╡ ┘ä╪▒╪ñ┘è╪⌐ ┘â┘ä ╪¬╪╡╪¡┘è╪¡. **╪º┘ä╪ú┘â┘ê╪º╪» ┘é╪¿┘ä ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐ ╪º┘ä╪½╪º┘å┘è╪⌐ ┘â╪º┘å╪¬ ╪│╪¬┘â╪│╪▒ ╪º┘ä╪Ñ┘å╪¬╪º╪¼ ΓÇö ╪º╪│╪¬╪«╪»┘à ╪º┘ä╪ú┘â┘ê╪º╪» ╪º┘ä╪¡╪º┘ä┘è╪⌐ ┘ü┘é╪╖.**
-- ≡ƒö┤ **┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐ (2026-08-03)**: ╪ú╪╢╪º┘ü╪¬ **┬º1.1-pre** ΓÇö ┘à╪┤┘â┘ä╪⌐ ╪¡╪º╪¼╪▓╪⌐ ╪¡╪▒╪¼╪⌐: `status: 'COMPLETED'` ┘é┘è┘à╪⌐ enum ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐ ╪¬╪│╪¿╪¿ ┘ü┘è╪▒┘ê╪│ ┘à╪▓╪»┘ê╪¼ ╪╣┘å╪» ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒. **┘è╪¼╪¿ ╪¬┘å┘ü┘è╪░ ┬º1.1-pre ┘é╪¿┘ä ┬º1.1 ┘ê╪Ñ┘ä╪º ╪º┘ä╪╣┘à┘è┘ä ┘è╪│╪¬┘ä┘à ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘à┘â╪▒╪▒╪⌐.** ╪º╪¿╪¡╪½ ╪╣┘å ╪╣┘ä╪º┘à╪⌐ "≡ƒö┤ ╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐".
-
-### 0.2 ╪¡┘é╪º╪ª┘é ┘à╪ñ┘â╪»╪⌐ (┘ä╪º ╪¬╪╣╪¬┘à╪» ╪╣┘ä┘ë ╪º┘ü╪¬╪▒╪º╪╢╪º╪¬ ΓÇö ╪¬╪¡┘é┘é┘å╪º ┘à┘å┘ç╪º)
-- Γ£à **BullMQ + ioredis ┘à╪½╪¿╪¬╪º┘å ┘ü╪╣┘ä╪º┘ï** ┘ü┘è `apps/backend/package.json` (`bullmq@^5.66.2`, `ioredis@^5.8.2`). ┘å┘à╪╖ ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à ┘à┘ê╪¼┘ê╪» ┘ü┘è `services/queueService.js`.
-- Γ£à **Redis ┘à┘Å╪╣╪»** ╪╣╪¿╪▒ `config/redis.js` (┘è╪»╪╣┘à `REDIS_URL` ╪ú┘ê `REDIS_HOST/PORT/PASSWORD`).
-- Γ¥î **`processNotificationQueue()` ╪║┘è╪▒ ┘à╪│╪¬╪»╪╣┘ë ┘à┘å ╪ú┘è ┘à┘â╪º┘å** ┘ü┘è ╪º┘ä╪Ñ┘å╪¬╪º╪¼ ΓÇö verified (┘ä╪º `setInterval`╪î ┘ä╪º cron╪î ┘ä╪º route).
-- Γ£à **`orderStatusAutoChangeCron` ┘à╪│╪¼┘æ┘ä** ┘ü┘è `server.js:1112-1113` ┘ä┘â┘å┘ç ┘è╪¬╪¼╪º┘ê╪▓ `orderService.updateOrderStatus`.
-- Γ£à **╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¡╪º┘ä╪º╪¬** (`getWhatsAppOrderEventType` ┘ü┘è `orderService.js:26`) ╪¬╪▒╪│┘à **8 ╪¡╪º┘ä╪º╪¬ ┘ü┘é╪╖** ┘à┘å ╪ú╪╡┘ä 31 (enum `OrderStatus`).
-- ≡ƒö┤ **(┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐)** `WhatsAppNotificationQueueStatus` enum (`schema.prisma:3625`) = `PENDING, PROCESSING, SENT, FAILED, CANCELLED` ΓÇö **┘ä╪º `COMPLETED`**. ┘ä┘â┘å `processNotificationQueue:3509` ┘è┘â╪¬╪¿ `'COMPLETED'` ΓåÆ ┘è╪▒┘à┘è enum error ╪╣┘å╪» ╪º┘ä╪¬┘ü╪╣┘è┘ä ΓåÆ ┘ü┘è╪▒┘ê╪│ ┘à╪▓╪»┘ê╪¼. (╪º┘å╪╕╪▒ ┬º1.1-pre.)
-- Γ£à **(┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐)** `orderService` ┘ç┘ê **singleton** (`module.exports = orderService` ┘ü┘è `:1717`)╪¢ ╪º┘ä┘å┘à╪╖ ╪º┘ä╪╡╪¡┘è╪¡ ┘ä┘ä╪º╪│╪¬╪»╪╣╪º╪í ┘ç┘ê `orderService.setCompanyId(companyId).updateOrderStatus(...)` (┘â┘à╪º ┘ü┘è `routes/orders.js:3031`).
-- Γ£à **(┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐)** `ORDER_RETURNED`/`ORDER_REFUNDED`/`RETURNED_TO_SENDER`/`PARTIAL_REFUND`/`REFUND_PROCESSING` **┘à┘ê╪¼┘ê╪»╪⌐** ┘ü┘è ╪º┘ä┘Ç enums ╪º┘ä╪½┘ä╪º╪½╪⌐ (Templates/Logs/Queue) ╪╢┘à┘å ┘é╪│┘à "New Order Statuses" ΓÇö ┘ä╪º migration ┘à╪╖┘ä┘ê╪¿╪¢ ┘è┘â┘ü┘è mapping ┘ü┘è `getPersistedNotificationEventType`.
+**تاريخ الإنشاء**: 2026-08-03
+**المؤلف**: AI Audit (مراجعة شاملة)
+**الحالة**: مسودة معتمدة للتنفيذ — مخصصة لـ agent تنفيذي
+**آخر تحديث**: 2026-08-03
 
 ---
 
-## 1. ╪º┘ä┘à┘ä╪«╪╡ ╪º┘ä╪¬┘å┘ü┘è╪░┘è
+## 0. اقرأ هذا أولاً (للـ agent المنفّذ)
 
-╪º┘â╪¬┘Å╪┤┘ü╪¬ **8 ┘à╪┤╪º┘â┘ä** ┘ü┘è ┘å╪╕╪º┘à ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪╖┘ä╪¿╪º╪¬╪î ╪ú╪▒╪¿╪╣ ┘à┘å┘ç╪º ╪¡╪▒╪¼╪⌐. ╪º┘ä╪ú╪«╪╖╪▒ ╪ú┘å **╪╖╪º╪¿┘ê╪▒ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ (`WhatsAppNotificationQueue`) ┘à┘â╪¬┘ê╪¿ ╪¿╪º┘ä┘â╪º┘à┘ä ┘ä┘â┘å┘ç ┘à╪╣╪╖┘æ┘ä (dead code)** ΓÇö ╪ú┘è ╪Ñ╪┤╪╣╪º╪▒ ┘è╪»╪«┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒ (╪ú╪¿╪▒╪▓┘ç╪º: ┘â┘ä ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ **quiet-hours / ╪│╪º╪╣╪º╪¬ ╪º┘ä┘ç╪»┘ê╪í**) **┘ä╪º ┘è┘Å╪▒╪│┘ä ╪ú╪¿╪»╪º┘ï**. ┘ê╪¿╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘ä╪░┘ä┘â╪î ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪¿╪»┘ê┘å ╪Ñ╪╡┘ä╪º╪¡ **┬º1.1-pre** ┘è╪¡┘ê┘ä┘ç ╪Ñ┘ä┘ë ┘ü┘è╪▒┘ê╪│ ┘à╪▓╪»┘ê╪¼ (╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘à┘â╪▒╪▒╪⌐ ┘ä┘ä╪╣┘à┘è┘ä).
+> ⚠️ **لا تخلط بين هذه الخطة وخطة الذاكرة.** هذه الوثيقة معنية بإصلاح **إشعارات واتساب للطلبات** (إرسال/إعادة/تكرار/قوالب). خطة الذاكرة المنفصلة (`docs/infrastructure/production-memory-queue-remediation-plan.md`) معنية بـ **تسريب ذاكرة Baileys + طابور مزامنة الطلبات بين الشركات** (`OrderSyncQueue`/`syncQueueService`) — وهي طابور **مختلف تماماً** عن `WhatsAppNotificationQueue` الذي تعالجه هذه الوثيقة.
 
-| # | ╪º┘ä┘à╪┤┘â┘ä╪⌐ | ╪º┘ä╪«╪╖┘ê╪▒╪⌐ | ╪º┘ä┘à╪▒╪¡┘ä╪⌐ |
+### 0.1 كيف تستخدم هذه الوثيقة
+- كل مرحلة مستقلة ويمكن تنفيذها على حدة (راجع "ترتيب التنفيذ الموصى به" في §6).
+- كل مهمة لها: الملف/السطر الدقيق، الكود الحالي، الكود المقترح، معايير النجاح، خطة التراجع.
+- **قبل أي تعديل**، شغّل `node --check <file>` على الملف بعد كل تغيير، واختبر محلياً.
+- **بعد كل مرحلة**، حدّث §8 (سجل التقدم) بتاريخ/نتيجة المهام المنجزة.
+- 🟡 **مراجعة ثانية (2026-08-03)**: صحّحت أخطاءً تقنية في النسخة الأولى (توقيع `updateOrderStatus`، حقول `Company`، mapping الـ enum، اسم الجدول، منطق retry، guard التداخل) وأضافت §5.2 + §5.3. ابحث عن علامة "🟡 تصحيح من مراجعة ثانية" في النص لرؤية كل تصحيح. **الأكواد قبل المراجعة الثانية كانت ستكسر الإنتاج — استخدم الأكواد الحالية فقط.**
+- 🔴 **مراجعة ثالثة (2026-08-03)**: أضافت **§1.1-pre** — مشكلة حاجزة حرجة: `status: 'COMPLETED'` قيمة enum غير صالحة تسبب فيروس مزدوج عند تفعيل الطابور. **يجب تنفيذ §1.1-pre قبل §1.1 وإلا العميل يستلم إشعارات مكررة.** ابحث عن علامة "🔴 تصحيح من مراجعة ثالثة".
+
+### 0.2 حقائق مؤكدة (لا تعتمد على افتراضات — تحققنا منها)
+- ✅ **BullMQ + ioredis مثبتان فعلاً** في `apps/backend/package.json` (`bullmq@^5.66.2`, `ioredis@^5.8.2`). نمط الاستخدام موجود في `services/queueService.js`.
+- ✅ **Redis مُعد** عبر `config/redis.js` (يدعم `REDIS_URL` أو `REDIS_HOST/PORT/PASSWORD`).
+- ❌ **`processNotificationQueue()` غير مستدعى من أي مكان** في الإنتاج — verified (لا `setInterval`، لا cron، لا route).
+- ✅ **`orderStatusAutoChangeCron` مسجّل** في `server.js:1112-1113` لكنه يتجاوز `orderService.updateOrderStatus`.
+- ✅ **خريطة الحالات** (`getWhatsAppOrderEventType` في `orderService.js:26`) ترسم **8 حالات فقط** من أصل 31 (enum `OrderStatus`).
+- 🔴 **(مراجعة ثالثة)** `WhatsAppNotificationQueueStatus` enum (`schema.prisma:3625`) = `PENDING, PROCESSING, SENT, FAILED, CANCELLED` — **لا `COMPLETED`**. لكن `processNotificationQueue:3509` يكتب `'COMPLETED'` → يرمي enum error عند التفعيل → فيروس مزدوج. (انظر §1.1-pre.)
+- ✅ **(مراجعة ثالثة)** `orderService` هو **singleton** (`module.exports = orderService` في `:1717`)؛ النمط الصحيح للاستدعاء هو `orderService.setCompanyId(companyId).updateOrderStatus(...)` (كما في `routes/orders.js:3031`).
+- ✅ **(مراجعة ثالثة)** `ORDER_RETURNED`/`ORDER_REFUNDED`/`RETURNED_TO_SENDER`/`PARTIAL_REFUND`/`REFUND_PROCESSING` **موجودة** في الـ enums الثلاثة (Templates/Logs/Queue) ضمن قسم "New Order Statuses" — لا migration مطلوب؛ يكفي mapping في `getPersistedNotificationEventType`.
+
+---
+
+## 1. الملخص التنفيذي
+
+اكتُشفت **8 مشاكل** في نظام إشعارات واتساب للطلبات، أربع منها حرجة. الأخطر أن **طابور الإشعارات (`WhatsAppNotificationQueue`) مكتوب بالكامل لكنه معطّل (dead code)** — أي إشعار يدخل الطابور (أبرزها: كل إشعارات **quiet-hours / ساعات الهدوء**) **لا يُرسل أبداً**. وبالإضافة لذلك، تفعيل الطابور بدون إصلاح **§1.1-pre** يحوله إلى فيروس مزدوج (إشعارات مكررة للعميل).
+
+| # | المشكلة | الخطورة | المرحلة |
 |---|---------|---------|---------|
-| 1-pre | ≡ƒåò `status: 'COMPLETED'` ┘é┘è┘à╪⌐ enum ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐ ┘ü┘è `processNotificationQueue:3509` ΓåÆ ┘ü┘è╪▒┘ê╪│ ┘à╪▓╪»┘ê╪¼ ╪╣┘å╪» ╪º┘ä╪¬┘ü╪╣┘è┘ä | ≡ƒö┤ ╪¡╪▒╪¼╪⌐ (╪¡╪º╪¼╪▓) | 1 |
-| 1 | ╪╖╪º╪¿┘ê╪▒ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘à┘è╪¬ (quiet-hours ╪¬╪╢┘è╪╣ ┘ä┘ä╪ú╪¿╪») | ≡ƒö┤ ╪¡╪▒╪¼╪⌐ | 1 |
-| 2 | `orderStatusAutoChangeCron` ┘è╪¬╪¼╪º┘ê╪▓ `updateOrderStatus` | ≡ƒö┤ ╪¡╪▒╪¼╪⌐ | 1 |
-| 3 | ╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¡╪º┘ä╪º╪¬ ┘å╪º┘é╪╡╪⌐ (`RETURNED`/`REFUNDED`/`EXCHANGED` ╪¬┘Å╪¬╪«╪╖┘ë ╪¿╪╡┘à╪¬) | ≡ƒö┤ ╪¡╪▒╪¼╪⌐ | 2 |
-| 4 | ┘ç╪º╪▒╪»┘â┘ê╪» ╪╣┘ä╪º┘à╪⌐ "Mokhtar Elhenawy" + ╪º┘ä╪▒┘ê╪º╪¿╪╖ (multi-tenant) | ≡ƒö┤ ╪¡╪▒╪¼╪⌐ | 2 |
-| 5 | ┘à╪│╪º╪▒ ╪Ñ╪┤╪╣╪º╪▒ ┘à╪▓╪»┘ê╪¼ ┘è╪╣╪¬┘à╪» ╪╣┘ä┘ë ┘å╪º┘ü╪░╪⌐ 10╪½ ┘ü┘é╪╖ | ≡ƒƒá ╪╣╪º┘ä┘è╪⌐ | 3 |
-| 6 | ╪º┘ä┘Ç dedup ┘à┘å╪│┘ê╪« ┘ü┘è 4 ╪ú┘à╪º┘â┘å ╪¿┘à┘å╪╖┘é ┘à╪¬┘å╪º┘é╪╢ | ≡ƒƒá ╪╣╪º┘ä┘è╪⌐ | 3 |
-| 7 | ┘ä╪º retry ┘ä┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘ü┘ê╪▒┘è | ≡ƒƒá ╪╣╪º┘ä┘è╪⌐ | 4 |
-| 8 | ┘é┘ê╪º┘ä╪¿ ╪╣╪▒╪¿┘è╪⌐ ┘ü┘é╪╖ + 3 ╪╖╪¿┘é╪º╪¬ + ┘à┘ä┘ü 4206 ╪│╪╖╪▒ | ≡ƒƒí ╪╡┘è╪º┘å╪⌐ | 5 |
+| 1-pre | 🆕 `status: 'COMPLETED'` قيمة enum غير صالحة في `processNotificationQueue:3509` → فيروس مزدوج عند التفعيل | 🔴 حرجة (حاجز) | 1 |
+| 1 | طابور الإشعارات ميت (quiet-hours تضيع للأبد) | 🔴 حرجة | 1 |
+| 2 | `orderStatusAutoChangeCron` يتجاوز `updateOrderStatus` | 🔴 حرجة | 1 |
+| 3 | خريطة الحالات ناقصة (`RETURNED`/`REFUNDED`/`EXCHANGED` تُتخطى بصمت) | 🔴 حرجة | 2 |
+| 4 | هاردكود علامة "Mokhtar Elhenawy" + الروابط (multi-tenant) | 🔴 حرجة | 2 |
+| 5 | مسار إشعار مزدوج يعتمد على نافذة 10ث فقط | 🟠 عالية | 3 |
+| 6 | الـ dedup منسوخ في 4 أماكن بمنطق متناقض | 🟠 عالية | 3 |
+| 7 | لا retry للإرسال الفوري | 🟠 عالية | 4 |
+| 8 | قوالب عربية فقط + 3 طبقات + ملف 4206 سطر | 🟡 صيانة | 5 |
 
 ---
 
-## 2. ╪«╪▒┘è╪╖╪⌐ ╪º┘ä┘å╪╕╪º┘à (┘à╪▒╪¼╪╣ ╪│╪▒┘è╪╣)
+## 2. خريطة النظام (مرجع سريع)
 
-### 2.1 ╪º┘ä┘à┘ä┘ü╪º╪¬ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐
-| ╪º┘ä┘à┘ä┘ü | ╪º┘ä╪»┘ê╪▒ |
+### 2.1 الملفات الأساسية
+| الملف | الدور |
 |------|------|
-| `services/whatsapp/WhatsAppNotificationService.js` (4206 ╪│╪╖╪▒) | ╪º┘ä┘à┘å╪│┘æ┘é ╪º┘ä╪▒╪ª┘è╪│┘è: ┘é┘ê╪º┘ä╪¿ + ╪Ñ╪▒╪│╪º┘ä + ┘à┘ê╪º╪▓┘å╪⌐ ╪¼┘ä╪│╪º╪¬ + quiet-hours + ╪╖╪º╪¿┘ê╪▒ + ┘â┘ä domain senders |
-| `services/orderService.js` | `updateOrderStatus` (L859) + `updateGuestOrderStatus` (L1284) ΓÇö ┘è╪¡┘ê┘è╪º┘å ╪º┘ä┘Ç fire-and-forget send |
-| `services/orderWorkflowService.js` | ┘à╪│╪º╪▒ ╪º┘ä╪┤╪║┘æ╪º┘ä╪⌐ ╪º┘ä┘à╪¬┘é╪»┘à╪⌐ ╪º┘ä╪¿╪»┘è┘ä (`sendWorkflowNotification` L529) |
-| `services/whatsapp/WhatsAppInteractionService.js` | ╪▒╪»┘ê╪» ╪ú╪▓╪▒╪º╪▒ ╪º┘ä╪╣┘à┘è┘ä (`confirm_order_`, `set_status_...`) ΓåÆ ╪Ñ╪╣╪º╪»╪⌐ ╪»╪«┘ê┘ä ┘ä┘Ç `updateOrderStatus` |
-| `cron/orderStatusAutoChangeCron.js` | ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪¬┘ä┘é╪º╪ª┘è (┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä╪«╪»┘à╪⌐) |
-| `controller/orderStatusController.js` | ╪▓╪▒╪╣ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ (`seedDefaultOrderTemplates` L928) |
+| `services/whatsapp/WhatsAppNotificationService.js` (4206 سطر) | المنسّق الرئيسي: قوالب + إرسال + موازنة جلسات + quiet-hours + طابور + كل domain senders |
+| `services/orderService.js` | `updateOrderStatus` (L859) + `updateGuestOrderStatus` (L1284) — يحويان الـ fire-and-forget send |
+| `services/orderWorkflowService.js` | مسار الشغّالة المتقدمة البديل (`sendWorkflowNotification` L529) |
+| `services/whatsapp/WhatsAppInteractionService.js` | ردود أزرار العميل (`confirm_order_`, `set_status_...`) → إعادة دخول لـ `updateOrderStatus` |
+| `cron/orderStatusAutoChangeCron.js` | تغيير حالة تلقائي (يتجاوز الخدمة) |
+| `controller/orderStatusController.js` | زرع قوالب الحالات الافتراضية (`seedDefaultOrderTemplates` L928) |
 
-### 2.2 ┘å┘é╪º╪╖ ╪»╪«┘ê┘ä ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ (┘â┘ä┘ç╪º ┘è╪¼╪¿ ╪ú┘å ╪¬┘à╪▒┘æ ╪¿┘Ç `updateOrderStatus`)
-- `POST /order-workflow/change-status` ΓåÆ `routes/orderWorkflowRoutes.js:207`
-- `PATCH /api/.../orders-enhanced/:id/status` ΓåÆ `routes/enhancedOrders.js:697`
-- `PATCH /:orderNumber/status` ΓåÆ `routes/orders.js:4574`
-- `POST /simple/:orderNumber/status` ΓåÆ `routes/orders.js:2822`
-- `POST /bulk/status` ΓåÆ `routes/orders.js:5103` ┘ê `/bulk/status/by-filters` ΓåÆ `:5172`
+### 2.2 نقاط دخول تغيير الحالة (كلها يجب أن تمرّ بـ `updateOrderStatus`)
+- `POST /order-workflow/change-status` → `routes/orderWorkflowRoutes.js:207`
+- `PATCH /api/.../orders-enhanced/:id/status` → `routes/enhancedOrders.js:697`
+- `PATCH /:orderNumber/status` → `routes/orders.js:4574`
+- `POST /simple/:orderNumber/status` → `routes/orders.js:2822`
+- `POST /bulk/status` → `routes/orders.js:5103` و `/bulk/status/by-filters` → `:5172`
 
-### 2.3 ┘å┘à╪º╪░╪¼ ┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪░╪º╪¬ ╪º┘ä╪╡┘ä╪⌐
-- `WhatsAppNotificationQueue` (`schema.prisma:7138`) ΓÇö ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪º┘ä┘à╪╣╪╖┘æ┘ä
-- `WhatsAppNotificationLog` (`schema.prisma:7090`) ΓÇö ╪│╪¼┘ä ╪º┘ä╪Ñ╪▒╪│╪º┘ä (┘à╪╡╪»╪▒ ╪º┘ä┘Ç dedup)
-- `WhatsAppNotificationTemplate` (`schema.prisma:7317`) ΓÇö ╪º┘ä┘é┘ê╪º┘ä╪¿ ┘ä┘â┘ä ╪┤╪▒┘â╪⌐
-- `WhatsAppNotificationSettings` (`schema.prisma:~7200`) ΓÇö ┘à┘Å╪╣┘ä┘æ┘à ╪╣┘ä┘è┘ç╪º `UNUSED - Planned feature` ┘ä┘â┘å `scheduleNotification` ┘è┘é╪▒╪ñ┘ç╪º ┘ü╪╣┘ä╪º┘ï
-- `OrderStatusConfig` (`schema.prisma:8740`) ΓÇö ╪¡┘é┘ä `notifyCustomer Boolean @default(false)`
+### 2.3 نماذج قاعدة البيانات ذات الصلة
+- `WhatsAppNotificationQueue` (`schema.prisma:7138`) — الطابور المعطّل
+- `WhatsAppNotificationLog` (`schema.prisma:7090`) — سجل الإرسال (مصدر الـ dedup)
+- `WhatsAppNotificationTemplate` (`schema.prisma:7317`) — القوالب لكل شركة
+- `WhatsAppNotificationSettings` (`schema.prisma:~7200`) — مُعلّم عليها `UNUSED - Planned feature` لكن `scheduleNotification` يقرؤها فعلاً
+- `OrderStatusConfig` (`schema.prisma:8740`) — حقل `notifyCustomer Boolean @default(false)`
 
 ---
 
-## 3. ╪º┘ä┘à╪▒╪¡┘ä╪⌐ 1: ╪º┘ä╪Ñ╪╡┘ä╪º╪¡╪º╪¬ ╪º┘ä╪¡╪▒╪¼╪⌐ (╪ú╪╣┘ä┘ë ╪ú┘ê┘ä┘ê┘è╪⌐)
+## 3. المرحلة 1: الإصلاحات الحرجة (أعلى أولوية)
 
-### ≡ƒö┤ 1.1-pre ╪Ñ╪╡┘ä╪º╪¡ ┘é┘è┘à╪⌐ enum ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐ ┘ü┘è `processNotificationQueue` (╪┤╪▒╪╖ ╪¡╪º╪¼╪▓)
+### 🔴 1.1-pre إصلاح قيمة enum غير صالحة في `processNotificationQueue` (شرط حاجز)
 
-> ≡ƒåò **╪ú┘Å╪╢┘è┘ü ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐ (2026-08-03)** ΓÇö **┘è╪¼╪¿ ╪¬┘å┘ü┘è╪░┘ç ┘é╪¿┘ä ┬º1.1**╪î ┘ê╪Ñ┘ä╪º ┘è╪¬╪¡┘ê┘ä ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪Ñ┘ä┘ë **┘ü┘è╪▒┘ê╪│ ┘à╪▓╪»┘ê╪¼** (╪Ñ╪┤╪╣╪º╪▒ + ╪¬┘â╪▒╪º╪▒ ┘ä┘ä╪╣┘à┘è┘ä).
+> 🆕 **أُضيف من مراجعة ثالثة (2026-08-03)** — **يجب تنفيذه قبل §1.1**، وإلا يتحول تفعيل الطابور إلى **فيروس مزدوج** (إشعار + تكرار للعميل).
 
-**╪º┘ä╪¼╪░╪▒**: `processNotificationQueue` ┘ü┘è `WhatsAppNotificationService.js:3509` ┘è┘â╪¬╪¿ `status: 'COMPLETED'` ╪╣┘å╪» ┘å╪¼╪º╪¡ ╪º┘ä╪Ñ╪▒╪│╪º┘ä:
+**الجذر**: `processNotificationQueue` في `WhatsAppNotificationService.js:3509` يكتب `status: 'COMPLETED'` عند نجاح الإرسال:
 ```js
-// ╪¬╪¡╪»┘è╪½ ╪º┘ä╪╖╪º╪¿┘ê╪▒
+// تحديث الطابور
 await prisma.whatsAppNotificationQueue.update({
   where: { id: notification.id },
-  data: { status: 'COMPLETED', processedAt: new Date() }   // ΓåÉ :3509
+  data: { status: 'COMPLETED', processedAt: new Date() }   // ← :3509
 });
 ```
 
-┘ä┘â┘å `WhatsAppNotificationQueueStatus` enum (`schema.prisma:3625`) ┘è╪¡╪¬┘ê┘è ┘ü┘é╪╖ ╪╣┘ä┘ë:
+لكن `WhatsAppNotificationQueueStatus` enum (`schema.prisma:3625`) يحتوي فقط على:
 ```
-PENDING, PROCESSING, SENT, FAILED, CANCELLED   ΓåÉ ┘ä╪º ┘è┘ê╪¼╪» COMPLETED
+PENDING, PROCESSING, SENT, FAILED, CANCELLED   ← لا يوجد COMPLETED
 ```
 
-**╪º┘ä┘å╪¬┘è╪¼╪⌐ ╪º┘ä┘â╪º╪▒╪½┘è╪⌐ ╪╣┘å╪» ╪¬┘ü╪╣┘è┘ä ┬º1.1**:
-1. ┘è┘å╪¼╪¡ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ΓåÆ ┘è┘Å┘â╪¬╪¿ ╪╡┘ü ╪º┘ä┘Ç log ╪¿┘Ç `status: 'SENT'` (`:3500`) ╪¿┘å╪¼╪º╪¡.
-2. ╪¬╪¡╪»┘è╪½ ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪Ñ┘ä┘ë `'COMPLETED'` **┘è╪▒┘à┘è enum error** (Prisma validation).
-3. ╪º┘ä╪«╪╖╪ú ┘è┘Å┘ä╪¬┘é╪╖ ┘ü┘è ╪º┘ä┘Ç catch (`:3514`) ┘â┘ü╪┤┘ä ΓåÆ `retryCount++` + ╪Ñ╪╣╪º╪»╪⌐ ╪¼╪»┘ê┘ä╪⌐ `PENDING` ╪¿╪╣╪» 5 ╪»┘é╪º╪ª┘é.
-4. ╪º┘ä┘Ç worker ┘è╪╣┘è╪» ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐ ╪¿╪╣╪» 5 ╪»┘é╪º╪ª┘é ΓåÆ **╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪¬┘Å╪╣╪º╪» ┘ä┘ä╪╣┘à┘è┘ä ┘ü╪╣┘ä┘è┘ï╪º** (╪º┘ä╪│╪¼┘ä ╪º┘ä┘Ç log ┘à┘â╪¬┘ê╪¿ SENT ┘ä┘â┘å ╪º┘ä╪╖╪º╪¿┘ê╪▒ ┘ä╪º ┘è╪╣╪▒┘ü).
-5. ╪¬╪¬┘â╪▒╪▒ ╪º┘ä╪»╪º╪ª╪▒╪⌐ ╪¡╪¬┘ë `maxRetries` (3) ΓåÆ ╪º┘ä╪╣┘à┘è┘ä ┘è╪│╪¬┘ä┘à **╪¡╪¬┘ë 4 ┘å╪│╪«** ┘à┘å ┘å┘ü╪│ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒.
+**النتيجة الكارثية عند تفعيل §1.1**:
+1. ينجح الإرسال → يُكتب صف الـ log بـ `status: 'SENT'` (`:3500`) بنجاح.
+2. تحديث الطابور إلى `'COMPLETED'` **يرمي enum error** (Prisma validation).
+3. الخطأ يُلتقط في الـ catch (`:3514`) كفشل → `retryCount++` + إعادة جدولة `PENDING` بعد 5 دقائق.
+4. الـ worker يعيد المعالجة بعد 5 دقائق → **الرسالة تُعاد للعميل فعليًا** (السجل الـ log مكتوب SENT لكن الطابور لا يعرف).
+5. تتكرر الدائرة حتى `maxRetries` (3) → العميل يستلم **حتى 4 نسخ** من نفس الإشعار.
 
-**╪º┘ä╪Ñ╪╡┘ä╪º╪¡** (╪│╪╖╪▒ ┘ê╪º╪¡╪»╪î ╪¿╪»┘ê┘å migration):
+**الإصلاح** (سطر واحد، بدون migration):
 
-**╪º┘ä┘à┘ä┘ü**: `apps/backend/services/whatsapp/WhatsAppNotificationService.js:3509`
+**الملف**: `apps/backend/services/whatsapp/WhatsAppNotificationService.js:3509`
 
-**╪º┘ä┘â┘ê╪» ╪º┘ä╪¡╪º┘ä┘è**:
+**الكود الحالي**:
 ```js
 data: { status: 'COMPLETED', processedAt: new Date() }
 ```
 
-**╪º┘ä┘â┘ê╪» ╪¿╪╣╪» ╪º┘ä╪Ñ╪╡┘ä╪º╪¡**:
+**الكود بعد الإصلاح**:
 ```js
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º1.1-pre):
-// 'COMPLETED' ┘ä┘è╪│╪¬ ┘é┘è┘à╪⌐ ┘ü┘è WhatsAppNotificationQueueStatus enum (PENDING/PROCESSING/SENT/FAILED/CANCELLED).
-// ╪º╪│╪¬╪«╪»┘à 'SENT' ┘ä╪¬╪╖╪º╪¿┘é ╪»┘ä╪º┘ä╪⌐ ╪º┘ä┘Ç log row (:3500) ┘ê┘ä╪¬┘ü╪º╪»┘è enum error ΓåÆ retry ┘ä╪º┘å┘ç╪º╪ª┘è ΓåÆ ╪Ñ╪╣╪º╪»╪⌐ ╪Ñ╪▒╪│╪º┘ä ┘à┘â╪▒╪▒.
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1-pre):
+// 'COMPLETED' ليست قيمة في WhatsAppNotificationQueueStatus enum (PENDING/PROCESSING/SENT/FAILED/CANCELLED).
+// استخدم 'SENT' لتطابق دلالة الـ log row (:3500) ولتفادي enum error → retry لانهائي → إعادة إرسال مكرر.
 data: { status: 'SENT', processedAt: new Date() }
 ```
 
-#### ΓÜá∩╕Å ╪¬┘å╪¿┘è┘ç╪º╪¬
-- **╪▒╪º╪¼╪╣ ╪º┘ä┘é╪▒╪º╪í╪º╪¬ ╪º┘ä╪ú╪«╪▒┘ë ┘ä┘Ç `status` ┘ü┘è ╪º┘ä╪╖╪º╪¿┘ê╪▒** ┘ä┘ä╪¬╪ú┘â╪» ┘à┘å ╪º╪¬╪│╪º┘é┘ç╪º ┘à╪╣ ╪º┘ä┘Ç enum: `:3433` (PENDING)╪î `:3449` (PROCESSING)╪î `:3521` (FAILED)╪î `:3528` (PENDING). ┘â┘ä┘ç╪º ╪╡╪º┘ä╪¡╪⌐ ΓÇö ┘ü┘é╪╖ `:3509` ╪«╪º╪╖╪ª╪⌐.
-- **╪º╪¿╪¡╪½ ╪╣┘å ╪ú┘è ╪╕┘ç┘ê╪▒ ╪ó╪«╪▒ ┘ä┘Ç `'COMPLETED'`** ╪╣┘ä┘ë `whatsAppNotificationQueue`:
+#### ⚠️ تنبيهات
+- **راجع القراءات الأخرى لـ `status` في الطابور** للتأكد من اتساقها مع الـ enum: `:3433` (PENDING)، `:3449` (PROCESSING)، `:3521` (FAILED)، `:3528` (PENDING). كلها صالحة — فقط `:3509` خاطئة.
+- **ابحث عن أي ظهور آخر لـ `'COMPLETED'`** على `whatsAppNotificationQueue`:
   ```bash
   grep -rn "status: 'COMPLETED'" apps/backend/services/whatsapp/ apps/backend/controller/
   ```
 
-**┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡ ┬º1.1-pre**:
-- [ ] `node --check` ╪╣┘ä┘ë ╪º┘ä┘à┘ä┘ü ╪│┘ä┘è┘à.
-- [ ] ╪¿╪╣╪» ┬º1.1: ╪Ñ╪┤╪╣╪º╪▒ ╪╣╪¿╪▒ ╪º┘ä╪╖╪º╪¿┘ê╪▒ ┘è┘Å╪▒╪│┘ä **┘à╪▒╪⌐ ┘ê╪º╪¡╪»╪⌐ ┘ü┘é╪╖** (┘ä╪º ╪¬┘â╪▒╪º╪▒ ╪¡╪¬┘ë ╪¿╪╣╪» `maxRetries`).
-- [ ] `whatsapp_notification_queue` ┘ä╪º ┘è╪¿┘é┘ë ╪╡┘ü┘ê┘ü `PENDING` ┘ä┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘à┘Å╪▒╪│┘ä╪⌐ ┘ü╪╣┘ä╪º┘ï.
-- [ ] `processNotificationQueue` ┘ä╪º ┘è╪▒┘à┘è `PrismaClientValidationError` ╪¿╪┤╪ú┘å enum.
+**معايير النجاح §1.1-pre**:
+- [ ] `node --check` على الملف سليم.
+- [ ] بعد §1.1: إشعار عبر الطابور يُرسل **مرة واحدة فقط** (لا تكرار حتى بعد `maxRetries`).
+- [ ] `whatsapp_notification_queue` لا يبقى صفوف `PENDING` للإشعارات المُرسلة فعلاً.
+- [ ] `processNotificationQueue` لا يرمي `PrismaClientValidationError` بشأن enum.
 
-**╪«╪╖╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ┬º1.1-pre**: `git checkout -- services/whatsapp/WhatsAppNotificationService.js` (┘ä┘â┘å ┘ç╪░╪º ┘è╪╣┘è╪» ╪º┘ä┘ü┘è╪▒┘ê╪│╪î ┘ä╪░╪º ╪º┘ä╪¬╪▒╪º╪¼╪╣ ┘è╪╣┘å┘è **╪╣╪»┘à ╪¬┘ü╪╣┘è┘ä ┬º1.1** ╪ú┘è╪╢┘ï╪º).
+**خطة التراجع §1.1-pre**: `git checkout -- services/whatsapp/WhatsAppNotificationService.js` (لكن هذا يعيد الفيروس، لذا التراجع يعني **عدم تفعيل §1.1** أيضًا).
 
 ---
 
-### ≡ƒö┤ 1.1 ╪¬┘ü╪╣┘è┘ä ╪╖╪º╪¿┘ê╪▒ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ (`processNotificationQueue`)
+### 🔴 1.1 تفعيل طابور الإشعارات (`processNotificationQueue`)
 
-**╪º┘ä╪¼╪░╪▒**: `processNotificationQueue()` ┘ü┘è `WhatsAppNotificationService.js:3413` ┘à┘â╪¬┘ê╪¿╪⌐ ╪¿╪º┘ä┘â╪º┘à┘ä ┘ä┘â┘å **┘ä╪º ╪¬┘Å╪│╪¬╪»╪╣┘ë**. `scheduleNotification()` (L2460) ┘è┘â╪¬╪¿ ╪╡┘ü┘ê┘ü╪º┘ï ┘ü┘è `WhatsAppNotificationQueue`╪î ┘ä┘â┘å ┘ä╪º ╪┤┘è╪í ┘è╪╣╪º┘ä╪¼┘ç╪º. ╪º┘ä┘å╪¬┘è╪¼╪⌐: ┘â┘ä ╪Ñ╪┤╪╣╪º╪▒ ┘è╪»╪«┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒ (╪«╪º╪╡╪⌐ **quiet-hours deferral** ┘ü┘è `:2035-2049`) **┘è┘Å┘å╪│┘ë ┘ä┘ä╪ú╪¿╪»**.
+**الجذر**: `processNotificationQueue()` في `WhatsAppNotificationService.js:3413` مكتوبة بالكامل لكن **لا تُستدعى**. `scheduleNotification()` (L2460) يكتب صفوفاً في `WhatsAppNotificationQueue`، لكن لا شيء يعالجها. النتيجة: كل إشعار يدخل الطابور (خاصة **quiet-hours deferral** في `:2035-2049`) **يُنسى للأبد**.
 
-**╪º┘ä╪¡┘ä ╪º┘ä┘à┘é╪¬╪▒╪¡**: ╪º╪│╪¬╪«╪»┘à BullMQ ╪º┘ä┘à┘ê╪¼┘ê╪» ╪¿╪º┘ä┘ü╪╣┘ä (┘å┘ü╪│ ┘å┘à╪╖ `services/queueService.js`) ┘ä╪¬╪¼┘å┘æ╪¿ `setInterval` ╪º┘ä┘ç╪┤.
+**الحل المقترح**: استخدم BullMQ الموجود بالفعل (نفس نمط `services/queueService.js`) لتجنّب `setInterval` الهش.
 
-**╪º┘ä┘à┘ä┘ü ╪º┘ä╪¼╪»┘è╪»**: `apps/backend/services/whatsapp/notificationQueueWorker.js`
+**الملف الجديد**: `apps/backend/services/whatsapp/notificationQueueWorker.js`
 
 ```js
 /**
- * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º1.1):
- * ╪╖╪º╪¿┘ê╪▒ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿ ΓÇö ┘à╪╣╪º┘ä╪¼╪⌐ WhatsAppNotificationQueue ╪╣╪¿╪▒ BullMQ.
- * ┘è╪¡┘ä ┘à╪┤┘â┘ä╪⌐ processNotificationQueue() ╪º┘ä┘à┘è╪¬╪⌐ ΓåÆ quiet-hours + ╪º┘ä┘à╪¼╪»┘ê┘ä╪⌐ ╪¬┘Å╪▒╪│┘ä ╪º┘ä╪ó┘å.
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1):
+ * طابور إشعارات واتساب — معالجة WhatsAppNotificationQueue عبر BullMQ.
+ * يحل مشكلة processNotificationQueue() الميتة → quiet-hours + المجدولة تُرسل الآن.
  *
- * ┘à╪▒╪¼╪╣ ╪º┘ä┘å┘à╪╖: services/queueService.js (BullMQ + ioredis ┘à╪½╪¿╪¬╪º┘å ╪¿╪º┘ä┘ü╪╣┘ä).
+ * مرجع النمط: services/queueService.js (BullMQ + ioredis مثبتان بالفعل).
  */
 const { Worker, QueueEvents } = require('bullmq');
 const redisConfig = require('../../config/redis');
@@ -172,14 +172,14 @@ function isRedisConfigured() {
 }
 
 /**
- * ┘à╪¡┘ü┘æ╪▓ (trigger) BullMQ ΓÇö ╪º┘ä┘Ç Worker ┘ç┘å╪º ┘ü┘é╪╖ "┘è┘ê┘é╪╕" ╪º┘ä┘à╪╣╪º┘ä╪¼ ╪º┘ä╪»┘ê╪▒┘è
- * ╪º┘ä╪░┘è ┘è┘ä╪¬┘é╪╖ PENDING ┘à┘å WhatsAppNotificationQueue.
- * ╪ú╪¿┘é┘è┘å╪º processNotificationQueue ┘â┘à╪╡╪»╪▒ ╪º┘ä╪¡┘é┘è┘é╪⌐ ╪º┘ä┘ê╪¡┘è╪» (┘ä╪º ╪¬┘â╪▒╪º╪▒ ┘à┘å╪╖┘é).
+ * محفّز (trigger) BullMQ — الـ Worker هنا فقط "يوقظ" المعالج الدوري
+ * الذي يلتقط PENDING من WhatsAppNotificationQueue.
+ * أبقينا processNotificationQueue كمصدر الحقيقة الوحيد (لا تكرار منطق).
  */
 function startNotificationQueueWorker() {
   if (started || !isRedisConfigured()) {
     if (!isRedisConfigured()) {
-      console.warn('ΓÜá∩╕Å [NOTIF-QUEUE] Redis ╪║┘è╪▒ ┘à┘Å╪╣╪» ΓÇö ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪│┘è╪╣┘à┘ä ╪¿┘Ç fallback polling');
+      console.warn('⚠️ [NOTIF-QUEUE] Redis غير مُعد — الطابور سيعمل بـ fallback polling');
       startFallbackPolling();
     }
     return;
@@ -193,37 +193,37 @@ function startNotificationQueueWorker() {
     {
       connection: redisConfig,
       concurrency: 1,
-      // ╪º┘ä┘à┘ç┘à╪⌐ ┘à╪¬┘â╪▒╪▒╪⌐ ┘â┘ä ╪»┘é┘è┘é╪⌐ (repeat) ΓÇö ╪¬╪╣╪º┘ä╪¼ PENDING ╪º┘ä┘à╪│╪¬╪¡┘é╪⌐ ┘ü┘é╪╖.
+      // المهمة متكررة كل دقيقة (repeat) — تعالج PENDING المستحقة فقط.
     }
   );
 
   worker.on('failed', (job, err) =>
-    console.error(`Γ¥î [NOTIF-QUEUE] Job ${job?.id} failed:`, err.message)
+    console.error(`❌ [NOTIF-QUEUE] Job ${job?.id} failed:`, err.message)
   );
   worker.on('error', (err) =>
-    console.error(`Γ¥î [NOTIF-QUEUE] Worker error:`, err.message)
+    console.error(`❌ [NOTIF-QUEUE] Worker error:`, err.message)
   );
 
-  // ╪¼╪»┘ê┘ä╪⌐ ╪¬┘â╪▒╪º╪▒┘è╪⌐: ╪»┘ü╪╣╪⌐ ┘â┘ä 60 ╪½╪º┘å┘è╪⌐
+  // جدولة تكرارية: دفعة كل 60 ثانية
   const { Queue } = require('bullmq');
   const queue = new Queue(QUEUE_NAME, { connection: redisConfig });
   queue.add(
     'process-pending',
     {},
     {
-      repeat: { pattern: '* * * * *' }, // ┘â┘ä ╪»┘é┘è┘é╪⌐
+      repeat: { pattern: '* * * * *' }, // كل دقيقة
       removeOnComplete: 100,
       removeOnFail: 500
     }
   ).catch((e) => console.error('[NOTIF-QUEUE] schedule failed:', e.message));
 
   started = true;
-  console.log('Γ£à [NOTIF-QUEUE] WhatsApp notification queue worker started');
+  console.log('✅ [NOTIF-QUEUE] WhatsApp notification queue worker started');
 }
 
 /**
- * fallback: polling ╪¿╪│┘è╪╖ ╪¿╪»┘ê┘å Redis (┘è╪¡╪º┘â┘è ╪º┘ä╪│┘ä┘ê┘â ╪º┘ä┘é╪»┘è┘à ╪º┘ä┘à┘é╪╡┘ê╪»).
- * ╪º╪│╪¬╪«╪»┘à ┘ü┘è ╪º┘ä╪¿┘è╪ª╪º╪¬ ╪¿╪»┘ê┘å Redis ┘ü┘é╪╖.
+ * fallback: polling بسيط بدون Redis (يحاكي السلوك القديم المقصود).
+ * استخدم في البيئات بدون Redis فقط.
  */
 function startFallbackPolling() {
   if (started) return;
@@ -236,7 +236,7 @@ function startFallbackPolling() {
   }, 60000);
   id.unref?.();
   started = true;
-  console.log('Γ£à [NOTIF-QUEUE] Fallback polling started (60s)');
+  console.log('✅ [NOTIF-QUEUE] Fallback polling started (60s)');
 }
 
 async function stopNotificationQueueWorker() {
@@ -250,29 +250,29 @@ module.exports = {
 };
 ```
 
-**╪º┘ä╪¬╪│╪¼┘è┘ä ┘ü┘è** `apps/backend/server.js` (╪¿╪╣╪» ~L1113╪î ┘é╪▒╪¿ ╪¿┘é┘è╪⌐ ╪º┘ä┘Ç crons):
+**التسجيل في** `apps/backend/server.js` (بعد ~L1113، قرب بقية الـ crons):
 
 ```js
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º1.1): ┘ü╪╣┘æ┘ä ╪╖╪º╪¿┘ê╪▒ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب
 try {
   const { startNotificationQueueWorker } = require('./services/whatsapp/notificationQueueWorker');
   startNotificationQueueWorker();
-  console.log('Γ£à [NOTIF-QUEUE] WhatsApp notification queue worker registered');
+  console.log('✅ [NOTIF-QUEUE] WhatsApp notification queue worker registered');
 } catch (err) {
-  console.error('Γ¥î [NOTIF-QUEUE] Failed to start notification queue worker:', err.message);
+  console.error('❌ [NOTIF-QUEUE] Failed to start notification queue worker:', err.message);
 }
 ```
 
-#### ΓÜá∩╕Å ╪¬┘å╪¿┘è┘ç ╪ú┘à┘å┘è ┘ä┘ä┘à╪╣╪º┘ä╪¼ ╪º┘ä╪¡╪º┘ä┘è (╪╣┘è╪¿ ┘è╪¼╪¿ ╪Ñ╪╡┘ä╪º╪¡┘ç ╪ú╪½┘å╪º╪í ╪º┘ä╪¬┘ü╪╣┘è┘ä)
-`processNotificationQueue` ╪º┘ä╪¡╪º┘ä┘è (`WhatsAppNotificationService.js:3413-3545`) **┘ä╪º ┘è╪»╪╣┘à META_CLOUD** ΓÇö ┘è┘ü╪¬╪▒╪╢ Baileys ┘ü┘é╪╖ (`WhatsAppManager.getSession` + `WhatsAppMessageHandler.sendText`). ╪Ñ╪╡┘ä╪º╪¡:
-- ╪º╪│╪¬╪¿╪»┘ä ┘à┘å╪╖┘é ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘ä╪¼ ╪¿╪º╪│╪¬╪»╪╣╪º╪í `sendNotification({...})` ╪º┘ä╪▒╪ª┘è╪│┘è (╪º┘ä╪░┘è ┘ü┘è┘ç DB fallback + META_CLOUD) ╪¿╪»┘ä╪º┘ï ┘à┘å `sendText` ╪º┘ä┘à╪¿╪º╪┤╪▒╪î **╪ú┘ê** ╪ú╪╢┘ü ┘ü╪▒╪╣ META_CLOUD ╪╡╪▒╪º╪¡╪⌐┘ï ┘é╪¿┘ä ┘â╪¬┘ä╪⌐ `sendText`.
-- ╪▒╪º╪¼╪╣ `sendNotification` (L~2010) ┘ä┘ä┘å┘à╪╖ ╪º┘ä┘â╪º┘à┘ä (sticky session + Meta special-casing).
-- ≡ƒƒí **╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐**: ┘ç╪░╪º ╪º┘ä╪Ñ╪╡┘ä╪º╪¡ ┘ç┘ê ┘å┘ü╪│┘ç "╪º┘ä╪¼╪▓╪í ╪ú" ┘à┘å ┬º4.1 (┘ü╪╡┘ä ╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ╪╣┘å ╪º┘ä╪¼╪»┘ê┘ä╪⌐). ┘è┘å╪╡╪¡ ╪¿╪»┘à╪¼┘ç┘à╪º ┘ü┘è ┘à┘ç┘à╪⌐ ┘ê╪º╪¡╪»╪⌐.
+#### ⚠️ تنبيه أمني للمعالج الحالي (عيب يجب إصلاحه أثناء التفعيل)
+`processNotificationQueue` الحالي (`WhatsAppNotificationService.js:3413-3545`) **لا يدعم META_CLOUD** — يفترض Baileys فقط (`WhatsAppManager.getSession` + `WhatsAppMessageHandler.sendText`). إصلاح:
+- استبدل منطق الإرسال داخل المعالج باستدعاء `sendNotification({...})` الرئيسي (الذي فيه DB fallback + META_CLOUD) بدلاً من `sendText` المباشر، **أو** أضف فرع META_CLOUD صراحةً قبل كتلة `sendText`.
+- راجع `sendNotification` (L~2010) للنمط الكامل (sticky session + Meta special-casing).
+- 🟡 **تصحيح من مراجعة ثانية**: هذا الإصلاح هو نفسه "الجزء أ" من §4.1 (فصل حل الجلسة عن الجدولة). ينصح بدمجهما في مهمة واحدة.
 
-#### ΓÜá∩╕Å ╪¬┘å╪¿┘è┘ç: ╪¡┘à╪º┘è╪⌐ ┘à┘å ╪º┘ä╪¬╪»╪º╪«┘ä (re-entrancy guard)
-≡ƒƒí **┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐**: ┘ä┘ê ╪¼┘ê┘ä╪⌐ `processNotificationQueue` ╪¬╪¼╪º┘ê╪▓╪¬ 60╪½ (fallback polling ┘â┘ä 60╪½╪î ╪ú┘ê BullMQ repeat job)╪î ┘é╪» ╪¬╪¬╪»╪º╪«┘ä ╪¼┘ê┘ä╪¬╪º┘å ╪╣┘ä┘ë ┘å┘ü╪│ ╪º┘ä╪╡┘ü┘ê┘ü. ╪ú╪╢┘ü guard ╪»╪º╪«┘ä `processNotificationQueue` ┘å┘ü╪│┘ç╪º:
+#### ⚠️ تنبيه: حماية من التداخل (re-entrancy guard)
+🟡 **من مراجعة ثانية**: لو جولة `processNotificationQueue` تجاوزت 60ث (fallback polling كل 60ث، أو BullMQ repeat job)، قد تتداخل جولتان على نفس الصفوف. أضف guard داخل `processNotificationQueue` نفسها:
 ```js
-// ≡ƒ¢í∩╕Å notifications-fix-plan ┬º1.1: ┘à┘å╪╣ ╪º┘ä╪¬╪»╪º╪«┘ä
+// 🛡️ notifications-fix-plan §1.1: منع التداخل
 let processingQueue = false;
 async function processNotificationQueue() {
   if (processingQueue) {
@@ -281,34 +281,34 @@ async function processNotificationQueue() {
   }
   processingQueue = true;
   try {
-    // ... ╪º┘ä┘à┘å╪╖┘é ╪º┘ä╪¡╪º┘ä┘è ...
+    // ... المنطق الحالي ...
   } finally {
     processingQueue = false;
   }
 }
 ```
-┘à┘ä╪º╪¡╪╕╪⌐: ╪º┘ä╪¡╪º╪▒╪│ ╪º┘ä╪¡╪º┘ä┘è `isRunning` ┘ü┘è ╪º┘ä┘â╪▒┘ê┘å (┬º1.2) ┘ä╪º ┘è╪║╪╖┘è ┘ç╪░╪º ΓÇö ┘ç╪░╪º ╪¡╪º╪▒╪│ ╪╣┘ä┘ë ┘à╪│╪¬┘ê┘ë ╪º┘ä┘à╪╣╪º┘ä╪¼ ┘å┘ü╪│┘ç.
+ملاحظة: الحارس الحالي `isRunning` في الكرون (§1.2) لا يغطي هذا — هذا حارس على مستوى المعالج نفسه.
 
-**┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡ ┬º1.1**:
-- [ ] ╪¿╪╣╪» ╪¬┘ü╪╣┘è┘ä `quietHoursEnabled` ┘à╪╣ ┘å╪º┘ü╪░╪⌐ ┘ä┘è┘ä┘è╪⌐╪î ╪Ñ╪┤╪╣╪º╪▒ ┘à┘Å╪¼╪»┘ê┘ä ┘ü┘è ╪º┘ä╪╖╪º╪¿┘ê╪▒ ┘è┘Å╪▒╪│┘ä **╪«┘ä╪º┘ä 60 ╪½╪º┘å┘è╪⌐** ╪¿╪╣╪» ╪º┘å╪¬┘ç╪º╪í ┘å╪º┘ü╪░╪⌐ ╪º┘ä┘ç╪»┘ê╪í.
-- [ ] ╪¼╪»┘ê┘ä `whatsapp_notification_queue` ┘ä╪º ┘è╪¬╪▒╪º┘â┘à ╪╡┘ü┘ê┘ü `PENDING` ┘à╪│╪¬╪¡┘é╪⌐ (`scheduledAt <= now()`) ┘ä╪ú┘â╪½╪▒ ┘à┘å ╪»┘é┘è┘é╪¬┘è┘å.
-- [ ] ┘ä╪º ╪¬╪ú╪½┘è╪▒ ╪╣┘ä┘ë ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘ü┘ê╪▒┘è (sync) ╪«╪º╪▒╪¼ ╪º┘ä┘Ç quiet-hours.
-- [ ] ╪│╪¡╪¿ Redis: ┘ä┘ê Redis ┘à┘Å╪╖┘ü╪ú╪î fallback polling ┘è╪╣┘à┘ä ┘ê┘è╪│╪¼┘æ┘ä ╪¬╪¡╪░┘è╪▒.
-- [ ] ≡ƒƒí ┘ä╪º ╪¬╪»╪º╪«┘ä: ┘ä┘ê ╪¼┘ê┘ä╪⌐ > 60╪½╪î ╪º┘ä╪¼┘ê┘ä╪⌐ ╪º┘ä╪¬╪º┘ä┘è╪⌐ ╪¬╪¬╪«╪╖┘ë ╪¿┘å╪º╪í┘ï ╪╣┘ä┘ë `processingQueue`.
+**معايير النجاح §1.1**:
+- [ ] بعد تفعيل `quietHoursEnabled` مع نافذة ليلية، إشعار مُجدول في الطابور يُرسل **خلال 60 ثانية** بعد انتهاء نافذة الهدوء.
+- [ ] جدول `whatsapp_notification_queue` لا يتراكم صفوف `PENDING` مستحقة (`scheduledAt <= now()`) لأكثر من دقيقتين.
+- [ ] لا تأثير على الإرسال الفوري (sync) خارج الـ quiet-hours.
+- [ ] سحب Redis: لو Redis مُطفأ، fallback polling يعمل ويسجّل تحذير.
+- [ ] 🟡 لا تداخل: لو جولة > 60ث، الجولة التالية تتخطى بناءً على `processingQueue`.
 
-**╪«╪╖╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ┬º1.1**: ╪╣┘ä┘æ┘é ┘â╪¬┘ä╪⌐ ╪º┘ä┘Ç require ┘ü┘è `server.js` + ╪º╪¡╪░┘ü `notificationQueueWorker.js`. ┘ä╪º ╪¬╪ú╪½┘è╪▒ ╪╣┘ä┘ë ╪º┘ä╪Ñ┘å╪¬╪º╪¼ (╪º┘ä╪╖╪º╪¿┘ê╪▒ ┘â╪º┘å ┘à┘è╪¬╪º┘ï ╪ú╪╡┘ä╪º┘ï).
+**خطة التراجع §1.1**: علّق كتلة الـ require في `server.js` + احذف `notificationQueueWorker.js`. لا تأثير على الإنتاج (الطابور كان ميتاً أصلاً).
 
 ---
 
-### ≡ƒö┤ 1.2 ╪Ñ╪╡┘ä╪º╪¡ `orderStatusAutoChangeCron` ┘ä┘è┘à╪▒┘æ ╪¿┘Ç `updateOrderStatus`
+### 🔴 1.2 إصلاح `orderStatusAutoChangeCron` ليمرّ بـ `updateOrderStatus`
 
-**╪º┘ä╪¼╪░╪▒**: `cron/orderStatusAutoChangeCron.js:95` ┘è╪│╪¬╪«╪»┘à `prisma.order.updateMany` ╪«╪º┘à ΓåÆ ┘è╪¬╪¼╪º┘ê╪▓ ┘â┘ä ╪┤┘è╪í: ┘ä╪º ╪Ñ╪┤╪╣╪º╪▒╪º╪¬╪î ┘ä╪º `metadata.preparationStatus` sync╪î ┘ä╪º commission/loyalty/invoice.
+**الجذر**: `cron/orderStatusAutoChangeCron.js:95` يستخدم `prisma.order.updateMany` خام → يتجاوز كل شيء: لا إشعارات، لا `metadata.preparationStatus` sync، لا commission/loyalty/invoice.
 
-**╪º┘ä╪¡┘ä**: ╪º╪│╪¬╪¿╪»┘ä ╪º┘ä┘Ç `updateMany` ╪º┘ä╪¼┘à╪º╪╣┘è ╪¿╪¡┘ä┘é╪⌐ ╪¬┘å╪º╪»┘è `orderService.updateOrderStatus` ┘ä┘â┘ä ╪╖┘ä╪¿.
+**الحل**: استبدل الـ `updateMany` الجماعي بحلقة تنادي `orderService.updateOrderStatus` لكل طلب.
 
-**╪º┘ä┘à┘ä┘ü**: `apps/backend/cron/orderStatusAutoChangeCron.js` ΓÇö ╪º╪│╪¬╪¿╪»┘ä ┘â╪¬┘ä╪⌐ `// Batch update` (L82-100).
+**الملف**: `apps/backend/cron/orderStatusAutoChangeCron.js` — استبدل كتلة `// Batch update` (L82-100).
 
-**╪º┘ä┘â┘ê╪» ╪º┘ä╪¡╪º┘ä┘è** (L82-100):
+**الكود الحالي** (L82-100):
 ```js
 // Batch update
 await prisma.order.updateMany({
@@ -327,26 +327,26 @@ const historyEntries = orders.map(order => ({ ... }));
 await prisma.orderStatusHistory.createMany({ data: historyEntries, skipDuplicates: true });
 ```
 
-#### ≡ƒö┤ ╪º┘ä╪¬┘ê┘é┘è╪╣ ╪º┘ä╪╡╪¡┘è╪¡ (╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐)
+#### 🔴 التوقيع الصحيح (تصحيح من مراجعة ثانية)
 
-> ΓÜá∩╕Å **╪¬╪¡╪░┘è╪▒**: ╪º┘ä╪¬┘ê┘é┘è╪╣ ╪º┘ä┘ü╪╣┘ä┘è ┘ä┘Ç `updateOrderStatus` (`orderService.js:870`) ┘ç┘ê:
+> ⚠️ **تحذير**: التوقيع الفعلي لـ `updateOrderStatus` (`orderService.js:870`) هو:
 > ```js
 > updateOrderStatus(orderNumber, companyId, status, notes = null, userId = null,
 >                   userName = null, existingOrderObject = null, isOverride = false,
 >                   options = null)
 > ```
-> ╪¡┘è╪½ `options` ┘è╪»╪╣┘à **┘ü┘é╪╖** `{ skipCallAttemptGuard, skipTransitionValidation }`. ┘ä╪º ╪¬┘ê╪¼╪» ╪«┘è╪º╪▒╪º╪¬ `changedBy`/`reason`/`skipNotifications`. ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ┘à┘å ┘ç╪░┘ç ╪º┘ä╪«╪╖╪⌐ ╪º╪│╪¬╪«╪»┘à╪¬ ╪¬┘ê┘é┘è╪╣┘ï╪º ╪½┘ä╪º╪½┘è┘ï╪º ╪«╪º╪╖╪ª┘ï╪º (`updateOrderStatus(order.id, rule.toStatus, {...})`) ΓÇö **┘ä╪º ╪¬╪│╪¬╪«╪»┘à┘ç**.
+> حيث `options` يدعم **فقط** `{ skipCallAttemptGuard, skipTransitionValidation }`. لا توجد خيارات `changedBy`/`reason`/`skipNotifications`. النسخة الأولى من هذه الخطة استخدمت توقيعًا ثلاثيًا خاطئًا (`updateOrderStatus(order.id, rule.toStatus, {...})`) — **لا تستخدمه**.
 >
-> ┘â╪░┘ä┘â `orderService` ┘ç┘ê **class instance method** (┘è╪│╪¬╪«╪»┘à `this.getPrisma()`)╪î ┘ä╪░╪º ┘è╪¼╪¿ ╪¬┘à╪▒┘è╪▒ `companyId` ╪ú┘ê ╪╢╪¿╪╖┘ç ╪╣╪¿╪▒ `orderService.setCompanyId(companyId)` ┘é╪¿┘ä ╪º┘ä╪º╪│╪¬╪»╪╣╪º╪í. ╪¬╪¡┘é┘é ┘à┘å ┘â┘è┘ü ┘è╪│╪¬╪»╪╣┘è┘ç ╪º┘ä┘à╪¬╪╡┘ä┘ê┘å ╪º┘ä╪¡╪º┘ä┘è┘ê┘å (┘à╪½┘ä `services/codDepositService.js:227`).
+> كذلك `orderService` هو **class instance method** (يستخدم `this.getPrisma()`)، لذا يجب تمرير `companyId` أو ضبطه عبر `orderService.setCompanyId(companyId)` قبل الاستدعاء. تحقق من كيف يستدعيه المتصلون الحاليون (مثل `services/codDepositService.js:227`).
 
-**╪º┘ä┘â┘ê╪» ╪¿╪╣╪» ╪º┘ä╪Ñ╪╡┘ä╪º╪¡** (┘à╪╖╪º╪¿┘é ┘ä┘ä╪¬┘å┘ü┘è╪░ ╪º┘ä┘ü╪╣┘ä┘è ┘ü┘è `cron/orderStatusAutoChangeCron.js`):
+**الكود بعد الإصلاح** (مطابق للتنفيذ الفعلي في `cron/orderStatusAutoChangeCron.js`):
 ```js
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º1.2):
-// ┘à╪▒┘æ ╪╣╪¿╪▒ updateOrderStatus ┘ä╪╢┘à╪º┘å: ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿ + metadata.preparationStatus +
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §1.2):
+// مرّ عبر updateOrderStatus لضمان: إشعارات واتساب + metadata.preparationStatus +
 // commission/loyalty/invoice side-effects.
-// ┘à┘ä╪º╪¡╪╕╪⌐ (╪¬╪╡╪¡┘è╪¡ ┬º3.1): updateOrderStatus ┘è┘â╪¬╪¿ OrderStatusHistory ┘à╪¬╪»╪º╪«┘ä╪º┘ï
-// (statusHistory.create ╪»╪º╪«┘ä order.update ΓÇö orderService.js) ΓÇö ┘ä╪░╪º ┘ä╪º createMany ┘à┘å┘ü╪╡┘ä
-// ┘ä╪¬╪¼┘å┘æ╪¿ ╪╡┘ü┘æ┘è history ┘à┘â╪▒╪▒┘è┘å. changedBy = 'SYSTEM_AUTO' ╪╣╪¿╪▒ userId.
+// ملاحظة (تصحيح §3.1): updateOrderStatus يكتب OrderStatusHistory متداخلاً
+// (statusHistory.create داخل order.update — orderService.js) — لذا لا createMany منفصل
+// لتجنّب صفّي history مكررين. changedBy = 'SYSTEM_AUTO' عبر userId.
 const orderService = require('../services/orderService');   // singleton (module.exports = orderService)
 const reason = `Auto-changed by rule: after ${rule.waitTime} ${rule.timeUnit}`;
 
@@ -356,17 +356,17 @@ let failed = 0;
 for (const order of orders) {
   try {
     await orderService.setCompanyId(companyId).updateOrderStatus(
-      order.id,           // orderNumber (┘è┘é╪¿┘ä id ╪ú┘ê orderNumber)
+      order.id,           // orderNumber (يقبل id أو orderNumber)
       companyId,          // companyId
       rule.toStatus,      // status
       reason,             // notes
-      'SYSTEM_AUTO',      // userId ΓåÆ changedBy ┘ü┘è OrderStatusHistory
+      'SYSTEM_AUTO',      // userId → changedBy في OrderStatusHistory
       'System Automation',// userName
       null,               // existingOrderObject
       false,              // isOverride
       {                   // options
-        skipTransitionValidation: true, // ╪º┘ä┘é╪º╪╣╪»╪⌐ ┘à┘ê╪½┘ê┘é╪⌐╪¢ ╪¬╪¼╪º┘ê╪▓ ┘ü╪¡╪╡ allowedNextStatuses
-        skipCallAttemptGuard: true,     // ┘ä╪º ┘è┘ê╪¼╪» ┘à┘â╪º┘ä┘à╪⌐ ╪╣┘à┘è┘ä ┘ü┘è ╪º┘ä╪ú╪¬┘à╪¬╪⌐
+        skipTransitionValidation: true, // القاعدة موثوقة؛ تجاوز فحص allowedNextStatuses
+        skipCallAttemptGuard: true,     // لا يوجد مكالمة عميل في الأتمتة
       }
     );
     updated++;
@@ -376,65 +376,65 @@ for (const order of orders) {
   }
 }
 
-console.log(`[ORDER-STATUS-AUTO-CHANGE-CRON] Rule ${rule.fromStatus}ΓåÆ${rule.toStatus}: ${updated} ok, ${failed} failed`);
+console.log(`[ORDER-STATUS-AUTO-CHANGE-CRON] Rule ${rule.fromStatus}→${rule.toStatus}: ${updated} ok, ${failed} failed`);
 ```
 
-> ≡ƒÜ¿ **╪¬┘å╪¿┘è┘ç (╪¬╪╡╪¡┘è╪¡ ┘à┘å ╪º┘ä╪¬┘å┘ü┘è╪░ ΓÇö ┘à┘ç┘à ╪¼╪»╪º┘ï)**: `updateOrderStatus` ┘è┘â╪¬╪¿ `OrderStatusHistory` **┘à╪¬╪»╪º╪«┘ä╪º┘ï** ╪╣╪¿╪▒ `statusHistory: { create: {...} }` ╪»╪º╪«┘ä `prisma.order.update` (╪º┘å╪╕╪▒ `orderService.js` ~L1065-1073). **┘ä╪º ╪¬╪│╪¬╪«╪»┘à `createMany` ┘à┘å┘ü╪╡┘ä** ┘ê╪Ñ┘ä╪º ╪│╪¬┘å╪¬╪¼ ╪╡┘ü┘ê┘ü history ┘à┘â╪▒╪▒╪⌐. ┘à╪▒┘æ╪▒ ┘ç┘ê┘è╪⌐ ╪º┘ä┘à┘å┘ü┘æ╪░ ╪╣╪¿╪▒ ╪º┘ä┘à╪╣╪º┘à┘ä `userId` (┘è╪╕┘ç╪▒ ┘â┘Ç `changedBy` ┘ü┘è ╪º┘ä┘Ç history) ΓÇö ┘è╪│╪¬╪«╪»┘à ╪º┘ä┘Ç cron `'SYSTEM_AUTO'` ┘ä┘ç╪░╪º ╪º┘ä╪║╪▒╪╢. ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ┘à┘å ┘ç╪░┘ç ╪º┘ä╪«╪╖╪⌐ ╪º┘é╪¬╪▒╪¡╪¬ createMany ┘à┘å┘ü╪╡┘ä ╪¿┘å╪º╪í┘ï ╪╣┘ä┘ë ╪º┘ü╪¬╪▒╪º╪╢ ╪«╪º╪╖╪ª ("updateOrderStatus ┘ä╪º ┘è┘â╪¬╪¿ history") ΓÇö ╪º┘Å┘â╪¬╪┤┘ü ╪ú╪½┘å╪º╪í ╪º┘ä╪¬┘å┘ü┘è╪░ ┘ê╪ú┘Å╪▓┘è┘ä.
+> 🚨 **تنبيه (تصحيح من التنفيذ — مهم جداً)**: `updateOrderStatus` يكتب `OrderStatusHistory` **متداخلاً** عبر `statusHistory: { create: {...} }` داخل `prisma.order.update` (انظر `orderService.js` ~L1065-1073). **لا تستخدم `createMany` منفصل** وإلا ستنتج صفوف history مكررة. مرّر هوية المنفّذ عبر المعامل `userId` (يظهر كـ `changedBy` في الـ history) — يستخدم الـ cron `'SYSTEM_AUTO'` لهذا الغرض. النسخة الأولى من هذه الخطة اقترحت createMany منفصل بناءً على افتراض خاطئ ("updateOrderStatus لا يكتب history") — اُكتشف أثناء التنفيذ وأُزيل.
 
-#### ΓÜá∩╕Å ╪¬┘å╪¿┘è┘ç╪º╪¬ ┘ç╪º┘à╪⌐
-1. ≡ƒƒí **┘å┘à╪╖ ╪º┘ä╪º╪│╪¬╪»╪╣╪º╪í (┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐)**: ╪º╪│╪¬╪«╪»┘à `orderService.setCompanyId(companyId).updateOrderStatus(...)` ΓÇö ┘å┘ü╪│ ┘å┘à╪╖ `routes/orders.js:3031`. `orderService` ┘ç┘ê **singleton** (`module.exports = orderService` ┘ü┘è `:1717`)╪î ┘ê╪º┘ä┘Ç constructor ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è ┘è╪¬╪▒┘â `companyId = null`. ╪¬┘à╪▒┘è╪▒ `companyId` ┘â┘à╪╣╪º┘à┘ä ┘ê╪¡╪»┘ç ┘ä╪º ┘è┘â┘ü┘è ┘ä╪ú┘å ╪¿╪╣╪╢ ╪º┘ä╪º╪│╪¬╪╣┘ä╪º┘à╪º╪¬ ╪º┘ä╪»╪º╪«┘ä┘è╪⌐ ╪¬╪╣╪¬┘à╪» ╪╣┘ä┘ë `this.companyId`╪¢ ┘ä╪░╪º ╪º╪╢╪¿╪╖ ╪º┘ä╪│┘è╪º┘é ╪╡╪▒╪º╪¡╪⌐┘ï ┘é╪¿┘ä ┘â┘ä ╪º╪│╪¬╪»╪╣╪º╪í ┘ä╪¬╪¼┘å╪¿ ╪¬╪│╪▒┘è╪¿ ╪¿┘è╪º┘å╪º╪¬ tenant.
-2. **`order.id` vs `orderNumber`**: `updateOrderStatus` ┘è┘é╪¿┘ä ┘â┘ä┘è┘ç┘à╪º ╪»╪º╪«┘ä┘è┘ï╪º (OR query)╪î ┘ä┘â┘å `order.id` ╪ú╪│╪▒╪╣. ╪º╪│╪¬╪«╪»┘à ┘à╪º ┘è╪╖┘ä╪¿┘ç ╪º┘ä┘Ç API.
-3. **╪º┘ä╪ú╪»╪º╪í**: ┘ä┘ê ╪º┘ä┘é╪º╪╣╪»╪⌐ ╪¬╪╖╪º╪¿┘é ┘à╪ª╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪»┘ü╪╣╪⌐╪î ╪º╪│╪¬╪»╪╣╪º╪í `updateOrderStatus` ┘ä┘â┘ä ╪╖┘ä╪¿ ┘è╪╡╪¿╪¡ ╪ú╪¿╪╖╪ú ┘à┘å `updateMany`. ╪¡┘ä┘ê┘ä:
-   - ╪¡╪»┘æ `findMany` ╪º┘ä╪ú┘ê┘ä┘è ╪¿┘Ç `take: 50` ┘ä┘â┘ä ╪»┘ü╪╣╪⌐ (╪º┘ä┘â╪▒┘ê┘å ┘è╪╣┘à┘ä ┘â┘ä ╪»┘é┘è┘é╪⌐╪î ┘ü╪│┘è┘ä╪¡┘é).
-4. **╪º┘ä┘Ç mutex/re-entrancy**: `isRunning` guard ╪º┘ä╪¡╪º┘ä┘è ┘â╪º┘ü┘ì. ┘ä┘â┘å `updateOrderStatus` ╪º┘ä╪»╪º╪«┘ä┘è ┘é╪» ┘è┘â┘ê┘å ╪ú╪¿╪╖╪ú ΓÇö ╪¬╪ú┘â╪» ╪ú┘å ╪º┘ä┘â╪▒┘ê┘å ╪º┘ä╪¬╪º┘ä┘è ┘ä╪º ┘è╪¬╪»╪º╪«┘ä (╪º╪│╪¬┘à╪▒ ╪¿┘ü╪¡╪╡ `isRunning`).
+#### ⚠️ تنبيهات هامة
+1. 🟡 **نمط الاستدعاء (مراجعة ثالثة)**: استخدم `orderService.setCompanyId(companyId).updateOrderStatus(...)` — نفس نمط `routes/orders.js:3031`. `orderService` هو **singleton** (`module.exports = orderService` في `:1717`)، والـ constructor الافتراضي يترك `companyId = null`. تمرير `companyId` كمعامل وحده لا يكفي لأن بعض الاستعلامات الداخلية تعتمد على `this.companyId`؛ لذا اضبط السياق صراحةً قبل كل استدعاء لتجنب تسريب بيانات tenant.
+2. **`order.id` vs `orderNumber`**: `updateOrderStatus` يقبل كليهما داخليًا (OR query)، لكن `order.id` أسرع. استخدم ما يطلبه الـ API.
+3. **الأداء**: لو القاعدة تطابق مئات الطلبات دفعة، استدعاء `updateOrderStatus` لكل طلب يصبح أبطأ من `updateMany`. حلول:
+   - حدّ `findMany` الأولي بـ `take: 50` لكل دفعة (الكرون يعمل كل دقيقة، فسيلحق).
+4. **الـ mutex/re-entrancy**: `isRunning` guard الحالي كافٍ. لكن `updateOrderStatus` الداخلي قد يكون أبطأ — تأكد أن الكرون التالي لا يتداخل (استمر بفحص `isRunning`).
 
-**┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡ ┬º1.2**:
-- [ ] ╪╖┘ä╪¿ ┘è╪╖╪º╪¿┘é ┘é╪º╪╣╪»╪⌐ auto-change ΓåÆ ┘è╪¬┘ä┘é┘ë ╪º┘ä╪╣┘à┘è┘ä ╪Ñ╪┤╪╣╪º╪▒ ┘ê╪º╪¬╪│╪º╪¿ (┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ ┘ü┘è ╪«╪▒┘è╪╖╪⌐ ┬º3╪î ┘ê┘à╪╣ ┬º2.1-pre mapping).
-- [ ] `metadata.preparationStatus` ┘è┘Å╪¡╪»┘æ╪½ ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¬┘è ┘ü┘è `PREPARATION_PIPELINE_STATUSES`.
-- [ ] `OrderStatusHistory` ╪¬┘Å╪│╪¼┘æ┘ä ╪¿┘Ç `changedBy: 'SYSTEM_AUTO'` (╪╣╪¿╪▒ `userId` ╪º┘ä┘à┘Å┘à╪▒┘Ä┘æ╪▒ ┘ä┘Ç `updateOrderStatus` ΓÇö ┘è┘â╪¬╪¿ ╪º┘ä┘Ç history ┘à╪¬╪»╪º╪«┘ä╪º┘ï).
-- [ ] ┘ä╪º ╪º┘å╪¡╪»╪º╪▒ ┘ü┘è ╪▓┘à┘å ╪º┘ä┘â╪▒┘ê┘å (┘è╪¿┘é┘ë < 30╪½ ┘ä┘â┘ä ╪»┘ü╪╣╪⌐ 50 ╪╖┘ä╪¿).
+**معايير النجاح §1.2**:
+- [ ] طلب يطابق قاعدة auto-change → يتلقى العميل إشعار واتساب (لو الحالة في خريطة §3، ومع §2.1-pre mapping).
+- [ ] `metadata.preparationStatus` يُحدّث للطلبات التي في `PREPARATION_PIPELINE_STATUSES`.
+- [ ] `OrderStatusHistory` تُسجّل بـ `changedBy: 'SYSTEM_AUTO'` (عبر `userId` المُمرَّر لـ `updateOrderStatus` — يكتب الـ history متداخلاً).
+- [ ] لا انحدار في زمن الكرون (يبقى < 30ث لكل دفعة 50 طلب).
 
-**╪«╪╖╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ┬º1.2**: `git checkout -- cron/orderStatusAutoChangeCron.js`.
+**خطة التراجع §1.2**: `git checkout -- cron/orderStatusAutoChangeCron.js`.
 
 ---
 
-## 4. ╪º┘ä┘à╪▒╪¡┘ä╪⌐ 2: ╪Ñ╪╡┘ä╪º╪¡╪º╪¬ ╪╡╪¡┘è╪¡╪⌐ ╪╣╪º┘ä┘è╪⌐ ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐
+## 4. المرحلة 2: إصلاحات صحيحة عالية الأولوية
 
-### ≡ƒö┤ 2.1 ╪¬┘ê╪│┘è╪╣ ╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¡╪º┘ä╪º╪¬ (`getWhatsAppOrderEventType`)
+### 🔴 2.1 توسيع خريطة الحالات (`getWhatsAppOrderEventType`)
 
-**╪º┘ä╪¼╪░╪▒**: `services/orderService.js:26` ╪¬╪▒╪│┘à **8 ╪¡╪º┘ä╪º╪¬ ┘ü┘é╪╖**. ╪¿╪º┘é┘è ╪º┘ä╪¡╪º┘ä╪º╪¬ (RETURNED, REFUNDED, PARTIALLY_RETURNED, EXCHANGED, READY, QUALITY_CHECK...) ╪¬╪▒╪¼╪╣ `null` ΓåÆ ╪º┘ä┘Ç guard ┘ü┘è `orderService.js:1227` ┘è╪¬╪«╪╖┘ë ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ **╪¿╪╡┘à╪¬**. ┘ê╪º┘ä┘à┘ü╪º╪▒┘é╪⌐ ╪ú┘å `sendOrderStatusNotification` (`WhatsAppNotificationService.js:2714`) ╪╣┘å╪»┘ç╪º ╪«╪▒┘è╪╖╪⌐ ╪ú┘ê╪│╪╣ + DB fallback ┘ä┘â┘å┘ç╪º **┘ä╪º ╪¬┘Å╪╡┘ä ╪Ñ┘ä┘è┘ç╪º**.
+**الجذر**: `services/orderService.js:26` ترسم **8 حالات فقط**. باقي الحالات (RETURNED, REFUNDED, PARTIALLY_RETURNED, EXCHANGED, READY, QUALITY_CHECK...) ترجع `null` → الـ guard في `orderService.js:1227` يتخطى الإشعار **بصمت**. والمفارقة أن `sendOrderStatusNotification` (`WhatsAppNotificationService.js:2714`) عندها خريطة أوسع + DB fallback لكنها **لا تُصل إليها**.
 
-**╪º┘ä╪¡┘ä ╪º┘ä╪ú┘å╪╕┘ü (╪¿╪»┘ä ╪¬┘â╪▒╪º╪▒ ╪º┘ä┘é┘ê╪º╪ª┘à)**: ╪º╪¡╪░┘ü ╪º┘ä┘Ç guard ┘ü┘è `orderService.js` ┘ê╪º╪¬╪▒┘â `sendOrderStatusNotification` ┘è┘é╪▒╪▒ (┘ä╪»┘è┘ç╪º DB `orderStatusConfig.notifyCustomer` + fallback `isFallback:true`).
+**الحل الأنظف (بدل تكرار القوائم)**: احذف الـ guard في `orderService.js` واترك `sendOrderStatusNotification` يقرر (لديها DB `orderStatusConfig.notifyCustomer` + fallback `isFallback:true`).
 
-**╪º┘ä┘à┘ä┘ü**: `apps/backend/services/orderService.js` ΓÇö ╪º┘ä┘â╪¬┘ä╪⌐ ╪╣┘å╪» L1220-1249 (updateOrderStatus) ┘ê L1451-1484 (updateGuestOrderStatus).
+**الملف**: `apps/backend/services/orderService.js` — الكتلة عند L1220-1249 (updateOrderStatus) و L1451-1484 (updateGuestOrderStatus).
 
-**╪º┘ä┘â┘ê╪» ╪º┘ä╪¡╪º┘ä┘è** (L1224-1249 ╪¬┘é╪▒┘è╪¿╪º┘ï):
+**الكود الحالي** (L1224-1249 تقريباً):
 ```js
 const notificationStatus = normalizeWhatsAppOrderStatus(status);
 const eventType = getWhatsAppOrderEventType(status);
 // ...dedup 10s on eventType...
 if (!notificationStatus || !eventType) {
-  return;  // ΓåÉ ╪º┘ä╪╡┘à╪¬ ┘ç┘å╪º ┘è╪«┘ü┘è RETURNED/REFUNDED/╪Ñ┘ä╪«
+  return;  // ← الصمت هنا يخفي RETURNED/REFUNDED/إلخ
 }
 // ...await WhatsAppNotificationService.sendOrderStatusNotification(order, notificationStatus);
 ```
 
-#### ≡ƒö┤ ╪┤╪▒╪╖ ┘à╪│╪¿┘é ╪Ñ┘ä╪▓╪º┘à┘è: mapping ╪º┘ä┘Ç event type ╪Ñ┘ä┘ë ┘é┘è┘à ╪º┘ä┘Ç enum ╪º┘ä╪╡╪º┘ä╪¡╪⌐
+#### 🔴 شرط مسبق إلزامي: mapping الـ event type إلى قيم الـ enum الصالحة
 
-> ΓÜá∩╕Å **╪¬╪¡╪░┘è╪▒ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐**: ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘Ç enum ╪º┘ä┘à┘ê╪¼┘ê╪»╪⌐ ┘ü┘è ╪º┘ä┘Ç schema (`WhatsAppNotificationLogsEventType` / `WhatsAppNotificationQueueEventType`╪î `schema.prisma:3669` ┘ê `3832`) ╪¬╪¡╪¬┘ê┘è ╪╣┘ä┘ë `ORDER_RETURNED`╪î `ORDER_REFUNDED`╪î `RETURNED_TO_SENDER`╪î `PARTIAL_REFUND`╪î `REFUND_PROCESSING` ΓÇö ┘ä┘â┘å `getPersistedNotificationEventType` (`WhatsAppNotificationService.js:1064`) **┘ä╪º ┘è╪¡┘ê┘æ┘ä** `RETURNED` ╪º┘ä╪«╪º┘à ╪Ñ┘ä┘ë `ORDER_RETURNED`. ╪º┘ä┘å╪¬┘è╪¼╪⌐: ┘ä┘ê ┘à╪▒┘æ╪▒┘å╪º `notificationStatus = 'RETURNED'` ┘à╪¿╪º╪┤╪▒╪⌐╪î ╪º┘ä╪Ñ╪»╪▒╪º╪¼ ┘ü┘è `whatsAppNotificationLog`/`whatsAppNotificationQueue` ╪│┘è┘ü╪┤┘ä (┘é┘è┘à╪⌐ enum ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐) ΓåÆ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘è╪╢┘è╪╣ ╪╡╪º┘à╪¬╪º┘ï.
+> ⚠️ **تحذير من مراجعة ثانية**: الحالات الـ enum الموجودة في الـ schema (`WhatsAppNotificationLogsEventType` / `WhatsAppNotificationQueueEventType`، `schema.prisma:3669` و `3832`) تحتوي على `ORDER_RETURNED`، `ORDER_REFUNDED`، `RETURNED_TO_SENDER`، `PARTIAL_REFUND`، `REFUND_PROCESSING` — لكن `getPersistedNotificationEventType` (`WhatsAppNotificationService.js:1064`) **لا يحوّل** `RETURNED` الخام إلى `ORDER_RETURNED`. النتيجة: لو مرّرنا `notificationStatus = 'RETURNED'` مباشرة، الإدراج في `whatsAppNotificationLog`/`whatsAppNotificationQueue` سيفشل (قيمة enum غير صالحة) → الإشعار يضيع صامتاً.
 
-**╪Ñ╪¼╪▒╪º╪í ╪Ñ┘ä╪▓╪º┘à┘è (┘é╪¿┘ä ╪ú┘ê ┘à╪╣ ┬º2.1)**: ╪ú╪╢┘ü mapping ┘ü┘è `getPersistedNotificationEventType` (`WhatsAppNotificationService.js:1017`):
+**إجراء إلزامي (قبل أو مع §2.1)**: أضف mapping في `getPersistedNotificationEventType` (`WhatsAppNotificationService.js:1017`):
 
 ```js
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º2.1-pre):
-// ╪¡┘ê┘ä raw order status codes ╪Ñ┘ä┘ë ┘é┘è┘à enum ╪╡╪º┘ä╪¡╪⌐ ┘ä┘Ç WhatsAppNotificationLog/Queue.
-// ╪º┘ä┘Ç enums ╪¬╪¡╪¬┘ê┘è ╪¿╪º┘ä┘ü╪╣┘ä ╪╣┘ä┘ë ORDER_RETURNED/ORDER_REFUNDED/PARTIAL_REFUND/RETURNED_TO_SENDER/REFUND_PROCESSING.
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1-pre):
+// حول raw order status codes إلى قيم enum صالحة لـ WhatsAppNotificationLog/Queue.
+// الـ enums تحتوي بالفعل على ORDER_RETURNED/ORDER_REFUNDED/PARTIAL_REFUND/RETURNED_TO_SENDER/REFUND_PROCESSING.
 const ORDER_STATUS_TO_EVENT_TYPE = {
   RETURNED: 'ORDER_RETURNED',
-  PARTIALLY_RETURNED: 'ORDER_RETURNED',   // ╪ú┘ê 'PARTIAL_REFUND' ╪¡╪│╪¿ ╪º┘ä╪▒╪║╪¿╪⌐ ┘ü┘è ╪º┘ä╪¬┘à┘è┘è╪▓
+  PARTIALLY_RETURNED: 'ORDER_RETURNED',   // أو 'PARTIAL_REFUND' حسب الرغبة في التمييز
   REFUNDED: 'ORDER_REFUNDED',
   PARTIALLY_REFUNDED: 'PARTIAL_REFUND',
-  EXCHANGED: 'ORDER_RETURNED',            // ┘ä╪º ┘è┘ê╪¼╪» EXCHANGED ┘à┘å┘ü╪╡┘ä╪¢ ╪º╪│╪¬╪«╪»┘à ORDER_RETURNED ╪ú┘ê ╪ú╪╢┘ü enum ╪¼╪»┘è╪»
+  EXCHANGED: 'ORDER_RETURNED',            // لا يوجد EXCHANGED منفصل؛ استخدم ORDER_RETURNED أو أضف enum جديد
 };
 
 function getPersistedNotificationEventType(eventType) {
@@ -442,7 +442,7 @@ function getPersistedNotificationEventType(eventType) {
     return 'ANNOUNCEMENT';
   }
   const upper = String(eventType || '').toUpperCase();
-  // ≡ƒÜ¿ NEW: map raw order status codes to valid enum values
+  // 🚨 NEW: map raw order status codes to valid enum values
   if (ORDER_STATUS_TO_EVENT_TYPE[upper]) {
     return ORDER_STATUS_TO_EVENT_TYPE[upper];
   }
@@ -450,27 +450,27 @@ function getPersistedNotificationEventType(eventType) {
 }
 ```
 
-> **┘é╪▒╪º╪▒ ╪¬╪╡┘à┘è┘à┘è ┘à╪╖┘ä┘ê╪¿**: `EXCHANGED` ┘ê `PARTIALLY_RETURNED` ┘ä┘è╪│ ┘ä┘ç┘à╪º ┘à┘é╪º╪¿┘ä ┘à╪¿╪º╪┤╪▒ ┘ü┘è ╪º┘ä┘Ç enum. ╪º┘ä╪«┘è╪º╪▒╪º╪¬: (╪ú) ╪º╪│╪¬╪«╪»╪º┘à `ORDER_RETURNED` ┘â┘Ç fallback╪î ╪ú┘ê (╪¿) ╪Ñ╪╢╪º┘ü╪⌐ ┘é┘è┘à enum ╪¼╪»┘è╪»╪⌐ ╪╣╪¿╪▒ migration. ╪│╪¼┘æ┘ä ╪º┘ä┘é╪▒╪º╪▒ ┘ü┘è ┬º8.
+> **قرار تصميمي مطلوب**: `EXCHANGED` و `PARTIALLY_RETURNED` ليس لهما مقابل مباشر في الـ enum. الخيارات: (أ) استخدام `ORDER_RETURNED` كـ fallback، أو (ب) إضافة قيم enum جديدة عبر migration. سجّل القرار في §8.
 
-**╪º┘ä┘â┘ê╪» ╪¿╪╣╪» ╪º┘ä╪Ñ╪╡┘ä╪º╪¡** (╪º┘ä╪«┘è╪º╪▒ ╪º┘ä┘à┘ê╪╡┘ë ╪¿┘ç ΓÇö ╪¬┘ü┘ê┘è╪╢ ┘â╪º┘à┘ä╪î **╪¿╪»┘ê┘å `contains`**):
+**الكود بعد الإصلاح** (الخيار الموصى به — تفويض كامل، **بدون `contains`**):
 
 ```js
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º2.1):
-// ┘ä╪º ╪¬╪¡╪¼╪¿ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ç┘å╪º ΓÇö ╪»╪╣ sendOrderStatusNotification ┘è┘é╪▒╪▒ ╪╣╪¿╪▒:
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
+// لا تحجب الإشعارات هنا — دع sendOrderStatusNotification يقرر عبر:
 //   1) DB OrderStatusConfig.notifyCustomer
-//   2) ╪«╪▒┘è╪╖╪¬┘ç ╪º┘ä╪«╪º╪╡╪⌐ ╪º┘ä╪ú┘ê╪│╪╣
+//   2) خريطته الخاصة الأوسع
 //   3) fallback isFallback
-// ╪º┘ä╪º╪¡╪¬┘ü╪º╪╕ ╪¿┘Ç normalizeWhatsAppOrderStatus ┘ü┘é╪╖ ┘ä┘ä╪¬╪╖╪¿┘è╪╣ (PREPARINGΓåÆPICKING).
+// الاحتفاظ بـ normalizeWhatsAppOrderStatus فقط للتطبيع (PREPARING→PICKING).
 const notificationStatus = normalizeWhatsAppOrderStatus(status) || status;
 
-// dedup 10s ΓÇö ╪º╪│╪¬╪«╪»┘à ╪º┘ä┘Ç eventType ╪º┘ä┘à┘Å╪¡┘ê┘æ┘ä (┘à┘ê╪¡┘æ╪» ╪╣╪¿╪▒ getPersistedNotificationEventType)
-// ┘â┘à┘ü╪¬╪º╪¡╪î ┘à╪╣ ┘à╪╖╪º╪¿┘é╪⌐ ╪¬╪º┘à╪⌐ (┘ä┘è╪│ contains) ┘ä╪¬┘ü╪º╪»┘è STATUS_1/STATUS_10 false match.
-// (╪▒╪º╪¼╪╣ ┬º3.1: ┘ä╪º╪¡┘é┘ï╪º ┘è╪│╪¬╪¿╪»┘ä ┘ç╪░╪º ╪¿╪º┘ä┘Ç helper ╪º┘ä┘à┘ê╪¡┘æ╪» isDuplicateNotification)
+// dedup 10s — استخدم الـ eventType المُحوّل (موحّد عبر getPersistedNotificationEventType)
+// كمفتاح، مع مطابقة تامة (ليس contains) لتفادي STATUS_1/STATUS_10 false match.
+// (راجع §3.1: لاحقًا يستبدل هذا بالـ helper الموحّد isDuplicateNotification)
 const persistedEventType = getPersistedNotificationEventType(notificationStatus);
 const recent = await prisma.whatsAppNotificationLog.findFirst({
   where: {
     orderId: order.id,
-    eventType: persistedEventType,   // ΓåÉ ╪¬╪╖╪º╪¿┘é ╪¬╪º┘à (equals)
+    eventType: persistedEventType,   // ← تطابق تام (equals)
     createdAt: { gte: new Date(Date.now() - 10000) },
   },
   select: { id: true },
@@ -484,53 +484,53 @@ try {
   await WhatsAppNotificationService.sendOrderStatusNotification(order, notificationStatus);
 } catch (notifErr) {
   console.error('[ORDER] status notification failed:', notifErr.message);
-  // ┘ä╪º ╪¬╪▒┘à┘É ΓÇö ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘ü╪┤┘ä ┘ä┘â┘å ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¡╪º┘ä╪⌐ ┘å╪¼╪¡
+  // لا ترمِ — الإشعار فشل لكن تحديث الحالة نجح
 }
 ```
 
-> ΓÜá∩╕Å **╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐**: ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ┘à┘å ┘ç╪░╪º ╪º┘ä┘â┘ê╪» ╪º╪│╪¬╪«╪»┘à╪¬ `eventType: { contains: notificationStatus }` ΓÇö ┘ç╪░╪º ┘è╪╣┘è╪» ╪Ñ╪»╪«╪º┘ä ┘å┘ü╪│ ╪╣┘è╪¿ ┬º3.1 (┘à╪╖╪º╪¿┘é╪⌐ ┘â╪º╪░╪¿╪⌐ `STATUS_1`/`STATUS_10`). ╪º╪│╪¬╪«╪»┘à ╪º┘ä╪¬╪╖╪º╪¿┘é ╪º┘ä╪¬╪º┘à ╪╣┘ä┘ë `persistedEventType` ╪º┘ä┘à╪¡┘ê┘æ┘ä.
+> ⚠️ **تصحيح من مراجعة ثانية**: النسخة الأولى من هذا الكود استخدمت `eventType: { contains: notificationStatus }` — هذا يعيد إدخال نفس عيب §3.1 (مطابقة كاذبة `STATUS_1`/`STATUS_10`). استخدم التطابق التام على `persistedEventType` المحوّل.
 
-#### ΓÜá∩╕Å ╪¬┘å╪¿┘è┘ç╪º╪¬
-- **╪▒╪º╪¼╪╣ `sendOrderStatusNotification` (WhatsAppNotificationService.js:2714)** ┘ä╪¬╪ú┘â┘è╪» ╪ú┘å┘ç ┘è╪¬╪╣╪º┘à┘ä ┘à╪╣ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à╪▒╪│┘ê┘à╪⌐ ╪¿┘Ç fallback ╪ó┘à┘å (┘ä╪º ┘è╪▒┘à┘è). ┘ä┘ê ┘è╪▒┘à┘è╪î ╪ú╪╢┘ü `try/catch` ╪»╪º╪«┘ä┘è + ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪¡╪º┘ä╪⌐ `null` ╪¿╪»┘ä `throw`.
-- **╪º┘ü╪¡╪╡ `orderStatusConfig.notifyCustomer`**: ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘ä┘è `notifyCustomer: false` ┘è╪¼╪¿ ╪ú┘ä╪º ╪¬┘Å╪▒╪│┘ä ╪¡╪¬┘ë ╪¿╪╣╪» ╪º┘ä╪¬┘ü┘ê┘è╪╢. ╪¬╪ú┘â╪» ╪Ñ┘å `sendOrderStatusNotification` ┘è╪¡╪¬╪▒┘à ┘ç╪░╪º ╪º┘ä╪¡┘é┘ä (╪▒╪º╪¼╪╣ L~2730).
-- **╪º╪«╪¬╪¿╪º╪▒ ╪º┘ä╪º┘å╪¡╪»╪º╪▒**: ┘é╪¿┘ä ╪º┘ä╪Ñ╪╡┘ä╪º╪¡╪î RETURNED ┘â╪º┘å ┘è┘Å╪¬╪«╪╖┘ë ╪¿╪╡┘à╪¬. ╪¿╪╣╪» ╪º┘ä╪Ñ╪╡┘ä╪º╪¡ ┘é╪» ┘è╪¿╪»╪ú ╪º┘ä╪Ñ╪▒╪│╪º┘ä ΓÇö ╪¬╪ú┘â╪» ┘à┘å ┘ê╪¼┘ê╪» ┘é╪º┘ä╪¿ DB ┘ä┘â┘ä ╪¡╪º┘ä╪⌐ `notifyCustomer: true` (╪º╪│╪¬╪«╪»┘à `seedDefaultOrderTemplates`).
+#### ⚠️ تنبيهات
+- **راجع `sendOrderStatusNotification` (WhatsAppNotificationService.js:2714)** لتأكيد أنه يتعامل مع الحالات غير المرسومة بـ fallback آمن (لا يرمي). لو يرمي، أضف `try/catch` داخلي + إعادة الحالة `null` بدل `throw`.
+- **افحص `orderStatusConfig.notifyCustomer`**: الحالات اللي `notifyCustomer: false` يجب ألا تُرسل حتى بعد التفويض. تأكد إن `sendOrderStatusNotification` يحترم هذا الحقل (راجع L~2730).
+- **اختبار الانحدار**: قبل الإصلاح، RETURNED كان يُتخطى بصمت. بعد الإصلاح قد يبدأ الإرسال — تأكد من وجود قالب DB لكل حالة `notifyCustomer: true` (استخدم `seedDefaultOrderTemplates`).
 
-**┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡ ┬º2.1**:
-- [ ] ╪╖┘ä╪¿ ┘è┘Å╪║┘è┘æ╪▒ ┘ä┘Ç `RETURNED` ┘à╪╣ `OrderStatusConfig.notifyCustomer: true` ΓåÆ ╪º┘ä╪╣┘à┘è┘ä ┘è╪¬┘ä┘é┘ë ╪Ñ╪┤╪╣╪º╪▒╪º┘ï.
-- [ ] ≡ƒƒí ╪╖┘ä╪¿ ┘è┘Å╪║┘è┘æ╪▒ ┘ä┘Ç `RETURNED` ╪«┘ä╪º┘ä **quiet-hours** (┘è╪»╪«┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒) ΓåÆ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘è╪╡┘ä ╪ú┘è╪╢┘ï╪º ╪╣╪¿╪▒ ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪¿╪╣╪» ┘å┘ç╪º┘è╪⌐ ╪º┘ä┘ç╪»┘ê╪í. (┘ä╪ú┘å ┘à╪│╪º╪▒ ╪º┘ä┘Ç queue ┘è╪│╪¬╪«╪»┘à `getPersistedNotificationEventType` ╪ú┘è╪╢┘ï╪º ┘ü┘è `:3493`╪î ┘ü╪º┘ä╪¡┘ä ╪┤╪º┘à┘ä╪¢ ┘è╪│╪¬╪¡┘é ╪º╪«╪¬╪¿╪º╪▒┘ï╪º ╪╡╪▒┘è╪¡┘ï╪º.)
-- [ ] ╪╖┘ä╪¿ ┘è┘Å╪║┘è┘æ╪▒ ┘ä╪¡╪º┘ä╪⌐ `notifyCustomer: false` ΓåÆ ┘ä╪º ╪Ñ╪┤╪╣╪º╪▒ (┘à╪¡╪¬╪▒┘à).
-- [ ] ┘ä╪º ╪¬┘â╪▒╪º╪▒ ╪Ñ╪┤╪╣╪º╪▒ ┘ä┘å┘ü╪│ ╪º┘ä╪¬╪║┘è┘è╪▒ ╪«┘ä╪º┘ä 10╪½.
-- [ ] ┘ä╪º ╪º┘å╪¡╪»╪º╪▒ ┘ä┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘Ç 8 ╪º┘ä┘à╪▒╪│┘ê┘à╪⌐ ╪ú╪╡┘ä╪º┘ï.
+**معايير النجاح §2.1**:
+- [ ] طلب يُغيّر لـ `RETURNED` مع `OrderStatusConfig.notifyCustomer: true` → العميل يتلقى إشعاراً.
+- [ ] 🟡 طلب يُغيّر لـ `RETURNED` خلال **quiet-hours** (يدخل الطابور) → الإشعار يصل أيضًا عبر الطابور بعد نهاية الهدوء. (لأن مسار الـ queue يستخدم `getPersistedNotificationEventType` أيضًا في `:3493`، فالحل شامل؛ يستحق اختبارًا صريحًا.)
+- [ ] طلب يُغيّر لحالة `notifyCustomer: false` → لا إشعار (محترم).
+- [ ] لا تكرار إشعار لنفس التغيير خلال 10ث.
+- [ ] لا انحدار للحالات الـ 8 المرسومة أصلاً.
 
-**╪«╪╖╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ┬º2.1**: `git checkout -- services/orderService.js`.
+**خطة التراجع §2.1**: `git checkout -- services/orderService.js`.
 
 ---
 
-### ≡ƒö┤ 2.2 ╪Ñ╪▓╪º┘ä╪⌐ ┘ç╪º╪▒╪»┘â┘ê╪» ╪╣┘ä╪º┘à╪⌐ "Mokhtar Elhenawy" + ╪º┘ä╪▒┘ê╪º╪¿╪╖
+### 🔴 2.2 إزالة هاردكود علامة "Mokhtar Elhenawy" + الروابط
 
-**╪º┘ä╪¼╪░╪▒**: ┘à┘å╪╡╪⌐ SaaS ┘à╪¬╪╣╪»╪»╪⌐ ╪º┘ä┘à╪│╪¬╪ú╪¼╪▒┘è┘å ╪¬╪▒╪│┘ä ╪º╪│┘à/╪▒┘ê╪º╪¿╪╖ ╪┤╪▒┘â╪⌐ ┘à╪¡╪»╪»╪⌐ ┘ä┘â┘ä ╪º┘ä╪╣┘à┘ä╪º╪í.
+**الجذر**: منصة SaaS متعددة المستأجرين ترسل اسم/روابط شركة محددة لكل العملاء.
 
-| ╪º┘ä┘à┘ä┘ü:╪º┘ä╪│╪╖╪▒ | ╪º┘ä┘ç╪º╪▒╪»┘â┘ê╪» |
+| الملف:السطر | الهاردكود |
 |-------------|-----------|
 | `WhatsAppNotificationService.js:49` | `footer: "Mokhtar Elhenawy Store"` |
 | `WhatsAppNotificationService.js:2331` | `"Mokhtar Elhenawy Store"` |
 | `WhatsAppNotificationService.js:2136` | `https://mokhtarelhenawy.online/track/...` |
 | `WhatsAppNotificationService.js:2658` | `https://${company.slug}.mokhtarelhenawy.online` |
 
-**╪º┘ä╪¡┘ä**: ╪º╪│╪¬╪¿╪»┘ä ╪¿┘Ç `company.name` + `company.customDomain`/`company.website` ┘à┘å DB╪î ┘à╪╣ fallback ╪╣╪º┘à ┘à╪¡╪º┘è╪».
+**الحل**: استبدل بـ `company.name` + `company.customDomain`/`company.website` من DB، مع fallback عام محايد.
 
-**╪º┘ä┘â┘ê╪» ╪º┘ä┘à┘é╪¬╪▒╪¡** (╪»╪º┘ä╪⌐ ┘à╪│╪º╪╣╪»╪⌐ ┘ü┘è ╪ú╪╣┘ä┘ë ╪º┘ä┘à┘ä┘ü):
+**الكود المقترح** (دالة مساعدة في أعلى الملف):
 
-> ≡ƒƒí **╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐**: ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ╪º╪│╪¬╪«╪»┘à╪¬ `displayName`/`domain`/`websiteUrl` ΓÇö **┘ç╪░┘ç ╪º┘ä╪¡┘é┘ê┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐** ┘ü┘è ┘å┘à┘ê╪░╪¼ `Company` (`schema.prisma:1900`). ╪º┘ä╪¡┘é┘ê┘ä ╪º┘ä┘ü╪╣┘ä┘è╪⌐ ╪º┘ä┘à╪ñ┘â╪»╪⌐: `name` (`:1902`╪î ╪║┘è╪▒ nullable)╪î `website` (`:1905`╪î String╪ƒ)╪î `slug` (`:1913`╪î @unique)╪î `customDomain` (`:1928`╪î @unique).
+> 🟡 **تصحيح من مراجعة ثانية**: النسخة الأولى استخدمت `displayName`/`domain`/`websiteUrl` — **هذه الحقول غير موجودة** في نموذج `Company` (`schema.prisma:1900`). الحقول الفعلية المؤكدة: `name` (`:1902`، غير nullable)، `website` (`:1905`، String؟)، `slug` (`:1913`، @unique)، `customDomain` (`:1928`، @unique).
 
 ```js
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º2.2): multi-tenant brand resolution
-// ╪¡┘é┘ê┘ä Company ╪º┘ä┘à╪ñ┘â╪»╪⌐ (schema.prisma): name, website?, slug?, customDomain?
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §2.2): multi-tenant brand resolution
+// حقول Company المؤكدة (schema.prisma): name, website?, slug?, customDomain?
 function resolveCompanyBrand(company) {
-  // company ┘é╪» ┘è┘â┘ê┘å undefined ┘ü┘è ╪│┘è╪º┘é╪º╪¬ ┘à╪╣┘è┘å╪⌐ ΓÇö fallback ┘à╪¡╪º┘è╪»
+  // company قد يكون undefined في سياقات معينة — fallback محايد
   const name = company?.name || 'Store';
   const slug = company?.slug || 'store';
-  // ╪ú┘ê┘ä┘ê┘è╪⌐: customDomain (╪º┘ä┘å╪╖╪º┘é ╪º┘ä┘à╪«╪╡╪╡) ΓåÆ website ΓåÆ slug.platformDomain
+  // أولوية: customDomain (النطاق المخصص) → website → slug.platformDomain
   const customDomain = company?.customDomain?.trim() || null;
   const websiteHost = company?.website
     ? String(company.website).replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim()
@@ -542,41 +542,41 @@ function resolveCompanyBrand(company) {
   return { name, domain, trackingBaseUrl: `https://${domain}` };
 }
 
-// ┘à┘â╪º┘å ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à:
+// مكان الاستخدام:
 // footer: resolveCompanyBrand(company).name
 // trackingLink: variables.trackingLink ||
 //   (variables.orderNumber ? `${brand.trackingBaseUrl}/track/${variables.orderNumber}` : '')
 ```
 
-#### ΓÜá∩╕Å ╪¬┘å╪¿┘è┘ç╪º╪¬
-- **╪º┘ä╪¿╪¡╪½ ╪º┘ä╪┤╪º┘à┘ä**: ╪¿╪╣╪» ╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä╪î ╪┤╪║┘æ┘ä `grep -rn "Mokhtar Elhenawy\|mokhtarelhenawy" apps/backend/services/whatsapp/` ┘ä┘ä╪¬╪ú┘â╪» ┘à┘å ╪╣╪»┘à ╪¿┘é╪º╪í ╪ú┘è ╪╕┘ç┘ê╪▒.
-- **╪º╪«╪¬╪▒╪º┘é ╪º┘ä╪╣┘ä╪º┘à╪⌐ ╪º┘ä┘é╪»┘è┘à╪⌐**: ╪┤╪▒┘â╪⌐ Mokhtar ╪º┘ä╪¡┘é┘è┘é┘è╪⌐ ┘è╪¼╪¿ ╪ú┘å ╪¬╪▒┘ë ╪º╪│┘à┘ç╪º ╪º┘ä╪╡╪¡┘è╪¡ ┘à┘å DB (`company.name === 'Mokhtar Elhenawy Store'`) ΓÇö ╪¬╪ú┘â╪» ╪Ñ┘å ╪│╪¼┘ä┘ç╪º ┘ü┘è DB ┘è╪¡┘ê┘è ╪º┘ä╪º╪│┘à ╪º┘ä╪╡╪¡┘è╪¡╪î ┘ê╪Ñ┘ä╪º ╪¡╪»┘æ╪½ ╪º┘ä╪│╪¼┘ä.
-- **`customDomain` ╪¿╪»┘ê┘å ╪¿╪▒┘ê╪¬┘ê┘â┘ê┘ä**: ╪º┘ä╪¡┘é┘ä ┘è┘Å╪«╪▓┘Ä┘æ┘å ╪╣╪º╪»╪⌐┘ï ╪¿╪»┘ê┘å `https://`╪¢ ╪º┘ä┘Ç helper ╪ú╪╣┘ä╪º┘ç ┘è╪╢┘è┘ü ╪º┘ä╪¿╪▒┘ê╪¬┘ê┘â┘ê┘ä. ╪¬╪¡┘é┘é ┘à┘å ╪╡┘è╪║╪⌐ ╪º┘ä╪¬╪«╪▓┘è┘å ╪º┘ä┘ü╪╣┘ä┘è╪⌐ ┘ü┘è ╪º┘ä╪Ñ┘å╪¬╪º╪¼ ┘é╪¿┘ä ╪º┘ä╪º╪╣╪¬┘à╪º╪».
+#### ⚠️ تنبيهات
+- **البحث الشامل**: بعد الاستبدال، شغّل `grep -rn "Mokhtar Elhenawy\|mokhtarelhenawy" apps/backend/services/whatsapp/` للتأكد من عدم بقاء أي ظهور.
+- **اختراق العلامة القديمة**: شركة Mokhtar الحقيقية يجب أن ترى اسمها الصحيح من DB (`company.name === 'Mokhtar Elhenawy Store'`) — تأكد إن سجلها في DB يحوي الاسم الصحيح، وإلا حدّث السجل.
+- **`customDomain` بدون بروتوكول**: الحقل يُخزَّن عادةً بدون `https://`؛ الـ helper أعلاه يضيف البروتوكول. تحقق من صيغة التخزين الفعلية في الإنتاج قبل الاعتماد.
 
-**┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡ ┬º2.2**:
-- [ ] ╪┤╪▒┘â╪⌐ ╪¼╪»┘è╪»╪⌐ ╪¬╪▒┘ë ╪º╪│┘à┘ç╪º + ┘å╪╖╪º┘é┘ç╪º ┘ü┘è ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬╪î ┘ä╪º ╪º╪│┘à Mokhtar.
-- [ ] ╪┤╪▒┘â╪⌐ Mokhtar ╪¬╪▒┘ë ╪º╪│┘à┘ç╪º ╪º┘ä╪╡╪¡┘è╪¡ (┘à┘å DB).
-- [ ] `grep -rn "mokhtarelhenawy" apps/backend/services/whatsapp/` ΓåÆ ┘ä╪º ╪╕┘ç┘ê╪▒ (╪¿╪╣╪» ╪º╪│╪¬╪½┘å╪º╪í╪º╪¬ migration/seed).
-- [ ] ┘ä╪º ╪º┘å┘â╪│╪º╪▒ ┘ü┘è ╪▒┘ê╪º╪¿╪╖ ╪º┘ä╪¬╪¬╪¿╪╣ ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘é╪»┘è┘à╪⌐.
+**معايير النجاح §2.2**:
+- [ ] شركة جديدة ترى اسمها + نطاقها في الإشعارات، لا اسم Mokhtar.
+- [ ] شركة Mokhtar ترى اسمها الصحيح (من DB).
+- [ ] `grep -rn "mokhtarelhenawy" apps/backend/services/whatsapp/` → لا ظهور (بعد استثناءات migration/seed).
+- [ ] لا انكسار في روابط التتبع للطلبات القديمة.
 
-**╪«╪╖╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ┬º2.2**: `git checkout -- services/whatsapp/WhatsAppNotificationService.js`.
+**خطة التراجع §2.2**: `git checkout -- services/whatsapp/WhatsAppNotificationService.js`.
 
 ---
 
-## 5. ╪º┘ä┘à╪▒╪¡┘ä╪⌐ 3ΓÇô5: ╪¬╪¡╪│┘è┘å╪º╪¬ ╪╣╪º┘ä┘è╪⌐/┘à╪¬┘ê╪│╪╖╪⌐ ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐
+## 5. المرحلة 3–5: تحسينات عالية/متوسطة الأولوية
 
-### ≡ƒƒá 3.1 ╪¬┘ê╪¡┘è╪» ╪º┘ä┘Ç dedup + ┘é┘è╪» DB ┘ü╪▒┘è╪» (┘è╪¡┘ä ╪º┘ä┘à╪┤╪º┘â┘ä #5 ┘ê #6)
+### 🟠 3.1 توحيد الـ dedup + قيد DB فريد (يحل المشاكل #5 و #6)
 
-**╪º┘ä╪¼╪░╪▒**: ╪º┘ä┘Ç dedup ┘à┘å╪│┘ê╪« ┘ü┘è 4 ╪ú┘à╪º┘â┘å ╪¿┘à┘å╪╖┘é ┘à╪¬┘å╪º┘é╪╢ + ┘å╪º┘ü╪░╪⌐ 10╪½ ┘ü┘é╪╖ (┘ä╪º `idempotency key` ╪¡┘é┘è┘é┘è).
+**الجذر**: الـ dedup منسوخ في 4 أماكن بمنطق متناقض + نافذة 10ث فقط (لا `idempotency key` حقيقي).
 
-**╪º┘ä┘à┘ê╪º┘é╪╣**:
-1. `WhatsAppNotificationService.js:2671` ΓÇö key: `orderId`+`ORDER_CREATED`
-2. `orderService.js:1230` ΓÇö key: `orderId`+`eventType`
-3. `orderService.js:1460` ΓÇö key: `recipientPhone`+`eventType` (guest)
-4. `orderWorkflowService.js:610` ΓÇö key: `eventType contains statusCode` (╪º┘ä╪ú╪╢╪╣┘ü ΓÇö ┘à╪╖╪º╪¿┘é╪⌐ ┘â╪º╪░╪¿╪⌐ ┘à╪¡╪¬┘à┘ä╪⌐)
+**المواقع**:
+1. `WhatsAppNotificationService.js:2671` — key: `orderId`+`ORDER_CREATED`
+2. `orderService.js:1230` — key: `orderId`+`eventType`
+3. `orderService.js:1460` — key: `recipientPhone`+`eventType` (guest)
+4. `orderWorkflowService.js:610` — key: `eventType contains statusCode` (الأضعف — مطابقة كاذبة محتملة)
 
-**╪º┘ä╪¡┘ä**:
-1. **╪ú┘å╪┤╪ª ╪»╪º┘ä╪⌐ ┘à╪│╪º╪╣╪»╪⌐ ┘à┘ê╪¡┘æ╪»╪⌐** ┘ü┘è `WhatsAppNotificationService.js`:
+**الحل**:
+1. **أنشئ دالة مساعدة موحّدة** في `WhatsAppNotificationService.js`:
    ```js
    async function isDuplicateNotification({ companyId, orderId, recipientPhone, eventType, windowMs = 10000 }) {
      const prisma = getSharedPrismaClient();
@@ -593,146 +593,146 @@ function resolveCompanyBrand(company) {
      return Boolean(found);
    }
    ```
-2. **╪º╪│╪¬╪¿╪»┘ä** ┘â┘ä ╪º┘ä┘Ç 4 ┘à┘ê╪º┘é╪╣ ╪¿┘ç╪░┘ç ╪º┘ä╪»╪º┘ä╪⌐ (╪ú┘ê ╪╡┘Ä╪»┘É┘æ╪▒┘ç╪º ┘à┘å┘ç╪º).
-3. **╪ú╪╢┘ü ┘é┘è╪» DB ┘ü╪▒┘è╪»** (migration):
+2. **استبدل** كل الـ 4 مواقع بهذه الدالة (أو صَدِّرها منها).
+3. **أضف قيد DB فريد** (migration):
    ```prisma
-   // ┘ü┘è WhatsAppNotificationLog:
+   // في WhatsAppNotificationLog:
    @@unique([companyId, orderId, eventType], map: "notif_log_order_event_uniq")
-   // ┘à┘ä╪º╪¡╪╕╪⌐: ╪º╪│╪¬╪«╪»┘à partial unique index ┘ä┘ê ┘ä╪º╪▓┘à ╪º┘ä╪│┘à╪º╪¡ ╪¿╪Ñ╪╣╪º╪»╪⌐ ┘à╪¡╪º┘ê┘ä╪⌐ ╪¿╪╣╪» ┘ü╪┤┘ä:
+   // ملاحظة: استخدم partial unique index لو لازم السماح بإعادة محاولة بعد فشل:
    // CREATE UNIQUE INDEX ... WHERE status = 'SENT'
    ```
 
-#### ≡ƒöÆ ╪º┘ä┘é╪▒╪º╪▒ ╪º┘ä┘å┘ç╪º╪ª┘è (╪¿╪╣╪» ╪º┘ä╪¬┘å┘ü┘è╪░)
+#### 🔒 القرار النهائي (بعد التنفيذ)
 
-> **╪▒┘Å┘ü╪╢ ╪º┘ä┘é┘è╪» ╪º┘ä┘ü╪▒┘è╪» ╪º┘ä╪»╪º╪ª┘à** ΓÇö ╪¬┘à ╪º╪╣╪¬┘à╪º╪» `isDuplicateNotification` ╪¿┘å╪º┘ü╪░╪⌐ ╪▓┘à┘å┘è╪⌐ (10 ╪½┘ê╪º┘å┘ì) ┘ü┘é╪╖╪î ┘ê**┘ä╪º migration ┘à╪╖┘ä┘ê╪¿╪⌐**.
-> **╪º┘ä╪│╪¿╪¿**: ╪º┘ä┘é┘è╪» ╪º┘ä╪»╪º╪ª┘à ╪╣┘ä┘ë `(companyId, orderId, eventType)` ┘è┘à┘å╪╣ ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘à╪┤╪▒┘ê╪╣╪⌐ ╪¿╪╣╪» ╪º┘å╪¬┘ç╪º╪í ╪º┘ä┘å╪º┘ü╪░╪⌐ ╪º┘ä╪▓┘à┘å┘è╪⌐ ΓÇö ┘à╪½┘ä╪º┘ï flip-flop `CONFIRMED ΓåÆ CANCELLED ΓåÆ CONFIRMED` ╪¿╪╣╪» >10╪½: ╪ú┘ê┘ä `CONFIRMED` ╪ú╪╡╪¿╪¡ `SENT` ┘ü┘è╪¿┘é┘ë ╪º┘ä┘é┘è╪» (╪¡╪¬┘ë partial ╪╣┘ä┘ë `status='SENT'`) ┘è╪▒┘ü╪╢ ╪º┘ä┘Ç CONFIRMED ╪º┘ä╪½╪º┘å┘è ╪▒╪║┘à ╪ú┘å┘ç ╪Ñ╪┤╪╣╪º╪▒ ┘à╪┤╪▒┘ê╪╣ ┘ä╪º╪¡┘é. ╪º┘ä┘Ç dedup ┘ç┘å╪º **╪▓┘à┘å┘è ╪¿╪╖╪¿┘è╪╣╪¬┘ç** (┘å╪º┘ü╪░╪⌐)╪î ┘ä╪░╪º ╪º┘ä╪ó┘ä┘è╪⌐ ╪º┘ä╪╡╪¡┘è╪¡╪⌐ ┘ç┘è ┘ü╪¡╪╡ ╪º┘ä┘å╪º┘ü╪░╪⌐ ┘ü┘è ╪╖╪¿┘é╪⌐ ╪º┘ä╪¬╪╖╪¿┘è┘é ╪º┘ä┘à┘ê╪¡┘æ╪» ΓÇö ┘ê┘ä┘è╪│ ┘é┘è╪»╪º┘ï DB ╪»╪º╪ª┘à╪º┘ï.
+> **رُفض القيد الفريد الدائم** — تم اعتماد `isDuplicateNotification` بنافذة زمنية (10 ثوانٍ) فقط، و**لا migration مطلوبة**.
+> **السبب**: القيد الدائم على `(companyId, orderId, eventType)` يمنع إعادة الإرسال المشروعة بعد انتهاء النافذة الزمنية — مثلاً flip-flop `CONFIRMED → CANCELLED → CONFIRMED` بعد >10ث: أول `CONFIRMED` أصبح `SENT` فيبقى القيد (حتى partial على `status='SENT'`) يرفض الـ CONFIRMED الثاني رغم أنه إشعار مشروع لاحق. الـ dedup هنا **زمني بطبيعته** (نافذة)، لذا الآلية الصحيحة هي فحص النافذة في طبقة التطبيق الموحّد — وليس قيداً DB دائماً.
 
-#### ΓÜá∩╕Å ╪¬┘å╪¿┘è┘ç╪º╪¬
-- **╪º┘ä┘é┘è╪» ╪º┘ä┘ü╪▒┘è╪» ┘é╪» ┘è┘ü╪┤┘ä** ┘ä┘ê ┘ü┘è┘ç ╪╡┘ü┘ê┘ü ┘à┘â╪▒╪▒╪⌐ ┘à┘ê╪¼┘ê╪»╪⌐ ┘ü┘è ╪º┘ä╪Ñ┘å╪¬╪º╪¼. ╪┤╪║┘æ┘ä ╪│┘â╪▒╪¿╪¬ ╪¬┘å╪╕┘è┘ü ╪ú┘ê┘ä╪º┘ï. ≡ƒƒí **╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐**: ╪º╪│┘à ╪º┘ä╪¼╪»┘ê┘ä ╪º┘ä┘ü╪╣┘ä┘è `whatsapp_notification_logs` (**╪¼┘à╪╣**╪î `@@map` ┘ü┘è `schema.prisma`):
+#### ⚠️ تنبيهات
+- **القيد الفريد قد يفشل** لو فيه صفوف مكررة موجودة في الإنتاج. شغّل سكربت تنظيف أولاً. 🟡 **تصحيح من مراجعة ثانية**: اسم الجدول الفعلي `whatsapp_notification_logs` (**جمع**، `@@map` في `schema.prisma`):
   ```sql
   DELETE FROM "whatsapp_notification_logs" a USING "whatsapp_notification_logs" b
   WHERE a.id > b.id AND a."orderId" = b."orderId" AND a."eventType" = b."eventType"
     AND a."companyId" = b."companyId";
   ```
-- **╪▒╪º╪¼╪╣ ┘å┘à┘ê╪░╪¼ `WhatsAppNotificationLog`** ┘ä┘ä╪¬╪ú┘â╪» ┘à┘å ┘ê╪¼┘ê╪» `companyId`, `orderId`, `recipientPhone`, `eventType` ┘â╪ú╪╣┘à╪»╪⌐ (╪▒╪º╪¼╪╣ `schema.prisma:7090`).
-- **`orderWorkflowService.js:610`** ┘è╪│╪¬╪«╪»┘à `contains` ΓåÆ ╪º╪│╪¬╪¿╪»┘ä ╪¿┘à╪╖╪º╪¿┘é╪⌐ ╪¬╪º┘à╪⌐ (`equals`) ╪╣┘ä┘ë `persistedEventType` ╪º┘ä┘à╪¡┘ê┘æ┘ä (┘å┘ü╪│ ┘à┘å┘ç╪¼ ┬º2.1) ╪¿╪╣╪» ╪º┘ä╪¬┘ê╪¡┘è╪».
+- **راجع نموذج `WhatsAppNotificationLog`** للتأكد من وجود `companyId`, `orderId`, `recipientPhone`, `eventType` كأعمدة (راجع `schema.prisma:7090`).
+- **`orderWorkflowService.js:610`** يستخدم `contains` → استبدل بمطابقة تامة (`equals`) على `persistedEventType` المحوّل (نفس منهج §2.1) بعد التوحيد.
 
-**┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡ ┬º3.1**: flip-flop (CONFIRMEDΓåÆCANCELLEDΓåÆCONFIRMED) ╪«┘ä╪º┘ä > 10╪½ ┘ä╪º ┘è┘å╪¬╪¼ ╪Ñ╪┤╪╣╪º╪▒┘è┘å ┘à╪¬╪╖╪º╪¿┘é┘è┘å╪¢ ┘à╪╖╪º╪¿┘é╪⌐ ┘â╪º╪░╪¿╪⌐ `STATUS_1`/`STATUS_10` ┘à╪│╪¬╪¡┘è┘ä╪⌐.
+**معايير النجاح §3.1**: flip-flop (CONFIRMED→CANCELLED→CONFIRMED) خلال > 10ث لا ينتج إشعارين متطابقين؛ مطابقة كاذبة `STATUS_1`/`STATUS_10` مستحيلة.
 
 ---
 
-### ≡ƒƒá 4.1 ╪Ñ╪╢╪º┘ü╪⌐ retry ┘ä┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘ü┘ê╪▒┘è
+### 🟠 4.1 إضافة retry للإرسال الفوري
 
-**╪º┘ä╪¼╪░╪▒**: `sendNotification` catch (`:2387-2410`) ┘è╪│╪¼┘æ┘ä `FAILED` + ┘è╪¡╪│╪¿ `retryable` ┘ä┘â┘å ┘ä╪º ╪┤┘è╪í ┘è╪¬╪╡╪▒┘ü ╪╣┘ä┘è┘ç.
+**الجذر**: `sendNotification` catch (`:2387-2410`) يسجّل `FAILED` + يحسب `retryable` لكن لا شيء يتصرف عليه.
 
-#### ≡ƒö┤ ┘é┘è┘ê╪» ╪¬╪╡┘à┘è┘à┘è╪⌐ (╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐)
+#### 🔴 قيود تصميمية (تصحيح من مراجعة ثانية)
 
-> ΓÜá∩╕Å **╪¬╪¡╪░┘è╪▒ ┘à┘ç┘à**: ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ┘à┘å ┘ç╪░╪º ╪º┘ä┘é╪│┘à ╪º┘é╪¬╪▒╪¡╪¬ `scheduleNotification(...)` ┘ä┘ä┘Ç retry. ┘ä┘â┘å `scheduleNotification` (`WhatsAppNotificationService.js:2495-2519`) **┘è╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ┘ê┘è┘Å╪½╪¿┘æ╪¬┘ç╪º ┘ê┘é╪¬ ╪º┘ä╪¼╪»┘ê┘ä╪⌐** ΓÇö ┘ä┘ê ╪º┘ä╪¼┘ä╪│╪⌐ ┘à┘é╪╖┘ê╪╣╪⌐ ┘ê┘é╪¬ ╪º┘ä┘ü╪┤┘ä╪î ┘è╪▒╪¼╪╣ `{success: false, reason: 'no_session'}` **┘é╪¿┘ä** ╪ú┘å ┘è┘â╪¬╪¿ ╪╡┘ü┘ï╪º ┘ü┘è ╪º┘ä╪╖╪º╪¿┘ê╪▒. ╪º┘ä┘å╪¬┘è╪¼╪⌐: retry ┘ä┘ü╪┤┘ä ╪º┘ä╪¼┘ä╪│╪⌐ **╪╣╪»┘è┘à ╪º┘ä┘ü╪º╪ª╪»╪⌐** ╪¿┘ç╪░╪º ╪º┘ä╪ú╪│┘ä┘ê╪¿.
+> ⚠️ **تحذير مهم**: النسخة الأولى من هذا القسم اقترحت `scheduleNotification(...)` للـ retry. لكن `scheduleNotification` (`WhatsAppNotificationService.js:2495-2519`) **يحل الجلسة ويُثبّتها وقت الجدولة** — لو الجلسة مقطوعة وقت الفشل، يرجع `{success: false, reason: 'no_session'}` **قبل** أن يكتب صفًا في الطابور. النتيجة: retry لفشل الجلسة **عديم الفائدة** بهذا الأسلوب.
 >
-> **╪º┘ä╪Ñ╪╡┘ä╪º╪¡ ╪º┘ä┘à╪╖┘ä┘ê╪¿**: ╪º┘ä╪Ñ╪╡┘ä╪º╪¡ ╪º┘ä╪¡┘é┘è┘é┘è ┘ä┘ü╪┤┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ┘ç┘ê **╪¬╪ú╪¼┘è┘ä ╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ╪Ñ┘ä┘ë ┘ê┘é╪¬ ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐** ╪»╪º╪«┘ä `processNotificationQueue` (┘ê┘ä┘è╪│ ┘ê┘é╪¬ ╪º┘ä╪¼╪»┘ê┘ä╪⌐). ┘ê┘ç╪░╪º **┘å┘ü╪│┘ç** ╪º┘ä╪Ñ╪╡┘ä╪º╪¡ ╪º┘ä╪░┘è ┘è╪¡┘ä ╪»╪╣┘à META_CLOUD ╪º┘ä┘à╪░┘â┘ê╪▒ ┘ü┘è ╪¬┘å╪¿┘è┘ç ┬º1.1. ┘ä╪░╪º:
-> - **┘ä╪ú╪«╪╖╪º╪í ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪╣╪º╪¿╪▒╪⌐ ╪║┘è╪▒ ╪º┘ä╪¼┘ä╪│╪⌐** (timeout ╪┤╪¿┘â╪⌐╪î rate limit): ╪º┘ä╪¼╪»┘ê┘ä╪⌐ ╪╣╪¿╪▒ ╪º┘ä╪╖╪º╪¿┘ê╪▒ **╪¿╪╣╪»** ┘ü╪╡┘ä ╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ╪¬╪╣┘à┘ä.
-> - **┘ä╪ú╪«╪╖╪º╪í ╪º┘ä╪¼┘ä╪│╪⌐ ╪º┘ä┘à┘é╪╖┘ê╪╣╪⌐**: ┘ä╪º ┘ü╪º╪ª╪»╪⌐ ┘à┘å retry ╪¡╪¬┘ë ┘è┘Å╪╖╪¿┘Ä┘æ┘é ╪º┘ä╪Ñ╪╡┘ä╪º╪¡ ╪º┘ä┘ç┘è┘â┘ä┘è ╪ú╪»┘å╪º┘ç.
+> **الإصلاح المطلوب**: الإصلاح الحقيقي لفشل الجلسة هو **تأجيل حل الجلسة إلى وقت المعالجة** داخل `processNotificationQueue` (وليس وقت الجدولة). وهذا **نفسه** الإصلاح الذي يحل دعم META_CLOUD المذكور في تنبيه §1.1. لذا:
+> - **لأخطاء الإرسال العابرة غير الجلسة** (timeout شبكة، rate limit): الجدولة عبر الطابور **بعد** فصل حل الجلسة تعمل.
+> - **لأخطاء الجلسة المقطوعة**: لا فائدة من retry حتى يُطبَّق الإصلاح الهيكلي أدناه.
 
-**╪º┘ä╪¡┘ä ╪º┘ä┘à┘é╪¬╪▒╪¡ (╪¼╪▓╪ª╪º┘å)**:
+**الحل المقترح (جزئان)**:
 
-**╪º┘ä╪¼╪▓╪í ╪ú ΓÇö ┘ü╪╡┘ä ╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ╪╣┘å ╪º┘ä╪¼╪»┘ê┘ä╪⌐ (╪Ñ╪╡┘ä╪º╪¡ ┘ç┘è┘â┘ä┘è╪î ┘à╪▒╪¬╪¿╪╖ ╪¿┘Ç ┬º1.1)**:
-┘ü┘è `scheduleNotification` (`:2495-2519`) ┘ê`processNotificationQueue` (`:3413`):
-1. **┘ä╪º ╪¬╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ┘ê┘é╪¬ `scheduleNotification`** ΓÇö ╪¿╪»┘ä ╪░┘ä┘â╪î ╪«╪▓┘æ┘å `companyId` ┘ü┘é╪╖ ┘ü┘è ╪╡┘ü ╪º┘ä╪╖╪º╪¿┘ê╪▒ (╪º┘ä╪¡┘é┘ä ┘à┘ê╪¼┘ê╪» ╪¿╪º┘ä┘ü╪╣┘ä ┘ü┘è `WhatsAppNotificationQueue.companyId`).
-2. **╪¡┘Å┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ┘ê┘é╪¬ `processNotificationQueue`** (╪╣┘å╪» ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘ü╪╣┘ä┘è) ΓÇö ┘ç╪░╪º ┘è╪│┘à╪¡ ╪¿╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐ ┘ä╪º╪¡┘é┘ï╪º ╪╣┘å╪»┘à╪º ╪¬╪╣┘ê╪» ╪º┘ä╪¼┘ä╪│╪⌐/META_CLOUD ┘à╪¬╪╡┘ä╪⌐.
-3. ┘ç╪░╪º ╪º┘ä╪¬╪║┘è┘è╪▒ **┘è╪¡┘ä ╪ú┘è╪╢┘ï╪º** ╪»╪╣┘à META_CLOUD ┘ü┘è ╪º┘ä╪╖╪º╪¿┘ê╪▒: ╪º┘ä┘à╪╣╪º┘ä╪¼ ┘è╪│╪¬╪«╪»┘à `sendNotification({...})` ╪º┘ä╪▒╪ª┘è╪│┘è (╪º┘ä╪░┘è ┘ü┘è┘ç DB fallback + META special-casing) ╪¿╪»┘ä╪º┘ï ┘à┘å `WhatsAppMessageHandler.sendText` ╪º┘ä┘à╪¿╪º╪┤╪▒.
+**الجزء أ — فصل حل الجلسة عن الجدولة (إصلاح هيكلي، مرتبط بـ §1.1)**:
+في `scheduleNotification` (`:2495-2519`) و`processNotificationQueue` (`:3413`):
+1. **لا تحل الجلسة وقت `scheduleNotification`** — بدل ذلك، خزّن `companyId` فقط في صف الطابور (الحقل موجود بالفعل في `WhatsAppNotificationQueue.companyId`).
+2. **حُل الجلسة وقت `processNotificationQueue`** (عند الإرسال الفعلي) — هذا يسمح بإعادة المحاولة لاحقًا عندما تعود الجلسة/META_CLOUD متصلة.
+3. هذا التغيير **يحل أيضًا** دعم META_CLOUD في الطابور: المعالج يستخدم `sendNotification({...})` الرئيسي (الذي فيه DB fallback + META special-casing) بدلاً من `WhatsAppMessageHandler.sendText` المباشر.
 
-**╪º┘ä╪¼╪▓╪í ╪¿ ΓÇö retry ┘ä┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪╣╪º╪¿╪▒** (┘ü┘è `sendNotification` catch `:2387`):
+**الجزء ب — retry للإرسال العابر** (في `sendNotification` catch `:2387`):
 ```js
 } catch (sendErr) {
-  const retryable = isRetryableError(sendErr);  // timeout/rate-limit╪î ┘ê┘ä┘è╪│ no_session
+  const retryable = isRetryableError(sendErr);  // timeout/rate-limit، وليس no_session
   if (retryable && (attempt ?? 0) < 3) {
     const backoffMs = Math.min(30000, 5000 * Math.pow(2, attempt ?? 0));
-    // ╪¿╪╣╪» ╪º┘ä╪¼╪▓╪í ╪ú: scheduleNotification ┘ä┘à ┘è╪╣╪» ┘è╪¡╪¬╪º╪¼ sessionId ┘à╪│╪¿┘é┘ï╪º
+    // بعد الجزء أ: scheduleNotification لم يعد يحتاج sessionId مسبقًا
     await scheduleNotification({
       ...originalOptions,
       scheduleAt: new Date(Date.now() + backoffMs),
-      priority: Math.max(priority ?? 5, 8),  // ╪ú┘é┘ä ╪ú┘ê┘ä┘ê┘è╪⌐ (╪ú╪▒┘é╪º┘à ╪ú╪╣┘ä┘ë)
+      priority: Math.max(priority ?? 5, 8),  // أقل أولوية (أرقام أعلى)
     });
     return { status: 'RETRYING', scheduledAt: new Date(Date.now() + backoffMs) };
   }
-  // ╪│╪¼┘æ┘ä FAILED ┘å┘ç╪º╪ª┘è
+  // سجّل FAILED نهائي
 }
 ```
 
-> ╪▒╪¿╪╖ ┘à╪╣ ┬º1.1: ╪º┘ä┘Ç retry ┘è╪╣╪¬┘à╪» ╪╣┘ä┘ë (╪ú) ╪╖╪º╪¿┘ê╪▒ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘å╪┤╪╖╪î ┘ê(╪¿) ╪º┘ä╪¼╪▓╪í ╪ú (┘ü╪╡┘ä ╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐). ╪¿╪»┘ê┘å ╪º┘ä╪¼╪▓╪í ╪ú╪î ╪º┘ä┘Ç retry ┘è╪╣┘à┘ä ┘ü┘é╪╖ ┘ä┘ä╪ú╪«╪╖╪º╪í ╪║┘è╪▒ ╪º┘ä╪¼┘ä╪│┘è╪⌐.
+> ربط مع §1.1: الـ retry يعتمد على (أ) طابور الإشعارات النشط، و(ب) الجزء أ (فصل حل الجلسة). بدون الجزء أ، الـ retry يعمل فقط للأخطاء غير الجلسية.
 
 ---
 
-### ≡ƒƒí 5.1 ╪¬┘é╪│┘è┘à ╪º┘ä┘à┘ä┘ü ╪º┘ä╪╣┘à┘ä╪º┘é + ╪¬┘ê╪¡┘è╪» ╪º┘ä┘é┘ê╪º┘ä╪¿ (╪¬╪¡╪│┘è┘å ╪╡┘è╪º┘å╪⌐)
+### 🟡 5.1 تقسيم الملف العملاق + توحيد القوالب (تحسين صيانة)
 
-**╪º┘ä╪¼╪░╪▒**: `WhatsAppNotificationService.js` = **4206 ╪│╪╖╪▒** ┘è╪¼┘à╪╣ templates + queue + send + balancing + ┘â┘ä domain. ╪º┘ä┘é┘ê╪º┘ä╪¿ ╪╣╪▒╪¿┘è╪⌐ ┘ü┘é╪╖ ┘ê┘à╪¿╪╣╪½╪▒╪⌐ ┘ü┘è 3 ╪╖╪¿┘é╪º╪¬.
+**الجذر**: `WhatsAppNotificationService.js` = **4206 سطر** يجمع templates + queue + send + balancing + كل domain. القوالب عربية فقط ومبعثرة في 3 طبقات.
 
-**╪º┘ä╪¡┘ä ╪º┘ä┘à┘é╪¬╪▒╪¡ (╪¬╪»╪▒┘è╪¼┘è╪î ┘ä╪º rewrite ┘â╪¿┘è╪▒)**:
-1. **╪º╪│╪¬╪«╪▒╪º╪¼ ╪º┘ä┘é┘ê╪º┘ä╪¿**: `services/whatsapp/templates/defaultTemplates.js` (┘å┘é┘ä `DEFAULT_TEMPLATES` L15-904).
-2. **╪º╪│╪¬╪«╪▒╪º╪¼ ╪º┘ä┘à┘ê╪º╪▓┘å╪⌐**: `services/whatsapp/sessionBalancer.js` (`getOrAssignSession`, sticky session, DB fallback).
-3. **╪º╪│╪¬╪«╪▒╪º╪¼ ╪º┘ä╪╖╪º╪¿┘ê╪▒**: ┘à┘å╪╖┘é `processNotificationQueue` + `scheduleNotification` ╪Ñ┘ä┘ë module ┘à┘å┘ü╪╡┘ä.
-4. **i18n ┘ä┘ä┘é┘ê╪º┘ä╪¿**: ╪ú╪╢┘ü ╪»╪╣┘à ╪º┘ä┘ä╪║╪⌐ ╪╣┘ä┘ë ┘à╪│╪¬┘ê┘ë `Company.locale` (╪ú┘ê `Customer.locale`) ΓÇö ╪º┘ä┘é╪º┘ä╪¿ ┘è┘Å╪«╪¬╪º╪▒ ╪¿╪º┘ä┘ä╪║╪⌐. ╪º╪¿╪»╪ú ╪¿╪º┘ä╪╣╪▒╪¿┘è╪⌐ (╪º┘ä╪¡╪º┘ä┘è) + skeleton ╪Ñ┘å╪¼┘ä┘è╪▓┘è.
+**الحل المقترح (تدريجي، لا rewrite كبير)**:
+1. **استخراج القوالب**: `services/whatsapp/templates/defaultTemplates.js` (نقل `DEFAULT_TEMPLATES` L15-904).
+2. **استخراج الموازنة**: `services/whatsapp/sessionBalancer.js` (`getOrAssignSession`, sticky session, DB fallback).
+3. **استخراج الطابور**: منطق `processNotificationQueue` + `scheduleNotification` إلى module منفصل.
+4. **i18n للقوالب**: أضف دعم اللغة على مستوى `Company.locale` (أو `Customer.locale`) — القالب يُختار باللغة. ابدأ بالعربية (الحالي) + skeleton إنجليزي.
 
-> ┘ç╪░┘ç ╪º┘ä┘à╪▒╪¡┘ä╪⌐ **╪º╪«╪¬┘è╪º╪▒┘è╪⌐/╪¬╪»╪▒┘è╪¼┘è╪⌐** ΓÇö ┘ä╪º ╪¬╪ñ╪½╪▒ ╪╣┘ä┘ë ╪º┘ä╪Ñ╪╡┘ä╪º╪¡╪º╪¬ ╪º┘ä╪¡╪▒╪¼╪⌐. ┘å┘ü┘æ╪░┘ç╪º ┘ü┘é╪╖ ╪¿╪╣╪» ╪º╪│╪¬┘é╪▒╪º╪▒ ┬º1ΓÇô┬º4.
+> هذه المرحلة **اختيارية/تدريجية** — لا تؤثر على الإصلاحات الحرجة. نفّذها فقط بعد استقرار §1–§4.
 
-### ≡ƒôï ┘à╪º ┘å┘Å┘ü┘æ╪░ ┘ü╪╣┘ä┘è╪º┘ï (╪¡╪¬┘ë 2026-08-03) ┘à┘é╪º╪¿┘ä ┘à╪º ╪¬╪ú╪¼┘æ┘ä
+### 📋 ما نُفّذ فعلياً (حتى 2026-08-03) مقابل ما تأجّل
 
-**┘å┘Å┘ü┘æ╪░ (╪º┘ä┘à┘ä┘ü ┘å╪▓┘ä ┘à┘å 4206 ΓåÆ ~3227 ╪│╪╖╪▒):**
-- Γ£à `DEFAULT_TEMPLATES` ΓåÆ `services/whatsapp/templates/defaultTemplates.js` (╪¿┘è╪º┘å╪º╪¬ ┘å┘é┘è╪⌐╪î ~890 ╪│╪╖╪▒).
-- Γ£à ┘à┘ê╪º╪▓┘å╪⌐ ╪º┘ä╪¼┘ä╪│╪º╪¬ (Sticky / Round-Robin / JIT init) ΓåÆ `services/whatsapp/sessionBalancer.js` (+ `sessionRotation`, `sessionInitializationInFlight`).
-- Γ£à `formatPhoneNumber` ΓåÆ `utils/phoneFormat.js` (┘à╪┤╪¬╪▒┘â ╪¿┘è┘å ╪º┘ä╪«╪»┘à╪⌐ ┘ê╪º┘ä┘Ç balancer).
-- Γ£à ┘å┘ê╪º╪⌐ ╪º┘ä╪ú┘å┘ê╪º╪╣ ╪º┘ä┘å┘é┘è╪⌐ ΓåÆ `services/whatsapp/notificationTypes.js` (`getPersistedNotificationEventType` / `getPersistedNotificationCategory` / `getPersistedNotificationRecipientType` / `isOrderCategory`) ΓÇö ╪¬┘Å╪│╪¬╪«╪»┘à ┘à┘å ╪º┘ä╪«╪»┘à╪⌐ ┘ê╪º┘ä┘Ç dedup ┘à╪╣╪º┘ï╪î ┘ê╪¬┘Å╪╣╪º╪» ╪¬╪╡╪»┘è╪▒┘ç╪º ┘à┘å `WhatsAppNotificationService` ┘ä┘ä┘à╪¬┘ê╪º┘ü┘é┘è┘å ╪º┘ä╪¡╪º┘ä┘è┘è┘å.
-- Γ£à ┘â┘ä ╪º┘ä╪¬╪╡╪»┘è╪▒╪º╪¬ ╪º┘ä╪«╪º╪▒╪¼┘è╪⌐ ┘à╪¡┘ü┘ê╪╕╪⌐ (`DEFAULT_TEMPLATES`, `formatPhoneNumber`, `resolveDeliveryCompanyId`, `getPersistedNotificationEventType`, ...) ΓÇö ╪¬╪¡┘é┘æ┘é ┘à┘å `adminWhatsAppController` / `customerWhatsAppController` / `whatsappNotificationController`.
+**نُفّذ (الملف نزل من 4206 → ~3227 سطر):**
+- ✅ `DEFAULT_TEMPLATES` → `services/whatsapp/templates/defaultTemplates.js` (بيانات نقية، ~890 سطر).
+- ✅ موازنة الجلسات (Sticky / Round-Robin / JIT init) → `services/whatsapp/sessionBalancer.js` (+ `sessionRotation`, `sessionInitializationInFlight`).
+- ✅ `formatPhoneNumber` → `utils/phoneFormat.js` (مشترك بين الخدمة والـ balancer).
+- ✅ نواة الأنواع النقية → `services/whatsapp/notificationTypes.js` (`getPersistedNotificationEventType` / `getPersistedNotificationCategory` / `getPersistedNotificationRecipientType` / `isOrderCategory`) — تُستخدم من الخدمة والـ dedup معاً، وتُعاد تصديرها من `WhatsAppNotificationService` للمتوافقين الحاليين.
+- ✅ كل التصديرات الخارجية محفوظة (`DEFAULT_TEMPLATES`, `formatPhoneNumber`, `resolveDeliveryCompanyId`, `getPersistedNotificationEventType`, ...) — تحقّق من `adminWhatsAppController` / `customerWhatsAppController` / `whatsappNotificationController`.
 
-**┘à╪¬╪ú╪¼┘æ┘ä (╪¿╪│╪¿╪¿ ┘à╪¡╪»╪»):**
-- ΓÅ╕∩╕Å **╪º╪│╪¬╪«╪▒╪º╪¼ ╪º┘ä╪╖╪º╪¿┘ê╪▒/`senders`** (╪º┘ä╪¿┘å╪» 3 + ╪¬┘ü╪╡┘è┘ä ╪│╪º╪¿┘é): ╪»┘ê╪º┘ä ╪º┘ä╪Ñ╪▒╪│╪º┘ä (HR/loyalty/signup/orders) ┘ê╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪¬╪╣╪¬┘à╪» ╪╣┘ä┘ë ~20 ╪»╪º┘ä╪⌐ ┘à╪┤╪¬╪▒┘â╪⌐ ┘ü┘è ╪º┘ä┘à┘ä┘ü ╪º┘ä╪▒╪ª┘è╪│┘è ΓÇö ╪º┘ä╪º╪│╪¬╪«╪▒╪º╪¼ ┘è╪¬╪╖┘ä╪¿ module ┘å┘ê╪º╪⌐ ╪Ñ╪╢╪º┘ü┘è╪º┘ï ┘ê┘è╪╣╪▒┘æ╪╢ ┘ä┘Ç circular dependencies. ┘é┘è┘æ┘à ┘ä╪º╪¡┘é╪º┘ï ┘â┘Ç refactor ┘à╪│╪¬┘é┘ä.
-- ΓÅ╕∩╕Å **i18n ┘ä┘ä╪▒╪│╪º╪ª┘ä** (╪º┘ä╪¿┘å╪» 4): ┘à┘è╪▓╪⌐ ┘à┘å╪¬╪¼ ┘â╪º┘à┘ä╪⌐ ΓÇö ╪¬╪¬╪╖┘ä╪¿ ╪¡┘é┘ä ┘ä╪║╪⌐ ╪╣┘ä┘ë ╪º┘ä┘é╪º┘ä╪¿/╪º┘ä╪┤╪▒┘â╪⌐ + UI ┘ü┘è ╪╡┘ü╪¡╪⌐ status-templates + ╪¿╪░╪▒ ┘é┘ê╪º┘ä╪¿ ╪Ñ┘å╪¼┘ä┘è╪▓┘è╪⌐. ╪«╪º╪▒╪¼ ┘å╪╖╪º┘é ╪Ñ╪╡┘ä╪º╪¡ ╪º┘ä╪ú╪«╪╖╪º╪í.
+**متأجّل (بسبب محدد):**
+- ⏸️ **استخراج الطابور/`senders`** (البند 3 + تفصيل سابق): دوال الإرسال (HR/loyalty/signup/orders) والطابور تعتمد على ~20 دالة مشتركة في الملف الرئيسي — الاستخراج يتطلب module نواة إضافياً ويعرّض لـ circular dependencies. قيّم لاحقاً كـ refactor مستقل.
+- ⏸️ **i18n للرسائل** (البند 4): ميزة منتج كاملة — تتطلب حقل لغة على القالب/الشركة + UI في صفحة status-templates + بذر قوالب إنجليزية. خارج نطاق إصلاح الأخطاء.
 
 ---
 
-### ≡ƒƒá 5.2 ╪│╪»┘æ ╪¬╪¼╪º┘ê╪▓╪º╪¬ ╪º┘ä╪┤╪║┘æ╪º┘ä╪⌐ ╪º┘ä┘à╪¬┘é╪»┘à╪⌐ (workflow raw updates)
+### 🟠 5.2 سدّ تجاوزات الشغّالة المتقدمة (workflow raw updates)
 
-> ≡ƒåò **╪ú┘Å╪╢┘è┘ü ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐**: ┘à╪┤┘â┘ä╪⌐ ╪╡╪¡╪⌐ ╪¿┘è╪º┘å╪º╪¬ ┘ü╪╣┘ä┘è╪⌐╪î ┘ä┘è╪│╪¬ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ü┘é╪╖.
+> 🆕 **أُضيف من مراجعة ثانية**: مشكلة صحة بيانات فعلية، ليست إشعارات فقط.
 
-**╪º┘ä╪¼╪░╪▒**: `services/orderWorkflowService.js:351` ┘ê `:471` ┘è╪│╪¬╪«╪»┘à╪º┘å `prisma.order.update` ╪«╪º┘à ┘ä╪¬╪╖╪¿┘è┘é ┘å╪¬┘è╪¼╪⌐ ╪º┘ä╪¬╪¡┘é┘é (`validateStatusChange`) ΓÇö ┘ç╪░╪º ┘è╪¬╪¼╪º┘ê╪▓ `orderService.updateOrderStatus`╪î ┘ü┘ä╪º ┘à╪▓╪º┘à┘å╪⌐ `metadata.preparationStatus` ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¬┘è ╪¬┘å╪¬┘é┘ä ╪╣╪¿╪▒ ╪º┘ä╪┤╪║┘æ╪º┘ä╪⌐ ╪º┘ä┘à╪¬┘é╪»┘à╪⌐.
+**الجذر**: `services/orderWorkflowService.js:351` و `:471` يستخدمان `prisma.order.update` خام لتطبيق نتيجة التحقق (`validateStatusChange`) — هذا يتجاوز `orderService.updateOrderStatus`، فلا مزامنة `metadata.preparationStatus` للطلبات التي تنتقل عبر الشغّالة المتقدمة.
 
-**╪º┘ä╪¬╪ú╪½┘è╪▒**: ╪╖╪º╪¿┘ê╪▒ ╪º┘ä╪¬╪¡╪╢┘è╪▒ (`preparationQueueService` ┘è┘é╪▒╪ú `metadata.preparationStatus` ┘â┘à╪╡╪»╪▒ ┘ä┘ä╪¡┘é┘è┘é╪⌐) ┘ä╪º ┘è╪▒┘ë ╪¬╪║┘è┘è╪▒╪º╪¬ ╪º┘ä╪┤╪║┘æ╪º┘ä╪⌐ ΓåÆ ╪╖┘ä╪¿╪º╪¬ ╪¬╪╢┘è╪╣ ┘à┘å ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪¬╪¡╪╢┘è╪▒ ╪ú┘ê ╪¬╪¬╪ú╪«╪▒.
+**التأثير**: طابور التحضير (`preparationQueueService` يقرأ `metadata.preparationStatus` كمصدر للحقيقة) لا يرى تغييرات الشغّالة → طلبات تضيع من قائمة التحضير أو تتأخر.
 
-**╪º┘ä╪¡┘ä ╪º┘ä┘à┘é╪¬╪▒╪¡** (╪«┘è╪º╪▒╪º┘å ΓÇö ╪º╪«╪¬╪▒ ╪¡╪│╪¿ ╪º┘ä╪¬╪╣┘é┘è╪» ╪º┘ä┘à┘é╪¿┘ê┘ä):
+**الحل المقترح** (خياران — اختر حسب التعقيد المقبول):
 
-**╪º┘ä╪«┘è╪º╪▒ ╪ú (┘à┘ê╪╡┘ë ╪¿┘ç ΓÇö ╪ú┘é┘ä ╪¬╪║┘è┘è╪▒)**: ╪¿╪╣╪» `prisma.order.update` ╪º┘ä╪«╪º┘à ┘ü┘è ┘â┘ä╪º ╪º┘ä┘à┘ê┘é╪╣┘è┘å╪î ╪º╪│╪¬╪»╪╣┘É ╪»╪º┘ä╪⌐ ┘à╪▓╪º┘à┘å╪⌐ `metadata.preparationStatus` ┘à╪¿╪º╪┤╪▒╪⌐. ┘ç╪░┘ç ╪º┘ä╪»╪º┘ä╪⌐ ┘à┘ê╪¼┘ê╪»╪⌐ ╪¿╪º┘ä┘ü╪╣┘ä ╪»╪º╪«┘ä `orderService.updateOrderStatus` (╪º┘ä┘à┘å╪╖┘é ╪╣┘å╪» `orderService.js:1025-1034`) ΓÇö ╪º╪│╪¬╪«╪▒╪¼┘ç╪º ┘â╪»╪º┘ä╪⌐ ┘à╪│╪¬┘é┘ä╪⌐ ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪º╪│╪¬╪»╪╣╪º╪í:
+**الخيار أ (موصى به — أقل تغيير)**: بعد `prisma.order.update` الخام في كلا الموقعين، استدعِ دالة مزامنة `metadata.preparationStatus` مباشرة. هذه الدالة موجودة بالفعل داخل `orderService.updateOrderStatus` (المنطق عند `orderService.js:1025-1034`) — استخرجها كدالة مستقلة قابلة للاستدعاء:
 ```js
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º5.2):
-// ╪¿╪╣╪» ┘â┘ä prisma.order.update ╪«╪º┘à ┘ü┘è orderWorkflowService.js:351/:471:
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §5.2):
+// بعد كل prisma.order.update خام في orderWorkflowService.js:351/:471:
 const orderService = require('./orderService');
 await orderService.syncPreparationMetadata(orderId, newStatus);
 ```
-> **┘à╪╖┘ä┘ê╪¿ ┘à┘å ╪º┘ä┘à┘å┘ü┘æ╪░**: ╪¬╪ú┘â╪» ╪Ñ┘å `syncPreparationMetadata` ╪»╪º┘ä╪⌐ ┘à╪│╪¬┘é┘ä╪⌐ (╪ú┘ê ╪º╪│╪¬╪«╪▒╪¼┘ç╪º ┘à┘å `updateOrderStatus`). ┘ä╪º ╪¬┘Å┘â╪▒╪▒ ┘à┘å╪╖┘é ╪º┘ä╪¬╪╖╪¿┘è╪╣ ┘ü┘è ┘à┘â╪º┘å┘è┘å.
+> **مطلوب من المنفّذ**: تأكد إن `syncPreparationMetadata` دالة مستقلة (أو استخرجها من `updateOrderStatus`). لا تُكرر منطق التطبيع في مكانين.
 
-**╪º┘ä╪«┘è╪º╪▒ ╪¿ (╪ú┘å╪╕┘ü ┘ä┘â┘å ╪ú┘â╪¿╪▒)**: ╪º╪│╪¬╪¿╪»┘ä `prisma.order.update` ╪º┘ä╪«╪º┘à ┘ü┘è `orderWorkflowService` ╪¿╪º┘ä╪º╪│╪¬╪»╪╣╪º╪í ╪º┘ä┘â╪º┘à┘ä ┘ä┘Ç `updateOrderStatus` (╪¿┘å┘ü╪│ ╪¬┘ê┘é┘è╪╣ ┬º1.2). ┘ä┘â┘å ┘ç╪░╪º ┘é╪» ┘è╪│╪¿╪¿ ╪¬┘â╪▒╪º╪▒ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ (┘è┘Å╪╣╪º┘ä╪¼ ╪¿┘Ç ┬º3.1 dedup).
+**الخيار ب (أنظف لكن أكبر)**: استبدل `prisma.order.update` الخام في `orderWorkflowService` بالاستدعاء الكامل لـ `updateOrderStatus` (بنفس توقيع §1.2). لكن هذا قد يسبب تكرار إشعارات (يُعالج بـ §3.1 dedup).
 
-**┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡ ┬º5.2**:
-- [ ] ╪╖┘ä╪¿ ┘è┘å╪¬┘é┘ä ╪╣╪¿╪▒ workflow transition (┘à╪½┘ä╪º┘ï READY_FOR_PROCESSINGΓåÆPROCESSING) ΓåÆ `metadata.preparationStatus` ┘è┘Å╪¡╪»┘æ╪½.
-- [ ] ╪╖╪º╪¿┘ê╪▒ ╪º┘ä╪¬╪¡╪╢┘è╪▒ ┘è╪▒┘ë ╪º┘ä╪╖┘ä╪¿ ┘ü┘è ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╡╪¡┘è╪¡╪⌐ ╪¿╪╣╪» transition.
+**معايير النجاح §5.2**:
+- [ ] طلب ينتقل عبر workflow transition (مثلاً READY_FOR_PROCESSING→PROCESSING) → `metadata.preparationStatus` يُحدّث.
+- [ ] طابور التحضير يرى الطلب في القائمة الصحيحة بعد transition.
 
-**╪«╪╖╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ┬º5.2**: `git checkout -- services/orderWorkflowService.js`.
+**خطة التراجع §5.2**: `git checkout -- services/orderWorkflowService.js`.
 
 ---
 
-### ≡ƒƒá 5.3 ┘à╪▒╪º┘é╪¿╪⌐ ╪º┘ä╪╖╪º╪¿┘ê╪▒ (queue stats endpoint + alert)
+### 🟠 5.3 مراقبة الطابور (queue stats endpoint + alert)
 
-> ≡ƒåò **╪ú┘Å╪╢┘è┘ü ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐**: ╪│╪»┘æ ┘ü╪¼┘ê╪⌐ #12 ┘à┘å ╪º┘ä╪¬╪»┘é┘è┘é ╪º┘ä╪ú╪╡┘ä┘è.
+> 🆕 **أُضيف من مراجعة ثانية**: سدّ فجوة #12 من التدقيق الأصلي.
 
-**╪º┘ä╪¼╪░╪▒**: ╪¿╪╣╪» ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒ (┬º1.1)╪î ┘ä╪º ┘è┘ê╪¼╪» endpoint ┘è╪╣╪▒╪╢ "┘â┘à ╪Ñ╪┤╪╣╪º╪▒ ╪╣╪º┘ä┘é" ┘ê┘ä╪º alert ┘ä┘ê ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪¿┘è┘â╪¿╪▒. ┘à╪┤┘â┘ä╪⌐ #1 ╪º┘ä╪ú╪╡┘ä┘è╪⌐ (╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪º┘ä┘à┘è╪¬) ┘à┘à┘â┘å ╪¬╪│╪¬┘à╪▒ ╪┤┘ç┘ê╪▒ ╪¿╪»┘ê┘å ┘à╪º ╪¡╪» ┘è┘ä╪º╪¡╪╕╪¢ ┘à╪╣ ╪¬┘ü╪╣┘è┘ä┘ç╪î ╪╣┘â╪│ ╪░┘ä┘â ΓÇö ╪ú┘è ╪¬╪╣╪╖┘ä ╪╡╪º┘à╪¬ ┘ä╪º╪▓┘à ┘è╪╕┘ç╪▒ ╪¿╪│╪▒╪╣╪⌐.
+**الجذر**: بعد تفعيل الطابور (§1.1)، لا يوجد endpoint يعرض "كم إشعار عالق" ولا alert لو الطابور بيكبر. مشكلة #1 الأصلية (الطابور الميت) ممكن تستمر شهور بدون ما حد يلاحظ؛ مع تفعيله، عكس ذلك — أي تعطل صامت لازم يظهر بسرعة.
 
-**╪º┘ä╪¡┘ä ╪º┘ä┘à┘é╪¬╪▒╪¡** (╪¼╪▓╪í╪º┘å):
+**الحل المقترح** (جزءان):
 
-**╪º┘ä╪¼╪▓╪í ╪ú ΓÇö endpoint ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬**: ╪ú╪╢┘ü ┘ü┘è `controller/whatsappNotificationController.js`:
+**الجزء أ — endpoint إحصائيات**: أضف في `controller/whatsappNotificationController.js`:
 
-> ≡ƒƒí **╪¬╪╡╪¡┘è╪¡ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐**: ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ╪º╪│╪¬╪«╪»┘à╪¬ `status: { notIn: ['COMPLETED', 'PENDING', 'PROCESSING'] }` ┘ä┘Ç failed ΓÇö ┘ç╪░╪º ╪«╪º╪╖╪ª ┘ä╪│╪¿╪¿┘è┘å: (1) `'COMPLETED'` ┘ä┘è╪│╪¬ ┘é┘è┘à╪⌐ enum ╪╡╪º┘ä╪¡╪⌐ (╪▒╪º╪¼╪╣ ┬º1.1-pre)╪î (2) ╪º┘ä┘Ç enum ┘è╪¡╪¬┘ê┘è `FAILED` ┘ê`CANCELLED` ╪╡╪▒╪º╪¡╪⌐┘ï. ╪º╪│╪¬╪«╪»┘à ╪¬╪╖╪º╪¿┘é┘ï╪º ╪¬╪º┘à┘ï╪º ╪╣┘ä┘ë ┘é┘è┘à ╪º┘ä┘Ç enum ╪º┘ä╪«┘à╪│: `PENDING, PROCESSING, SENT, FAILED, CANCELLED`.
+> 🟡 **تصحيح من مراجعة ثالثة**: النسخة الأولى استخدمت `status: { notIn: ['COMPLETED', 'PENDING', 'PROCESSING'] }` لـ failed — هذا خاطئ لسببين: (1) `'COMPLETED'` ليست قيمة enum صالحة (راجع §1.1-pre)، (2) الـ enum يحتوي `FAILED` و`CANCELLED` صراحةً. استخدم تطابقًا تامًا على قيم الـ enum الخمس: `PENDING, PROCESSING, SENT, FAILED, CANCELLED`.
 
 ```js
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º5.3): queue stats endpoint
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §5.3): queue stats endpoint
 async function getNotificationQueueStats(req, res) {
   const prisma = getSharedPrismaClient();
   const companyId = req.user.companyId;
@@ -740,10 +740,10 @@ async function getNotificationQueueStats(req, res) {
   const [pending, processing, sent, failed, cancelled, overdue] = await Promise.all([
     prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'PENDING' } }),
     prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'PROCESSING' } }),
-    prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'SENT' } }),          // ≡ƒƒí SENT ╪¿╪»┘ä COMPLETED
+    prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'SENT' } }),          // 🟡 SENT بدل COMPLETED
     prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'FAILED' } }),
     prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'CANCELLED' } }),
-    // overdue = PENDING ┘à╪│╪¬╪¡┘é╪⌐ ┘ä┘à ╪¬┘Å╪╣╪º┘ä╪¼ (> 2 ╪»┘é┘è┘é╪⌐) ΓÇö ┘à╪ñ╪┤╪▒ ╪╡╪¡╪⌐ ╪º┘ä╪╖╪º╪¿┘ê╪▒
+    // overdue = PENDING مستحقة لم تُعالج (> 2 دقيقة) — مؤشر صحة الطابور
     prisma.whatsAppNotificationQueue.count({
       where: { companyId, status: 'PENDING', scheduledAt: { lte: new Date(Date.now() - 120000) } }
     }),
@@ -752,92 +752,92 @@ async function getNotificationQueueStats(req, res) {
   res.json({ pending, processing, sent, failed, cancelled, overdue, healthy: overdue === 0 });
 }
 ```
-╪│╪¼┘æ┘ä┘ç ┘ü┘è `routes/whatsappNotificationRoutes.js` ┘â┘Ç `GET /stats` (┘à╪¡┘à┘è ╪¿╪╡┘ä╪º╪¡┘è╪⌐).
+سجّله في `routes/whatsappNotificationRoutes.js` كـ `GET /stats` (محمي بصلاحية).
 
-**╪º┘ä╪¼╪▓╪í ╪¿ ΓÇö alert ┘ü┘è ╪º┘ä┘Ç worker**: ┘ü┘è `notificationQueueWorker.js` (┘à┘å ┬º1.1)╪î ╪│╪¼┘æ┘ä ╪¬╪¡╪░┘è╪▒ ╪╡╪▒┘è╪¡ ┘ä┘ê `overdue > 0`:
+**الجزء ب — alert في الـ worker**: في `notificationQueueWorker.js` (من §1.1)، سجّل تحذير صريح لو `overdue > 0`:
 ```js
-// ┘â┘ä ╪»┘é┘è┘é╪⌐╪î ╪¿╪╣╪» processNotificationQueue╪î ╪º┘ü╪¡╪╡ overdue
+// كل دقيقة، بعد processNotificationQueue، افحص overdue
 const overdue = await prisma.whatsAppNotificationQueue.count({
   where: { status: 'PENDING', scheduledAt: { lte: new Date(Date.now() - 120000) } }
 });
 if (overdue > 10) {
-  console.error(`≡ƒÜ¿ [NOTIF-QUEUE] ${overdue} notifications overdue (>2min) ΓÇö check worker/Redis/META_CLOUD`);
+  console.error(`🚨 [NOTIF-QUEUE] ${overdue} notifications overdue (>2min) — check worker/Redis/META_CLOUD`);
 }
 ```
 
-#### ΓÜá∩╕Å ╪¬┘å╪¿┘è┘ç╪º╪¬
-- ≡ƒƒí **┘à╪ñ┘â╪» (┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘ä╪½╪⌐)**: `WhatsAppNotificationQueueStatus` enum (`schema.prisma:3625`) ┘é┘è┘à┘ç: `PENDING, PROCESSING, SENT, FAILED, CANCELLED`. ┘ä╪º `COMPLETED` ΓÇö ┘ä╪░╪º stats ┘è╪│╪¬╪«╪»┘à `SENT` ┘ä┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘å╪º╪¼╪¡╪⌐ (╪▒╪º╪¼╪╣ ┬º1.1-pre).
-- **╪º┘ä╪¡╪» (threshold)**: ╪º╪¿╪»╪ú ╪¿┘Ç 10 ┘â┘Ç alert threshold╪î ╪º╪╢╪¿╪╖┘ç ╪¿┘å╪º╪í┘ï ╪╣┘ä┘ë ╪º┘ä╪¡┘à┘ä ╪º┘ä┘ü╪╣┘ä┘è.
+#### ⚠️ تنبيهات
+- 🟡 **مؤكد (مراجعة ثالثة)**: `WhatsAppNotificationQueueStatus` enum (`schema.prisma:3625`) قيمه: `PENDING, PROCESSING, SENT, FAILED, CANCELLED`. لا `COMPLETED` — لذا stats يستخدم `SENT` للإشعارات الناجحة (راجع §1.1-pre).
+- **الحد (threshold)**: ابدأ بـ 10 كـ alert threshold، اضبطه بناءً على الحمل الفعلي.
 
-**┘à╪╣╪º┘è┘è╪▒ ╪º┘ä┘å╪¼╪º╪¡ ┬º5.3**:
-- [ ] `GET /api/v1/whatsapp-notifications/stats` ┘è╪▒╪¼╪╣ counts ╪╡╪¡┘è╪¡╪⌐.
-- [ ] ┘ä┘ê ╪º┘ä╪╖╪º╪¿┘ê╪▒ ┘è╪¬╪▒╪º┘â┘à (>10 overdue)╪î ┘è╪╕┘ç╪▒ ╪«╪╖╪ú ┘ê╪º╪╢╪¡ ┘ü┘è ╪º┘ä┘Ç logs.
-- [ ] ╪º┘ä┘ä┘ê╪¡╪⌐ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ (╪º╪«╪¬┘è╪º╪▒┘è) ╪¬╪╣╪▒╪╢ ┘ç╪░┘ç ╪º┘ä╪ú╪▒┘é╪º┘à.
+**معايير النجاح §5.3**:
+- [ ] `GET /api/v1/whatsapp-notifications/stats` يرجع counts صحيحة.
+- [ ] لو الطابور يتراكم (>10 overdue)، يظهر خطأ واضح في الـ logs.
+- [ ] اللوحة الإدارية (اختياري) تعرض هذه الأرقام.
 
-**╪«╪╖╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ┬º5.3**: ╪º╪¡╪░┘ü endpoint + ╪º┘ä┘Ç alert block. ┘ä╪º ╪¬╪ú╪½┘è╪▒ ┘ê╪╕┘è┘ü┘è (┘à╪▒╪º┘é╪¿╪⌐ ┘ü┘é╪╖).
-
----
-
-### ≡ƒöº ┘à╪¬╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘å╪┤╪▒ (┘à┘å┘ü┘æ╪░ ΓÇö ╪¿╪╣╪» ╪º┘â╪¬┘à╪º┘ä ┬º1.1ΓÇô┬º5.3)
-
-- **Redis**: `REDIS_URL` ╪ú┘ê `REDIS_HOST/PORT/PASSWORD` ┘ü┘è `.env` ΓÇö ┘ä┘ê ╪║┘è╪▒ ┘à┘â┘ê┘æ┘å╪î ╪º┘ä┘Ç worker ┘è╪╣┘à┘ä ╪¿┘Ç fallback polling (setInterval 60s) ┘à╪╣ ╪¬╪¡╪░┘è╪▒╪î ┘ê╪º┘ä╪ú╪»╪º╪í ╪ú┘é┘ä ╪¬╪╣╪»╪»╪º┘ï ┘ä┘ä┘Ç instances.
-- **┘ä╪º schema migration ┘à╪╖┘ä┘ê╪¿╪⌐**: ┘ä╪º ╪¬╪║┘è┘è╪▒ enums ┘ê┘ä╪º ┘é┘è┘ê╪» DB (┘é╪▒╪º╪▒ ┬º3.1). ╪º┘ä╪¬╪║┘è┘è╪▒╪º╪¬ ┘â┘ä┘ç╪º app-level.
-- **╪┤╪▒┘â╪⌐ Mokhtar**: ╪¬╪ú┘â╪» ╪ú┘å `company.name` ┘ü┘è DB ┘è╪¡┘ê┘è "Mokhtar Elhenawy Store" ΓÇö ╪º┘ä┘Ç footer/╪º┘ä╪▒┘ê╪º╪¿╪╖ ╪º┘ä╪ó┘å ╪¬┘Å┘é╪▒╪ú ┘à┘å DB (┘ä╪º ┘ç╪º╪▒╪»┘â┘ê╪»).
-- **╪º┘ä╪¬╪¡┘é┘é ╪¿╪╣╪» ╪º┘ä┘å╪┤╪▒**: `GET /api/v1/whatsapp-notifications/queue-stats` ┘è╪╣┘à┘ä╪î ┘ê`psql` ┘ä┘ä╪╖╪º╪¿┘ê╪▒ ┘ä╪º ┘è╪¬╪▒╪º┘â┘à PENDING ┘à╪│╪¬╪¡┘é╪⌐.
+**خطة التراجع §5.3**: احذف endpoint + الـ alert block. لا تأثير وظيفي (مراقبة فقط).
 
 ---
 
-## 6. ╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪¬┘å┘ü┘è╪░ ╪º┘ä┘à┘ê╪╡┘ë ╪¿┘ç + ╪º┘ä╪¼╪»┘ê┘ä ╪º┘ä╪▓┘à┘å┘è
+### 🔧 متطلبات النشر (منفّذ — بعد اكتمال §1.1–§5.3)
 
-| ╪º┘ä╪¬╪▒╪¬┘è╪¿ | ╪º┘ä┘à┘ç┘à╪⌐ | ╪º┘ä╪¼┘ç╪» | ╪º┘ä┘à╪«╪º╪╖╪▒╪⌐ | ┘è╪╣╪¬┘à╪» ╪╣┘ä┘ë |
+- **Redis**: `REDIS_URL` أو `REDIS_HOST/PORT/PASSWORD` في `.env` — لو غير مكوّن، الـ worker يعمل بـ fallback polling (setInterval 60s) مع تحذير، والأداء أقل تعدداً للـ instances.
+- **لا schema migration مطلوبة**: لا تغيير enums ولا قيود DB (قرار §3.1). التغييرات كلها app-level.
+- **شركة Mokhtar**: تأكد أن `company.name` في DB يحوي "Mokhtar Elhenawy Store" — الـ footer/الروابط الآن تُقرأ من DB (لا هاردكود).
+- **التحقق بعد النشر**: `GET /api/v1/whatsapp-notifications/queue-stats` يعمل، و`psql` للطابور لا يتراكم PENDING مستحقة.
+
+---
+
+## 6. ترتيب التنفيذ الموصى به + الجدول الزمني
+
+| الترتيب | المهمة | الجهد | المخاطرة | يعتمد على |
 |---------|--------|------|---------|-----------|
-| 1 | ≡ƒö┤ ┬º1.1-pre ╪¬╪╡╪¡┘è╪¡ enum `'COMPLETED'ΓåÆ'SENT'` (╪¡╪º╪¼╪▓) | ╪╡╪║┘è╪▒ | ┘à┘å╪«┘ü╪╢╪⌐ (╪│╪╖╪▒ ┘ê╪º╪¡╪») | ΓÇö |
-| 2 | ┬º1.1 ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒ | ┘à╪¬┘ê╪│╪╖ | ┘à┘å╪«┘ü╪╢╪⌐ (┘â╪º┘å ┘à┘è╪¬╪º┘ï) | ┬º1.1-pre (╪Ñ┘ä╪▓╪º┘à┘è) |
-| 3 | ┬º2.1-pre mapping event type (╪┤╪▒╪╖ ┘à╪│╪¿┘é) | ╪╡╪║┘è╪▒ | ┘à┘å╪«┘ü╪╢╪⌐ | ΓÇö |
-| 4 | ┬º2.1 ╪¬┘ê╪│┘è╪╣ ╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¡╪º┘ä╪º╪¬ | ╪╡╪║┘è╪▒ | ┘à╪¬┘ê╪│╪╖╪⌐ (┘é╪» ┘è╪¿╪»╪ú ╪Ñ╪▒╪│╪º┘ä╪º╪¬ ╪¼╪»┘è╪»╪⌐) | ┬º1.1╪î ┬º2.1-pre |
-| 5 | ┬º1.2 ╪Ñ╪╡┘ä╪º╪¡ ╪º┘ä┘â╪▒┘ê┘å | ╪╡╪║┘è╪▒ | ┘à┘å╪«┘ü╪╢╪⌐ | ┬º2.1 (╪¡╪¬┘ë ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪¬┘Å╪▒╪│┘ä) |
-| 6 | ┬º2.2 ╪Ñ╪▓╪º┘ä╪⌐ ╪º┘ä┘ç╪º╪▒╪»┘â┘ê╪» | ╪╡╪║┘è╪▒ | ┘à┘å╪«┘ü╪╢╪⌐ | ΓÇö |
-| 7 | ┬º3.1 ╪¬┘ê╪¡┘è╪» dedup + DB unique | ┘à╪¬┘ê╪│╪╖ | ┘à╪¬┘ê╪│╪╖╪⌐ (migration) | ΓÇö |
-| 8 | ┬º4.1 retry + ┘ü╪╡┘ä ╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ | ┘à╪¬┘ê╪│╪╖ | ┘à╪¬┘ê╪│╪╖╪⌐ (┘ç┘è┘â┘ä┘è) | ┬º1.1 (┘è╪¡┘ä META_CLOUD ╪ú┘è╪╢┘ï╪º) |
-| 9 | ┬º5.2 ╪│╪»┘æ ╪¬╪¼╪º┘ê╪▓╪º╪¬ workflow | ╪╡╪║┘è╪▒ | ┘à┘å╪«┘ü╪╢╪⌐ | ΓÇö |
-| 10 | ┬º5.3 ┘à╪▒╪º┘é╪¿╪⌐ ╪º┘ä╪╖╪º╪¿┘ê╪▒ | ╪╡╪║┘è╪▒ | ┘à┘å╪«┘ü╪╢╪⌐ | ┬º1.1 |
-| 11 | ┬º5.1 ╪º┘ä╪¬┘é╪│┘è┘à + i18n | ┘â╪¿┘è╪▒ | ┘à┘å╪«┘ü╪╢╪⌐ (╪¬╪»╪▒┘è╪¼┘è) | ┘â┘ä ┘à╪º ╪│╪¿┘é |
+| 1 | 🔴 §1.1-pre تصحيح enum `'COMPLETED'→'SENT'` (حاجز) | صغير | منخفضة (سطر واحد) | — |
+| 2 | §1.1 تفعيل الطابور | متوسط | منخفضة (كان ميتاً) | §1.1-pre (إلزامي) |
+| 3 | §2.1-pre mapping event type (شرط مسبق) | صغير | منخفضة | — |
+| 4 | §2.1 توسيع خريطة الحالات | صغير | متوسطة (قد يبدأ إرسالات جديدة) | §1.1، §2.1-pre |
+| 5 | §1.2 إصلاح الكرون | صغير | منخفضة | §2.1 (حتى الحالات الجديدة تُرسل) |
+| 6 | §2.2 إزالة الهاردكود | صغير | منخفضة | — |
+| 7 | §3.1 توحيد dedup + DB unique | متوسط | متوسطة (migration) | — |
+| 8 | §4.1 retry + فصل حل الجلسة | متوسط | متوسطة (هيكلي) | §1.1 (يحل META_CLOUD أيضًا) |
+| 9 | §5.2 سدّ تجاوزات workflow | صغير | منخفضة | — |
+| 10 | §5.3 مراقبة الطابور | صغير | منخفضة | §1.1 |
+| 11 | §5.1 التقسيم + i18n | كبير | منخفضة (تدريجي) | كل ما سبق |
 
-**╪º┘ä╪¡╪» ╪º┘ä╪▓┘à┘å┘è ╪º┘ä┘à┘é╪¬╪▒╪¡**: ┬º1.1-pre+┬º1.1+┬º2.1-pre+┬º2.1+┬º1.2+┬º2.2 = 1ΓÇô2 ┘è┘ê┘à ╪╣┘à┘ä (╪º┘ä╪¡╪▒╪¼╪⌐)╪¢ ┬º3.1+┬º4.1+┬º5.2+┬º5.3 = 2ΓÇô3 ╪ú┘è╪º┘à╪¢ ┬º5.1 = ╪ú╪│╪¿┘ê╪╣+.
+**الحد الزمني المقترح**: §1.1-pre+§1.1+§2.1-pre+§2.1+§1.2+§2.2 = 1–2 يوم عمل (الحرجة)؛ §3.1+§4.1+§5.2+§5.3 = 2–3 أيام؛ §5.1 = أسبوع+.
 
 ---
 
-## 7. ╪º╪│╪¬╪▒╪º╪¬┘è╪¼┘è╪⌐ ╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ┘ê╪º┘ä╪╖╪▒╪¡
+## 7. استراتيجية الاختبار والطرح
 
-### 7.1 ╪│┘è┘å╪º╪▒┘è┘ê┘ç╪º╪¬ ╪º╪«╪¬╪¿╪º╪▒ ┘è╪»┘ê┘è╪⌐ (┘ä┘â┘ä ┘à╪▒╪¡┘ä╪⌐)
-| # | ╪º┘ä╪│┘è┘å╪º╪▒┘è┘ê | ╪º┘ä┘à╪¬┘ê┘é╪╣ | ╪º┘ä┘à╪▒╪¡┘ä╪⌐ |
+### 7.1 سيناريوهات اختبار يدوية (لكل مرحلة)
+| # | السيناريو | المتوقع | المرحلة |
 |---|-----------|---------|---------|
-| 1 | ╪Ñ╪┤╪╣╪º╪▒ ┘ü┘è quiet-hours | ┘è┘Å╪▒╪│┘ä ╪«┘ä╪º┘ä 60╪½ ╪¿╪╣╪» ┘å┘ç╪º┘è╪⌐ ╪º┘ä┘ç╪»┘ê╪í | ┬º1.1 |
-| 2 | ╪╖╪º╪¿┘ê╪▒ Redis ┘à┘Å╪╖┘ü╪ú | fallback polling ┘è╪╣┘à┘ä | ┬º1.1 |
-| 3 | ┘é╪º╪╣╪»╪⌐ auto-change (╪¿╪╣╪» X ╪»┘é┘è┘é╪⌐ ΓåÆ SHIPPED) | ╪Ñ╪┤╪╣╪º╪▒ ╪┤╪¡┘å ┘è╪╡┘ä ┘ä┘ä╪╣┘à┘è┘ä | ┬º1.2 |
-| 4 | ╪¬╪║┘è┘è╪▒ ╪╖┘ä╪¿ ┘ä┘Ç RETURNED (notifyCustomer:true) | ╪Ñ╪┤╪╣╪º╪▒ ┘è╪╡┘ä | ┬º2.1 |
-| 5 | ╪¬╪║┘è┘è╪▒ ╪╖┘ä╪¿ ┘ä╪¡╪º┘ä╪⌐ notifyCustomer:false | ┘ä╪º ╪Ñ╪┤╪╣╪º╪▒ | ┬º2.1 |
-| 6 | ╪┤╪▒┘â╪⌐ ╪¼╪»┘è╪»╪⌐ (╪║┘è╪▒ Mokhtar) | ╪º╪│┘à┘ç╪º + ┘å╪╖╪º┘é┘ç╪º ┘ü┘è ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ | ┬º2.2 |
-| 7 | flip-flop CONFIRMEDΓåÆCANCELLEDΓåÆCONFIRMED (>10╪½) | ┘ä╪º ╪Ñ╪┤╪╣╪º╪▒ ┘à╪¬┘â╪▒╪▒ ┘à╪╖╪º╪¿┘é | ┬º3.1 |
-| 8 | ≡ƒƒí ╪╖┘ä╪¿ ┘è┘å╪¬┘é┘ä ┘ä┘Ç RETURNED ╪╣╪¿╪▒ ╪┤╪▒┘â┘ç META_CLOUD | ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘è╪╡┘ä (┘ä╪º ┘è┘Å╪¬╪«╪╖┘ë) | ┬º1.1+┬º4.1 |
-| 9 | ≡ƒƒí ╪¼┘ê┘ä╪⌐ processNotificationQueue > 60╪½ | ╪º┘ä╪¼┘ê┘ä╪⌐ ╪º┘ä╪¬╪º┘ä┘è╪⌐ ╪¬╪¬╪«╪╖┘ë (┘ä╪º ╪¬╪»╪º╪«┘ä) | ┬º1.1 |
+| 1 | إشعار في quiet-hours | يُرسل خلال 60ث بعد نهاية الهدوء | §1.1 |
+| 2 | طابور Redis مُطفأ | fallback polling يعمل | §1.1 |
+| 3 | قاعدة auto-change (بعد X دقيقة → SHIPPED) | إشعار شحن يصل للعميل | §1.2 |
+| 4 | تغيير طلب لـ RETURNED (notifyCustomer:true) | إشعار يصل | §2.1 |
+| 5 | تغيير طلب لحالة notifyCustomer:false | لا إشعار | §2.1 |
+| 6 | شركة جديدة (غير Mokhtar) | اسمها + نطاقها في الإشعار | §2.2 |
+| 7 | flip-flop CONFIRMED→CANCELLED→CONFIRMED (>10ث) | لا إشعار متكرر مطابق | §3.1 |
+| 8 | 🟡 طلب ينتقل لـ RETURNED عبر شركه META_CLOUD | الإشعار يصل (لا يُتخطى) | §1.1+§4.1 |
+| 9 | 🟡 جولة processNotificationQueue > 60ث | الجولة التالية تتخطى (لا تداخل) | §1.1 |
 
-### 7.2 ╪ú┘ê╪º┘à╪▒ ╪¬╪¡┘é┘é
+### 7.2 أوامر تحقق
 ```bash
-# ╪º┘ä╪╖╪º╪¿┘ê╪▒ ┘ä╪º ┘è╪¬╪▒╪º┘â┘à PENDING ┘à╪│╪¬╪¡┘é╪⌐
+# الطابور لا يتراكم PENDING مستحقة
 psql -d maxp -c "SELECT COUNT(*) FROM whatsapp_notification_queue
   WHERE status='PENDING' AND \"scheduledAt\" <= NOW();"
 
-# ┘ä╪º ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘à┘â╪▒╪▒╪⌐ ┘ü┘è ╪º┘ä┘Ç 10╪½ ╪º┘ä╪ú╪«┘è╪▒╪⌐ (≡ƒƒí ╪º╪│┘à ╪º┘ä╪¼╪»┘ê┘ä ╪¼┘à╪╣: whatsapp_notification_logs)
+# لا إشعارات مكررة في الـ 10ث الأخيرة (🟡 اسم الجدول جمع: whatsapp_notification_logs)
 psql -d maxp -c "SELECT \"orderId\", \"eventType\", COUNT(*)
   FROM whatsapp_notification_logs
   WHERE \"createdAt\" >= NOW() - INTERVAL '10 seconds'
   GROUP BY \"orderId\", \"eventType\" HAVING COUNT(*) > 1;"
 
-# ╪º┘ä╪¿╪¡╪½ ╪╣┘å ┘ç╪º╪▒╪»┘â┘ê╪» ┘à╪¬╪¿┘é┘æ┘ì
+# البحث عن هاردكود متبقٍّ
 grep -rn "Mokhtar Elhenawy\|mokhtarelhenawy" apps/backend/services/whatsapp/
 
-# ≡ƒƒí ┘à╪▒╪º┘é╪¿╪⌐ ╪º┘ä╪╖╪º╪¿┘ê╪▒ (╪¿╪╣╪» ┬º5.3): ╪╣╪»╪» ╪º┘ä╪╣╪º┘ä┘é┘è┘å ╪¡╪│╪¿ ╪º┘ä╪¡╪º┘ä╪⌐/╪º┘ä╪╣┘à╪▒
+# 🟡 مراقبة الطابور (بعد §5.3): عدد العالقين حسب الحالة/العمر
 psql -d maxp -c "SELECT status, COUNT(*),
     MAX(EXTRACT(EPOCH FROM (NOW() - \"scheduledAt\"))::INT) AS max_age_sec
   FROM whatsapp_notification_queue
@@ -847,60 +847,60 @@ psql -d maxp -c "SELECT status, COUNT(*),
 
 ---
 
-## 8. ╪│╪¼┘ä ╪º┘ä╪¬┘é╪»┘à (┘è╪¡╪»┘æ╪½┘ç ╪º┘ä┘à┘å┘ü┘æ╪░ ╪¿╪╣╪» ┘â┘ä ┘à┘ç┘à╪⌐)
+## 8. سجل التقدم (يحدّثه المنفّذ بعد كل مهمة)
 
-| ╪º┘ä┘à┘ç┘à╪⌐ | ╪º┘ä┘à┘å┘ü┘æ╪░ | ╪º┘ä╪¬╪º╪▒┘è╪« | ╪º┘ä╪¡╪º┘ä╪⌐ | ┘à┘ä╪º╪¡╪╕╪º╪¬ / PR |
+| المهمة | المنفّذ | التاريخ | الحالة | ملاحظات / PR |
 |--------|---------|---------|--------|---------------|
-| ┬º1.1-pre enum COMPLETEDΓåÆSENT | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | ≡ƒö┤ ╪¡╪º╪¼╪▓ ┘é╪¿┘ä ┬º1.1 ΓÇö WhatsAppNotificationService.js:3509 ΓåÆ 'SENT' |
-| ┬º1.1 ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒ | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | `notificationQueueWorker.js` (╪¼╪»┘è╪») + ╪¬╪│╪¼┘è┘ä ┘ü┘è server.js + ╪¡╪º╪▒╪│ ╪¬╪»╪º╪«┘ä ┘ü┘è processNotificationQueue |
-| ┬º1.2 ╪Ñ╪╡┘ä╪º╪¡ ╪º┘ä┘â╪▒┘ê┘å | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | ┘à╪▒┘ê╪▒ ╪╣╪¿╪▒ updateOrderStatus (setCompanyId + take:50 + changedBy='SYSTEM_AUTO'). **╪¬╪╡╪¡┘è╪¡**: updateOrderStatus ┘è┘â╪¬╪¿ history ┘à╪¬╪»╪º╪«┘ä╪º┘ï ΓÇö ╪ú┘Å╪▓┘è┘ä createMany (┘â╪º┘å ╪│┘è┘Å┘å╪¬╪¼ ╪╡┘ü┘æ┘è┘å) |
-| ┬º2.1-pre mapping event type | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | ORDER_STATUS_TO_EVENT_TYPE (┘à┘ê╪│┘æ╪╣╪⌐ ╪¿╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪│╪¬ ╪º┘ä┘é┘è╪º╪│┘è╪⌐ ┘ü┘è ┬º3.1) + ╪¬╪╡╪»┘è╪▒ getPersistedNotificationEventType |
-| ┬º2.1 ╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¡╪º┘ä╪º╪¬ | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | ╪¡╪░┘ü guard + ╪¬┘ü┘ê┘è╪╢ sendOrderStatusNotification + ╪¬╪╖╪º╪¿┘é ╪¬╪º┘à (╪¿╪»┘ä contains) + ╪¡╪░┘ü getWhatsAppOrderEventType |
-| ┬º2.2 ╪Ñ╪▓╪º┘ä╪⌐ ╪º┘ä┘ç╪º╪▒╪»┘â┘ê╪» | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | `utils/companyBranding.js` (╪¼╪»┘è╪») + ╪º╪│╪¬╪¿╪»╪º┘ä ╪º┘ä┘à┘ê╪º╪╢╪╣ ╪º┘ä╪ú╪▒╪¿╪╣╪⌐ + orderWorkflowService |
-| ┬º2.3 auto-seed ┘é┘ê╪º┘ä╪¿ (╪»┘ü╪º╪╣┘è) | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | `services/orderTemplateSeeding.js` (╪¼╪»┘è╪») ΓÇö `ensureOrderTemplate` ┘ü┘è sendNotification ╪╣┘å╪» ╪║┘è╪º╪¿ ┘é╪º┘ä╪¿ ╪╖┘ä╪¿ (╪┤╪▒┘â╪⌐ ╪¼╪»┘è╪»╪⌐ ┘ä┘à ╪¬╪╣╪» ╪¬┘ü╪┤┘ä ╪¿╪╡┘à╪¬ ╪¿┘Ç no_template)╪¢ orderStatusController ┘è╪│╪¬┘ê╪▒╪» ╪º┘ä╪¿╪░╪▒ ┘à┘å ╪º┘ä╪«╪»┘à╪⌐ |
-| ┬º3.1 ╪¬┘ê╪¡┘è╪» dedup | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | helper `isDuplicateNotification` ┘à┘ê╪¡┘æ╪» + ╪º╪│╪¬╪¿╪»╪º┘ä ╪º┘ä┘à┘ê╪º┘é╪╣ ╪º┘ä╪ú╪▒╪¿╪╣╪⌐ (╪Ñ╪╡┘ä╪º╪¡ contains). **┘é╪▒╪º╪▒**: DB unique ┘à╪▒┘ü┘ê╪╢ ΓÇö permanent ┘è┘à┘å╪╣ ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘à╪┤╪▒┘ê╪╣╪⌐ ╪¿╪╣╪» ╪º┘ä┘å╪º┘ü╪░╪⌐ (flip-flop)╪¢ ╪º┘ä┘Ç dedup ╪º┘ä╪▓┘à┘å┘è ┘ç┘ê ╪º┘ä╪ó┘ä┘è╪⌐ ╪º┘ä╪╡╪¡┘è╪¡╪⌐ |
-| ┬º4.1 retry + ┘ü╪╡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | ╪¡┘ä┘æ ╪º┘ä╪¼┘ä╪│╪⌐ ┘à╪ñ╪¼┘æ┘ä ┘ä┘ä┘à╪╣╪º┘ä╪¼╪⌐ ┘ü┘è ╪º┘ä╪╖╪º╪¿┘ê╪▒ (┘è╪»╪╣┘à META_CLOUD + ╪º┘ä╪¼┘ä╪│╪º╪¬ ╪º┘ä┘à┘å┘ü╪╡┘ä╪⌐)╪¢ scheduleNotification ┘è┘é╪¿┘ä ╪º┘ä╪¼╪»┘ê┘ä╪⌐ ╪¿┘ä╪º ╪¼┘ä╪│╪⌐ (sessionId='')╪¢ retry ╪╣╪¿╪▒ ╪º┘ä╪╖╪º╪¿┘ê╪▒ ┘ä┘ä╪ú╪«╪╖╪º╪í ╪º┘ä╪╣╪º╪¿╪▒╪⌐ (retryable) |
-| ┬º5.1 ╪º┘ä╪¬┘é╪│┘è┘à | agent | 2026-08-03 | Γ£à ╪¼╪▓╪ª┘è | ╪º╪│╪¬╪«╪▒╪¼╪¬ `DEFAULT_TEMPLATES` ΓåÆ `templates/defaultTemplates.js`╪î ┘à┘ê╪º╪▓┘å╪⌐ ╪º┘ä╪¼┘ä╪│╪º╪¬ ΓåÆ `sessionBalancer.js` + `formatPhoneNumber` ΓåÆ `utils/phoneFormat.js`╪î ┘ê┘å┘ê╪º╪⌐ ╪º┘ä╪ú┘å┘ê╪º╪╣ ╪º┘ä┘å┘é┘è╪⌐ ΓåÆ `notificationTypes.js` (╪º┘ä┘à┘ä┘ü 4205ΓåÆ2797 ╪│╪╖╪▒). **┘à╪¬╪¿┘é┘æ┘è**: ╪º┘ä╪╖╪º╪¿┘ê╪▒/senders + i18n (┘à╪ñ╪¼┘ä╪⌐ ΓÇö ╪¬┘å╪╖┘ê┘è ╪╣┘ä┘ë circular deps ┘ê┘à┘è╪▓╪⌐ ┘à┘å╪¬╪¼) |
-| ┬º5.2 ╪│╪» bypasses workflow | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | ╪º╪│╪¬╪«╪▒╪º╪¼ `syncPreparationMetadata` + ╪º╪│╪¬╪»╪╣╪º╪ñ┘ç ╪¿╪╣╪» ╪º┘ä┘Ç raw updates ┘ü┘è :351/:471 |
-| ┬º5.3 ┘à╪▒╪º┘é╪¿╪⌐ ╪º┘ä╪╖╪º╪¿┘ê╪▒ | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | `GET /api/v1/whatsapp-notifications/queue-stats` (╪¼╪»┘è╪») + ╪¬┘å╪¿┘è┘ç overdue>10 ┘ü┘è ╪º┘ä┘Ç worker |
-| **╪º╪«╪¬╪¿╪º╪▒╪º╪¬ Jest (task 1)** | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | 4 ┘à┘ä┘ü╪º╪¬ ╪¼╪»┘è╪»╪⌐: `tests/services/whatsapp/notificationTypes.test.js` (25)╪î `tests/services/whatsapp/isDuplicateNotification.test.js` (7)╪î `tests/utils/companyBranding.test.js` (7)╪î `tests/services/syncPreparationMetadata.test.js` (7) ΓÇö **52/52 ╪ú╪«╪╢╪▒** |
-| **╪¬┘ê╪¡┘è╪» ╪º┘ä┘ê╪½┘è┘é╪⌐ (task 2)** | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | ┬º1.2 ┘â┘ê╪» ┘à╪╖╪º╪¿┘é ┘ä┘ä┘ü╪╣┘ä (╪¿┘ä╪º createMany + ╪¬┘å╪¿┘è┘ç ╪º┘ä┘Ç nested history)╪¢ ┬º3.1 ╪ú┘Å╪╢┘è┘ü "╪º┘ä┘é╪▒╪º╪▒ ╪º┘ä┘å┘ç╪º╪ª┘è" (╪▒┘ü╪╢ ╪º┘ä┘Ç DB unique)╪¢ ┬º5.1 ┘ê╪½┘æ┘é ╪º┘ä┘à┘å┘ü┘æ╪░/╪º┘ä┘à╪ñ╪¼┘æ┘ä ╪¿╪»┘é╪⌐ |
-| **╪¬╪¡┘é┘é ╪│┘ä┘ê┘â┘è (task 3)** | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | scheduleNotification ┘ä╪º ┘è╪▒╪¼╪╣ no_session Γ£ô╪¢ re-entrancy guard Γ£ô╪¢ ┘à┘ä╪º╪¡╪╕╪⌐: processNotificationQueue ┘è╪▒╪│┘ä ┘à╪¿╪º╪┤╪▒╪⌐ ╪╣╪¿╪▒ WhatsAppMessageHandler (┘è╪▒┘ê┘æ╪¬ META_CLOUD) ┘ê┘ä┘è╪│ sendNotification ΓÇö ┘à┘é╪¿┘ê┘ä ┘ê╪╕┘è┘ü┘è╪º┘ï╪î ┘è┘Å┘ê╪½┘æ┘é ┘ü┘è ╪º┘ä╪¬┘é╪▒┘è╪▒ |
-| **╪Ñ╪╡┘ä╪º╪¡ ╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ┘à╪│╪¿┘é╪⌐ ╪º┘ä┘ü╪┤┘ä** | agent | 2026-08-03 | Γ£à ┘à┘å┘ü┘æ╪░ | `orderService.limit.test.js` (mock ┘å╪º┘é╪╡ product.findUnique) + `WhatsAppSyncService.test.js` ΓÇö **≡ƒö┤ ╪º┘â╪¬┘Å╪┤┘ü ┘ê╪╡┘Å╪¡┘æ╪¡ deadlock ╪¡┘é┘è┘é┘è ┘ü┘è `withKeyLock`** (WhatsAppSyncService.js:23-43): `gate = prev.then(() => current)` ┘â╪º┘å ┘è╪¼╪╣┘ä ╪ú┘ê┘ä ╪º╪│╪¬╪»╪╣╪º╪í ┘ä╪ú┘è ┘à┘ü╪¬╪º╪¡ ┘è┘å╪¬╪╕╪▒ `current` ╪º┘ä╪░┘è ┘ä╪º ┘è┘Å╪¡┘ä┘æ ╪Ñ┘ä╪º ╪¿╪╣╪» fn ΓåÆ **╪ú┘ê┘ä ╪▒╪│╪º┘ä╪⌐ WhatsApp ╪¬┘å╪┤╪ª ╪╣┘à┘è┘ä╪º┘ï ┘â╪º┘å╪¬ ╪│╪¬╪¬╪¼┘à┘æ╪» ┘ä┘ä╪ú╪¿╪» ┘ü┘è ╪º┘ä╪Ñ┘å╪¬╪º╪¼**. ╪º┘ä╪Ñ╪╡┘ä╪º╪¡: `gate = prev` (┘ê╪╣╪» ╪Ñ╪╖┘ä╪º┘é ╪º┘ä┘à┘Å╪¬╪╡┘ä ╪º┘ä╪│╪º╪¿┘é) + ╪¬╪«╪▓┘è┘å `current` ┘â┘à┘ü╪¬╪º╪¡ ╪º┘ä╪¬╪º┘ä┘è. ╪¬╪¡┘é┘æ┘é: ╪¬╪│┘ä╪│┘ä ╪╡╪¡┘è╪¡ (maxConcurrent=1) + ╪¬┘å╪╕┘è┘ü ╪º┘ä╪«╪▒┘è╪╖╪⌐. + mock `executeWithRetry` ┘ü┘è ╪º┘ä╪º╪«╪¬╪¿╪º╪▒ + ╪¬┘ê┘é┘æ╪╣ `whatsappId` ┘ü┘è ╪º┘ä┘Ç backfill. ╪º┘ä┘à╪¼┘à┘ê╪╣╪⌐: **8/8 ╪│┘ê┘è╪¬╪º╪¬ / 59/59 ╪ú╪«╪╢╪▒ (┘à╪│╪¬┘é╪▒ ╪╣╪¿╪▒ 3 ╪¬╪┤╪║┘è┘ä╪º╪¬)** |
+| §1.1-pre enum COMPLETED→SENT | agent | 2026-08-03 | ✅ منفّذ | 🔴 حاجز قبل §1.1 — WhatsAppNotificationService.js:3509 → 'SENT' |
+| §1.1 تفعيل الطابور | agent | 2026-08-03 | ✅ منفّذ | `notificationQueueWorker.js` (جديد) + تسجيل في server.js + حارس تداخل في processNotificationQueue |
+| §1.2 إصلاح الكرون | agent | 2026-08-03 | ✅ منفّذ | مرور عبر updateOrderStatus (setCompanyId + take:50 + changedBy='SYSTEM_AUTO'). **تصحيح**: updateOrderStatus يكتب history متداخلاً — أُزيل createMany (كان سيُنتج صفّين) |
+| §2.1-pre mapping event type | agent | 2026-08-03 | ✅ منفّذ | ORDER_STATUS_TO_EVENT_TYPE (موسّعة بالحالات الست القياسية في §3.1) + تصدير getPersistedNotificationEventType |
+| §2.1 خريطة الحالات | agent | 2026-08-03 | ✅ منفّذ | حذف guard + تفويض sendOrderStatusNotification + تطابق تام (بدل contains) + حذف getWhatsAppOrderEventType |
+| §2.2 إزالة الهاردكود | agent | 2026-08-03 | ✅ منفّذ | `utils/companyBranding.js` (جديد) + استبدال المواضع الأربعة + orderWorkflowService |
+| §2.3 auto-seed قوالب (دفاعي) | agent | 2026-08-03 | ✅ منفّذ | `services/orderTemplateSeeding.js` (جديد) — `ensureOrderTemplate` في sendNotification عند غياب قالب طلب (شركة جديدة لم تعد تفشل بصمت بـ no_template)؛ orderStatusController يستورد البذر من الخدمة |
+| §3.1 توحيد dedup | agent | 2026-08-03 | ✅ منفّذ | helper `isDuplicateNotification` موحّد + استبدال المواقع الأربعة (إصلاح contains). **قرار**: DB unique مرفوض — permanent يمنع إعادة الإرسال المشروعة بعد النافذة (flip-flop)؛ الـ dedup الزمني هو الآلية الصحيحة |
+| §4.1 retry + فصل الجلسة | agent | 2026-08-03 | ✅ منفّذ | حلّ الجلسة مؤجّل للمعالجة في الطابور (يدعم META_CLOUD + الجلسات المنفصلة)؛ scheduleNotification يقبل الجدولة بلا جلسة (sessionId='')؛ retry عبر الطابور للأخطاء العابرة (retryable) |
+| §5.1 التقسيم | agent | 2026-08-03 | ✅ جزئي | استخرجت `DEFAULT_TEMPLATES` → `templates/defaultTemplates.js`، موازنة الجلسات → `sessionBalancer.js` + `formatPhoneNumber` → `utils/phoneFormat.js`، ونواة الأنواع النقية → `notificationTypes.js` (الملف 4205→2797 سطر). **متبقّي**: الطابور/senders + i18n (مؤجلة — تنطوي على circular deps وميزة منتج) |
+| §5.2 سد bypasses workflow | agent | 2026-08-03 | ✅ منفّذ | استخراج `syncPreparationMetadata` + استدعاؤه بعد الـ raw updates في :351/:471 |
+| §5.3 مراقبة الطابور | agent | 2026-08-03 | ✅ منفّذ | `GET /api/v1/whatsapp-notifications/queue-stats` (جديد) + تنبيه overdue>10 في الـ worker |
+| **اختبارات Jest (task 1)** | agent | 2026-08-03 | ✅ منفّذ | 4 ملفات جديدة: `tests/services/whatsapp/notificationTypes.test.js` (25)، `tests/services/whatsapp/isDuplicateNotification.test.js` (7)، `tests/utils/companyBranding.test.js` (7)، `tests/services/syncPreparationMetadata.test.js` (7) — **52/52 أخضر** |
+| **توحيد الوثيقة (task 2)** | agent | 2026-08-03 | ✅ منفّذ | §1.2 كود مطابق للفعل (بلا createMany + تنبيه الـ nested history)؛ §3.1 أُضيف "القرار النهائي" (رفض الـ DB unique)؛ §5.1 وثّق المنفّذ/المؤجّل بدقة |
+| **تحقق سلوكي (task 3)** | agent | 2026-08-03 | ✅ منفّذ | scheduleNotification لا يرجع no_session ✓؛ re-entrancy guard ✓؛ ملاحظة: processNotificationQueue يرسل مباشرة عبر WhatsAppMessageHandler (يروّت META_CLOUD) وليس sendNotification — مقبول وظيفياً، يُوثّق في التقرير |
+| **إصلاح اختبارات مسبقة الفشل** | agent | 2026-08-03 | ✅ منفّذ | `orderService.limit.test.js` (mock ناقص product.findUnique) + `WhatsAppSyncService.test.js` — **🔴 اكتُشف وصُحّح deadlock حقيقي في `withKeyLock`** (WhatsAppSyncService.js:23-43): `gate = prev.then(() => current)` كان يجعل أول استدعاء لأي مفتاح ينتظر `current` الذي لا يُحلّ إلا بعد fn → **أول رسالة WhatsApp تنشئ عميلاً كانت ستتجمّد للأبد في الإنتاج**. الإصلاح: `gate = prev` (وعد إطلاق المُتصل السابق) + تخزين `current` كمفتاح التالي. تحقّق: تسلسل صحيح (maxConcurrent=1) + تنظيف الخريطة. + mock `executeWithRetry` في الاختبار + توقّع `whatsappId` في الـ backfill. المجموعة: **8/8 سويتات / 59/59 أخضر (مستقر عبر 3 تشغيلات)** |
 
 ---
 
-## 9. ┘à╪▒╪º╪¼╪╣
+## 9. مراجع
 
-### 9.1 ┘à┘ä┘ü╪º╪¬ ┘à╪¬╪ú╪½╪▒╪⌐
-| ╪º┘ä┘à┘ä┘ü | ╪º┘ä╪¬╪║┘è┘è╪▒╪º╪¬ |
+### 9.1 ملفات متأثرة
+| الملف | التغييرات |
 |------|-----------|
-| `services/whatsapp/WhatsAppNotificationService.js` | ┬º1.1-pre (enum `'COMPLETED'ΓåÆ'SENT'`)╪î ┬º2.1-pre (mapping)╪î ┬º2.2 (┘ç╪º╪▒╪»┘â┘ê╪»)╪î ┬º3.1 (dedup)╪î ┬º4.1 (retry + ┘ü╪╡┘ä ╪º┘ä╪¼┘ä╪│╪⌐)╪î ┬º5.1 (╪¬┘é╪│┘è┘à)╪î ┬º5.3 (alert) |
-| `services/whatsapp/templates/defaultTemplates.js` | **╪¼╪»┘è╪»** (┬º5.1) ΓÇö DEFAULT_TEMPLATES ┘à╪│╪¬╪«╪▒╪¼ |
-| `services/whatsapp/sessionBalancer.js` | **╪¼╪»┘è╪»** (┬º5.1) ΓÇö ┘à┘ê╪º╪▓┘å╪⌐ ╪º┘ä╪¼┘ä╪│╪º╪¬ + JIT init |
-| `services/whatsapp/notificationTypes.js` | **╪¼╪»┘è╪»** (┬º5.1) ΓÇö ┘å┘ê╪º╪⌐ ╪ú┘å┘ê╪º╪╣ ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘å┘é┘è╪⌐ (persisted mapping + isOrderCategory) |
-| `services/whatsapp/notificationQueueWorker.js` | **╪¼╪»┘è╪»** (┬º1.1 + ┬º5.3 alert) |
-| `utils/companyBranding.js` | **╪¼╪»┘è╪»** (┬º2.2) |
-| `utils/phoneFormat.js` | **╪¼╪»┘è╪»** (┬º5.1) |
-| `services/orderService.js` | ┬º2.1 (╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¡╪º┘ä╪º╪¬ + guard)╪î ┬º3.1 (dedup)╪î ┬º5.2 (╪º╪│╪¬╪«╪▒╪º╪¼ syncPreparationMetadata) |
-| `services/orderWorkflowService.js` | ┬º3.1 (dedup)╪î ┬º5.2 (╪│╪» raw update bypass) |
-| `cron/orderStatusAutoChangeCron.js` | ┬º1.2 (╪¬┘à╪▒┘è╪▒ ╪╣╪¿╪▒ updateOrderStatus ΓÇö ╪ú┘Å╪▓┘è┘ä createMany ┘ä╪¬╪¼┘å┘æ╪¿ ╪º╪▓╪»┘ê╪º╪¼ history) |
-| `controller/whatsappNotificationController.js` | ┬º5.3 (getNotificationQueueStats) |
-| `routes/whatsappNotificationRoutes.js` | ┬º5.3 (╪¬╪│╪¼┘è┘ä /queue-stats) |
-| `server.js` | ┬º1.1 (╪¬╪│╪¼┘è┘ä ╪º┘ä┘Ç worker) |
+| `services/whatsapp/WhatsAppNotificationService.js` | §1.1-pre (enum `'COMPLETED'→'SENT'`)، §2.1-pre (mapping)، §2.2 (هاردكود)، §3.1 (dedup)، §4.1 (retry + فصل الجلسة)، §5.1 (تقسيم)، §5.3 (alert) |
+| `services/whatsapp/templates/defaultTemplates.js` | **جديد** (§5.1) — DEFAULT_TEMPLATES مستخرج |
+| `services/whatsapp/sessionBalancer.js` | **جديد** (§5.1) — موازنة الجلسات + JIT init |
+| `services/whatsapp/notificationTypes.js` | **جديد** (§5.1) — نواة أنواع الإشعارات النقية (persisted mapping + isOrderCategory) |
+| `services/whatsapp/notificationQueueWorker.js` | **جديد** (§1.1 + §5.3 alert) |
+| `utils/companyBranding.js` | **جديد** (§2.2) |
+| `utils/phoneFormat.js` | **جديد** (§5.1) |
+| `services/orderService.js` | §2.1 (خريطة الحالات + guard)، §3.1 (dedup)، §5.2 (استخراج syncPreparationMetadata) |
+| `services/orderWorkflowService.js` | §3.1 (dedup)، §5.2 (سد raw update bypass) |
+| `cron/orderStatusAutoChangeCron.js` | §1.2 (تمرير عبر updateOrderStatus — أُزيل createMany لتجنّب ازدواج history) |
+| `controller/whatsappNotificationController.js` | §5.3 (getNotificationQueueStats) |
+| `routes/whatsappNotificationRoutes.js` | §5.3 (تسجيل /queue-stats) |
+| `server.js` | §1.1 (تسجيل الـ worker) |
 
-### 9.2 ┘ê╪½╪º╪ª┘é ╪░╪º╪¬ ╪╡┘ä╪⌐
-- `docs/infrastructure/production-memory-queue-remediation-plan.md` ΓÇö **╪╖╪º╪¿┘ê╪▒ ┘à╪«╪¬┘ä┘ü** (`OrderSyncQueue`/┘à╪▓╪º┘à┘å╪⌐ ╪¿┘è┘å ╪º┘ä╪┤╪▒┘â╪º╪¬ + ╪¬╪│╪▒┘è╪¿ ╪º┘ä╪░╪º┘â╪▒╪⌐). ┘ä╪º ┘è╪«┘ä╪╖.
-- `docs/orders/order-status-auto-change-2026-07-01.md` ΓÇö ╪¬┘ê╪½┘è┘é ┘à┘è╪▓╪⌐ ╪º┘ä┘â╪▒┘ê┘å (┘è╪¡╪¬┘ê┘è ╪¬╪¡╪░┘è╪▒ ┬º1.2).
-- `docs/orders/order-status-preparation-sync-2026-08-03.md` ΓÇö ┘à╪▓╪º┘à┘å╪⌐ `metadata.preparationStatus` (┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿┘Ç ┬º1.2 ┘ê┬º5.2).
+### 9.2 وثائق ذات صلة
+- `docs/infrastructure/production-memory-queue-remediation-plan.md` — **طابور مختلف** (`OrderSyncQueue`/مزامنة بين الشركات + تسريب الذاكرة). لا يخلط.
+- `docs/orders/order-status-auto-change-2026-07-01.md` — توثيق ميزة الكرون (يحتوي تحذير §1.2).
+- `docs/orders/order-status-preparation-sync-2026-08-03.md` — مزامنة `metadata.preparationStatus` (مرتبطة بـ §1.2 و§5.2).
 
-### 9.3 ┘à┘ä╪º╪¡╪╕╪º╪¬ ┘ä┘ä┘à┘Å╪▒╪º╪¼┘É╪╣
-- ╪▒┘â┘æ╪▓ ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐ ╪╣┘ä┘ë: (╪ú) ╪╡╪¡╪⌐ ╪¬┘ê┘é┘è╪╣╪º╪¬ ╪º┘ä╪»┘ê╪º┘ä ┘é╪¿┘ä ╪º┘ä╪º╪│╪¬╪»╪╣╪º╪í (╪▒╪º╪¼╪╣ ┬º1.2 ΓÇö ╪º┘ä╪¬┘ê┘é┘è╪╣ ╪º┘ä┘ü╪╣┘ä┘è 9 ┘à╪╣╪º┘à┘ä╪º╪¬)╪î (╪¿) ╪╣╪»┘à ┘â╪│╪▒ META_CLOUD path (┬º1.1 + ┬º4.1 ╪º┘ä╪¼╪▓╪í ╪ú)╪î (╪¼) **┬º3.1**: ┘é┘Å╪»┘æ╪▒ ╪ú┘å ┘é┘è╪» DB ╪º┘ä┘ü╪▒┘è╪» ╪º┘ä╪»╪º╪ª┘à ┘è┘Å╪╣┘è┘é ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘à╪┤╪▒┘ê╪╣╪⌐ ╪¿╪╣╪» ╪º┘ä┘å╪º┘ü╪░╪⌐ ΓÇö ╪º╪╣╪¬┘à╪»┘å╪º ╪º┘ä┘Ç dedup ╪º┘ä╪▓┘à┘å┘è ╪º┘ä┘à┘ê╪¡┘æ╪» ┘ü┘é╪╖ (┘ä╪º migration).
-- ╪ú┘è ╪¬╪╣╪»┘è┘ä ╪╣┘ä┘ë `orderService.updateOrderStatus` ┘è╪¼╪¿ ╪º╪«╪¬╪¿╪º╪▒┘ç ╪╣┘ä┘ë ┘à╪│╪º╪▒╪º╪¬ ╪º┘ä┘Ç 7 ╪º┘ä┘à╪░┘â┘ê╪▒╪⌐ ┘ü┘è ┬º2.2 (┘å┘é╪º╪╖ ╪»╪«┘ê┘ä ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐).
-- ≡ƒƒí **┘à╪▒╪º╪¼╪╣╪⌐ ╪½╪º┘å┘è╪⌐ (2026-08-03)** ╪╖┘Å╪¿┘æ┘é╪¬: ╪╡╪¡┘æ╪¡╪¬ ╪¬┘ê┘é┘è╪╣ `updateOrderStatus`╪î ╪¡┘é┘ê┘ä `Company`╪î mapping ╪º┘ä┘Ç enum╪î ╪º╪│┘à ╪º┘ä╪¼╪»┘ê┘ä (`whatsapp_notification_logs`)╪î ┘à┘å╪╖┘é retry ┘ä┘ü╪┤┘ä ╪º┘ä╪¼┘ä╪│╪⌐╪î guard ╪º┘ä╪¬╪»╪º╪«┘ä╪î ┘ê╪ú╪╢┘ü╪¬ ┬º5.2 (workflow bypass) ┘ê┬º5.3 (┘à╪▒╪º┘é╪¿╪⌐).
-- ≡ƒƒí **┘à╪▒╪º╪¼╪╣╪⌐ ╪▒╪º╪¿╪╣╪⌐ (╪º┘ä╪¬┘å┘ü┘è╪░)**: ╪º┘â╪¬┘Å╪┤┘ü ╪ú┘å `updateOrderStatus` ┘è┘â╪¬╪¿ OrderStatusHistory ┘à╪¬╪»╪º╪«┘ä╪º┘ï ΓÇö ╪ú┘Å╪▓┘è┘ä createMany ┘à┘å ┬º1.2 ┘ä╪¬╪¼┘å┘æ╪¿ ╪º┘ä╪º╪▓╪»┘ê╪º╪¼. ╪º┘â╪¬┘à┘ä╪¬ ┬º1.1-preΓåÆ┬º5.3 ┘à╪º ╪╣╪»╪º i18n ┘ê╪¿┘é┘è╪⌐ ╪¬┘é╪│┘è┘à ┬º5.1 (┘à╪ñ╪¼┘ä╪⌐).
-- ≡ƒƒí **┘à╪▒╪º╪¼╪╣╪⌐ ╪«╪º┘à╪│╪⌐ (╪¬╪│┘ä┘è┘à/╪º╪«╪¬╪¿╪º╪▒╪º╪¬)**: ╪ú┘Å╪╢┘è┘ü╪¬ 4 ┘à┘ä┘ü╪º╪¬ ╪º╪«╪¬╪¿╪º╪▒ Jest (52/52 ╪ú╪«╪╢╪▒). ╪¬╪¡┘é┘é ╪│┘ä┘ê┘â┘è: `scheduleNotification` ┘ä╪º ┘è┘Å╪│┘é╪╖ ╪╣┘å╪» ╪║┘è╪º╪¿ ╪¼┘ä╪│╪⌐ Γ£ô╪î guard ╪º┘ä╪¬╪»╪º╪«┘ä Γ£ô╪î ┘ä┘â┘å `processNotificationQueue` ┘è╪▒╪│┘ä ┘à╪¿╪º╪┤╪▒╪⌐ ╪╣╪¿╪▒ `WhatsAppMessageHandler` (┘è╪▒┘ê┘æ╪¬ META_CLOUD ╪»╪º╪«┘ä┘è╪º┘ï + ╪¡┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ┘à╪ñ╪¼┘æ┘ä) ┘ê┘ä┘è╪│ ╪╣╪¿╪▒ `sendNotification` ΓÇö ┘à┘é╪¿┘ê┘ä ┘ê╪╕┘è┘ü┘è╪º┘ï╪î deviation ┘à┘ê╪½┘æ┘é ┘à┘å ╪¬┘ê╪╡┘è╪⌐ ┬º1.1. ┘à┘ä╪º╪¡╪╕╪⌐: `getPersistedNotificationEventType('PREPARING'|'PACKAGED')` ┘è┘Å╪▒╪¼╪╣ ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪«╪º┘à (┘ä┘è╪│╪¬ ┘é┘è┘à enum) ΓÇö ╪ó┘à┘å╪⌐ ╪¡╪º┘ä┘è╪º┘ï ┘ä╪ú┘å `normalizeWhatsAppOrderStatus` ╪¬╪¡┘ê┘æ┘ä┘ç┘à╪º ╪Ñ┘ä┘ë PICKING/PACKED ┘é╪¿┘ä ╪º┘ä╪Ñ╪▒╪│╪º┘ä╪î ┘ä┘â┘å ╪ú┘è ┘à┘Å╪│╪¬╪»╪╣┘ì ┘à╪│╪¬┘é╪¿┘ä┘è ┘è┘à╪▒┘æ╪▒┘ç╪º ┘à╪¿╪º╪┤╪▒╪⌐ ╪│┘è┘Å╪╡╪º╪¿ ╪¿┘Ç enum error.
+### 9.3 ملاحظات للمُراجِع
+- ركّز المراجعة على: (أ) صحة توقيعات الدوال قبل الاستدعاء (راجع §1.2 — التوقيع الفعلي 9 معاملات)، (ب) عدم كسر META_CLOUD path (§1.1 + §4.1 الجزء أ)، (ج) **§3.1**: قُدّر أن قيد DB الفريد الدائم يُعيق إعادة الإرسال المشروعة بعد النافذة — اعتمدنا الـ dedup الزمني الموحّد فقط (لا migration).
+- أي تعديل على `orderService.updateOrderStatus` يجب اختباره على مسارات الـ 7 المذكورة في §2.2 (نقاط دخول تغيير الحالة).
+- 🟡 **مراجعة ثانية (2026-08-03)** طُبّقت: صحّحت توقيع `updateOrderStatus`، حقول `Company`، mapping الـ enum، اسم الجدول (`whatsapp_notification_logs`)، منطق retry لفشل الجلسة، guard التداخل، وأضفت §5.2 (workflow bypass) و§5.3 (مراقبة).
+- 🟡 **مراجعة رابعة (التنفيذ)**: اكتُشف أن `updateOrderStatus` يكتب OrderStatusHistory متداخلاً — أُزيل createMany من §1.2 لتجنّب الازدواج. اكتملت §1.1-pre→§5.3 ما عدا i18n وبقية تقسيم §5.1 (مؤجلة).
+- 🟡 **مراجعة خامسة (تسليم/اختبارات)**: أُضيفت 4 ملفات اختبار Jest (52/52 أخضر). تحقق سلوكي: `scheduleNotification` لا يُسقط عند غياب جلسة ✓، guard التداخل ✓، لكن `processNotificationQueue` يرسل مباشرة عبر `WhatsAppMessageHandler` (يروّت META_CLOUD داخلياً + حل الجلسة مؤجّل) وليس عبر `sendNotification` — مقبول وظيفياً، deviation موثّق من توصية §1.1. ملاحظة: `getPersistedNotificationEventType('PREPARING'|'PACKAGED')` يُرجع القيمة الخام (ليست قيم enum) — آمنة حالياً لأن `normalizeWhatsAppOrderStatus` تحوّلهما إلى PICKING/PACKED قبل الإرسال، لكن أي مُستدعٍ مستقبلي يمرّرها مباشرة سيُصاب بـ enum error.
 
 ---
 
-*┘ç╪░╪º ╪º┘ä┘à╪│╪¬┘å╪» ┘ç┘ê ╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä╪▒╪│┘à┘è ┘ä╪Ñ╪╡┘ä╪º╪¡ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪╖┘ä╪¿╪º╪¬. ╪¡╪»┘æ╪½ ┬º8 ╪¿╪╣╪» ┘â┘ä ┘à┘ç┘à╪⌐. ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐ ╪º┘ä╪½╪º┘å┘è╪⌐ (2026-08-03) ╪»┘à╪¼╪¬ ╪¬╪╡╪¡┘è╪¡╪º╪¬ ╪¬┘é┘å┘è╪⌐ ┘à╪ñ┘â╪»╪⌐ ┘à┘å ┘à╪▒╪º╪¼╪╣╪⌐ ╪«╪º╪▒╪¼┘è╪⌐.*
+*هذا المستند هو المرجع الرسمي لإصلاح إشعارات واتساب للطلبات. حدّث §8 بعد كل مهمة. المراجعة الثانية (2026-08-03) دمجت تصحيحات تقنية مؤكدة من مراجعة خارجية.*

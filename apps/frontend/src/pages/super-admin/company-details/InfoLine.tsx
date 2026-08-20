@@ -1,5 +1,5 @@
 import type { ReactNode, ElementType } from "react"
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink } from "lucide-react"
 
 function InfoLineInner({ icon: Icon, children, asLink }: { icon: ElementType; children: ReactNode; asLink?: boolean }) {
   return (

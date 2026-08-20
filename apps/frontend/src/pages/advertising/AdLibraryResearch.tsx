@@ -1,6 +1,13 @@
 import React, { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Calendar, CalendarDays, ExternalLink, Filter, Loader2, Megaphone, Search, Volume2 } from 'lucide-react';
+import {
+  CalendarDays,
+  ExternalLink,
+  Filter,
+  Loader2,
+  Megaphone,
+  Search,
+} from "lucide-react";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import {
   type FacebookAdLibraryAd,

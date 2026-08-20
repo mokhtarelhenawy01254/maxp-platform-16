@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Banknote,
   CheckCircle2,
@@ -88,7 +88,7 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
       });
       setData(payload);
     } catch {
-      setError("╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪º┘ä┘å╪¬╪º╪ª╪¼ ╪º┘ä┘å┘ç╪º╪ª┘è╪⌐");
+      setError("تعذر تحميل النتائج النهائية");
     } finally {
       setLoading(false);
     }
@@ -132,32 +132,32 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
       <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard
-          label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬"
+          label="إجمالي الطلبات"
           value={formatNumber(summary.totalOrders)}
           icon={Package}
         />
         <KpiCard
-          label="┘à┘Å╪│┘ä┘Ä┘æ┘à"
+          label="مُسلَّم"
           value={formatNumber(summary.delivered)}
           icon={CheckCircle2}
           gradient="from-emerald-500 to-teal-600"
           hint={formatCurrency(summary.deliveredRevenue)}
         />
         <KpiCard
-          label="┘ü╪º╪┤┘ä"
+          label="فاشل"
           value={formatNumber(summary.failed)}
           icon={XCircle}
           gradient="from-rose-500 to-red-600"
           hint={formatCurrency(summary.failedRevenue)}
         />
         <KpiCard
-          label="┘å╪│╪¿╪⌐ ╪º┘ä┘å╪¼╪º╪¡"
+          label="نسبة النجاح"
           value={formatPercent(summary.successRate)}
           icon={Target}
           gradient="from-sky-500 to-indigo-600"
         />
         <KpiCard
-          label="╪º┘ä╪Ñ┘è╪▒╪º╪» ╪º┘ä╪╢╪º╪ª╪╣"
+          label="الإيراد الضائع"
           value={formatCurrency(summary.lostRevenue)}
           icon={Banknote}
           gradient="from-amber-500 to-orange-600"
@@ -166,8 +166,8 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MovementCard
-          title="╪¬┘ê╪▓┘è╪╣ ╪º┘ä┘å╪¬╪º╪ª╪¼"
-          subtitle="╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪¡╪│╪¿ ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘å┘ç╪º╪ª┘è╪⌐"
+          title="توزيع النتائج"
+          subtitle="عدد الطلبات حسب الحالة النهائية"
         >
           <div className="h-[280px]">
             <DeferredResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -206,7 +206,7 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
                           {status ? getStatusLabel(status) : "-"}
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-300">
-                          {formatNumber(Number(item.value ?? 0))} ╪╖┘ä╪¿
+                          {formatNumber(Number(item.value ?? 0))} طلب
                         </div>
                       </div>
                     );
@@ -244,8 +244,8 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
         </MovementCard>
 
         <MovementCard
-          title="╪º┘ä╪Ñ┘è╪▒╪º╪» ╪¡╪│╪¿ ╪º┘ä┘å╪¬┘è╪¼╪⌐"
-          subtitle="╪Ñ╪¼┘à╪º┘ä┘è ┘é┘è┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ä┘â┘ä ╪¡╪º┘ä╪⌐ ┘å┘ç╪º╪ª┘è╪⌐"
+          title="الإيراد حسب النتيجة"
+          subtitle="إجمالي قيمة الطلبات لكل حالة نهائية"
         >
           <div className="h-[320px]">
             <DeferredResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -302,8 +302,8 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <MovementCard
-          title="╪ú╪│╪¿╪º╪¿ ╪º┘ä┘ü╪┤┘ä"
-          subtitle="╪ó╪«╪▒ ╪│╪¿╪¿ ┘à╪│╪¼┘ä ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘ü╪º╪┤┘ä╪⌐"
+          title="أسباب الفشل"
+          subtitle="آخر سبب مسجل للطلبات الفاشلة"
           className="xl:col-span-2"
         >
           {data.reasons.length > 0 ? (
@@ -311,10 +311,10 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
               <table className="w-full text-right">
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 dark:border-gray-700/60 dark:text-gray-400">
-                    <th className="px-4 py-3">╪º┘ä╪│╪¿╪¿</th>
-                    <th className="px-4 py-3">╪º┘ä╪¡╪º┘ä╪⌐</th>
-                    <th className="px-4 py-3 text-center">╪º┘ä╪╣╪»╪»</th>
-                    <th className="px-4 py-3 text-left">╪º┘ä╪Ñ┘è╪▒╪º╪»</th>
+                    <th className="px-4 py-3">السبب</th>
+                    <th className="px-4 py-3">الحالة</th>
+                    <th className="px-4 py-3 text-center">العدد</th>
+                    <th className="px-4 py-3 text-left">الإيراد</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -342,14 +342,14 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
             </div>
           ) : (
             <div className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-              ┘ä╪º ╪¬┘ê╪¼╪» ╪ú╪│╪¿╪º╪¿ ┘à╪│╪¼┘ä╪⌐ ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘ü╪º╪┤┘ä╪⌐
+              لا توجد أسباب مسجلة للطلبات الفاشلة
             </div>
           )}
         </MovementCard>
 
         <MovementCard
-          title="╪º┘ä╪¡╪▒┘â╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐ ┘ê╪º┘ä╪¬┘ä┘é╪º╪ª┘è╪⌐"
-          subtitle="╪¬╪╡┘å┘è┘ü ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪¡╪│╪¿ ╪ó╪«╪▒ ╪¡╪▒┘â╪⌐"
+          title="الحركات اليدوية والتلقائية"
+          subtitle="تصنيف الطلبات حسب آخر حركة"
         >
           <div className="space-y-6">
             <div>
@@ -357,7 +357,7 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
                 <div className="flex items-center gap-2">
                   <AutoBadge auto={false} />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                    ┘è╪»┘ê┘è
+                    يدوي
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -381,7 +381,7 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
                 <div className="flex items-center gap-2">
                   <AutoBadge auto />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                    ╪¬┘ä┘é╪º╪ª┘è
+                    تلقائي
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -401,7 +401,7 @@ export default function OutcomesTab({ startDate, endDate, mode }: MovementFilter
               </div>
             </div>
             <p className="pt-1 text-xs text-gray-500 dark:text-gray-400">
-              ┘à┘å ╪Ñ╪¼┘à╪º┘ä┘è {formatNumber(summary.totalOrders)} ╪╖┘ä╪¿ ┘ü┘è ╪º┘ä┘ü╪¬╪▒╪⌐ ╪º┘ä┘à╪¡╪»╪»╪⌐
+              من إجمالي {formatNumber(summary.totalOrders)} طلب في الفترة المحددة
             </p>
           </div>
         </MovementCard>

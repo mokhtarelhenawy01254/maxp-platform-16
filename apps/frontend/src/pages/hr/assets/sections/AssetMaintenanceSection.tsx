@@ -1,10 +1,19 @@
-import { Circle as WrenchScrewdriverIcon, Circle as CalendarDaysIcon, Circle as BellAlertIcon, Plus as PlusIcon, Activity as ChartBarIcon, ShieldAlert as ShieldExclamationIcon, Clock as ClockIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  WrenchScrewdriverIcon,
+  CalendarDaysIcon,
+  BellAlertIcon,
+  PlusIcon,
+  ChartBarIcon,
+  ShieldExclamationIcon,
+  ClockIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { useCurrency } from "../../../../hooks/useCurrency";
 import { toast } from "sonner";
+import { tToast } from "../../../../utils/i18n-toast";
 
 interface MaintenanceRecord {
   id: string;
@@ -87,7 +96,7 @@ const AssetMaintenanceSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error in main maintenance fetch:", error);
-      toast.error("حدث خطأ أثناء تحميل البيانات");
+      tToast.error("AssetMaintenanceSection.error_error_85aa");
     } finally {
       setLoading(false);
     }
@@ -99,7 +108,7 @@ const AssetMaintenanceSection: React.FC = () => {
 
   const handleAddMaintenance = async () => {
     if (!newRecord.assetId || !newRecord.description) {
-      toast.error("يرجى اكمال البيانات المطلوبة");
+      tToast.error("AssetMaintenanceSection.msg_b270");
       return;
     }
 
@@ -109,12 +118,12 @@ const AssetMaintenanceSection: React.FC = () => {
         newRecord,
       );
       if (response.data.success) {
-        toast.success("تم تسجيل سجل الصيانة بنجاح");
+        tToast.success("AssetMaintenanceSection.success_login_record_39c0");
         setShowAddModal(false);
         fetchData();
       }
     } catch (error) {
-      toast.error("فشل في حفظ سجل الصيانة");
+      tToast.error("AssetMaintenanceSection.failed_save_efc0");
     }
   };
 

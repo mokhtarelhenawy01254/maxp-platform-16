@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { Image, Save, Search, X, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import { Image, Save, Search, XCircle, ToggleLeft, ToggleRight, RefreshCw } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
@@ -78,8 +79,8 @@ export default function SuperAdminAIImageGeneratorSettings() {
     setSaving(true);
     try {
       const res = await axios.put(buildApiUrl("super-admin/ai-image-generator-settings"), { config }, { headers: getAuthHeaders() });
-      if (res.data.success) { toast.success("تم حفظ الإعدادات"); setConfig(res.data.data); }
-    } catch { toast.error("خطأ في حفظ الإعدادات"); }
+      if (res.data.success) { tToast.success("SuperAdminAIImageGeneratorSettings.success_save_d643"); setConfig(res.data.data); }
+    } catch { tToast.error("SuperAdminAIImageGeneratorSettings.error_save_f591"); }
     finally { setSaving(false); }
   };
 
@@ -93,7 +94,7 @@ export default function SuperAdminAIImageGeneratorSettings() {
     await axios.put(buildApiUrl(`super-admin/ai-image-generator-settings/companies/${companyId}`), data, { headers: getAuthHeaders() });
     setEditingCompany(null);
     await fetchCompanies();
-    toast.success("تم حفظ إعدادات الشركة");
+    tToast.success("SuperAdminAIImageGeneratorSettings.success_save_c57f");
   };
 
   const updateTierModel = (tierKey: string, model: string) => {

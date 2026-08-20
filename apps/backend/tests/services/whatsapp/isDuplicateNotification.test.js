@@ -1,5 +1,5 @@
-﻿/**
- * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º3.1) ΓÇö regression tests:
+/**
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §3.1) — regression tests:
  * isDuplicateNotification is the single dedup gate used by orderService,
  * orderWorkflowService and sendOrderCreatedNotification. It must key on the
  * PERSISTED event type (matches whatsAppNotificationLog rows) and scope by
@@ -28,7 +28,7 @@ jest.mock('../../../services/sharedDatabase', () => ({
 
 const { isDuplicateNotification } = require('../../../services/whatsapp/WhatsAppNotificationService');
 
-describe('isDuplicateNotification (┬º3.1)', () => {
+describe('isDuplicateNotification (§3.1)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSettings.whatsAppNotificationLog.findFirst.mockResolvedValue(null);

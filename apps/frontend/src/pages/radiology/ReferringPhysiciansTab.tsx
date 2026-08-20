@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, BadgePercent, FileText, CheckCircle2, Circle } from "lucide-react";
@@ -142,7 +142,7 @@ export default function ReferringPhysiciansTab() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {commissions.map(c => (
               <div key={c.physicianId} className="flex justify-between items-center border dark:border-gray-700 rounded-lg px-3 py-2 text-sm">
-                <span className="font-medium">{c.name || "ΓÇö"}</span>
+                <span className="font-medium">{c.name || "—"}</span>
                 <span className="text-green-600 font-bold">{Number(c.commission).toFixed(0)} {t("radiology.currency")}</span>
               </div>
             ))}
@@ -170,9 +170,9 @@ export default function ReferringPhysiciansTab() {
                 {items.map(p => (
                   <tr key={p.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
                     <td className="py-3 px-4 font-medium">{p.name}</td>
-                    <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.specialty || "ΓÇö"}</td>
-                    <td className="py-3 px-4" dir="ltr">{p.phone || "ΓÇö"}</td>
-                    <td className="py-3 px-4">{p.marketingRepName || "ΓÇö"}</td>
+                    <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.specialty || "—"}</td>
+                    <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>
+                    <td className="py-3 px-4">{p.marketingRepName || "—"}</td>
                     <td className="py-3 px-4">{t(COMMISSION_LABEL[p.commissionType] || p.commissionType)}{p.commissionType === "PERCENTAGE" ? ` ${p.commissionValue}%` : p.commissionType === "FIXED" ? ` ${p.commissionValue} ${t("radiology.currency")}` : ""}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
@@ -267,7 +267,7 @@ export default function ReferringPhysiciansTab() {
                     {results.items.map(i => (
                       <tr key={i.id} className="border-b dark:border-gray-700/50">
                         <td className="py-2 px-2 font-medium">{i.patientName}</td>
-                        <td className="py-2 px-2">{i.examTypeName || i.modality || "ΓÇö"}</td>
+                        <td className="py-2 px-2">{i.examTypeName || i.modality || "—"}</td>
                         <td className="py-2 px-2 whitespace-nowrap">{new Date(i.createdAt).toLocaleDateString("ar-EG")}</td>
                         <td className="py-2 px-2">
                           <span className={`inline-block px-2 py-0.5 rounded text-xs ${RadiologyStatusMap[i.status]?.color || "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"}`}>

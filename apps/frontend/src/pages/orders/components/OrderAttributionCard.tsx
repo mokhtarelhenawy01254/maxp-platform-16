@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import {
   GlobeAltIcon,
   HashtagIcon,
@@ -91,18 +91,18 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪¡┘à┘ä╪⌐
+            بيانات الحملة
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            ╪º┘ä┘à╪╡╪»╪▒ ╪º┘ä╪Ñ╪╣┘ä╪º┘å┘è ┘ê╪º┘ä╪▒╪¿╪╖ ╪º┘ä╪¬╪│┘ê┘è┘é┘è ┘ä┘ä╪╖┘ä╪¿
+            المصدر الإعلاني والربط التسويقي للطلب
           </p>
         </div>
       </div>
 
       {!attribution ? (
         <p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-          ┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ╪¡┘à┘ä╪⌐ ┘à╪¡┘ü┘ê╪╕╪⌐ ┘ä┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿. ╪│╪¬╪╕┘ç╪▒ ┘ç┘å╪º ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪º┘ä┘é╪º╪»┘à╪⌐ ┘à┘å ╪▒┘ê╪º╪¿╪╖
-          ┘à╪╣┘ä┘æ┘à╪⌐ ╪ú┘ê ╪¿╪╣╪» ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪º┘ä╪¬┘é╪º╪╖ ╪º┘ä╪¼╪»┘è╪».
+          لا توجد بيانات حملة محفوظة لهذا الطلب. ستظهر هنا الطلبات الجديدة القادمة من روابط
+          معلّمة أو بعد تفعيل الالتقاط الجديد.
         </p>
       ) : (
         <div className="space-y-3">
@@ -128,17 +128,17 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
 
           <DetailRow
             icon={<GlobeAltIcon />}
-            label="╪º┘ä┘à╪╡╪»╪▒ / ╪º┘ä┘ê╪│┘è╪╖"
+            label="المصدر / الوسيط"
             value={sourceMedium}
           />
           <DetailRow
             icon={<MegaphoneIcon />}
-            label="╪º╪│┘à ╪º┘ä╪¡┘à┘ä╪⌐"
+            label="اسم الحملة"
             value={attribution.campaignName}
           />
           <DetailRow
             icon={<HashtagIcon />}
-            label="╪▒┘é┘à ╪º┘ä╪¡┘à┘ä╪⌐"
+            label="رقم الحملة"
             value={attribution.campaignId}
             mono
           />
@@ -156,7 +156,7 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
           />
           <DetailRow
             icon={<LinkIcon />}
-            label="╪╡┘ü╪¡╪⌐ ╪º┘ä┘ç╪¿┘ê╪╖"
+            label="صفحة الهبوط"
             value={attribution.landingPath}
             mono
           />
@@ -168,7 +168,7 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
           />
           <DetailRow
             icon={<ClockIcon />}
-            label="┘ê┘é╪¬ ╪º┘ä╪º┘ä╪¬┘é╪º╪╖"
+            label="وقت الالتقاط"
             value={attribution.capturedAt ? formatDateTime(attribution.capturedAt) : undefined}
           />
         </div>

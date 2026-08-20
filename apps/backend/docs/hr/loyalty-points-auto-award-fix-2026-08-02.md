@@ -1,7 +1,7 @@
-﻿# Loyalty Points Auto-Award Fix
+# Loyalty Points Auto-Award Fix
 
 **Date**: 2026-08-02
-**Domain**: HR ΓÇö Customer Loyalty
+**Domain**: HR — Customer Loyalty
 **Type**: Bugfix
 
 ## Problem
@@ -26,10 +26,10 @@ Root cause was a Prisma unique-input name mismatch:
 Replaced `customer_program_unique` with the correct generated name
 `customerId_programId` in:
 
-- `apps/backend/services/hr/customerLoyaltyService.js` ΓÇö 6 sites:
+- `apps/backend/services/hr/customerLoyaltyService.js` — 6 sites:
   `enrollCustomer`, `addPoints`, `redeemPoints`, `updateCustomerTier`,
   `applyLoyaltyPointsForOrder`, `adjustPoints`
-- `apps/backend/services/cashbackService.js` ΓÇö 1 site (tier-override lookup)
+- `apps/backend/services/cashbackService.js` — 1 site (tier-override lookup)
 
 Verified via the live API that manual `enroll`/`add-points` previously returned
 500 with the unknown-argument error; after the fix the correct input name matches

@@ -1,6 +1,6 @@
-﻿/**
- * ≡ƒÆ│ Loyalty Tier Card Service ΓÇö unit tests (DB-free)
- * ┘è╪«╪¬╪¿╪▒ ╪¬┘ê┘ä┘è╪» ╪╡┘ê╪▒╪⌐ ╪º┘ä┘â╪º╪▒╪¬ ┘ê╪½╪¿╪º╪¬ ╪▒┘é┘à ╪º┘ä╪╣╪╢┘ê┘è╪⌐.
+/**
+ * 💳 Loyalty Tier Card Service — unit tests (DB-free)
+ * يختبر توليد صورة الكارت وثبات رقم العضوية.
  */
 
 const {
@@ -16,38 +16,38 @@ jest.mock('../../services/sharedDatabase', () => ({
 
 describe('loyaltyTierCardService', () => {
   describe('membershipNumberFromId', () => {
-    test('┘è╪▒╪¼╪╣ ╪▒┘é┘à ╪╣╪╢┘ê┘è╪⌐ ╪¿╪╡┘è╪║╪⌐ MP-XXXX-XXXX', () => {
+    test('يرجع رقم عضوية بصيغة MP-XXXX-XXXX', () => {
       expect(membershipNumberFromId('cmabc123')).toMatch(/^MP-\d{4}-\d{4}$/);
     });
 
-    test('╪½╪º╪¿╪¬ ┘ä┘å┘ü╪│ ╪º┘ä┘à╪╣╪▒┘æ┘ü', () => {
+    test('ثابت لنفس المعرّف', () => {
       const a = membershipNumberFromId('cmabc123');
       const b = membershipNumberFromId('cmabc123');
       expect(a).toBe(b);
     });
 
-    test('╪ú╪▒┘é╪º┘à ┘à╪«╪¬┘ä┘ü╪⌐ ┘ä┘à╪╣╪▒┘æ┘ü╪º╪¬ ┘à╪«╪¬┘ä┘ü╪⌐', () => {
+    test('أرقام مختلفة لمعرّفات مختلفة', () => {
       expect(membershipNumberFromId('cmabc123')).not.toBe(membershipNumberFromId('cmabc456'));
     });
   });
 
   describe('renderTierCard', () => {
-    test('┘è╪▒╪¼╪╣ Buffer PNG ╪╡╪º┘ä╪¡', () => {
+    test('يرجع Buffer PNG صالح', () => {
       const png = renderTierCard({
-        customer: { firstName: '┘à╪¡┘à╪»', lastName: '╪╣╪¿╪»╪º┘ä┘ä┘ç' },
+        customer: { firstName: 'محمد', lastName: 'عبدالله' },
         tier: {
           name: 'GOLD',
-          nameAr: '╪º┘ä╪╣┘à┘è┘ä ╪º┘ä╪░┘ç╪¿┘è',
+          nameAr: 'العميل الذهبي',
           color: '#d4af37',
           icon: 'crown',
-          benefits: JSON.stringify(['╪┤╪¡┘å ┘à╪¼╪º┘å┘è', '╪«╪╡┘à 10%']),
+          benefits: JSON.stringify(['شحن مجاني', 'خصم 10%']),
           calculationType: 'POINTS',
         },
         record: { id: 'cmrecord1', joinDate: new Date('2025-01-01') },
-        companyName: '┘à╪¬╪¼╪▒ ╪º┘ä╪ú┘å╪º┘é╪⌐',
+        companyName: 'متجر الأناقة',
         membershipNumber: 'MP-1234-5678',
         points: 500,
-        metricLabel: '┘å┘é╪╖╪⌐',
+        metricLabel: 'نقطة',
       });
 
       expect(Buffer.isBuffer(png)).toBe(true);
@@ -55,12 +55,12 @@ describe('loyaltyTierCardService', () => {
       expect(png.slice(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
     });
 
-    test('┘è╪¬╪¡┘à┘ä ┘ä┘ê┘å ╪║┘è╪▒ ╪╡╪º┘ä╪¡ ┘ê┘è╪▒╪¼╪╣ ┘â╪º╪▒╪¬', () => {
+    test('يتحمل لون غير صالح ويرجع كارت', () => {
       const png = renderTierCard({
-        customer: { firstName: '╪╣┘ä┘è', lastName: '╪¡╪│┘å' },
+        customer: { firstName: 'علي', lastName: 'حسن' },
         tier: {
           name: 'SILVER',
-          nameAr: '┘ü╪╢┘è',
+          nameAr: 'فضي',
           color: 'not-a-color',
           icon: 'gem',
           benefits: null,
@@ -70,14 +70,14 @@ describe('loyaltyTierCardService', () => {
         companyName: 'Store',
         membershipNumber: 'MP-9999-0000',
         points: 0,
-        metricLabel: '┘å┘é╪╖╪⌐',
+        metricLabel: 'نقطة',
       });
       expect(Buffer.isBuffer(png)).toBe(true);
     });
   });
 
   describe('cardPublicPath', () => {
-    test('┘è╪¿┘å┘è ┘à╪│╪º╪▒ URL ╪ó┘à┘å', () => {
+    test('يبني مسار URL آمن', () => {
       const url = cardPublicPath('comp-1', 'cust/../x', 'tier 1');
       expect(url).toMatch(/^\/uploads\/tier-cards\/comp-1\//);
       expect(url).not.toContain('..');
@@ -86,7 +86,7 @@ describe('loyaltyTierCardService', () => {
   });
 
   describe('getOrGenerateTierCard', () => {
-    test('┘è╪▒╪¼╪╣ null ╪¿╪ú┘à╪º┘å ╪╣┘å╪» ╪║┘è╪º╪¿ ╪º┘ä┘à╪│╪¬┘ê┘ë', async () => {
+    test('يرجع null بأمان عند غياب المستوى', async () => {
       const sharedDatabase = require('../../services/sharedDatabase');
       const prisma = {
         customerLoyaltyTier: { findFirst: jest.fn().mockResolvedValue(null) },

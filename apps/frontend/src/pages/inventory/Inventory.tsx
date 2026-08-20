@@ -1,9 +1,15 @@
-import { Circle as CubeIcon, AlertTriangle as ExclamationTriangleIcon, Plus as PlusIcon, Minus as MinusIcon, RefreshCw as ArrowPathIcon, Eye as EyeIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
 import React, { useCallback, useMemo, useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useCurrency } from "../../hooks/useCurrency";
-;
+import {
+  CubeIcon,
+  ExclamationTriangleIcon,
+  PlusIcon,
+  MinusIcon,
+  ArrowPathIcon,
+  EyeIcon,
+} from "@heroicons/react/24/outline";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import CreateInventoryProductDialog from "./components/CreateInventoryProductDialog";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -281,12 +287,12 @@ const Inventory: React.FC = () => {
         !stockUpdate.warehouseId ||
         stockUpdate.quantity <= 0
       ) {
-        alert("يرجى ملء جميع الحقول المطلوبة");
+        alert(i18n.t("Inventory.msg_aec8"));
         return;
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
         "/inventory/update-stock",
-        stockUpdate as Record<string, unknown>,
+        stockUpdate as unknown as Record<string, unknown>,
       );
 
       if (response.data.success) {
@@ -305,13 +311,13 @@ const Inventory: React.FC = () => {
           expiryDate: "",
           isApproved: true,
         });
-        alert(response.data.message || "تم تحديث المخزون بنجاح");
+        alert(response.data.message || i18n.t("Inventory.success_update_9a49"));
       } else {
-        alert(response.data.message || "فشل في تحديث المخزون");
+        alert(response.data.message || i18n.t("Inventory.failed_update_ff8a"));
       }
     } catch (error: unknown) {
       console.error("Error updating stock:", error);
-      alert(getErrorMessage(error, "فشل في تحديث المخزون"));
+      alert(getErrorMessage(error, i18n.t("Inventory.failed_update_ff8a")));
     }
   };
 
@@ -370,7 +376,7 @@ const Inventory: React.FC = () => {
         !transferData.toWarehouseId ||
         transferData.quantity <= 0
       ) {
-        alert("يرجى ملء جميع الحقول المطلوبة");
+        alert(i18n.t("Inventory.msg_aec8"));
         return;
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
@@ -388,10 +394,10 @@ const Inventory: React.FC = () => {
           notes: "",
           batchNumber: "",
         });
-        alert("تم نقل المخزون بنجاح");
+        alert(i18n.t("Inventory.msg_7ffe"));
       }
     } catch (error: unknown) {
-      alert(getErrorMessage(error, "فشل في نقل المخزون"));
+      alert(getErrorMessage(error, i18n.t("Inventory.msg_68e2")));
     }
   };
 

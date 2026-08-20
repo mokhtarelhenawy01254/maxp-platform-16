@@ -1,8 +1,13 @@
-import { ThumbsUp as HandThumbUpIcon, ThumbsDown as HandThumbDownIcon, Circle as HandThumbUpSolidIcon, Circle as HandThumbDownSolidIcon } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 import React, { useState } from "react";
-;
-;
+import i18n from "../../i18n";
+import {
+  HandThumbUpIcon,
+  HandThumbDownIcon,
+} from "@heroicons/react/24/outline";
+import {
+  HandThumbUpIcon as HandThumbUpSolidIcon,
+  HandThumbDownIcon as HandThumbDownSolidIcon,
+} from "@heroicons/react/24/solid";
 import { getApiUrl } from "../../config/environment"; // Import environment config
 
 interface RatingButtonsProps {
@@ -90,7 +95,7 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
       setIsSubmitted(false);
 
       // يمكن إضافة toast notification هنا
-      alert("حدث خطأ في إرسال التقييم. يرجى المحاولة مرة أخرى.");
+      alert(i18n.t("RatingButtons.error_error_1ca7"));
     } finally {
       setIsSubmitting(false);
     }

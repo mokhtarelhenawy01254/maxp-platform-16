@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -57,8 +57,8 @@ describe('labTestsController', () => {
     test('returns paginated tests with active parameter counts ordered by name asc', async () => {
       const prisma = createMockPrisma();
       prisma.labTest.findMany.mockResolvedValue([
-        { id: 't1', name: '╪╡┘ê╪▒╪⌐ ╪»┘à ┘â╪º┘à┘ä╪⌐', category: '╪»┘à', abbreviation: 'CBC', sampleType: '╪»┘à ┘ê╪▒┘è╪»┘è', price: 50, isActive: true, _count: { parameters: 2 } },
-        { id: 't2', name: '╪│┘â╪▒ ╪╡╪º╪ª┘à', category: '┘â┘è┘à┘è╪º╪í', price: 40, isActive: true, _count: { parameters: 0 } }
+        { id: 't1', name: 'صورة دم كاملة', category: 'دم', abbreviation: 'CBC', sampleType: 'دم وريدي', price: 50, isActive: true, _count: { parameters: 2 } },
+        { id: 't2', name: 'سكر صائم', category: 'كيمياء', price: 40, isActive: true, _count: { parameters: 0 } }
       ]);
       prisma.labTest.count.mockResolvedValue(37);
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -88,7 +88,7 @@ describe('labTestsController', () => {
 
       const res = createResponse();
       await controller.getAllTests(
-        { user: { companyId: 'c1' }, query: { search: '╪»┘à', category: '┘â┘è┘à┘è╪º╪í', page: '2', limit: '10' } },
+        { user: { companyId: 'c1' }, query: { search: 'دم', category: 'كيمياء', page: '2', limit: '10' } },
         res
       );
 
@@ -96,11 +96,11 @@ describe('labTestsController', () => {
         where: {
           companyId: 'c1',
           isActive: true,
-          category: '┘â┘è┘à┘è╪º╪í',
+          category: 'كيمياء',
           OR: [
-            { name: { contains: '╪»┘à', mode: 'insensitive' } },
-            { category: { contains: '╪»┘à', mode: 'insensitive' } },
-            { abbreviation: { contains: '╪»┘à', mode: 'insensitive' } }
+            { name: { contains: 'دم', mode: 'insensitive' } },
+            { category: { contains: 'دم', mode: 'insensitive' } },
+            { abbreviation: { contains: 'دم', mode: 'insensitive' } }
           ]
         },
         include: { _count: { select: { parameters: { where: { isActive: true } } } } },
@@ -112,11 +112,11 @@ describe('labTestsController', () => {
         where: {
           companyId: 'c1',
           isActive: true,
-          category: '┘â┘è┘à┘è╪º╪í',
+          category: 'كيمياء',
           OR: [
-            { name: { contains: '╪»┘à', mode: 'insensitive' } },
-            { category: { contains: '╪»┘à', mode: 'insensitive' } },
-            { abbreviation: { contains: '╪»┘à', mode: 'insensitive' } }
+            { name: { contains: 'دم', mode: 'insensitive' } },
+            { category: { contains: 'دم', mode: 'insensitive' } },
+            { abbreviation: { contains: 'دم', mode: 'insensitive' } }
           ]
         }
       });
@@ -149,10 +149,10 @@ describe('labTestsController', () => {
       prisma.labTest.findFirst.mockResolvedValue({
         id: 't1',
         companyId: 'c1',
-        name: '╪│┘â╪▒ ╪╡╪º╪ª┘à',
+        name: 'سكر صائم',
         parameters: [
-          { id: 'p1', name: '╪º┘ä╪¼┘ä┘ê┘â┘ê╪▓', sortOrder: 0 },
-          { id: 'p2', name: '╪º┘ä╪│┘â╪▒ ╪º┘ä╪¬╪▒╪º┘â┘à┘è', sortOrder: 1 }
+          { id: 'p1', name: 'الجلوكوز', sortOrder: 0 },
+          { id: 'p2', name: 'السكر التراكمي', sortOrder: 1 }
         ]
       });
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -194,9 +194,9 @@ describe('labTestsController', () => {
       prisma.labTest.create.mockResolvedValue({
         id: 't-new',
         companyId: 'c1',
-        name: '╪╡┘ê╪▒╪⌐ ╪»┘à ┘â╪º┘à┘ä╪⌐',
+        name: 'صورة دم كاملة',
         price: 75,
-        parameters: [{ id: 'p1', name: '┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å', unit: 'g/dL', referenceRange: '13-17', resultOptions: ['┘à┘å╪«┘ü╪╢', '╪╖╪¿┘è╪╣┘è', '┘à╪▒╪¬┘ü╪╣'], showFlag: true, sortOrder: 0 }]
+        parameters: [{ id: 'p1', name: 'هيموجلوبين', unit: 'g/dL', referenceRange: '13-17', resultOptions: ['منخفض', 'طبيعي', 'مرتفع'], showFlag: true, sortOrder: 0 }]
       });
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -204,12 +204,12 @@ describe('labTestsController', () => {
       await controller.createTest({
         user: { companyId: 'c1' },
         body: {
-          name: '╪╡┘ê╪▒╪⌐ ╪»┘à ┘â╪º┘à┘ä╪⌐',
-          category: '╪»┘à',
+          name: 'صورة دم كاملة',
+          category: 'دم',
           abbreviation: 'CBC',
           price: '75',
           parameters: [
-            { name: '┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å', unit: 'g/dL', referenceRange: '13-17', resultOptions: '["┘à┘å╪«┘ü╪╢","╪╖╪¿┘è╪╣┘è","┘à╪▒╪¬┘ü╪╣"]', showFlag: true, sortOrder: 0 }
+            { name: 'هيموجلوبين', unit: 'g/dL', referenceRange: '13-17', resultOptions: '["منخفض","طبيعي","مرتفع"]', showFlag: true, sortOrder: 0 }
           ]
         }
       }, res);
@@ -218,18 +218,18 @@ describe('labTestsController', () => {
       expect(prisma.labTest.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
           companyId: 'c1',
-          name: '╪╡┘ê╪▒╪⌐ ╪»┘à ┘â╪º┘à┘ä╪⌐',
-          category: '╪»┘à',
+          name: 'صورة دم كاملة',
+          category: 'دم',
           abbreviation: 'CBC',
           price: 75,
           parameters: {
             create: [
               expect.objectContaining({
                 companyId: 'c1',
-                name: '┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å',
+                name: 'هيموجلوبين',
                 unit: 'g/dL',
                 referenceRange: '13-17',
-                resultOptions: ['┘à┘å╪«┘ü╪╢', '╪╖╪¿┘è╪╣┘è', '┘à╪▒╪¬┘ü╪╣'],
+                resultOptions: ['منخفض', 'طبيعي', 'مرتفع'],
                 showFlag: true,
                 sortOrder: 0
               })
@@ -247,16 +247,16 @@ describe('labTestsController', () => {
       await controller.createTest({
         user: { companyId: 'c1' },
         body: {
-          name: '╪¬╪¡┘ä┘è┘ä ╪¿┘ê┘ä',
+          name: 'تحليل بول',
           price: 30,
-          parameters: [{ name: '╪º┘ä╪¿╪▒┘ê╪¬┘è┘å', resultOptions: '╪│╪º┘ä╪¿,┘à┘ê╪¼╪¿' }]
+          parameters: [{ name: 'البروتين', resultOptions: 'سالب,موجب' }]
         }
       }, res);
 
       expect(prisma.labTest.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
           parameters: {
-            create: [expect.objectContaining({ name: '╪º┘ä╪¿╪▒┘ê╪¬┘è┘å', resultOptions: ['╪│╪º┘ä╪¿', '┘à┘ê╪¼╪¿'] })]
+            create: [expect.objectContaining({ name: 'البروتين', resultOptions: ['سالب', 'موجب'] })]
           }
         })
       }));
@@ -268,7 +268,7 @@ describe('labTestsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createTest({ user: { companyId: 'c1' }, body: { name: '╪¬╪¡┘ä┘è┘ä', price: -5 } }, res);
+      await controller.createTest({ user: { companyId: 'c1' }, body: { name: 'تحليل', price: -5 } }, res);
       expect(res.statusCode).toBe(400);
       expect(res.payload.success).toBe(false);
     });
@@ -280,15 +280,15 @@ describe('labTestsController', () => {
       const res = createResponse();
       await controller.createTest({
         user: { companyId: 'c1' },
-        body: { name: '╪¬╪¡┘ä┘è┘ä', parameters: [{ unit: 'mg' }] }
+        body: { name: 'تحليل', parameters: [{ unit: 'mg' }] }
       }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم الباراميتر مطلوب');
     });
 
     test('returns 403 when companyId is missing', async () => {
       const res = createResponse();
-      await controller.createTest({ user: {}, body: { name: '╪¬╪¡┘ä┘è┘ä' } }, res);
+      await controller.createTest({ user: {}, body: { name: 'تحليل' } }, res);
       expect(res.statusCode).toBe(403);
       expect(res.payload.success).toBe(false);
     });
@@ -298,8 +298,8 @@ describe('labTestsController', () => {
     test('updates whitelisted fields and replaces all parameters', async () => {
       const prisma = createMockPrisma();
       prisma.labTest.findFirst
-        .mockResolvedValueOnce({ id: 't1', companyId: 'c1', name: '┘é╪»┘è┘à' })
-        .mockResolvedValue({ id: 't1', companyId: 'c1', name: '┘à╪¡╪»╪½', parameters: [] });
+        .mockResolvedValueOnce({ id: 't1', companyId: 'c1', name: 'قديم' })
+        .mockResolvedValue({ id: 't1', companyId: 'c1', name: 'محدث', parameters: [] });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -307,10 +307,10 @@ describe('labTestsController', () => {
         user: { companyId: 'c1' },
         params: { id: 't1' },
         body: {
-          name: '┘à╪¡╪»╪½',
+          name: 'محدث',
           price: 100,
           parameters: [
-            { name: '╪¿-╪ú', unit: 'mg', referenceRange: '1-2', resultOptions: ['╪ú', '╪¿'], showFlag: false, sortOrder: 0 }
+            { name: 'ب-أ', unit: 'mg', referenceRange: '1-2', resultOptions: ['أ', 'ب'], showFlag: false, sortOrder: 0 }
           ]
         }
       }, res);
@@ -321,10 +321,10 @@ describe('labTestsController', () => {
           expect.objectContaining({
             companyId: 'c1',
             testId: 't1',
-            name: '╪¿-╪ú',
+            name: 'ب-أ',
             unit: 'mg',
             referenceRange: '1-2',
-            resultOptions: ['╪ú', '╪¿'],
+            resultOptions: ['أ', 'ب'],
             showFlag: false,
             sortOrder: 0
           })
@@ -332,14 +332,14 @@ describe('labTestsController', () => {
       });
       expect(prisma.labTest.update).toHaveBeenCalledWith({
         where: { id: 't1' },
-        data: expect.objectContaining({ name: '┘à╪¡╪»╪½', price: 100 })
+        data: expect.objectContaining({ name: 'محدث', price: 100 })
       });
       expect(res.statusCode).toBe(200);
     });
 
     test('clears all parameters when an empty array is provided', async () => {
       const prisma = createMockPrisma();
-      prisma.labTest.findFirst.mockResolvedValue({ id: 't1', companyId: 'c1', name: '┘é╪»┘è┘à' });
+      prisma.labTest.findFirst.mockResolvedValue({ id: 't1', companyId: 'c1', name: 'قديم' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -376,7 +376,7 @@ describe('labTestsController', () => {
       expect(res.statusCode).toBe(200);
       expect(prisma.labTest.findFirst).toHaveBeenCalledWith({ where: { id: 't1', companyId: 'c1' } });
       expect(prisma.labTest.update).toHaveBeenCalledWith({ where: { id: 't1' }, data: { isActive: false } });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä╪º╪«╪¬╪¿╪º╪▒');
+      expect(res.payload.message).toBe('تم حذف الاختبار');
     });
 
     test('returns 404 for a test from another company', async () => {
@@ -395,14 +395,14 @@ describe('labTestsController', () => {
       const prisma = createMockPrisma();
       prisma.labTest.findFirst.mockResolvedValue({ id: 't1', companyId: 'c1' });
       prisma.labTestParameter.findFirst.mockResolvedValue({ sortOrder: 4 });
-      prisma.labTestParameter.create.mockResolvedValue({ id: 'p-new', name: '╪¿┘è┘ä┘è╪▒┘ê╪¿┘è┘å', sortOrder: 5 });
+      prisma.labTestParameter.create.mockResolvedValue({ id: 'p-new', name: 'بيليروبين', sortOrder: 5 });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.addParameter({
         user: { companyId: 'c1' },
         params: { id: 't1' },
-        body: { name: '╪¿┘è┘ä┘è╪▒┘ê╪¿┘è┘å', unit: 'mg/dL', resultOptions: ['╪│╪º┘ä╪¿', '┘à┘ê╪¼╪¿'] }
+        body: { name: 'بيليروبين', unit: 'mg/dL', resultOptions: ['سالب', 'موجب'] }
       }, res);
 
       expect(res.statusCode).toBe(200);
@@ -410,9 +410,9 @@ describe('labTestsController', () => {
         data: expect.objectContaining({
           companyId: 'c1',
           testId: 't1',
-          name: '╪¿┘è┘ä┘è╪▒┘ê╪¿┘è┘å',
+          name: 'بيليروبين',
           unit: 'mg/dL',
-          resultOptions: ['╪│╪º┘ä╪¿', '┘à┘ê╪¼╪¿'],
+          resultOptions: ['سالب', 'موجب'],
           sortOrder: 5
         })
       });
@@ -427,12 +427,12 @@ describe('labTestsController', () => {
       await controller.addParameter({
         user: { companyId: 'c1' },
         params: { id: 't1' },
-        body: { name: '╪¿1', sortOrder: 7 }
+        body: { name: 'ب1', sortOrder: 7 }
       }, res);
 
       expect(prisma.labTestParameter.findFirst).not.toHaveBeenCalled();
       expect(prisma.labTestParameter.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ name: '╪¿1', sortOrder: 7 })
+        data: expect.objectContaining({ name: 'ب1', sortOrder: 7 })
       });
     });
 
@@ -444,7 +444,7 @@ describe('labTestsController', () => {
       const res = createResponse();
       await controller.addParameter({ user: { companyId: 'c1' }, params: { id: 't1' }, body: { unit: 'mg' } }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم الباراميتر مطلوب');
     });
 
     test('returns 404 when the test belongs to another company', async () => {
@@ -452,7 +452,7 @@ describe('labTestsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.addParameter({ user: { companyId: 'c1' }, params: { id: 'other' }, body: { name: '╪¿' } }, res);
+      await controller.addParameter({ user: { companyId: 'c1' }, params: { id: 'other' }, body: { name: 'ب' } }, res);
       expect(res.statusCode).toBe(404);
       expect(res.payload.success).toBe(false);
     });
@@ -462,22 +462,22 @@ describe('labTestsController', () => {
     test('updates whitelisted parameter fields including resultOptions', async () => {
       const prisma = createMockPrisma();
       prisma.labTest.findFirst.mockResolvedValue({ id: 't1', companyId: 'c1' });
-      prisma.labTestParameter.findFirst.mockResolvedValue({ id: 'p1', testId: 't1', companyId: 'c1', name: '┘é╪»┘è┘à' });
-      prisma.labTestParameter.update.mockResolvedValue({ id: 'p1', name: '╪¼╪»┘è╪»' });
+      prisma.labTestParameter.findFirst.mockResolvedValue({ id: 'p1', testId: 't1', companyId: 'c1', name: 'قديم' });
+      prisma.labTestParameter.update.mockResolvedValue({ id: 'p1', name: 'جديد' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.updateParameter({
         user: { companyId: 'c1' },
         params: { id: 't1', parameterId: 'p1' },
-        body: { name: '╪¼╪»┘è╪»', referenceRange: '3.5-5.5', resultOptions: '["low","high"]', showFlag: false }
+        body: { name: 'جديد', referenceRange: '3.5-5.5', resultOptions: '["low","high"]', showFlag: false }
       }, res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.labTestParameter.update).toHaveBeenCalledWith({
         where: { id: 'p1' },
         data: expect.objectContaining({
-          name: '╪¼╪»┘è╪»',
+          name: 'جديد',
           referenceRange: '3.5-5.5',
           resultOptions: ['low', 'high'],
           showFlag: false
@@ -497,7 +497,7 @@ describe('labTestsController', () => {
         body: { name: 'x' }
       }, res);
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('الباراميتر غير موجود');
     });
 
     test('returns 404 when the test belongs to another company', async () => {
@@ -511,7 +511,7 @@ describe('labTestsController', () => {
         body: { name: 'x' }
       }, res);
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('الاختبار غير موجود');
     });
   });
 
@@ -519,7 +519,7 @@ describe('labTestsController', () => {
     test('soft deletes the parameter (isActive=false)', async () => {
       const prisma = createMockPrisma();
       prisma.labTest.findFirst.mockResolvedValue({ id: 't1', companyId: 'c1' });
-      prisma.labTestParameter.findFirst.mockResolvedValue({ id: 'p1', testId: 't1', companyId: 'c1', name: '╪¿' });
+      prisma.labTestParameter.findFirst.mockResolvedValue({ id: 'p1', testId: 't1', companyId: 'c1', name: 'ب' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -530,7 +530,7 @@ describe('labTestsController', () => {
         where: { id: 'p1' },
         data: { isActive: false }
       });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä╪¿╪º╪▒╪º┘à┘è╪¬╪▒');
+      expect(res.payload.message).toBe('تم حذف الباراميتر');
     });
 
     test('returns 404 when the parameter is not found in the company', async () => {

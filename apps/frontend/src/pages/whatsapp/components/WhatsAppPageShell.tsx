@@ -1,8 +1,8 @@
-import { useTranslation } from 'react-i18next';
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { LucideIcon } from "lucide-react";
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -71,14 +71,23 @@ export function WhatsAppPageShell({
     <section
       dir={i18n.dir()}
         className={cn(
-          "min-h-full space-y-4 overflow-x-hidden px-2 py-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:space-y-6 sm:px-6 sm:py-5 lg:px-8",
+          "min-h-full space-y-space-4 overflow-x-hidden px-space-1 py-space-2 pb-[calc(var(--space-4)+env(safe-area-inset-bottom))] sm:space-y-space-6 sm:px-space-6 sm:py-space-4 lg:px-space-8",
           className,
         )}
       >
-        <div className="overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-sm sm:rounded-3xl sm:shadow-lg">
-          <div className="flex flex-col gap-4 px-4 py-4 sm:gap-5 sm:px-6 sm:py-5 lg:px-7">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex min-w-0 items-start gap-2 sm:gap-3">
+        <div
+          className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-soft sm:rounded-3xl sm:shadow-raised"
+          style={{ backgroundImage: "var(--journey-header-gradient)", backgroundSize: "200% 200%" }}
+        >
+          {/* Accent glow orb */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-32 opacity-60"
+            style={{ background: "var(--journey-hero-glow)" }}
+            aria-hidden
+          />
+          <div className="relative flex flex-col gap-space-4 px-space-4 py-space-4 sm:gap-space-5 sm:px-space-6 sm:py-space-5 lg:px-space-7">
+          <div className="flex flex-col gap-space-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex min-w-0 items-start gap-space-2 sm:gap-space-3">
               {backHref ? (
                 <Link
                   to={backHref}
@@ -95,7 +104,7 @@ export function WhatsAppPageShell({
               ) : null}
 
               <div className="flex min-w-0 gap-2 sm:gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-[color:var(--color-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] sm:size-12 sm:rounded-2xl">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--journey-accent-soft)] text-[color:var(--journey-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] sm:size-12 sm:rounded-2xl">
                   <Icon className="size-5 sm:size-6" />
                 </div>
                 <div className="min-w-0 space-y-1 sm:space-y-2">
@@ -142,12 +151,12 @@ export function WhatsAppSurfaceCard({
   return (
     <Card
       className={cn(
-        "rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-sm sm:rounded-3xl sm:shadow-md",
+        "rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-soft sm:rounded-3xl sm:shadow-raised",
         className,
       )}
     >
       {title || description || action ? (
-        <CardHeader className="gap-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] pb-3 sm:gap-3 sm:pb-4">
+        <CardHeader className="gap-space-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] pb-space-2 sm:gap-space-3 sm:pb-space-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               {title ? (

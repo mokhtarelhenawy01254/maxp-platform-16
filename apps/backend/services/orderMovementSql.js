@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 async function fetchTransitionAggregates({ companyId, start, end }) {
   const prisma = getSharedPrismaClient();

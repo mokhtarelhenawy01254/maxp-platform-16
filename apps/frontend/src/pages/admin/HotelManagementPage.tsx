@@ -1,11 +1,13 @@
-import { Circle as BuildingOffice2Icon, Home as HomeIcon, Key as KeyIcon, Circle as CalendarDaysIcon, DollarSign as CurrencyDollarIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Search as MagnifyingGlassIcon, Settings as Cog6ToothIcon } from 'lucide-react';
 import { useState, useEffect } from "react";
 import {
   hotelApi, HotelProperty, HotelRoomType, HotelRoom, HotelReservation,
   HotelService, HotelPolicy, HotelRoomRate,
   ROOM_STATUS_LABELS, ROOM_STATUS_COLORS, RESERVATION_STATUS_LABELS, RESERVATION_STATUS_COLORS, FOLIO_TYPE_LABELS
 } from "./hotel/shared";
-;
+import {
+  BuildingOffice2Icon, HomeIcon, KeyIcon, CalendarDaysIcon, CurrencyDollarIcon,
+  PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, Cog6ToothIcon
+} from "@heroicons/react/24/outline";
 
 import PropertyModal from "./hotel/PropertyModal";
 import RoomTypeModal from "./hotel/RoomTypeModal";

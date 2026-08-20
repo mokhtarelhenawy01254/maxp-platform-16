@@ -1,7 +1,18 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 
 const LEGACY_APP_SLUG_ALIASES = {
-  'order-core': ['ecommerce-basic']
+  'order-core': ['ecommerce-basic', 'store-basic', 'store'],
+  'order-invoicing': ['ecommerce-basic', 'store-basic', 'store'],
+  // Grandfathering: companies with old monolithic store apps keep access to new granular apps
+  'pos-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
+  'coupons-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
+  'woocommerce-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
+  'multi-warehouse-pro': ['store-pro', 'inventory-pro'],
+  'order-accounting-sources': ['store-pro', 'order-source-tracking'],
+  // Grandfathering only for monolithic apps that historically included manual orders.
+  // order-core / ecommerce-basic / store-basic do NOT open manual orders anymore —
+  // manual-orders-pro is now a standalone paid app.
+  'manual-orders-pro': ['store-pro']
 };
 
 const getCandidateAppSlugs = (appSlug) => {
@@ -52,109 +63,130 @@ const checkAppAccess = (appSlug) => {
         }
       }
 
-      // Get the app
+      // Find all marketplace apps matching any candidate slug
       const candidateSlugs = getCandidateAppSlugs(appSlug);
-      const app = await executeWithRetry(async () => {
+      const candidateApps = await executeWithRetry(async () => {
         const prisma = getSharedPrismaClient();
-
-        for (const candidateSlug of candidateSlugs) {
-          const candidateApp = await prisma.marketplaceApp.findUnique({
-            where: { slug: candidateSlug }
-          });
-
-          if (candidateApp) {
-            return candidateApp;
-          }
-        }
-
-        return null;
+        return await prisma.marketplaceApp.findMany({
+          where: { slug: { in: candidateSlugs } }
+        });
       });
 
-      if (!app) {
+      if (candidateApps.length === 0) {
         return res.status(404).json({
           success: false,
           message: 'الأداة غير موجودة'
         });
       }
 
-      // Check if app is installed and active
-      const companyApp = await executeWithRetry(async () => {
-        return await getSharedPrismaClient().companyApp.findUnique({
-          where: {
-            companyId_appId: { companyId, appId: app.id }
-          }
-        });
+      // Sort: exact match (primary slug) first, then legacy/alias matches
+      const primarySlug = String(appSlug || '').trim();
+      candidateApps.sort((a, b) => {
+        if (a.slug === primarySlug) return -1;
+        if (b.slug === primarySlug) return 1;
+        return 0;
       });
 
-      if (!companyApp) {
-        return res.status(403).json({
-          success: false,
-          message: `هذه الميزة تتطلب تفعيل: ${app.name}`,
-          needsActivation: true,
-          app: {
-            slug: app.slug,
-            name: app.name,
-            icon: app.icon,
-            monthlyPrice: app.monthlyPrice,
-            pricingModel: app.pricingModel
-          }
-        });
-      }
+      // Check if company has ANY of the candidate apps installed and active
+      let matchedApp = null;
+      let matchedCompanyApp = null;
 
-      // Check if app is active or in trial
-      if (!['TRIAL', 'ACTIVE'].includes(companyApp.status)) {
-        let message = 'هذه الأداة غير نشطة';
-
-        if (companyApp.status === 'EXPIRED') {
-          message = `انتهت صلاحية ${app.name}. يرجى تجديد الاشتراك`;
-        } else if (companyApp.status === 'CANCELLED') {
-          message = `تم إلغاء ${app.name}. يرجى إعادة التفعيل`;
-        } else if (companyApp.status === 'SUSPENDED') {
-          message = `تم تعليق ${app.name}. يرجى التواصل مع الدعم`;
-        }
-
-        return res.status(403).json({
-          success: false,
-          message,
-          needsRenewal: companyApp.status === 'EXPIRED',
-          app: {
-            slug: app.slug,
-            name: app.name,
-            status: companyApp.status
-          }
-        });
-      }
-
-      // Check if trial has ended
-      if (companyApp.status === 'TRIAL' && companyApp.trialEndsAt) {
-        const now = new Date();
-        if (now > companyApp.trialEndsAt) {
-          // Update status to expired
-          await executeWithRetry(async () => {
-            return await getSharedPrismaClient().companyApp.update({
-              where: { id: companyApp.id },
-              data: { status: 'EXPIRED' }
-            });
-          });
-
-          return res.status(403).json({
-            success: false,
-            message: `انتهت الفترة التجريبية لـ ${app.name}. يرجى الترقية للاستمرار`,
-            trialEnded: true,
-            app: {
-              slug: app.slug,
-              name: app.name,
-              monthlyPrice: app.monthlyPrice
+      for (const candidateApp of candidateApps) {
+        const companyAppRecord = await executeWithRetry(async () => {
+          return await getSharedPrismaClient().companyApp.findUnique({
+            where: {
+              companyId_appId: { companyId, appId: candidateApp.id }
             }
           });
+        });
+
+        if (!companyAppRecord) {
+          continue;
         }
+
+        if (!['TRIAL', 'ACTIVE'].includes(companyAppRecord.status)) {
+          // Track the best error to show later (prefer primary app error)
+          if (!matchedApp) {
+            matchedApp = candidateApp;
+            matchedCompanyApp = companyAppRecord;
+          }
+          continue;
+        }
+
+        // Check trial expiry
+        if (companyAppRecord.status === 'TRIAL' && companyAppRecord.trialEndsAt) {
+          const now = new Date();
+          if (now > companyAppRecord.trialEndsAt) {
+            await executeWithRetry(async () => {
+              return await getSharedPrismaClient().companyApp.update({
+                where: { id: companyAppRecord.id },
+                data: { status: 'EXPIRED' }
+              });
+            });
+            if (!matchedApp) {
+              matchedApp = candidateApp;
+              matchedCompanyApp = { ...companyAppRecord, status: 'EXPIRED' };
+            }
+            continue;
+          }
+        }
+
+        // Found a valid app — grant access
+        req.companyApp = companyAppRecord;
+        req.marketplaceApp = candidateApp;
+        return next();
       }
 
-      // Attach app info to request for later use
-      req.companyApp = companyApp;
-      req.marketplaceApp = app;
+      // No valid app found — return the best error message
+      const bestApp = matchedApp || candidateApps[0];
+      const bestCompanyApp = matchedCompanyApp;
 
-      next();
+      if (!bestCompanyApp) {
+        return res.status(403).json({
+          success: false,
+          message: `هذه الميزة تتطلب تفعيل: ${bestApp.name}`,
+          needsActivation: true,
+          app: {
+            slug: bestApp.slug,
+            name: bestApp.name,
+            icon: bestApp.icon,
+            monthlyPrice: bestApp.monthlyPrice,
+            pricingModel: bestApp.pricingModel
+          }
+        });
+      }
+
+      if (bestCompanyApp.status === 'EXPIRED') {
+        return res.status(403).json({
+          success: false,
+          message: bestCompanyApp.trialEndsAt ? `انتهت الفترة التجريبية لـ ${bestApp.name}. يرجى الترقية للاستمرار` : `انتهت صلاحية ${bestApp.name}. يرجى تجديد الاشتراك`,
+          needsRenewal: true,
+          trialEnded: !!bestCompanyApp.trialEndsAt,
+          app: {
+            slug: bestApp.slug,
+            name: bestApp.name,
+            status: bestCompanyApp.status
+          }
+        });
+      }
+
+      let message = 'هذه الأداة غير نشطة';
+      if (bestCompanyApp.status === 'CANCELLED') {
+        message = `تم إلغاء ${bestApp.name}. يرجى إعادة التفعيل`;
+      } else if (bestCompanyApp.status === 'SUSPENDED') {
+        message = `تم تعليق ${bestApp.name}. يرجى التواصل مع الدعم`;
+      }
+
+      return res.status(403).json({
+        success: false,
+        message,
+        needsRenewal: false,
+        app: {
+          slug: bestApp.slug,
+          name: bestApp.name,
+          status: bestCompanyApp.status
+        }
+      });
     } catch (error) {
       console.error('Error checking app access:', error);
       res.status(500).json({

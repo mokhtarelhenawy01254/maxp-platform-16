@@ -1,4 +1,4 @@
-﻿const {
+const {
   validateStock,
   MAX_PRODUCT_STOCK,
 } = require('../../utils/stockValidation');

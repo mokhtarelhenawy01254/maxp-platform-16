@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -111,10 +111,10 @@ const STATUS_META: Record<
   StockStatus,
   { label: string; className: string; dot: string }
 > = {
-  low: { label: "┘à╪«╪▓┘ê┘å ┘à┘å╪«┘ü╪╢", className: "text-yellow-700 bg-yellow-100 border-yellow-200", dot: "bg-yellow-500" },
-  out: { label: "┘å┘ü╪» ╪º┘ä┘à╪«╪▓┘ê┘å", className: "text-red-700 bg-red-100 border-red-200", dot: "bg-red-500" },
-  safe: { label: "┘à╪¬┘ê┘ü╪▒", className: "text-emerald-700 bg-emerald-100 border-emerald-200", dot: "bg-emerald-500" },
-  untracked: { label: "╪¿╪»┘ê┘å ╪¬╪¬╪¿╪╣", className: "text-gray-600 bg-gray-100 border-gray-200", dot: "bg-gray-400" },
+  low: { label: "مخزون منخفض", className: "text-yellow-700 bg-yellow-100 border-yellow-200", dot: "bg-yellow-500" },
+  out: { label: "نفد المخزون", className: "text-red-700 bg-red-100 border-red-200", dot: "bg-red-500" },
+  safe: { label: "متوفر", className: "text-emerald-700 bg-emerald-100 border-emerald-200", dot: "bg-emerald-500" },
+  untracked: { label: "بدون تتبع", className: "text-gray-600 bg-gray-100 border-gray-200", dot: "bg-gray-400" },
 };
 
 function Skeleton({ className }: { className?: string }) {
@@ -191,7 +191,7 @@ const ReorderPointsPage: React.FC = () => {
           message = (error as { response?: { data?: { message?: string } } })
             .response?.data?.message;
         }
-        toast.error(message || (t("reorderPoints.loadError", "┘ü╪┤┘ä ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪¿┘è╪º┘å╪º╪¬") as string));
+        toast.error(message || (t("reorderPoints.loadError", "فشل في جلب البيانات") as string));
       } finally {
         setLoading(false);
       }
@@ -219,25 +219,25 @@ const ReorderPointsPage: React.FC = () => {
     };
     return [
       {
-        title: t("reorderPoints.lowStock", "┘à╪«╪▓┘ê┘å ┘à┘å╪«┘ü╪╢"),
+        title: t("reorderPoints.lowStock", "مخزون منخفض"),
         value: safeSummary.lowStockCount,
         icon: ExclamationTriangleIcon,
         gradient: "from-yellow-500/20 to-yellow-500/5 text-yellow-600",
       },
       {
-        title: t("reorderPoints.outOfStock", "┘å┘ü╪» ╪º┘ä┘à╪«╪▓┘ê┘å"),
+        title: t("reorderPoints.outOfStock", "نفد المخزون"),
         value: safeSummary.outOfStockCount,
         icon: XCircleIcon,
         gradient: "from-red-500/20 to-red-500/5 text-red-600",
       },
       {
-        title: t("reorderPoints.preOrderCount", "╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é"),
+        title: t("reorderPoints.preOrderCount", "الطلب المسبق"),
         value: safeSummary.preOrderCount,
         icon: ShoppingBagIcon,
         gradient: "from-indigo-500/20 to-indigo-500/5 text-indigo-600",
       },
       {
-        title: t("reorderPoints.atRiskValue", "┘é┘è┘à╪⌐ ┘à╪╣╪▒╪╢╪⌐ ┘ä┘ä╪«╪╖╪▒"),
+        title: t("reorderPoints.atRiskValue", "قيمة معرضة للخطر"),
         value: formatPrice(safeSummary.atRiskValue),
         icon: ArrowDownTrayIcon,
         gradient: "from-emerald-500/20 to-emerald-500/5 text-emerald-600",
@@ -252,7 +252,7 @@ const ReorderPointsPage: React.FC = () => {
 
   const toggleSelection = (id: string, item?: ReorderItem) => {
     if (item && !hasInventory(item)) {
-      toast.error(t("reorderPoints.noInventoryBlock", "┘ä╪º ┘è┘à┘â┘å ╪¬╪╣╪»┘è┘ä ╪º┘ä┘å┘é╪╖╪⌐ ┘ä┘à┘å╪¬╪¼ ╪¿┘ä╪º ╪│╪¼┘ä╪º╪¬ ┘à╪«╪▓┘ê┘å") as string);
+      toast.error(t("reorderPoints.noInventoryBlock", "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون") as string);
       return;
     }
     setSelectedIds((previous) => {
@@ -276,7 +276,7 @@ const ReorderPointsPage: React.FC = () => {
 
   const startEdit = (item: ReorderItem) => {
     if (!hasInventory(item)) {
-      toast.error(t("reorderPoints.noInventoryBlock", "┘ä╪º ┘è┘à┘â┘å ╪¬╪╣╪»┘è┘ä ╪º┘ä┘å┘é╪╖╪⌐ ┘ä┘à┘å╪¬╪¼ ╪¿┘ä╪º ╪│╪¼┘ä╪º╪¬ ┘à╪«╪▓┘ê┘å") as string);
+      toast.error(t("reorderPoints.noInventoryBlock", "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون") as string);
       return;
     }
     setEditingId(rowKey(item));
@@ -285,7 +285,7 @@ const ReorderPointsPage: React.FC = () => {
 
   const saveSingle = async (item: ReorderItem) => {
     if (!hasInventory(item)) {
-      toast.error(t("reorderPoints.noInventoryBlock", "┘ä╪º ┘è┘à┘â┘å ╪¬╪╣╪»┘è┘ä ╪º┘ä┘å┘é╪╖╪⌐ ┘ä┘à┘å╪¬╪¼ ╪¿┘ä╪º ╪│╪¼┘ä╪º╪¬ ┘à╪«╪▓┘ê┘å") as string);
+      toast.error(t("reorderPoints.noInventoryBlock", "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون") as string);
       return;
     }
     const parsed = Math.max(0, Number(editValue) || 0);
@@ -295,11 +295,11 @@ const ReorderPointsPage: React.FC = () => {
         ? `/inventory/reorder-points/${item.inventoryId}`
         : `/inventory/reorder-points/product/${item.productId}`;
       await companyAwareApi.put(target, { reorderPoint: parsed });
-      toast.success(t("reorderPoints.saved", "╪¬┘à ╪º┘ä╪¡┘ü╪╕") as string);
+      toast.success(t("reorderPoints.saved", "تم الحفظ") as string);
       setEditingId(null);
       fetchData();
     } catch {
-      toast.error(t("reorderPoints.saveError", "┘ü╪┤┘ä ╪º┘ä╪¡┘ü╪╕") as string);
+      toast.error(t("reorderPoints.saveError", "فشل الحفظ") as string);
     } finally {
       setSavingId(null);
     }
@@ -308,7 +308,7 @@ const ReorderPointsPage: React.FC = () => {
   const saveBulk = async () => {
     const parsed = Math.max(0, Number(bulkValue) || 0);
     if (selectedIds.size === 0) {
-      toast.error(t("reorderPoints.noSelection", "╪º╪«╪¬╪▒ ┘à┘å╪¬╪¼╪º╪¬ ╪ú┘ê┘ä╪º┘ï"));
+      toast.error(t("reorderPoints.noSelection", "اختر منتجات أولاً"));
       return;
     }
     setBulkBusy(true);
@@ -317,7 +317,7 @@ const ReorderPointsPage: React.FC = () => {
         (item) => selectedIds.has(rowKey(item)) && hasInventory(item),
       );
       if (selectedItems.length === 0) {
-        toast.error(t("reorderPoints.noInventoryBlock", "┘ä╪º ┘è┘à┘â┘å ╪¬╪╣╪»┘è┘ä ╪º┘ä┘å┘é╪╖╪⌐ ┘ä┘à┘å╪¬╪¼ ╪¿┘ä╪º ╪│╪¼┘ä╪º╪¬ ┘à╪«╪▓┘ê┘å") as string);
+        toast.error(t("reorderPoints.noInventoryBlock", "لا يمكن تعديل النقطة لمنتج بلا سجلات مخزون") as string);
         return;
       }
       await companyAwareApi.post("/inventory/reorder-points/bulk", {
@@ -329,14 +329,14 @@ const ReorderPointsPage: React.FC = () => {
       });
       toast.success(
         (
-          t("reorderPoints.bulkSaved", "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘å┘é╪╖╪⌐ ┘ä┘Ç {{count}} ┘à┘å╪¬╪¼") as string
+          t("reorderPoints.bulkSaved", "تم تحديث النقطة لـ {{count}} منتج") as string
         ).replace("{{count}}", String(selectedItems.length)),
       );
       setBulkValue("");
       setSelectedIds(new Set());
       fetchData();
     } catch {
-      toast.error(t("reorderPoints.bulkError", "┘ü╪┤┘ä ╪º┘ä╪¬╪¡╪»┘è╪½ ╪º┘ä╪¼┘à╪º╪╣┘è") as string);
+      toast.error(t("reorderPoints.bulkError", "فشل التحديث الجماعي") as string);
     } finally {
       setBulkBusy(false);
     }
@@ -398,10 +398,10 @@ const ReorderPointsPage: React.FC = () => {
   };
 
   const urgencyMeta = (urgency?: string) => {
-    if (urgency === "critical") return { label: "╪¡╪▒╪¼", className: "bg-red-100 text-red-700" };
-    if (urgency === "warning") return { label: "╪¬╪¡╪░┘è╪▒", className: "bg-orange-100 text-orange-700" };
-    if (urgency === "moderate") return { label: "┘à╪¬┘ê╪│╪╖", className: "bg-yellow-100 text-yellow-700" };
-    return { label: "╪ó┘à┘å", className: "bg-emerald-100 text-emerald-700" };
+    if (urgency === "critical") return { label: "حرج", className: "bg-red-100 text-red-700" };
+    if (urgency === "warning") return { label: "تحذير", className: "bg-orange-100 text-orange-700" };
+    if (urgency === "moderate") return { label: "متوسط", className: "bg-yellow-100 text-yellow-700" };
+    return { label: "آمن", className: "bg-emerald-100 text-emerald-700" };
   };
 
   const sortableHead = (field: string, label: string) => (
@@ -412,7 +412,7 @@ const ReorderPointsPage: React.FC = () => {
     >
       {label}
       {sortBy === field ? (
-        <span className="text-[10px]">{sortDir === "asc" ? "Γû▓" : "Γû╝"}</span>
+        <span className="text-[10px]">{sortDir === "asc" ? "▲" : "▼"}</span>
       ) : null}
     </button>
   );
@@ -424,23 +424,23 @@ const ReorderPointsPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <ArchiveBoxIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-              {t("reorderPoints.title", "╪Ñ╪»╪º╪▒╪⌐ ┘å┘é╪º╪╖ ╪╣╪¼╪▓ ╪º┘ä┘à╪«╪▓┘ê┘å")}
+              {t("reorderPoints.title", "إدارة نقاط عجز المخزون")}
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {t(
                 "reorderPoints.subtitle",
-                "╪▒╪º╪¼╪╣ ╪º┘ä┘â┘à┘è╪º╪¬ ╪º┘ä┘à╪¬╪¿┘é┘è╪⌐ ┘ê┘å┘é╪º╪╖ ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘ê╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é ┘ä┘â┘ä ┘à┘å╪¬╪¼",
+                "راجع الكميات المتبقية ونقاط إعادة الطلب والطلب المسبق لكل منتج",
               )}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={exportCsv} className="gap-2">
               <ArrowDownTrayIcon className="h-4 w-4" />
-              {t("reorderPoints.export", "╪¬╪╡╪»┘è╪▒ CSV")}
+              {t("reorderPoints.export", "تصدير CSV")}
             </Button>
             <Button variant="outline" onClick={() => fetchData()} className="gap-2">
               <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              {t("reorderPoints.refresh", "╪¬╪¡╪»┘è╪½")}
+              {t("reorderPoints.refresh", "تحديث")}
             </Button>
           </div>
         </div>
@@ -475,9 +475,9 @@ const ReorderPointsPage: React.FC = () => {
               <div className="inline-flex rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-1">
                 {(
                   [
-                    { key: "product", label: t("reorderPoints.viewProduct", "╪¿╪º┘ä┘â┘ä (┘à╪¼┘à╪╣)") },
-                    { key: "warehouse", label: t("reorderPoints.viewWarehouse", "╪¿╪º┘ä┘à╪«╪▓┘å") },
-                    { key: "preorder", label: t("reorderPoints.viewPreOrder", "╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é") },
+                    { key: "product", label: t("reorderPoints.viewProduct", "بالكل (مجمع)") },
+                    { key: "warehouse", label: t("reorderPoints.viewWarehouse", "بالمخزن") },
+                    { key: "preorder", label: t("reorderPoints.viewPreOrder", "الطلب المسبق") },
                   ] as { key: ReorderView; label: string }[]
                 ).map((tab) => (
                   <button
@@ -501,7 +501,7 @@ const ReorderPointsPage: React.FC = () => {
                   <Input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder={t("reorderPoints.search", "╪¿╪¡╪½ ╪¿╪º┘ä╪º╪│┘à ╪ú┘ê SKU...") as string}
+                    placeholder={t("reorderPoints.search", "بحث بالاسم أو SKU...") as string}
                     className="pl-9 w-56"
                   />
                 </div>
@@ -512,14 +512,14 @@ const ReorderPointsPage: React.FC = () => {
                     onValueChange={(value) => setStockFilter(value ?? "all")}
                   >
                     <SelectTrigger className="w-40">
-                      <SelectValue placeholder={t("reorderPoints.all", "╪º┘ä┘â┘ä")} />
+                      <SelectValue placeholder={t("reorderPoints.all", "الكل")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t("reorderPoints.all", "╪º┘ä┘â┘ä")}</SelectItem>
-                      <SelectItem value="low">{t("reorderPoints.filterLow", "┘à╪«╪▓┘ê┘å ┘à┘å╪«┘ü╪╢")}</SelectItem>
-                      <SelectItem value="out">{t("reorderPoints.filterOut", "┘å┘ü╪»")}</SelectItem>
-                      <SelectItem value="safe">{t("reorderPoints.filterSafe", "┘à╪¬┘ê┘ü╪▒")}</SelectItem>
-                      <SelectItem value="preorder">{t("reorderPoints.filterPreOrder", "╪╖┘ä╪¿ ┘à╪│╪¿┘é")}</SelectItem>
+                      <SelectItem value="all">{t("reorderPoints.all", "الكل")}</SelectItem>
+                      <SelectItem value="low">{t("reorderPoints.filterLow", "مخزون منخفض")}</SelectItem>
+                      <SelectItem value="out">{t("reorderPoints.filterOut", "نفد")}</SelectItem>
+                      <SelectItem value="safe">{t("reorderPoints.filterSafe", "متوفر")}</SelectItem>
+                      <SelectItem value="preorder">{t("reorderPoints.filterPreOrder", "طلب مسبق")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -541,7 +541,7 @@ const ReorderPointsPage: React.FC = () => {
               <div className="py-16 text-center">
                 <CheckCircleIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600" />
                 <p className="mt-4 text-gray-500 dark:text-gray-400">
-                  {t("reorderPoints.empty", "┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘à╪╖╪º╪¿┘é╪⌐")}
+                  {t("reorderPoints.empty", "لا توجد بيانات مطابقة")}
                 </p>
               </div>
             ) : (
@@ -557,16 +557,16 @@ const ReorderPointsPage: React.FC = () => {
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600"
                         />
                       </TableHead>
-                      <TableHead>{sortableHead("name", t("reorderPoints.colProduct", "╪º┘ä┘à┘å╪¬╪¼"))}</TableHead>
-                      <TableHead>{t("reorderPoints.colStatus", "╪º┘ä╪¡╪º┘ä╪⌐")}</TableHead>
+                      <TableHead>{sortableHead("name", t("reorderPoints.colProduct", "المنتج"))}</TableHead>
+                      <TableHead>{t("reorderPoints.colStatus", "الحالة")}</TableHead>
                       {view === "warehouse" ? (
-                        <TableHead>{t("reorderPoints.colWarehouse", "╪º┘ä┘à╪«╪▓┘å")}</TableHead>
+                        <TableHead>{t("reorderPoints.colWarehouse", "المخزن")}</TableHead>
                       ) : null}
-                      <TableHead>{sortableHead("available", t("reorderPoints.colAvailable", "╪º┘ä┘à╪¬╪¿┘é┘è"))}</TableHead>
-                      <TableHead>{sortableHead("reorderPoint", t("reorderPoints.colReorder", "╪º┘ä┘å┘é╪╖╪⌐"))}</TableHead>
-                      <TableHead>{t("reorderPoints.colPreOrder", "╪╖┘ä╪¿ ┘à╪│╪¿┘é")}</TableHead>
-                      <TableHead>{sortableHead("daysUntilStockout", t("reorderPoints.colDays", "╪ú┘è╪º┘à ╪º┘ä┘å┘ü╪º╪»"))}</TableHead>
-                      <TableHead>{t("reorderPoints.colSuggested", "┘à┘é╪¬╪▒╪¡")}</TableHead>
+                      <TableHead>{sortableHead("available", t("reorderPoints.colAvailable", "المتبقي"))}</TableHead>
+                      <TableHead>{sortableHead("reorderPoint", t("reorderPoints.colReorder", "النقطة"))}</TableHead>
+                      <TableHead>{t("reorderPoints.colPreOrder", "طلب مسبق")}</TableHead>
+                      <TableHead>{sortableHead("daysUntilStockout", t("reorderPoints.colDays", "أيام النفاد"))}</TableHead>
+                      <TableHead>{t("reorderPoints.colSuggested", "مقترح")}</TableHead>
                       <TableHead className="w-20">{t("reorderPoints.colActions", "")}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -610,7 +610,7 @@ const ReorderPointsPage: React.FC = () => {
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                   {item.sku}
-                                  {item.categoryName ? ` ΓÇó ${item.categoryName}` : ""}
+                                  {item.categoryName ? ` • ${item.categoryName}` : ""}
                                 </p>
                               </div>
                             </div>
@@ -624,7 +624,7 @@ const ReorderPointsPage: React.FC = () => {
                           {view === "warehouse" ? (
                             <TableCell>
                               <span className="text-sm text-gray-700 dark:text-gray-300">
-                                {item.warehouseName || "ΓÇö"}
+                                {item.warehouseName || "—"}
                               </span>
                             </TableCell>
                           ) : null}
@@ -634,7 +634,7 @@ const ReorderPointsPage: React.FC = () => {
                             </span>
                             {item.reserved > 0 ? (
                               <span className="text-xs text-gray-400 mr-1">
-                                (+{item.reserved} ┘à╪¡╪¼┘ê╪▓)
+                                (+{item.reserved} محجوز)
                               </span>
                             ) : null}
                           </TableCell>
@@ -642,10 +642,10 @@ const ReorderPointsPage: React.FC = () => {
                             {!canEditPoint ? (
                               <div className="flex flex-col">
                                 <span className="text-sm text-gray-400 dark:text-gray-500">
-                                  {t("reorderPoints.noInventory", "╪¿┘ä╪º ╪│╪¼┘ä╪º╪¬ ┘à╪«╪▓┘ê┘å")}
+                                  {t("reorderPoints.noInventory", "بلا سجلات مخزون")}
                                 </span>
                                 <span className="text-[11px] text-gray-400/70">
-                                  {t("reorderPoints.noInventoryHint", "╪ú╪╢┘ü ┘à╪«╪▓┘ê┘å╪º┘ï ╪ú┘ê┘ä╪º┘ï ┘à┘å ╪╡┘ü╪¡╪⌐ ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å")}
+                                  {t("reorderPoints.noInventoryHint", "أضف مخزوناً أولاً من صفحة إدارة المخزون")}
                                 </span>
                               </div>
                             ) : isEditing ? (
@@ -683,7 +683,7 @@ const ReorderPointsPage: React.FC = () => {
                                   type="button"
                                   onClick={() => startEdit(item)}
                                   className="p-1 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                                  title={t("reorderPoints.edit", "╪¬╪╣╪»┘è┘ä ╪º┘ä┘å┘é╪╖╪⌐") as string}
+                                  title={t("reorderPoints.edit", "تعديل النقطة") as string}
                                 >
                                   <PencilSquareIcon className="h-3.5 w-3.5" />
                                 </button>
@@ -694,8 +694,8 @@ const ReorderPointsPage: React.FC = () => {
                             <div className="flex flex-col gap-1">
                               <span className={`inline-flex items-center gap-1 w-fit rounded-full px-2 py-0.5 text-[11px] font-bold ${item.isPreOrder ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
                                 {item.isPreOrder
-                                  ? t("reorderPoints.preOrderOn", "┘à┘ü╪╣┘ä")
-                                  : t("reorderPoints.preOrderOff", "┘à╪╣╪╖┘ä")}
+                                  ? t("reorderPoints.preOrderOn", "مفعل")
+                                  : t("reorderPoints.preOrderOff", "معطل")}
                               </span>
                               {item.preOrderDate ? (
                                 <span className="text-[11px] text-gray-400">
@@ -708,7 +708,7 @@ const ReorderPointsPage: React.FC = () => {
                             <div className="flex flex-col gap-1">
                               <span className="text-sm font-bold text-gray-900 dark:text-white">
                                 {item.daysUntilStockout === 999
-                                  ? "Γê₧"
+                                  ? "∞"
                                   : item.daysUntilStockout}
                               </span>
                               <span className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-bold ${urgency.className}`}>
@@ -719,11 +719,11 @@ const ReorderPointsPage: React.FC = () => {
                           <TableCell>
                             <div className="flex flex-col gap-0.5">
                               <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                                {item.suggestedReorder || "ΓÇö"}
+                                {item.suggestedReorder || "—"}
                               </span>
                               {typeof item.dailyAvgSales === "number" && item.dailyAvgSales > 0 ? (
                                 <span className="text-[11px] text-gray-400">
-                                  {t("reorderPoints.perDay", "{{count}}/┘è┘ê┘à").replace(
+                                  {t("reorderPoints.perDay", "{{count}}/يوم").replace(
                                     "{{count}}",
                                     String(item.dailyAvgSales),
                                   )}
@@ -737,7 +737,7 @@ const ReorderPointsPage: React.FC = () => {
                               disabled={!canEditPoint}
                               onClick={() => startEdit(item)}
                               className="p-2 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
-                              title={t("reorderPoints.edit", "╪¬╪╣╪»┘è┘ä ╪º┘ä┘å┘é╪╖╪⌐") as string}
+                              title={t("reorderPoints.edit", "تعديل النقطة") as string}
                             >
                               <PencilSquareIcon className="h-4 w-4" />
                             </button>
@@ -754,7 +754,7 @@ const ReorderPointsPage: React.FC = () => {
               <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {t("reorderPoints.selected", "╪º┘ä┘à╪¡╪»╪»: {{count}}").replace(
+                    {t("reorderPoints.selected", "المحدد: {{count}}").replace(
                       "{{count}}",
                       String(selectedIds.size),
                     )}
@@ -766,7 +766,7 @@ const ReorderPointsPage: React.FC = () => {
                         min="0"
                         value={bulkValue}
                         onChange={(event) => setBulkValue(event.target.value)}
-                        placeholder={t("reorderPoints.bulkPlaceholder", "┘å┘é╪╖╪⌐ ╪¼╪»┘è╪»╪⌐...") as string}
+                        placeholder={t("reorderPoints.bulkPlaceholder", "نقطة جديدة...") as string}
                         className="w-28 h-9 text-sm"
                       />
                       <Button
@@ -775,8 +775,8 @@ const ReorderPointsPage: React.FC = () => {
                         className="h-9 text-sm"
                       >
                         {bulkBusy
-                          ? t("reorderPoints.saving", "╪¼╪º╪▒┘è ╪º┘ä╪¡┘ü╪╕...")
-                          : t("reorderPoints.applyBulk", "╪¬╪╣┘è┘è┘å ┘ä┘ä┘à╪¡╪»╪»")}
+                          ? t("reorderPoints.saving", "جاري الحفظ...")
+                          : t("reorderPoints.applyBulk", "تعيين للمحدد")}
                       </Button>
                     </div>
                   )}

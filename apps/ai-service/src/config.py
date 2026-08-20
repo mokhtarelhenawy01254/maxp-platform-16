@@ -139,9 +139,6 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_required(self) -> Settings:
         if self.environment in ("staging", "production"):
-            if not self.anthropic_api_key and not self.openai_api_key and not self.google_api_key:
-                msg = "At least one LLM API key (ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY) is required in staging/production"
-                raise ValueError(msg)
             if not self.maxp_api_url or "localhost" in self.maxp_api_url.lower():
                 warnings.warn(
                     f"MAXP_API_URL is set to localhost ({self.maxp_api_url}) in {self.environment} mode",

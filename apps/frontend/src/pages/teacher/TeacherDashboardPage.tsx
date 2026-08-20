@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Calendar, CalendarDays, Clock, DollarSign, Users } from 'lucide-react';
+import { CalendarDays, Clock, DollarSign, Users } from "lucide-react";
 
 interface DashboardData {
   upcomingSessions: number;

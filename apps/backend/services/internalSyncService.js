@@ -11,6 +11,190 @@ class InternalSyncService {
         this.prisma = getSharedPrismaClient();
     }
 
+    _safeParseJson(value) {
+        if (value == null) return null;
+        if (typeof value === 'object') return value;
+        try {
+            return JSON.parse(value);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    _looseEquals(a, b) {
+        if (a === b) return true;
+        return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+    }
+
+    /**
+     * Builds Prisma Customer upsert args preferring phone/whatsapp identity and
+     * falling back to facebookId so synced orders never create a customer with
+     * a null identity key (which previously lost customer contact data).
+     */
+    buildSyncedCustomerUpsertArgs(customer, companyId) {
+        const firstName = customer?.firstName || '';
+        const lastName = customer?.lastName || '';
+        const email = customer?.email || null;
+        const phone = customer?.phone || null;
+        const whatsappId = customer?.whatsappId || customer?.phone || null;
+        const facebookId = customer?.facebookId || null;
+
+        const update = { firstName, lastName, email, phone, facebookId };
+
+        if (whatsappId) {
+            return {
+                where: { whatsappId_companyId: { whatsappId, companyId } },
+                update,
+                create: { firstName, lastName, email, phone, whatsappId, facebookId, companyId, status: 'ACTIVE' }
+            };
+        }
+
+        if (facebookId) {
+            return {
+                where: { facebookId_companyId: { facebookId, companyId } },
+                update,
+                create: { firstName, lastName, email, phone, whatsappId: null, facebookId, companyId, status: 'ACTIVE' }
+            };
+        }
+
+        return {
+            where: { whatsappId_companyId: { whatsappId: null, companyId } },
+            update,
+            create: { firstName, lastName, email, phone, whatsappId: null, facebookId: null, companyId, status: 'ACTIVE' }
+        };
+    }
+
+    /**
+     * Extracts normalized variant (color/size/variantId/image) from an order item.
+     * Works for both regular OrderItem rows and storefront GuestOrder JSON items.
+     */
+    _extractItemVariant(item) {
+        if (!item) return { productColor: null, productSize: null, variantId: null, productImage: null };
+
+        const metadata = this._safeParseJson(item.metadata) || {};
+        const attributes = this._safeParseJson(item.attributes) || {};
+        const variant = (item.variant && typeof item.variant === 'object') ? item.variant : (metadata.variant || {});
+        const attributeValues = metadata.attributeValues || {};
+
+        const rawColor = item.productColor
+            || item.color
+            || item.colour
+            || item['اللون']
+            || metadata.productColor
+            || metadata.color
+            || metadata.colour
+            || metadata['اللون']
+            || attributes.color
+            || attributes.colour
+            || attributes['اللون']
+            || attributeValues.color
+            || attributeValues.colour
+            || attributeValues['اللون']
+            || variant.color
+            || variant.colour
+            || variant['اللون']
+            || null;
+
+        const rawSize = item.productSize != null
+            ? item.productSize
+            : item.size != null
+            ? item.size
+            : item['المقاس'] != null
+            ? item['المقاس']
+            : metadata.productSize != null
+            ? metadata.productSize
+            : metadata.size != null
+            ? metadata.size
+            : metadata['المقاس'] != null
+            ? metadata['المقاس']
+            : attributes.size != null
+            ? attributes.size
+            : attributes['المقاس'] != null
+            ? attributes['المقاس']
+            : attributeValues.size != null
+            ? attributeValues.size
+            : attributeValues['المقاس'] != null
+            ? attributeValues['المقاس']
+            : variant.size != null
+            ? variant.size
+            : variant['المقاس'] != null
+            ? variant['المقاس']
+            : null;
+
+        return {
+            productColor: rawColor != null && String(rawColor).trim() !== '' ? String(rawColor).trim() : null,
+            productSize: rawSize != null && String(rawSize).trim() !== '' ? String(rawSize).trim() : null,
+            variantId: item.variantId || variant.id || metadata.variantId || null,
+            productImage: item.productImage || item.image || variant.image || metadata.image || null
+        };
+    }
+
+    /**
+     * Matches a provider product variant for a synced order item using its
+     * extracted color/size (metadata attributeValues first, then variant name).
+     * Returns the provider-side variant so order items get the correct FK.
+     */
+    findMatchingProviderVariantForOrderItem(item, product) {
+        if (!item || !product || !Array.isArray(product.productVariants)) return null;
+
+        const targetColor = (item.productColor || '').toString().trim();
+        const targetSize = (item.productSize != null ? String(item.productSize) : '').trim();
+
+        let bestMatch = null;
+        let bestScore = 0;
+
+        for (const variant of product.productVariants) {
+            const metadata = this._safeParseJson(variant.metadata) || {};
+            const attributeValues = metadata.attributeValues || {};
+
+            const vColor = String(
+                attributeValues['اللون'] || attributeValues.color || attributeValues.colour || variant.color || ''
+            ).trim();
+            const vSize = String(
+                attributeValues['المقاس'] != null ? attributeValues['المقاس']
+                : attributeValues.size != null ? attributeValues.size
+                : variant.size != null ? variant.size
+                : ''
+            ).trim();
+
+            let score = 0;
+            if (targetColor && vColor && this._looseEquals(targetColor, vColor)) score += 2;
+            if (targetSize && vSize && this._looseEquals(targetSize, vSize)) score += 2;
+
+            if (score === 0 && variant.name) {
+                const parts = String(variant.name).split(/\s*[-–|]\s*/).map(p => p.trim()).filter(Boolean);
+                for (const part of parts) {
+                    if (targetColor && this._looseEquals(targetColor, part)) score += 1;
+                    if (targetSize && this._looseEquals(targetSize, part)) score += 1;
+                }
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = variant;
+            }
+        }
+
+        return bestScore > 0 ? bestMatch : null;
+    }
+
+    _extractPrimaryImage(product) {
+        if (!product || !product.images) return null;
+        let images = product.images;
+        if (typeof images === 'string') {
+            try {
+                images = images.trim().startsWith('[') ? JSON.parse(images) : images.split(',');
+            } catch (e) {
+                images = [];
+            }
+        }
+        if (Array.isArray(images) && images.length > 0) {
+            const first = String(images[0]).trim();
+            return first || null;
+        }
+        return null;
+    }
+
     /**
      * Synchronize product updates to all consumer companies.
      * Called when a provider updates a product.
@@ -122,28 +306,9 @@ class InternalSyncService {
                 // Handle Customer
                 let localCustomerId = null;
                 if (order.customer) {
-                    const customer = await this.prisma.customer.upsert({
-                        where: {
-                            whatsappId_companyId: {
-                                whatsappId: order.customer.phone || order.customer.whatsappId,
-                                companyId: consumerId
-                            }
-                        },
-                        update: {
-                            firstName: order.customer.firstName,
-                            lastName: order.customer.lastName,
-                            email: order.customer.email
-                        },
-                        create: {
-                            firstName: order.customer.firstName,
-                            lastName: order.customer.lastName,
-                            phone: order.customer.phone,
-                            whatsappId: order.customer.phone || order.customer.whatsappId,
-                            email: order.customer.email,
-                            companyId: consumerId,
-                            status: 'ACTIVE'
-                        }
-                    });
+                    const customer = await this.prisma.customer.upsert(
+                        this.buildSyncedCustomerUpsertArgs(order.customer, consumerId)
+                    );
                     localCustomerId = customer.id;
                 }
 
@@ -158,15 +323,23 @@ class InternalSyncService {
                         }
                     });
 
+                    const variantData = this._extractItemVariant(item);
+
                     localOrderItems.push({
                         productId: localProduct ? localProduct.id : null,
+                        productName: item.productName || item.product?.name || null,
+                        productSku: item.productSku || item.product?.sku || null,
                         quantity: item.quantity,
                         price: item.price,
                         total: item.total,
+                        ...variantData,
                         metadata: JSON.stringify({
                             originalProductName: item.product?.name,
                             originalProductId: item.productId,
-                            pushedFrom: providerId
+                            pushedFrom: providerId,
+                            variantId: variantData.variantId,
+                            productColor: variantData.productColor,
+                            productSize: variantData.productSize
                         })
                     });
                 }
@@ -261,7 +434,8 @@ class InternalSyncService {
                                 productName: item.name || item.productName,
                                 quantity: item.quantity,
                                 price: item.price,
-                                total: (item.price * item.quantity)
+                                total: (item.price * item.quantity),
+                                ...this._extractItemVariant(item)
                             });
                         }
 
@@ -327,7 +501,8 @@ class InternalSyncService {
                                 originalProduct,
                                 quantity: item.quantity,
                                 price: item.price,
-                                total: item.total
+                                total: item.total,
+                                ...this._extractItemVariant(item)
                             });
                             break; // Found the provider for this item
                         }
@@ -367,30 +542,16 @@ class InternalSyncService {
                         }
 
                         let providerCustomerId = null;
+                        let providerCustomerPhone = order.customer?.phone || null;
+                        let providerCustomerName = null;
                         if (order.customer) {
-                            const customer = await this.prisma.customer.upsert({
-                                where: {
-                                    whatsappId_companyId: {
-                                        whatsappId: order.customer.phone || order.customer.whatsappId,
-                                        companyId: providerId
-                                    }
-                                },
-                                update: {
-                                    firstName: order.customer.firstName,
-                                    lastName: order.customer.lastName,
-                                    email: order.customer.email
-                                },
-                                create: {
-                                    firstName: order.customer.firstName,
-                                    lastName: order.customer.lastName,
-                                    phone: order.customer.phone,
-                                    whatsappId: order.customer.phone || order.customer.whatsappId,
-                                    email: order.customer.email,
-                                    companyId: providerId,
-                                    status: 'ACTIVE'
-                                }
-                            });
+                            const customer = await this.prisma.customer.upsert(
+                                this.buildSyncedCustomerUpsertArgs(order.customer, providerId)
+                            );
                             providerCustomerId = customer.id;
+                            providerCustomerPhone = order.customer.phone || providerCustomerPhone;
+                            providerCustomerName = [order.customer.firstName, order.customer.lastName]
+                                .filter(Boolean).join(' ') || null;
                         }
 
                         const subtotal = items.reduce((acc, curr) => acc + Number(curr.total), 0);
@@ -415,6 +576,8 @@ class InternalSyncService {
                             data: {
                                 orderNumber: `${orderNumber}-AFF-${consumerId.slice(-4)}`,
                                 customerId: providerCustomerId,
+                                customerPhone: providerCustomerPhone,
+                                customerName: providerCustomerName,
                                 companyId: providerId,
                                 affiliateId: affiliate.id,
                                 orderSource: 'AFFILIATE_DIRECT',
@@ -432,14 +595,26 @@ class InternalSyncService {
                                 sourceType: 'internal_push',
                                 externalId: orderId,
                                 orderItems: {
-                                    create: items.map(it => ({
-                                        productId: it.originalProduct.id,
-                                        quantity: it.quantity,
-                                        price: it.price,
-                                        total: it.total,
-                                        basePrice: it.originalProduct.price,
-                                        merchantPrice: it.originalProduct.cost
-                                    }))
+                                    create: items.map(it => {
+                                        const matchedVariant = this.findMatchingProviderVariantForOrderItem(
+                                            { productColor: it.productColor, productSize: it.productSize },
+                                            it.originalProduct
+                                        );
+                                        return {
+                                            productId: it.originalProduct.id,
+                                            productName: it.originalProduct.name || null,
+                                            productSku: it.originalProduct.sku || null,
+                                            quantity: it.quantity,
+                                            price: it.price,
+                                            total: it.total,
+                                            basePrice: it.originalProduct.price,
+                                            merchantPrice: it.originalProduct.cost,
+                                            productColor: it.productColor || null,
+                                            productSize: it.productSize || null,
+                                            variantId: matchedVariant ? matchedVariant.id : null,
+                                            productImage: it.productImage || this._extractPrimaryImage(it.originalProduct) || null
+                                        };
+                                    })
                                 }
                             }
                         });
@@ -448,6 +623,44 @@ class InternalSyncService {
                         await commissionService.calculateCommissions(providerOrder.id);
 
                         console.log(`✅ [INTERNAL-SYNC] Successfully pushed order segment to provider ${providerId}. Provider Order: ${providerOrder.orderNumber}`);
+
+                        // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد (طلبات الأفليت)
+                        // 🚨 كان مفقوداً بالكامل — طلبات internal_push وصلت بدون أي إشعار للعميل
+                        try {
+                            const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+
+                            const orderForNotification = {
+                                id: providerOrder.id,
+                                orderNumber: providerOrder.orderNumber,
+                                companyId: providerId,
+                                customerPhone: providerCustomerPhone,
+                                customerName: providerCustomerName,
+                                customer: {
+                                    firstName: providerCustomerName?.split(' ')[0] || providerCustomerName,
+                                    phone: providerCustomerPhone
+                                },
+                                customerId: providerCustomerId,
+                                total: parseFloat(providerOrder.total),
+                                shipping: parseFloat(providerOrder.shipping || 0),
+                                currency: 'EGP',
+                                items: (items || []).map(it => ({
+                                    productName: it.originalProduct?.name || it.name,
+                                    quantity: it.quantity || 1,
+                                    price: it.price,
+                                    total: it.total,
+                                    productSku: it.originalProduct?.sku || it.sku,
+                                    productColor: it.productColor || null,
+                                    productSize: it.productSize || null
+                                })),
+                                createdAt: providerOrder.createdAt
+                            };
+
+                            await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+                            console.log(`✅ [WHATSAPP] Order notification sent for affiliate order: ${providerOrder.orderNumber}`);
+                        } catch (whatsappError) {
+                            // لا نوقف العملية إذا فشل WhatsApp
+                            console.log(`⚠️ [WHATSAPP] Failed to send affiliate order notification: ${whatsappError.message}`);
+                        }
 
                         // 🛒 Auto-export to WooCommerce for the provider company
                         try {

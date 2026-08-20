@@ -1,7 +1,6 @@
-import { AlignLeft as Bars3Icon, X as XMarkIcon, Circle as UserCircleIcon, Circle as ArrowRightOnRectangleIcon, Settings as Cog6ToothIcon, Search as MagnifyingGlassIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as PlayIcon, Circle as PauseIcon, Circle as StopIcon, Smartphone as DevicePhoneMobileIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuthSimple";
 import { useCompany } from "../contexts/CompanyContext";
 import NotificationDropdown from "./notifications/NotificationDropdown";
@@ -9,12 +8,18 @@ import OrderNotificationBell from "./notifications/OrderNotificationBell";
 import LanguageSwitcher from "./common/LanguageSwitcher";
 import { envConfig } from "../config/environment";
 import { CompanyLogo } from "./ui/CompanyLogo";
-import AppDownloadModal from "./modals/AppDownloadModal";
-import SmartAppBanner from "./common/SmartAppBanner";
-;
+import {
+  Bars3Icon,
+  XMarkIcon,
+  UserCircleIcon,
+  ArrowRightOnRectangleIcon,
+  Cog6ToothIcon,
+  MagnifyingGlassIcon,
+  ChatBubbleLeftRightIcon,
+} from "@heroicons/react/24/outline";
 
 import { useTimer } from "../contexts/TimerContext";
-;
+import { PlayIcon, PauseIcon, StopIcon } from "@heroicons/react/24/solid";
 
 const GlobalTimer: React.FC = () => {
   const {
@@ -174,7 +179,6 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Parse company settings if they are a string, otherwise use directly
@@ -212,7 +216,7 @@ const Header: React.FC = () => {
     { name: t("header.conversations"), href: "/conversations" },
     { name: t("header.products"), href: "/products" },
     { name: t("header.orders"), href: "/orders" },
-    { name: t("header.reports"), href: "/reports" },
+    { name: t("header.reports"), href: "/analytics/orders" },
   ];
 
   return (
@@ -229,7 +233,21 @@ const Header: React.FC = () => {
                 className="h-10 w-10 rounded-lg object-cover shadow-sm border border-gray-200 dark:border-gray-600"
                 companyName={user?.company?.name}
               >
-                <img src="/logo.png" alt="MAX-P" className="h-9 w-auto object-contain rounded-lg" />
+                <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <svg
+                    className="h-5 w-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                </div>
               </CompanyLogo>
               <div className="mr-3">
                 <span className="text-xl font-bold text-gray-900 dark:text-white">
@@ -277,16 +295,6 @@ const Header: React.FC = () => {
 
             {/* Language Switcher */}
             <LanguageSwitcher />
-
-            {/* Mobile App Download Button */}
-            <button
-              onClick={() => setIsAppModalOpen(true)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all duration-200 shadow-xs"
-              title="تحميل تطبيق الموبايل"
-            >
-              <DevicePhoneMobileIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span>تطبيق الموبايل</span>
-            </button>
 
             {/* New Orders Bell */}
             <OrderNotificationBell />
@@ -391,7 +399,7 @@ const Header: React.FC = () => {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden relative z-50">
+          <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 border-t border-gray-200 dark:border-gray-700">
               {navigation.map((item) => (
                 <Link
@@ -438,16 +446,6 @@ const Header: React.FC = () => {
                   {t("header.settings")}
                 </Link>
 
-                <a
-                  href="/downloads/maxp-app.apk"
-                  download="maxp-app.apk"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-sm"
-                >
-                  <DevicePhoneMobileIcon className="h-4 w-4" />
-                  <span>تحميل تطبيق الموبايل (APK)</span>
-                </a>
-
                 <button
                   onClick={handleLogout}
                   className="block w-full text-right px-3 py-2 rounded-md text-base font-medium text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -470,13 +468,6 @@ const Header: React.FC = () => {
           }}
         />
       )}
-
-      {/* App Download Modal & Smart Mobile Banner */}
-      <AppDownloadModal
-        isOpen={isAppModalOpen}
-        onClose={() => setIsAppModalOpen(false)}
-      />
-      <SmartAppBanner onOpenModal={() => setIsAppModalOpen(true)} />
     </header>
   );
 };

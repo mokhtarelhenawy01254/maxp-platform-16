@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ChevronDownIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover";
 import { Checkbox } from "../../../components/ui/checkbox";
@@ -72,8 +72,8 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
     selectedNames.length === 0
       ? placeholder
       : selectedNames.length <= 2
-        ? selectedNames.join("╪î ")
-        : `${selectedNames.slice(0, 2).join("╪î ")} +${selectedNames.length - 2}`;
+        ? selectedNames.join("، ")
+        : `${selectedNames.slice(0, 2).join("، ")} +${selectedNames.length - 2}`;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

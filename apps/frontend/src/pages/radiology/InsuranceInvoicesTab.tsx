@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Banknote } from "lucide-react";
@@ -58,7 +58,7 @@ const INVOICE_STATUS: Record<string, { label: string; color: string }> = {
 
 const fmtMoney = (n?: number, currency = "") => `${Number(n ?? 0).toFixed(2)} ${currency}`;
 
-const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "ΓÇö");
+const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
 
 export default function InsuranceInvoicesTab() {
   const { t } = useTranslation();
@@ -237,8 +237,8 @@ export default function InsuranceInvoicesTab() {
                 const st = INVOICE_STATUS[inv.status] ?? { label: inv.status, color: "bg-gray-100 text-gray-700" };
                 return (
                   <tr key={inv.id} className="border-b dark:border-gray-700/50 last:border-0">
-                    <td className="py-3 px-4" dir="ltr">{inv.invoiceNumber || "ΓÇö"}</td>
-                    <td className="py-3 px-4 font-medium">{inv.insuranceCompanyName || "ΓÇö"}</td>
+                    <td className="py-3 px-4" dir="ltr">{inv.invoiceNumber || "—"}</td>
+                    <td className="py-3 px-4 font-medium">{inv.insuranceCompanyName || "—"}</td>
                     <td className="py-3 px-4">{fmtMoney(inv.totalAmount, t("radiology.currency"))}</td>
                     <td className="py-3 px-4">{fmtMoney(inv.paidAmount, t("radiology.currency"))}</td>
                     <td className="py-3 px-4">{fmtMoney(inv.remainingAmount, t("radiology.currency"))}</td>
@@ -250,7 +250,7 @@ export default function InsuranceInvoicesTab() {
                           <Banknote className="w-3.5 h-3.5" />{t("radiology.insuranceInvoices.recordPayment")}
                         </button>
                       ) : (
-                        <span className="text-xs text-gray-400">ΓÇö</span>
+                        <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
                   </tr>
@@ -308,7 +308,7 @@ export default function InsuranceInvoicesTab() {
                         />
                         <span>
                           <span className="font-medium">{s.patientName}</span>
-                          {s.examTypeName ? <span className="text-gray-500 dark:text-gray-400"> ΓÇö {s.examTypeName}</span> : null}
+                          {s.examTypeName ? <span className="text-gray-500 dark:text-gray-400"> — {s.examTypeName}</span> : null}
                           {!s.insuranceCompanyId ? <span className="text-xs text-yellow-600 dark:text-yellow-400"> ({t("radiology.insuranceInvoices.willBeLinked")})</span> : null}
                         </span>
                       </label>
@@ -341,7 +341,7 @@ export default function InsuranceInvoicesTab() {
               </button>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {t("radiology.insuranceInvoices.invoiceLabel")} <span dir="ltr">{paymentTarget.invoiceNumber || paymentTarget.id}</span> ΓÇö {t("radiology.insuranceInvoices.remaining")} {fmtMoney(paymentTarget.remainingAmount, t("radiology.currency"))}
+              {t("radiology.insuranceInvoices.invoiceLabel")} <span dir="ltr">{paymentTarget.invoiceNumber || paymentTarget.id}</span> — {t("radiology.insuranceInvoices.remaining")} {fmtMoney(paymentTarget.remainingAmount, t("radiology.currency"))}
             </p>
             <div className="space-y-4">
               <div>

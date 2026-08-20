@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 
@@ -38,10 +38,10 @@ const TikTokMessagingSettingsCard: React.FC = () => {
     setSaving(true);
     try {
       await apiClient.put("/tiktok/messaging/status", { enabled });
-      toast.success("╪¬┘à ╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪▒╪│╪º╪ª┘ä");
+      toast.success("تم حفظ إعدادات الرسائل");
       loadStatus();
     } catch {
-      toast.error("┘ü╪┤┘ä ╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪▒╪│╪º╪ª┘ä");
+      toast.error("فشل حفظ إعدادات الرسائل");
     } finally {
       setSaving(false);
     }
@@ -50,14 +50,14 @@ const TikTokMessagingSettingsCard: React.FC = () => {
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <h2 className="mb-1 text-lg font-semibold text-gray-900">
-        ╪▒╪│╪º╪ª┘ä TikTok
+        رسائل TikTok
       </h2>
       <p className="mb-4 text-sm text-gray-500">
-        ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪▒╪│╪º╪ª┘ä ╪º┘ä┘à╪¿╪º╪┤╪▒╪⌐ ┘à┘å TikTok
+        إدارة الرسائل المباشرة من TikTok
       </p>
 
       {loading ? (
-        <p className="text-sm text-gray-400">╪¼╪º╪▒┘É ╪º┘ä╪¬╪¡┘à┘è┘ä...</p>
+        <p className="text-sm text-gray-400">جارِ التحميل...</p>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -68,8 +68,8 @@ const TikTokMessagingSettingsCard: React.FC = () => {
             />
             <span className="text-sm text-gray-700">
               {status?.connected
-                ? `┘à╪¬╪╡┘ä ╪¿╪¡╪│╪º╪¿ ${status.tiktokUsername || "TikTok"}`
-                : "╪║┘è╪▒ ┘à╪¬╪╡┘ä"}
+                ? `متصل بحساب ${status.tiktokUsername || "TikTok"}`
+                : "غير متصل"}
             </span>
           </div>
 
@@ -80,7 +80,7 @@ const TikTokMessagingSettingsCard: React.FC = () => {
               onChange={(e) => setEnabled(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300"
             />
-            ╪¬┘ü╪╣┘è┘ä ╪º╪│╪¬┘é╪¿╪º┘ä ╪º┘ä╪▒╪│╪º╪ª┘ä ┘à┘å TikTok
+            تفعيل استقبال الرسائل من TikTok
           </label>
 
           <button
@@ -88,7 +88,7 @@ const TikTokMessagingSettingsCard: React.FC = () => {
             disabled={saving}
             className="rounded-lg bg-black px-5 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
           >
-            {saving ? "╪¼╪º╪▒┘É ╪º┘ä╪¡┘ü╪╕..." : "╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬"}
+            {saving ? "جارِ الحفظ..." : "حفظ الإعدادات"}
           </button>
         </div>
       )}

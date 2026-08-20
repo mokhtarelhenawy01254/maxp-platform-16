@@ -11,6 +11,7 @@ model MarketplaceApp {
   pricingModel  PricingModel     @default(SUBSCRIPTION)
   unitPrice     Decimal?         @db.Decimal(10, 2)
   unitName      String?
+  ppuBillingMethod String?       @default("PER_ORDER")
   features      Json?
   isActive      Boolean          @default(true)
   isPublic      Boolean          @default(true)
@@ -26,6 +27,7 @@ model MarketplaceApp {
   reviewCount   Int              @default(0)
   installCount  Int              @default(0)
   isPopular     Boolean          @default(false)
+  isAutoInstall Boolean          @default(false)
   
   // Phase 5: Hardening
   engineCompatibility String?
@@ -104,16 +106,20 @@ model AppReview {
 
 /// UNUSED - Planned feature for app marketplace
 model AppPricingRule {
-  id        String         @id @default(cuid())
-  appId     String
-  name      String
-  condition Json
-  action    Json
-  priority  Int            @default(0)
-  isActive  Boolean        @default(true)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  app       MarketplaceApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+  id          String            @id @default(cuid())
+  appId       String?
+  name        String?
+  feature     String?
+  price       Decimal?          @db.Decimal(10, 2)
+  unit        String?
+  description String?
+  condition   Json?
+  action      Json?
+  priority    Int               @default(0)
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  app         MarketplaceApp?   @relation(fields: [appId], references: [id], onDelete: Cascade)
 
   @@index([appId])
   @@map("app_pricing_rules")

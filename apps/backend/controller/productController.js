@@ -26,6 +26,8 @@ const {
   serializeJsonField,
 } = require('../utils/productMediaUtils');
 const { formatProductResponse } = require('../utils/productNormalizationUtils');
+const { validateStock } = require('../utils/stockValidation');
+const { MAX_PRODUCT_STOCK } = require('../utils/stockValidation');
 const ragKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const {
@@ -497,9 +499,11 @@ const getAllProducts = async (req, res) => {
     // Build filter object (Search)
     const where = withActiveProductFilter({ companyId });
     if (req.query.search) {
-      where.name = {
-        contains: req.query.search
-      };
+      const searchTerm = req.query.search;
+      where.OR = [
+        { name: { contains: searchTerm } },
+        { sku: { contains: searchTerm } },
+      ];
     }
 
     const isAffiliateUser = req.user.role === 'AFFILIATE';
@@ -1514,7 +1518,19 @@ const updateSingleProduct = async (req, res) => {
       updateData.price = parseFloat(updateData.price);
     }
     if (updateData.stock !== undefined) {
-      updateData.stock = parseInt(updateData.stock);
+      // الحقل الفاضي من المدخل يعني صفر — نفس سلوك الإنشاء
+      const stockValue = updateData.stock === '' || updateData.stock === null
+        ? 0
+        : updateData.stock;
+      const stockResult = validateStock(stockValue);
+      if (!stockResult.ok) {
+        return res.status(400).json({
+          success: false,
+          message: stockResult.message,
+          error: stockResult.message,
+        });
+      }
+      updateData.stock = parseInt(stockValue);
     }
     if (updateData.comparePrice !== undefined) {
       updateData.comparePrice = parseFloat(updateData.comparePrice);
@@ -2149,6 +2165,17 @@ const createProduct = async (req, res) => {
       workflow: initialWorkflow,
     });
 
+    if (stock !== undefined && stock !== null && stock !== '') {
+      const stockResult = validateStock(stock);
+      if (!stockResult.ok) {
+        return res.status(400).json({
+          success: false,
+          message: stockResult.message,
+          error: stockResult.message,
+        });
+      }
+    }
+
     const now = new Date();
     let product = await getSharedPrismaClient().product.create({
       data: {
@@ -2364,9 +2391,13 @@ const duplicateProduct = async (req, res) => {
     const duplicateMerchantPrice = Number(
       sourceMerchantProduct?.merchantPrice ?? sourceProduct.price ?? 0
     );
-    const duplicateMerchantStock = Number(
+    const rawDuplicateMerchantStock = Number(
       sourceMerchantProduct?.stock ?? sourceProduct.stock ?? 0
     );
+    // قصّ المخزون للسقف المنطقي بدلاً من رفض العملية كلها (منتج قديم برقم خيالي)
+    const duplicateMerchantStock = Number.isFinite(rawDuplicateMerchantStock)
+      ? Math.min(Math.max(rawDuplicateMerchantStock, 0), MAX_PRODUCT_STOCK)
+      : 0;
 
     const duplicatePayload = {
       name: buildDuplicateProductName(sourceProduct.name),
@@ -3038,6 +3069,17 @@ const createProductVariant = async (req, res) => {
     const sanitizedVariantImages = sanitizeImageCollection(images);
     const imagesStr = sanitizedVariantImages.length > 0 ? JSON.stringify(sanitizedVariantImages) : null;
 
+    if (stock !== undefined && stock !== null && stock !== '' && !stockManagedByCompanyWarehouse) {
+      const stockResult = validateStock(stock);
+      if (!stockResult.ok) {
+        return res.status(400).json({
+          success: false,
+          message: stockResult.message,
+          error: stockResult.message,
+        });
+      }
+    }
+
     // إنشاء الـ variant الجديد
     const variant = await getSharedPrismaClient().productVariant.create({
       data: {
@@ -3455,6 +3497,17 @@ const updateProductVariant = async (req, res) => {
       sortOrder,
       metadata
     } = req.body;
+
+    if (stock !== undefined && stock !== null && stock !== '' && !stockManagedByCompanyWarehouse) {
+      const stockResult = validateStock(stock);
+      if (!stockResult.ok) {
+        return res.status(400).json({
+          success: false,
+          message: stockResult.message,
+          error: stockResult.message,
+        });
+      }
+    }
 
     const imagesStr = images !== undefined
       ? (() => {

@@ -1,8 +1,6 @@
-import { ExternalLink as ArrowTopRightOnSquareIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
 import React from "react";
 import { Link } from "react-router-dom";
-;
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";

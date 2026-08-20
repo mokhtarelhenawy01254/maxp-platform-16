@@ -1,0 +1,17 @@
+{
+  "title": "إعدادات Instagram",
+  "subtitle": "إدارة حسابات Instagram المرتبطة بصفحات Facebook",
+  "howToConnect": "كيفية ربط Instagram",
+  "connectInfo": "يتم ربط Instagram تلقائياً عند توصيل صفحة Facebook المرتبطة بحساب Instagram Business.",
+  "facebookSettings": "إعدادات Facebook",
+  "reauthInfo": "لإعادة المصادقة وتحديث الأذونات.",
+  "loading": "جاري التحميل...",
+  "loadError": "تعذر تحميل حسابات Instagram",
+  "noAccounts": "لا توجد حسابات Instagram مرتبطة",
+  "connectPrompt": "قم بتوصيل صفحة Facebook مرتبطة بحساب Instagram Business للبدء",
+  "connectFacebook": "توصيل صفحة Facebook",
+  "instagramAccount": "حساب Instagram",
+  "linkedTo": "مرتبط بصفحة",
+  "connected": "متصل",
+  "addAccount": "إضافة حساب آخر"
+}

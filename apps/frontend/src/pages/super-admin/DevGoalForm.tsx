@@ -1,10 +1,14 @@
-import { ArrowRight as ArrowRightIcon, Plus as PlusIcon, X as XMarkIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  ArrowRightIcon,
+  PlusIcon,
+  XMarkIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
@@ -148,7 +152,7 @@ const DevGoalForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.startDate || !formData.endDate) {
-      alert("العنوان والتواريخ مطلوبة");
+      alert(i18n.t("DevGoalForm.msg_2fbd"));
       return;
     }
 
@@ -184,10 +188,10 @@ const DevGoalForm: React.FC = () => {
       if (data.success) {
         navigate(`/super-admin/dev-goals/${data.data.id}`);
       } else {
-        alert(data.error || "فشل حفظ الهدف");
+        alert(data.error || i18n.t("DevGoalForm.failed_save_7680"));
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("DevGoalForm.msg_58e7"));
     } finally {
       setSaving(false);
     }

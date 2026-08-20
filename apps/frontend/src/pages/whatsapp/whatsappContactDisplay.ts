@@ -166,8 +166,17 @@ export function getBestContactDisplayName(contact: ContactDisplaySource): string
     return displayPhone;
   }
 
+  // LID contacts without mapping — show partial JID instead of "WhatsApp"
+  if (contact.jid?.includes('@lid')) {
+    const bareJid = contact.jid.split('@')[0].replace(/\D/g, '');
+    if (bareJid) return `اتصال واتساب (${bareJid.slice(-4)})`;
+  }
+  if (contact.jid?.endsWith('@g.us')) {
+    return contact.pushName || 'مجموعة واتساب';
+  }
+
   // Absolute last resort - but never show raw JID
-  return "WhatsApp";
+  return "اتصال واتساب";
 }
 
 /**

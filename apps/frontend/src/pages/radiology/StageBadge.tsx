@@ -1,7 +1,7 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { RadiologyStage, RADIOLOGY_STAGE_META } from "./shared";
 
-/** Badge ┘è╪╣╪▒╪╢ ╪º╪│┘à ╪º┘ä┘à╪▒╪¡┘ä╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ┘ä┘ä╪¡╪º┘ä╪⌐ ╪¿┘ä┘ê┘å┘ç╪º (Stage stepper) */
+/** Badge يعرض اسم المرحلة الأساسية للحالة بلونها (Stage stepper) */
 export function StageBadge({ stage, className = "" }: { stage: RadiologyStage; className?: string }) {
   const { t } = useTranslation();
   const meta = RADIOLOGY_STAGE_META[stage] || RADIOLOGY_STAGE_META.RECEPTION;

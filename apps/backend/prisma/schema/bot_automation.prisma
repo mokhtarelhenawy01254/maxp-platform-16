@@ -1,4 +1,4 @@
-﻿model BotAutomationSettings {
+model BotAutomationSettings {
   id                  String    @id @default(cuid())
   companyId           String    @unique
   welcomeEnabled      Boolean   @default(false)
@@ -25,7 +25,7 @@ model BotAutomationRule {
   replyType            String   @default("TEXT") // TEXT | IMAGE | VIDEO
   replyText            String?  @db.Text
   mediaUrl             String?
-  buttons              String?  @db.Text // JSON array: [{title, payload}] ΓÇö quick replies
+  buttons              String?  @db.Text // JSON array: [{title, payload}] — quick replies
   priority             Int      @default(0)
   isEnabled            Boolean  @default(true)
   stopFurtherProcessing Boolean @default(true)
@@ -57,7 +57,7 @@ model BotConversationStarter {
 model BotPersistentMenu {
   id          String   @id @default(cuid())
   companyId   String   @unique
-  pageId      String?  // Facebook page id (FacebookPage.pageId) ΓÇö target for the push
+  pageId      String?  // Facebook page id (FacebookPage.pageId) — target for the push
   items       String?  @db.Text // JSON array of {type:"postback"|"web_url", title, payload?|url?, webview_height_ratio?}
   isEnabled   Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -111,7 +111,7 @@ model BotSegment {
   id          String   @id @default(cuid())
   companyId   String
   name        String
-  rules       String?  @db.Text // JSON: [{field, op, value}] ΓÇö op: eq|contains|gte|lte
+  rules       String?  @db.Text // JSON: [{field, op, value}] — op: eq|contains|gte|lte
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)

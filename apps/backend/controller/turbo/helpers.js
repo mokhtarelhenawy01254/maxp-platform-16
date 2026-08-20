@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Turbo Controller Helpers
- * ╪»┘ê╪º┘ä ┘à╪│╪º╪╣╪»╪⌐ ┘ä┘Ç Turbo Controllers
+ * دوال مساعدة لـ Turbo Controllers
  */
 
 const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
@@ -57,7 +57,7 @@ async function findOrderByNumber(orderNumber, companyId) {
     items: items.map(item => ({
       id: item.id || Math.random().toString(),
       productId: item.productId || null,
-      productName: item.name || item.productName || '┘à┘å╪¬╪¼',
+      productName: item.name || item.productName || 'منتج',
       quantity: item.quantity || 1,
       price: item.price || 0,
       total: item.total || (item.price || 0) * (item.quantity || 1),
@@ -87,7 +87,7 @@ function parseTurboMetadata(turboMetadata) {
   if (typeof turboMetadata !== 'string') return null;
   try { return JSON.parse(turboMetadata); }
   catch (error) {
-    console.warn('ΓÜá∩╕Å [TURBO-CONTROLLER] Failed to parse turboMetadata for shipment lookup:', error.message);
+    console.warn('⚠️ [TURBO-CONTROLLER] Failed to parse turboMetadata for shipment lookup:', error.message);
     return null;
   }
 }

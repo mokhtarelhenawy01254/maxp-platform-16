@@ -7,32 +7,32 @@ import {
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
-import { RefreshCw, AlertTriangle, Download, Calendar, Filter, Activity, ShoppingBag, DollarSign, TrendingUp, Package } from 'lucide-react';
+import {
+  RefreshCw,
+  AlertTriangle,
+  Download,
+  Calendar,
+  Filter,
+  Activity,
+  ShoppingBag,
+  DollarSign,
+  TrendingUp,
+  Package,
+} from "lucide-react";
 import analyticsService from "../../services/analyticsService";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   Legend,
-  Filler,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
+  ResponsiveContainer,
+} from "recharts";
 import ThemeToggle from "../../components/ui/theme-toggle";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-);
+
 
 const PERIOD_OPTIONS = [
   { value: "7", label: "آخر 7 أيام" },
@@ -192,76 +192,13 @@ const StatusAnalysisReport: React.FC = () => {
   }, [selectedStatus, period, startDate, endDate]);
 
   const chartData = useMemo(() => {
-    if (!data?.trend) return null;
-
-    return {
-      labels: data.trend.map((d) => formatDate(d.date)),
-      datasets: [
-        {
-          label: "الطلبات",
-          data: data.trend.map((d) => d.orders),
-          borderColor: "rgb(99, 102, 241)",
-          backgroundColor: "rgba(99, 102, 241, 0.1)",
-          fill: true,
-          tension: 0.4,
-          yAxisID: "y",
-        },
-        {
-          label: "القيمة (ج.م)",
-          data: data.trend.map((d) => d.revenue),
-          borderColor: "rgb(34, 197, 94)",
-          backgroundColor: "rgba(34, 197, 94, 0.1)",
-          fill: true,
-          tension: 0.4,
-          yAxisID: "y1",
-        },
-      ],
-    };
+    if (!data?.trend) return [];
+    return data.trend.map((d) => ({
+      date: formatDate(d.date),
+      orders: d.orders,
+      revenue: d.revenue,
+    }));
   }, [data]);
-
-  const chartOptions = {
-    responsive: true,
-    interaction: {
-      mode: "index" as const,
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        position: "top" as const,
-        labels: {
-          font: { family: "system-ui, -apple-system, sans-serif" },
-        },
-      },
-      tooltip: {
-        titleFont: { family: "system-ui, -apple-system, sans-serif" },
-        bodyFont: { family: "system-ui, -apple-system, sans-serif" },
-        rtl: true,
-      },
-    },
-    scales: {
-      x: {
-        grid: {
-          color: "rgba(156, 163, 175, 0.1)",
-        },
-      },
-      y: {
-        type: "linear" as const,
-        display: true,
-        position: "left" as const,
-        grid: {
-          color: "rgba(156, 163, 175, 0.1)",
-        },
-      },
-      y1: {
-        type: "linear" as const,
-        display: true,
-        position: "right" as const,
-        grid: {
-          drawOnChartArea: false,
-        },
-      },
-    },
-  };
 
   const handleExport = () => {
     // محاكاة التصدير
@@ -477,7 +414,20 @@ const StatusAnalysisReport: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-80 w-full">
-                    {chartData && <Line data={chartData} options={chartOptions} />}
+                    {chartData.length > 0 && (
+                      <ResponsiveContainer width="100%" height={320}>
+                        <AreaChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.1)" />
+                          <XAxis dataKey="date" />
+                          <YAxis yAxisId="left" stroke="rgba(156, 163, 175, 0.1)" />
+                          <YAxis yAxisId="right" orientation="right" stroke="rgba(156, 163, 175, 0.1)" />
+                          <Tooltip />
+                          <Legend />
+                          <Area yAxisId="left" type="monotone" dataKey="orders" name="الطلبات" stroke="rgb(99, 102, 241)" fill="rgba(99, 102, 241, 0.1)" />
+                          <Area yAxisId="right" type="monotone" dataKey="revenue" name="القيمة (ج.م)" stroke="rgb(34, 197, 94)" fill="rgba(34, 197, 94, 0.1)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </CardContent>
               </Card>

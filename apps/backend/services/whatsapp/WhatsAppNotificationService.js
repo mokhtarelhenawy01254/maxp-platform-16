@@ -93,13 +93,8 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
 
   if (isMetaSession) {
     // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
-    // 🚨 PRODUCTION-FIX (meta-template-empty-name): ممكن يبقى فيه أكتر من سجل META_CLOUD
-    // لنفس الحدث وواحد منهم metaTemplateName فاضي (غالباً ناتج عن إعادة ربط قديمة). لو
-    // findFirst رجّع السجل الفاضي الأول (ترتيب isDefault غير حاسم — كلهم f) كان الكود
-    // هيكمل للقالب العادي ويبعث نص حر بأزرار بدل قالب الميتا المعتمد. لازم نستبعد السجلات
-    // اللي اسمها فاضي من البحث مباشرةً.
     const metaTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
-      where: { companyId, eventType, isActive: true, channel: 'META_CLOUD', metaTemplateName: { not: null } },
+      where: { companyId, eventType, isActive: true, channel: 'META_CLOUD' },
       orderBy: { isDefault: 'desc' }
     });
     if (metaTemplate && metaTemplate.metaTemplateName && String(metaTemplate.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {

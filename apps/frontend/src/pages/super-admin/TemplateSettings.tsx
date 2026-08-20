@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useTemplate } from "../../templates/useTemplate";
 import { templateMetas } from "../../config/templates";
 
@@ -8,13 +8,13 @@ const TemplateSettings: React.FC = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto" dir="auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">╪Ñ╪»╪º╪▒╪⌐ ┘é┘ê╪º┘ä╪¿ ┘ê╪º╪¼┘ç╪⌐ ╪º┘ä┘à╪│╪¬╪«╪»┘à</h1>
-        <p className="text-muted-foreground">╪º╪«╪¬╪▒ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪░┘è ╪¬╪▒┘è╪» ╪¬╪╖╪¿┘è┘é┘ç ╪╣┘ä┘ë ┘â┘ä ╪º┘ä╪┤╪▒┘â╪º╪¬. ╪º┘ä┘é┘ê╪º┘ä╪¿ ╪¬╪ñ╪½╪▒ ┘ü┘é╪╖ ╪╣┘ä┘ë ╪º┘ä╪┤┘â┘ä ┘ê╪º┘ä┘à╪╕┘ç╪▒╪î ┘ê┘ä╪º ╪¬╪ñ╪½╪▒ ╪╣┘ä┘ë ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪ú┘ê ╪º┘ä┘à┘ç╪º┘à.</p>
+        <h1 className="text-2xl font-bold mb-2">إدارة قوالب واجهة المستخدم</h1>
+        <p className="text-muted-foreground">اختر القالب الذي تريد تطبيقه على كل الشركات. القوالب تؤثر فقط على الشكل والمظهر، ولا تؤثر على البيانات أو المهام.</p>
       </div>
 
       {meta ? (
         <div className="mb-6 p-4 rounded-lg border bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪¡╪º┘ä┘è</p>
+          <p className="text-sm text-muted-foreground">القالب الحالي</p>
           <p className="text-lg font-semibold">{meta.name}</p>
         </div>
       ) : null}
@@ -35,7 +35,7 @@ const TemplateSettings: React.FC = () => {
             >
               {isActive ? (
                 <span className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  ┘å╪┤╪╖
+                  نشط
                 </span>
               ) : null}
 
@@ -48,7 +48,7 @@ const TemplateSettings: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-base">{t.name}</h3>
-                  <p className="text-xs text-muted-foreground">{t.id === "template-1" ? "╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è (Business OS)" : t.id === "template-2" ? "╪¬╪╡┘à┘è┘à ╪»╪º┘â┘å ╪╣╪╡╪▒┘è ┘à╪│╪¬┘ê╪¡┘ë ┘à┘å Linear" : ""}</p>
+                  <p className="text-xs text-muted-foreground">{t.id === "template-1" ? "القالب الافتراضي (Business OS)" : t.id === "template-2" ? "تصميم داكن عصري مستوحى من Linear" : ""}</p>
                 </div>
               </div>
 
@@ -63,11 +63,11 @@ const TemplateSettings: React.FC = () => {
       </div>
 
       <div className="mt-8 p-4 rounded-lg border bg-muted/30">
-        <h3 className="font-medium text-sm mb-2">┘à┘ä╪º╪¡╪╕╪⌐ ┘à┘ç┘à╪⌐</h3>
+        <h3 className="font-medium text-sm mb-2">ملاحظة مهمة</h3>
         <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-          <li>╪¬╪║┘è┘è╪▒ ╪º┘ä┘é╪º┘ä╪¿ ┘è╪╖╪¿┘é ┘ü┘ê╪▒╪º┘ï ╪╣┘ä┘ë ┘â┘ä ╪º┘ä┘à╪│╪¬╪«╪»┘à┘è┘å ┘ü┘è ╪¼┘à┘è╪╣ ╪º┘ä╪┤╪▒┘â╪º╪¬</li>
-          <li>╪º┘ä┘é┘ê╪º┘ä╪¿ ┘ä╪º ╪¬╪ñ╪½╪▒ ╪╣┘ä┘ë ╪º┘ä╪¿┘è╪º┘å╪º╪¬╪î ╪º┘ä╪╖┘ä╪¿╪º╪¬╪î ╪º┘ä╪╣┘à┘ä╪º╪í╪î ╪º┘ä┘à╪«╪▓┘ê┘å╪î ╪ú┘ê ╪ú┘è ╪Ñ╪╣╪»╪º╪»╪º╪¬</li>
-          <li>┘è┘à┘â┘å┘â ╪º┘ä╪▒╪¼┘ê╪╣ ┘ä┘ä┘é╪º┘ä╪¿ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è ┘ü┘è ╪ú┘è ┘ê┘é╪¬</li>
+          <li>تغيير القالب يطبق فوراً على كل المستخدمين في جميع الشركات</li>
+          <li>القوالب لا تؤثر على البيانات، الطلبات، العملاء، المخزون، أو أي إعدادات</li>
+          <li>يمكنك الرجوع للقالب الافتراضي في أي وقت</li>
         </ul>
       </div>
     </div>

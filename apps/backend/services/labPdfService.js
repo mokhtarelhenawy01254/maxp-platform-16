@@ -1,15 +1,15 @@
-﻿const path = require('path');
+const path = require('path');
 const PDFDocument = require('pdfkit');
 const { shapeArabic } = require('../utils/arabicShaping');
 
 const FONT = path.join(__dirname, '..', 'fonts', 'NotoSansArabic-Regular.ttf');
 
 const FLAG_LABEL = {
-  critical_high: '╪º╪▒╪¬┘ü╪º╪╣ ╪¡╪▒╪¼',
-  high: '╪╣╪º┘ä┘ì',
-  normal: '╪╖╪¿┘è╪╣┘è',
-  low: '┘à┘å╪«┘ü╪╢',
-  critical_low: '╪º┘å╪«┘ü╪º╪╢ ╪¡╪▒╪¼',
+  critical_high: 'ارتفاع حرج',
+  high: 'عالٍ',
+  normal: 'طبيعي',
+  low: 'منخفض',
+  critical_low: 'انخفاض حرج',
 };
 
 const FLAG_COLOR = {
@@ -23,9 +23,9 @@ const FLAG_COLOR = {
 const AR = (s) => shapeArabic(String(s ?? ''));
 
 const fmtDate = (d) => {
-  if (!d) return 'ΓÇö';
+  if (!d) return '—';
   const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return 'ΓÇö';
+  if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
@@ -50,27 +50,27 @@ function generateOrderPdf(order, company) {
     doc.font('Noto');
     const pageWidth = doc.page.width - 80; // margins
 
-    // ΓöÇΓöÇ Header ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-    doc.fontSize(20).fillColor('#2563eb').text(AR(company?.name || '╪º┘ä┘à╪╣┘à┘ä'), 40, 40, { align: 'right', width: pageWidth });
+    // ── Header ───────────────────────────────────────────────
+    doc.fontSize(20).fillColor('#2563eb').text(AR(company?.name || 'المعمل'), 40, 40, { align: 'right', width: pageWidth });
     doc.fontSize(10).fillColor('#4b5563').text(
-      `${AR('╪▒┘é┘à ╪º┘ä╪¬┘é╪▒┘è╪▒:')} ${AR(order.orderNumber || '')}   ${AR('╪º┘ä╪¬╪º╪▒┘è╪«:')} ${AR(fmtDate(order.createdAt))}`,
+      `${AR('رقم التقرير:')} ${AR(order.orderNumber || '')}   ${AR('التاريخ:')} ${AR(fmtDate(order.createdAt))}`,
       40, 70, { align: 'right', width: pageWidth }
     );
     doc.moveTo(40, 92).lineTo(555, 92).strokeColor('#2563eb').lineWidth(2).stroke();
 
-    // ΓöÇΓöÇ Title ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-    doc.fontSize(15).fillColor('#1f2937').text(AR('╪¬┘é╪▒┘è╪▒ ╪¬╪¡╪º┘ä┘è┘ä ╪╖╪¿┘è╪⌐'), 40, 102, { align: 'center', width: pageWidth });
+    // ── Title ────────────────────────────────────────────────
+    doc.fontSize(15).fillColor('#1f2937').text(AR('تقرير تحاليل طبية'), 40, 102, { align: 'center', width: pageWidth });
 
-    // ΓöÇΓöÇ Patient info ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Patient info ─────────────────────────────────────────
     const info = [
-      [AR('╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢'), AR(order.patientName)],
-      [AR('╪º┘ä┘ç╪º╪¬┘ü'), AR(order.patientPhone || 'ΓÇö')],
-      [AR('╪º┘ä╪¼┘å╪│'), AR(order.patientGender || 'ΓÇö')],
-      [AR('╪º┘ä╪╣┘à╪▒'), AR(order.patientAge || 'ΓÇö')],
-      [AR('╪º┘ä┘à╪¡╪º┘ä ╪Ñ┘ä┘è┘ç'), AR(order.doctorName || 'ΓÇö')],
-      [AR('┘ê┘é╪¬ ╪ú╪«╪░ ╪º┘ä╪╣┘è┘å╪⌐'), AR(order.collectionDate ? fmtDate(order.collectionDate) : 'ΓÇö')],
-      [AR('┘ê┘é╪¬ ╪º┘ä╪Ñ╪¿┘ä╪º╪║'), AR(order.reportStatus === 'DELIVERED' || order.signedAt ? fmtDate(order.signedAt || order.updatedAt) : 'ΓÇö')],
-      [AR('╪│╪º╪╣╪º╪¬ ╪º┘ä╪╡┘è╪º┘à'), AR(order.fastingHours != null ? `${order.fastingHours} ╪│╪º╪╣╪⌐` : 'ΓÇö')],
+      [AR('اسم المريض'), AR(order.patientName)],
+      [AR('الهاتف'), AR(order.patientPhone || '—')],
+      [AR('الجنس'), AR(order.patientGender || '—')],
+      [AR('العمر'), AR(order.patientAge || '—')],
+      [AR('المحال إليه'), AR(order.doctorName || '—')],
+      [AR('وقت أخذ العينة'), AR(order.collectionDate ? fmtDate(order.collectionDate) : '—')],
+      [AR('وقت الإبلاغ'), AR(order.reportStatus === 'DELIVERED' || order.signedAt ? fmtDate(order.signedAt || order.updatedAt) : '—')],
+      [AR('ساعات الصيام'), AR(order.fastingHours != null ? `${order.fastingHours} ساعة` : '—')],
     ];
 
     let y = 130;
@@ -88,20 +88,20 @@ function generateOrderPdf(order, company) {
       doc.fontSize(10).fillColor('#111827').text(v, x + 90, yy);
     }
 
-    // ΓöÇΓöÇ Flags ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Flags ────────────────────────────────────────────────
     let flags = [];
     try {
       const f = typeof order.patientFlags === 'string' ? JSON.parse(order.patientFlags) : order.patientFlags;
       flags = f && typeof f === 'object' ? Object.entries(f).filter(([, v]) => v).map(([k]) => k) : [];
     } catch { /* ignore */ }
-    const flagNames = { bleeding: '┘à╪▒┘è╪╢ ╪│┘è┘ê┘ä╪⌐', diabetic: '┘à╪▒┘è╪╢ ╪│┘â╪▒', thyroid: '╪║╪»╪⌐', tumor: '╪ú┘ê╪▒╪º┘à', antibiotic: '┘à╪╢╪º╪» ╪¡┘è┘ê┘è', iron: '╪¡╪»┘è╪»', cortisone: '┘â┘ê╪▒╪¬┘è╪▓┘ê┘å', liver: '┘à╪▒┘è╪╢ ┘â╪¿╪»' };
+    const flagNames = { bleeding: 'مريض سيولة', diabetic: 'مريض سكر', thyroid: 'غدة', tumor: 'أورام', antibiotic: 'مضاد حيوي', iron: 'حديد', cortisone: 'كورتيزون', liver: 'مريض كبد' };
     if (flags.length) {
       y = 128 + rowH * 4 + 10;
-      doc.fontSize(9).fillColor('#92400e').text(`${AR('╪¬┘å╪¿┘è┘ç╪º╪¬:')} ${AR(flags.map((f) => flagNames[f] || f).join('╪î '))}`, 40, y);
+      doc.fontSize(9).fillColor('#92400e').text(`${AR('تنبيهات:')} ${AR(flags.map((f) => flagNames[f] || f).join('، '))}`, 40, y);
       y += 22;
     }
 
-    // ΓöÇΓöÇ Results tables ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Results tables ───────────────────────────────────────
     y = flags.length ? y : 128 + rowH * 4 + 16;
     const colW = [140, 120, 90, 130, 85]; // name, result, unit, range, flag
     const tableW = colW.reduce((a, b) => a + b, 0);
@@ -109,7 +109,7 @@ function generateOrderPdf(order, company) {
 
     const drawTableHeader = (yy) => {
       doc.rect(tableX, yy, tableW, 22).fill('#eff6ff').stroke('#bfdbfe');
-      const headers = [AR('╪º┘ä╪º╪«╪¬╪¿╪º╪▒'), AR('╪º┘ä┘å╪¬┘è╪¼╪⌐'), AR('╪º┘ä┘ê╪¡╪»╪⌐'), AR('╪º┘ä┘à╪»┘ë ╪º┘ä┘à╪▒╪¼╪╣┘è'), AR('╪º┘ä╪¡╪º┘ä╪⌐')];
+      const headers = [AR('الاختبار'), AR('النتيجة'), AR('الوحدة'), AR('المدى المرجعي'), AR('الحالة')];
       let hx = tableX;
       doc.fontSize(9).fillColor('#1e40af');
       headers.forEach((h, i) => {
@@ -133,7 +133,7 @@ function generateOrderPdf(order, company) {
     };
 
     (order.tests || []).forEach((test) => {
-      const testName = test.test?.name || '╪º╪«╪¬╪¿╪º╪▒';
+      const testName = test.test?.name || 'اختبار';
       const results = parseResults(test.results);
       const params = Array.isArray(test.test?.parameters) ? test.test.parameters : [];
       const byId = new Map(results.map((r) => [r.parameterId, r]));
@@ -145,19 +145,19 @@ function generateOrderPdf(order, company) {
       y = drawTableHeader(y);
 
       if (!params.length) {
-        y = drawRow([{ text: AR('┘ä╪º ╪¬┘ê╪¼╪» ┘å╪¬╪º╪ª╪¼'), color: '#9ca3af' }, { text: '' }, { text: '' }, { text: '' }, { text: '' }], y, false);
+        y = drawRow([{ text: AR('لا توجد نتائج'), color: '#9ca3af' }, { text: '' }, { text: '' }, { text: '' }, { text: '' }], y, false);
       } else {
         params.forEach((p, idx) => {
           if (y > doc.page.height - 60) { doc.addPage(); y = 40; y = drawTableHeader(y); }
           const r = byId.get(p.id);
           const flag = r?.flag;
           const flagColor = FLAG_COLOR[flag] || '#111827';
-          const flagLabel = FLAG_LABEL[flag] || 'ΓÇö';
+          const flagLabel = FLAG_LABEL[flag] || '—';
           y = drawRow([
             { text: AR(p.name), color: '#111827' },
-            { text: AR(r?.result ?? 'ΓÇö'), color: '#111827' },
-            { text: AR(p.unit || 'ΓÇö'), color: '#4b5563' },
-            { text: AR(p.referenceRange || 'ΓÇö'), color: '#4b5563' },
+            { text: AR(r?.result ?? '—'), color: '#111827' },
+            { text: AR(p.unit || '—'), color: '#4b5563' },
+            { text: AR(p.referenceRange || '—'), color: '#4b5563' },
             { text: AR(flagLabel), color: flagColor },
           ], y, idx % 2 === 1);
         });
@@ -165,16 +165,16 @@ function generateOrderPdf(order, company) {
       y += 10;
     });
 
-    // ΓöÇΓöÇ Signature ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Signature ────────────────────────────────────────────
     if (y > doc.page.height - 120) { doc.addPage(); y = 40; }
     y += 20;
     doc.moveTo(40, y).lineTo(250, y).strokeColor('#374151').lineWidth(1).stroke();
-    doc.fontSize(10).fillColor('#111827').text(AR(order.signedBy || '╪º┘ä╪¬┘ê┘é┘è╪╣'), 40, y + 6);
+    doc.fontSize(10).fillColor('#111827').text(AR(order.signedBy || 'التوقيع'), 40, y + 6);
     if (order.signedAt) doc.fontSize(9).fillColor('#6b7280').text(AR(fmtDate(order.signedAt)), 40, y + 20);
 
-    // ΓöÇΓöÇ Footer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Footer ───────────────────────────────────────────────
     doc.fontSize(8).fillColor('#9ca3af').text(
-      AR('╪¬┘à ╪Ñ┘å╪┤╪º╪í ┘ç╪░╪º ╪º┘ä╪¬┘é╪▒┘è╪▒ ╪ó┘ä┘è╪º┘ï ╪¿┘ê╪º╪│╪╖╪⌐ ┘å╪╕╪º┘à ╪º┘ä┘à╪╣┘à┘ä'),
+      AR('تم إنشاء هذا التقرير آلياً بواسطة نظام المعمل'),
       40, doc.page.height - 50,
       { align: 'center', width: pageWidth }
     );

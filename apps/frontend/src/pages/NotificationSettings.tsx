@@ -1,6 +1,18 @@
-import { RefreshCw as ArrowPathIcon, Bell as BellIcon, Check as CheckCircleIcon, MessageSquare as ChatBubbleLeftRightIcon, Clock as ClockIcon, Settings as CogIcon, Monitor as ComputerDesktopIcon, Phone as DevicePhoneMobileIcon, Mail as EnvelopeIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, Circle as PlayIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
-;
+import {
+  ArrowPathIcon,
+  BellIcon,
+  CheckCircleIcon,
+  ChatBubbleLeftRightIcon,
+  ClockIcon,
+  CogIcon,
+  ComputerDesktopIcon,
+  DevicePhoneMobileIcon,
+  EnvelopeIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  PlayIcon,
+} from "@heroicons/react/24/outline";
 import api from "../services/api";
 import { useAuth } from "../hooks/useAuthSimple";
 import {
@@ -169,6 +181,22 @@ const createNormalizedSettings = ({
         showPreview: rawSettings?.channels?.browser?.showPreview ?? true,
         requireInteraction:
           rawSettings?.channels?.browser?.requireInteraction ?? false,
+      },
+      sound: {
+        enabled: rawSettings?.channels?.sound?.enabled ?? true,
+        volume:
+          typeof rawSettings?.channels?.sound?.volume === "number"
+            ? rawSettings.channels.sound.volume
+            : 100,
+        pattern: rawSettings?.channels?.sound?.pattern || "cash",
+      },
+      incompleteSound: {
+        enabled: rawSettings?.channels?.incompleteSound?.enabled ?? true,
+        volume:
+          typeof rawSettings?.channels?.incompleteSound?.volume === "number"
+            ? rawSettings.channels.incompleteSound.volume
+            : 100,
+        pattern: rawSettings?.channels?.incompleteSound?.pattern || "coins",
       },
     },
     typeSettings: baseTypeSettings,
@@ -931,7 +959,7 @@ const NotificationSettings: React.FC = () => {
     }
 
     if (!browserPushDiagnostics.serviceWorkerRegistered) {
-      issues.push("ملف push-sw.js لم يُسجل بعد داخل هذا المتصفح.");
+      issues.push("ملف الـ Service Worker لم يُسجل بعد داخل هذا المتصفح.");
     }
 
     if (

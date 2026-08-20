@@ -1,23 +1,23 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 const { normalizeBotText } = require('./botRuleEngine');
 
 const UNSUBSCRIBE_KEYWORDS = [
   'stop',
-  '╪º┘è┘é╪º┘ü',
-  '╪Ñ┘è┘é╪º┘ü',
-  '╪ú┘ê┘é┘ü',
-  '╪º┘ê┘é┘ü',
-  '╪¬┘ê┘é┘ü',
-  '╪º┘ä╪║╪º╪í ╪º┘ä╪º╪┤╪¬╪▒╪º┘â',
-  '╪Ñ┘ä╪║╪º╪í ╪º┘ä╪º╪┤╪¬╪▒╪º┘â',
-  '╪º┘ä╪║╪º╪í ╪º┘ä╪º╪┤╪¬╪▒╪º┘â╪º╪¬',
-  '┘ä╪º ╪¬╪¿╪╣╪½',
-  '┘â┘ü╪º┘è╪⌐',
-  '┘à╪┤ ╪╣╪º┘è╪▓ ╪▒╪│╪º┘è┘ä',
+  'ايقاف',
+  'إيقاف',
+  'أوقف',
+  'اوقف',
+  'توقف',
+  'الغاء الاشتراك',
+  'إلغاء الاشتراك',
+  'الغاء الاشتراكات',
+  'لا تبعث',
+  'كفاية',
+  'مش عايز رسايل',
   'don t send',
 ];
 
-const UNSUBSCRIBE_CONFIRMATION = '╪¬┘à ╪Ñ┘ä╪║╪º╪í ╪º╪┤╪¬╪▒╪º┘â┘â ┘ü┘è ╪º┘ä╪▒╪│╪º╪ª┘ä ╪º┘ä╪¬┘ä┘é╪º╪ª┘è╪⌐ Γ£à ╪│╪¬╪╕┘ä ╪¬╪¬┘ä┘é┘ë ╪▒╪»┘ê╪» ╪º┘ä╪«╪»┘à╪⌐ ┘ü┘é╪╖.';
+const UNSUBSCRIBE_CONFIRMATION = 'تم إلغاء اشتراكك في الرسائل التلقائية ✅ ستظل تتلقى ردود الخدمة فقط.';
 
 function isUnsubscribeText(text) {
   if (!text) return false;

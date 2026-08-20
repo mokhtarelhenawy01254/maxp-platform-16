@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -21,7 +21,7 @@ const createPrisma = () => ({
 });
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   params: {},
   body: {},
   ...overrides,
@@ -36,7 +36,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.setCriticalFinding(req({ user: {}, params: { id: 'study-1' }, body: { category: 'CAT1' } }), res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, error: 'غير مصرح' });
   });
 
   test('setCriticalFinding returns 404 when study is missing', async () => {
@@ -48,7 +48,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.setCriticalFinding(req({ params: { id: 'study-1' }, body: { category: 'CAT1' } }), res);
 
     expect(res.statusCode).toBe(404);
-    expect(res.payload).toEqual({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    expect(res.payload).toEqual({ success: false, error: 'الحالة غير موجودة' });
   });
 
   test('setCriticalFinding returns 400 when report is missing', async () => {
@@ -61,7 +61,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.setCriticalFinding(req({ params: { id: 'study-1' }, body: { category: 'CAT1' } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toEqual({ success: false, error: '╪º┘ä╪¬┘é╪▒┘è╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪» ΓÇö ╪ú┘å╪┤╪ª ┘à╪│┘ê╪»╪⌐ ╪ú┘ê┘ä╪º┘ï' });
+    expect(res.payload).toEqual({ success: false, error: 'التقرير غير موجود — أنشئ مسودة أولاً' });
   });
 
   test('setCriticalFinding rejects an invalid category', async () => {
@@ -72,7 +72,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.setCriticalFinding(req({ params: { id: 'study-1' }, body: { category: 'CAT9' } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toEqual({ success: false, error: '┘ü╪ª╪⌐ ╪º┘ä╪╣╪½┘ê╪▒ ╪º┘ä╪¡╪▒╪¼ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+    expect(res.payload).toEqual({ success: false, error: 'فئة العثور الحرج غير صحيحة' });
     expect(prisma.radiologyStudy.findFirst).not.toHaveBeenCalled();
     expect(prisma.radiologyReport.update).not.toHaveBeenCalled();
   });
@@ -85,13 +85,13 @@ describe('radiologyCriticalFindingsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.setCriticalFinding(req({ params: { id: 'study-1' }, body: { category: 'CAT1', findingText: '┘å╪▓┘è┘ü ╪¡╪º╪»' } }), res);
+    await controller.setCriticalFinding(req({ params: { id: 'study-1' }, body: { category: 'CAT1', findingText: 'نزيف حاد' } }), res);
 
     expect(res.statusCode).toBe(200);
     const call = prisma.radiologyReport.update.mock.calls[0][0];
     expect(call.data.criticalCategory).toBe('CAT1');
-    expect(call.data.criticalFindingText).toBe('┘å╪▓┘è┘ü ╪¡╪º╪»');
-    expect(call.data.criticalFlaggedBy).toBe('╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»');
+    expect(call.data.criticalFindingText).toBe('نزيف حاد');
+    expect(call.data.criticalFlaggedBy).toBe('أحمد محمود');
     expect(call.data.criticalFlaggedAt).toBeInstanceOf(Date);
   });
 
@@ -103,7 +103,7 @@ describe('radiologyCriticalFindingsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.setCriticalFinding(req({ params: { id: 'study-1' }, body: { category: 'CAT2', findingText: '┘à╪¬╪º╪¿╪╣╪⌐' } }), res);
+    await controller.setCriticalFinding(req({ params: { id: 'study-1' }, body: { category: 'CAT2', findingText: 'متابعة' } }), res);
 
     expect(res.statusCode).toBe(200);
     const call = prisma.radiologyReport.update.mock.calls[0][0];
@@ -136,7 +136,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.acknowledgeCriticalFinding(req({ user: {}, params: { id: 'study-1' } }), res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, error: 'غير مصرح' });
   });
 
   test('acknowledgeCriticalFinding returns 404 when study is missing', async () => {
@@ -148,7 +148,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.acknowledgeCriticalFinding(req({ params: { id: 'study-1' } }), res);
 
     expect(res.statusCode).toBe(404);
-    expect(res.payload).toEqual({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    expect(res.payload).toEqual({ success: false, error: 'الحالة غير موجودة' });
   });
 
   test('acknowledgeCriticalFinding returns 400 when report is missing', async () => {
@@ -161,7 +161,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.acknowledgeCriticalFinding(req({ params: { id: 'study-1' } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toEqual({ success: false, error: '╪º┘ä╪¬┘é╪▒┘è╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪» ΓÇö ╪ú┘å╪┤╪ª ┘à╪│┘ê╪»╪⌐ ╪ú┘ê┘ä╪º┘ï' });
+    expect(res.payload).toEqual({ success: false, error: 'التقرير غير موجود — أنشئ مسودة أولاً' });
   });
 
   test('acknowledgeCriticalFinding returns 400 when there is no critical finding', async () => {
@@ -174,7 +174,7 @@ describe('radiologyCriticalFindingsController', () => {
     await controller.acknowledgeCriticalFinding(req({ params: { id: 'study-1' } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toEqual({ success: false, error: '┘ä╪º ┘è┘ê╪¼╪» ╪╣╪½┘ê╪▒ ╪¡╪▒╪¼ ┘ä┘ä╪º╪╣╪¬╪▒╪º┘ü ╪¿┘ç' });
+    expect(res.payload).toEqual({ success: false, error: 'لا يوجد عثور حرج للاعتراف به' });
     expect(prisma.radiologyReport.update).not.toHaveBeenCalled();
   });
 
@@ -190,13 +190,13 @@ describe('radiologyCriticalFindingsController', () => {
 
     expect(res.statusCode).toBe(200);
     const call = prisma.radiologyReport.update.mock.calls[0][0];
-    expect(call.data.criticalAcknowledgedBy).toBe('╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»');
+    expect(call.data.criticalAcknowledgedBy).toBe('أحمد محمود');
     expect(call.data.criticalAcknowledgedAt).toBeInstanceOf(Date);
   });
 
   test('acknowledgeCriticalFinding is idempotent when already acknowledged', async () => {
     const prisma = createPrisma();
-    const report = { id: 'rep-1', studyId: 'study-1', criticalCategory: 'CAT2', criticalAcknowledgedAt: new Date('2026-01-01T10:00:00Z'), criticalAcknowledgedBy: '╪». ┘à╪»┘è╪▒' };
+    const report = { id: 'rep-1', studyId: 'study-1', criticalCategory: 'CAT2', criticalAcknowledgedAt: new Date('2026-01-01T10:00:00Z'), criticalAcknowledgedBy: 'د. مدير' };
     prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1' });
     prisma.radiologyReport.findUnique.mockResolvedValue(report);
     getSharedPrismaClient.mockReturnValue(prisma);

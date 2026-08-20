@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const DISCOUNT_TYPES = ['PERCENTAGE', 'CUSTOM', 'NONE'];
 
@@ -16,7 +16,7 @@ const normalizeBool = (value, fallback) => {
 const normalizeDiscountType = (value) => {
   if (value === undefined || value === null || value === '') return { value: 'PERCENTAGE', error: null };
   const s = String(value).trim().toUpperCase();
-  if (!DISCOUNT_TYPES.includes(s)) return { value: null, error: '┘å┘ê╪╣ ╪º┘ä╪«╪╡┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡' };
+  if (!DISCOUNT_TYPES.includes(s)) return { value: null, error: 'نوع الخصم غير صالح' };
   return { value: s, error: null };
 };
 
@@ -30,7 +30,7 @@ const clampDiscountPercent = (value) => {
 const getAllContracts = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, includeInactive } = req.query;
     const where = { companyId };
@@ -50,17 +50,17 @@ const getAllContracts = async (req, res) => {
     res.json({ success: true, data: contracts });
   } catch (error) {
     console.error('Error fetching lab contracts:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪¬╪╣╪º┘é╪»╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب التعاقدات' });
   }
 };
 
 const createContract = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { name, region, governorate, discountType, discountPercent, externalSample } = req.body || {};
-    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪¬╪╣╪º┘é╪» ┘à╪╖┘ä┘ê╪¿' });
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم التعاقد مطلوب' });
 
     const typeCheck = normalizeDiscountType(discountType);
     if (typeCheck.error) return res.status(400).json({ success: false, error: typeCheck.error });
@@ -80,24 +80,24 @@ const createContract = async (req, res) => {
     res.json({ success: true, data: contract });
   } catch (error) {
     console.error('Error creating lab contract:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪¬╪╣╪º┘é╪»' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء التعاقد' });
   }
 };
 
 const updateContract = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.labContract.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪¬╪╣╪º┘é╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'التعاقد غير موجود' });
 
     const data = {};
     if (body.name !== undefined) {
-      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪¬╪╣╪º┘é╪» ┘à╪╖┘ä┘ê╪¿' });
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم التعاقد مطلوب' });
       data.name = String(body.name).trim();
     }
     if (body.region !== undefined) data.region = normalizeText(body.region);
@@ -115,25 +115,25 @@ const updateContract = async (req, res) => {
     res.json({ success: true, data: contract });
   } catch (error) {
     console.error('Error updating lab contract:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¬╪╣╪º┘é╪»' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث التعاقد' });
   }
 };
 
 const deleteContract = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.labContract.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪¬╪╣╪º┘é╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'التعاقد غير موجود' });
 
     const contract = await prisma.labContract.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä╪¬╪╣╪º┘é╪»', data: contract });
+    res.json({ success: true, message: 'تم حذف التعاقد', data: contract });
   } catch (error) {
     console.error('Error deleting lab contract:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä╪¬╪╣╪º┘é╪»' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف التعاقد' });
   }
 };
 

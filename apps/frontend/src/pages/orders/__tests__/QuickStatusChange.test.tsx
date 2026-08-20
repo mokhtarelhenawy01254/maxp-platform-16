@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import QuickStatusChange from "../QuickStatusChange";
 
@@ -28,7 +28,7 @@ jest.mock("../../../services/apiClient", () => ({
             id: "order-" + code,
             orderNumber: code,
             status: "PENDING",
-            customerName: "╪╣┘à┘è┘ä ╪¬╪¼╪▒┘è╪¿┘è",
+            customerName: "عميل تجريبي",
             customerPhone: "01000000000",
             total: 250,
             currency: "EGP",
@@ -44,8 +44,8 @@ jest.mock("../../../services/apiClient", () => ({
 
 jest.mock("../../../services/orderWorkflowService", () => ({
   getStatuses: jest.fn().mockResolvedValue([
-    { id: "s1", code: "PENDING", name: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒" },
-    { id: "s2", code: "CONFIRMED", name: "┘à╪ñ┘â╪»" },
+    { id: "s1", code: "PENDING", name: "قيد الانتظار" },
+    { id: "s2", code: "CONFIRMED", name: "مؤكد" },
   ]),
   getConfig: jest.fn().mockResolvedValue({ data: { enabled: false } }),
 }));
@@ -110,7 +110,7 @@ describe("QuickStatusChange duplicate blocking", () => {
     // Re-entering the same blocked code is rejected without a new API call
     searchFor("ORD-TEST-1");
     expect(await screen.findByText("quickStatus.orderBlocked")).toBeInTheDocument();
-    expect(screen.queryByText("╪╣┘à┘è┘ä ╪¬╪¼╪▒┘è╪¿┘è")).not.toBeInTheDocument();
+    expect(screen.queryByText("عميل تجريبي")).not.toBeInTheDocument();
     // API was hit exactly twice (first legit search + second search that detected the duplicate),
     // and the blocked re-entry above must NOT have triggered another call
     expect(apiClient.get).toHaveBeenCalledTimes(2);

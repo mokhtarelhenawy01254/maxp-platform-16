@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -44,8 +44,8 @@ describe('labHomeVisitsController', () => {
     test('returns paginated visits scoped to the company ordered by visitDate desc', async () => {
       const prisma = createMockPrisma();
       prisma.labHomeVisit.findMany.mockResolvedValue([
-        { id: 'v1', patientName: '╪ú╪¡┘à╪»', status: 'SCHEDULED', visitDate: '2024-01-10T10:00:00.000Z', reviewed: false },
-        { id: 'v2', patientName: '┘à╪¡┘à╪»', status: 'DONE', visitDate: '2024-01-09T10:00:00.000Z', reviewed: true }
+        { id: 'v1', patientName: 'أحمد', status: 'SCHEDULED', visitDate: '2024-01-10T10:00:00.000Z', reviewed: false },
+        { id: 'v2', patientName: 'محمد', status: 'DONE', visitDate: '2024-01-09T10:00:00.000Z', reviewed: true }
       ]);
       prisma.labHomeVisit.count.mockResolvedValue(63);
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -78,7 +78,7 @@ describe('labHomeVisitsController', () => {
           status: 'done',
           dateFrom: '2024-01-01',
           dateTo: '2024-01-31',
-          search: '╪ú╪¡┘à╪»',
+          search: 'أحمد',
           page: '2',
           limit: '10'
         }
@@ -93,8 +93,8 @@ describe('labHomeVisitsController', () => {
           lte: new Date('2024-01-31')
         },
         OR: [
-          { patientName: { contains: '╪ú╪¡┘à╪»', mode: 'insensitive' } },
-          { phone: { contains: '╪ú╪¡┘à╪»', mode: 'insensitive' } }
+          { patientName: { contains: 'أحمد', mode: 'insensitive' } },
+          { phone: { contains: 'أحمد', mode: 'insensitive' } }
         ]
       });
       expect(prisma.labHomeVisit.findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 10, take: 10 }));
@@ -137,7 +137,7 @@ describe('labHomeVisitsController', () => {
       prisma.labHomeVisit.create.mockResolvedValue({
         id: 'v-new',
         companyId: 'c1',
-        patientName: '╪ú╪¡┘à╪»',
+        patientName: 'أحمد',
         phone: null,
         address: null,
         visitDate: null,
@@ -148,13 +148,13 @@ describe('labHomeVisitsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createVisit({ user: { companyId: 'c1' }, body: { patientName: '╪ú╪¡┘à╪»' } }, res);
+      await controller.createVisit({ user: { companyId: 'c1' }, body: { patientName: 'أحمد' } }, res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.labHomeVisit.create).toHaveBeenCalledWith({
         data: {
           companyId: 'c1',
-          patientName: '╪ú╪¡┘à╪»',
+          patientName: 'أحمد',
           phone: undefined,
           address: undefined,
           visitDate: undefined,
@@ -162,7 +162,7 @@ describe('labHomeVisitsController', () => {
           notes: undefined
         }
       });
-      expect(res.payload.data.patientName).toBe('╪ú╪¡┘à╪»');
+      expect(res.payload.data.patientName).toBe('أحمد');
     });
 
     test('creates a visit with full fields and parses the visit date', async () => {
@@ -170,12 +170,12 @@ describe('labHomeVisitsController', () => {
       prisma.labHomeVisit.create.mockResolvedValue({
         id: 'v-new',
         companyId: 'c1',
-        patientName: '┘à╪¡┘à╪»',
+        patientName: 'محمد',
         phone: '0100',
-        address: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+        address: 'القاهرة',
         visitDate: new Date('2024-02-01T09:30:00.000Z'),
         status: 'DONE',
-        notes: '┘à┘ä╪º╪¡╪╕╪⌐',
+        notes: 'ملاحظة',
         reviewed: false
       });
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -184,24 +184,24 @@ describe('labHomeVisitsController', () => {
       await controller.createVisit({
         user: { companyId: 'c1' },
         body: {
-          patientName: '┘à╪¡┘à╪»',
+          patientName: 'محمد',
           phone: '0100',
-          address: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+          address: 'القاهرة',
           visitDate: '2024-02-01T09:30:00.000Z',
           status: 'DONE',
-          notes: '┘à┘ä╪º╪¡╪╕╪⌐'
+          notes: 'ملاحظة'
         }
       }, res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.labHomeVisit.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          patientName: '┘à╪¡┘à╪»',
+          patientName: 'محمد',
           phone: '0100',
-          address: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+          address: 'القاهرة',
           visitDate: new Date('2024-02-01T09:30:00.000Z'),
           status: 'DONE',
-          notes: '┘à┘ä╪º╪¡╪╕╪⌐'
+          notes: 'ملاحظة'
         })
       });
     });
@@ -214,7 +214,7 @@ describe('labHomeVisitsController', () => {
       await controller.createVisit({ user: { companyId: 'c1' }, body: { patientName: '' } }, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم المريض مطلوب');
       expect(prisma.labHomeVisit.create).not.toHaveBeenCalled();
     });
 
@@ -223,10 +223,10 @@ describe('labHomeVisitsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createVisit({ user: { companyId: 'c1' }, body: { patientName: '╪ú╪¡┘à╪»', status: 'BOGUS' } }, res);
+      await controller.createVisit({ user: { companyId: 'c1' }, body: { patientName: 'أحمد', status: 'BOGUS' } }, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪¡╪º┘ä╪⌐ ╪º┘ä╪▓┘è╪º╪▒╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐');
+      expect(res.payload.error).toBe('حالة الزيارة غير صحيحة');
       expect(prisma.labHomeVisit.create).not.toHaveBeenCalled();
     });
 
@@ -235,16 +235,16 @@ describe('labHomeVisitsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createVisit({ user: { companyId: 'c1' }, body: { patientName: '╪ú╪¡┘à╪»', visitDate: 'not-a-date' } }, res);
+      await controller.createVisit({ user: { companyId: 'c1' }, body: { patientName: 'أحمد', visitDate: 'not-a-date' } }, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪¬╪º╪▒┘è╪« ╪º┘ä╪▓┘è╪º╪▒╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡');
+      expect(res.payload.error).toBe('تاريخ الزيارة غير صحيح');
       expect(prisma.labHomeVisit.create).not.toHaveBeenCalled();
     });
 
     test('returns 403 when companyId is missing', async () => {
       const res = createResponse();
-      await controller.createVisit({ user: {}, body: { patientName: '╪ú╪¡┘à╪»' } }, res);
+      await controller.createVisit({ user: {}, body: { patientName: 'أحمد' } }, res);
       expect(res.statusCode).toBe(403);
       expect(res.payload.success).toBe(false);
     });
@@ -254,27 +254,27 @@ describe('labHomeVisitsController', () => {
     test('updates whitelisted fields', async () => {
       const prisma = createMockPrisma();
       prisma.labHomeVisit.findFirst
-        .mockResolvedValueOnce({ id: 'v1', companyId: 'c1', patientName: '╪ú╪¡┘à╪»' })
-        .mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: '┘à╪¡╪»╪½', phone: '0111', reviewed: false });
+        .mockResolvedValueOnce({ id: 'v1', companyId: 'c1', patientName: 'أحمد' })
+        .mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: 'محدث', phone: '0111', reviewed: false });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.updateVisit({
         user: { companyId: 'c1' },
         params: { id: 'v1' },
-        body: { patientName: '┘à╪¡╪»╪½', phone: '0111', address: '╪º┘ä╪¼┘è╪▓╪⌐' }
+        body: { patientName: 'محدث', phone: '0111', address: 'الجيزة' }
       }, res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.labHomeVisit.update).toHaveBeenCalledWith({
         where: { id: 'v1' },
-        data: { patientName: '┘à╪¡╪»╪½', phone: '0111', address: '╪º┘ä╪¼┘è╪▓╪⌐' }
+        data: { patientName: 'محدث', phone: '0111', address: 'الجيزة' }
       });
     });
 
     test('auto-sets reviewed=true when status becomes DONE', async () => {
       const prisma = createMockPrisma();
-      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: '╪ú╪¡┘à╪»' });
+      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: 'أحمد' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -293,7 +293,7 @@ describe('labHomeVisitsController', () => {
 
     test('marks reviewed when requested explicitly', async () => {
       const prisma = createMockPrisma();
-      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: '╪ú╪¡┘à╪»' });
+      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: 'أحمد' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -311,7 +311,7 @@ describe('labHomeVisitsController', () => {
 
     test('rejects an invalid status', async () => {
       const prisma = createMockPrisma();
-      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: '╪ú╪¡┘à╪»' });
+      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: 'أحمد' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -322,13 +322,13 @@ describe('labHomeVisitsController', () => {
       }, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪¡╪º┘ä╪⌐ ╪º┘ä╪▓┘è╪º╪▒╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐');
+      expect(res.payload.error).toBe('حالة الزيارة غير صحيحة');
       expect(prisma.labHomeVisit.update).not.toHaveBeenCalled();
     });
 
     test('requires a patient name when provided', async () => {
       const prisma = createMockPrisma();
-      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: '╪ú╪¡┘à╪»' });
+      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: 'أحمد' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -339,7 +339,7 @@ describe('labHomeVisitsController', () => {
       }, res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم المريض مطلوب');
     });
 
     test('returns 404 for a visit from another company', async () => {
@@ -350,11 +350,11 @@ describe('labHomeVisitsController', () => {
       await controller.updateVisit({
         user: { companyId: 'c1' },
         params: { id: 'other' },
-        body: { patientName: '┘à╪¡┘à╪»' }
+        body: { patientName: 'محمد' }
       }, res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä╪▓┘è╪º╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الزيارة غير موجودة');
       expect(prisma.labHomeVisit.update).not.toHaveBeenCalled();
     });
   });
@@ -362,8 +362,8 @@ describe('labHomeVisitsController', () => {
   describe('deleteVisit', () => {
     test('hard deletes a visit and returns an Arabic message', async () => {
       const prisma = createMockPrisma();
-      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: '╪ú╪¡┘à╪»' });
-      prisma.labHomeVisit.delete.mockResolvedValue({ id: 'v1', patientName: '╪ú╪¡┘à╪»' });
+      prisma.labHomeVisit.findFirst.mockResolvedValue({ id: 'v1', companyId: 'c1', patientName: 'أحمد' });
+      prisma.labHomeVisit.delete.mockResolvedValue({ id: 'v1', patientName: 'أحمد' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -372,7 +372,7 @@ describe('labHomeVisitsController', () => {
       expect(res.statusCode).toBe(200);
       expect(prisma.labHomeVisit.findFirst).toHaveBeenCalledWith({ where: { id: 'v1', companyId: 'c1' } });
       expect(prisma.labHomeVisit.delete).toHaveBeenCalledWith({ where: { id: 'v1' } });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä╪▓┘è╪º╪▒╪⌐');
+      expect(res.payload.message).toBe('تم حذف الزيارة');
     });
 
     test('returns 404 for a visit from another company', async () => {

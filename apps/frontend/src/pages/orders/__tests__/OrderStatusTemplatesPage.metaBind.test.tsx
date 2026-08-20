@@ -1,6 +1,6 @@
-﻿/**
- * ╪▒╪¿╪╖ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º: slot ┘à┘è╪¬╪º ┘à╪│╪¬┘é┘ä ╪¼┘å╪¿ slot ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ╪º┘ä╪╣╪º╪»┘è.
- * ╪º┘ä╪¬╪╣╪»┘è┘ä ╪╣┘ä┘ë slot ┘à┘è╪¬╪º ╪¿┘è┘ü╪¬╪¡ ╪º┘ä╪»┘è╪º┘ä┘ê╪¼ ┘ü┘è ┘ê╪╢╪╣ ┘à┘è╪¬╪º ┘à╪¿╪º╪┤╪▒╪⌐ (┘à┘ü┘è╪┤ ╪¬╪¿┘ê┘è╪¿).
+/**
+ * ربط قالب ميتا: slot ميتا مستقل جنب slot الواتساب العادي.
+ * التعديل على slot ميتا بيفتح الديالوج في وضع ميتا مباشرة (مفيش تبويب).
  */
 import React from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
@@ -29,7 +29,7 @@ const { apiClient } = require("../../../services/apiClient") as {
   apiClient: { get: jest.Mock; put: jest.Mock; post: jest.Mock; delete: jest.Mock; patch: jest.Mock };
 };
 
-const META_SESSIONS = [{ id: "ms1", name: "╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º", provider: "META_CLOUD", metaDisplayPhoneNumber: "201000000000" }];
+const META_SESSIONS = [{ id: "ms1", name: "جلسة ميتا", provider: "META_CLOUD", metaDisplayPhoneNumber: "201000000000" }];
 
 const META_TEMPLATES = [
   {
@@ -37,7 +37,7 @@ const META_TEMPLATES = [
     status: "APPROVED",
     language: "ar",
     category: "UTILITY",
-    components: [{ type: "BODY", text: "┘à╪▒╪¡╪¿╪º┘ï {{1}}╪î ╪╖┘ä╪¿┘â {{2}} ┘ü┘è ╪º┘ä╪╖╪▒┘è┘é" }],
+    components: [{ type: "BODY", text: "مرحباً {{1}}، طلبك {{2}} في الطريق" }],
     boundToLocalTemplateId: null,
     boundToEventType: null,
   },
@@ -48,7 +48,7 @@ function makeStatus(overrides: Record<string, any>) {
   return {
     id: "st1",
     code: "CONFIRMED",
-    name: "┘à╪ñ┘â╪»",
+    name: "مؤكد",
     color: "#3B82F6",
     sortOrder: 1,
     statusType: "order",
@@ -59,7 +59,7 @@ function makeStatus(overrides: Record<string, any>) {
     template: {
       id: "t1",
       name: "t1",
-      content: "┘à╪▒╪¡╪¿╪º {{customerName}} ╪ú┘â╪» ╪╖┘ä╪¿┘â",
+      content: "مرحبا {{customerName}} أكد طلبك",
       eventType: "CONFIRMED",
       isActive: true,
       channel: "AUTO",
@@ -81,7 +81,7 @@ function mockApi(status: any, options: { postResubmit?: boolean } = {}) {
     }
     if (url === "/whatsapp-notifications/templates/delivery-preview") {
       return Promise.resolve({
-        data: { success: true, defaultSession: { id: "ms1", name: "╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º", provider: "META_CLOUD" }, preview: [] },
+        data: { success: true, defaultSession: { id: "ms1", name: "جلسة ميتا", provider: "META_CLOUD" }, preview: [] },
       });
     }
     if (url === "/whatsapp/sessions") {
@@ -114,27 +114,27 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     jest.clearAllMocks();
   });
 
-  test("slot ┘à┘è╪¬╪º ╪¿┘è┘ü╪¬╪¡ ╪º┘ä╪»┘è╪º┘ä┘ê╪¼ ┘ü┘è ┘ê╪╢╪╣ ┘à┘è╪¬╪º ┘ê┘è╪╣╪▒╪╢ ╪▒╪│╪º┘ä╪⌐ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪«╪¬╪º╪▒", async () => {
+  test("slot ميتا بيفتح الديالوج في وضع ميتا ويعرض رسالة قالب ميتا المختار", async () => {
     mockApi(makeStatus({}));
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
 
-    await user.selectOptions(await screen.findByRole("combobox", { name: /┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»/ }), "order_confirm_ar");
+    await user.selectOptions(await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ }), "order_confirm_ar");
 
-    expect(await screen.findByText(/╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä┘ä┘è ┘ç╪¬╪¬╪¿╪╣╪¬ ┘ä┘ä╪╣┘à┘è┘ä/)).toBeInTheDocument();
-    expect(screen.getAllByText(/╪ú╪¡┘à╪» ┘à╪¡┘à╪»/).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/الرسالة اللي هتتبعت للعميل/)).toBeInTheDocument();
+    expect(screen.getAllByText(/أحمد محمد/).length).toBeGreaterThan(0);
   });
 
-  test("╪¿┘è╪╕┘ç╪▒ ┘à╪ñ╪┤╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪▒╪¿┘ê╪╖╪⌐ ┘ê╪º┘ä╪▓╪▒ ╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪» ┘ä┘à╪º ┘è┘â┘ê┘å ╪º┘ä┘é╪º┘ä╪¿ ┘à╪▒╪¿┘ê╪╖", async () => {
+  test("بيظهر مؤشر الحالة المربوطة والزر إرسال للمراجعة من جديد لما يكون القالب مربوط", async () => {
     mockApi(
       makeStatus({
         template: {
           id: "t1",
           name: "t1",
-          content: "┘à╪▒╪¡╪¿╪º {{customerName}} ╪ú┘â╪» ╪╖┘ä╪¿┘â",
+          content: "مرحبا {{customerName}} أكد طلبك",
           eventType: "CONFIRMED",
           isActive: true,
           channel: "AUTO",
@@ -147,21 +147,21 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    // slot ┘à┘è╪¬╪º ╪¿┘è╪╣╪▒╪╢ ╪º┘ä╪▒╪¿╪╖ ╪º┘ä┘é╪»┘è┘à ╪╣┘ä┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º╪»┘è (╪¬┘ê╪º┘ü┘é ┘é╪»┘è┘à) ΓÇö ┘ü╪¬╪¡ ┘ê╪╢╪╣ ╪¬╪╣╪»┘è┘ä ╪º┘ä┘à╪¡╪¬┘ê┘ë
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪¬╪╣╪»┘è┘ä ╪º┘ä┘à╪¡╪¬┘ê┘ë/ }));
+    // slot ميتا بيعرض الربط القديم على القالب العادي (توافق قديم) — فتح وضع تعديل المحتوى
+    await user.click(within(metaSlot()).getByRole("button", { name: /تعديل المحتوى/ }));
 
-    expect(await screen.findByText(/╪º┘ä╪▒╪¿╪╖ ╪º┘ä╪¡╪º┘ä┘è/)).toBeInTheDocument();
-    // resubmit button should NOT show yet ΓÇö content hasn't changed
-    expect(screen.queryByRole("button", { name: /╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»/ })).not.toBeInTheDocument();
+    expect(await screen.findByText(/الربط الحالي/)).toBeInTheDocument();
+    // resubmit button should NOT show yet — content hasn't changed
+    expect(screen.queryByRole("button", { name: /إرسال للمراجعة من جديد/ })).not.toBeInTheDocument();
 
     // edit the content to trigger resubmit button
-    const textarea = screen.getByRole("textbox", { name: /┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è/ });
+    const textarea = screen.getByRole("textbox", { name: /محتوى القالب المحلي/ });
     await user.clear(textarea);
-    await user.type(textarea, "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪╖┘ä╪¿┘â ╪¿┘å╪¼╪º╪¡ - ╪┤┘â╪▒╪º┘ï ┘ä┘â");
+    await user.type(textarea, "تم تحديث طلبك بنجاح - شكراً لك");
 
-    expect(await screen.findByRole("button", { name: /╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»/ })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /إرسال للمراجعة من جديد/ })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»/ }));
+    await user.click(screen.getByRole("button", { name: /إرسال للمراجعة من جديد/ }));
 
     await waitFor(() =>
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -171,26 +171,26 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     );
     expect(apiClient.put).toHaveBeenCalledWith(
       expect.stringContaining("/templates/t1"),
-      expect.objectContaining({ content: "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪╖┘ä╪¿┘â ╪¿┘å╪¼╪º╪¡ - ╪┤┘â╪▒╪º┘ï ┘ä┘â" })
+      expect.objectContaining({ content: "تم تحديث طلبك بنجاح - شكراً لك" })
     );
   });
 
-  test("╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¡┘ä┘è ╪¿┘è╪╕┘ç╪▒ ╪¿╪º┘ä╪¬┘ê╪│┘è╪╣ ┘ü┘è ┘ê╪╢╪╣ ╪▒╪¿╪╖ ┘à┘è╪¬╪º ┘ä┘ä╪¬╪╣╪»┘è┘ä", async () => {
+  test("المرجع المحلي بيظهر بالتوسيع في وضع ربط ميتا للتعديل", async () => {
     mockApi(makeStatus({}));
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
 
-    await user.click(screen.getByRole("button", { name: /╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¡┘ä┘è/ }));
+    await user.click(screen.getByRole("button", { name: /المرجع المحلي/ }));
 
-    const contentArea = screen.getByPlaceholderText(/╪º┘â╪¬╪¿ ╪▒╪│╪º┘ä╪¬┘â ┘ç┘å╪º/);
+    const contentArea = screen.getByPlaceholderText(/اكتب رسالتك هنا/);
     expect(contentArea).toBeInTheDocument();
-    expect(contentArea).toHaveValue("┘à╪▒╪¡╪¿╪º {{customerName}} ╪ú┘â╪» ╪╖┘ä╪¿┘â");
+    expect(contentArea).toHaveValue("مرحبا {{customerName}} أكد طلبك");
   });
 
-  test("╪▒╪¿╪╖ ┘é╪º┘ä╪¿ ╪¼╪»┘è╪» (┘à┘ü┘è╪┤ template.id) ╪¿┘è┘å╪┤╪ª ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï ╪½┘à ┘è╪▒╪¿╪╖┘ç ╪¿┘à┘è╪¬╪º", async () => {
+  test("ربط قالب جديد (مفيش template.id) بينشئ القالب الميتا أولاً ثم يربطه بميتا", async () => {
     const createdId = "t-new";
     mockApi(makeStatus({ template: null, hasTemplate: false }));
     apiClient.post.mockImplementation((url: string, body?: any) => {
@@ -208,14 +208,14 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í/ }));
-    await user.selectOptions(await screen.findByRole("combobox", { name: /┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»/ }), "order_confirm_ar");
-    await user.click(screen.getByRole("button", { name: /╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
+    await user.selectOptions(await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ }), "order_confirm_ar");
+    await user.click(screen.getByRole("button", { name: /ربط بقالب ميتا/ }));
 
     await waitFor(() =>
       expect(apiClient.post).toHaveBeenCalledWith(
         "/whatsapp/notifications/templates",
-        expect.objectContaining({ name: "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪ñ┘â╪»", eventType: "CONFIRMED", channel: "META_CLOUD" })
+        expect.objectContaining({ name: "قالب ميتا مؤكد", eventType: "CONFIRMED", channel: "META_CLOUD" })
       )
     );
     await waitFor(() =>
@@ -226,7 +226,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     );
   });
 
-  test("╪▓╪▒ ╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¼╪»┘è╪» ╪¿┘è╪¡┘ü╪╕ ╪º┘ä┘à╪¡┘ä┘è ╪½┘à ╪¿┘è┘å╪┤╪▒ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐", async () => {
+  test("زر إنشاء قالب ميتا جديد بيحفظ المحلي ثم بينشر القالب على ميتا للمراجعة", async () => {
     mockApi(makeStatus({}));
     apiClient.post.mockImplementation((url: string, body?: any) => {
       if (url.endsWith("/publish")) {
@@ -241,9 +241,9 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
 
-    await user.click(screen.getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¼╪»┘è╪»/ }));
+    await user.click(screen.getByRole("button", { name: /إنشاء قالب ميتا جديد/ }));
 
     await waitFor(() =>
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -257,7 +257,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     );
   });
 
-  test("┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪▒╪¿┘ê╪╖ ╪¿╪¡╪º┘ä╪⌐ ╪¬╪º┘å┘è╪⌐ ┘ä╪│┘ç ╪¿┘è╪╕┘ç╪▒ ┘ä┘ä╪º╪«╪¬┘è╪º╪▒ (multi-bind) + ╪¬┘ê╪╢┘è╪¡ ╪º┘ä╪▒╪¿╪╖", async () => {
+  test("قالب ميتا مربوط بحالة تانية لسه بيظهر للاختيار (multi-bind) + توضيح الربط", async () => {
     mockApi(makeStatus({}));
     apiClient.get.mockImplementation((url: string) => {
       if (url === "/order-status/with-templates") {
@@ -268,7 +268,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
       }
       if (url === "/whatsapp-notifications/templates/delivery-preview") {
         return Promise.resolve({
-          data: { success: true, defaultSession: { id: "ms1", name: "╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º", provider: "META_CLOUD" }, preview: [] },
+          data: { success: true, defaultSession: { id: "ms1", name: "جلسة ميتا", provider: "META_CLOUD" }, preview: [] },
         });
       }
       if (url === "/whatsapp/sessions") {
@@ -283,7 +283,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
                 status: "APPROVED",
                 language: "ar",
                 category: "UTILITY",
-                components: [{ type: "BODY", text: "┘à╪▒╪¡╪¿╪º┘ï {{1}}╪î ╪╖┘ä╪¿┘â {{2}} ┘ü┘è ╪º┘ä╪╖╪▒┘è┘é" }],
+                components: [{ type: "BODY", text: "مرحباً {{1}}، طلبك {{2}} في الطريق" }],
                 boundToLocalTemplateIds: ["t-other"],
                 boundToEventTypes: ["SHIPPED"],
                 boundToLocalTemplateId: "t-other",
@@ -299,16 +299,16 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
 
-    const select = await screen.findByRole("combobox", { name: /┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»/ });
-    expect(within(select).getByText(/┘à╪▒╪¿┘ê╪╖ ╪¿┘Ç SHIPPED/)).toBeInTheDocument();
+    const select = await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ });
+    expect(within(select).getByText(/مربوط بـ SHIPPED/)).toBeInTheDocument();
 
     await user.selectOptions(select, "order_confirm_ar");
-    expect(await screen.findByText(/╪º┘ä┘é╪º┘ä╪¿ ╪»┘ç ┘à╪▒╪¿┘ê╪╖ ╪¡╪º┘ä┘è╪º┘ï ╪¿┘â┘à╪º┘å: SHIPPED/)).toBeInTheDocument();
+    expect(await screen.findByText(/القالب ده مربوط حالياً بكمان: SHIPPED/)).toBeInTheDocument();
   });
 
-  test("╪º╪«╪¬┘è╪º╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¿┘è╪¿┘å┘è ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à╪¡┘ä┘è ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘ä┘ê ╪º┘ä┘é╪º┘ä╪¿ ┘à╪▒╪¿┘ê╪╖ ╪¿╪¡╪º┘ä╪⌐ ╪¬╪º┘å┘è╪⌐ (auto-fill)", async () => {
+  test("اختيار قالب ميتا بيبني المحتوى المحلي تلقائياً لو القالب مربوط بحالة تانية (auto-fill)", async () => {
     mockApi(makeStatus({}));
     apiClient.get.mockImplementation((url: string) => {
       if (url === "/order-status/with-templates") {
@@ -319,7 +319,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
       }
       if (url === "/whatsapp-notifications/templates/delivery-preview") {
         return Promise.resolve({
-          data: { success: true, defaultSession: { id: "ms1", name: "╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º", provider: "META_CLOUD" }, preview: [] },
+          data: { success: true, defaultSession: { id: "ms1", name: "جلسة ميتا", provider: "META_CLOUD" }, preview: [] },
         });
       }
       if (url === "/whatsapp/sessions") {
@@ -334,12 +334,12 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
                 status: "APPROVED",
                 language: "ar",
                 category: "UTILITY",
-                components: [{ type: "BODY", text: "┘à╪▒╪¡╪¿╪º┘ï {{1}}╪î ╪╖┘ä╪¿┘â {{2}} ┘ü┘è ╪º┘ä╪╖╪▒┘è┘é" }],
+                components: [{ type: "BODY", text: "مرحباً {{1}}، طلبك {{2}} في الطريق" }],
                 boundToLocalTemplateIds: ["t-other"],
                 boundToEventTypes: ["SHIPPED"],
                 boundToLocalTemplateId: "t-other",
                 boundToEventType: "SHIPPED",
-                boundLocalContent: "┘à╪▒╪¡╪¿╪º┘ï {{customerName}}╪î ╪╖┘ä╪¿┘â {{orderNumber}} ┘ü┘è ╪º┘ä╪╖╪▒┘è┘é",
+                boundLocalContent: "مرحباً {{customerName}}، طلبك {{orderNumber}} في الطريق",
               },
             ],
           },
@@ -351,38 +351,38 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
 
-    // ╪¬┘ê╪│┘è╪╣ ╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¡┘ä┘è ╪╣╪┤╪º┘å ┘å╪┤┘ê┘ü ╪º┘ä┘Ç textarea
-    await user.click(screen.getByRole("button", { name: /╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¡┘ä┘è/ }));
-    const textarea = await screen.findByRole("textbox", { name: /┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è/ });
-    expect(textarea).toHaveValue("┘à╪▒╪¡╪¿╪º {{customerName}} ╪ú┘â╪» ╪╖┘ä╪¿┘â");
+    // توسيع المرجع المحلي عشان نشوف الـ textarea
+    await user.click(screen.getByRole("button", { name: /المرجع المحلي/ }));
+    const textarea = await screen.findByRole("textbox", { name: /محتوى القالب المحلي/ });
+    expect(textarea).toHaveValue("مرحبا {{customerName}} أكد طلبك");
 
-    const select = await screen.findByRole("combobox", { name: /┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»/ });
+    const select = await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ });
     await user.selectOptions(select, "order_confirm_ar");
 
-    // ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º╪¬╪¿┘å┘ë ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘à┘å ┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪▒╪¿┘ê╪╖
-    expect(textarea).toHaveValue("┘à╪▒╪¡╪¿╪º┘ï {{customerName}}╪î ╪╖┘ä╪¿┘â {{orderNumber}} ┘ü┘è ╪º┘ä╪╖╪▒┘è┘é");
-    expect(await screen.findByText(/╪º╪¬╪¿┘å┘ë ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à╪¡┘ä┘è ╪¬┘ä┘é╪º╪ª┘è╪º┘ï/)).toBeInTheDocument();
+    // المحتوى اتبنى تلقائياً من محتوى القالب المربوط
+    expect(textarea).toHaveValue("مرحباً {{customerName}}، طلبك {{orderNumber}} في الطريق");
+    expect(await screen.findByText(/اتبنى المحتوى المحلي تلقائياً/)).toBeInTheDocument();
   });
 
-  test("╪º╪«╪¬┘è╪º╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¿╪»┘ê┘å ╪▒╪¿╪╖ ╪¿┘è╪¿┘å┘è ┘à╪¡╪¬┘ê┘ë ╪º┘ü╪¬╪▒╪º╪╢┘è ┘à┘å ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º", async () => {
+  test("اختيار قالب ميتا بدون ربط بيبني محتوى افتراضي من نص قالب ميتا", async () => {
     mockApi(makeStatus({}));
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
 
-    await user.click(screen.getByRole("button", { name: /╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¡┘ä┘è/ }));
-    const textarea = await screen.findByRole("textbox", { name: /┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è/ });
-    const select = await screen.findByRole("combobox", { name: /┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»/ });
+    await user.click(screen.getByRole("button", { name: /المرجع المحلي/ }));
+    const textarea = await screen.findByRole("textbox", { name: /محتوى القالب المحلي/ });
+    const select = await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ });
     await user.selectOptions(select, "order_confirm_ar");
 
-    expect(textarea).toHaveValue("┘à╪▒╪¡╪¿╪º┘ï {{customerName}}╪î ╪╖┘ä╪¿┘â {{orderNumber}} ┘ü┘è ╪º┘ä╪╖╪▒┘è┘é");
+    expect(textarea).toHaveValue("مرحباً {{customerName}}، طلبك {{orderNumber}} في الطريق");
   });
 
-  test("╪¿┘è┘à┘å╪╣ ╪º┘ä╪¡┘ü╪╕ ┘ä┘à╪º ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¡┘ä┘è╪⌐ ╪ú┘é┘ä ┘à┘å ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘ê┘è╪╣╪▒╪╢ ╪▒╪│╪º┘ä╪⌐", async () => {
+  test("بيمنع الحفظ لما المتغيرات المحلية أقل من قالب ميتا ويعرض رسالة", async () => {
     mockApi(makeStatus({}));
     apiClient.get.mockImplementation((url: string) => {
       if (url === "/order-status/with-templates") {
@@ -393,7 +393,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
       }
       if (url === "/whatsapp-notifications/templates/delivery-preview") {
         return Promise.resolve({
-          data: { success: true, defaultSession: { id: "ms1", name: "╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º", provider: "META_CLOUD" }, preview: [] },
+          data: { success: true, defaultSession: { id: "ms1", name: "جلسة ميتا", provider: "META_CLOUD" }, preview: [] },
         });
       }
       if (url === "/whatsapp/sessions") {
@@ -408,28 +408,28 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
 
-    const select = await screen.findByRole("combobox", { name: /┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»/ });
+    const select = await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ });
     await user.selectOptions(select, "order_confirm_ar");
 
-    // ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º╪¬╪¿┘å┘ë ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪¿┘à╪¬╪║┘è╪▒┘è┘å ΓÇö ┘å┘à╪│╪¡ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ┘å╪╣┘â╪│ ╪º┘ä┘Ç mismatch
-    await user.click(screen.getByRole("button", { name: /╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¡┘ä┘è/ }));
-    const textarea = screen.getByRole("textbox", { name: /┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è/ });
+    // المحتوى اتبنى تلقائياً بمتغيرين — نمسح المتغيرات نعكس الـ mismatch
+    await user.click(screen.getByRole("button", { name: /المرجع المحلي/ }));
+    const textarea = screen.getByRole("textbox", { name: /محتوى القالب المحلي/ });
     await user.clear(textarea);
-    await user.type(textarea, "┘å╪╡ ┘à┘å ╪║┘è╪▒ ┘à╪¬╪║┘è╪▒╪º╪¬");
+    await user.type(textarea, "نص من غير متغيرات");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/┘à╪¡╪¬╪º╪¼/);
-    expect(screen.getByRole("button", { name: /╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º/ })).toBeDisabled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/محتاج/);
+    expect(screen.getByRole("button", { name: /حفظ وربط بقالب ميتا/ })).toBeDisabled();
   });
 
-  test("╪¬╪║┘è┘è╪▒ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘è┘ü╪¬╪¡ ┘ê╪╢╪╣ ╪¿╪│┘è╪╖ (switch) ╪¿╪»┘ê┘å ┘à╪¡╪▒╪▒ ┘à╪¡╪¬┘ê┘ë ┘ê┘è╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪«╪¬╪º╪▒", async () => {
+  test("تغيير القالب بيفتح وضع بسيط (switch) بدون محرر محتوى ويربط القالب المختار", async () => {
     mockApi(
       makeStatus({
         metaTemplate: {
           id: "mt1",
-          name: "┘é╪º┘ä╪¿ ╪╖┘ä╪¿ ╪¼╪»┘è╪»",
-          content: "┘à╪▒╪¡╪¿╪º {{customerName}} ╪ú┘â╪» ╪╖┘ä╪¿┘â",
+          name: "قالب طلب جديد",
+          content: "مرحبا {{customerName}} أكد طلبك",
           eventType: "CONFIRMED",
           isActive: true,
           channel: "META_CLOUD",
@@ -442,22 +442,22 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    await user.click(within(metaSlot()).getByRole("button", { name: /╪¬╪║┘è┘è╪▒ ╪º┘ä┘é╪º┘ä╪¿/ }));
+    await user.click(within(metaSlot()).getByRole("button", { name: /تغيير القالب/ }));
 
-    expect(await screen.findByText(/╪¬╪║┘è┘è╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º: ┘à╪ñ┘â╪»/)).toBeInTheDocument();
-    // ┘ê╪╢╪╣ switch ┘à┘ü┘è╪┤ ┘à╪¡╪▒╪▒ ┘à╪¡╪¬┘ê┘ë
-    expect(screen.queryByRole("textbox", { name: /┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è/ })).not.toBeInTheDocument();
-    // ┘ü┘è ╪▓╪▒ ╪▒╪¿╪╖/╪¡┘ü╪╕ ╪¿╪│┘è╪╖
-    expect(screen.getByRole("button", { name: /╪¡┘ü╪╕ ╪º┘ä╪¬╪║┘è┘è╪▒/ })).toBeInTheDocument();
+    expect(await screen.findByText(/تغيير قالب ميتا: مؤكد/)).toBeInTheDocument();
+    // وضع switch مفيش محرر محتوى
+    expect(screen.queryByRole("textbox", { name: /محتوى القالب المحلي/ })).not.toBeInTheDocument();
+    // في زر ربط/حفظ بسيط
+    expect(screen.getByRole("button", { name: /حفظ التغيير/ })).toBeInTheDocument();
   });
 
-  test("╪º┘ä┘à┘ê╪¬ ┘ä╪º ╪¬╪╕┘ç╪▒ ╪▓╪▒ ╪º┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘ü┘è slot ┘à┘è╪¬╪º ╪º┘ä┘à╪▒╪¿┘ê╪╖ ΓÇö ╪º┘ä╪ú╪▓╪▒╪º╪▒ ╪º┘ä╪ú╪▒╪¿╪╣╪⌐ ┘à┘å┘ü╪╡┘ä╪⌐", async () => {
+  test("الموت لا تظهر زر انشاء قالب في slot ميتا المربوط — الأزرار الأربعة منفصلة", async () => {
     mockApi(
       makeStatus({
         metaTemplate: {
           id: "mt1",
-          name: "┘é╪º┘ä╪¿ ╪╖┘ä╪¿ ╪¼╪»┘è╪»",
-          content: "┘à╪▒╪¡╪¿╪º {{customerName}} ╪ú┘â╪» ╪╖┘ä╪¿┘â",
+          name: "قالب طلب جديد",
+          content: "مرحبا {{customerName}} أكد طلبك",
           eventType: "CONFIRMED",
           isActive: true,
           channel: "META_CLOUD",
@@ -471,11 +471,11 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
 
     await screen.findByTestId("status-row-st1");
     const slot = metaSlot();
-    // ╪ú╪▒╪¿╪╣╪⌐ ╪ú┘ü╪╣╪º┘ä ┘à┘à┘è╪▓╪⌐: ╪¬╪║┘è┘è╪▒ ╪º┘ä┘é╪º┘ä╪¿ + ╪¬╪╣╪»┘è┘ä ╪º┘ä┘à╪¡╪¬┘ê┘ë + ┘ü┘â ╪º┘ä╪▒╪¿╪╖ (+ ┘à╪╣╪º┘è┘å╪⌐)
-    expect(within(slot).getByRole("button", { name: /╪¬╪║┘è┘è╪▒ ╪º┘ä┘é╪º┘ä╪¿/ })).toBeInTheDocument();
-    expect(within(slot).getByRole("button", { name: /╪¬╪╣╪»┘è┘ä ╪º┘ä┘à╪¡╪¬┘ê┘ë/ })).toBeInTheDocument();
-    expect(within(slot).getByRole("button", { name: /┘ü┘â ╪º┘ä╪▒╪¿╪╖/ })).toBeInTheDocument();
-    // ╪▓╪▒ ╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à╪¬╪º╪¡ ╪»╪º╪ª┘à╪º┘ï ┘ü┘è slot ╪º┘ä┘à╪▒╪¿┘ê╪╖ (┘ä┘ä╪Ñ┘å╪┤╪º╪í ┘à┘å ╪¼╪»┘è╪»)
-    expect(within(slot).getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿/ })).toBeInTheDocument();
+    // أربعة أفعال مميزة: تغيير القالب + تعديل المحتوى + فك الربط (+ معاينة)
+    expect(within(slot).getByRole("button", { name: /تغيير القالب/ })).toBeInTheDocument();
+    expect(within(slot).getByRole("button", { name: /تعديل المحتوى/ })).toBeInTheDocument();
+    expect(within(slot).getByRole("button", { name: /فك الربط/ })).toBeInTheDocument();
+    // زر إنشاء قالب متاح دائماً في slot المربوط (للإنشاء من جديد)
+    expect(within(slot).getByRole("button", { name: /إنشاء قالب/ })).toBeInTheDocument();
   });
 });

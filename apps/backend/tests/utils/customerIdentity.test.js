@@ -1,4 +1,4 @@
-﻿const { phoneFields, buildPhoneWhere, findCustomerByPhone } = require('../../utils/customerIdentity');
+const { phoneFields, buildPhoneWhere, findCustomerByPhone } = require('../../utils/customerIdentity');
 
 describe('customerIdentity', () => {
   test('phoneFields writes canonical phoneNormalized for any format', () => {

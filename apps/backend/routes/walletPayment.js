@@ -551,6 +551,17 @@ router.post('/admin/review-receipt/:id', authenticateToken, requireSuperAdmin, a
       platformPartnerService.distributeCommissions(billingHistoryId).catch(err => {
         console.error('❌ [WALLET-REVIEW] Error distributing commissions:', err.message);
       });
+
+      // 🚀 تحصيل رسوم الاستخدام المؤجلة تلقائياً بعد إيداع الرصيد
+      try {
+        const pendingBillingService = require('../services/pendingBillingService');
+        const pendingResult = await pendingBillingService.processPendingUsageCharges(receipt.invoice.companyId);
+        if (pendingResult.processed > 0) {
+          console.log(`✅ [WALLET-REVIEW] Auto-collected ${pendingResult.processed} pending charge(s), released ${pendingResult.released.length} order(s)`);
+        }
+      } catch (pendingError) {
+        console.error('⚠️ [WALLET-REVIEW] Error processing pending charges:', pendingError.message);
+      }
     }
 
     res.json({

@@ -1,10 +1,18 @@
-import { ArrowRight as ArrowRightIcon, Circle as LightBulbIcon, Circle as CheckBadgeIcon, Star as SparklesIcon, X as XMarkIcon, Pencil as PencilIcon, Image as PhotoIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  ArrowRightIcon,
+  LightBulbIcon,
+  CheckBadgeIcon,
+  SparklesIcon,
+  XMarkIcon,
+  PencilIcon,
+  PhotoIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 import { Attachment } from "../../types/tasks";
 
 interface Project {

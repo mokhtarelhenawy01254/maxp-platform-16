@@ -23,6 +23,14 @@ export interface CheckoutData {
   shippingCost?: number;
   subtotal?: number;
   total?: number;
+  redeemPoints?: boolean;
+  useWallet?: boolean;
+  walletAmount?: number;
+  walletProof?: {
+    imageUrl?: string;
+    walletNumber?: string;
+    transferRef?: string;
+  };
 }
 
 export interface CheckoutOrderPayload {
@@ -59,6 +67,14 @@ export interface CheckoutOrderPayload {
   subtotal: number;
   shippingCost: number;
   total: number;
+  redeemPoints?: boolean;
+  useWallet?: boolean;
+  walletAmount?: number;
+  walletProof?: {
+    imageUrl?: string;
+    walletNumber?: string;
+    transferRef?: string;
+  };
 }
 
 interface CheckoutPurchaseTrackingItem {
@@ -134,6 +150,9 @@ export const buildCheckoutOrderPayload = (
     },
     paymentMethod: data.paymentMethod,
     ...(data.couponCode ? { couponCode: data.couponCode } : {}),
+    ...(data.redeemPoints ? { redeemPoints: true } : {}),
+    ...(data.useWallet && data.walletAmount ? { useWallet: true, walletAmount: data.walletAmount } : {}),
+    ...(data.walletProof && data.walletProof.imageUrl ? { walletProof: data.walletProof } : {}),
     notes: data.notes || undefined,
     items: items.map((item) => ({
       productId: item.productId,

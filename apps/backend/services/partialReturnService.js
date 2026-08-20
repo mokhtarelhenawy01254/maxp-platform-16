@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Partial Return Service
- * ╪╣┘å╪» ┘ê╪╡┘ê┘ä ╪┤╪¡┘å╪⌐ R (╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è)╪î ╪¿┘å╪╣┘à┘ä ╪ú┘ê╪▒╪»╪▒ ╪¼╪»┘è╪» ┘ä┘ä┘à╪▒╪¬╪¼╪╣
+ * عند وصول شحنة R (تسليم جزئي)، بنعمل أوردر جديد للمرتجع
  */
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 
@@ -54,7 +54,7 @@ async function ensureReturnOrder(originalOrder, rCode, turboStatus) {
     }), 2
   );
 
-  console.log(`Γ£à [PARTIAL-RETURN] Created return order ${returnOrderNum} for ${rCode}`);
+  console.log(`✅ [PARTIAL-RETURN] Created return order ${returnOrderNum} for ${rCode}`);
   return newOrder;
 }
 

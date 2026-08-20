@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -31,8 +31,8 @@ describe('bookingPriceListsController', () => {
       getSharedPrismaClient.mockReturnValue({
         priceList: {
           findMany: jest.fn().mockResolvedValue([
-            { id: 'base-1', name: '┘é╪º╪ª┘à╪⌐ ╪ú╪│╪º╪│┘è╪⌐', description: null, baseListId: null, isActive: true, _count: { items: 3 } },
-            { id: 'pl-2', name: '┘é╪º╪ª┘à╪⌐ ╪¬╪╣╪º┘é╪»┘è╪⌐', description: null, baseListId: 'base-1', isActive: true, _count: { items: 1 } }
+            { id: 'base-1', name: 'قائمة أساسية', description: null, baseListId: null, isActive: true, _count: { items: 3 } },
+            { id: 'pl-2', name: 'قائمة تعاقدية', description: null, baseListId: 'base-1', isActive: true, _count: { items: 1 } }
           ])
         }
       });
@@ -65,19 +65,19 @@ describe('bookingPriceListsController', () => {
         priceList: {
           count: jest.fn().mockResolvedValue(0),
           create: jest.fn().mockResolvedValue({
-            id: 'base-1', companyId: 'c1', name: '┘é╪º╪ª┘à╪⌐ ╪ú╪│╪º╪│┘è╪⌐', description: null, baseListId: null, isActive: true
+            id: 'base-1', companyId: 'c1', name: 'قائمة أساسية', description: null, baseListId: null, isActive: true
           })
         }
       };
       getSharedPrismaClient.mockReturnValue(mockPrisma);
 
       const res = createResponse();
-      await controller.createPriceList({ user: { companyId: 'c1' }, body: { name: '┘é╪º╪ª┘à╪⌐ ╪ú╪│╪º╪│┘è╪⌐' } }, res);
+      await controller.createPriceList({ user: { companyId: 'c1' }, body: { name: 'قائمة أساسية' } }, res);
 
       expect(res.statusCode).toBe(200);
       expect(res.payload.data.isBase).toBe(true);
       expect(mockPrisma.priceList.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ companyId: 'c1', name: '┘é╪º╪ª┘à╪⌐ ╪ú╪│╪º╪│┘è╪⌐', baseListId: null })
+        data: expect.objectContaining({ companyId: 'c1', name: 'قائمة أساسية', baseListId: null })
       }));
     });
 
@@ -87,7 +87,7 @@ describe('bookingPriceListsController', () => {
           count: jest.fn().mockResolvedValue(1),
           findFirst: jest.fn().mockResolvedValue({ id: 'base-1', companyId: 'c1', baseListId: null }),
           create: jest.fn().mockResolvedValue({
-            id: 'pl-2', companyId: 'c1', name: '┘é╪º╪ª┘à╪⌐ ╪¬╪╣╪º┘é╪»┘è╪⌐', description: null, baseListId: 'base-1', isActive: true
+            id: 'pl-2', companyId: 'c1', name: 'قائمة تعاقدية', description: null, baseListId: 'base-1', isActive: true
           })
         }
       };
@@ -95,7 +95,7 @@ describe('bookingPriceListsController', () => {
 
       const res = createResponse();
       await controller.createPriceList(
-        { user: { companyId: 'c1' }, body: { name: '┘é╪º╪ª┘à╪⌐ ╪¬╪╣╪º┘é╪»┘è╪⌐', baseListId: 'base-1' } },
+        { user: { companyId: 'c1' }, body: { name: 'قائمة تعاقدية', baseListId: 'base-1' } },
         res
       );
 
@@ -117,7 +117,7 @@ describe('bookingPriceListsController', () => {
 
       const res = createResponse();
       await controller.createPriceList(
-        { user: { companyId: 'c1' }, body: { name: '┘é╪º╪ª┘à╪⌐', baseListId: 'other-base' } },
+        { user: { companyId: 'c1' }, body: { name: 'قائمة', baseListId: 'other-base' } },
         res
       );
 
@@ -129,7 +129,7 @@ describe('bookingPriceListsController', () => {
       const res = createResponse();
       await controller.createPriceList({ user: { companyId: 'c1' }, body: { name: '' } }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم القائمة مطلوب');
     });
 
     test('rejects a derived list as baseListId', async () => {
@@ -143,12 +143,12 @@ describe('bookingPriceListsController', () => {
 
       const res = createResponse();
       await controller.createPriceList(
-        { user: { companyId: 'c1' }, body: { name: '┘é╪º╪ª┘à╪⌐', baseListId: 'pl-2' } },
+        { user: { companyId: 'c1' }, body: { name: 'قائمة', baseListId: 'pl-2' } },
         res
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪º╪╣╪¬┘à╪º╪» ┘é╪º╪ª┘à╪⌐ ┘à╪¬┘ü╪▒╪╣╪⌐ ┘â┘é╪º╪ª┘à╪⌐ ╪ú╪│╪º╪│┘è╪⌐');
+      expect(res.payload.error).toBe('لا يمكن اعتماد قائمة متفرعة كقائمة أساسية');
     });
   });
 
@@ -158,7 +158,7 @@ describe('bookingPriceListsController', () => {
         priceList: {
           findFirst: jest.fn().mockResolvedValue({ id: 'pl-2', companyId: 'c1', baseListId: 'base-1' }),
           update: jest.fn().mockResolvedValue({
-            id: 'pl-2', companyId: 'c1', name: '┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐', description: '┘ê╪╡┘ü', baseListId: 'base-1', isActive: true
+            id: 'pl-2', companyId: 'c1', name: 'قائمة جديدة', description: 'وصف', baseListId: 'base-1', isActive: true
           })
         }
       };
@@ -166,14 +166,14 @@ describe('bookingPriceListsController', () => {
 
       const res = createResponse();
       await controller.updatePriceList(
-        { user: { companyId: 'c1' }, params: { id: 'pl-2' }, body: { name: '┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐', description: '┘ê╪╡┘ü' } },
+        { user: { companyId: 'c1' }, params: { id: 'pl-2' }, body: { name: 'قائمة جديدة', description: 'وصف' } },
         res
       );
 
       expect(res.statusCode).toBe(200);
       expect(mockPrisma.priceList.update).toHaveBeenCalledWith(expect.objectContaining({
         where: { id: 'pl-2' },
-        data: expect.objectContaining({ name: '┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐', description: '┘ê╪╡┘ü' })
+        data: expect.objectContaining({ name: 'قائمة جديدة', description: 'وصف' })
       }));
     });
 
@@ -195,7 +195,7 @@ describe('bookingPriceListsController', () => {
         res
       );
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم القائمة مطلوب');
     });
   });
 
@@ -228,7 +228,7 @@ describe('bookingPriceListsController', () => {
       const res = createResponse();
       await controller.deletePriceList({ user: { companyId: 'c1' }, params: { id: 'base-1' } }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪¡╪░┘ü ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐');
+      expect(res.payload.error).toBe('لا يمكن حذف قائمة الأسعار الأساسية');
     });
 
     test('refuses to delete a list that derived lists reference', async () => {
@@ -241,7 +241,7 @@ describe('bookingPriceListsController', () => {
       const res = createResponse();
       await controller.deletePriceList({ user: { companyId: 'c1' }, params: { id: 'pl-1' } }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪¡╪░┘ü ┘é╪º╪ª┘à╪⌐ ╪¬┘ü╪▒╪╣ ┘à┘å┘ç╪º ┘é┘ê╪º╪ª┘à ╪ú╪«╪▒┘ë');
+      expect(res.payload.error).toBe('لا يمكن حذف قائمة تفرع منها قوائم أخرى');
     });
   });
 
@@ -251,7 +251,7 @@ describe('bookingPriceListsController', () => {
         priceList: { findFirst: jest.fn().mockResolvedValue({ id: 'pl-2', companyId: 'c1', baseListId: 'base-1' }) },
         priceListItem: {
           findMany: jest.fn().mockResolvedValue([
-            { id: 'item-1', priceListId: 'pl-2', serviceId: 'svc-1', price: 250, isActive: true, service: { id: 'svc-1', name: '┘â╪┤┘ü', basePrice: 300, durationMinutes: 30 } }
+            { id: 'item-1', priceListId: 'pl-2', serviceId: 'svc-1', price: 250, isActive: true, service: { id: 'svc-1', name: 'كشف', basePrice: 300, durationMinutes: 30 } }
           ])
         }
       };
@@ -263,7 +263,7 @@ describe('bookingPriceListsController', () => {
       expect(res.statusCode).toBe(200);
       const item = res.payload.data[0];
       expect(item.effectivePrice).toBe(250);
-      expect(item.service).toMatchObject({ id: 'svc-1', name: '┘â╪┤┘ü', basePrice: 300, durationMinutes: 30 });
+      expect(item.service).toMatchObject({ id: 'svc-1', name: 'كشف', basePrice: 300, durationMinutes: 30 });
     });
   });
 
@@ -323,7 +323,7 @@ describe('bookingPriceListsController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä╪│╪╣╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡');
+      expect(res.payload.error).toBe('السعر غير صحيح');
       expect(mockPrisma.priceListItem).toBeUndefined();
     });
 
@@ -337,7 +337,7 @@ describe('bookingPriceListsController', () => {
         res
       );
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪Ñ╪╢╪º┘ü╪⌐ ╪ú╪│╪╣╪º╪▒ ┘à╪«╪╡╪╡╪⌐ ┘ä┘ä┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐');
+      expect(res.payload.error).toBe('لا يمكن إضافة أسعار مخصصة للقائمة الأساسية');
     });
   });
 
@@ -373,7 +373,7 @@ describe('bookingPriceListsController', () => {
         res
       );
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä╪«╪»┘à╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الخدمة غير موجودة');
     });
 
     test('returns item price when an override exists', async () => {

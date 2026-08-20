@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Briefcase, Calendar, CheckCircle2, Edit, Folder, Plus, Search, Trash2, TrendingUp, X, XCircle } from 'lucide-react';
+import {
+  TrendingUp,
+  Plus,
+  Calendar,
+  Briefcase,
+  Trash2,
+  Edit,
+  Search,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -26,6 +36,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Promotion {
   id: string;
@@ -202,7 +214,7 @@ const EmployeesPromotion: React.FC = () => {
         );
         fetchPromotions();
       } else {
-        toast.error(response.data.error || "فشل في تحديث حالة الترقية");
+        toast.error(response.data.error || i18n.t("EmployeesPromotion.failed_update_d7a0"));
       }
     } catch (error: any) {
       console.error("❌ Error updating status:", error);
@@ -214,10 +226,10 @@ const EmployeesPromotion: React.FC = () => {
     try {
       const response = await api.delete(`/hr/promotions/${promotionId}`);
       if (response.data.success) {
-        toast.success("تم حذف الترقية بنجاح");
+        tToast.success("EmployeesPromotion.success_delete_044f");
         fetchPromotions(); // إعادة تحميل القائمة
       } else {
-        toast.error(response.data.error || "فشل في حذف الترقية");
+        toast.error(response.data.error || i18n.t("EmployeesPromotion.failed_delete_c80d"));
       }
     } catch (error: any) {
       console.error("❌ Error deleting promotion:", error);

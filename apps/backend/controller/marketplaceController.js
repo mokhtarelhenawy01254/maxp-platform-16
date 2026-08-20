@@ -210,6 +210,13 @@ function normalizeMarketplaceAppForApi(app) {
   };
 }
 
+function createRequiredAppsError(requiredApps) {
+  const error = new Error('هذه الأداة تتطلب تفعيل أدوات أخرى أولاً');
+  error.code = 'REQUIRED_APPS_MISSING';
+  error.requiredApps = requiredApps;
+  return error;
+}
+
 function createAlreadyInstalledError(existing) {
   const error = new Error('الأداة مفعلة بالفعل بنفس نظام الدفع');
   error.code = 'APP_ALREADY_INSTALLED';
@@ -243,18 +250,13 @@ async function ensureCompanyAppInstalled(tx, {
       onlyPublic: true
     });
 
-    // Tolerate stale required-app references. Deprecated/removed slugs
-    // (e.g. store-basic/store-pro/ecommerce-basic merged into `store`) can
-    // linger in the DB even though the app row no longer resolves as an
-    // active, public app. Blocking the install over a stale prerequisite
-    // bricks every dependent app, so log it and continue — the feature-level
-    // gate (checkAppAccess) still enforces access independently.
     if (requiredResolution.missingSlugs.length > 0) {
-      for (const missingSlug of requiredResolution.missingSlugs) {
-        console.warn(
-          `[marketplace] Required app '${missingSlug}' for '${normalizedSlug}' is not an active/public app — skipping stale requirement.`
-        );
-      }
+      throw createRequiredAppsError(
+        requiredResolution.missingSlugs.map((requiredSlug) => ({
+          slug: requiredSlug,
+          name: requiredSlug
+        }))
+      );
     }
 
     for (const requiredApp of requiredResolution.apps) {
@@ -381,6 +383,7 @@ function buildDbAppPayloadFromCatalog(catalogApp) {
     pricingModel: normalizePricingModel(catalogApp?.pricingModel, monthlyPrice === 0 ? 'FREE' : 'SUBSCRIPTION'),
     unitPrice,
     unitName: catalogApp?.unitName || null,
+    ppuBillingMethod: catalogApp?.ppuBillingMethod || "PER_ORDER",
     features: normalizeJsonObject(catalogApp?.features, {}),
     isActive: catalogApp?.isActive !== false,
     isPublic: catalogApp?.isPublic !== false,
@@ -461,6 +464,7 @@ async function ensureDbAppBySlug(slug, options = {}) {
     pricingModel: createPayload.pricingModel,
     unitPrice: createPayload.unitPrice,
     unitName: createPayload.unitName,
+    ppuBillingMethod: createPayload.ppuBillingMethod,
     features: createPayload.features,
     isActive: createPayload.isActive,
     isPublic: createPayload.isPublic,
@@ -1168,7 +1172,15 @@ exports.getCategories = async (req, res) => {
     });
 
     const categoryMap = {
-      ECOMMERCE: { name: 'التجارة الإلكترونية', nameEn: 'E-Commerce', icon: '🛒' },
+      ECOMMERCE: { name: 'المتجر والمنتجات', nameEn: 'Store & Products', icon: '🛒' },
+      ORDER_OPS: { name: 'الطلبات والتنفيذ', nameEn: 'Orders & Fulfillment', icon: '📝' },
+      WAREHOUSE: { name: 'المخزون والمستودعات', nameEn: 'Inventory & Warehousing', icon: '📦' },
+      SHIPPING: { name: 'الشحن والتوصيل', nameEn: 'Shipping & Delivery', icon: '🚚' },
+      ACCOUNTING: { name: 'الفواتير والمحاسبة', nameEn: 'Invoicing & Accounting', icon: '🧾' },
+      PAYMENTS: { name: 'الدفع والتحصيل', nameEn: 'Payments & Collections', icon: '💳' },
+      PROCUREMENT: { name: 'المشتريات والموردين', nameEn: 'Procurement & Suppliers', icon: '🛍️' },
+      WHOLESALE: { name: 'البيع بالجملة', nameEn: 'Wholesale & B2B', icon: '🏪' },
+      SALES: { name: 'المبيعات', nameEn: 'Sales', icon: '🛒' },
       HR: { name: 'الموارد البشرية', nameEn: 'HR', icon: '👥' },
         [LEGACY_AUTOMATION_CATEGORY]: { name: 'الأتمتة', nameEn: 'Automation', icon: '⚙️' },
       COMMUNICATION: { name: 'التواصل', nameEn: 'Communication', icon: '💬' },
@@ -1178,6 +1190,11 @@ exports.getCategories = async (req, res) => {
       PRODUCTIVITY: { name: 'الإنتاجية', nameEn: 'Productivity', icon: '⚡' },
       FINANCE: { name: 'المالية', nameEn: 'Finance', icon: '💰' },
       MARKETING: { name: 'التسويق', nameEn: 'Marketing', icon: '📣' },
+      SUPPORT: { name: 'الدعم وخدمة العملاء', nameEn: 'Support', icon: '🎧' },
+      WHATSAPP: { name: 'واتساب', nameEn: 'WhatsApp', icon: '💬' },
+      SEO: { name: 'تحسين محركات البحث', nameEn: 'SEO', icon: '🌐' },
+      THEMES: { name: 'الثيمات والقوالب', nameEn: 'Themes', icon: '🎨' },
+      DESIGN: { name: 'التصميم', nameEn: 'Design', icon: '🎨' },
       GAMIFICATION: { name: 'الألعاب والترفيه', nameEn: 'Gamification', icon: '🎮' },
       MEDICAL: { name: 'النظام الطبي', nameEn: 'Medical System', icon: '🏥' }
     };
@@ -1988,7 +2005,8 @@ exports.subscribeToBundle = async (req, res) => {
         await tx.companyWallet.update({
           where: { companyId },
           data: {
-            balance: { decrement: Number(bundle.monthlyPrice) }
+            balance: { decrement: Number(bundle.monthlyPrice) },
+            totalSpent: { increment: Number(bundle.monthlyPrice) }
           }
         });
 

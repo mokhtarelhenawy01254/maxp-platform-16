@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -26,13 +26,13 @@ const req = (overrides = {}) => ({
 const roomRow = (overrides = {}) => ({
   id: 'r1',
   companyId: 'company-1',
-  name: '╪º┘ä╪║╪▒┘ü╪⌐ 1',
+  name: 'الغرفة 1',
   capacityPerHour: 4,
   isActive: true,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
-  devices: [{ device: { id: 'd1', name: '╪¼┘ç╪º╪▓ CT', room: '╪º┘ä╪║╪▒┘ü╪⌐ 1', modality: 'CT', isActive: true } }],
-  doctors: [{ radiologist: { id: 'doc1', name: '╪». ╪│╪º╪▒╪⌐', location: 'ON_SITE', isActive: true } }],
+  devices: [{ device: { id: 'd1', name: 'جهاز CT', room: 'الغرفة 1', modality: 'CT', isActive: true } }],
+  doctors: [{ radiologist: { id: 'doc1', name: 'د. سارة', location: 'ON_SITE', isActive: true } }],
   ...overrides,
 });
 
@@ -58,10 +58,10 @@ describe('radiologyRoomsController', () => {
     expect(res.statusCode).toBe(200);
     expect(prisma.radiologyRoom.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { companyId: 'company-1', isActive: true } }));
     expect(res.payload.data[0]).toMatchObject({
-      name: '╪º┘ä╪║╪▒┘ü╪⌐ 1',
+      name: 'الغرفة 1',
       capacityPerHour: 4,
-      devices: [{ id: 'd1', name: '╪¼┘ç╪º╪▓ CT' }],
-      doctors: [{ id: 'doc1', name: '╪». ╪│╪º╪▒╪⌐' }],
+      devices: [{ id: 'd1', name: 'جهاز CT' }],
+      doctors: [{ id: 'doc1', name: 'د. سارة' }],
     });
   });
 
@@ -74,12 +74,12 @@ describe('radiologyRoomsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.createRoom(req({ body: { name: '╪º┘ä╪║╪▒┘ü╪⌐ 1', capacityPerHour: 0, deviceIds: ['d1'], doctorIds: ['doc1'] } }), res);
+    await controller.createRoom(req({ body: { name: 'الغرفة 1', capacityPerHour: 0, deviceIds: ['d1'], doctorIds: ['doc1'] } }), res);
 
     expect(res.statusCode).toBe(200);
     expect(prisma.radiologyRoom.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        name: '╪º┘ä╪║╪▒┘ü╪⌐ 1',
+        name: 'الغرفة 1',
         capacityPerHour: 1,
         companyId: 'company-1',
         devices: { create: [{ deviceId: 'd1' }] },
@@ -106,10 +106,10 @@ describe('radiologyRoomsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.createRoom(req({ body: { name: '╪º┘ä╪║╪▒┘ü╪⌐ 1' } }), res);
+    await controller.createRoom(req({ body: { name: 'الغرفة 1' } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toMatch(/╪¿┘å┘ü╪│ ╪º┘ä╪º╪│┘à/);
+    expect(res.payload.error).toMatch(/بنفس الاسم/);
   });
 
   test('rejects assigning a device that does not belong to the company', async () => {
@@ -119,10 +119,10 @@ describe('radiologyRoomsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.createRoom(req({ body: { name: '╪║╪▒┘ü╪⌐ CT', deviceIds: ['other-dev'] } }), res);
+    await controller.createRoom(req({ body: { name: 'غرفة CT', deviceIds: ['other-dev'] } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toMatch(/╪¼┘ç╪º╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»/);
+    expect(res.payload.error).toMatch(/جهاز غير موجود/);
   });
 
   test('updates name/capacity and syncs device/doctor lists', async () => {
@@ -138,11 +138,11 @@ describe('radiologyRoomsController', () => {
     const res = createResponse();
     await controller.updateRoom(req({
       params: { id: 'r1' },
-      body: { name: '╪║╪▒┘ü╪⌐ 2', capacityPerHour: 6, deviceIds: ['d1'], doctorIds: ['doc1'] },
+      body: { name: 'غرفة 2', capacityPerHour: 6, deviceIds: ['d1'], doctorIds: ['doc1'] },
     }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyRoom.update).toHaveBeenCalledWith({ where: { id: 'r1' }, data: expect.objectContaining({ name: '╪║╪▒┘ü╪⌐ 2', capacityPerHour: 6 }) });
+    expect(prisma.radiologyRoom.update).toHaveBeenCalledWith({ where: { id: 'r1' }, data: expect.objectContaining({ name: 'غرفة 2', capacityPerHour: 6 }) });
     expect(prisma.radiologyRoomDevice.deleteMany).toHaveBeenCalledWith({ where: { roomId: 'r1' } });
     expect(prisma.radiologyRoomDevice.createMany).toHaveBeenCalledWith({ data: [{ roomId: 'r1', deviceId: 'd1' }] });
     expect(prisma.radiologyRoomDoctor.deleteMany).toHaveBeenCalledWith({ where: { roomId: 'r1' } });

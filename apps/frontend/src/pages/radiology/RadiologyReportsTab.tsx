@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -63,15 +63,15 @@ const nextActionFor = (status: string): ActionKind | null => {
 };
 
 const CLINICAL_PHRASES = [
-  "╪º┘ä╪¡╪º┘ä╪⌐ ╪░╪º╪¬ ╪¼┘ê╪»╪⌐ ┘ü┘å┘è╪⌐ ┘à┘å╪º╪│╪¿╪⌐.",
-  "┘ä╪º ┘è┘ê╪¼╪» ╪»┘ä┘è┘ä ╪╣┘ä┘ë ┘â╪│┘ê╪▒ ╪¡╪º╪»╪⌐.",
-  "╪º┘ä┘à┘å╪º╪╖┘é ╪º┘ä╪╕┘ä┘è┘ä╪⌐ ╪╢┘à┘å ╪º┘ä╪¡╪»┘ê╪» ╪º┘ä╪╖╪¿┘è╪╣┘è╪⌐.",
+  "الحالة ذات جودة فنية مناسبة.",
+  "لا يوجد دليل على كسور حادة.",
+  "المناطق الظليلة ضمن الحدود الطبيعية.",
 ];
 
 const IMPRESSION_PHRASES = [
-  "╪¬┘é╪▒┘è╪▒ ╪╢┘à┘å ╪º┘ä╪¡╪»┘ê╪» ╪º┘ä╪╖╪¿┘è╪╣┘è╪⌐.",
-  "┘è┘å╪╡╪¡ ╪¿┘à╪¬╪º╪¿╪╣╪⌐ ╪│╪▒┘è╪▒┘è╪⌐.",
-  "┘è┘å╪╡╪¡ ╪¿┘ü╪¡╪╡ ╪Ñ╪┤╪╣╪º╪╣┘è ╪Ñ╪╢╪º┘ü┘è ┘ä┘ä╪¬┘ê╪╢┘è╪¡.",
+  "تقرير ضمن الحدود الطبيعية.",
+  "ينصح بمتابعة سريرية.",
+  "ينصح بفحص إشعاعي إضافي للتوضيح.",
 ];
 
 interface ReportRow extends RadiologyStudy {
@@ -126,9 +126,9 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
   const criticalMeta = criticalCat ? RADIOLOGY_CRITICAL_META[criticalCat] : undefined;
 
   const fmtDateTime = (iso?: string): string => {
-    if (!iso) return "ΓÇö";
+    if (!iso) return "—";
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "ΓÇö";
+    if (Number.isNaN(d.getTime())) return "—";
     return new Intl.DateTimeFormat("ar-EG", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(d);
   };
 
@@ -326,10 +326,10 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
               {study ? (
                 <div className="mb-4 rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold text-sm">{study.patientName || "ΓÇö"}</p>
+                    <p className="font-semibold text-sm">{study.patientName || "—"}</p>
                     <span className="text-xs text-gray-500 dark:text-gray-400 font-mono" dir="ltr">{study.studyNumber || study.id.slice(0, 8)}</span>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{study.examTypeName || study.examType?.name || "ΓÇö"}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{study.examTypeName || study.examType?.name || "—"}</p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {parsePatientFlags(study.patientFlags).map(f => {
                       const meta = flagMeta(f);
@@ -362,7 +362,7 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
               ) : null}
               <textarea autoFocus className={`${MODAL_INPUT_CLS} min-h-[240px] resize-y`} value={text} onChange={e => setText(e.target.value)} placeholder={t("radiology.reports.reportTextPlaceholder") as string} />
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                {text.length} {t("radiology.reports.characterCount")} ┬╖ {text.trim().split(/\s+/).filter(Boolean).length} {t("radiology.reports.wordCount")}
+                {text.length} {t("radiology.reports.characterCount")} · {text.trim().split(/\s+/).filter(Boolean).length} {t("radiology.reports.wordCount")}
               </p>
 
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -412,7 +412,7 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
                 </div>
                 {aiMeta ? (
                   <p className="mt-1.5 text-xs text-violet-600 dark:text-violet-400">
-                    {t("radiology.aiDraft.disclaimer")}{aiMeta.model ? ` ΓÇö ${t("radiology.aiDraft.model")}: ${aiMeta.model}` : ""}{aiMeta.provider ? ` (${aiMeta.provider})` : ""}
+                    {t("radiology.aiDraft.disclaimer")}{aiMeta.model ? ` — ${t("radiology.aiDraft.model")}: ${aiMeta.model}` : ""}{aiMeta.provider ? ` (${aiMeta.provider})` : ""}
                   </p>
                 ) : null}
               </div>
@@ -438,9 +438,9 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
                   </div>
                   {criticalCat ? (
                     <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 pt-1">
-                      {report?.criticalFlaggedBy ? <p>{t("radiology.critical.flaggedBy")}: <b className="text-gray-700 dark:text-gray-200">{report.criticalFlaggedBy}</b>{report.criticalFlaggedAt ? ` ΓÇö ${fmtDateTime(report.criticalFlaggedAt)}` : ""}</p> : null}
+                      {report?.criticalFlaggedBy ? <p>{t("radiology.critical.flaggedBy")}: <b className="text-gray-700 dark:text-gray-200">{report.criticalFlaggedBy}</b>{report.criticalFlaggedAt ? ` — ${fmtDateTime(report.criticalFlaggedAt)}` : ""}</p> : null}
                       {report?.criticalAcknowledgedBy ? (
-                        <p>{t("radiology.critical.acknowledgedBy")}: <b className="text-gray-700 dark:text-gray-200">{report.criticalAcknowledgedBy}</b>{report.criticalAcknowledgedAt ? ` ΓÇö ${fmtDateTime(report.criticalAcknowledgedAt)}` : ""}</p>
+                        <p>{t("radiology.critical.acknowledgedBy")}: <b className="text-gray-700 dark:text-gray-200">{report.criticalAcknowledgedBy}</b>{report.criticalAcknowledgedAt ? ` — ${fmtDateTime(report.criticalAcknowledgedAt)}` : ""}</p>
                       ) : (
                         <p>{t("radiology.critical.notAcknowledged")}</p>
                       )}
@@ -639,7 +639,7 @@ export default function RadiologyReportsTab() {
   const reportBadge = (value: string) => {
     const meta = RadiologyReportStatusMap[value];
     if (meta) return <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${meta.color}`}>{t(meta.label)}</span>;
-    return <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "ΓÇö"}</span>;
+    return <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "—"}</span>;
   };
 
   const toggleSelect = (id: string) => {
@@ -693,7 +693,7 @@ export default function RadiologyReportsTab() {
     { key: "signed", labelKey: "radiology.reports.signedBy", field: "signedBy" },
   ] as const;
 
-  const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "ΓÇö");
+  const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "—");
 
   return (
     <div className="space-y-6">
@@ -822,7 +822,7 @@ export default function RadiologyReportsTab() {
                         </td>
                         <td className="py-3 px-4 font-medium">{s.patientName}</td>
                         <td className="py-3 px-4 font-medium" dir="ltr">{s.studyNumber || s.id.slice(0, 8)}</td>
-                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "ΓÇö"}</td>
+                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{s.examTypeName || s.examType?.name || "—"}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {reportBadge(reportStatus)}
@@ -839,7 +839,7 @@ export default function RadiologyReportsTab() {
                               const name = s.report?.[r.field];
                               return (
                                 <span key={r.key} className="text-xs text-right px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700">
-                                  {t(r.labelKey)}: <b>{name || "ΓÇö"}</b>
+                                  {t(r.labelKey)}: <b>{name || "—"}</b>
                                 </span>
                               );
                             })}

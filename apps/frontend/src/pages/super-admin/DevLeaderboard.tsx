@@ -1,10 +1,15 @@
-import { Circle as TrophyIcon, Zap as FireIcon, Star as StarIcon, User as UserIcon, Star as SparklesIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../hooks/useTheme";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  TrophyIcon,
+  FireIcon,
+  StarIcon,
+  UserIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/solid";
 
 interface LeaderboardEntry {
   id: string;

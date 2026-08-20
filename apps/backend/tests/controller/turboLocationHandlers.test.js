@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   company: {
     findUnique: jest.fn(),
   },
@@ -42,27 +42,27 @@ describe('turbo locationHandlers', () => {
         matches: [
           {
             governorateId: '1',
-            governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+            governorate: 'القاهرة',
             areaId: '10',
-            area: '┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒',
+            area: 'مدينة نصر',
             confidence: 1,
           },
         ],
         count: 1,
       });
-      const req = { query: { q: '┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒' }, user: { companyId: 'comp1' } };
+      const req = { query: { q: 'مدينة نصر' }, user: { companyId: 'comp1' } };
       const res = createMockResponse();
 
       await searchAreaByText(req, res);
 
-      expect(mockSearchAreaByText).toHaveBeenCalledWith('┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒', { limit: undefined });
+      expect(mockSearchAreaByText).toHaveBeenCalledWith('مدينة نصر', { limit: undefined });
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true }),
       );
     });
 
     test('rejects requests without companyId', async () => {
-      const req = { query: { q: '┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒' }, user: {} };
+      const req = { query: { q: 'مدينة نصر' }, user: {} };
       const res = createMockResponse();
 
       await searchAreaByText(req, res);
@@ -82,27 +82,27 @@ describe('turbo locationHandlers', () => {
         matches: [
           {
             governorateId: '1',
-            governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+            governorate: 'القاهرة',
             areaId: '10',
-            area: '┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒',
+            area: 'مدينة نصر',
             confidence: 1,
           },
         ],
         count: 1,
       });
-      const req = { query: { q: '┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒', companyId: 'comp1' }, body: {} };
+      const req = { query: { q: 'مدينة نصر', companyId: 'comp1' }, body: {} };
       const res = createMockResponse();
 
       await searchAreaByTextPublic(req, res);
 
-      expect(mockSearchAreaByText).toHaveBeenCalledWith('┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒', { limit: undefined });
+      expect(mockSearchAreaByText).toHaveBeenCalledWith('مدينة نصر', { limit: undefined });
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true }),
       );
     });
 
     test('rejects public requests without companyId', async () => {
-      const req = { query: { q: '┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒' }, body: {} };
+      const req = { query: { q: 'مدينة نصر' }, body: {} };
       const res = createMockResponse();
 
       await searchAreaByTextPublic(req, res);

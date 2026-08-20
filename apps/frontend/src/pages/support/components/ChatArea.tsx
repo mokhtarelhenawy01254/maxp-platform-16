@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
-import { AlertCircle, AlertTriangle, Check, CheckCircle, Clock, Download, Link, Navigation, Paperclip, Send, Shield, User, X } from 'lucide-react';
+import {
+  Send,
+  Paperclip,
+  X,
+  Download,
+  User,
+  Shield,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { Ticket } from "../../../services/supportService";
 import LinkifiedText from "../../../components/common/LinkifiedText";
 

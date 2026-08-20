@@ -10,11 +10,21 @@
 .whatsapp-workspace-root {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0%;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
   overflow: hidden;
   container-type: inline-size;
   container-name: wa-root;
+}
+
+.wa-panel-sidebar,
+.wa-panel-chat,
+.chat-right-panel-container {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
 }
 
 /* ── 3. View Transitions — Sidebar ↔ Chat ── */
@@ -140,7 +150,7 @@
 /* ── 8. Filter Pills — Horizontal Scroll on Mobile ── */
 .wa-filter-strip {
   display: flex;
-  gap: 0.375rem;
+  gap: var(--space-1, 6px);
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -159,11 +169,11 @@
 
 /* ── 9. Safe-Area Insets ── */
 .wa-safe-bottom {
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--space-1, 6px) + env(safe-area-inset-bottom, 0px));
 }
 
 .wa-input-bar {
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--space-1, 6px) + env(safe-area-inset-bottom, 0px));
 }
 
 /* ── 10. Overscroll Contain — Messages Area ── */
@@ -359,23 +369,77 @@
   }
 }
 
-/* ── 18. Slim Scrollbars for WhatsApp ── */
-.wa-slim-scroll {
+/* ── 18. Visible Custom Scrollbars for WhatsApp ── */
+.wa-slim-scroll,
+.wa-messages-scroll,
+.whatsapp-messages-area {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 30%, transparent) transparent;
+  scrollbar-color: rgba(100, 116, 139, 0.6) rgba(0, 0, 0, 0.05);
 }
 
-.wa-slim-scroll::-webkit-scrollbar {
-  width: 4px;
+.wa-slim-scroll::-webkit-scrollbar,
+.wa-messages-scroll::-webkit-scrollbar,
+.whatsapp-messages-area::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
 }
 
-.wa-slim-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.wa-slim-scroll::-webkit-scrollbar-thumb {
-  background-color: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 30%, transparent);
+.wa-slim-scroll::-webkit-scrollbar-track,
+.wa-messages-scroll::-webkit-scrollbar-track,
+.whatsapp-messages-area::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 9999px;
+}
+
+.wa-slim-scroll::-webkit-scrollbar-thumb,
+.wa-messages-scroll::-webkit-scrollbar-thumb,
+.whatsapp-messages-area::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.6);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+}
+
+.wa-slim-scroll::-webkit-scrollbar-thumb:hover,
+.wa-messages-scroll::-webkit-scrollbar-thumb:hover,
+.whatsapp-messages-area::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.9);
+}
+
+/* Dark mode & Enterprise Theme scrollbar overrides */
+.dark .wa-slim-scroll,
+.dark .wa-messages-scroll,
+.dark .whatsapp-messages-area,
+[data-theme="business-os-enterprise"] .wa-slim-scroll,
+[data-theme="business-os-enterprise"] .wa-messages-scroll,
+[data-theme="business-os-enterprise"] .whatsapp-messages-area {
+  scrollbar-color: rgba(148, 163, 184, 0.65) rgba(255, 255, 255, 0.05);
+}
+
+.dark .wa-slim-scroll::-webkit-scrollbar-track,
+.dark .wa-messages-scroll::-webkit-scrollbar-track,
+.dark .whatsapp-messages-area::-webkit-scrollbar-track,
+[data-theme="business-os-enterprise"] .wa-slim-scroll::-webkit-scrollbar-track,
+[data-theme="business-os-enterprise"] .wa-messages-scroll::-webkit-scrollbar-track,
+[data-theme="business-os-enterprise"] .whatsapp-messages-area::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .wa-slim-scroll::-webkit-scrollbar-thumb,
+.dark .wa-messages-scroll::-webkit-scrollbar-thumb,
+.dark .whatsapp-messages-area::-webkit-scrollbar-thumb,
+[data-theme="business-os-enterprise"] .wa-slim-scroll::-webkit-scrollbar-thumb,
+[data-theme="business-os-enterprise"] .wa-messages-scroll::-webkit-scrollbar-thumb,
+[data-theme="business-os-enterprise"] .whatsapp-messages-area::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.65);
+}
+
+.dark .wa-slim-scroll::-webkit-scrollbar-thumb:hover,
+.dark .wa-messages-scroll::-webkit-scrollbar-thumb:hover,
+.dark .whatsapp-messages-area::-webkit-scrollbar-thumb:hover,
+[data-theme="business-os-enterprise"] .wa-slim-scroll::-webkit-scrollbar-thumb:hover,
+[data-theme="business-os-enterprise"] .wa-messages-scroll::-webkit-scrollbar-thumb:hover,
+[data-theme="business-os-enterprise"] .whatsapp-messages-area::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(226, 232, 240, 0.9);
 }
 
 /* ── 19. Reduced Motion — Disable All Animations ── */
@@ -433,7 +497,7 @@
 /* ── 22. Scrollbar Gutter Stabilization (Prevent layout shift) ── */
 .wa-messages-scroll,
 .wa-slim-scroll {
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 
 /* ── 23. Emoji Picker Bottom Sheet Drawer on Mobile ── */
@@ -467,25 +531,30 @@
 @media (min-width: 1024px) {
   .wa-panel-sidebar {
     border-right: 1px solid color-mix(in srgb, var(--shell-control-border) 100%, transparent) !important;
+    border-left: none !important;
+  }
+  [dir="rtl"] .wa-panel-sidebar {
+    border-left: 1px solid color-mix(in srgb, var(--shell-control-border) 100%, transparent) !important;
+    border-right: none !important;
   }
 }
 
 /* ── 26. Custom Messages Area Background ── */
 .whatsapp-messages-area {
-  background-color: #ffffff !important; /* Pure white in light mode */
+  background-color: oklch(1.000 0.000 0.0) !important; /* Pure white in light mode */
   background-image: none !important;
 }
 
 :root {
-  --whatsapp-message-incoming: #f0f2f5;
+  --whatsapp-message-incoming: oklch(0.960 0.005 258.3);
 }
 
 .dark {
-  --whatsapp-message-incoming: #1f2c33 !important;
+  --whatsapp-message-incoming: oklch(0.284 0.022 232.0) !important;
 }
 
 .dark .whatsapp-messages-area {
-  background-color: #0b141a !important; /* Dark WhatsApp slate-green */
+  background-color: oklch(0.185 0.018 238.2) !important; /* Dark WhatsApp slate-green */
   background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 0) !important;
   background-size: 20px 20px !important;
 }
@@ -498,6 +567,27 @@
 @media (min-width: 1024px) {
   .routing-workspace-grid {
     grid-template-columns: 320px 1fr;
+  }
+}
+
+/* ── Chat Right Panel — Mobile Overlay ── */
+@media (max-width: 1023px) {
+  .chat-right-panel-container {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-card, hsl(0 0% 100%));
+    animation: wa-tray-up 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .chat-right-panel-container > aside {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-left: none !important;
+    flex: 1;
+    min-height: 0;
   }
 }
 

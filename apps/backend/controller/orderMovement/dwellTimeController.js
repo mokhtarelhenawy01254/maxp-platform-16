@@ -1,4 +1,4 @@
-﻿const core = require('../../services/orderMovementCore');
+const core = require('../../services/orderMovementCore');
 
 const DWELL_OUTLIER_HOURS = 2160;
 
@@ -31,7 +31,7 @@ const buildCycleTime = (cycleValues) => {
 const handler = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح' });
 
     const { startDate, endDate, mode } = req.query;
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
@@ -102,7 +102,7 @@ const handler = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪¡┘ä┘è┘ä ╪▓┘à┘å ╪º┘ä┘à┘â┘ê╪½' });
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحليل زمن المكوث' });
   }
 };
 

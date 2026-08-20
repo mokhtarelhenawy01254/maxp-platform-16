@@ -1,4 +1,4 @@
-﻿import { AppCardSkeleton, SectionSkeleton, HeroBannerSkeleton } from "./Skeletons";
+import { AppCardSkeleton, SectionSkeleton, HeroBannerSkeleton } from "./Skeletons";
 import { AppCard } from "./AppCard";
 import { SearchBar } from "./SearchBar";
 import { CategoryBar } from "./CategoryBar";

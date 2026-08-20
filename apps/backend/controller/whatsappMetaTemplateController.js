@@ -38,6 +38,53 @@ async function listMetaTemplates(req, res) {
   }
 }
 
+// رفع وسيط (صورة/فيديو/مستند) لاستخدامه في HEADER قالب ميتا — يرجع الـ handle المطلوب
+// في example.header_handle عند إنشاء القالب، أو كـ header parameter عند الإرسال.
+async function uploadTemplateMedia(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId مطلوب' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'الملف مطلوب (multipart field: file)' });
+    }
+
+    const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+    const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+      where: { id: targetSessionId, companyId }
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'الجلسة غير موجودة' });
+    }
+
+    const handle = await MetaCloudProvider.uploadTemplateMedia(
+      targetSessionId,
+      req.file.buffer,
+      req.file.mimetype,
+      req.file.originalname
+    );
+
+    if (!handle) {
+      return res.status(500).json({ error: 'فشل رفع الوسائط إلى ميتا' });
+    }
+
+    res.json({
+      success: true,
+      mediaId: handle,
+      mediaType: req.file.mimetype,
+      fileName: req.file.originalname,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Error uploading template media:', error);
+    res.status(500).json({ error: error.message || 'حدث خطأ أثناء رفع الوسائط' });
+  }
+}
+
 async function createMetaTemplate(req, res) {
   try {
     const { companyId } = req.user;
@@ -80,7 +127,7 @@ async function createMetaTemplate(req, res) {
 async function updateMetaTemplate(req, res) {
   try {
     const { companyId } = req.user;
-    const { sessionId, templateName } = req.body;
+    const { sessionId, templateName, templateId } = req.body;
 
     if (!sessionId || !templateName) {
       return res.status(400).json({ error: 'sessionId و templateName مطلوبان' });
@@ -97,14 +144,25 @@ async function updateMetaTemplate(req, res) {
 
     const updateData = {};
     if (req.body.components) updateData.components = req.body.components;
-    if (req.body.language) updateData.language = req.body.language;
     if (req.body.category) updateData.category = req.body.category;
 
-    if (!updateData.components && !updateData.language && !updateData.category) {
-      return res.status(400).json({ error: 'يجب توفير components أو language أو category للتحديث' });
+    if (!updateData.components && !updateData.category) {
+      return res.status(400).json({ error: 'يجب توفير components أو category للتحديث' });
     }
 
-    const result = await MetaCloudProvider.updateTemplate(targetSessionId, templateName, updateData);
+    // تعديل قالب في ميتا يتم عبر الـ numeric template ID (POST /{id}).
+    // إن لم يُرسل templateId، نحلّه من الاسم عبر listTemplates.
+    let resolvedTemplateId = templateId;
+    if (!resolvedTemplateId) {
+      const templates = await MetaCloudProvider.listTemplates(targetSessionId);
+      const found = (templates || []).find((t) => t.name === templateName);
+      resolvedTemplateId = found && found.id;
+    }
+    if (!resolvedTemplateId) {
+      return res.status(400).json({ error: 'لم يتم العثور على القالب في ميتا (templateId مطلوب)' });
+    }
+
+    const result = await MetaCloudProvider.updateTemplate(targetSessionId, resolvedTemplateId, updateData);
     res.json({ success: true, result });
   } catch (error) {
     console.error('Error updating Meta template:', error);
@@ -232,5 +290,6 @@ module.exports = {
   createMetaTemplate,
   updateMetaTemplate,
   deleteMetaTemplate,
-  broadcastMetaTemplate
+  broadcastMetaTemplate,
+  uploadTemplateMedia
 };

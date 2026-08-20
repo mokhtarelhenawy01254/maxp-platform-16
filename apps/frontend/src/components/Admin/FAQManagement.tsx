@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +29,17 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, ThumbsUp, ThumbsDown, X } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  ThumbsUp,
+  ThumbsDown,
+  X,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 
 interface FAQ {

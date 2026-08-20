@@ -1,4 +1,4 @@
-﻿const TurboService = require('../../services/turboService');
+const TurboService = require('../../services/turboService');
 
 const addTicket = async (req, res) => {
   try {
@@ -19,7 +19,7 @@ const addTicket = async (req, res) => {
     if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message });
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error adding ticket:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error adding ticket:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to add ticket' });
   }
 };
@@ -32,7 +32,7 @@ const getInquiriesTypes = async (req, res) => {
     const result = await turboService.getInquiriesTypes();
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting inquiries types:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting inquiries types:', error);
     const isConfigError = error.message?.includes('Turbo is not enabled') || error.message?.includes('not configured');
     res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get inquiries types', types: [] });
   }
@@ -47,7 +47,7 @@ const getTickets = async (req, res) => {
     const result = await turboService.getTickets(parseInt(page), parseInt(per_page));
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting tickets:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting tickets:', error);
     const isConfigError = error.message?.includes('Turbo is not enabled') || error.message?.includes('not configured');
     res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get tickets', tickets: [], pagination: { total: 0, page: 1, per_page: 10, pages: 0 } });
   }
@@ -64,7 +64,7 @@ const getTicket = async (req, res) => {
     if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message, ticket: null });
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting ticket:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting ticket:', error);
     const isConfigError = error.message?.includes('Turbo is not enabled') || error.message?.includes('not configured');
     res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get ticket', ticket: null });
   }
@@ -81,7 +81,7 @@ const getTicketLog = async (req, res) => {
     if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message, ticket: null, logs: [] });
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting ticket log:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting ticket log:', error);
     const isConfigError = error.message?.includes('Turbo is not enabled') || error.message?.includes('not configured');
     res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get ticket log', ticket: null, logs: [] });
   }
@@ -103,7 +103,7 @@ const replyToTicket = async (req, res) => {
     if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message });
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error replying to ticket:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error replying to ticket:', error);
     const isConfigError = error.message?.includes('Turbo is not enabled') || error.message?.includes('not configured');
     res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to reply to ticket' });
   }
@@ -117,7 +117,7 @@ const getUnreadTicketsCount = async (req, res) => {
     const result = await turboService.getUnreadTicketsCount();
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error getting unread tickets count:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error getting unread tickets count:', error);
     const isConfigError = error.message?.includes('Turbo is not enabled') || error.message?.includes('not configured');
     res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get unread tickets count', counts: { tickets: 0, missions: 0, orders: 0 } });
   }

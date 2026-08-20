@@ -1,4 +1,4 @@
-﻿diff --git a/node_modules/@whiskeysockets/baileys/lib/Utils/history.js b/node_modules/@whiskeysockets/baileys/lib/Utils/history.js
+diff --git a/node_modules/@whiskeysockets/baileys/lib/Utils/history.js b/node_modules/@whiskeysockets/baileys/lib/Utils/history.js
 index def9742..8d90649 100644
 --- a/node_modules/@whiskeysockets/baileys/lib/Utils/history.js
 +++ b/node_modules/@whiskeysockets/baileys/lib/Utils/history.js

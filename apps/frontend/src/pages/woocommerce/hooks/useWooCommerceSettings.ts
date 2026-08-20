@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import { Settings } from "../types";
 import tokenManager from "../../../utils/tokenManager";
 
@@ -70,7 +71,7 @@ export const useWooCommerceSettings = () => {
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
-      toast.error("فشل جلب الإعدادات");
+      tToast.error("wooSettings.failed_fetch_3c76");
     }
   }, []);
 
@@ -125,7 +126,7 @@ export const useWooCommerceSettings = () => {
       (settingsForm.consumerKey && settingsForm.consumerSecret);
 
     if (!settingsForm.storeUrl || !hasKeys) {
-      toast.error("جميع بيانات الاتصال مطلوبة");
+      tToast.error("wooSettings.msg_3d1d");
       return;
     }
 
@@ -141,13 +142,13 @@ export const useWooCommerceSettings = () => {
 
       const data = await response.json();
       if (data.success) {
-        toast.success("تم حفظ الإعدادات بنجاح");
+        tToast.success("wooSettings.success_save_1406");
         loadSettings();
       } else {
         toast.error(data.message);
       }
     } catch (error: any) {
-      toast.error("خطأ في حفظ الإعدادات");
+      tToast.error("wooSettings.error_save_1cdd");
       console.error(error);
     } finally {
       setLoading(false);
@@ -167,7 +168,7 @@ export const useWooCommerceSettings = () => {
       (!useStoredCredentials &&
         (!settingsForm.consumerKey || !settingsForm.consumerSecret))
     ) {
-      toast.error("يرجى ملء جميع الحقول أولاً");
+      tToast.error("wooSettings.msg_3f49");
       return;
     }
 
@@ -197,7 +198,7 @@ export const useWooCommerceSettings = () => {
         toast.error(`❌ فشل الاتصال: ${data.message}`);
       }
     } catch (error: any) {
-      toast.error("❌ خطأ في اختبار الاتصال");
+      tToast.error("wooSettings.msg_c337");
     } finally {
       setTestingConnection(false);
     }
@@ -207,13 +208,13 @@ export const useWooCommerceSettings = () => {
     const urlToUse = customNgrokUrl || ngrokUrl;
 
     if (!settingsForm.id) {
-      toast.error("احفظ إعدادات المتجر أولاً قبل تثبيت Webhooks");
+      tToast.error("wooSettings.msg_6f64");
       return;
     }
 
     // Check for ngrok on localhost
     if (window.location.hostname === "localhost" && !urlToUse) {
-      toast.error("يرجى إدخال ngrok URL للاختبار على localhost");
+      tToast.error("wooSettings.msg_032e");
       return;
     }
 
@@ -248,7 +249,7 @@ export const useWooCommerceSettings = () => {
         toast.error(data.message);
       }
     } catch (error: any) {
-      toast.error("خطأ في إعداد Webhooks");
+      tToast.error("wooSettings.msg_d72d");
     } finally {
       setLoading(false);
     }
@@ -267,14 +268,14 @@ export const useWooCommerceSettings = () => {
 
       const data = await response.json();
       if (data.success) {
-        toast.success("تم الغاء الربط بنجاح");
+        tToast.success("wooSettings.msg_3bc6");
         if (selectedSettingsId === id) setSelectedSettingsId(null);
         loadSettings();
       } else {
         toast.error(data.message);
       }
     } catch (error: any) {
-      toast.error("خطأ في الغاء الربط");
+      tToast.error("wooSettings.msg_912d");
     } finally {
       setLoading(false);
     }
@@ -309,7 +310,7 @@ export const useWooCommerceSettings = () => {
       return data;
     } catch (error) {
       console.error("Reset error:", error);
-      toast.error("فشل عملية إعادة الضبط");
+      tToast.error("wooSettings.msg_df71");
       return { success: false };
     } finally {
       setLoading(false);

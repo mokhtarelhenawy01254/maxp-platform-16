@@ -1,8 +1,20 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { format, isToday, isYesterday } from "date-fns";
-import { AlertTriangle, Bot, Check, CheckCheck, Clock3, Download, File, FileText, MapPin, Pencil, Pin, Radio } from 'lucide-react';
+import {
+  AlertTriangle,
+  Bot,
+  Check,
+  CheckCheck,
+  Clock3,
+  Download,
+  FileText,
+  MapPin,
+  Pencil,
+  Radio,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import api from "../../../services/api";
 
 import { cn } from "@/lib/utils";
@@ -21,6 +33,23 @@ interface MessageBubbleProps {
   onQuotedMessageClick?: (quotedMessageId: string) => void;
   onCorrect?: () => void;
   highlighted?: boolean;
+}
+
+function stripBaileysButtonBox(content: string, footer?: string | null): string {
+  if (!content) return content;
+  let result = content;
+  const boxIdx = result.indexOf("┌");
+  if (boxIdx !== -1) {
+    result = result.slice(0, boxIdx).replace(/\s*\n+$/, "");
+  }
+  if (footer) {
+    const marker = `_${footer}_`;
+    const fIdx = result.lastIndexOf(marker);
+    if (fIdx !== -1) {
+      result = result.slice(0, fIdx).replace(/\s*\n+$/, "");
+    }
+  }
+  return result.trim();
 }
 
 function shouldShowDateSeparator(
@@ -84,7 +113,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
           sessionId,
           correction: correctionText,
         });
-        toast.success('تم تصحيح الرد وتعليم الوكيل ✅');
+        tToast.success("MessageBubble.msg_fbfd");
         setIsEditing(false);
         setCorrectionText('');
         onCorrect?.();
@@ -108,6 +137,92 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
     };
 
     const renderMessageContent = () => {
+      // ── Parse interactive buttons (quick replies / order confirm) ──
+      let interactiveButtons: { id?: string; text: string; url?: string | null; type?: string | null }[] | null = null;
+      let interactiveFooter: string | null = null;
+      try {
+        if (message.interactiveData) {
+          const parsed = JSON.parse(message.interactiveData);
+          let rawButtons = parsed?.buttons;
+          // Meta templates store buttons inside components → { type: "BUTTONS", buttons: [...] }
+          if (!Array.isArray(rawButtons) || rawButtons.length === 0) {
+            const buttonsComponent = Array.isArray(parsed?.components)
+              ? parsed.components.find((c: any) => String(c?.type || "").toUpperCase() === "BUTTONS")
+              : null;
+            if (buttonsComponent?.buttons && Array.isArray(buttonsComponent.buttons)) {
+              rawButtons = buttonsComponent.buttons;
+            }
+          }
+          if (Array.isArray(rawButtons) && rawButtons.length > 0) {
+            interactiveButtons = rawButtons
+              .map((b: any) => ({
+                id: b?.id,
+                text: b?.text || b?.title || b?.displayText || b?.buttonText?.displayText || "",
+                url: b?.url || null,
+                type: b?.type || null,
+              }))
+              .filter((b: { text: string }) => b.text.trim());
+          }
+          // Meta template buttons/footer stored separately under templateButtons/templateFooter
+          if ((!interactiveButtons || interactiveButtons.length === 0) && Array.isArray(parsed?.templateButtons)) {
+            interactiveButtons = parsed.templateButtons
+              .map((b: any) => ({
+                id: b?.id,
+                text: b?.text || "",
+                url: b?.url || null,
+                type: b?.type || null,
+              }))
+              .filter((b: { text: string }) => b.text.trim());
+          }
+          // Footer: explicit field, Meta template FOOTER component, or templateFooter
+          if (parsed?.footer) {
+            interactiveFooter = parsed.footer;
+          } else if (Array.isArray(parsed?.components)) {
+            const footerComponent = parsed.components.find((c: any) => String(c?.type || "").toUpperCase() === "FOOTER");
+            if (footerComponent?.text) interactiveFooter = footerComponent.text;
+          }
+          if (!interactiveFooter && parsed?.templateFooter) {
+            interactiveFooter = parsed.templateFooter;
+          }
+        }
+      } catch {
+        interactiveButtons = null;
+      }
+
+      const renderButtonsBlock = () => {
+        if (!interactiveButtons || interactiveButtons.length === 0) return null;
+        return (
+          <div className="mt-1.5 space-y-1.5">
+            {interactiveButtons.map((btn, i) =>
+              btn.url ? (
+                <a
+                  key={btn.id || i}
+                  href={btn.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-2 text-center text-sm font-semibold text-[color:var(--color-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
+                >
+                  {btn.text}
+                  <span className="text-[color:var(--color-muted-foreground)]">↗</span>
+                </a>
+              ) : (
+                <div
+                  key={btn.id || i}
+                  className="flex items-center justify-center rounded-lg border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-2 text-center text-sm font-semibold text-[color:var(--color-foreground)]"
+                >
+                  {btn.text}
+                </div>
+              )
+            )}
+            {interactiveFooter ? (
+              <p className="pt-0.5 text-center text-xs text-[color:var(--color-muted-foreground)]">
+                {interactiveFooter}
+              </p>
+            ) : null}
+          </div>
+        );
+      };
+
       if (message.mediaUrl === "FAILED_DOWNLOAD") {
         return (
           <div className="flex items-center gap-2 rounded-xl border border-rose-300/70 bg-rose-500/10 px-3 py-2 text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-200">
@@ -235,7 +350,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         } catch {
           return (
             <LinkifiedText
-              text={message.content}
+              text={message.content ?? ''}
               className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
             />
           );
@@ -276,37 +391,55 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
               />
             ) : null}
+            {renderButtonsBlock()}
+          </div>
+        );
+      }
+
+      if (message.messageType === "BUTTONS") {
+        const bodyText = interactiveButtons
+          ? stripBaileysButtonBox(message.content || "", interactiveFooter)
+          : (message.content || "");
+        return (
+          <div className="space-y-1.5">
+            {bodyText ? (
+              <LinkifiedText
+                text={bodyText}
+                className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
+              />
+            ) : null}
+            {renderButtonsBlock()}
           </div>
         );
       }
 
       return (
         <LinkifiedText
-          text={message.content}
+          text={message.content ?? ''}
           className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
         />
       );
     };
 
     return (
-      <div className="w-full px-2 py-0.5">
+      <div className="w-full px-space-2 py-space-0">
         {shouldShowDateSeparator(message, previousMessage) ? (
-          <div className="mb-2 flex justify-center">
-            <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-1 text-xs text-[color:var(--color-muted-foreground)] shadow-sm">
+          <div className="mb-space-2 flex justify-center">
+            <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-space-3 py-space-1 text-xs text-[color:var(--color-muted-foreground)] shadow-xs">
               {getDateSeparatorText(message.timestamp)}
             </div>
           </div>
         ) : null}
 
-        <div
-          className={cn(
-            "flex w-full px-1.5",
-            message.fromMe ? "justify-end" : "justify-start",
-          )}
-        >
           <div
             className={cn(
-              "wa-bubble wa-bubble-enter min-w-[5rem] cursor-context-menu rounded-xl px-2.5 py-1.5 shadow-sm sm:px-3 sm:py-2",
+              "flex w-full px-space-1",
+              message.fromMe ? "justify-end" : "justify-start",
+            )}
+          >
+            <div
+              className={cn(
+                "wa-bubble wa-bubble-enter min-w-[5rem] cursor-context-menu rounded-xl px-space-2 py-space-1 shadow-xs sm:px-space-3 sm:py-space-2",
               "border border-transparent",
               message.fromMe
               ? "rounded-tr-[6px] bg-[var(--whatsapp-message-outgoing)] text-[var(--whatsapp-message-outgoing-text)]"
@@ -315,9 +448,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         )}
             onContextMenu={(event) => onContextMenu(event, message)}
           >
-            {isGroup && !message.fromMe && message.participant ? (
+            {isGroup && !message.fromMe && (message.participant || message.participantName) ? (
               <p className="mb-1 text-xs font-semibold text-[color:var(--color-secondary)]">
-                {getParticipantName(message.participant)}
+                {message.participantName || getParticipantName(message.participant!)}
               </p>
             ) : null}
 

@@ -21,7 +21,8 @@ const MESSAGE_STATUS_RANK = {
   PENDING: 0,
   SENT: 1,
   DELIVERED: 2,
-  READ: 3
+  READ: 3,
+  FAILED: 4
 };
 
 function shouldApplyMessageStatus(currentStatus, nextStatus) {
@@ -44,6 +45,7 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
   const updatePayload = {
     pushName: pushName || undefined,
     lastMessageAt: new Date(),
+    lastMessageIsFromMe: isOutgoing,
     lastCustomerMessageAt: isOutgoing ? undefined : new Date(),
     totalMessages: { increment: 1 },
     unreadCount: isOutgoing ? undefined : { increment: 1 },
@@ -58,6 +60,7 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
     phoneNumber,
     pushName,
     lastMessageAt: new Date(),
+    lastMessageIsFromMe: isOutgoing,
     lastCustomerMessageAt: isOutgoing ? undefined : new Date(),
     totalMessages: 1,
     unreadCount: isOutgoing ? 0 : 1,
@@ -149,7 +152,7 @@ async function saveIncomingMessage(payload) {
       sessionId,
       normalizedJid,
       {
-        sessionId,
+        messageId,
         type: messageType,
         content,
         mediaUrl,
@@ -270,8 +273,137 @@ async function saveIncomingMessage(payload) {
     console.error('❌ Error sending WhatsApp notification:', error.message);
   }
 
-  // ── AI auto-reply with debounce ────────────────────────────────────────────
+  // ── Bot automation (no-AI rules: welcome / keyword / default) ──────────────
+  let botHandled = false;
   if (content && messageType === 'TEXT' && syncedCustomer?.companyId) {
+    try {
+      const { isUnsubscribeText, isUnsubscribed, recordUnsubscribe, UNSUBSCRIBE_CONFIRMATION } = require('../botUnsubscribeService');
+      const prisma = getSharedPrismaClient();
+
+      const alreadyUnsubscribed = await isUnsubscribed(syncedCustomer.companyId, syncedCustomer.id, 'WHATSAPP');
+      const isStop = isUnsubscribeText(content);
+      if (isStop || alreadyUnsubscribed) {
+        if (isStop) {
+          await recordUnsubscribe(syncedCustomer.companyId, syncedCustomer.id, 'WHATSAPP', content.slice(0, 200));
+          await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, UNSUBSCRIBE_CONFIRMATION, {
+            isAIResponse: false,
+          });
+          if (syncedConversation?.id) {
+            prisma.message.create({
+              data: {
+                conversationId: syncedConversation.id,
+                content: UNSUBSCRIBE_CONFIRMATION,
+                type: 'TEXT',
+                isFromCustomer: false,
+                metadata: JSON.stringify({ platform: 'whatsapp', source: 'unsubscribe_reply' }),
+              },
+            }).catch(() => {});
+          }
+        }
+        botHandled = true;
+      }
+
+      const { evaluateInboundBotReply } = require('../botRuleEngine');
+      const firstContact = (await prisma.whatsAppMessage.count({
+        where: { sessionId, remoteJid: normalizedJid }
+      })) <= 1;
+
+      const evaluation = await evaluateInboundBotReply({
+        companyId: syncedCustomer.companyId,
+        text: content,
+        channel: 'WHATSAPP',
+        customer: {
+          firstName: syncedCustomer.firstName,
+          lastName: syncedCustomer.lastName,
+        },
+        isFirstMessage: firstContact,
+      });
+
+      if (evaluation?.kind && (evaluation.replyText || evaluation.mediaUrl)) {
+        const { buildWhatsAppButtons } = require('../botMessageSender');
+        const waButtons = buildWhatsAppButtons(evaluation.buttons);
+        if (evaluation.replyType === 'IMAGE' && evaluation.mediaUrl) {
+          await WhatsAppMessageHandler.sendImage(sessionId, normalizedJid, evaluation.mediaUrl, evaluation.replyText || '', {
+            isAIResponse: false,
+          });
+        } else if (waButtons.length > 0) {
+          await WhatsAppMessageHandler.sendButtons(
+            sessionId,
+            normalizedJid,
+            evaluation.replyText || '',
+            waButtons,
+            { isAIResponse: false }
+          );
+        } else {
+          await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, evaluation.replyText, {
+            isAIResponse: false,
+          });
+        }
+        if (syncedConversation?.id) {
+          prisma.message.create({
+            data: {
+              conversationId: syncedConversation.id,
+              content: evaluation.replyText,
+              type: 'TEXT',
+              isFromCustomer: false,
+              metadata: JSON.stringify({
+                platform: 'whatsapp',
+                source: evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'),
+                ruleId: evaluation.ruleId || null,
+              }),
+            },
+          }).catch((e) => console.error('[BOT-RULES] Failed to save bot reply:', e.message));
+        }
+        botHandled = true;
+      }
+
+      if (!botHandled && syncedCustomer?.id) {
+        const { onCustomerReply } = require('../botFlowRuntime');
+        const flowResult = await onCustomerReply({
+          companyId: syncedCustomer.companyId,
+          customerId: syncedCustomer.id,
+          channel: 'WHATSAPP',
+          text: content,
+          sendStep: async (step) => {
+            const { buildWhatsAppButtons } = require('../botMessageSender');
+            const waButtons = buildWhatsAppButtons(step.buttons);
+            if (waButtons.length > 0) {
+              await WhatsAppMessageHandler.sendButtons(sessionId, normalizedJid, step.content, waButtons, {
+                isAIResponse: false,
+              });
+            } else if (step.mediaUrl) {
+              await WhatsAppMessageHandler.sendImage(sessionId, normalizedJid, step.mediaUrl, step.content, {
+                isAIResponse: false,
+              });
+            } else {
+              await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, step.content, {
+                isAIResponse: false,
+              });
+            }
+            if (syncedConversation?.id) {
+              prisma.message.create({
+                data: {
+                  conversationId: syncedConversation.id,
+                  content: step.content,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  metadata: JSON.stringify({ platform: 'whatsapp', source: 'flow_step' }),
+                },
+              }).catch(() => {});
+            }
+          },
+        });
+        if (flowResult?.handled) {
+          botHandled = true;
+        }
+      }
+    } catch (e) {
+      console.error('❌ [BOT-RULES] Error in WhatsApp bot automation:', e.message);
+    }
+  }
+
+  // ── AI auto-reply with debounce ────────────────────────────────────────────
+  if (content && messageType === 'TEXT' && syncedCustomer?.companyId && !botHandled) {
     setImmediate(async () => {
       try {
         const { getSharedPrismaClient } = require('../sharedDatabase');
@@ -460,8 +592,10 @@ async function saveIncomingMessage(payload) {
   return savedMessage;
 }
 
-async function updateMessageStatus(companyId, messageId, status) {
+async function updateMessageStatus(companyId, messageId, status, options = {}) {
   const prisma = getSharedPrismaClient();
+  const { errors = [], recipientId = null, timestamp } = options;
+
   const existingMessages = await prisma.whatsAppMessage.findMany({
     where: { messageId },
     select: {
@@ -522,6 +656,59 @@ async function updateMessageStatus(companyId, messageId, status) {
       data: { status: 'failed', failureReason: 'Delivery failed' }
     });
     if (count > 0) updateBroadcastCampaignCount(messageId, 'failedCount');
+  }
+
+  // 🆕 SYNC-NOTIFICATION-LOG: تحديث whatsapp_notification_logs بالحالة الحقيقية
+  // من Meta (delivered/read/failed). الـ messageId من الـ webhook (wamid) يطابق
+  // whatsappMessageId المحفوظ وقت الإرسال — فنربط الاثنين للحصول على الحالة الفعلية.
+  try {
+    const logMatch = await prisma.whatsAppNotificationLog.findFirst({
+      where: { whatsappMessageId: messageId },
+      select: { id: true, status: true }
+    });
+
+    if (logMatch) {
+      const logUpdate = { updatedAt: new Date() };
+      let hasStatusChange = false;
+      if (status === 'FAILED') {
+        const firstError = errors[0] || {};
+        logUpdate.status = 'FAILED';
+        logUpdate.failedAt = timestamp ? new Date(timestamp) : new Date();
+        logUpdate.errorCode = firstError.code != null ? String(firstError.code) : null;
+        logUpdate.failureReason =
+          firstError.error_data?.details ||
+          firstError.message ||
+          firstError.title ||
+          `Meta delivery failed (code: ${firstError.code ?? 'unknown'})`;
+        hasStatusChange = true;
+      } else if (status === 'DELIVERED') {
+        // نُرقّي من SENT إلى DELIVERED فقط (ممنوع التراجع من READ/FAILED)
+        if (logMatch.status === 'SENT' || logMatch.status === 'PENDING') {
+          logUpdate.status = 'DELIVERED';
+          logUpdate.deliveredAt = timestamp ? new Date(timestamp) : new Date();
+          hasStatusChange = true;
+        }
+      } else if (status === 'READ') {
+        // READ يتضمن DELIVERED — نُرقّي أي حالة سابقة
+        if (logMatch.status !== 'FAILED') {
+          logUpdate.status = 'READ';
+          logUpdate.readAt = timestamp ? new Date(timestamp) : new Date();
+          if (!logUpdate.deliveredAt) logUpdate.deliveredAt = logUpdate.readAt;
+          hasStatusChange = true;
+        }
+      }
+      // SENT: لا نغيّر شيئاً — الإرسال مسجّل بالفعل وقت الإنشاء
+
+      // نتخطّى الـ update لو مفيش تغيير فعلي في الحالة (مثل FAILED ثم DELIVERED لاحقاً)
+      if (hasStatusChange) {
+        await prisma.whatsAppNotificationLog.updateMany({
+          where: { id: logMatch.id },
+          data: logUpdate
+        });
+      }
+    }
+  } catch (logSyncErr) {
+    console.error('❌ [UPDATE-MSG-STATUS] Failed to sync notification log:', logSyncErr.message);
   }
 
   const io = getIO();

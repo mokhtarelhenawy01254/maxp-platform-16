@@ -1,7 +1,11 @@
-import { Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import {
   ShippingMethod,

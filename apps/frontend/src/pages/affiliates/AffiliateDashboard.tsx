@@ -1,10 +1,10 @@
-import { Activity as ChartBarIcon, DollarSign as CurrencyDollarIcon, ShoppingBag as ShoppingBagIcon, Circle as UserGroupIcon, Link as LinkIcon, Circle as ClipboardDocumentListIcon, Circle as ArrowTrendingUpIcon, Edit as PencilSquareIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCurrency } from "../../hooks/useCurrency";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { useTheme } from "../../hooks/useTheme";
 import { createStorageKey, getWithExpiry, setWithExpiry } from "../../utils/storage";
 import {
@@ -13,7 +13,16 @@ import {
   type AffiliateStoreCompany,
 } from "./affiliateStoreLinks";
 import { copyAffiliateText } from "./affiliateClipboard";
-;
+import {
+  ChartBarIcon,
+  CurrencyDollarIcon,
+  ShoppingBagIcon,
+  UserGroupIcon,
+  LinkIcon,
+  ClipboardDocumentListIcon,
+  ArrowTrendingUpIcon,
+  PencilSquareIcon,
+} from "@heroicons/react/24/outline";
 
 interface AffiliateStats {
   totalEarnings: number;
@@ -191,15 +200,15 @@ const AffiliateDashboard: React.FC = () => {
   const copyToClipboard = async (text: string) => {
     const copied = await copyAffiliateText(text);
     if (copied) {
-      toast.success("تم نسخ الرابط!");
+      tToast.success("AffiliateDashboard.msg_8552");
       return;
     }
-    toast.error("لم نتمكن من النسخ تلقائيا، انسخ الرابط يدويا من الحقل.");
+    tToast.error("AffiliateDashboard.msg_6c14");
   };
 
   const uploadReplacementDocument = async () => {
     if (!affiliate || !replacementDocument) {
-      toast.error("اختر ملفًا صالحًا أولاً");
+      tToast.error("AffiliateDashboard.msg_ea5b");
       return;
     }
 
@@ -216,7 +225,7 @@ const AffiliateDashboard: React.FC = () => {
       if (response.data.success && response.data.data) {
         setAffiliate(response.data.data);
         setReplacementDocument(null);
-        toast.success("تم رفع النسخة الجديدة وبانتظار مراجعة الإدارة");
+        tToast.success("AffiliateDashboard.msg_e5e2");
       }
     } catch (error: unknown) {
       toast.error(

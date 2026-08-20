@@ -488,31 +488,51 @@ exports.installCompanyCoverageApp = async (req, res) => {
  * @desc Create new marketplace app
  * @access Super Admin
  */
+const generateSlug = (name) => {
+  const base = String(name || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (base) return base;
+  return `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
 exports.createApp = async (req, res) => {
   try {
     const body = req.body;
+
+    if (!body.name || !String(body.name).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'اسم التطبيق مطلوب'
+      });
+    }
 
     // Only pick fields that exist in the Prisma MarketplaceApp model
     const ALLOWED_FIELDS = [
       'slug', 'name', 'description', 'logo', 'images',
       'monthlyPrice', 'yearlyPrice', 'pricingModel', 'unitPrice', 'unitName',
+      'ppuBillingMethod',
       'features', 'isActive', 'isPublic', 'isFeatured', 'isPopular',
       'requiredApps', 'trialDays', 'mainRoute', 'adminRoute',
-      'category', 'icon', 'coverImage', 'engineCompatibility',
+      'category', 'icon', 'coverImage', 'engineCompatibility', 'isAutoInstall',
     ];
     const appData = {};
     for (const key of ALLOWED_FIELDS) {
       if (key in body) appData[key] = body[key];
     }
 
-    // Generate slug from name if not provided
-    if (!appData.slug && appData.name) {
-      appData.slug = appData.name
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+    // Generate slug from name if not provided (fallback for non-latin names)
+    if (!appData.slug) {
+      appData.slug = generateSlug(appData.name);
     }
+
+    // Ensure required non-null model fields have valid values
+    if (appData.description == null) appData.description = String(body.name).trim() || '';
+    if (appData.monthlyPrice == null) appData.monthlyPrice = 0;
+    if (appData.yearlyPrice == null) appData.yearlyPrice = 0;
 
     // Ensure numeric fields are correctly typed
     if (appData.monthlyPrice != null) appData.monthlyPrice = parseFloat(appData.monthlyPrice);
@@ -554,9 +574,10 @@ exports.updateApp = async (req, res) => {
     const ALLOWED_FIELDS = [
       'slug', 'name', 'description', 'logo', 'images',
       'monthlyPrice', 'yearlyPrice', 'pricingModel', 'unitPrice', 'unitName',
+      'ppuBillingMethod',
       'features', 'isActive', 'isPublic', 'isFeatured', 'isPopular',
       'requiredApps', 'trialDays', 'mainRoute', 'adminRoute',
-      'category', 'icon', 'coverImage', 'engineCompatibility',
+      'category', 'icon', 'coverImage', 'engineCompatibility', 'isAutoInstall',
     ];
     const updateData = {};
     for (const key of ALLOWED_FIELDS) {
@@ -624,7 +645,7 @@ exports.deleteApp = async (req, res) => {
     if (app._count.installations > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete app: installed by ${app._count.installations} company(ies). Uninstall it first.`
+        message: `لا يمكن حذف الأداة: مثبتة لدى ${app._count.installations} شركة. قم بإلغاء التثبيت أولاً.`
       });
     }
 
@@ -825,8 +846,19 @@ exports.createBundle = async (req, res) => {
     const bundleData = req.body;
     const { apps, ...rest } = bundleData;
 
+    if (!rest.name || !String(rest.name).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'اسم الباقة مطلوب'
+      });
+    }
+
     const payload = {
       ...rest,
+      ...(rest.slug ? {} : { slug: generateSlug(rest.name) }),
+      description: rest.description == null ? String(rest.name).trim() : rest.description,
+      monthlyPrice: rest.monthlyPrice != null ? parseFloat(rest.monthlyPrice) : 0,
+      discount: rest.discount != null ? parseFloat(rest.discount) : 0,
       appIds: rest.appIds || (Array.isArray(apps)
         ? apps.map((app) => (typeof app === 'string' ? app : app.slug || app.id || '')).filter(Boolean)
         : [])
@@ -862,12 +894,15 @@ exports.updateBundle = async (req, res) => {
     const { id } = req.params;
     const { apps, ...rest } = req.body;
 
-    const updateData = {
-      ...rest,
-      appIds: rest.appIds || (Array.isArray(apps)
+    // Only set appIds when explicitly provided, otherwise preserve existing value
+    const updateData = { ...rest };
+    if (rest.appIds !== undefined || Array.isArray(apps)) {
+      updateData.appIds = rest.appIds || (Array.isArray(apps)
         ? apps.map((app) => (typeof app === 'string' ? app : app.slug || app.id || '')).filter(Boolean)
-        : [])
-    };
+        : []);
+    }
+    if (updateData.monthlyPrice != null) updateData.monthlyPrice = parseFloat(updateData.monthlyPrice);
+    if (updateData.discount != null) updateData.discount = parseFloat(updateData.discount);
 
     const bundle = await executeWithRetry(async () => {
       return await getSharedPrismaClient().appBundle.update({

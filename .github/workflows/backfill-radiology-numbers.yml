@@ -1,4 +1,4 @@
-﻿name: Run radiology numbering backfill on server
+name: Run radiology numbering backfill on server
 
 on:
   workflow_dispatch:

@@ -1,6 +1,6 @@
-﻿/**
- * ╪º┘ä┘é┘ê╪º┘ä╪¿ ╪º┘ä┘à╪¬╪┤╪º╪¿┘ç╪⌐ (╪ú┘â╪¬╪▒ ┘à┘å 4 ╪¿┘å┘ü╪│ ╪º┘ä┘à╪¡╪¬┘ê┘ë) ╪¿╪¬╪¬╪╖┘ê┘ë ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï ╪¬╪¡╪¬ ╪▒╪ú╪│ group ┘ê╪º╪¡╪»╪î
- * ┘ê╪¿╪¬╪¬┘ü╪¬╪¡ ╪¿╪╢╪║╪╖╪⌐ "╪╣╪▒╪╢ ╪º┘ä╪¬┘ü╪º╪╡┘è┘ä". ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪¿╪¬╪╕┘ç╪▒ ╪¿╪│ ╪╣┘å╪» ╪º┘ä╪╖┘ä╪¿.
+/**
+ * القوالب المتشابهة (أكتر من 4 بنفس المحتوى) بتتطوى افتراضياً تحت رأس group واحد،
+ * وبتتفتح بضغطة "عرض التفاصيل". المعاينة بتظهر بس عند الطلب.
  */
 import React from "react";
 import { render, screen } from "@testing-library/react";
@@ -34,7 +34,7 @@ function makeStatus(overrides: Record<string, any>) {
   return {
     id: "st1",
     code: "CONFIRMED",
-    name: "┘à╪ñ┘â╪»",
+    name: "مؤكد",
     color: "#3B82F6",
     sortOrder: 1,
     statusType: "order",
@@ -47,24 +47,24 @@ function makeStatus(overrides: Record<string, any>) {
   };
 }
 
-const GENERIC_CONTENT = "┘à╪▒╪¡╪¿╪º╪î ╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿┘â ╪¿┘å╪¼╪º╪¡";
+const GENERIC_CONTENT = "مرحبا، تم تغيير حالة طلبك بنجاح";
 
 const GROUPED_STATUSES = [
-  makeStatus({ id: "st1", code: "CONFIRMED", name: "┘à╪ñ┘â╪»", hasTemplate: true, template: { id: "t1", name: "t1", content: GENERIC_CONTENT, eventType: "CONFIRMED", isActive: true } }),
-  makeStatus({ id: "st2", code: "SHIPPED", name: "╪¬┘à ╪º┘ä╪┤╪¡┘å", statusType: "shipping", sortOrder: 2, hasTemplate: true, template: { id: "t2", name: "t2", content: GENERIC_CONTENT, eventType: "SHIPPED", isActive: true } }),
-  makeStatus({ id: "st3", code: "DELIVERED", name: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à", statusType: "shipping", sortOrder: 3, hasTemplate: true, template: { id: "t3", name: "t3", content: GENERIC_CONTENT, eventType: "DELIVERED", isActive: true } }),
-  makeStatus({ id: "st4", code: "PROCESSING", name: "┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░", statusType: "preparation", sortOrder: 4, hasTemplate: true, template: { id: "t4", name: "t4", content: GENERIC_CONTENT, eventType: "PROCESSING", isActive: true } }),
-  makeStatus({ id: "st5", code: "CANCELLED", name: "┘à┘ä╪║┘è", statusType: "order", sortOrder: 5, hasTemplate: true, template: { id: "t5", name: "t5", content: GENERIC_CONTENT, eventType: "CANCELLED", isActive: true } }),
-  makeStatus({ id: "st6", code: "REFUNDED", name: "┘à╪│╪¬╪▒╪»", statusType: "order", sortOrder: 6, hasTemplate: true, template: { id: "t6", name: "t6", content: GENERIC_CONTENT, eventType: "REFUNDED", isActive: true } }),
+  makeStatus({ id: "st1", code: "CONFIRMED", name: "مؤكد", hasTemplate: true, template: { id: "t1", name: "t1", content: GENERIC_CONTENT, eventType: "CONFIRMED", isActive: true } }),
+  makeStatus({ id: "st2", code: "SHIPPED", name: "تم الشحن", statusType: "shipping", sortOrder: 2, hasTemplate: true, template: { id: "t2", name: "t2", content: GENERIC_CONTENT, eventType: "SHIPPED", isActive: true } }),
+  makeStatus({ id: "st3", code: "DELIVERED", name: "تم التسليم", statusType: "shipping", sortOrder: 3, hasTemplate: true, template: { id: "t3", name: "t3", content: GENERIC_CONTENT, eventType: "DELIVERED", isActive: true } }),
+  makeStatus({ id: "st4", code: "PROCESSING", name: "قيد التنفيذ", statusType: "preparation", sortOrder: 4, hasTemplate: true, template: { id: "t4", name: "t4", content: GENERIC_CONTENT, eventType: "PROCESSING", isActive: true } }),
+  makeStatus({ id: "st5", code: "CANCELLED", name: "ملغي", statusType: "order", sortOrder: 5, hasTemplate: true, template: { id: "t5", name: "t5", content: GENERIC_CONTENT, eventType: "CANCELLED", isActive: true } }),
+  makeStatus({ id: "st6", code: "REFUNDED", name: "مسترد", statusType: "order", sortOrder: 6, hasTemplate: true, template: { id: "t6", name: "t6", content: GENERIC_CONTENT, eventType: "REFUNDED", isActive: true } }),
 ];
 
 const CUSTOM_STATUS = makeStatus({
   id: "st7",
   code: "CUSTOM_STATUS",
-  name: "╪¡╪º┘ä╪⌐ ┘à╪«╪╡╪╡╪⌐",
+  name: "حالة مخصصة",
   sortOrder: 7,
   hasTemplate: true,
-  template: { id: "t7", name: "t7", content: "┘à╪▒╪¡╪¿╪º┘ï {{customerName}} ╪º╪│╪¬┘ä┘à╪¬ ╪╖┘ä╪¿┘â", eventType: "CUSTOM_STATUS", isActive: true },
+  template: { id: "t7", name: "t7", content: "مرحباً {{customerName}} استلمت طلبك", eventType: "CUSTOM_STATUS", isActive: true },
 });
 
 function mockApi(statuses: Array<Record<string, unknown>>) {
@@ -98,12 +98,12 @@ describe("OrderStatusTemplatesPage grouping", () => {
     jest.clearAllMocks();
   });
 
-  test("group ╪ú┘â╪¿╪▒ ┘à┘å 4 ╪¿╪¬╪¬╪╖┘ê┘ë ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï ╪¬╪¡╪¬ ╪▒╪ú╪│ ┘ê╪º╪¡╪»", async () => {
+  test("group أكبر من 4 بتتطوى افتراضياً تحت رأس واحد", async () => {
     mockApi([...GROUPED_STATUSES, CUSTOM_STATUS]);
     renderPage();
 
     expect(await screen.findByTestId("group-header")).toBeInTheDocument();
-    expect(screen.getByText("6 ╪¡╪º┘ä╪⌐ ╪¿┘å┘ü╪│ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º┘à")).toBeInTheDocument();
+    expect(screen.getByText("6 حالة بنفس القالب العام")).toBeInTheDocument();
 
     expect(screen.queryByTestId("status-row-st1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st6")).not.toBeInTheDocument();
@@ -111,29 +111,29 @@ describe("OrderStatusTemplatesPage grouping", () => {
     expect(screen.getByTestId("status-row-st7")).toBeInTheDocument();
   });
 
-  test("╪▓╪▒ ╪╣╪▒╪╢ ╪º┘ä╪¬┘ü╪º╪╡┘è┘ä ╪¿┘è┘ü╪¬╪¡ ╪º┘ä┘Ç group", async () => {
+  test("زر عرض التفاصيل بيفتح الـ group", async () => {
     mockApi([...GROUPED_STATUSES, CUSTOM_STATUS]);
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("group-header");
-    await user.click(screen.getByRole("button", { name: /╪╣╪▒╪╢ ╪º┘ä╪¬┘ü╪º╪╡┘è┘ä/ }));
+    await user.click(screen.getByRole("button", { name: /عرض التفاصيل/ }));
 
     expect(screen.getByTestId("status-row-st1")).toBeInTheDocument();
     expect(screen.getByTestId("status-row-st6")).toBeInTheDocument();
   });
 
-  test("╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ┘à╪╖┘ê┘è╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï ┘ê╪¿╪¬┘ü╪¬╪¡ ╪¿╪╢╪║╪╖╪⌐ ┘à╪╣╪º┘è┘å╪⌐", async () => {
+  test("المعاينة مطوية افتراضياً وبتفتح بضغطة معاينة", async () => {
     mockApi([CUSTOM_STATUS]);
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st7");
-    expect(screen.queryByText("╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘â╪º┘à┘ä╪⌐")).not.toBeInTheDocument();
+    expect(screen.queryByText("المعاينة الكاملة")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /^┘à╪╣╪º┘è┘å╪⌐/ }));
+    await user.click(screen.getByRole("button", { name: /^معاينة/ }));
 
-    expect(screen.getByText("╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘â╪º┘à┘ä╪⌐")).toBeInTheDocument();
-    expect(screen.getAllByText(/╪ú╪¡┘à╪» ┘à╪¡┘à╪»/).length).toBeGreaterThan(0);
+    expect(screen.getByText("المعاينة الكاملة")).toBeInTheDocument();
+    expect(screen.getAllByText(/أحمد محمد/).length).toBeGreaterThan(0);
   });
 });

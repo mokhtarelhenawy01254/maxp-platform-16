@@ -1,11 +1,24 @@
-import { Plus as PlusIcon, Folder as FolderIcon, Circle as CalendarDaysIcon, User as UserIcon, Tag as TagIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Circle as ArrowTrendingUpIcon, Check as CheckCircleIcon, Clock as ClockIcon, Eye as EyeIcon, Filter as FunnelIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  PlusIcon,
+  FolderIcon,
+  CalendarDaysIcon,
+  UserIcon,
+  TagIcon,
+  PencilIcon,
+  TrashIcon,
+  ArrowTrendingUpIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  EyeIcon,
+  FunnelIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 
 interface Project {
   id: string;
@@ -452,7 +465,7 @@ const ProjectFormModal: React.FC<{
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.description.trim()) {
-      alert("الاسم والوصف مطلوبان");
+      alert(i18n.t("DevProjects.msg_f4a8"));
       return;
     }
 
@@ -481,10 +494,10 @@ const ProjectFormModal: React.FC<{
       if (data.success) {
         onSuccess();
       } else {
-        alert(data.error || "فشل في إنشاء المشروع");
+        alert(data.error || i18n.t("DevProjects.failed_create_b90e"));
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("DevProjects.msg_58f7"));
     } finally {
       setSaving(false);
     }

@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(() => ({})),
 }));
 
@@ -21,14 +21,14 @@ describe('preparationQueueService.assertPreparationHoldRule', () => {
 
     expect(caught).not.toBeNull();
     expect(caught.statusCode).toBe(400);
-    expect(caught.message).toContain('╪│╪¿╪¿ ╪¬╪╣┘ä┘è┘é ╪º┘ä╪╖┘ä╪¿ ┘à╪╖┘ä┘ê╪¿');
+    expect(caught.message).toContain('سبب تعليق الطلب مطلوب');
   });
 
   test('allows holding with a reason note', async () => {
     const result = await assertPreparationHoldRule({
       currentPreparationStatus: 'PREPARING',
       targetStatus: 'ON_HOLD_PREP',
-      notes: '┘ü┘è ╪º┘å╪¬╪╕╪º╪▒ ╪▒╪» ╪º┘ä╪╣┘à┘è┘ä ╪╣┘ä┘ë ╪º┘ä╪╣┘å┘ê╪º┘å',
+      notes: 'في انتظار رد العميل على العنوان',
     });
 
     expect(result).toBeNull();
@@ -48,7 +48,7 @@ describe('preparationQueueService.assertPreparationHoldRule', () => {
 
     expect(caught).not.toBeNull();
     expect(caught.statusCode).toBe(400);
-    expect(caught.message).toContain('┘à╪╣┘ä┘é ╪¿╪º┘å╪¬╪╕╪º╪▒ ╪¡┘ä ╪º┘ä┘à╪┤┘â┘ä╪⌐');
+    expect(caught.message).toContain('معلق بانتظار حل المشكلة');
   });
 
   test('blocks a held order from moving to any forward prep stage', async () => {
@@ -71,7 +71,7 @@ describe('preparationQueueService.assertPreparationHoldRule', () => {
     const result = await assertPreparationHoldRule({
       currentPreparationStatus: 'ON_HOLD_PREP',
       targetStatus: 'PENDING_PREPARATION',
-      notes: '╪¬┘à ╪¡┘ä ╪º┘ä┘à╪┤┘â┘ä╪⌐',
+      notes: 'تم حل المشكلة',
     });
 
     expect(result).toBeNull();
@@ -81,7 +81,7 @@ describe('preparationQueueService.assertPreparationHoldRule', () => {
     const result = await assertPreparationHoldRule({
       currentPreparationStatus: 'ON_HOLD_PREP',
       targetStatus: 'CANCELLED',
-      notes: '╪Ñ┘ä╪║╪º╪í',
+      notes: 'إلغاء',
     });
 
     expect(result).toBeNull();

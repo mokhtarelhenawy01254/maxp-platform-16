@@ -1,7 +1,17 @@
-import { Users as UsersIcon, Circle as BuildingOffice2Icon, Search as MagnifyingGlassIcon, Circle as ArrowsRightLeftIcon, Plus as PlusIcon, Mail as EnvelopeIcon, Phone as PhoneIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
-;
+import {
+  UsersIcon,
+  BuildingOffice2Icon,
+  MagnifyingGlassIcon,
+  ArrowsRightLeftIcon,
+  PlusIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface UserCompanyRelation {
@@ -48,7 +58,7 @@ const OwnerUsersManagement: React.FC = () => {
       if (response.data.success) {
         setUsers(response.data.data.users);
       } else {
-        toast.error(response.data.message || "فشل تحميل المستخدمين");
+        toast.error(response.data.message || i18n.t("OwnerUsersManagement.failed_load_47f1"));
       }
     } catch (error: any) {
       console.error("Failed to fetch users", error);
@@ -111,7 +121,7 @@ const OwnerUsersManagement: React.FC = () => {
         ? [selectedCompanyFilter]
         : user.companies.map((uc) => uc.company.id).filter(Boolean);
     if (!targetCompanies.length) {
-      toast.error("لا يمكن تحديد الشركة لهذا المستخدم");
+      tToast.error("OwnerUsersManagement.msg_60da");
       return;
     }
     if (!window.confirm(`هل أنت متأكد من حذف ${user.firstName}؟`)) return;
@@ -142,11 +152,11 @@ const OwnerUsersManagement: React.FC = () => {
 
       if (success) {
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
-        toast.success("تم حذف المستخدم");
+        tToast.success("OwnerUsersManagement.success_delete_9115");
       } else if (notFoundCount === targetCompanies.length) {
         // كله 404 -> اعتبره محذوف وحدث القائمة
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
-        toast.success("المستخدم محذوف مسبقاً وتم تحديث القائمة");
+        tToast.success("OwnerUsersManagement.msg_295b");
       } else {
         toast.error(lastMessage || "فشل حذف المستخدم");
       }
@@ -225,7 +235,7 @@ const OwnerUsersManagement: React.FC = () => {
               placeholder="بحث..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="form-input pr-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm shadow-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
           </div>
           {/* Company Filter */}

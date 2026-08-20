@@ -1,4 +1,4 @@
-﻿{
+{
   "dashboard": {
     "title": "My Dashboard",
     "subtitle": "Employee overview and quick actions",
@@ -74,7 +74,7 @@
     "professionalTraining": "Professional Training",
     "professionalTrainingDesc": "Complete the 'Effective Time Management' course on the internal learning platform.",
     "addPersonalGoal": "Add Personal Goal",
-    "footer": "MaxP HR Management System ┬⌐ 2026",
+    "footer": "MaxP HR Management System © 2026",
     "helpCenter": "Help Center",
     "companyPolicy": "Company Policy",
     "reportIssue": "Report Issue",
@@ -169,9 +169,9 @@
     "statusLate": "Late",
     "statusOnLeave": "On Leave",
     "openInMap": "Click to open location in map",
-    "checkinFailed": "Γ¥î Check-in failed",
+    "checkinFailed": "❌ Check-in failed",
     "dataErrorDesc": "Please check the entered data",
-    "locationRequired": "≡ƒôì Location access required",
+    "locationRequired": "📍 Location access required",
     "locationRequiredDesc": "To check in from the office, you must allow access to your location. Enable location services and try again.",
     "checkinTime": "Check-in time:",
     "hoursElapsed": "{{hours}}h elapsed",
@@ -1029,7 +1029,7 @@
     "affiliateProductsDesc": "Import company products, create orders, and review your linked orders only.",
     "affiliateClients": "Clients & Commissions",
     "affiliateClientsDesc": "Track your linked clients, withdrawal requests, and commissions for your account.",
-    "saveSuccess": "Your profile has been updated successfully Γ£ô",
+    "saveSuccess": "Your profile has been updated successfully ✓",
     "saveError": "An error occurred while updating",
     "invalidImage": "Please select a valid image file",
     "avatarUpdated": "Profile picture updated successfully",

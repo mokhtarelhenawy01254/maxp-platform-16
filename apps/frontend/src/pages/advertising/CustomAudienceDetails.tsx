@@ -1,4 +1,3 @@
-import { ArrowLeft as ArrowLeftIcon, Trash2 as TrashIcon, Circle as UserGroupIcon, Calendar as CalendarIcon, Tag as TagIcon, Eye as EyeIcon } from 'lucide-react';
 /**
  * Custom Audience Details Page
  *
@@ -7,8 +6,16 @@ import { ArrowLeft as ArrowLeftIcon, Trash2 as TrashIcon, Circle as UserGroupIco
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-;
+import {
+  ArrowLeftIcon,
+  TrashIcon,
+  UserGroupIcon,
+  CalendarIcon,
+  TagIcon,
+  EyeIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookCustomAudience,
@@ -53,7 +60,7 @@ const CustomAudienceDetails: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCustomAudience(id);
-      toast.success("تم حذف الجمهور بنجاح");
+      tToast.success("CustomAudienceDetails.success_delete_12fd");
       navigate("/advertising/facebook-ads/audiences");
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "فشل في حذف الجمهور");

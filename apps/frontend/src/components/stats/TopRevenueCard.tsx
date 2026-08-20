@@ -1,6 +1,5 @@
-import { Circle as ArrowTrendingUpIcon } from 'lucide-react';
 import React, { useMemo } from 'react';
-;
+import { ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 
 interface TopRevenueCardProps {
     stats: any;

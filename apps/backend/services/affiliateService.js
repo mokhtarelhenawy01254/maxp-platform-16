@@ -215,6 +215,7 @@ class AffiliateService {
       const prisma = this.prisma;
       const {
         companyId,
+        customerId = null,
         commissionType = 'PERCENTAGE',
         commissionRate = 5.0,
         paymentMethod,
@@ -267,6 +268,7 @@ class AffiliateService {
         data: {
           userId,
           companyId,
+          customerId: customerId || null,
           affiliateCode,
           commissionType: normalizedCommissionType,
           commissionRate: parsedCommissionRate,
@@ -444,6 +446,152 @@ class AffiliateService {
     } catch (error) {
       console.error('❌ [AFFILIATE] Error tracking referral:', error);
       throw error;
+    }
+  }
+
+  /**
+   * ربط المسوق بعميل ولاء (لشراء النقاط المكتسبة من الإحالات)
+   * لو المسوق معندوش عميل مرتبط، بننشئ عميل من بيانات المستخدم بتاعه
+   * أو بنربط عميل موجود بنفس رقم التليفون.
+   */
+  async getOrCreateAffiliateCustomer(affiliate) {
+    const prisma = this.prisma;
+    try {
+      if (affiliate.customerId) {
+        const existing = await prisma.customer.findUnique({
+          where: { id: affiliate.customerId }
+        });
+        if (existing) return existing.id;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: affiliate.userId },
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true }
+      });
+      const phone = user?.phone || null;
+
+      if (phone && affiliate.companyId) {
+        const { findCustomerByPhone } = require('../utils/customerIdentity');
+        const byPhone = await findCustomerByPhone(prisma, phone, affiliate.companyId);
+        if (byPhone) {
+          await prisma.affiliate.update({
+            where: { id: affiliate.id },
+            data: { customerId: byPhone.id }
+          });
+          return byPhone.id;
+        }
+      }
+
+      let customer;
+      try {
+        customer = await prisma.customer.create({
+          data: {
+            companyId: affiliate.companyId,
+            firstName: user?.firstName || 'مسوق',
+            lastName: user?.lastName || affiliate.affiliateCode,
+            email: user?.email || null,
+            phone,
+            phoneNormalized: phone ? require('../utils/phoneNormalization').toCanonicalE164(phone) : null,
+            status: 'ACTIVE'
+          }
+        });
+      } catch (err) {
+        if (err?.code === 'P2002' && phone && affiliate.companyId) {
+          const { findCustomerByPhone } = require('../utils/customerIdentity');
+          const found = await findCustomerByPhone(prisma, phone, affiliate.companyId);
+          if (found) {
+            await prisma.affiliate.update({
+              where: { id: affiliate.id },
+              data: { customerId: found.id }
+            });
+            return found.id;
+          }
+        }
+        throw err;
+      }
+
+      await prisma.affiliate.update({
+        where: { id: affiliate.id },
+        data: { customerId: customer.id }
+      });
+
+      return customer.id;
+    } catch (error) {
+      console.error('❌ [AFFILIATE] Error resolving affiliate customer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * منح نقاط الولاء للمسوق عند نجاح الإحالة (بديل العمولة المالية)
+   * يُستدعى عند تحويل الإحالة (converted = true).
+   */
+  async awardReferralLoyaltyPoints(referralId) {
+    try {
+      const prisma = this.prisma;
+      const referral = await prisma.affiliateReferral.findUnique({
+        where: { id: referralId },
+        include: { affiliate: true }
+      });
+
+      if (!referral || !referral.affiliateId) {
+        return { awarded: false, reason: 'no_referral' };
+      }
+      if (referral.pointsAwarded) {
+        return { awarded: false, reason: 'already_awarded' };
+      }
+      if (!referral.converted) {
+        return { awarded: false, reason: 'not_converted' };
+      }
+
+      const affiliate = referral.affiliate;
+      const companyId = affiliate.companyId;
+      if (!companyId) {
+        return { awarded: false, reason: 'no_company' };
+      }
+
+      const customerId = await this.getOrCreateAffiliateCustomer(affiliate);
+
+      const loyaltyService = require('./hr/customerLoyaltyService');
+      const program = await prisma.customerLoyaltyProgram.findFirst({
+        where: { companyId, type: 'POINTS', status: 'ACTIVE' },
+        orderBy: { createdAt: 'asc' }
+      });
+      if (!program) {
+        return { awarded: false, reason: 'no_points_program' };
+      }
+
+      const points = Number(program.pointsPerReferral || 0);
+      if (points <= 0) {
+        return { awarded: false, reason: 'points_zero' };
+      }
+
+      // تسجيل العميل في برنامج النقاط لو مش مسجل
+      const existingRecord = await prisma.customerLoyaltyRecord.findUnique({
+        where: { customerId_programId: { customerId, programId: program.id } }
+      });
+      if (!existingRecord) {
+        await loyaltyService.enrollCustomer(companyId, customerId, program.id, 0);
+      }
+
+      await loyaltyService.addPoints(
+        companyId,
+        customerId,
+        program.id,
+        points,
+        `إحالة ناجحة #${referral.referralCode}`
+      );
+
+      await prisma.affiliateReferral.update({
+        where: { id: referralId },
+        data: { pointsAwarded: true }
+      });
+
+      console.log(`✅ [AFFILIATE] Awarded ${points} loyalty points to affiliate ${affiliate.id} for referral ${referralId}`);
+      return { awarded: true, points, customerId, programId: program.id };
+    } catch (error) {
+      console.error('❌ [AFFILIATE] Error awarding referral loyalty points:', error);
+      return { awarded: false, reason: error.message };
     }
   }
 

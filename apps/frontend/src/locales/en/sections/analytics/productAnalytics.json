@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Product Sales Report",
   "subtitle": "Sales performance of each product during the period from orders",
   "fetchError": "Error fetching data",

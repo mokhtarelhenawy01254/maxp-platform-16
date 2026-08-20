@@ -1,10 +1,10 @@
-﻿/**
+/**
  * migrateLegacyPlatformRoles.js
  *
  * One-time migration: find company memberships/users whose role was stored with
  * a legacy platform-team name ("Team Lead", "Project Manager", "Developer",
  * "Tester", "Agent") and re-point them at the proper built-in company roles.
- * These names collide with the platform's internal admin roles ΓÇö after the
+ * These names collide with the platform's internal admin roles — after the
  * auth access overhaul they must NOT be treated as platform admins.
  *
  * Legacy names cannot live in the UserCompany.role enum (Prisma validates it),
@@ -41,7 +41,7 @@ async function main() {
   const apply = process.argv.includes('--apply');
   const prisma = new PrismaClient();
 
-  console.log(apply ? 'ΓÜá∩╕Å  APPLY MODE ΓÇö data will be modified' : '≡ƒöì DRY-RUN ΓÇö no changes, report only');
+  console.log(apply ? '⚠️  APPLY MODE — data will be modified' : '🔍 DRY-RUN — no changes, report only');
   console.log('Targets:', JSON.stringify(LEGACY_KEYS));
 
   const builtInRoles = await prisma.role.findMany({
@@ -49,7 +49,7 @@ async function main() {
     select: { id: true, key: true },
   });
   const roleIdByKey = new Map(builtInRoles.map((r) => [r.key, r.id]));
-  console.log(`≡ƒôª Built-in roles: ${builtInRoles.map((r) => r.key).join(', ')}`);
+  console.log(`📦 Built-in roles: ${builtInRoles.map((r) => r.key).join(', ')}`);
 
   // 1) Memberships pointing at a custom Role whose key is a legacy name.
   const customRoleMemberships = await prisma.userCompany.findMany({
@@ -63,20 +63,20 @@ async function main() {
     },
   });
 
-  console.log(`\n≡ƒæÑ ${customRoleMemberships.length} membership(s) reference a legacy custom role`);
+  console.log(`\n👥 ${customRoleMemberships.length} membership(s) reference a legacy custom role`);
   let updatedMemberships = 0;
   for (const uc of customRoleMemberships) {
     const sourceKey = uc.roleRef?.key;
     const targetKey = LEGACY_ROLE_MAP[sourceKey];
-    // Identity mapping (e.g. an existing "AGENT" role) ΓÇö nothing to change.
+    // Identity mapping (e.g. an existing "AGENT" role) — nothing to change.
     if (!sourceKey || sourceKey === targetKey) continue;
     const targetRoleId = roleIdByKey.get(targetKey);
     if (!targetRoleId) {
-      console.log(`  ΓÅ¡∩╕Å  target built-in role "${targetKey}" missing ΓÇö skipping userCompany ${uc.id}`);
+      console.log(`  ⏭️  target built-in role "${targetKey}" missing — skipping userCompany ${uc.id}`);
       continue;
     }
     console.log(
-      `  ΓÇó userCompany=${uc.id} user=${uc.userId} company=${uc.companyId} roleRef="${sourceKey}" -> "${targetKey}"`,
+      `  • userCompany=${uc.id} user=${uc.userId} company=${uc.companyId} roleRef="${sourceKey}" -> "${targetKey}"`,
     );
     if (apply) {
       await prisma.userCompany.update({
@@ -93,12 +93,12 @@ async function main() {
     select: { id: true, email: true, role: true },
   });
 
-  console.log(`\n≡ƒæñ ${legacyUsers.length} user(s) carry a legacy name in User.role`);
+  console.log(`\n👤 ${legacyUsers.length} user(s) carry a legacy name in User.role`);
   let updatedUsers = 0;
   for (const u of legacyUsers) {
     const targetKey = LEGACY_ROLE_MAP[u.role];
-    if (u.role === targetKey) continue; // identity mapping ΓÇö no-op
-    console.log(`  ΓÇó user=${u.id} ${u.email} role="${u.role}" -> "${targetKey}"`);
+    if (u.role === targetKey) continue; // identity mapping — no-op
+    console.log(`  • user=${u.id} ${u.email} role="${u.role}" -> "${targetKey}"`);
     if (apply) {
       await prisma.user.update({
         where: { id: u.id },
@@ -110,8 +110,8 @@ async function main() {
 
   console.log(
     apply
-      ? `\nΓ£à Done ΓÇö ${updatedMemberships} membership(s) + ${updatedUsers} user(s) updated`
-      : `\nΓ£à Dry-run complete ΓÇö ${updatedMemberships} membership(s) + ${updatedUsers} user(s) would change. Re-run with --apply to commit.`,
+      ? `\n✅ Done — ${updatedMemberships} membership(s) + ${updatedUsers} user(s) updated`
+      : `\n✅ Dry-run complete — ${updatedMemberships} membership(s) + ${updatedUsers} user(s) would change. Re-run with --apply to commit.`,
   );
   await prisma.$disconnect();
 }

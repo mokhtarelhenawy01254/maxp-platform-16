@@ -151,6 +151,8 @@ model AiSetting {
   negativeKeywords           String?  @db.Text
   autoFilterEnabled          Boolean  @default(false)
   negativeCommentAction      String   @default("hide")
+  agentPaused                Boolean  @default(false)
+  pauseReason                String?
   company                    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("ai_settings")

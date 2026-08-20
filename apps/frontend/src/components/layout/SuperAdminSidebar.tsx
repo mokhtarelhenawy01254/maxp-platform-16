@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Activity, Award, BarChart, BarChart3, Bell, Brain, Briefcase, Brush, Building, ChevronDown, ChevronUp, Clock, Code2, CreditCard, Database, DollarSign, Download, Facebook, Folder, GitBranch, Globe, Grid, HardDrive, Headphones, History, Image, Key, Layers, LayoutDashboard, MessageSquare, Palette, Play, Rocket, Server, Settings, Shield, Sliders, Tag, Ticket, Trophy, Users, Wallet, Wrench, Zap } from 'lucide-react';
+import { LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Brain, History, Globe, Headphones, Tag, ChevronUp, ChevronDown, Activity, Sliders, Facebook, Award, GitBranch, Users, Clock, HardDrive, MessageSquare, Key, Play, Download, Code2, Zap, Brush, Server, Grid, Bell, Image, Briefcase, Wallet, Ticket, Palette, Database, Wrench, Layers, Trophy, Rocket } from 'lucide-react';
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -37,6 +37,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: t("superAdmin.sidebar.pendingReceipts"), icon: <BarChart3 className="size-5" />, path: "/super-admin/pending-receipts" },
     { text: t("superAdmin.sidebar.marketplaceManagement"), icon: <Globe className="size-5" />, path: "/super-admin/marketplace-management" },
     { text: t("superAdmin.sidebar.marketplaceCoverage"), icon: <Shield className="size-5" />, path: "/super-admin/marketplace-coverage" },
+    { text: t("superAdmin.sidebar.businessSpecialties"), icon: <Briefcase className="size-5" />, path: "/super-admin/business-specialties" },
     { text: t("superAdmin.sidebar.storefrontThemes"), icon: <Palette className="size-5" />, path: "/super-admin/storefront-themes" },
     { text: t("superAdmin.sidebar.customerInvoices"), icon: <BarChart3 className="size-5" />, path: "/super-admin/invoices" },
     { text: t("superAdmin.sidebar.customerPayments"), icon: <DollarSign className="size-5" />, path: "/super-admin/payments" },
@@ -73,6 +74,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: t("superAdmin.sidebar.staffAccess"), icon: <Briefcase className="size-5" />, path: "/super-admin/staff-access" },
     { text: t("superAdmin.sidebar.superAdminUsers"), icon: <Shield className="size-5" />, path: "/super-admin/users" },
     { text: t("superAdmin.sidebar.partners"), icon: <Users className="size-5" />, path: "/super-admin/partner-management" },
+    { text: t("superAdmin.sidebar.uiTemplates"), icon: <Palette className="size-5" />, path: "/super-admin/ui-templates" },
   ]},
   { title: t("superAdmin.sidebar.marketingLinks"), icon: <Tag className="size-5" />, items: [
     { text: t("superAdmin.sidebar.marketingLinksCenter"), icon: <Globe className="size-5" />, path: "/super-admin/marketing-links" },
@@ -102,6 +104,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: t("superAdmin.sidebar.escalations"), icon: <Clock className="size-5" />, path: "/super-admin/dev/escalations" },
     { text: t("superAdmin.sidebar.taskSettings"), icon: <Settings className="size-5" />, path: "/super-admin/dev-settings" },
     { text: t("superAdmin.sidebar.taskApiKeys"), icon: <Key className="size-5" />, path: "/super-admin/dev-task-integrations" },
+    { text: t("superAdmin.sidebar.desktopApp"), icon: <Download className="size-5" />, path: "/super-admin/downloads" },
   ]},
 ];
 

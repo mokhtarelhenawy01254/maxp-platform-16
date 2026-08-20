@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../services/api';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -74,8 +74,8 @@ const TurboCaptains: React.FC = () => {
   };
 
   const SortIcon = ({ field }: { field: string }) => {
-    if (sortBy !== field) return <span className="text-gray-300 ml-1">Γåò</span>;
-    return <span className="text-blue-600 ml-1">{sortOrder === 'desc' ? 'Γåô' : 'Γåæ'}</span>;
+    if (sortBy !== field) return <span className="text-gray-300 ml-1">↕</span>;
+    return <span className="text-blue-600 ml-1">{sortOrder === 'desc' ? '↓' : '↑'}</span>;
   };
 
   const getScoreColor = (rate: number) => {
@@ -103,10 +103,10 @@ const TurboCaptains: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            ╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä┘à┘å╪»┘ê╪¿┘è┘å
+            تقارير المندوبين
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            ╪¬╪¡┘ä┘è┘ä ╪ú╪»╪º╪í ┘à┘å╪»┘ê╪¿┘è Turbo - ┘å╪│╪¿ ╪º┘ä╪¬╪│┘ä┘è┘à ┘ê╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬
+            تحليل أداء مندوبي Turbo - نسب التسليم والمرتجعات
           </p>
         </div>
       </div>
@@ -115,23 +115,23 @@ const TurboCaptains: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-blue-600">{totalStats.totalCaptains}</div>
-            <div className="text-xs text-gray-500 mt-1">╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à┘å╪»┘ê╪¿┘è┘å</div>
+            <div className="text-xs text-gray-500 mt-1">إجمالي المندوبين</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalStats.totalShipments}</div>
-            <div className="text-xs text-gray-500 mt-1">╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪┤╪¡┘å╪º╪¬</div>
+            <div className="text-xs text-gray-500 mt-1">إجمالي الشحنات</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-green-600">{totalStats.totalDelivered}</div>
-            <div className="text-xs text-gray-500 mt-1">╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à</div>
+            <div className="text-xs text-gray-500 mt-1">تم التسليم</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-red-600">{totalStats.totalReturned}</div>
-            <div className="text-xs text-gray-500 mt-1">┘à╪▒╪¬╪¼╪╣╪º╪¬</div>
+            <div className="text-xs text-gray-500 mt-1">مرتجعات</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-amber-600">{totalStats.avgDeliveryRate}%</div>
-            <div className="text-xs text-gray-500 mt-1">┘à╪¬┘ê╪│╪╖ ┘å╪│╪¿╪⌐ ╪º┘ä╪¬╪│┘ä┘è┘à</div>
+            <div className="text-xs text-gray-500 mt-1">متوسط نسبة التسليم</div>
           </div>
         </div>
       )}
@@ -142,14 +142,14 @@ const TurboCaptains: React.FC = () => {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="╪¿╪¡╪½ ╪¿╪º╪│┘à ╪º┘ä┘à┘å╪»┘ê╪¿..."
+            placeholder="بحث باسم المندوب..."
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 flex-1 max-w-xs"
           />
           <button
             onClick={fetchData}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
           >
-            ╪¿╪¡╪½
+            بحث
           </button>
         </div>
 
@@ -158,35 +158,35 @@ const TurboCaptains: React.FC = () => {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th onClick={() => handleSort('captain_name')} className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="captain_name" /> ╪º┘ä┘à┘å╪»┘ê╪¿
+                  <SortIcon field="captain_name" /> المندوب
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">╪º┘ä┘ü╪▒╪╣</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الفرع</th>
                 <th onClick={() => handleSort('total')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="total" /> ╪Ñ╪¼┘à╪º┘ä┘è
+                  <SortIcon field="total" /> إجمالي
                 </th>
                 <th onClick={() => handleSort('delivered')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="delivered" /> Γ£à ╪¬┘à
+                  <SortIcon field="delivered" /> ✅ تم
                 </th>
                 <th onClick={() => handleSort('returned')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="returned" /> Γ¥î ┘à╪▒╪¬╪¼╪╣
+                  <SortIcon field="returned" /> ❌ مرتجع
                 </th>
                 <th onClick={() => handleSort('active')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="active" /> ≡ƒÜÜ ┘å╪┤╪╖
+                  <SortIcon field="active" /> 🚚 نشط
                 </th>
                 <th onClick={() => handleSort('delivery_rate')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="delivery_rate" /> ≡ƒôê ┘å╪│╪¿╪⌐ ╪º┘ä╪¬╪│┘ä┘è┘à
+                  <SortIcon field="delivery_rate" /> 📈 نسبة التسليم
                 </th>
                 <th onClick={() => handleSort('return_rate')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="return_rate" /> ┘å╪│╪¿╪⌐ ╪º┘ä┘à╪▒╪¬╪¼╪╣
+                  <SortIcon field="return_rate" /> نسبة المرتجع
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">╪ú╪¿╪▒╪▓ ╪ú╪│╪¿╪º╪¿ ╪º┘ä╪¬╪ú╪«┘è╪▒</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">أبرز أسباب التأخير</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {captains.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                    ┘ä╪º ┘è┘ê╪¼╪» ┘à┘å╪»┘ê╪¿┘è┘å ╪¿╪╣╪». ╪º┘å╪¬╪╕╪▒ ╪¡╪¬┘ë ┘ê╪╡┘ê┘ä ╪¿┘è╪º┘å╪º╪¬ Webhook ┘à┘å Turbo.
+                    لا يوجد مندوبين بعد. انتظر حتى وصول بيانات Webhook من Turbo.
                   </td>
                 </tr>
               ) : (
@@ -239,7 +239,7 @@ const TurboCaptains: React.FC = () => {
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-gray-400">ΓÇö</span>
+                          <span className="text-xs text-gray-400">—</span>
                         )}
                       </div>
                     </td>

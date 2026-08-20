@@ -1,6 +1,10 @@
-import { Image as PhotoIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, X as XCircleIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  PhotoIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
 import { Product, getStockStatus } from "./ProductsTypes";
 import { PRODUCT_WORKFLOW_STATUSES } from "../utils/workflow";
 

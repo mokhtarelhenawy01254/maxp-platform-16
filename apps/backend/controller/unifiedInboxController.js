@@ -190,6 +190,7 @@ const getUnifiedConversations = async (req, res) => {
         // 2. Also fetch WhatsApp contacts if platform includes whatsapp
         // ──────────────────────────────────────────────────────────
         let whatsappContacts = [];
+        const warnings = [];
         const shouldFetchWhatsApp = hasAll || selectedPlatforms.includes('WHATSAPP');
         const isWhatsAppOnly = !hasAll && selectedPlatforms.includes('WHATSAPP') && selectedPlatforms.length === 1;
 
@@ -205,7 +206,9 @@ const getUnifiedConversations = async (req, res) => {
                 if (sessionIds.length > 0) {
                     const waWhere = {
                         sessionId: { in: sessionIds },
-                        isArchived: false
+                        isArchived: false,
+                        totalMessages: { gt: 0 },
+                        NOT: { jid: { contains: '@lid' } }
                     };
 
                     if (isPinned === 'true') {
@@ -242,6 +245,7 @@ const getUnifiedConversations = async (req, res) => {
                             category: true,
                             unreadCount: true,
                             lastMessageAt: true,
+                            lastMessagePreview: true,
                             isPinned: true,
                             isMuted: true,
                             whatsAppSession: {
@@ -282,6 +286,7 @@ const getUnifiedConversations = async (req, res) => {
                 }
             } catch (waErr) {
                 console.error('⚠️ [UNIFIED] Error fetching WhatsApp contacts:', waErr.message);
+                warnings.push({ platform: 'whatsapp', message: 'تعذر تحميل محادثات واتساب، قد تكون بعض المحادثات غير مكتملة' });
             }
         }
 
@@ -413,6 +418,7 @@ const getUnifiedConversations = async (req, res) => {
         res.json({
             success: true,
             data: allConversations,
+            warnings: warnings.length > 0 ? warnings : undefined,
             pagination: {
                 total: totalCount + whatsappContacts.length,
                 page: parseInt(page),
@@ -682,7 +688,8 @@ const sendUnifiedMessage = async (req, res) => {
 
             if (!isMedia) {
                 message = await WhatsAppMessageHandler.sendText(sessionId, jid, content, {
-                    quotedMessageId
+                    quotedMessageId,
+                    typingSimulation: true
                 });
             } else if (type.toLowerCase() === 'image') {
                 message = await WhatsAppMessageHandler.sendImage(sessionId, jid, mediaUrl, content || '');

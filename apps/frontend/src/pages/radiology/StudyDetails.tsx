@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -204,16 +204,16 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   const flags = useMemo(() => parsePatientFlags(study?.patientFlags), [study?.patientFlags]);
   useRadiologyRiskFlags();
   const fmtDate = (iso?: string): string => {
-    if (!iso) return "ΓÇö";
+    if (!iso) return "—";
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "ΓÇö";
+    if (Number.isNaN(d.getTime())) return "—";
     return new Intl.DateTimeFormat("ar-EG", { year: "numeric", month: "long", day: "numeric" }).format(d);
   };
 
   const fmtDateTime = (iso?: string): string => {
-    if (!iso) return "ΓÇö";
+    if (!iso) return "—";
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "ΓÇö";
+    if (Number.isNaN(d.getTime())) return "—";
     return new Intl.DateTimeFormat("ar-EG", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(d);
   };
 
@@ -224,7 +224,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   const renderBadge = (map: Record<string, { label: string; color: string }>, value?: string) => {
     const meta = value ? map[value] : undefined;
     if (meta) return <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${meta.color}`}>{t(meta.label)}</span>;
-    return <span className="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "ΓÇö"}</span>;
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{value || "—"}</span>;
   };
 
   const statusMetaFor = (dimension: string, status?: string): { label: string; color: string } | undefined => {
@@ -236,7 +236,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   };
 
   const statusText = (dimension: string, status?: string): string => {
-    if (!status) return "ΓÇö";
+    if (!status) return "—";
     const meta = statusMetaFor(dimension, status);
     return meta ? t(meta.label) : status;
   };
@@ -253,7 +253,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   };
 
   const methodText = (method?: string): string => {
-    if (!method) return "ΓÇö";
+    if (!method) return "—";
     const key = `radiology.paymentMethod.${method}`;
     const translated = t(key);
     return translated !== key ? translated : method;
@@ -262,7 +262,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   const billingTypeText = (b?: string): string => {
     if (b === "INSURANCE") return t("radiology.details.billingType.INSURANCE");
     if (b === "PATIENT") return t("radiology.details.billingType.PATIENT");
-    return b || "ΓÇö";
+    return b || "—";
   };
 
   const recordPayment = async () => {
@@ -378,7 +378,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
       });
       if (res.draft) {
         setDraftText(res.draft);
-        setAiDraftInfo(res.model ? `${t("radiology.aiDraft.disclaimer")} ΓÇö ${t("radiology.aiDraft.model")}: ${res.model}` : t("radiology.aiDraft.disclaimer"));
+        setAiDraftInfo(res.model ? `${t("radiology.aiDraft.disclaimer")} — ${t("radiology.aiDraft.model")}: ${res.model}` : t("radiology.aiDraft.disclaimer"));
         toast.info(t("radiology.aiDraft.filled"));
       } else if (res.reason === "AI_NOT_CONFIGURED") {
         toast.warning(t("radiology.aiDraft.notConfigured"));
@@ -429,16 +429,16 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
   };
 
   const turnaroundText = (): string => {
-    if (!report || !report.createdAt) return "ΓÇö";
+    if (!report || !report.createdAt) return "—";
     const from = new Date(report.createdAt);
-    if (Number.isNaN(from.getTime())) return "ΓÇö";
+    if (Number.isNaN(from.getTime())) return "—";
     const to = report.signedAt ? new Date(report.signedAt) : new Date(report.updatedAt);
-    if (Number.isNaN(to.getTime())) return "ΓÇö";
+    if (Number.isNaN(to.getTime())) return "—";
     const diffMin = Math.round((to.getTime() - from.getTime()) / 60000);
-    if (diffMin < 0) return "ΓÇö";
+    if (diffMin < 0) return "—";
     const h = Math.floor(diffMin / 60);
     const m = diffMin % 60;
-    return `${h}╪│ ${m}╪»`;
+    return `${h}س ${m}د`;
   };
 
   if (loading) {
@@ -517,10 +517,10 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
               </div>
             }
           >
-            <Row label={t("radiology.patients.name")}>{study.patientName || "ΓÇö"}</Row>
-            <Row label={t("radiology.schedule.phone")}><span dir="ltr">{study.patientPhone || "ΓÇö"}</span></Row>
+            <Row label={t("radiology.patients.name")}>{study.patientName || "—"}</Row>
+            <Row label={t("radiology.schedule.phone")}><span dir="ltr">{study.patientPhone || "—"}</span></Row>
             <Row label={t("radiology.schedule.gender")}>{genderText(study.patientGender)}</Row>
-            <Row label={t("radiology.schedule.age")}>{study.patientAge ? <span dir="ltr">{study.patientAge}</span> : "ΓÇö"}</Row>
+            <Row label={t("radiology.schedule.age")}>{study.patientAge ? <span dir="ltr">{study.patientAge}</span> : "—"}</Row>
             {study.nationalId ? <Row label={t("radiology.studies.nationalId")}><span dir="ltr">{study.nationalId}</span></Row> : null}
             {study.insuranceNumber ? <Row label={t("radiology.studies.insuranceNumber")}><span dir="ltr">{study.insuranceNumber}</span></Row> : null}
             {flags.length > 0 ? (
@@ -537,7 +537,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
           </Card>
 
           <Card title={t("radiology.details.exam")} icon={<Stethoscope className="w-5 h-5" />}>
-            <Row label={t("radiology.studies.examType")}>{study.examTypeName || study.examType?.name || "ΓÇö"}</Row>
+            <Row label={t("radiology.studies.examType")}>{study.examTypeName || study.examType?.name || "—"}</Row>
             {modality ? <Row label={t("radiology.settings.modalities")}>{modality}</Row> : null}
             {study.deviceName ? <Row label={t("radiology.schedule.device")}>{study.deviceName}</Row> : null}
             {study.additionAmount ? <Row label={t("radiology.reception.examAdditions")}>{fmtMoney(study.additionAmount)}</Row> : null}
@@ -548,7 +548,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
               <Row label={t("radiology.details.externalReferral")}>
                 <span className="flex items-center gap-2 flex-wrap justify-end">
                   <span className="px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">{t("radiology.details.externalReferralBadge")}</span>
-                  {study.externalPartnerName || "ΓÇö"}
+                  {study.externalPartnerName || "—"}
                 </span>
               </Row>
             ) : null}
@@ -569,8 +569,8 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
           {appointment ? (
             <Card title={t("radiology.details.appointment")} icon={<Calendar className="w-5 h-5" />}>
               <Row label={t("radiology.schedule.date")}>{fmtDate(appointment.appointmentDate)}</Row>
-              <Row label={t("radiology.schedule.time")}><span dir="ltr">{appointment.appointmentTime || "ΓÇö"}</span></Row>
-              <Row label={t("radiology.schedule.referringDoctor")}>{appointment.referringPhysicianId || study.referralDoctor || "ΓÇö"}</Row>
+              <Row label={t("radiology.schedule.time")}><span dir="ltr">{appointment.appointmentTime || "—"}</span></Row>
+              <Row label={t("radiology.schedule.referringDoctor")}>{appointment.referringPhysicianId || study.referralDoctor || "—"}</Row>
             </Card>
           ) : null}
 
@@ -590,7 +590,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
                     >
                       <span className="flex items-center gap-2 min-w-0">
                         <span className="font-medium text-blue-600 dark:text-blue-400 truncate" dir="ltr">{sib.studyNumber || sib.id.slice(0, 8)}</span>
-                        <span className="text-gray-500 dark:text-gray-400 truncate">{sib.examTypeName || sib.examType?.name || "ΓÇö"}</span>
+                        <span className="text-gray-500 dark:text-gray-400 truncate">{sib.examTypeName || sib.examType?.name || "—"}</span>
                       </span>
                       {renderBadge(RadiologyStatusMap, sib.status)}
                     </button>
@@ -621,7 +621,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
                         </div>
                         {h.reason ? <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{h.reason}</p> : null}
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                          {h.userName || h.changedBy ? `${h.userName || h.changedBy} ΓÇö ` : ""}{fmtDateTime(h.createdAt)}
+                          {h.userName || h.changedBy ? `${h.userName || h.changedBy} — ` : ""}{fmtDateTime(h.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -667,10 +667,10 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
                 {report?.criticalFindingText ? <p className="text-sm mt-1.5 whitespace-pre-wrap">{report.criticalFindingText}</p> : null}
                 <div className="text-xs mt-2 space-y-0.5 opacity-80">
                   {report?.criticalFlaggedBy ? (
-                    <p>{t("radiology.critical.flaggedBy")}: {report.criticalFlaggedBy} ΓÇö {fmtDateTime(report.criticalFlaggedAt)}</p>
+                    <p>{t("radiology.critical.flaggedBy")}: {report.criticalFlaggedBy} — {fmtDateTime(report.criticalFlaggedAt)}</p>
                   ) : null}
                   {report?.criticalAcknowledgedBy ? (
-                    <p>{t("radiology.critical.acknowledgedBy")}: {report.criticalAcknowledgedBy} ΓÇö {fmtDateTime(report.criticalAcknowledgedAt)}</p>
+                    <p>{t("radiology.critical.acknowledgedBy")}: {report.criticalAcknowledgedBy} — {fmtDateTime(report.criticalAcknowledgedAt)}</p>
                   ) : (
                     <p>{t("radiology.critical.notAcknowledged")}</p>
                   )}
@@ -775,7 +775,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
                     <span className="font-medium text-gray-900 dark:text-gray-100 truncate">{img.fileName}</span>
                     <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
                       {img.seriesDescription ? `${img.seriesDescription} ` : ""}
-                      {img.fileSize ? `ΓÇö ${(Number(img.fileSize) / 1024).toFixed(0)} KB` : ""}
+                      {img.fileSize ? `— ${(Number(img.fileSize) / 1024).toFixed(0)} KB` : ""}
                     </span>
                   </div>
                 ))}
@@ -790,7 +790,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
               action={renderBadge(RadiologyPaymentStatusMap, insuranceInvoice.paymentStatus)}
             >
               <Row label={t("radiology.insuranceInvoices.invoiceNumber")}><span dir="ltr">{insuranceInvoice.invoiceNumber || insuranceInvoice.id}</span></Row>
-              <Row label={t("radiology.insuranceInvoices.entity")}>{insuranceInvoice.insuranceCompanyName || "ΓÇö"}</Row>
+              <Row label={t("radiology.insuranceInvoices.entity")}>{insuranceInvoice.insuranceCompanyName || "—"}</Row>
               <Row label={t("radiology.details.total")}>{fmtMoney(insuranceInvoice.total)}</Row>
               <Row label={t("radiology.details.paid")}>{fmtMoney(insuranceInvoice.paidAmount)}</Row>
               <Row label={t("radiology.details.remaining")}>{fmtMoney(insuranceInvoice.remaining)}</Row>
@@ -840,8 +840,8 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
                 {payments.map(p => (
                   <div key={p.id} className="flex items-center justify-between gap-2 py-2 border-b dark:border-gray-700/50 last:border-0 text-sm">
                     <div className="min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{methodText(p.method)}{p.paidBy ? ` ΓÇö ${p.paidBy}` : ""}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{p.note ? `${p.note} ΓÇö ` : ""}{fmtDateTime(p.createdAt)}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{methodText(p.method)}{p.paidBy ? ` — ${p.paidBy}` : ""}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{p.note ? `${p.note} — ` : ""}{fmtDateTime(p.createdAt)}</p>
                     </div>
                     <span className="font-bold text-green-600 dark:text-green-400 shrink-0">{signed(p.amount)}</span>
                   </div>
@@ -851,7 +851,7 @@ export default function StudyDetails({ studyId }: { studyId: string }) {
                     <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">{t("radiology.cashierShifts.title")}</p>
                     {shiftPayments.map((sp, i) => (
                       <div key={sp.id || `${sp.shiftId || "shift"}-${i}`} className="flex items-center justify-between gap-2 py-1.5 border-b dark:border-gray-700/50 last:border-0 text-sm">
-                        <span className="text-gray-600 dark:text-gray-300 truncate">{methodText(sp.method)}{sp.note ? ` ΓÇö ${sp.note}` : ""}</span>
+                        <span className="text-gray-600 dark:text-gray-300 truncate">{methodText(sp.method)}{sp.note ? ` — ${sp.note}` : ""}</span>
                         <span className="font-bold text-green-600 dark:text-green-400 shrink-0">{signed(sp.amount)}</span>
                       </div>
                     ))}

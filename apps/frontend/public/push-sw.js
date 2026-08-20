@@ -3,7 +3,12 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    self.clients.claim().then(() => {
+      // Unregister self so /sw.js can control scope / cleanly
+      return self.registration.unregister();
+    })
+  );
 });
 
 self.addEventListener("push", (event) => {

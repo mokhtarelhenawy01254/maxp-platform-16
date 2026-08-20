@@ -1,7 +1,7 @@
-﻿/**
+/**
  * tiktokEventsRoutes.js
  *
- * Routes ┘ä╪Ñ╪»╪º╪▒╪⌐ ┘ê╪Ñ╪▒╪│╪º┘ä TikTok Events (Pixel) ΓÇö ┘è╪¬┘à ╪¬╪½╪¿┘è╪¬┘ç╪º ╪¬╪¡╪¬ /api/v1/tiktok/events.
+ * Routes لإدارة وإرسال TikTok Events (Pixel) — يتم تثبيتها تحت /api/v1/tiktok/events.
  */
 
 const express = require('express');

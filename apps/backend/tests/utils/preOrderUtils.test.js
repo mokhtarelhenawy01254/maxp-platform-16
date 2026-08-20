@@ -1,4 +1,4 @@
-﻿const { isPreOrderEligible } = require('../../utils/preOrderUtils');
+const { isPreOrderEligible } = require('../../utils/preOrderUtils');
 
 describe('preOrderUtils.isPreOrderEligible', () => {
   test('returns false when product is null', () => {

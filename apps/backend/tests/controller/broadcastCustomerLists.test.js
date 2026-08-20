@@ -1,4 +1,4 @@
-﻿const broadcastController = require('../../controller/broadcastController');
+const broadcastController = require('../../controller/broadcastController');
 
 const createResponse = () => {
   const res = {};
@@ -50,7 +50,7 @@ jest.mock('../../services/whatsapp/providers/MetaCloudProvider', () => ({
   default: class {},
 }));
 
-describe('broadcastController ΓÇö customer lists', () => {
+describe('broadcastController — customer lists', () => {
   const companyId = 'comp_1';
   const req = (body = {}, params = {}, query = {}) => ({ user: { companyId }, body, params, query });
 
@@ -60,14 +60,14 @@ describe('broadcastController ΓÇö customer lists', () => {
   });
 
   describe('createCustomerList', () => {
-    test('┘è┘å╪┤╪ª ┘é╪º╪ª┘à╪⌐ ┘ê┘è╪¡╪│╪¿ ╪º┘ä╪╣╪»╪» ┘à┘å ╪╣┘à┘è┘ä count', async () => {
+    test('ينشئ قائمة ويحسب العدد من عميل count', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue(null);
       mockPrisma.customer.count.mockResolvedValue(42);
       mockPrisma.customerList.create.mockResolvedValue({ id: 'list_1', name: 'VIP', count: 42, criteria: '{"type":"all"}' });
 
       const res = createResponse();
       await broadcastController.createCustomerList(
-        req({ name: 'VIP', description: '┘â╪¿╪º╪▒', criteria: { type: 'all' } }),
+        req({ name: 'VIP', description: 'كبار', criteria: { type: 'all' } }),
         res,
       );
 
@@ -78,7 +78,7 @@ describe('broadcastController ΓÇö customer lists', () => {
       }));
     });
 
-    test('┘è╪▒┘ü╪╢ ╪º┘ä╪º╪│┘à ╪º┘ä┘à┘â╪▒╪▒ ╪¿┘Ç 409', async () => {
+    test('يرفض الاسم المكرر بـ 409', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue({ id: 'other' });
       const res = createResponse();
       await broadcastController.createCustomerList(
@@ -88,7 +88,7 @@ describe('broadcastController ΓÇö customer lists', () => {
       expect(res.status).toHaveBeenCalledWith(409);
     });
 
-    test('┘è╪▒┘ü╪╢ ╪║┘è╪º╪¿ ╪º┘ä╪º╪│┘à ╪ú┘ê ╪º┘ä┘à╪╣╪º┘è┘è╪▒', async () => {
+    test('يرفض غياب الاسم أو المعايير', async () => {
       const res = createResponse();
       await broadcastController.createCustomerList(req({ name: '' }), res);
       expect(res.status).toHaveBeenCalledWith(400);
@@ -96,16 +96,16 @@ describe('broadcastController ΓÇö customer lists', () => {
   });
 
   describe('updateCustomerList', () => {
-    test('┘è╪¡╪»┘æ╪½ ┘é╪º╪ª┘à╪⌐ ┘à┘ê╪¼┘ê╪»╪⌐ ┘ê┘è╪╣┘è╪» ╪¡╪│╪º╪¿ ╪º┘ä╪╣╪»╪»', async () => {
+    test('يحدّث قائمة موجودة ويعيد حساب العدد', async () => {
       mockPrisma.customerList.findFirst
         .mockResolvedValueOnce({ id: 'list_1', isDefault: false })
         .mockResolvedValueOnce(null);
       mockPrisma.customer.count.mockResolvedValue(10);
-      mockPrisma.customerList.update.mockResolvedValue({ id: 'list_1', name: '╪¼╪»┘è╪»╪⌐', count: 10 });
+      mockPrisma.customerList.update.mockResolvedValue({ id: 'list_1', name: 'جديدة', count: 10 });
 
       const res = createResponse();
       await broadcastController.updateCustomerList(
-        req({ name: '╪¼╪»┘è╪»╪⌐', criteria: { type: 'active', hours: 12 } }, { listId: 'list_1' }),
+        req({ name: 'جديدة', criteria: { type: 'active', hours: 12 } }, { listId: 'list_1' }),
         res,
       );
 
@@ -113,7 +113,7 @@ describe('broadcastController ΓÇö customer lists', () => {
       expect(res.json).toHaveBeenCalled();
     });
 
-    test('┘é╪º╪ª┘à╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐ ΓåÆ 404', async () => {
+    test('قائمة غير موجودة → 404', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue(null);
       const res = createResponse();
       await broadcastController.updateCustomerList(
@@ -123,7 +123,7 @@ describe('broadcastController ΓÇö customer lists', () => {
       expect(res.status).toHaveBeenCalledWith(404);
     });
 
-    test('┘é╪º╪ª┘à╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ΓåÆ 400', async () => {
+    test('قائمة افتراضية → 400', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue({ id: 'all', isDefault: true });
       const res = createResponse();
       await broadcastController.updateCustomerList(
@@ -135,7 +135,7 @@ describe('broadcastController ΓÇö customer lists', () => {
   });
 
   describe('refreshCustomerListCount', () => {
-    test('┘è╪╣┘è╪» ╪¡╪│╪º╪¿ ╪º┘ä╪╣╪»╪» ┘ê┘è╪¡╪»┘æ╪½┘ç', async () => {
+    test('يعيد حساب العدد ويحدّثه', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue({ id: 'list_1', criteria: '{"type":"all"}' });
       mockPrisma.customer.count.mockResolvedValue(77);
       mockPrisma.customerList.update.mockResolvedValue({ id: 'list_1', count: 77 });
@@ -149,7 +149,7 @@ describe('broadcastController ΓÇö customer lists', () => {
       }));
     });
 
-    test('┘é╪º╪ª┘à╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐ ΓåÆ 404', async () => {
+    test('قائمة غير موجودة → 404', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue(null);
       const res = createResponse();
       await broadcastController.refreshCustomerListCount(req({}, { listId: 'x' }), res);
@@ -158,7 +158,7 @@ describe('broadcastController ΓÇö customer lists', () => {
   });
 
   describe('previewCustomerListCount', () => {
-    test('┘è╪╣┘è╪» ╪º┘ä╪╣╪»╪» ┘ä┘à╪╣╪º┘è┘è╪▒ ╪¿╪»┘ê┘å ╪¡┘ü╪╕', async () => {
+    test('يعيد العدد لمعايير بدون حفظ', async () => {
       mockPrisma.customer.count.mockResolvedValue(5);
       const res = createResponse();
       await broadcastController.previewCustomerListCount(
@@ -171,7 +171,7 @@ describe('broadcastController ΓÇö customer lists', () => {
       }));
     });
 
-    test('┘à╪╣╪º┘è┘è╪▒ ┘å╪º┘é╪╡╪⌐ ΓåÆ 400', async () => {
+    test('معايير ناقصة → 400', async () => {
       const res = createResponse();
       await broadcastController.previewCustomerListCount(req({}), res);
       expect(res.status).toHaveBeenCalledWith(400);
@@ -179,11 +179,11 @@ describe('broadcastController ΓÇö customer lists', () => {
   });
 
   describe('getCustomersInList', () => {
-    test('┘é╪º╪ª┘à╪⌐ ┘à╪«╪╡╪╡╪⌐ ΓåÆ ┘è╪▒╪¼╪╣ data/total/page/limit', async () => {
+    test('قائمة مخصصة → يرجع data/total/page/limit', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue({ id: 'list_1', criteria: '{"type":"all"}' });
       mockPrisma.customer.count.mockResolvedValue(3);
       mockPrisma.customer.findMany.mockResolvedValue([
-        { id: 'c1', firstName: '┘à╪¡┘à╪»', lastName: '╪ú╪¡┘à╪»', email: '', phone: '201', status: 'ACTIVE', tags: '', customerRating: 'EXCELLENT', createdAt: new Date(), updatedAt: new Date() },
+        { id: 'c1', firstName: 'محمد', lastName: 'أحمد', email: '', phone: '201', status: 'ACTIVE', tags: '', customerRating: 'EXCELLENT', createdAt: new Date(), updatedAt: new Date() },
       ]);
 
       const res = createResponse();
@@ -200,10 +200,10 @@ describe('broadcastController ΓÇö customer lists', () => {
         hasMore: false,
       }));
       const payload = res.json.mock.calls[0][0];
-      expect(payload.data[0].name).toBe('┘à╪¡┘à╪» ╪ú╪¡┘à╪»');
+      expect(payload.data[0].name).toBe('محمد أحمد');
     });
 
-    test('┘é╪º╪ª┘à╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ all ΓåÆ ╪¿╪»┘ê┘å ┘é╪▒╪º╪í╪⌐ ┘à┘å customerList', async () => {
+    test('قائمة افتراضية all → بدون قراءة من customerList', async () => {
       mockPrisma.customer.count.mockResolvedValue(8);
       mockPrisma.customer.findMany.mockResolvedValue([]);
       const res = createResponse();
@@ -212,7 +212,7 @@ describe('broadcastController ΓÇö customer lists', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ total: 8 }));
     });
 
-    test('┘é╪º╪ª┘à╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐ ΓåÆ 404', async () => {
+    test('قائمة غير موجودة → 404', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue(null);
       const res = createResponse();
       await broadcastController.getCustomersInList(req({}, { listId: 'nope' }), res);
@@ -221,7 +221,7 @@ describe('broadcastController ΓÇö customer lists', () => {
   });
 
   describe('deleteCustomerList', () => {
-    test('┘è╪¡╪░┘ü ┘é╪º╪ª┘à╪⌐ ┘à╪«╪╡╪╡╪⌐ ╪¿┘å╪¼╪º╪¡', async () => {
+    test('يحذف قائمة مخصصة بنجاح', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue({ id: 'list_1', isDefault: false });
       mockPrisma.customerList.delete.mockResolvedValue({ id: 'list_1' });
       const res = createResponse();
@@ -229,7 +229,7 @@ describe('broadcastController ΓÇö customer lists', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
 
-    test('┘é╪º╪ª┘à╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ΓåÆ 400', async () => {
+    test('قائمة افتراضية → 400', async () => {
       mockPrisma.customerList.findFirst.mockResolvedValue({ id: 'all', isDefault: true });
       const res = createResponse();
       await broadcastController.deleteCustomerList(req({}, { listId: 'all' }), res);

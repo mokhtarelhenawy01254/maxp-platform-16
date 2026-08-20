@@ -1,4 +1,4 @@
-﻿const core = require('../../services/orderMovementCore');
+const core = require('../../services/orderMovementCore');
 const sql = require('../../services/orderMovementSql');
 
 const START_KEY = 'START';
@@ -6,7 +6,7 @@ const START_KEY = 'START';
 const handler = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح' });
 
     const { startDate, endDate } = req.query;
     const mode = req.query.mode === 'manual' ? 'manual' : req.query.mode === 'auto' ? 'auto' : 'all';
@@ -74,7 +74,7 @@ const handler = async (req, res) => {
     }
     statuses.sort((a, b) => (outflow.get(b) || 0) - (outflow.get(a) || 0) || a.localeCompare(b));
 
-    const nodes = [{ id: START_KEY, name: '╪¿╪»╪º┘è╪⌐' }, ...statuses.map((s) => ({ id: s, name: s }))];
+    const nodes = [{ id: START_KEY, name: 'بداية' }, ...statuses.map((s) => ({ id: s, name: s }))];
     const indexMap = new Map(nodes.map((n, i) => [n.id, i]));
 
     const links = [];
@@ -116,7 +116,7 @@ const handler = async (req, res) => {
       }
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪¡┘ä┘è┘ä ╪¡╪▒┘â╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬' });
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحليل حركة الطلبات' });
   }
 };
 

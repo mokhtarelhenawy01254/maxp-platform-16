@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   shippingCompany: { findMany: jest.fn() },
   shipment: { findMany: jest.fn(), updateMany: jest.fn() },
   order: { findMany: jest.fn(), update: jest.fn() },

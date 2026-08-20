@@ -1,4 +1,4 @@
-﻿/**
+/**
  * One-off: backfill stale `metadata.preparationStatus` on orders whose
  * `order.status` was changed outside the preparation queue.
  *
@@ -65,12 +65,12 @@ function parseMetadata(value) {
 }
 
 async function main() {
-  console.log('ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ');
+  console.log('══════════════════════════════════════════════════════════════');
   console.log('Backfill preparation status metadata');
   console.log(`Company slug : ${COMPANY_SLUG || '(all companies)'}`);
   console.log(`Dry run      : ${DRY_RUN}`);
   console.log(`Batch size   : ${BATCH_SIZE}`);
-  console.log('ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ');
+  console.log('══════════════════════════════════════════════════════════════');
 
   let companyId = null;
   if (COMPANY_SLUG) {
@@ -79,15 +79,15 @@ async function main() {
       select: { id: true, name: true, slug: true }
     });
     if (!company) {
-      console.error(`Γ¥î Company with slug "${COMPANY_SLUG}" not found.`);
+      console.error(`❌ Company with slug "${COMPANY_SLUG}" not found.`);
       process.exit(1);
     }
     companyId = company.id;
-    console.log(`Γ£à Found company: ${company.name} (${company.id})`);
+    console.log(`✅ Found company: ${company.name} (${company.id})`);
   }
 
-  // ΓöÇΓöÇΓöÇ Regular orders ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-  console.log('\nΓöÇΓöÇ Regular orders ΓöÇΓöÇ');
+  // ─── Regular orders ──────────────────────────────────────────────────────
+  console.log('\n── Regular orders ──');
   let matched = 0;
   let updated = 0;
   let skipped = 0;
@@ -118,7 +118,7 @@ async function main() {
       // queue's source of truth). Only override when missing or stale vs an
       // explicit order.status.
       if (currentPrep && currentPrep !== normalizedStatus) {
-        // A real stage already exists and differs ΓÇö but if order.status is an
+        // A real stage already exists and differs — but if order.status is an
         // explicit stage (e.g. CONFIRMED after a move back), the newer intent
         // is order.status, so sync it.
         // If currentPrep is the mapped PROCESSING left by an earlier backfill,
@@ -138,7 +138,7 @@ async function main() {
           updated += 1;
           console.log(`  ${DRY_RUN ? '[DRY]' : '[OK]'} ${order.orderNumber}: prep ${currentPrep} -> ${normalizedStatus} (stale PROCESSING)`);
         } else {
-          // Real distinct stage that predates this order.status ΓÇö leave it.
+          // Real distinct stage that predates this order.status — leave it.
           skipped += 1;
         }
         continue;
@@ -169,8 +169,8 @@ async function main() {
   }
   console.log(`Regular: ${matched} scanned, ${updated} would-be/updated, ${skipped} skipped`);
 
-  // ΓöÇΓöÇΓöÇ Guest orders ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-  console.log('\nΓöÇΓöÇ Guest orders ΓöÇΓöÇ');
+  // ─── Guest orders ────────────────────────────────────────────────────────
+  console.log('\n── Guest orders ──');
   let gMatched = 0;
   let gUpdated = 0;
   let gSkipped = 0;
@@ -239,15 +239,15 @@ async function main() {
   }
   console.log(`Guest: ${gMatched} scanned, ${gUpdated} would-be/updated, ${gSkipped} skipped`);
 
-  console.log('\nΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ');
-  console.log(`Γ£à ${DRY_RUN ? 'DRY RUN ΓÇö no changes made.' : 'Backfill complete.'}`);
+  console.log('\n══════════════════════════════════════════════════════════════');
+  console.log(`✅ ${DRY_RUN ? 'DRY RUN — no changes made.' : 'Backfill complete.'}`);
   console.log(`   Regular: ${updated} updated | Guest: ${gUpdated} updated`);
-  console.log('ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ');
+  console.log('══════════════════════════════════════════════════════════════');
 }
 
 main()
   .catch(async (err) => {
-    console.error('Γ¥î Backfill failed:', err);
+    console.error('❌ Backfill failed:', err);
     await prisma.$disconnect();
     process.exit(1);
   })

@@ -60,33 +60,12 @@ const clampProgress = (value) => {
   return Math.max(0, Math.min(100, Math.round(numericValue)));
 };
 
-const escapeSqlValue = (value) => String(value ?? "").replace(/'/g, "''");
-
 const escapeSqlLike = (value) =>
-  escapeSqlValue(String(value ?? ""))
+  String(value ?? "")
+    .replace(/'/g, "''")
     .replace(/\\/g, "\\\\")
     .replace(/%/g, "\\%")
     .replace(/_/g, "\\_");
-
-const toSqlLiteral = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "NULL";
-  }
-
-  if (value instanceof Date) {
-    return `'${escapeSqlValue(value.toISOString())}'`;
-  }
-
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? String(value) : "NULL";
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "TRUE" : "FALSE";
-  }
-
-  return `'${escapeSqlValue(value)}'`;
-};
 
 const toApiStatus = (status) => String(status || "pending").toLowerCase();
 const toApiPriority = (priority) => String(priority || "medium").toLowerCase();
@@ -221,39 +200,47 @@ async function shouldUseLegacyTaskQueries() {
 }
 
 function buildLegacyTaskWhereClause(filters) {
-  const clauses = [`"companyId" = '${escapeSqlValue(filters.companyId)}'`];
+  const clauses = [];
+  const params = [];
+
+  clauses.push(`"companyId" = $1`);
+  params.push(filters.companyId);
 
   if (filters.projectId) {
-    clauses.push(`"projectId" = '${escapeSqlValue(filters.projectId)}'`);
+    clauses.push(`"projectId" = $${params.length + 1}`);
+    params.push(filters.projectId);
   }
 
   if (filters.assignedTo) {
-    clauses.push(`"assignedTo" = '${escapeSqlValue(filters.assignedTo)}'`);
+    clauses.push(`"assignedTo" = $${params.length + 1}`);
+    params.push(filters.assignedTo);
   }
 
   if (filters.createdBy) {
-    clauses.push(`"createdBy" = '${escapeSqlValue(filters.createdBy)}'`);
+    clauses.push(`"createdBy" = $${params.length + 1}`);
+    params.push(filters.createdBy);
   }
 
   if (filters.status) {
-    clauses.push(`"status" = '${escapeSqlValue(normalizeStatus(filters.status))}'`);
+    clauses.push(`"status" = $${params.length + 1}`);
+    params.push(normalizeStatus(filters.status));
   }
 
   if (filters.priority) {
-    clauses.push(
-      `"priority" = '${escapeSqlValue(normalizePriority(filters.priority))}'`,
-    );
+    clauses.push(`"priority" = $${params.length + 1}`);
+    params.push(normalizePriority(filters.priority));
   }
 
   if (filters.search) {
-    const safeSearch = escapeSqlLike(filters.search);
+    const searchParamIdx = params.length + 1;
     clauses.push(`(
-      LOWER(COALESCE("title", '')) LIKE LOWER('%${safeSearch}%') ESCAPE '\\'
-      OR LOWER(COALESCE("description", '')) LIKE LOWER('%${safeSearch}%') ESCAPE '\\'
+      LOWER(COALESCE("title", '')) LIKE LOWER($${searchParamIdx}) ESCAPE '\\'
+      OR LOWER(COALESCE("description", '')) LIKE LOWER($${searchParamIdx}) ESCAPE '\\'
     )`);
+    params.push(`%${escapeSqlLike(filters.search)}%`);
   }
 
-  return clauses.join(" AND ");
+  return { sql: clauses.join(" AND "), params };
 }
 
 async function fetchLegacyTaskSummaries({
@@ -269,7 +256,7 @@ async function fetchLegacyTaskSummaries({
   sortBy = "createdAt",
   sortOrder = "desc",
 }) {
-  const whereClause = buildLegacyTaskWhereClause({
+  const { sql: whereClause, params: whereParams } = buildLegacyTaskWhereClause({
     companyId,
     projectId,
     status,
@@ -284,8 +271,12 @@ async function fetchLegacyTaskSummaries({
   const orderClause = buildTaskOrderClause(sortBy, sortOrder);
   const prisma = getSharedPrismaClient();
 
+  const limitIdx = whereParams.length + 1;
+  const offsetIdx = whereParams.length + 2;
+
   const [tasks, countRows] = await Promise.all([
-    prisma.$queryRawUnsafe(`
+    prisma.$queryRawUnsafe(
+      `
       SELECT
         "id",
         "projectId",
@@ -312,14 +303,21 @@ async function fetchLegacyTaskSummaries({
       FROM "Task"
       WHERE ${whereClause}
       ORDER BY ${orderClause}
-      LIMIT ${parsedLimit}
-      OFFSET ${offset}
-    `),
-    prisma.$queryRawUnsafe(`
+      LIMIT $${limitIdx}
+      OFFSET $${offsetIdx}
+    `,
+      ...whereParams,
+      parsedLimit,
+      offset,
+    ),
+    prisma.$queryRawUnsafe(
+      `
       SELECT COUNT(*)::int AS total
       FROM "Task"
       WHERE ${whereClause}
-    `),
+    `,
+      ...whereParams,
+    ),
   ]);
 
   const formattedTasks = await hydrateLegacyTasks(tasks);
@@ -417,7 +415,8 @@ async function hydrateLegacyTasks(tasks) {
 
 async function fetchLegacyTaskById(companyId, taskId) {
   const prisma = getSharedPrismaClient();
-  const rows = await prisma.$queryRawUnsafe(`
+  const rows = await prisma.$queryRawUnsafe(
+    `
     SELECT
       "id",
       "projectId",
@@ -442,10 +441,13 @@ async function fetchLegacyTaskById(companyId, taskId) {
       "completedDate",
       "isRecurring"
     FROM "Task"
-    WHERE "companyId" = ${toSqlLiteral(companyId)}
-      AND "id" = ${toSqlLiteral(taskId)}
+    WHERE "companyId" = $1
+      AND "id" = $2
     LIMIT 1
-  `);
+  `,
+    companyId,
+    taskId,
+  );
 
   if (!rows?.length) {
     return null;
@@ -799,14 +801,20 @@ const taskController = {
         const insertColumnSql = insertColumns
           .map((columnName) => `"${columnName}"`)
           .join(", ");
-        const insertValueSql = insertColumns
-          .map((columnName) => toSqlLiteral(legacyTaskData[columnName]))
+        const insertPlaceholders = insertColumns
+          .map((_, i) => `$${i + 1}`)
           .join(", ");
+        const insertValues = insertColumns.map(
+          (columnName) => legacyTaskData[columnName],
+        );
 
-        await getSharedPrismaClient().$executeRawUnsafe(`
+        await getSharedPrismaClient().$executeRawUnsafe(
+          `
           INSERT INTO "Task" (${insertColumnSql})
-          VALUES (${insertValueSql})
-        `);
+          VALUES (${insertPlaceholders})
+        `,
+          ...insertValues,
+        );
 
         newTask = await fetchLegacyTaskById(companyId, taskId);
       } else {
@@ -1204,16 +1212,24 @@ const taskController = {
               : clampProgress(progress);
         const completedDate =
           normalizedStatus === "COMPLETED" ? new Date() : null;
-        const updatedCount = await getSharedPrismaClient().$executeRawUnsafe(`
+        const updatedCount = await getSharedPrismaClient().$executeRawUnsafe(
+          `
           UPDATE "Task"
           SET
-            "status" = ${toSqlLiteral(normalizedStatus)},
-            "progress" = ${toSqlLiteral(nextProgress)},
-            "completedDate" = ${toSqlLiteral(completedDate)},
-            "updatedAt" = ${toSqlLiteral(new Date())}
-          WHERE "id" = ${toSqlLiteral(id)}
-            AND "companyId" = ${toSqlLiteral(companyId)}
-        `);
+            "status" = $1,
+            "progress" = $2,
+            "completedDate" = $3,
+            "updatedAt" = $4
+          WHERE "id" = $5
+            AND "companyId" = $6
+        `,
+          normalizedStatus,
+          nextProgress,
+          completedDate,
+          new Date(),
+          id,
+          companyId,
+        );
 
         if (!updatedCount) {
           return res.status(404).json({

@@ -1,8 +1,32 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, type TouchEvent as ReactTouchEvent } from "react";
+import { useTranslation } from "react-i18next";
 import EmojiPicker from "emoji-picker-react";
 import { VirtualItem } from "@tanstack/react-virtual";
-import { AlertTriangle, ArrowLeft, BarChart2, BarChart3, Clipboard, ClipboardList, File, FileText, Info, Link, List, MapPin, Menu, Mic, Navigation, PanelRightClose, PanelRightOpen, Paperclip, Pin, Plus, RefreshCw, Send, ShoppingBag, ShoppingCart, Smile, Store, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  BarChart3,
+  Info,
+  List,
+  MapPin,
+  Mic,
+  Package,
+  Paperclip,
+  PanelRightClose,
+  PanelRightOpen,
+  RefreshCw,
+  Send,
+  ShoppingCart,
+  Smile,
+  Menu,
+  Plus,
+  Store,
+  ClipboardList,
+  FileText,
+  Link2,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +35,9 @@ import { cn } from "@/lib/utils";
 
 import { Contact, Message } from "../../../hooks/useWhatsAppQueries";
 import {
-  getBestContactDisplayName,
   getContactDisplayPhone,
 } from "../whatsappContactDisplay";
+import { getInboxExternalImageUrl } from "@/utils/imageUrl";
 import MessageBubble from "./MessageBubble";
 import AudioRecorder from "./AudioRecorder";
 
@@ -53,6 +77,7 @@ interface ChatWindowProps {
   onOpenOrder: () => void;
   onOpenTasks?: () => void;
   onOpenTemplate?: () => void;
+  onOpenProducts?: () => void;
   onBackToList?: () => void;
   onTouchStart?: (e: ReactTouchEvent) => void;
   onTouchEnd?: (e: ReactTouchEvent) => void;
@@ -100,6 +125,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onOpenOrder,
   onOpenTasks,
   onOpenTemplate,
+  onOpenProducts,
   onBackToList,
   onTouchStart,
   onTouchEnd,
@@ -121,12 +147,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return (
       <div
         className={cn(
-          "whatsapp-theme-transition flex min-h-[24rem] flex-1 items-center justify-center bg-[color:var(--color-muted)] px-6 text-center",
+          "whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col items-center justify-center bg-[color:var(--color-muted)]/40 px-space-6 text-center",
           className,
         )}
       >
-        <div className="max-w-sm space-y-4">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-primary)] shadow-md">
+        <div className="max-w-sm space-y-space-4">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-primary)] shadow-raised">
             <Send className="size-7" />
           </div>
           <p className="text-lg font-semibold text-[color:var(--color-foreground)]">
@@ -142,6 +168,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const replyPreview = replyingTo?.content || replyingTo?.mediaType || t("whatsapp.window.message");
 
+  const handleCopyChatLink = () => {
+    if (!selectedContact) return;
+    const sessionId = selectedContact.sessionId || "";
+    if (!sessionId) {
+      toast.error("لا يمكن نسخ رابط المحادثة");
+      return;
+    }
+    const jid = encodeURIComponent(selectedContact.jid);
+    const url = `${window.location.origin}/whatsapp/chat?session=${encodeURIComponent(sessionId)}&jid=${jid}`;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => toast.success("تم نسخ رابط المحادثة"))
+      .catch(() => toast.error("تعذر نسخ الرابط"));
+  };
+
   return (
     <div
       className={cn(
@@ -151,15 +192,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="wa-glass-header flex items-center justify-between gap-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-3 py-1.5">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="wa-glass-header flex items-center justify-between gap-space-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-space-3 py-space-1 shrink-0">
+        <div className="flex min-w-0 items-center gap-space-2">
           {onBackToList ? (
             <Button
               variant="ghost"
               size="icon-sm"
               className="size-8 rounded-full hover:bg-[var(--whatsapp-surface-hover)] lg:hidden"
               onClick={onBackToList}
-              title={t("whatsapp.sidebar.all")}
+              title={t("whatsapp.sidebar.all") as string}
             >
               <ArrowLeft
                 className={cn("size-4", i18n.dir() === "rtl" && "rotate-180")}
@@ -168,7 +209,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </Button>
           ) : null}
           <Avatar className="size-8">
-            <AvatarImage src={selectedContact.profilePicUrl || undefined} />
+            <AvatarImage src={getInboxExternalImageUrl(selectedContact.profilePicUrl) || undefined} />
             <AvatarFallback className="bg-primary/10 text-xs text-[color:var(--color-primary)]">
               {getContactName(selectedContact).slice(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -249,6 +290,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <Info className="size-4" />
           <span className="sr-only">{t("common.info")}</span>
         </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="size-8 shrink-0 rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+          onClick={handleCopyChatLink}
+          title="نسخ رابط المحادثة"
+        >
+          <Link2 className="size-4" />
+          <span className="sr-only">نسخ رابط المحادثة</span>
+        </Button>
       </div>
 
       <div
@@ -313,14 +364,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   }}
                 >
                   <MessageBubble
-                    message={message}
+                    message={message!}
                     previousMessage={previousMessage || undefined}
                     isGroup={selectedContact.isGroup}
                     sessionId={selectedContact.sessionId}
                     onContextMenu={onMessageContextMenu}
                     getParticipantName={getParticipantName}
                     onQuotedMessageClick={onQuotedMessageClick}
-                    highlighted={highlightedMessageId === message.messageId}
+                    highlighted={highlightedMessageId === message?.messageId}
                   />
                 </div>
               );
@@ -337,15 +388,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : null}
       </div>
 
-      <div className="wa-input-bar border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3">
+      <div className="wa-input-bar border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3 shrink-0">
         {replyingTo ? (
           <div className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-2">
             <div className="min-w-0 space-y-1">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--color-primary)]">
                 {replyingTo.fromMe
                   ? t("whatsapp.window.you")
-                  : replyingTo.participant
-                    ? getParticipantName(replyingTo.participant)
+                  : replyingTo.participant || replyingTo.participantName
+                    ? (replyingTo.participantName || getParticipantName(replyingTo.participant || ''))
                     : getContactName(selectedContact)}
               </p>
               <p className="line-clamp-2 text-sm text-[color:var(--color-muted-foreground)]">
@@ -375,7 +426,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="relative flex flex-wrap items-end gap-2">
             {showEmojiPicker ? (
               <>
-                <div className="wa-rich-tools-backdrop sm:hidden" aria-hidden="true" inert onClick={() => setShowEmojiPicker(false)} />
+                <div className="wa-rich-tools-backdrop sm:hidden" aria-hidden="true" {...({inert: true} as any)} onClick={() => setShowEmojiPicker(false)} />
                 <div className="whatsapp-emoji-picker absolute bottom-full start-0 z-20 mb-3 overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] shadow-lg">
                   <EmojiPicker
                     onEmojiClick={(data) => setNewMessage(newMessage + data.emoji)}
@@ -401,7 +452,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 size="icon-sm"
                 className="rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
                 onClick={() => fileInputRef.current?.click()}
-                title={t("whatsapp.tooltips.attach")}
+                title={t("whatsapp.tooltips.attach") as string}
               >
                 <Paperclip className="size-4" />
               </Button>
@@ -422,7 +473,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             {showRichTools ? (
               <>
                 {/* Mobile: bottom tray */}
-                <div className="wa-rich-tools-backdrop sm:hidden" aria-hidden="true" inert onClick={() => setShowRichTools(false)} />
+                <div className="wa-rich-tools-backdrop sm:hidden" aria-hidden="true" {...({inert: true} as any)} onClick={() => setShowRichTools(false)} />
                 <div className="wa-rich-tools-tray sm:order-2 sm:static sm:inset-auto sm:z-auto sm:w-auto sm:animate-none sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:dark:shadow-none">
                   <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-1">
                 <Button
@@ -430,7 +481,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   size="icon-sm"
                   className="rounded-full"
                   onClick={onOpenPoll}
-                  title={t("whatsapp.tooltips.poll")}
+                  title={t("whatsapp.tooltips.poll") as string}
                 >
                   <BarChart3 className="size-4" />
                 </Button>
@@ -439,7 +490,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   size="icon-sm"
                   className="rounded-full"
                   onClick={onOpenButtons}
-                  title={t("whatsapp.tooltips.buttons")}
+                  title={t("whatsapp.tooltips.buttons") as string}
                 >
                   <Menu className="size-4" />
                 </Button>
@@ -448,7 +499,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   size="icon-sm"
                   className="rounded-full"
                   onClick={onOpenList}
-                  title={t("whatsapp.tooltips.list")}
+                  title={t("whatsapp.tooltips.list") as string}
                 >
                   <List className="size-4" />
                 </Button>
@@ -457,7 +508,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   size="icon-sm"
                   className="rounded-full"
                   onClick={onOpenCatalog}
-                  title={t("whatsapp.tooltips.catalog")}
+                  title={t("whatsapp.tooltips.catalog") as string}
                 >
                   <Store className="size-4" />
                 </Button>
@@ -466,7 +517,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   size="icon-sm"
                   className="rounded-full"
                   onClick={onOpenLocation}
-                  title={t("whatsapp.tooltips.location")}
+                  title={t("whatsapp.tooltips.location") as string}
                 >
                   <MapPin className="size-4" />
                 </Button>
@@ -475,7 +526,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   size="icon-sm"
                   className="rounded-full"
                   onClick={onOpenOrder}
-                  title={t("whatsapp.tooltips.order")}
+                  title={t("whatsapp.tooltips.order") as string}
                 >
                   <ShoppingCart className="size-4" />
                 </Button>
@@ -485,7 +536,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     size="icon-sm"
                     className="rounded-full"
                     onClick={onOpenTasks}
-                    title={t("whatsapp.tooltips.task")}
+                    title={t("whatsapp.tooltips.task") as string}
                   >
                     <ClipboardList className="size-4" />
                   </Button>
@@ -496,7 +547,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     size="icon-sm"
                     className="rounded-full"
                     onClick={onOpenTemplate}
-                    title={t("whatsapp.tooltips.template")}
+                    title={t("whatsapp.tooltips.template") as string}
                   >
                     <FileText className="size-4" />
                   </Button>
@@ -511,8 +562,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <textarea
               value={newMessage}
               onChange={(event) => setNewMessage(event.target.value)}
-              placeholder={t("whatsapp.window.inputPlaceholder")}
-              aria-label={t("whatsapp.window.inputPlaceholder")}
+              placeholder={t("whatsapp.window.inputPlaceholder") as string}
+              aria-label={t("whatsapp.window.inputPlaceholder") as string}
               className="wa-auto-textarea order-2 min-h-[2.5rem] min-w-[10rem] flex-1 resize-none rounded-xl border border-[color:var(--shell-control-border)] bg-background dark:bg-[var(--whatsapp-surface-strong)] px-3.5 py-2 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3 sm:min-h-[2.5rem] sm:min-w-[14rem] sm:py-2"
               rows={1}
               onKeyDown={(event) => {
@@ -522,6 +573,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 }
               }}
             />
+
+            {onOpenProducts && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="order-4 rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)] w-10 h-10 p-0 shrink-0 flex items-center justify-center"
+                onClick={onOpenProducts}
+                title={t("whatsapp.tooltips.products") as string}
+              >
+                <Package className="size-4" />
+              </Button>
+            )}
 
             {newMessage.trim() ? (
               <Button

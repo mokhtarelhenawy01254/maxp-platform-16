@@ -1,12 +1,12 @@
-﻿# Fix: Customer.phoneNormalized missing from Prisma schema (customer creation broken)
+# Fix: Customer.phoneNormalized missing from Prisma schema (customer creation broken)
 
 **Date**: 2026-08-02
-**Domain**: Infrastructure ΓÇö Prisma Schema / Customers
+**Domain**: Infrastructure — Prisma Schema / Customers
 **Type**: Bugfix
 
 ## Problem
 
-Admin customer creation ("╪Ñ╪╢╪º┘ü╪⌐ ╪╣┘à┘è┘ä") and storefront guestΓåÆcustomer conversion
+Admin customer creation ("إضافة عميل") and storefront guest→customer conversion
 were failing on production with:
 
 ```
@@ -26,10 +26,10 @@ adds it to `Customer` (which is what the dedupe code writes/queries).
 
 ## Fix
 
-- `apps/backend/prisma/schema/products.prisma` ΓÇö added
+- `apps/backend/prisma/schema/products.prisma` — added
   `phoneNormalized String?` to `model Customer` and an
   `@@index([phoneNormalized])`.
-- `apps/backend/prisma/schema.prisma` ΓÇö same field added to the root
+- `apps/backend/prisma/schema.prisma` — same field added to the root
   `Customer` model to keep both schema copies in sync.
 
 The production deploy runs `prisma db push --schema=prisma/schema`, which adds
@@ -39,6 +39,6 @@ the `phoneNormalized` column to the `customers` table, and
 ## Verification
 
 - After deploy: `POST /api/v1/customers` (admin create) succeeds.
-- Storefront checkout guestΓåÆcustomer conversion succeeds.
+- Storefront checkout guest→customer conversion succeeds.
 - `phoneNormalized` is populated with the canonical E.164 value (e.g.
   `+2010...`).

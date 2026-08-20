@@ -1,8 +1,18 @@
-import { ArrowLeft as ArrowLeftIcon, DollarSign as BanknotesIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as CubeIcon, Circle as PaperAirplaneIcon, ShoppingBag as ShoppingBagIcon, Truck as TruckIcon, User as UserIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-;
+import {
+  ArrowLeftIcon,
+  BanknotesIcon,
+  ChatBubbleLeftRightIcon,
+  CubeIcon,
+  PaperAirplaneIcon,
+  ShoppingBagIcon,
+  TruckIcon,
+  UserIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTheme } from "../../hooks/useTheme";
@@ -238,7 +248,7 @@ const AffiliateOrderDetails: React.FC = () => {
     const message = ticketMessage.trim();
 
     if (message.length < 5) {
-      toast.error("اكتب تفاصيل أوضح قبل فتح التيكت");
+      tToast.error("AffiliateOrderDetails.msg_7afd");
       return;
     }
 
@@ -264,7 +274,7 @@ const AffiliateOrderDetails: React.FC = () => {
             : current,
         );
         setTicketMessage("");
-        toast.success(response.data.message || "تم فتح التيكت وربطه بالطلب");
+        toast.success(response.data.message || i18n.t("AffiliateOrderDetails.msg_1b99"));
       }
     } catch (error: unknown) {
       const message =

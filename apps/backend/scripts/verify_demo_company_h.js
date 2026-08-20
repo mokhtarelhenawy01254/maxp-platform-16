@@ -1,4 +1,4 @@
-﻿const path = require('path');
+const path = require('path');
 const { PrismaClient } = require('../prisma/generated/postgresql_v2');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env.production'), quiet: true });
 require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
@@ -26,5 +26,5 @@ async function main() {
 }
 
 main()
-  .catch(e => { console.error('Γ¥î Error:', e.message); process.exit(1); })
+  .catch(e => { console.error('❌ Error:', e.message); process.exit(1); })
   .finally(() => prisma.$disconnect());

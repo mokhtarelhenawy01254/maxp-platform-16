@@ -1,4 +1,4 @@
-﻿# Subscription Payment Return Page (`/subscription`)
+# Subscription Payment Return Page (`/subscription`)
 
 ## Problem
 
@@ -17,7 +17,7 @@ unauthenticated branch contained `path="/subscription"` (which redirected to
 `/auth/login`). As a result, an authenticated user landing on
 `/subscription?status=success...` matched the authenticated catch-all route
 (`<Route path="*" element={<Navigate to="/apps" replace />}>`) and was thrown
-onto the apps dashboard ("╪º┘ä┘à╪¬╪¼╪▒") instead of seeing a payment-success
+onto the apps dashboard ("المتجر") instead of seeing a payment-success
 confirmation. This made it look like paying for a bundle dumped the customer
 back onto the store.
 
@@ -25,8 +25,8 @@ back onto the store.
 
 - New page: `apps/frontend/src/pages/payment/SubscriptionSuccess.tsx`
   - Reads `status`, `paymentStatus`/`statusCode`, and `billingId` from the URL.
-  - **Success** state (default): "╪¿╪º┘é╪⌐ AI + Inbox ┘à┘ü╪╣┘æ┘ä╪⌐!" + primary CTA
-    "╪º╪¿╪»╪ú ╪º┘ä╪ó┘å ΓÇö ╪╡┘å╪»┘ê┘é ╪º┘ä┘ê╪º╪▒╪»" ΓåÆ `/unified-inbox`, secondary link back to
+  - **Success** state (default): "باقة AI + Inbox مفعّلة!" + primary CTA
+    "ابدأ الآن — صندوق الوارد" → `/unified-inbox`, secondary link back to
     `/marketplace/bundles`.
   - **Failure** state: retry checkout or return to the bundles page.
   - **Pending** fallback (no status): continue to inbox or browse bundles.

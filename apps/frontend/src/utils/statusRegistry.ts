@@ -18,7 +18,7 @@ const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colo
   CONFIRMED:            { label: 'مؤكد',                 labelKey: 'orders.confirmed',         colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' },
   SCHEDULED:            { label: 'طلب مجدول',            labelKey: 'orders.scheduled',         colorClass: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' },
   ON_HOLD:              { label: 'معلق',                 labelKey: 'orders.onHold',            colorClass: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' },
-  PROCESSING:           { label: 'قيد التجهيز',          labelKey: 'orders.processing',        colorClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400' },
+  PROCESSING:           { label: 'قيد التنفيذ',           labelKey: 'orders.processing',        colorClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400' },
   SHIPPED:              { label: 'تم الشحن',             labelKey: 'orders.shipped',           colorClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' },
   DELIVERED:            { label: 'تم التسليم',           labelKey: 'orders.delivered',         colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
   CANCELLED:            { label: 'ملغي',                 labelKey: 'orders.cancelled',         colorClass: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
@@ -34,6 +34,7 @@ const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colo
   READY_TO_SHIP:        { label: 'جاهز للشحن',           labelKey: 'orders.readyToShip',       colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
   OUT_FOR_DELIVERY:     { label: 'خرج للتسليم',          labelKey: 'orders.outForDelivery',    colorClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' },
   LOST:                 { label: 'مفقود',                labelKey: 'orders.lost',              colorClass: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
+  INCOMPLETE:           { label: 'غير مكتمل',            labelKey: 'orders.incomplete',        colorClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400' },
   PENDING_PREPARATION:  { label: 'بانتظار التجهيز',      labelKey: 'orders.pendingPreparation',colorClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
   PREPARING:            { label: 'قيد التجهيز',          labelKey: 'orders.preparing',         colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' },
   READY:                { label: 'جاهز للشحن',           labelKey: 'orders.ready',              colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
@@ -41,10 +42,11 @@ const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colo
   PACKAGED:             { label: 'تم التعبئة',           labelKey: 'orders.packaged',          colorClass: 'bg-teal-100 text-teal-800 dark:bg-teal-900/20 dark:text-teal-400' },
   ON_HOLD_PREP:         { label: 'تجهيز معلق',           labelKey: 'orders.onHoldPrep',        colorClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
   NOT_SHIPPED:          { label: 'لم يتم الشحن',         labelKey: 'orders.notShipped',        colorClass: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
-  REFUNDED_PARTIALLY:   { label: 'مسترجع جزئي',          labelKey: 'orders.partiallyRefunded', colorClass: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
-  COMPLETED:            { label: 'مكتمل',                labelKey: 'orders.completed',         colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
-  FAILED:               { label: 'فشل',                  labelKey: 'orders.failed',            colorClass: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
+  REFUNDED_PARTIALLY:   { label: 'مسترد جزئياً',          labelKey: 'orders.partiallyRefunded', colorClass: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
+  COMPLETED:            { label: 'مدفوع',                labelKey: 'orders.completed',         colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
+  FAILED:               { label: 'فشل الدفع',             labelKey: 'orders.failed',            colorClass: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
   STOCK_SHORTAGE:       { label: 'عجز مخزون',            labelKey: 'orders.stockShortage',     colorClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/20 dark:text-rose-400' },
+  SHORTAGE_FAILED:      { label: 'فشل بسبب العجز',       labelKey: 'orders.shortageFailed',    colorClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' },
   WOO_TAGHEZ:           { label: 'Woo Taghez',           labelKey: 'orders.wooTaghez',         colorClass: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
   PENDING_CANCELLATION: { label: 'بانتظار الإلغاء',      labelKey: 'orders.pendingCancellation',colorClass: 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400' },
 };
@@ -62,8 +64,10 @@ const TURBO_STATUS_DEFS: Record<string, { label: string; labelKey: string; color
   archived:              { label: 'شحنة محذوفة',            labelKey: 'orders.turboArchived',       colorClass: 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300' },
   returned_resent:       { label: 'معاد إرسالها',           labelKey: 'orders.turboReturnedResent', colorClass: 'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-900/30 dark:text-sky-300' },
   returned_missing:      { label: 'مرتجع مفقود',            labelKey: 'orders.turboReturnedMissing',colorClass: 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' },
-  returned_destroyed:    { label: 'مرتجع معدوم',            labelKey: 'orders.turboReturnedDestroyed',colorClass: 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-900/40 dark:text-rose-200' },
-  delayed:               { label: 'مؤجلة مع المندوب',       labelKey: 'orders.turboDelayed',        colorClass: 'bg-yellow-50 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300' },
+   returned_destroyed:    { label: 'مرتجع معدوم',            labelKey: 'orders.turboReturnedDestroyed',colorClass: 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-900/40 dark:text-rose-200' },
+   returned_received:     { label: 'مرتجعات وصلتني',          labelKey: 'orders.turboReturnedReceived', colorClass: 'bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300' },
+   returned_to_customer:  { label: 'مرتجعة للعميل',            labelKey: 'orders.turboReturnedToCustomer', colorClass: 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300' },
+   delayed:               { label: 'مؤجلة مع المندوب',       labelKey: 'orders.turboDelayed',        colorClass: 'bg-yellow-50 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300' },
 };
 
 /** Map any raw turbo alias → canonical code */
@@ -83,7 +87,9 @@ const TURBO_ALIASES: Record<string, string> = {
   '12': 'returned_destroyed', 'returned_destroyed': 'returned_destroyed', 'status_12': 'returned_destroyed',
   '13': 'delayed', 'delayed': 'delayed', 'on hold': 'delayed', 'failed delivery': 'delayed', 'rescheduled': 'delayed', 'status_13': 'delayed',
   'مؤجلة': 'delayed', 'مؤجله': 'delayed', 'مؤجل': 'delayed', 'تأجيل': 'delayed', 'مؤجلة مع المندوب': 'delayed', 'قيد الانتظار مع المندوب': 'delayed',
-  'تم التسليم': 'delivered', 'مرتجع مع الشركة': 'returned_to_company', 'مرتجعات بالشركة': 'returned_to_company',
+   'تم التسليم': 'delivered', 'مرتجع مع الشركة': 'returned_to_company', 'مرتجعات بالشركة': 'returned_to_company',
+   '20': 'returned_received', 'returned_received': 'returned_received', 'status_20': 'returned_received', 'مرتجعات وصلتني': 'returned_received',
+   'returned_to_customer': 'returned_to_customer', 'مرتجعة': 'returned_to_customer',
 };
 
 export interface OrderLike {

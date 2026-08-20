@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const METHODS = ['CASH', 'CARD', 'VODAFONE_CASH', 'BANK'];
 
@@ -54,14 +54,14 @@ const attachToActiveShift = async (prisma, companyId, studyId, type, amount, met
 const openShift = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { cashierName, branchId } = req.body || {};
-    const name = typeof cashierName === 'string' && cashierName.trim() ? cashierName.trim() : req.user?.firstName ? `${req.user.firstName}${req.user.lastName ? ' ' + req.user.lastName : ''}` : '╪╡╪▒╪º┘ü';
+    const name = typeof cashierName === 'string' && cashierName.trim() ? cashierName.trim() : req.user?.firstName ? `${req.user.firstName}${req.user.lastName ? ' ' + req.user.lastName : ''}` : 'صراف';
 
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyShift.findFirst({ where: { companyId, status: 'OPEN' } });
-    if (existing) return res.status(400).json({ success: false, error: '┘è┘ê╪¼╪» ┘ê╪▒╪»┘è╪⌐ ┘à┘ü╪¬┘ê╪¡╪⌐ ΓÇö ╪ú╪║┘ä┘é┘ç╪º ╪ú┘ê┘ä╪º┘ï' });
+    if (existing) return res.status(400).json({ success: false, error: 'يوجد وردية مفتوحة — أغلقها أولاً' });
 
     const shift = await prisma.radiologyShift.create({
       data: { companyId, branchId: branchId || null, cashierName: name, status: 'OPEN', openedBy: req.user?.id || req.user?.email || null },
@@ -69,14 +69,14 @@ const openShift = async (req, res) => {
     res.json({ success: true, data: shift });
   } catch (error) {
     console.error('Error opening radiology shift:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ┘ü╪¬╪¡ ╪º┘ä┘ê╪▒╪»┘è╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في فتح الوردية' });
   }
 };
 
 const getActiveShift = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const prisma = getSharedPrismaClient();
     const shift = await prisma.radiologyShift.findFirst({ where: { companyId, status: 'OPEN' } });
@@ -86,14 +86,14 @@ const getActiveShift = async (req, res) => {
     res.json({ success: true, data: { ...shift, summary: summarize(payments), payments } });
   } catch (error) {
     console.error('Error getting active radiology shift:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ê╪▒╪»┘è╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الوردية' });
   }
 };
 
 const listShifts = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { page, limit } = req.query;
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -118,20 +118,20 @@ const listShifts = async (req, res) => {
     res.json({ success: true, data: { items: rows, total, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('Error listing radiology shifts:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ê╪▒╪»┘è╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الورديات' });
   }
 };
 
 const closeShift = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const shift = await prisma.radiologyShift.findFirst({ where: { id, companyId } });
-    if (!shift) return res.status(404).json({ success: false, error: '╪º┘ä┘ê╪▒╪»┘è╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
-    if (shift.status !== 'OPEN') return res.status(400).json({ success: false, error: '╪º┘ä┘ê╪▒╪»┘è╪⌐ ┘à╪║┘ä┘é╪⌐ ╪¿╪º┘ä┘ü╪╣┘ä' });
+    if (!shift) return res.status(404).json({ success: false, error: 'الوردية غير موجودة' });
+    if (shift.status !== 'OPEN') return res.status(400).json({ success: false, error: 'الوردية مغلقة بالفعل' });
 
     const payments = await prisma.radiologyShiftPayment.findMany({ where: { shiftId: id } });
     const closed = await prisma.radiologyShift.update({
@@ -142,7 +142,7 @@ const closeShift = async (req, res) => {
     res.json({ success: true, data: { ...closed, summary: summarize(payments) } });
   } catch (error) {
     console.error('Error closing radiology shift:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ╪║┘ä╪º┘é ╪º┘ä┘ê╪▒╪»┘è╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إغلاق الوردية' });
   }
 };
 

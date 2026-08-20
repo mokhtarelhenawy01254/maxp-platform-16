@@ -12,6 +12,7 @@ router.get('/sessions/:sessionId/conversations', inboxController.getSessionConve
 router.get('/unread-counts', inboxController.getUnreadCounts);
 router.get('/conversations/:conversationId', inboxController.getConversationDetail);
 router.post('/conversations/:conversationId/messages', inboxController.sendMessage);
+router.post('/conversations/:conversationId/send-existing-image', inboxController.sendExistingImage);
 router.patch('/conversations/:conversationId/status', inboxController.updateStatus);
 router.post('/conversations/:conversationId/assign', inboxController.assignConversation);
 router.post('/conversations/:conversationId/transfer', inboxController.transferConversation);

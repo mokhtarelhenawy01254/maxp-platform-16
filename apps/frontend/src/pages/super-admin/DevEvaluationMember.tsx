@@ -1,10 +1,17 @@
-import { ArrowLeft as ArrowLeftIcon, User as UserIcon, Clock as ClockIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Activity as ChartBarIcon, Star as StarIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  ArrowLeftIcon,
+  UserIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ChartBarIcon,
+  StarIcon,
+} from "@heroicons/react/24/outline";
 import {
   RadarChart,
   PolarGrid,

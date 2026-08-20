@@ -1,6 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, Building, Building2, CheckCircle2, CreditCard, Eye, Landmark, Loader2, Pencil, Plus, ReceiptText, RefreshCw, Search, ShieldCheck, Trash2, Wallet, X, XCircle } from 'lucide-react';
+import { tToast } from "../utils/i18n-toast";
+import {
+  AlertCircle,
+  Building2,
+  CheckCircle2,
+  CreditCard,
+  Eye,
+  Landmark,
+  Loader2,
+  Pencil,
+  Plus,
+  ReceiptText,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Wallet,
+  XCircle,
+} from "lucide-react";
 
 import {
   AlertDialog,
@@ -1412,7 +1430,7 @@ const WalletManagement: React.FC = () => {
 
   const handleSaveWallet = async () => {
     if (!walletForm.name.trim() || !walletForm.number.trim()) {
-      toast.error("اسم المحفظة ورقمها مطلوبان.");
+      tToast.error("WalletManagement.msg_9034");
       return;
     }
 
@@ -1427,10 +1445,10 @@ const WalletManagement: React.FC = () => {
             isActive: editingWallet.isActive,
           },
         );
-        toast.success("تم تحديث المحفظة بنجاح");
+        tToast.success("WalletManagement.success_update_c3e3");
       } else {
         await apiClient.post("/wallet-payment/admin/wallet-numbers", walletForm);
-        toast.success("تمت إضافة المحفظة بنجاح");
+        tToast.success("WalletManagement.msg_1efc");
       }
 
       setWalletDialogOpen(false);
@@ -1482,7 +1500,7 @@ const WalletManagement: React.FC = () => {
       await apiClient.delete(
         `/wallet-payment/admin/wallet-numbers/${walletPendingDelete.id}`,
       );
-      toast.success("تم حذف المحفظة بنجاح");
+      tToast.success("WalletManagement.success_delete_cda7");
       setWalletPendingDelete(null);
       await fetchWalletNumbers();
     } catch (error: unknown) {
@@ -1531,12 +1549,12 @@ const WalletManagement: React.FC = () => {
     const bonus = fundsForm.bonus ? Number(fundsForm.bonus) : 0;
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("أدخل مبلغًا صحيحًا أكبر من صفر.");
+      tToast.error("WalletManagement.msg_834a");
       return;
     }
 
     if (!Number.isFinite(bonus) || bonus < 0) {
-      toast.error("قيمة البونص غير صحيحة.");
+      tToast.error("WalletManagement.msg_2a19");
       return;
     }
 
@@ -1549,7 +1567,7 @@ const WalletManagement: React.FC = () => {
         bonus,
         notes: fundsForm.notes,
       });
-      toast.success("تم إضافة الرصيد بنجاح");
+      tToast.success("WalletManagement.success_add_ca6f");
       setAddFundsDialogOpen(false);
       setSelectedCompany(null);
       setFundsForm(INITIAL_FUNDS_FORM);

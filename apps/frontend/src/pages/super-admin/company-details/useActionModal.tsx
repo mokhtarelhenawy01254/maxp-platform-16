@@ -1,6 +1,6 @@
 import type { ElementType, ReactNode } from "react"
 import { useCallback, useState } from "react"
-import { Loader2 } from 'lucide-react'
+import { Loader2 } from "lucide-react"
 import { Button } from "../../../components/ui/button"
 
 export function useActionModal<TArgs extends Array<unknown> = Array<unknown>>({ onConfirm, confirmLabel, confirmIcon: ConfirmIcon }: {

@@ -1,10 +1,17 @@
-import { RefreshCw as ArrowPathIcon, Download as ArrowDownTrayIcon, Filter as FunnelIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect";
-;
+import {
+  ArrowPathIcon,
+  ArrowDownTrayIcon,
+  FunnelIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "@heroicons/react/24/outline";
 
 interface StatusRow {
   status: string;
@@ -54,6 +61,7 @@ interface ItemDetail {
   productName: string | null;
   productColor: string | null;
   productSize: string | null;
+  productSku: string | null;
   quantity: number;
   price: number;
   total: number;
@@ -63,6 +71,7 @@ interface ItemDetail {
 interface GroupedVariation {
   productColor: string | null;
   productSize: string | null;
+  productSku: string | null;
   quantity: number;
   total: number;
 }
@@ -81,16 +90,49 @@ interface Pagination {
   totalPages: number;
 }
 
+type DatePreset = 'today' | 'last7' | 'last30' | 'thisMonth' | 'all' | 'custom';
+
+const DATE_PRESETS: { key: DatePreset; label: string }[] = [
+  { key: 'today', label: 'اليوم' },
+  { key: 'last7', label: 'آخر 7 أيام' },
+  { key: 'last30', label: 'آخر 30 يوم' },
+  { key: 'thisMonth', label: 'هذا الشهر' },
+  { key: 'all', label: 'كل الفترات' },
+  { key: 'custom', label: 'تخصيص' },
+];
+
+const getDateRangeForPreset = (preset: DatePreset): { start: string; end: string } | null => {
+  if (preset === 'all' || preset === 'custom') return null;
+  const now = new Date();
+  const end = now.toISOString().split('T')[0];
+  let start: string;
+  switch (preset) {
+    case 'today':
+      start = end;
+      break;
+    case 'last7':
+      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      break;
+    case 'last30':
+      start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      break;
+    case 'thisMonth':
+      start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      break;
+    default:
+      return null;
+  }
+  return { start, end };
+};
+
 const StatusSummaryReport: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [statusOptions, setStatusOptions] = useState<MultiSelectOption[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [reportData, setReportData] = useState<StatusSummaryData | null>(null);
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    end: new Date().toISOString().split("T")[0],
-  });
+  const [datePreset, setDatePreset] = useState<DatePreset>('last30');
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [loading, setLoading] = useState(false);
   const [fetchingStatuses, setFetchingStatuses] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +154,7 @@ const StatusSummaryReport: React.FC = () => {
     const loadStatuses = async () => {
       setFetchingStatuses(true);
       try {
-        const res = await apiClient.get("/analytics/statuses", { params: { statusType: "order" } });
+        const res = await apiClient.get("/analytics/statuses", { params: { statusType: "order,preparation" } });
         const statuses: { code: string; name: string }[] = res.data?.data || [];
         setStatusOptions(statuses.map((s) => ({ value: s.code, label: s.name })));
       } catch (err) {
@@ -130,8 +172,13 @@ const StatusSummaryReport: React.FC = () => {
     setError(null);
     try {
       const params: Record<string, string> = { statuses: selectedStatuses.join(",") };
-      if (dateRange.start) params.startDate = dateRange.start;
-      if (dateRange.end) params.endDate = dateRange.end;
+      if (datePreset !== 'all') {
+        const range = datePreset === 'custom' ? dateRange : getDateRangeForPreset(datePreset);
+        if (range) {
+          if (range.start) params.startDate = range.start;
+          if (range.end) params.endDate = range.end;
+        }
+      }
       const res = await apiClient.get("/analytics/status-summary", { params });
       setReportData(res.data?.data || null);
     } catch (err: any) {
@@ -140,7 +187,7 @@ const StatusSummaryReport: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedStatuses, dateRange]);
+  }, [selectedStatuses, datePreset, dateRange]);
 
   const openDrillDown = async (mode: "orders" | "items", pageNum = 1) => {
     if (inlineExpanded && inlineMode === mode && pageNum === 1) {
@@ -162,8 +209,13 @@ const StatusSummaryReport: React.FC = () => {
         page: String(pageNum),
         limit: mode === "items" ? "5000" : "50",
       };
-      if (dateRange.start) params.startDate = dateRange.start;
-      if (dateRange.end) params.endDate = dateRange.end;
+      if (datePreset !== 'all') {
+        const range = datePreset === 'custom' ? dateRange : getDateRangeForPreset(datePreset);
+        if (range) {
+          if (range.start) params.startDate = range.start;
+          if (range.end) params.endDate = range.end;
+        }
+      }
       const res = await apiClient.get(`/analytics/status-summary/${mode}`, { params });
       const data = res.data?.data;
       if (mode === "orders") {
@@ -227,6 +279,7 @@ const StatusSummaryReport: React.FC = () => {
           g.variations.push({
             productColor: item.productColor,
             productSize: item.productSize,
+            productSku: item.productSku,
             quantity: item.quantity,
             total: item.total,
           });
@@ -239,6 +292,7 @@ const StatusSummaryReport: React.FC = () => {
           variations: [{
             productColor: item.productColor,
             productSize: item.productSize,
+            productSku: item.productSku,
             quantity: item.quantity,
             total: item.total,
           }],
@@ -311,23 +365,41 @@ const StatusSummaryReport: React.FC = () => {
                 />
               )}
             </div>
-            <div className="w-36">
+            <div className="min-w-0">
               <label className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-gray-400">{t('reports.k_17')}</label>
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
-                className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:bg-gray-700"
-              />
-            </div>
-            <div className="w-36">
-              <label className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-gray-400">{t('reports.k_18')}</label>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
-                className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:bg-gray-700"
-              />
+              <div className="flex flex-wrap items-center gap-1.5">
+                {DATE_PRESETS.map((p) => (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => setDatePreset(p.key)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      datePreset === p.key
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              {datePreset === 'custom' && (
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
+                    className="block w-40 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:bg-gray-700"
+                  />
+                  <span className="text-gray-400">{'—'}</span>
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
+                    className="block w-40 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:bg-gray-700"
+                  />
+                </div>
+              )}
             </div>
             <div>
               <button
@@ -651,6 +723,7 @@ const StatusSummaryReport: React.FC = () => {
                                                       <tr className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                                         <th className="px-3 py-2 font-semibold">{t('reports.k_34')}</th>
                                                         <th className="px-3 py-2 font-semibold">{t('reports.k_35')}</th>
+                                                        <th className="px-3 py-2 font-semibold">{t('reports.k_33')}</th>
                                                         <th className="px-3 py-2 font-semibold">{t('reports.k_44')}</th>
                                                         <th className="px-3 py-2 font-semibold">{t('reports.k_8')}</th>
                                                       </tr>
@@ -674,6 +747,9 @@ const StatusSummaryReport: React.FC = () => {
                                                                 {v.productSize}
                                                               </span>
                                                             ) : "—"}
+                                                          </td>
+                                                          <td className="px-3 py-2 font-mono text-gray-500 dark:text-gray-400">
+                                                            {v.productSku || "—"}
                                                           </td>
                                                           <td className="px-3 py-2 font-bold text-gray-900 dark:text-gray-100">{v.quantity}</td>
                                                           <td className="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">{formatEGP(v.total)}</td>

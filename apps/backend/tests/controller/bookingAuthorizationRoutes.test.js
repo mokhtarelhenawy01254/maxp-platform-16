@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 jest.mock('../../utils/verifyToken', () => ({
@@ -73,7 +73,7 @@ const expectNotGated = (routes, method, path) => {
   expect(hasRoleGuard(route.handles)).toBe(false);
 };
 
-describe('booking routes ΓÇö role gating of sensitive endpoints', () => {
+describe('booking routes — role gating of sensitive endpoints', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

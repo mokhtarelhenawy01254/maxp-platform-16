@@ -1,6 +1,15 @@
-import { Plus as PlusIcon, Calendar as CalendarIcon, Eye as EyeIcon, Clock as ClockIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, X as XMarkIcon, Image as PhotoIcon, Circle as PaperAirplaneIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  PlusIcon,
+  CalendarIcon,
+  EyeIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
+  PhotoIcon,
+  PaperAirplaneIcon,
+} from "@heroicons/react/24/outline";
 import { broadcastService } from "../../services/broadcastService";
 import CampaignProgressModal from "../../components/broadcast/CampaignProgressModal";
 

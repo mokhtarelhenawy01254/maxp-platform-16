@@ -1,7 +1,12 @@
-import { Circle as ArrowTrendingUpIcon, Circle as ArrowTrendingDownIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, Circle as LightBulbIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useMemo } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  LightBulbIcon,
+} from "@heroicons/react/24/outline";
 import type { DashboardData } from "./types";
 
 type Insight = {

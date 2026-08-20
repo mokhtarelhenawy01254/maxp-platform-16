@@ -1,7 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ChevronDown, ChevronUp, CopyPlus, Eye, GripVertical, Plus, Save, Sparkles, Star, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  CopyPlus,
+  Eye,
+  GripVertical,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import {
   buildMessagingPreset,
@@ -80,7 +92,7 @@ const WorkReportFormBuilder: React.FC = () => {
         }
       } catch (error) {
         console.error("Error fetching reporting form:", error);
-        toast.error("تعذر تحميل الفورم");
+        tToast.error("WorkReportFormBuilder.unable_load_c717");
       } finally {
         setLoading(false);
       }
@@ -229,12 +241,12 @@ const WorkReportFormBuilder: React.FC = () => {
     const payload = normalizeForSubmit();
 
     if (!payload.title) {
-      toast.error("اكتب اسم الفورم أولًا");
+      tToast.error("WorkReportFormBuilder.msg_92ff");
       return;
     }
 
     if (!payload.fields.length) {
-      toast.error("أضف حقلًا واحدًا على الأقل");
+      tToast.error("WorkReportFormBuilder.msg_b98e");
       return;
     }
 
@@ -242,13 +254,13 @@ const WorkReportFormBuilder: React.FC = () => {
       setSaving(true);
       if (isEditing && formId) {
         await companyAwareApi.put(`/hr/reporting/forms/${formId}`, payload);
-        toast.success("تم تحديث الفورم");
+        tToast.success("WorkReportFormBuilder.success_update_f51f");
       } else {
         const response = await companyAwareApi.post<{ data: { id: string } }>(
           "/hr/reporting/forms",
           payload,
         );
-        toast.success("تم إنشاء الفورم");
+        tToast.success("WorkReportFormBuilder.success_create_3fbf");
         const createdId = response.data?.data?.id;
         if (createdId) {
           navigate(`/hr/reporting/forms/${createdId}/preview`);

@@ -49,6 +49,18 @@ async function fixDuplicates() {
       ) AND "instagramAccountId" IS NOT NULL;
     `).catch(e => console.log("facebook_pages fix skipped:", e.message));
 
+    // 5. Fix return_requests duplicate (companyId, orderId)
+    // Keep the oldest request per company + order
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM "return_requests"
+      WHERE id IN (
+        SELECT id FROM (
+          SELECT id, ROW_NUMBER() OVER(PARTITION BY "companyId", "orderId" ORDER BY "createdAt" ASC, id ASC) as rn
+          FROM "return_requests"
+        ) t WHERE t.rn > 1
+      );
+    `).catch(e => console.log("return_requests fix skipped:", e.message));
+
     console.log("✅ Duplicate cleanup completed successfully!");
   } catch (error) {
     console.error("❌ Error during duplicate cleanup:", error);

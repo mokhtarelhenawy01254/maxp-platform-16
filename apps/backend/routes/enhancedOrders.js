@@ -10,8 +10,55 @@ const customerBlocklistService = require('../services/customerBlocklistService')
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 const verifyToken = require("../utils/verifyToken");
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 const DEFAULT_MIGRATION_COMPANY_ID = 'cmdt8nrjq003vufuss47dqc45';
+
+// أداة الطلب اليدوي (اشتراك): هي الوحيدة اللي تحدد انتهاء الاشتراك والتعليق
+const MANUAL_ORDER_APP_SLUGS = ['manual-orders-pro'];
+const MANUAL_ORDER_ACTIVE_STATUSES = ['TRIAL', 'ACTIVE'];
+
+/**
+ * فحص وصول إنشاء الطلب اليدوي (الخيار 2):
+ * - لا يوجد سجل اشتراك للأداة أصلًا → 403 (مقفول).
+ * - يوجد سجل بحالة TRIAL/ACTIVE → يسمح ويُكمل عادي.
+ * - يوجد سجل لكن منتهي/معلّق/ملغي → يسمح بالإنشاء ويضع علامة
+ *   req.manualSubscriptionExpired لتُعلَّق الأوردرات الجديدة (مخفية + ماسكة).
+ */
+const manualOrderAccess = async (req, res, next) => {
+  try {
+    if (req.user?.role === 'SUPER_ADMIN') return next();
+
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(401).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+
+    const installed = await getSharedPrismaClient().companyApp.findMany({
+      where: { companyId, app: { slug: { in: MANUAL_ORDER_APP_SLUGS } } },
+      select: { status: true },
+    });
+
+    if (installed.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'هذه الميزة تتطلب تفعيل: الطلبات اليدوية',
+        needsActivation: true,
+        app: { slug: 'manual-orders-pro', name: 'الطلبات اليدوية' },
+      });
+    }
+
+    const active = installed.some((r) => MANUAL_ORDER_ACTIVE_STATUSES.includes(r.status));
+    if (!active) {
+      req.manualSubscriptionExpired = true;
+    }
+
+    next();
+  } catch (error) {
+    console.error('❌ [MANUAL-ACCESS] Error:', error.message);
+    res.status(500).json({ success: false, message: 'خطأ في التحقق من صلاحيات الطلب اليدوي' });
+  }
+};
 
 // Apply authentication to all routes
 router.use(verifyToken.authenticateToken);
@@ -41,16 +88,12 @@ function mapPaymentMethod(method) {
   return mapping[method?.toLowerCase()] || 'CASH';
 }
 
-// تطبيقات صفحة الطلب اليدوي (اشتراك): وجود سجل لأي منها يسمح بفتح الصفحة
-const MANUAL_ORDER_APP_SLUGS = ['manual-orders-pro', 'store-pro'];
-const MANUAL_ORDER_ACTIVE_STATUSES = ['TRIAL', 'ACTIVE'];
-
 /**
- * حالة اشتراك الطلبات اليدوية للشركة
+ * حالة اشتراك الطلب اليدوي للشركة
  * GET /api/v1/orders-enhanced/manual-access
- * - NONE    → لا يوجد سجل اشتراك → الواجهة تظهر شاشة التفعيل
- * - ACTIVE  → TRIAL/ACTIVE → الصفحة تعمل عادي
- * - EXPIRED → يوجد سجل لكن منتهي → الصفحة تعمل والأوردرات الجديدة تتعلق
+ * - NONE    → مفيش سجل اشتراك → مقفول
+ * - ACTIVE  → TRIAL/ACTIVE → عادي
+ * - EXPIRED → موجود لكن منتهي → يكتب أوردرات لكنها بتتعلق
  */
 router.get('/manual-access', async (req, res) => {
   try {
@@ -109,6 +152,7 @@ router.get('/', async (req, res) => {
       page = 1,
       limit = 20,
       status,
+      paymentStatus,
       customerId,
       conversationId,
       dateFrom,
@@ -150,6 +194,7 @@ router.get('/', async (req, res) => {
       page: parseInt(page),
       limit: parseInt(limit),
       status,
+      paymentStatus,
       customerId,
       conversationId,
       dateFrom,
@@ -158,7 +203,8 @@ router.get('/', async (req, res) => {
       extractionMethod,
       sourceType,
       onlyUnseen: onlyUnseen === 'true',
-      search
+      search,
+      includeHeld: req.query.includeHeld === 'true',
     });
 
     await enhancedOrderService.disconnect();
@@ -325,14 +371,11 @@ router.post('/migrate-from-files', async (req, res) => {
           continue;
         }
 
-        let customer = await getSharedPrismaClient().customer.findFirst({
-          where: {
-            OR: [
-              { firstName: orderData.customerName || 'عميل غير محدد' },
-              { phone: orderData.customerPhone || '' }
-            ]
-          }
-        });
+        let customer = null;
+        if (orderData.customerPhone) {
+          const { findCustomerByPhone } = require('../utils/customerIdentity');
+          customer = await findCustomerByPhone(getSharedPrismaClient(), orderData.customerPhone, DEFAULT_MIGRATION_COMPANY_ID);
+        }
 
         if (!customer) {
           customer = await getSharedPrismaClient().customer.create({
@@ -340,6 +383,7 @@ router.post('/migrate-from-files', async (req, res) => {
               firstName: orderData.customerName || 'عميل غير محدد',
               lastName: '',
               phone: orderData.customerPhone || '',
+              phoneNormalized: orderData.customerPhone ? require('../utils/phoneNormalization').toCanonicalE164(orderData.customerPhone) : null,
               email: orderData.customerEmail || '',
               companyId: DEFAULT_MIGRATION_COMPANY_ID
             }
@@ -376,8 +420,10 @@ router.post('/migrate-from-files', async (req, res) => {
               data: {
                 orderId: newOrder.id,
                 productName: item.name || 'منتج غير محدد',
-                productColor: item.metadata?.color || '',
-                productSize: item.metadata?.size || '',
+                productColor: item.metadata?.color ? String(item.metadata.color) : '',
+                productSize: item.metadata?.size != null ? String(item.metadata.size) : '',
+                productSku: item.sku || item.productSku || item.metadata?.sku || null,
+                productId: item.productId || null,
                 price: item.price || 0,
                 quantity: item.quantity || 1,
                 total: item.total || 0
@@ -460,7 +506,7 @@ router.get('/stats', async (req, res) => {
  * POST /api/v1/orders-enhanced
  */
 console.log('🚧 [ENHANCED-ORDERS] Route initialization');
-router.post('/', async (req, res) => {
+router.post('/', manualOrderAccess, async (req, res) => {
   try {
     console.log('📝 [ENHANCED-ORDERS] Received POST / request');
     // Auth check handled by middleware
@@ -687,6 +733,32 @@ router.post('/', async (req, res) => {
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
 
     if (result.success) {
+      // 🚧 تعليق الطلب اليدوي (مخفي + ماسك) فقط عندما:
+      // اشتراك الطلبات اليدوية منتهي + المحفظة بدون رصيد (مفيش فلوس للتجديد).
+      // الطلب مش بيتحاسب بفلوس (مجاني) — بيتحرر تلقائيًا لما الاشتراك يتفعّل.
+      if (req.manualSubscriptionExpired && result.order?.id) {
+        try {
+          const wallet = await getSharedPrismaClient().companyWallet.findUnique({
+            where: { companyId: req.user.companyId },
+          });
+          const balance = wallet ? Number(wallet.balance) : 0;
+
+          if (balance <= 0) {
+            const { holdOrderForExpiredSubscription } = require('../services/pendingBillingService');
+            await holdOrderForExpiredSubscription({
+              companyId: req.user.companyId,
+              orderId: result.order.id,
+              orderNumber: result.order.orderNumber,
+            });
+            result.held = true;
+            result.holdReason = 'subscription_expired';
+            result.message = `${result.message || 'تم إنشاء الطلب بنجاح'}. اشتراك الطلبات اليدوية منتهي ورصيد المحفظة صفر، الطلب معلّق وسيظهر في صفحة الطلبات بعد تجديد الاشتراك.`;
+          }
+        } catch (holdError) {
+          console.error('❌ [ENHANCED-ORDERS] Failed to hold order for expired subscription:', holdError.message);
+        }
+      }
+
       // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
       try {
         const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
@@ -695,6 +767,7 @@ router.post('/', async (req, res) => {
           id: result.order.id,
           orderNumber: result.order.orderNumber,
           companyId: req.user.companyId,
+          status: result.order.status,
           customerPhone: result.order.customerPhone,
           customerName: result.order.customerName,
           customer: {
@@ -706,7 +779,7 @@ router.post('/', async (req, res) => {
           items: result.order.items || [] // ✅ Include items for WhatsApp notification
         };
 
-        await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+        await WhatsAppNotificationService.sendOrderCreationNotification(orderForNotification);
         console.log('✅ [WHATSAPP] Order notification sent for:', result.order.orderNumber);
       } catch (whatsappError) {
         console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
@@ -838,6 +911,10 @@ router.patch('/:id/validation', async (req, res) => {
       });
     }
 
+    // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): تحديث التحقق/الملاحظات يعدّل بيانات الطلب.
+    const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+    await assertOrderStatusEditable(enhancedOrderService.getPrisma(), companyId, order.status);
+
     const updatedOrder = await enhancedOrderService.getPrisma().order.update({
       where: { id },
       data: {
@@ -857,10 +934,11 @@ router.patch('/:id/validation', async (req, res) => {
 
   } catch (error) {
     console.error('❌ خطأ في تحديث حالة التحقق:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       success: false,
       error: error.message,
-      message: 'فشل في تحديث حالة التحقق'
+      message: statusCode === 403 ? error.message : 'فشل في تحديث حالة التحقق'
     });
   }
 });

@@ -1,9 +1,17 @@
-import { Server as ServerIcon, Circle as PlayIcon, Check as CheckCircleIcon, X as XCircleIcon, RefreshCw as ArrowPathIcon, Terminal as CommandLineIcon, Download as ArrowDownTrayIcon, Info as InformationCircleIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  ServerIcon,
+  PlayIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  CommandLineIcon,
+  ArrowDownTrayIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/24/outline";
 
 interface MigrationProgress {
   step: string;

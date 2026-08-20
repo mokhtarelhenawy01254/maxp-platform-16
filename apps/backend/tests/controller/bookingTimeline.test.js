@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 jest.mock('../../services/bookingPatientService', () => ({
@@ -33,11 +33,11 @@ const makeDoctor = (overrides = {}) => ({
   id: 'doc-1',
   companyId: 'company-1',
   branchId: 'branch-1',
-  title: '╪»┘â╪¬┘ê╪▒',
-  name: '╪ú╪¡┘à╪»',
-  specialty: '╪╣╪╕╪º┘à',
+  title: 'دكتور',
+  name: 'أحمد',
+  specialty: 'عظام',
   isActive: true,
-  branch: { id: 'branch-1', name: '┘ü╪▒╪╣ 1' },
+  branch: { id: 'branch-1', name: 'فرع 1' },
   availability: [
     { id: 'av-1', doctorId: 'doc-1', dayOfWeek: 5, startTime: '09:00', endTime: '17:00', isAvailable: true }
   ],
@@ -50,8 +50,8 @@ const makeAppointment = (overrides = {}) => ({
   branchId: 'branch-1',
   doctorId: 'doc-1',
   serviceId: 'service-1',
-  serviceName: '┘ü╪¡╪╡',
-  customerName: '╪│╪º╪▒╪⌐',
+  serviceName: 'فحص',
+  customerName: 'سارة',
   customerPhone: '0100',
   customerGender: 'female',
   patientId: 'pat-1',
@@ -62,10 +62,10 @@ const makeAppointment = (overrides = {}) => ({
   status: 'confirmed',
   bookingStatus: 'CONFIRMED',
   reportStatus: 'PENDING',
-  room: '╪║╪▒┘ü╪⌐ 2',
-  preparationNote: '╪╡┘è╪º┘à 6 ╪│╪º╪╣╪º╪¬',
+  room: 'غرفة 2',
+  preparationNote: 'صيام 6 ساعات',
   notes: '',
-  title: '┘à┘ê╪╣╪»',
+  title: 'موعد',
   description: null,
   source: 'dashboard',
   paymentRequired: false,
@@ -75,9 +75,9 @@ const makeAppointment = (overrides = {}) => ({
   prescription: null,
   followUpDate: null,
   createdAt: new Date('2026-08-07T08:00:00.000Z'),
-  doctor: { id: 'doc-1', title: '╪»┘â╪¬┘ê╪▒', name: '╪ú╪¡┘à╪»', specialty: '╪╣╪╕╪º┘à' },
-  service: { id: 'service-1', name: '┘ü╪¡╪╡' },
-  branch: { id: 'branch-1', name: '┘ü╪▒╪╣ 1' },
+  doctor: { id: 'doc-1', title: 'دكتور', name: 'أحمد', specialty: 'عظام' },
+  service: { id: 'service-1', name: 'فحص' },
+  branch: { id: 'branch-1', name: 'فرع 1' },
   ...overrides
 });
 
@@ -123,8 +123,8 @@ describe('bookingAppointmentsController.getTimeline', () => {
     const { resources, appointments } = res.payload.data;
     expect(resources).toHaveLength(1);
     expect(resources[0].doctorId).toBe('doc-1');
-    expect(resources[0].doctorName).toBe('╪»┘â╪¬┘ê╪▒ ╪ú╪¡┘à╪»');
-    expect(resources[0].specialty).toBe('╪╣╪╕╪º┘à');
+    expect(resources[0].doctorName).toBe('دكتور أحمد');
+    expect(resources[0].specialty).toBe('عظام');
     expect(resources[0].startTime).toBe('09:00');
     expect(resources[0].endTime).toBe('17:00');
     expect(resources[0].isAvailable).toBe(true);
@@ -133,8 +133,8 @@ describe('bookingAppointmentsController.getTimeline', () => {
 
     expect(appointments).toHaveLength(1);
     expect(appointments[0].doctorId).toBe('doc-1');
-    expect(appointments[0].doctorName).toBe('╪»┘â╪¬┘ê╪▒ ╪ú╪¡┘à╪»');
-    expect(appointments[0].customerName).toBe('╪│╪º╪▒╪⌐');
+    expect(appointments[0].doctorName).toBe('دكتور أحمد');
+    expect(appointments[0].customerName).toBe('سارة');
     expect(appointments[0].customerPhone).toBe('0100');
     expect(appointments[0].appointmentDate).toBe('2026-08-07');
     expect(appointments[0].startTime).toBe('10:00');
@@ -142,8 +142,8 @@ describe('bookingAppointmentsController.getTimeline', () => {
     expect(appointments[0].status).toBe('confirmed');
     expect(appointments[0].bookingStatus).toBe('CONFIRMED');
     expect(appointments[0].reportStatus).toBe('PENDING');
-    expect(appointments[0].room).toBe('╪║╪▒┘ü╪⌐ 2');
-    expect(appointments[0].preparationNote).toBe('╪╡┘è╪º┘à 6 ╪│╪º╪╣╪º╪¬');
+    expect(appointments[0].room).toBe('غرفة 2');
+    expect(appointments[0].preparationNote).toBe('صيام 6 ساعات');
   });
 
   test('handles a doctor without availability using default day hours', async () => {
@@ -220,7 +220,7 @@ describe('bookingAppointmentsController.createAppointment', () => {
 
   test('persists room and preparationNote on create', async () => {
     const prisma = {
-      bookingBranch: { findFirst: jest.fn().mockResolvedValue({ id: 'branch-1', name: '┘ü╪▒╪╣ 1', genderDays: null }) },
+      bookingBranch: { findFirst: jest.fn().mockResolvedValue({ id: 'branch-1', name: 'فرع 1', genderDays: null }) },
       appointment: {
         count: jest.fn().mockResolvedValue(0),
         findMany: jest.fn().mockResolvedValue([]),
@@ -231,8 +231,8 @@ describe('bookingAppointmentsController.createAppointment', () => {
           createdAt: new Date('2026-08-07T08:00:00.000Z'),
           bookingStatus: null,
           reportStatus: null,
-          branch: { id: 'branch-1', name: '┘ü╪▒╪╣ 1' },
-          service: { id: 'service-1', name: '┘ü╪¡╪╡' }
+          branch: { id: 'branch-1', name: 'فرع 1' },
+          service: { id: 'service-1', name: 'فحص' }
         }))
       },
       doctorAvailability: { findFirst: jest.fn().mockResolvedValue({ startTime: '09:00', endTime: '17:00', isAvailable: true }) },
@@ -243,26 +243,26 @@ describe('bookingAppointmentsController.createAppointment', () => {
 
     const res = createResponse();
     await createAppointment({
-      user: { companyId: 'company-1', id: 'user-1', role: 'ADMIN', firstName: '╪╣┘ä┘è', lastName: '┘à╪¡┘à╪»' },
+      user: { companyId: 'company-1', id: 'user-1', role: 'ADMIN', firstName: 'علي', lastName: 'محمد' },
       body: {
-        customerName: '╪│╪º╪▒╪⌐', customerPhone: '0100', customerGender: 'female',
-        branchId: 'branch-1', doctorId: 'doc-1', serviceId: 'service-1', serviceName: '┘ü╪¡╪╡',
+        customerName: 'سارة', customerPhone: '0100', customerGender: 'female',
+        branchId: 'branch-1', doctorId: 'doc-1', serviceId: 'service-1', serviceName: 'فحص',
         appointmentDate: '2026-08-07', startTime: '10:00',
-        room: '╪║╪▒┘ü╪⌐ 3', preparationNote: '╪╡┘è╪º┘à 8 ╪│╪º╪╣╪º╪¬'
+        room: 'غرفة 3', preparationNote: 'صيام 8 ساعات'
       }
     }, res);
 
     expect(res.statusCode).toBe(200);
     expect(prisma.appointment.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ room: '╪║╪▒┘ü╪⌐ 3', preparationNote: '╪╡┘è╪º┘à 8 ╪│╪º╪╣╪º╪¬' })
+      data: expect.objectContaining({ room: 'غرفة 3', preparationNote: 'صيام 8 ساعات' })
     }));
-    expect(res.payload.data.room).toBe('╪║╪▒┘ü╪⌐ 3');
-    expect(res.payload.data.preparationNote).toBe('╪╡┘è╪º┘à 8 ╪│╪º╪╣╪º╪¬');
+    expect(res.payload.data.room).toBe('غرفة 3');
+    expect(res.payload.data.preparationNote).toBe('صيام 8 ساعات');
   });
 
   test('rejects a serviceId from another company', async () => {
     const prisma = {
-      bookingBranch: { findFirst: jest.fn().mockResolvedValue({ id: 'branch-1', name: '┘ü╪▒╪╣ 1', genderDays: null }) },
+      bookingBranch: { findFirst: jest.fn().mockResolvedValue({ id: 'branch-1', name: 'فرع 1', genderDays: null }) },
       appointment: { count: jest.fn().mockResolvedValue(0) },
       bookingService: { findFirst: jest.fn().mockResolvedValue(null) }
     };
@@ -271,15 +271,15 @@ describe('bookingAppointmentsController.createAppointment', () => {
 
     const res = createResponse();
     await createAppointment({
-      user: { companyId: 'company-1', id: 'user-1', role: 'ADMIN', firstName: '╪╣┘ä┘è', lastName: '┘à╪¡┘à╪»' },
+      user: { companyId: 'company-1', id: 'user-1', role: 'ADMIN', firstName: 'علي', lastName: 'محمد' },
       body: {
-        customerName: '╪│╪º╪▒╪⌐', branchId: 'branch-1', serviceId: 'service-foreign',
+        customerName: 'سارة', branchId: 'branch-1', serviceId: 'service-foreign',
         appointmentDate: '2026-08-07', startTime: '10:00'
       }
     }, res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪º┘ä╪«╪»┘à╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+    expect(res.payload.error).toBe('الخدمة غير موجودة');
     expect(prisma.appointment.create).toBeUndefined();
   });
 });
@@ -294,7 +294,7 @@ describe('bookingAppointmentsController.updateAppointment', () => {
         findFirst: jest.fn().mockResolvedValue({ id: 'apt-1', companyId: 'company-1' }),
         update: jest.fn().mockImplementation(async ({ data }) => ({
           id: 'apt-1',
-          customerName: '╪│╪º╪▒╪⌐',
+          customerName: 'سارة',
           appointmentDate: new Date('2026-08-07'),
           startTime: '10:00',
           endTime: '10:30',
@@ -312,15 +312,15 @@ describe('bookingAppointmentsController.updateAppointment', () => {
     await updateAppointment({
       user: { companyId: 'company-1' },
       params: { id: 'apt-1' },
-      body: { room: '╪║╪▒┘ü╪⌐ 5', preparationNote: '╪Ñ╪¡╪╢╪º╪▒ ╪¬╪¡╪º┘ä┘è┘ä ╪│╪º╪¿┘é╪⌐' }
+      body: { room: 'غرفة 5', preparationNote: 'إحضار تحاليل سابقة' }
     }, res);
 
     expect(res.statusCode).toBe(200);
     expect(prisma.appointment.update).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ room: '╪║╪▒┘ü╪⌐ 5', preparationNote: '╪Ñ╪¡╪╢╪º╪▒ ╪¬╪¡╪º┘ä┘è┘ä ╪│╪º╪¿┘é╪⌐' })
+      data: expect.objectContaining({ room: 'غرفة 5', preparationNote: 'إحضار تحاليل سابقة' })
     }));
-    expect(res.payload.data.room).toBe('╪║╪▒┘ü╪⌐ 5');
-    expect(res.payload.data.preparationNote).toBe('╪Ñ╪¡╪╢╪º╪▒ ╪¬╪¡╪º┘ä┘è┘ä ╪│╪º╪¿┘é╪⌐');
+    expect(res.payload.data.room).toBe('غرفة 5');
+    expect(res.payload.data.preparationNote).toBe('إحضار تحاليل سابقة');
   });
 
   test('rejects a doctorId from another company on update', async () => {
@@ -341,7 +341,7 @@ describe('bookingAppointmentsController.updateAppointment', () => {
     }, res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪º┘ä╪╖╪¿┘è╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(res.payload.error).toBe('الطبيب غير موجود');
     expect(prisma.bookingDoctor.findFirst).toHaveBeenCalledWith({
       where: { id: 'doc-foreign', companyId: 'company-1' },
       select: { id: true },
@@ -370,7 +370,7 @@ describe('bookingAppointmentsController.updateAppointment', () => {
     }, res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(res.payload.error).toBe('المريض غير موجود');
     expect(prisma.patient.findFirst).toHaveBeenCalledWith({
       where: { id: 'patient-foreign', companyId: 'company-1' },
       select: { id: true },
@@ -388,7 +388,7 @@ describe('bookingAppointmentsController.updateAppointment', () => {
         }),
         update: jest.fn().mockImplementation(async ({ data }) => ({
           id: 'apt-1',
-          customerName: '╪│╪º╪▒╪⌐',
+          customerName: 'سارة',
           appointmentDate: data.appointmentDate,
           startTime: data.startTime,
           endTime: '11:30',
@@ -439,7 +439,7 @@ describe('bookingAppointmentsController.updateAppointment', () => {
         }),
         update: jest.fn().mockImplementation(async ({ data }) => ({
           id: 'apt-1',
-          customerName: '╪│╪º╪▒╪⌐',
+          customerName: 'سارة',
           appointmentDate: new Date('2026-08-07'),
           startTime: '10:00',
           endTime: '10:30',
@@ -457,12 +457,12 @@ describe('bookingAppointmentsController.updateAppointment', () => {
     await updateAppointment({
       user: { companyId: 'company-1' },
       params: { id: 'apt-1' },
-      body: { room: '╪║╪▒┘ü╪⌐ 9' }
+      body: { room: 'غرفة 9' }
     }, res);
 
     expect(res.statusCode).toBe(200);
     expect(prisma.appointment.update).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ room: '╪║╪▒┘ü╪⌐ 9' }),
+      data: expect.objectContaining({ room: 'غرفة 9' }),
     }));
     const dataArg = prisma.appointment.update.mock.calls[0][0].data;
     expect(dataArg.labelPrinted).toBeUndefined();
@@ -486,7 +486,7 @@ describe('bookingPatientService.findOrCreatePatient tenant isolation', () => {
 
     const result = await service.findOrCreatePatient({
       companyId: 'company-1',
-      customerName: '╪│╪º╪▒╪⌐',
+      customerName: 'سارة',
       customerId: 'cust-foreign',
     });
 

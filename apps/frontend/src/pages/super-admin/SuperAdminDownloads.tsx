@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -38,10 +38,10 @@ const downloads = [
 ];
 
 const features = [
-  { icon: <Zap className="w-5 h-5" />, title: "╪│╪▒┘è╪╣ ┘ê╪«┘ü┘è┘ü", desc: "╪¿┘è╪┤╪¬╪║┘ä ╪╣┘ä┘ë ┘â┘ä ╪º┘ä╪ú╪¼┘ç╪▓╪⌐ ╪¿╪»┘ê┘å ╪¬╪¿╪╖┘è" },
-  { icon: <Shield className="w-5 h-5" />, title: "╪ó┘à┘å", desc: "╪º┘ä╪¬╪┤┘ü┘è╪▒ ╪º┘ä┘â╪º┘à┘ä ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ┘ê╪º┘ä╪º╪¬╪╡╪º┘ä╪º╪¬" },
-  { icon: <Wifi className="w-5 h-5" />, title: "ibrecessed", desc: "╪¿┘è╪┤╪¬╪║┘ä ╪ú┘ê┘å┘ä╪º┘è┘å ┘ê╪ú┘ê┘ü┘ä╪º┘è┘å" },
-  { icon: <CheckCircle className="w-5 h-5" />, title: "╪│┘ç┘ä ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à", desc: "┘ê╪º╪¼┘ç╪⌐ ╪╣╪▒╪¿┘è╪⌐ ╪¿╪│┘è╪╖╪⌐ ┘ê┘ê╪º╪╢╪¡╪⌐" },
+  { icon: <Zap className="w-5 h-5" />, title: "سريع وخفيف", desc: "بيشتغل على كل الأجهزة بدون تبطي" },
+  { icon: <Shield className="w-5 h-5" />, title: "آمن", desc: "التشفير الكامل للبيانات والاتصالات" },
+  { icon: <Wifi className="w-5 h-5" />, title: "ibrecessed", desc: "بيشتغل أونلاين وأوفلاين" },
+  { icon: <CheckCircle className="w-5 h-5" />, title: "سهل الاستخدام", desc: "واجهة عربية بسيطة وواضحة" },
 ];
 
 const SuperAdminDownloads = () => {
@@ -54,9 +54,9 @@ const SuperAdminDownloads = () => {
     <div className="container mx-auto p-6 max-w-6xl" dir="rtl">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-3">╪¬╪¡┘à┘è┘ä ╪¬╪╖╪¿┘è┘é MaxP Tasks</h1>
+        <h1 className="text-3xl font-bold mb-3">تحميل تطبيق MaxP Tasks</h1>
         <p className="text-muted-foreground text-lg">
-          ┘å╪│┘æ╪¿ ╪¬╪╖╪¿┘è┘é ╪│╪╖╪¡ ╪º┘ä┘à┘â╪¬╪¿ ┘ä╪Ñ╪»╪º╪▒╪⌐ ┘à┘ç╪º┘à ╪º┘ä┘ü╪▒┘è┘é ╪¿╪│┘ç┘ê┘ä╪⌐
+          نسّب تطبيق سطح المكتب لإدارة مهام الفريق بسهولة
         </p>
       </div>
 
@@ -94,7 +94,7 @@ const SuperAdminDownloads = () => {
             <CardContent className="text-center">
               <div className="space-y-2 text-sm text-muted-foreground mb-6">
                 <p>{item.requirements}</p>
-                {item.size !== "-" && <p>╪º┘ä╪¡╪¼┘à: {item.size}</p>}
+                {item.size !== "-" && <p>الحجم: {item.size}</p>}
               </div>
               <Button
                 className="w-full"
@@ -105,10 +105,10 @@ const SuperAdminDownloads = () => {
                 {item.status === "available" ? (
                   <>
                     <Download className="w-4 h-4 ml-2" />
-                    ╪¬╪¡┘à┘è┘ä ╪º┘ä╪ó┘å
+                    تحميل الآن
                   </>
                 ) : (
-                  "┘é╪▒┘è╪¿╪º┘ï"
+                  "قريباً"
                 )}
               </Button>
             </CardContent>
@@ -119,25 +119,25 @@ const SuperAdminDownloads = () => {
       {/* Installation Guide */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">╪»┘ä┘è┘ä ╪º┘ä╪¬╪½╪¿┘è╪¬</CardTitle>
+          <CardTitle className="text-lg">دليل التثبيت</CardTitle>
         </CardHeader>
         <CardContent>
           <ol className="space-y-3 text-sm">
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span>
-              <span>╪¡┘à┘æ┘ä ╪º┘ä┘à┘ä┘ü ╪¡╪│╪¿ ┘å╪╕╪º┘à ╪º┘ä╪¬╪┤╪║┘è┘ä ╪¿╪¬╪º╪╣┘â</span>
+              <span>حمّل الملف حسب نظام التشغيل بتاعك</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
-              <span>╪º┘ü╪¬╪¡ ╪º┘ä┘à┘ä┘ü ┘ê╪º╪¬╪¿╪╣ ╪«╪╖┘ê╪º╪¬ ╪º┘ä╪¬╪½╪¿┘è╪¬</span>
+              <span>افتح الملف واتبع خطوات التثبيت</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span>
-              <span>╪│╪¼┘æ┘ä ╪»╪«┘ê┘ä ╪¿╪º┘ä╪¿╪▒┘è╪» ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è ┘ê┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒ ╪¿╪¬┘ê╪╣┘â</span>
+              <span>سجّل دخول بالبريد الإلكتروني وكلمة المرور بتوعك</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-xs font-bold">4</span>
-              <span>╪º╪¿╪»╪ú ╪Ñ╪»╪º╪▒╪⌐ ┘à┘ç╪º┘à ╪º┘ä┘ü╪▒┘è┘é!</span>
+              <span>ابدأ إدارة مهام الفريق!</span>
             </li>
           </ol>
         </CardContent>

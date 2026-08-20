@@ -1,7 +1,14 @@
-import { Calendar as CalendarIcon, Activity as ChartBarIcon, Clock as ClockIcon, Circle as CpuChipIcon, Folder as FolderIcon, Plus as PlusIcon, Grid as Squares2X2Icon } from 'lucide-react';
 import React from "react";
 import { Link } from "react-router-dom";
-;
+import {
+  CalendarIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CpuChipIcon,
+  FolderIcon,
+  PlusIcon,
+  Squares2X2Icon,
+} from "@heroicons/react/24/outline";
 
 import { BusinessPageHero } from "../../../components/business/BusinessSurface";
 import { Button, buttonVariants } from "../../../components/ui/button";

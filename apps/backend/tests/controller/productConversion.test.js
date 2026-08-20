@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   $transaction: jest.fn((fn) => fn(mockPrisma)),
   product: {
     findFirst: jest.fn(),
@@ -117,7 +117,7 @@ describe('productConversionController.convertProductToPresentation', () => {
     await convertProductToPresentation(req, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ success: false, message: '╪º┘ä┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: 'المنتج غير موجود' });
     expect(mockPrisma.productPresentation.create).not.toHaveBeenCalled();
   });
 
@@ -137,7 +137,7 @@ describe('productConversionController.convertProductToPresentation', () => {
     await convertProductToPresentation(req, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ success: false, message: '╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: 'المنتج الهدف غير موجود' });
     expect(mockPrisma.productPresentation.create).not.toHaveBeenCalled();
   });
 
@@ -152,7 +152,7 @@ describe('productConversionController.convertProductToPresentation', () => {
     await convertProductToPresentation(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, message: '┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼ ╪Ñ┘ä┘ë ┘å┘ü╪│┘ç' });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: 'لا يمكن تحويل المنتج إلى نفسه' });
     expect(mockPrisma.productPresentation.create).not.toHaveBeenCalled();
   });
 
@@ -167,7 +167,7 @@ describe('productConversionController.convertProductToPresentation', () => {
     await convertProductToPresentation(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü ┘à╪╖┘ä┘ê╪¿' });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: 'معرف المنتج الهدف مطلوب' });
   });
 
   test('success path: creates presentation on target, merges stock, re-points orders, nulls SKU then soft-deletes', async () => {
@@ -225,7 +225,7 @@ describe('productConversionController.convertProductToPresentation', () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        message: '╪¬┘à ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼ ╪Ñ┘ä┘ë ╪╣╪▒╪╢ ╪¬┘é╪»┘è┘à┘è ╪¿┘å╪¼╪º╪¡',
+        message: 'تم تحويل المنتج إلى عرض تقديمي بنجاح',
         data: expect.objectContaining({
           targetProductId: 'tgt-1',
           presentationSlug: 'sparkle-sneakers/sparkle-sneakers-duplicate',
@@ -351,7 +351,7 @@ describe('productConversionController.convertBulkProductsToPresentations', () =>
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      message: '╪º╪«╪¬╪▒ ┘à┘å╪¬╪¼╪º┘ï ┘ê╪º╪¡╪»╪º┘ï ╪╣┘ä┘ë ╪º┘ä╪ú┘é┘ä ┘ä┘ä╪¬╪¡┘ê┘è┘ä',
+      message: 'اختر منتجاً واحداً على الأقل للتحويل',
     });
   });
 
@@ -364,7 +364,7 @@ describe('productConversionController.convertBulkProductsToPresentations', () =>
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      message: '┘à╪╣╪▒┘ü ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü ┘à╪╖┘ä┘ê╪¿',
+      message: 'معرف المنتج الهدف مطلوب',
     });
   });
 
@@ -382,7 +382,7 @@ describe('productConversionController.convertBulkProductsToPresentations', () =>
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      message: '╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘ç╪»┘ü ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»',
+      message: 'المنتج الهدف غير موجود',
     });
   });
 
@@ -409,7 +409,7 @@ describe('productConversionController.convertBulkProductsToPresentations', () =>
     const payload = res.json.mock.calls[0][0];
     expect(payload.data.convertedCount).toBe(2);
     expect(payload.data.skippedCount).toBe(1);
-    expect(payload.data.skipped[0].reason).toBe('╪º┘ä┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(payload.data.skipped[0].reason).toBe('المنتج غير موجود');
   });
 
   test('skips converting a product onto itself', async () => {
@@ -424,6 +424,6 @@ describe('productConversionController.convertBulkProductsToPresentations', () =>
     const payload = res.json.mock.calls[0][0];
     expect(payload.data.convertedCount).toBe(1);
     expect(payload.data.skippedCount).toBe(1);
-    expect(payload.data.skipped[0].reason).toBe('┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘à┘å╪¬╪¼ ╪Ñ┘ä┘ë ┘å┘ü╪│┘ç');
+    expect(payload.data.skipped[0].reason).toBe('لا يمكن تحويل المنتج إلى نفسه');
   });
 });

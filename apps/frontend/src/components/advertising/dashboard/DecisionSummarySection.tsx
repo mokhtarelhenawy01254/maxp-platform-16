@@ -1,7 +1,6 @@
-import { formatCurrency } from '@/utils/formatters';
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Gauge } from 'lucide-react';
+import { AlertTriangle, Gauge } from "lucide-react";
 import {
   type FacebookAdsDecisionSummary,
   type FacebookAdsPerformanceSummary,

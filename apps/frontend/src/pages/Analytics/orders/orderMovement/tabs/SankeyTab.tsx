@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { GitBranch, Package, MousePointerClick, Bot, TrendingDown, TrendingUp } from "lucide-react";
 import { Sankey, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -46,7 +46,7 @@ function SankeyNodeComponent(props: any) {
   const { x, y, width, height, index, payload } = props;
   const id = String(payload?.id ?? "");
   const fill = id === "START" ? "#6366F1" : statusChartColor(id, index);
-  const label = id === "START" ? "╪¿╪»╪º┘è╪⌐" : getStatusLabel(id);
+  const label = id === "START" ? "بداية" : getStatusLabel(id);
   const nodeHeight = Math.max(height, 2);
   return (
     <g>
@@ -99,7 +99,7 @@ function FlowList({ title, icon: Icon, rows, color }: { title: string; icon: Rea
     <MovementCard title={title}>
       <div className="space-y-3">
         {rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬</p>
+          <p className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">لا توجد بيانات</p>
         ) : (
           rows.slice(0, 8).map((row, i) => (
             <div key={row.status} className="flex items-center gap-3">
@@ -134,7 +134,7 @@ export default function SankeyTab({ startDate, endDate, mode }: MovementFilterPr
       const result = await fetchMovement<SankeyData>("sankey", { startDate, endDate, mode });
       setData(result);
     } catch {
-      setError("╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¬╪»┘ü┘é");
+      setError("تعذر تحميل خريطة التدفق");
     } finally {
       setLoading(false);
     }
@@ -155,15 +155,15 @@ export default function SankeyTab({ startDate, endDate, mode }: MovementFilterPr
     <div className="space-y-6">
       <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪¡╪▒┘â╪º╪¬" value={formatNumber(data.totalTransitions)} icon={GitBranch} hint={`┘à┘å ${formatNumber(data.totalOrders)} ╪╖┘ä╪¿`} />
-        <KpiCard label="╪¡╪▒┘â╪º╪¬ ┘è╪»┘ê┘è╪⌐" value={formatNumber(data.modes.manual)} icon={MousePointerClick} gradient="from-sky-500 to-blue-600" hint={`${manualShare.toFixed(1)}%`} />
-        <KpiCard label="╪¡╪▒┘â╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è╪⌐" value={formatNumber(data.modes.auto)} icon={Bot} gradient="from-violet-500 to-fuchsia-600" hint={`${(100 - manualShare).toFixed(1)}%`} />
-        <KpiCard label="╪╣╪»╪» ╪º┘ä╪¡╪º┘ä╪º╪¬" value={formatNumber(data.nodes.length - 1)} icon={Package} gradient="from-emerald-500 to-teal-600" />
+        <KpiCard label="إجمالي الحركات" value={formatNumber(data.totalTransitions)} icon={GitBranch} hint={`من ${formatNumber(data.totalOrders)} طلب`} />
+        <KpiCard label="حركات يدوية" value={formatNumber(data.modes.manual)} icon={MousePointerClick} gradient="from-sky-500 to-blue-600" hint={`${manualShare.toFixed(1)}%`} />
+        <KpiCard label="حركات تلقائية" value={formatNumber(data.modes.auto)} icon={Bot} gradient="from-violet-500 to-fuchsia-600" hint={`${(100 - manualShare).toFixed(1)}%`} />
+        <KpiCard label="عدد الحالات" value={formatNumber(data.nodes.length - 1)} icon={Package} gradient="from-emerald-500 to-teal-600" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         <div className="xl:col-span-2">
-          <MovementCard title="╪«╪▒┘è╪╖╪⌐ ╪¬╪»┘ü┘é ╪¡╪▒┘â╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬" subtitle="╪╣╪▒╪╢ ╪¡╪¼┘à ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à┘å╪¬┘é┘ä╪⌐ ╪¿┘è┘å ╪º┘ä╪¡╪º┘ä╪º╪¬ ΓÇö ╪│┘à╪º┘â╪⌐ ╪º┘ä╪«╪╖ ╪¬╪╣╪¿╪▒ ╪╣┘å ╪º┘ä╪╣╪»╪»">
+          <MovementCard title="خريطة تدفق حركة الطلبات" subtitle="عرض حجم الطلبات المنتقلة بين الحالات — سماكة الخط تعبر عن العدد">
             <div className="overflow-x-auto">
               <div style={{ height: chartHeight, minWidth: 640 }} dir="ltr">
                 <ResponsiveContainer width="100%" height="100%">
@@ -189,13 +189,13 @@ export default function SankeyTab({ startDate, endDate, mode }: MovementFilterPr
                         return (
                           <div style={CHART_TOOLTIP_STYLE} className="rounded-xl px-3 py-2">
                             <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {from.id === "START" ? "╪¿╪»╪º┘è╪⌐" : getStatusLabel(from.id)} ΓåÉ {to.id === "START" ? "╪¿╪»╪º┘è╪⌐" : getStatusLabel(to.id)}
+                              {from.id === "START" ? "بداية" : getStatusLabel(from.id)} ← {to.id === "START" ? "بداية" : getStatusLabel(to.id)}
                             </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-300">{formatNumber(link.value)} ╪╖┘ä╪¿</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-300">{formatNumber(link.value)} طلب</div>
                             <div className="text-xs text-gray-600 dark:text-gray-300">
-                              ┘è╪»┘ê┘è {formatNumber(link.manual)} ┬╖ ╪¬┘ä┘é╪º╪ª┘è {formatNumber(link.auto)}
+                              يدوي {formatNumber(link.manual)} · تلقائي {formatNumber(link.auto)}
                             </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-300">╪Ñ┘è╪▒╪º╪» {formatNumber(link.revenue)} ╪¼.┘à</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-300">إيراد {formatNumber(link.revenue)} ج.م</div>
                           </div>
                         );
                       }}
@@ -206,21 +206,21 @@ export default function SankeyTab({ startDate, endDate, mode }: MovementFilterPr
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500 dark:border-gray-700/60 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-sky-500" /> ╪«╪╖ ╪ú╪▓╪▒┘é = ╪¡╪▒┘â╪⌐ ┘è╪»┘ê┘è╪⌐ ╪║╪º┘ä╪¿╪º┘ï
+                <span className="h-2.5 w-2.5 rounded-full bg-sky-500" /> خط أزرق = حركة يدوية غالباً
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-violet-500" /> ╪«╪╖ ╪¿┘å┘ü╪│╪¼┘è = ╪¡╪▒┘â╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐ ╪║╪º┘ä╪¿╪º┘ï
+                <span className="h-2.5 w-2.5 rounded-full bg-violet-500" /> خط بنفسجي = حركة تلقائية غالباً
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" /> ╪╣┘é╪»╪⌐ ╪º┘ä╪¿╪»╪º┘è╪⌐
+                <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" /> عقدة البداية
               </span>
             </div>
           </MovementCard>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:col-span-2">
-          <FlowList title="╪ú╪╣┘ä┘ë ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪»╪«┘ê┘ä╪º┘ï" icon={TrendingDown} rows={data.topInflows} color="#0EA5E9" />
-          <FlowList title="╪ú╪╣┘ä┘ë ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪«╪▒┘ê╪¼╪º┘ï" icon={TrendingUp} rows={data.topOutflows} color="#8B5CF6" />
+          <FlowList title="أعلى الحالات دخولاً" icon={TrendingDown} rows={data.topInflows} color="#0EA5E9" />
+          <FlowList title="أعلى الحالات خروجاً" icon={TrendingUp} rows={data.topOutflows} color="#8B5CF6" />
         </div>
       </div>
     </div>

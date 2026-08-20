@@ -1,8 +1,20 @@
-import { Archive as ArchiveBoxIcon, ArrowLeft as ArrowLeftIcon, DollarSign as BanknotesIcon, Store as BuildingStorefrontIcon, Circle as ClipboardDocumentListIcon, CreditCard as CreditCardIcon, Circle as CubeIcon, Edit as PencilSquareIcon, Circle as ReceiptPercentIcon, ShoppingBag as ShoppingBagIcon, Truck as TruckIcon, Circle as UserCircleIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-;
+import {
+  ArchiveBoxIcon,
+  ArrowLeftIcon,
+  BanknotesIcon,
+  BuildingStorefrontIcon,
+  ClipboardDocumentListIcon,
+  CreditCardIcon,
+  CubeIcon,
+  PencilSquareIcon,
+  ReceiptPercentIcon,
+  ShoppingBagIcon,
+  TruckIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 

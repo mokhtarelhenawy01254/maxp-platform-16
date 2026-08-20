@@ -23,6 +23,19 @@ const { emitToAudience, getConversationAudience } = require('../whatsappRealtime
 const DEFAULT_BAILEYS_SEND_RECONNECT_WAIT_MS = 10000;
 const BAILEYS_SEND_RECONNECT_POLL_MS = 500;
 
+/**
+ * 🚨 PRODUCTION-FIX: تحديث بيانات الـ contact بعد إرسال ناجح.
+ * فشل هذا التحديث (DB/network) لا يجب أبداً أن يحوّل إرسالاً نجح فعلاً إلى
+ * "فشل" — كان يسبب fallback مكرر (رسالة مكررة للعميل) أو failureReason مضلل.
+ */
+async function safeUpdateContact(sessionId, jid, options = {}) {
+  try {
+    await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, options.sock, { isOutgoing: true });
+  } catch (contactErr) {
+    console.warn(`⚠️ [WhatsAppMessageHandler] updateContact failed (non-critical): ${contactErr.message}`);
+  }
+}
+
 async function getSessionProvider(sessionId) {
     const session = await getSharedPrismaClient().whatsAppSession.findUnique({
         where: { id: sessionId }
@@ -46,6 +59,7 @@ async function ensureMetaContact(sessionId, jid, options = {}) {
             },
             update: {
                 lastMessageAt: new Date(),
+                lastMessageIsFromMe: isOutgoing,
                 totalMessages: { increment: 1 },
                 unreadCount: isOutgoing ? undefined : { increment: 1 },
                 updatedAt: new Date()
@@ -54,6 +68,7 @@ async function ensureMetaContact(sessionId, jid, options = {}) {
                 jid: normalizedJid,
                 phoneNumber,
                 lastMessageAt: new Date(),
+                lastMessageIsFromMe: isOutgoing,
                 totalMessages: 1,
                 unreadCount: isOutgoing ? 0 : 1,
                 isGroup: false,
@@ -98,6 +113,19 @@ function createBaileysSessionNotReadyError(sessionId, reason) {
     error.sessionId = sessionId;
     error.reason = reason;
     return error;
+}
+
+/**
+ * إعادة فحص الجاهزية بعد تحضير الوسائط/تأخير الكتابة — قراءة فقط (no reconnect).
+ * لو socket مات أثناء التحضير نرفض فوراً بـ WA_SESSION_NOT_READY بدل ما
+ * getSendableBaileysSession يعمل reconnect كامل كـ side effect (خطر إرسال مكرر).
+ */
+function assertSessionReadyAfterPrep(sessionId, phase) {
+    const session = WhatsAppManager.getSession(sessionId);
+    if (!isSendableBaileysSession(session)) {
+        throw createBaileysSessionNotReadyError(sessionId, getBaileysSessionReadinessReason(session) || `socket died during ${phase}`);
+    }
+    return session;
 }
 
 function getBaileysSendReconnectWaitMs() {
@@ -195,18 +223,36 @@ async function sendText(sessionId, to, text, options = {}) {
                 previewUrl: options.previewUrl
             });
 
-            const savedMessage = await saveOutgoingMessage(sessionId, jid, {
-                messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
-                type: 'TEXT',
-                content: text,
-                quotedMessageId: options.quotedMessageId,
-                interactiveData: options.interactiveData ? JSON.stringify(options.interactiveData) : null,
-                isAIResponse: options.isAIResponse || false,
-                aiConfidence: options.aiConfidence,
-                metadata: options.metadata
-            }, { companyId: dbSession?.companyId, senderId: options.senderId });
+            // 🚨 PRODUCTION-FIX: حفظ الرسالة محلياً بعد نجاح إرسال ميتا الفعلي.
+            // لو فشل الـ upsert (DB error)، لا يجب أن يحوّل إرسالاً وصل فعلاً إلى "فشل".
+            let savedMessage;
+            try {
+                savedMessage = await saveOutgoingMessage(sessionId, jid, {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    type: 'TEXT',
+                    content: text,
+                    quotedMessageId: options.quotedMessageId,
+                    interactiveData: options.interactiveData ? JSON.stringify(options.interactiveData) : null,
+                    isAIResponse: options.isAIResponse || false,
+                    aiConfidence: options.aiConfidence,
+                    metadata: options.metadata
+                }, { companyId: dbSession?.companyId, senderId: options.senderId });
+            } catch (saveErr) {
+                console.warn(`⚠️ [WhatsAppMessageHandler] saveOutgoingMessage failed (non-critical, send already succeeded): ${saveErr.message}`);
+                savedMessage = {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    messageType: 'TEXT',
+                    content: text
+                };
+            }
 
-            await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            try {
+                await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            } catch (contactErr) {
+                // 🚨 PRODUCTION-FIX: فشل تحديث بيانات الـ contact (مثل upsert فشل)
+                // لا يجب أبداً أن يحوّل إرسالاً نجح فعلاً إلى "فشل".
+                console.warn(`⚠️ [WhatsAppMessageHandler] ensureMetaContact failed (non-critical): ${contactErr.message}`);
+            }
             return savedMessage;
         }
 
@@ -218,15 +264,34 @@ async function sendText(sessionId, to, text, options = {}) {
             hasSocket: !!session?.sock
         });
 
-        const jid = formatJid(to);
+        let jid = formatJid(to);
+
+        // 🚨 PRODUCTION-FIX (C3): الـ LID غير محلول لا يمكن الإرسال إليه — نرفض مبكراً
+        // بدل الإرسال في فراغ ثم كتابة SENT وهمي. الحل لا يستخدم recursion:
+        // نعيد تعيين jid للـ JID المحلول ونكمل المسار العادي.
+        if (jid.includes('@lid')) {
+            const resolved = await WhatsAppManager.resolveOutgoingRemoteJid(sessionId, jid);
+            if (!resolved || String(resolved).includes('@lid')) {
+                const err = new Error('المرسل إليه يستخدم معرّف جهاز مرتبط (LID) غير محلول بعد');
+                err.code = 'WA_RECIPIENT_LID_UNRESOLVED';
+                throw err;
+            }
+            jid = resolved;
+        }
 
         // إرسال حالة الكتابة
         await sendTypingSafely(sessionId, jid, true);
 
-        // تأخير بسيط لمحاكاة الكتابة
-        await delay(Math.min(text.length * 20, 2000));
+        // تأخير بسيط لمحاكاة الكتابة — opt-in للإرسال التفاعلي اليدوي فقط
+        // (typingSimulation: true). للإرسال الآلي (notification/API/AI/queue)
+        // لا ندفع حتى 2s تأخير ولا نوسّع نافذة موت الـ socket أثناء الـ flap.
+        if (options.typingSimulation) {
+            await delay(Math.min(text.length * 20, 2000));
+        }
 
         // إرسال الرسالة
+        // لا يوجد blind retry: getSendableBaileysSession يضمن جلسة جاهزة قبل الإرسال،
+        // وإعادة الإرسال بعد خطأ شبكة بيسبب رسائل مكررة للعميل (الإرسال قد يكون وصل فعلاً)
         const messageOptions = {
             text
         };
@@ -243,27 +308,11 @@ async function sendText(sessionId, to, text, options = {}) {
 
         let result;
         try {
-            session = await getSendableBaileysSession(sessionId, dbSession);
+            session = assertSessionReadyAfterPrep(sessionId, 'typing delay');
             result = await session.sock.sendMessage(jid, messageOptions);
         } catch (sendError) {
-            console.warn(`⚠️ [WA-SEND:${sessionId}] First send attempt failed: ${sendError.message}. Reconnecting and retrying...`);
-            try {
-                const companyId = session?.companyId || dbSession?.companyId;
-                if (companyId) {
-                    await WhatsAppManager.reconnectSession(sessionId, companyId, 0, {
-                        syncFullHistory: session?.syncFullHistory || false,
-                        forceRestart: true
-                    });
-                }
-            } catch (reconnectError) {
-                console.error(`❌ [WA-SEND:${sessionId}] Reconnect during retry failed:`, reconnectError.message);
-            }
-            
-            session = await waitForSendableBaileysSession(sessionId);
-            if (!session) {
-                throw sendError;
-            }
-            result = await session.sock.sendMessage(jid, messageOptions);
+            console.error(`❌ [WA-SEND:${sessionId}] Send failed: ${sendError.message}. No blind retry (would duplicate customer messages).`);
+            throw sendError;
         }
 
         // إيقاف حالة الكتابة
@@ -282,7 +331,7 @@ async function sendText(sessionId, to, text, options = {}) {
         }, { companyId: session.companyId, senderId: options.senderId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -305,9 +354,9 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
                 type: 'IMAGE',
                 content: caption,
-                mediaUrl: imageSource.url || imageSource.filePath,
+                mediaUrl: (imageSource && imageSource.url) || (imageSource && imageSource.filePath) || (typeof imageSource === 'string' ? imageSource : null),
                 mediaType: 'image',
-                mediaMimeType: imageSource.mimetype,
+                mediaMimeType: imageSource && imageSource.mimetype,
                 isAIResponse: options.isAIResponse || false
             }, { companyId: dbSession?.companyId });
 
@@ -315,14 +364,34 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        // توحيد شكل مصدر الصورة (كائن/سلسلة نصية) عشان نتعامل معه بشكل ثابت
+        let source = imageSource;
+        if (typeof imageSource === 'string') {
+            source = { url: imageSource };
+        } else {
+            source = imageSource || {};
+        }
+
+        // 🖼️ تحويل صور WEBP/BMP/SVG لـ JPEG قبل الإرسال عبر Baileys برضه
+        // (واتساب نفسه بيكتشف نوع الملف، والصيغ غير JPEG/PNG/GIF ممكن تطلع شاشة
+        // "غير مدعومة" عند العميل). لو معانا buffer أو ملف محلي نحوله مباشرة.
+        let image = source.buffer || { url: source.filePath || source.url };
+        let mimetype = source.mimetype || 'image/jpeg';
+        if (source.buffer && typeof source.buffer !== 'undefined') {
+            const { normalizeImageForWhatsApp } = require('../../utils/whatsAppImageCompat');
+            const normalized = await normalizeImageForWhatsApp(source.buffer, mimetype);
+            image = normalized.buffer;
+            mimetype = normalized.mimetype;
+        }
+
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
         const messageOptions = {
-            image: imageSource.buffer || { url: imageSource.filePath || imageSource.url },
+            image,
             caption,
-            mimetype: imageSource.mimetype || 'image/jpeg'
+            mimetype
         };
 
         if (options.quotedMessageId) {
@@ -331,20 +400,21 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
             };
         }
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
             messageId: result.key.id,
             type: 'IMAGE',
             content: caption,
-            mediaUrl: imageSource.url,
+            mediaUrl: source.url,
             mediaType: 'image',
-            mediaMimeType: imageSource.mimetype,
+            mediaMimeType: mimetype,
             isAIResponse: options.isAIResponse || false
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -376,7 +446,7 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -386,6 +456,7 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
             mimetype: videoSource.mimetype || 'video/mp4'
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -398,7 +469,7 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -431,7 +502,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -441,6 +512,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
             ptt: options.ptt || false // voice note
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -452,7 +524,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -488,7 +560,7 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -499,6 +571,7 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
             caption: options.caption
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -512,7 +585,7 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -546,7 +619,7 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -559,6 +632,7 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
             }
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -568,7 +642,7 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -610,7 +684,7 @@ async function sendContact(sessionId, to, contact, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -627,6 +701,7 @@ END:VCARD`;
             }
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -636,7 +711,7 @@ END:VCARD`;
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -656,10 +731,11 @@ async function sendReaction(sessionId, to, messageId, emoji) {
             return result;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
+        session = assertSessionReadyAfterPrep(sessionId, 'reaction');
         const result = await session.sock.sendMessage(jid, {
             react: {
                 text: emoji,
@@ -712,19 +788,37 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
 
             const result = await MetaCloudProvider.sendInteractive(sessionId, to, interactivePayload);
 
-            const savedMessage = await saveOutgoingMessage(sessionId, jid, {
-                messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
-                type: 'BUTTONS',
-                content: text,
-                interactiveData: JSON.stringify({ buttons: limitedButtons, footer }),
-                isAIResponse: options.isAIResponse || false
-            }, { companyId: dbSession?.companyId });
+            // 🚨 PRODUCTION-FIX: حفظ الرسالة محلياً بعد نجاح إرسال ميتا الفعلي.
+            // لو فشل الـ upsert (DB error)، لا يجب أن يحوّل إرسالاً وصل فعلاً إلى "فشل".
+            let savedMessage;
+            try {
+                savedMessage = await saveOutgoingMessage(sessionId, jid, {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    type: 'BUTTONS',
+                    content: text,
+                    interactiveData: JSON.stringify({ buttons: limitedButtons, footer }),
+                    isAIResponse: options.isAIResponse || false
+                }, { companyId: dbSession?.companyId });
+            } catch (saveErr) {
+                console.warn(`⚠️ [WhatsAppMessageHandler] saveOutgoingMessage failed (non-critical, send already succeeded): ${saveErr.message}`);
+                savedMessage = {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    messageType: 'BUTTONS',
+                    content: text
+                };
+            }
 
-            await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            try {
+                await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            } catch (contactErr) {
+                // 🚨 PRODUCTION-FIX: فشل تحديث بيانات الـ contact (مثل upsert فشل)
+                // لا يجب أبداً أن يحوّل إرسالاً نجح فعلاً إلى "فشل".
+                console.warn(`⚠️ [WhatsAppMessageHandler] ensureMetaContact failed (non-critical): ${contactErr.message}`);
+            }
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
         const footer = options.footer || '';
@@ -740,6 +834,7 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
         const btnText = buttons.map((btn, i) => `   ${['1️⃣', '2️⃣', '3️⃣'][i]} *${btn.text}*`).join('\n');
         const formattedText = `${text}\n\n┌─────────────────┐\n${btnText}\n└─────────────────┘\n\n_${footer}_`;
 
+        session = assertSessionReadyAfterPrep(sessionId, 'buttons prep');
         const result = await session.sock.sendMessage(jid, { text: formattedText });
         console.log(`✅ [WHATSAPP-BTN] Formatted text message sent successfully to ${jid}`);
 
@@ -752,7 +847,7 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
             isAIResponse: options.isAIResponse || false
         }, { companyId: session.companyId });
 
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -821,7 +916,7 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -846,6 +941,7 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
             description: options.description
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         // حفظ الرسالة في قاعدة البيانات
@@ -858,7 +954,7 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -896,7 +992,7 @@ async function sendProduct(sessionId, to, product, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -920,6 +1016,7 @@ async function sendProduct(sessionId, to, product, options = {}) {
             messageOptions.buttons = buttonRows;
         }
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         // حفظ الرسالة في قاعدة البيانات
@@ -935,7 +1032,7 @@ async function sendProduct(sessionId, to, product, options = {}) {
 
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -993,7 +1090,8 @@ async function getMessages(sessionId, remoteJid, options = {}) {
 
         const where = {
             sessionId,
-            remoteJid: remoteJids.length > 1 ? { in: remoteJids } : remoteJids[0]
+            remoteJid: remoteJids.length > 1 ? { in: remoteJids } : remoteJids[0],
+            isHidden: false
         };
 
         if (before) {
@@ -1021,9 +1119,61 @@ async function getMessages(sessionId, remoteJid, options = {}) {
             : [];
         const senderMap = Object.fromEntries(senders.map(u => [u.id, [u.firstName, u.lastName].filter(Boolean).join(' ')]));
 
+        // حل أسماء المرسلين داخل رسائل الجروبات: المشارك قد يكون LID أو رقم تلفون.
+        const participantNameMap = await resolveGroupParticipantNames(sessionId, messages);
+
+        // Backfill Meta template buttons for older TEMPLATE messages that predate
+        // storing templateButtons in interactiveData, so they render on the
+        // business-side chat. Only fires when such messages exist; fails silently.
+        const hasTemplateWithoutButtons = messages.some((m) => {
+          if (m.messageType !== 'TEMPLATE' || !m.interactiveData) return false;
+          try {
+            const p = JSON.parse(m.interactiveData);
+            return Boolean(p?.templateName) && !p?.templateButtons;
+          } catch {
+            return false;
+          }
+        });
+        if (hasTemplateWithoutButtons) {
+          try {
+            const allTemplates = await MetaCloudProvider.listTemplates(sessionId);
+            if (Array.isArray(allTemplates) && allTemplates.length > 0) {
+              const byName = Object.fromEntries(allTemplates.map((t) => [t.name, t]));
+              for (const m of messages) {
+                if (m.messageType !== 'TEMPLATE' || !m.interactiveData) continue;
+                let parsed;
+                try {
+                  parsed = JSON.parse(m.interactiveData);
+                } catch {
+                  continue;
+                }
+                if (parsed?.templateButtons || !parsed?.templateName) continue;
+                const tmpl = byName[parsed.templateName];
+                const tmplComponents = tmpl?.components || [];
+                const buttonsComp = tmplComponents.find((c) => (c.type || '').toUpperCase() === 'BUTTONS');
+                if (buttonsComp?.buttons && Array.isArray(buttonsComp.buttons)) {
+                  parsed.templateButtons = buttonsComp.buttons.map((b) => ({
+                    type: b.type || null,
+                    text: b.text || '',
+                    url: b.url || (b.type === 'URL' ? (b.action?.url || null) : null) || null,
+                  }));
+                }
+                const footerComp = tmplComponents.find((c) => (c.type || '').toUpperCase() === 'FOOTER');
+                if (footerComp?.text) parsed.templateFooter = footerComp.text;
+                if (parsed.templateButtons || parsed.templateFooter) {
+                  m.interactiveData = JSON.stringify(parsed);
+                }
+              }
+            }
+          } catch (enrichErr) {
+            console.warn(`[WhatsAppMessageHandler] Could not backfill template buttons for ${sessionId}:`, enrichErr?.message);
+          }
+        }
+
         const enriched = messages.map(m => ({
             ...m,
-            senderName: m.fromMe && m.senderId ? (senderMap[m.senderId] || null) : null
+            senderName: m.fromMe && m.senderId ? (senderMap[m.senderId] || null) : null,
+            participantName: (!m.fromMe && m.participant) ? (participantNameMap[m.participant] || null) : null
         }));
 
         return {
@@ -1058,16 +1208,72 @@ function getRemoteJidLookupValues(remoteJid) {
 }
 
 /**
+ * حل أسماء المرسلين داخل رسائل الجروبات.
+ * المشارك قد يكون LID (@lid) أو رقم تلفون (@s.whatsapp.net) — نرجعه لرقم التلفون
+ * عبر whatsAppLidMapping ثم نبحث عن اسم جهة الاتصال.
+ * @param {string} sessionId
+ * @param {Array<object>} messages
+ * @returns {Promise<Record<string, string|null>>} map من JID المشارك إلى اسمه
+ */
+async function resolveGroupParticipantNames(sessionId, messages) {
+    const participantJids = [...new Set(
+        messages.filter(m => !m.fromMe && m.participant).map(m => m.participant)
+    )];
+    if (participantJids.length === 0) return {};
+
+    const prisma = getSharedPrismaClient();
+    const lidMap = {};
+    const lidJids = participantJids.filter(j => String(j).includes('@lid'));
+
+    try {
+        if (lidJids.length > 0 && prisma.whatsAppLidMapping) {
+            const lidRows = await prisma.whatsAppLidMapping.findMany({
+                where: { sessionId, lidJid: { in: lidJids } },
+                select: { lidJid: true, phoneJid: true }
+            });
+            for (const r of lidRows) lidMap[r.lidJid] = r.phoneJid;
+        }
+    } catch (e) {
+        console.warn('⚠️ Failed to resolve group participant LIDs:', e.message);
+    }
+
+    const candidateJids = new Set(participantJids);
+    for (const p of participantJids) {
+        if (lidMap[p]) candidateJids.add(lidMap[p]);
+    }
+
+    let contacts = [];
+    try {
+        contacts = await prisma.whatsAppContact.findMany({
+            where: { sessionId, jid: { in: [...candidateJids] } },
+            select: { jid: true, name: true, pushName: true }
+        });
+    } catch (e) {
+        console.warn('⚠️ Failed to load contacts for group participants:', e.message);
+    }
+
+    const nameByJid = {};
+    for (const c of contacts) nameByJid[c.jid] = c.name || c.pushName || null;
+
+    const result = {};
+    for (const p of participantJids) {
+        result[p] = nameByJid[p] || (lidMap[p] ? nameByJid[lidMap[p]] : null) || null;
+    }
+    return result;
+}
+
+/**
  * حذف رسالة
  */
 async function deleteMessage(sessionId, remoteJid, messageId, forEveryone = false) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(remoteJid);
 
         if (forEveryone) {
+            session = assertSessionReadyAfterPrep(sessionId, 'delete');
             await session.sock.sendMessage(jid, {
                 delete: {
                     remoteJid: jid,
@@ -1290,6 +1496,7 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
                     remoteJid,
                     {
                         sessionId,
+                        messageId: data.messageId,
                         type: data.type, // RAW WhatsApp type
                         content: data.content,
                         mediaUrl: data.mediaUrl,
@@ -1365,7 +1572,7 @@ function delay(ms) {
 async function sendPoll(sessionId, to, pollData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1386,6 +1593,7 @@ async function sendPoll(sessionId, to, pollData, options = {}) {
             };
         }
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -1411,7 +1619,7 @@ async function sendPoll(sessionId, to, pollData, options = {}) {
 async function sendOrder(sessionId, to, orderData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1419,6 +1627,7 @@ async function sendOrder(sessionId, to, orderData, options = {}) {
             order: orderData
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -1442,7 +1651,7 @@ async function sendOrder(sessionId, to, orderData, options = {}) {
 async function sendCatalog(sessionId, to, catalogData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1450,6 +1659,7 @@ async function sendCatalog(sessionId, to, catalogData, options = {}) {
             catalog: catalogData
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -1473,7 +1683,7 @@ async function sendCatalog(sessionId, to, catalogData, options = {}) {
 async function getCatalog(sessionId) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const catalog = await session.sock.getCatalog();
         return catalog;
@@ -1489,7 +1699,7 @@ async function getCatalog(sessionId) {
 async function getProducts(sessionId, catalogId) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const products = await session.sock.getProducts(catalogId);
         return products;
@@ -1505,7 +1715,7 @@ async function getProducts(sessionId, catalogId) {
 async function getCart(sessionId, cartId) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const cart = await session.sock.getCart(cartId);
         return cart;
@@ -1532,43 +1742,77 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
             const result = await MetaCloudProvider.sendTemplate(sessionId, to, templateName, languageCode, components);
 
             let templateBody = options?.templateBody || '';
-            if (!templateBody) {
-                try {
-                    const allTemplates = await MetaCloudProvider.listTemplates(sessionId);
-                    const tmpl = Array.isArray(allTemplates) ? allTemplates.find(t => t.name === templateName) : null;
-                    const bodyComp = tmpl?.components?.find(c => c.type === 'BODY' || c.type === 'body');
-                    let bodyText = bodyComp?.text || '';
-                    if (bodyText) {
-                        const bodyParamObj = components.find(c => c.type === 'BODY' || c.type === 'body');
-                        if (bodyParamObj?.parameters && Array.isArray(bodyParamObj.parameters)) {
-                            bodyParamObj.parameters.forEach((param, idx) => {
-                                const val = param.text || param.value || '';
-                                bodyText = bodyText.replace(new RegExp(`\\\\{\\\\{\\\\s*${idx + 1}\\\\s*\\\\}\\\\}`, 'g'), val);
-                            });
-                        }
-                        templateBody = bodyText;
+            let templateButtons = null;
+            let templateFooter = null;
+            try {
+                const allTemplates = await MetaCloudProvider.listTemplates(sessionId);
+                const tmpl = Array.isArray(allTemplates) ? allTemplates.find(t => t.name === templateName) : null;
+                const tmplComponents = tmpl?.components || [];
+                const bodyComp = tmplComponents.find(c => (c.type || '').toUpperCase() === 'BODY');
+                if (!templateBody && bodyComp?.text) {
+                    let bodyText = bodyComp.text;
+                    const bodyParamObj = components.find(c => (c.type || '').toUpperCase() === 'BODY');
+                    if (bodyParamObj?.parameters && Array.isArray(bodyParamObj.parameters)) {
+                        bodyParamObj.parameters.forEach((param, idx) => {
+                            const val = param.text || param.value || '';
+                            bodyText = bodyText.replace(new RegExp(`\\\\{\\\\{\\\\s*${idx + 1}\\\\s*\\\\}\\\\}`, 'g'), val);
+                        });
                     }
-                } catch (err) {
-                    console.warn(`[WhatsAppMessageHandler] Could not auto-fetch body text for template ${templateName}:`, err.message);
+                    templateBody = bodyText;
                 }
+                // Extract buttons + footer from the Meta template definition so they
+                // can be displayed in the business-side chat bubble.
+                const buttonsComp = tmplComponents.find(c => (c.type || '').toUpperCase() === 'BUTTONS');
+                if (buttonsComp?.buttons && Array.isArray(buttonsComp.buttons)) {
+                    templateButtons = buttonsComp.buttons.map((b) => ({
+                        type: b.type || null,
+                        text: b.text || '',
+                        url: b.url || (b.type === 'URL' ? (b.action?.url || null) : null) || null,
+                    }));
+                }
+                const footerComp = tmplComponents.find(c => (c.type || '').toUpperCase() === 'FOOTER');
+                if (footerComp?.text) templateFooter = footerComp.text;
+            } catch (err) {
+                console.warn(`[WhatsAppMessageHandler] Could not auto-fetch template definition for ${templateName}:`, err.message);
             }
 
             const displayContent = templateBody ? `${templateName}\n${templateBody}` : `Template: ${templateName}`;
             let meta = serializeOutgoingMetadata(options.metadata);
-            const savedMessage = await saveOutgoingMessage(sessionId, jid, {
-                messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
-                type: 'TEMPLATE',
-                content: displayContent,
-                interactiveData: JSON.stringify({ templateName, languageCode, components, templateBody }),
-                isAIResponse: options.isAIResponse || false,
-                metadata: meta
-            }, { companyId: dbSession?.companyId, senderId: options.senderId });
 
-            await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            // 🚨 PRODUCTION-FIX: حفظ الرسالة محلياً بعد نجاح إرسال ميتا الفعلي.
+            // لو فشل الـ upsert (DB error)، لا يجب أن يحوّل إرسالاً وصل فعلاً إلى
+            // "فشل" — كان يسبب fallback مكرر (رسالة مكررة للعميل) أو failureReason مضلل.
+            let savedMessage;
+            try {
+                savedMessage = await saveOutgoingMessage(sessionId, jid, {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    type: 'TEMPLATE',
+                    content: displayContent,
+                    interactiveData: JSON.stringify({ templateName, languageCode, components, templateBody, templateButtons, templateFooter }),
+                    isAIResponse: options.isAIResponse || false,
+                    metadata: meta
+                }, { companyId: dbSession?.companyId, senderId: options.senderId });
+            } catch (saveErr) {
+                console.warn(`⚠️ [WhatsAppMessageHandler] saveOutgoingMessage failed (non-critical, send already succeeded): ${saveErr.message}`);
+                savedMessage = {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    messageType: 'TEMPLATE',
+                    content: displayContent
+                };
+            }
+
+            try {
+                await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            } catch (contactErr) {
+                // 🚨 PRODUCTION-FIX: فشل تحديث بيانات الـ contact (مثل upsert فشل)
+                // لا يجب أبداً أن يحوّل إرسالَ قالبٍ نجح فعلاً إلى "فشل" —
+                // كان بيسبب fallback خاطئ لـ BUTTONS رغم نجاح الـ TEMPLATE.
+                console.warn(`⚠️ [WhatsAppMessageHandler] ensureMetaContact failed (non-critical): ${contactErr.message}`);
+            }
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1579,6 +1823,7 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
             }
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -1608,7 +1853,7 @@ async function getMessageTemplate(sessionId) {
             return templates;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const templates = await session.sock.getMessageTemplate();
         return templates;
@@ -1646,5 +1891,4 @@ module.exports = {
     sendTemplateMessage,
     getMessageTemplate
 };
-
 

@@ -1,8 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import {
   Routes,
   Route,
@@ -41,6 +37,7 @@ import type {
 } from "./types/theme.types";
 import { useClarityAnalytics } from "../hooks/useClarityAnalytics";
 import { useFacebookPixel } from "../hooks/useFacebookPixel";
+import { useGoogleAnalytics } from "../hooks/useGoogleAnalytics";
 import { useCategories } from "./hooks/useCategories";
 import StorefrontProductImage from "./components/StorefrontProductImage";
 import StorefrontSkeleton from "./components/StorefrontSkeleton";
@@ -66,6 +63,7 @@ import {
   isStorefrontMarketplaceAppEnabled,
 } from "./utils/marketplaceApps";
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
+import ReturnsPage from "./pages/ReturnsPage";
 import { useStorePage } from "../hooks/useStorePage";
 import i18n from "../i18n";
 import { footerSettingsService, type FooterSettings } from "../services/footerSettingsService";
@@ -8481,6 +8479,10 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           element={<DynamicStorefrontPage />}
         />
         <Route
+          path={scopedPath("returns")}
+          element={<ReturnsPage />}
+        />
+        <Route
           path={scopedPath(":pageSlug/*")}
           element={<DynamicStorefrontPage />}
         />
@@ -8622,6 +8624,7 @@ const StorefrontShell: React.FC<StorefrontShellProps> = ({
     [settings],
   );
   useFacebookPixel(settings?.storefrontSettings ?? null);
+  useGoogleAnalytics(settings?.storefrontSettings ?? null);
   useClarityAnalytics(settings?.storefrontSettings ?? null);
   useStorefrontVisitTracking(settings);
 

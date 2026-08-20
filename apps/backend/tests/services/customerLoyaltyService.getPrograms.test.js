@@ -1,4 +1,4 @@
-﻿const loyaltyService = require('../../services/hr/customerLoyaltyService');
+const loyaltyService = require('../../services/hr/customerLoyaltyService');
 const sharedDatabase = require('../../services/sharedDatabase');
 
 jest.mock('../../services/sharedDatabase', () => ({

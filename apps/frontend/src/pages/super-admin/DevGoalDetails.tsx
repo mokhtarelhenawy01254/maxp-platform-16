@@ -1,11 +1,25 @@
-import { ArrowRight as ArrowRightIcon, Circle as FlagIcon, Check as CheckCircleIcon, Clock as ClockIcon, AlertTriangle as ExclamationTriangleIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Link as LinkIcon, X as XMarkIcon, Circle as CalendarDaysIcon, User as UserIcon, MessageSquare as ChatBubbleLeftIcon, Activity as ChartBarIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  ArrowRightIcon,
+  FlagIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  LinkIcon,
+  XMarkIcon,
+  CalendarDaysIcon,
+  UserIcon,
+  ChatBubbleLeftIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
@@ -157,7 +171,7 @@ const DevGoalDetails: React.FC = () => {
         fetchGoal();
       }
     } catch (err) {
-      alert("فشل حفظ النتيجة الرئيسية");
+      alert(i18n.t("DevGoalDetails.failed_save_181b"));
     }
   };
 
@@ -171,7 +185,7 @@ const DevGoalDetails: React.FC = () => {
       const data = await response.json();
       if (data.success) fetchGoal();
     } catch (err) {
-      alert("فشل الحذف");
+      alert(i18n.t("DevGoalDetails.msg_892b"));
     }
   };
 
@@ -191,7 +205,7 @@ const DevGoalDetails: React.FC = () => {
         fetchGoal();
       }
     } catch (err) {
-      alert("فشل إضافة المراجعة");
+      alert(i18n.t("DevGoalDetails.failed_add_9743"));
     }
   };
 
@@ -205,7 +219,7 @@ const DevGoalDetails: React.FC = () => {
       const data = await response.json();
       if (data.success) fetchGoal();
     } catch (err) {
-      alert("فشل تحديث التقدم");
+      alert(i18n.t("DevGoalDetails.failed_update_f56b"));
     }
   };
 

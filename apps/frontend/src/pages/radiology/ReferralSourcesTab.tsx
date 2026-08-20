@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Building2, Stethoscope } from "lucide-react";
@@ -162,13 +162,13 @@ export default function ReferralSourcesTab() {
                 <tr key={c.id} className="border-b dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="py-3 px-4 font-medium"><span className="flex items-center gap-2"><Building2 className="w-4 h-4 text-gray-400" />{c.name}</span></td>
                   <td className="py-3 px-4">{TYPE_LABEL[c.type] ? t(TYPE_LABEL[c.type]) : c.type}</td>
-                  <td className="py-3 px-4">{c.marketingRepName || "ΓÇö"}</td>
+                  <td className="py-3 px-4">{c.marketingRepName || "—"}</td>
                   <td className="py-3 px-4">
                     <span className="flex items-center gap-1 flex-wrap">
                       <Stethoscope className="w-3.5 h-3.5 text-gray-400" />
                       {(c.physicians || []).length > 0
                         ? (c.physicians || []).map(p => <span key={p.id} className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-xs">{p.name}</span>)
-                        : <span className="text-gray-400">ΓÇö</span>}
+                        : <span className="text-gray-400">—</span>}
                     </span>
                   </td>
                   <td className="py-3 px-4">

@@ -1,10 +1,27 @@
-import { ArrowRight as ArrowRightIcon, Circle as BuildingOffice2Icon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, Circle as CalendarDaysIcon, Clock as ClockIcon, Check as CheckCircleIcon, X as XCircleIcon, Truck as TruckIcon, Circle as CubeIcon, User as UserIcon, Phone as PhoneIcon, Pin as MapPinIcon, Eye as EyeIcon, Download as ArrowDownTrayIcon, Filter as FunnelIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-;
+import {
+  ArrowRightIcon,
+  BuildingOffice2Icon,
+  ShoppingCartIcon,
+  CurrencyDollarIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  TruckIcon,
+  CubeIcon,
+  UserIcon,
+  PhoneIcon,
+  MapPinIcon,
+  EyeIcon,
+  ArrowDownTrayIcon,
+  FunnelIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
+import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../utils/statusRegistry";
 
 interface OrderItem {
@@ -132,11 +149,11 @@ const CompanyOrdersDetails: React.FC = () => {
         setTotalPages(response.data.data.pagination.totalPages);
         setTotal(response.data.data.pagination.total);
       } else {
-        toast.error("فشل تحميل البيانات");
+        tToast.error("CompanyOrdersDetails.failed_load_e304");
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error);
-      toast.error("فشل تحميل الطلبات");
+      tToast.error("CompanyOrdersDetails.failed_load_e2ac");
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +161,7 @@ const CompanyOrdersDetails: React.FC = () => {
 
   const handleExport = () => {
     if (orders.length === 0) {
-      toast.error("لا توجد طلبات للتصدير");
+      tToast.error("CompanyOrdersDetails.msg_075a");
       return;
     }
 
@@ -183,7 +200,7 @@ const CompanyOrdersDetails: React.FC = () => {
     link.download = `orders-${company?.name}-${startDate}-to-${endDate}.csv`;
     link.click();
 
-    toast.success("تم تصدير التقرير");
+    tToast.success("CompanyOrdersDetails.msg_9ac6");
   };
 
   const toggleOrderExpand = (orderId: string) => {

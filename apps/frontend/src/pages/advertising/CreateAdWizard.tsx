@@ -8,7 +8,31 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, Calendar, Check, CheckCircle, ChevronLeft, ChevronRight, DollarSign, Eye, Facebook, Globe, Heart, Image, Instagram, Layout, Loader2, MessageCircle, Phone, Search, Smartphone, Sparkles, Star, Target, Users, X, Zap } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Target,
+  DollarSign,
+  Users,
+  Layout,
+  Image,
+  CheckCircle,
+  ChevronRight,
+  ChevronLeft,
+  Loader2,
+  AlertCircle,
+  Sparkles,
+  Calendar,
+  Globe,
+  Zap,
+  Eye,
+  Facebook,
+  Instagram,
+  MessageCircle,
+  Search,
+  X,
+  Heart,
+  Smartphone,
+} from "lucide-react";
 import {
   facebookAdsService,
   CreateFullAdData,
@@ -720,7 +744,7 @@ const CreateAdWizard: React.FC = () => {
   const [searchParams] = useSearchParams();
   const launchPrefillId = searchParams.get("launchPrefillId") || "";
   const storedLaunchPrefill = getProductLaunchPrefillPayload(launchPrefillId);
-  const isAiDraftPrefill = Boolean(storedLaunchPrefill);
+  const isAiDraftPrefill = !!storedLaunchPrefill;
   const prefillProductUrl =
     storedLaunchPrefill?.productUrl || searchParams.get("productUrl") || "";
   const prefillProductId =
@@ -758,7 +782,7 @@ const CreateAdWizard: React.FC = () => {
       : "CAROUSEL";
   const requestedAdAccountId = searchParams.get("adAccountId") || "";
   const [currentStep, setCurrentStep] = useState(1);
-  const [showFullWizard, setShowFullWizard] = useState(!storedLaunchPrefill);
+  const [showFullWizard, setShowFullWizard] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<CreateAdWizardErrors>({});
   const getError = useCallback(
@@ -1318,7 +1342,7 @@ const CreateAdWizard: React.FC = () => {
     try {
       const activeAdAccountId = await activateSelectedAdAccount();
       await loadPagesAndPixels(activeAdAccountId);
-      toast.success("تم تفعيل الحساب الإعلاني وتحميل الصفحات والبكسلات");
+      tToast.success("CreateAdWizard.success_activate_0a35");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -1793,7 +1817,7 @@ const CreateAdWizard: React.FC = () => {
         adAccountId:
           "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى نثبت الحساب المقصود.",
       }));
-      toast.error("فعّل الحساب الإعلاني المختار قبل مراجعة الإرسال");
+      tToast.error("CreateAdWizard.msg_93bd");
       return;
     }
 

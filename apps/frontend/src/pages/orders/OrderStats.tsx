@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -112,7 +112,7 @@ const OrderStats: React.FC = () => {
     );
   }
 
-  // Γ£à ╪╣╪▒╪╢ ╪¡╪º┘ä╪⌐ ╪º┘ä╪«╪╖╪ú
+  // ✅ عرض حالة الخطأ
   if (error && !loading) {
     return (
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
@@ -313,7 +313,7 @@ const OrderStats: React.FC = () => {
           </h3>
           <div className="space-y-3">
             {stats.recentOrders.map((order) => {
-              // Γ£à ╪¬┘å╪│┘è┘é ╪º┘ä╪¬╪º╪▒┘è╪«
+              // ✅ تنسيق التاريخ
               const formatDate = (dateString: string) => {
                 try {
                   const date = new Date(dateString);

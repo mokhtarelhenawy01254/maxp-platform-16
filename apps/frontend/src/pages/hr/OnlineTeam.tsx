@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Users,
@@ -69,12 +69,12 @@ const formatSince = (iso: string | null): string => {
   const then = new Date(iso);
   const diffMs = Date.now() - then.getTime();
   const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "╪º┘ä╪ó┘å";
-  if (minutes < 60) return `┘à┘å╪░ ${minutes} ╪»┘é┘è┘é╪⌐`;
+  if (minutes < 1) return "الآن";
+  if (minutes < 60) return `منذ ${minutes} دقيقة`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `┘à┘å╪░ ${hours} ╪│╪º╪╣╪⌐`;
+  if (hours < 24) return `منذ ${hours} ساعة`;
   const days = Math.floor(hours / 24);
-  return `┘à┘å╪░ ${days} ┘è┘ê┘à`;
+  return `منذ ${days} يوم`;
 };
 
 const OnlineTeam: React.FC = () => {
@@ -412,7 +412,7 @@ const OnlineTeam: React.FC = () => {
                           {emp.firstName} {emp.lastName}
                           {isCurrentUser && (
                             <span className="text-xs font-normal text-blue-600 dark:text-blue-400">
-                              (╪ú┘å╪¬)
+                              (أنت)
                             </span>
                           )}
                         </h3>

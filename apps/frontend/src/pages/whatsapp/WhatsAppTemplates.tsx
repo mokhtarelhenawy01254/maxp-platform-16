@@ -1,7 +1,19 @@
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
-import { Check, CheckCircle, Edit, Eye, File, FileText, Navigation, Plus, RefreshCw, Save, Search, Send } from 'lucide-react';
+import {
+  CheckCircle,
+  Cloud,
+  Edit,
+  Eye,
+  FileText,
+  Globe,
+  Plus,
+  Search,
+  Send,
+  Save,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -47,14 +59,13 @@ interface Template {
   sentCount?: number;
   deliveredCount?: number;
   readCount?: number;
+  metaTemplateName?: string | null;
+  metaTemplateStatus?: string | null;
 }
 
 type NoticeTone = "success" | "error" | "warning" | "info";
 
-type NoticeState = {
-  tone: NoticeTone;
-  message: string;
-} | null;
+
 
 type TemplateFormState = {
   name: string;
@@ -95,7 +106,7 @@ const createEmptyTemplateForm = (
   superAdminMode = false,
 ): TemplateFormState => ({
   name: "",
-  category: superAdminMode ? "CUSTOMER" : "ORDERS",
+  category: superAdminMode ? "CUSTOMER" : "PRODUCTS",
   eventType: superAdminMode ? "NEW_SIGNUP_WELCOME" : "",
   content: "",
   isActive: true,
@@ -149,7 +160,6 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
             : "System";
 
       return {
-        ORDERS: t("whatsappNotifications.tabs.orders"),
         PRODUCTS: t("whatsappNotifications.tabs.products"),
         CUSTOMER: i18n.language === "ar" ? "العملاء" : "Customers",
         MARKETING: t("whatsappNotifications.tabs.marketing"),
@@ -163,14 +173,6 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
 
   const EVENT_LABELS = useMemo(
     () => ({
-      ORDER_CREATED: t("whatsappNotifications.orders.orderCreated"),
-      ORDER_CONFIRMED: t("whatsappNotifications.orders.orderConfirmed"),
-      ORDER_PROCESSING: t("whatsappNotifications.orders.orderProcessing"),
-      ORDER_SHIPPED: t("whatsappNotifications.orders.orderShipped"),
-      ORDER_OUT_FOR_DELIVERY: t("whatsappNotifications.orders.orderShipped"),
-      ORDER_DELIVERED: t("whatsappNotifications.orders.orderDelivered"),
-      ORDER_CANCELLED: t("whatsappNotifications.orders.orderCancelled"),
-      PAYMENT_REMINDER: t("whatsappNotifications.orders.paymentReminder"),
       BACK_IN_STOCK: t("whatsappNotifications.products.backInStock"),
       PRICE_DROP: t("whatsappNotifications.products.priceDrop"),
       NEW_PRODUCT: t("whatsappNotifications.products.newProduct"),
@@ -181,6 +183,26 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
       PROMOTIONAL: t("whatsappNotifications.marketing.promotional"),
       COUPON_SENT: t("whatsappNotifications.marketing.coupons"),
       BIRTHDAY_WISH: t("whatsappNotifications.marketing.birthday"),
+      LOYALTY_POINTS_AWARDED:
+        i18n.language === "ar" ? "إشعار كسب نقاط ولاء" : "Loyalty points awarded",
+      LOYALTY_TIER_UPGRADED:
+        i18n.language === "ar" ? "الترقية لمستوى أعلى" : "Loyalty tier upgrade",
+      LOYALTY_TIER_DOWNGRADED:
+        i18n.language === "ar" ? "انخفاض مستوى الولاء" : "Loyalty tier downgrade",
+      LOYALTY_POINTS_EXPIRY_WARNING:
+        i18n.language === "ar" ? "تنبيه قرب انتهاء النقاط" : "Points expiry warning",
+      LOYALTY_POINTS_EXPIRED:
+        i18n.language === "ar" ? "انتهاء صلاحية النقاط" : "Loyalty points expired",
+      LOYALTY_POINTS_REDEEMED:
+        i18n.language === "ar" ? "استبدال النقاط" : "Loyalty points redeemed",
+      CASHBACK_CREDITED:
+        i18n.language === "ar" ? "ايداع كاش باك" : "Cashback credited",
+      CASHBACK_REVERSED:
+        i18n.language === "ar" ? "خصم كاش باك" : "Cashback reversed",
+      CUSTOMER_QUALITY_UPGRADED:
+        i18n.language === "ar" ? "ارتفاع تصنيف الجودة" : "Customer quality upgrade",
+      CUSTOMER_QUALITY_DOWNGRADED:
+        i18n.language === "ar" ? "انخفاض تصنيف الجودة" : "Customer quality downgrade",
       REVIEW_REQUEST: t("whatsappNotifications.products.priceDrop"),
       NEW_SIGNUP_WELCOME:
         i18n.language === "ar" ? "رسالة ترحيب بعد التسجيل" : "Welcome after signup",
@@ -229,7 +251,11 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     [EVENT_LABELS, superAdminMode],
   );
 
-  const defaultCategory = searchParams.get("category") || "ALL";
+  const defaultCategory = (() => {
+    const param = searchParams.get("category");
+    if (param && param !== "ORDERS") return param;
+    return "ALL";
+  })();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -242,6 +268,10 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
   const [templateCategory, setTemplateCategory] = useState(defaultCategory);
   const [templateForm, setTemplateForm] =
     useState<TemplateFormState>(() => createEmptyTemplateForm(superAdminMode));
+
+  const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
+  const [selectedMetaSession, setSelectedMetaSession] = useState("");
+  const [publishingId, setPublishingId] = useState<string | null>(null);
 
   const pageTitle = companyName
     ? `${t("whatsappNotifications.tabs.templates")} · ${companyName}`
@@ -275,7 +305,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
         "/whatsapp-notifications/templates",
         withCompanyConfig(),
       );
-      setTemplates(response.data.templates || []);
+      setTemplates((response as any).data.templates || []);
     } catch (error) {
       console.error("Error loading WhatsApp templates:", error);
       showNotice(
@@ -287,16 +317,57 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     }
   }, [withCompanyConfig, i18n.language, showNotice]);
 
+  const fetchMetaSessions = useCallback(async () => {
+    try {
+      const res = await apiClient.get("/whatsapp/sessions", withCompanyConfig());
+      const list: { id: string; name: string; provider: string; metaDisplayPhoneNumber?: string }[] = (res as any).data?.sessions || [];
+      const cloudSessions = list.filter(s => s.provider === 'META_CLOUD');
+      setMetaSessions(cloudSessions);
+      if (cloudSessions.length > 0 && cloudSessions[0] && !selectedMetaSession) {
+        setSelectedMetaSession(cloudSessions[0].id);
+      }
+    } catch { /* ignore */ }
+  }, [withCompanyConfig, selectedMetaSession]);
+
+  const publishToMeta = useCallback(async (templateId: string) => {
+    if (!selectedMetaSession) {
+      showNotice("warning", i18n.language === "ar" ? "اختر جلسة ميتا أولاً" : "Select a Meta session first");
+      return;
+    }
+    setPublishingId(templateId);
+    try {
+      void apiClient.post(
+        `/whatsapp-notifications/templates/${templateId}/publish`,
+        { sessionId: selectedMetaSession },
+        withCompanyConfig(),
+      );
+      showNotice("success",
+        i18n.language === "ar"
+          ? "تم إرسال القالب لميتا للمراجعة"
+          : "Template sent to Meta for review");
+      await fetchTemplates();
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      showNotice("error",
+        i18n.language === "ar"
+          ? `فشل النشر: ${err.response?.data?.error || err.message}`
+          : `Publish failed: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setPublishingId(null);
+    }
+  }, [selectedMetaSession, withCompanyConfig, i18n.language, showNotice, fetchTemplates]);
+
   const refreshPageData = useCallback(async () => {
     try {
       setRefreshing(true);
       await fetchTemplates();
+      await fetchMetaSessions();
     } catch (error) {
       console.error("Error refreshing WhatsApp templates:", error);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchTemplates]);
+  }, [fetchTemplates, fetchMetaSessions]);
 
   useEffect(() => {
     let mounted = true;
@@ -308,6 +379,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
         }
 
         await fetchTemplates();
+        await fetchMetaSessions();
       } finally {
         if (mounted) {
           setLoading(false);
@@ -320,12 +392,12 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     return () => {
       mounted = false;
     };
-  }, [fetchTemplates]);
+  }, [fetchTemplates, fetchMetaSessions]);
 
   // Sync category state with searchParams
   useEffect(() => {
     const categoryParam = searchParams.get("category");
-    if (categoryParam && categoryParam !== templateCategory) {
+    if (categoryParam && categoryParam !== "ORDERS" && categoryParam !== templateCategory) {
       setTemplateCategory(categoryParam);
     }
   }, [searchParams]);
@@ -343,7 +415,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     if (editingTemplate) {
       setTemplateForm({
         name: editingTemplate.name || "",
-        category: editingTemplate.category || (superAdminMode ? "CUSTOMER" : "ORDERS"),
+        category: editingTemplate.category || (superAdminMode ? "CUSTOMER" : "PRODUCTS"),
         eventType: editingTemplate.eventType || "",
         content: editingTemplate.content || "",
         isActive: editingTemplate.isActive ?? true,
@@ -420,6 +492,8 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
 
   const filteredTemplates = useMemo(() => {
     return templates.filter((template) => {
+      if (template.category === "ORDERS") return false;
+
       const matchSearch =
         templateSearch.trim() === "" ||
         (template.name &&
@@ -458,24 +532,41 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
       description={pageDescription}
       icon={FileText}
       actions={
-        <Button
-          variant="outline"
-          onClick={refreshPageData}
-          disabled={refreshing}
-          className="rounded-full bg-[color:var(--color-muted)]"
-        >
-          {refreshing ? (
-            <span className="flex items-center gap-2">
-              <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              {i18n.language === "ar" ? "جاري التحديث..." : "Refreshing..."}
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <RefreshCw className="size-4" />
-              {i18n.language === "ar" ? "تحديث" : "Refresh"}
-            </span>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          {metaSessions.length > 0 ? (
+            <Select value={selectedMetaSession} onValueChange={(v) => setSelectedMetaSession(v ?? '')}>
+              <SelectTrigger className="h-9 w-auto min-w-[140px] rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-xs">
+                <Globe className="size-3 me-1" />
+                <SelectValue placeholder={i18n.language === 'ar' ? 'جلسة ميتا' : 'Meta session'} />
+              </SelectTrigger>
+              <SelectContent>
+                {metaSessions.map(s => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    {s.metaDisplayPhoneNumber || s.name || s.id.substring(0, 8)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Button
+            variant="outline"
+            onClick={refreshPageData}
+            disabled={refreshing}
+            className="rounded-full bg-[color:var(--color-muted)]"
+          >
+            {refreshing ? (
+              <span className="flex items-center gap-2">
+                <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                {i18n.language === "ar" ? "جاري التحديث..." : "Refreshing..."}
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <RefreshCw className="size-4" />
+                {i18n.language === "ar" ? "تحديث" : "Refresh"}
+              </span>
+            )}
+          </Button>
+        </div>
       }
     >
       <div className="space-y-4">
@@ -485,7 +576,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
               ? i18n.language === "ar"
                 ? "قوالب تسجيل الشركات"
                 : "Company signup templates"
-              : t("whatsappNotifications.tabs.templates")
+              : (t("whatsappNotifications.tabs.templates") as unknown as string)
           }
           description={
             superAdminMode
@@ -514,40 +605,40 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
         >
           <div className="space-y-5">
             <div className="flex flex-col gap-4">
+              {/* Search bar */}
+              <div className="relative w-full">
+                <Search className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+                <Input
+                  value={templateSearch}
+                  onChange={(event) => setTemplateSearch(event.target.value)}
+                  placeholder={String(t("common.search"))}
+                  className="h-11 rounded-full bg-[color:var(--color-muted)] ps-10"
+                />
+              </div>
+
+              {/* Category filter tabs */}
               <Tabs
                 value={templateCategory}
                 onValueChange={handleCategoryChange}
                 className="w-full"
               >
-                <div className="flex flex-col-reverse gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <TabsList className="flex h-auto flex-wrap justify-start gap-1 bg-transparent p-0">
+                <TabsList className="flex h-auto flex-wrap justify-start gap-1.5 bg-transparent p-0">
+                  <TabsTrigger
+                    value="ALL"
+                    className="rounded-full px-4 py-2 data-[state=active]:bg-[color:var(--color-primary)] data-[state=active]:text-white data-[state=active]:shadow-md"
+                  >
+                    {i18n.language === "ar" ? "جميع التصنيفات" : "All categories"}
+                  </TabsTrigger>
+                  {availableCategoryEntries.map(([key, label]) => (
                     <TabsTrigger
-                      value="ALL"
+                      key={key}
+                      value={key}
                       className="rounded-full px-4 py-2 data-[state=active]:bg-[color:var(--color-primary)] data-[state=active]:text-white data-[state=active]:shadow-md"
                     >
-                      {i18n.language === "ar" ? "جميع التصنيفات" : "All categories"}
+                      {label}
                     </TabsTrigger>
-                    {availableCategoryEntries.map(([key, label]) => (
-                      <TabsTrigger
-                        key={key}
-                        value={key}
-                        className="rounded-full px-4 py-2 data-[state=active]:bg-[color:var(--color-primary)] data-[state=active]:text-white data-[state=active]:shadow-md"
-                      >
-                        {label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-
-                  <div className="relative w-full shrink-0 lg:w-[16rem]">
-                    <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
-                    <Input
-                      value={templateSearch}
-                      onChange={(event) => setTemplateSearch(event.target.value)}
-                      placeholder={t("common.search")}
-                      className="h-11 rounded-full bg-[color:var(--color-card)] pl-10"
-                    />
-                  </div>
-                </div>
+                  ))}
+                </TabsList>
               </Tabs>
             </div>
 
@@ -597,8 +688,8 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                           <Badge
                             variant="outline"
                             className={
-                              categoryBadgeClasses[template.category] ||
-                              categoryBadgeClasses.SYSTEM
+                              categoryBadgeClasses[template.category as keyof typeof categoryBadgeClasses] ||
+                              categoryBadgeClasses['SYSTEM']
                             }
                           >
                             {CATEGORY_LABELS[
@@ -631,18 +722,66 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                           </Badge>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-full bg-primary/6 text-[color:var(--color-primary)] hover:bg-primary/12"
-                        onClick={() => {
-                          setEditingTemplate(template);
-                          setTemplateDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="size-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        {template.metaTemplateName ? (
+                          <Badge
+                            variant="outline"
+                            className={
+                              template.metaTemplateStatus === 'APPROVED'
+                                ? 'border-emerald-300/70 bg-emerald-500/10 text-emerald-800'
+                                : template.metaTemplateStatus === 'REJECTED'
+                                  ? 'border-red-300/70 bg-red-500/10 text-red-800'
+                                  : 'border-amber-300/70 bg-amber-500/10 text-amber-800'
+                            }
+                          >
+                            <Cloud className="size-3 me-1" />
+                            {template.metaTemplateStatus === 'APPROVED'
+                              ? (i18n.language === 'ar' ? 'على ميتا' : 'On Meta')
+                              : template.metaTemplateStatus === 'REJECTED'
+                                ? (i18n.language === 'ar' ? 'مرفوض' : 'Rejected')
+                                : template.metaTemplateStatus === 'PENDING'
+                                  ? (i18n.language === 'ar' ? 'قيد المراجعة' : 'Pending')
+                                  : template.metaTemplateStatus || (i18n.language === 'ar' ? 'منشور' : 'Published')}
+                          </Badge>
+                        ) : null}
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="rounded-full bg-primary/6 text-[color:var(--color-primary)] hover:bg-primary/12"
+                          onClick={() => {
+                            setEditingTemplate(template);
+                            setTemplateDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="size-4" />
+                        </Button>
+                      </div>
                     </div>
+
+                    {template.metaTemplateName && template.metaTemplateStatus !== 'APPROVED' ? null : (
+                      <div className="mt-3 flex items-center gap-2">
+                        {!selectedMetaSession ? (
+                          <p className="text-xs text-muted-foreground">
+                            {i18n.language === 'ar' ? 'لا توجد جلسة ميتا متاحة' : 'No Meta session available'}
+                          </p>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1 text-xs"
+                            disabled={publishingId === template.id}
+                            onClick={() => publishToMeta(template.id!)}
+                          >
+                            <Cloud className="size-3" />
+                            {publishingId === template.id
+                              ? (i18n.language === 'ar' ? 'جاري النشر...' : 'Publishing...')
+                              : template.metaTemplateName
+                                ? (i18n.language === 'ar' ? 'إعادة النشر' : 'Re-publish')
+                                : (i18n.language === 'ar' ? 'نشر على ميتا' : 'Publish to Meta')}
+                          </Button>
+                        )}
+                      </div>
+                    )}
 
                     <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 px-4 py-4 dark:border-emerald-500/40 dark:bg-emerald-500/[0.08]">
                       <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-800 dark:text-emerald-200">
@@ -738,7 +877,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                     <Select
                       value={templateForm.category}
                       onValueChange={(val) =>
-                        setTemplateForm((prev) => ({ ...prev, category: val }))
+                        setTemplateForm((prev) => ({ ...prev, category: val ?? '' }))
                       }
                       disabled={superAdminMode}
                     >
@@ -762,7 +901,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                     <Select
                       value={templateForm.eventType}
                       onValueChange={(val) =>
-                        setTemplateForm((prev) => ({ ...prev, eventType: val }))
+                        setTemplateForm((prev) => ({ ...prev, eventType: val ?? '' }))
                       }
                     >
                       <SelectTrigger className="h-12 bg-[color:var(--color-muted)]">

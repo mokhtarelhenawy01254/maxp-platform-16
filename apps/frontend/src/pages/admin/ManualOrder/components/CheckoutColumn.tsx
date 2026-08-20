@@ -1,10 +1,23 @@
-import { User as UserIcon, Pin as MapPinIcon, DollarSign as BanknotesIcon, Check as CheckCircleIcon, Search as MagnifyingGlassIcon, Truck as TruckIcon, Circle as TicketIcon, X as XMarkIcon, AlertTriangle as ExclamationTriangleIcon, ShoppingBag as ShoppingCartIcon, Printer as PrinterIcon, Calendar as CalendarIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useMemo } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  UserIcon,
+  MapPinIcon,
+  BanknotesIcon,
+  CheckCircleIcon,
+  MagnifyingGlassIcon,
+  TruckIcon,
+  TicketIcon,
+  XMarkIcon,
+  ExclamationTriangleIcon,
+  ShoppingCartIcon,
+  PrinterIcon,
+  CalendarIcon,
+} from "@heroicons/react/24/outline";
 import { SearchableSelect } from "../../../../components/ui/SearchableSelect";
-import { customerService } from "../../../../services/customerService";
+import { GovernorateAreaSearch } from "../../../../components/ui/GovernorateAreaSearch";
 import { apiClient } from "../../../../services/apiClient";
+import { lookupCustomerByPhone } from "../../../../hooks/useCustomerByPhone";
 import {
   customerBlocklistService,
   CustomerBlockEvaluation,
@@ -13,36 +26,6 @@ import { toast } from "sonner";
 import { CartItem } from "../types";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../hooks/useAuthSimple";
-// قائمة المحافظات المصرية - translation keys (resolved inside component via useTranslation)
-const EGYPT_GOVERNORATE_KEYS = [
-  'manualOrder.k_25',
-  'manualOrder.k_26',
-  'manualOrder.k_27',
-  'manualOrder.k_28',
-  'manualOrder.k_29',
-  'manualOrder.k_30',
-  'manualOrder.k_31',
-  'manualOrder.k_32',
-  'manualOrder.k_33',
-  'manualOrder.k_34',
-  'manualOrder.k_35',
-  'manualOrder.k_36',
-  'manualOrder.k_37',
-  'manualOrder.k_38',
-  'manualOrder.k_39',
-  'manualOrder.k_40',
-  'manualOrder.k_41',
-  'manualOrder.k_42',
-  'manualOrder.k_43',
-  'manualOrder.k_44',
-  'manualOrder.k_45',
-  'manualOrder.k_46',
-  'manualOrder.k_47',
-  'manualOrder.k_48',
-  'manualOrder.k_49',
-  'manualOrder.k_50',
-  'manualOrder.k_51',
-];
 
 const normalizeLocationLabel = (value: string | null | undefined) =>
   String(value || "").replace(/^\d+:/, "").trim();
@@ -91,16 +74,6 @@ interface TurboLocationApiItem {
   name?: string | null;
 }
 
-interface SearchCustomer {
-  firstName?: string | null;
-  lastName?: string | null;
-  phone?: string | null;
-  address?: string | null;
-  governorate?: string | null;
-  city?: string | null;
-  area?: string | null;
-}
-
 interface ApiErrorPayload {
   response?: {
     data?: {
@@ -123,7 +96,6 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAffiliate = user?.role === "AFFILIATE";
-  const EGYPT_GOVERNORATES = useMemo(() => EGYPT_GOVERNORATE_KEYS.map(k => t(k)), [t]);
   const canOverrideBlockedCustomer = [
     "OWNER",
     "COMPANY_ADMIN",
@@ -157,9 +129,10 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const [loadingAreas, setLoadingAreas] = useState(false);
 
   // Order Settings
-  const [status, setStatus] = useState("PENDING"); // PENDING, CONFIRMED
+  const [status, setStatus] = useState("CONFIRMED"); // PENDING, CONFIRMED
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [requestType, setRequestType] = useState("delivery");
+  const [returnAmount, setReturnAmount] = useState<string>("");
 
   // Shipping State
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
@@ -196,14 +169,6 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const shippingCost = shippingInfo?.price || 0;
   const totalDiscount = couponDiscount + manualDiscount;
   const grandTotal = subtotal - totalDiscount + shippingCost;
-  const availableGovernorates = useMemo(() => {
-    const source =
-      governments.length > 0
-        ? governments.map((gov) => normalizeLocationLabel(gov.name))
-        : EGYPT_GOVERNORATES;
-
-    return Array.from(new Set(source.filter(Boolean)));
-  }, [governments]);
 
   useEffect(() => {
     if (!canUseTurboLocationLookups) {
@@ -248,49 +213,40 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
     fetchGovernments();
   }, [canUseTurboLocationLookups]);
 
-  // Debounced Phone Search
+  // Debounced Phone Search — auto-fill customer data from previous orders
   useEffect(() => {
-    const searchCustomer = async () => {
-      if (phone.length < 10) return; // Wait for full number
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 9) {
+      setSearching(false);
+      return;
+    }
 
+    let isCancelled = false;
+    const timeoutId = setTimeout(async () => {
       try {
         setSearching(true);
-        // Using existing search API which likely searches name/phone
-        const results = await customerService.searchCustomers(phone);
+        const customer = await lookupCustomerByPhone(phone);
 
-        // Find exact phone match
-        const customer = (results as SearchCustomer[]).find(
-          (c) => c.phone === phone || c.phone?.includes(phone),
-        );
+        if (isCancelled || !customer) return;
 
-        if (customer) {
-          setFirstName(customer.firstName || "");
-          setLastName(customer.lastName || "");
-          setAddress(customer.address || "");
-          setGovernorate(
-            normalizeLocationLabel(customer.governorate || customer.city || ""),
-          );
-          setArea(
-            normalizeLocationLabel(
-              customer.area ||
-                (customer.governorate ? customer.city : "") ||
-                "",
-            ),
-          );
-          toast.success(t('manualOrder.k_52'));
-        }
+        setFirstName(customer.firstName || "");
+        setLastName(customer.lastName || "");
+        setAddress(customer.address || "");
+        setGovernorate(normalizeLocationLabel(customer.governorate || ""));
+        setArea(normalizeLocationLabel(customer.area || ""));
+        if (customer.notes) setNotes(customer.notes);
+        toast.success(t('manualOrder.k_52'));
       } catch (error) {
         console.error("Search error:", error);
       } finally {
-        setSearching(false);
+        if (!isCancelled) setSearching(false);
       }
+    }, 800);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeoutId);
     };
-
-    const timeoutId = setTimeout(() => {
-      if (phone) searchCustomer();
-    }, 1000);
-
-    return () => clearTimeout(timeoutId);
   }, [phone]);
 
   useEffect(() => {
@@ -532,8 +488,8 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
           quantity: item.quantity,
           variantId: item.variantId,
           sku: item.sku,
-          productColor: item.color,
-          productSize: item.size,
+          productColor: item.color ? String(item.color) : null,
+          productSize: item.size != null ? String(item.size) : null,
           productImage: item.image,
         })),
         customerPhone: phone,
@@ -550,6 +506,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         platform: "manual",
         source: "manual_entry",
         requestType: requestType,
+        returnAmount: returnAmount ? parseFloat(returnAmount) : undefined,
         // New fields for shipping and discount
         couponId: appliedCoupon?.id,
         couponCode: appliedCoupon?.code,
@@ -711,27 +668,18 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
               {t('manualOrder.k_95')} <span className="text-red-500 dark:text-red-400">*</span>
             </label>
-            <SearchableSelect
-              options={availableGovernorates.map((gov) => ({
-                value: gov,
-                label: gov,
-              }))}
-              value={governorate}
-              onChange={(nextGovernorate) => {
-                setGovernorate(nextGovernorate);
-                if (
-                  normalizeLocationLabel(nextGovernorate) !==
-                  normalizeLocationLabel(governorate)
-                ) {
-                  setArea("");
-                }
+            <GovernorateAreaSearch
+              value={{ governorate, area }}
+              onChange={(next) => {
+                setGovernorate(normalizeLocationLabel(next.governorate));
+                setArea(normalizeLocationLabel(next.area));
               }}
               placeholder={t('manualOrder.k_1')}
               searchPlaceholder={t('manualOrder.k_2')}
               emptyText={t('manualOrder.k_3')}
-              disabled={false}
-              loading={loadingGovernments}
               loadingText={t('manualOrder.k_4')}
+              disabled={!canUseTurboLocationLookups}
+              autoSearchText={address || ""}
             />
             {loadingGovernments && (
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
@@ -961,16 +909,39 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   } else if (val === "exchange") {
                     setStatus("EXCHANGED");
                   } else {
-                    setStatus("PENDING");
+                    setStatus("CONFIRMED");
                   }
                 }}
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value="delivery">{t('manualOrder.k_19')}</option>
+                <option value="partial_delivery">طلب تسليم جزئي</option>
                 <option value="return">{t('manualOrder.k_20')}</option>
                 <option value="exchange">{t('manualOrder.k_21')}</option>
               </select>
             </div>
+          </div>
+
+          {/* قيمة المرتجع الافتراضية */}
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              💰 مبلغ التحصيل في حالة المرتجع (افتراضي: مصاريف الشحن)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={returnAmount}
+                onChange={(e) => setReturnAmount(e.target.value)}
+                placeholder={shippingInfo ? `${shippingInfo.price} (مصاريف الشحن)` : 'سيتم استخدام مصاريف الشحن تلقائياً'}
+                className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 pe-16"
+                min="0"
+                step="1"
+              />
+              <span className="absolute start-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">ج.م</span>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              هذا المبلغ يظهر في شركة الشحن كـ "مبلغ التحصيل في حالة المرتجع"
+            </p>
           </div>
 
           <div>

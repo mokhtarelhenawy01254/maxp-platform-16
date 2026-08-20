@@ -1,8 +1,17 @@
-import { Building as BuildingOfficeIcon, Pin as MapPinIcon, Plus as PlusIcon, Edit as PencilSquareIcon, Trash2 as TrashIcon, Check as CheckCircleIcon, X as XCircleIcon, Circle as InboxStackIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-;
+import {
+  BuildingOfficeIcon,
+  MapPinIcon,
+  PlusIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  InboxStackIcon,
+} from "@heroicons/react/24/outline";
 import { companyAwareApi } from "../../services/companyAwareApi";
+import { useTranslation } from "react-i18next";
+
 interface Warehouse {
   id: string;
   name: string;

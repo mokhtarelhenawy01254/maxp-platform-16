@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { randomUUID } = require('crypto');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
 const jwt = require('jsonwebtoken');
 const socketService = require('../services/socketService');
@@ -15,6 +18,7 @@ const dropshippingService = require('../services/dropshippingService');
 const EmailService = require('../services/email/EmailService');
 const internalSyncService = require('../services/internalSyncService');
 const { trackStorefrontAppUsage } = require('../services/storefrontAppUsageService');
+const { billOrderPpuApps } = require('../services/orderBasedBillingService');
 const { resolvePublicShippingQuote } = require('../controller/shippingZoneController');
 const {
   extractSubdomainMiddleware,
@@ -24,9 +28,15 @@ const {
   resolveShippingClass
 } = require('../utils/shippingClassUtils');
 const { safeJsonParse } = require('../utils/jsonUtils');
+const { sanitizeOrderAttribution } = require('../utils/orderAttribution');
+const { isPreOrderEligible } = require('../utils/preOrderUtils');
 const {
   getConversionSuiteFreeShippingPromotion,
 } = require('../utils/storefrontFreeShipping');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
+const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+const { splitCustomerName } = require('../utils/customerName');
 const {
   applyVolumeDiscount,
   getVolumeDiscountsFromMetadata,
@@ -51,6 +61,42 @@ router.use(requireCompany);
 
 // Track affiliate referrals
 router.use(trackAffiliateReferral);
+
+// Multer setup for wallet payment proof screenshots (uploaded by customer at checkout)
+const walletProofStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = 'uploads/wallet-proofs';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `wallet-proof-${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`);
+  },
+});
+
+const walletProofUpload = multer({
+  storage: walletProofStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'), false);
+  },
+});
+
+// Upload a wallet payment proof screenshot before placing the order
+router.post('/wallet-proof/upload', walletProofUpload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Image file is required' });
+    }
+    const imageUrl = `/uploads/wallet-proofs/${req.file.filename}`;
+    return res.json({ success: true, data: { imageUrl } });
+  } catch (error) {
+    console.error('❌ [WALLET-PROOF] Upload error:', error?.message);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
 
 router.post('/checkout-draft', async (req, res) => {
   try {
@@ -78,6 +124,8 @@ router.post('/checkout-draft', async (req, res) => {
         ? coerceCartItemsToArray(existingCart.items)
         : [];
 
+    const attribution = sanitizeOrderAttribution(req.body?.attribution);
+
     const checkoutData = {
       customerName: normalizeCheckoutDraftText(req.body?.customerName, 120),
       email: normalizeCheckoutDraftText(req.body?.email, 160).toLowerCase(),
@@ -92,9 +140,7 @@ router.post('/checkout-draft', async (req, res) => {
       subtotal: toCheckoutDraftAmount(req.body?.subtotal, 0),
       shippingCost: toCheckoutDraftAmount(req.body?.shippingCost, 0),
       total: toCheckoutDraftAmount(req.body?.total, 0),
-      ...(sanitizeOrderAttribution(req.body?.attribution)
-        ? { attribution: sanitizeOrderAttribution(req.body?.attribution) }
-        : {}),
+      ...(attribution ? { attribution } : {}),
     };
 
     const hasCheckoutSignal = Boolean(
@@ -152,10 +198,29 @@ router.post('/checkout-draft', async (req, res) => {
 
     if (!existingCart && savedCart) {
       try {
-        const { handleCartCreated } = require('./services/orders/incompleteCartMessagingService');
+        const { handleCartCreated } = require('../services/orders/incompleteCartMessagingService');
         handleCartCreated(savedCart);
       } catch (triggerError) {
         console.warn('⚠️ [PUBLIC-ORDERS] Incomplete cart messaging trigger failed:', triggerError.message);
+      }
+
+      // 📡 بث إيفنت لحظي لتنبيه إدارة المتجر بطلب غير مكتمل جديد (يعمل صوت + إشعار)
+      try {
+        if (socketService && socketService.getIO()) {
+          const cartItems = coerceCartItemsToArray(savedCart.items);
+          socketService.getIO().to(`company_${companyId}`).emit('order:incomplete:new', {
+            cartId: savedCart.cartId,
+            companyId,
+            customerName: checkoutData?.customerName || '',
+            customerPhone: checkoutData?.phone || '',
+            total: Number(savedCart.total || 0),
+            itemCount: Array.isArray(cartItems) ? cartItems.length : 0,
+            createdAt: new Date(),
+          });
+          console.log(`📡 [SOCKET] Emitted order:incomplete:new for cart ${savedCart.cartId}`);
+        }
+      } catch (socketError) {
+        console.warn('⚠️ [PUBLIC-ORDERS] Failed to emit incomplete-cart socket event:', socketError.message);
       }
     }
 
@@ -303,7 +368,10 @@ function mapPaymentMethodToEnum(method) {
     'online': 'STRIPE', // ONLINE maps to STRIPE
     'paypal': 'PAYPAL',
     'stripe': 'STRIPE',
-    'cod': 'CASH'
+    'cod': 'CASH',
+    'wallet': 'WALLET',
+    'instapay': 'INSTAPAY',
+    'vodafone_cash': 'VODAFONE_CASH'
   };
   return methodMap[method?.toLowerCase()] || 'CASH';
 }
@@ -417,203 +485,6 @@ function extractCookieValue(cookieHeader, key) {
     new RegExp(`(?:^|;\\s*)${escapedKey}=([^;]*)`),
   );
   return match?.[1] ? decodeURIComponent(match[1]) : null;
-}
-
-function normalizeAttributionText(value, maxLength = 320) {
-  if (value === undefined || value === null) return null;
-
-  const normalized = String(value).trim().replace(/\s+/g, ' ');
-  if (!normalized) return null;
-
-  return normalized.slice(0, maxLength);
-}
-
-function sanitizeAttributionRawParams(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-
-  const entries = Object.entries(value)
-    .slice(0, 24)
-    .map(([key, rawValue]) => {
-      const normalizedKey = normalizeAttributionText(key, 80)?.toLowerCase();
-      const normalizedValue = normalizeAttributionText(rawValue, 320);
-      return normalizedKey && normalizedValue ? [normalizedKey, normalizedValue] : null;
-    })
-    .filter(Boolean);
-
-  return entries.length > 0 ? Object.fromEntries(entries) : null;
-}
-
-function sanitizeLandingPageAttribution(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-
-  const sanitized = {
-    source: normalizeAttributionText(value.source, 120),
-    landingPageId: normalizeAttributionText(value.landingPageId, 160),
-    landingPageSlug: normalizeAttributionText(value.landingPageSlug, 160),
-    generationMode: normalizeAttributionText(value.generationMode, 80),
-    productId: normalizeAttributionText(value.productId, 160),
-  };
-
-  return Object.entries(sanitized).reduce((acc, [key, rawValue]) => {
-    if (rawValue !== null && rawValue !== undefined) {
-      acc[key] = rawValue;
-    }
-    return acc;
-  }, {});
-}
-
-function inferAttributionPlatform(source, referrer, clickIds = {}) {
-  const haystack = [
-    source,
-    referrer,
-    clickIds.fbclid ? 'facebook' : '',
-    clickIds.fbc ? 'facebook' : '',
-    clickIds.fbp ? 'facebook' : '',
-    clickIds.gclid ? 'google' : '',
-    clickIds.ttclid ? 'tiktok' : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  if (haystack.includes('instagram')) return 'instagram';
-  if (
-    haystack.includes('facebook') ||
-    haystack.includes('meta') ||
-    haystack.includes('l.facebook.com')
-  ) {
-    return 'facebook';
-  }
-  if (haystack.includes('google')) return 'google';
-  if (haystack.includes('tiktok')) return 'tiktok';
-  if (haystack.includes('youtube')) return 'youtube';
-
-  return null;
-}
-
-function sanitizeOrderAttribution(rawAttribution, fallbacks = {}) {
-  const attribution =
-    typeof rawAttribution === 'string'
-      ? safeJsonParse(rawAttribution, null)
-      : rawAttribution;
-
-  if (!attribution || typeof attribution !== 'object' || Array.isArray(attribution)) {
-    return null;
-  }
-
-  const rawParams = sanitizeAttributionRawParams(attribution.rawParams);
-  const landingPage =
-    sanitizeLandingPageAttribution(attribution.landingPage) ||
-    sanitizeLandingPageAttribution({
-      source: attribution.landingPageSource,
-      landingPageId: attribution.landingPageId,
-      landingPageSlug: attribution.landingPageSlug,
-      generationMode: attribution.generationMode,
-      productId: attribution.productId,
-    });
-  const referrer = normalizeAttributionText(attribution.referrer, 1024);
-  const clickIds = {
-    fbclid: normalizeAttributionText(attribution.fbclid, 255),
-    gclid: normalizeAttributionText(attribution.gclid, 255),
-    ttclid: normalizeAttributionText(attribution.ttclid, 255),
-    fbc: normalizeAttributionText(attribution.fbc || fallbacks.fbc, 255),
-    fbp: normalizeAttributionText(attribution.fbp || fallbacks.fbp, 255),
-  };
-  const platform =
-    normalizeAttributionText(attribution.platform, 80)?.toLowerCase() ||
-    inferAttributionPlatform(attribution.source, referrer, clickIds);
-
-  let source = normalizeAttributionText(attribution.source, 120)?.toLowerCase();
-  if (!source) {
-    if (platform) {
-      source = platform;
-    } else if (referrer) {
-      try {
-        source = new URL(referrer).hostname.replace(/^www\./i, '').slice(0, 120);
-      } catch (_) {
-        source = null;
-      }
-    }
-  }
-
-  if (!source) {
-    source = 'direct';
-  }
-
-  let medium = normalizeAttributionText(attribution.medium, 120)?.toLowerCase();
-  if (!medium) {
-    if (source === 'direct') {
-      medium = 'none';
-    } else if (clickIds.gclid) {
-      medium = 'cpc';
-    } else if (platform && ['facebook', 'instagram', 'tiktok'].includes(platform)) {
-      medium = 'paid_social';
-    } else if (referrer) {
-      medium = 'referral';
-    }
-  }
-
-  const sanitized = {
-    platform,
-    source,
-    medium,
-    campaignName: normalizeAttributionText(
-      attribution.campaignName || attribution.campaign || attribution.utm_campaign,
-      160,
-    ),
-    campaignId: normalizeAttributionText(
-      attribution.campaignId ||
-        attribution.campaign_id ||
-        attribution.utm_id,
-      160,
-    ),
-    adSetId: normalizeAttributionText(
-      attribution.adSetId ||
-        attribution.adset_id ||
-        attribution.ad_set_id,
-      160,
-    ),
-    adId: normalizeAttributionText(
-      attribution.adId ||
-        attribution.ad_id,
-      160,
-    ),
-    content: normalizeAttributionText(
-      attribution.content || attribution.utm_content,
-      160,
-    ),
-    term: normalizeAttributionText(
-      attribution.term || attribution.utm_term,
-      160,
-    ),
-    landingPath: normalizeAttributionText(attribution.landingPath, 1024),
-    referrer,
-    fbclid: clickIds.fbclid,
-    gclid: clickIds.gclid,
-    ttclid: clickIds.ttclid,
-    fbc: clickIds.fbc,
-    fbp: clickIds.fbp,
-    capturedAt:
-      normalizeAttributionText(attribution.capturedAt, 80) || new Date().toISOString(),
-    rawParams,
-    landingPage:
-      landingPage && Object.keys(landingPage).length > 0 ? landingPage : null,
-  };
-
-  return Object.entries(sanitized).reduce((acc, [key, value]) => {
-    if (
-      value !== null &&
-      value !== undefined &&
-      (!(typeof value === 'object' && !Array.isArray(value)) || Object.keys(value).length > 0)
-    ) {
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
 }
 
 function normalizeItemAttributes(rawAttributes) {
@@ -786,8 +657,8 @@ function buildTrackedOrderItem(item) {
     variantId: item?.variantId || null,
     quantity: item?.quantity,
     price: item?.price,
-    productColor: item?.productColor || getAttributeValue(attributes, ['color', 'colour', 'اللون']) || null,
-    productSize: item?.productSize || getAttributeValue(attributes, ['size', 'المقاس']) || null,
+    productColor: (item?.productColor || getAttributeValue(attributes, ['color', 'colour', 'اللون'])) ? String(item?.productColor || getAttributeValue(attributes, ['color', 'colour', 'اللون'])) : null,
+    productSize: (item?.productSize || getAttributeValue(attributes, ['size', 'المقاس'])) != null ? String(item?.productSize || getAttributeValue(attributes, ['size', 'المقاس'])) : null,
     image: productImage,
     imageUrl: productImage,
     attributes,
@@ -855,7 +726,9 @@ router.post('/', async (req, res) => {
       fbc,
       fbp,
       useWallet,
-      walletAmount
+      walletAmount,
+      redeemPoints,
+      walletProof
     } = req.body;
 
     const headerFbc = req.headers['x-fbc'];
@@ -990,6 +863,7 @@ router.post('/', async (req, res) => {
       : null;
 
     const shippingClassCounts = {};
+    const preOrderItems = [];
 
     // Verify stock again
     for (const item of cartItems) {
@@ -1012,6 +886,10 @@ router.post('/', async (req, res) => {
           error: `المنتج غير موجود: ${item.name || 'Unknown'}`
         });
       }
+
+      // الطلب المسبق: إذا كان المنتج pre-order وتاريخ التوفر مستقبلي (أو غير محدد)،
+      // يُسمح بالطلب حتى لو المخزون صفر — لا يتم رفض فحص المخزون.
+      const preOrderEligible = isPreOrderEligible(product);
 
       if (product.isDropshipped) {
         const availability = await dropshippingService.checkMerchantAvailability(
@@ -1049,7 +927,7 @@ router.post('/', async (req, res) => {
           });
         }
 
-        if (variant.trackInventory !== false && variant.stock < item.quantity && !req.headers['x-admin-convert']) {
+        if (variant.trackInventory !== false && variant.stock < item.quantity && !req.headers['x-admin-convert'] && !preOrderEligible) {
           console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
@@ -1158,13 +1036,22 @@ router.post('/', async (req, res) => {
         console.log(`✅ [CREATE-ORDER] Enriched item ${item.productId}: Color=${item.productColor}, Size=${item.productSize}, Image=${image ? 'Yes' : 'No'}`);
       } else {
         // Check main product stock if no variant and tracking is enabled
-        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert']) {
+        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert'] && !preOrderEligible) {
           console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
             error: `المخزون غير كافي للمنتج: ${item.name || product.name}. المتوفر: ${product.stock}`
           });
         }
+      }
+
+      if (preOrderEligible) {
+        preOrderItems.push({
+          productId: product.id,
+          name: product.name,
+          quantity: item.quantity,
+          preOrderDate: product.preOrderDate || null,
+        });
       }
 
       const itemShippingClass = resolveShippingClass(selectedVariant?.metadata, product?.metadata);
@@ -1411,6 +1298,157 @@ router.post('/', async (req, res) => {
       discountAmount += promoDiscount;
     }
 
+    // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي) / أو كوبون الخصم التلقائي
+    let loyaltyDiscount = 0;
+    let loyaltyRewards = null;
+    let loyaltyTierInfo = null;
+    let autoDiscountVoucherId = null;
+    let loyaltyCustomer = null;
+    try {
+      loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
+      if (loyaltyCustomer) {
+        const autoDiscountService = require('../services/autoDiscountService');
+        const loyaltySettings = await autoDiscountService.getSettings(company.id);
+        const autoActive = loyaltySettings.autoDiscountEnabled === true && loyaltySettings.enabled !== false;
+        const tiersActive = loyaltySettings.tiersEnabled === true;
+        const discountCombination = loyaltySettings.discountCombination || 'ADDITIVE';
+        const maxTotalDiscountPercent = Number(loyaltySettings.maxTotalDiscountPercent || 0);
+
+        let tierDiscount = 0;
+        let voucherDiscount = 0;
+
+        // نظام "المستويات": مزايا المستوى (شحن مجاني + خصم %) — مستقل عن الخصم التلقائي
+        if (tiersActive) {
+          loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
+          const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
+          loyaltyTierInfo = progress?.tier || null;
+
+          if (loyaltyRewards?.freeShipping && Number(shippingCost) > 0) {
+            freeShippingAdjustment = {
+              source: 'loyalty_tier',
+              originalShippingCost: Number(shippingCost),
+              discountAmount: Number(shippingCost),
+              appliedShippingCost: 0,
+            };
+            shippingCost = 0;
+          }
+
+          const lp = Number(loyaltyRewards?.discountPercent || 0);
+          if (lp > 0) {
+            tierDiscount = (Number(cartTotal) || 0) * (lp / 100);
+          }
+        }
+
+        // نظام "الخصم التلقائي": كوبون الخصم — مستقل عن المستويات
+        if (autoActive) {
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId: company.id,
+            customerId: loyaltyCustomer.id,
+            cartTotal
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            voucherDiscount = voucherRes.discount;
+            autoDiscountVoucherId = voucherRes.voucher.id;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+          }
+        }
+
+        // دمج خصم المستوى + كوبون الخصم حسب وضع الدمج (discountCombination) + حد أقصى
+        const base = Number(cartTotal) || 0;
+        let combined = 0;
+        if (discountCombination === 'BEST') {
+          combined = Math.max(tierDiscount, voucherDiscount);
+        } else if (discountCombination === 'COMPOUND') {
+          const tierPct = base > 0 ? (tierDiscount / base) * 100 : 0;
+          const voucherPct = base > 0 ? (voucherDiscount / base) * 100 : 0;
+          combined = base * (1 - (1 - tierPct / 100) * (1 - voucherPct / 100));
+        } else {
+          // ADDITIVE: جمع النسب
+          combined = tierDiscount + voucherDiscount;
+        }
+        // 🛡️ حد أقصى لإجمالي الخصم
+        if (maxTotalDiscountPercent > 0) {
+          const capAmount = base * (maxTotalDiscountPercent / 100);
+          if (combined > capAmount) combined = capAmount;
+        }
+
+        // 🛡️ B) سقف الخصم الشامل (Company.maxDiscountCap) + منع دمج الكوبون مع الولاء
+        try {
+          const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+          const couponCode = req.body && req.body.couponCode;
+          let couponAllowWithLoyalty = true;
+          if (couponCode && prisma.coupon) {
+            const cp = await prisma.coupon.findFirst({ where: { companyId: company.id, code: couponCode } }).catch(() => null);
+            if (cp) couponAllowWithLoyalty = cp.allowWithLoyalty !== false;
+          }
+          const capResult = await customerLoyaltyService.enforceDiscountCap({
+            companyId: company.id,
+            orderTotal: cartTotal,
+            couponDiscount: combined,
+            walletAmount: Number(walletAmount) || 0,
+            pointsAmount: 0,
+            couponAllowWithLoyalty
+          });
+          if (!capResult.loyaltyAllowed) {
+            // الكوبون لا يُسمح بدمجه مع الولاء → أزل خصم الولاء من المجموع
+            combined = capResult.couponDiscount;
+          } else if (capResult.capped) {
+            combined = capResult.cappedTotal;
+          }
+        } catch (capErr) {
+          console.warn('⚠️ [LOYALTY] discount cap check failed:', capErr && capErr.message);
+        }
+
+        loyaltyDiscount = combined;
+        if (loyaltyDiscount > 0) {
+          discountAmount += loyaltyDiscount;
+        }
+      }
+    } catch (loyaltyError) {
+      console.error('⚠️ [LOYALTY] Failed to apply rewards at checkout:', loyaltyError?.message);
+    }
+
+    // خصم الدفع الإلكتروني (من إعدادات المتجر: discountEnabled + discountPercent) — يُطبّق على الدفع بالبطاقة أو المحفظة
+    let walletDiscount = 0;
+    let walletDiscountPercent = 0;
+    if (paymentMethod === 'card' || paymentMethod === 'wallet') {
+      try {
+        const walletSettingsRow = await prisma.storefrontSettings.findUnique({
+          where: { companyId: company.id },
+          select: { walletPaymentSettings: true },
+        });
+        const walletSettings = safeJsonParse(
+          walletSettingsRow?.walletPaymentSettings,
+          {}
+        );
+        const discountEnabled =
+          walletSettings?.discountEnabled === true ||
+          walletSettings?.discountEnabled === 'true';
+        const percent = Math.max(0, Number(walletSettings?.discountPercent || 0));
+        if (discountEnabled && percent > 0) {
+          walletDiscountPercent = percent;
+          walletDiscount = Number(
+            (((Number(cartTotal) || 0) * percent) / 100).toFixed(2)
+          );
+          discountAmount += walletDiscount;
+          console.log(
+            '🎁 [WALLET-DISCOUNT] Applied:',
+            walletDiscount,
+            'EGP (',
+            percent,
+            '% of cartTotal ',
+            cartTotal,
+            ')'
+          );
+        }
+      } catch (walletDiscountError) {
+        console.error(
+          '⚠️ [WALLET-DISCOUNT] Failed to apply wallet discount:',
+          walletDiscountError?.message
+        );
+      }
+    }
+
     const finalTotal = (Number(cartTotal) || 0) + (Number(shippingCost) || 0) - (Number(discountAmount) || 0);
 
     // Wallet usage (optional - requires CUSTOMER token)
@@ -1421,14 +1459,14 @@ router.post('/', async (req, res) => {
       : 0;
 
     if (wantsWallet) {
-      if (!customerAuth) {
+      if (!customerAuth && !loyaltyCustomer) {
         return res.status(401).json({
           success: false,
           error: 'يجب تسجيل الدخول كعميل لاستخدام المحفظة'
         });
       }
 
-      if (customerAuth.companyId !== company.id) {
+      if (customerAuth && customerAuth.companyId !== company.id) {
         return res.status(403).json({
           success: false,
           error: 'رمز العميل لا يطابق شركة المتجر'
@@ -1546,24 +1584,23 @@ router.post('/', async (req, res) => {
             orderSource = 'AFFILIATE_REFERRAL';
 
             // البحث عن أو إنشاء العميل لربط الإحالة
-            let customer = await prisma.customer.findFirst({
-              where: {
-                companyId: company.id,
-                phone: guestPhone
-              }
-            });
+            let customer = await findCustomerByPhone(prisma, guestPhone, company.id);
 
             if (!customer) {
-              customer = await prisma.customer.create({
-                data: {
-                  firstName: guestName.split(' ')[0] || guestName,
-                  lastName: guestName.split(' ').slice(1).join(' ') || '',
-                  phone: guestPhone,
-                  email: guestEmail,
-                  companyId: company.id,
-                  status: 'ACTIVE'
-                }
-              });
+              customer = await safeCreateCustomer(
+                prisma,
+                {
+                  data: {
+                    ...splitCustomerName(guestName),
+                    phone: guestPhone,
+                    phoneNormalized: toCanonicalE164(guestPhone),
+                    email: guestEmail,
+                    companyId: company.id,
+                    status: 'ACTIVE'
+                  }
+                },
+                buildPhoneWhere(guestPhone, company.id)
+              );
             }
 
             // تتبع الإحالة (سيتم تحسين trackReferral لمنع التكرار)
@@ -1596,17 +1633,21 @@ router.post('/', async (req, res) => {
 
     // Create order and update stock in a transaction to ensure data consistency
     // ✅ FIX: Increased timeout to 30 seconds to prevent "Transaction already closed" errors
+    let pointsApplied = 0;
+    let pointsUsed = 0;
+    let pointsProgramId = null;
     const order = await prisma.$transaction(async (tx) => {
       let walletApplied = 0;
       let walletBalanceBefore = null;
       let walletBalanceAfter = null;
       let walletIdForTxn = null;
 
-      if (wantsWallet && customerAuth) {
+      const walletCustomerId = customerAuth?.customerId || loyaltyCustomer?.id || null;
+      if (wantsWallet && walletCustomerId) {
         // Ensure wallet exists
         let wallet = await tx.customerWallet.findFirst({
           where: {
-            customerId: customerAuth.customerId,
+            customerId: walletCustomerId,
             companyId: company.id,
             isActive: true
           }
@@ -1615,7 +1656,7 @@ router.post('/', async (req, res) => {
         if (!wallet) {
           wallet = await tx.customerWallet.create({
             data: {
-              customerId: customerAuth.customerId,
+              customerId: walletCustomerId,
               companyId: company.id,
               balance: 0,
               totalEarned: 0,
@@ -1648,6 +1689,45 @@ router.post('/', async (req, res) => {
 
       const finalTotalAfterWallet = Math.max(0, (Number(finalTotal) || 0) - walletApplied);
 
+      // استبدال النقاط كدفع (نظام الخصم التلقائي): نقطة = pointsRedemptionValue ج
+      if (redeemPoints === true || redeemPoints === 'true') {
+        try {
+          const autoDiscountService = require('../services/autoDiscountService');
+          const autoSettings = await autoDiscountService.getSettings(company.id);
+          if (autoSettings.autoDiscountEnabled === true && autoSettings.redeemPointsEnabled !== false) {
+            const program = await tx.customerLoyaltyProgram.findFirst({
+              where: { companyId: company.id, type: 'POINTS', status: 'ACTIVE' },
+              orderBy: { createdAt: 'asc' }
+            });
+            if (program && loyaltyCustomer) {
+              const record = await tx.customerLoyaltyRecord.findUnique({
+                where: { customerId_programId: { customerId: loyaltyCustomer.id, programId: program.id } }
+              });
+              if (record && parseFloat(record.currentPoints) > 0) {
+                const valuePer = Number(autoSettings.pointsRedemptionValue || 1);
+                const maxUsable = Math.floor(finalTotalAfterWallet / valuePer);
+                pointsUsed = Math.min(Math.floor(parseFloat(record.currentPoints)), maxUsable);
+                if (pointsUsed > 0) {
+                  pointsApplied = pointsUsed * valuePer;
+                  await tx.customerLoyaltyRecord.update({
+                    where: { id: record.id },
+                    data: {
+                      currentPoints: Math.max(0, parseFloat(record.currentPoints) - pointsUsed),
+                      totalRedeemed: (parseFloat(record.totalRedeemed) || 0) + pointsUsed,
+                      lastPointsRedeemed: new Date()
+                    }
+                  });
+                  pointsProgramId = program.id;
+                }
+              }
+            }
+          }
+        } catch (pointsError) {
+          console.error('⚠️ [POINTS-REDEEM] Failed to redeem points at checkout:', pointsError?.message);
+        }
+      }
+      const finalTotalAfterPoints = Math.max(0, finalTotalAfterWallet - pointsApplied);
+
       // Create order
       // Note: items and shippingAddress must be JSON strings for Prisma
       const orderMetadata = {};
@@ -1663,7 +1743,7 @@ router.post('/', async (req, res) => {
 
       if (walletApplied > 0) {
         orderMetadata.walletApplied = walletApplied;
-        orderMetadata.walletCustomerId = customerAuth.customerId;
+        orderMetadata.walletCustomerId = walletCustomerId;
         orderMetadata.walletBalanceBefore = walletBalanceBefore;
         orderMetadata.walletBalanceAfter = walletBalanceAfter;
       }
@@ -1677,12 +1757,64 @@ router.post('/', async (req, res) => {
         orderMetadata.quantityOfferFreeShipping = quantityOfferFreeShipping;
       }
 
+      if (preOrderItems.length > 0) {
+        orderMetadata.preOrder = {
+          items: preOrderItems,
+          orderedAt: new Date().toISOString(),
+        };
+      }
+
       if (freeShippingAdjustment) {
         orderMetadata.freeShipping = freeShippingAdjustment;
       }
 
+      if (loyaltyDiscount > 0 || loyaltyTierInfo) {
+        orderMetadata.loyalty = {
+          tierName: loyaltyTierInfo?.name || loyaltyTierInfo?.nameAr || null,
+          tierNameAr: loyaltyTierInfo?.nameAr || null,
+          discountPercent: Number(loyaltyRewards?.discountPercent || 0),
+          discountAmount: Number(loyaltyDiscount.toFixed(2)),
+          freeShipping: Boolean(loyaltyRewards?.freeShipping),
+        };
+      }
+
+      if (walletDiscount > 0) {
+        orderMetadata.walletDiscount = {
+          percent: walletDiscountPercent,
+          discountAmount: Number(walletDiscount.toFixed(2)),
+        };
+      }
+
+      if (autoDiscountVoucherId) {
+        orderMetadata.autoDiscount = {
+          usedVoucherId: autoDiscountVoucherId,
+          discountAmount: Number(loyaltyDiscount.toFixed(2)),
+          appliedAt: new Date().toISOString()
+        };
+      }
+
+      if (pointsApplied > 0) {
+        orderMetadata.pointsRedemption = {
+          programId: pointsProgramId,
+          pointsUsed,
+          value: pointsApplied,
+          appliedAt: new Date().toISOString()
+        };
+      }
+
       if (sanitizedAttribution) {
         orderMetadata.attribution = sanitizedAttribution;
+      }
+
+      // Wallet payment proof (screenshot + transfer details) uploaded by customer
+      if (paymentMethod === 'wallet' && walletProof && typeof walletProof === 'object') {
+        orderMetadata.walletPaymentProof = {
+          imageUrl: String(walletProof.imageUrl || '').slice(0, 500),
+          walletNumber: String(walletProof.walletNumber || '').slice(0, 120) || null,
+          transferRef: String(walletProof.transferRef || '').slice(0, 120) || null,
+          status: 'PENDING',
+          submittedAt: new Date().toISOString(),
+        };
       }
 
       const newOrder = await tx.guestOrder.create({
@@ -1695,7 +1827,7 @@ router.post('/', async (req, res) => {
           total: cartTotal,
           shippingCost,
           discountAmount,
-          finalTotal: finalTotalAfterWallet,
+          finalTotal: finalTotalAfterPoints,
           shippingAddress: JSON.stringify(shippingAddress),
           paymentMethod,
           status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
@@ -1768,6 +1900,25 @@ router.post('/', async (req, res) => {
       timeout: 30000  // Maximum time the transaction can run
     });
 
+    // حفظ عنوان العميل تلقائياً من الشيك آوت (يظهر في "بياناتي" من غير ما يكتبه بنفسه)
+    try {
+      const rawAddr = shippingAddress || null;
+      if (rawAddr) {
+        if (customerAuth?.customerId) {
+          await orderService._saveCustomerAddress(customerAuth.customerId, company.id, rawAddr);
+        } else if (guestPhone) {
+          const db = await getSharedPrismaClientAsync();
+          const matched = await db.customer.findFirst({
+            where: { companyId: company.id, phone: guestPhone },
+            select: { id: true }
+          });
+          if (matched) await orderService._saveCustomerAddress(matched.id, company.id, rawAddr);
+        }
+      }
+    } catch (addrErr) {
+      console.error('⚠️ [CHECKOUT] Failed to save customer address:', addrErr?.message || addrErr);
+    }
+
     // Delete cart (only if using cart mode)
     if (shouldDeleteCart && cartId) {
       try {
@@ -1777,10 +1928,45 @@ router.post('/', async (req, res) => {
         });
 
         if (existingCart) {
+          // نلتقط بيانات السلة قبل حذفها لتسجيل التحويل الطبيعي
+          let convCheckoutData = {};
+          try {
+            convCheckoutData = existingCart.checkoutData
+              ? (typeof existingCart.checkoutData === 'string' ? JSON.parse(existingCart.checkoutData) : existingCart.checkoutData)
+              : {};
+          } catch (e) {
+            convCheckoutData = {};
+          }
+          const convValue = typeof existingCart.total === 'string'
+            ? parseFloat(existingCart.total) || 0
+            : Number(existingCart.total || 0);
+
           await prisma.guestCart.delete({
             where: { cartId }
           });
           console.log('✅ [CREATE-ORDER] Cart deleted successfully:', cartId);
+
+          // سجل التحويل الطبيعي (العميل كمل الشيك آوت لوحده).
+          // بيتجاهل طلبات admin-convert لأن نقطة التحويل دي بتسجل بالفعل في routes/orders.js
+          if (!req.headers['x-admin-convert']) {
+            try {
+              await prisma.cartConversionLog.create({
+                data: {
+                  cartId,
+                  orderId: newOrder?.id || null,
+                  orderNumber: newOrder?.orderNumber || null,
+                  employeeId: null,
+                  employeeName: null,
+                  companyId: company.id,
+                  cartValue: convValue,
+                  governorate: convCheckoutData?.governorate || convCheckoutData?.city || null,
+                  channel: 'natural',
+                },
+              });
+            } catch (logError) {
+              console.error('⚠️ [CREATE-ORDER] Failed to record natural cart conversion log:', logError.message);
+            }
+          }
         } else {
           console.log('⚠️ [CREATE-ORDER] Cart not found, skipping delete:', cartId);
         }
@@ -1855,6 +2041,34 @@ router.post('/', async (req, res) => {
       console.error('❌ [Facebook CAPI] Error tracking Purchase event:', capiError);
     }
 
+    // TikTok Events (best-effort, never throws)
+    try {
+      const tiktokEventsManager = require('../services/tiktok/tiktokEventsManager');
+      const tiktokEventId = pixelEventId || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await tiktokEventsManager.trackPurchaseForCompany(
+        company.id,
+        {
+          email: guestEmail,
+          phone: guestPhone,
+          ip: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+          userAgent: req.headers['user-agent'],
+          pageUrl: req.headers['referer'] || `${req.protocol}://${req.get('host')}${req.originalUrl}`,
+        },
+        {
+          orderNumber: order.orderNumber,
+          items: cartItems.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total: finalTotal,
+        },
+        tiktokEventId,
+      );
+    } catch (tiktokTrackErr) {
+      console.error('❌ [TikTok Events] Error tracking Purchase event:', tiktokTrackErr);
+    }
+
     }
 
     // Emit socket event for real-time updates
@@ -1914,12 +2128,7 @@ router.post('/', async (req, res) => {
       const prisma = await getPrisma();
 
       // البحث عن أو إنشاء customer
-      let customer = await prisma.customer.findFirst({
-        where: {
-          phone: order.guestPhone,
-          companyId: company.id
-        }
-      });
+      let customer = await findCustomerByPhone(prisma, order.guestPhone, company.id);
 
       // If order was placed by an authenticated customer, prefer linking to that customer record
       if (customerAuth && customerAuth.companyId === company.id) {
@@ -1936,23 +2145,44 @@ router.post('/', async (req, res) => {
         console.log('🔍 [ORDER-CREATE] Creating new customer:', order.guestName, order.guestPhone);
 
         // Split name into first and last
-        const nameParts = order.guestName?.split(' ') || ['عميل', 'جديد'];
-        const firstName = nameParts[0] || 'عميل';
-        const lastName = nameParts.slice(1).join(' ') || '';
+        const nameParts = splitCustomerName(order.guestName);
+        const firstName = nameParts.firstName;
+        const lastName = nameParts.lastName;
 
-        customer = await prisma.customer.create({
-          data: {
-            firstName: firstName,
-            lastName: lastName || null,
-            phone: order.guestPhone,
-            email: order.guestEmail || null,
-            companyId: company.id,
-            status: 'ACTIVE',
-            metadata: JSON.stringify({ source: 'guest_order', guestOrderId: order.id })
-          }
-        });
+        customer = await safeCreateCustomer(
+          prisma,
+          {
+            data: {
+              firstName: firstName,
+              lastName: lastName || null,
+              phone: order.guestPhone,
+              phoneNormalized: toCanonicalE164(order.guestPhone),
+              email: order.guestEmail || null,
+              companyId: company.id,
+              status: 'ACTIVE',
+              metadata: JSON.stringify({ source: 'guest_order', guestOrderId: order.id })
+            }
+          },
+          buildPhoneWhere(order.guestPhone, company.id)
+        );
         console.log('✅ [ORDER-CREATE] Customer created:', customer.id);
       } else {
+        const updateData = {};
+        if (customer.status === 'LEAD') updateData.status = 'ACTIVE';
+        if (!customer.phoneNormalized && customer.phone) {
+          updateData.phoneNormalized = toCanonicalE164(customer.phone);
+        }
+        if (Object.keys(updateData).length > 0) {
+          try {
+            updateData.updatedAt = new Date();
+            customer = await prisma.customer.update({
+              where: { id: customer.id },
+              data: updateData
+            });
+          } catch (statusErr) {
+            console.error('⚠️ [ORDER-CREATE] Failed to update customer:', statusErr.message);
+          }
+        }
         console.log('✅ [ORDER-CREATE] Found existing customer:', customer.id);
       }
 
@@ -1986,8 +2216,10 @@ router.post('/', async (req, res) => {
           price: parseFloat(item.price || 0),
           total: parseFloat((item.price || 0) * (item.quantity || 1)),
           productSku: item.productSku || item.sku || null,
-          productColor,
-          productSize,
+          // productColor/productSize مقبولان في OrderItem كـ String فقط؛
+          // خصائص الفاريانت (سايز) قد تكون Int (37) فيخفق إنشاء الـ primary order.
+          productColor: productColor == null ? null : String(productColor),
+          productSize: productSize == null ? null : String(productSize),
           productId: item.productId || null,
           variantId: item.variantId || null,
           productImage,
@@ -2004,6 +2236,13 @@ router.post('/', async (req, res) => {
       let duplicateMetadata = null;
       let attributionMetadata = null;
       let freeShippingMetadata = null;
+      // Wallet payment metadata carried over from the guest order
+      let walletPaymentProofMetadata = null;
+      let walletDiscountMetadata = null;
+      let walletAppliedMetadata = null;
+      let walletCustomerIdMetadata = null;
+      let walletBalanceBeforeMetadata = null;
+      let walletBalanceAfterMetadata = null;
 
       if (order.metadata) {
         try {
@@ -2023,6 +2262,24 @@ router.post('/', async (req, res) => {
           if (metadata.freeShipping) {
             freeShippingMetadata = metadata.freeShipping;
           }
+          if (metadata.walletPaymentProof) {
+            walletPaymentProofMetadata = metadata.walletPaymentProof;
+          }
+          if (metadata.walletDiscount) {
+            walletDiscountMetadata = metadata.walletDiscount;
+          }
+          if (metadata.walletApplied !== undefined && metadata.walletApplied !== null) {
+            walletAppliedMetadata = metadata.walletApplied;
+          }
+          if (metadata.walletCustomerId) {
+            walletCustomerIdMetadata = metadata.walletCustomerId;
+          }
+          if (metadata.walletBalanceBefore !== undefined && metadata.walletBalanceBefore !== null) {
+            walletBalanceBeforeMetadata = metadata.walletBalanceBefore;
+          }
+          if (metadata.walletBalanceAfter !== undefined && metadata.walletBalanceAfter !== null) {
+            walletBalanceAfterMetadata = metadata.walletBalanceAfter;
+          }
         } catch (e) {
           // Ignore metadata parsing errors
         }
@@ -2038,8 +2295,35 @@ router.post('/', async (req, res) => {
       if (freeShippingMetadata) {
         regularOrderMetadata.freeShipping = freeShippingMetadata;
       }
+      if (pointsApplied > 0) {
+        regularOrderMetadata.pointsRedemption = {
+          programId: pointsProgramId,
+          pointsUsed,
+          value: pointsApplied,
+          appliedAt: new Date().toISOString()
+        };
+      }
       if (promoDiscount > 0) {
         regularOrderMetadata.storePromotion = { discount: promoDiscount, label: promoLabel };
+      }
+      // Wallet payment metadata (proof screenshot + transfer details + discounts)
+      if (walletPaymentProofMetadata) {
+        regularOrderMetadata.walletPaymentProof = walletPaymentProofMetadata;
+      }
+      if (walletDiscountMetadata) {
+        regularOrderMetadata.walletDiscount = walletDiscountMetadata;
+      }
+      if (walletAppliedMetadata !== null) {
+        regularOrderMetadata.walletApplied = walletAppliedMetadata;
+      }
+      if (walletCustomerIdMetadata) {
+        regularOrderMetadata.walletCustomerId = walletCustomerIdMetadata;
+      }
+      if (walletBalanceBeforeMetadata !== null) {
+        regularOrderMetadata.walletBalanceBefore = walletBalanceBeforeMetadata;
+      }
+      if (walletBalanceAfterMetadata !== null) {
+        regularOrderMetadata.walletBalanceAfter = walletBalanceAfterMetadata;
       }
       if (order.id && Object.keys(regularOrderMetadata).length > 0) {
         regularOrderMetadata.guestOrderId = order.id;
@@ -2062,7 +2346,16 @@ router.post('/', async (req, res) => {
           customerEmail: order.guestEmail || null,
           customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
           shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
-          governorate: shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '',
+          governorate: (() => {
+            const rawGovernorate = shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '';
+            try {
+              const { getTurboGovernorateName } = require('../utils/turbo/governorateMapper');
+              const normalized = getTurboGovernorateName(rawGovernorate);
+              return normalized || rawGovernorate || '';
+            } catch (e) {
+              return rawGovernorate || '';
+            }
+          })(),
           city: shippingAddress?.city || '',
           subtotal: parseFloat(order.total),
           shipping: parseFloat(order.shippingCost || 0),
@@ -2099,6 +2392,11 @@ router.post('/', async (req, res) => {
         // Update referral to mark as converted
         if (affiliateReferralId) {
           try {
+            const referralBefore = await prisma.affiliateReferral.findUnique({
+              where: { id: affiliateReferralId },
+              select: { id: true, converted: true }
+            });
+
             await prisma.affiliateReferral.update({
               where: { id: affiliateReferralId },
               data: {
@@ -2107,6 +2405,16 @@ router.post('/', async (req, res) => {
                 orderId: createdOrder.id
               }
             });
+
+            // 🎁 منح المسوق نقاط ولاء بدلاً من العمولة المالية عند نجاح الإحالة
+            if (referralBefore && !referralBefore.converted) {
+              try {
+                const affiliateService = require('../services/affiliateService');
+                await affiliateService.awardReferralLoyaltyPoints(affiliateReferralId);
+              } catch (awardErr) {
+                console.error('⚠️ [GUEST-ORDER] Error awarding referral loyalty points:', awardErr.message);
+              }
+            }
           } catch (error) {
             console.error('⚠️ [GUEST-ORDER] Error updating referral:', error.message);
           }
@@ -2152,6 +2460,20 @@ router.post('/', async (req, res) => {
         if (!dropshippingRoutingError) {
           console.log('✅ [ORDER-CREATE] Order created successfully:', createdOrder.id, createdOrder.orderNumber);
 
+          // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط لأي طلب جديد من المتجر
+          try {
+            const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+            await customerLoyaltyService.applyLoyaltyPointsForOrder({
+              orderId: createdOrder.id,
+              companyId: company.id,
+              changedBy: null
+            }).catch((loyaltyError) => {
+              console.error(`❌ [LOYALTY-AUTO] Failed to award points for storefront order ${createdOrder.orderNumber}:`, loyaltyError.message);
+            });
+          } catch (loyaltyError) {
+            console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+          }
+
           // تصدير Order إلى WooCommerce
           wooExportService.exportOrderAsync(createdOrder.id);
           console.log('✅ [GUEST-ORDER] Order created and queued for WooCommerce export:', createdOrder.orderNumber);
@@ -2184,35 +2506,47 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (createdOrder && !isDuplicateOrder) {
-    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    if (!isDuplicateOrder) {
+    // عناصر الطلب — متاحة دائماً من الـ guest order
+    let guestItems = [];
     try {
-      console.log('📱 [WHATSAPP] Preparing to send notification for order:', createdOrder.orderNumber);
+      guestItems = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+    } catch (parseErr) {
+      guestItems = cartItems || [];
+    }
+
+    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    // ملاحظة: نعتمد على بيانات الـ guest order (المتوفرة دائماً) بدلاً من createdOrder —
+    // لو فشل تحويل الزائر لطلب عادي (customer.create/order.create) يبقى الإشعار يشتغل عادي.
+    try {
+      console.log('📱 [WHATSAPP] Preparing to send notification for order:', order.orderNumber);
       console.log('📱 [WHATSAPP] Order data:', {
-        id: createdOrder.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
+        id: order.id,
+        customerPhone: order.guestPhone,
+        customerName: order.guestName,
         companyId: company.id,
-        total: createdOrder.total
+        total: order.finalTotal
       });
 
       const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
       // تجهيز بيانات الطلب للإشعار
       const orderForNotification = {
-        id: createdOrder.id,
-        orderNumber: createdOrder.orderNumber,
+        id: createdOrder?.id || order.id,
+        orderNumber: order.orderNumber,
         companyId: company.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
+        customerPhone: order.guestPhone || createdOrder?.customerPhone,
+        customerName: order.guestName || createdOrder?.customerName,
         customer: {
-          firstName: createdOrder.customerName?.split(' ')[0] || createdOrder.customerName,
-          phone: createdOrder.customerPhone
+          firstName: (order.guestName || createdOrder?.customerName || '').split(' ')[0] || order.guestName,
+          phone: order.guestPhone || createdOrder?.customerPhone
         },
-        total: parseFloat(createdOrder.total),
-        shipping: parseFloat(createdOrder.shipping),
+        customerId: createdOrder?.customerId || null,
+        total: parseFloat(order.finalTotal ?? order.total ?? createdOrder?.total ?? 0),
+        shipping: parseFloat(order.shippingCost ?? createdOrder?.shipping ?? 0),
         currency: 'EGP',
-        items: createdOrder.orderItems || [] // ✅ Include items for WhatsApp notification
+        items: (createdOrder?.orderItems && createdOrder.orderItems.length > 0) ? createdOrder.orderItems : guestItems,
+        createdAt: order.createdAt || createdOrder?.createdAt
       };
 
       console.log('📱 [WHATSAPP] Calling sendOrderCreatedNotification with:', orderForNotification);
@@ -2236,7 +2570,7 @@ router.post('/', async (req, res) => {
           console.error('⚠️ [WHATSAPP] No notification template found for ORDER_CREATED');
         }
       } else {
-        console.log('✅ [WHATSAPP] Order notification sent successfully for:', createdOrder.orderNumber);
+        console.log('✅ [WHATSAPP] Order notification sent successfully for:', order.orderNumber);
       }
     } catch (whatsappError) {
       // لا نوقف العملية إذا فشل WhatsApp
@@ -2246,25 +2580,29 @@ router.post('/', async (req, res) => {
 
     // 📧 إرسال إشعار البريد الإلكتروني تلقائياً
     try {
-      if (createdOrder.customerEmail) {
-        console.log('📧 [EMAIL] Preparing to send confirmation to:', createdOrder.customerEmail);
+      const emailRecipient = createdOrder?.customerEmail || order.guestEmail;
+      if (emailRecipient) {
+        console.log('📧 [EMAIL] Preparing to send confirmation to:', emailRecipient);
 
-        const emailItems = (Array.isArray(createdOrder.items) ? createdOrder.items : []).map(item => ({
-          productName: item.product?.name || item.productName,
-          quantity: item.quantity,
-          price: parseFloat(item.price),
+        const emailItems = ((createdOrder?.orderItems && createdOrder.orderItems.length > 0)
+          ? createdOrder.orderItems
+          : guestItems
+        ).map(item => ({
+          productName: item.product?.name || item.productName || item.name,
+          quantity: item.quantity || 1,
+          price: parseFloat(item.price || 0),
           productColor: item.productColor,
           productSize: item.productSize
         }));
 
         await EmailService.sendOrderConfirmation({
-          customerEmail: createdOrder.customerEmail,
-          customerName: createdOrder.customerName,
-          orderNumber: createdOrder.orderNumber,
+          customerEmail: emailRecipient,
+          customerName: createdOrder?.customerName || order.guestName,
+          orderNumber: order.orderNumber,
           items: emailItems,
-          total: parseFloat(createdOrder.total),
-          status: createdOrder.status,
-          customerPhone: createdOrder.customerPhone
+          total: parseFloat(order.finalTotal ?? createdOrder?.total ?? 0),
+          status: createdOrder?.status || order.status || 'PENDING',
+          customerPhone: order.guestPhone || createdOrder?.customerPhone
         });
         console.log('✅ [EMAIL] Order confirmation sent successfully');
       }
@@ -2285,6 +2623,60 @@ router.post('/', async (req, res) => {
       }
     } catch (distError) {
       console.error('❌ [CREATE-ORDER] Error in auto-distribution:', distError.message);
+    }
+
+    // 🤖 Trigger the order-confirmation agent (منى) to resolve the delivery area
+    // against the shipping company's map. Fire-and-forget — never blocks checkout.
+    try {
+      const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+      const addressFieldsForAgent = (() => {
+        if (typeof shippingAddress === 'object' && shippingAddress) {
+          return {
+            address_text: [
+              shippingAddress.street || shippingAddress.address || '',
+              shippingAddress.city || '',
+              shippingAddress.governorate || '',
+            ].filter(Boolean).join(', ') || null,
+            governorate: shippingAddress.governorate || shippingAddress.state || null,
+            city: shippingAddress.city || null,
+          };
+        }
+        const raw = typeof shippingAddress === 'string' ? shippingAddress : (order?.customerAddress || order?.shippingAddress || '');
+        return {
+          address_text: typeof raw === 'string' && raw.trim() ? raw : null,
+          governorate: null,
+          city: null,
+        };
+      })();
+
+      aiServiceAdminClient.notifyOrderCreated({
+        company_id: company.id,
+        order_number: order?.orderNumber || createdOrder?.orderNumber || orderNumber,
+        customer_phone: order?.guestPhone || createdOrder?.customerPhone || null,
+        customer_name: order?.guestName || createdOrder?.customerName || null,
+        ...addressFieldsForAgent,
+        source: 'storefront',
+      }).catch((agentErr) => {
+        console.warn('⚠️ [ORDER-CREATED-AGENT] AI agent trigger failed (non-blocking):', agentErr.message);
+      });
+    } catch (agentTriggerErr) {
+      console.warn('⚠️ [ORDER-CREATED-AGENT] AI agent trigger skipped (non-blocking):', agentTriggerErr.message);
+    }
+
+    try {
+      const trackedTotal = Number(order?.finalTotal || finalTotal || 0);
+      const itemsCount = Array.isArray(cartItems) ? cartItems.length : 0;
+
+      await billOrderPpuApps({
+        companyId: company.id,
+        orderNumber: order?.orderNumber || orderNumber || '',
+        orderTotal: trackedTotal,
+        itemsCount,
+        metadata: { paymentMethod },
+        orderId: createdOrder?.id || order?.id || null,
+      });
+    } catch (ppuError) {
+      console.error('❌ [PPU-BILLING] Error billing PPU apps:', ppuError.message);
     }
 
     try {
@@ -2355,7 +2747,19 @@ router.post('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: { ...order, storePromotionDiscount: promoDiscount, storePromotionLabel: promoLabel },
+      data: {
+        ...order,
+        storePromotionDiscount: promoDiscount,
+        storePromotionLabel: promoLabel,
+        loyaltyDiscount,
+        loyaltyFreeShipping: Boolean(loyaltyRewards?.freeShipping),
+        loyaltyTierName: loyaltyTierInfo?.nameAr || loyaltyTierInfo?.name || null,
+        autoDiscountApplied: Boolean(autoDiscountVoucherId),
+        autoDiscountVoucherId,
+        pointsRedemptionApplied: pointsApplied > 0,
+        pointsUsed,
+        pointsValue: pointsApplied,
+      },
       duplicate: isDuplicateOrder,
       message: isDuplicateOrder ? 'تم تسجيل الطلب المكرر' : 'تم إنشاء الطلب بنجاح'
     });
@@ -2399,6 +2803,45 @@ router.get('/track', async (req, res) => {
 
     if (order) {
       order.items = coerceCartItemsToArray(order.items).map(buildTrackedOrderItem);
+    }
+
+    // دمج بيانات الطلب الأساسي (Order) مع GuestOrder:
+    // الـ GuestOrder لقطة وقت الإنشاء وبتفضل متجمدة، بينما مكافآت الولاء
+    // (النقاط والكاش باك) والحالة الحقيقية بتتكتب على الـ Order الأساسي بعد التسليم.
+    // ملاحظة: أوردرات الستور بتخزن رقم الطلب في حقل id، فبنبحث بـ id أو orderNumber.
+    if (order) {
+      try {
+        const primaryOrder = await prisma.order.findFirst({
+          where: {
+            companyId: company.id,
+            OR: [
+              { id: order.orderNumber },
+              { orderNumber: order.orderNumber }
+            ]
+          },
+          select: { metadata: true, status: true, total: true, subtotal: true, shipping: true, discount: true }
+        });
+        if (primaryOrder) {
+          const guestMeta = (() => {
+            try { return typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {}); } catch (e) { return {}; }
+          })();
+          const primaryMeta = (() => {
+            try { return typeof primaryOrder.metadata === 'string' ? JSON.parse(primaryOrder.metadata) : (primaryOrder.metadata || {}); } catch (e) { return {}; }
+          })();
+          order.metadata = JSON.stringify({ ...guestMeta, ...primaryMeta });
+          if (primaryOrder.status) order.status = primaryOrder.status;
+          // GuestOrder total/finalTotal/discountAmount/shippingCost تقابل Order total/discount/shipping
+          if (primaryOrder.total !== null && primaryOrder.total !== undefined) {
+            order.total = primaryOrder.total;
+            order.finalTotal = primaryOrder.total;
+          }
+          if (primaryOrder.discount !== null && primaryOrder.discount !== undefined) order.discountAmount = primaryOrder.discount;
+          if (primaryOrder.shipping !== null && primaryOrder.shipping !== undefined) order.shippingCost = primaryOrder.shipping;
+          if (primaryOrder.subtotal !== null && primaryOrder.subtotal !== undefined) order.subtotal = primaryOrder.subtotal;
+        }
+      } catch (mergeError) {
+        console.error('⚠️ [TRACK-ORDER] Failed to merge primary order data:', mergeError.message);
+      }
     }
 
     // إذا لم يتم العثور عليه في GuestOrder، ابحث في Order العادي
@@ -2572,6 +3015,36 @@ router.get('/:orderNumber/track', async (req, res) => {
         companyId: company.id
       }
     });
+
+    if (order) {
+      try {
+        const primaryOrder = await prisma.order.findFirst({
+          where: {
+            companyId: company.id,
+            OR: [
+              { id: orderNumber },
+              { orderNumber }
+            ]
+          },
+          select: { metadata: true, status: true, total: true, subtotal: true, shipping: true, discount: true }
+        });
+        if (primaryOrder) {
+          const guestMeta = (() => { try { return typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {}); } catch (e) { return {}; } })();
+          const primaryMeta = (() => { try { return typeof primaryOrder.metadata === 'string' ? JSON.parse(primaryOrder.metadata) : (primaryOrder.metadata || {}); } catch (e) { return {}; } })();
+          order.metadata = JSON.stringify({ ...guestMeta, ...primaryMeta });
+          if (primaryOrder.status) order.status = primaryOrder.status;
+          if (primaryOrder.total !== null && primaryOrder.total !== undefined) {
+            order.total = primaryOrder.total;
+            order.finalTotal = primaryOrder.total;
+          }
+          if (primaryOrder.discount !== null && primaryOrder.discount !== undefined) order.discountAmount = primaryOrder.discount;
+          if (primaryOrder.shipping !== null && primaryOrder.shipping !== undefined) order.shippingCost = primaryOrder.shipping;
+          if (primaryOrder.subtotal !== null && primaryOrder.subtotal !== undefined) order.subtotal = primaryOrder.subtotal;
+        }
+      } catch (mergeError) {
+        console.error('⚠️ [TRACK-ORDER-LEGACY] Failed to merge primary order data:', mergeError.message);
+      }
+    }
 
     if (!order) {
       return res.status(404).json({

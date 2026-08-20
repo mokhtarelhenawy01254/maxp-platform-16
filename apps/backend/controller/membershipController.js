@@ -72,7 +72,11 @@ exports.registerMember = async (req, res) => {
 
     if (phone || email) {
       const duplicateFilters = [];
-      if (phone) duplicateFilters.push({ phone });
+      if (phone) {
+        duplicateFilters.push({ phone });
+        const canonicalPhone = require('../utils/phoneNormalization').toCanonicalE164(phone);
+        if (canonicalPhone) duplicateFilters.push({ phoneNormalized: canonicalPhone });
+      }
       if (email) duplicateFilters.push({ email });
 
       linkedCustomer = await prisma.customer.findFirst({
@@ -119,25 +123,31 @@ exports.registerMember = async (req, res) => {
           }
         });
       } else {
-        linkedCustomer = await prisma.customer.create({
-          data: {
-            companyId,
-            firstName: customerFirstName,
-            lastName: customerLastName,
-            phone: phone || null,
-            email: email || null,
-            status: 'LEAD',
-            tags: JSON.stringify(['membership', 'lead']),
-            metadata: JSON.stringify(nextMetadata),
+        const { safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
+        linkedCustomer = await safeCreateCustomer(
+          prisma,
+          {
+            data: {
+              companyId,
+              firstName: customerFirstName,
+              lastName: customerLastName,
+              phone: phone || null,
+              phoneNormalized: phone ? require('../utils/phoneNormalization').toCanonicalE164(phone) : null,
+              email: email || null,
+              status: 'LEAD',
+              tags: JSON.stringify(['membership', 'lead']),
+              metadata: JSON.stringify(nextMetadata),
+            },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              email: true,
+            }
           },
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            email: true,
-          }
-        });
+          phone ? buildPhoneWhere(phone, companyId) : (email ? { companyId, email } : null)
+        );
       }
     }
 

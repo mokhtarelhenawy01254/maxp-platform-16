@@ -20,15 +20,17 @@ async function seedMarketplace() {
   const ecommerceApps = [
     {
       slug: 'store-basic',
-      name: 'المتجر الأساسي',
+      name: 'المتجر',
       category: 'ECOMMERCE',
-      description: 'متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة.',
+      description: 'متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.',
       icon: '🛒',
       monthlyPrice: 249,
       yearlyPrice: 2490,
       trialDays: 14,
       features: JSON.stringify([
-        'منتجات غير محدودة',
+        'إدارة الطلبات',
+        'إدارة المنتجات',
+        'المتجر الإلكتروني',
         'سلة تسوق ذكية',
         'معالجة الطلبات',
         'تقارير المبيعات الأساسية',
@@ -43,15 +45,15 @@ async function seedMarketplace() {
     },
     {
       slug: 'store-pro',
-      name: 'المتجر الاحترافي',
+      name: 'متجر ماكس',
       category: 'ECOMMERCE',
-      description: 'متجر متقدم مع POS، إدارة مخزون متعدد، وميزات احترافية للشركات المتوسطة والكبيرة.',
+      description: 'متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.',
       icon: '🏪',
       monthlyPrice: 499,
       yearlyPrice: 4990,
       trialDays: 14,
       features: JSON.stringify([
-        'نظام POS متكامل',
+        'منتجات غير محدودة',
         'مخازن متعددة',
         'تتبع المخزون Real-time',
         'تقارير متقدمة',
@@ -64,9 +66,112 @@ async function seedMarketplace() {
       isFeatured: true
     },
     {
+      slug: 'pos-pro',
+      name: 'نظام POS',
+      category: 'ECOMMERCE',
+      description: 'نقطة بيع متكاملة: كاشير، فواتير بيع مباشر، سلة بيع سريعة، وطباعة فواتير بيع فورية.',
+      icon: '🖥️',
+      monthlyPrice: 149,
+      yearlyPrice: 1490,
+      trialDays: 14,
+      features: JSON.stringify([
+        'كاشير POS',
+        'بيع سريع',
+        'فاتورة بيع فورية'
+      ]),
+      isActive: false,
+      isPublic: false,
+      isFeatured: false
+    },
+    {
+      slug: 'coupons-pro',
+      name: 'الكوبونات والعروض',
+      category: 'MARKETING',
+      description: 'إنشاء كوبونات خصم وعروض ترويجية — نسب/مبالغ خصم، حد أدنى للطلب، وتتبع أداء الكوبونات.',
+      icon: '🎟️',
+      monthlyPrice: 99,
+      yearlyPrice: 990,
+      trialDays: 14,
+      features: JSON.stringify([
+        'كوبونات الخصم',
+        'العروض الترويجية',
+        'تتبع أداء الكوبونات'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
+      slug: 'woocommerce-pro',
+      name: 'تكامل WooCommerce',
+      category: 'INTEGRATION',
+      description: 'مزامنة المنتجات والطلبات والمخزون بين منصة MaxP ومتجر WooCommerce — استيراد وتصدير تلقائي.',
+      icon: '🛒',
+      monthlyPrice: 79,
+      yearlyPrice: 790,
+      trialDays: 14,
+      features: JSON.stringify([
+        'مزامنة المنتجات',
+        'مزامنة الطلبات',
+        'مزامنة المخزون'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
+      slug: 'multi-warehouse-pro',
+      name: 'المخزون المتعدد',
+      category: 'WAREHOUSE',
+      description: 'إدارة مخزون عبر مستودعات متعددة — تحويلات المخزون بين المستودعات، وتوزيع الكميات لكل فرع.',
+      icon: '🏬',
+      monthlyPrice: 149,
+      yearlyPrice: 1490,
+      trialDays: 14,
+      features: JSON.stringify([
+        'مستودعات متعددة',
+        'تحويلات المخزون',
+        'توزيع الكميات'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
+      slug: 'order-accounting-sources',
+      name: 'مصادر الطلبات والمحاسبة',
+      category: 'ORDER_OPS',
+      description: 'تتبع مصدر كل طلب (متجر، يدوي، فيسبوك، واتساب، تليجرام، استيراد) مع محاسبة وإيرادات منفصلة لكل مصدر.',
+      icon: '🔀',
+      monthlyPrice: 149,
+      yearlyPrice: 1490,
+      trialDays: 14,
+      features: JSON.stringify([
+        'تتبع مصدر الطلب',
+        'محاسبة كل مصدر',
+        'تقارير المصادر'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
+      slug: 'manual-orders-pro',
+      name: 'الطلب اليدوي',
+      category: 'ORDER_OPS',
+      description: 'إنشاء طلبات يدوية من صفحة مخصصة: اختيار المنتج والمتغيرات، إضافة العميل، وتحديد طريقة الدفع والشحن.',
+      icon: '✍️',
+      monthlyPrice: 99,
+      yearlyPrice: 990,
+      trialDays: 14,
+      features: JSON.stringify([
+        'نموذج الطلب اليدوي',
+        'بيانات العميل',
+        'الدفع والشحن'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
       slug: 'inventory-pro',
       name: 'إدارة المخزون المتقدمة',
-      category: 'ECOMMERCE',
+      category: 'WAREHOUSE',
       description: 'نظام إدارة مخزون متقدم مع Barcode، تتبع Serial Numbers، وتنبيهات ذكية.',
       icon: '📦',
       monthlyPrice: 199,
@@ -375,6 +480,25 @@ async function seedMarketplace() {
       ]),
       isActive: true,
       isFeatured: false
+    },
+    {
+      slug: 'unified-inbox',
+      name: 'Unified Inbox',
+      category: 'COMMUNICATION',
+      description: 'صندوق وارد موحد يجمع محادثاتك من كل المنصات في مكان واحد مع إمكانية الرد المباشر.',
+      icon: '📬',
+      monthlyPrice: 299,
+      yearlyPrice: 2999,
+      trialDays: 0,
+      features: JSON.stringify([
+        'دعم المنصات المتعددة',
+        'الرد الموحد',
+        'سجل المحادثات',
+        'فريق العمل المشترك'
+      ]),
+      isActive: true,
+      isFeatured: false,
+      isPopular: true
     }
   ];
 
@@ -726,7 +850,26 @@ async function seedMarketplace() {
         'تحديث آلي'
       ]),
       isActive: true,
-      isPopular: false
+      isPopular: false,
+      requiredApps: ['facebook-pages-connect']
+    },
+    {
+      slug: 'facebook-post',
+      name: 'إنشاء منشور فيسبوك',
+      category: 'MARKETING',
+      description: 'إنشاء ونشر منشورات فيسبوك مباشرة من المنصة — نصوص، صور، وجدولة النشر على صفحاتك.',
+      icon: '📝',
+      monthlyPrice: 49,
+      yearlyPrice: 490,
+      trialDays: 14,
+      features: JSON.stringify([
+        'منشئ المنشورات',
+        'جدولة النشر'
+      ]),
+      isActive: true,
+      isFeatured: false,
+      isPopular: false,
+      requiredApps: ['facebook-pages-connect']
     }
   ];
 
@@ -862,7 +1005,7 @@ async function seedMarketplace() {
     {
       slug: 'order-core',
       name: 'إدارة الطلبات - المستوى الأساسي',
-      category: 'ECOMMERCE',
+      category: 'ORDER_OPS',
       description: 'نظام متكامل لمعالجة الطلبات، تتبع الحالات، وطباعة الفواتير. يشمل التكامل مع سلة التسوق.',
       icon: '📝',
       monthlyPrice: 0,
@@ -882,7 +1025,7 @@ async function seedMarketplace() {
     {
       slug: 'order-shipping-turbo',
       name: 'شحن Turbo الذكي',
-      category: 'ECOMMERCE',
+      category: 'SHIPPING',
       description: 'تكامل كامل مع نظام شحن Turbo: إنشاء بوالص الشحن، تتبع لحظي، وإدارة المسارات.',
       icon: '🚀',
       monthlyPrice: 149,
@@ -922,7 +1065,7 @@ async function seedMarketplace() {
     {
       slug: 'order-invoicing',
       name: 'نظام الفواتير المتقدم',
-      category: 'FINANCE',
+      category: 'ACCOUNTING',
       description: 'تصميم وإصدار فواتير احترافية للطلبات، تقارير الضرائب، وإحصائيات المبيعات المالية.',
       icon: '🧾',
       monthlyPrice: 129,
@@ -988,6 +1131,17 @@ async function seedMarketplace() {
       monthlyPrice: 999,
       yearlyPrice: null,
       discount: 37,
+      isActive: true,
+      isFeatured: true
+    },
+    {
+      slug: 'facebook-complete-bundle',
+      name: 'باقة فيسبوك الشاملة',
+      description: 'كل أدوات فيسبوك: ربط الصفحات + إعلانات + Pixel + كتالوج متجر + نشر المنشورات في باقة واحدة بتوفير.',
+      apps: ['facebook-pages-connect', 'facebook-ads-pro', 'facebook-pixel-capi', 'facebook-catalog-shop', 'facebook-post'],
+      monthlyPrice: 399,
+      yearlyPrice: 3990,
+      discount: 27,
       isActive: true,
       isFeatured: true
     }

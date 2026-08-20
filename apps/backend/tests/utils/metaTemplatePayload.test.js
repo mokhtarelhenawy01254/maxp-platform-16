@@ -1,18 +1,18 @@
-﻿/**
- * ╪º╪«╪¬╪¿╪º╪▒╪º╪¬ buildMetaTemplatePayload ΓÇö ┘å┘ü╪│ ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è ┘ä╪╡┘è╪║╪⌐ ┘à┘è╪¬╪º
- * ╪º┘ä┘à╪│╪¬╪«╪»┘à ┘ü┘è publishTemplateToMeta ┘ê resubmitMetaTemplate.
+/**
+ * اختبارات buildMetaTemplatePayload — نفس تحويل القالب المحلي لصيغة ميتا
+ * المستخدم في publishTemplateToMeta و resubmitMetaTemplate.
  */
 const { buildMetaTemplatePayload } = require('../../utils/metaTemplatePayload');
 
 describe('buildMetaTemplatePayload', () => {
-  test('┘è╪¡┘ê┘ä ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪│┘à╪º╪⌐ ┘ä╪ú╪▒┘é╪º┘à ┘à┘ê╪╢╪╣┘è╪⌐ ╪¡╪│╪¿ ╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪╕┘ç┘ê╪▒', () => {
+  test('يحول المتغيرات المسماة لأرقام موضعية حسب ترتيب الظهور', () => {
     const out = buildMetaTemplatePayload({
-      content: '┘à╪▒╪¡╪¿╪º {{customerName}}╪î ╪╖┘ä╪¿┘â {{orderNumber}}',
+      content: 'مرحبا {{customerName}}، طلبك {{orderNumber}}',
       category: 'ORDER',
       hasButtons: false,
       buttons: null
     });
-    expect(out.bodyText).toBe('┘à╪▒╪¡╪¿╪º {{1}}╪î ╪╖┘ä╪¿┘â {{2}}╪î');
+    expect(out.bodyText).toBe('مرحبا {{1}}، طلبك {{2}}،');
     expect(out.variableCount).toBe(2);
     expect(out.variableOrder).toBe(JSON.stringify([
       { position: 1, name: 'customerName' },
@@ -20,45 +20,45 @@ describe('buildMetaTemplatePayload', () => {
     ]));
   });
 
-  test('┘è┘ê╪¡╪» ╪º┘ä╪ú┘é┘ê╪º╪│ ╪º┘ä┘à┘ü╪▒╪»╪⌐ ╪Ñ┘ä┘ë ╪╡┘è╪║╪⌐ ┘à╪▓╪»┘ê╪¼╪⌐', () => {
-    const out = buildMetaTemplatePayload({ content: '┘â┘ê╪» {orderNumber} ╪¼╪º┘ç╪▓', category: 'ORDER', hasButtons: false, buttons: null });
-    expect(out.bodyText).toBe('┘â┘ê╪» {{1}} ╪¼╪º┘ç╪▓');
+  test('يوحد الأقواس المفردة إلى صيغة مزدوجة', () => {
+    const out = buildMetaTemplatePayload({ content: 'كود {orderNumber} جاهز', category: 'ORDER', hasButtons: false, buttons: null });
+    expect(out.bodyText).toBe('كود {{1}} جاهز');
   });
 
-  test('┘è╪╢┘è┘ü ╪¬╪▒╪¡┘è╪¿ ┘é╪¿┘ä ╪º┘ä┘à╪¬╪║┘è╪▒ ┘ü┘è ╪¿╪»╪º┘è╪⌐ ╪º┘ä┘å╪╡ ┘ê┘ü╪º╪╡┘ä╪⌐ ╪¿╪╣╪»┘ç ┘ü┘è ╪º┘ä┘å┘ç╪º┘è╪⌐', () => {
-    const out = buildMetaTemplatePayload({ content: '{{customerName}}╪î ╪º╪│╪¬┘ä┘à╪¬ ╪╖┘ä╪¿┘â {{total}}', category: 'ORDER', hasButtons: false, buttons: null });
-    expect(out.bodyText).toBe('╪ú┘ç┘ä╪º┘ï {{1}}╪î ╪º╪│╪¬┘ä┘à╪¬ ╪╖┘ä╪¿┘â {{2}}╪î');
-    expect(out.metaPadding).toContain('╪ú┘ç┘ä╪º┘ï');
-    expect(out.metaPadding).toContain('╪î');
+  test('يضيف ترحيب قبل المتغير في بداية النص وفاصلة بعده في النهاية', () => {
+    const out = buildMetaTemplatePayload({ content: '{{customerName}}، استلمت طلبك {{total}}', category: 'ORDER', hasButtons: false, buttons: null });
+    expect(out.bodyText).toBe('أهلاً {{1}}، استلمت طلبك {{2}}،');
+    expect(out.metaPadding).toContain('أهلاً');
+    expect(out.metaPadding).toContain('،');
   });
 
-  test('┘è╪¿┘å┘è ╪ú╪▓╪▒╪º╪▒ QUICK_REPLY ┘ä┘ê ┘ü┘è ╪ú╪▓╪▒╪º╪▒', () => {
+  test('يبني أزرار QUICK_REPLY لو في أزرار', () => {
     const out = buildMetaTemplatePayload({
-      content: '╪¬╪ú┘â┘è╪» ╪╖┘ä╪¿┘â',
+      content: 'تأكيد طلبك',
       category: 'ORDER',
       hasButtons: true,
       buttons: JSON.stringify([
-        { id: 'confirm', text: '╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒', action: 'CONFIRMED' },
-        { id: 'cancel', text: '╪Ñ┘ä╪║╪º╪í ╪º┘ä╪ú┘ê╪▒╪»╪▒', action: 'CANCELLED' }
+        { id: 'confirm', text: 'تأكيد الأوردر', action: 'CONFIRMED' },
+        { id: 'cancel', text: 'إلغاء الأوردر', action: 'CANCELLED' }
       ])
     });
     expect(out.buttonsComponent).toEqual({
       type: 'BUTTONS',
       buttons: [
-        { type: 'QUICK_REPLY', text: '╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒' },
-        { type: 'QUICK_REPLY', text: '╪Ñ┘ä╪║╪º╪í ╪º┘ä╪ú┘ê╪▒╪»╪▒' }
+        { type: 'QUICK_REPLY', text: 'تأكيد الأوردر' },
+        { type: 'QUICK_REPLY', text: 'إلغاء الأوردر' }
       ]
     });
   });
 
-  test('┘è╪¡╪»╪» ╪º┘ä┘ü╪ª╪⌐ UTILITY ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï', () => {
-    const out = buildMetaTemplatePayload({ content: '┘å╪╡', category: null, hasButtons: false, buttons: null });
+  test('يحدد الفئة UTILITY افتراضياً', () => {
+    const out = buildMetaTemplatePayload({ content: 'نص', category: null, hasButtons: false, buttons: null });
     expect(out.metaCategory).toBe('UTILITY');
   });
 
-  test('≡ƒö┤ regression: ┘è┘ü╪▒╪╢ UTILITY ╪╣┘ä┘ë ┘é╪º┘ä╪¿ ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿ ╪¡╪¬┘ë ┘ä┘ê category = MARKETING', () => {
+  test('🔴 regression: يفرض UTILITY على قالب حالة طلب حتى لو category = MARKETING', () => {
     const out = buildMetaTemplatePayload({
-      content: '╪¬┘à ╪¬┘ê╪╡┘è┘ä ╪╖┘ä╪¿┘â {{orderNumber}}',
+      content: 'تم توصيل طلبك {{orderNumber}}',
       category: 'MARKETING',
       eventType: 'delivered',
       hasButtons: false,
@@ -67,9 +67,9 @@ describe('buildMetaTemplatePayload', () => {
     expect(out.metaCategory).toBe('UTILITY');
   });
 
-  test('≡ƒö┤ regression: ┘è┘ü╪▒╪╢ UTILITY ╪╣┘ä┘ë ┘é╪º┘ä╪¿ ORDER_DELIVERED ╪¡╪¬┘ë ┘ä┘ê category = MARKETING', () => {
+  test('🔴 regression: يفرض UTILITY على قالب ORDER_DELIVERED حتى لو category = MARKETING', () => {
     const out = buildMetaTemplatePayload({
-      content: '╪¬┘à ╪¬┘ê╪╡┘è┘ä ╪╖┘ä╪¿┘â {{orderNumber}}',
+      content: 'تم توصيل طلبك {{orderNumber}}',
       category: 'MARKETING',
       eventType: 'ORDER_DELIVERED',
       hasButtons: false,
@@ -78,9 +78,9 @@ describe('buildMetaTemplatePayload', () => {
     expect(out.metaCategory).toBe('UTILITY');
   });
 
-  test('┘è╪¿┘é┘è MARKETING ┘ä┘ä┘é╪º┘ä╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é┘è ╪║┘è╪▒ ╪º┘ä┘à╪▒╪¬╪¿╪╖ ╪¿╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿', () => {
+  test('يبقي MARKETING للقالب التسويقي غير المرتبط بحالة طلب', () => {
     const out = buildMetaTemplatePayload({
-      content: '╪«╪╡┘à 50% ╪¿┘à┘å╪º╪│╪¿╪⌐ ╪º┘ä╪╣┘è╪»',
+      content: 'خصم 50% بمناسبة العيد',
       category: 'MARKETING',
       eventType: 'NEWSLETTER_SUBSCRIBED',
       hasButtons: false,
@@ -89,9 +89,9 @@ describe('buildMetaTemplatePayload', () => {
     expect(out.metaCategory).toBe('MARKETING');
   });
 
-  test('┘è╪¿┘é┘è AUTHENTICATION ┘ä┘é╪º┘ä╪¿ OTP', () => {
+  test('يبقي AUTHENTICATION لقالب OTP', () => {
     const out = buildMetaTemplatePayload({
-      content: '┘â┘ê╪» ╪º┘ä╪¬╪¡┘é┘é {{otpCode}}',
+      content: 'كود التحقق {{otpCode}}',
       category: 'AUTHENTICATION',
       eventType: 'OTP',
       hasButtons: false,
@@ -100,7 +100,7 @@ describe('buildMetaTemplatePayload', () => {
     expect(out.metaCategory).toBe('AUTHENTICATION');
   });
 
-  test('┘è╪¬╪╣╪º┘à┘ä ┘à╪╣ content ┘ü╪º╪▒╪║', () => {
+  test('يتعامل مع content فارغ', () => {
     const out = buildMetaTemplatePayload({ content: '', category: 'ORDER', hasButtons: false, buttons: null });
     expect(out.bodyText).toBe('');
     expect(out.variableCount).toBe(0);
@@ -109,9 +109,9 @@ describe('buildMetaTemplatePayload', () => {
     expect(out.headerComponent).toBeNull();
   });
 
-  test('┘è╪¿┘å┘è headerComponent ┘ä┘ê╪│╪º╪ª╪╖ (IMAGE) ┘à┘å headerFormat + headerMediaHandle', () => {
+  test('يبني headerComponent لوسائط (IMAGE) من headerFormat + headerMediaHandle', () => {
     const out = buildMetaTemplatePayload({
-      content: '╪▒╪│╪º┘ä╪⌐ ╪¿┘ç╪º ╪╡┘ê╪▒╪⌐',
+      content: 'رسالة بها صورة',
       category: 'ORDER',
       hasButtons: false,
       buttons: null,
@@ -125,11 +125,11 @@ describe('buildMetaTemplatePayload', () => {
     });
   });
 
-  test('┘ä╪º ┘è╪¿┘å┘è headerComponent ┘ä┘ç┘è╪»╪▒ TEXT ╪ú┘ê ╪¿┘ä╪º handle', () => {
-    const textHeader = buildMetaTemplatePayload({ content: '┘å╪╡', category: 'ORDER', hasButtons: false, buttons: null, headerFormat: 'TEXT' });
+  test('لا يبني headerComponent لهيدر TEXT أو بلا handle', () => {
+    const textHeader = buildMetaTemplatePayload({ content: 'نص', category: 'ORDER', hasButtons: false, buttons: null, headerFormat: 'TEXT' });
     expect(textHeader.headerComponent).toBeNull();
 
-    const noHandle = buildMetaTemplatePayload({ content: '┘å╪╡', category: 'ORDER', hasButtons: false, buttons: null, headerFormat: 'IMAGE' });
+    const noHandle = buildMetaTemplatePayload({ content: 'نص', category: 'ORDER', hasButtons: false, buttons: null, headerFormat: 'IMAGE' });
     expect(noHandle.headerComponent).toBeNull();
   });
 });

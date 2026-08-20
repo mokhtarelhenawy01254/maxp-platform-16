@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, Loader2, Play, StopCircle, Banknote } from "lucide-react";
@@ -17,7 +17,7 @@ interface ShiftSummary {
 interface Shift { id: string; cashierName: string; status: string; openedAt: string; closedAt?: string; summary?: ShiftSummary; }
 
 const fmtMoney = (n?: number, currency = "") => `${Number(n ?? 0).toFixed(0)} ${currency}`;
-const fmtDate = (d?: string) => (d ? new Date(d).toLocaleString("ar-EG") : "ΓÇö");
+const fmtDate = (d?: string) => (d ? new Date(d).toLocaleString("ar-EG") : "—");
 
 export default function CashierShiftsTab() {
   const { t } = useTranslation();
@@ -127,7 +127,7 @@ export default function CashierShiftsTab() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h3 className="font-bold flex items-center gap-2"><Banknote className="w-5 h-5 text-green-600" />{t("radiology.cashierShifts.openShift")}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t("radiology.cashierShifts.cashier")} <b>{active.cashierName}</b> ΓÇö {t("radiology.cashierShifts.openedAt")} {fmtDate(active.openedAt)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t("radiology.cashierShifts.cashier")} <b>{active.cashierName}</b> — {t("radiology.cashierShifts.openedAt")} {fmtDate(active.openedAt)}</p>
             </div>
             <button onClick={close} disabled={busy} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <StopCircle className="w-4 h-4" />}{t("radiology.cashierShifts.closeShift")}
@@ -169,7 +169,7 @@ export default function CashierShiftsTab() {
                       </span>
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">{fmtDate(s.openedAt)}</td>
-                    <td className="py-3 px-4 whitespace-nowrap">{s.closedAt ? fmtDate(s.closedAt) : "ΓÇö"}</td>
+                    <td className="py-3 px-4 whitespace-nowrap">{s.closedAt ? fmtDate(s.closedAt) : "—"}</td>
                     <td className="py-3 px-4 text-green-600 font-medium">{fmtMoney(s.summary?.patientCollected, t("radiology.currency"))}</td>
                     <td className="py-3 px-4 text-blue-600 font-medium">{fmtMoney(s.summary?.insuranceCollected, t("radiology.currency"))}</td>
                     <td className="py-3 px-4 text-red-600">{fmtMoney(s.summary?.refunded, t("radiology.currency"))}</td>

@@ -1,7 +1,23 @@
-import { Circle as BuildingOffice2Icon, Users as UsersIcon, Check as CheckCircleIcon, X as XCircleIcon, Download as ArrowDownTrayIcon, Circle as CalendarDaysIcon, Clock as ClockIcon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, MessageSquare as ChatBubbleLeftRightIcon, AlertTriangle as ExclamationTriangleIcon, ArrowRight as ArrowRightIcon, Activity as ChartBarIcon, Plus as PlusIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-;
+import {
+  BuildingOffice2Icon,
+  UsersIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowDownTrayIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  ShoppingCartIcon,
+  CurrencyDollarIcon,
+  ChatBubbleLeftRightIcon,
+  ExclamationTriangleIcon,
+  ArrowRightIcon,
+  ChartBarIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import CreateCompanyModal from "../../components/CreateCompanyModal";
@@ -112,7 +128,7 @@ const MyCompaniesDashboard: React.FC = () => {
         setDashboardData(response.data.data);
         setWithExpiry(cacheKey, response.data.data, CACHE_TTL_MS);
       } else {
-        const message = response.data.message || "فشل تحميل البيانات";
+        const message = response.data.message || i18n.t("MyCompaniesDashboard.failed_load_ff88");
         if (!background) {
           setError(message);
           toast.error(message);
@@ -122,7 +138,7 @@ const MyCompaniesDashboard: React.FC = () => {
       console.error("Failed to fetch dashboard", error);
       if (!background) {
         setError("فشل تحميل لوحة التحكم");
-        toast.error("فشل تحميل لوحة التحكم");
+        tToast.error("MyCompaniesDashboard.failed_load_5e4a");
       }
     } finally {
       if (!background) {
@@ -150,9 +166,9 @@ const MyCompaniesDashboard: React.FC = () => {
     try {
       setIsExporting(true);
       // TODO: Implement export
-      toast.success("جاري التصدير...");
+      tToast.success("MyCompaniesDashboard.msg_e43b");
     } catch (error) {
-      toast.error("فشل التصدير");
+      tToast.error("MyCompaniesDashboard.msg_0952");
     } finally {
       setIsExporting(false);
     }
@@ -165,10 +181,10 @@ const MyCompaniesDashboard: React.FC = () => {
         navigate("/company-dashboard");
         return;
       }
-      toast.error("فشل في تبديل الشركة. حاول مرة أخرى.");
+      tToast.error("MyCompaniesDashboard.msg_5853");
     } catch (error) {
       console.error("Error switching company:", error);
-      toast.error("فشل في تبديل الشركة. حاول مرة أخرى.");
+      tToast.error("MyCompaniesDashboard.msg_5853");
     }
   };
 
@@ -179,11 +195,11 @@ const MyCompaniesDashboard: React.FC = () => {
         toast.success(`تم تعيين ${companyName} كشركة افتراضية`);
         fetchDashboard({ background: true });
       } else {
-        toast.error(response.data.message || "فشل تعيين الشركة كافتراضية");
+        toast.error(response.data.message || i18n.t("MyCompaniesDashboard.msg_d0f3"));
       }
     } catch (error) {
       console.error("Error setting default company:", error);
-      toast.error("فشل تعيين الشركة كافتراضية");
+      tToast.error("MyCompaniesDashboard.msg_d0f3");
     }
   };
 

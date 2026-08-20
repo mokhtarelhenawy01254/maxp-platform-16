@@ -1,5 +1,5 @@
-﻿/**
- * OrderModal ΓÇö unified modal shell for the orders feature.
+/**
+ * OrderModal — unified modal shell for the orders feature.
  *
  * Wraps shadcn/ui Dialog (built on @base-ui/react) so every order modal
  * shares the same backdrop, focus-trap, Esc-to-close, animation, and
@@ -85,7 +85,7 @@ export interface OrderModalProps {
   title?: React.ReactNode;
   /** Description shown below the title. */
   description?: React.ReactNode;
-  /** Optional icon ΓÇö renders in a tinted circle above the title. */
+  /** Optional icon — renders in a tinted circle above the title. */
   icon?: React.ComponentType<{ className?: string }>;
   /** Color tone for the icon circle and the default primary action. */
   tone?: ModalTone;
@@ -161,7 +161,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             onClick={handleClose}
             disabled={busy}
           >
-            {cancelLabel ?? "╪Ñ┘ä╪║╪º╪í"}
+            {cancelLabel ?? "إلغاء"}
           </Button>
         )}
         {secondaryAction && (

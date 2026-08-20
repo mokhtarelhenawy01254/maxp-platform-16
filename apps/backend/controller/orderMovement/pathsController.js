@@ -1,11 +1,11 @@
-﻿const core = require('../../services/orderMovementCore');
+const core = require('../../services/orderMovementCore');
 
 const filterByMode = (transitions, mode) => mode === 'manual' ? transitions.filter((t) => !t.auto) : mode === 'auto' ? transitions.filter((t) => t.auto) : transitions;
 
 const handler = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح' });
 
     const { startDate, endDate } = req.query;
     const mode = req.query.mode === 'manual' ? 'manual' : req.query.mode === 'auto' ? 'auto' : 'all';
@@ -26,7 +26,7 @@ const handler = async (req, res) => {
       totalOrders += 1;
 
       const statuses = list.map((t) => t.status);
-      const path = statuses.join('ΓåÆ');
+      const path = statuses.join('→');
       const last = list[list.length - 1];
       const hours = core.hoursBetween(order.createdAt, last.createdAt);
       const terminal = statuses[statuses.length - 1];
@@ -97,7 +97,7 @@ const handler = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪¡┘ä┘è┘ä ┘à╪│╪º╪▒╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬' });
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحليل مسارات الطلبات' });
   }
 };
 

@@ -1,10 +1,10 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Copy, Check, Globe, Palette } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 
 /**
- * WebChatWidgetPage ΓÇö embed setup for the public website chat widget.
+ * WebChatWidgetPage — embed setup for the public website chat widget.
  * Generates a copy-paste <script> snippet gated by the company's storefront domain.
  */
 export default function WebChatWidgetPage() {

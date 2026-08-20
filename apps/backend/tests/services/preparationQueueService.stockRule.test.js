@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   order: {
     findUnique: jest.fn(),
   },
@@ -52,7 +52,7 @@ describe('preparationQueueService.assertPreparationStockRule', () => {
   });
 
   test('throws 400 when moving forward with missing stock and partial prep disabled', async () => {
-    // p1 available 0 < 2 ΓåÆ shortage
+    // p1 available 0 < 2 → shortage
     mockPrisma.inventory.findMany.mockResolvedValue([
       { productId: 'p1', warehouseId: 'w1', quantity: 0, available: 0, reserved: 0 },
       { productId: 'p2', warehouseId: 'w1', quantity: 3, available: 3, reserved: 0 },
@@ -72,7 +72,7 @@ describe('preparationQueueService.assertPreparationStockRule', () => {
 
     expect(caught).not.toBeNull();
     expect(caught.statusCode).toBe(400);
-    expect(caught.message).toContain('┘å╪º┘é╪╡╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å');
+    expect(caught.message).toContain('ناقصة المخزون');
   });
 
   test('allows forward move with missing stock when allowPartialPreparation is true', async () => {

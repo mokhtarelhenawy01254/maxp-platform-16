@@ -1,10 +1,10 @@
-﻿const core = require('../../services/orderMovementCore');
+const core = require('../../services/orderMovementCore');
 
 const handler = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
     const { startDate, endDate } = req.query;
     const { start, end } = core.normalizeDateRange({ startDate, endDate });
@@ -66,7 +66,7 @@ const handler = async (req, res) => {
 
     const reviewerGroups = new Map();
     for (const r of reviewed) {
-      const name = r.reviewedByName || r.reviewedBy || '╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü';
+      const name = r.reviewedByName || r.reviewedBy || 'غير معروف';
       if (!reviewerGroups.has(name)) {
         reviewerGroups.set(name, { name, reviewedCount: 0, approved: 0, rejected: 0, hours: [] });
       }
@@ -96,7 +96,7 @@ const handler = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪¡┘ä┘è┘ä ╪º┘ä┘à┘ê╪º┘ü┘é╪º╪¬' });
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحليل الموافقات' });
   }
 };
 

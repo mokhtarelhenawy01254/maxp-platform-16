@@ -1,11 +1,11 @@
-﻿/**
+/**
  * platformSeoMiddleware.js
  *
  * Server-side Open Graph / Twitter Card meta injector for MaxP platform routes.
  *
  * Runs BEFORE the catch-all storefrontHtmlController so that requests made
  * by social-media crawlers (Telegram, WhatsApp, Facebook, Twitter/X, LinkedIn)
- * receive a properly customised HTML head ΓÇö even though the SPA JavaScript
+ * receive a properly customised HTML head — even though the SPA JavaScript
  * never executes in their headless context.
  *
  * Route matching strategy:
@@ -13,7 +13,7 @@
  *  - Prefix fallbacks are tested second (e.g. /landing/*)
  *  - If nothing matches we fall back to the default MaxP platform cover.
  *
- * The injected tags ONLY replace existing values ΓÇö they never remove tags that
+ * The injected tags ONLY replace existing values — they never remove tags that
  * storefrontSeoService or the static index.html already set.
  */
 
@@ -27,68 +27,68 @@ const path = require("path");
 
 const PLATFORM_BASE_URL = "https://maxp.online";
 const PLATFORM_OG_COVER = `${PLATFORM_BASE_URL}/og-cover.png`;
-const PLATFORM_DEFAULT_TITLE = "MaxP ΓÇö ┘à┘å╪╡╪⌐ ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪¬┘ê╪º╪╡┘ä ┘ê╪º┘ä╪¬╪¼╪º╪▒╪⌐ ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪⌐";
+const PLATFORM_DEFAULT_TITLE = "MaxP — منصة إدارة التواصل والتجارة الإلكترونية";
 const PLATFORM_DEFAULT_DESCRIPTION =
-  "┘à┘å╪╡╪⌐ ┘à╪¬┘â╪º┘à┘ä╪⌐ ┘ä╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä┘à╪¡╪º╪»╪½╪º╪¬╪î ╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è╪î ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒ ╪º┘ä╪▒┘é┘à┘è╪⌐ ┘ü┘è ┘à┘â╪º┘å ┘ê╪º╪¡╪».";
+  "منصة متكاملة لإدارة المحادثات، الذكاء الاصطناعي، والمتاجر الرقمية في مكان واحد.";
 
 // ---------------------------------------------------------------------------
-// Route ΓåÆ SEO metadata map
-// Each entry defines: title, description, image (optional ΓÇö falls back to og-cover)
+// Route → SEO metadata map
+// Each entry defines: title, description, image (optional — falls back to og-cover)
 // ---------------------------------------------------------------------------
 
 const ROUTE_SEO_MAP = [
-  // ΓöÇΓöÇ Landing Pages ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Landing Pages ──────────────────────────────────────────────────────────
   {
     match: "/landing/ai-inbox",
-    title: "Max P AI + Inbox ΓÇö AI Agent + Unified Inbox ┘ü┘è ╪¿╪º┘é╪⌐ ┘ê╪º╪¡╪»╪⌐",
+    title: "Max P AI + Inbox — AI Agent + Unified Inbox في باقة واحدة",
     description:
-      "╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è ┘ä┘ä┘à╪¡╪º╪»╪½╪º╪¬ + ╪╡┘å╪»┘ê┘é ┘ê╪º╪▒╪» ┘à┘ê╪¡╪» ┘ä┘â┘ä ╪º┘ä┘à┘å╪╡╪º╪¬. AI Agent ┘è╪▒╪» ┘ê┘è┘å╪┤╪ª ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï. ┘⌐┘⌐┘⌐ ╪¼.┘à/╪┤┘ç╪▒.",
+      "الذكاء الاصطناعي للمحادثات + صندوق وارد موحد لكل المنصات. AI Agent يرد وينشئ الطلبات تلقائياً. ٩٩٩ ج.م/شهر.",
     image: `${PLATFORM_BASE_URL}/og-messaging.svg`,
   },
   {
     match: "/landing/messaging",
-    title: "Max P Inbox ΓÇö ┘â┘ä ╪▒╪│╪º┘è┘ä ┘ê╪º╪¬╪│╪º╪¿ ┘ê╪¬┘ä╪¼╪▒╪º┘à ┘ê╪º┘å╪│╪¬╪¼╪▒╪º┘à ┘ê┘à╪º╪│┘å╪¼╪▒ ┘ü┘è ┘à┘â╪º┘å ┘ê╪º╪¡╪»",
+    title: "Max P Inbox — كل رسايل واتساب وتلجرام وانستجرام وماسنجر في مكان واحد",
     description:
-      "╪╡┘å╪»┘ê┘é ┘ê╪º╪▒╪» ┘à┘ê╪¡┘æ╪» ┘ä┘ä╪▒╪» ╪╣┘ä┘ë ┘â┘ä ╪º┘ä┘à┘å╪╡╪º╪¬ ┬╖ AI Agent ┘è╪╣┘à┘ä ╪¡╪¼┘ê╪▓╪º╪¬ ┘ê╪╖┘ä╪¿╪º╪¬. ┘à┘å ┘⌐┘⌐┘⌐ ╪¼.┘à/╪┤┘ç╪▒.",
+      "صندوق وارد موحّد للرد على كل المنصات · AI Agent يعمل حجوزات وطلبات. من ٩٩٩ ج.م/شهر.",
     image: `${PLATFORM_BASE_URL}/og-messaging.svg`,
   },
   {
     match: "/landing/medical",
-    title: "Max P ╪º┘ä╪¿╪º┘é╪⌐ ╪º┘ä╪╖╪¿┘è╪⌐ ΓÇö ╪º┘ä┘å╪╕╪º┘à ╪º┘ä╪╖╪¿┘è ╪º┘ä┘à╪¬┘â╪º┘à┘ä + ┘ê╪º╪¬╪│╪º╪¿ + AI Agents",
+    title: "Max P الباقة الطبية — النظام الطبي المتكامل + واتساب + AI Agents",
     description:
-      "┘å╪╕╪º┘à ╪╖╪¿┘è ┘à╪¬┘â╪º┘à┘ä ┘è╪╢┘à ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä┘à┘ê╪º╪╣┘è╪»╪î ╪│╪¼┘ä╪º╪¬ ╪º┘ä┘à╪▒╪╢┘ë╪î ┘ê╪º╪¬╪│╪º╪¿╪î ┘ê╪ú╪╣┘ê╪º┘å ╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è ┘ä┘ä╪╣┘è╪º╪»╪º╪¬ ┘ê╪º┘ä┘à╪│╪¬╪┤┘ü┘è╪º╪¬.",
+      "نظام طبي متكامل يضم إدارة المواعيد، سجلات المرضى، واتساب، وأعوان الذكاء الاصطناعي للعيادات والمستشفيات.",
   },
   {
     match: "/landing/employees",
-    title: "Max P ΓÇö ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä┘à┘ê╪╕┘ü┘è┘å ┘ê╪º┘ä╪¡╪╢┘ê╪▒ ┘ê╪º┘ä╪Ñ╪¼╪º╪▓╪º╪¬ ╪¿╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è",
+    title: "Max P — إدارة الموظفين والحضور والإجازات بالذكاء الاصطناعي",
     description:
-      "┘å╪╕╪º┘à ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä┘à┘ê╪╕┘ü┘è┘å ┘à┘å MaxP ΓÇö ╪º┘ä╪¡╪╢┘ê╪▒ ┘ê╪º┘ä╪º┘å╪╡╪▒╪º┘ü╪î ╪º┘ä╪Ñ╪¼╪º╪▓╪º╪¬╪î ╪º┘ä╪▒┘ê╪º╪¬╪¿╪î ┘ê┘â┘ä ┘à╪º ┘è╪¡╪¬╪º╪¼┘ç ┘ü╪▒┘è┘é ╪º┘ä╪╣┘à┘ä.",
+      "نظام إدارة الموظفين من MaxP — الحضور والانصراف، الإجازات، الرواتب، وكل ما يحتاجه فريق العمل.",
   },
   {
     match: "/landing/marketing",
-    title: "Max P ΓÇö ┘à┘å╪╡╪⌐ ╪º┘ä╪¬╪│┘ê┘è┘é ╪º┘ä╪▒┘é┘à┘è ┘ê╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪Ñ╪╣┘ä╪º┘å╪º╪¬",
+    title: "Max P — منصة التسويق الرقمي وإدارة الإعلانات",
     description:
-      "╪Ñ╪»╪º╪▒╪⌐ ╪¡┘à┘ä╪º╪¬┘â ╪º┘ä╪¬╪│┘ê┘è┘é┘è╪⌐╪î ╪Ñ╪╣┘ä╪º┘å╪º╪¬ ┘ü┘è╪│╪¿┘ê┘â ┘ê╪º┘å╪│╪¬╪¼╪▒╪º┘à ┘ê╪¼┘ê╪¼┘ä╪î ┘ê╪¬╪¡┘ä┘è┘ä ╪º┘ä╪ú╪»╪º╪í ┘à┘å ┘à┘â╪º┘å ┘ê╪º╪¡╪» ┘à╪╣ AI Agent.",
+      "إدارة حملاتك التسويقية، إعلانات فيسبوك وانستجرام وجوجل، وتحليل الأداء من مكان واحد مع AI Agent.",
   },
   {
     match: "/landing",
-    title: "MaxP ΓÇö ╪¿╪º┘é╪º╪¬ ┘ê┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä┘à┘å╪╡╪⌐",
+    title: "MaxP — باقات ومنتجات المنصة",
     description: PLATFORM_DEFAULT_DESCRIPTION,
   },
 
-  // ΓöÇΓöÇ Super Admin ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Super Admin ─────────────────────────────────────────────────────────────
   {
     match: "/super-admin",
     title: "MaxP Super Admin",
-    description: "┘ä┘ê╪¡╪⌐ ╪¬╪¡┘â┘à ╪º┘ä┘à┘å╪╡╪⌐ ΓÇö ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪┤╪▒┘â╪º╪¬╪î ╪º┘ä╪¿╪º┘é╪º╪¬╪î ┘ê╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬.",
+    description: "لوحة تحكم المنصة — إدارة الشركات، الباقات، والإعدادات.",
     noIndex: true,
   },
 
-  // ΓöÇΓöÇ Regular Admin ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Regular Admin ───────────────────────────────────────────────────────────
   {
     match: "/admin",
-    title: "MaxP ΓÇö ┘ä┘ê╪¡╪⌐ ╪º┘ä╪¬╪¡┘â┘à",
-    description: "╪Ñ╪»╪º╪▒╪⌐ ┘à╪¡╪º╪»╪½╪º╪¬┘â ┘ê╪╖┘ä╪¿╪º╪¬┘â ┘ê┘à╪¬╪¼╪▒┘â ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è ┘à┘å ┘à┘â╪º┘å ┘ê╪º╪¡╪».",
+    title: "MaxP — لوحة التحكم",
+    description: "إدارة محادثاتك وطلباتك ومتجرك الإلكتروني من مكان واحد.",
     noIndex: true,
   },
 ];
@@ -163,7 +163,7 @@ const resolveRouteSeo = (pathname) => {
 };
 
 // ---------------------------------------------------------------------------
-// Index HTML loader (simple in-process cache ΓÇö shared across requests)
+// Index HTML loader (simple in-process cache — shared across requests)
 // ---------------------------------------------------------------------------
 
 const INDEX_HTML_CANDIDATES = [
@@ -240,7 +240,7 @@ exports.handlePlatformSeo = async (req, res, next) => {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate");
     return res.status(200).send(html);
   } catch (err) {
-    console.error("Γ¥î [PLATFORM-SEO] Error injecting SEO tags:", err?.message);
+    console.error("❌ [PLATFORM-SEO] Error injecting SEO tags:", err?.message);
     return next();
   }
 };

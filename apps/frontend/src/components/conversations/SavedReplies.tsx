@@ -1,6 +1,5 @@
-import { X as XMarkIcon, Plus as PlusIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { apiService, SavedReply } from "../../services/apiService";
 
 interface SavedRepliesProps {

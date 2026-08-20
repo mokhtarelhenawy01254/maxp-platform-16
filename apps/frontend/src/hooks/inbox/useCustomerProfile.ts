@@ -32,10 +32,12 @@ interface Customer {
   lastName: string;
   email: string | null;
   phone: string | null;
+  phone2?: string | null;
   avatar: string | null;
   city: string | null;
   country: string | null;
   tags?: string | string[];
+  metadata?: any;
 }
 
 export const useCustomerProfile = () => {
@@ -93,8 +95,65 @@ export const useCustomerProfile = () => {
     [companyId],
   );
 
-  const calculateLTV = useCallback(() => {
-    return orders
+  const updateCustomerPhone = useCallback(
+    async (phone: string) => {
+      if (!customer?.id || !companyId) {
+        return { success: false, message: "معرف العميل غير متاح" };
+      }
+
+      try {
+        const res = await apiClient.put(
+          `/customers/${customer.id}`,
+          { phone },
+          { params: { companyId } },
+        );
+
+        if (res.data.success) {
+          setCustomer((prev) => (prev ? { ...prev, phone } : prev));
+          return { success: true, message: res.data.message || "تم تحديث رقم الهاتف بنجاح" };
+        }
+        return { success: false, message: res.data?.message || "فشل تحديث رقم الهاتف" };
+      } catch (err: any) {
+        console.error("Error updating customer phone:", err);
+        return {
+          success: false,
+          message: err?.response?.data?.message || "حدث خطأ أثناء تحديث رقم الهاتف",
+        };
+      }
+    },
+    [customer?.id, companyId],
+  );
+
+  const updateCustomerPhone2 = useCallback(
+    async (phone2: string) => {
+      if (!customer?.id || !companyId) {
+        return { success: false, message: "معرف العميل غير متاح" };
+      }
+      try {
+        const res = await apiClient.put(
+          `/customers/${customer.id}`,
+          { phone2 },
+          { params: { companyId } },
+        );
+        if (res.data.success) {
+          setCustomer((prev) =>
+            prev ? { ...prev, phone2, metadata: res.data.data?.metadata || prev.metadata } : prev,
+          );
+          return { success: true, message: res.data.message || "تم إضافة رقم الهاتف الثاني بنجاح" };
+        }
+        return { success: false, message: res.data?.message || "فشل إضافة رقم الهاتف الثاني" };
+      } catch (err: any) {
+        console.error("Error updating second phone:", err);
+        return {
+          success: false,
+          message: err?.response?.data?.message || "حدث خطأ أثناء إضافة رقم الهاتف الثاني",
+        };
+      }
+    },
+    [customer?.id, companyId],
+  );
+
+  const calculateLTV = useCallback(() => {    return orders
       .filter(
         (o) =>
           o.status === "completed" ||
@@ -143,6 +202,8 @@ export const useCustomerProfile = () => {
     loading,
     error,
     loadCustomerData,
+    updateCustomerPhone,
+    updateCustomerPhone2,
     calculateLTV,
     calculateRating,
   };

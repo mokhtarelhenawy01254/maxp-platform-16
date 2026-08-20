@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Loader2, Search } from "lucide-react";
@@ -296,7 +296,7 @@ export default function ReceptionTab() {
                     physicianResults.map(p => (
                       <button key={p.id} type="button" onClick={() => pickPhysician(p)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
                         <span className="font-medium">{p.name}</span>
-                        {p.specialty ? <span className="text-xs text-gray-500 dark:text-gray-400"> ΓÇö {p.specialty}</span> : null}
+                        {p.specialty ? <span className="text-xs text-gray-500 dark:text-gray-400"> — {p.specialty}</span> : null}
                       </button>
                     ))
                   )}

@@ -1,9 +1,9 @@
-﻿const { resolveInboundMessageText } = require('../../utils/allFunctions');
+const { resolveInboundMessageText } = require('../../utils/allFunctions');
 
 describe('allFunctions resolveInboundMessageText', () => {
   test('prefers quick_reply payload over button title', () => {
     const event = {
-      message: { text: '╪º┘ä╪ú╪│╪╣╪º╪▒', quick_reply: { payload: 'PRICE' } },
+      message: { text: 'الأسعار', quick_reply: { payload: 'PRICE' } },
     };
     expect(resolveInboundMessageText(event)).toBe('PRICE');
   });
@@ -18,7 +18,7 @@ describe('allFunctions resolveInboundMessageText', () => {
   });
 
   test('falls back to plain text for normal messages', () => {
-    expect(resolveInboundMessageText({ message: { text: '┘â╪º┘à ╪º┘ä╪│╪╣╪▒' } })).toBe('┘â╪º┘à ╪º┘ä╪│╪╣╪▒');
+    expect(resolveInboundMessageText({ message: { text: 'كام السعر' } })).toBe('كام السعر');
   });
 
   test('returns null when no text source', () => {

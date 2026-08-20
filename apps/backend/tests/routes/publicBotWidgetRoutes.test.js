@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const request = require("supertest");
 
 const mockPrisma = {

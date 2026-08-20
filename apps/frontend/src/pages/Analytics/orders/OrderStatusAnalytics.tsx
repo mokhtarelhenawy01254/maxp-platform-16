@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BarChart as BarChartIcon,
   TrendingUp,
@@ -127,43 +127,43 @@ const PIE_COLORS = [
 ];
 
 const STATUS_LABELS: Record<string, string> = {
-  SHORTAGE_FAILED: "┘ü╪┤┘ä ╪º┘ä╪╣╪¼╪▓",
-  CANCELLED: "┘à┘ä╪║┘è",
-  DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à",
-  SHIPPED: "╪¬┘à ╪º┘ä╪┤╪¡┘å",
-  PROCESSING: "┘é┘è╪» ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐",
-  CONFIRMED: "┘à╪ñ┘â╪»",
-  PENDING: "┘à╪╣┘ä┘é",
-  STOCK_SHORTAGE: "╪╣╪¼╪▓ ┘à╪«╪▓┘ê┘å",
-  RETURNED: "┘à╪│╪¬╪▒╪¼╪╣",
-  REFUNDED: "┘à╪│╪¬╪▒╪»",
-  PARTIALLY_DELIVERED: "╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è",
-  DUPLICATE_ORDER: "┘à┘â╪▒╪▒",
+  SHORTAGE_FAILED: "فشل العجز",
+  CANCELLED: "ملغي",
+  DELIVERED: "تم التسليم",
+  SHIPPED: "تم الشحن",
+  PROCESSING: "قيد المعالجة",
+  CONFIRMED: "مؤكد",
+  PENDING: "معلق",
+  STOCK_SHORTAGE: "عجز مخزون",
+  RETURNED: "مسترجع",
+  REFUNDED: "مسترد",
+  PARTIALLY_DELIVERED: "تسليم جزئي",
+  DUPLICATE_ORDER: "مكرر",
 };
 
 const PAYMENT_LABELS: Record<string, string> = {
-  CASH: "┘â╪º╪┤ ╪╣┘å╪» ╪º┘ä╪º╪│╪¬┘ä╪º┘à",
-  CREDIT_CARD: "╪¿╪╖╪º┘é╪⌐ ╪º╪ª╪¬┘à╪º┘å",
-  BANK_TRANSFER: "╪¬╪¡┘ê┘è┘ä ╪¿┘å┘â┘è",
-  PAYPAL: "╪¿╪º┘è ╪¿╪º┘ä",
-  STRIPE: "╪│╪¬╪▒╪º┘è╪¿",
-  WALLET: "┘à╪¡┘ü╪╕╪⌐ ╪▒┘é┘à┘è╪⌐",
-  INSTAPAY: "╪Ñ┘å╪│╪¬╪º╪¿╪º┘è",
-  VISA: "┘ü┘è╪▓╪º",
-  MASTERCARD: "┘à╪º╪│╪¬╪▒┘â╪º╪▒╪»",
-  VODAFONE_CASH: "┘ü┘ê╪»╪º┘ü┘ê┘å ┘â╪º╪┤",
+  CASH: "كاش عند الاستلام",
+  CREDIT_CARD: "بطاقة ائتمان",
+  BANK_TRANSFER: "تحويل بنكي",
+  PAYPAL: "باي بال",
+  STRIPE: "سترايب",
+  WALLET: "محفظة رقمية",
+  INSTAPAY: "إنستاباي",
+  VISA: "فيزا",
+  MASTERCARD: "ماستركارد",
+  VODAFONE_CASH: "فودافون كاش",
 };
 
 const SOURCE_LABELS: Record<string, string> = {
-  storefront: "╪º┘ä┘à╪¬╪¼╪▒",
-  ai_conversation: "┘à╪¡╪º╪»╪½╪⌐ ╪░┘â┘è╪⌐",
-  internal_push: "╪Ñ╪»╪«╪º┘ä ╪»╪º╪«┘ä┘è",
-  woocommerce: "┘ê┘ê┘â┘ê┘à╪▒╪│",
-  manual: "┘è╪»┘ê┘è",
-  REGULAR: "╪╣╪º╪»┘è",
-  AFFILIATE_REFERRAL: "╪¬╪│┘ê┘è┘é ╪¿╪º┘ä╪╣┘à┘ê┘ä╪⌐ (╪Ñ╪¡╪º┘ä╪⌐)",
-  AFFILIATE_DIRECT: "╪¬╪│┘ê┘è┘é ╪¿╪º┘ä╪╣┘à┘ê┘ä╪⌐ (┘à╪¿╪º╪┤╪▒)",
-  INTERNAL_IMPORT: "╪º╪│╪¬┘è╪▒╪º╪» ╪»╪º╪«┘ä┘è",
+  storefront: "المتجر",
+  ai_conversation: "محادثة ذكية",
+  internal_push: "إدخال داخلي",
+  woocommerce: "ووكومرس",
+  manual: "يدوي",
+  REGULAR: "عادي",
+  AFFILIATE_REFERRAL: "تسويق بالعمولة (إحالة)",
+  AFFILIATE_DIRECT: "تسويق بالعمولة (مباشر)",
+  INTERNAL_IMPORT: "استيراد داخلي",
 };
 
 export default function OrderStatusAnalytics() {
@@ -191,7 +191,7 @@ export default function OrderStatusAnalytics() {
       );
       setData(res.data.data);
     } catch {
-      setError("┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬");
+      setError("فشل تحميل البيانات");
     } finally {
       setLoading(false);
     }
@@ -200,20 +200,20 @@ export default function OrderStatusAnalytics() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleReopenOrder = useCallback(async (order: ShortageFailedOrder) => {
-    if (!window.confirm(`┘ç┘ä ╪¬╪▒┘è╪» ╪Ñ╪╣╪º╪»╪⌐ ┘ü╪¬╪¡ ╪º┘ä╪╖┘ä╪¿ ${order.orderNumber} ┘ä┘ä╪¬╪┤╪║┘è┘ä╪ƒ`)) return;
+    if (!window.confirm(`هل تريد إعادة فتح الطلب ${order.orderNumber} للتشغيل؟`)) return;
     setReopeningOrderId(order.id);
     try {
       const res = await apiClient.post<{ success: boolean }>(
         `/orders-new/simple/${encodeURIComponent(order.orderNumber)}/status`,
-        { status: "PENDING_PREPARATION", notes: "╪Ñ╪╣╪º╪»╪⌐ ┘ü╪¬╪¡ ┘à┘å ╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪╣╪¼╪▓ ╪º┘ä┘å┘ç╪º╪ª┘è" },
+        { status: "PENDING_PREPARATION", notes: "إعادة فتح من تبويب العجز النهائي" },
       );
       if (res.data.success) {
         await fetchData();
       } else {
-        window.alert("╪¬╪╣╪░╪▒ ╪Ñ╪╣╪º╪»╪⌐ ┘ü╪¬╪¡ ╪º┘ä╪╖┘ä╪¿");
+        window.alert("تعذر إعادة فتح الطلب");
       }
     } catch {
-      window.alert("╪¬╪╣╪░╪▒ ╪Ñ╪╣╪º╪»╪⌐ ┘ü╪¬╪¡ ╪º┘ä╪╖┘ä╪¿");
+      window.alert("تعذر إعادة فتح الطلب");
     } finally {
       setReopeningOrderId(null);
     }
@@ -240,7 +240,7 @@ export default function OrderStatusAnalytics() {
       o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "",
     ]);
     const csvContent =
-      "\uFEFF╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿,╪º┘ä╪╣┘à┘è┘ä,╪º┘ä┘ç╪º╪¬┘ü,╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐,╪º┘ä┘à╪¿┘ä╪║,╪º┘ä╪¬╪º╪▒┘è╪«\n" +
+      "\uFEFFرقم الطلب,العميل,الهاتف,المحافظة,المبلغ,التاريخ\n" +
       rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -258,7 +258,7 @@ export default function OrderStatusAnalytics() {
       <div className="flex items-center justify-center min-h-[500px]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
-          <p className="text-sm text-gray-500">╪¼╪º╪▒┘ì ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¬╪¡┘ä┘è┘ä...</p>
+          <p className="text-sm text-gray-500">جارٍ تحميل التحليل...</p>
         </div>
       </div>
     );
@@ -271,7 +271,7 @@ export default function OrderStatusAnalytics() {
           <XCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <p className="text-red-600 font-medium">{error}</p>
           <button onClick={() => fetchData(true)} className="mt-4 px-5 py-2 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition">
-            ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐
+            إعادة المحاولة
           </button>
         </div>
       </div>
@@ -286,18 +286,18 @@ export default function OrderStatusAnalytics() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-l from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              ╪¬╪¡┘ä┘è┘ä ╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+              تحليل حالات الطلبات
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              ╪▒╪ñ┘è╪⌐ ╪┤╪º┘à┘ä╪⌐ ┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘à╪╣ ╪¬╪▒┘â┘è╪▓ ╪╣┘ä┘ë ╪º┘ä╪╣╪¼╪▓ ╪º┘ä┘å┘ç╪º╪ª┘è
+              رؤية شاملة لحالات الطلبات مع تركيز على العجز النهائي
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => fetchData(true)} disabled={loading} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition shadow-sm disabled:opacity-60">
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> ╪¬╪¡╪»┘è╪½
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> تحديث
             </button>
             <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition shadow-sm shadow-purple-200">
-              <Download className="h-4 w-4" /> ╪¬╪╡╪»┘è╪▒
+              <Download className="h-4 w-4" /> تصدير
             </button>
           </div>
         </div>
@@ -316,12 +316,12 @@ export default function OrderStatusAnalytics() {
           <div className="mt-3 flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">┘à┘å:</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">من:</span>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
                 className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">╪Ñ┘ä┘ë:</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">إلى:</span>
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
                 className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
             </div>
@@ -331,9 +331,9 @@ export default function OrderStatusAnalytics() {
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
           {([
-            { key: "overview", label: "┘å╪╕╪▒╪⌐ ╪╣╪º┘à╪⌐", icon: BarChartIcon },
-            { key: "shortage", label: "╪º┘ä╪╣╪¼╪▓ ╪º┘ä┘å┘ç╪º╪ª┘è", icon: AlertTriangle },
-            { key: "trends", label: "╪º┘ä╪º╪¬╪¼╪º┘ç╪º╪¬", icon: TrendingUp },
+            { key: "overview", label: "نظرة عامة", icon: BarChartIcon },
+            { key: "shortage", label: "العجز النهائي", icon: AlertTriangle },
+            { key: "trends", label: "الاتجاهات", icon: TrendingUp },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -346,41 +346,41 @@ export default function OrderStatusAnalytics() {
           ))}
         </div>
 
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+        {/* ═══════════════════════════════════════════════ */}
         {/* TAB: Overview */}
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+        {/* ═══════════════════════════════════════════════ */}
         {activeTab === "overview" && (
           <div className="space-y-6">
             {/* KPI Cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard
-                title="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬"
+                title="إجمالي الطلبات"
                 value={summary?.totalOrders || 0}
                 icon={ShoppingCart}
                 color="blue"
-                detail={`${summary?.dateRange ? new Date(summary.dateRange.start + "T00:00:00").toLocaleDateString("ar-EG") : ""} ΓÇö ${summary?.dateRange ? new Date(summary.dateRange.end + "T00:00:00").toLocaleDateString("ar-EG") : ""}`}
+                detail={`${summary?.dateRange ? new Date(summary.dateRange.start + "T00:00:00").toLocaleDateString("ar-EG") : ""} — ${summary?.dateRange ? new Date(summary.dateRange.end + "T00:00:00").toLocaleDateString("ar-EG") : ""}`}
               />
               <KpiCard
-                title="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪Ñ┘è╪▒╪º╪»╪º╪¬"
-                value={`${(summary?.totalRevenue || 0).toLocaleString("ar-EG")} ╪¼.┘à`}
+                title="إجمالي الإيرادات"
+                value={`${(summary?.totalRevenue || 0).toLocaleString("ar-EG")} ج.م`}
                 icon={DollarSign}
                 color="green"
-                detail={`┘à╪¬┘ê╪│╪╖: ${(summary?.avgOrderValue || 0).toLocaleString("ar-EG")} ╪¼.┘à`}
+                detail={`متوسط: ${(summary?.avgOrderValue || 0).toLocaleString("ar-EG")} ج.م`}
               />
               <KpiCard
-                title="┘ü╪┤┘ä ╪¿╪│╪¿╪¿ ╪º┘ä╪╣╪¼╪▓"
+                title="فشل بسبب العجز"
                 value={summary?.shortageFailedCount || 0}
                 icon={AlertTriangle}
                 color="purple"
-                detail={`${summary?.shortageFailedPercentage || 0}% ┘à┘å ╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è`}
+                detail={`${summary?.shortageFailedPercentage || 0}% من الإجمالي`}
                 trend={Number(summary?.shortageFailedPercentage || 0) > 10 ? "down" : "up"}
               />
               <KpiCard
-                title="┘é┘è┘à╪⌐ ╪º┘ä╪╣╪¼╪▓ ╪º┘ä┘ü╪º╪┤┘ä"
-                value={`${(summary?.shortageFailedRevenue || 0).toLocaleString("ar-EG")} ╪¼.┘à`}
+                title="قيمة العجز الفاشل"
+                value={`${(summary?.shortageFailedRevenue || 0).toLocaleString("ar-EG")} ج.م`}
                 icon={Wallet}
                 color="orange"
-                detail={`${summary?.shortageFailedCount || 0} ╪╖┘ä╪¿`}
+                detail={`${summary?.shortageFailedCount || 0} طلب`}
               />
             </div>
 
@@ -388,7 +388,7 @@ export default function OrderStatusAnalytics() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Status Distribution Pie */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">╪¬┘ê╪▓┘è╪╣ ╪º┘ä╪¡╪º┘ä╪º╪¬</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">توزيع الحالات</h3>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -398,7 +398,7 @@ export default function OrderStatusAnalytics() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value, name) => [`${value} ╪╖┘ä╪¿`, STATUS_LABELS[String(name)] || String(name)]}
+                        formatter={(value, name) => [`${value} طلب`, STATUS_LABELS[String(name)] || String(name)]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -416,7 +416,7 @@ export default function OrderStatusAnalytics() {
 
               {/* Daily Trend */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">╪º┘ä╪º╪¬╪¼╪º┘ç ╪º┘ä┘è┘ê┘à┘è</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">الاتجاه اليومي</h3>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={trendData}>
@@ -443,7 +443,7 @@ export default function OrderStatusAnalytics() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <Clock className="h-5 w-5 inline ml-2 text-gray-400" /> ╪º┘ä╪¬┘ê╪▓┘è╪╣ ╪º┘ä╪│╪º╪╣┘è
+                  <Clock className="h-5 w-5 inline ml-2 text-gray-400" /> التوزيع الساعي
                 </h3>
                 <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -460,7 +460,7 @@ export default function OrderStatusAnalytics() {
 
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <MapPin className="h-5 w-5 inline ml-2 text-gray-400" /> ╪ú╪╣┘ä┘ë ╪º┘ä┘à╪¡╪º┘ü╪╕╪º╪¬
+                  <MapPin className="h-5 w-5 inline ml-2 text-gray-400" /> أعلى المحافظات
                 </h3>
                 <div className="space-y-3">
                   {topGovs.slice(0, 8).map((g, i) => (
@@ -483,9 +483,9 @@ export default function OrderStatusAnalytics() {
           </div>
         )}
 
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+        {/* ═══════════════════════════════════════════════ */}
         {/* TAB: Shortage Failed */}
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+        {/* ═══════════════════════════════════════════════ */}
         {activeTab === "shortage" && (
           <div className="space-y-6">
             {/* Shortage KPIs */}
@@ -493,36 +493,36 @@ export default function OrderStatusAnalytics() {
               <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm">╪Ñ╪¼┘à╪º┘ä┘è ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣╪¼╪▓ ╪º┘ä┘ü╪º╪┤┘ä</p>
+                    <p className="text-purple-100 text-sm">إجمالي طلبات العجز الفاشل</p>
                     <p className="text-4xl font-bold mt-2">{summary?.shortageFailedCount || 0}</p>
                   </div>
                   <AlertTriangle className="h-10 w-10 text-purple-200" />
                 </div>
-                <p className="text-purple-200 text-sm mt-3">{summary?.shortageFailedPercentage || 0}% ┘à┘å ╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬</p>
+                <p className="text-purple-200 text-sm mt-3">{summary?.shortageFailedPercentage || 0}% من إجمالي الطلبات</p>
               </div>
 
               <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 text-white shadow-lg shadow-orange-200 dark:shadow-orange-900/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-orange-100 text-sm">╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä┘à┘ü┘é┘ê╪»╪⌐</p>
-                    <p className="text-3xl font-bold mt-2">{(summary?.shortageFailedRevenue || 0).toLocaleString("ar-EG")} <span className="text-lg">╪¼.┘à</span></p>
+                    <p className="text-orange-100 text-sm">القيمة المفقودة</p>
+                    <p className="text-3xl font-bold mt-2">{(summary?.shortageFailedRevenue || 0).toLocaleString("ar-EG")} <span className="text-lg">ج.م</span></p>
                   </div>
                   <DollarSign className="h-10 w-10 text-orange-200" />
                 </div>
-                <p className="text-orange-200 text-sm mt-3">┘à╪¬┘ê╪│╪╖: {summary?.shortageFailedCount ? ((summary?.shortageFailedRevenue || 0) / summary.shortageFailedCount).toLocaleString("ar-EG") : 0} ╪¼.┘à/╪╖┘ä╪¿</p>
+                <p className="text-orange-200 text-sm mt-3">متوسط: {summary?.shortageFailedCount ? ((summary?.shortageFailedRevenue || 0) / summary.shortageFailedCount).toLocaleString("ar-EG") : 0} ج.م/طلب</p>
               </div>
 
               <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl p-6 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-sm">┘å╪│╪¿╪⌐ ╪º┘ä╪¬╪│┘ä┘è┘à</p>
+                    <p className="text-emerald-100 text-sm">نسبة التسليم</p>
                     <p className="text-4xl font-bold mt-2">
                       {deliveryRate}%
                     </p>
                   </div>
                   <Target className="h-10 w-10 text-emerald-200" />
                 </div>
-                <p className="text-emerald-200 text-sm mt-3">┘à┘å ╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬</p>
+                <p className="text-emerald-200 text-sm mt-3">من إجمالي الطلبات</p>
               </div>
             </div>
 
@@ -531,17 +531,17 @@ export default function OrderStatusAnalytics() {
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Package className="h-5 w-5 text-purple-500" /> ╪ú┘â╪½╪▒ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä┘à╪¬╪│╪¿╪¿╪⌐ ┘ü┘è ╪º┘ä╪╣╪¼╪▓ ╪º┘ä┘å┘ç╪º╪ª┘è
+                    <Package className="h-5 w-5 text-purple-500" /> أكثر المنتجات المتسببة في العجز النهائي
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
-                        <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪º┘ä┘à┘å╪¬╪¼</th>
-                        <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬</th>
-                        <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪º┘ä┘é╪╖╪╣</th>
-                        <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">┘é┘è┘à╪⌐ ╪º┘ä╪«╪│╪º╪▒╪⌐</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">المنتج</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">عدد الطلبات</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">القطع</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">قيمة الخسارة</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -550,7 +550,7 @@ export default function OrderStatusAnalytics() {
                           <td className="py-3 px-4 font-medium text-gray-900 dark:text-gray-100">{p.product}</td>
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{p.ordersCount}</td>
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{p.units}</td>
-                          <td className="py-3 px-4 font-semibold text-purple-700 dark:text-purple-300">{p.revenue.toLocaleString("ar-EG")} ╪¼.┘à</td>
+                          <td className="py-3 px-4 font-semibold text-purple-700 dark:text-purple-300">{p.revenue.toLocaleString("ar-EG")} ج.م</td>
                         </tr>
                       ))}
                     </tbody>
@@ -563,32 +563,32 @@ export default function OrderStatusAnalytics() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-gray-100 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <XCircle className="h-5 w-5 text-purple-500" /> ╪ó╪«╪▒ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣╪¼╪▓ ╪º┘ä┘ü╪º╪┤┘ä
-                  <span className="text-sm font-normal text-gray-400 mr-auto">({recentFailed.length} ╪╖┘ä╪¿)</span>
+                  <XCircle className="h-5 w-5 text-purple-500" /> آخر طلبات العجز الفاشل
+                  <span className="text-sm font-normal text-gray-400 mr-auto">({recentFailed.length} طلب)</span>
                 </h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪º┘ä╪╣┘à┘è┘ä</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪º┘ä┘ç╪º╪¬┘ü</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪º┘ä┘à╪¿┘ä╪║</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">╪º┘ä╪¬╪º╪▒┘è╪«</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">العميل</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">الهاتف</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">المبلغ</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">المحافظة</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentFailed.length === 0 ? (
-                      <tr><td colSpan={7} className="py-12 text-center text-gray-400">┘ä╪º ╪¬┘ê╪¼╪» ╪╖┘ä╪¿╪º╪¬ ╪╣╪¼╪▓ ┘ü╪º╪┤┘ä ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐</td></tr>
+                      <tr><td colSpan={7} className="py-12 text-center text-gray-400">لا توجد طلبات عجز فاشل في هذه الفترة</td></tr>
                     ) : (
                       recentFailed.map((o) => (
                         <tr key={o.id} className="border-b border-gray-50 dark:border-gray-750 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition">
                           <td className="py-3 px-4 font-medium text-purple-700 dark:text-purple-300">{o.orderNumber}</td>
                           <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{o.customerName || "-"}</td>
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400" dir="ltr">{o.customerPhone || "-"}</td>
-                          <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white">{o.total.toLocaleString("ar-EG")} ╪¼.┘à</td>
+                          <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white">{o.total.toLocaleString("ar-EG")} ج.م</td>
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{o.governorate || "-"}</td>
                           <td className="py-3 px-4 text-gray-500 dark:text-gray-400 text-xs">
                             {o.createdAt ? new Date(o.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" }) : "-"}
@@ -600,7 +600,7 @@ export default function OrderStatusAnalytics() {
                               className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 transition hover:border-purple-300 disabled:opacity-50 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:border-purple-700"
                             >
                               <RefreshCw className={`h-3.5 w-3.5 ${reopeningOrderId === o.id ? "animate-spin" : ""}`} />
-                              ╪Ñ╪╣╪º╪»╪⌐ ┘ü╪¬╪¡
+                              إعادة فتح
                             </button>
                           </td>
                         </tr>
@@ -613,14 +613,14 @@ export default function OrderStatusAnalytics() {
           </div>
         )}
 
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+        {/* ═══════════════════════════════════════════════ */}
         {/* TAB: Trends */}
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+        {/* ═══════════════════════════════════════════════ */}
         {activeTab === "trends" && (
           <div className="space-y-6">
             {/* Full Trend Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">╪º╪¬╪¼╪º┘ç ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪╣┘ä┘ë ┘à╪»╪º╪▒ ╪º┘ä┘ê┘é╪¬</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">اتجاه الحالات على مدار الوقت</h3>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData}>
@@ -642,12 +642,12 @@ export default function OrderStatusAnalytics() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <Wallet className="h-5 w-5 inline ml-2 text-gray-400" /> ╪╖╪▒┘é ╪º┘ä╪»┘ü╪╣
+                  <Wallet className="h-5 w-5 inline ml-2 text-gray-400" /> طرق الدفع
                 </h3>
                 <div className="space-y-3">
                   {(data?.paymentStats || []).map((p) => (
                     <div key={p.method} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24 truncate">{PAYMENT_LABELS[p.method] || p.method || "╪║┘è╪▒ ┘à╪¡╪»╪»"}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24 truncate">{PAYMENT_LABELS[p.method] || p.method || "غير محدد"}</span>
                       <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" style={{ width: `${(p.count / Math.max(...(data?.paymentStats || []).map(x => x.count), 1)) * 100}%` }} />
                       </div>
@@ -659,12 +659,12 @@ export default function OrderStatusAnalytics() {
 
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <Package className="h-5 w-5 inline ml-2 text-gray-400" /> ┘à╪╡╪º╪»╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+                  <Package className="h-5 w-5 inline ml-2 text-gray-400" /> مصادر الطلبات
                 </h3>
                 <div className="space-y-3">
                   {(data?.sourceStats || []).map((s) => (
                     <div key={s.source} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24 truncate">{SOURCE_LABELS[s.source] || s.source || "╪║┘è╪▒ ┘à╪¡╪»╪»"}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24 truncate">{SOURCE_LABELS[s.source] || s.source || "غير محدد"}</span>
                       <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full" style={{ width: `${(s.count / Math.max(...(data?.sourceStats || []).map(x => x.count), 1)) * 100}%` }} />
                       </div>
@@ -681,7 +681,7 @@ export default function OrderStatusAnalytics() {
   );
 }
 
-/* ΓöÇΓöÇΓöÇ KPI Card Component ΓöÇΓöÇΓöÇ */
+/* ─── KPI Card Component ─── */
 function KpiCard({ title, value, icon: Icon, color, detail, trend }: {
   title: string;
   value: string | number;

@@ -1,6 +1,5 @@
-import { Clock as ClockIcon } from 'lucide-react';
 import React, { useMemo } from 'react';
-;
+import { ClockIcon } from '@heroicons/react/24/outline';
 
 interface BestHourCardProps {
     stats: any;

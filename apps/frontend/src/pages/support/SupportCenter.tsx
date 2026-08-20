@@ -1,8 +1,14 @@
-import { MessageSquare as ChatBubbleLeftRightIcon, Plus as PlusIcon, Search as MagnifyingGlassIcon, Circle as PaperAirplaneIcon, X as XMarkIcon, Circle as PaperClipIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import supportService from "../../services/supportService";
-;
+import {
+  ChatBubbleLeftRightIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  PaperAirplaneIcon,
+  XMarkIcon,
+  PaperClipIcon,
+} from "@heroicons/react/24/outline";
 import type { Ticket } from "../../services/supportService";
 
 const getStatusText = (status: string) => {

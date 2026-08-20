@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import DwellTimeTab from "../tabs/DwellTimeTab";
 
 jest.mock("../orderMovementShared", () => require("../testSupport").buildSharedMock());
@@ -25,11 +25,11 @@ describe("DwellTimeTab", () => {
 
     render(<DwellTimeTab {...props} />);
 
-    await waitFor(() => expect(screen.getByText("╪ú╪¿╪╖╪ú ╪¡╪º┘ä╪⌐")).toBeInTheDocument());
-    expect(screen.getByText("╪ú╪│╪▒╪╣ ╪¡╪º┘ä╪⌐")).toBeInTheDocument();
-    expect(screen.getByText("┘à╪¬┘ê╪│╪╖ ╪▓┘à┘å ╪º┘ä╪»┘ê╪▒╪⌐")).toBeInTheDocument();
-    expect(screen.getByText("╪º┘ä┘à┘â┘ê╪½ ┘ä┘â┘ä ╪¡╪º┘ä╪⌐")).toBeInTheDocument();
-    expect(screen.getByText("┘à╪¬┘ê╪│╪╖ ╪º┘ä┘à┘â┘ê╪½ ╪¿╪º┘ä╪¡╪º┘ä╪⌐")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("أبطأ حالة")).toBeInTheDocument());
+    expect(screen.getByText("أسرع حالة")).toBeInTheDocument();
+    expect(screen.getByText("متوسط زمن الدورة")).toBeInTheDocument();
+    expect(screen.getByText("المكوث لكل حالة")).toBeInTheDocument();
+    expect(screen.getByText("متوسط المكوث بالحالة")).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith("dwell-time", { startDate: "2026-05-01", endDate: "2026-08-11", mode: "all" });
   });
 
@@ -42,7 +42,7 @@ describe("DwellTimeTab", () => {
   });
 
   test("renders error state on failure", async () => {
-    mockFetch.mockRejectedValue(new Error("┘ü╪┤┘ä"));
+    mockFetch.mockRejectedValue(new Error("فشل"));
 
     render(<DwellTimeTab {...props} />);
 

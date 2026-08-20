@@ -19,6 +19,10 @@ const PERMISSIONS = [
   { key: 'orders.assign', name: 'تعيين طلب لمستخدم', domain: 'ORDERS' },
   { key: 'orders.export', name: 'تصدير الطلبات', domain: 'ORDERS' },
   { key: 'orders.bulk.create', name: 'إنشاء طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.bulk.view', name: 'عرض طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.bulk.edit', name: 'تعديل طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.bulk.delete', name: 'حذف طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.bulk.export', name: 'تصدير طلبات bulk', domain: 'ORDERS' },
   { key: 'orders.invoice.print', name: 'طباعة الفواتير', domain: 'ORDERS' },
 
   // Orders — Incomplete Orders section
@@ -194,6 +198,14 @@ const PERMISSIONS = [
   { key: 'whatsapp.sessions', name: 'إدارة جلسات واتساب', domain: 'WHATSAPP' },
   { key: 'whatsapp.templates', name: 'إدارة القوالب', domain: 'WHATSAPP' },
   { key: 'whatsapp.settings', name: 'إعدادات واتساب', domain: 'WHATSAPP' },
+  { key: 'whatsapp.reply', name: 'الرد على رسائل واتساب', domain: 'WHATSAPP' },
+  { key: 'whatsapp.broadcast', name: 'البث الجماعي', domain: 'WHATSAPP' },
+  { key: 'whatsapp.groups.manage', name: 'إدارة المجموعات', domain: 'WHATSAPP' },
+  { key: 'whatsapp.chats.manage', name: 'إدارة المحادثات', domain: 'WHATSAPP' },
+  { key: 'whatsapp.contacts.manage', name: 'إدارة جهات الاتصال', domain: 'WHATSAPP' },
+  { key: 'whatsapp.labels.manage', name: 'إدارة العلامات', domain: 'WHATSAPP' },
+  { key: 'whatsapp.analytics.view', name: 'عرض تحليلات واتساب', domain: 'WHATSAPP' },
+  { key: 'whatsapp.quick-replies.manage', name: 'إدارة الردود السريعة', domain: 'WHATSAPP' },
 
   // Facebook
   { key: 'facebook.pages', name: 'إدارة الصفحات', domain: 'FACEBOOK' },
@@ -215,6 +227,8 @@ const PERMISSIONS = [
   { key: 'bulkOrders.edit', name: 'تعديل طلب bulk', domain: 'ORDERS' },
   { key: 'bulkOrders.delete', name: 'حذف طلب bulk', domain: 'ORDERS' },
   { key: 'bulkOrders.export', name: 'تصدير طلبات bulk', domain: 'ORDERS' },
+  { key: 'bulkOrders.import', name: 'استيراد طلبات bulk', domain: 'ORDERS' },
+  { key: 'bulkOrders.execute', name: 'تنفيذ طلبات bulk', domain: 'ORDERS' },
 
   // Marketing
   { key: 'marketing.campaigns', name: 'إدارة الحملات', domain: 'MARKETING' },
@@ -293,6 +307,9 @@ const BUILT_IN_ROLES = {
       'marketing.campaigns', 'marketing.coupons', 'marketing.broadcast',
       'inventory.view',
       'hr.employees', 'hr.attendance',
+      'whatsapp.reply', 'whatsapp.broadcast', 'whatsapp.groups.manage',
+      'whatsapp.chats.manage', 'whatsapp.contacts.manage', 'whatsapp.labels.manage',
+      'whatsapp.analytics.view', 'whatsapp.quick-replies.manage',
     ],
   },
   AGENT: {
@@ -314,6 +331,8 @@ const BUILT_IN_ROLES = {
       'reports.view', 'reports.view.own',
       'notifications.view',
       'inventory.view',
+      'whatsapp.reply',
+      'whatsapp.quick-replies.manage',
     ],
   },
   AFFILIATE: {
@@ -347,7 +366,7 @@ async function seed() {
   // Upsert built-in roles (no companyId = global)
   for (const [key, role] of Object.entries(BUILT_IN_ROLES)) {
     let dbRole = await prisma.role.findFirst({
-      where: { key, companyId: null },
+      where: { key, OR: [{ companyId: '__system__' }, { companyId: null }] },
     });
 
     if (dbRole) {
@@ -359,6 +378,12 @@ async function seed() {
           priority: role.priority,
         },
       });
+      if (dbRole.companyId === null) {
+        await prisma.role.update({
+          where: { id: dbRole.id },
+          data: { companyId: '__system__' },
+        });
+      }
     } else {
       dbRole = await prisma.role.create({
         data: {

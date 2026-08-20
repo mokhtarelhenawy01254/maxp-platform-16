@@ -7,7 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
-import { ArrowRight, Book, BookOpen, Braces, Brain, Building, Building2, Calendar, Check, ChevronDown, ChevronUp, Clipboard, Copy, CreditCard, Edit3, File, FileText, Globe, Grid, Layers, List, Navigation, Pencil, RotateCcw, Send, Server, Settings, Share2, Shield, Split, Tag, Trash2, User, Wrench } from 'lucide-react';
+import {
+  ArrowRight, Pencil, Copy, Check, Send, Trash2, Edit3,
+  Brain, BookOpen, Wrench, Layers, Globe, CreditCard,
+  Shield, Share2, Server, Split, Calendar, Building2, ChevronDown, ChevronUp,
+  RotateCcw, Braces, Hash, List, FileText, User,
+} from "lucide-react";
 import {
   EditDialog, ApplyDialog, DeleteDialog, DuplicateDialog, EditCompanyAgentDialog,
   ROLE_ICONS, ROLE_COLORS, toneColors,

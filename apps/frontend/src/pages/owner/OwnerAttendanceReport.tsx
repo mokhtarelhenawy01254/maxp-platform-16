@@ -1,7 +1,29 @@
-import { Download as ArrowDownTrayIcon, Circle as CalendarDaysIcon, Circle as UserGroupIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, Circle as UserMinusIcon, Search as MagnifyingGlassIcon, Mail as EnvelopeIcon, Building as BuildingOfficeIcon, Phone as PhoneIcon, Circle as BriefcaseIcon, Activity as ChartBarIcon, Grid as Squares2X2Icon, Table as TableCellsIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, File as DocumentTextIcon, Circle as DocumentChartBarIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect, useMemo } from "react";
-;
+import {
+  ArrowDownTrayIcon,
+  CalendarDaysIcon,
+  UserGroupIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  UserMinusIcon,
+  MagnifyingGlassIcon,
+  EnvelopeIcon,
+  BuildingOfficeIcon,
+  PhoneIcon,
+  BriefcaseIcon,
+  ChartBarIcon,
+  Squares2X2Icon,
+  TableCellsIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DocumentTextIcon,
+  DocumentChartBarIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface EmployeeAttendanceData {
@@ -140,11 +162,11 @@ const OwnerAttendanceReport: React.FC = () => {
       if (response.data.success) {
         setReportData(response.data.data);
       } else {
-        toast.error(response.data.message || "فشل تحميل التقرير");
+        toast.error(response.data.message || i18n.t("OwnerAttendanceReport.failed_load_cef6"));
       }
     } catch (error) {
       console.error("Failed to fetch report", error);
-      toast.error("فشل تحميل التقرير");
+      tToast.error("OwnerAttendanceReport.failed_load_cef6");
     } finally {
       setIsLoading(false);
     }
@@ -228,11 +250,11 @@ const OwnerAttendanceReport: React.FC = () => {
         await generateExcelReport();
       }
 
-      toast.success("تم إنشاء التقرير بنجاح");
+      tToast.success("OwnerAttendanceReport.success_create_27b7");
       setShowReportModal(false);
     } catch (error) {
       console.error("Error generating report:", error);
-      toast.error("فشل في إنشاء التقرير");
+      tToast.error("OwnerAttendanceReport.failed_create_878d");
     } finally {
       setIsGeneratingReport(false);
     }
@@ -494,9 +516,9 @@ const OwnerAttendanceReport: React.FC = () => {
       link.download = `detailed-attendance-${startDate}-to-${endDate}.csv`;
       link.click();
 
-      toast.success("تم تصدير التقرير");
+      tToast.success("OwnerAttendanceReport.msg_6004");
     } catch (error) {
-      toast.error("فشل التصدير");
+      tToast.error("OwnerAttendanceReport.msg_6657");
     } finally {
       setIsExporting(false);
     }
@@ -656,7 +678,7 @@ const OwnerAttendanceReport: React.FC = () => {
               placeholder="ابحث باسم الموظف أو البريد الإلكتروني..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="form-input w-full pr-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm shadow-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="w-full md:w-48">

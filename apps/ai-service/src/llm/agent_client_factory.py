@@ -128,9 +128,11 @@ def build_agent_client(
 ) -> Any:
     if not model:
         raise ValueError("model is required for LLM client creation")
-    api_key = getattr(settings, "google_api_key", None) or os.getenv("GOOGLE_API_KEY")
+    from src.llm.key_resolver import get_active_key_sync
+
+    api_key = get_active_key_sync("GOOGLE")
     if api_key:
-        logger.info("agent_client.sync_env_fallback", model=model)
+        logger.info("agent_client.sync_db_key", model=model)
         client = LLMClient(provider="GOOGLE", model=model, api_key=api_key)
         return AgentClientAdapter(client, tools=tools, system_prompt=system_prompt)
     if os.getenv("PYTEST_CURRENT_TEST"):

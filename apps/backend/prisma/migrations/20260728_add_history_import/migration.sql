@@ -1,4 +1,4 @@
-﻿-- CreateEnum
+-- CreateEnum
 CREATE TYPE "WhatsAppHistoryImportStatus" AS ENUM ('NOT_REQUESTED', 'REQUESTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED');
 
 -- CreateTable
@@ -39,7 +39,7 @@ CREATE INDEX "whatsapp_session_history_imports_sessionId_status_idx" ON "whatsap
 -- AddForeignKey
 ALTER TABLE "whatsapp_session_history_imports" ADD CONSTRAINT "whatsapp_session_history_imports_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "whatsapp_sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Backfill: ╪Ñ┘å╪┤╪º╪í records ┘ä┘ä╪¼┘ä╪│╪º╪¬ ╪º┘ä┘ä┘è importHistoryOnLink=true ┘ü┘è metadata
+-- Backfill: إنشاء records للجلسات اللي importHistoryOnLink=true في metadata
 INSERT INTO "whatsapp_session_history_imports" ("id", "sessionId", "status", "requestedAt", "createdAt", "updatedAt")
 SELECT 
     gen_random_uuid()::text,

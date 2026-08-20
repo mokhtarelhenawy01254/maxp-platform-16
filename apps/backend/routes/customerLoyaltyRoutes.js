@@ -105,8 +105,110 @@ router.post('/adjust-points',
   customerLoyaltyController.adjustPoints
 );
 
+// إعدادات المستويات (طريقة الحساب + الفئات)
+router.get('/tier-config',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getTierConfig
+);
+
+router.put('/tier-config',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateTierConfig
+);
+
+// نظام الولاء (اختيار: المستويات أو الخصم التلقائي)
+router.get('/system-settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getSystemSettings
+);
+
+router.put('/system-settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateSystemSettings
+);
+
+// 🆕 إعدادات الولاء الموحّدة (مفاتيح تفعيل مستقلة: المستويات / الخصم التلقائي / الكاش باك + وضع دمج الخصم + حد أقصى)
+router.get('/loyalty-config',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getLoyaltyConfig
+);
+
+router.put('/loyalty-config',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateLoyaltyConfig
+);
+
+// معالجة الكوبونات المنتهية (تحويلها لكاش باك) — يدوي
+router.post('/vouchers/process-expired',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.processExpiredVouchers
+);
+
+// تحليلات نظام الولاء الحالي (الخصم التلقائي أو المستويات)
+router.get('/system-analytics',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getSystemAnalytics
+);
+
+// إصدار الكوبونات الناقصة (backfill) للأوردرات المسلّمة القديمة
+router.post('/vouchers/backfill',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.backfillVouchers
+);
+
+// تجاوز عميل (طريقة الحساب + المزايا المخصصة)
+router.get('/customers/:customerId/tier-override',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getCustomerTierOverride
+);
+
+router.put('/customers/:customerId/tier-override',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateCustomerTierOverride
+);
+
+// ملخص بوابة العميل (نقاط / خصومات / كاش باك / بيانات)
+router.get('/customers/:customerId/portal-summary',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getCustomerPortalSummary
+);
+
+// 💳 كارت عضوية العميل (بطاقة مستوى الولاء) — توليد/جلب
+router.get('/customers/:customerId/card',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getCustomerTierCard
+);
+
+// 📤 إرسال كارت العضوية للعميل عبر WhatsApp
+router.post('/customers/:customerId/card/send',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.sendCustomerTierCard
+);
+
+// 🏆 إنشاء مستويات من قالب جاهز (Preset)
+router.post('/tiers/preset',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.createTierPreset
+);
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// 💰 Cashback Settings
+// 🔔 جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// جلب جدول الإشعارات
+router.get('/notifications/schedule',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getNotificationSchedule
+);
+
+// تحديث صف من جدول الإشعارات
+router.put('/notifications/schedule',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateNotificationSchedule
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 💰 Cashback Settings (Global)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 router.get('/cashback/settings',
@@ -117,6 +219,20 @@ router.get('/cashback/settings',
 router.put('/cashback/settings',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
   customerLoyaltyController.updateCashbackSettings
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🏅 Points Settings (Global)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/points/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getPointsSettings
+);
+
+router.put('/points/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updatePointsSettings
 );
 
 module.exports = router;

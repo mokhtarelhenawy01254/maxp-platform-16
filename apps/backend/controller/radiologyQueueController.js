@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
 
 const STUCK_ORDER_STATUSES = ['PENDING', 'CHECKED_IN', 'IN_PROGRESS'];
@@ -24,8 +24,8 @@ const buildStudyWhere = (companyId, { deviceName, modality } = {}) => {
 };
 
 /**
- * ╪º╪¡╪│╪¿ ╪╣╪»╪» ╪º┘ä╪│╪º╪╣╪º╪¬ ┘à┘å╪░ ╪ó╪«╪▒ ╪¡╪▒┘â╪⌐ ┘ü┘è statusHistory (╪ú┘ê ┘à┘å╪░ ╪º┘ä╪Ñ┘å╪┤╪º╪í ╪Ñ┘å ┘ä┘à ╪¬┘ê╪¼╪» ╪¡╪▒┘â╪º╪¬)
- * ΓÇö best-effort: ┘ä╪º ╪¬╪╣╪╖┘æ┘ä ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪Ñ┘å ╪¬╪╣╪░┘æ╪▒ ┘é╪▒╪º╪í╪⌐ ╪º┘ä╪│╪¼┘ä.
+ * احسب عدد الساعات منذ آخر حركة في statusHistory (أو منذ الإنشاء إن لم توجد حركات)
+ * — best-effort: لا تعطّل الطابور إن تعذّر قراءة السجل.
  */
 const attachStuckHours = async (prisma, studies, now) => {
   if (!studies.length) return [];
@@ -39,7 +39,7 @@ const attachStuckHours = async (prisma, studies, now) => {
     });
     grouped.forEach(g => { lastMoveAt[g.studyId] = g._max?.createdAt || null; });
   } catch {
-    // ╪¬╪¼╪º┘ç┘ä ╪º┘ä╪ú╪«╪╖╪º╪í ΓÇö ┘å╪╣┘ê╪» ┘ä┘ê┘é╪¬ ╪º┘ä╪Ñ┘å╪┤╪º╪í
+    // تجاهل الأخطاء — نعود لوقت الإنشاء
   }
   return studies.map(study => {
     const base = lastMoveAt[study.id] || study.createdAt || now;
@@ -51,7 +51,7 @@ const attachStuckHours = async (prisma, studies, now) => {
 const getDailyQueue = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { deviceName, modality } = req.query;
     const limit = normalizeListLimit(req.query.limit);
@@ -117,7 +117,7 @@ const getDailyQueue = async (req, res) => {
       ]),
     ]);
 
-    // ╪¡╪¼┘ê╪▓╪º╪¬ ╪º┘ä┘è┘ê┘à ┘à╪▒╪¬╪¿╪⌐ ╪¡╪│╪¿ ┘à┘ê╪╣╪» ╪º┘ä╪¡╪¼╪▓ (╪º┘ä┘ê┘é╪¬ ╪½┘à ╪¬╪º╪▒┘è╪« ╪º┘ä╪Ñ┘å╪┤╪º╪í)
+    // حجوزات اليوم مرتبة حسب موعد الحجز (الوقت ثم تاريخ الإنشاء)
     pendingCheckIn.sort((a, b) => {
       const ta = a.appointmentTime || '';
       const tb = b.appointmentTime || '';
@@ -149,7 +149,7 @@ const getDailyQueue = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching radiology daily queue:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪╖╪º╪¿┘ê╪▒ ╪º┘ä┘è┘ê┘à' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب طابور اليوم' });
   }
 };
 

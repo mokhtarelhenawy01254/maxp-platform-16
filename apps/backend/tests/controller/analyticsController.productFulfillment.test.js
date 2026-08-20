@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/analyticsService', () => ({}));
+jest.mock('../../services/analyticsService', () => ({}));
 
 jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
@@ -29,11 +29,11 @@ const makeItem = (overrides) => ({
   price: '100.00',
   total: '100.00',
   productId: 'prod-1',
-  productName: '┘à┘å╪¬╪¼ ╪¬╪¼╪▒┘è╪¿┘è',
+  productName: 'منتج تجريبي',
   productSku: 'SKU-1',
   productImage: null,
   order: { id: 'order-1', status: 'DELIVERED' },
-  product: { name: '┘à┘å╪¬╪¼ ╪¬╪¼╪▒┘è╪¿┘è', sku: 'SKU-1', mainImage: null },
+  product: { name: 'منتج تجريبي', sku: 'SKU-1', mainImage: null },
   ...overrides
 });
 
@@ -55,7 +55,7 @@ describe('analyticsController.getProductFulfillmentAnalytics', () => {
       orderItem: {
         findMany: jest.fn().mockResolvedValue([
           makeItem({ order: { id: 'order-1', status: 'DELIVERED' } }),
-          makeItem({ order: { id: 'order-2', status: 'DELIVERED' }, productId: 'prod-2', productName: '┘à┘å╪¬╪¼ ╪½╪º┘å┘è', productSku: 'SKU-2', total: '50.00' }),
+          makeItem({ order: { id: 'order-2', status: 'DELIVERED' }, productId: 'prod-2', productName: 'منتج ثاني', productSku: 'SKU-2', total: '50.00' }),
           makeItem({ order: { id: 'order-3', status: 'CANCELLED' } }),
           makeItem({ order: { id: 'order-4', status: 'RETURNED' } }),
           makeItem({ order: { id: 'order-5', status: 'CONFIRMED' } })

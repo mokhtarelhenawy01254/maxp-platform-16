@@ -4,7 +4,7 @@ import { StatusBadge } from "../StatusBadge";
 import { ModalFooter } from "../ModalFooter";
 import { MiniStat } from "../MiniStat";
 import { MetricCard } from "../MetricCard";
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from "lucide-react";
 
 describe("StatusBadge", () => {
   it("renders active state", () => {

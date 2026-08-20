@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Fix turboShipmentStatus on PRODUCTION for DELIVERED orders
  * Calls sync-status after the FINAL STATUS PROTECTION is deployed,
  * which will correctly set turboShipmentStatus to 'delivered'
@@ -11,7 +11,7 @@ async function main() {
   const lr = await axios.default.post(`${BASE}/auth/login`, { email: 'swan@h2m.com', password: '0165676135' });
   const token = lr.data.data?.token || lr.data.token;
   const headers = { Authorization: 'Bearer ' + token };
-  console.log('Γ£à Logged in\n');
+  console.log('✅ Logged in\n');
 
   // Load all records
   let all = [];
@@ -29,7 +29,7 @@ async function main() {
   targets.forEach(o => console.log(`  ${o.orderNumber} | turboStatus: ${o.turboShipmentStatus}`));
 
   if (!targets.length) {
-    console.log('\nΓ£à All DELIVERED orders already have correct turboShipmentStatus!');
+    console.log('\n✅ All DELIVERED orders already have correct turboShipmentStatus!');
     return;
   }
 
@@ -46,10 +46,10 @@ async function main() {
       );
       const newTurboStatus = r.data?.data?.turboShipmentStatus || r.data?.data?.status;
       if (newTurboStatus === 'delivered') {
-        console.log('Γ£à ΓåÆ delivered');
+        console.log('✅ → delivered');
         fixed++;
       } else {
-        console.log(`ΓÜá∩╕Å  ΓåÆ ${newTurboStatus} (checking DB state...)`);
+        console.log(`⚠️  → ${newTurboStatus} (checking DB state...)`);
         // Re-fetch to confirm DB state
         const check = await axios.default.get(`${BASE}/turbo/records?limit=1&search=${order.orderNumber}`, { headers });
         const updated = check.data?.data?.[0];
@@ -58,14 +58,14 @@ async function main() {
         else failed++;
       }
     } catch (e) {
-      console.log(`Γ¥î ${e.response?.data?.message || e.message}`);
+      console.log(`❌ ${e.response?.data?.message || e.message}`);
       failed++;
     }
     await sleep(400);
   }
 
   console.log(`\n=== SUMMARY ===`);
-  console.log(`Γ£à Fixed: ${fixed} | Γ¥î Failed: ${failed}`);
+  console.log(`✅ Fixed: ${fixed} | ❌ Failed: ${failed}`);
 
   // Final verification
   let allAfter = [];

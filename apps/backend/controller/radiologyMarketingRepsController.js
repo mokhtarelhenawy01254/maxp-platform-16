@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const normalizeText = (value) => {
   if (value === undefined || value === null) return null;
@@ -9,7 +9,7 @@ const normalizeText = (value) => {
 const listMarketingReps = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, includeInactive } = req.query;
     const where = { companyId };
@@ -27,17 +27,17 @@ const listMarketingReps = async (req, res) => {
     res.json({ success: true, data: reps });
   } catch (error) {
     console.error('Error listing radiology marketing reps:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘à┘å╪»┘ê╪¿┘è ╪º┘ä╪¬╪│┘ê┘è┘é' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب مندوبي التسويق' });
   }
 };
 
 const createMarketingRep = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { name, phone, userId } = req.body || {};
-    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘à┘å╪»┘ê╪¿ ┘à╪╖┘ä┘ê╪¿' });
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم المندوب مطلوب' });
 
     const rep = await getSharedPrismaClient().radiologyMarketingRep.create({
       data: {
@@ -50,24 +50,24 @@ const createMarketingRep = async (req, res) => {
     res.json({ success: true, data: rep });
   } catch (error) {
     console.error('Error creating radiology marketing rep:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘à┘å╪»┘ê╪¿' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء المندوب' });
   }
 };
 
 const updateMarketingRep = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyMarketingRep.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à┘å╪»┘ê╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'المندوب غير موجود' });
 
     const data = {};
     if (body.name !== undefined) {
-      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘à┘å╪»┘ê╪¿ ┘à╪╖┘ä┘ê╪¿' });
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم المندوب مطلوب' });
       data.name = String(body.name).trim();
     }
     if (body.phone !== undefined) data.phone = normalizeText(body.phone);
@@ -78,36 +78,36 @@ const updateMarketingRep = async (req, res) => {
     res.json({ success: true, data: rep });
   } catch (error) {
     console.error('Error updating radiology marketing rep:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä┘à┘å╪»┘ê╪¿' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث المندوب' });
   }
 };
 
 const deleteMarketingRep = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyMarketingRep.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à┘å╪»┘ê╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'المندوب غير موجود' });
 
     await prisma.radiologyMarketingRep.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä┘à┘å╪»┘ê╪¿', data: { id } });
+    res.json({ success: true, message: 'تم حذف المندوب', data: { id } });
   } catch (error) {
     console.error('Error deleting radiology marketing rep:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘à┘å╪»┘ê╪¿' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف المندوب' });
   }
 };
 
 /**
- * ┘à╪¡┘ü╪╕╪⌐ ┘à┘å╪»┘ê╪¿┘è ╪º┘ä╪¬╪│┘ê┘è┘é: ╪╣╪»╪» ╪º┘ä╪»╪▒╪º╪│╪º╪¬ ┘ê╪º┘ä╪Ñ┘è╪▒╪º╪» ┘ä┘â┘ä ┘à┘å╪»┘ê╪¿ (╪¡╪│╪¿ marketingRepId snapshot ╪╣┘ä┘ë ╪º┘ä╪»╪▒╪º╪│╪º╪¬).
- * ╪¬┘Å╪¡╪│╪¿ ┘à┘å ╪º┘ä╪»╪▒╪º╪│╪º╪¬ ╪º┘ä┘ü╪╣┘ä┘è╪⌐ ┘ü┘é╪╖ ΓÇö ┘ä┘ä┘é╪▒╪º╪í╪⌐ (┘ä╪º ╪¬┘Å╪«╪▓┘Ä┘æ┘å ╪¬╪º╪▒╪¼╪¬ ╪¿╪╣╪»).
+ * محفظة مندوبي التسويق: عدد الدراسات والإيراد لكل مندوب (حسب marketingRepId snapshot على الدراسات).
+ * تُحسب من الدراسات الفعلية فقط — للقراءة (لا تُخزَّن تارجت بعد).
  */
 const repPortfolio = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { dateFrom, dateTo } = req.query;
     const prisma = getSharedPrismaClient();
@@ -170,7 +170,7 @@ const repPortfolio = async (req, res) => {
 
     const rows = Array.from(byRep.values()).map((r) => ({
       repId: r.repId,
-      name: repNameById.get(r.repId) || r.name || 'ΓÇö',
+      name: repNameById.get(r.repId) || r.name || '—',
       count: r.count,
       deliveredCount: r.deliveredCount,
       revenue: Math.round(r.revenue),
@@ -187,7 +187,7 @@ const repPortfolio = async (req, res) => {
     res.json({ success: true, data: { rows, totalRevenue: Math.round(totalRevenue), totalCount } });
   } catch (error) {
     console.error('Error computing radiology marketing rep portfolio:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪│╪º╪¿ ┘à╪¡┘ü╪╕╪⌐ ╪º┘ä┘à┘å╪»┘ê╪¿┘è┘å' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حساب محفظة المندوبين' });
   }
 };
 

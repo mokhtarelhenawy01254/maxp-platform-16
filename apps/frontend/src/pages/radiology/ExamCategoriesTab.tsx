@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, List as ListIcon, FolderTree, ChevronDown, ChevronLeft } from "lucide-react";
 import { api, fetchJson, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyExamCategory } from "./shared";
@@ -142,11 +142,11 @@ export default function ExamCategoriesTab() {
               {childrenCount > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{childrenCount}</span>}
             </div>
           </td>
-          <td className="py-3 px-4">{c.nameEn || "ΓÇö"}</td>
+          <td className="py-3 px-4">{c.nameEn || "—"}</td>
           <td className="py-3 px-4">
-            {c.modality ? <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" dir="ltr">{c.modality}</span> : "ΓÇö"}
+            {c.modality ? <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" dir="ltr">{c.modality}</span> : "—"}
           </td>
-          <td className="py-3 px-4">{c.parentName || "ΓÇö"}</td>
+          <td className="py-3 px-4">{c.parentName || "—"}</td>
           <td className="py-3 px-4 whitespace-nowrap">{t("radiology.examCategories.examTypeCount", { count })}</td>
           <td className="py-3 px-4">
             {c.isActive ? (
@@ -234,9 +234,9 @@ export default function ExamCategoriesTab() {
                 {viewMode === "tree" ? renderRows(tree, 0) : filtered.map(c => (
                   <tr key={c.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
                     <td className="py-3 px-4 font-medium">{c.name}</td>
-                    <td className="py-3 px-4">{c.nameEn || "ΓÇö"}</td>
-                    <td className="py-3 px-4">{c.modality ? <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" dir="ltr">{c.modality}</span> : "ΓÇö"}</td>
-                    <td className="py-3 px-4">{c.parentName || "ΓÇö"}</td>
+                    <td className="py-3 px-4">{c.nameEn || "—"}</td>
+                    <td className="py-3 px-4">{c.modality ? <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" dir="ltr">{c.modality}</span> : "—"}</td>
+                    <td className="py-3 px-4">{c.parentName || "—"}</td>
                     <td className="py-3 px-4 whitespace-nowrap">{t("radiology.examCategories.examTypeCount", { count: c._count?.examTypes ?? c.examTypeCount ?? 0 })}</td>
                     <td className="py-3 px-4">
                       {c.isActive ? (

@@ -28,6 +28,7 @@ const MERCHANT_BLOCKED_ORDER_PATHS = new Set([
   "/orders/analytics",
   "/orders/woocommerce-sync",
   "/orders/turbo-records",
+  "/orders/turbo-captains",
   "/orders/whatsapp-notifications",
   "/orders/invoices",
   "/orders/manual",

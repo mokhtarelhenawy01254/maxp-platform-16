@@ -1,4 +1,4 @@
-﻿const { getRecords } = require('./recordsHandler');
+const { getRecords } = require('./recordsHandler');
 const { createShipment, bulkCreateShipments, cancelShipment, unlinkShipment, updateShipment, updateShipmentLegacy } = require('./shipmentHandlers');
 const { trackShipment, syncShipmentStatus } = require('./trackingHandlers');
 const { calculateShippingCost, getShippingComparison } = require('./shippingHandlers');

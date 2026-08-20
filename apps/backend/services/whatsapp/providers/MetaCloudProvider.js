@@ -7,6 +7,7 @@ const axios = require('axios');
 const { getSharedPrismaClient } = require('../../sharedDatabase');
 const { getMetaGraphApiVersion } = require('../../../config/metaApi');
 const { mapError } = require('../whatsappErrorCodes');
+const { decryptField } = require('../../../utils/fieldEncryption');
 
 async function getSession(sessionId) {
   return await getSharedPrismaClient().whatsAppSession.findUnique({
@@ -16,7 +17,7 @@ async function getSession(sessionId) {
 
 function resolveBaseConfig(session) {
   const apiVersion = session?.metaApiVersion || getMetaGraphApiVersion();
-  const accessToken = session?.metaAccessToken;
+  const accessToken = decryptField(session?.metaAccessToken);
   if (!accessToken) {
     throw new Error('Missing Meta Cloud access token for session');
   }
@@ -126,6 +127,60 @@ function makeUrlAbsolute(url) {
   const relativePath = url.startsWith('/') ? url : `/${url}`;
   return `${baseUrl}${relativePath}`;
 }
+
+/**
+ * كشف الـ URLs الداخلية التي لا تستطيع خوادم Meta الوصول إليها.
+ * ميتا تتحمّل الـ link من خوادمها، فـ localhost/127.0.0.1/عناوين خاصة
+ * (10.x, 172.16-31.x, 192.168.x) مش متاحة لها → لازم نرفعها بـ media id.
+ */
+function isInternalUrl(url) {
+  if (!url) return false;
+  if (!/^https?:\/\//i.test(String(url))) return true; // نسبي = داخلي
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    if (!hostname) return true;
+    if (hostname === 'localhost' || hostname === '::1' || hostname === '[::1]' || hostname === '0.0.0.0') return true;
+    if (/^127\./.test(hostname)) return true;
+    if (/^10\./.test(hostname)) return true;
+    if (/^192\.168\./.test(hostname)) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true;
+    return false;
+  } catch (e) {
+    return true;
+  }
+}
+
+function guessMediaMime(url, fallback = 'image/jpeg') {
+  const clean = String(url || '').split('?')[0].toLowerCase();
+  if (clean.endsWith('.png')) return 'image/png';
+  if (clean.endsWith('.gif')) return 'image/gif';
+  if (clean.endsWith('.webp')) return 'image/webp';
+  if (clean.endsWith('.jpg') || clean.endsWith('.jpeg')) return 'image/jpeg';
+  if (clean.endsWith('.mp4')) return 'video/mp4';
+  if (clean.endsWith('.pdf')) return 'application/pdf';
+  if (clean.endsWith('.mp3')) return 'audio/mpeg';
+  if (clean.endsWith('.ogg')) return 'audio/ogg';
+  return fallback;
+}
+
+function guessMediaFileName(url, fallback = 'media') {
+  try {
+    const pathname = new URL(url).pathname;
+    const base = decodeURIComponent(pathname.split('/').pop() || '');
+    if (base && base.includes('.')) return base;
+  } catch (e) { /* ignore */ }
+  return fallback;
+}
+
+async function downloadMediaBuffer(url, timeoutMs = 20000) {
+  const response = await axios.get(url, {
+    responseType: 'arraybuffer',
+    timeout: timeoutMs,
+    maxContentLength: 20 * 1024 * 1024,
+    maxBodyLength: 20 * 1024 * 1024,
+  });
+  return Buffer.from(response.data);
+}
 async function uploadMediaFile(sessionId, fileBuffer, mimetype, filename) {
   const session = await getSession(sessionId);
   if (!session) {
@@ -152,6 +207,44 @@ async function uploadMediaFile(sessionId, fileBuffer, mimetype, filename) {
   }));
 
   return response.data?.id || null;
+}
+
+/**
+ * يرفع وسيطاً (صورة/فيديو/مستند) لاستخدامه في HEADER قالب ميتا عبر
+ * Resumable Upload API — ميتا تتطلب الـ handle الناتج في example.header_handle
+ * عند إنشاء/تعديل قالب هيدره من نوع IMAGE|VIDEO|DOCUMENT.
+ *
+ * @returns {Promise<string|null>} الـ handle (h) أو id، أو null عند الفشل
+ */
+async function uploadTemplateMedia(sessionId, fileBuffer, mimetype, filename) {
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  const { apiVersion, accessToken } = resolveBaseConfig(session);
+  const wabaId = session?.metaWabaId;
+  if (!wabaId) {
+    throw new Error('Missing Meta WABA ID for session');
+  }
+
+  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/uploads`;
+
+  const response = await apiCall(() => axios.post(url, fileBuffer, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': mimetype,
+      file_offset: '0',
+      file_length: String(fileBuffer.length),
+      file_type: mimetype,
+      file_name: filename
+    },
+    timeout: 60000,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity
+  }));
+
+  return response.data?.h || response.data?.id || null;
 }
 
 async function sendMedia(sessionId, to, media, kind, options = {}) {
@@ -184,7 +277,37 @@ async function sendMedia(sessionId, to, media, kind, options = {}) {
   } else {
     const rawUrl = mediaObj?.url || mediaObj?.link;
     if (rawUrl) {
-      mediaPayload.link = makeUrlAbsolute(rawUrl);
+      const guessedMime = mediaObj?.mimetype || guessMediaMime(rawUrl, kind === 'image' ? 'image/jpeg' : 'application/octet-stream');
+      // 🚨 ميتا بتتحمّل الـ link من خوادمها — الـ URLs الداخلية (localhost/خاصة)
+      // مش متاحة لها، فبننزّل الملف ونرفعه لخوادم ميتا ونبعت بـ media id.
+      // وكمان صور WEBP/BMP/SVG (صيغ مش مدعومة لرسائل الصور في Cloud API)
+      // لازم تتحوّل لـ JPEG محلياً — حتى لو الرابط عام، ميتا مش هتعرف تعرضه.
+      const needsLocalUpload = isInternalUrl(rawUrl) || (kind === 'image' && !['image/jpeg', 'image/png', 'image/gif'].includes(guessedMime));
+      if (needsLocalUpload) {
+        try {
+          let buffer = await downloadMediaBuffer(makeUrlAbsolute(rawUrl));
+          let mime = guessedMime;
+          let fileName = mediaObj?.fileName || guessMediaFileName(rawUrl, `media_${Date.now()}`);
+          if (kind === 'image') {
+            const { normalizeImageForWhatsApp } = require('../../../utils/whatsAppImageCompat');
+            const normalized = await normalizeImageForWhatsApp(buffer, mime);
+            buffer = normalized.buffer;
+            mime = normalized.mimetype;
+          }
+          const mediaId = await uploadMediaFile(sessionId, buffer, mime, fileName);
+          if (mediaId) {
+            mediaPayload.id = mediaId;
+          } else {
+            throw new Error('فشل رفع الملف إلى خوادم Meta');
+          }
+        } catch (uploadErr) {
+          // فشل التحميل أو الرفع → fallback للـ link المطلق (قد ينجح لو الـ host عام)
+          console.warn(`⚠️ [META-SEND] Internal media upload failed, falling back to link: ${uploadErr.message}`);
+          mediaPayload.link = makeUrlAbsolute(rawUrl);
+        }
+      } else {
+        mediaPayload.link = makeUrlAbsolute(rawUrl);
+      }
     }
   }
 
@@ -365,6 +488,27 @@ async function checkContact(sessionId, phoneNumbers) {
   }
 }
 
+function generateComponentExamples(components) {
+  return components.map(comp => {
+    if (comp.type === 'BODY' && comp.text) {
+      const varCount = (comp.text.match(/\{\{\d+\}\}/g) || []).length;
+      if (varCount > 0 && !comp.example) {
+        const examples = Array.from({ length: varCount }, (_, i) => `example${i + 1}`);
+        return { ...comp, example: { body_text: [examples] } };
+      }
+    }
+    // HEADER وسائط (IMAGE/VIDEO/DOCUMENT): ميتا تتطلب example.header_handle
+    // من Resumable Upload API عند إنشاء/تعديل القالب — من غيره يرفض القالب.
+    if (comp.type === 'HEADER' && comp.format && comp.format !== 'TEXT') {
+      const mediaHandle = comp.headerHandle || comp.mediaHandle || comp.example?.header_handle?.[0];
+      if (mediaHandle && !comp.example?.header_handle) {
+        return { ...comp, example: { header_handle: [mediaHandle] } };
+      }
+    }
+    return comp;
+  });
+}
+
 async function createTemplate(sessionId, templateData) {
   const session = await getSession(sessionId);
   if (!session) throw new Error('Session not found');
@@ -373,10 +517,12 @@ async function createTemplate(sessionId, templateData) {
   const wabaId = session?.metaWabaId;
   if (!wabaId) throw new Error('Missing Meta WABA ID for session');
 
-  const { name, language, category, components, allowCategoryChange } = templateData;
+  const { name, language, category, components: rawComponents, allowCategoryChange, generateExample = true } = templateData;
   if (!name || !language || !category) {
     throw new Error('Missing required fields: name, language, category');
   }
+
+  const components = generateExample ? generateComponentExamples(rawComponents) : rawComponents;
 
   const payload = {
     name,
@@ -401,20 +547,37 @@ async function createTemplate(sessionId, templateData) {
   return response.data;
 }
 
-async function updateTemplate(sessionId, templateName, templateData) {
+/**
+ * تعديل قالب موجود في ميتا.
+ * الـ endpoint الصحيح (حسب وثائق ميتا 2026) هو POST مباشرة على الـ template ID:
+ *   POST /{apiVersion}/{message-template-id}   body: { components, category, message_send_ttl_seconds }
+ * (وليس /{wabaId}/message_templates/{id} ولا ?name= — تلك تُفسَّر كإنشاء وترفض).
+ * القوالب APPROVED/REJECTED/PAUSED قابلة للتعديل، وميتا تعيد الموافقة تلقائياً بعد التعديل.
+ * لا يمكن تعديل category لقالب APPROVED — أرسل components فقط في هذه الحالة.
+ *
+ * @param {string} sessionId
+ * @param {string} templateId  الرقمي لقالب ميتا (message-template-id)
+ * @param {object} templateData  { components?, category?, messageSendTtlSeconds? }
+ */
+async function updateTemplate(sessionId, templateId, templateData) {
   const session = await getSession(sessionId);
   if (!session) throw new Error('Session not found');
 
   const { apiVersion, accessToken } = resolveBaseConfig(session);
-  const wabaId = session?.metaWabaId;
-  if (!wabaId) throw new Error('Missing Meta WABA ID for session');
+  if (!templateId) throw new Error('Missing Meta message template ID for update');
+
+  const components = templateData.components
+    ? generateComponentExamples(templateData.components)
+    : undefined;
 
   const payload = {};
-  if (templateData.components) payload.components = templateData.components;
-  if (templateData.language) payload.language = templateData.language;
+  if (components) payload.components = components;
   if (templateData.category) payload.category = templateData.category;
+  if (templateData.messageSendTtlSeconds != null) payload.message_send_ttl_seconds = templateData.messageSendTtlSeconds;
 
-  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
+  console.log(`☁️ [META-UPDATE] Updating Meta template id=${templateId}`, JSON.stringify({ components: payload.components?.length, category: payload.category, message_send_ttl_seconds: payload.message_send_ttl_seconds }));
+
+  const url = `https://graph.facebook.com/${apiVersion}/${encodeURIComponent(templateId)}`;
   const response = await apiCall(() => axios.post(url, payload, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -423,7 +586,16 @@ async function updateTemplate(sessionId, templateName, templateData) {
     timeout: 30000
   }));
 
-  return response.data;
+  const data = response.data;
+  if (data?.error) {
+    const metaErr = new Error(data.error.message || 'Meta API rejected template update');
+    metaErr.code = data.error.code;
+    metaErr.metaError = data.error;
+    throw metaErr;
+  }
+
+  console.log(`☁️ [META-UPDATE] Response:`, JSON.stringify({ success: data?.success, id: data?.id, status: data?.status }));
+  return data;
 }
 
 async function deleteTemplate(sessionId, templateName) {
@@ -451,6 +623,7 @@ module.exports = {
   sendText,
   sendMedia,
   uploadMediaFile,
+  uploadTemplateMedia,
   sendLocation,
   sendContacts,
   sendReaction,

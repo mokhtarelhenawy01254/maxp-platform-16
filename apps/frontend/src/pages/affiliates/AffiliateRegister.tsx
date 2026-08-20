@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface ApiSuccess<T> {
   success: boolean;
@@ -34,7 +35,7 @@ const AffiliateRegister: React.FC = () => {
       >("/affiliates/register", formData);
 
       if (response.data.success) {
-        toast.success("تم تسجيلك كمسوق بنجاح!");
+        tToast.success("AffiliateRegister.msg_564e");
         navigate("/affiliates/dashboard");
       }
     } catch (error: any) {

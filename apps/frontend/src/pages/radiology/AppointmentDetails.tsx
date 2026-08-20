@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -40,7 +40,7 @@ const APPT_STATUS_META: Record<string, { label: string; color: string }> = {
 const Row = ({ label, children }: { label: string; children?: React.ReactNode }) => (
   <div className="flex items-start justify-between gap-3 py-1.5">
     <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
-    <span className="text-sm font-medium text-gray-800 dark:text-gray-100 text-left">{children || "ΓÇö"}</span>
+    <span className="text-sm font-medium text-gray-800 dark:text-gray-100 text-left">{children || "—"}</span>
   </div>
 );
 
@@ -118,10 +118,10 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
   const examNames = (() => {
     try {
       const ids = a.examTypeIds ? JSON.parse(a.examTypeIds as string) : [];
-      return Array.isArray(ids) && ids.length ? `${a.examTypeName || ""} +${ids.length - 1}`.trim() : a.examTypeName || "ΓÇö";
-    } catch { return a.examTypeName || "ΓÇö"; }
+      return Array.isArray(ids) && ids.length ? `${a.examTypeName || ""} +${ids.length - 1}`.trim() : a.examTypeName || "—";
+    } catch { return a.examTypeName || "—"; }
   })();
-  const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "ΓÇö");
+  const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
   const genderText = (g?: string): string => {
     if (g === "male") return t("radiology.gender.male");
     if (g === "female") return t("radiology.gender.female");
@@ -172,27 +172,27 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
                 })}
               </div>
               <Row label={t("radiology.patients.name")}>{a.patientName}</Row>
-              <Row label={t("radiology.schedule.phone")}><span dir="ltr">{a.patientPhone || "ΓÇö"}</span></Row>
+              <Row label={t("radiology.schedule.phone")}><span dir="ltr">{a.patientPhone || "—"}</span></Row>
               <Row label={t("radiology.schedule.gender")}>{genderText(a.patientGender)}</Row>
-              <Row label={t("radiology.schedule.age")}><span dir="ltr">{a.patientAge || "ΓÇö"}</span></Row>
-              <Row label={t("radiology.studies.nationalId")}><span dir="ltr">{a.nationalId || "ΓÇö"}</span></Row>
-              <Row label={t("radiology.studies.insuranceNumber")}><span dir="ltr">{a.insuranceNumber || "ΓÇö"}</span></Row>
+              <Row label={t("radiology.schedule.age")}><span dir="ltr">{a.patientAge || "—"}</span></Row>
+              <Row label={t("radiology.studies.nationalId")}><span dir="ltr">{a.nationalId || "—"}</span></Row>
+              <Row label={t("radiology.studies.insuranceNumber")}><span dir="ltr">{a.insuranceNumber || "—"}</span></Row>
             </Card>
 
             <Card title={t("radiology.details.exam")} icon={<Stethoscope className="w-5 h-5 text-blue-600 dark:text-blue-400" />}>
               <Row label={t("radiology.appointmentDetails.examType")}>{examNames}</Row>
-              <Row label={t("radiology.appointmentDetails.device")}>{a.deviceName || "ΓÇö"}</Row>
+              <Row label={t("radiology.appointmentDetails.device")}>{a.deviceName || "—"}</Row>
               <Row label={t("radiology.appointmentDetails.appointmentDate")}>{fmtDate(a.appointmentDate)}</Row>
-              <Row label={t("radiology.appointmentDetails.appointmentTime")}><span dir="ltr">{a.appointmentTime || "ΓÇö"}</span></Row>
+              <Row label={t("radiology.appointmentDetails.appointmentTime")}><span dir="ltr">{a.appointmentTime || "—"}</span></Row>
               <Row label={t("radiology.appointmentDetails.additions")}>{Number(a.additionAmount || 0).toFixed(0)} {t("radiology.currency")}</Row>
-              <Row label={t("radiology.appointmentDetails.referringDoctor")}>{a.referralDoctor || "ΓÇö"}</Row>
-              <Row label={t("radiology.appointmentDetails.insuranceCompany")}>{a.insuranceCompanyId ? t("radiology.appointmentDetails.insuranceProvided") : "ΓÇö"}</Row>
+              <Row label={t("radiology.appointmentDetails.referringDoctor")}>{a.referralDoctor || "—"}</Row>
+              <Row label={t("radiology.appointmentDetails.insuranceCompany")}>{a.insuranceCompanyId ? t("radiology.appointmentDetails.insuranceProvided") : "—"}</Row>
               {(() => {
                 const pt = a.payerType || (a.insuranceCompanyId ? "INSURANCE" : a.referralSourceId ? "REFERRAL" : a.isExternalReferral ? "PARTNER" : "CUSTOMER");
                 let txt = t("radiology.schedule.payerCustomer");
-                if (pt === "INSURANCE") txt = `${t("radiology.schedule.payerInsurance")}${a.insuranceCompanyName ? " ΓÇö " + a.insuranceCompanyName : ""}`;
-                else if (pt === "REFERRAL") txt = `${t("radiology.schedule.payerReferral")}${a.referralSourceName ? " ΓÇö " + a.referralSourceName : ""}`;
-                else if (pt === "PARTNER") txt = `${t("radiology.schedule.payerPartner")}${a.externalPartnerName ? " ΓÇö " + a.externalPartnerName : ""}`;
+                if (pt === "INSURANCE") txt = `${t("radiology.schedule.payerInsurance")}${a.insuranceCompanyName ? " — " + a.insuranceCompanyName : ""}`;
+                else if (pt === "REFERRAL") txt = `${t("radiology.schedule.payerReferral")}${a.referralSourceName ? " — " + a.referralSourceName : ""}`;
+                else if (pt === "PARTNER") txt = `${t("radiology.schedule.payerPartner")}${a.externalPartnerName ? " — " + a.externalPartnerName : ""}`;
                 return (
                   <Row label={t("radiology.schedule.payer")}>
                     <span className="flex flex-col items-end gap-0.5">
@@ -213,7 +213,7 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
                     <div key={s.id} className="flex items-center justify-between gap-3 p-3 border dark:border-gray-700 rounded-lg">
                       <div className="min-w-0">
                         <p className="font-medium text-sm" dir="ltr">{s.studyNumber || s.id}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{s.examTypeName || "ΓÇö"}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{s.examTypeName || "—"}</p>
                       </div>
                       <button onClick={() => navigate(`/radiology/study/${s.id}`)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         {t("radiology.appointmentDetails.openStudy")}<ArrowRightLeft className="w-3 h-3" />
@@ -227,10 +227,10 @@ export default function AppointmentDetails({ appointmentId }: { appointmentId: s
 
           <div className="space-y-5">
             <Card title={t("radiology.details.notes")} icon={<ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />}>
-              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{a.notes || "ΓÇö"}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{a.notes || "—"}</p>
             </Card>
             <Card title={t("radiology.appointmentDetails.branch")} icon={<Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />}>
-              <p className="text-sm text-gray-600 dark:text-gray-300">{a.branchId || "ΓÇö"}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{a.branchId || "—"}</p>
             </Card>
             <Card title={t("radiology.appointmentDetails.timeline")} icon={<History className="w-5 h-5 text-blue-600 dark:text-blue-400" />}>
               <div className="space-y-2">

@@ -1,10 +1,10 @@
-﻿# Order Status ΓåÆ Preparation Metadata Sync (2026-08-03)
+# Order Status → Preparation Metadata Sync (2026-08-03)
 
 ## Problem
 
 The preparation queue (`/orders/preparation`) reads `metadata.preparationStatus` as its source of truth (`getEffectivePreparationStatus` in `preparationQueueService.js`), falling back to `order.status` only when the metadata key is absent.
 
-Status changes made **outside** the preparation queue ΓÇö quick-status (`/orders/quick-status`), the orders page, bulk updates for non-preparation statuses ΓÇö went through `orderService.updateOrderStatus` / `updateGuestOrderStatus`, which updated `order.status` **only** and never touched `metadata.preparationStatus`.
+Status changes made **outside** the preparation queue — quick-status (`/orders/quick-status`), the orders page, bulk updates for non-preparation statuses — went through `orderService.updateOrderStatus` / `updateGuestOrderStatus`, which updated `order.status` **only** and never touched `metadata.preparationStatus`.
 
 Result: an order moved to `READY` from quick-status showed as `READY` on `/orders`, but the preparation page kept displaying the stale stage (e.g. `PACKAGED`) because the older metadata value won.
 
@@ -12,7 +12,7 @@ Result: an order moved to `READY` from quick-status showed as `READY` on `/order
 
 ### `backend/services/orderService.js`
 
-- Added `PREPARATION_PIPELINE_STATUSES` ΓÇö the set of statuses that live in the preparation pipeline (`PENDING_PREPARATION`, `PREPARING`, `PROCESSING`, `QUALITY_CHECK`, `PACKAGED`, `PACKED`, `READY`, `READY_TO_SHIP`, `STOCK_SHORTAGE`, `PENDING_STOCK`, `ON_HOLD_STOCK`, `ON_HOLD_PREP`).
+- Added `PREPARATION_PIPELINE_STATUSES` — the set of statuses that live in the preparation pipeline (`PENDING_PREPARATION`, `PREPARING`, `PROCESSING`, `QUALITY_CHECK`, `PACKAGED`, `PACKED`, `READY`, `READY_TO_SHIP`, `STOCK_SHORTAGE`, `PENDING_STOCK`, `ON_HOLD_STOCK`, `ON_HOLD_PREP`).
 - Added `parsePreparationMetadata` to safely parse the order JSON metadata.
 - In `updateOrderStatus` and `updateGuestOrderStatus`, when the target status belongs to `PREPARATION_PIPELINE_STATUSES`, the update now also writes `metadata.preparationStatus` + `preparationStatusUpdatedAt` alongside `order.status`.
 
@@ -37,7 +37,7 @@ Any external status change to a preparation-pipeline status is now reflected on 
 
 ### `backend/services/preparationQueueService.js`
 
-- Added and exported `assertPreparationStockRule({ orderId, companyId, targetStatus, prepSettings })` ΓÇö mirrors the frontend `validateTransition` stock check. When `requireStockBeforePreparing` is on and `allowPartialPreparation` is off, moving an order to `QUALITY_CHECK` / `PACKAGED` / `handoffStatus` with missing items throws a 400. This makes the rule server-side so a direct API call cannot bypass it.
+- Added and exported `assertPreparationStockRule({ orderId, companyId, targetStatus, prepSettings })` — mirrors the frontend `validateTransition` stock check. When `requireStockBeforePreparing` is on and `allowPartialPreparation` is off, moving an order to `QUALITY_CHECK` / `PACKAGED` / `handoffStatus` with missing items throws a 400. This makes the rule server-side so a direct API call cannot bypass it.
 
 ### `backend/routes/orders.js`
 
@@ -52,5 +52,5 @@ Any external status change to a preparation-pipeline status is now reflected on 
 
 ### Tests
 
-- `tests/services/preparationQueueService.stockRule.test.js` (4 tests): complete stock ΓåÆ allowed; missing stock + partial disabled ΓåÆ 400; partial enabled ΓåÆ allowed; rule disabled ΓåÆ allowed.
+- `tests/services/preparationQueueService.stockRule.test.js` (4 tests): complete stock → allowed; missing stock + partial disabled → 400; partial enabled → allowed; rule disabled → allowed.
 - `tests/services/orderService.preparationSync.test.js` extended: move back to `CONFIRMED` syncs metadata.

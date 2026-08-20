@@ -1,4 +1,4 @@
-﻿export type OrderSoundPattern =
+export type OrderSoundPattern =
   | "alarm"
   | "urgent"
   | "classic"
@@ -24,8 +24,8 @@ export interface OrderSoundEvent {
   waveform: OscillatorType;
 }
 
-// ┘å╪║┘à╪º╪¬ ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à┘ê┘ä┘æ╪»╪⌐ ╪¿┘Ç Web Audio (╪º┘ä╪ú┘å┘à╪º╪╖ ╪º┘ä┘é╪»┘è┘à╪⌐)
-// ╪º┘ä╪ú┘å┘à╪º╪╖ ╪º┘ä╪¼╪»┘è╪»╪⌐ (╪º┘ä┘â╪º╪┤/╪º┘ä╪╣┘à┘ä╪º╪¬) ╪¿╪¬╪┤╪¬╪║┘ä ┘à┘å ┘à┘ä┘ü╪º╪¬ ╪╡┘ê╪¬ ╪¡┘é┘è┘é┘è╪⌐ ┘ü┘è public/sounds
+// نغمات صوت الطلبات المولّدة بـ Web Audio (الأنماط القديمة)
+// الأنماط الجديدة (الكاش/العملات) بتشتغل من ملفات صوت حقيقية في public/sounds
 const ORDER_SOUND_PATTERN_NOTES: Record<
   OrderSoundPattern,
   OrderSoundPatternNote[]
@@ -63,7 +63,7 @@ const ORDER_SOUND_PATTERN_NOTES: Record<
   goldcoin: [],
 };
 
-// ┘é╪º╪ª┘à╪⌐ ╪º┘ä┘å╪║┘à╪º╪¬ ╪º┘ä┘à╪╣╪▒┘ê╪╢╪⌐ ┘ü┘è ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬
+// قائمة النغمات المعروضة في الإعدادات
 export const ORDER_SOUND_PATTERNS: Array<{
   id: OrderSoundPattern;
   label: string;
@@ -72,48 +72,48 @@ export const ORDER_SOUND_PATTERNS: Array<{
 }> = [
   {
     id: "cash",
-    label: "┘å╪║┘à╪⌐ ╪º┘ä┘â╪º╪┤",
-    description: "┘â╪º╪┤┘è╪▒ ╪º┘ä┘à╪¡╪º┘ü╪╕ ΓÇö ┘â╪º ╪¬╪┤┘è┘å┘é ╪¡┘é┘è┘é┘è╪⌐ ╪¬┘ü╪▒┘æ╪¡",
+    label: "نغمة الكاش",
+    description: "كاشير المحافظ — كا تشينق حقيقية تفرّح",
     audioUrl: "/sounds/register-cha-ching.mp3",
   },
   {
     id: "kaching",
-    label: "┘â╪º╪┤ ╪▒┘è╪¼┘è╪│╪¬╪▒",
-    description: "╪▒┘å╪⌐ ╪º┘ä┘â╪º╪┤┘è╪▒ ╪º┘ä┘â┘ä╪º╪│┘è┘â┘è╪⌐ ╪º┘ä┘ê╪º╪╢╪¡╪⌐",
+    label: "كاش ريجيستر",
+    description: "رنة الكاشير الكلاسيكية الواضحة",
     audioUrl: "/sounds/cash-register-kaching.mp3",
   },
   {
     id: "coins",
-    label: "╪╣┘à┘ä╪º╪¬",
-    description: "╪▒┘å┘è┘å ╪╣┘à┘ä╪º╪¬ ┘à╪╣╪»┘å┘è╪⌐ ┘å╪º╪▓┘ä╪⌐",
+    label: "عملات",
+    description: "رنين عملات معدنية نازلة",
     audioUrl: "/sounds/clinking-coins.mp3",
   },
   {
     id: "coinwin",
-    label: "┘ü┘ê╪▓ ╪╣┘à┘ä╪º╪¬",
-    description: "╪Ñ╪┤╪╣╪º╪▒ ┘ü┘ê╪▓ ╪¿╪╣┘à┘ä╪º╪¬ ┘à╪▒╪¡╪⌐",
+    label: "فوز عملات",
+    description: "إشعار فوز بعملات مرحة",
     audioUrl: "/sounds/coin-win-notification.mp3",
   },
   {
     id: "magiccoins",
-    label: "╪╣┘à┘ä╪º╪¬ ╪│╪¡╪▒┘è╪⌐",
-    description: "╪╣┘à┘ä╪º╪¬ ┘à╪¬╪ú┘ä┘é╪⌐ ╪¿╪¡╪│ ╪│╪¡╪▒┘è",
+    label: "عملات سحرية",
+    description: "عملات متألقة بحس سحري",
     audioUrl: "/sounds/magical-coin-win.mp3",
   },
   {
     id: "goldcoin",
-    label: "╪¼╪º╪ª╪▓╪⌐ ╪░┘ç╪¿┘è╪⌐",
-    description: "┘é╪╖╪╣╪⌐ ╪░┘ç╪¿┘è╪⌐ ╪¬┘ü┘ê╪▓ ╪¿╪¼╪º╪ª╪▓╪⌐",
+    label: "جائزة ذهبية",
+    description: "قطعة ذهبية تفوز بجائزة",
     audioUrl: "/sounds/gold-coin-prize.mp3",
   },
-  { id: "alarm", label: "╪╡┘ü┘æ╪º╪▒╪⌐ ╪Ñ┘å╪░╪º╪▒", description: "╪╡┘ü┘æ╪º╪▒╪⌐ ┘é┘ê┘è╪⌐ ┘à╪¬┘é╪╖╪╣╪⌐" },
-  { id: "urgent", label: "╪╣╪º╪¼┘ä", description: "╪╡┘ü┘æ┘é╪º╪¬ ╪│╪▒┘è╪╣╪⌐ ┘à╪¬╪¬╪º┘ä┘è╪⌐" },
-  { id: "classic", label: "┘â┘ä╪º╪│┘è┘â┘è", description: "╪¼╪▒╪│ ╪»┘è┘å╪¼ ╪»┘ê┘å╪¼" },
-  { id: "digital", label: "╪▒┘é┘à┘è", description: "┘å╪║┘à╪⌐ ╪▒┘å┘è┘å ╪▒┘é┘à┘è╪⌐ ╪╡╪º╪╣╪»╪⌐" },
-  { id: "smooth", label: "┘å╪º╪╣┘à", description: "┘å╪║┘à╪⌐ ┘à╪▒┘è╪¡╪⌐ ┘ç╪º╪»╪ª╪⌐" },
+  { id: "alarm", label: "صفّارة إنذار", description: "صفّارة قوية متقطعة" },
+  { id: "urgent", label: "عاجل", description: "صفّقات سريعة متتالية" },
+  { id: "classic", label: "كلاسيكي", description: "جرس دينج دونج" },
+  { id: "digital", label: "رقمي", description: "نغمة رنين رقمية صاعدة" },
+  { id: "smooth", label: "ناعم", description: "نغمة مريحة هادئة" },
 ];
 
-// ╪Ñ╪▒╪¼╪º╪╣ ╪▒╪º╪¿╪╖ ┘à┘ä┘ü ╪º┘ä╪╡┘ê╪¬ ┘ä┘ä┘å╪║┘à╪º╪¬ ╪º┘ä┘à╪¿┘å┘è╪⌐ ╪╣┘ä┘ë ┘à┘ä┘ü╪º╪¬ ╪¡┘é┘è┘é┘è╪⌐
+// إرجاع رابط ملف الصوت للنغمات المبنية على ملفات حقيقية
 export const getOrderSoundAudioUrl = (
   pattern: OrderSoundPattern,
 ): string | null => {
@@ -121,7 +121,7 @@ export const getOrderSoundAudioUrl = (
   return entry?.audioUrl ?? null;
 };
 
-// ╪¬┘ê┘ä┘è╪» ┘å┘ê╪¬╪º╪¬ ╪º┘ä┘å╪║┘à╪⌐ ╪º┘ä┘à┘ê┘ä┘æ╪»╪⌐ ╪¡╪¬┘ë ┘å┘ç╪º┘è╪⌐ ╪º┘ä┘à╪»╪⌐
+// توليد نوتات النغمة المولّدة حتى نهاية المدة
 export const buildPatternEvents = (
   pattern: OrderSoundPattern,
   startTime: number,

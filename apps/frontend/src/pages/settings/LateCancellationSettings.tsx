@@ -1,8 +1,13 @@
-import { Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, ShieldAlert as ShieldExclamationIcon, Info as InformationCircleIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/api";
-;
+import {
+  CheckCircleIcon,
+  ArrowPathIcon,
+  ShieldExclamationIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/24/outline";
 
 interface OrderStatusOption {
   code: string;
@@ -128,7 +133,7 @@ const LateCancellationSettings: React.FC = () => {
           settings.lateCancellationTargetStatuses,
       });
       if (response.data.success) {
-        toast.success("تم حفظ إعدادات اعتراض الإلغاء المتأخر بنجاح ✅");
+        tToast.success("LateCancellationSettings.success_save_767c");
         fetchSettings();
       }
     } catch (error) {

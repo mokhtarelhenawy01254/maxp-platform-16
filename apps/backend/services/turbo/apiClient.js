@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Turbo API Client
- * ╪╣┘à┘è┘ä HTTP ┘ä╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘Ç Turbo API
+ * عميل HTTP لإدارة الاتصال بـ Turbo API
  */
 
 const axios = require('axios');
@@ -45,12 +45,12 @@ class TurboApiClient {
       return this.apiKey;
     } catch (error) {
       if (isTurboConfigurationError(error)) {
-        console.warn('ΓÜá∩╕Å [TURBO] API key unavailable:', {
+        console.warn('⚠️ [TURBO] API key unavailable:', {
           companyId: this.companyId,
           reason: error.message,
         });
       } else {
-        console.error('Γ¥î [TURBO] Error fetching API key:', error);
+        console.error('❌ [TURBO] Error fetching API key:', error);
       }
       throw error;
     }
@@ -88,7 +88,7 @@ class TurboApiClient {
 
       return company?.turboMainClientCode || null;
     } catch (error) {
-      console.error('Γ¥î [TURBO] Error fetching main_client_code:', error);
+      console.error('❌ [TURBO] Error fetching main_client_code:', error);
       return null;
     }
   }
@@ -109,7 +109,7 @@ class TurboApiClient {
 
       return company?.turboSenderNumber || null;
     } catch (error) {
-      console.error('Γ¥î [TURBO] Error fetching sender_number:', error);
+      console.error('❌ [TURBO] Error fetching sender_number:', error);
       return null;
     }
   }

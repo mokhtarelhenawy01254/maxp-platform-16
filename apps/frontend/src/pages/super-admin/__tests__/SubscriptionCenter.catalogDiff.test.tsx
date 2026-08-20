@@ -94,9 +94,9 @@ describe("SubscriptionCenter Catalog Diff UI", () => {
     }
     fireEvent.click(marketplaceTab);
 
-    expect(await screen.findByText(/Files vs DB/i)).toBeInTheDocument();
-    expect(screen.getByText("Apps (Catalog/DB)")).toBeInTheDocument();
-    expect(screen.getByText("Bundles (Catalog/DB)")).toBeInTheDocument();
+    expect(await screen.findByText(/الملفات مقابل قاعدة البيانات/i)).toBeInTheDocument();
+    expect(screen.getByText("التطبيقات (الملفات/قاعدة البيانات)")).toBeInTheDocument();
+    expect(screen.getByText("الباقات (الملفات/قاعدة البيانات)")).toBeInTheDocument();
     expect(screen.getByText("8/7")).toBeInTheDocument();
     expect(screen.getByText("3/2")).toBeInTheDocument();
   });
@@ -167,7 +167,7 @@ describe("SubscriptionCenter Catalog Diff UI", () => {
     }
     fireEvent.click(marketplaceTab);
 
-    expect(await screen.findByText(/Files vs DB/i)).toBeInTheDocument();
+    expect(await screen.findByText(/الملفات مقابل قاعدة البيانات/i)).toBeInTheDocument();
 
     const detailsButton = screen.getByRole("button", { name: /عرض التفاصيل|إخفاء التفاصيل/i });
     fireEvent.click(detailsButton);

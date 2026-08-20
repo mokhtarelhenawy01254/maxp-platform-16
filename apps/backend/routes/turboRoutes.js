@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Turbo Shipping Routes
- * ┘à╪│╪º╪▒╪º╪¬ Turbo ┘ä┘ä╪┤╪¡┘å
+ * مسارات Turbo للشحن
  */
 
 const express = require('express');
@@ -10,14 +10,14 @@ const verifyToken = require("../utils/verifyToken");
 const { checkAppAccess } = require('../middleware/checkAppAccess');
 const turboController = require('../controller/turboController');
 
-// ╪Ñ╪╣╪»╪º╪» multer ┘ä┘ä╪¬╪╣╪º┘à┘ä ┘à╪╣ ╪▒┘ü╪╣ ╪º┘ä┘à┘ä┘ü╪º╪¬ (┘ü┘è ╪º┘ä╪░╪º┘â╪▒╪⌐)
+// إعداد multer للتعامل مع رفع الملفات (في الذاكرة)
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB max
   },
   fileFilter: (req, file, cb) => {
-    // ╪º┘ä╪│┘à╪º╪¡ ╪¿╪╡┘ê╪▒ ┘ü┘é╪╖
+    // السماح بصور فقط
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
@@ -28,93 +28,93 @@ const upload = multer({
 
 /**
  * Public Routes (No Authentication Required)
- * ╪º┘ä┘à╪│╪º╪▒╪º╪¬ ╪º┘ä╪╣╪º┘à╪⌐ (┘ä╪º ╪¬╪¬╪╖┘ä╪¿ ┘à╪╡╪º╪»┘é╪⌐)
+ * المسارات العامة (لا تتطلب مصادقة)
  */
 
 /**
  * GET /api/turbo/orders/:orderId/waybill
- * ╪╖╪¿╪º╪╣╪⌐ ╪¿┘ê┘ä┘è╪╡╪⌐ ╪º┘ä╪┤╪¡┘å╪⌐ - ╪╣╪º┘à ╪¿╪»┘ê┘å ┘à╪╡╪º╪»┘é╪⌐
+ * طباعة بوليصة الشحنة - عام بدون مصادقة
  */
 router.get('/orders/:orderId/waybill', turboController.printWaybill);
 
-// ╪¼┘à┘è╪╣ ╪º┘ä┘à╪│╪º╪▒╪º╪¬ ╪º┘ä╪¬╪º┘ä┘è╪⌐ ╪¬╪¬╪╖┘ä╪¿ ╪º┘ä┘à╪╡╪º╪»┘é╪⌐
+// جميع المسارات التالية تتطلب المصادقة
 
 
 /**
  * POST /api/turbo/orders/:orderId/shipment
- * ╪Ñ┘å╪┤╪º╪í ╪┤╪¡┘å╪⌐ ╪¼╪»┘è╪»╪⌐ ┘ä┘ä╪╖┘ä╪¿
+ * إنشاء شحنة جديدة للطلب
  */
 router.post('/orders/:orderId/shipment', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.createShipment);
 
 /**
  * POST /api/turbo/bulk/create-shipments
- * ╪Ñ┘å╪┤╪º╪í ╪┤╪¡┘å╪º╪¬ ┘ä╪╣╪»╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪»┘ü╪╣╪⌐ ┘ê╪º╪¡╪»╪⌐
+ * إنشاء شحنات لعدة طلبات دفعة واحدة
  */
 router.post('/bulk/create-shipments', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.bulkCreateShipments);
 
 /**
  * GET /api/turbo/orders/:orderId/track
- * ╪¬╪¬╪¿╪╣ ╪º┘ä╪┤╪¡┘å╪⌐
+ * تتبع الشحنة
  */
 router.get('/orders/:orderId/track', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.trackShipment);
 
 /**
  * POST /api/turbo/orders/:orderId/sync-status
- * ╪│╪¡╪¿ ┘ê┘à╪▓╪º┘à┘å╪⌐ ╪¡╪º┘ä╪⌐ ╪º┘ä╪┤╪¡┘å╪⌐ ╪º┘ä┘à╪¿╪º╪┤╪▒╪⌐ ┘à┘å ╪¬╪▒╪¿┘ê ┘ê╪¬╪¡╪»┘è╪½ ╪º┘ä╪╖┘ä╪¿
+ * سحب ومزامنة حالة الشحنة المباشرة من تربو وتحديث الطلب
  */
 router.post('/orders/:orderId/sync-status', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.syncShipmentStatus);
 
 /**
  * POST /api/turbo/calculate
- * ╪¡╪│╪º╪¿ ╪¬┘â┘ä┘ü╪⌐ ╪º┘ä╪┤╪¡┘å
+ * حساب تكلفة الشحن
  */
 router.post('/calculate', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.calculateShippingCost);
 
 /**
  * GET /api/turbo/orders/:orderId/shipping-comparison
- * ╪¼┘ä╪¿ ┘à┘é╪º╪▒┘å╪⌐ ╪ú╪│╪╣╪º╪▒ ╪º┘ä╪┤╪¡┘å
+ * جلب مقارنة أسعار الشحن
  */
 router.get('/orders/:orderId/shipping-comparison', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getShippingComparison);
 
 /**
  * POST /api/turbo/orders/:orderId/cancel
- * ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪┤╪¡┘å╪⌐
+ * إلغاء الشحنة
  */
 router.post('/orders/:orderId/cancel', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.cancelShipment);
 
 /**
  * POST /api/turbo/orders/:orderId/unlink
- * ╪Ñ┘ä╪║╪º╪í ╪▒╪¿╪╖ Turbo ╪º┘ä┘à╪¡┘ä┘è ┘à┘å ╪º┘ä╪╖┘ä╪¿ ╪¿╪»┘ê┘å ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪┤╪¡┘å╪⌐ ╪«╪º╪▒╪¼ MaxP
+ * إلغاء ربط Turbo المحلي من الطلب بدون إلغاء الشحنة خارج MaxP
  */
 router.post('/orders/:orderId/unlink', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.unlinkShipment);
 
 /**
  * GET /api/turbo/orders/:orderId/label
- * ╪╖╪¿╪º╪╣╪⌐ ┘à┘ä╪╡┘é ╪º┘ä╪┤╪¡┘å╪⌐
+ * طباعة ملصق الشحنة
  */
 router.get('/orders/:orderId/label', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.printLabel);
 
 /**
  * GET /api/turbo/governments
- * ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä┘à╪¡╪º┘ü╪╕╪º╪¬ ┘à┘å Turbo API
+ * جلب قائمة المحافظات من Turbo API
  */
 router.get('/governments', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getGovernments);
 
 /**
  * GET /api/turbo/areas/:governmentId
- * ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä┘à┘å╪º╪╖┘é ╪¿┘å╪º╪í┘ï ╪╣┘ä┘ë ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐
+ * جلب قائمة المناطق بناءً على المحافظة
  */
 router.get('/areas/:governmentId', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getAreas);
 
 /**
  * GET /api/turbo/search-area?q=...
- * ╪¿╪¡╪½ ┘å╪╡┘è ╪░┘â┘è ╪╣┘å ╪º┘ä┘à┘å╪╖┘é╪⌐ ╪╣╪¿╪▒ ┘â┘ä ┘à╪¡╪º┘ü╪╕╪º╪¬/┘à┘å╪º╪╖┘é ╪┤╪▒┘â╪⌐ ╪º┘ä╪┤╪¡┘å
+ * بحث نصي ذكي عن المنطقة عبر كل محافظات/مناطق شركة الشحن
  */
 router.get('/search-area', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.searchAreaByText);
 
 /**
  * GET /api/turbo/reports/shipping
- * ╪¼┘ä╪¿ ╪¬┘é╪▒┘è╪▒ ╪º┘ä╪┤╪¡┘å
+ * جلب تقرير الشحن
  */
 const turboReportController = require('../controller/turboReportController');
 router.get('/reports/shipping', verifyToken.authenticateToken, checkAppAccess('order-shipping-reports'), turboReportController.getShippingReport);
@@ -125,67 +125,67 @@ router.put('/reports/shipping/governorate-costs', verifyToken.authenticateToken,
 
 /**
  * GET /api/turbo/branches
- * ╪¼┘ä╪¿ ┘ü╪▒┘ê╪╣ Turbo
+ * جلب فروع Turbo
  */
 router.get('/records', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getRecords);
 router.get('/branches', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getBranches);
 
 /**
  * PUT /api/turbo/orders/:orderId/shipment
- * ╪¬╪¡╪»┘è╪½ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪┤╪¡┘å╪⌐
+ * تحديث بيانات الشحنة
  */
 router.put('/orders/:orderId/shipment', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.updateShipment);
 
 /**
  * POST /api/turbo/tickets
- * ╪Ñ╪╢╪º┘ü╪⌐ ╪¬╪░┘â╪▒╪⌐ ╪»╪╣┘à ╪Ñ┘ä┘ë Turbo
+ * إضافة تذكرة دعم إلى Turbo
  */
 router.post('/tickets', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.addTicket);
 
 /**
  * GET /api/turbo/inquiries-types
- * ╪¼┘ä╪¿ ╪ú┘å┘ê╪º╪╣ ╪º┘ä╪º╪│╪¬┘ü╪│╪º╪▒╪º╪¬ ┘à┘å Turbo
- * ┘è╪»╪╣┘à POST ┘ê GET
+ * جلب أنواع الاستفسارات من Turbo
+ * يدعم POST و GET
  */
 router.get('/inquiries-types', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getInquiriesTypes);
 router.post('/inquiries-types', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getInquiriesTypes);
 
 /**
  * GET /api/turbo/tickets/unread-count
- * ╪¼┘ä╪¿ ╪╣╪»╪» ╪º┘ä╪¬╪░╪º┘â╪▒ ╪║┘è╪▒ ╪º┘ä┘à┘é╪▒┘ê╪í╪⌐ ┘à┘å Turbo
- * ┘è╪¼╪¿ ╪ú┘å ┘è╪ú╪¬┘è ┘é╪¿┘ä /tickets/:id ┘ä╪¬╪¼┘å╪¿ ╪º┘ä╪¬╪╖╪º╪¿┘é ╪º┘ä╪«╪º╪╖╪ª
+ * جلب عدد التذاكر غير المقروءة من Turbo
+ * يجب أن يأتي قبل /tickets/:id لتجنب التطابق الخاطئ
  */
 router.get('/tickets/unread-count', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getUnreadTicketsCount);
 
 /**
  * GET /api/turbo/tickets/:id/log
- * ╪¼┘ä╪¿ ╪│╪¼┘ä ╪º┘ä╪¬╪░┘â╪▒╪⌐ ┘à┘å Turbo
- * ┘è╪¼╪¿ ╪ú┘å ┘è╪ú╪¬┘è ┘é╪¿┘ä /tickets/:id ┘ä╪¬╪¼┘å╪¿ ╪º┘ä╪¬╪╖╪º╪¿┘é ╪º┘ä╪«╪º╪╖╪ª
+ * جلب سجل التذكرة من Turbo
+ * يجب أن يأتي قبل /tickets/:id لتجنب التطابق الخاطئ
  */
 router.get('/tickets/:id/log', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTicketLog);
 
 /**
  * POST /api/turbo/tickets/:id/reply
- * ╪º┘ä╪▒╪» ╪╣┘ä┘ë ╪¬╪░┘â╪▒╪⌐ ┘ü┘è Turbo
- * ┘è╪¼╪¿ ╪ú┘å ┘è╪ú╪¬┘è ┘é╪¿┘ä /tickets/:id ┘ä╪¬╪¼┘å╪¿ ╪º┘ä╪¬╪╖╪º╪¿┘é ╪º┘ä╪«╪º╪╖╪ª
+ * الرد على تذكرة في Turbo
+ * يجب أن يأتي قبل /tickets/:id لتجنب التطابق الخاطئ
  */
 router.post('/tickets/:id/reply', verifyToken.authenticateToken, upload.single('image'), checkAppAccess('order-shipping-turbo'), turboController.replyToTicket);
 
 /**
  * GET /api/turbo/tickets/:id
- * ╪¼┘ä╪¿ ╪¬┘ü╪º╪╡┘è┘ä ╪¬╪░┘â╪▒╪⌐ ┘à╪╣┘è┘å╪⌐ ┘à┘å Turbo
+ * جلب تفاصيل تذكرة معينة من Turbo
  */
 router.get('/tickets/:id', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTicket);
 
 /**
  * GET /api/turbo/tickets
- * ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪¬╪░╪º┘â╪▒ ┘à┘å Turbo
+ * جلب قائمة التذاكر من Turbo
  */
 router.get('/tickets', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTickets);
 
 /**
  * GET /api/turbo/captains/stats
- * ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä┘à┘å╪»┘ê╪¿┘è┘å - ┘å╪│╪¿ ╪º┘ä╪¬╪│┘ä┘è┘à ┘ê╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬
+ * إحصائيات المندوبين - نسب التسليم والمرتجعات
  */
 const captainStatsController = require('../controller/turbo/captainStatsController');
 router.get('/captains/stats', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), captainStatsController.getCaptainStats);
@@ -279,7 +279,7 @@ router.get('/debug/ghost-orders', verifyToken.authenticateToken, async (req, res
     const fixResults = [];
     const ghostProcessing = ghostOrders.filter(o => o.turboShipmentStatus === 'processing');
     
-    // Action: mark_delivered or mark_returned ΓÇö bulk update ghost processing orders
+    // Action: mark_delivered or mark_returned — bulk update ghost processing orders
     if ((action === 'mark_delivered' || action === 'mark_returned') && ghostProcessing.length > 0) {
       const newStatus = action === 'mark_delivered' ? 'delivered' : 'returned_to_company';
       const turboStatus = action === 'mark_delivered' ? '7' : '5';
@@ -287,7 +287,7 @@ router.get('/debug/ghost-orders', verifyToken.authenticateToken, async (req, res
       for (const o of ghostProcessing) {
         try {
           await syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: turboStatus, payload: { source: 'ghost_bulk_fix', action } }).catch(() => {});
-          fixResults.push({ orderNumber: o.orderNumber, turboCode: o.turboShipmentId, action: `ΓåÆ ${newStatus}` });
+          fixResults.push({ orderNumber: o.orderNumber, turboCode: o.turboShipmentId, action: `→ ${newStatus}` });
           updated++;
         } catch(e) { fixResults.push({ orderNumber: o.orderNumber, error: e.message }); }
       }

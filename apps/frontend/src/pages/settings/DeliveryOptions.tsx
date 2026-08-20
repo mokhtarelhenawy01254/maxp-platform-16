@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Clock3, Loader2, Package, Pencil, Plus, Star, Trash2, Truck } from 'lucide-react';
+import {
+  Clock3,
+  Loader2,
+  Package,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+  Truck,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -445,7 +445,7 @@ export default function ScheduleTab() {
   const pickPhysician = (p: { id: string; name: string; marketingRepId?: string | null }) => {
     setModal(m => {
       if (!m) return m;
-      // ┘à┘å╪»┘ê╪¿ ╪º┘ä╪╖╪¿┘è╪¿ ┘è╪│╪¿┘é ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¼┘ç╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ (╪Ñ┘å ┘ê┘Å╪¼╪») ΓÇö ╪º┘é╪¬╪▒╪º╪¡ ┘é╪º╪¿┘ä ┘ä┘ä╪¬╪¼╪º┘ê╪▓
+      // مندوب الطبيب يسبق مندوب الجهة الحالية (إن وُجد) — اقتراح قابل للتجاوز
       const suggestedRep = p.marketingRepId || m.marketingRepId || "";
       const repName = p.marketingRepId
         ? (marketingReps.find(r => r.id === p.marketingRepId)?.name || m.marketingRepName || "")
@@ -710,7 +710,7 @@ export default function ScheduleTab() {
     setInitialPayment({ amount: "", method: "CASH" });
   };
 
-  const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "ΓÇö");
+  const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "—");
   const labelCls = "block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1";
 
   const shiftAnchor = (dir: number) => {
@@ -847,7 +847,7 @@ export default function ScheduleTab() {
                       {h.sortable ? (
                         <button onClick={() => toggleSort(h.key)} className="flex items-center gap-1 font-medium">
                           {h.label}
-                          {sort?.key === h.key ? (sort.dir === "asc" ? "Γû▓" : "Γû╝") : null}
+                          {sort?.key === h.key ? (sort.dir === "asc" ? "▲" : "▼") : null}
                         </button>
                       ) : h.label}
                     </th>
@@ -873,16 +873,16 @@ export default function ScheduleTab() {
                         })}
                       </td>
                       <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
-                        {a.examTypeName || "ΓÇö"}
+                        {a.examTypeName || "—"}
                         {(a.examTypeIds && (Array.isArray(a.examTypeIds) ? a.examTypeIds.length : 1) > 1) ? <span className="mr-1.5 text-xs text-blue-600 dark:text-blue-400">+{Array.isArray(a.examTypeIds) ? a.examTypeIds.length - 1 : 0}</span> : null}
                         {a.deviceName ? <span className="mr-1.5 text-xs text-gray-400">({a.deviceName})</span> : null}
                         {(() => { const pt = a.payerType || (a.insuranceCompanyId ? "INSURANCE" : a.referralSourceId ? "REFERRAL" : a.isExternalReferral ? "PARTNER" : "CUSTOMER"); let pl: string | null = null; if (pt === "INSURANCE") pl = a.insuranceCompanyName || insuranceCompanies.find(c => c.id === a.insuranceCompanyId)?.name || null; else if (pt === "REFERRAL") pl = a.referralSourceName || null; else if (pt === "PARTNER") pl = a.externalPartnerName || null; if (!pl) return null; return <span className="mr-1.5 inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300" title={t("radiology.schedule.payer") as string}><Banknote className="w-3 h-3" />{pl}</span>; })()}
                       </td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.additionAmount ? `${Number(a.additionAmount).toFixed(0)} ${t("radiology.currency")}` : "ΓÇö"}</td>
+                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.additionAmount ? `${Number(a.additionAmount).toFixed(0)} ${t("radiology.currency")}` : "—"}</td>
                       <td className="py-3 px-4">{fmtDate(a.appointmentDate)}</td>
-                      <td className="py-3 px-4" dir="ltr">{a.appointmentTime || "ΓÇö"}</td>
+                      <td className="py-3 px-4" dir="ltr">{a.appointmentTime || "—"}</td>
                       <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${meta?.color}`}>{t(meta?.label as never)}</span></td>
-                      <td className="py-3 px-4 text-gray-400 dark:text-gray-500 max-w-[160px] truncate">{a.notes || "ΓÇö"}</td>
+                      <td className="py-3 px-4 text-gray-400 dark:text-gray-500 max-w-[160px] truncate">{a.notes || "—"}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
                           <button onClick={() => navigate(a.studyId ? `/radiology/study/${a.studyId}` : `/radiology/appointment/${a.id}`)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.details.viewDetails") as string} aria-label={t("radiology.details.viewDetails") as string}><Info className="w-4 h-4" /></button>
@@ -954,7 +954,7 @@ export default function ScheduleTab() {
                     ) : patientResults.map(p => (
                       <button key={p.id} type="button" onClick={() => pickPatient(p)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
                         <span className="font-medium">{p.firstName} {p.lastName || ""}</span>
-                        {p.phone ? <span className="text-xs text-gray-500 dark:text-gray-400"> ΓÇö {p.phone}</span> : null}
+                        {p.phone ? <span className="text-xs text-gray-500 dark:text-gray-400"> — {p.phone}</span> : null}
                       </button>
                     ))}
                   </div>
@@ -987,7 +987,7 @@ export default function ScheduleTab() {
                           </button>
                         </div>
                         {newPatient.nationalIdImage ? (
-                          <img src={newPatient.nationalIdImage} alt="╪¿╪╖╪º┘é╪⌐ ╪º┘ä╪▒┘é┘à ╪º┘ä┘é┘ê┘à┘è" className="mt-2 w-24 h-16 object-cover rounded-lg border dark:border-gray-600" />
+                          <img src={newPatient.nationalIdImage} alt="بطاقة الرقم القومي" className="mt-2 w-24 h-16 object-cover rounded-lg border dark:border-gray-600" />
                         ) : null}
                       </div>
                       <div>
@@ -1036,7 +1036,7 @@ export default function ScheduleTab() {
                               <span className="font-medium">{et.name}</span>
                               {et.category ? <span className="text-xs text-gray-500 dark:text-gray-400"> ({et.category})</span> : null}
                             </span>
-                            {selected ? <span className="text-xs text-blue-600 dark:text-blue-400 shrink-0">Γ£ô</span> : null}
+                            {selected ? <span className="text-xs text-blue-600 dark:text-blue-400 shrink-0">✓</span> : null}
                           </button>
                         );
                       })}
@@ -1050,7 +1050,7 @@ export default function ScheduleTab() {
                       const cov = coverage[id];
                       return (
                         <span key={id} className={`flex items-center gap-1.5 text-xs border dark:border-gray-600 rounded-full px-2.5 py-1 ${cov && !cov.covered ? "border-amber-500 text-amber-600 dark:text-amber-400" : "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"}`}>
-                          <span className="font-medium">{et?.name || "ΓÇö"}</span>
+                          <span className="font-medium">{et?.name || "—"}</span>
                           {cov && !cov.covered ? <span className="text-[10px] font-semibold">{t("radiology.schedule.notCovered")}</span> : null}
                           <button type="button" onClick={() => toggleExam(id)} className="text-gray-400 hover:text-red-500"><XMarkIcon className="w-3 h-3" /></button>
                         </span>
@@ -1101,7 +1101,7 @@ export default function ScheduleTab() {
                     const src = referralSources.find(s => s.id === sid) as ({ id: string; name: string; marketingRepId?: string | null } | undefined);
                     setModal(m => {
                       if (!m) return m;
-                      // ╪º┘é╪¬╪▒╪º╪¡ ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¼┘ç╪⌐ ┘ü┘é╪╖ ╪Ñ╪░╪º ┘ä┘à ┘è┘â┘å ┘ç┘å╪º┘â ┘à┘å╪»┘ê╪¿ ╪╖╪¿┘è╪¿ ┘à╪¡╪»╪» ┘è╪»┘ê┘è╪º┘ï
+                      // اقتراح مندوب الجهة فقط إذا لم يكن هناك مندوب طبيب محدد يدوياً
                       const hasPhysicianRep = m.referringPhysicianId && m.marketingRepId;
                       const suggestedRep = hasPhysicianRep ? m.marketingRepId : (src?.marketingRepId || "");
                       const repName = hasPhysicianRep ? m.marketingRepName : (src?.marketingRepId ? (marketingReps.find(r => r.id === src.marketingRepId)?.name || "") : "");
@@ -1137,7 +1137,7 @@ export default function ScheduleTab() {
                 <select className={MODAL_INPUT_CLS} value={modal.deviceId} onChange={e => setModal({ ...modal, deviceId: e.target.value })}>
                   <option value="">{t("radiology.schedule.noDevice")}</option>
                   {devices.filter(d => d.isActive !== false).map(d => (
-                    <option key={d.id} value={d.id}>{d.name}{d.room ? ` ΓÇö ${d.room}` : ""}</option>
+                    <option key={d.id} value={d.id}>{d.name}{d.room ? ` — ${d.room}` : ""}</option>
                   ))}
                 </select>
                 {(() => {
@@ -1152,7 +1152,7 @@ export default function ScheduleTab() {
                   });
                   return clash ? (
                     <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <Zap className="w-3 h-3" /> {t("radiology.schedule.deviceConflict", { name: clash.patientName, time: clash.appointmentTime || "ΓÇö" })}
+                      <Zap className="w-3 h-3" /> {t("radiology.schedule.deviceConflict", { name: clash.patientName, time: clash.appointmentTime || "—" })}
                     </p>
                   ) : null;
                 })()}
@@ -1292,7 +1292,7 @@ export default function ScheduleTab() {
               <h3 className="text-lg font-bold">{t("radiology.schedule.cardScanTitle")}</h3>
               <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label={t("radiology.cancel") as string}><XMarkIcon className="w-5 h-5" /></button>
             </div>
-            <img src={cardScan} alt="╪º┘ä╪¿╪╖╪º┘é╪⌐" className="w-full max-h-64 object-contain rounded-lg border dark:border-gray-600 mb-4" />
+            <img src={cardScan} alt="البطاقة" className="w-full max-h-64 object-contain rounded-lg border dark:border-gray-600 mb-4" />
             {cardOcrBusy ? (
               <p className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mb-3">
                 <Loader2 className="w-4 h-4 animate-spin" />{t("radiology.schedule.cardOcrReading")}

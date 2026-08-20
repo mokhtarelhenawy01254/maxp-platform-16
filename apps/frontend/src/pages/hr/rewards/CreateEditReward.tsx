@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "../../../i18n";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../../services/apiClient";
-import { AlertCircle, AlertTriangle, ArrowLeft, Award, Calendar, DollarSign, Grid, RefreshCw, Save, Sparkles, Star, User } from 'lucide-react';
+import {
+  Award,
+  ArrowLeft,
+  Save,
+  AlertCircle,
+  RefreshCw,
+  User,
+  Calendar,
+  DollarSign,
+  Sparkles,
+  Layers,
+} from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3007";
 
@@ -66,6 +79,7 @@ interface FormData {
 }
 
 const CreateEditReward: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEdit = !!id;
@@ -265,10 +279,10 @@ const CreateEditReward: React.FC = () => {
 
       if (isEdit) {
         await apiClient.put(`/hr/rewards/records/${id}`, payload);
-        alert("تم تحديث المكافأة بنجاح");
+        alert(i18n.t("CreateEditReward.success_update_6490"));
       } else {
         await apiClient.post(`/hr/rewards/records`, payload);
-        alert("تم إضافة المكافأة بنجاح");
+        alert(i18n.t("CreateEditReward.success_add_ab3d"));
       }
 
       navigate("/hr/rewards");

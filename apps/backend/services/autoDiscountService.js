@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const DEFAULT_SETTINGS = {
   system: 'AUTO_DISCOUNT',
@@ -10,23 +10,23 @@ const DEFAULT_SETTINGS = {
   pointsPerAmount: 5,
   pointsRedemptionValue: 1,
   redeemPointsEnabled: true,
-  // ≡ƒåò ┘ü┘ä╪º╪¼╪º╪¬ ╪¬┘ü╪╣┘è┘ä ┘à╪│╪¬┘é┘ä╪⌐ ┘ä┘â┘ä ┘å╪╕╪º┘à (╪╣╪┤╪º┘å ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ ┘ê╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘è╪┤╪¬╪║┘ä┘ê╪º ┘à╪╣ ╪¿╪╣╪╢)
+  // 🆕 فلاجات تفعيل مستقلة لكل نظام (عشان المستويات والخصم التلقائي يشتغلوا مع بعض)
   tiersEnabled: false,
   autoDiscountEnabled: false,
-  // ≡ƒåò ┘ê╪╢╪╣ ╪»┘à╪¼ ╪«╪╡┘à ╪º┘ä┘à╪│╪¬┘ê┘ë + ┘â┘ê╪¿┘ê┘å ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è:
-  //   'BEST' = ╪ú╪╣┘ä┘ë ╪«╪╡┘à ╪¿╪│ | 'ADDITIVE' = ╪¼┘à╪╣ ╪º┘ä┘å╪│╪¿ | 'COMPOUND' = ┘à╪▒┘â┘æ╪¿
+  // 🆕 وضع دمج خصم المستوى + كوبون الخصم التلقائي:
+  //   'BEST' = أعلى خصم بس | 'ADDITIVE' = جمع النسب | 'COMPOUND' = مركّب
   discountCombination: 'ADDITIVE',
-  // ╪¡╪» ╪ú┘é╪╡┘ë ┘ä╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪«╪╡┘à (┘¬) ΓÇö 0 = ╪¿╪»┘ê┘å ╪¡╪»
+  // حد أقصى لإجمالي الخصم (٪) — 0 = بدون حد
   maxTotalDiscountPercent: 20,
 };
 
 /**
- * ╪Ñ╪╣╪»╪º╪»╪º╪¬ ┘å╪╕╪º┘à "╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è" ┘ä╪┤╪▒┘â╪⌐ ┘à╪╣┘è┘å╪⌐
+ * إعدادات نظام "الخصم التلقائي" لشركة معينة
  */
 async function getSettings(companyId) {
   const prisma = getSharedPrismaClient();
-  // ≡ƒ¢í∩╕Å ┘ä┘ê ╪º┘ä┘Ç companyId ┘å╪º┘é╪╡/╪║┘è╪▒ ╪╡╪º┘ä╪¡ (┘à╪½┘ä SUPER_ADMIN ┘à┘å ╪║┘è╪▒ ╪│┘è╪º┘é ╪┤╪▒┘â╪⌐)
-  // ┘å╪▒╪¼┘æ╪╣ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ╪¿╪»┘ä ┘à╪º ┘å┘ê┘é╪╣ ┘ü┘è ╪«╪╖╪ú Prisma validation ΓåÆ 500
+  // 🛡️ لو الـ companyId ناقص/غير صالح (مثل SUPER_ADMIN من غير سياق شركة)
+  // نرجّع الإعدادات الافتراضية بدل ما نوقع في خطأ Prisma validation → 500
   if (!companyId) {
     return { ...DEFAULT_SETTINGS, loyaltySystem: 'TIERS' };
   }
@@ -43,12 +43,12 @@ async function getSettings(companyId) {
     }
   } catch (e) { /* ignore malformed */ }
   const result = { ...cfg, loyaltySystem: company?.loyaltySystem || 'TIERS' };
-  // ≡ƒƒó backfill: ╪º┘ä╪┤╪▒┘â╪º╪¬ ╪º┘ä┘ä┘è ┘â╪º┘å╪¬ ╪┤╪║╪º┘ä╪⌐ ┘é╪¿┘ä ╪Ñ╪╢╪º┘ü╪⌐ ┘ü┘ä╪º╪¼ ╪º┘ä╪¬┘ü╪╣┘è┘ä ╪¬┘ü╪╢┘ä ┘à┘ü╪╣┘æ┘ä╪⌐ (╪º┘ä╪│┘ä┘ê┘â ╪º┘ä┘é╪»┘è┘à)
+  // 🟢 backfill: الشركات اللي كانت شغالة قبل إضافة فلاج التفعيل تفضل مفعّلة (السلوك القديم)
   if (storedSettings.activated === undefined) {
     result.activated = Boolean(company?.loyaltySystem);
   }
-  // ≡ƒòÉ backfill: ┘ä┘ê ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘à┘ü╪╣┘æ┘ä ┘ê┘à┘ä┘ê╪┤ ╪¬╪º╪▒┘è╪« ╪¬┘ü╪╣┘è┘ä ┘à╪¡┘ü┘ê╪╕ (╪¿┘è╪º┘å╪º╪¬ ┘é╪»┘è┘à╪⌐)╪î
-  // ┘å╪│╪¬╪»┘ä ┘à┘å ╪ú┘ê┘ä ┘â┘ê╪¿┘ê┘å ╪╡╪»╪▒ ┘ê┘å╪¡┘ü╪╕┘ç ┘à╪▒╪⌐ ┘ê╪º╪¡╪»╪⌐ ╪╣╪┤╪º┘å ╪º┘ä╪¬╪º╪▒┘è╪« ┘è╪¿┘é┘ë ╪½╪º╪¿╪¬
+  // 🕐 backfill: لو الخصم التلقائي مفعّل وملوش تاريخ تفعيل محفوظ (بيانات قديمة)،
+  // نستدل من أول كوبون صدر ونحفظه مرة واحدة عشان التاريخ يبقى ثابت
   if (result.loyaltySystem === 'AUTO_DISCOUNT' && !result.loyaltyActivatedAt) {
     try {
       const firstVoucher = await prisma.customerLoyaltyVoucher.findFirst({
@@ -70,8 +70,8 @@ async function getSettings(companyId) {
 }
 
 /**
- * ┘ç┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘ç┘ê ╪º┘ä┘à┘ü╪╣┘ä ┘ä┘ä╪┤╪▒┘â╪⌐╪ƒ
- * ≡ƒåò ┘à╪│╪¬┘é┘ä ╪╣┘å ┘å╪╕╪º┘à ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ ΓÇö ╪¿┘è╪╣╪¬┘à╪» ╪╣┘ä┘ë autoDiscountEnabled
+ * هل نظام الخصم التلقائي هو المفعل للشركة؟
+ * 🆕 مستقل عن نظام المستويات — بيعتمد على autoDiscountEnabled
  */
 async function isAutoDiscountActive(companyId) {
   const s = await getSettings(companyId);
@@ -79,8 +79,8 @@ async function isAutoDiscountActive(companyId) {
 }
 
 /**
- * ┘ç┘ä ┘å╪╕╪º┘à ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ (Tiers) ┘ç┘ê ╪º┘ä┘à┘ü╪╣┘ä ┘ä┘ä╪┤╪▒┘â╪⌐╪ƒ
- * ≡ƒåò ┘à╪│╪¬┘é┘ä ╪╣┘å ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ΓÇö ╪¿┘è╪╣╪¬┘à╪» ╪╣┘ä┘ë tiersEnabled
+ * هل نظام المستويات (Tiers) هو المفعل للشركة؟
+ * 🆕 مستقل عن الخصم التلقائي — بيعتمد على tiersEnabled
  */
 async function isTiersActive(companyId) {
   const s = await getSettings(companyId);
@@ -88,7 +88,7 @@ async function isTiersActive(companyId) {
 }
 
 /**
- * ┘ç┘ä ┘å╪╕╪º┘à ╪º┘ä┘ê┘ä╪º╪í (╪ú┘è╪º┘ï ┘â╪º┘å: ┘à╪│╪¬┘ê┘è╪º╪¬ ╪ú┘ê ╪«╪╡┘à ╪¬┘ä┘é╪º╪ª┘è) ┘à┘ü╪╣┘æ┘ä ┘ü╪╣┘ä╪º┘ï ┘ä┘ä╪┤╪▒┘â╪⌐╪ƒ
+ * هل نظام الولاء (أياً كان: مستويات أو خصم تلقائي) مفعّل فعلاً للشركة؟
  */
 async function isLoyaltySystemActivated(companyId) {
   const s = await getSettings(companyId);
@@ -96,13 +96,13 @@ async function isLoyaltySystemActivated(companyId) {
 }
 
 /**
- * ╪¬╪¡╪»┘è╪½ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ┘å╪╕╪º┘à ╪º┘ä┘ê┘ä╪º╪í ┘ä┘ä╪┤╪▒┘â╪⌐
- * data.system: 'TIERS' | 'AUTO_DISCOUNT' (╪¬┘ü╪╣┘è┘ä ╪ú╪¡╪»┘ç┘à╪º ┘è╪╣╪╖┘æ┘ä ╪º┘ä╪ó╪«╪▒)
- * data.activated: true = ╪¬┘à ╪º┘ä╪╢╪║╪╖ ╪╣┘ä┘ë "╪¬┘ü╪╣┘è┘ä ╪º┘ä┘å╪╕╪º┘à" ΓåÆ ╪º┘ä┘å╪╕╪º┘à ┘è╪┤╪¬╪║┘ä ┘ü╪╣┘ä┘è╪º┘ï
+ * تحديث إعدادات نظام الولاء للشركة
+ * data.system: 'TIERS' | 'AUTO_DISCOUNT' (تفعيل أحدهما يعطّل الآخر)
+ * data.activated: true = تم الضغط على "تفعيل النظام" → النظام يشتغل فعلياً
  */
 async function updateSettings(companyId, data) {
   const prisma = getSharedPrismaClient();
-  // ≡ƒ¢í∩╕Å ┘ä┘ê ╪º┘ä┘Ç companyId ┘å╪º┘é╪╡╪î ┘à┘å┘à┘å╪╣╪┤ P2025/validation ΓåÆ 500 ╪╣┘ä┘ë ╪º┘ä╪¡┘ü╪╕
+  // 🛡️ لو الـ companyId ناقص، منمنعش P2025/validation → 500 على الحفظ
   if (!companyId) {
     throw new Error('Company context is missing');
   }
@@ -111,16 +111,16 @@ async function updateSettings(companyId, data) {
   const next = { ...current, ...data };
   delete next.loyaltySystem;
   next.system = system;
-  // ≡ƒƒó ╪º┘ä╪¬┘ü╪╣┘è┘ä ╪¿┘è╪¬╪║┘è╪▒ ┘ü┘é╪╖ ┘ä┘à╪º ╪º┘ä┘Ç activated ┘è╪¬┘ê╪╡┘Ä┘æ┘ä ╪╡╪▒╪º╪¡╪⌐ ┘ü┘è ╪º┘ä╪╖┘ä╪¿
-  //    (┘à╪┤ ╪¿┘è╪¬┘ä╪║┘ë ╪¿┘à╪¼╪▒╪» ╪º╪«╪¬┘è╪º╪▒ ╪º┘ä┘å╪╕╪º┘à ╪º┘ä╪¬╪º┘å┘è ┘ü┘è ╪º┘ä┘ê╪º╪¼┘ç╪⌐)
+  // 🟢 التفعيل بيتغير فقط لما الـ activated يتوصَّل صراحة في الطلب
+  //    (مش بيتلغى بمجرد اختيار النظام التاني في الواجهة)
   if (data.activated !== undefined) {
     next.activated = data.activated === true;
   }
-  // ≡ƒòÉ ╪╣┘å╪» ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘ä╪ú┘ê┘ä ┘à╪▒╪⌐ (╪ú┘ê ╪º┘ä╪▒╪¼┘ê╪╣ ╪Ñ┘ä┘è┘ç ╪¿╪╣╪» ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬) ┘å╪¡┘ü╪╕ ╪¬╪º╪▒┘è╪« ╪º┘ä╪¬┘ü╪╣┘è┘ä
+  // 🕐 عند تفعيل الخصم التلقائي لأول مرة (أو الرجوع إليه بعد المستويات) نحفظ تاريخ التفعيل
   if (system === 'AUTO_DISCOUNT' && next.activated === true && current.loyaltySystem !== 'AUTO_DISCOUNT') {
     next.loyaltyActivatedAt = new Date().toISOString();
   }
-  // ≡ƒåò ┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä┘ü┘ä╪º╪¼╪º╪¬ ╪º┘ä┘à╪│╪¬┘é┘ä╪⌐ ┘à╪╣ ╪º┘ä┘å╪╕╪º┘à ╪º┘ä┘é╪»┘è┘à (╪╣╪┤╪º┘å ╪º┘ä┘ü╪▒┘ê┘å╪¬ ╪º┘ä┘é╪»┘è┘à ┘è┘ü╪╢┘ä ╪┤╪║╪º┘ä)
+  // 🆕 مزامنة الفلاجات المستقلة مع النظام القديم (عشان الفرونت القديم يفضل شغال)
   next.tiersEnabled = (system === 'TIERS' && next.activated === true);
   next.autoDiscountEnabled = (system === 'AUTO_DISCOUNT' && next.activated === true);
   await prisma.company.update({
@@ -130,17 +130,17 @@ async function updateSettings(companyId, data) {
       loyaltySettings: JSON.stringify(next)
     }
   });
-  // Γ£à ┘å╪▒╪¼┘æ╪╣ loyaltySystem ┘ü┘è ╪º┘ä┘Ç response ╪╣╪┤╪º┘å ╪º┘ä┘ê╪º╪¼┘ç╪⌐ ╪¬╪╣╪▒┘ü ╪º┘ä┘å╪╕╪º┘à ╪º┘ä┘ü╪╣┘ä┘è ╪º┘ä┘à┘ü╪╣┘æ┘ä
+  // ✅ نرجّع loyaltySystem في الـ response عشان الواجهة تعرف النظام الفعلي المفعّل
   return { ...next, loyaltySystem: system };
 }
 
 /**
- * ≡ƒåò ╪¬╪¡╪»┘è╪½ ┘à┘ê╪¡┘æ╪» ┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘ê┘ä╪º╪í ┘à╪╣ ┘ü┘ä╪º╪¼╪º╪¬ ╪¬┘ü╪╣┘è┘ä ┘à╪│╪¬┘é┘ä╪⌐:
- * - tiersEnabled / autoDiscountEnabled: ┘â┘ä ┘ê╪º╪¡╪» ┘ä┘ê╪¡╪»┘ç (╪º┘ä╪º╪¬┘å┘è┘å ┘à┘à┘â┘å ┘è╪┤╪¬╪║┘ä┘ê╪º ┘à╪╣ ╪¿╪╣╪╢)
- * - discountCombination: ┘ê╪╢╪╣ ╪»┘à╪¼ ╪º┘ä╪«╪╡┘à (BEST | ADDITIVE | COMPOUND)
- * - maxTotalDiscountPercent: ╪¡╪» ╪ú┘é╪╡┘ë ┘ä╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪«╪╡┘à (%) ΓÇö 0 = ╪¿╪»┘ê┘å ╪¡╪»
- * - ╪¡┘é┘ê┘ä ╪Ñ╪╣╪»╪º╪» ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è (discountPercent ...)
- * ┘à┘ä╪º╪¡╪╕╪⌐: ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â (cashbackEnabled) ╪¿┘è╪¬╪╣╪º┘à┘ä ┘à╪╣╪º┘ç ╪º┘ä┘Ç controller ╪╣╪┤╪º┘å ┘è╪╕╪¿╪╖ ╪╣┘ä┘ë status ╪¿╪▒┘å╪º┘à╪¼ CASHBACK.
+ * 🆕 تحديث موحّد لإعدادات الولاء مع فلاجات تفعيل مستقلة:
+ * - tiersEnabled / autoDiscountEnabled: كل واحد لوحده (الاتنين ممكن يشتغلوا مع بعض)
+ * - discountCombination: وضع دمج الخصم (BEST | ADDITIVE | COMPOUND)
+ * - maxTotalDiscountPercent: حد أقصى لإجمالي الخصم (%) — 0 = بدون حد
+ * - حقول إعداد الخصم التلقائي (discountPercent ...)
+ * ملاحظة: الكاش باك (cashbackEnabled) بيتعامل معاه الـ controller عشان يظبط على status برنامج CASHBACK.
  */
 async function updateLoyaltyConfig(companyId, config = {}) {
   const prisma = getSharedPrismaClient();
@@ -169,12 +169,12 @@ async function updateLoyaltyConfig(companyId, config = {}) {
     if (config[k] !== undefined) next[k] = config[k];
   }
 
-  // ≡ƒòÉ ╪¬╪º╪▒┘è╪« ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ╪ú┘ê┘ä ┘à╪▒╪⌐ ┘è╪¬┘ü╪╣┘æ┘ä
+  // 🕐 تاريخ تفعيل الخصم التلقائي أول مرة يتفعّل
   if (next.autoDiscountEnabled === true && current.autoDiscountEnabled !== true) {
     next.loyaltyActivatedAt = new Date().toISOString();
   }
 
-  // ≡ƒöä ┘å╪¡╪º┘ü╪╕ ╪╣┘ä┘ë ╪º┘ä╪¡┘é┘ê┘ä legacy (loyaltySystem/activated) ┘à╪¬╪▓╪º┘à┘å╪⌐ ┘ä╪ú┘å ┘â┘ê╪» ┘é╪»┘è┘à ┘ä╪│┘ç ╪¿┘è┘é╪▒╪ú┘ç╪º
+  // 🔄 نحافظ على الحقول legacy (loyaltySystem/activated) متزامنة لأن كود قديم لسه بيقرأها
   if (next.tiersEnabled && !next.autoDiscountEnabled) {
     next.loyaltySystem = 'TIERS'; next.activated = true;
   } else if (next.autoDiscountEnabled && !next.tiersEnabled) {
@@ -193,7 +193,7 @@ async function updateLoyaltyConfig(companyId, config = {}) {
 }
 
 /**
- * ╪Ñ╪╡╪»╪º╪▒ ┘â┘ê╪¿┘ê┘å ╪«╪╡┘à ╪¬┘ä┘é╪º╪ª┘è ╪¿╪╣╪» ╪¬╪│┘ä┘è┘à ╪ú┘ê╪▒╪»╪▒ (┘à╪▒╪⌐ ┘ê╪º╪¡╪»╪⌐ ┘ä┘â┘ä ╪ú┘ê╪▒╪»╪▒)
+ * إصدار كوبون خصم تلقائي بعد تسليم أوردر (مرة واحدة لكل أوردر)
  */
 async function issueVoucherForDeliveredOrder({ orderId, companyId }) {
   const prisma = getSharedPrismaClient();
@@ -210,7 +210,7 @@ async function issueVoucherForDeliveredOrder({ orderId, companyId }) {
     if (existing) return { issued: false, reason: 'already_issued' };
 
     const settings = await getSettings(companyId);
-    // ≡ƒòÉ ╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘ä┘è ╪º╪¬╪╖┘ä╪¿╪¬ ┘é╪¿┘ä ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä┘ê┘ä╪º╪í ┘à╪┤ ╪¿╪¬╪º╪«╪» ┘â┘ê╪¿┘ê┘å ╪«╪╡┘à
+    // 🕐 الأوردرات اللي اتطلبت قبل تفعيل نظام الولاء مش بتاخد كوبون خصم
     const activatedAt = await getLoyaltyActivatedAt(companyId, settings);
     if (activatedAt && new Date(order.createdAt) < activatedAt) {
       return { issued: false, reason: 'order_before_activation' };
@@ -232,7 +232,7 @@ async function issueVoucherForDeliveredOrder({ orderId, companyId }) {
       }
     });
 
-    // ≡ƒô¿ ╪Ñ╪┤╪╣╪º╪▒ ╪º┘ä╪╣┘à┘è┘ä ╪¿┘à┘å╪¡ ┘â┘ê╪¿┘ê┘å ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è (╪╣╪¿╪▒ ╪¼╪»┘ê┘ä ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í)
+    // 📨 إشعار العميل بمنح كوبون الخصم التلقائي (عبر جدول إشعارات العملاء)
     try {
       const { sendCustomerNotification } = require('./hr/customerNotificationScheduleService');
       const customer = await prisma.customer.findUnique({
@@ -262,18 +262,18 @@ async function issueVoucherForDeliveredOrder({ orderId, companyId }) {
         });
       }
     } catch (notifError) {
-      console.warn(`ΓÜá∩╕Å [AUTO-DISCOUNT-NOTIF] Failed to notify ${orderNumber}:`, notifError.message);
+      console.warn(`⚠️ [AUTO-DISCOUNT-NOTIF] Failed to notify ${orderNumber}:`, notifError.message);
     }
 
     return { issued: true, voucher };
   } catch (error) {
-    console.error('Γ¥î [AUTO-DISCOUNT] Failed to issue voucher:', error.message);
+    console.error('❌ [AUTO-DISCOUNT] Failed to issue voucher:', error.message);
     return { issued: false, reason: 'error' };
   }
 }
 
 /**
- * ╪ú┘é╪▒╪¿ ┘â┘ê╪¿┘ê┘å ┘å╪┤╪╖ ┘ä╪╣┘à┘è┘ä (╪║┘è╪▒ ┘à╪│╪¬╪«╪»┘à ┘ê╪║┘è╪▒ ┘à┘å╪¬┘ç┘è)
+ * أقرب كوبون نشط لعميل (غير مستخدم وغير منتهي)
  */
 async function getActiveVoucher(customerId, companyId) {
   const prisma = getSharedPrismaClient();
@@ -284,7 +284,7 @@ async function getActiveVoucher(customerId, companyId) {
 }
 
 /**
- * ╪¡╪│╪º╪¿ ╪«╪╡┘à ╪º┘ä┘â┘ê╪¿┘ê┘å ┘ä┘ä╪╖┘ä╪¿ ╪º┘ä╪¡╪º┘ä┘è (╪Ñ┘å ┘ê┘Å╪¼╪» ┘â┘ê╪¿┘ê┘å ┘å╪┤╪╖)
+ * حساب خصم الكوبون للطلب الحالي (إن وُجد كوبون نشط)
  */
 async function applyVoucherDiscount({ companyId, customerId, cartTotal }) {
   const prisma = getSharedPrismaClient();
@@ -304,7 +304,7 @@ async function markVoucherUsed(voucherId) {
 }
 
 /**
- * ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘â┘ê╪¿┘ê┘å╪º╪¬ ╪º┘ä┘à┘å╪¬┘ç┘è╪⌐ ╪Ñ┘ä┘ë ┘â╪º╪┤ ╪¿╪º┘â ┘ü┘è ╪º┘ä┘à╪¡┘ü╪╕╪⌐ (cron)
+ * تحويل الكوبونات المنتهية إلى كاش باك في المحفظة (cron)
  */
 async function convertExpiredVouchers() {
   const prisma = getSharedPrismaClient();
@@ -317,8 +317,8 @@ async function convertExpiredVouchers() {
     try {
       const settings = await getSettings(v.companyId);
       if (settings.convertExpiredToCashback !== false) {
-        // ≡ƒ¢í∩╕Å Idempotency: ┘ä┘ê ╪º┘ä┘â┘ê╪¿┘ê┘å ╪»┘ç ╪º╪¬╪¡┘ê┘æ┘ä ┘ü╪╣┘ä╪º┘ï (┘ü┘è┘ç transaction id)╪î ┘å╪¬╪«╪╖╪º┘ç
-        // ╪╣╪┤╪º┘å ┘à┘å╪╢╪º╪╣┘ü╪┤ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ┘ä┘ê ╪º┘ä┘Ç cron ╪º╪┤╪¬╪║┘ä ╪¬╪º┘å┘è ╪╣┘ä┘ë ┘å┘ü╪│ ╪º┘ä┘â┘ê╪¿┘ê┘å.
+        // 🛡️ Idempotency: لو الكوبون ده اتحوّل فعلاً (فيه transaction id)، نتخطاه
+        // عشان منضاعفش الكاش باك لو الـ cron اشتغل تاني على نفس الكوبون.
         const already = await prisma.customerLoyaltyVoucher.findUnique({
           where: { id: v.id },
           select: { status: true, convertedWalletTxId: true }
@@ -328,8 +328,8 @@ async function convertExpiredVouchers() {
         }
 
         const WalletService = require('./walletService');
-        // ≡ƒ¢í∩╕Å ╪¿┘å╪╣┘à┘ä addCashback + ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä┘â┘ê╪¿┘ê┘å ┘ü┘è ┘å┘ü╪│ ╪º┘ä┘Ç transaction
-        // ╪╣╪┤╪º┘å ┘ä┘ê ┘ü╪┤┘ä ╪ú┘è ┘ê╪º╪¡╪»╪î ┘à┘è╪¡╪╡┘ä╪┤ ┘â╪º╪┤ ╪¿╪º┘â ┘à┘å ╪║┘è╪▒ ╪¬╪¡┘ê┘è┘ä ╪¡╪º┘ä╪⌐ (┘ê┘ä╪º ╪º┘ä╪╣┘â╪│).
+        // 🛡️ بنعمل addCashback + تحديث حالة الكوبون في نفس الـ transaction
+        // عشان لو فشل أي واحد، ميحصلش كاش باك من غير تحويل حالة (ولا العكس).
         const result = await prisma.$transaction(async (tx) => {
           const walletRes = await WalletService.addCashbackWithTx(
             tx, v.customerId, v.sourceOrderId, Number(v.amount), 1, Number(v.amount)
@@ -342,7 +342,7 @@ async function convertExpiredVouchers() {
         });
         converted++;
 
-        // ≡ƒô¿ ╪Ñ╪┤╪╣╪º╪▒ ╪º┘ä╪╣┘à┘è┘ä ╪¿╪¬╪¡┘ê┘è┘ä ╪º┘ä┘â┘ê╪¿┘ê┘å ╪º┘ä┘à┘å╪¬┘ç┘è ╪Ñ┘ä┘ë ┘â╪º╪┤ ╪¿╪º┘â
+        // 📨 إشعار العميل بتحويل الكوبون المنتهي إلى كاش باك
         try {
           const { sendCustomerNotification } = require('./hr/customerNotificationScheduleService');
           const customer = await prisma.customer.findUnique({
@@ -369,7 +369,7 @@ async function convertExpiredVouchers() {
             });
           }
         } catch (notifError) {
-          console.warn(`ΓÜá∩╕Å [AUTO-DISCOUNT-NOTIF] Failed to notify convert for voucher ${v.id}:`, notifError.message);
+          console.warn(`⚠️ [AUTO-DISCOUNT-NOTIF] Failed to notify convert for voucher ${v.id}:`, notifError.message);
         }
       } else {
         await prisma.customerLoyaltyVoucher.update({
@@ -378,25 +378,25 @@ async function convertExpiredVouchers() {
         });
       }
     } catch (error) {
-      console.error(`Γ¥î [AUTO-DISCOUNT] Convert failed for voucher ${v.id}:`, error.message);
+      console.error(`❌ [AUTO-DISCOUNT] Convert failed for voucher ${v.id}:`, error.message);
     }
   }
   return { converted, expiredCount: expired.length };
 }
 
 /**
- * ╪Ñ┘ä╪║╪º╪í ┘â┘ê╪¿┘ê┘å╪º╪¬ ╪ú┘ê╪▒╪»╪▒ ╪╣┘å╪» ╪Ñ┘ä╪║╪º╪í/╪▒╪¼┘ê╪╣ ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪º┘ä┘à╪╡╪»╪▒╪î
- * ┘ê╪º╪│╪¬╪▒╪¼╪º╪╣ ╪º┘ä┘â┘ê╪¿┘ê┘å ╪º┘ä┘à╪│╪¬╪«╪»┘à ╪Ñ┘å ┘â╪º┘å ╪º┘ä╪╖┘ä╪¿ ╪º╪│╪¬╪«╪»┘à ┘â┘ê╪¿┘ê┘å.
+ * إلغاء كوبونات أوردر عند إلغاء/رجوع الأوردر المصدر،
+ * واسترجاع الكوبون المستخدم إن كان الطلب استخدم كوبون.
  */
 async function reverseVoucherForOrder({ orderId, companyId }) {
   const prisma = getSharedPrismaClient();
   try {
-    // 1) ╪Ñ┘ä╪║╪º╪í ╪º┘ä┘â┘ê╪¿┘ê┘å╪º╪¬ ╪º┘ä┘å╪┤╪╖╪⌐/╪º┘ä┘à┘å╪¬┘ç┘è╪⌐ ╪º┘ä╪╡╪º╪»╪▒╪⌐ ┘à┘å ┘ç╪░╪º ╪º┘ä╪ú┘ê╪▒╪»╪▒
+    // 1) إلغاء الكوبونات النشطة/المنتهية الصادرة من هذا الأوردر
     await prisma.customerLoyaltyVoucher.updateMany({
       where: { companyId, sourceOrderId: orderId, status: { in: ['ACTIVE', 'EXPIRED'] } },
       data: { status: 'CANCELLED' }
     });
-    // 2) ┘ä┘ê ┘â┘ê╪¿┘ê┘å ┘à┘å ┘ç╪░╪º ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪º╪¬╪¡┘ê┘æ┘ä ┘ä┘â╪º╪┤ ╪¿╪º┘â╪î ┘å╪«╪╡┘à┘ç ┘à┘å ╪º┘ä┘à╪¡┘ü╪╕╪⌐
+    // 2) لو كوبون من هذا الأوردر اتحوّل لكاش باك، نخصمه من المحفظة
     const converted = await prisma.customerLoyaltyVoucher.findMany({
       where: { companyId, sourceOrderId: orderId, status: 'CONVERTED' }
     });
@@ -405,14 +405,14 @@ async function reverseVoucherForOrder({ orderId, companyId }) {
         const WalletService = require('./walletService');
         const wallet = await prisma.customerWallet.findFirst({ where: { customerId: v.customerId } });
         if (wallet && Number(wallet.balance) >= Number(v.amount)) {
-          await WalletService.deductFromWallet(v.customerId, Number(v.amount), `╪¬╪▒╪¼┘è╪╣ ┘â┘ê╪¿┘ê┘å ┘à┘å╪¬┘ç┘è ┘ä┘ä╪ú┘ê╪▒╪»╪▒ ${v.orderNumber}`);
+          await WalletService.deductFromWallet(v.customerId, Number(v.amount), `ترجيع كوبون منتهي للأوردر ${v.orderNumber}`);
         }
         await prisma.customerLoyaltyVoucher.update({ where: { id: v.id }, data: { status: 'CANCELLED' } });
       } catch (error) {
-        console.error(`Γ¥î [AUTO-DISCOUNT] Converted-voucher wallet reversal failed for ${v.id}:`, error.message);
+        console.error(`❌ [AUTO-DISCOUNT] Converted-voucher wallet reversal failed for ${v.id}:`, error.message);
       }
     }
-    // 3) ┘ä┘ê ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪º╪│╪¬╪«╪»┘à ┘â┘ê╪¿┘ê┘å╪î ┘å╪▒╪¼┘æ╪╣ ╪º┘ä┘â┘ê╪¿┘ê┘å ┘å╪┤╪╖ (╪Ñ┘å ┘ä╪│┘ç ┘ü┘è ┘å╪º┘ü╪░╪⌐ ╪╡┘ä╪º╪¡┘è╪¬┘ç)
+    // 3) لو الأوردر استخدم كوبون، نرجّع الكوبون نشط (إن لسه في نافذة صلاحيته)
     const order = await prisma.order.findFirst({ where: { id: orderId, companyId }, select: { metadata: true } });
     if (order?.metadata) {
       try {
@@ -428,13 +428,13 @@ async function reverseVoucherForOrder({ orderId, companyId }) {
     }
     return { reversed: true };
   } catch (error) {
-    console.error('Γ¥î [AUTO-DISCOUNT] Reverse failed:', error.message);
+    console.error('❌ [AUTO-DISCOUNT] Reverse failed:', error.message);
     return { reversed: false };
   }
 }
 
 /**
- * ╪º╪│╪¬╪▒╪¼╪º╪╣ ╪º┘ä┘å┘é╪º╪╖ ╪º┘ä┘ä┘è ╪º╪│╪¬╪«╪»┘à┘ç╪º ╪º┘ä╪╣┘à┘è┘ä ┘â╪»┘ü╪╣ (┘å┘é╪╖╪⌐ = value ╪¼) ╪╣┘å╪» ╪Ñ┘ä╪║╪º╪í/╪▒╪¼┘ê╪╣ ╪º┘ä╪ú┘ê╪▒╪»╪▒
+ * استرجاع النقاط اللي استخدمها العميل كدفع (نقطة = value ج) عند إلغاء/رجوع الأوردر
  */
 async function restoreRedeemedPointsForOrder({ orderId, companyId }) {
   const prisma = getSharedPrismaClient();
@@ -446,7 +446,7 @@ async function restoreRedeemedPointsForOrder({ orderId, companyId }) {
     try { meta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata; } catch (e) { return { restored: false, reason: 'bad_metadata' }; }
 
     let pr = meta?.pointsRedemption;
-    // Fallback: ╪¿╪╣╪╢ ╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪¿╪¬╪¡╪╖ ╪º┘ä┘Ç pointsRedemption ╪╣┘ä┘ë ╪º┘ä┘Ç GuestOrder ┘ü┘é╪╖
+    // Fallback: بعض الأوردرات بتحط الـ pointsRedemption على الـ GuestOrder فقط
     if (!pr || !pr.pointsUsed) {
       const guestOrder = await prisma.guestOrder.findFirst({ where: { orderNumber: order.orderNumber || '', companyId }, select: { metadata: true } });
       if (guestOrder?.metadata) {
@@ -473,14 +473,14 @@ async function restoreRedeemedPointsForOrder({ orderId, companyId }) {
     });
     return { restored: true, points: pointsUsed };
   } catch (error) {
-    console.error('Γ¥î [AUTO-DISCOUNT] Restore redeemed points failed:', error.message);
+    console.error('❌ [AUTO-DISCOUNT] Restore redeemed points failed:', error.message);
     return { restored: false, reason: 'error' };
   }
 }
 
 /**
- * ╪¬╪º╪▒┘è╪« ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘ä┘ä╪┤╪▒┘â╪⌐.
- * ┘ä┘ê ┘à┘ä┘ê╪┤ ╪¬╪º╪▒┘è╪« ┘à╪¡┘ü┘ê╪╕ (╪¿┘è╪º┘å╪º╪¬ ┘é╪»┘è┘à╪⌐) ┘å╪│╪¬╪»┘ä ┘à┘å ╪ú┘ê┘ä ┘â┘ê╪¿┘ê┘å ╪╡╪»╪▒.
+ * تاريخ تفعيل نظام الخصم التلقائي للشركة.
+ * لو ملوش تاريخ محفوظ (بيانات قديمة) نستدل من أول كوبون صدر.
  */
 async function getLoyaltyActivatedAt(companyId, settings) {
   const raw = settings?.loyaltyActivatedAt;
@@ -498,10 +498,10 @@ async function getLoyaltyActivatedAt(companyId, settings) {
 }
 
 /**
- * ╪¡╪º┘ä╪⌐ ╪«╪╡┘à ╪╣┘à┘è┘ä ┘ê╪º╪¡╪»:
- * - 'AVAILABLE': ╪╣┘å╪»┘ç ┘â┘ê╪¿┘ê┘å ╪«╪╡┘à ┘ü╪╣┘æ╪º┘ä (╪«╪╡┘à ┘à╪¬╪º╪¡)
- * - 'PRE_ACTIVATION': ┘â┘ä ╪ú┘ê╪▒╪»╪▒╪º╪¬┘ç ╪º┘ä┘à╪│┘ä┘æ┘à╪⌐ ╪º╪¬╪╖┘ä╪¿╪¬ ┘é╪¿┘ä ╪¬┘ü╪╣┘è┘ä ┘å╪╕╪º┘à ╪º┘ä┘ê┘ä╪º╪í (┘à╪┤ ╪¿┘è╪╖╪¿┘é ╪╣┘ä┘è┘ç)
- * - null: ┘à╪┤ ┘ä┘ç ╪¡╪º┘ä╪⌐ (┘à┘ü┘è╪┤ ╪ú┘ê╪▒╪»╪▒╪º╪¬ / ╪º╪│╪¬╪«╪»┘à ╪º┘ä╪«╪╡┘à)
+ * حالة خصم عميل واحد:
+ * - 'AVAILABLE': عنده كوبون خصم فعّال (خصم متاح)
+ * - 'PRE_ACTIVATION': كل أوردراته المسلّمة اتطلبت قبل تفعيل نظام الولاء (مش بيطبق عليه)
+ * - null: مش له حالة (مفيش أوردرات / استخدم الخصم)
  */
 async function getCustomerAutoDiscountStatus({ companyId, customerId, settings }) {
   const prisma = getSharedPrismaClient();
@@ -529,7 +529,7 @@ async function getCustomerAutoDiscountStatus({ companyId, customerId, settings }
 }
 
 /**
- * ╪¬╪¡┘ê┘è┘ä ┘â╪º╪ª┘å ╪º┘ä┘â┘ê╪¿┘ê┘å ┘ä┘ä╪┤┘â┘ä ╪º┘ä┘à┘ê╪¡┘æ╪» ╪º┘ä┘ä┘è ╪¿┘è╪▒╪¼╪╣ ┘ä┘ä┘ê╪º╪¼┘ç╪⌐ (┘à╪│╪¬╪«╪»┘à ┘ü┘è ┘â┘ä ╪º┘ä╪ú┘à╪º┘â┘å).
+ * تحويل كائن الكوبون للشكل الموحّد اللي بيرجع للواجهة (مستخدم في كل الأماكن).
  */
 function mapVoucherToPublic(voucher) {
   if (!voucher) return null;
@@ -543,8 +543,8 @@ function mapVoucherToPublic(voucher) {
 }
 
 /**
- * ┘à┘ä╪«╪╡ ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘ä╪╣┘à┘è┘ä ┘ê╪º╪¡╪» (┘â┘ê╪¿┘ê┘å ┘ü╪╣┘æ╪º┘ä + ╪¡╪º┘ä╪⌐ ╪º┘ä╪«╪╡┘à) ΓÇö ┘à╪│╪¬╪«╪»┘à ┘ü┘è ╪¿┘ê╪º╪¿╪⌐ ╪º┘ä╪╣┘à┘è┘ä
- * ┘ü┘è ┘à┘â╪º┘å┘è┘å (╪º┘ä┘à╪│╪ñ┘ê┘ä + ╪º┘ä╪╣┘à┘è┘ä ┘å┘ü╪│┘ç) ╪╣╪┤╪º┘å ┘à┘ü┘è╪┤ ╪¬┘â╪▒╪º╪▒/╪º┘å╪¡╪▒╪º┘ü.
+ * ملخص الخصم التلقائي لعميل واحد (كوبون فعّال + حالة الخصم) — مستخدم في بوابة العميل
+ * في مكانين (المسؤول + العميل نفسه) عشان مفيش تكرار/انحراف.
  */
 async function getCustomerAutoDiscountSummary({ customerId, companyId, settings }) {
   const cfg = settings || await getSettings(companyId);
@@ -559,8 +559,8 @@ async function getCustomerAutoDiscountSummary({ customerId, companyId, settings 
 }
 
 /**
- * ╪Ñ╪½╪▒╪º╪í ┘é╪º╪ª┘à╪⌐ ╪╣┘à┘ä╪º╪í ╪¿╪¡╪º┘ä╪⌐ ╪º┘ä╪«╪╡┘à (AVAILABLE / PRE_ACTIVATION) ┘ä╪╡┘ü╪¡╪⌐ ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í.
- * ╪¿┘è╪¿┘é┘ë null ┘ä┘ê ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘à╪┤ ┘à┘ü╪╣┘æ┘ä ╪ú┘ê ┘à┘ü┘è╪┤ ╪¡╪º┘ä╪⌐.
+ * إثراء قائمة عملاء بحالة الخصم (AVAILABLE / PRE_ACTIVATION) لصفحة قائمة العملاء.
+ * بيبقى null لو نظام الخصم التلقائي مش مفعّل أو مفيش حالة.
  */async function enrichCustomersWithAutoDiscountStatus(companyId, customers) {
   if (!Array.isArray(customers) || customers.length === 0) return customers;
   const settings = await getSettings(companyId);
@@ -604,10 +604,10 @@ async function getCustomerAutoDiscountSummary({ customerId, companyId, settings 
 }
 
 /**
- * Backfill: ╪Ñ╪╡╪»╪º╪▒ ┘â┘ê╪¿┘ê┘å╪º╪¬ ┘ä╪ú┘è ╪ú┘ê╪▒╪»╪▒ ┘à╪│┘ä┘æ┘à ┘é╪»┘è┘à ┘ä╪│┘ç ┘à┘ü┘è╪┤ ┘ä┘è┘ç ┘â┘ê╪¿┘ê┘å
- * (╪¿╪│╪¿╪¿ ┘à╪┤╪º┘â┘ä ╪│╪º╪¿┘é╪⌐/╪«╪╖╪ú ╪¼┘ä╪¿ ╪¿┘è╪º┘å╪º╪¬/┘å╪╕╪º┘à ┘à┘ê┘é┘ê┘ü ┘ä┘ü╪¬╪▒╪⌐).
- * ╪¿┘è╪╢┘à┘å ╪Ñ┘å ╪º┘ä┘å╪╕╪º┘à "┘è╪¡╪│╪¿ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘ê┘è╪¬┘ü╪╣┘ä" ┘ä┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘à╪│┘ä┘æ┘à╪⌐ ╪º┘ä┘å╪º┘é╪╡╪⌐.
- * ┘à╪▒╪┤╪¡: ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪º┘ä┘à╪│┘ä┘æ┘à ╪¿╪╣╪» ╪¬╪º╪▒┘è╪« ╪º┘ä╪¬┘ü╪╣┘è┘ä ┘ê┘à┘ü┘è╪┤ ┘ä┘ç ┘â┘ê╪¿┘ê┘å ╪ú╪╡┘ä╪º┘ï.
+ * Backfill: إصدار كوبونات لأي أوردر مسلّم قديم لسه مفيش ليه كوبون
+ * (بسبب مشاكل سابقة/خطأ جلب بيانات/نظام موقوف لفترة).
+ * بيضمن إن النظام "يحسب تلقائياً ويتفعل" للأوردرات المسلّمة الناقصة.
+ * مرشح: الأوردر المسلّم بعد تاريخ التفعيل ومفيش له كوبون أصلاً.
  */
 async function backfillMissingVouchers(companyId, { limit = 50 } = {}) {
   const prisma = getSharedPrismaClient();
@@ -619,7 +619,7 @@ async function backfillMissingVouchers(companyId, { limit = 50 } = {}) {
   const settings = await getSettings(companyId);
   const activatedAt = await getLoyaltyActivatedAt(companyId, settings);
 
-  // ╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘à╪│┘ä┘æ┘à╪⌐
+  // الأوردرات المسلّمة
   const delivered = await prisma.order.findMany({
     where: {
       companyId,
@@ -634,7 +634,7 @@ async function backfillMissingVouchers(companyId, { limit = 50 } = {}) {
 
   if (delivered.length === 0) return { processed: 0, issued: 0, skipped: 0 };
 
-  // ╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘ä┘è ┘ä┘è┘ç╪º ┘â┘ê╪¿┘ê┘å ╪ú╪╡┘ä╪º┘ï
+  // الأوردرات اللي ليها كوبون أصلاً
   const withVoucher = await prisma.customerLoyaltyVoucher.findMany({
     where: { companyId, sourceOrderId: { in: delivered.map(o => o.id) } },
     select: { sourceOrderId: true }
@@ -664,21 +664,21 @@ async function backfillMissingVouchers(companyId, { limit = 50 } = {}) {
       });
       issued++;
     } catch (error) {
-      console.error(`Γ¥î [AUTO-DISCOUNT-BACKFILL] Failed for order ${order.orderNumber}:`, error.message);
+      console.error(`❌ [AUTO-DISCOUNT-BACKFILL] Failed for order ${order.orderNumber}:`, error.message);
       skipped++;
     }
   }
 
   if (issued > 0) {
-    console.log(`Γ£à [AUTO-DISCOUNT-BACKFILL] Issued ${issued} vouchers for company ${companyId}`);
+    console.log(`✅ [AUTO-DISCOUNT-BACKFILL] Issued ${issued} vouchers for company ${companyId}`);
   }
   return { processed: delivered.length, issued, skipped };
 }
 
 /**
- * ΓÅ░ ╪Ñ╪▒╪│╪º┘ä ╪¬┘å╪¿┘è┘ç ┘ä┘ä╪╣┘à┘ä╪º╪í ┘é╪¿┘ä ╪º┘å╪¬┘ç╪º╪í ╪╡┘ä╪º╪¡┘è╪⌐ ┘â┘ê╪¿┘ê┘å ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è.
- * ┘è┘Å╪│╪¬╪»╪╣┘ë ┘à┘å ┘â╪▒┘ê┘å ┘è┘ê┘à┘è ΓÇö ┘è╪▒╪│┘ä ┘à╪▒╪⌐ ┘ê╪º╪¡╪»╪⌐ ┘ä┘â┘ä ┘â┘ê╪¿┘ê┘å (lastExpiryWarnedAt ┘ü╪º╪▒╪║).
- * @param {Object} [options] ΓÇö { hoursBefore } ╪╣╪»╪» ╪º┘ä╪│╪º╪╣╪º╪¬ ┘é╪¿┘ä ╪º┘ä╪º┘å╪¬┘ç╪º╪í (╪º┘ü╪¬╪▒╪º╪╢┘è 24)
+ * ⏰ إرسال تنبيه للعملاء قبل انتهاء صلاحية كوبون الخصم التلقائي.
+ * يُستدعى من كرون يومي — يرسل مرة واحدة لكل كوبون (lastExpiryWarnedAt فارغ).
+ * @param {Object} [options] — { hoursBefore } عدد الساعات قبل الانتهاء (افتراضي 24)
  */
 async function sendExpiryWarnings({ hoursBefore = 24 } = {}) {
   const prisma = getSharedPrismaClient();
@@ -726,7 +726,7 @@ async function sendExpiryWarnings({ hoursBefore = 24 } = {}) {
       });
       warned++;
     } catch (error) {
-      console.warn(`ΓÜá∩╕Å [AUTO-DISCOUNT-NOTIF] Expiry warn failed for voucher ${v.id}:`, error.message);
+      console.warn(`⚠️ [AUTO-DISCOUNT-NOTIF] Expiry warn failed for voucher ${v.id}:`, error.message);
     }
   }
   return { warned };

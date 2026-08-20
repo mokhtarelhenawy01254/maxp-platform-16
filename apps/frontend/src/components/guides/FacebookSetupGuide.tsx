@@ -1,6 +1,12 @@
-import { ChevronRight as ChevronRightIcon, ChevronDown as ChevronDownIcon, ExternalLink as ArrowTopRightOnSquareIcon, Clipboard as ClipboardDocumentIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useState } from "react";
-;
+import i18n from "../../i18n";
+import {
+  ChevronRightIcon,
+  ChevronDownIcon,
+  ArrowTopRightOnSquareIcon,
+  ClipboardDocumentIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 import { buildWebhookUrl } from "../../utils/urlHelper";
 
 interface GuideStep {
@@ -105,7 +111,7 @@ const FacebookSetupGuide: React.FC = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert("تم نسخ النص إلى الحافظة");
+    alert(i18n.t("FacebookSetupGuide.msg_1aca"));
   };
 
   return (

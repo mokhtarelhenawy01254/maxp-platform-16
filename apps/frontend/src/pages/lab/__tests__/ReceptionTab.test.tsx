@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ReceptionTab from "../ReceptionTab";
@@ -14,10 +14,10 @@ const jsonResponse = (body: unknown) => ({ ok: true, json: async () => body }) a
 
 const labTest = {
   id: "t1",
-  name: "┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å",
+  name: "هيموجلوبين",
   abbreviation: "HGB",
-  category: "╪»┘à",
-  sampleType: "╪»┘à ┘ê╪▒┘è╪»┘è",
+  category: "دم",
+  sampleType: "دم وريدي",
   price: 50,
   isActive: true,
   createdAt: "2026-01-01",
@@ -48,11 +48,11 @@ describe("ReceptionTab", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     render(<ReceptionTab />);
-    await screen.findByText("┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å");
-    await user.click(screen.getByText("┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å"));
-    await user.type(screen.getByPlaceholderText("╪º┘ä╪º╪│┘à ╪º┘ä┘â╪º┘à┘ä"), "┘à╪¡┘à╪»");
+    await screen.findByText("هيموجلوبين");
+    await user.click(screen.getByText("هيموجلوبين"));
+    await user.type(screen.getByPlaceholderText("الاسم الكامل"), "محمد");
 
-    const submit = screen.getByRole("button", { name: "╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿" });
+    const submit = screen.getByRole("button", { name: "إنشاء الطلب" });
     await user.click(submit);
     await user.click(submit);
 
@@ -78,6 +78,6 @@ describe("ReceptionTab", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     render(<ReceptionTab />);
-    expect(await screen.findByText("┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å")).toBeInTheDocument();
+    expect(await screen.findByText("هيموجلوبين")).toBeInTheDocument();
   });
 });

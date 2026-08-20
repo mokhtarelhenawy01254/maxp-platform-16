@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import AgingTab from "../tabs/AgingTab";
 
 jest.mock("../orderMovementShared", () => require("../testSupport").buildSharedMock());
@@ -11,7 +11,7 @@ const props = { startDate: "2026-05-01", endDate: "2026-08-11", mode: "all" as c
 
 const agingData = {
   summary: { totalAged: 3, oldestHours: 48, totalRevenue: 300, stuckOver7d: 1 },
-  buckets: [{ key: "<1d", label: "╪ú┘é┘ä ┘à┘å ┘è┘ê┘à", count: 1, revenue: 100 }],
+  buckets: [{ key: "<1d", label: "أقل من يوم", count: 1, revenue: 100 }],
   orders: [
     {
       orderId: "o1",
@@ -19,10 +19,10 @@ const agingData = {
       status: "PENDING",
       ageHours: 48,
       total: 100,
-      customerName: "╪╣┘à┘è┘ä ╪¬╪¼╪▒┘è╪¿┘è",
-      governorate: "╪º┘ä┘é╪º┘ç╪▒╪⌐",
+      customerName: "عميل تجريبي",
+      governorate: "القاهرة",
       lastTransitionAt: "2026-08-01T00:00:00Z",
-      lastTransitionBy: "╪ú╪¡┘à╪»",
+      lastTransitionBy: "أحمد",
       lastTransitionAuto: false,
       updatedAt: "2026-08-10T00:00:00Z",
     },
@@ -37,12 +37,12 @@ describe("AgingTab", () => {
 
     render(<AgingTab {...props} />);
 
-    await waitFor(() => expect(screen.getByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à╪╣┘ä┘æ┘é")).toBeInTheDocument());
-    expect(screen.getByText("╪º┘ä╪ú┘é╪»┘à")).toBeInTheDocument();
-    expect(screen.getByText("┘é┘è┘à╪⌐ ╪º┘ä┘ü┘ä┘ê╪│ ╪º┘ä┘à╪¡╪¿┘ê╪│╪⌐")).toBeInTheDocument();
-    expect(screen.getByText("╪ú┘â╪½╪▒ ┘à┘å ╪ú╪│╪¿┘ê╪╣")).toBeInTheDocument();
-    expect(screen.getByText("╪º┘ä╪¬┘ê╪▓┘è╪╣ ╪¡╪│╪¿ ╪º┘ä╪╣┘à╪▒")).toBeInTheDocument();
-    expect(screen.getByText("┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘é╪⌐")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("إجمالي المعلّق")).toBeInTheDocument());
+    expect(screen.getByText("الأقدم")).toBeInTheDocument();
+    expect(screen.getByText("قيمة الفلوس المحبوسة")).toBeInTheDocument();
+    expect(screen.getByText("أكثر من أسبوع")).toBeInTheDocument();
+    expect(screen.getByText("التوزيع حسب العمر")).toBeInTheDocument();
+    expect(screen.getByText("قائمة الطلبات المعلقة")).toBeInTheDocument();
     expect(screen.getByText("ORD-1")).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith("aging", { startDate: "2026-05-01", endDate: "2026-08-11", mode: "all", minAgeHours: 24 });
   });
@@ -56,7 +56,7 @@ describe("AgingTab", () => {
   });
 
   test("renders error state on failure", async () => {
-    mockFetch.mockRejectedValue(new Error("┘ü╪┤┘ä"));
+    mockFetch.mockRejectedValue(new Error("فشل"));
 
     render(<AgingTab {...props} />);
 

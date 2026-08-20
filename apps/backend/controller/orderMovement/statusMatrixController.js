@@ -1,4 +1,4 @@
-﻿const core = require('../../services/orderMovementCore');
+const core = require('../../services/orderMovementCore');
 const sql = require('../../services/orderMovementSql');
 
 const CANONICAL = ['PENDING', 'DRAFT', 'CONFIRMED', 'SCHEDULED', 'PENDING_PREPARATION', 'PREPARING', 'READY', 'QUALITY_CHECK', 'PACKAGED', 'READY_TO_SHIP', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'PARTIALLY_DELIVERED', 'DELIVERED', 'REFUNDED', 'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'CANCELLED', 'DUPLICATE_ORDER', 'LOST', 'TRASH', 'NOT_SHIPPED', 'ON_HOLD', 'ON_HOLD_PREP', 'STOCK_SHORTAGE', 'SHORTAGE_FAILED', 'PENDING_CANCELLATION'];
@@ -53,7 +53,7 @@ const handler = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
 
     const { startDate, endDate, mode = 'all' } = req.query;
@@ -183,7 +183,7 @@ const handler = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪¡┘ä┘è┘ä ┘à╪╡┘ü┘ê┘ü╪⌐ ╪º┘ä╪º┘å╪¬┘é╪º┘ä╪º╪¬' });
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحليل مصفوفة الانتقالات' });
   }
 };
 

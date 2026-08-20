@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
@@ -130,7 +130,7 @@ const WidgetTab: React.FC = () => {
               className="absolute bottom-2 left-2 h-14 w-14 rounded-full flex items-center justify-center text-white text-2xl"
               style={{ backgroundColor: settings.widgetColor }}
             >
-              ≡ƒÆ¼
+              💬
             </span>
           </div>
         </div>

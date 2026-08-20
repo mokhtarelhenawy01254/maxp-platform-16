@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -48,7 +48,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -60,13 +60,13 @@ const makeOrder = (overrides = {}) => ({
   companyId: 'company-1',
   orderNumber: 'LAB-20260809-1234',
   patientId: null,
-  patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+  patientName: 'محمد علي',
   patientPhone: '01001234567',
   patientGender: 'MALE',
   patientAge: '30',
   contractId: null,
   branchId: null,
-  doctorName: '╪». ╪ú╪¡┘à╪»',
+  doctorName: 'د. أحمد',
   doctorType: null,
   fastingHours: 8,
   externalSample: false,
@@ -86,8 +86,8 @@ const makeOrder = (overrides = {}) => ({
   createdAt: new Date('2026-08-09T10:00:00.000Z'),
   updatedAt: new Date('2026-08-09T10:00:00.000Z'),
   tests: [
-    { id: 'ot1', orderId: 'order-1', testId: 'test-1', price: 100, status: 'PENDING', results: null, test: { id: 'test-1', name: '╪╡┘ê╪▒╪⌐ ╪»┘à', abbreviation: 'CBC', category: '┘ç┘è┘à╪º╪¬┘ê┘ä┘ê╪¼┘è╪º', parameters: [] } },
-    { id: 'ot2', orderId: 'order-1', testId: 'test-2', price: 50, status: 'PENDING', results: null, test: { id: 'test-2', name: '╪│┘â╪▒ ╪╡╪º╪ª┘à', abbreviation: 'FBS', category: '┘â┘è┘à┘è╪º╪í', parameters: [] } },
+    { id: 'ot1', orderId: 'order-1', testId: 'test-1', price: 100, status: 'PENDING', results: null, test: { id: 'test-1', name: 'صورة دم', abbreviation: 'CBC', category: 'هيماتولوجيا', parameters: [] } },
+    { id: 'ot2', orderId: 'order-1', testId: 'test-2', price: 50, status: 'PENDING', results: null, test: { id: 'test-2', name: 'سكر صائم', abbreviation: 'FBS', category: 'كيمياء', parameters: [] } },
   ],
   ...overrides,
 });
@@ -133,7 +133,7 @@ describe('labOrdersController', () => {
       await controller.createOrder(
         req({
           body: {
-            patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+            patientName: 'محمد علي',
             patientPhone: '01001234567',
             patientGender: 'MALE',
             fastingHours: 8,
@@ -148,7 +148,7 @@ describe('labOrdersController', () => {
       expect(res.statusCode).toBe(200);
       const data = prisma.labOrder.create.mock.calls[0][0].data;
       expect(data.companyId).toBe('company-1');
-      expect(data.patientName).toBe('┘à╪¡┘à╪» ╪╣┘ä┘è');
+      expect(data.patientName).toBe('محمد علي');
       expect(data.subtotal).toBe(150);
       expect(data.discount).toBe(0);
       expect(data.total).toBe(150);
@@ -182,7 +182,7 @@ describe('labOrdersController', () => {
       await controller.createOrder(
         req({
           body: {
-            patientName: '┘à╪▒┘è╪╢',
+            patientName: 'مريض',
             discount: 10,
             paid: 30,
             testIds: [{ testId: 'test-1', price: 80 }, { testId: 'test-2' }],
@@ -208,12 +208,12 @@ describe('labOrdersController', () => {
 
       const res = createResponse();
       await controller.createOrder(
-        req({ body: { patientName: '┘à╪▒┘è╪╢', testIds: [{ testId: 'test-1' }, { testId: 'foreign' }] } }),
+        req({ body: { patientName: 'مريض', testIds: [{ testId: 'test-1' }, { testId: 'foreign' }] } }),
         res
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪ú╪¡╪» ╪º┘ä╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ╪º┘ä┘à╪¡╪»╪»╪⌐ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐');
+      expect(res.payload.error).toBe('أحد الاختبارات المحددة لا ينتمي لهذه الشركة');
       expect(prisma.labOrder.create).not.toHaveBeenCalled();
     });
 
@@ -225,7 +225,7 @@ describe('labOrdersController', () => {
       await controller.createOrder(req({ body: { testIds: [{ testId: 'test-1' }] } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم المريض مطلوب');
       expect(prisma.labOrder.create).not.toHaveBeenCalled();
     });
 
@@ -236,12 +236,12 @@ describe('labOrdersController', () => {
 
       const res = createResponse();
       await controller.createOrder(
-        req({ body: { patientName: '┘à╪▒┘è╪╢', patientId: 'foreign-pat', testIds: [{ testId: 'test-1' }] } }),
+        req({ body: { patientName: 'مريض', patientId: 'foreign-pat', testIds: [{ testId: 'test-1' }] } }),
         res
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘à╪▒┘è╪╢ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐');
+      expect(res.payload.error).toBe('المريض لا ينتمي لهذه الشركة');
       expect(prisma.labOrder.create).not.toHaveBeenCalled();
     });
 
@@ -255,7 +255,7 @@ describe('labOrdersController', () => {
 
       const res = createResponse();
       await controller.createOrder(
-        req({ body: { patientName: '┘à╪▒┘è╪╢', testIds: [{ testId: 'test-1' }] } }),
+        req({ body: { patientName: 'مريض', testIds: [{ testId: 'test-1' }] } }),
         res
       );
 
@@ -275,12 +275,12 @@ describe('labOrdersController', () => {
 
       const res = createResponse();
       await controller.createOrder(
-        req({ body: { patientName: '┘à╪▒┘è╪╢', orderNumber: 'LAB-20260809-1111', testIds: [{ testId: 'test-1' }] } }),
+        req({ body: { patientName: 'مريض', orderNumber: 'LAB-20260809-1111', testIds: [{ testId: 'test-1' }] } }),
         res
       );
 
       expect(res.statusCode).toBe(409);
-      expect(res.payload.error).toBe('╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿ ┘à╪│╪¬╪«╪»┘à ┘à┘å ┘é╪¿┘ä');
+      expect(res.payload.error).toBe('رقم الطلب مستخدم من قبل');
       expect(prisma.labOrder.create).toHaveBeenCalledTimes(1);
     });
 
@@ -292,7 +292,7 @@ describe('labOrdersController', () => {
 
       const res = createResponse();
       await controller.createOrder(
-        req({ body: { patientName: '┘à╪▒┘è╪╢', paid: 500, testIds: [{ testId: 'test-1' }] } }),
+        req({ body: { patientName: 'مريض', paid: 500, testIds: [{ testId: 'test-1' }] } }),
         res
       );
 
@@ -317,7 +317,7 @@ describe('labOrdersController', () => {
             status: 'SIGNED',
             reportStatus: 'REVIEWED',
             branchId: 'b1',
-            search: '┘à╪¡┘à╪»',
+            search: 'محمد',
             dateFrom: '2026-08-01',
             dateTo: '2026-08-09',
             page: '2',
@@ -334,9 +334,9 @@ describe('labOrdersController', () => {
         reportStatus: 'REVIEWED',
         branchId: 'b1',
         OR: [
-          { patientName: { contains: '┘à╪¡┘à╪»', mode: 'insensitive' } },
-          { patientPhone: { contains: '┘à╪¡┘à╪»', mode: 'insensitive' } },
-          { orderNumber: { contains: '┘à╪¡┘à╪»', mode: 'insensitive' } },
+          { patientName: { contains: 'محمد', mode: 'insensitive' } },
+          { patientPhone: { contains: 'محمد', mode: 'insensitive' } },
+          { orderNumber: { contains: 'محمد', mode: 'insensitive' } },
         ],
         createdAt: { gte: expect.any(Date), lte: expect.any(Date) },
       });
@@ -385,13 +385,13 @@ describe('labOrdersController', () => {
               testId: 'test-1',
               price: 100,
               status: 'RESULTS_ENTERED',
-              results: [{ parameterId: 'p1', parameterName: '╪¼┘ä┘ê┘â┘ê╪▓', unit: 'mg/dL', result: '95', flag: 'normal' }],
+              results: [{ parameterId: 'p1', parameterName: 'جلوكوز', unit: 'mg/dL', result: '95', flag: 'normal' }],
               test: {
                 id: 'test-1',
-                name: '╪│┘â╪▒ ╪╡╪º╪ª┘à',
+                name: 'سكر صائم',
                 abbreviation: 'FBS',
-                category: '┘â┘è┘à┘è╪º╪í',
-                parameters: [{ id: 'p1', name: '╪¼┘ä┘ê┘â┘ê╪▓', unit: 'mg/dL', referenceRange: '70-100', showFlag: true, sortOrder: 1 }],
+                category: 'كيمياء',
+                parameters: [{ id: 'p1', name: 'جلوكوز', unit: 'mg/dL', referenceRange: '70-100', showFlag: true, sortOrder: 1 }],
               },
             },
           ],
@@ -419,7 +419,7 @@ describe('labOrdersController', () => {
       await controller.getOrderById(req({ params: { id: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪╖┘ä╪¿ ╪º┘ä╪¬╪¡╪º┘ä┘è┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('طلب التحاليل غير موجود');
     });
   });
 
@@ -436,9 +436,9 @@ describe('labOrdersController', () => {
         ],
       });
       prisma.labTestParameter.findMany.mockResolvedValue([
-        { id: 'p1', name: '╪¼┘ä┘ê┘â┘ê╪▓', unit: 'mg/dL', testId: 'test-1' },
-        { id: 'p2', name: '┘â┘ê┘ä┘è╪│╪¬╪▒┘ê┘ä', unit: 'mg/dL', testId: 'test-1' },
-        { id: 'p3', name: '┘è┘ê╪▒┘è╪º', unit: 'mg/dL', testId: 'test-2' },
+        { id: 'p1', name: 'جلوكوز', unit: 'mg/dL', testId: 'test-1' },
+        { id: 'p2', name: 'كوليسترول', unit: 'mg/dL', testId: 'test-1' },
+        { id: 'p3', name: 'يوريا', unit: 'mg/dL', testId: 'test-2' },
       ]);
       prisma.labOrderTest.update.mockResolvedValue({});
       prisma.labOrder.update.mockResolvedValue(makeOrder({ reportStatus: 'RESULTS_ENTERED' }));
@@ -474,8 +474,8 @@ describe('labOrdersController', () => {
         data: {
           status: 'RESULTS_ENTERED',
           results: expect.arrayContaining([
-            expect.objectContaining({ parameterId: 'p1', parameterName: '╪¼┘ä┘ê┘â┘ê╪▓', unit: 'mg/dL', result: '95', flag: 'normal' }),
-            expect.objectContaining({ parameterId: 'p2', parameterName: '┘â┘ê┘ä┘è╪│╪¬╪▒┘ê┘ä', unit: 'mg/dL', result: '180' }),
+            expect.objectContaining({ parameterId: 'p1', parameterName: 'جلوكوز', unit: 'mg/dL', result: '95', flag: 'normal' }),
+            expect.objectContaining({ parameterId: 'p2', parameterName: 'كوليسترول', unit: 'mg/dL', result: '180' }),
           ]),
         },
       });
@@ -484,7 +484,7 @@ describe('labOrdersController', () => {
         data: {
           status: 'RESULTS_ENTERED',
           results: expect.arrayContaining([
-            expect.objectContaining({ parameterId: 'p3', parameterName: '┘è┘ê╪▒┘è╪º', result: '88', flag: 'high' }),
+            expect.objectContaining({ parameterId: 'p3', parameterName: 'يوريا', result: '88', flag: 'high' }),
           ]),
         },
       });
@@ -499,11 +499,11 @@ describe('labOrdersController', () => {
         id: 'order-1',
         companyId: 'company-1',
         reportStatus: 'SIGNED',
-        signedBy: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»',
+        signedBy: 'أحمد محمود',
         signedAt: new Date('2026-08-09T12:00:00.000Z'),
         tests: [{ id: 'ot1', orderId: 'order-1', testId: 'test-1', price: 100, status: 'SIGNED', results: null }],
       });
-      prisma.labTestParameter.findMany.mockResolvedValue([{ id: 'p1', name: '╪¼┘ä┘ê┘â┘ê╪▓', unit: 'mg/dL', testId: 'test-1' }]);
+      prisma.labTestParameter.findMany.mockResolvedValue([{ id: 'p1', name: 'جلوكوز', unit: 'mg/dL', testId: 'test-1' }]);
       prisma.labOrderTest.update.mockResolvedValue({});
       prisma.labOrder.update.mockResolvedValue(makeOrder({ reportStatus: 'RESULTS_ENTERED', signedBy: null, signedAt: null }));
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -544,7 +544,7 @@ describe('labOrdersController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪¬╪╣╪»┘è┘ä ┘å╪¬╪º╪ª╪¼ ╪¬┘é╪▒┘è╪▒ ╪¬┘à ╪¬╪│┘ä┘è┘à┘ç');
+      expect(res.payload.error).toBe('لا يمكن تعديل نتائج تقرير تم تسليمه');
       expect(prisma.labOrderTest.update).not.toHaveBeenCalled();
     });
 
@@ -559,7 +559,7 @@ describe('labOrdersController', () => {
           { id: 'ot2', orderId: 'order-1', testId: 'test-2', price: 50, status: 'PENDING', results: null },
         ],
       });
-      prisma.labTestParameter.findMany.mockResolvedValue([{ id: 'p1', name: '╪¼┘ä┘ê┘â┘ê╪▓', unit: 'mg/dL', testId: 'test-1' }]);
+      prisma.labTestParameter.findMany.mockResolvedValue([{ id: 'p1', name: 'جلوكوز', unit: 'mg/dL', testId: 'test-1' }]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -577,7 +577,7 @@ describe('labOrdersController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘à╪╣╪º┘à┘ä ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░╪º ╪º┘ä╪º╪«╪¬╪¿╪º╪▒');
+      expect(res.payload.error).toBe('المعامل لا ينتمي لهذا الاختبار');
       expect(prisma.labOrderTest.update).not.toHaveBeenCalled();
       expect(prisma.labOrder.update).not.toHaveBeenCalled();
     });
@@ -602,7 +602,7 @@ describe('labOrdersController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿');
+      expect(res.payload.error).toBe('الاختبار لا ينتمي لهذا الطلب');
       expect(prisma.labOrderTest.update).not.toHaveBeenCalled();
     });
   });
@@ -617,7 +617,7 @@ describe('labOrdersController', () => {
       await controller.reviewOrder(req({ params: { id: 'order-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘è╪¼╪¿ ╪Ñ╪»╪«╪º┘ä ╪º┘ä┘å╪¬╪º╪ª╪¼ ┘é╪¿┘ä ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐');
+      expect(res.payload.error).toBe('يجب إدخال النتائج قبل المراجعة');
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
@@ -667,7 +667,7 @@ describe('labOrdersController', () => {
       await controller.reviewOrder(req({ params: { id: 'order-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘è╪¼╪¿ ╪Ñ╪»╪«╪º┘ä ┘å╪¬╪º╪ª╪¼ ╪¼┘à┘è╪╣ ╪º┘ä╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ┘é╪¿┘ä ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐');
+      expect(res.payload.error).toBe('يجب إدخال نتائج جميع الاختبارات قبل المراجعة');
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
@@ -682,7 +682,7 @@ describe('labOrdersController', () => {
       await controller.signOrder(req({ params: { id: 'order-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘è╪¼╪¿ ┘à╪▒╪º╪¼╪╣╪⌐ ╪º┘ä┘å╪¬╪º╪ª╪¼ ┘é╪¿┘ä ╪º┘ä╪¬┘ê┘é┘è╪╣');
+      expect(res.payload.error).toBe('يجب مراجعة النتائج قبل التوقيع');
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
@@ -691,13 +691,13 @@ describe('labOrdersController', () => {
       prisma.labOrder.findFirst.mockResolvedValue({ id: 'order-1', companyId: 'company-1', reportStatus: 'REVIEWED' });
       prisma.labOrderTest.updateMany.mockResolvedValue({ count: 2 });
       prisma.labOrder.update.mockResolvedValue(
-        makeOrder({ reportStatus: 'SIGNED', status: 'SIGNED', signedBy: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»', signedAt: new Date('2026-08-09T12:00:00.000Z') })
+        makeOrder({ reportStatus: 'SIGNED', status: 'SIGNED', signedBy: 'أحمد محمود', signedAt: new Date('2026-08-09T12:00:00.000Z') })
       );
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.signOrder(
-        req({ params: { id: 'order-1' }, user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' } }),
+        req({ params: { id: 'order-1' }, user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' } }),
         res
       );
 
@@ -712,12 +712,12 @@ describe('labOrdersController', () => {
           data: expect.objectContaining({
             reportStatus: 'SIGNED',
             status: 'SIGNED',
-            signedBy: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»',
+            signedBy: 'أحمد محمود',
             signedAt: expect.any(Date),
           }),
         })
       );
-      expect(res.payload.data.signedBy).toBe('╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»');
+      expect(res.payload.data.signedBy).toBe('أحمد محمود');
       expect(res.payload.data.signedAt).toBe('2026-08-09T12:00:00.000Z');
     });
   });
@@ -771,7 +771,7 @@ describe('labOrdersController', () => {
       await controller.markDelivered(req({ params: { id: 'order-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘è╪¼╪¿ ╪¬┘ê┘é┘è╪╣ ╪º┘ä╪¬┘é╪▒┘è╪▒ ┘é╪¿┘ä ╪º┘ä╪¬╪│┘ä┘è┘à');
+      expect(res.payload.error).toBe('يجب توقيع التقرير قبل التسليم');
       expect(prisma.labOrder.update).not.toHaveBeenCalled();
     });
   });
@@ -815,20 +815,20 @@ describe('labOrdersController', () => {
     test('whitelists fields and normalizes status', async () => {
       const prisma = createPrisma();
       prisma.labOrder.findFirst.mockResolvedValue(makeOrder());
-      prisma.labOrder.update.mockResolvedValue(makeOrder({ doctorName: '╪». ╪│╪º╪▒╪⌐', status: 'COLLECTED' }));
+      prisma.labOrder.update.mockResolvedValue(makeOrder({ doctorName: 'د. سارة', status: 'COLLECTED' }));
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.updateOrder(
         req({
           params: { id: 'order-1' },
-          body: { doctorName: '╪». ╪│╪º╪▒╪⌐', status: 'collected', evil: 'injected', tests: [{ testId: 'x' }] },
+          body: { doctorName: 'د. سارة', status: 'collected', evil: 'injected', tests: [{ testId: 'x' }] },
         }),
         res
       );
 
       const data = prisma.labOrder.update.mock.calls[0][0].data;
-      expect(data.doctorName).toBe('╪». ╪│╪º╪▒╪⌐');
+      expect(data.doctorName).toBe('د. سارة');
       expect(data.status).toBe('COLLECTED');
       expect(data.evil).toBeUndefined();
       expect(data.tests).toBeUndefined();
@@ -885,7 +885,7 @@ describe('labOrdersController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪¬╪╣╪»┘è┘ä ╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ╪º┘ä╪╖┘ä╪¿ ╪¿╪╣╪» ╪¿╪»╪í ╪Ñ╪»╪«╪º┘ä ╪º┘ä┘å╪¬╪º╪ª╪¼');
+      expect(res.payload.error).toBe('لا يمكن تعديل اختبارات الطلب بعد بدء إدخال النتائج');
       expect(prisma.labOrderTest.deleteMany).not.toHaveBeenCalled();
       expect(prisma.labOrder.update).not.toHaveBeenCalled();
     });
@@ -940,7 +940,7 @@ describe('labOrdersController', () => {
         const res = createResponse();
         await controller[action](req({ params: { id: 'foreign' } }), res);
         expect(res.statusCode).toBe(404);
-        expect(res.payload.error).toBe('╪╖┘ä╪¿ ╪º┘ä╪¬╪¡╪º┘ä┘è┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+        expect(res.payload.error).toBe('طلب التحاليل غير موجود');
       }
     });
   });

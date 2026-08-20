@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -46,7 +46,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -56,7 +56,7 @@ const req = (overrides = {}) => ({
 const makeTag = (overrides = {}) => ({
   id: 'tag-1',
   companyId: 'company-1',
-  name: '╪╖┘ê╪º╪▒╪ª',
+  name: 'طوارئ',
   isActive: true,
   createdAt: new Date('2026-08-11T10:00:00.000Z'),
   updatedAt: new Date('2026-08-11T10:00:00.000Z'),
@@ -75,12 +75,12 @@ describe('radiologyTagsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.listTags(req({ query: { search: '╪╖┘ê╪º╪▒╪ª' } }), res);
+      await controller.listTags(req({ query: { search: 'طوارئ' } }), res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyExamTag.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { companyId: 'company-1', isActive: true, name: { contains: '╪╖┘ê╪º╪▒╪ª', mode: 'insensitive' } },
+          where: { companyId: 'company-1', isActive: true, name: { contains: 'طوارئ', mode: 'insensitive' } },
           orderBy: { name: 'asc' },
         })
       );
@@ -108,7 +108,7 @@ describe('radiologyTagsController', () => {
       await controller.listTags(req({ user: {} }), res);
 
       expect(res.statusCode).toBe(403);
-      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+      expect(res.payload.error).toBe('غير مصرح');
       expect(prisma.radiologyExamTag.findMany).not.toHaveBeenCalled();
     });
   });
@@ -120,13 +120,13 @@ describe('radiologyTagsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createTag(req({ body: { name: '  ╪╖┘ê╪º╪▒╪ª  ' } }), res);
+      await controller.createTag(req({ body: { name: '  طوارئ  ' } }), res);
 
       expect(res.statusCode).toBe(200);
       const data = prisma.radiologyExamTag.create.mock.calls[0][0].data;
       expect(data.companyId).toBe('company-1');
-      expect(data.name).toBe('╪╖┘ê╪º╪▒╪ª');
-      expect(res.payload.data.name).toBe('╪╖┘ê╪º╪▒╪ª');
+      expect(data.name).toBe('طوارئ');
+      expect(res.payload.data.name).toBe('طوارئ');
     });
 
     test('rejects a missing name', async () => {
@@ -137,7 +137,7 @@ describe('radiologyTagsController', () => {
       await controller.createTag(req({ body: {} }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä╪¬╪º╪¼ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم التاج مطلوب');
       expect(prisma.radiologyExamTag.create).not.toHaveBeenCalled();
     });
 
@@ -146,7 +146,7 @@ describe('radiologyTagsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createTag(req({ user: {}, body: { name: '╪╖┘ê╪º╪▒╪ª' } }), res);
+      await controller.createTag(req({ user: {}, body: { name: 'طوارئ' } }), res);
 
       expect(res.statusCode).toBe(403);
       expect(prisma.radiologyExamTag.create).not.toHaveBeenCalled();
@@ -161,7 +161,7 @@ describe('radiologyTagsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.updateTag(req({ params: { id: 'tag-1' }, body: { name: '╪╖┘ê╪º╪▒╪ª ┘é┘ä╪¿' } }), res);
+      await controller.updateTag(req({ params: { id: 'tag-1' }, body: { name: 'طوارئ قلب' } }), res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyExamTag.findFirst).toHaveBeenCalledWith({
@@ -169,7 +169,7 @@ describe('radiologyTagsController', () => {
       });
       expect(prisma.radiologyExamTag.update).toHaveBeenCalledWith({
         where: { id: 'tag-1' },
-        data: { name: '╪╖┘ê╪º╪▒╪ª ┘é┘ä╪¿' },
+        data: { name: 'طوارئ قلب' },
       });
     });
 
@@ -182,7 +182,7 @@ describe('radiologyTagsController', () => {
       await controller.updateTag(req({ params: { id: 'tag-1' }, body: { name: '   ' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä╪¬╪º╪¼ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم التاج مطلوب');
       expect(prisma.radiologyExamTag.update).not.toHaveBeenCalled();
     });
 
@@ -195,7 +195,7 @@ describe('radiologyTagsController', () => {
       await controller.updateTag(req({ params: { id: 'foreign' }, body: { name: 'x' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä╪¬╪º╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('التاج غير موجود');
       expect(prisma.radiologyExamTag.update).not.toHaveBeenCalled();
     });
   });
@@ -215,7 +215,7 @@ describe('radiologyTagsController', () => {
         where: { id: 'tag-1' },
         data: { isActive: false },
       });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä╪¬╪º╪¼');
+      expect(res.payload.message).toBe('تم حذف التاج');
     });
 
     test('returns 404 for a tag outside the company', async () => {
@@ -227,7 +227,7 @@ describe('radiologyTagsController', () => {
       await controller.deleteTag(req({ params: { id: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä╪¬╪º╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('التاج غير موجود');
       expect(prisma.radiologyExamTag.update).not.toHaveBeenCalled();
     });
   });
@@ -281,7 +281,7 @@ describe('radiologyTagsController', () => {
       await controller.listModalities(req({ user: {} }), res);
 
       expect(res.statusCode).toBe(403);
-      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+      expect(res.payload.error).toBe('غير مصرح');
       expect(prisma.radiologyExamType.findMany).not.toHaveBeenCalled();
     });
   });

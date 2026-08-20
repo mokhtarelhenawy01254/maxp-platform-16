@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tiktokEventsManager.js
  *
  * Orchestrates TikTok Events API (Pixel) tracking for a company.

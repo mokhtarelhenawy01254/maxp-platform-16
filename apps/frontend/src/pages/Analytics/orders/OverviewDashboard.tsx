@@ -1,8 +1,18 @@
-import { Activity as ChartBarIcon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, Check as CheckCircleIcon, X as XCircleIcon, Circle as ArrowTrendingUpIcon, Circle as ArrowTrendingDownIcon, Clock as ClockIcon, Truck as TruckIcon, Users as UsersIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-;
+import {
+  ChartBarIcon,
+  ShoppingCartIcon,
+  CurrencyDollarIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  ClockIcon,
+  TruckIcon,
+  UsersIcon,
+} from "@heroicons/react/24/outline";
 import {
   AreaChart,
   Area,
@@ -16,6 +26,9 @@ import {
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { useCurrency } from "../../../hooks/useCurrency";
 import {
@@ -42,7 +55,7 @@ const OverviewDashboard: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const CACHE_TTL_MS = 60_000;
 
@@ -79,9 +92,9 @@ const OverviewDashboard: React.FC = () => {
 
     return createStorageKey(
       "orders-overview-dashboard",
-      `${companyId}:${period}`,
+      `${companyId}:${range?.period || ""}:${range?.startDate || ""}:${range?.endDate || ""}`,
     );
-  }, [period, user?.company?.id, user?.companyId]);
+  }, [range, user?.company?.id, user?.companyId]);
 
   const fetchDashboardData = useCallback(
     async ({ signal, background = false } = {}) => {
@@ -93,15 +106,16 @@ const OverviewDashboard: React.FC = () => {
 
         const [storeData, dailyData] = await Promise.all([
           analyticsService.getStoreAnalytics(
-            period,
-            undefined,
+            range?.period,
+            range?.startDate,
+            range?.endDate,
             undefined,
             signal,
           ),
           analyticsService.getDailyAnalytics(
-            period,
-            undefined,
-            undefined,
+            range?.period,
+            range?.startDate,
+            range?.endDate,
             signal,
           ),
         ]);
@@ -132,7 +146,7 @@ const OverviewDashboard: React.FC = () => {
         }
       }
     },
-    [cacheKey, period],
+    [cacheKey, range],
   );
 
   useEffect(() => {
@@ -237,16 +251,7 @@ const OverviewDashboard: React.FC = () => {
             ملخص شامل لأداء المتجر
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-        >
-          <option value="7">آخر 7 أيام</option>
-          <option value="30">آخر 30 يوم</option>
-          <option value="90">آخر 90 يوم</option>
-          <option value="365">آخر سنة</option>
-        </select>
+        <PeriodSelector onRangeChange={setRange} />
       </div>
 
       {/* Quick Stats */}

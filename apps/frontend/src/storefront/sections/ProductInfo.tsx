@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { apiClient } from '../../services/apiClient';
 import VariantSelector from '../components/VariantSelector';
 import QuantitySelector from '../components/QuantitySelector';
 import Button from '../components/Button';
@@ -31,7 +33,24 @@ import {
   isStorefrontMarketplaceAppEnabled,
 } from '../utils/marketplaceApps';
 import TrustedBadgePanel from '../components/TrustedBadgePanel';
-import { AlarmClock, BadgeCheck, Check, CheckCircle2, ExternalLink, Eye, Facebook, Heart, MessageCircle, RotateCcw, Ruler, Share2, ShieldCheck, Sparkles, Star, Truck, Twitter, X } from 'lucide-react';
+import {
+  AlarmClock,
+  BadgeCheck,
+  CheckCircle2,
+  Eye,
+  Facebook,
+  Heart,
+  Twitter,
+  ExternalLink,
+  MessageCircle,
+  Ruler,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+  RotateCcw,
+  X,
+} from 'lucide-react';
 import {
   calculateVolumeDiscountPricing,
   getProductVolumeDiscounts,
@@ -877,6 +896,7 @@ const PlayfulStory = ({
 );
 
 const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSettings }) => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const variant = section?.variant || 'standard';
   const location = useLocation();
@@ -1842,6 +1862,64 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const discount = activeComparePrice && activeComparePrice > activePrice
     ? Math.round(((activeComparePrice - activePrice) / activeComparePrice) * 100)
     : null;
+
+  const [cashbackPreview, setCashbackPreview] = useState<{
+    cashback: number;
+    currency: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCashbackPreview(null);
+
+    if (!product) {
+      return undefined;
+    }
+
+    const companyId = storefrontSettings?.company?.id;
+    const categoryId = (product as { category?: { id?: string | number } })?.category?.id;
+    const amount = Number(activePrice) * Number(quantity || 1);
+
+    if (!companyId || !Number.isFinite(amount) || amount <= 0) {
+      return undefined;
+    }
+
+    const params = new URLSearchParams({
+      companyId: String(companyId),
+      productId: String(product.id),
+      categoryId: categoryId ? String(categoryId) : '',
+      amount: String(amount),
+    });
+
+    apiClient
+      .get(`/loyalty/cashback-preview?${params.toString()}`)
+      .then((response: any) => {
+        if (cancelled) {
+          return;
+        }
+        const payload = response?.data?.data ?? response?.data ?? {};
+        if (!payload || payload.isDynamic === false) {
+          return;
+        }
+        const cashback = Number(payload.cashback);
+        if (!Number.isFinite(cashback) || cashback <= 0) {
+          return;
+        }
+        setCashbackPreview({
+          cashback,
+          currency: payload.currency || currency,
+        });
+      })
+      .catch(() => {
+        // Fail silently: the badge is hidden when the endpoint is unavailable
+        // or dynamic cashback is disabled.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.id, activePrice, quantity, storefrontSettings?.company?.id, currency]);
+
   const activeStock =
     typeof selectedVariant?.stock === 'number' && Number.isFinite(selectedVariant.stock)
       ? selectedVariant.stock
@@ -3185,7 +3263,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   // primary decision area, especially for merged-buybox PDP variants.
   const shouldRenderPrimaryBuyBox = !externalOnlyProduct;
   const showStickyMobileAddToCart =
-    shouldRenderPrimaryBuyBox && !externalOnlyProduct && !isCartOpen;
+    isElessiCareBuybox &&
+    shouldRenderPrimaryBuyBox &&
+    !externalOnlyProduct &&
+    !isGalleryZoomOpen &&
+    !isInlineQuickOrderVisible &&
+    !isCartOpen;
   const shouldRenderStandaloneBuyBox =
     shouldRenderPrimaryBuyBox && !isPrimaryQuantityOffersDecision;
   const primaryActionTargetId = hasEmbeddedPdpCheckout
@@ -3343,27 +3426,27 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   );
 
   const shippingPolicyDialog = (
-    <Dialog.Root open={isShippingDialogOpen} onOpenChange={setIsShippingDialogOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
-        <Dialog.Content
+    <DialogPrimitive.Root open={isShippingDialogOpen} onOpenChange={setIsShippingDialogOpen}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
+        <DialogPrimitive.Popup
           dir={theme.direction}
           className="fixed inset-x-0 bottom-0 z-[95] w-full max-h-[92vh] overflow-y-auto rounded-t-[1.6rem] border-t border-border bg-card p-0 shadow-2xl animate-in slide-in-from-bottom duration-300 md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-2xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[1.4rem] md:border"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="relative p-5 sm:p-6">
-            <Dialog.Close className={`absolute top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
+            <DialogPrimitive.Close className={`absolute top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
               <X className="h-4 w-4" />
-            </Dialog.Close>
+            </DialogPrimitive.Close>
             <div className="space-y-2 pe-12">
-              <Dialog.Title className="text-lg font-black text-foreground sm:text-2xl">
+              <DialogPrimitive.Title className="text-lg font-black text-foreground sm:text-2xl">
                 {shippingModalTitle}
-              </Dialog.Title>
-              <Dialog.Description className="text-sm leading-6 text-muted-foreground">
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-sm leading-6 text-muted-foreground">
                 {prefersArabicCopy
                   ? 'هذه النافذة تشرح سياسة الشحن والاستبدال، بينما موعد الوصول المتوقع يظل ظاهرًا في الشريط المختصر أعلى مساحة الحسم.'
                   : 'This modal explains shipping and returns, while the estimated arrival stays visible in the utility strip above the decision area.'}
-              </Dialog.Description>
+              </DialogPrimitive.Description>
             </div>
 
             <div className="mt-6 grid gap-4">
@@ -3425,9 +3508,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
             </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 
   const sizeGuideTriggerButton =
@@ -3465,27 +3548,27 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     ) : null;
 
   const sizeGuideDialog = (
-    <Dialog.Root open={isSizeGuideDialogOpen} onOpenChange={setIsSizeGuideDialogOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
-        <Dialog.Content
+    <DialogPrimitive.Root open={isSizeGuideDialogOpen} onOpenChange={setIsSizeGuideDialogOpen}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
+        <DialogPrimitive.Popup
           dir={theme.direction}
           className="fixed inset-x-0 bottom-0 z-[95] w-full max-h-[88vh] overflow-y-auto rounded-t-[1.6rem] border-t border-border bg-card p-0 shadow-2xl animate-in slide-in-from-bottom duration-300 md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[1.4rem] md:border"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="relative p-5 sm:p-6">
-            <Dialog.Close className={`absolute top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
+            <DialogPrimitive.Close className={`absolute top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
               <X className="h-4 w-4" />
-            </Dialog.Close>
+            </DialogPrimitive.Close>
             <div className="space-y-2 pe-12">
-              <Dialog.Title className="text-lg font-black text-foreground sm:text-2xl">
+              <DialogPrimitive.Title className="text-lg font-black text-foreground sm:text-2xl">
                 {sizeGuideModalTitle}
-              </Dialog.Title>
-              <Dialog.Description className="text-sm leading-6 text-muted-foreground">
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-sm leading-6 text-muted-foreground">
                 {prefersArabicCopy
                   ? 'مرجع سريع فقط للمقاس الأنسب، من غير شرح طويل أو تكرار داخل الصفحة.'
                   : 'A short size reference without extra copy or repetition on the page.'}
-              </Dialog.Description>
+              </DialogPrimitive.Description>
             </div>
 
             <div className="mt-5 space-y-4">
@@ -3542,33 +3625,33 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               ) : null}
             </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 
   const questionDialog = (
-    <Dialog.Root open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" />
-        <Dialog.Content
+    <DialogPrimitive.Root open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" />
+        <DialogPrimitive.Popup
           dir={theme.direction}
           className="fixed inset-x-0 bottom-0 z-[95] w-full max-h-[92vh] overflow-y-auto rounded-t-[1.6rem] border-t border-[#ead8ca] bg-white p-0 shadow-2xl animate-in slide-in-from-bottom duration-300 md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[1.4rem] md:border"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="relative p-5 sm:p-6">
-            <Dialog.Close className={`absolute top-4 rounded-full border border-[#ead8ca] bg-white p-2 text-[#8f5c44] transition-colors hover:text-[#2d211e] ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
+            <DialogPrimitive.Close className={`absolute top-4 rounded-full border border-[#ead8ca] bg-white p-2 text-[#8f5c44] transition-colors hover:text-[#2d211e] ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
               <X className="h-4 w-4" />
-            </Dialog.Close>
+            </DialogPrimitive.Close>
             <div className="space-y-2 pe-12">
-              <Dialog.Title className="text-lg font-black text-[#2d211e] sm:text-2xl">
+              <DialogPrimitive.Title className="text-lg font-black text-[#2d211e] sm:text-2xl">
                 {prefersArabicCopy ? 'اسألي عن المنتج' : 'Ask a question'}
-              </Dialog.Title>
-              <Dialog.Description className="text-sm leading-6 text-[#6f5a54]">
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-sm leading-6 text-[#6f5a54]">
                 {prefersArabicCopy
                   ? 'اكتبي سؤالك عن المقاس أو الخامة أو الاستبدال، وسيصل إلى فريق المتجر مع اسم المنتج المختار.'
                   : 'Ask about fit, material, or delivery and the request will be sent with the current product context.'}
-              </Dialog.Description>
+              </DialogPrimitive.Description>
             </div>
 
             <div className="mt-5 rounded-[1.25rem] border border-[#ead8ca] bg-[#fffaf6] p-4">
@@ -3624,9 +3707,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               </button>
             </form>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 
   // Common UI Sections for Premium Variants
@@ -3732,12 +3815,24 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     </div>
   ) : commonHeader;
 
+  const cashbackPreviewBadge = cashbackPreview ? (
+    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1 text-xs font-bold text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+      <Sparkles size={14} />
+      {t('product.cashbackPreview', {
+        amount: formatStorefrontCurrency(cashbackPreview.cashback, cashbackPreview.currency),
+      })}
+    </span>
+  ) : null;
+
   const commonPrice = (
-    <div className="flex items-baseline gap-3">
-      <span className="text-4xl font-black text-foreground">{displayPrice}</span>
-      {originalPrice && (
-        <span className="text-xl text-muted-foreground line-through decoration-primary/30 font-bold opacity-40">{originalPrice}</span>
-      )}
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline gap-3">
+        <span className="text-4xl font-black text-foreground">{displayPrice}</span>
+        {originalPrice && (
+          <span className="text-xl text-muted-foreground line-through decoration-primary/30 font-bold opacity-40">{originalPrice}</span>
+        )}
+      </div>
+      {cashbackPreviewBadge}
     </div>
   );
   const commandSpecsPrice = isPcHubCommandSpecs ? (
@@ -3764,6 +3859,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           </span>
         ) : null}
       </div>
+      {cashbackPreviewBadge}
     </div>
   ) : commonPrice;
   const buyNowText =

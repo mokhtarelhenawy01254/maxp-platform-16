@@ -1,0 +1,88 @@
+{
+  "title": "Company Activities",
+  "tabs": {
+    "dashboard": "Dashboard",
+    "allActivities": "All Activities",
+    "mostActiveUsers": "Most Active Users",
+    "criticalActivities": "Critical Activities"
+  },
+  "stats": {
+    "totalActivities": "Total Activities",
+    "activeUsers": "Active Users",
+    "criticalActivities": "Critical Activities",
+    "highSeverity": "High Severity"
+  },
+  "charts": {
+    "distributionByCategory": "Distribution by Category",
+    "dailyActivities": "Daily Activities (Last 30 days)",
+    "total": "Total",
+    "success": "Success",
+    "failure": "Failure"
+  },
+  "filters": {
+    "category": "Category",
+    "severity": "Severity",
+    "status": "Status",
+    "search": "Search",
+    "searchPlaceholder": "Search in description...",
+    "exportCsv": "Export CSV",
+    "all": "All"
+  },
+  "table": {
+    "user": "User",
+    "dateTime": "Date & Time",
+    "category": "Category",
+    "action": "Action",
+    "description": "Description",
+    "severity": "Severity",
+    "status": "Status",
+    "details": "Details",
+    "noActivities": "No activities found",
+    "rowsPerPage": "Rows per page:",
+    "displayedRows": "{{from}}-{{to}} of {{count}}"
+  },
+  "categories": {
+    "AUTH": "Authentication",
+    "ADS": "Ads",
+    "CONVERSATIONS": "Conversations",
+    "BILLING": "Billing",
+    "SETTINGS": "Settings",
+    "SUPPORT": "Support",
+    "FILES": "Files",
+    "USERS": "Users",
+    "COMPANY": "Company",
+    "REPORTS": "Reports"
+  },
+  "actions": {
+    "CREATE": "Create",
+    "UPDATE": "Update",
+    "DELETE": "Delete",
+    "LOGIN": "Login",
+    "LOGOUT": "Logout",
+    "UPLOAD": "Upload",
+    "DOWNLOAD": "Download",
+    "VIEW": "View",
+    "SEND": "Send",
+    "RECEIVE": "Receive",
+    "ACTIVATE": "Activate",
+    "DEACTIVATE": "Deactivate"
+  },
+  "severity": {
+    "LOW": "Low",
+    "MEDIUM": "Medium",
+    "HIGH": "High",
+    "CRITICAL": "Critical"
+  },
+  "activityDetails": {
+    "title": "Activity Details",
+    "unknownUser": "Unknown",
+    "ipAddress": "IP Address",
+    "browser": "Browser",
+    "notAvailable": "Not available",
+    "close": "Close"
+  },
+  "errors": {
+    "fetchFailed": "An error occurred while fetching activities",
+    "exportFailed": "An error occurred while exporting activities"
+  }
+}

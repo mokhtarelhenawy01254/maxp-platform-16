@@ -1,11 +1,18 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Grid3X3, Home, Search, ShoppingBag, User, Circle } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import {
+  Grid3X3,
+  Home,
+  Search,
+  ShoppingBag,
+  User,
+  type LucideIcon,
+} from 'lucide-react';
 import { buildStorefrontPath } from '../utils/paths';
 import { useCartStore } from '../store/useCartStore';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { isPharmacyThemeId } from '../utils/pharmacyThemes';
+import { tokenManager } from '../../utils/tokenManager';
 
 interface MobileBottomNavProps {
   onSearchOpen?: () => void;
@@ -41,13 +48,37 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
 
   const homePath = buildStorefrontPath(location.pathname, '/', location.search);
   const shopPath = buildStorefrontPath(location.pathname, '/shop', location.search);
-  const accountPath = buildStorefrontPath(location.pathname, '/auth/login', location.search);
+
+  // "حسابي" => main-app customer portal (NOT a /store route). If the customer is
+  // already logged in, go straight to /account; otherwise open the WhatsApp OTP login.
+  const isCustomerLoggedIn = (() => {
+    try {
+      const token = tokenManager.getAccessToken();
+      if (!token) return false;
+      return JSON.parse(atob(token.split('.')[1]))?.role === 'CUSTOMER';
+    } catch {
+      return false;
+    }
+  })();
+  const buildAccountPath = () => {
+    const target = isCustomerLoggedIn ? '/account' : '/auth/customer-register';
+    const params = new URLSearchParams(location.search);
+    const next = new URLSearchParams();
+    ['companyId', 'previewTheme', 'previewSource', 'previewAdminOrigin'].forEach((key) => {
+      const value = params.get(key);
+      if (value) next.set(key, value);
+    });
+    const queryString = next.toString();
+    return `${target}${queryString ? `?${queryString}` : ''}`;
+  };
+  const accountPath = buildAccountPath();
 
   const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
   const isHome = normalizedPath === '/' || normalizedPath.endsWith('/store');
   const isShop = normalizedPath.includes('/shop') || normalizedPath.includes('/category');
   const isCart = normalizedPath.includes('/cart') || isCartOpen;
-  const isAccount = normalizedPath.includes('/auth');
+  const isAccount =
+    normalizedPath.includes('/auth') || normalizedPath.startsWith('/account');
   const isProductDetail = normalizedPath.includes('/product');
   const isCheckoutFlow =
     normalizedPath.includes('/checkout') || normalizedPath.includes('/thank-you');

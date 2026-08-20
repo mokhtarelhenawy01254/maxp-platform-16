@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Image as ImageIcon, Loader2, X } from "lucide-react";
 import { api, fetchJson, RadiologyStudyImage, MODAL_CONTENT_CLS } from "./shared";

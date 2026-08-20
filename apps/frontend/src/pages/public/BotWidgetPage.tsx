@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 
@@ -62,7 +62,7 @@ const BotWidgetPage: React.FC = () => {
       }}
       title={primary.label}
     >
-      ≡ƒÆ¼
+      💬
     </a>
   );
 };

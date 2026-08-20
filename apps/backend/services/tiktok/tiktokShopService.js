@@ -1,9 +1,9 @@
-﻿const crypto = require('crypto');
+const crypto = require('crypto');
 const axios = require('axios');
 const { getSharedPrismaClient } = require('../sharedDatabase');
 
 const TIKTOK_SHOP_API_BASE = 'https://partner.tiktokshop.com/api/v2/';
-const NO_ACCOUNT_ERROR = { code: 'NO_ACCOUNT', message: '╪º╪▒╪¿╪╖ ╪¡╪│╪º╪¿ ┘à╪¬╪¼╪▒ TikTok Shop ╪ú┘ê┘ä╪º┘ï' };
+const NO_ACCOUNT_ERROR = { code: 'NO_ACCOUNT', message: 'اربط حساب متجر TikTok Shop أولاً' };
 
 const prisma = () => getSharedPrismaClient();
 
@@ -108,7 +108,7 @@ async function callTiktokShop(config) {
     response = await axios(config);
   } catch (error) {
     const detail = error.response?.data?.message || error.response?.data?.msg || error.message;
-    const err = new Error(detail || '┘ü╪┤┘ä ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘à╪¬╪¼╪▒ TikTok Shop');
+    const err = new Error(detail || 'فشل الاتصال بمتجر TikTok Shop');
     err.code = 'TIKTOK_API_ERROR';
     err.apiCode = error.response?.data?.code;
     throw err;
@@ -116,7 +116,7 @@ async function callTiktokShop(config) {
 
   const payload = response?.data;
   if (!payload || payload.code !== 0) {
-    const err = new Error(payload?.message || '╪«╪╖╪ú ┘à┘å ┘à╪¬╪¼╪▒ TikTok Shop');
+    const err = new Error(payload?.message || 'خطأ من متجر TikTok Shop');
     err.code = 'TIKTOK_API_ERROR';
     err.apiCode = payload?.code;
     throw err;

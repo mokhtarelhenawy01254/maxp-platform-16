@@ -1,8 +1,14 @@
-import { formatDate } from '@/utils/formatters';
-import { formatCurrency } from '@/utils/formatters';
 import React, { useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Clock3, Filter, PauseCircle, Search, Sliders, SlidersHorizontal, Target } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Clock3,
+  Filter,
+  PauseCircle,
+  Search,
+  SlidersHorizontal,
+  Target,
+} from "lucide-react";
 import MiniMetric from "./MiniMetric";
 import SelectFilter from "./SelectFilter";
 import {

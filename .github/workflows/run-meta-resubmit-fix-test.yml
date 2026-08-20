@@ -1,4 +1,4 @@
-﻿name: Run Meta Resubmit Fix Test
+name: Run Meta Resubmit Fix Test
 
 on:
   workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             apps/backend/scripts/diag-meta-update.js \
             "$SERVER_USER@$SERVER_HOST:/tmp/diag-meta-update.js"
-          echo "Γ£à Scripts uploaded to /tmp"
+          echo "✅ Scripts uploaded to /tmp"
 
       - name: Execute test on server
         uses: appleboy/ssh-action@v1.0.3
@@ -53,7 +53,7 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            echo "≡ƒôì Running test-meta-resubmit-fix.js (calls real resubmit-meta endpoint)..."
+            echo "📍 Running test-meta-resubmit-fix.js (calls real resubmit-meta endpoint)..."
             export PASSWORD="${{ github.event.inputs.password }}"
             node /tmp/test-meta-resubmit-fix.js
-            echo "Γ£à Finished!"
+            echo "✅ Finished!"

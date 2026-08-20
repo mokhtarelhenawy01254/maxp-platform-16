@@ -1,4 +1,4 @@
-﻿import { useCustomerLoyaltySummary } from "../../hooks/useCustomerLoyaltySummary";
+import { useCustomerLoyaltySummary } from "../../hooks/useCustomerLoyaltySummary";
 import CustomerAccountDashboard from "./CustomerAccountDashboard";
 
 export default function CustomerAccountHome() {

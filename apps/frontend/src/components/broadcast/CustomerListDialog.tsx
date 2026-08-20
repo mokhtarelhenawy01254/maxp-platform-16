@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Users, Sparkles, Clock, ShoppingBag, FileText, Wallet, Landmark,
   Star, ArrowDownUp, Tag, Crown, Heart, AlertTriangle, Loader2, Plus,
@@ -39,54 +39,54 @@ const PAYMENT_STATUSES = ['PENDING', 'COMPLETED', 'PARTIALLY_PAID', 'FAILED', 'R
 const RATINGS = ['EXCELLENT', 'GOOD', 'AVERAGE', 'POOR', 'UNKNOWN'];
 
 const STATUS_LABELS: Record<string, string> = {
-  DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à",
-  PENDING: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒",
-  CONFIRMED: "┘à╪ñ┘â╪»",
-  SCHEDULED: "┘à╪¼╪»┘ê┘ä",
-  PROCESSING: "┘é┘è╪» ╪º┘ä╪¬╪¼┘ç┘è╪▓",
-  SHIPPED: "╪¬┘à ╪º┘ä╪┤╪¡┘å",
-  CANCELLED: "┘à┘ä╪║┘è",
-  REFUNDED: "┘à╪│╪¬╪▒╪¼╪╣",
-  RETURNED: "┘à╪▒╪¬╪¼╪╣",
-  PARTIALLY_RETURNED: "┘à╪▒╪¬╪¼╪╣ ╪¼╪▓╪ª┘è╪º┘ï",
-  EXCHANGED: "┘à╪│╪¬╪¿╪»┘ä",
-  PARTIALLY_REFUNDED: "┘à╪│╪¬╪▒╪¼╪╣ ╪¼╪▓╪ª┘è╪º┘ï",
-  READY_TO_SHIP: "╪¼╪º┘ç╪▓ ┘ä┘ä╪┤╪¡┘å",
-  ON_HOLD: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒",
-  OUT_FOR_DELIVERY: "╪«╪º╪▒╪¼ ┘ä┘ä╪¬┘ê╪╡┘è┘ä",
-  LOST: "╪╢╪º╪ª╪╣",
-  PREPARING: "┘è╪¬┘à ╪¬╪¼┘ç┘è╪▓┘ç",
-  QUALITY_CHECK: "┘ü╪¡╪╡ ╪º┘ä╪¼┘ê╪»╪⌐",
-  PACKAGED: "╪¬┘à ╪º┘ä╪¬╪║┘ä┘è┘ü",
-  PARTIALLY_DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è╪º┘ï",
-  STOCK_SHORTAGE: "┘å┘é╪╡ ┘ü┘è ╪º┘ä┘à╪«╪▓┘ê┘å",
-  PENDING_CANCELLATION: "╪Ñ┘ä╪║╪º╪í ┘à╪╣┘ä┘é",
-  APPROVED: "┘à┘ê╪º┘ü┘é╪⌐",
-  REJECTED: "┘à╪▒┘ü┘ê╪╢",
-  COMPLETED: "┘à┘â╪¬┘à┘ä",
-  PARTIALLY_PAID: "┘à╪»┘ü┘ê╪╣ ╪¼╪▓╪ª┘è╪º┘ï",
-  FAILED: "┘ü╪┤┘ä",
-  EXCELLENT: "┘à┘à╪¬╪º╪▓",
-  GOOD: "╪¼┘è╪»",
-  AVERAGE: "┘à╪¬┘ê╪│╪╖",
-  POOR: "╪╢╪╣┘è┘ü",
-  UNKNOWN: "╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü",
+  DELIVERED: "تم التسليم",
+  PENDING: "قيد الانتظار",
+  CONFIRMED: "مؤكد",
+  SCHEDULED: "مجدول",
+  PROCESSING: "قيد التجهيز",
+  SHIPPED: "تم الشحن",
+  CANCELLED: "ملغي",
+  REFUNDED: "مسترجع",
+  RETURNED: "مرتجع",
+  PARTIALLY_RETURNED: "مرتجع جزئياً",
+  EXCHANGED: "مستبدل",
+  PARTIALLY_REFUNDED: "مسترجع جزئياً",
+  READY_TO_SHIP: "جاهز للشحن",
+  ON_HOLD: "قيد الانتظار",
+  OUT_FOR_DELIVERY: "خارج للتوصيل",
+  LOST: "ضائع",
+  PREPARING: "يتم تجهيزه",
+  QUALITY_CHECK: "فحص الجودة",
+  PACKAGED: "تم التغليف",
+  PARTIALLY_DELIVERED: "تم التسليم جزئياً",
+  STOCK_SHORTAGE: "نقص في المخزون",
+  PENDING_CANCELLATION: "إلغاء معلق",
+  APPROVED: "موافقة",
+  REJECTED: "مرفوض",
+  COMPLETED: "مكتمل",
+  PARTIALLY_PAID: "مدفوع جزئياً",
+  FAILED: "فشل",
+  EXCELLENT: "ممتاز",
+  GOOD: "جيد",
+  AVERAGE: "متوسط",
+  POOR: "ضعيف",
+  UNKNOWN: "غير معروف",
 };
 
 const CRITERIA_TYPES = [
-  { value: "all", label: "╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å", icon: Users, hint: "┘â┘ä ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å" },
-  { value: "active", label: "┘å╪┤╪╖ ╪«┘ä╪º┘ä ┘ü╪¬╪▒╪⌐", icon: Clock, hint: "╪╣┘à┘ä╪º╪í ╪¬┘ê╪º╪╡┘ä┘ê╪º ╪«┘ä╪º┘ä ╪ó╪«╪▒ X ╪│╪º╪╣╪⌐" },
-  { value: "inactive", label: "╪║┘è╪▒ ┘å╪┤╪╖ ┘à┘å╪░ ┘ü╪¬╪▒╪⌐", icon: Clock, hint: "╪╣┘à┘ä╪º╪í ┘ä┘à ┘è╪¬┘ê╪º╪╡┘ä┘ê╪º ┘à┘å╪░ X ┘è┘ê┘à" },
-  { value: "tag", label: "┘è╪¡┘à┘ä ┘ê╪│┘à (Tag)", icon: Tag, hint: "╪╣┘à┘ä╪º╪í ┘ä╪»┘è┘ç┘à ┘ê╪│┘à ┘à╪¡╪»╪»" },
-  { value: "orderStatus", label: "╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿ ╪«┘ä╪º┘ä ┘ü╪¬╪▒╪⌐", icon: ShoppingBag, hint: "╪╣┘à┘ä╪º╪í ╪╣┘å╪»┘ç┘à ╪╖┘ä╪¿ ╪¿╪¡╪º┘ä╪⌐ ┘à╪╣┘è┘å╪⌐" },
-  { value: "returnRequest", label: "╪╖┘ä╪¿╪º╪¬ ┘à╪▒╪¬╪¼╪╣", icon: FileText, hint: "╪╣┘à┘ä╪º╪í ┘é╪º┘à┘ê╪º ╪¿╪╖┘ä╪¿ ┘à╪▒╪¬╪¼╪╣" },
-  { value: "paymentStatus", label: "╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣", icon: Wallet, hint: "╪╣┘à┘ä╪º╪í ╪¿╪¡╪º┘ä╪⌐ ╪»┘ü╪╣ ┘ä╪╖┘ä╪¿╪º╪¬┘ç┘à" },
-  { value: "city", label: "╪º┘ä┘à╪»┘è┘å╪⌐", icon: Landmark, hint: "╪╣┘à┘ä╪º╪í ┘à┘å ┘à╪»┘è┘å╪⌐ ┘à╪╣┘è┘å╪⌐" },
-  { value: "customerRating", label: "╪º┘ä╪¬┘é┘è┘è┘à", icon: Star, hint: "╪╣┘à┘ä╪º╪í ╪¿╪¬┘é┘è┘è┘à ┘à╪¡╪»╪»" },
-  { value: "latest", label: "╪º┘ä╪ú╪¡╪»╪½", icon: ArrowDownUp, hint: "╪ú╪¡╪»╪½ N ╪╣┘à┘ä╪º╪í" },
-  { value: "oldest", label: "╪º┘ä╪ú┘é╪»┘à", icon: ArrowDownUp, hint: "╪ú┘é╪»┘à N ╪╣┘à┘ä╪º╪í" },
-  { value: "minTotalSpent", label: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪Ñ┘å┘ü╪º┘é", icon: Wallet, hint: "╪╣┘à┘ä╪º╪í ╪ú┘å┘ü┘é┘ê╪º ╪ú┘â╪½╪▒ ┘à┘å ┘à╪¿┘ä╪║" },
-  { value: "minOrdersCount", label: "╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬", icon: ShoppingBag, hint: "╪╣┘à┘ä╪º╪í ┘ä╪»┘è┘ç┘à N ╪╖┘ä╪¿ ╪ú┘ê ╪ú┘â╪½╪▒" },
+  { value: "all", label: "جميع العملاء النشطين", icon: Users, hint: "كل العملاء النشطين" },
+  { value: "active", label: "نشط خلال فترة", icon: Clock, hint: "عملاء تواصلوا خلال آخر X ساعة" },
+  { value: "inactive", label: "غير نشط منذ فترة", icon: Clock, hint: "عملاء لم يتواصلوا منذ X يوم" },
+  { value: "tag", label: "يحمل وسم (Tag)", icon: Tag, hint: "عملاء لديهم وسم محدد" },
+  { value: "orderStatus", label: "حالة طلب خلال فترة", icon: ShoppingBag, hint: "عملاء عندهم طلب بحالة معينة" },
+  { value: "returnRequest", label: "طلبات مرتجع", icon: FileText, hint: "عملاء قاموا بطلب مرتجع" },
+  { value: "paymentStatus", label: "حالة الدفع", icon: Wallet, hint: "عملاء بحالة دفع لطلباتهم" },
+  { value: "city", label: "المدينة", icon: Landmark, hint: "عملاء من مدينة معينة" },
+  { value: "customerRating", label: "التقييم", icon: Star, hint: "عملاء بتقييم محدد" },
+  { value: "latest", label: "الأحدث", icon: ArrowDownUp, hint: "أحدث N عملاء" },
+  { value: "oldest", label: "الأقدم", icon: ArrowDownUp, hint: "أقدم N عملاء" },
+  { value: "minTotalSpent", label: "إجمالي الإنفاق", icon: Wallet, hint: "عملاء أنفقوا أكثر من مبلغ" },
+  { value: "minOrdersCount", label: "عدد الطلبات", icon: ShoppingBag, hint: "عملاء لديهم N طلب أو أكثر" },
 ] as const;
 
 type CriteriaType = (typeof CRITERIA_TYPES)[number]["value"];
@@ -94,27 +94,27 @@ type CriteriaType = (typeof CRITERIA_TYPES)[number]["value"];
 const SMART_PRESETS = [
   {
     value: "champions",
-    label: "╪ú┘ü╪╢┘ä ╪º┘ä╪╣┘à┘ä╪º╪í",
+    label: "أفضل العملاء",
     icon: Crown,
-    hint: "┘å╪┤╪╖┘ê┘å + ┘â╪½┘è╪▒┘ê ╪º┘ä╪╖┘ä╪¿╪º╪¬ + ╪Ñ┘å┘ü╪º┘é ┘à╪▒╪¬┘ü╪╣ ΓÇö ╪╣╪▒╪╢ ┘ê┘ä╪º╪í",
+    hint: "نشطون + كثيرو الطلبات + إنفاق مرتفع — عرض ولاء",
   },
   {
     value: "loyal",
-    label: "╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä╪ú┘ê┘ü┘è╪º╪í",
+    label: "العملاء الأوفياء",
     icon: Heart,
-    hint: "5 ╪╖┘ä╪¿╪º╪¬ ╪ú┘ê ╪ú┘â╪½╪▒ ΓÇö ╪▒╪┤┘æ╪¡┘ç┘à ┘ä╪¿╪▒┘å╪º┘à╪¼ ╪º┘ä┘ê┘ä╪º╪í",
+    hint: "5 طلبات أو أكثر — رشّحهم لبرنامج الولاء",
   },
   {
     value: "atRisk",
-    label: "┘à╪╣╪▒╪╢┘ê┘å ┘ä┘ä┘ü┘é╪»╪º┘å",
+    label: "معرضون للفقدان",
     icon: AlertTriangle,
-    hint: "┘â╪º┘å┘ê╪º ┘à╪┤╪¬╪▒┘è┘å ┘ä┘â┘å ╪║┘è╪▒ ┘å╪┤╪╖┘è┘å 30 ┘è┘ê┘à ΓÇö ╪ú╪╣╪» ╪º┘ä╪¬┘å╪┤┘è╪╖",
+    hint: "كانوا مشترين لكن غير نشطين 30 يوم — أعد التنشيط",
   },
   {
     value: "new",
-    label: "╪╣┘à┘ä╪º╪í ╪¼╪»╪»",
+    label: "عملاء جدد",
     icon: Sparkles,
-    hint: "╪ú╪¡╪»╪½ 100 ╪╣┘à┘è┘ä ΓÇö ╪▒╪¡┘æ╪¿ ╪¿┘ç┘à",
+    hint: "أحدث 100 عميل — رحّب بهم",
   },
 ] as const;
 
@@ -167,7 +167,7 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
       const res = await customerService.getDistinctTags();
       const tags = Array.isArray(res) ? res.map((t: any) => (typeof t === "string" ? t : t?.name)).filter(Boolean) : [];
       setAvailableTags(tags);
-    } catch { /* ╪¬╪¼╪º┘ç┘ä */ }
+    } catch { /* تجاهل */ }
   }, []);
 
   useEffect(() => { void loadTags(); }, [loadTags]);
@@ -202,7 +202,7 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
   }, [formCriteria, open]);
 
   const handleSave = async () => {
-    if (!formName.trim()) { toast.error("╪º╪│┘à ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘à╪╖┘ä┘ê╪¿"); return; }
+    if (!formName.trim()) { toast.error("اسم القائمة مطلوب"); return; }
     setSaving(true);
     try {
       await broadcastService.createCustomerList({
@@ -210,11 +210,11 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
         description: formDescription.trim(),
         criteria: formCriteria,
       });
-      toast.success("╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪¿┘å╪¼╪º╪¡");
+      toast.success("تم إنشاء القائمة بنجاح");
       onOpenChange(false);
       onSuccess();
     } catch (err: any) {
-      toast.error(err?.message || "┘ü╪┤┘ä ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º╪ª┘à╪⌐");
+      toast.error(err?.message || "فشل في إنشاء القائمة");
     } finally {
       setSaving(false);
     }
@@ -224,21 +224,21 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>╪Ñ┘å╪┤╪º╪í ┘é╪º╪ª┘à╪⌐ ╪╣┘à┘ä╪º╪í ╪¼╪»┘è╪»╪⌐</DialogTitle>
+          <DialogTitle>إنشاء قائمة عملاء جديدة</DialogTitle>
           <DialogDescription>
-            ╪¡╪»╪» ┘à╪╣╪º┘è┘è╪▒ ╪░┘â┘è╪⌐ ┘ä╪º╪│╪¬┘ç╪»╪º┘ü ╪╣┘à┘ä╪º╪í ┘à╪¡╪»╪»┘è┘å╪î ╪½┘à ╪ú╪▒╪│┘ä ╪º┘ä╪¡┘à┘ä╪⌐ ╪╣╪¿╪▒ ┘ê╪º╪¬╪│╪º╪¿.
+            حدد معايير ذكية لاستهداف عملاء محددين، ثم أرسل الحملة عبر واتساب.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="list-name">╪º╪│┘à ╪º┘ä┘é╪º╪ª┘à╪⌐ *</Label>
-              <Input id="list-name" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="┘à╪½╪º┘ä: ╪╣┘à┘ä╪º╪í VIP" />
+              <Label htmlFor="list-name">اسم القائمة *</Label>
+              <Input id="list-name" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: عملاء VIP" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="list-description">┘ê╪╡┘ü ╪º┘ä┘é╪º╪ª┘à╪⌐</Label>
-              <Input id="list-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="┘ê╪╡┘ü ╪º╪«╪¬┘è╪º╪▒┘è" />
+              <Label htmlFor="list-description">وصف القائمة</Label>
+              <Input id="list-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="وصف اختياري" />
             </div>
           </div>
 
@@ -246,7 +246,7 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
 
           {/* Smart RFM presets */}
           <div className="space-y-1.5">
-            <Label>╪º╪¿╪»╪ú ┘à┘å ┘é╪º┘ä╪¿ ╪¼╪º┘ç╪▓</Label>
+            <Label>ابدأ من قالب جاهز</Label>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {SMART_PRESETS.map((p) => {
                 const active = formCriteria.type === "preset" && formCriteria.preset === p.value;
@@ -278,10 +278,10 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
           </div>
 
           <div className="space-y-1.5">
-            <Label>╪ú┘ê ╪¡╪»╪» ┘à╪╣┘è╪º╪▒╪º┘ï ┘è╪»┘ê┘è╪º┘ï</Label>
+            <Label>أو حدد معياراً يدوياً</Label>
             <Select value={formCriteriaType} onValueChange={(v) => changeCriteriaType((v ?? "all") as string)}>
               <SelectTrigger className="h-11">
-                <SelectValue placeholder="╪º╪«╪¬╪▒ ╪º┘ä┘à╪╣┘è╪º╪▒" />
+                <SelectValue placeholder="اختر المعيار" />
               </SelectTrigger>
               <SelectContent>
                 {CRITERIA_TYPES.map((ct) => (
@@ -304,39 +304,39 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
             <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/30 p-4">
               {formCriteriaType === "active" && (
                 <div className="space-y-1.5">
-                  <Label>╪«┘ä╪º┘ä ╪ó╪«╪▒ (╪│╪º╪╣╪⌐)</Label>
+                  <Label>خلال آخر (ساعة)</Label>
                   <Input type="number" min={1} value={formCriteria.hours ?? 24} onChange={(e) => updateCriteriaField("hours", parseInt(e.target.value) || 1)} />
                 </div>
               )}
               {formCriteriaType === "inactive" && (
                 <div className="space-y-1.5">
-                  <Label>╪║┘è╪▒ ┘å╪┤╪╖ ┘à┘å╪░ (┘è┘ê┘à)</Label>
+                  <Label>غير نشط منذ (يوم)</Label>
                   <Input type="number" min={1} value={formCriteria.days ?? 7} onChange={(e) => updateCriteriaField("days", parseInt(e.target.value) || 1)} />
                 </div>
               )}
               {formCriteriaType === "tag" && (
                 <div className="space-y-1.5">
-                  <Label>╪º┘ä┘ê╪│┘à (Tag)</Label>
+                  <Label>الوسم (Tag)</Label>
                   {availableTags.length > 0 ? (
                     <Select value={formCriteria.tag || ""} onValueChange={(v) => updateCriteriaField("tag", v ?? "")}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="╪º╪«╪¬╪▒ ┘ê╪│┘à╪º┘ï" /></SelectTrigger>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="اختر وسماً" /></SelectTrigger>
                       <SelectContent>
                         {availableTags.map((tag) => (
-                          <SelectItem key={tag} value={tag}>≡ƒÅ╖∩╕Å {tag}</SelectItem>
+                          <SelectItem key={tag} value={tag}>🏷️ {tag}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Input value={formCriteria.tag || ""} onChange={(e) => updateCriteriaField("tag", e.target.value)} placeholder="╪º╪│┘à ╪º┘ä┘ê╪│┘à" />
+                    <Input value={formCriteria.tag || ""} onChange={(e) => updateCriteriaField("tag", e.target.value)} placeholder="اسم الوسم" />
                   )}
                 </div>
               )}
               {(formCriteriaType === "orderStatus" || formCriteriaType === "returnRequest" || formCriteriaType === "paymentStatus") && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label>{formCriteriaType === "returnRequest" ? "╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪▒╪¬╪¼╪╣" : formCriteriaType === "paymentStatus" ? "╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣" : "╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿"}</Label>
+                    <Label>{formCriteriaType === "returnRequest" ? "حالة المرتجع" : formCriteriaType === "paymentStatus" ? "حالة الدفع" : "حالة الطلب"}</Label>
                     <Select value={formCriteria.status || ""} onValueChange={(v) => updateCriteriaField("status", v ?? "")}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="╪º╪«╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪⌐" /></SelectTrigger>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="اختر الحالة" /></SelectTrigger>
                       <SelectContent>
                         {(formCriteriaType === "returnRequest" ? RETURN_STATUSES : formCriteriaType === "paymentStatus" ? PAYMENT_STATUSES : ORDER_STATUSES).map((s) => (
                           <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>
@@ -345,20 +345,20 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>╪«┘ä╪º┘ä ╪ó╪«╪▒ (┘è┘ê┘à)</Label>
+                    <Label>خلال آخر (يوم)</Label>
                     <Input type="number" min={1} value={formCriteria.days ?? 30} onChange={(e) => updateCriteriaField("days", parseInt(e.target.value) || 1)} />
                   </div>
                 </div>
               )}
               {formCriteriaType === "city" && (
                 <div className="space-y-1.5">
-                  <Label>╪º┘ä┘à╪»┘è┘å╪⌐ / ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐</Label>
-                  <Input value={formCriteria.city || ""} onChange={(e) => updateCriteriaField("city", e.target.value)} placeholder="┘à╪½╪º┘ä: ╪º┘ä┘é╪º┘ç╪▒╪⌐" />
+                  <Label>المدينة / المحافظة</Label>
+                  <Input value={formCriteria.city || ""} onChange={(e) => updateCriteriaField("city", e.target.value)} placeholder="مثال: القاهرة" />
                 </div>
               )}
               {formCriteriaType === "customerRating" && (
                 <div className="space-y-1.5">
-                  <Label>╪º┘ä╪¬┘é┘è┘è┘à</Label>
+                  <Label>التقييم</Label>
                   <Select value={formCriteria.rating || "EXCELLENT"} onValueChange={(v) => updateCriteriaField("rating", v ?? "EXCELLENT")}>
                     <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -371,24 +371,24 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
               )}
               {(formCriteriaType === "latest" || formCriteriaType === "oldest") && (
                 <div className="space-y-1.5">
-                  <Label>╪╣╪»╪» ╪º┘ä╪╣┘à┘ä╪º╪í</Label>
+                  <Label>عدد العملاء</Label>
                   <Input type="number" min={1} value={formCriteria.limit ?? 100} onChange={(e) => updateCriteriaField("limit", parseInt(e.target.value) || 1)} />
                 </div>
               )}
               {formCriteriaType === "minTotalSpent" && (
                 <div className="space-y-1.5">
-                  <Label>╪Ñ╪¼┘à╪º┘ä┘è ╪Ñ┘å┘ü╪º┘é ΓëÑ (╪¼┘å┘è┘ç / ┘ê╪¡╪»╪⌐ ╪º┘ä╪╣┘à┘ä╪⌐)</Label>
+                  <Label>إجمالي إنفاق ≥ (جنيه / وحدة العملة)</Label>
                   <Input type="number" min={0} value={formCriteria.amount ?? 1000} onChange={(e) => updateCriteriaField("amount", parseFloat(e.target.value) || 0)} />
                 </div>
               )}
               {formCriteriaType === "minOrdersCount" && (
                 <div className="space-y-1.5">
-                  <Label>╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ΓëÑ</Label>
+                  <Label>عدد الطلبات ≥</Label>
                   <Input type="number" min={1} value={formCriteria.count ?? 2} onChange={(e) => updateCriteriaField("count", parseInt(e.target.value) || 1)} />
                 </div>
               )}
               {formCriteriaType === "all" && (
-                <p className="text-sm text-[color:var(--color-muted-foreground)]">╪│╪¬╪┤┘à┘ä ┘ç╪░┘ç ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å.</p>
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">ستشمل هذه القائمة جميع العملاء النشطين.</p>
               )}
             </div>
           ) : (
@@ -399,7 +399,7 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
                   <>
                     {preset ? <preset.icon className="size-4 text-[color:var(--color-primary)]" /> : <Sparkles className="size-4 text-[color:var(--color-primary)]" />}
                     <span className="text-sm font-medium text-[color:var(--color-foreground)]">
-                      {preset ? preset.label : "┘é╪º┘ä╪¿ ╪¼╪º┘ç╪▓"} ΓÇö {preset ? preset.hint : "╪│┘è╪¬┘à ╪¬╪╖╪¿┘è┘é ╪º┘ä┘à╪╣╪º┘è┘è╪▒ ╪º┘ä╪░┘â┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï"}
+                      {preset ? preset.label : "قالب جاهز"} — {preset ? preset.hint : "سيتم تطبيق المعايير الذكية تلقائياً"}
                     </span>
                   </>
                 );
@@ -411,9 +411,9 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
           <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/30 p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <Label>╪º╪│╪¬╪½┘å╪º╪í ╪º┘ä┘à╪▒╪º╪│┘Ä┘ä┘è┘å ╪¡╪»┘è╪½╪º┘ï</Label>
+                <Label>استثناء المراسَلين حديثاً</Label>
                 <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                  ╪º╪│╪¬╪¿╪╣╪» ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä╪░┘è┘å ╪ú╪▒╪│┘ä┘ê╪º ╪Ñ┘ä┘è┘â ╪ú┘ê ╪ú┘Å╪▒╪│┘ä ╪Ñ┘ä┘è┘ç┘à ╪«┘ä╪º┘ä ╪ó╪«╪▒ (┘è┘ê┘à). ┘è┘à┘å╪╣ ╪Ñ╪▓╪╣╪º╪¼ ╪╣┘à┘ä╪º╪í ╪¬┘ê╪º╪╡┘ä┘ê╪º ┘à╪ñ╪«╪▒╪º┘ï.
+                  استبعد العملاء الذين أرسلوا إليك أو أُرسل إليهم خلال آخر (يوم). يمنع إزعاج عملاء تواصلوا مؤخراً.
                 </p>
               </div>
               <div className="w-32 shrink-0">
@@ -421,14 +421,14 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
                   value={formCriteria.excludeContactedInDays ? String(formCriteria.excludeContactedInDays) : "0"}
                   onValueChange={(v) => updateCriteriaField("excludeContactedInDays", v === "0" ? undefined : parseInt(v || "0", 10))}
                 >
-                  <SelectTrigger className="h-11"><SelectValue placeholder="╪¿╪»┘ê┘å ╪º╪│╪¬╪½┘å╪º╪í" /></SelectTrigger>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="بدون استثناء" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">╪¿╪»┘ê┘å ╪º╪│╪¬╪½┘å╪º╪í</SelectItem>
-                    <SelectItem value="1">┘è┘ê┘à ┘ê╪º╪¡╪»</SelectItem>
-                    <SelectItem value="3">3 ╪ú┘è╪º┘à</SelectItem>
-                    <SelectItem value="7">7 ╪ú┘è╪º┘à</SelectItem>
-                    <SelectItem value="14">14 ┘è┘ê┘à</SelectItem>
-                    <SelectItem value="30">30 ┘è┘ê┘à</SelectItem>
+                    <SelectItem value="0">بدون استثناء</SelectItem>
+                    <SelectItem value="1">يوم واحد</SelectItem>
+                    <SelectItem value="3">3 أيام</SelectItem>
+                    <SelectItem value="7">7 أيام</SelectItem>
+                    <SelectItem value="14">14 يوم</SelectItem>
+                    <SelectItem value="30">30 يوم</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -439,25 +439,25 @@ const CustomerListDialog: React.FC<CustomerListDialogProps> = ({ open, onOpenCha
           <div className="flex items-center justify-between rounded-2xl border border-[color:color-mix(in_srgb,var(--color-primary)_20%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_6%,var(--color-card))] px-4 py-3">
             <div className="flex items-center gap-2">
               <Users className="size-4 text-[color:var(--color-primary)]" />
-              <span className="text-sm font-medium text-[color:var(--color-foreground)]">╪╣╪»╪» ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘à╪¬┘ê┘é╪╣</span>
+              <span className="text-sm font-medium text-[color:var(--color-foreground)]">عدد العملاء المتوقع</span>
             </div>
             {previewLoading ? (
               <Loader2 className="size-4 animate-spin text-[color:var(--color-primary)]" />
             ) : previewCount !== null ? (
               <span className="text-lg font-bold text-[color:var(--color-primary)]">
-                {previewCount.toLocaleString("ar-EG")} <span className="text-xs font-normal text-[color:var(--color-muted-foreground)]">╪╣┘à┘è┘ä</span>
+                {previewCount.toLocaleString("ar-EG")} <span className="text-xs font-normal text-[color:var(--color-muted-foreground)]">عميل</span>
               </span>
             ) : (
-              <span className="text-sm text-[color:var(--color-muted-foreground)]">╪║┘è╪▒ ┘à╪¬╪º╪¡</span>
+              <span className="text-sm text-[color:var(--color-muted-foreground)]">غير متاح</span>
             )}
           </div>
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>╪Ñ┘ä╪║╪º╪í</Button>
+          <Button variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>إلغاء</Button>
           <Button className="rounded-full" onClick={() => void handleSave()} disabled={saving}>
             {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-            ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º╪ª┘à╪⌐
+            إنشاء القائمة
           </Button>
         </DialogFooter>
       </DialogContent>

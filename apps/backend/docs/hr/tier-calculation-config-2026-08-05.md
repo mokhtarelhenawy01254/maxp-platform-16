@@ -1,34 +1,34 @@
-﻿# Configurable Customer Tier Calculation + Per-Customer Benefits
+# Configurable Customer Tier Calculation + Per-Customer Benefits
 
 **Date**: 2026-08-05
-**Domain**: HR ΓÇö Customer Loyalty / Tiers
+**Domain**: HR — Customer Loyalty / Tiers
 **Type**: Feature
 
 ## Overview
 
 Admins can now choose **how a customer's tier is calculated** and define
 **benefits per tier**, plus assign custom benefits to a specific customer.
-Configured from a new **╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬** tab in the Segmentation hub
+Configured from a new **إعدادات المستويات** tab in the Segmentation hub
 (`/customers/segments`).
 
 ## Three calculation methods
 
 Each loyalty tier has a `calculationType`:
 
-- `POINTS` ΓÇö based on loyalty points (`currentPoints`).
-- `SPENT` ΓÇö based on total money paid on **DELIVERED** orders.
-- `ITEMS` ΓÇö based on total quantity of pieces on **DELIVERED** orders.
+- `POINTS` — based on loyalty points (`currentPoints`).
+- `SPENT` — based on total money paid on **DELIVERED** orders.
+- `ITEMS` — based on total quantity of pieces on **DELIVERED** orders.
 
 Each tier stores the thresholds for its method (`minPoints/maxPoints`,
 `minSpent/maxSpent`, `minItems/maxItems`).
 
 ## Company default + per-customer override
 
-- `CustomerLoyaltyProgram.defaultTierMethod` ΓÇö company-wide default (defaults to
+- `CustomerLoyaltyProgram.defaultTierMethod` — company-wide default (defaults to
   `POINTS`).
-- `Customer.tierMethod` ΓÇö per-customer override; when set it wins over the
+- `Customer.tierMethod` — per-customer override; when set it wins over the
   program default.
-- Resolution order: `customer.tierMethod` ΓåÆ `program.defaultTierMethod` ΓåÆ
+- Resolution order: `customer.tierMethod` → `program.defaultTierMethod` →
   `POINTS`.
 
 ## Benefits
@@ -48,7 +48,7 @@ Both tiers (`CustomerLoyaltyTier.benefits`) and per-customer overrides
 
 `apps/backend/services/hr/customerLoyaltyService.js`:
 
-- `determineTier(companyId, programId, metricValue, method)` ΓÇö matches only
+- `determineTier(companyId, programId, metricValue, method)` — matches only
   tiers of the given `calculationType`, converts Decimals to `Number`.
 - `resolveTierMethod`, `computeTierMetric` (points / delivered total / delivered
   item quantity).
@@ -66,16 +66,16 @@ Both tiers (`CustomerLoyaltyTier.benefits`) and per-customer overrides
 ## Frontend
 
 `apps/frontend/src/pages/customers/TierConfigTab.tsx` (new) added as an
-**╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬** tab in `CustomerSegments.tsx`:
+**إعدادات المستويات** tab in `CustomerSegments.tsx`:
 
 - Program selector + company default method.
 - Tier editor: name, calculation type, method thresholds, benefits
   (free shipping, priority shipping, discount %, custom text).
-- Per-customer: search by phone ΓåÆ set method override + benefits.
+- Per-customer: search by phone → set method override + benefits.
 
 ## Tests
 
-`customerLoyaltyService.autoAward.test.js` ΓÇö `determineTier` for `POINTS`
+`customerLoyaltyService.autoAward.test.js` — `determineTier` for `POINTS`
 boundaries, `SPENT` thresholds, `ITEMS` thresholds, and that only tiers of the
 requested `calculationType` match.
 

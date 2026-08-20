@@ -1,5 +1,20 @@
 import React from "react";
-import { Award, Bot, Code, CreditCard, Database, Facebook, Globe, LayoutDashboard, Megaphone, MessageSquare, Server, ShieldAlert, ShoppingBag, ShoppingCart, Trophy, Truck, Users, Volume2 } from 'lucide-react';
+import {
+  ShoppingCart,
+  LayoutDashboard,
+  Users,
+  Megaphone,
+  ShieldAlert,
+  Bot,
+  Globe,
+  CreditCard,
+  MessageSquare,
+  Facebook,
+  Database,
+  Code,
+  Trophy,
+  Truck,
+} from "lucide-react";
 
 export type ProjectNodeStatus = "stable" | "beta" | "new" | "maintenance";
 

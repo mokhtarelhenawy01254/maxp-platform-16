@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "sonner";
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
 import { OrderDetailsType, Government, Area } from "../types";
 import {
   validateOrderItems,
@@ -43,16 +45,16 @@ const resolveOrderImageSrc = (value: any): string => {
 };
 
 const looksLikeSizeValue = (value: unknown): boolean => {
-  if (typeof value !== "string") return false;
-
+  if (value == null) return false;
+  const str = String(value).trim();
   return /^(?:xxs|xs|s|m|l|xl|xxl|xxxl|2xl|3xl|4xl|5xl|free|one size|onesize|universal|small|medium|large|extra large|\d{1,3}(?:\.\d+)?)$/i.test(
-    value.trim(),
+    str,
   );
 };
 
 const normalizeVariantDisplayValues = (color: unknown, size: unknown) => {
-  const normalizedColor = typeof color === "string" ? color.trim() : "";
-  let normalizedSize = typeof size === "string" ? size.trim() : "";
+  const normalizedColor = typeof color === "string" ? color.trim() : (color != null ? String(color).trim() : "");
+  let normalizedSize = size != null ? String(size).trim() : "";
 
   if (
     normalizedColor &&
@@ -359,10 +361,29 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         const enhancedOrder: OrderDetailsType = {
           ...simpleOrder,
           status: (simpleOrder.status || "").toUpperCase(),
-          paymentStatus: (
-            simpleOrder.paymentStatus ||
-            (simpleOrder.metadata?.isGuestOrder ? "UNAVAILABLE" : "PENDING")
-          ).toUpperCase() as any,
+          paymentStatus: (() => {
+            const rawStatus = String(
+              simpleOrder.paymentStatus ||
+                (simpleOrder.metadata?.isGuestOrder ? "UNAVAILABLE" : "PENDING"),
+            ).toUpperCase();
+            if (
+              (rawStatus === "PENDING" ||
+                rawStatus === "UNAVAILABLE" ||
+                rawStatus === "UNKNOWN" ||
+                rawStatus === "") &&
+              String(simpleOrder.paymentMethod || "").toLowerCase() === "wallet"
+            ) {
+              const walletProof = (simpleOrder.metadata as any)
+                ?.walletPaymentProof;
+              const hasScreenshot = Boolean(walletProof?.imageUrl);
+              const isRejected =
+                String(walletProof?.status || "").toUpperCase() === "REJECTED";
+              if (hasScreenshot && !isRejected) {
+                return "COMPLETED";
+              }
+            }
+            return rawStatus;
+          })() as any,
           items: (Array.isArray(simpleOrder.items)
             ? simpleOrder.items
             : []
@@ -427,24 +448,27 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
               return "";
             })();
 
+            const toStr = (v: unknown): string =>
+              v != null ? String(v).trim() : "";
+
             const extractedProductSize = (() => {
               // 1. Direct fields
-              if (item.productSize) return item.productSize;
-              if (item.size) return item.size;
+              if (item.productSize != null) return toStr(item.productSize);
+              if (item.size != null) return toStr(item.size);
 
               // 2. Metadata
-              if (itemMetadata.size) return itemMetadata.size;
-              if (itemMetadata.attributeValues?.["المقاس"])
-                return itemMetadata.attributeValues["المقاس"];
-              if (itemMetadata.attributeValues?.["size"])
-                return itemMetadata.attributeValues["size"];
+              if (itemMetadata.size != null) return toStr(itemMetadata.size);
+              if (itemMetadata.attributeValues?.["المقاس"] != null)
+                return toStr(itemMetadata.attributeValues["المقاس"]);
+              if (itemMetadata.attributeValues?.["size"] != null)
+                return toStr(itemMetadata.attributeValues["size"]);
 
               // 3. Variant Relation
               if (item.variant) {
-                if (variantMetadata.attributeValues?.["المقاس"])
-                  return variantMetadata.attributeValues["المقاس"];
-                if (variantMetadata.attributeValues?.["size"])
-                  return variantMetadata.attributeValues["size"];
+                if (variantMetadata.attributeValues?.["المقاس"] != null)
+                  return toStr(variantMetadata.attributeValues["المقاس"]);
+                if (variantMetadata.attributeValues?.["size"] != null)
+                  return toStr(variantMetadata.attributeValues["size"]);
 
                 if (item.variant.name) {
                   const parts = item.variant.name
@@ -482,6 +506,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
                 resolveOrderImageSrc(itemMetadata.images) ||
                 resolveOrderImageSrc(item.product?.images) ||
                 "",
+              productSku: item.productSku || "",
               price: validPrice,
               quantity: validQuantity,
               total: parseFloat(item.total) || validPrice * validQuantity,
@@ -530,7 +555,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       }
     } catch (error) {
       console.error("Error fetching order:", error);
-      toast.error("فشل تحميل تفاصيل الطلب");
+      tToast.error("orderDetails.failed_load_1612");
     } finally {
       setLoading(false);
     }
@@ -607,7 +632,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     const trimmedNotes = String(notes || "").trim();
 
     if (isCancellationStatus(normalizedStatus) && !trimmedNotes) {
-      toast.error("سبب إلغاء الطلب مطلوب");
+      tToast.error("orderDetails.msg_2c62");
       return false;
     }
 
@@ -624,14 +649,14 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       if (response.data.success) {
         if (response.data.data?.workflowStatus === "pending") {
           toast.success(
-            response.data.message || "تم تقديم طلب تغيير الحالة للمراجعة",
+            response.data.message || i18n.t("orderDetails.msg_911a"),
           );
           return true;
         }
 
         await fetchOrderDetails();
         await fetchAllowedTransitions(normalizedStatus);
-        toast.success(response.data.message || "تم تحديث حالة الطلب بنجاح");
+        toast.success(response.data.message || i18n.t("orderDetails.success_update_status_5c48"));
         return true;
       }
       return false;
@@ -648,7 +673,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     notes: string,
   ) => {
     if (order?.metadata?.isGuestOrder) {
-      toast.error("حالة الدفع غير متاحة حالياً لطلبات الضيوف");
+      tToast.error("orderDetails.msg_ce95");
       return false;
     }
 
@@ -667,12 +692,45 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
             ? { ...prev, paymentStatus: newPaymentStatus.toUpperCase() as any }
             : null,
         );
-        toast.success("تم تحديث حالة الدفع بنجاح");
+        tToast.success("orderDetails.success_update_status_4792");
         return true;
       }
       return false;
     } catch (error: any) {
       toast.error(error.response?.data?.message || "فشل تحديث حالة الدفع");
+      return false;
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const verifyWalletProof = async (action: "VERIFY" | "REJECT", rejectReason?: string) => {
+    if (!order?.walletPaymentProof && !order?.metadata?.walletPaymentProof) return false;
+    try {
+      setUpdating(true);
+      const response = await apiClient.post(
+        `/orders-new/simple/${encodedOrderNumber}/wallet-proof/verify`,
+        { action, ...(rejectReason ? { rejectReason } : {}) },
+      );
+      if (response.data.success) {
+        setOrder((prev) =>
+          prev
+            ? {
+                ...prev,
+                walletPaymentProof: response.data.data?.walletPaymentProof || prev.walletPaymentProof,
+                paymentStatus:
+                  action === "VERIFY"
+                    ? ("COMPLETED" as any)
+                    : prev.paymentStatus,
+              }
+            : null,
+        );
+        toast.success(response.data.message || "تم تحديث إثبات الدفع");
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "فشل التحقق من إثبات الدفع");
       return false;
     } finally {
       setUpdating(false);
@@ -691,7 +749,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       );
       if (response.data.success) {
         setOrderNotes((prev) => [response.data.data, ...prev]);
-        toast.success("تم إضافة الملاحظة بنجاح");
+        tToast.success("orderDetails.success_add_477c");
         return true;
       }
       return false;
@@ -715,7 +773,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         setOrderNotes((prev) =>
           prev.map((n) => (n.id === noteId ? response.data.data : n)),
         );
-        toast.success("تم تعديل الملاحظة بنجاح");
+        tToast.success("orderDetails.msg_a504");
         return true;
       }
       return false;
@@ -735,7 +793,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       );
       if (response.data.success) {
         setOrderNotes((prev) => prev.filter((n) => n.id !== noteId));
-        toast.success("تم حذف الملاحظة بنجاح");
+        tToast.success("orderDetails.success_delete_42f8");
         return true;
       }
       return false;
@@ -825,8 +883,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           return {
             productId: item.productId || item.id || "",
             productName: item.productName || item.name || "",
-            productColor: item.productColor || null,
-            productSize: item.productSize || null,
+            productColor: item.productColor ? String(item.productColor) : null,
+            productSize: item.productSize != null ? String(item.productSize) : null,
             price,
             quantity,
             total: price * quantity,
@@ -859,7 +917,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
 
       await fetchOrderDetails();
       setIsEditing(false);
-      toast.success("تم حفظ التغييرات بنجاح");
+      tToast.success("orderDetails.success_save_a5c2");
       return true;
     } catch (e: any) {
       console.error("Save error:", e);
@@ -901,6 +959,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     handleGovernmentChange,
     updateStatus,
     updatePaymentStatus,
+    verifyWalletProof,
     addNote,
     updateNote,
     deleteNote,

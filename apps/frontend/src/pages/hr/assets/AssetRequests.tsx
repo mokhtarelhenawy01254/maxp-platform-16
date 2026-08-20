@@ -1,6 +1,11 @@
-import { Circle as ClipboardDocumentListIcon, Check as CheckCircleIcon, X as XCircleIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import i18n from "../../../i18n";
+import {
+  ClipboardDocumentListIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import { apiClient } from "../../../services/apiClient";
 
 interface AssetRequest {
@@ -80,13 +85,13 @@ const AssetRequests: React.FC = () => {
       }
     } catch (error) {
       console.error("Error approving request:", error);
-      alert("فشل في الموافقة على الطلب");
+      alert(i18n.t("AssetRequests.msg_d2d3"));
     }
   };
 
   const handleReject = async () => {
     if (!selectedRequest || !rejectionReason.trim()) {
-      alert("يرجى إدخال سبب الرفض");
+      alert(i18n.t("AssetRequests.please_reason_7dfe"));
       return;
     }
 
@@ -106,13 +111,13 @@ const AssetRequests: React.FC = () => {
       }
     } catch (error) {
       console.error("Error rejecting request:", error);
-      alert("فشل في رفض الطلب");
+      alert(i18n.t("AssetRequests.msg_b942"));
     }
   };
 
   const handleFulfill = async () => {
     if (!selectedRequest || !selectedAssetId) {
-      alert("يرجى اختيار الأصل");
+      alert(i18n.t("AssetRequests.msg_f5d7"));
       return;
     }
 
@@ -129,11 +134,11 @@ const AssetRequests: React.FC = () => {
         setShowFulfillModal(false);
         setSelectedAssetId("");
         setSelectedRequest(null);
-        alert("تم تخصيص الأصل بنجاح");
+        alert(i18n.t("AssetRequests.msg_713d"));
       }
     } catch (error) {
       console.error("Error fulfilling request:", error);
-      alert("فشل في تخصيص الأصل");
+      alert(i18n.t("AssetRequests.msg_eda3"));
     }
   };
 

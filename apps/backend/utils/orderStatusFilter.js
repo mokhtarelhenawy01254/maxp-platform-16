@@ -1,4 +1,4 @@
-﻿// Shared status-filter parsing for the orders list.
+// Shared status-filter parsing for the orders list.
 // The /orders-new/simple route accepts `status` as a single code OR a
 // comma-separated list (e.g. "CONFIRMED,SHIPPED"). Statuses live in different
 // places depending on their kind, so this module partitions the selected codes

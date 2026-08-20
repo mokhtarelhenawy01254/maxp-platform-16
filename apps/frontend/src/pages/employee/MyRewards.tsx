@@ -1,7 +1,23 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { AlertCircle, AlertTriangle, ArrowUpRight, Award, Calendar, Check, CheckCircle, Clock, DollarSign, Filter, Gift, Info, Loader2, TrendingUp, Trophy, X, XCircle } from 'lucide-react';
+import {
+    Trophy,
+    Calendar,
+    DollarSign,
+    Gift,
+    Clock,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    Loader2,
+    Filter,
+    ArrowUpRight,
+    TrendingUp,
+    Award,
+    Info
+} from "lucide-react";
 import api from "../../services/api";
+import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -24,29 +40,29 @@ interface Reward {
     };
 }
 
-const REWARD_STATUS = {
+const REWARD_STATUS: Record<string, { labelKey: string; color: string; icon: React.ElementType }> = {
     PENDING: {
-        label: "قيد الانتظار",
+        labelKey: "employee.rewards.pendingStatus",
         color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
         icon: Clock,
     },
     APPROVED: {
-        label: "معتمد",
+        labelKey: "employee.rewards.approvedStatus",
         color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
         icon: CheckCircle,
     },
     APPLIED: {
-        label: "تم الصرف",
+        labelKey: "employee.rewards.paidStatus",
         color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
         icon: Award,
     },
     REJECTED: {
-        label: "مرفوض",
+        labelKey: "employee.rewards.rejectedStatus",
         color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
         icon: XCircle,
     },
     VOIDED: {
-        label: "ملغي",
+        labelKey: "employee.rewards.cancelledStatus",
         color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400",
         icon: AlertCircle,
     }
@@ -89,11 +105,8 @@ const MyRewards: React.FC = () => {
     };
 
     const getMonthName = (month: number) => {
-        const months = [
-            "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-            "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
-        ];
-        return months[month - 1];
+        const date = new Date(2024, month - 1, 1);
+        return date.toLocaleDateString(i18n.language === "ar" ? "ar-EG" : "en-US", { month: "long" });
     };
 
     if (loading) {
@@ -115,23 +128,23 @@ const MyRewards: React.FC = () => {
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
                         <Trophy className="h-10 w-10 text-yellow-500 ml-3 drop-shadow-md" />
-                        {t("rewards.myRewards")}
+                        {t("employee.rewards.title")}
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
-                        {t("rewards.myRewardsDescription")}
+                        {t("employee.rewards.subtitle")}
                     </p>
                 </div>
 
                 <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-xl border-none min-w-[280px]">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-indigo-100 font-medium">إجمالي المكافآت المعتمدة</span>
+                            <span className="text-indigo-100 font-medium">{t("employee.rewards.totalApproved")}</span>
                             <Gift className="h-6 w-6 text-yellow-300" />
                         </div>
                         <div className="text-4xl font-black">{formatCurrency(totalRewards)}</div>
                         <div className="mt-4 flex items-center text-indigo-100 text-sm">
                             <TrendingUp className="h-4 w-4 ml-1" />
-                            <span>بناءً على سجلاتك في النظام</span>
+                            <span>{t("employee.rewards.basedOnRecords")}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -145,10 +158,10 @@ const MyRewards: React.FC = () => {
                             <Trophy className="h-12 w-12" />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            لا توجد مكافآت مسجلة حالياً
+                            {t("employee.rewards.noRewards")}
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto text-lg leading-relaxed">
-                            عندما تحصل على مكافأة أو حافز من الإدارة، ستظهر تفاصيلها هنا فور اعتمادها. استمر في التميز!
+                            {t("employee.rewards.noRewardsDesc")}
                         </p>
                     </Card>
                 ) : (
@@ -178,7 +191,7 @@ const MyRewards: React.FC = () => {
                                                         </h3>
                                                         <Badge className={`${status.color} border-none font-bold py-1 px-3`}>
                                                             <StatusIcon className="h-3.5 w-3.5 ml-1.5" />
-                                                            {status.label}
+                                                            {t(status.labelKey)}
                                                         </Badge>
                                                     </div>
 
@@ -189,12 +202,12 @@ const MyRewards: React.FC = () => {
                                                         </div>
                                                         <div className="flex items-center">
                                                             <Clock className="h-4 w-4 ml-1.5 text-indigo-500" />
-                                                            بتاريخ: {formatDate(reward.createdAt)}
+                                                            {t("employee.rewards.date", { date: formatDate(reward.createdAt) })}
                                                         </div>
                                                         {reward.rewardCategory && (
                                                             <div className="flex items-center">
                                                                 <Filter className="h-4 w-4 ml-1.5 text-indigo-500" />
-                                                                الفئة: {reward.rewardCategory}
+                                                                {t("employee.rewards.category", { category: reward.rewardCategory })}
                                                             </div>
                                                         )}
                                                     </div>
@@ -203,7 +216,7 @@ const MyRewards: React.FC = () => {
 
                                             <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-4 border-t lg:border-t-0 lg:border-r border-gray-100 dark:border-gray-700 pt-4 lg:pt-0 lg:pr-8">
                                                 <div className="text-right">
-                                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1 font-bold">القيمة</p>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1 font-bold">{t("employee.rewards.value")}</p>
                                                     <p className="text-3xl font-black text-green-600 dark:text-green-400">
                                                         {formatCurrency(reward.calculatedValue)}
                                                     </p>
@@ -216,7 +229,7 @@ const MyRewards: React.FC = () => {
                                                     className="flex items-center gap-2 px-5 py-2.5 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white rounded-xl text-sm font-bold transition-all duration-300 border border-gray-200 dark:border-gray-700"
                                                 >
                                                     <Info className="h-4 w-4" />
-                                                    التفاصيل
+                                                    {t("employee.rewards.details")}
                                                 </button>
                                             </div>
                                         </div>
@@ -240,7 +253,7 @@ const MyRewards: React.FC = () => {
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                                        تفاصيل المكافأة
+                                        {t("employee.rewards.detailsTitle")}
                                     </h2>
                                     <p className="text-sm text-gray-500 font-medium">#{selectedReward.id.slice(-8).toUpperCase()}</p>
                                 </div>
@@ -257,25 +270,25 @@ const MyRewards: React.FC = () => {
                         <div className="p-8 max-h-[70vh] overflow-y-auto space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black">اسم المكافأة</p>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black">{t("employee.rewards.rewardName")}</p>
                                     <p className="text-xl font-bold text-gray-900 dark:text-white">
                                         {selectedReward.rewardName}
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black">قيمة المكافأة</p>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black">{t("employee.rewards.rewardValue")}</p>
                                     <p className="text-2xl font-black text-green-600 dark:text-green-400">
                                         {formatCurrency(selectedReward.calculatedValue)}
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black">فترة الاستحقاق</p>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black">{t("employee.rewards.period")}</p>
                                     <p className="text-lg font-bold text-gray-700 dark:text-gray-300">
                                         {getMonthName(selectedReward.appliedMonth)} {selectedReward.appliedYear}
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black">تاريخ التسجيل</p>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black">{t("employee.rewards.recordDate")}</p>
                                     <p className="text-lg font-bold text-gray-700 dark:text-gray-300">
                                         {formatDate(selectedReward.createdAt)}
                                     </p>
@@ -284,23 +297,23 @@ const MyRewards: React.FC = () => {
 
                             <div className="space-y-4">
                                 <div className="p-6 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl">
-                                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em] font-black mb-3">سبب المكافأة</p>
+                                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em] font-black mb-3">{t("employee.rewards.reason")}</p>
                                     <p className="text-gray-900 dark:text-white leading-relaxed text-lg italic">
-                                        {selectedReward.reason || "لم يتم ذكر سبب محدد"}
+                                        {selectedReward.reason || t("employee.rewards.noReason")}
                                     </p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                     <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
                                         <Clock className="h-5 w-5 text-gray-400 ml-3" />
-                                        <span className="text-gray-500 ml-2">الحالة الحالية:</span>
+                                        <span className="text-gray-500 ml-2">{t("employee.rewards.currentStatus")}</span>
                                         <span className="font-bold text-gray-900 dark:text-white">
-                                            {REWARD_STATUS[selectedReward.status]?.label || selectedReward.status}
+                                            {t(REWARD_STATUS[selectedReward.status]?.labelKey || "employee.rewards.pendingStatus")}
                                         </span>
                                     </div>
                                     <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
                                         <Filter className="h-5 w-5 text-gray-400 ml-3" />
-                                        <span className="text-gray-500 ml-2">الفئة:</span>
+                                        <span className="text-gray-500 ml-2">{t("employee.rewards.categoryLabel")}</span>
                                         <span className="font-bold text-gray-900 dark:text-white">
                                             {selectedReward.rewardCategory}
                                         </span>
@@ -315,7 +328,7 @@ const MyRewards: React.FC = () => {
                                 onClick={() => setShowDetailsModal(false)}
                                 className="px-8 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all duration-300 shadow-xl shadow-indigo-200 dark:shadow-none font-black text-lg"
                             >
-                                إغلاق
+                                {t("employee.common.close")}
                             </button>
                         </div>
                     </div>

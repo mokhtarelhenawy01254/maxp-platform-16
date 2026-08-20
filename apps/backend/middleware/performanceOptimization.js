@@ -75,12 +75,39 @@ const performanceMonitor = (req, res, next) => {
  * Simple memory cache for frequently accessed data
  */
 class SimpleCache {
-  constructor(defaultTTL = 300000) { // 5 minutes default
+  constructor(defaultTTL = 300000, maxSize = 2000) { // 5 minutes default, 2000 entry cap
     this.cache = new Map();
     this.defaultTTL = defaultTTL;
+    this.maxSize = maxSize;
+    // Periodically purge expired entries so the Map never grows unbounded
+    // (expired keys were previously only removed when re-accessed, leaking memory).
+    this.sweepTimer = setInterval(() => this.sweep(), 60000);
+    if (this.sweepTimer.unref) {
+      this.sweepTimer.unref();
+    }
   }
-  
+
+  sweep() {
+    const now = Date.now();
+    for (const [key, item] of this.cache) {
+      if (now > item.expiry) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
   set(key, value, ttl = this.defaultTTL) {
+    if (this.cache.size >= this.maxSize) {
+      this.sweep();
+      if (this.cache.size >= this.maxSize) {
+        // Still over the cap: evict oldest entries (Map preserves insertion order)
+        const overflow = this.cache.size - this.maxSize + 1;
+        const keys = this.cache.keys();
+        for (let i = 0; i < overflow; i += 1) {
+          this.cache.delete(keys.next().value);
+        }
+      }
+    }
     const expiry = Date.now() + ttl;
     this.cache.set(key, { value, expiry });
   }

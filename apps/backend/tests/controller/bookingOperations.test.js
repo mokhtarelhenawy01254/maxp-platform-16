@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -54,7 +54,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -81,12 +81,12 @@ describe('bookingOperationsController', () => {
           id: 'appt-1',
           companyId: 'company-1',
           patientId: 'pat-1',
-          patient: { id: 'pat-1', firstName: '┘à╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '0100' },
-          branch: { id: 'b1', name: '┘ü╪▒╪╣ ╪▒╪ª┘è╪│┘è' },
-          service: { id: 's1', name: '┘â╪┤┘ü ╪╣┘è┘ê┘å' },
+          patient: { id: 'pat-1', firstName: 'محمد', lastName: 'علي', phone: '0100' },
+          branch: { id: 'b1', name: 'فرع رئيسي' },
+          service: { id: 's1', name: 'كشف عيون' },
           serviceName: null,
-          room: '╪║╪▒┘ü╪⌐ 1',
-          customerName: '╪╣┘à┘è┘ä ┘é╪»┘è┘à',
+          room: 'غرفة 1',
+          customerName: 'عميل قديم',
           customerPhone: '0111',
           appointmentDate: new Date('2026-08-07'),
           startTime: '10:00',
@@ -117,11 +117,11 @@ describe('bookingOperationsController', () => {
       expect(res.statusCode).toBe(200);
       const entry = res.payload.data[0];
       expect(entry.appointmentId).toBe('appt-1');
-      expect(entry.patientName).toBe('┘à╪¡┘à╪» ╪╣┘ä┘è');
+      expect(entry.patientName).toBe('محمد علي');
       expect(entry.patientPhone).toBe('0100');
-      expect(entry.serviceName).toBe('┘â╪┤┘ü ╪╣┘è┘ê┘å');
-      expect(entry.room).toBe('╪║╪▒┘ü╪⌐ 1');
-      expect(entry.branchName).toBe('┘ü╪▒╪╣ ╪▒╪ª┘è╪│┘è');
+      expect(entry.serviceName).toBe('كشف عيون');
+      expect(entry.room).toBe('غرفة 1');
+      expect(entry.branchName).toBe('فرع رئيسي');
     });
 
     test('defaults to today when no date query is provided', async () => {
@@ -153,13 +153,13 @@ describe('bookingOperationsController', () => {
           printedBy: 'user-1',
           appointment: {
             id: 'appt-1',
-            customerName: '╪╣┘à┘è┘ä',
+            customerName: 'عميل',
             customerPhone: '0111',
-            serviceName: '┘â╪┤┘ü',
+            serviceName: 'كشف',
             appointmentDate: new Date('2026-08-07'),
             startTime: '10:00',
-            room: '╪║╪▒┘ü╪⌐ 1',
-            patient: { id: 'pat-1', firstName: '┘à╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '0100' },
+            room: 'غرفة 1',
+            patient: { id: 'pat-1', firstName: 'محمد', lastName: 'علي', phone: '0100' },
           },
         },
       ]);
@@ -182,10 +182,10 @@ describe('bookingOperationsController', () => {
       const entry = res.payload.data[0];
       expect(entry.id).toBe('label-1');
       expect(entry.labelType).toBe('EXAM');
-      expect(entry.patientName).toBe('┘à╪¡┘à╪» ╪╣┘ä┘è');
+      expect(entry.patientName).toBe('محمد علي');
       expect(entry.patientPhone).toBe('0100');
-      expect(entry.serviceName).toBe('┘â╪┤┘ü');
-      expect(entry.room).toBe('╪║╪▒┘ü╪⌐ 1');
+      expect(entry.serviceName).toBe('كشف');
+      expect(entry.room).toBe('غرفة 1');
     });
   });
 
@@ -217,7 +217,7 @@ describe('bookingOperationsController', () => {
           appointmentId: 'appt-1',
           patientId: 'pat-1',
           labelType: 'EXAM',
-          printedBy: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»',
+          printedBy: 'أحمد محمود',
         }),
       });
       expect(prisma.appointment.update).toHaveBeenCalledWith({
@@ -260,12 +260,12 @@ describe('bookingOperationsController', () => {
           id: 'appt-1',
           companyId: 'company-1',
           patientId: 'pat-1',
-          patient: { id: 'pat-1', firstName: '┘à╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '0100' },
+          patient: { id: 'pat-1', firstName: 'محمد', lastName: 'علي', phone: '0100' },
           branch: null,
-          service: { name: '┘â╪┤┘ü' },
+          service: { name: 'كشف' },
           serviceName: null,
-          room: '╪║╪▒┘ü╪⌐ 1',
-          customerName: '╪╣┘à┘è┘ä',
+          room: 'غرفة 1',
+          customerName: 'عميل',
           customerPhone: null,
           appointmentDate: new Date('2026-08-07'),
           startTime: '10:00',
@@ -278,10 +278,10 @@ describe('bookingOperationsController', () => {
           patientId: null,
           patient: null,
           branch: null,
-          service: { name: '╪ú╪┤╪╣╪⌐' },
+          service: { name: 'أشعة' },
           serviceName: null,
           room: null,
-          customerName: '╪╣┘à┘è┘ä ╪½╪º┘å┘è',
+          customerName: 'عميل ثاني',
           customerPhone: '0111',
           appointmentDate: new Date('2026-08-07'),
           startTime: '11:00',
@@ -309,7 +309,7 @@ describe('bookingOperationsController', () => {
       expect(entry.appointmentId).toBe('appt-1');
       expect(entry.status).toBe('DELIVERED');
       expect(entry.paidStatus).toBe('PAID');
-      expect(entry.patientName).toBe('┘à╪¡┘à╪» ╪╣┘ä┘è');
+      expect(entry.patientName).toBe('محمد علي');
     });
 
     test('derives READY from approved report status and UNPAID without invoice', async () => {
@@ -321,10 +321,10 @@ describe('bookingOperationsController', () => {
           patientId: null,
           patient: null,
           branch: null,
-          service: { name: '┘â╪┤┘ü' },
+          service: { name: 'كشف' },
           serviceName: null,
           room: null,
-          customerName: '╪╣┘à┘è┘ä',
+          customerName: 'عميل',
           customerPhone: null,
           appointmentDate: new Date('2026-08-07'),
           startTime: '10:00',
@@ -446,7 +446,7 @@ describe('bookingOperationsController', () => {
         appointmentId: 'appt-1',
         status: 'DELIVERED',
         deliveredAt: new Date('2026-08-07T12:00:00'),
-        deliveredBy: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»',
+        deliveredBy: 'أحمد محمود',
       });
       prisma.appointment.update.mockResolvedValue({ id: 'appt-1', resultDelivered: true });
       prisma.transactionLog.create.mockResolvedValue({ id: 'log-1' });
@@ -454,7 +454,7 @@ describe('bookingOperationsController', () => {
 
       const res = createResponse();
       await controller.markDelivered(
-        req({ params: { id: 'appt-1' }, user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' } }),
+        req({ params: { id: 'appt-1' }, user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' } }),
         res
       );
 
@@ -464,7 +464,7 @@ describe('bookingOperationsController', () => {
           appointmentId: 'appt-1',
           status: 'DELIVERED',
           deliveredAt: expect.any(Date),
-          deliveredBy: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»',
+          deliveredBy: 'أحمد محمود',
         }),
       });
       expect(prisma.appointment.update).toHaveBeenCalledWith({
@@ -487,7 +487,7 @@ describe('bookingOperationsController', () => {
         id: 'del-1',
         status: 'DELIVERED',
         deliveredAt: new Date('2026-08-07T12:00:00'),
-        deliveredBy: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»',
+        deliveredBy: 'أحمد محمود',
       });
       prisma.appointment.update.mockResolvedValue({ id: 'appt-1', resultDelivered: true });
       prisma.transactionLog.create.mockResolvedValue({ id: 'log-1' });
@@ -495,13 +495,13 @@ describe('bookingOperationsController', () => {
 
       const res = createResponse();
       await controller.markDelivered(
-        req({ params: { id: 'del-1' }, user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' } }),
+        req({ params: { id: 'del-1' }, user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' } }),
         res
       );
 
       expect(prisma.reportDelivery.update).toHaveBeenCalledWith({
         where: { id: 'del-1' },
-        data: expect.objectContaining({ status: 'DELIVERED', deliveredAt: expect.any(Date), deliveredBy: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»' }),
+        data: expect.objectContaining({ status: 'DELIVERED', deliveredAt: expect.any(Date), deliveredBy: 'أحمد محمود' }),
       });
       expect(prisma.appointment.update).toHaveBeenCalledWith({
         where: { id: 'appt-1' },
@@ -518,11 +518,11 @@ describe('bookingOperationsController', () => {
         entityType: 'INVOICE',
         entityId: 'inv-1',
         action: 'PAYMENT',
-        description: '╪»┘ü╪╣╪⌐ ┘å┘é╪»┘è╪⌐',
+        description: 'دفعة نقدية',
         amount: 250,
-        payer: '┘à╪¡┘à╪»',
+        payer: 'محمد',
         userId: 'user-1',
-        userName: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»',
+        userName: 'أحمد محمود',
         createdAt: new Date('2026-08-07T12:00:00'),
       });
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -530,7 +530,7 @@ describe('bookingOperationsController', () => {
       const res = createResponse();
       await controller.logTransaction(
         req({
-          body: { entityType: 'INVOICE', entityId: 'inv-1', action: 'PAYMENT', description: '╪»┘ü╪╣╪⌐ ┘å┘é╪»┘è╪⌐', amount: 250, payer: '┘à╪¡┘à╪»' },
+          body: { entityType: 'INVOICE', entityId: 'inv-1', action: 'PAYMENT', description: 'دفعة نقدية', amount: 250, payer: 'محمد' },
         }),
         res
       );
@@ -542,7 +542,7 @@ describe('bookingOperationsController', () => {
           entityId: 'inv-1',
           action: 'PAYMENT',
           amount: 250,
-          userName: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»',
+          userName: 'أحمد محمود',
         }),
       });
       expect(res.statusCode).toBe(200);
@@ -587,7 +587,7 @@ describe('bookingOperationsController', () => {
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪º┘ä╪¡');
+      expect(res.payload.error).toBe('المبلغ غير صالح');
       expect(prisma.transactionLog.create).not.toHaveBeenCalled();
     });
   });
@@ -598,12 +598,12 @@ describe('bookingOperationsController', () => {
       prisma.transactionLog.findMany.mockResolvedValue([
         {
           id: 'log-2', entityType: 'PAYMENT', entityId: 'inv-2', action: 'PAYMENT',
-          description: '╪»┘ü╪╣╪⌐ ╪½╪º┘å┘è╪⌐', amount: 100, payer: null, userId: 'user-1',
-          userName: '╪ú╪¡┘à╪» ┘à╪¡┘à┘ê╪»', createdAt: new Date('2026-08-07T13:00:00'),
+          description: 'دفعة ثانية', amount: 100, payer: null, userId: 'user-1',
+          userName: 'أحمد محمود', createdAt: new Date('2026-08-07T13:00:00'),
         },
         {
           id: 'log-1', entityType: 'INVOICE', entityId: 'inv-1', action: 'CREATE',
-          description: '╪Ñ┘å╪┤╪º╪í ┘ü╪º╪¬┘ê╪▒╪⌐', amount: 500, payer: '┘à╪¡┘à╪»', userId: null,
+          description: 'إنشاء فاتورة', amount: 500, payer: 'محمد', userId: null,
           userName: null, createdAt: new Date('2026-08-07T12:00:00'),
         },
       ]);
@@ -612,7 +612,7 @@ describe('bookingOperationsController', () => {
 
       const res = createResponse();
       await controller.getTransactions(
-        req({ query: { from: '2026-08-01', to: '2026-08-31', entityType: 'INVOICE', search: '┘ü╪º╪¬┘ê╪▒╪⌐', page: '1', limit: '100' } }),
+        req({ query: { from: '2026-08-01', to: '2026-08-31', entityType: 'INVOICE', search: 'فاتورة', page: '1', limit: '100' } }),
         res
       );
 

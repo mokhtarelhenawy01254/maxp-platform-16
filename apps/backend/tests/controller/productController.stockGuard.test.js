@@ -1,4 +1,4 @@
-﻿const mockEnsureWithinPlanLimit = jest.fn();
+const mockEnsureWithinPlanLimit = jest.fn();
 const mockPrisma = {
   product: {
     findFirst: jest.fn(),

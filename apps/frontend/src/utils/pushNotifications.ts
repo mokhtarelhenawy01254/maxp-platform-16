@@ -96,11 +96,17 @@ const getPushServiceWorkerRegistration =
     }
 
     try {
+      const registration = await navigator.serviceWorker.getRegistration("/");
+      if (registration) {
+        return registration;
+      }
       const registrations = await navigator.serviceWorker.getRegistrations();
       return (
-        registrations.find((registration) =>
-          [registration.active, registration.waiting, registration.installing].some(
-            (worker) => worker?.scriptURL?.includes("/push-sw.js"),
+        registrations.find((reg) =>
+          [reg.active, reg.waiting, reg.installing].some(
+            (worker) =>
+              worker?.scriptURL?.includes("/sw-v4.js") ||
+              worker?.scriptURL?.includes("/push-sw.js"),
           ),
         ) || null
       );
@@ -258,7 +264,7 @@ export const registerPushServiceWorker =
       return null;
     }
 
-    const registration = await navigator.serviceWorker.register("/push-sw.js", {
+    const registration = await navigator.serviceWorker.register("/sw-v4.js", {
       scope: "/",
     });
 

@@ -2,7 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, ArrowRight, Briefcase, Calendar, CheckCircle2, DollarSign, Folder, Save, TrendingUp, User as UserIcon } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Save,
+  ArrowRight,
+  ArrowLeft,
+  TrendingUp,
+  Briefcase,
+  Calendar,
+  DollarSign,
+  User as UserIcon,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import api from "../../services/api";
 
 import { Button } from "../../components/ui/button";
@@ -93,7 +105,7 @@ const CreatePromotion: React.FC = () => {
         }
       } catch (error: any) {
         console.error("❌ Error fetching data:", error);
-        toast.error("فشل في تحميل بيانات الموظفين");
+        tToast.error("CreatePromotion.failed_load_a9d9");
       }
     };
     fetchData();
@@ -134,13 +146,13 @@ const CreatePromotion: React.FC = () => {
       setLoading(true);
 
       if (!data.employeeId) {
-        toast.error("يجب اختيار الموظف");
+        tToast.error("CreatePromotion.msg_c6e2");
         setLoading(false);
         return;
       }
 
       if (!data.toPositionName) {
-        toast.error("يجب كتابة المنصب الجديد");
+        tToast.error("CreatePromotion.msg_754a");
         setLoading(false);
         return;
       }
@@ -152,7 +164,7 @@ const CreatePromotion: React.FC = () => {
         data.fromPositionName.trim().toLowerCase() ===
           data.toPositionName.trim().toLowerCase()
       ) {
-        toast.error("المنصب الجديد يجب أن يكون مختلفاً عن المنصب السابق");
+        tToast.error("CreatePromotion.msg_1de3");
         setLoading(false);
         return;
       }
@@ -166,7 +178,7 @@ const CreatePromotion: React.FC = () => {
       };
 
       await api.post("/hr/promotions", payload);
-      toast.success("تم إنشاء الترقية بنجاح");
+      tToast.success("CreatePromotion.success_create_e6da");
       navigate("/hr/promotions");
     } catch (error: any) {
       console.error("❌ Error creating promotion:", error);

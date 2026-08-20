@@ -1,6 +1,12 @@
-import { Activity as ChartBarIcon, Circle as ArrowTrendingDownIcon, DollarSign as CurrencyDollarIcon, Calendar as CalendarIcon, RefreshCw as ArrowPathIcon, Circle as PresentationChartBarIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  ChartBarIcon,
+  ArrowTrendingDownIcon,
+  CurrencyDollarIcon,
+  CalendarIcon,
+  ArrowPathIcon,
+  PresentationChartBarIcon,
+} from "@heroicons/react/24/outline";
 
 const KPIsSection: React.FC = () => {
   const kpis = [

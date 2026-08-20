@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { XMarkIcon, FunnelIcon } from "@heroicons/react/24/outline";
 
@@ -188,7 +188,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
     filters.merchantId.forEach((value) => {
       const match = merchantOptions.find((m) => m.id === value);
       list.push({
-        key: t("orders.merchantLabel", { defaultValue: "╪º┘ä╪¬╪º╪¼╪▒" }),
+        key: t("orders.merchantLabel", { defaultValue: "التاجر" }),
         value: match?.name || match?.email || value,
         tone: "warning",
         remove: () =>
@@ -201,7 +201,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
     filters.affiliateId.forEach((value) => {
       const match = affiliateOptions.find((a) => a.id === value);
       list.push({
-        key: t("orders.affiliateLabel", { defaultValue: "╪º┘ä┘à╪│┘ê┘é" }),
+        key: t("orders.affiliateLabel", { defaultValue: "المسوق" }),
         value: match?.user?.firstName
           ? `${match.user.firstName} ${match.user.lastName ?? ""}`.trim()
           : match?.affiliateCode || value,
@@ -287,8 +287,8 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
         : t("orders.allDates");
       const toLabel = filters.endDate ? filters.endDate : t("orders.allDates");
       list.push({
-        key: t("orders.period", { defaultValue: "╪º┘ä┘ü╪¬╪▒╪⌐" }),
-        value: `${fromLabel} ΓåÆ ${toLabel}`,
+        key: t("orders.period", { defaultValue: "الفترة" }),
+        value: `${fromLabel} → ${toLabel}`,
         tone: "primary",
         remove: () => {
           onFilterChange("startDate", "");
@@ -344,12 +344,12 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
   return (
     <div
       role="region"
-      aria-label={String(t("orders.activeFilters", { defaultValue: "╪º┘ä┘ü┘ä╪º╪¬╪▒ ╪º┘ä┘å╪┤╪╖╪⌐" }))}
+      aria-label={String(t("orders.activeFilters", { defaultValue: "الفلاتر النشطة" }))}
       className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/60 px-3 py-2 text-xs shadow-[0_8px_30px_-24px_rgba(15,23,42,0.4)] backdrop-blur-sm"
     >
       <span className="inline-flex items-center gap-1.5 px-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         <FunnelIcon className="h-3.5 w-3.5" />
-        {t("orders.activeFilters", { defaultValue: "┘ü┘ä╪º╪¬╪▒ ┘å╪┤╪╖╪⌐" })}
+        {t("orders.activeFilters", { defaultValue: "فلاتر نشطة" })}
         <span className="ms-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-primary/10 px-1.5 text-[10px] font-bold text-primary">
           {chips.length}
         </span>
@@ -364,7 +364,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
           <button
             type="button"
             onClick={chip.remove}
-            aria-label={`${t("orders.removeFilter", { defaultValue: "╪Ñ╪▓╪º┘ä╪⌐ ┘ü┘ä╪¬╪▒" })}: ${chip.key} ${chip.value}`}
+            aria-label={`${t("orders.removeFilter", { defaultValue: "إزالة فلتر" })}: ${chip.key} ${chip.value}`}
             className={`-me-1 flex h-4 w-4 items-center justify-center rounded-full transition ${xClasses[chip.tone]}`}
           >
             <XMarkIcon className="h-3 w-3" />
@@ -377,7 +377,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
           onClick={onClearAdvancedFilters}
           className="ms-auto rounded-full px-2.5 py-1 text-[11px] font-semibold text-destructive transition hover:bg-destructive/10"
         >
-          {t("orders.clearAll", { defaultValue: "┘à╪│╪¡ ╪º┘ä┘â┘ä" })}
+          {t("orders.clearAll", { defaultValue: "مسح الكل" })}
         </button>
       )}
     </div>

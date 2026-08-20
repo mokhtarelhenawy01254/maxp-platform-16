@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../utils/i18n-toast";
 
 import { storefrontApi } from "../utils/storefrontApi";
 import type {
@@ -837,7 +838,7 @@ export const useElessiProductDetails = (
 
     const needsVariantSelection = hasVariants && !selectedVariant?.id;
     if (needsVariantSelection) {
-      toast.error("يرجى اختيار اللون أو المقاس أولًا");
+      tToast.error("useElessiProductDetails.msg_0924");
       return false;
     }
 
@@ -860,11 +861,11 @@ export const useElessiProductDetails = (
       }
 
       window.dispatchEvent(new Event("cartUpdated"));
-      toast.success("تمت إضافة المنتج للسلة");
+      tToast.success("useElessiProductDetails.msg_df74");
       return true;
     } catch (error) {
       console.error("Failed to add to cart:", error);
-      toast.error("تعذر إضافة المنتج للسلة");
+      tToast.error("useElessiProductDetails.unable_add_f585");
       return false;
     } finally {
       setAddingToCart(false);

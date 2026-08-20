@@ -1,8 +1,15 @@
-import { Circle as RocketLaunchIcon, Check as CheckCircleIcon, X as XCircleIcon, Info as InformationCircleIcon, Key as KeyIcon, Link as LinkIcon, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  RocketLaunchIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  InformationCircleIcon,
+  KeyIcon,
+  LinkIcon,
+  ArrowLeftIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 

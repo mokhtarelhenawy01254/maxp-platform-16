@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CategorySidebar } from "../CategorySidebar";
 import { groupCategories, categoryGroups, OTHER_CATEGORY_GROUP_ID } from "@/utils/marketplace";
@@ -11,13 +11,13 @@ jest.mock("react-i18next", () => ({
 }));
 
 const sampleCategories: Category[] = [
-  { category: "ECOMMERCE", name: "╪º┘ä╪¬╪¼╪º╪▒╪⌐ ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪⌐", nameEn: "E-Commerce", icon: "≡ƒ¢Æ", count: 13 },
-  { category: "CRM", name: "╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í", nameEn: "CRM", icon: "≡ƒôè", count: 4 },
-  { category: "MARKETING", name: "╪º┘ä╪¬╪│┘ê┘è┘é", nameEn: "Marketing", icon: "≡ƒôú", count: 11 },
-  { category: "ANALYTICS", name: "╪º┘ä╪¬╪¡┘ä┘è┘ä╪º╪¬", nameEn: "Analytics", icon: "≡ƒôê", count: 5 },
-  { category: "AI", name: "╪º┘ä╪ú╪¬┘à╪¬╪⌐", nameEn: "Automation", icon: "ΓÜÖ∩╕Å", count: 4 },
-  { category: "MEDICAL", name: "╪º┘ä┘å╪╕╪º┘à ╪º┘ä╪╖╪¿┘è", nameEn: "Medical", icon: "≡ƒÅÑ", count: 1 },
-  { category: "UNKNOWN", name: "╪¬╪╡┘å┘è┘ü ╪¼╪»┘è╪»", nameEn: "Unknown", icon: "≡ƒôª", count: 2 },
+  { category: "ECOMMERCE", name: "التجارة الإلكترونية", nameEn: "E-Commerce", icon: "🛒", count: 13 },
+  { category: "CRM", name: "إدارة العملاء", nameEn: "CRM", icon: "📊", count: 4 },
+  { category: "MARKETING", name: "التسويق", nameEn: "Marketing", icon: "📣", count: 11 },
+  { category: "ANALYTICS", name: "التحليلات", nameEn: "Analytics", icon: "📈", count: 5 },
+  { category: "AI", name: "الأتمتة", nameEn: "Automation", icon: "⚙️", count: 4 },
+  { category: "MEDICAL", name: "النظام الطبي", nameEn: "Medical", icon: "🏥", count: 1 },
+  { category: "UNKNOWN", name: "تصنيف جديد", nameEn: "Unknown", icon: "📦", count: 2 },
 ];
 
 describe("groupCategories", () => {
@@ -37,7 +37,7 @@ describe("groupCategories", () => {
   });
 
   it("skips empty groups", () => {
-    const groups = groupCategories([{ category: "ECOMMERCE", name: "E", nameEn: "E", icon: "≡ƒ¢Æ", count: 1 }]);
+    const groups = groupCategories([{ category: "ECOMMERCE", name: "E", nameEn: "E", icon: "🛒", count: 1 }]);
     expect(groups).toHaveLength(1);
     expect(groups[0].id).toBe("commerce");
   });
@@ -63,10 +63,10 @@ describe("CategorySidebar", () => {
     expect(screen.getByText("marketplace.categories.all")).toBeInTheDocument();
     expect(screen.getByText("marketplace.categories.groups.commerce")).toBeInTheDocument();
     expect(screen.getByText("marketplace.categories.groups.data")).toBeInTheDocument();
-    expect(screen.getByText("╪º┘ä╪¬╪¼╪º╪▒╪⌐ ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪⌐")).toBeInTheDocument();
-    expect(screen.getByText("╪º┘ä╪¬╪¡┘ä┘è┘ä╪º╪¬")).toBeInTheDocument();
-    expect(screen.getByText("╪º┘ä┘å╪╕╪º┘à ╪º┘ä╪╖╪¿┘è")).toBeInTheDocument();
-    expect(screen.getByText("╪¬╪╡┘å┘è┘ü ╪¼╪»┘è╪»")).toBeInTheDocument();
+    expect(screen.getByText("التجارة الإلكترونية")).toBeInTheDocument();
+    expect(screen.getByText("التحليلات")).toBeInTheDocument();
+    expect(screen.getByText("النظام الطبي")).toBeInTheDocument();
+    expect(screen.getByText("تصنيف جديد")).toBeInTheDocument();
   });
 
   it("shows the total count on the All row", () => {
@@ -102,7 +102,7 @@ describe("CategorySidebar", () => {
         onSelect={onSelect}
       />,
     );
-    fireEvent.click(screen.getByText("╪º┘ä╪¬╪¡┘ä┘è┘ä╪º╪¬"));
+    fireEvent.click(screen.getByText("التحليلات"));
     expect(onSelect).toHaveBeenCalledWith("ANALYTICS");
   });
 
@@ -115,7 +115,7 @@ describe("CategorySidebar", () => {
       />,
     );
     fireEvent.click(screen.getByText("marketplace.categories.groups.data"));
-    expect(screen.queryByText("╪º┘ä╪¬╪¡┘ä┘è┘ä╪º╪¬")).not.toBeInTheDocument();
-    expect(screen.queryByText("╪º┘ä╪ú╪¬┘à╪¬╪⌐")).not.toBeInTheDocument();
+    expect(screen.queryByText("التحليلات")).not.toBeInTheDocument();
+    expect(screen.queryByText("الأتمتة")).not.toBeInTheDocument();
   });
 });

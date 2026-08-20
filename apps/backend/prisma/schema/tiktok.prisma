@@ -1,8 +1,8 @@
-﻿// TikTok integrations core schema.
+// TikTok integrations core schema.
 // Shared by: Content Posting, TikTok Shop, Login Kit, Embed/Display, Events API.
 // NOTE: scalar companyId references (no @relation) to avoid coupling to shared models.
 
-/// ╪¡╪│╪º╪¿ TikTok ┘à╪▒╪¬╪¿╪╖ ╪¿╪┤╪▒┘â╪⌐ (OAuth ╪ú┘ê ┘è╪»┘ê┘è)
+/// حساب TikTok مرتبط بشركة (OAuth أو يدوي)
 model TikTokAccount {
   id             String    @id @default(cuid())
   companyId      String
@@ -25,7 +25,7 @@ model TikTokAccount {
   @@map("tiktok_accounts")
 }
 
-/// ╪Ñ╪╣╪»╪º╪»╪º╪¬ TikTok ┘ä┘â┘ä ╪┤╪▒┘â╪⌐
+/// إعدادات TikTok لكل شركة
 model TikTokSettings {
   id                 String   @id @default(cuid())
   companyId          String   @unique
@@ -46,8 +46,8 @@ model TikTokSettings {
   @@map("tiktok_settings")
 }
 
-/// ╪¡╪│╪º╪¿ TikTok Business ┘à╪▒╪¿┘ê╪╖ ╪¿╪┤╪▒┘â╪⌐ ┘ä╪«╪»┘à╪⌐ ╪º┘ä╪▒╪│╪º╪ª┘ä (Business Messaging API)
-/// ┘è╪«╪▓┘å ╪¿┘è╪º┘å╪º╪¬ ╪¡╪│╪º╪¿ ╪º┘ä╪¿┘è╪▓┘å╪│ + ╪¬┘ê┘â┘å ╪º┘ä┘ê╪╡┘ê┘ä ╪º┘ä╪«╪º╪╡ ╪¿╪º┘ä╪▒╪│╪º╪ª┘ä + ╪│╪▒ ╪º┘ä┘ê┘è╪¿ ┘ç┘ê┘â
+/// حساب TikTok Business مربوط بشركة لخدمة الرسائل (Business Messaging API)
+/// يخزن بيانات حساب البيزنس + توكن الوصول الخاص بالرسائل + سر الويب هوك
 model TikTokBusinessAccount {
   id                String    @id @default(cuid())
   companyId         String
@@ -70,7 +70,7 @@ model TikTokBusinessAccount {
   @@map("tiktok_business_accounts")
 }
 
-/// ┘à┘å╪┤┘ê╪▒ ╪¬┘à ┘å╪┤╪▒┘ç ╪ú┘ê ╪¼╪»┘ê┘ä╪¬┘ç ╪╣╪¿╪▒ Content Posting API
+/// منشور تم نشره أو جدولته عبر Content Posting API
 model TikTokPost {
   id            String    @id @default(cuid())
   companyId     String
@@ -92,7 +92,7 @@ model TikTokPost {
   @@map("tiktok_posts")
 }
 
-/// ╪¡╪│╪º╪¿ ┘à╪¬╪¼╪▒ TikTok Shop ┘à╪▒╪¬╪¿╪╖ ╪¿╪┤╪▒┘â╪⌐
+/// حساب متجر TikTok Shop مرتبط بشركة
 model TikTokShopAccount {
   id              String    @id @default(cuid())
   companyId       String
@@ -114,7 +114,7 @@ model TikTokShopAccount {
   @@map("tiktok_shop_accounts")
 }
 
-/// ╪Ñ╪╣╪»╪º╪»╪º╪¬ TikTok Events (Pixel) ┘ä┘â┘ä ╪┤╪▒┘â╪⌐
+/// إعدادات TikTok Events (Pixel) لكل شركة
 model TikTokPixelConfig {
   id                 String    @id @default(cuid())
   companyId          String

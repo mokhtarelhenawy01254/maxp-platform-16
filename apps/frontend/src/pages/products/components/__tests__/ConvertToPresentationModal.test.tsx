@@ -1,4 +1,4 @@
-﻿import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { ConvertToPresentationModal } from "../ConvertToPresentationModal";
 import type { ConvertPresentationResult } from "../../hooks/useProductPresentations";
@@ -20,7 +20,7 @@ const mockedGet = apiClient.get as jest.MockedFunction<typeof apiClient.get>;
 const convertResult: ConvertPresentationResult = {
   presentation: {
     id: "pres-1",
-    name: "╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è",
+    name: "المنتج الأصلي",
     slug: "original",
     images: [],
     isActive: true,
@@ -43,8 +43,8 @@ describe("ConvertToPresentationModal", () => {
       data: {
         success: true,
         data: [
-          { id: "target-1", name: "╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è", sku: "SKU-1", price: 150, mainImage: "/img1.png" },
-          { id: "current-1", name: "╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪¡╪º┘ä┘è", sku: "SKU-CURRENT" },
+          { id: "target-1", name: "المنتج الأصلي", sku: "SKU-1", price: 150, mainImage: "/img1.png" },
+          { id: "current-1", name: "المنتج الحالي", sku: "SKU-CURRENT" },
         ],
       },
     });
@@ -56,7 +56,7 @@ describe("ConvertToPresentationModal", () => {
       <ConvertToPresentationModal
         open
         currentProductId="current-1"
-        displayCurrency="╪¼.┘à"
+        displayCurrency="ج.م"
         onClose={onClose}
         onConvert={onConvert}
         onSuccess={onSuccess}
@@ -67,21 +67,21 @@ describe("ConvertToPresentationModal", () => {
     renderModal();
 
     expect(
-      screen.getByText(/╪¡┘ê┘æ┘ä ┘ç╪░╪º ╪º┘ä┘à┘å╪¬╪¼ \(╪º┘ä┘à┘â╪▒╪▒\) ╪Ñ┘ä┘ë ╪╣╪▒╪╢ ╪¬┘é╪»┘è┘à┘è/),
+      screen.getByText(/حوّل هذا المنتج \(المكرر\) إلى عرض تقديمي/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘é╪»┘è┘à╪⌐ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿┘ç╪░╪º ╪º┘ä┘à┘å╪¬╪¼/),
+      screen.getByText(/الطلبات القديمة المرتبطة بهذا المنتج/),
     ).toBeInTheDocument();
-    expect(screen.getByText("╪¬╪ú┘â┘è╪» ╪º┘ä╪¬╪¡┘ê┘è┘ä")).toBeDisabled();
+    expect(screen.getByText("تأكيد التحويل")).toBeDisabled();
   });
 
   it("excludes the current product from the result list", async () => {
     renderModal();
 
     await waitFor(() => {
-      expect(screen.getByText("╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è")).toBeInTheDocument();
+      expect(screen.getByText("المنتج الأصلي")).toBeInTheDocument();
     });
-    expect(screen.queryByText("╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪¡╪º┘ä┘è")).not.toBeInTheDocument();
+    expect(screen.queryByText("المنتج الحالي")).not.toBeInTheDocument();
     expect(screen.queryByText("SKU-CURRENT")).not.toBeInTheDocument();
   });
 
@@ -89,13 +89,13 @@ describe("ConvertToPresentationModal", () => {
     renderModal();
 
     await waitFor(() => {
-      expect(screen.getByText("╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è")).toBeInTheDocument();
+      expect(screen.getByText("المنتج الأصلي")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è"));
-    expect(screen.getByText(/╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è ╪º┘ä┘à╪¡╪»╪»/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("المنتج الأصلي"));
+    expect(screen.getByText(/المنتج الأصلي المحدد/)).toBeInTheDocument();
 
-    const confirmButton = screen.getByText("╪¬╪ú┘â┘è╪» ╪º┘ä╪¬╪¡┘ê┘è┘ä").closest("button");
+    const confirmButton = screen.getByText("تأكيد التحويل").closest("button");
     expect(confirmButton).not.toBeNull();
     fireEvent.click(confirmButton!);
 
@@ -106,25 +106,25 @@ describe("ConvertToPresentationModal", () => {
   });
 
   it("shows the API error message inline on failure", async () => {
-    onConvert.mockRejectedValue(new Error("╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»"));
+    onConvert.mockRejectedValue(new Error("المنتج الأصلي غير موجود"));
     renderModal();
 
     await waitFor(() => {
-      expect(screen.getByText("╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è")).toBeInTheDocument();
+      expect(screen.getByText("المنتج الأصلي")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è"));
-    fireEvent.click(screen.getByText("╪¬╪ú┘â┘è╪» ╪º┘ä╪¬╪¡┘ê┘è┘ä"));
+    fireEvent.click(screen.getByText("المنتج الأصلي"));
+    fireEvent.click(screen.getByText("تأكيد التحويل"));
 
     await waitFor(() => {
-      expect(screen.getByText("╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä╪ú╪╡┘ä┘è ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»")).toBeInTheDocument();
+      expect(screen.getByText("المنتج الأصلي غير موجود")).toBeInTheDocument();
     });
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
   it("closes via the cancel button", () => {
     renderModal();
-    fireEvent.click(screen.getByText("╪Ñ┘ä╪║╪º╪í"));
+    fireEvent.click(screen.getByText("إلغاء"));
     expect(onClose).toHaveBeenCalled();
   });
 });

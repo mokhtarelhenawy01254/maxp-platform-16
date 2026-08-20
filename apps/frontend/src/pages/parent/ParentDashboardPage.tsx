@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Book, Calendar, CalendarDays, Clock, GraduationCap, Users } from 'lucide-react';
+import { CalendarDays, Users, GraduationCap, Clock } from "lucide-react";
 
 interface DashboardData {
   children: number;

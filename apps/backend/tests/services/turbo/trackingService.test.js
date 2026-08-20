@@ -1,4 +1,4 @@
-﻿jest.mock('axios', () => ({
+jest.mock('axios', () => ({
   post: jest.fn(),
   get: jest.fn(),
 }));
@@ -203,7 +203,7 @@ describe('TrackingService', () => {
       // Should have dateRange with 90 days ago
       const fromDate = new Date(result.dateRange.from);
       const daysDiff = Math.round((Date.now() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
-      // Allow ┬▒1 day tolerance: setDate(-90) can land on 89 or 91 days ago depending on clock
+      // Allow ±1 day tolerance: setDate(-90) can land on 89 or 91 days ago depending on clock
       expect(daysDiff).toBeGreaterThanOrEqual(89);
       expect(daysDiff).toBeLessThanOrEqual(91);
     });

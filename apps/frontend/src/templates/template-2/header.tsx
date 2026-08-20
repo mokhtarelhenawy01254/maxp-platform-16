@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
@@ -44,14 +44,14 @@ const LinearHeader: React.FC = () => {
         WebkitBackdropFilter: "blur(12px)",
       }}
     >
-      {/* Left side ΓÇö breadcrumb or title */}
+      {/* Left side — breadcrumb or title */}
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium" style={{ color: "#f7f8f8" }}>
           {t("sidebar.dashboard")}
         </span>
       </div>
 
-      {/* Right side ΓÇö actions */}
+      {/* Right side — actions */}
       <div className="flex items-center gap-1.5">
         <ThemeToggle />
         <LanguageSwitcher />

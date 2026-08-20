@@ -1,4 +1,4 @@
-﻿const { randomUUID } = require('crypto');
+const { randomUUID } = require('crypto');
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const { getWooCommerceAutoExportService } = require('./wooCommerceAutoExportService');
 const WalletService = require('./walletService');
@@ -29,7 +29,7 @@ const FAILURE_STATUSES_REQUIRING_CALLS = new Set(['DELIVERY_FAILED', 'NO_ANSWER'
 // Statuses that can appear as preparation stages. The preparation queue reads
 // metadata.preparationStatus as its source of truth (with order.status as a
 // fallback), so any external status change to one of these MUST also sync the
-// metadata field ΓÇö otherwise the change never appears on the preparation page.
+// metadata field — otherwise the change never appears on the preparation page.
 // This set mirrors the stages of normalizePreparationStage (WAITING/PREPARING/
 // QUALITY_CHECK/PACKAGED/STOCK_SHORTAGE/READY_TO_SHIP/PENDING_CANCELLATION/
 // ON_HOLD_PREP) so moves to e.g. CONFIRMED (from PREPARING) also sync.
@@ -82,7 +82,7 @@ const toFiniteNumberOrNull = (value) => {
 class OrderService {
   constructor(companyId = null) {
     this.companyId = companyId;
-    //console.log('≡ƒ¢Æ OrderService initialized', companyId ? `for company ${companyId}` : 'without companyId');
+    //console.log('🛒 OrderService initialized', companyId ? `for company ${companyId}` : 'without companyId');
   }
 
   setCompanyId(companyId) {
@@ -109,18 +109,18 @@ class OrderService {
     const callAttempts = Number(order?.callAttempts || 0);
     if (callAttempts < 3) {
       throw createOrderStatusError(
-        `┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪╖┘ä╪¿ ┘ä┘ç╪░┘ç ╪º┘ä╪¡╪º┘ä╪⌐ ┘é╪¿┘ä ╪Ñ╪¼╪▒╪º╪í 3 ┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º╪¬╪╡╪º┘ä ╪╣┘ä┘ë ╪º┘ä╪ú┘é┘ä (╪º┘ä┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º┘ä╪¡╪º┘ä┘è╪⌐: ${callAttempts})`,
+        `لا يمكن تحويل الطلب لهذه الحالة قبل إجراء 3 محاولات اتصال على الأقل (المحاولات الحالية: ${callAttempts})`,
         400
       );
     }
   }
 
   /**
-   * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º5.2):
-   * ┘à╪▓╪º┘à┘å╪⌐ metadata.preparationStatus ┘ä╪¡╪º┘ä╪⌐ ┘à╪╣┘è┘æ┘å╪⌐ ΓÇö ┘à╪│╪¬╪«╪▒╪¼ ┘à┘å updateOrderStatus
-   * (╪º┘ä┘à┘å╪╖┘é ╪º┘ä╪ú╪╡┘ä┘è ╪╣┘å╪» L1012-1021) ┘ä┘è┘Å╪│╪¬╪»╪╣┘ë ┘à┘å ╪«╪º╪▒╪¼ ╪º┘ä┘à╪│╪º╪▒ ╪º┘ä┘à┘ê╪¡┘æ╪» (┘à╪½┘ä ┘à╪│╪º╪▒╪º╪¬
-   * ╪º┘ä╪┤╪║┘æ╪º┘ä╪⌐ ╪º┘ä┘à╪¬┘é╪»┘à╪⌐ ╪º┘ä╪¬┘è ╪¬╪│╪¬╪«╪»┘à prisma.order.update ╪«╪º┘à). Idempotent ΓÇö ┘ä╪º ┘è┘â╪¬╪¿
-   * ╪┤┘è╪ª╪º┘ï ┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ ┘ä┘è╪│╪¬ ┘à┘å PREPARATION_PIPELINE_STATUSES.
+   * 🚨 PRODUCTION-FIX (notifications-fix-plan §5.2):
+   * مزامنة metadata.preparationStatus لحالة معيّنة — مستخرج من updateOrderStatus
+   * (المنطق الأصلي عند L1012-1021) ليُستدعى من خارج المسار الموحّد (مثل مسارات
+   * الشغّالة المتقدمة التي تستخدم prisma.order.update خام). Idempotent — لا يكتب
+   * شيئاً لو الحالة ليست من PREPARATION_PIPELINE_STATUSES.
    */
   async syncPreparationMetadata(orderId, status, prismaClient = null) {
     const normalized = String(status || '').toUpperCase();
@@ -178,7 +178,7 @@ class OrderService {
       : [];
 
     if (normalizedAllowedStatuses.length > 0 && !normalizedAllowedStatuses.includes(normalizedNextStatus)) {
-      throw createOrderStatusError(`┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘à┘å ╪º┘ä╪¡╪º┘ä╪⌐ ${normalizedCurrentStatus} ╪Ñ┘ä┘ë ${normalizedNextStatus}`);
+      throw createOrderStatusError(`لا يمكن الانتقال من الحالة ${normalizedCurrentStatus} إلى ${normalizedNextStatus}`);
     }
   }
 
@@ -200,7 +200,7 @@ class OrderService {
   }
 
   /**
-   * ╪¡┘ü╪╕ ╪╣┘å┘ê╪º┘å ╪º┘ä╪╣┘à┘è┘ä ┘à┘å ╪º┘ä╪╖┘ä╪¿ (╪¿┘è╪¬╪¡┘ü╪╕ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘ü┘è metadata.address ╪╣╪┤╪º┘å ┘è╪╕┘ç╪▒ ┘ü┘è "╪¿┘è╪º┘å╪º╪¬┘è")
+   * حفظ عنوان العميل من الطلب (بيتحفظ تلقائياً في metadata.address عشان يظهر في "بياناتي")
    */
   async _saveCustomerAddress(customerId, companyId, rawAddress) {
     if (!customerId || !companyId || !rawAddress) return;
@@ -213,7 +213,7 @@ class OrderService {
           rawAddress.street || rawAddress.address || rawAddress.details || '',
           rawAddress.city || rawAddress.governorate || rawAddress.state || '',
           rawAddress.country || '',
-        ].filter(Boolean).join('╪î ').trim();
+        ].filter(Boolean).join('، ').trim();
         if (!address) address = JSON.stringify(rawAddress);
       } catch (e) {
         address = '';
@@ -240,13 +240,13 @@ class OrderService {
         where: { id: customer.id },
         data: { metadata: JSON.stringify(meta) }
       });
-      console.log(`Γ£à [ORDER-SERVICE] Saved customer address (${customer.id})`);
+      console.log(`✅ [ORDER-SERVICE] Saved customer address (${customer.id})`);
     } catch (e) {
-      console.error('ΓÜá∩╕Å [ORDER-SERVICE] Failed to save customer address:', e?.message || e);
+      console.error('⚠️ [ORDER-SERVICE] Failed to save customer address:', e?.message || e);
     }
   }
 
-  // ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ╪¼╪»┘è╪» ┘à┘å ╪º┘ä┘à╪¡╪º╪»╪½╪⌐ (┘å╪│╪«╪⌐ ┘à╪¿╪│╪╖╪⌐)
+  // إنشاء طلب جديد من المحادثة (نسخة مبسطة)
   async createOrderFromConversation(data) {
     try {
       const {
@@ -264,7 +264,7 @@ class OrderService {
         notes
       } = data;
 
-      //console.log('≡ƒ¢Æ Creating new order from conversation:', {
+      //console.log('🛒 Creating new order from conversation:', {
       //   conversationId,
       //   customerId,
       //   productName,
@@ -311,19 +311,19 @@ class OrderService {
         throw createOrderStatusError('Customer is required to create an order');
       }
 
-      // ╪Ñ┘å╪┤╪º╪í ╪▒┘é┘à ╪╖┘ä╪¿ ┘ü╪▒┘è╪»
+      // إنشاء رقم طلب فريد
       const orderNumber = await this.generateOrderNumber(companyId);
 
-      // ╪¡╪│╪º╪¿ ╪º┘ä┘à╪¼┘à┘ê╪╣
+      // حساب المجموع
       const subtotal = parseFloat(productPrice) * quantity;
 
-      // ≡ƒÄü ╪¼┘ä╪¿ ┘à┘â╪º┘ü╪ó╪¬ ╪º┘ä┘ê┘ä╪º╪í ┘ê╪¬╪╖╪¿┘è┘é┘ç╪º
+      // 🎁 جلب مكافآت الولاء وتطبيقها
       let rewards = null;
       try {
         const loyaltyService = require('./hr/customerLoyaltyService');
         rewards = await loyaltyService.getCustomerActiveRewards(companyId, resolvedCustomerId);
       } catch (err) {
-        console.error('ΓÜá∩╕Å Loyalty Rewards Fetch Failed:', err.message);
+        console.error('⚠️ Loyalty Rewards Fetch Failed:', err.message);
       }
 
       let finalSubtotal = subtotal;
@@ -334,8 +334,8 @@ class OrderService {
         finalSubtotal = subtotal - appliedDiscount;
       }
 
-      // ≡ƒÄü ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è: ┘ä┘ê ┘å╪╕╪º┘à ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘à┘ü╪╣┘æ┘ä ┘ê╪º┘ä╪╣┘à┘è┘ä ╪╣┘å╪»┘ç ┘â┘ê╪¿┘ê┘å ╪«╪╡┘à ┘ü╪╣┘æ╪º┘ä╪î
-      // ┘å╪╖╪¿┘é┘ç ╪╣┘ä┘ë ╪º┘ä╪╖┘ä╪¿ (┘à┘å ╪º┘ä┘à╪¡╪º╪»╪½╪⌐) ΓÇö ┘à╪┤ ╪¿╪│ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¬╪¼╪▒.
+      // 🎁 الخصم التلقائي: لو نظام الخصم التلقائي مفعّل والعميل عنده كوبون خصم فعّال،
+      // نطبقه على الطلب (من المحادثة) — مش بس طلبات المتجر.
       let autoDiscountVoucherId = null;
       let autoDiscountAppliedValue = 0;
       try {
@@ -353,11 +353,11 @@ class OrderService {
             autoDiscountVoucherId = voucherRes.voucher.id;
             autoDiscountAppliedValue = voucherRes.discount;
             await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
-            console.log(`Γ£à [AUTO-DISCOUNT] Applied ${voucherRes.discount} EGP discount to conversation order for customer ${resolvedCustomerId}`);
+            console.log(`✅ [AUTO-DISCOUNT] Applied ${voucherRes.discount} EGP discount to conversation order for customer ${resolvedCustomerId}`);
           }
         }
       } catch (autoDiscountError) {
-        console.error('Γ¥î [AUTO-DISCOUNT] Failed to apply auto discount on conversation order:', autoDiscountError.message);
+        console.error('❌ [AUTO-DISCOUNT] Failed to apply auto discount on conversation order:', autoDiscountError.message);
       }
 
       const explicitShipping = toFiniteNumberOrNull(data.shippingAmount ?? data.shippingCost ?? data.shipping);
@@ -366,7 +366,7 @@ class OrderService {
         : parseFloat(this.calculateShipping(city, subtotal, rewards));
       const total = finalSubtotal + shipping;
 
-      // ┘ü╪¡╪╡ ╪º┘ä╪¬┘â╪▒╪º╪▒ ┘é╪¿┘ä ╪º┘ä╪Ñ┘å╪┤╪º╪í
+      // فحص التكرار قبل الإنشاء
       const duplicateSettings = await this.getDuplicateSettings(companyId);
       let duplicateMatch = null;
       if (duplicateSettings && (customerPhone || data.customerEmail) && total > 0) {
@@ -390,7 +390,7 @@ class OrderService {
         return existingOrder ? { ...existingOrder, customer } : existingOrder;
       }
 
-      // ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿╪»┘ê┘å items (╪│┘å╪╢┘è┘ü┘ç╪º ┘ä╪º╪¡┘é╪º┘ï)
+      // إنشاء الطلب بدون items (سنضيفها لاحقاً)
       const orderLimitCheck = await ensureWithinPlanLimit(companyId, 'orders', 1);
       if (!orderLimitCheck.allowed) {
         throw createLimitExceededError(orderLimitCheck.payload);
@@ -439,7 +439,7 @@ class OrderService {
             discount: parseFloat(appliedDiscount.toFixed(2)),
             total: parseFloat(total.toFixed(2)),
             currency: 'EGP',
-            notes: `╪╖┘ä╪¿ ┘à┘å ╪º┘ä┘à╪¡╪º╪»╪½╪⌐\n╪º┘ä┘à┘å╪¬╪¼: ${productName}\n╪º┘ä┘ä┘ê┘å: ${productColor}\n╪º┘ä┘à┘é╪º╪│: ${productSize}\n╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä: ${customerName}\n╪º┘ä┘ç╪º╪¬┘ü: ${customerPhone}\n╪º┘ä┘à╪»┘è┘å╪⌐: ${city}\n╪º┘ä┘à╪¡╪º╪»╪½╪⌐: ${conversationId}\n${notes || ''}`,
+            notes: `طلب من المحادثة\nالمنتج: ${productName}\nاللون: ${productColor}\nالمقاس: ${productSize}\nاسم العميل: ${customerName}\nالهاتف: ${customerPhone}\nالمدينة: ${city}\nالمحادثة: ${conversationId}\n${notes || ''}`,
             status: isDuplicate ? 'DUPLICATE_ORDER' : 'PENDING',
             paymentStatus: 'PENDING',
             paymentMethod: 'CASH',
@@ -465,33 +465,33 @@ class OrderService {
         });
       }, 5);
 
-      // ╪¡┘ü╪╕ ╪╣┘å┘ê╪º┘å ╪º┘ä╪╣┘à┘è┘ä ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘à┘å ╪º┘ä╪╖┘ä╪¿ (┘è╪╕┘ç╪▒ ┘ü┘è "╪¿┘è╪º┘å╪º╪¬┘è")
+      // حفظ عنوان العميل تلقائياً من الطلب (يظهر في "بياناتي")
       await this._saveCustomerAddress(
         resolvedCustomerId,
         companyId,
         data.shippingAddress || data.address || data.customerAddress || null
       );
 
-      // ╪¬╪¡╪»┘è╪½ ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä
+      // تحديث إحصائيات العميل
       await this.updateCustomerStats(resolvedCustomerId, parseFloat(total));
 
-      // ≡ƒ¢Æ ╪¬╪╡╪»┘è╪▒ ╪¬┘ä┘é╪º╪ª┘è ┘ä┘Ç WooCommerce (┘ü┘è ╪º┘ä╪«┘ä┘ü┘è╪⌐) - ╪¬╪¼╪º┘ç┘ä ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à┘â╪▒╪▒╪⌐
+      // 🛒 تصدير تلقائي لـ WooCommerce (في الخلفية) - تجاهل للطلبات المكررة
       if (!isDuplicate) {
         try {
           const wooExportService = getWooCommerceAutoExportService();
           wooExportService.exportOrderAsync(order.id);
         } catch (wooError) {
-          console.error('ΓÜá∩╕Å [ORDER-SERVICE] WooCommerce auto-export skipped:', wooError.message);
+          console.error('⚠️ [ORDER-SERVICE] WooCommerce auto-export skipped:', wooError.message);
         }
 
-        // ≡ƒöä Push order to consumer company if applicable
+        // 🔄 Push order to consumer company if applicable
         internalSyncService.pushOrderToConsumer(order.id, companyId).catch(err => {
-          console.error(`Γ¥î Failed to push order ${order.id} to consumer:`, err.message);
+          console.error(`❌ Failed to push order ${order.id} to consumer:`, err.message);
         });
 
-        // ≡ƒÜÇ Push order to provider(s) if it contains imported products
+        // 🚀 Push order to provider(s) if it contains imported products
         internalSyncService.pushOrderToProvider(order.id, companyId).catch(err => {
-          console.error(`Γ¥î [INTERNAL-SYNC] Failed to push order ${order.id} to provider:`, err.message);
+          console.error(`❌ [INTERNAL-SYNC] Failed to push order ${order.id} to provider:`, err.message);
         });
       }
 
@@ -500,10 +500,10 @@ class OrderService {
         const confirmationService = require('./orderConfirmationService');
         await confirmationService.autoAssignOnCreation(companyId, order.id, 'regular');
       } catch (distError) {
-        console.error('Γ¥î [ORDER-SERVICE] Error in auto-distribution:', distError.message);
+        console.error('❌ [ORDER-SERVICE] Error in auto-distribution:', distError.message);
       }
 
-      // ≡ƒÄü ╪¬╪│╪¼┘è┘ä ╪¬┘ä┘é╪º╪ª┘è ┘ü┘è ┘å╪╕╪º┘à ╪º┘ä┘ê┘ä╪º╪í + ╪¡╪│╪º╪¿ ╪º┘ä┘å┘é╪º╪╖ ┘ä╪ú┘è ╪╖┘ä╪¿ ╪¼╪»┘è╪» ┘à┘å ╪º┘ä┘à╪¡╪º╪»╪½╪⌐
+      // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط لأي طلب جديد من المحادثة
       try {
         const customerLoyaltyService = require('./hr/customerLoyaltyService');
         await customerLoyaltyService.applyLoyaltyPointsForOrder({
@@ -511,17 +511,17 @@ class OrderService {
           companyId,
           changedBy: data.createdBy
         }).catch((loyaltyError) => {
-          console.error(`Γ¥î [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
+          console.error(`❌ [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
         });
       } catch (loyaltyError) {
-        console.error('Γ¥î [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+        console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
       }
 
-      //console.log('Γ£à Order created successfully:', order.orderNumber);
+      //console.log('✅ Order created successfully:', order.orderNumber);
       return { ...order, customer };
 
     } catch (error) {
-      console.error('Γ¥î Error creating order:', error);
+      console.error('❌ Error creating order:', error);
       throw error;
     }
   }
@@ -647,7 +647,7 @@ class OrderService {
     };
   }
 
-  // ╪Ñ┘å╪┤╪º╪í ╪▒┘é┘à ╪╖┘ä╪¿ ┘ü╪▒┘è╪»
+  // إنشاء رقم طلب فريد
   async generateOrderNumber(companyId = null) {
     const effectiveCompanyId = companyId || this.companyId;
 
@@ -722,7 +722,7 @@ class OrderService {
     });
   }
 
-  // ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪¬┘â╪▒╪º╪▒
+  // إعدادات التكرار
   async getDuplicateSettings(companyId = null) {
     const settings = await this.getOrderSettings(companyId);
     return {
@@ -737,8 +737,8 @@ class OrderService {
     return normalized || null;
   }
 
-  // ╪¬┘ê┘ä┘è╪» ┘â┘ä ╪º┘ä╪╡┘è╪║ ╪º┘ä┘à┘à┘â┘å╪⌐ ┘ä╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü (┘à╪╡╪▒/╪»┘ê┘ä┘è) ╪╣╪┤╪º┘å ┘â╪┤┘ü ╪º┘ä╪¬┘â╪▒╪º╪▒ ┘è┘à╪│┘â ┘å┘ü╪│ ╪º┘ä╪▒┘é┘à
-  // ╪¿╪╡┘è╪║ ┘à╪«╪¬┘ä┘ü╪⌐ (012/20/+20/╪¿╪»┘ê┘å ╪¿╪º╪»╪ª╪⌐...). ┘å┘ü╪│ ┘à┘å╪╖┘é ╪º┘ä╪¿╪¡╪½ ┘ü┘è ╪º┘ä┘é╪º╪ª┘à╪⌐.
+  // توليد كل الصيغ الممكنة لرقم الهاتف (مصر/دولي) عشان كشف التكرار يمسك نفس الرقم
+  // بصيغ مختلفة (012/20/+20/بدون بادئة...). نفس منطق البحث في القائمة.
   getPhoneVariationsForDuplicate(input) {
     const clean = String(input || '').replace(/\D/g, '');
     if (!clean) return [];
@@ -849,35 +849,35 @@ class OrderService {
     return null;
   }
 
-  // ╪¡╪│╪º╪¿ ╪¬┘â┘ä┘ü╪⌐ ╪º┘ä╪┤╪¡┘å
+  // حساب تكلفة الشحن
   calculateShipping(city, subtotal, rewards = null) {
-    // ≡ƒÄü ╪¬┘é┘ä┘è┘ä ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐ ┘ä┘ä┘à┘å╪╖┘é ╪º┘ä╪½╪º╪¿╪¬ ╪Ñ╪░╪º ┘â╪º┘å ┘ç┘å╪º┘â ┘à┘â╪º┘ü╪ú╪⌐ ╪┤╪¡┘å ┘à╪¼╪º┘å┘è ┘à┘å ╪¿╪▒┘å╪º┘à╪¼ ╪º┘ä┘ê┘ä╪º╪í
+    // 🎁 تقليل الأولوية للمنطق الثابت إذا كان هناك مكافأة شحن مجاني من برنامج الولاء
     if (rewards && rewards.freeShipping) {
       if (rewards.freeShippingThreshold === 0 || subtotal >= rewards.freeShippingThreshold) {
         return 0;
       }
     }
 
-    // ╪┤╪¡┘å ┘à╪¼╪º┘å┘è ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ╪ú┘â╪½╪▒ ┘à┘å 250 ╪¼┘å┘è┘ç (┘à┘å╪╖┘é ╪º┘ü╪¬╪▒╪º╪╢┘è)
+    // شحن مجاني للطلبات أكثر من 250 جنيه (منطق افتراضي)
     if (subtotal >= 250) {
       return 0;
     }
 
-    // ╪¬┘â┘ä┘ü╪⌐ ╪º┘ä╪┤╪¡┘å ╪¡╪│╪¿ ╪º┘ä┘à╪»┘è┘å╪⌐
+    // تكلفة الشحن حسب المدينة
     const shippingRates = {
-      '╪º┘ä┘é╪º┘ç╪▒╪⌐': 50,
-      '╪º┘ä╪Ñ╪│┘â┘å╪»╪▒┘è╪⌐': 50,
-      '╪º┘ä╪¼┘è╪▓╪⌐': 50,
+      'القاهرة': 50,
+      'الإسكندرية': 50,
+      'الجيزة': 50,
       'default': 75
     };
 
     return shippingRates[city] || shippingRates.default;
   }
 
-  // ╪º┘ä╪¿╪¡╪½ ╪╣┘å ╪º┘ä┘à┘å╪¬╪¼ ╪ú┘ê ╪Ñ┘å╪┤╪º╪ñ┘ç
+  // البحث عن المنتج أو إنشاؤه
   async findOrCreateProduct(productName, companyId) {
     try {
-      // ╪º┘ä╪¿╪¡╪½ ╪╣┘å ╪º┘ä┘à┘å╪¬╪¼ ╪º┘ä┘à┘ê╪¼┘ê╪»
+      // البحث عن المنتج الموجود
       let product = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.product.findFirst({
@@ -888,12 +888,12 @@ class OrderService {
         });
       }, 3);
 
-      // ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘à┘å╪¬╪¼ ╪Ñ╪░╪º ┘ä┘à ┘è┘â┘å ┘à┘ê╪¼┘ê╪»
+      // إنشاء المنتج إذا لم يكن موجود
       if (!product) {
         const productLimitCheck = await ensureWithinPlanLimit(companyId, 'products', 1);
         if (!productLimitCheck.allowed) {
           console.warn(
-            `ΓÜá∩╕Å [ORDER-SERVICE] Skipping product auto-create for ${companyId}: ${productLimitCheck.payload?.message || 'Plan limit reached'}`
+            `⚠️ [ORDER-SERVICE] Skipping product auto-create for ${companyId}: ${productLimitCheck.payload?.message || 'Plan limit reached'}`
           );
           return null;
         }
@@ -903,9 +903,9 @@ class OrderService {
           return await prisma.product.create({
             data: {
               name: productName,
-              sku: `AUTO-${Date.now()}`, // ╪Ñ┘å╪┤╪º╪í SKU ╪¬┘ä┘é╪º╪ª┘è
+              sku: `AUTO-${Date.now()}`, // إنشاء SKU تلقائي
               companyId,
-              price: 0, // ╪│┘è╪¬┘à ╪¬╪¡╪»┘è╪½┘ç ┘ä╪º╪¡┘é╪º┘ï
+              price: 0, // سيتم تحديثه لاحقاً
               isActive: true,
               metadata: JSON.stringify({
                 createdFromOrder: true,
@@ -914,18 +914,18 @@ class OrderService {
             }
           });
         }, 5);
-        //console.log('≡ƒôª Created new product:', productName);
+        //console.log('📦 Created new product:', productName);
       }
 
       return product.id;
     } catch (error) {
-      console.error('Γ¥î Error finding/creating product:', error);
-      // ╪Ñ╪▒╪¼╪º╪╣ null ╪Ñ╪░╪º ┘ü╪┤┘ä
+      console.error('❌ Error finding/creating product:', error);
+      // إرجاع null إذا فشل
       return null;
     }
   }
 
-  // ╪¬╪¡╪»┘è╪½ ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä
+  // تحديث إحصائيات العميل
   async updateCustomerStats(customerId, orderTotal) {
     try {
       await safeQuery(async () => {
@@ -942,13 +942,13 @@ class OrderService {
           WHERE id = ${customerId}
         `;
       }, 5);
-      //console.log('≡ƒôè Customer stats updated');
+      //console.log('📊 Customer stats updated');
     } catch (error) {
-      console.error('Γ¥î Error updating customer stats:', error);
+      console.error('❌ Error updating customer stats:', error);
     }
   }
 
-  // ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä
+  // الحصول على طلبات العميل
   async getCustomerOrders(customerId, companyId, limit = 10) {
     try {
       const orders = await safeQuery(async () => {
@@ -956,7 +956,7 @@ class OrderService {
         return await prisma.order.findMany({
           where: {
             customerId,
-            companyId // Γ£à SECURITY: Ensure company isolation
+            companyId // ✅ SECURITY: Ensure company isolation
           },
           include: {
             items: {
@@ -972,12 +972,12 @@ class OrderService {
 
       return orders;
     } catch (error) {
-      console.error('Γ¥î Error fetching customer orders:', error);
+      console.error('❌ Error fetching customer orders:', error);
       return [];
     }
   }
 
-  // ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪╖┘ä╪¿ ╪¿╪º┘ä╪▒┘é┘à
+  // الحصول على طلب بالرقم
   async getOrderByNumber(orderNumber, companyId) {
     try {
       const order = await safeQuery(async () => {
@@ -1003,19 +1003,19 @@ class OrderService {
 
       return order;
     } catch (error) {
-      console.error('Γ¥î Error fetching order:', error);
+      console.error('❌ Error fetching order:', error);
       return null;
     }
   }
 
-  // ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿
+  // تحديث حالة الطلب
   async updateOrderStatus(orderNumber, companyId, status, notes = null, userId = null, userName = null, existingOrderObject = null, isOverride = false, options = null) {
 
     try {
       const { skipCallAttemptGuard = false, skipTransitionValidation = false } = options || {};
       status = normalizeOrderStatusCode(status);
 
-      // ΓÜí FIX: If status is an ID (CUIDs are typically >20 chars), resolve it to its Code
+      // ⚡ FIX: If status is an ID (CUIDs are typically >20 chars), resolve it to its Code
       // This prevents saving an uppercased CUID to the database and fixes workflow validation.
       if (status && status.length > 20) {
         const prisma = this.getPrisma();
@@ -1027,7 +1027,7 @@ class OrderService {
         }
       }
 
-      // ≡ƒÜÇ SPEED OPTIMIZATION: Use pre-fetched order if available
+      // 🚀 SPEED OPTIMIZATION: Use pre-fetched order if available
       const order = existingOrderObject || await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.order.findFirst({
@@ -1045,14 +1045,14 @@ class OrderService {
         });
       }, 3);
 
-      if (!order) throw createOrderStatusError("╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»", 404);
+      if (!order) throw createOrderStatusError("الطلب غير موجود", 404);
 
       const currentStatus = normalizeOrderStatusCode(order.status);
       if (currentStatus === status) {
         return order;
       }
 
-      // ≡ƒùæ∩╕Å Trash/Restore Logic
+      // 🗑️ Trash/Restore Logic
       if (status === 'RESTORE') {
         // Find last status that wasn't TRASH from history
         const lastStatus = await this.getPrisma().orderStatusHistory.findFirst({
@@ -1064,12 +1064,12 @@ class OrderService {
         });
         
         status = normalizeOrderStatusCode(lastStatus ? lastStatus.status : 'PENDING');
-        if (!notes) notes = '╪¬┘à ╪º╪│╪¬╪╣╪º╪»╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘à┘å ╪│┘ä╪⌐ ╪º┘ä┘à╪¡╪░┘ê┘ü╪º╪¬';
+        if (!notes) notes = 'تم استعادة الطلب من سلة المحذوفات';
       } else if (status === 'TRASH') {
-        if (!notes) notes = '╪¬┘à ┘å┘é┘ä ╪º┘ä╪╖┘ä╪¿ ╪Ñ┘ä┘ë ╪│┘ä╪⌐ ╪º┘ä┘à╪¡╪░┘ê┘ü╪º╪¬';
+        if (!notes) notes = 'تم نقل الطلب إلى سلة المحذوفات';
       }
 
-      // ≡ƒ¢í∩╕Å Late Cancellation Intercept
+      // 🛡️ Late Cancellation Intercept
       if (status === 'CANCELLED' && order.company?.settings) {
         try {
           const settingsObj = typeof order.company.settings === 'string' 
@@ -1079,34 +1079,34 @@ class OrderService {
           if (settingsObj?.lateCancellationInterceptEnabled && Array.isArray(settingsObj?.lateCancellationTargetStatuses)) {
             if (settingsObj.lateCancellationTargetStatuses.includes(currentStatus)) {
               status = 'PENDING_CANCELLATION';
-              if (!notes) notes = '╪¬┘à ╪╖┘ä╪¿ ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪ú╪½┘å╪º╪í ╪º┘ä╪¬╪¼┘ç┘è╪▓';
+              if (!notes) notes = 'تم طلب إلغاء الأوردر أثناء التجهيز';
             }
           }
         } catch (e) {
-          console.error('Γ¥î [ORDER-SERVICE-DEBUG] Error parsing company settings for late cancellation intercept:', e);
+          console.error('❌ [ORDER-SERVICE-DEBUG] Error parsing company settings for late cancellation intercept:', e);
         }
       }
       
-      // ≡ƒ¢í∩╕Å PRODUCTION-FIX (custom-status-enum): ╪╣┘à┘ê╪» order.status enum ┘à┘é┘ü┘ê┘ä ┘ü┘è ╪º┘ä╪»╪º╪¬╪º╪¿┘è╪▓╪î
-      // ┘ê╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘à╪«╪╡╪╡╪⌐ (┘à╪½┘ä DELAYED-WITH-CAPTAIN) ┘à╪┤ ╪¼╪▓╪í ┘à┘å┘ç. ╪¿┘å╪¡┘ä┘æ┘ç╪º ╪╣╪¿╪▒ mapsToSystem:
-      // - storedStatus = ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪╡╪º┘ä╪¡╪⌐ ╪º┘ä┘ä┘è ╪¬╪¬╪«╪▓┘æ┘å ┘ü╪╣┘ä╪º┘ï ╪╣┘ä┘ë order.status.
-      // - originalRequestedStatus = ╪º┘ä┘â┘ê╪» ╪º┘ä┘ä┘è ╪º┘ä┘à╪│╪¬╪«╪»┘à ╪╖┘ä╪¿┘ç (┘à╪«╪╡╪╡ ╪ú┘ê ┘å╪╕╪º┘à┘è) ΓÇö ┘å╪│╪¬╪«╪»┘à┘ç
-      //   ┘ü┘è statusHistory + ╪Ñ╪┤╪╣╪º╪▒ WhatsApp (┘é╪º┘ä╪¿ ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪«╪╡╪╡╪⌐).
-      // ┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ ┘à╪┤ enum ┘ê┘à╪º┘ä┘ç╪º╪┤ mapsToSystem ╪╡╪º┘ä╪¡ ΓåÆ ┘å╪▒┘ü╪╢ ╪¿╪«╪╖╪ú ╪╣╪▒╪¿┘è ┘ê╪º╪╢╪¡ ╪¿╪»┘ä 500 Prisma.
+      // 🛡️ PRODUCTION-FIX (custom-status-enum): عمود order.status enum مقفول في الداتابيز،
+      // والحالات المخصصة (مثل DELAYED-WITH-CAPTAIN) مش جزء منه. بنحلّها عبر mapsToSystem:
+      // - storedStatus = القيمة الصالحة اللي تتخزّن فعلاً على order.status.
+      // - originalRequestedStatus = الكود اللي المستخدم طلبه (مخصص أو نظامي) — نستخدمه
+      //   في statusHistory + إشعار WhatsApp (قالب الحالة المخصصة).
+      // لو الحالة مش enum ومالهاش mapsToSystem صالح → نرفض بخطأ عربي واضح بدل 500 Prisma.
       const { resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
       const { stored: storedStatus, notify: originalRequestedStatus } = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
       if (!storedStatus) {
-        throw createOrderStatusError(`╪º┘ä╪¡╪º┘ä╪⌐ "${status}" ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐ ┘ê┘ä╪º ┘è┘à┘â┘å ╪¬╪╖╪¿┘è┘é┘ç╪º ╪╣┘ä┘ë ╪º┘ä╪╖┘ä╪¿`, 400);
+        throw createOrderStatusError(`الحالة "${status}" غير صالحة ولا يمكن تطبيقها على الطلب`, 400);
       }
       if (currentStatus === storedStatus) {
         return order;
       }
       status = storedStatus;
 
-      // ≡ƒÜ½ Block Scanner / Shipping Progression for PENDING_CANCELLATION
+      // 🚫 Block Scanner / Shipping Progression for PENDING_CANCELLATION
       if (currentStatus === 'PENDING_CANCELLATION' && ['PREPARING', 'QUALITY_CHECK', 'PACKAGED', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED'].includes(status)) {
         if (!isOverride) {
-          throw createOrderStatusError("╪¬┘à ╪¡╪╕╪▒ ╪º┘ä╪Ñ╪│┘â╪º┘å╪▒: ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪¿┘ç ╪╖┘ä╪¿ ╪Ñ┘ä╪║╪º╪í ┘à╪╣┘ä┘é ┘ê┘è╪¼╪¿ ╪¡╪│┘à┘ç ╪ú┘ê┘ä╪º┘ï.");
+          throw createOrderStatusError("تم حظر الإسكانر: الأوردر به طلب إلغاء معلق ويجب حسمه أولاً.");
         }
       }
 
@@ -1128,7 +1128,7 @@ class OrderService {
             userId,
             status,
             notes,
-            isOverride, // ΓÜí Pass correct override flag
+            isOverride, // ⚡ Pass correct override flag
             order
           );
         } catch (workflowError) {
@@ -1156,7 +1156,7 @@ class OrderService {
           skipValidation: skipTransitionValidation || isOverride
         });
       } catch (transitionError) {
-        console.error('Γ¥î [ORDER-SERVICE] Invalid status transition:', transitionError.message);
+        console.error('❌ [ORDER-SERVICE] Invalid status transition:', transitionError.message);
         throw transitionError;
       }
 
@@ -1176,7 +1176,7 @@ class OrderService {
         confirmationNotes: null
       } : {};
 
-      // ≡ƒöä [ORDER-SERVICE-UPDATE] Update the order
+      // 🔄 [ORDER-SERVICE-UPDATE] Update the order
       // Sync metadata.preparationStatus so external status changes (quick-status,
       // orders page) are reflected on the preparation queue too.
       const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
@@ -1230,11 +1230,11 @@ class OrderService {
         await this.logWorkflowAuditIfNeeded(companyId, order.id, workflowAuditLog, userId, notes || null);
       }
 
-      // ≡ƒÜÇ SPEED: Return result immediately to the user
+      // 🚀 SPEED: Return result immediately to the user
       // All other operations (Turbo, Returns, Commissions, Notifications) happen in the background
       (async () => {
         try {
-          // ≡ƒÜÜ Turbo Integration
+          // 🚚 Turbo Integration
 
           if (status === 'CONFIRMED' && order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey && !order.turboShipmentId) {
             const TurboService = require('./turboService');
@@ -1258,7 +1258,7 @@ class OrderService {
             }
           }
 
-          // ≡ƒöä Returns Integration
+          // 🔄 Returns Integration
           const returnStatuses = ['REFUNDED', 'RETURNED', 'PARTIALLY_REFUNDED'];
           let shouldCreateReturn = returnStatuses.includes(status);
 
@@ -1272,21 +1272,21 @@ class OrderService {
                 shouldCreateReturn = true;
               }
             } catch (configError) {
-              console.warn('ΓÜá∩╕Å [RETURNS-AUTO] Failed to check status config mapping in background:', configError.message);
+              console.warn('⚠️ [RETURNS-AUTO] Failed to check status config mapping in background:', configError.message);
             }
           }
 
           if (shouldCreateReturn) {
-            // ≡ƒÜ¿ PRODUCTION-FIX (return-notification-gap): autoCreateReturnRequest ┘ä╪º╪▓┘à ┘è┘ü╪╢┘ä
-            // ╪¼╪º┘å╪¿┘è ╪¬┘à╪º┘à╪º┘ï ΓÇö ╪ú┘è ┘ü╪┤┘ä ┘ü┘è┘ç (╪▓┘è FK ╪╣┘ä┘ë userId ╪¿╪¬╪º╪╣╪⌐ SYSTEM ┘à┘å ╪│┘è┘å┘â ╪¬╪▒╪¿┘ê) ┘â╪º┘å ╪¿┘è┘â╪│╪▒
-            // ╪º┘ä┘Ç background block ┘â┘ä┘ç ┘ê┘é╪¿┘ä ┘ê╪╡┘ê┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘ä┘ä╪╣┘à┘è┘ä. ╪»┘ä┘ê┘é╪¬┘è ╪ú┘è ╪«╪╖╪ú ╪¿┘è╪¬╪│╪¼┘ä ╪¿╪│
-            // ┘ê╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘è┘â┘à┘ä.
+            // 🚨 PRODUCTION-FIX (return-notification-gap): autoCreateReturnRequest لازم يفضل
+            // جانبي تماماً — أي فشل فيه (زي FK على userId بتاعة SYSTEM من سينك تربو) كان بيكسر
+            // الـ background block كله وقبل وصول الإشعار للعميل. دلوقتي أي خطأ بيتسجل بس
+            // والإشعار يكمل.
             await this.autoCreateReturnRequest(order, userId, status).catch(returnErr => {
-              console.error(`Γ¥î [RETURNS-AUTO-BG] autoCreateReturnRequest failed for ${orderNumber}:`, returnErr.message);
+              console.error(`❌ [RETURNS-AUTO-BG] autoCreateReturnRequest failed for ${orderNumber}:`, returnErr.message);
             });
           }
 
-          // ≡ƒÆ░ Affiliate & Commission & Cashback
+          // 💰 Affiliate & Commission & Cashback
           const commissionService = require('./commissionService');
           const shouldReverseAffiliateCommissions =
             status === 'CANCELLED' || shouldCreateReturn;
@@ -1295,36 +1295,36 @@ class OrderService {
             await commissionService.cancelAffiliateCommissionsForOrder(order.id, {
               reason:
                 notes ||
-                `╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ${orderNumber} ╪Ñ┘ä┘ë ${status}╪î ┘ä╪░┘ä┘â ╪ú┘Å┘ä╪║┘è╪¬ ╪╣┘à┘ê┘ä╪º╪¬ ╪º┘ä┘à╪│┘ê┘é ╪║┘è╪▒ ╪º┘ä┘à╪╡╪▒┘ê┘ü╪⌐`,
+                `تم تغيير حالة الطلب ${orderNumber} إلى ${status}، لذلك أُلغيت عمولات المسوق غير المصروفة`,
             }).catch(commErr => {
-              console.error(`Γ¥î [COMMISSION-BG] cancelAffiliateCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
+              console.error(`❌ [COMMISSION-BG] cancelAffiliateCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
             });
             await commissionService.cancelMerchantCommissionsForOrder(order.id, {
               reason:
                 notes ||
-                `╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ${orderNumber} ╪Ñ┘ä┘ë ${status}╪î ┘ä╪░┘ä┘â ╪ú┘Å┘ä╪║┘è╪¬ ┘à╪│╪¬╪¡┘é╪º╪¬ ╪º┘ä╪¬╪º╪¼╪▒ ╪║┘è╪▒ ╪º┘ä┘à╪╡╪▒┘ê┘ü╪⌐`,
+                `تم تغيير حالة الطلب ${orderNumber} إلى ${status}، لذلك أُلغيت مستحقات التاجر غير المصروفة`,
             }).catch(commErr => {
-              console.error(`Γ¥î [COMMISSION-BG] cancelMerchantCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
+              console.error(`❌ [COMMISSION-BG] cancelMerchantCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
             });
           }
 
-          // ≡ƒÆ╕ ╪╣┘å╪» ╪Ñ┘ä╪║╪º╪í ╪╖┘ä╪¿ ╪º╪¬╪│┘ä┘à ΓÇö ╪▒╪¼┘æ╪╣ ╪º┘ä┘å┘é╪º╪╖ ┘ê╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ╪º┘ä┘ä┘è ╪º╪¬╪¡╪│╪¿┘ê╪º + ┘â┘ê╪¿┘ê┘å╪º╪¬ ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è
+          // 💸 عند إلغاء طلب اتسلم — رجّع النقاط والكاش باك اللي اتحسبوا + كوبونات الخصم التلقائي
           if (status === 'CANCELLED') {
             const cashbackService = require('./cashbackService');
             const loyaltyService = require('./hr/customerLoyaltyService');
             const autoDiscountService = require('./autoDiscountService');
-            const cancelReason = notes || `╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿ ${orderNumber}`;
+            const cancelReason = notes || `إلغاء الطلب ${orderNumber}`;
             await cashbackService.reverseCashbackForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
-              console.error(`Γ¥î [CASHBACK-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
+              console.error(`❌ [CASHBACK-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
             });
             await loyaltyService.reverseLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId, reason: cancelReason }).catch(error => {
-              console.error(`Γ¥î [LOYALTY-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
+              console.error(`❌ [LOYALTY-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
             });
             await autoDiscountService.reverseVoucherForOrder({ orderId: order.id, companyId: order.companyId }).catch(error => {
-              console.error(`Γ¥î [AUTO-DISCOUNT-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
+              console.error(`❌ [AUTO-DISCOUNT-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
             });
             await autoDiscountService.restoreRedeemedPointsForOrder({ orderId: order.id, companyId: order.companyId }).catch(error => {
-              console.error(`Γ¥î [AUTO-DISCOUNT-RESTORE-POINTS] Failed for cancelled order ${orderNumber}:`, error.message);
+              console.error(`❌ [AUTO-DISCOUNT-RESTORE-POINTS] Failed for cancelled order ${orderNumber}:`, error.message);
             });
           }
 
@@ -1332,7 +1332,7 @@ class OrderService {
             const dropshippingService = require('./dropshippingService');
             const prisma = this.getPrisma();
 
-            // ┘é╪▒╪º╪í╪⌐ ╪º┘ä╪Ñ╪╣╪»╪º╪»: ┘ü┘è ╪ú┘è ╪¡╪º┘ä╪⌐ ╪¬╪¬╪¡╪│╪¿ ╪º┘ä╪╣┘à┘ê┘ä╪⌐
+            // قراءة الإعداد: في أي حالة تتحسب العمولة
             const affSetting = await prisma.affiliateSetting.findUnique({
               where: { companyId: order.companyId },
               select: { commissionOnStatus: true },
@@ -1361,48 +1361,48 @@ class OrderService {
             const loyaltyService = require('./hr/customerLoyaltyService');
             const autoDiscountService = require('./autoDiscountService');
 
-            // ┘å╪╕╪º┘à "╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è": ╪¿╪»┘ä ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ╪º┘ä┘ü┘ê╪▒┘è ┘å┘Å╪╡╪»╪▒ ┘â┘ê╪¿┘ê┘å 10% ┘ä┘ä╪ú┘ê╪▒╪»╪▒ ╪º┘ä╪¼╪º┘è
+            // نظام "الخصم التلقائي": بدل الكاش باك الفوري نُصدر كوبون 10% للأوردر الجاي
             const autoActive = await autoDiscountService.isAutoDiscountActive(order.companyId).catch(() => false);
             if (!autoActive) {
               await cashbackService.applyCashbackForPaidOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
-                console.error(`Γ¥î [CASHBACK-BG-ERROR] Failed for ${orderNumber}:`, error.message);
+                console.error(`❌ [CASHBACK-BG-ERROR] Failed for ${orderNumber}:`, error.message);
               });
             } else {
               await autoDiscountService.issueVoucherForDeliveredOrder({ orderId: order.id, companyId: order.companyId }).catch(error => {
-                console.error(`Γ¥î [AUTO-DISCOUNT-BG-ERROR] Voucher issue failed for ${orderNumber}:`, error.message);
+                console.error(`❌ [AUTO-DISCOUNT-BG-ERROR] Voucher issue failed for ${orderNumber}:`, error.message);
               });
             }
 
             await loyaltyService.applyLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
-              console.error(`Γ¥î [LOYALTY-BG-ERROR] Failed for ${orderNumber}:`, error.message);
+              console.error(`❌ [LOYALTY-BG-ERROR] Failed for ${orderNumber}:`, error.message);
             });
 
-            // ≡ƒÜÇ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪╣┘à┘è┘ä ┘ü┘è ╪│┘ä╪│┘ä╪⌐ ┘à╪º ╪¿╪╣╪» ╪º┘ä╪º╪│╪¬┘ä╪º┘à (╪¿╪╣╪» ╪ú╪│╪¿┘ê╪╣/╪ú╪│╪¿┘ê╪╣┘è┘å/╪¬╪º┘ä╪¬...) ╪╣┘å╪» ╪º┘ä╪¬╪│┘ä┘è┘à ╪º┘ä┘ü╪╣┘ä┘è
+            // 🚀 تسجيل العميل في سلسلة ما بعد الاستلام (بعد أسبوع/أسبوعين/تالت...) عند التسليم الفعلي
             try {
               const WhatsAppJourneyService = require('./whatsapp/WhatsAppJourneyService');
               await WhatsAppJourneyService.enrollCustomer(order.companyId, order.customerId, order.id).catch(error => {
-                console.error(`Γ¥î [JOURNEY-BG-ERROR] Enroll failed for ${orderNumber}:`, error.message);
+                console.error(`❌ [JOURNEY-BG-ERROR] Enroll failed for ${orderNumber}:`, error.message);
               });
             } catch (journeyError) {
-              console.error(`Γ¥î [JOURNEY-ERROR] Enroll threw for ${orderNumber}:`, journeyError.message);
+              console.error(`❌ [JOURNEY-ERROR] Enroll threw for ${orderNumber}:`, journeyError.message);
             }
           }
 
-          // ≡ƒô▒ WhatsApp Notification (with duplicate check)
+          // 📱 WhatsApp Notification (with duplicate check)
           try {
             const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
 
-            // ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º2.1):
-            // ┘ä╪º ╪¬╪¡╪¼╪¿ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à╪▒╪│┘ê┘à╪⌐ ┘ç┘å╪º ΓÇö ╪»╪╣ sendOrderStatusNotification ┘è┘é╪▒╪▒ ╪╣╪¿╪▒
-            // DB OrderStatusConfig.notifyCustomer + ╪«╪▒┘è╪╖╪¬┘ç ╪º┘ä╪ú┘ê╪│╪╣ + fallback isFallback.
-            // ≡ƒ¢í∩╕Å PRODUCTION-FIX (custom-status-enum): ┘å╪│╪¬╪«╪»┘à ╪º┘ä┘â┘ê╪» ╪º┘ä╪ú╪╡┘ä┘è (originalRequestedStatus)
-            // ΓÇö ┘à╪┤ ╪º┘ä┘Ç stored enum ΓÇö ╪╣╪┤╪º┘å ┘é╪º┘ä╪¿ ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪«╪╡╪╡╪⌐ (┘à╪½┘ä DELAYED-WITH-CAPTAIN) ┘è╪┤╪¬╪║┘ä.
+            // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
+            // لا تحجب الحالات غير المرسومة هنا — دع sendOrderStatusNotification يقرر عبر
+            // DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback isFallback.
+            // 🛡️ PRODUCTION-FIX (custom-status-enum): نستخدم الكود الأصلي (originalRequestedStatus)
+            // — مش الـ stored enum — عشان قالب الحالة المخصصة (مثل DELAYED-WITH-CAPTAIN) يشتغل.
             const notificationStatus = normalizeWhatsAppOrderStatus(originalRequestedStatus) || originalRequestedStatus;
 
-            // Γ£à Check for duplicate notification (┘ê╪¡┘æ╪»╪¬ ╪╣╪¿╪▒ isDuplicateNotification ┬º3.1)
-            // ≡ƒ¢í∩╕Å PRODUCTION-FIX (custom-status-enum-dedup): ╪º┘ä┘Ç dedup ┘ä╪º╪▓┘à ┘è╪│╪¬╪«╪»┘à ┘å┘ü╪│ ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä┘ä┘è
-            // ┘ç╪¬╪¬╪«╪▓┘å ┘ü╪╣┘ä╪º┘ï ┘ü┘è whatsAppNotificationLog.eventType ΓÇö ┘ä┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘à╪«╪╡╪╡╪⌐ ╪»┘è `mapsToSystem`
-            // (┘à╪½┘ä ON_HOLD) ┘à╪┤ ╪º┘ä┘â┘ê╪» ╪º┘ä┘à╪«╪╡╪╡ ΓÇö ┘ê╪Ñ┘ä╪º ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä┘à┘â╪▒╪▒╪⌐ ┘à╪¬╪¬╪╣╪▒┘ü╪┤ (┘é╪» ╪¬╪│╪¿╪¿ ╪│╪¿╪º┘à ┘ä┘ä╪╣┘à┘è┘ä).
+            // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
+            // 🛡️ PRODUCTION-FIX (custom-status-enum-dedup): الـ dedup لازم يستخدم نفس القيمة اللي
+            // هتتخزن فعلاً في whatsAppNotificationLog.eventType — للحالات المخصصة دي `mapsToSystem`
+            // (مثل ON_HOLD) مش الكود المخصص — وإلا الرسالة المكررة متتعرفش (قد تسبب سبام للعميل).
             const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
             const persistedEventForDedup = getPersistedNotificationEventType(storedStatus || notificationStatus);
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
@@ -1416,10 +1416,10 @@ class OrderService {
               await WhatsAppNotificationService.sendOrderStatusNotification(order, notificationStatus);
             }
           } catch (whatsappError) {
-            console.error('ΓÜá∩╕Å [WHATSAPP-STATUS-ERROR] Background notification failed:', whatsappError.message);
+            console.error('⚠️ [WHATSAPP-STATUS-ERROR] Background notification failed:', whatsappError.message);
           }
 
-          // ≡ƒº╛ Auto Invoice Generation
+          // 🧾 Auto Invoice Generation
           try {
             const prisma = this.getPrisma();
             const invoiceSettings = await prisma.orderInvoiceSettings.findUnique({
@@ -1436,17 +1436,17 @@ class OrderService {
               }
             }
           } catch (invoiceError) {
-            console.error('ΓÜá∩╕Å [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
+            console.error('⚠️ [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
           }
 
         } catch (backgroundError) {
-          console.error('ΓÜá∩╕Å [ORDER-STATUS-BG-ERROR]:', backgroundError.message);
+          console.error('⚠️ [ORDER-STATUS-BG-ERROR]:', backgroundError.message);
         }
       })();
 
       return updatedOrder;
     } catch (error) {
-      console.error('Γ¥î Error updating order status:', error);
+      console.error('❌ Error updating order status:', error);
       throw error;
     }
   }
@@ -1470,7 +1470,7 @@ class OrderService {
       }, 3);
 
       if (!guestOrder) {
-        throw createOrderStatusError('╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»', 404);
+        throw createOrderStatusError('الطلب غير موجود', 404);
       }
 
       if (normalizeOrderStatusCode(guestOrder.status) === status) {
@@ -1487,9 +1487,9 @@ class OrderService {
         });
 
         status = normalizeOrderStatusCode(lastStatus ? lastStatus.status : 'PENDING');
-        if (!notes) notes = '├ÿ┬¬├ÖΓÇª ├ÿ┬º├ÿ┬│├ÿ┬¬├ÿ┬╣├ÿ┬º├ÿ┬»├ÿ┬⌐ ├ÿ┬º├ÖΓÇ₧├ÿ┬╖├ÖΓÇ₧├ÿ┬¿ ├ÖΓÇª├ÖΓÇá ├ÿ┬│├ÖΓÇ₧├ÿ┬⌐ ├ÿ┬º├ÖΓÇ₧├ÖΓÇª├ÿ┬¡├ÿ┬░├Ö╦å├Ö┬ü├ÿ┬º├ÿ┬¬';
+        if (!notes) notes = 'ØªÙ… Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ø·Ù„Ø¨ Ù…Ù† Ø³Ù„Ø© Ø§Ù„Ù…Ø­Ø°ÙˆÙØ§Øª';
       } else if (status === 'TRASH') {
-        if (!notes) notes = '├ÿ┬¬├ÖΓÇª ├ÖΓÇá├ÖΓÇÜ├ÖΓÇ₧ ├ÿ┬º├ÖΓÇ₧├ÿ┬╖├ÖΓÇ₧├ÿ┬¿ ├ÿ┬Ñ├ÖΓÇ₧├ÖΓÇ░ ├ÿ┬│├ÖΓÇ₧├ÿ┬⌐ ├ÿ┬º├ÖΓÇ₧├ÖΓÇª├ÿ┬¡├ÿ┬░├Ö╦å├Ö┬ü├ÿ┬º├ÿ┬¬';
+        if (!notes) notes = 'ØªÙ… Ù†Ù‚Ù„ Ø§Ù„Ø·Ù„Ø¨ Ø¥Ù„Ù‰ Ø³Ù„Ø© Ø§Ù„Ù…Ø­Ø°ÙˆÙØ§Øª';
       }
 
       if (!skipCallAttemptGuard) {
@@ -1536,7 +1536,7 @@ class OrderService {
         try {
           if (status === 'CONFIRMED' || status === 'PROCESSING') {
             internalSyncService.pushOrderToProvider(updatedGuestOrder.id, companyId).catch(err => {
-              console.error(`Γ¥î [INTERNAL-SYNC] Failed to push guest order ${updatedGuestOrder.id} to provider:`, err.message);
+              console.error(`❌ [INTERNAL-SYNC] Failed to push guest order ${updatedGuestOrder.id} to provider:`, err.message);
             });
           }
 
@@ -1584,7 +1584,7 @@ class OrderService {
                 }
               }
             } catch (cashbackError) {
-              console.error('Γ¥î [CASHBACK] Failed to add cashback on guest order delivered:', cashbackError?.message);
+              console.error('❌ [CASHBACK] Failed to add cashback on guest order delivered:', cashbackError?.message);
             }
           }
 
@@ -1612,11 +1612,11 @@ class OrderService {
 
             const notificationStatus = normalizeWhatsAppOrderStatus(status) || status;
 
-            // ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º2.1):
-            // ┘ä╪º ╪¬╪¡╪¼╪¿ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à╪▒╪│┘ê┘à╪⌐ ΓÇö ╪»╪╣ sendOrderStatusNotification ┘è┘é╪▒╪▒
-            // (DB OrderStatusConfig.notifyCustomer + ╪«╪▒┘è╪╖╪¬┘ç ╪º┘ä╪ú┘ê╪│╪╣ + fallback).
+            // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
+            // لا تحجب الحالات غير المرسومة — دع sendOrderStatusNotification يقرر
+            // (DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback).
             const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
-            // Γ£à Check for duplicate notification (┘ê╪¡┘æ╪»╪¬ ╪╣╪¿╪▒ isDuplicateNotification ┬º3.1)
+            // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
               companyId,
               recipientPhone: notificationOrder.customerPhone,
@@ -1633,21 +1633,21 @@ class OrderService {
             } else {
             }
           } catch (waError) {
-            console.error(`ΓÜá∩╕Å [WHATSAPP] Failed to send notification for guest order: ${waError.message}`);
+            console.error(`⚠️ [WHATSAPP] Failed to send notification for guest order: ${waError.message}`);
           }
         } catch (backgroundError) {
-          console.error('ΓÜá∩╕Å [GUEST-ORDER-STATUS-BG-ERROR]:', backgroundError.message);
+          console.error('⚠️ [GUEST-ORDER-STATUS-BG-ERROR]:', backgroundError.message);
         }
       })();
 
       return updatedGuestOrder;
     } catch (error) {
-      console.error('Γ¥î Error updating guest order status:', error);
+      console.error('❌ Error updating guest order status:', error);
       throw error;
     }
   }
 
-  // ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ╪Ñ╪▒╪¼╪º╪╣ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï
+  // إنشاء طلب إرجاع تلقائياً
   async autoCreateReturnRequest(order, userId, status) {
     try {
       const prisma = this.getPrisma();
@@ -1667,8 +1667,8 @@ class OrderService {
       if (!reason) {
         reason = await prisma.returnReason.create({
           data: {
-            reason: '╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪¬┘ä┘é╪º╪ª┘è',
-            description: '╪¬┘à ╪Ñ┘å╪┤╪º╪í ┘ç╪░╪º ╪º┘ä╪│╪¿╪¿ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘à┘å ┘å╪╕╪º┘à ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
+            reason: 'تغيير حالة تلقائي',
+            description: 'تم إنشاء هذا السبب تلقائياً من نظام إدارة الطلبات',
             companyId: order.companyId
           }
         });
@@ -1681,7 +1681,7 @@ class OrderService {
           companyId: order.companyId,
           reasonId: reason.id,
           status: 'PENDING',
-          adminNotes: `╪¬┘à ╪Ñ┘å╪┤╪º╪í ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪╣┘å╪» ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪º┘ä╪ú╪╡┘ä┘è ╪Ñ┘ä┘ë: ${status}`,
+          adminNotes: `تم إنشاء هذا الطلب تلقائياً عند تغيير حالة الطلب الأصلي إلى: ${status}`,
           responsibleParty: 'OTHER',
           isReviewed: false,
           refundAmount: order.total ? parseFloat(order.total) : undefined,
@@ -1691,12 +1691,12 @@ class OrderService {
       await prisma.returnActivityLog.create({
         data: {
           returnRequestId: request.id,
-          // ≡ƒÜ¿ PRODUCTION-FIX (return-notification-gap): ╪│┘è┘å┘â ╪¬╪▒╪¿┘ê ╪¿┘è┘à╪▒╪▒ userId='SYSTEM'
-          // (┘à╪┤ id ┘à╪│╪¬╪«╪»┘à ╪¡┘é┘è┘é┘è) ΓåÆ ┘â╪º┘å ╪¿┘è┘â╪│╪▒ FK return_activity_logs_userId_fkey ΓåÆ
-          // ┘ü┘â╪º┘å ╪¿┘è┘à┘å╪╣ ╪Ñ╪┤╪╣╪º╪▒ ╪º┘ä┘à╪▒╪¬╪¼╪╣. ╪¿┘å┘à╪▒╪▒ userId ╪¿╪│ ┘ä┘ê ┘ç┘ê id ╪¡┘é┘è┘é┘è.
+          // 🚨 PRODUCTION-FIX (return-notification-gap): سينك تربو بيمرر userId='SYSTEM'
+          // (مش id مستخدم حقيقي) → كان بيكسر FK return_activity_logs_userId_fkey →
+          // فكان بيمنع إشعار المرتجع. بنمرر userId بس لو هو id حقيقي.
           userId: (userId && typeof userId === 'string' && !['SYSTEM', 'System', 'system', 'SYSTEM_SYNC', 'AUTO', 'Turbo Sync'].includes(String(userId))) ? userId : undefined,
           action: 'AUTO_CREATED',
-          details: `╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪¿╪│╪¿╪¿ ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘ä┘Ç ${status}`
+          details: `تم إنشاء الطلب تلقائياً بسبب تحديث حالة الطلب لـ ${status}`
         }
       });
 
@@ -1704,12 +1704,12 @@ class OrderService {
       if (error.code === 'P2002') {
         return;
       }
-      console.error('Γ¥î [RETURNS-AUTO] Error in autoCreateReturnRequest:', error);
+      console.error('❌ [RETURNS-AUTO] Error in autoCreateReturnRequest:', error);
       throw error;
     }
   }
 
-  // ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿
+  // تأكيد الطلب
   async confirmOrder(orderNumber, companyId, shippingAddress = null) {
     try {
       const order = await safeQuery(async () => {
@@ -1726,7 +1726,7 @@ class OrderService {
         });
 
         if (!existingOrder) {
-          throw new Error('╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪» ╪ú┘ê ╪║┘è╪▒ ╪¬╪º╪¿╪╣ ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐');
+          throw new Error('الطلب غير موجود أو غير تابع لهذه الشركة');
         }
 
         return await prisma.order.update({
@@ -1764,19 +1764,19 @@ class OrderService {
         });
       }, 5);
 
-      // ≡ƒÜÜ Turbo Integration: ╪Ñ┘å╪┤╪º╪í ╪┤╪¡┘å╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪Ñ╪░╪º ┘â╪º┘å ┘à┘ü╪╣┘æ┘ä
+      // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان مفعّل
       if (order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey) {
         try {
           const TurboService = require('./turboService');
           const turboService = new TurboService(order.company.turboApiKey, order.companyId);
 
-          // ╪¬╪¡╪╢┘è╪▒ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿
+          // تحضير بيانات الطلب
           const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
 
-          // ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪┤╪¡┘å╪⌐
+          // إنشاء الشحنة
           const shipmentResult = await turboService.createShipment(orderData);
 
-          // ╪¡┘ü╪╕ ┘à╪╣┘ä┘ê┘à╪º╪¬ ╪º┘ä╪┤╪¡┘å╪⌐ ┘ü┘è ┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¿┘è╪º┘å╪º╪¬
+          // حفظ معلومات الشحنة في قاعدة البيانات
           await safeQuery(async () => {
             const prisma = this.getPrisma();
             return await prisma.order.update({
@@ -1792,32 +1792,32 @@ class OrderService {
           }, 3);
 
         } catch (turboError) {
-          // ┘ä╪º ┘å┘ê┘é┘ü ╪º┘ä╪╣┘à┘ä┘è╪⌐ ╪Ñ╪░╪º ┘ü╪┤┘ä Turbo - ┘ü┘é╪╖ ┘å╪│╪¼┘ä ╪º┘ä╪«╪╖╪ú
-          console.error(`Γ¥î [TURBO] Failed to create shipment for order ${orderNumber}:`, turboError.message);
+          // لا نوقف العملية إذا فشل Turbo - فقط نسجل الخطأ
+          console.error(`❌ [TURBO] Failed to create shipment for order ${orderNumber}:`, turboError.message);
         }
       }
 
-      //console.log(`Γ£à Order ${orderNumber} confirmed`);
+      //console.log(`✅ Order ${orderNumber} confirmed`);
       return order;
     } catch (error) {
-      console.error('Γ¥î Error confirming order:', error);
+      console.error('❌ Error confirming order:', error);
       throw error;
     }
   }
 
-  // ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿
+  // إلغاء الطلب
   async cancelOrder(orderNumber, companyId, reason = null) {
     return await this.updateOrderStatus(
       orderNumber,
       companyId,
       'CANCELLED',
-      reason || '╪¬┘à ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿',
+      reason || 'تم إلغاء الطلب',
       null,
       null
     );
   }
 
-  // ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+  // إحصائيات الطلبات
   async getOrderStats(companyId, days = 30) {
     try {
       const startDate = new Date();
@@ -1843,7 +1843,7 @@ class OrderService {
         period: `${days} days`
       };
     } catch (error) {
-      console.error('Γ¥î Error fetching order stats:', error);
+      console.error('❌ Error fetching order stats:', error);
       return {
         totalOrders: 0,
         totalRevenue: 0,

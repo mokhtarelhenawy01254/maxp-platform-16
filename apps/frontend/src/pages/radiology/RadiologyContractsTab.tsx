@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, X as XMarkIcon, RefreshCw, Loader2, Search } from "lucide-react";
@@ -28,7 +28,7 @@ const emptyForm = (): ContractForm => ({
 });
 
 const discountLabel = (type: string) =>
-  DISCOUNT_TYPES.find(d => d.value === type)?.label || type || "ΓÇö";
+  DISCOUNT_TYPES.find(d => d.value === type)?.label || type || "—";
 
 export default function RadiologyContractsTab() {
   const { t } = useTranslation();
@@ -143,9 +143,9 @@ export default function RadiologyContractsTab() {
                 {contracts.map(c => (
                   <tr key={c.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
                     <td className="py-3 px-4 font-medium">{c.name}</td>
-                    <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{c.region || "ΓÇö"}</td>
+                    <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{c.region || "—"}</td>
                     <td className="py-3 px-4">{t(discountLabel(c.discountType))}</td>
-                    <td className="py-3 px-4">{c.discountType === "NONE" ? "ΓÇö" : `${c.discountPercent}%`}</td>
+                    <td className="py-3 px-4">{c.discountType === "NONE" ? "—" : `${c.discountPercent}%`}</td>
                     <td className="py-3 px-4">{c.externalSample ? t("radiology.yes") : t("radiology.no")}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5">

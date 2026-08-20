@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   getAccountStatus,
@@ -29,11 +29,11 @@ const getErrorMessage = (error: unknown): string => {
   const raw = err.response?.data?.error;
   if (typeof raw === "string") return raw;
   if (raw && typeof raw.message === "string") return raw.message;
-  return "╪¡╪»╪½ ╪«╪╖╪ú ╪║┘è╪▒ ┘à╪¬┘ê┘é╪╣";
+  return "حدث خطأ غير متوقع";
 };
 
 const formatDate = (value: string | null): string => {
-  if (!value) return "ΓÇö";
+  if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString("ar-EG");
@@ -92,14 +92,14 @@ export default function TikTokShop() {
 
   const handleConnect = async (): Promise<void> => {
     if (!form.shopId || !form.appKey || !form.appSecret || !form.accessToken) {
-      toast.error("┘è╪▒╪¼┘ë ╪Ñ╪»╪«╪º┘ä ┘à╪╣╪▒┘ü ╪º┘ä┘à╪¬╪¼╪▒ ┘ê App Key ┘ê App Secret ┘ê Access Token");
+      toast.error("يرجى إدخال معرف المتجر و App Key و App Secret و Access Token");
       return;
     }
     setSaving(true);
     try {
       const saved = await saveAccount(form);
       setAccount(saved);
-      toast.success("╪¬┘à ╪▒╪¿╪╖ ╪¡╪│╪º╪¿ ┘à╪¬╪¼╪▒ TikTok Shop ╪¿┘å╪¼╪º╪¡");
+      toast.success("تم ربط حساب متجر TikTok Shop بنجاح");
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -112,7 +112,7 @@ export default function TikTokShop() {
     setAccount({ connected: false });
     setOrders([]);
     setProducts([]);
-    toast.success("╪¬┘à ┘ü╪╡┘ä ╪º┘ä╪¡╪│╪º╪¿");
+    toast.success("تم فصل الحساب");
   };
 
   const handleSyncOrders = async (): Promise<void> => {
@@ -120,7 +120,7 @@ export default function TikTokShop() {
     try {
       const result = await syncOrders();
       setOrders(result.data);
-      toast.success(`╪¬┘à╪¬ ┘à╪▓╪º┘à┘å╪⌐ ${result.count} ╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡`);
+      toast.success(`تمت مزامنة ${result.count} طلب بنجاح`);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -133,7 +133,7 @@ export default function TikTokShop() {
     try {
       const result = await syncProducts();
       setProducts(result.data);
-      toast.success(`╪¬┘à╪¬ ┘à╪▓╪º┘à┘å╪⌐ ${result.count} ┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡`);
+      toast.success(`تمت مزامنة ${result.count} منتج بنجاح`);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -149,59 +149,59 @@ export default function TikTokShop() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            ┘à╪¬╪¼╪▒ TikTok Shop
+            متجر TikTok Shop
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            ╪▒╪¿╪╖ ╪¡╪│╪º╪¿ ┘à╪¬╪¼╪▒ TikTok Shop ┘ê┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ê╪º┘ä┘à┘å╪¬╪¼╪º╪¬
+            ربط حساب متجر TikTok Shop ومزامنة الطلبات والمنتجات
           </p>
         </div>
 
         {/* Connect card */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            {account?.connected ? "╪¡╪º┘ä╪⌐ ╪º┘ä╪▒╪¿╪╖" : "╪▒╪¿╪╖ ╪º┘ä┘à╪¬╪¼╪▒"}
+            {account?.connected ? "حالة الربط" : "ربط المتجر"}
           </h2>
 
           {loading ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              ╪¼╪º╪▒┘è ╪¬╪¡┘à┘è┘ä ╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪│╪º╪¿...
+              جاري تحميل حالة الحساب...
             </p>
           ) : account?.connected ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">╪º╪│┘à ╪º┘ä┘à╪¬╪¼╪▒</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">اسم المتجر</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {account.shopName || "ΓÇö"}
+                    {account.shopName || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">╪º┘ä┘à┘å╪╖┘é╪⌐</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">المنطقة</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {account.region || "ΓÇö"}
+                    {account.region || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">╪º┘ä╪¡╪º┘ä╪⌐</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">الحالة</p>
                   <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                    {account.status === "connected" ? "┘à╪¬╪╡┘ä" : account.status || "ΓÇö"}
+                    {account.status === "connected" ? "متصل" : account.status || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">╪ó╪«╪▒ ┘à╪▓╪º┘à┘å╪⌐</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">آخر مزامنة</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {formatDate(account.lastSyncedAt || null)}
                   </p>
                 </div>
               </div>
               <button onClick={handleDisconnect} className={secondaryButtonClass}>
-                ┘ü╪╡┘ä/╪Ñ╪╣╪º╪»╪⌐ ╪▒╪¿╪╖
+                فصل/إعادة ربط
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className={labelClass}>┘à╪╣╪▒┘ü ╪º┘ä┘à╪¬╪¼╪▒</label>
+                <label className={labelClass}>معرف المتجر</label>
                 <input
                   name="shopId"
                   value={form.shopId}
@@ -243,22 +243,22 @@ export default function TikTokShop() {
                 />
               </div>
               <div>
-                <label className={labelClass}>╪º╪│┘à ╪º┘ä┘à╪¬╪¼╪▒</label>
+                <label className={labelClass}>اسم المتجر</label>
                 <input
                   name="shopName"
                   value={form.shopName}
                   onChange={handleFormChange}
-                  placeholder="╪º╪│┘à ╪º┘ä┘à╪¬╪¼╪▒"
+                  placeholder="اسم المتجر"
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>╪º┘ä┘à┘å╪╖┘é╪⌐</label>
+                <label className={labelClass}>المنطقة</label>
                 <input
                   name="region"
                   value={form.region}
                   onChange={handleFormChange}
-                  placeholder="┘à╪½╪º┘ä: AE ╪ú┘ê US"
+                  placeholder="مثال: AE أو US"
                   className={inputClass}
                 />
               </div>
@@ -268,7 +268,7 @@ export default function TikTokShop() {
                   disabled={saving}
                   className={primaryButtonClass}
                 >
-                  {saving ? "╪¼╪º╪▒┘è ╪º┘ä╪¡┘ü╪╕..." : "╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖"}
+                  {saving ? "جاري الحفظ..." : "حفظ وربط"}
                 </button>
               </div>
             </div>
@@ -282,14 +282,14 @@ export default function TikTokShop() {
             disabled={syncingOrders || !account?.connected}
             className={primaryButtonClass}
           >
-            {syncingOrders ? "╪¼╪º╪▒┘è ╪º┘ä┘à╪▓╪º┘à┘å╪⌐..." : "┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬"}
+            {syncingOrders ? "جاري المزامنة..." : "مزامنة الطلبات"}
           </button>
           <button
             onClick={handleSyncProducts}
             disabled={syncingProducts || !account?.connected}
             className={primaryButtonClass}
           >
-            {syncingProducts ? "╪¼╪º╪▒┘è ╪º┘ä┘à╪▓╪º┘à┘å╪⌐..." : "┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬"}
+            {syncingProducts ? "جاري المزامنة..." : "مزامنة المنتجات"}
           </button>
         </div>
 
@@ -298,19 +298,19 @@ export default function TikTokShop() {
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
               <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                ╪º┘ä╪╖┘ä╪¿╪º╪¬
+                الطلبات
               </h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-xs text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
                   <tr>
-                    <th className="px-6 py-3 text-right font-medium">┘à╪╣╪▒┘ü ╪º┘ä╪╖┘ä╪¿</th>
-                    <th className="px-6 py-3 text-right font-medium">╪º┘ä╪¡╪º┘ä╪⌐</th>
-                    <th className="px-6 py-3 text-right font-medium">╪º┘ä┘à╪┤╪¬╪▒┘è</th>
-                    <th className="px-6 py-3 text-right font-medium">╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è</th>
-                    <th className="px-6 py-3 text-right font-medium">╪º┘ä╪╣┘à┘ä╪⌐</th>
-                    <th className="px-6 py-3 text-right font-medium">╪º┘ä╪¬╪º╪▒┘è╪«</th>
+                    <th className="px-6 py-3 text-right font-medium">معرف الطلب</th>
+                    <th className="px-6 py-3 text-right font-medium">الحالة</th>
+                    <th className="px-6 py-3 text-right font-medium">المشتري</th>
+                    <th className="px-6 py-3 text-right font-medium">الإجمالي</th>
+                    <th className="px-6 py-3 text-right font-medium">العملة</th>
+                    <th className="px-6 py-3 text-right font-medium">التاريخ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -319,7 +319,7 @@ export default function TikTokShop() {
                       <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{order.orderId}</td>
                       <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{order.status}</td>
                       <td className="px-6 py-3 text-gray-900 dark:text-gray-100">
-                        {order.buyerName || order.buyerUsername || "ΓÇö"}
+                        {order.buyerName || order.buyerUsername || "—"}
                       </td>
                       <td className="px-6 py-3 text-gray-900 dark:text-gray-100">
                         {formatAmount(order.totalAmount)}
@@ -341,17 +341,17 @@ export default function TikTokShop() {
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
               <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                ╪º┘ä┘à┘å╪¬╪¼╪º╪¬
+                المنتجات
               </h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-xs text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
                   <tr>
-                    <th className="px-6 py-3 text-right font-medium">╪º┘ä┘à╪╣╪▒┘ü</th>
-                    <th className="px-6 py-3 text-right font-medium">╪º┘ä╪º╪│┘à</th>
-                    <th className="px-6 py-3 text-right font-medium">╪º┘ä╪¡╪º┘ä╪⌐</th>
-                    <th className="px-6 py-3 text-right font-medium">╪╣╪»╪» ╪º┘ä┘Ç SKU</th>
+                    <th className="px-6 py-3 text-right font-medium">المعرف</th>
+                    <th className="px-6 py-3 text-right font-medium">الاسم</th>
+                    <th className="px-6 py-3 text-right font-medium">الحالة</th>
+                    <th className="px-6 py-3 text-right font-medium">عدد الـ SKU</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">

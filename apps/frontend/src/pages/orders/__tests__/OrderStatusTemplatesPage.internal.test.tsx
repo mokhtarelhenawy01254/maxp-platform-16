@@ -1,6 +1,6 @@
-﻿/**
- * ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪»╪º╪«┘ä┘è╪⌐ (TRASH/DRAFT/DUPLICATE_ORDER/...) ┘à╪«┘ü┘è╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï ┘à┘å ╪º┘ä┘é╪º╪ª┘à╪⌐╪î
- * ┘ê╪¬╪╕┘ç╪▒ ╪¿╪│ ┘ä┘à╪º ╪º┘ä┘à╪│╪¬╪«╪»┘à ┘è┘ü╪╣┘æ┘ä ╪º┘ä┘Ç toggle. ╪╣╪»┘æ╪º╪» ╪¬╪¿┘ê┘è╪¿ "╪º┘ä┘â┘ä" ┘à╪┤ ╪¿┘è╪┤┘à┘ä┘ç┘à.
+/**
+ * الحالات الداخلية (TRASH/DRAFT/DUPLICATE_ORDER/...) مخفية افتراضياً من القائمة،
+ * وتظهر بس لما المستخدم يفعّل الـ toggle. عدّاد تبويب "الكل" مش بيشملهم.
  */
 import React from "react";
 import { render, screen } from "@testing-library/react";
@@ -34,7 +34,7 @@ function makeStatus(overrides: Record<string, any>) {
   return {
     id: "st1",
     code: "CONFIRMED",
-    name: "┘à╪ñ┘â╪»",
+    name: "مؤكد",
     color: "#3B82F6",
     sortOrder: 1,
     statusType: "order",
@@ -78,12 +78,12 @@ describe("OrderStatusTemplatesPage internal statuses", () => {
     jest.clearAllMocks();
   });
 
-  test("╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪»╪º╪«┘ä┘è╪⌐ ┘à╪«┘ü┘è╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï ┘ê╪╣╪»┘æ╪º╪» ╪º┘ä┘â┘ä ┘à╪┤ ╪¿┘è╪┤┘à┘ä┘ç┘à", async () => {
+  test("الحالات الداخلية مخفية افتراضياً وعدّاد الكل مش بيشملهم", async () => {
     mockApi([
-      makeStatus({ id: "st1", code: "CONFIRMED", name: "┘à╪ñ┘â╪»" }),
-      makeStatus({ id: "st2", code: "SHIPPED", name: "╪¬┘à ╪º┘ä╪┤╪¡┘å", statusType: "shipping", sortOrder: 2 }),
-      makeStatus({ id: "st3", code: "TRASH", name: "╪│┘ä╪⌐ ╪º┘ä┘à╪¡╪░┘ê┘ü╪º╪¬", isNonNotifiable: true }),
-      makeStatus({ id: "st4", code: "DRAFT", name: "┘à╪│┘ê╪»╪⌐", isNonNotifiable: true }),
+      makeStatus({ id: "st1", code: "CONFIRMED", name: "مؤكد" }),
+      makeStatus({ id: "st2", code: "SHIPPED", name: "تم الشحن", statusType: "shipping", sortOrder: 2 }),
+      makeStatus({ id: "st3", code: "TRASH", name: "سلة المحذوفات", isNonNotifiable: true }),
+      makeStatus({ id: "st4", code: "DRAFT", name: "مسودة", isNonNotifiable: true }),
     ]);
     renderPage();
 
@@ -92,14 +92,14 @@ describe("OrderStatusTemplatesPage internal statuses", () => {
     expect(screen.queryByTestId("status-row-st3")).not.toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st4")).not.toBeInTheDocument();
 
-    expect(screen.getByRole("button", { name: /╪º┘ä┘â┘ä 2/ })).toBeInTheDocument();
-    expect(screen.getByLabelText(/╪╣╪▒╪╢ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪»╪º╪«┘ä┘è╪⌐/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /الكل 2/ })).toBeInTheDocument();
+    expect(screen.getByLabelText(/عرض الحالات الداخلية/)).toBeInTheDocument();
   });
 
-  test("╪º┘ä┘Ç toggle ╪¿┘è╪╕┘ç╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪»╪º╪«┘ä┘è╪⌐", async () => {
+  test("الـ toggle بيظهر الحالات الداخلية", async () => {
     mockApi([
-      makeStatus({ id: "st1", code: "CONFIRMED", name: "┘à╪ñ┘â╪»" }),
-      makeStatus({ id: "st3", code: "TRASH", name: "╪│┘ä╪⌐ ╪º┘ä┘à╪¡╪░┘ê┘ü╪º╪¬", isNonNotifiable: true }),
+      makeStatus({ id: "st1", code: "CONFIRMED", name: "مؤكد" }),
+      makeStatus({ id: "st3", code: "TRASH", name: "سلة المحذوفات", isNonNotifiable: true }),
     ]);
     renderPage();
     const user = userEvent.setup();
@@ -107,7 +107,7 @@ describe("OrderStatusTemplatesPage internal statuses", () => {
     expect(await screen.findByTestId("status-row-st1")).toBeInTheDocument();
     expect(screen.queryByTestId("status-row-st3")).not.toBeInTheDocument();
 
-    await user.click(screen.getByLabelText(/╪╣╪▒╪╢ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪»╪º╪«┘ä┘è╪⌐/));
+    await user.click(screen.getByLabelText(/عرض الحالات الداخلية/));
 
     expect(screen.getByTestId("status-row-st3")).toBeInTheDocument();
   });

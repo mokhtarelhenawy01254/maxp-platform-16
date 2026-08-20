@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const attachPriceList = (company) => ({
   ...company,
@@ -12,7 +12,7 @@ const priceListSelect = { id: true, name: true, isActive: true, baseListId: true
 const getAllInsuranceCompanies = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const companies = await getSharedPrismaClient().insuranceCompany.findMany({
       where: { companyId },
@@ -22,23 +22,23 @@ const getAllInsuranceCompanies = async (req, res) => {
     res.json({ success: true, data: companies.map(attachPriceList) });
   } catch (error) {
     console.error('Error fetching insurance companies:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪┤╪▒┘â╪º╪¬ ╪º┘ä╪¬╪ú┘à┘è┘å' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب شركات التأمين' });
   }
 };
 
 const createInsuranceCompany = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { name, priceListId, phone1, fax, contactName, contactPhone } = req.body;
-    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ┘à╪╖┘ä┘ê╪¿' });
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم شركة التأمين مطلوب' });
 
     const prisma = getSharedPrismaClient();
     let resolvedPriceListId = null;
     if (priceListId) {
       const list = await prisma.priceList.findFirst({ where: { id: priceListId, companyId } });
-      if (!list) return res.status(400).json({ success: false, error: '┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
       resolvedPriceListId = list.id;
     }
 
@@ -57,22 +57,22 @@ const createInsuranceCompany = async (req, res) => {
     res.json({ success: true, data: attachPriceList(company) });
   } catch (error) {
     console.error('Error creating insurance company:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء شركة التأمين' });
   }
 };
 
 const updateInsuranceCompany = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { name, priceListId, phone1, fax, contactName, contactPhone, isActive } = req.body;
-    if (name !== undefined && !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ┘à╪╖┘ä┘ê╪¿' });
+    if (name !== undefined && !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم شركة التأمين مطلوب' });
 
     const prisma = getSharedPrismaClient();
     const existing = await prisma.insuranceCompany.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!existing) return res.status(404).json({ success: false, error: 'شركة التأمين غير موجودة' });
 
     const data = {};
     if (name !== undefined) data.name = String(name).trim();
@@ -81,7 +81,7 @@ const updateInsuranceCompany = async (req, res) => {
         data.priceListId = null;
       } else if (priceListId !== '') {
         const list = await prisma.priceList.findFirst({ where: { id: priceListId, companyId } });
-        if (!list) return res.status(400).json({ success: false, error: '┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+        if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
         data.priceListId = list.id;
       }
     }
@@ -99,28 +99,28 @@ const updateInsuranceCompany = async (req, res) => {
     res.json({ success: true, data: attachPriceList(company) });
   } catch (error) {
     console.error('Error updating insurance company:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث شركة التأمين' });
   }
 };
 
 const deleteInsuranceCompany = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.insuranceCompany.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!existing) return res.status(404).json({ success: false, error: 'شركة التأمين غير موجودة' });
 
     const company = await prisma.insuranceCompany.update({
       where: { id },
       data: { isActive: false }
     });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å', data: company });
+    res.json({ success: true, message: 'تم حذف شركة التأمين', data: company });
   } catch (error) {
     console.error('Error deleting insurance company:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف شركة التأمين' });
   }
 };
 

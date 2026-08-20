@@ -1,6 +1,20 @@
-import { File as DocumentIcon, Image as PhotoIcon, File as DocumentTextIcon, ShieldCheck as ShieldCheckIcon, Circle as BookOpenIcon, Trash2 as TrashIcon, Download as ArrowDownTrayIcon, Plus as PlusIcon, X as XMarkIcon, Eye as EyeIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Monitor as ComputerDesktopIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import i18n from "../../../../i18n";
+import {
+  DocumentIcon,
+  PhotoIcon,
+  DocumentTextIcon,
+  ShieldCheckIcon,
+  BookOpenIcon,
+  TrashIcon,
+  ArrowDownTrayIcon,
+  PlusIcon,
+  XMarkIcon,
+  EyeIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ComputerDesktopIcon,
+} from "@heroicons/react/24/outline";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import axios from "axios";
 import { getApiUrl } from "../../../../config/environment";
@@ -241,11 +255,11 @@ const DocumentsSection: React.FC = () => {
         allowedTypes.some((t) => file.type.startsWith(t.replace("/*", ""))) ||
         file.type === "";
       if (!isAllowed) {
-        alert("نوع الملف غير مدعوم. يرجى رفع صور أو PDF أو Word/Excel.");
+        alert(i18n.t("DocumentsSection.msg_8a25"));
         return;
       }
       if (file.size > maxSize) {
-        alert("حجم الملف يتجاوز 20 ميجابايت.");
+        alert(i18n.t("DocumentsSection.msg_fd1d"));
         return;
       }
       setSelectedFile(file);
@@ -255,15 +269,15 @@ const DocumentsSection: React.FC = () => {
 
   const handleUpload = async () => {
     if (!uploadForm.assetId) {
-      alert("يرجى اختيار الأصل");
+      alert(i18n.t("DocumentsSection.msg_4ae4"));
       return;
     }
     if (!selectedFile && !uploadForm.fileUrl) {
-      alert("يرجى اختيار ملف أو إدخال رابط الملف");
+      alert(i18n.t("DocumentsSection.msg_a01e"));
       return;
     }
     if (!uploadForm.fileName) {
-      alert("يرجى إدخال اسم الملف");
+      alert(i18n.t("DocumentsSection.please_name_78ee"));
       return;
     }
 
@@ -307,7 +321,7 @@ const DocumentsSection: React.FC = () => {
       }
 
       if (!fileUrl) {
-        alert("يرجى اختيار ملف أو إدخال رابط الملف");
+        alert(i18n.t("DocumentsSection.msg_a01e"));
         setUploading(false);
         return;
       }
@@ -339,13 +353,13 @@ const DocumentsSection: React.FC = () => {
         setDocuments((prev) => [{ ...newDoc, asset }, ...prev]);
         setShowUploadModal(false);
         resetUploadForm();
-        alert("تم رفع المستند بنجاح");
+        alert(i18n.t("DocumentsSection.msg_7330"));
         // Refresh first page to keep pagination + filters in sync
         fetchAllDocuments({ page: 1, append: false });
       }
     } catch (err: any) {
       console.error("Document upload error:", err);
-      alert(err.response?.data?.message || err.message || "فشل في رفع المستند");
+      alert(err.response?.data?.message || err.message || i18n.t("DocumentsSection.msg_3c68"));
     } finally {
       setUploading(false);
     }

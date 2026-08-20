@@ -1,9 +1,17 @@
-import { Calendar as CalendarIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, ArrowLeft as ArrowLeftIcon, Plus as PlusIcon, Clock as ClockIcon, Circle as UserCircleIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
-;
+import {
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ArrowLeftIcon,
+  PlusIcon,
+  ClockIcon,
+  UserCircleIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 
 interface Task {
   id: string;

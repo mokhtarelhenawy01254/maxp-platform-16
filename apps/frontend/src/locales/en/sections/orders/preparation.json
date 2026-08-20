@@ -1,9 +1,9 @@
-﻿{
+{
   "page": {
     "title": "Order Preparation",
     "loading": "Checking availability...",
     "disabled": "Preparation path disabled",
-    "disabledHint": "ΓÇö Can be reactivated from order settings.",
+    "disabledHint": "— Can be reactivated from order settings.",
     "noOrders": "No matching orders now",
     "noOrdersHint": "Try changing filters or adjusting preparation settings.",
     "clearFilters": "Clear filters",
@@ -20,7 +20,7 @@
     "filter": "Preparation Filters",
     "refresh": "Refresh",
     "overdueShortage": "{{count}} order(s) past follow-up date",
-    "overdueShortageHint": "ΓÇö Use reason or owner filter for quick access.",
+    "overdueShortageHint": "— Use reason or owner filter for quick access.",
     "printInvoice": "Print Invoices",
     "sendToTurbo": "Send to Turbo",
     "quickTransfer": "Quick Inventory Transfer",
@@ -56,7 +56,7 @@
     "shortageHoldFailed": "Failed to save shortage hold data",
     "problemHoldSaved": "Problem hold data saved",
     "problemHoldFailed": "Failed to save problem hold data",
-    "holdBlocksForward": "Order is on hold pending the problem resolution ΓÇö release it back to preparation before moving on",
+    "holdBlocksForward": "Order is on hold pending the problem resolution — release it back to preparation before moving on",
     "excludedCount": "Excluding {{count}} non-matching order(s)",
     "bulkUpdated": "Updated {{success}} order(s), {{failed}} failed",
     "bulkUpdatedAll": "Updated {{success}} order(s) successfully",
@@ -137,7 +137,7 @@
     "details": "Details",
     "expand": "Show Details",
     "notDefined": "Unspecified",
-    "ready": "Ready Γ£ô",
+    "ready": "Ready ✓",
     "shortage": "{{count}} shortage",
     "applySelectedStage": "Apply Selected Stage",
     "unitsLabel": "pcs",
@@ -192,8 +192,8 @@
     "PACKAGED": "Order is packaged and awaiting delivery to shipping",
     "READY_TO_SHIP": "Ready to hand over to shipping company or create shipment",
     "STOCK_SHORTAGE": "Orders on hold due to stock shortage or awaiting transfer",
-    "SHORTAGE_FAILED": "Order failed due to permanent stock shortage ΓÇö will not be fulfilled",
-    "PENDING_CANCELLATION": "Orders the customer requested cancellation during preparation ΓÇö must stop immediately"
+    "SHORTAGE_FAILED": "Order failed due to permanent stock shortage — will not be fulfilled",
+    "PENDING_CANCELLATION": "Orders the customer requested cancellation during preparation — must stop immediately"
   },
   "shortageReasons": {
     "stock_shortage": "Stock Shortage",
@@ -212,9 +212,9 @@
   },
   "shortageFollowUp": {
     "overdueLabel": "Overdue",
-    "overdueText": "Follow-up is overdue ΓÇö please check with the assignee and update the status.",
+    "overdueText": "Follow-up is overdue — please check with the assignee and update the status.",
     "todayLabel": "Due Today",
-    "todayText": "Follow-up is due today ΓÇö please take action.",
+    "todayText": "Follow-up is due today — please take action.",
     "withoutDateLabel": "No Date Set",
     "withoutDateText": "No follow-up date has been set for this shortage hold."
   },
@@ -268,7 +268,7 @@
   },
   "shortageFailedTab": "Shortage Failed",
   "actionLabels": {
-    "viewOnlyDesc": "Merchant can see customer name and products only ΓÇö preparation tools are disabled.",
+    "viewOnlyDesc": "Merchant can see customer name and products only — preparation tools are disabled.",
     "viewOnly": "View Only",
     "holdShortage": "Hold by Shortage",
     "holdProblem": "Hold as Problem",
@@ -310,7 +310,7 @@
     "required": "{{count}} pcs required",
     "bestWarehouse": "Best stock: {{name}}",
     "shortage": "Shortage {{count}}",
-    "available": "In Stock Γ£ô",
+    "available": "In Stock ✓",
     "availableStock": "Available:",
     "reserved": "Reserved:",
     "coverage": "Coverage:",
@@ -347,7 +347,7 @@
     "confirmShortageFailed": "Are you sure you want to mark this order as shortage failed? The order will not be fulfilled."
   },
   "problemPanel": {
-    "title": "On Hold ΓÇö Problem Reason",
+    "title": "On Hold — Problem Reason",
     "desc": "This order is blocked until the problem is resolved. It will not move to shipping until returned to preparation.",
     "edit": "Edit",
     "addReason": "Add reason",
@@ -365,13 +365,13 @@
   "holdDialog": {
     "holdTitle": "Hold order {{order}} as a problem",
     "advanceTitle": "Update {{order}} to {{status}}",
-    "holdDesc": "Write the hold reason ΓÇö the order will not move to shipping until it is resolved.",
+    "holdDesc": "Write the hold reason — the order will not move to shipping until it is resolved.",
     "advanceDesc": "You can add a comment for the record before applying the status change.",
     "reasonLabel": "Hold Reason",
     "reasonPlaceholder": "e.g. Awaiting customer reply on the address",
     "commentLabel": "Comment",
     "commentPlaceholder": "Write a note (optional)",
-    "reasonRequired": "Hold reason is required ΓÇö describe the problem to be resolved",
+    "reasonRequired": "Hold reason is required — describe the problem to be resolved",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "saving": "Saving..."
@@ -379,8 +379,8 @@
   "notices": {
     "notes": "Notes:",
     "needsReview": "Needs stock review or transfer from another warehouse before completing preparation.",
-    "shortageHold": "Order on hold due to shortage ΓÇö will not enter daily operations until returned to preparation.",
-    "problemHold": "Order is on hold awaiting problem resolution ΓÇö will not be handed to shipping until resolved and released."
+    "shortageHold": "Order on hold due to shortage — will not enter daily operations until returned to preparation.",
+    "problemHold": "Order is on hold awaiting problem resolution — will not be handed to shipping until resolved and released."
   },
   "pageHeader": {
     "title": "Order Preparation",
@@ -413,11 +413,11 @@
   },
   "checkingInventory": "Checking inventory...",
   "pagination": {
-    "pageInfo": "Page {{page}} of {{totalPages}} ΓÇó {{count}} orders",
-    "pageInfo_one": "Page {{page}} of {{totalPages}} ΓÇó {{count}} order",
-    "pageInfo_two": "Page {{page}} of {{totalPages}} ΓÇó {{count}} orders",
-    "pageInfo_few": "Page {{page}} of {{totalPages}} ΓÇó {{count}} orders",
-    "pageInfo_many": "Page {{page}} of {{totalPages}} ΓÇó {{count}} orders",
+    "pageInfo": "Page {{page}} of {{totalPages}} • {{count}} orders",
+    "pageInfo_one": "Page {{page}} of {{totalPages}} • {{count}} order",
+    "pageInfo_two": "Page {{page}} of {{totalPages}} • {{count}} orders",
+    "pageInfo_few": "Page {{page}} of {{totalPages}} • {{count}} orders",
+    "pageInfo_many": "Page {{page}} of {{totalPages}} • {{count}} orders",
     "show": "Show",
     "perPage": "per page",
     "previous": "Previous",

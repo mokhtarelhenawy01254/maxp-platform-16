@@ -1,5 +1,15 @@
 import React from "react";
-import { BadgeCheck, Check, Circle, CreditCard, History, RotateCcw, ShieldCheck, Truck, WalletCards, Zap } from 'lucide-react';
+import {
+  BadgeCheck,
+  CreditCard,
+  RotateCcw,
+  ShieldCheck,
+  Truck,
+  WalletCards,
+  History,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { cn as cx } from "../../lib/utils";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 

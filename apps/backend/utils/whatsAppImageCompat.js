@@ -1,30 +1,30 @@
-﻿/**
- * ≡ƒû╝∩╕Å WhatsApp Image Format Compatibility
- * ╪¬╪¡┘ê┘è┘ä ╪╡┘ê╪▒ ┘ä╪ú┘è ╪╡┘è╪║╪⌐ ┘ä╪╡┘è╪║╪⌐ ┘è╪»╪╣┘à┘ç╪º WhatsApp Cloud API.
+/**
+ * 🖼️ WhatsApp Image Format Compatibility
+ * تحويل صور لأي صيغة لصيغة يدعمها WhatsApp Cloud API.
  *
- * WhatsApp Cloud API ┘è╪»╪╣┘à ╪╡┘ê╪▒ JPEG/PNG/GIF ┘ü┘é╪╖ ┘ü┘è ╪▒╪│╪º╪ª┘ä ╪º┘ä╪╡┘ê╪▒ ΓÇö ╪ú┘è ╪╡┘è╪║╪⌐ ╪¬╪º┘å┘è╪⌐
- * (WEBP ╪▓┘è ╪º┘ä┘ä┘è ╪¿┘è┘è╪¼┘è ┘à┘å ╪ú╪¼┘ç╪▓╪⌐ ╪ú┘å╪»╪▒┘ê┘è╪» ┘ê╪º┘ä┘à╪¬╪╡┘ü╪¡╪º╪¬╪î ╪ú┘ê BMP/SVG) ╪¿╪¬╪▒┘ü╪╢ ┘ü╪¬┘ê╪╡┘æ┘ä╪┤
- * ┘ä┘ä╪╣┘à┘è┘ä. ╪¿┘å╪¡┘ê┘ä┘ç╪º ┘ä┘Ç JPEG ┘é╪¿┘ä ╪º┘ä╪Ñ╪▒╪│╪º┘ä. ╪º┘ä┘Ç GIF ┘à╪¬╪¡╪▒┘â ┘ü╪¿┘è╪º╪«╪» ╪º╪│╪¬╪½┘å╪º╪í (┘à╪┤ ╪¿┘è╪¬╪║┘è┘æ╪▒).
+ * WhatsApp Cloud API يدعم صور JPEG/PNG/GIF فقط في رسائل الصور — أي صيغة تانية
+ * (WEBP زي اللي بييجي من أجهزة أندرويد والمتصفحات، أو BMP/SVG) بترفض فتوصّلش
+ * للعميل. بنحولها لـ JPEG قبل الإرسال. الـ GIF متحرك فبياخد استثناء (مش بيتغيّر).
  *
- * ╪º┘ä┘à┘ä┘ü ╪»┘ç standalone ΓÇö ┘à┘å ╪║┘è╪▒ ╪ú┘è require ╪╣┘ä┘ë ╪«╪»┘à╪º╪¬ WhatsApp ╪╣╪┤╪º┘å ┘å╪¬┘ü╪º╪»┘ë
- * circular dependencies (MetaCloudProvider Γçä WhatsAppMediaHandler Γçä WhatsAppManager).
+ * الملف ده standalone — من غير أي require على خدمات WhatsApp عشان نتفادى
+ * circular dependencies (MetaCloudProvider ⇄ WhatsAppMediaHandler ⇄ WhatsAppManager).
  */
 
 let sharp;
 try {
     sharp = require('sharp');
 } catch (error) {
-    console.warn('ΓÜá∩╕Å Sharp not available - WhatsApp image format conversion disabled');
+    console.warn('⚠️ Sharp not available - WhatsApp image format conversion disabled');
     sharp = null;
 }
 
 /**
- * ╪º┘ä╪╡┘è╪║ ╪º┘ä┘ä┘è Cloud API ╪¿┘è┘é╪¿┘ä┘ç╪º ┘â╪▒╪│╪º┘ä╪⌐ ╪╡┘ê╪▒╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐.
+ * الصيغ اللي Cloud API بيقبلها كرسالة صورة مباشرة.
  */
 const WHATSAPP_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/gif'];
 
 /**
- * ╪¬╪¡┘ê┘è┘ä ╪╡┘ê╪▒╪⌐ ┘ä╪ú┘è ╪╡┘è╪║╪⌐ ┘ä╪╡┘è╪║╪⌐ ┘è╪»╪╣┘à┘ç╪º WhatsApp.
+ * تحويل صورة لأي صيغة لصيغة يدعمها WhatsApp.
  *
  * @param {Buffer} buffer
  * @param {string} mimetype
@@ -42,10 +42,10 @@ async function normalizeImageForWhatsApp(buffer, mimetype) {
         const p = sharp(buffer).jpeg({ quality: 90 });
         const converted = await p.toBuffer();
         p.destroy();
-        console.log(`≡ƒû╝∩╕Å [WA-COMPAT] Converted ${cleanMime} ΓåÆ image/jpeg for WhatsApp delivery`);
+        console.log(`🖼️ [WA-COMPAT] Converted ${cleanMime} → image/jpeg for WhatsApp delivery`);
         return { buffer: converted, mimetype: 'image/jpeg' };
     } catch (error) {
-        console.warn(`ΓÜá∩╕Å [WA-COMPAT] Could not convert ${cleanMime} to JPEG, sending as-is:`, error.message);
+        console.warn(`⚠️ [WA-COMPAT] Could not convert ${cleanMime} to JPEG, sending as-is:`, error.message);
         return { buffer, mimetype: cleanMime };
     }
 }

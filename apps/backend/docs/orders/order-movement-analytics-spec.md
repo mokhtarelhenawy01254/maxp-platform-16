@@ -1,25 +1,25 @@
-﻿# Order Movement Analytics ΓÇö Agent Build Spec
+# Order Movement Analytics — Agent Build Spec
 
-Feature: ╪¬╪¡┘ä┘è┘ä╪º╪¬ ╪¡╪▒┘â╪⌐ ╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ (order status movement analytics) ΓÇö 8 analyses, manual vs auto split, 2026-modern UI, placed in the orders-analytics section.
+Feature: تحليلات حركة حالات الطلبات (order status movement analytics) — 8 analyses, manual vs auto split, 2026-modern UI, placed in the orders-analytics section.
 
 ## Shared Backend Context
 
-Already created ΓÇö DO NOT MODIFY these files:
+Already created — DO NOT MODIFY these files:
 
 - `apps/backend/services/orderMovementCore.js` (CommonJS). Exports:
-  - `fetchOrderMovementData({ companyId, startDate, endDate, maxOrders?, historyTake?, historyFilter? })` ΓåÆ `{ orders, start, end }`. Each order: `{ id, orderNumber, status, total(Number), createdAt, updatedAt, customerName, customerPhone, governorate, sourceType, paymentMethod, confirmedAt, assignedTo, assignedBy, assignedAt, createdBy, createdByName, turboShipmentId, statusHistory: [{status, oldStatus, changedBy, userName, reason, createdAt}] }` sorted asc. Orders are those with a history event intersecting `[start,end]`. `historyFilter:'full'` loads each order's full history (still only orders with a movement in range).
-  - `buildTransitions(order, { filterRange, start, end })` ΓåÆ transitions: `{ orderId, orderNumber, status, oldStatus, changedBy, userName, reason, createdAt, auto(boolean), orderTotal(Number), orderStatus, customerName, governorate, paymentMethod, sourceType }`.
+  - `fetchOrderMovementData({ companyId, startDate, endDate, maxOrders?, historyTake?, historyFilter? })` → `{ orders, start, end }`. Each order: `{ id, orderNumber, status, total(Number), createdAt, updatedAt, customerName, customerPhone, governorate, sourceType, paymentMethod, confirmedAt, assignedTo, assignedBy, assignedAt, createdBy, createdByName, turboShipmentId, statusHistory: [{status, oldStatus, changedBy, userName, reason, createdAt}] }` sorted asc. Orders are those with a history event intersecting `[start,end]`. `historyFilter:'full'` loads each order's full history (still only orders with a movement in range).
+  - `buildTransitions(order, { filterRange, start, end })` → transitions: `{ orderId, orderNumber, status, oldStatus, changedBy, userName, reason, createdAt, auto(boolean), orderTotal(Number), orderStatus, customerName, governorate, paymentMethod, sourceType }`.
   - `normalizeStatus(raw)`, `isAutoChange(entry)`, `normalizeDateRange({startDate,endDate})`, `calcPercentile(sortedArr, pct)`, `calcMean(arr)`, `hoursBetween(a,b)`.
   - Sets: `TERMINAL_STATUSES`, `SUCCESS_STATUSES`, `FAILURE_STATUSES`, `AUTO_ACTOR_MARKERS`. Plus `getSharedPrismaClient()`.
-- `apps/backend/routes/orderMovementRoutes.js` ΓÇö wires `GET /api/v1/analytics/order-movement/<slug>` ΓåÆ your controller. `authenticateToken` already applied. DO NOT EDIT.
+- `apps/backend/routes/orderMovementRoutes.js` — wires `GET /api/v1/analytics/order-movement/<slug>` → your controller. `authenticateToken` already applied. DO NOT EDIT.
 - server.js already mounts `/api/v1/analytics/order-movement`. DO NOT EDIT.
 
 ### Your controller (backend)
 - CommonJS. `const express = require('express'); const router = express.Router();`
 - Export `module.exports = router;` with EXACTLY ONE route `router.get('/', async (req, res) => {...})` for your slug.
 - `const core = require('../../services/orderMovementCore');`
-- Read `companyId = req.user?.companyId` ΓåÆ if missing `return res.status(403).json({ success:false, message:'╪║┘è╪▒ ┘à╪╡╪▒╪¡' })`.
-- Read `startDate`, `endDate`, `mode` from `req.query`. `mode` Γêê `'all'|'manual'|'auto'`. Helper to filter transitions by mode:
+- Read `companyId = req.user?.companyId` → if missing `return res.status(403).json({ success:false, message:'غير مصرح' })`.
+- Read `startDate`, `endDate`, `mode` from `req.query`. `mode` ∈ `'all'|'manual'|'auto'`. Helper to filter transitions by mode:
   ```js
   const filterByMode = (transitions, mode) => mode === 'manual' ? transitions.filter(t => !t.auto) : mode === 'auto' ? transitions.filter(t => t.auto) : transitions;
   ```
@@ -29,10 +29,10 @@ Already created ΓÇö DO NOT MODIFY these files:
 
 ## Shared Frontend Context
 
-Already created ΓÇö DO NOT MODIFY:
+Already created — DO NOT MODIFY:
 - `apps/frontend/src/pages/Analytics/orders/orderMovement/orderMovementShared.tsx`. Exports:
   - Types: `MovementFilterProps { startDate; endDate; mode: 'all'|'manual'|'auto' }`, `MovementHistoryEntry`.
-  - `fetchMovement<T>(path, params)` ΓåÆ GET `/analytics/order-movement/{path}` returns `data` payload.
+  - `fetchMovement<T>(path, params)` → GET `/analytics/order-movement/{path}` returns `data` payload.
   - `getStatusLabel(code)`, `getStatusColorClass(code)`, `statusChartColor(code,index)`.
   - Formatters: `formatNumber`, `formatCurrency`, `formatPercent`, `formatDuration(hours)`, `formatDate`, `formatDateTime`.
   - `CHART_TOOLTIP_STYLE`.
@@ -45,8 +45,8 @@ Already created ΓÇö DO NOT MODIFY:
 - Fetch via `const data = await fetchMovement('<slug>', { startDate, endDate, mode });`
 - UI requirements (2026-standard):
   - Arabic RTL (`dir` inherited from app), Tailwind, `lucide-react` icons, `recharts` (v3.8.0) for charts.
-  - Use the shared components above for consistency. Accent gradients indigoΓåÆviolet. `rounded-2xl` cards, soft shadows, subtle borders, hover transitions. Full dark-mode support.
-  - Loading ΓåÆ `<LoadingState />`, error ΓåÆ `<ErrorState message={...} onRetry={...} />`, empty ΓåÆ `<EmptyState />`.
+  - Use the shared components above for consistency. Accent gradients indigo→violet. `rounded-2xl` cards, soft shadows, subtle borders, hover transitions. Full dark-mode support.
+  - Loading → `<LoadingState />`, error → `<ErrorState message={...} onRetry={...} />`, empty → `<EmptyState />`.
   - Recharts custom tooltips use `contentStyle={CHART_TOOLTIP_STYLE}`.
 - TypeScript strict. NO comments. NO new dependencies. Do not touch `statusRegistry.ts`.
 - Show the manual/auto split visually wherever it adds value (AutoBadge, stacked bars, legend).
@@ -68,58 +68,58 @@ Already created ΓÇö DO NOT MODIFY:
 
 # Per-Analysis Contracts
 
-## 1. Status Matrix ΓÇö slug `matrix` ΓÇö controller `statusMatrixController.js` ΓÇö tab `StatusMatrixTab.tsx`
+## 1. Status Matrix — slug `matrix` — controller `statusMatrixController.js` — tab `StatusMatrixTab.tsx`
 
 Get orders via `fetchOrderMovementData({ companyId, startDate, endDate })`, `buildTransitions(order, { start, end })`, filter by mode.
 
-Classification of each transition (fromStatusΓåÆtoStatus), where `from = t.oldStatus` (may be null), `to = t.status`:
+Classification of each transition (fromStatus→toStatus), where `from = t.oldStatus` (may be null), `to = t.status`:
 ```js
 const CANONICAL = ['PENDING','DRAFT','CONFIRMED','SCHEDULED','PENDING_PREPARATION','PREPARING','READY','QUALITY_CHECK','PACKAGED','READY_TO_SHIP','PROCESSING','SHIPPED','OUT_FOR_DELIVERY','PARTIALLY_DELIVERED','DELIVERED','REFUNDED','RETURNED','PARTIALLY_RETURNED','EXCHANGED','CANCELLED','DUPLICATE_ORDER','LOST','TRASH','NOT_SHIPPED','ON_HOLD','ON_HOLD_PREP','STOCK_SHORTAGE','SHORTAGE_FAILED','PENDING_CANCELLATION'];
 ```
-- `from` null ΓåÆ `kind='start'`.
-- `from===to` ΓåÆ `kind='same'`.
-- both in CANONICAL: `idx(to)>idx(from)` ΓåÆ `kind='skip'` if `idx(to)-idx(from)>1` else `'forward'`; `idx(to)<idx(from)` ΓåÆ `'backward'`.
-- else ΓåÆ `'other'`.
+- `from` null → `kind='start'`.
+- `from===to` → `kind='same'`.
+- both in CANONICAL: `idx(to)>idx(from)` → `kind='skip'` if `idx(to)-idx(from)>1` else `'forward'`; `idx(to)<idx(from)` → `'backward'`.
+- else → `'other'`.
 - Then the **invalid** check OVERRIDES kind: query the company's allowed transitions and flag as `'invalid'`:
   ```js
   const prisma = core.getSharedPrismaClient();
   const configs = await prisma.orderStatusConfig.findMany({ where: { companyId, isActive: true }, select: { code: true, allowedNextStatuses: true } });
-  // build map code ΓåÆ parsed allowedNextStatuses (JSON array string or null)
+  // build map code → parsed allowedNextStatuses (JSON array string or null)
   ```
-  For a transition whose `from` status has a config with a non-empty allowedNextStatuses list, if `to` is not in the list ΓåÆ `'invalid'`. (If the `from` status has no config or empty list, leave the kind computed above.)
+  For a transition whose `from` status has a config with a non-empty allowedNextStatuses list, if `to` is not in the list → `'invalid'`. (If the `from` status has no config or empty list, leave the kind computed above.)
 
 Response `data`:
 ```js
 {
   totalTransitions, totalOrders,
   forwardCount, backwardCount, skipCount, invalidCount, startCount, sameCount, otherCount,
-  rows: [{ fromStatus, toStatus, count, revenue, manualCount, autoCount, kind }], // fromStatus null ΓåÆ '__start__'
+  rows: [{ fromStatus, toStatus, count, revenue, manualCount, autoCount, kind }], // fromStatus null → '__start__'
   statuses: [...unique status codes, ordered: first occurrence in CANONICAL, then alphabetical],
   modes: { manual, auto } // transition counts by mode
 }
 ```
 Aggregate rows by `(fromStatus||'__start__', toStatus)`; `revenue` = sum of `orderTotal`; sort by `count` desc, then kind priority invalid > backward > skip > forward > start > same > other.
 
-## 2. Sankey ΓÇö slug `sankey` ΓÇö controller `sankeyController.js` ΓÇö tab `SankeyTab.tsx`
+## 2. Sankey — slug `sankey` — controller `sankeyController.js` — tab `SankeyTab.tsx`
 
 Transitions as above. Response `data`:
 ```js
 {
   totalTransitions, totalOrders,
   modes: { manual, auto },
-  nodes: [{ id, name }],                       // 'START' first (name '╪¿╪»╪º┘è╪⌐'), then statuses sorted by total outflow desc
+  nodes: [{ id, name }],                       // 'START' first (name 'بداية'), then statuses sorted by total outflow desc
   links: [{ source, target, value, manual, auto, revenue }], // source/target are node indices; value = count
   topInflows: [{ status, count }],             // by toStatus (excluding START)
   topOutflows: [{ status, count }]             // by fromStatus (excluding START)
 }
 ```
 - Entry transitions (from null) connect from the `START` node.
-- Only include statuses with ΓëÑ1 link; drop isolated nodes.
-- Frontend: render with recharts `<Sankey data={{ nodes, links }} nodePadding={28} linkCurvature={0.6}>` with custom node fill from `statusChartColor`, a `Tooltip` showing count / manual / auto / revenue, plus KPI cards (╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪¡╪▒┘â╪º╪¬╪î ╪º┘ä╪╖┘ä╪¿╪º╪¬╪î ┘è╪»┘ê┘è╪î ╪¬┘ä┘é╪º╪ª┘è) and the top inflows/outflows lists. If recharts Sankey fails to render in build, fall back to a clean custom horizontal flow visualization (CSS bars per status with colored connectors) ΓÇö keep it simple and robust.
+- Only include statuses with ≥1 link; drop isolated nodes.
+- Frontend: render with recharts `<Sankey data={{ nodes, links }} nodePadding={28} linkCurvature={0.6}>` with custom node fill from `statusChartColor`, a `Tooltip` showing count / manual / auto / revenue, plus KPI cards (إجمالي الحركات، الطلبات، يدوي، تلقائي) and the top inflows/outflows lists. If recharts Sankey fails to render in build, fall back to a clean custom horizontal flow visualization (CSS bars per status with colored connectors) — keep it simple and robust.
 
-## 3. Paths ΓÇö slug `paths` ΓÇö controller `pathsController.js` ΓÇö tab `PathsTab.tsx`
+## 3. Paths — slug `paths` — controller `pathsController.js` — tab `PathsTab.tsx`
 
-Build a path string per order from its (mode-filtered, range-filtered) transitions in asc order. Only orders with ΓëÑ1 transition are counted. `path = statuses.join('ΓåÆ')` (use the statuses AFTER filtering). If an order's filtered transitions are empty ΓåÆ skip.
+Build a path string per order from its (mode-filtered, range-filtered) transitions in asc order. Only orders with ≥1 transition are counted. `path = statuses.join('→')` (use the statuses AFTER filtering). If an order's filtered transitions are empty → skip.
 
 Response `data`:
 ```js
@@ -133,9 +133,9 @@ Response `data`:
 - `avgHours` = mean of `hoursBetween(order.createdAt, lastTransition.createdAt)` per order in the path.
 - `medianHours` via `calcPercentile` on sorted values.
 - Top 15 by orderCount.
-Frontend: table of top paths (path as a horizontal chain of StatusPills), progress bar for percent, plus KPI cards (╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬╪î ╪╣╪»╪» ╪º┘ä┘à╪│╪º╪▒╪º╪¬╪î ╪ú╪╖┘ê┘ä ┘à╪│╪º╪▒╪î ┘à╪¬┘ê╪│╪╖ ╪º┘ä╪╖┘ê┘ä) and a success/failed/pending donut (PieChart).
+Frontend: table of top paths (path as a horizontal chain of StatusPills), progress bar for percent, plus KPI cards (إجمالي الطلبات، عدد المسارات، أطول مسار، متوسط الطول) and a success/failed/pending donut (PieChart).
 
-## 4. Dwell Time ΓÇö slug `dwell-time` ΓÇö controller `dwellTimeController.js` ΓÇö tab `DwellTimeTab.tsx`
+## 4. Dwell Time — slug `dwell-time` — controller `dwellTimeController.js` — tab `DwellTimeTab.tsx`
 
 Use `fetchOrderMovementData({ companyId, startDate, endDate, historyFilter: 'full', maxOrders: 15000 })`. For each order, iterate its full history asc: for `i` in `[0..history.length-2]`, dwell sample for `history[i].status` = `hoursBetween(history[i].createdAt, history[i+1].createdAt)`, classified manual/auto by `history[i+1].auto`. Ignore samples `> 2160` hours (90 days) as outliers. Also skip the "open" last dwell.
 
@@ -148,9 +148,9 @@ Response `data`:
 }
 ```
 - `cycleTime`: per order reaching a TERMINAL status (last history status in TERMINAL_STATUSES), hours = `hoursBetween(order.createdAt, lastHistory.createdAt)`; sampleSize = orders counted.
-Frontend: horizontal bar list per status (avg with p90 marker), KPI cards (╪ú╪¿╪╖╪ú ╪¡╪º┘ä╪⌐╪î ╪ú╪│╪▒╪╣ ╪¡╪º┘ä╪⌐╪î ┘à╪¬┘ê╪│╪╖ ╪▓┘à┘å ╪º┘ä╪»┘ê╪▒╪⌐╪î ╪╣┘è┘å╪º╪¬)╪î and a bar chart of avg by status. Highlight statuses with high p90.
+Frontend: horizontal bar list per status (avg with p90 marker), KPI cards (أبطأ حالة، أسرع حالة، متوسط زمن الدورة، عينات)، and a bar chart of avg by status. Highlight statuses with high p90.
 
-## 5. Outcomes ΓÇö slug `outcomes` ΓÇö controller `outcomesController.js` ΓÇö tab `OutcomesTab.tsx`
+## 5. Outcomes — slug `outcomes` — controller `outcomesController.js` — tab `OutcomesTab.tsx`
 
 Outcome = current `order.status` (last known). Response `data`:
 ```js
@@ -162,13 +162,13 @@ Outcome = current `order.status` (last known). Response `data`:
 }
 ```
 - `delivered` = count where status in SUCCESS_STATUSES; `failed` = FAILURE_STATUSES; `pending` = the rest. `lostRevenue` = sum total of orders whose status is in FAILURE_STATUSES; `failedRevenue` same value; `deliveredRevenue` = sum for SUCCESS.
-- `reasons`: from the LAST history entry of each order whose status is a failure status ΓÇö group by `reason` (normalize whitespace, skip empty), with status = that order's status.
+- `reasons`: from the LAST history entry of each order whose status is a failure status — group by `reason` (normalize whitespace, skip empty), with status = that order's status.
 - `modeSplit`: classify each order by its LAST history entry `auto`.
-Frontend: KPI cards (╪Ñ╪¼┘à╪º┘ä┘è╪î ┘à┘Å╪│┘ä┘Ä┘æ┘à╪î ┘ü╪º╪┤┘ä╪î ┘å╪│╪¿╪⌐ ╪º┘ä┘å╪¼╪º╪¡╪î ╪º┘ä╪Ñ┘è╪▒╪º╪» ╪º┘ä╪╢╪º╪ª╪╣), donut of outcomes, bar chart of outcomes vs revenue, and a reasons table with counts.
+Frontend: KPI cards (إجمالي، مُسلَّم، فاشل، نسبة النجاح، الإيراد الضائع), donut of outcomes, bar chart of outcomes vs revenue, and a reasons table with counts.
 
-## 6. Team ΓÇö slug `team` ΓÇö controller `teamController.js` ΓÇö tab `TeamTab.tsx`
+## 6. Team — slug `team` — controller `teamController.js` — tab `TeamTab.tsx`
 
-Group transitions by actor = `userName || changedBy`. Manual actors from manual transitions; the auto transitions form a synthetic member `{ name: '╪º┘ä┘å╪╕╪º┘à (╪¬┘ä┘é╪º╪ª┘è)', changedBy: 'SYSTEM_AUTO', isSystem: true }` when count > 0. Response `data`:
+Group transitions by actor = `userName || changedBy`. Manual actors from manual transitions; the auto transitions form a synthetic member `{ name: 'النظام (تلقائي)', changedBy: 'SYSTEM_AUTO', isSystem: true }` when count > 0. Response `data`:
 ```js
 {
   summary: { totalTransitions, manualTransitions, autoTransitions, activeMembers },
@@ -181,9 +181,9 @@ Group transitions by actor = `userName || changedBy`. Manual actors from manual 
 - `revenue` = sum of `orderTotal` of orders touched by the member (unique orders).
 - `invalidTransitions`: reuse the allowedNextStatuses config check (same as matrix) counting violations per member.
 - Sort members by `transitions` desc.
-Frontend: leaderboard table with rank, name, AutoBadge, KPIs per row; KPI cards (╪¡╪▒┘â╪º╪¬ ┘è╪»┘ê┘è╪⌐/╪¬┘ä┘é╪º╪ª┘è╪⌐/╪╣╪»╪» ╪º┘ä╪ú╪╣╪╢╪º╪í); bar chart of transitions by member; highlight confirms vs cancels ratio.
+Frontend: leaderboard table with rank, name, AutoBadge, KPIs per row; KPI cards (حركات يدوية/تلقائية/عدد الأعضاء); bar chart of transitions by member; highlight confirms vs cancels ratio.
 
-## 7. Aging ΓÇö slug `aging` ΓÇö controller `agingController.js` ΓÇö tab `AgingTab.tsx`
+## 7. Aging — slug `aging` — controller `agingController.js` — tab `AgingTab.tsx`
 
 Stuck orders: current status NOT in `TERMINAL_STATUSES`, and the order's LAST history entry is older than `minAgeHours` (query param, default 24). Orders still limited to those with movement in `[startDate,endDate]`. Response `data`:
 ```js
@@ -194,15 +194,15 @@ Stuck orders: current status NOT in `TERMINAL_STATUSES`, and the order's LAST hi
 }
 ```
 - `ageHours` = `hoursBetween(lastHistoryEntry.createdAt, now)`. `lastTransitionBy` = that entry's `userName||changedBy`; `lastTransitionAuto` = entry.auto.
-- Buckets: `['<1d','1-3d','3-7d','7-30d','>30d']` labels `╪ú┘é┘ä ┘à┘å ┘è┘ê┘à / 1-3 ╪ú┘è╪º┘à / 3-7 ╪ú┘è╪º┘à / 7-30 ┘è┘ê┘à / ╪ú┘â╪½╪▒ ┘à┘å 30 ┘è┘ê┘à`.
+- Buckets: `['<1d','1-3d','3-7d','7-30d','>30d']` labels `أقل من يوم / 1-3 أيام / 3-7 أيام / 7-30 يوم / أكثر من 30 يوم`.
 - `stuckOver7d` = count in buckets `7-30d` + `>30d`.
-Frontend: KPI cards (╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à╪╣┘ä┘é╪î ╪º┘ä╪ú┘é╪»┘à╪î ┘é┘è┘à╪⌐ ╪º┘ä┘ü┘ä┘ê╪│ ╪º┘ä┘à╪¡╪¿┘ê╪│╪⌐╪î ╪ú┘â╪½╪▒ ┘à┘å ╪ú╪│╪¿┘ê╪╣), bucket bars, and the orders table (StatusPill, AutoBadge, formatDuration, formatCurrency).
+Frontend: KPI cards (إجمالي المعلق، الأقدم، قيمة الفلوس المحبوسة، أكثر من أسبوع), bucket bars, and the orders table (StatusPill, AutoBadge, formatDuration, formatCurrency).
 
-## 8. Approvals ΓÇö slug `approvals` ΓÇö controller `approvalsController.js` ΓÇö tab `ApprovalsTab.tsx`
+## 8. Approvals — slug `approvals` — controller `approvalsController.js` — tab `ApprovalsTab.tsx`
 
 Query `prisma.orderStatusChangeRequest` scoped to companyId with `createdAt` in range, include: `order: { select: { orderNumber: true } }`, `fromStatus: { select: { name: true, code: true } }`, `toStatus: { select: { name: true, code: true } }`, `requestor: { select: { firstName: true, lastName: true } }`, `reviewer: { select: { firstName: true, lastName: true } }`. Order by `createdAt` asc, `take: 200`.
 
-Overrides: `prisma.orderWorkflowAuditLog.count({ where: { companyId, createdAt: rangeWhere, changeType: 'override' } })` ΓÇö use `core.buildHistoryRangeWhere({ start, end })`.
+Overrides: `prisma.orderWorkflowAuditLog.count({ where: { companyId, createdAt: rangeWhere, changeType: 'override' } })` — use `core.buildHistoryRangeWhere({ start, end })`.
 
 Response `data`:
 ```js
@@ -214,4 +214,4 @@ Response `data`:
 ```
 - `requestedByName` = `${firstName} ${lastName}` (fallback requestedBy id). `avgReviewHours` = mean of `hoursBetween(createdAt, reviewedAt)` over reviewed requests.
 - `reviewers` grouped by reviewer name.
-Frontend: KPI cards (╪╖┘ä╪¿╪º╪¬╪î ╪¿╪º┘å╪¬╪╕╪º╪▒╪î ┘à┘ê╪º┘ü┘é ╪╣┘ä┘è┘ç╪º╪î ┘à╪▒┘ü┘ê╪╢╪⌐╪î ┘à╪╣╪»┘ä ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐╪î ┘à╪¬┘ê╪│╪╖ ╪▓┘à┘å ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐╪î ╪¬╪¼╪º┘ê╪▓╪º╪¬)╪î a status-donut, and the requests table (StatusPill for fromΓåÆto, reason, reviewer, dates). Highlight pending rows.
+Frontend: KPI cards (طلبات، بانتظار، موافق عليها، مرفوضة، معدل الموافقة، متوسط زمن المراجعة، تجاوزات)، a status-donut, and the requests table (StatusPill for from→to, reason, reviewer, dates). Highlight pending rows.

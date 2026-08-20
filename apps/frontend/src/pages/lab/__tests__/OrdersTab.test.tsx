@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OrdersTab from "../OrdersTab";
@@ -16,7 +16,7 @@ const jsonResponse = (body: unknown) => ({ ok: true, json: async () => body }) a
 const order = {
   id: "o1",
   orderNumber: "LAB-20260808-0001",
-  patientName: "┘à╪«╪¬╪º╪▒",
+  patientName: "مختار",
   patientPhone: "0100",
   status: "PENDING",
   reportStatus: "RESULTS_ENTERED",
@@ -47,7 +47,7 @@ function listFetchMock(overrides: { failSecondFetch?: boolean } = {}) {
     if (u.includes("/lab/orders")) {
       orderGetCount += 1;
       if (overrides.failSecondFetch && orderGetCount > 1) {
-        return jsonResponse({ success: false, error: "┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬" });
+        return jsonResponse({ success: false, error: "فشل تحميل الطلبات" });
       }
       return jsonResponse({ success: true, data: { items: [order], total: 1, page: 1, limit: 50 } });
     }
@@ -63,7 +63,7 @@ describe("OrdersTab", () => {
 
     render(<OrdersTab />);
 
-    expect(await screen.findByText("┘à╪«╪¬╪º╪▒")).toBeInTheDocument();
+    expect(await screen.findByText("مختار")).toBeInTheDocument();
     expect(screen.getByText("LAB-20260808-0001")).toBeInTheDocument();
     expect(screen.getByText(/100.00/)).toBeInTheDocument();
   });
@@ -84,10 +84,10 @@ describe("OrdersTab", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     render(<OrdersTab />);
-    await screen.findByText("┘à╪«╪¬╪º╪▒");
+    await screen.findByText("مختار");
 
-    await user.click(screen.getByRole("button", { name: "┘à╪▒╪º╪¼╪╣╪⌐" }));
-    const confirmBtn = screen.getByRole("button", { name: "╪¬╪ú┘â┘è╪»" });
+    await user.click(screen.getByRole("button", { name: "مراجعة" }));
+    const confirmBtn = screen.getByRole("button", { name: "تأكيد" });
     await user.click(confirmBtn);
     await user.click(confirmBtn);
 
@@ -107,14 +107,14 @@ describe("OrdersTab", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     render(<OrdersTab />);
-    await screen.findByText("┘à╪«╪¬╪º╪▒");
+    await screen.findByText("مختار");
 
-    await user.click(screen.getByRole("button", { name: "┘à╪▒╪º╪¼╪╣╪⌐" }));
-    await user.click(screen.getByRole("button", { name: "╪¬╪ú┘â┘è╪»" }));
-    await screen.findByText("┘à╪«╪¬╪º╪▒");
+    await user.click(screen.getByRole("button", { name: "مراجعة" }));
+    await user.click(screen.getByRole("button", { name: "تأكيد" }));
+    await screen.findByText("مختار");
 
-    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("╪¬┘à╪¬ ┘à╪▒╪º╪¼╪╣╪⌐"));
-    expect(toast.error).not.toHaveBeenCalledWith("┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬");
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("تمت مراجعة"));
+    expect(toast.error).not.toHaveBeenCalledWith("فشل تحميل الطلبات");
   });
 
   test("results modal prefills existing results from tests[].test.parameters", async () => {
@@ -128,21 +128,21 @@ describe("OrdersTab", () => {
           price: 50,
           status: "PENDING",
           results: [
-            { parameterId: "p1", parameterName: "┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å", unit: "g/dL", result: "┘à┘ê╪¼╪¿", flag: "normal" },
+            { parameterId: "p1", parameterName: "هيموجلوبين", unit: "g/dL", result: "موجب", flag: "normal" },
           ],
           test: {
             id: "t1",
             name: "CBC",
             abbreviation: "CBC",
-            category: "╪»┘à",
+            category: "دم",
             parameters: [
               {
                 id: "p1",
                 testId: "t1",
-                name: "┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å",
+                name: "هيموجلوبين",
                 unit: "g/dL",
                 referenceRange: "13-17",
-                resultOptions: ["╪│╪º┘ä╪¿", "┘à┘ê╪¼╪¿"],
+                resultOptions: ["سالب", "موجب"],
                 showFlag: true,
                 sortOrder: 0,
                 isActive: true,
@@ -161,11 +161,11 @@ describe("OrdersTab", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     render(<OrdersTab />);
-    await screen.findByText("┘à╪«╪¬╪º╪▒");
-    await userEvent.click(screen.getByTitle("╪Ñ╪»╪«╪º┘ä ╪º┘ä┘å╪¬╪º╪ª╪¼"));
+    await screen.findByText("مختار");
+    await userEvent.click(screen.getByTitle("إدخال النتائج"));
 
-    expect(await screen.findByDisplayValue("┘à┘ê╪¼╪¿")).toBeInTheDocument();
-    expect(screen.getAllByText("┘ç┘è┘à┘ê╪¼┘ä┘ê╪¿┘è┘å").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "╪¡┘ü╪╕ ╪º┘ä┘å╪¬╪º╪ª╪¼" })).not.toBeDisabled();
+    expect(await screen.findByDisplayValue("موجب")).toBeInTheDocument();
+    expect(screen.getAllByText("هيموجلوبين").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "حفظ النتائج" })).not.toBeDisabled();
   });
 });

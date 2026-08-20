@@ -1,4 +1,4 @@
-﻿# TikTok Integrations (2026-08-13)
+# TikTok Integrations (2026-08-13)
 
 Built the official TikTok feature set for MaxP via 5 parallel agents + orchestrator wiring.
 
@@ -20,7 +20,7 @@ Built the official TikTok feature set for MaxP via 5 parallel agents + orchestra
 
 ## Purchase tracking
 
-`publicOrdersRoutes.js` (storefront order creation) fires `tiktokEventsManager.trackPurchaseForCompany(...)` right after the existing Facebook CAPI block ΓÇö best-effort, never throws, respects `TikTokPixelConfig.trackPurchase`, shares the frontend pixel event-id for dedup.
+`publicOrdersRoutes.js` (storefront order creation) fires `tiktokEventsManager.trackPurchaseForCompany(...)` right after the existing Facebook CAPI block — best-effort, never throws, respects `TikTokPixelConfig.trackPurchase`, shares the frontend pixel event-id for dedup.
 
 ## Configuration
 

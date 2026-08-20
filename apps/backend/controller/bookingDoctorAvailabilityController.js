@@ -1,15 +1,15 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const getAvailability = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { doctorId } = req.query;
-    if (!doctorId) return res.status(400).json({ success: false, error: '┘à╪╣╪▒┘ü ╪º┘ä╪╖╪¿┘è╪¿ ┘à╪╖┘ä┘ê╪¿' });
+    if (!doctorId) return res.status(400).json({ success: false, error: 'معرف الطبيب مطلوب' });
 
     const doctor = await getSharedPrismaClient().bookingDoctor.findFirst({ where: { id: doctorId, companyId } });
-    if (!doctor) return res.status(404).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!doctor) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
 
     const data = await getSharedPrismaClient().doctorAvailability.findMany({
       where: { doctorId, companyId },
@@ -18,24 +18,24 @@ const getAvailability = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching doctor availability:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪ú┘ê┘é╪º╪¬ ╪º┘ä╪╖╪¿┘è╪¿' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب أوقات الطبيب' });
   }
 };
 
 const updateAvailability = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { doctorId } = req.params;
     const { slots } = req.body;
     if (!Array.isArray(slots)) {
-      return res.status(400).json({ success: false, error: '╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê┘é╪º╪¬ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'بيانات الأوقات غير صحيحة' });
     }
 
     const prisma = getSharedPrismaClient();
     const doctor = await prisma.bookingDoctor.findFirst({ where: { id: doctorId, companyId } });
-    if (!doctor) return res.status(404).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!doctor) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
 
     await prisma.$transaction(async (tx) => {
       await tx.doctorAvailability.deleteMany({ where: { doctorId, companyId } });
@@ -60,7 +60,7 @@ const updateAvailability = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating doctor availability:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪ú┘ê┘é╪º╪¬ ╪º┘ä╪╖╪¿┘è╪¿' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث أوقات الطبيب' });
   }
 };
 

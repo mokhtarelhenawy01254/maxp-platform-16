@@ -1,10 +1,14 @@
-import { Activity as ChartBarIcon, RefreshCw as ArrowPathIcon, User as UserIcon, Filter as FunnelIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  ChartBarIcon,
+  ArrowPathIcon,
+  UserIcon,
+  FunnelIcon,
+} from "@heroicons/react/24/outline";
 import {
   BarChart,
   Bar,

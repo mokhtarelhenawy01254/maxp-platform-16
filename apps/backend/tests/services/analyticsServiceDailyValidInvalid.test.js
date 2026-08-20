@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   storeVisit: { findMany: jest.fn() },
   productVisit: { findMany: jest.fn() },
   conversionEvent: { findMany: jest.fn() },

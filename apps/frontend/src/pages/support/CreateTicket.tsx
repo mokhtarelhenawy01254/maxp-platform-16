@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle, AlertTriangle, ArrowLeft, Check, CheckCircle, Upload, X } from 'lucide-react';
+import { ArrowLeft, Upload, X, AlertCircle, CheckCircle } from "lucide-react";
 import supportService from "../../services/supportService";
 import ThemeToggle from "../../components/ui/theme-toggle";
 

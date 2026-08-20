@@ -1,8 +1,23 @@
-import { formatCurrency } from '@/utils/formatters';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, BarChart, BarChart3, Calendar, CalendarDays, Clock3, CreditCard, Filter, Gauge, Layers3, Megaphone, Phone, RefreshCw, Search, Smartphone, Target, Users, Volume2, Wallet } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BarChart3,
+  CalendarDays,
+  Clock3,
+  Filter,
+  Gauge,
+  Layers3,
+  Megaphone,
+  RefreshCw,
+  Search,
+  Smartphone,
+  Target,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
@@ -416,7 +431,7 @@ const FacebookAdsDiagnosis: React.FC = () => {
       loadData(id),
       loadBreakdowns(id),
     ]);
-    toast.success("تم تحديث بيانات التشخيص");
+    tToast.success("FacebookAdsDiagnosis.success_update_aa38");
   };
 
   if (loading || contextLoading) {

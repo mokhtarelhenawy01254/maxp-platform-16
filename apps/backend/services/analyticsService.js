@@ -86,6 +86,20 @@ const buildGuestAnalyticsOrderId = (guestOrder) => {
   return guestOrderId ? `guest-id:${guestOrderId}` : null;
 };
 
+// الطلبات غير الصالحة: الملغية (CANCELLED) والمحذوفة (TRASH/DELETED)
+const INVALID_ANALYTICS_ORDER_STATUSES = new Set([
+  'CANCELLED',
+  'CANCELED',
+  'TRASH',
+  'TRASH_ORDER',
+  'DELETED',
+]);
+
+const isInvalidAnalyticsOrderStatus = (status) =>
+  INVALID_ANALYTICS_ORDER_STATUSES.has(
+    String(status || '').trim().toUpperCase(),
+  );
+
 class AnalyticsService {
 
   async getAnalyticsOrderSnapshots(companyId, startDate, endDate) {
@@ -352,6 +366,155 @@ class AnalyticsService {
     return metrics;
   }
 
+  async getProductSalesPerformance(companyId, startDate, endDate) {
+    if (!companyId) {
+      throw new Error('companyId is required');
+    }
+
+    const [orderItems, { supplementalGuestOrders }] = await Promise.all([
+      getSharedPrismaClient().orderItem.findMany({
+        where: {
+          productId: { not: null },
+          order: {
+            is: {
+              companyId,
+              createdAt: { gte: startDate, lte: endDate }
+            }
+          }
+        },
+        select: {
+          orderId: true,
+          productId: true,
+          quantity: true,
+          price: true,
+          total: true
+        }
+      }),
+      this.getAnalyticsOrderSnapshots(companyId, startDate, endDate),
+    ]);
+
+    const metrics = new Map();
+
+    for (const item of orderItems) {
+      if (!item.productId) continue;
+
+      const existing =
+        metrics.get(item.productId) ||
+        {
+          quantitySold: 0,
+          revenue: 0,
+          orderIds: new Set()
+        };
+
+      const quantity = parseNumericValue(item.quantity) || 1;
+      const lineRevenue = parseNumericValue(item.total);
+      const unitPrice = parseNumericValue(item.price);
+
+      existing.quantitySold += quantity;
+      existing.revenue += lineRevenue > 0 ? lineRevenue : unitPrice * quantity;
+      if (item.orderId) {
+        existing.orderIds.add(item.orderId);
+      }
+
+      metrics.set(item.productId, existing);
+    }
+
+    for (const guestOrder of supplementalGuestOrders) {
+      const guestOrderId = buildGuestAnalyticsOrderId(guestOrder);
+      const items = parseGuestOrderItems(guestOrder.items);
+
+      for (const item of items) {
+        const productId = normalizeOrderIdentity(item?.productId);
+        if (!productId) continue;
+
+        const existing =
+          metrics.get(productId) ||
+          {
+            quantitySold: 0,
+            revenue: 0,
+            orderIds: new Set()
+          };
+
+        const quantity = parseNumericValue(item?.quantity) || 1;
+        const lineRevenue = parseNumericValue(item?.total);
+        const unitPrice = parseNumericValue(item?.price ?? item?.basePrice);
+
+        existing.quantitySold += quantity;
+        existing.revenue += lineRevenue > 0 ? lineRevenue : unitPrice * quantity;
+        if (guestOrderId) {
+          existing.orderIds.add(guestOrderId);
+        }
+
+        metrics.set(productId, existing);
+      }
+    }
+
+    if (metrics.size === 0) {
+      return { products: [], summary: null };
+    }
+
+    const productIds = [...metrics.keys()];
+
+    const allProducts = await getSharedPrismaClient().product.findMany({
+      where: {
+        companyId,
+        id: { in: productIds }
+      },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        mainImage: true,
+        images: true
+      }
+    });
+
+    const productsMap = new Map(allProducts.map((p) => [p.id, p]));
+
+    const products = productIds
+      .map((productId) => {
+        const product = productsMap.get(productId);
+        const metric = metrics.get(productId);
+        const orderCount = metric.orderIds.size;
+
+        return {
+          productId,
+          productName: product?.name || 'منتج غير معروف',
+          productSku: product?.sku || null,
+          productImage: product?.mainImage || resolvePrimaryImage(product?.images) || null,
+          quantitySold: metric.quantitySold,
+          orderCount,
+          revenue: parseFloat(metric.revenue.toFixed(2)),
+          averagePrice: metric.quantitySold > 0 ? parseFloat((metric.revenue / metric.quantitySold).toFixed(2)) : 0,
+          unitsPerOrder: orderCount > 0 ? parseFloat((metric.quantitySold / orderCount).toFixed(2)) : 0
+        };
+      })
+      .sort((a, b) => b.quantitySold - a.quantitySold);
+
+    const totalQuantity = products.reduce((sum, p) => sum + p.quantitySold, 0);
+    const totalRevenue = products.reduce((sum, p) => sum + p.revenue, 0);
+    const totalOrderIds = new Set();
+
+    orderItems.forEach((item) => {
+      if (item.orderId) totalOrderIds.add(item.orderId);
+    });
+    supplementalGuestOrders.forEach((guestOrder) => {
+      const id = buildGuestAnalyticsOrderId(guestOrder);
+      if (id) totalOrderIds.add(id);
+    });
+
+    return {
+      products,
+      summary: {
+        totalProducts: products.length,
+        totalQuantity,
+        totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        totalOrders: totalOrderIds.size,
+        averageOrderValue: totalOrderIds.size > 0 ? parseFloat((totalRevenue / totalOrderIds.size).toFixed(2)) : 0
+      }
+    };
+  }
+
   async buildDailyAnalyticsFromRawEvents(companyId, startDate, endDate) {
     const [storeVisits, productVisits, conversionEvents, orderSnapshots] = await Promise.all([
       getSharedPrismaClient().storeVisit.findMany({
@@ -401,7 +564,9 @@ class AnalyticsService {
           totalAddToCarts: 0,
           totalCheckouts: 0,
           totalPurchases: 0,
-          totalRevenue: 0
+          totalRevenue: 0,
+          validPurchases: 0,
+          invalidPurchases: 0
         });
       }
 
@@ -434,12 +599,22 @@ class AnalyticsService {
       const bucket = ensureBucket(order.createdAt);
       bucket.totalPurchases += 1;
       bucket.totalRevenue += parseNumericValue(order.total);
+      if (isInvalidAnalyticsOrderStatus(order.status)) {
+        bucket.invalidPurchases += 1;
+      } else {
+        bucket.validPurchases += 1;
+      }
     }
 
     for (const order of orderSnapshots.supplementalGuestOrders) {
       const bucket = ensureBucket(order.createdAt);
       bucket.totalPurchases += 1;
       bucket.totalRevenue += parseNumericValue(order.finalTotal ?? order.total);
+      if (isInvalidAnalyticsOrderStatus(order.status)) {
+        bucket.invalidPurchases += 1;
+      } else {
+        bucket.validPurchases += 1;
+      }
     }
 
     const buildDailyEntry = (date) => {
@@ -462,6 +637,8 @@ class AnalyticsService {
         totalCheckouts: bucket?.totalCheckouts || 0,
         totalPurchases,
         totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        validPurchases: bucket?.validPurchases || 0,
+        invalidPurchases: bucket?.invalidPurchases || 0,
         conversionRate: parseFloat(conversionRate.toFixed(2)),
         avgOrderValue: parseFloat(avgOrderValue.toFixed(2))
       };

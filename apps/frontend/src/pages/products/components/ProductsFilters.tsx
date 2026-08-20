@@ -1,6 +1,5 @@
-import { Search as MagnifyingGlassIcon, Filter as FunnelIcon } from 'lucide-react';
 import React from "react";
-;
+import { MagnifyingGlassIcon, FunnelIcon } from "@heroicons/react/24/outline";
 
 interface FiltersState {
   searchQuery: string;

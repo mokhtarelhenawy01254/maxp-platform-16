@@ -1,6 +1,6 @@
-﻿const DEFAULT_TEMPLATES = require('../../services/whatsapp/templates/defaultTemplates');
+const DEFAULT_TEMPLATES = require('../../services/whatsapp/templates/defaultTemplates');
 
-describe('defaultTemplates ΓÇö auto-discount events', () => {
+describe('defaultTemplates — auto-discount events', () => {
   test('contains default templates for all three auto-discount events', () => {
     expect(DEFAULT_TEMPLATES.AUTO_DISCOUNT_COUPON_GRANTED).toBeDefined();
     expect(DEFAULT_TEMPLATES.AUTO_DISCOUNT_COUPON_EXPIRING).toBeDefined();

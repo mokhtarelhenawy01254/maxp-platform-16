@@ -1,8 +1,20 @@
-import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle, Clock, DollarSign, Eye, Grid, Layers, Package, Search, X, XCircle } from 'lucide-react';
+import {
+  Search,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Package,
+  Layers,
+  DollarSign,
+  Eye,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
@@ -14,7 +26,7 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Switch } from "../../components/ui/switch";
-import { Plus, Pencil, Trash2, Clipboard, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Copy, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../components/ui/tooltip";

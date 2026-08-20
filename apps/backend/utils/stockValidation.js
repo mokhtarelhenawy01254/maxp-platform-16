@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared stock-cap helpers.
  * Used by product lifecycle, inventory and import paths so a single cap
  * is enforced consistently across the whole platform.
@@ -16,17 +16,17 @@ function validateStock(value) {
     : Number(value);
 
   if (!Number.isFinite(num)) {
-    return { ok: false, message: '┘é┘è┘à╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' };
+    return { ok: false, message: 'قيمة المخزون غير صالحة' };
   }
 
   if (num < 0) {
-    return { ok: false, message: '┘é┘è┘à╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å ┘ä╪º ┘è┘à┘â┘å ╪ú┘å ╪¬┘â┘ê┘å ╪│╪º┘ä╪¿╪⌐' };
+    return { ok: false, message: 'قيمة المخزون لا يمكن أن تكون سالبة' };
   }
 
   if (num > MAX_PRODUCT_STOCK) {
     return {
       ok: false,
-      message: `┘é┘è┘à╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å ╪║┘è╪▒ ┘à┘å╪╖┘é┘è╪⌐ ΓÇö ╪º┘ä╪¡╪» ╪º┘ä╪ú┘é╪╡┘ë ╪º┘ä┘à╪│┘à┘ê╪¡ ┘ç┘ê ${MAX_PRODUCT_STOCK} ┘é╪╖╪╣╪⌐`,
+      message: `قيمة المخزون غير منطقية — الحد الأقصى المسموح هو ${MAX_PRODUCT_STOCK} قطعة`,
     };
   }
 

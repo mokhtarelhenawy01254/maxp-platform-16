@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tiktokDisplayController.js
  * HTTP handlers for the TikTok Embed + Display API.
  * Mounted behind verifyToken.authenticateToken.
@@ -37,12 +37,12 @@ const listVideos = async (req, res) => {
         error: { code: 'NO_ACCOUNT', message: error.message },
       });
     }
-    console.error('Γ¥î [TIKTOK-DISPLAY] Failed to list videos:', error?.response?.data || error);
+    console.error('❌ [TIKTOK-DISPLAY] Failed to list videos:', error?.response?.data || error);
     return res.status(502).json({
       success: false,
       error: {
         code: error?.code || 'TIKTOK_ERROR',
-        message: error?.message || '┘ü╪┤┘ä ╪¼┘ä╪¿ ┘ü┘è╪»┘è┘ê┘ç╪º╪¬ TikTok',
+        message: error?.message || 'فشل جلب فيديوهات TikTok',
       },
     });
   }
@@ -54,7 +54,7 @@ const getEmbedInfo = async (req, res) => {
     if (!videoId) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VIDEO_ID_REQUIRED', message: '┘à╪╣╪▒┘ü ╪º┘ä┘ü┘è╪»┘è┘ê ┘à╪╖┘ä┘ê╪¿' },
+        error: { code: 'VIDEO_ID_REQUIRED', message: 'معرف الفيديو مطلوب' },
       });
     }
     const encodedId = encodeURIComponent(videoId);
@@ -66,8 +66,8 @@ const getEmbedInfo = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Γ¥î [TIKTOK-DISPLAY] Failed to build embed url:', error);
-    return res.status(500).json({ success: false, error: error?.message || '┘ü╪┤┘ä ╪Ñ┘å╪┤╪º╪í ┘à╪┤╪║┘ä ╪º┘ä┘ü┘è╪»┘è┘ê' });
+    console.error('❌ [TIKTOK-DISPLAY] Failed to build embed url:', error);
+    return res.status(500).json({ success: false, error: error?.message || 'فشل إنشاء مشغل الفيديو' });
   }
 };
 
@@ -87,8 +87,8 @@ const getSettings = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Γ¥î [TIKTOK-DISPLAY] Failed to load settings:', error);
-    return res.status(500).json({ success: false, error: error?.message || '┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬' });
+    console.error('❌ [TIKTOK-DISPLAY] Failed to load settings:', error);
+    return res.status(500).json({ success: false, error: error?.message || 'فشل تحميل الإعدادات' });
   }
 };
 
@@ -113,8 +113,8 @@ const saveSettings = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Γ¥î [TIKTOK-DISPLAY] Failed to save settings:', error);
-    return res.status(500).json({ success: false, error: error?.message || '┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬' });
+    console.error('❌ [TIKTOK-DISPLAY] Failed to save settings:', error);
+    return res.status(500).json({ success: false, error: error?.message || 'فشل حفظ الإعدادات' });
   }
 };
 
@@ -136,12 +136,12 @@ const getAccountInfo = async (req, res) => {
     if (error?.code === 'NO_ACCOUNT') {
       return res.json({ success: true, data: { connected: false } });
     }
-    console.error('Γ¥î [TIKTOK-DISPLAY] Failed to load account info:', error?.response?.data || error);
+    console.error('❌ [TIKTOK-DISPLAY] Failed to load account info:', error?.response?.data || error);
     return res.status(502).json({
       success: false,
       error: {
         code: error?.code || 'TIKTOK_ERROR',
-        message: error?.message || '┘ü╪┤┘ä ╪¼┘ä╪¿ ╪¿┘è╪º┘å╪º╪¬ ╪¡╪│╪º╪¿ TikTok',
+        message: error?.message || 'فشل جلب بيانات حساب TikTok',
       },
     });
   }

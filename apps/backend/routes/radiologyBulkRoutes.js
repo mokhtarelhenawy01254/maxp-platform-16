@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const controller = require('../controller/radiologyBulkController');
 const verifyToken = require('../utils/verifyToken');

@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, BarChart, BarChart3, Calendar, CalendarDays, Download, Filter, Table2, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  BarChart3,
+  CalendarDays,
+  Download,
+  Filter,
+  Table2,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import {
   Bar,
   BarChart,
@@ -69,7 +78,7 @@ const WorkReportRecordsPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching work report records:", error);
-      toast.error("تعذر تحميل السجلات");
+      tToast.error("WorkReportRecordsPage.unable_load_ea41");
     } finally {
       setLoading(false);
     }

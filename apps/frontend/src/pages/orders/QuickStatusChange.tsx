@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -116,7 +116,7 @@ const QuickStatusChange: React.FC = () => {
       if (body?.success && body?.data) {
         const order = { ...body.data, status: body.data.status?.toUpperCase() };
 
-        // Track repeated code entries ΓÇö a 2nd entry of the same order opens a blocking
+        // Track repeated code entries — a 2nd entry of the same order opens a blocking
         // modal and blocks that order so it can never be processed again in this session
         const searchCount = (searchCountsRef.current[codeKey] || 0) + 1;
         searchCountsRef.current = { ...searchCountsRef.current, [codeKey]: searchCount };
@@ -184,7 +184,7 @@ const QuickStatusChange: React.FC = () => {
       if (axiosError.response?.status === 404) {
         setSearchError(t("quickStatus.orderNotFound", { code }));
       } else if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
-        setSearchError("╪º┘å╪¬┘ç╪¬ ╪╡┘ä╪º╪¡┘è╪⌐ ╪º┘ä╪¼┘ä╪│╪⌐ ΓÇö ┘è╪▒╪¼┘ë ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä ┘à╪¼╪»╪»╪º┘ï.");
+        setSearchError("انتهت صلاحية الجلسة — يرجى تسجيل الدخول مجدداً.");
       } else {
         console.error("Search error:", error);
         setSearchError(t("quickStatus.searchError"));
@@ -252,7 +252,7 @@ const QuickStatusChange: React.FC = () => {
       return;
     }
     if (e.key === "Enter") {
-      // If we already have an order loaded and a different status is selected ΓåÆ change directly
+      // If we already have an order loaded and a different status is selected → change directly
       if (currentOrder && selectedStatus && selectedStatus !== currentOrder.status) {
         handleChangeStatus();
       } else {
@@ -463,7 +463,7 @@ const QuickStatusChange: React.FC = () => {
                     {t("quickStatus.total")}
                   </p>
                   <span className="text-sm font-bold text-gray-900 dark:text-white">
-                    {Number(currentOrder.total).toFixed(2)} {currentOrder.currency || "╪¼.┘à"}
+                    {Number(currentOrder.total).toFixed(2)} {currentOrder.currency || "ج.م"}
                   </span>
                 </div>
               )}
@@ -483,7 +483,7 @@ const QuickStatusChange: React.FC = () => {
               onClick={() => setChangeLog([])}
               className="text-sm px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
             >
-              ┘à╪│╪¡ ╪º┘ä╪│╪¼┘ä
+              مسح السجل
             </button>
           </div>
           <div className="overflow-x-auto">

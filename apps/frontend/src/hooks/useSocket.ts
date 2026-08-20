@@ -23,6 +23,8 @@ export interface SocketEvents {
   // حالة الاتصال
   user_online: (data: { userId: string; timestamp: Date }) => void;
   user_offline: (data: { userId: string; timestamp: Date }) => void;
+  online_users: (data: { users: string[] }) => void;
+  online_users_initial: (data: { users: string[] }) => void;
 
   // تحديثات المحادثات
   conversation_updated: (conversation: any) => void;

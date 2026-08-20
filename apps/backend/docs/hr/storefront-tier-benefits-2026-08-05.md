@@ -1,7 +1,7 @@
-﻿# Storefront Tier Benefits: Display, Progress & Auto-Apply
+# Storefront Tier Benefits: Display, Progress & Auto-Apply
 
 **Date**: 2026-08-05
-**Domain**: HR ΓÇö Customer Loyalty / Storefront Checkout
+**Domain**: HR — Customer Loyalty / Storefront Checkout
 **Type**: Feature
 
 ## Overview
@@ -9,9 +9,9 @@
 Customers now **see and benefit from** their loyalty tier inside the storefront
 checkout:
 
-1. **See it** ΓÇö a tier banner shows the customer's current level, its benefits,
-   and progress to the next level ("┘ü╪º╪╢┘ä X ┘å┘é╪╖╪⌐ ┘ê╪¬╪¬╪▒┘é┘ë ┘ä┘à╪│╪¬┘ê┘ë ┘â╪░╪º ┘ê╪¬╪¡╪╡┘ä ╪╣┘ä┘ë...").
-2. **Benefit automatically** ΓÇö free shipping and the tier discount % are applied
+1. **See it** — a tier banner shows the customer's current level, its benefits,
+   and progress to the next level ("فاضل X نقطة وتترقى لمستوى كذا وتحصل على...").
+2. **Benefit automatically** — free shipping and the tier discount % are applied
    automatically when the order is created (no coupon code needed).
 
 ## ORDER_COUNT method (4th calculation method)
@@ -22,8 +22,8 @@ Tiers can now be calculated by **number of DELIVERED orders**:
 - `computeTierMetric` counts DELIVERED orders via `prisma.order.aggregate`.
 - `resolveTierMethod`, `updateDefaultTierMethod` and the override update accept
   `ORDER_COUNT`.
-- TierConfigTab exposes a new option "╪¿╪╣╪»╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬" and renders
-  "╪º┘ä╪¡╪» ╪º┘ä╪ú╪»┘å┘ë/╪º┘ä╪ú┘é╪╡┘ë (╪ú┘ê╪▒╪»╪▒╪º╪¬)" for it.
+- TierConfigTab exposes a new option "بعدد الأوردرات" and renders
+  "الحد الأدنى/الأقصى (أوردرات)" for it.
 
 ## Public tier-progress endpoint
 
@@ -36,7 +36,7 @@ Returns (or `data: null` if the phone has no customer):
 ```jsonc
 {
   "method": "POINTS" | "SPENT" | "ITEMS" | "ORDER_COUNT",
-  "metricLabel": "┘å┘é╪╖╪⌐" | "╪¼.┘à" | "┘é╪╖╪╣╪⌐" | "╪ú┘ê╪▒╪»╪▒",
+  "metricLabel": "نقطة" | "ج.م" | "قطعة" | "أوردر",
   "currentMetric": 40,
   "tier": { "id", "name", "nameAr", "color", "icon", "benefits" },
   "nextTier": { "id", "name", "nameAr", "targetMetric", "remainingMetric", "benefits" },
@@ -53,8 +53,8 @@ store-promotion discounts:
 
 - The customer is resolved by `guestPhone` via `findCustomerByPhone`.
 - `getCustomerActiveRewards` + `getCustomerTierProgress` give the effective rewards.
-- `rewards.freeShipping` ΓåÆ shipping set to 0 (`freeShippingAdjustment.source = "loyalty_tier"`).
-- `rewards.discountPercent` ΓåÆ `loyaltyDiscount = cartTotal * pct / 100`, added to
+- `rewards.freeShipping` → shipping set to 0 (`freeShippingAdjustment.source = "loyalty_tier"`).
+- `rewards.discountPercent` → `loyaltyDiscount = cartTotal * pct / 100`, added to
   the running `discountAmount`.
 - Both are stamped into `orderMetadata.loyalty`
   (`tierName`, `tierNameAr`, `discountPercent`, `discountAmount`, `freeShipping`)
@@ -69,12 +69,12 @@ The server is the source of truth: the frontend only previews the numbers.
   query fallback).
 - `hooks/useTierProgress.ts` fetches on a valid Egyptian phone and clears on invalid.
 - `components/TierProgressBanner.tsx` renders the tier pill + progress message
-  ("┘ü╪º╪╢┘ä X {┘å┘é╪╖╪⌐/╪¼.┘à/┘é╪╖╪╣╪⌐/╪ú┘ê╪▒╪»╪▒} ┘ê╪¬╪¬╪▒┘é┘ë ┘ä┘à╪│╪¬┘ê┘ë ... ┘ê╪¬╪¡╪╡┘ä ╪╣┘ä┘ë ...").
+  ("فاضل X {نقطة/ج.م/قطعة/أوردر} وتترقى لمستوى ... وتحصل على ...").
 - `CheckoutForm` fetches tier-progress when the phone field loses focus and shows
   the banner.
 - `OrderSummary` + `PaymentSection` show the banner, apply free shipping in the
-  summary (shipping = 0 / "┘à╪¼╪º┘å┘è (┘à╪│╪¬┘ê┘ë ╪º┘ä┘ê┘ä╪º╪í)"), and render a
-  "╪«╪╡┘à ┘à╪│╪¬┘ê┘ë {name} ({pct}%)" row. Totals account for `effectiveShipping` and
+  summary (shipping = 0 / "مجاني (مستوى الولاء)"), and render a
+  "خصم مستوى {name} ({pct}%)" row. Totals account for `effectiveShipping` and
   `loyaltyDiscount`.
 
 ## Reward base = amount actually paid
@@ -83,11 +83,11 @@ Rewards (cashback, loyalty points, and the SPENT tier metric) are computed on
 **what the customer actually paid** (`Order.finalTotal`, i.e. after all discounts),
 NOT the gross order value:
 
-- `cashbackService.js` ΓÇö the `total` base now uses `order.finalTotal`
+- `cashbackService.js` — the `total` base now uses `order.finalTotal`
   (fallback `order.total`). The `subtotal` base stays `subtotal - discount`.
-- `customerLoyaltyService.js` points award ΓÇö base is
+- `customerLoyaltyService.js` points award — base is
   `order.finalTotal || order.total || order.subtotal`.
-- `computeTierMetric` SPENT method ΓÇö aggregates `finalTotal` of DELIVERED orders.
+- `computeTierMetric` SPENT method — aggregates `finalTotal` of DELIVERED orders.
 
 The tier **discount** benefit is unchanged: it is a fixed % of the order
 subtotal (`cartTotal * pct / 100`) applied at checkout.
@@ -106,11 +106,11 @@ into the tracked response.
 
 Important model difference: `GuestOrder` has `total/shippingCost/discountAmount/
 finalTotal`, while `Order` has `subtotal/shipping/discount/total`. The merge maps
-`Order.total ΓåÆ GuestOrder.total + finalTotal`, `Order.discount ΓåÆ discountAmount`,
-`Order.shipping ΓåÆ shippingCost`, `Order.subtotal ΓåÆ subtotal`. Storefront orders
+`Order.total → GuestOrder.total + finalTotal`, `Order.discount → discountAmount`,
+`Order.shipping → shippingCost`, `Order.subtotal → subtotal`. Storefront orders
 store the order number in the primary Order's `orderNumber` (found via `id` OR
 `orderNumber`), so the lookup searches both.
 
 ## Docs
 
-- `tier-calculation-config-2026-08-05.md` ΓÇö the configurable methods/benefits feature.
+- `tier-calculation-config-2026-08-05.md` — the configurable methods/benefits feature.

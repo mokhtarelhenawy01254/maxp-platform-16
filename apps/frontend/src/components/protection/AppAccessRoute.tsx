@@ -1,4 +1,4 @@
-﻿import React, { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import AccessDenied from "./AccessDenied";
 
@@ -23,10 +23,10 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
         <div className="text-center">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md">
             <h3 className="text-yellow-800 font-semibold mb-2">
-              ┘à╪╖┘ä┘ê╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä
+              مطلوب تسجيل الدخول
             </h3>
             <p className="text-yellow-700 mb-4">
-              ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä ┘ä┘ä┘ê╪╡┘ê┘ä ┘ä┘ç╪░┘ç ╪º┘ä╪╡┘ü╪¡╪⌐
+              يجب تسجيل الدخول للوصول لهذه الصفحة
             </p>
           </div>
         </div>
@@ -50,7 +50,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   );
 
   if (!hasAccess) {
-    return <AccessDenied message="┘ç╪░┘ç ╪º┘ä┘à┘è╪▓╪⌐ ╪¬╪¬╪╖┘ä╪¿ ╪¬┘ü╪╣┘è┘ä ╪¬╪╖╪¿┘è┘é ┘à╪«╪╡╪╡. ┘è╪▒╪¼┘ë ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪¬╪╖╪¿┘è┘é ┘à┘å ┘à╪¬╪¼╪▒ ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬." />;
+    return <AccessDenied message="هذه الميزة تتطلب تفعيل تطبيق مخصص. يرجى تفعيل التطبيق من متجر التطبيقات." />;
   }
 
   return <>{children}</>;

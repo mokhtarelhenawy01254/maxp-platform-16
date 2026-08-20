@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { Award, Crown, DollarSign, Edit, Eye, Filter, Gem, Gift, Medal, Plus, RefreshCw, Search, Star, Trophy, Users } from 'lucide-react';
+import {
+  Users,
+  Search,
+  Filter,
+  Star,
+  Crown,
+  Medal,
+  Gem,
+  Trophy,
+  Award,
+  Eye,
+  Edit,
+  RefreshCw,
+  Gift,
+  DollarSign,
+  Plus,
+  Send,
+} from "lucide-react";
 import { customerService, Customer } from "../../services/customerService";
 
 interface CustomerLoyaltyProgram {
@@ -42,6 +59,10 @@ const LoyaltyMembers: React.FC = () => {
   const [customers, setCustomers] = useState<CustomerLoyaltyRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Modal state
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
@@ -61,9 +82,9 @@ const LoyaltyMembers: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [sendingCardId, setSendingCardId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCustomers();
     fetchPrograms();
   }, []);
 
@@ -78,17 +99,52 @@ const LoyaltyMembers: React.FC = () => {
     }
   };
 
-  const fetchCustomers = async () => {
+  const loadCustomers = async (
+    targetPage: number,
+    targetSearch: string,
+    targetPageSize: number = pageSize,
+  ) => {
     try {
       setIsLoading(true);
-      const res = await apiClient.get("/hr/customer-loyalty/customers");
-      setCustomers(res.data.data || []);
+      const res = await apiClient.get("/hr/customer-loyalty/customers", {
+        params: {
+          page: targetPage,
+          pageSize: targetPageSize,
+          ...(targetSearch.trim() ? { search: targetSearch.trim() } : {}),
+        },
+      });
+      const data = res.data.data;
+      if (data && Array.isArray(data.records)) {
+        setCustomers(data.records);
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 1);
+      } else if (Array.isArray(data)) {
+        // Backward compatible with the legacy array shape
+        setCustomers(data);
+        setTotal(data.length);
+        setTotalPages(1);
+      } else {
+        setCustomers([]);
+        setTotal(0);
+        setTotalPages(1);
+      }
+      setPage(targetPage);
     } catch (error) {
       console.error("Error fetching customers:", error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Debounced server-side search (resets to first page)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadCustomers(1, searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchCustomers = () => loadCustomers(page, searchQuery);
 
   // Search customers for enrollment
   useEffect(() => {
@@ -136,6 +192,36 @@ const LoyaltyMembers: React.FC = () => {
       alert(error?.response?.data?.error || "فشل تسجيل العميل. يرجى المحاولة مرة أخرى.");
     } finally {
       setIsEnrolling(false);
+    }
+  };
+
+  const handleSendCard = async (record: CustomerLoyaltyRecord) => {
+    if (!record?.customer?.id) return;
+    setSendingCardId(record.id);
+    try {
+      const res = await apiClient.post<{
+        data?: { send?: { success?: boolean; reason?: string } };
+      }>(
+        `/hr/customer-loyalty/customers/${record.customer.id}/card/send`,
+        {},
+        { params: { programId: record.program.id } },
+      );
+      const send = res.data?.data?.send;
+      if (send?.success) {
+        alert("تم إرسال كارت العضوية للعميل على واتساب 🎖️");
+      } else {
+        alert(
+          send?.reason === "no_baileys_session"
+            ? "لا توجد جلسة واتساب متصلة لإرسال الصورة"
+            : "تعذر إرسال الكارت — تحقق من رقم الهاتف وجلسة الواتساب",
+        );
+      }
+    } catch (error) {
+      console.error("Error sending card:", error);
+      const err = error as { response?: { data?: { error?: string } } };
+      alert(err?.response?.data?.error || "فشل إرسال كارت العضوية");
+    } finally {
+      setSendingCardId(null);
     }
   };
 
@@ -207,16 +293,6 @@ const LoyaltyMembers: React.FC = () => {
     }
   };
 
-  // Filter customers based on search
-  const safeSearch = searchQuery.toLowerCase();
-  const filteredCustomers = customers.filter(
-    (c) =>
-      c.customer?.firstName?.toLowerCase()?.includes(safeSearch) ||
-      c.customer?.lastName?.toLowerCase()?.includes(safeSearch) ||
-      c.customer?.email?.toLowerCase()?.includes(safeSearch) ||
-      c.customer?.phone?.includes(safeSearch),
-  );
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -275,7 +351,7 @@ const LoyaltyMembers: React.FC = () => {
 
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-        {filteredCustomers.length === 0 ? (
+        {customers.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -314,7 +390,7 @@ const LoyaltyMembers: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredCustomers.map((record) => (
+                {customers.map((record) => (
                   <tr
                     key={record.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
@@ -396,6 +472,16 @@ const LoyaltyMembers: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
+                        {record.tier ? (
+                          <button
+                            onClick={() => handleSendCard(record)}
+                            disabled={sendingCardId === record.id}
+                            className="text-gray-400 hover:text-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                            title="إرسال كارت العضوية"
+                          >
+                            <Send className={`w-4 h-4 ${sendingCardId === record.id ? "animate-pulse" : ""}`} />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -404,6 +490,55 @@ const LoyaltyMembers: React.FC = () => {
             </table>
           </div>
         )}
+
+        {/* Pagination */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            عرض{" "}
+            <span className="font-semibold text-gray-700 dark:text-gray-200">
+              {customers.length.toLocaleString()}
+            </span>{" "}
+            من{" "}
+            <span className="font-semibold text-gray-700 dark:text-gray-200">
+              {total.toLocaleString()}
+            </span>{" "}
+            عميل
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                const nextSize = Number(e.target.value);
+                setPageSize(nextSize);
+                loadCustomers(1, searchQuery, nextSize);
+              }}
+              className="px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+            >
+              {[10, 25, 50, 100].map((s) => (
+                <option key={s} value={s}>
+                  {s} / صفحة
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => loadCustomers(page - 1, searchQuery)}
+              disabled={page <= 1}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              السابق
+            </button>
+            <span className="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
+              صفحة {page} من {Math.max(totalPages, 1)}
+            </span>
+            <button
+              onClick={() => loadCustomers(page + 1, searchQuery)}
+              disabled={page >= totalPages}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              التالي
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Adjustment Modal */}

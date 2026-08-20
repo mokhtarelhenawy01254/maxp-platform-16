@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   CalendarDays, Wallet, Clock, LayoutDashboard, LogOut, Menu, X, User, HeartPulse, Users
@@ -15,11 +15,11 @@ const DoctorLayout: React.FC<DoctorLayoutProps> = ({ children }) => {
   const doctor = JSON.parse(localStorage.getItem('doctor') || '{}');
 
   const navItems = [
-    { path: '/doctor/dashboard', label: '┘ä┘ê╪¡╪⌐ ╪º┘ä╪¬╪¡┘â┘à', icon: LayoutDashboard },
-    { path: '/doctor/schedule', label: '╪º┘ä╪¼╪»┘ê┘ä ╪º┘ä╪ú╪│╪¿┘ê╪╣┘è', icon: CalendarDays },
-    { path: '/doctor/patients', label: '┘à╪▒╪╢╪º┘è', icon: Users },
-    { path: '/doctor/payments', label: '╪º┘ä┘à╪»┘ü┘ê╪╣╪º╪¬', icon: Wallet },
-    { path: '/doctor/availability', label: '╪ú┘ê┘é╪º╪¬ ╪º┘ä╪╣┘à┘ä', icon: Clock },
+    { path: '/doctor/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
+    { path: '/doctor/schedule', label: 'الجدول الأسبوعي', icon: CalendarDays },
+    { path: '/doctor/patients', label: 'مرضاي', icon: Users },
+    { path: '/doctor/payments', label: 'المدفوعات', icon: Wallet },
+    { path: '/doctor/availability', label: 'أوقات العمل', icon: Clock },
   ];
 
   const handleLogout = () => {
@@ -36,7 +36,7 @@ const DoctorLayout: React.FC<DoctorLayoutProps> = ({ children }) => {
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-md hover:bg-gray-100">
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <Link to="/doctor/dashboard" className="text-lg font-bold text-blue-600">╪¿┘ê╪º╪¿╪⌐ ╪º┘ä╪╖╪¿┘è╪¿</Link>
+          <Link to="/doctor/dashboard" className="text-lg font-bold text-blue-600">بوابة الطبيب</Link>
           <div className="w-10" />
         </div>
       </header>
@@ -45,10 +45,10 @@ const DoctorLayout: React.FC<DoctorLayoutProps> = ({ children }) => {
         {/* Sidebar */}
         <aside className={`${sidebarOpen ? 'block' : 'hidden'} lg:block fixed lg:sticky top-0 right-0 z-40 w-64 h-screen bg-white shadow-lg border-l`}>
           <div className="p-6 border-b">
-            <Link to="/doctor/dashboard" className="text-xl font-bold text-blue-600 block mb-1 flex items-center gap-2"><HeartPulse size={20} />╪¿┘ê╪º╪¿╪⌐ ╪º┘ä╪╖╪¿┘è╪¿</Link>
+            <Link to="/doctor/dashboard" className="text-xl font-bold text-blue-600 block mb-1 flex items-center gap-2"><HeartPulse size={20} />بوابة الطبيب</Link>
             <div className="flex items-center gap-2 mt-3 text-sm text-gray-600">
               <User size={16} />
-              <span>{doctor.title ? `${doctor.title} ` : ""}{doctor.name || '╪╖╪¿┘è╪¿'}</span>
+              <span>{doctor.title ? `${doctor.title} ` : ""}{doctor.name || 'طبيب'}</span>
             </div>
           </div>
           <nav className="p-4 space-y-1">
@@ -71,7 +71,7 @@ const DoctorLayout: React.FC<DoctorLayoutProps> = ({ children }) => {
             <button onClick={handleLogout}
               className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
               <LogOut size={20} />
-              ╪¬╪│╪¼┘è┘ä ╪«╪▒┘ê╪¼
+              تسجيل خروج
             </button>
           </div>
         </aside>

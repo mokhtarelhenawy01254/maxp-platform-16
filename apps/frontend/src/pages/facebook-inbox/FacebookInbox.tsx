@@ -1,5 +1,4 @@
-import { useTranslation } from 'react-i18next';
-import React, {
+﻿import React, {
   useState,
   useMemo,
   useEffect,
@@ -7,6 +6,7 @@ import React, {
   useRef,
   useLayoutEffect,
 } from "react";
+import { useTranslation } from "react-i18next";
 import InboxTabs from "../../components/facebook-inbox/InboxTabs/InboxTabs";
 import ConversationItem from "../../components/facebook-inbox/ConversationList/ConversationItem";
 import MessageBubble from "../../components/facebook-inbox/MessageBubble/MessageBubble";
@@ -24,6 +24,7 @@ import SnoozeModal from "../../components/facebook-inbox/Modals/SnoozeModal";
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
 import TextGalleryModal from "../../components/facebook-inbox/TextGallery/TextGalleryModal";
 import ImageGalleryModal from "../../components/facebook-inbox/ImageGallery/ImageGalleryModal";
+import ProductImagePickerModal from "../../components/facebook-inbox/ProductImagePicker/ProductImagePickerModal";
 import {
   InboxTab,
   ConversationStatus,
@@ -41,8 +42,26 @@ import {
   showBrowserNotification as showNativeBrowserNotification,
 } from "../../utils/browserNotifications";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { ArrowRight, Ban as NoSymbolIcon, Check, Check as CheckCircleIcon, Circle as UserCircleIcon, Clipboard, Clock as ClockIcon, Copy, Menu, MoreHorizontal, PanelRightClose, PanelRightOpen, ShoppingBag as ShoppingCartIcon, Star as StarIcon, StickyNote, Trash2 as TrashIcon, X as XMarkIcon } from 'lucide-react';
-;
+import {
+  StickyNote,
+  Menu,
+  ArrowRight,
+  Copy,
+  Check,
+  MoreHorizontal,
+  PanelRightClose,
+  PanelRightOpen,
+} from "lucide-react";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  NoSymbolIcon,
+  ShoppingCartIcon,
+  StarIcon,
+  TrashIcon,
+  UserCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useDebounce } from "../../hooks/useDebounce";
 import { apiService } from "../../services/apiService";
@@ -73,6 +92,7 @@ type InboxApiMessage = Partial<Omit<InboxMessage, "metadata" | "timestamp">> & {
 
 type SocketInboxMessage = InboxMessage & {
   customerName?: string;
+  channel?: string;
 };
 
 const getApiError = (error: unknown): ApiErrorLike => {
@@ -83,7 +103,15 @@ const getApiError = (error: unknown): ApiErrorLike => {
   return {};
 };
 
-  const FacebookInbox: React.FC = () => {
+  const FacebookInbox: React.FC<{
+    channel?: string;
+    platform?: string;
+    inboxPath?: string;
+  }> = ({
+    channel = "FACEBOOK",
+    platform = "facebook",
+    inboxPath = "/facebook-inbox",
+  }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { companyId } = useCompany();
@@ -112,11 +140,11 @@ const getApiError = (error: unknown): ApiErrorLike => {
     selectedIds,
     toggleSelection,
     clearSelection,
-    // 🆕 API counts for accurate tab counts
+    // ðŸ†• API counts for accurate tab counts
     apiCounts,
-    // 🆕 Add conversation to list
+    // ðŸ†• Add conversation to list
     addConversationToList,
-    // 🆕 Mark messages as read (for read receipts)
+    // ðŸ†• Mark messages as read (for read receipts)
     markMessagesAsRead,
   } = useInboxConversations();
 
@@ -150,7 +178,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
   const [showFilters, setShowFilters] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true); // للتحكم في إظهار/إخفاء Sidebar على الموبايل
+  const [showSidebar, setShowSidebar] = useState(true); // Ù„Ù„ØªØ­ÙƒÙ… ÙÙŠ Ø¥Ø¸Ù‡Ø§Ø±/Ø¥Ø®ÙØ§Ø¡ Sidebar Ø¹Ù„Ù‰ Ø§Ù„Ù…ÙˆØ¨Ø§ÙŠÙ„
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [showDesktopContextColumn, setShowDesktopContextColumn] = useState(
     () => {
@@ -200,24 +228,27 @@ const getApiError = (error: unknown): ApiErrorLike => {
   // Image Gallery State
   const [showImageGallery, setShowImageGallery] = useState(false);
 
-  // 🆕 Quick Order Modal State
+  // ðŸ†• Product Image Picker State
+  const [showProductPicker, setShowProductPicker] = useState(false);
+
+  // ðŸ†• Quick Order Modal State
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
 
-  // 🆕 Block Customer States
+  // ðŸ†• Block Customer States
   const [isBlocked, setIsBlocked] = useState(false);
   const [checkingBlockStatus, setCheckingBlockStatus] = useState(false);
   const [blocking, setBlocking] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockReason, setBlockReason] = useState("");
 
-  // 🆕 Sound & Notifications States
+  // ðŸ†• Sound & Notifications States
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
-  // 🆕 Copy Link State
+  // ðŸ†• Copy Link State
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // 🆕 Advanced Search States
+  // ðŸ†• Advanced Search States
   const [loadingMessagesForSearch, setLoadingMessagesForSearch] = useState<
     Set<string>
   >(new Set());
@@ -229,7 +260,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     selectedConversation?.customerAvatar,
   );
 
-  // 🆕 Load specific conversation from URL
+  // ðŸ†• Load specific conversation from URL
   const conversationsRef = useRef(conversations);
   conversationsRef.current = conversations; // Keep ref updated
 
@@ -250,7 +281,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
       try {
         console.log(
-          "🔄 [URL-LOAD] Loading specific conversation from URL:",
+          "ðŸ”„ [URL-LOAD] Loading specific conversation from URL:",
           conversationId,
         );
 
@@ -260,7 +291,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         );
         if (existingConversation) {
           console.log(
-            "✅ [URL-LOAD] Conversation already loaded, selecting it",
+            "âœ… [URL-LOAD] Conversation already loaded, selecting it",
           );
           selectConversation(existingConversation);
           return;
@@ -277,7 +308,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         const convData = response.data?.data || response.data;
         if (!convData) {
           console.warn(
-            "⚠️ [URL-LOAD] Conversation payload missing, clearing URL param",
+            "âš ï¸ [URL-LOAD] Conversation payload missing, clearing URL param",
             { conversationId, companyId },
           );
           clearConversationUrlParam();
@@ -359,33 +390,33 @@ const getApiError = (error: unknown): ApiErrorLike => {
         selectConversation(formattedConversation);
 
         console.log(
-          "✅ [URL-LOAD] Conversation loaded and selected:",
+          "âœ… [URL-LOAD] Conversation loaded and selected:",
           conversationId,
         );
       } catch (error: unknown) {
         const status = getApiError(error).response?.status;
         if (status === 404 || status === 403) {
           console.warn(
-            "⚠️ [URL-LOAD] Conversation missing or inaccessible for current company, clearing URL param",
+            "âš ï¸ [URL-LOAD] Conversation missing or inaccessible for current company, clearing URL param",
             { conversationId, companyId, status },
           );
           clearConversationUrlParam();
           return;
         }
 
-        console.error("❌ [URL-LOAD] Error loading conversation:", error);
+        console.error("âŒ [URL-LOAD] Error loading conversation:", error);
       }
     },
     [companyId, selectConversation, addConversationToList, clearConversationUrlParam, t],
   );
 
-  // 🆕 Reload conversations when tab changes (especially for unreplied)
+  // ðŸ†• Reload conversations when tab changes (especially for unreplied)
   // Skip initial load since useInboxConversations already loads on mount
   const isInitialMount = useRef(true);
   const loadConversationsRef = useRef(loadConversations);
   loadConversationsRef.current = loadConversations; // Keep ref updated
 
-  // 🆕 Check URL for conversation parameter on mount (only once)
+  // ðŸ†• Check URL for conversation parameter on mount (only once)
   const urlConversationLoadedRef = useRef(false);
   const loadSpecificConversationRef = useRef(loadSpecificConversation);
   loadSpecificConversationRef.current = loadSpecificConversation; // Keep ref updated
@@ -399,7 +430,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
     if (conversationId && companyId) {
       urlConversationLoadedRef.current = true; // Mark as loaded
-      console.log("🔗 [URL] Found conversation ID in URL:", conversationId);
+      console.log("ðŸ”— [URL] Found conversation ID in URL:", conversationId);
       // Wait a bit for conversations to load first, then load specific conversation
       setTimeout(() => {
         if (loadSpecificConversationRef.current) {
@@ -412,34 +443,36 @@ const getApiError = (error: unknown): ApiErrorLike => {
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      // 🆕 Use database search when search query exists
+      // ðŸ†• Use database search when search query exists
       if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
         loadConversationsRef.current(
           1,
           false,
           activeTab,
           debouncedSearchQuery.trim(),
+          channel,
         );
       } else {
-        loadConversationsRef.current(1, false, activeTab);
+        loadConversationsRef.current(1, false, activeTab, undefined, channel);
       }
       return;
     }
 
-    // 🆕 Use database search when search query exists
+    // ðŸ†• Use database search when search query exists
     if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
       loadConversationsRef.current(
         1,
         false,
         activeTab,
         debouncedSearchQuery.trim(),
+        channel,
       );
     } else {
-      loadConversationsRef.current(1, false, activeTab);
+      loadConversationsRef.current(1, false, activeTab, undefined, channel);
     }
-  }, [activeTab, debouncedSearchQuery]); // 🔧 Added debouncedSearchQuery to trigger search in database
+  }, [activeTab, debouncedSearchQuery]); // ðŸ”§ Added debouncedSearchQuery to trigger search in database
 
-  // 🔧 OPTIMIZED: Debounce loadConversations to prevent excessive API calls
+  // ðŸ”§ OPTIMIZED: Debounce loadConversations to prevent excessive API calls
   // Move this before handlers that use it
   const loadConversationsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadConversationsRefForDebounce = useRef(loadConversations);
@@ -452,16 +485,16 @@ const getApiError = (error: unknown): ApiErrorLike => {
       clearTimeout(loadConversationsTimeoutRef.current);
     }
     loadConversationsTimeoutRef.current = setTimeout(() => {
-      // 🆕 Use database search when search query exists
+      // ðŸ†• Use database search when search query exists
       const search = debouncedSearchQueryRef.current?.trim();
       if (search) {
-        loadConversationsRefForDebounce.current(1, false, tab, search);
+        loadConversationsRefForDebounce.current(1, false, tab, search, channel);
       } else {
-        loadConversationsRefForDebounce.current(1, false, tab);
+        loadConversationsRefForDebounce.current(1, false, tab, undefined, channel);
       }
       loadConversationsTimeoutRef.current = null;
     }, 500); // Debounce by 500ms to batch multiple updates
-  }, []); // 🔧 OPTIMIZED: Empty dependencies, use ref instead
+  }, [channel]); // 🔧 OPTIMIZED: Empty dependencies, use ref instead
 
   // Tab counts - OPTIMIZED: Single pass calculation instead of multiple filters
   const tabCounts = useMemo(() => {
@@ -476,7 +509,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       spam: 0,
     };
 
-    // 🔧 OPTIMIZED: Single pass through conversations instead of multiple filters
+    // ðŸ”§ OPTIMIZED: Single pass through conversations instead of multiple filters
     if (conversations.length > 0) {
       for (const conv of conversations) {
         switch (conv.tab) {
@@ -507,7 +540,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     return counts;
   }, [conversations, apiCounts]);
 
-  // 🆕 Load all messages for a conversation (for advanced search)
+  // ðŸ†• Load all messages for a conversation (for advanced search)
   const loadAllMessagesForConversation = useCallback(
     async (conversationId: string) => {
       // Avoid duplicate loading
@@ -555,7 +588,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
       try {
         console.log(
-          "🔍 [SEARCH] Loading all messages for conversation:",
+          "ðŸ” [SEARCH] Loading all messages for conversation:",
           conversationId,
         );
 
@@ -592,7 +625,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
             senderName:
               msg.senderName ||
               msg.sender?.name ||
-              (msg.isFromCustomer ? "العميل" : "موظف"),
+              (msg.isFromCustomer ? t("facebookInbox.customer") : t("facebookInbox.employee")),
             timestamp: new Date(msg.timestamp || msg.createdAt || Date.now()),
             type: (msg.type || "text") as InboxMessage["type"],
             isFromCustomer: msg.isFromCustomer || false,
@@ -615,7 +648,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         }
 
         console.log(
-          `✅ [SEARCH] Loaded ${allMessages.length} messages for conversation ${conversationId}`,
+          `âœ… [SEARCH] Loaded ${allMessages.length} messages for conversation ${conversationId}`,
         );
 
         // Store messages in conversationMessages map for search
@@ -626,7 +659,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         });
       } catch (error) {
         console.error(
-          "❌ [SEARCH] Error loading all messages for conversation:",
+          "âŒ [SEARCH] Error loading all messages for conversation:",
           error,
         );
       } finally {
@@ -646,19 +679,19 @@ const getApiError = (error: unknown): ApiErrorLike => {
   );
 
   // Filtered conversations - using debounced search query with advanced message search
-  // 🔧 OPTIMIZED: Removed activeTab from dependencies (not used in filtering)
+  // ðŸ”§ OPTIMIZED: Removed activeTab from dependencies (not used in filtering)
   const filteredConversations = useMemo(() => {
     const filtered = conversations.filter((conv) => {
       // 1. Tab filter - REMOVED (Server-side filtering now)
       // We assume 'conversations' contains only items for the current tab
 
-      // 2. Search query (using debounced value) - 🆕 Advanced: search in messages too
+      // 2. Search query (using debounced value) - ðŸ†• Advanced: search in messages too
       if (debouncedSearchQuery) {
         const query = debouncedSearchQuery.toLowerCase();
         const matchesName = conv.customerName.toLowerCase().includes(query);
         const matchesMessage = conv.lastMessage.toLowerCase().includes(query);
 
-        // 🆕 Advanced: Search in loaded messages (from conversationMessages map or current messages)
+        // ðŸ†• Advanced: Search in loaded messages (from conversationMessages map or current messages)
         let matchesMessagesContent = false;
 
         // Check if messages are loaded for this conversation
@@ -712,7 +745,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     selectedConversation,
     messages,
     conversationMessages,
-  ]); // 🔧 Added conversationMessages for advanced search
+  ]); // ðŸ”§ Added conversationMessages for advanced search
 
   // Auto-scroll to bottom
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -820,7 +853,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
   }, [messages.length]);
 
   // Send message handlers
-  // 🆕 Optimistic UI handlers for instant message display
+  // ðŸ†• Optimistic UI handlers for instant message display
   const handleOptimisticMessage = useCallback(
     (optimisticMsg: InboxMessage) => {
       // Add message immediately to UI
@@ -842,7 +875,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     console.error("Message failed:", tempId, error);
   }, []);
 
-  // 🆕 Optimistic UI - message appears instantly, sends in background
+  // ðŸ†• Optimistic UI - message appears instantly, sends in background
   const handleSendMessage = useCallback(
     async (content: string) => {
       if (!selectedConversation || !companyId) return;
@@ -851,7 +884,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       const currentReplyTo = replyToMessage;
       setReplyToMessage(null);
 
-      // 🆕 Update conversation state immediately
+      // ðŸ†• Update conversation state immediately
       updateSelectedConversation({
         lastMessageIsFromCustomer: false,
         lastMessage:
@@ -860,7 +893,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       });
 
       try {
-        // 🆕 Send with optimistic callbacks - message shows instantly
+        // ðŸ†• Send with optimistic callbacks - message shows instantly
         await sendTextMessage(
           selectedConversation.id,
           content,
@@ -871,18 +904,18 @@ const getApiError = (error: unknown): ApiErrorLike => {
           handleMessageError,
         );
 
-        // 🔧 OPTIMIZED: Don't reload messages if socket will handle it
+        // ðŸ”§ OPTIMIZED: Don't reload messages if socket will handle it
         if (!isConnected) {
           loadMessages(selectedConversation.id);
         }
 
-        // 🆕 If in unreplied tab, reload conversations to get fresh data
+        // ðŸ†• If in unreplied tab, reload conversations to get fresh data
         if (activeTab === "unreplied") {
           debouncedLoadConversations("unreplied");
         }
       } catch (error) {
         // Error already handled by handleMessageError
-        console.error("فشل في إرسال الرسالة:", error);
+        console.error("ÙØ´Ù„ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©:", error);
       }
     },
     [
@@ -907,19 +940,19 @@ const getApiError = (error: unknown): ApiErrorLike => {
       try {
         await sendFileMessage(selectedConversation.id, file, companyId);
 
-        // 🆕 Update conversation state - message is now from us (not customer)
+        // ðŸ†• Update conversation state - message is now from us (not customer)
         updateSelectedConversation({
           lastMessageIsFromCustomer: false,
-          lastMessage: `📎 ${file.name}`,
+          lastMessage: `ðŸ“Ž ${file.name}`,
           lastMessageTime: new Date(),
         });
 
-        // 🔧 OPTIMIZED: Don't reload messages if socket will handle it
+        // ðŸ”§ OPTIMIZED: Don't reload messages if socket will handle it
         if (!isConnected) {
           loadMessages(selectedConversation.id);
         }
 
-        // 🆕 If in unreplied tab, reload conversations to get fresh data
+        // ðŸ†• If in unreplied tab, reload conversations to get fresh data
         if (activeTab === "unreplied") {
           debouncedLoadConversations("unreplied");
         }
@@ -1006,11 +1039,11 @@ const getApiError = (error: unknown): ApiErrorLike => {
         // Update state
         updateSelectedConversation({
           lastMessageIsFromCustomer: false,
-          lastMessage: messageContent || "📷 صورة",
+          lastMessage: messageContent || t("facebookInbox.photo"),
           lastMessageTime: new Date(),
         });
 
-        // 🔧 OPTIMIZED: Don't reload messages if socket will handle it
+        // ðŸ”§ OPTIMIZED: Don't reload messages if socket will handle it
         if (!isConnected) {
           setTimeout(() => {
             loadMessages(selectedConversation.id);
@@ -1056,7 +1089,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
         updateSelectedConversation({
           lastMessageIsFromCustomer: false,
-          lastMessage: "📷 صورة",
+          lastMessage: t("facebookInbox.photo"),
           lastMessageTime: new Date(),
         });
 
@@ -1116,7 +1149,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         if (successCount > 0) {
           updateSelectedConversation({
             lastMessageIsFromCustomer: false,
-            lastMessage: `📷 ${successCount} صورة`,
+            lastMessage: t("facebookInbox.photos", { count: successCount }),
             lastMessageTime: new Date(),
           });
 
@@ -1149,6 +1182,94 @@ const getApiError = (error: unknown): ApiErrorLike => {
       activeTab,
       isConnected,
       debouncedLoadConversations,
+    ],
+  );
+
+  // ðŸ†• Handle sending product images as a message
+  const handleSendProductImages = useCallback(
+    async (
+      product: { id: string; name: string; price: number | string },
+      images: Array<{ url: string; filename: string }>,
+      includeDetails: boolean,
+    ) => {
+      if (!selectedConversation || !companyId || images.length === 0) return;
+
+      setShowProductPicker(false);
+
+      try {
+        // Send product name & price text first if requested
+        if (includeDetails) {
+          const detailText = `${product.name}\nØ§Ù„Ø³Ø¹Ø±: ${product.price} Ø¬.Ù…`;
+          await sendTextMessage(
+            selectedConversation.id,
+            detailText,
+            companyId,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+
+        // Send images
+        let successCount = 0;
+        for (const image of images) {
+          try {
+            await apiClient.post(
+              `/conversations/${selectedConversation.id}/send-existing-image`,
+              {
+                imageUrl: image.url,
+                filename: image.filename,
+              },
+            );
+            successCount++;
+
+            if (successCount < images.length) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          } catch (error) {
+            console.error("Error sending product image:", error);
+          }
+        }
+
+        if (successCount > 0) {
+          updateSelectedConversation({
+            lastMessageIsFromCustomer: false,
+            lastMessage:
+              includeDetails
+                ? product.name
+                : t("facebookInbox.photos", { count: successCount }),
+            lastMessageTime: new Date(),
+          });
+
+          if (!isConnected) {
+            setTimeout(() => {
+              loadMessages(selectedConversation.id);
+            }, 500);
+          }
+
+          if (activeTab === "unreplied") {
+            debouncedLoadConversations("unreplied");
+          }
+
+          if (successCount < images.length) {
+            alert(t("conversations.imagesPartialSend", { success: successCount, total: images.length }));
+          }
+        } else {
+          alert(t("conversations.imagesSendFailed"));
+        }
+      } catch (error) {
+        console.error("Error sending product images:", error);
+        alert(t("conversations.imagesSendFailed"));
+      }
+    },
+    [
+      selectedConversation,
+      companyId,
+      sendTextMessage,
+      loadMessages,
+      updateSelectedConversation,
+      activeTab,
+      isConnected,
+      debouncedLoadConversations,
+      t,
     ],
   );
 
@@ -1194,7 +1315,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         await updateStatus(selectedConversation.id, status, companyId);
         debouncedLoadConversations(activeTab);
       } catch (error) {
-        console.error("فشل في تحديث الحالة:", error);
+        console.error("ÙØ´Ù„ ÙÙŠ ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø­Ø§Ù„Ø©:", error);
       }
     },
     [
@@ -1213,7 +1334,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         await assignConversation(selectedConversation.id, userId, companyId);
         debouncedLoadConversations(activeTab);
       } catch (error) {
-        console.error("فشل في تعيين المحادثة:", error);
+        console.error("ÙØ´Ù„ ÙÙŠ ØªØ¹ÙŠÙŠÙ† Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©:", error);
       }
     },
     [
@@ -1231,7 +1352,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       await markAsDone(selectedConversation.id, companyId);
       debouncedLoadConversations(activeTab);
     } catch (error) {
-      console.error("فشل في تحديث المحادثة:", error);
+      console.error("ÙØ´Ù„ ÙÙŠ ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©:", error);
     }
   }, [
     selectedConversation,
@@ -1251,7 +1372,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       );
       debouncedLoadConversations(activeTab);
     } catch (error) {
-      console.error("فشل في تحديث الأولوية:", error);
+      console.error("ÙØ´Ù„ ÙÙŠ ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø£ÙˆÙ„ÙˆÙŠØ©:", error);
     }
   }, [
     selectedConversation,
@@ -1269,7 +1390,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         await addTags(selectedConversation.id, tags, companyId);
         debouncedLoadConversations(activeTab);
       } catch (error) {
-        console.error("فشل في تحديث التصنيفات:", error);
+        console.error("ÙØ´Ù„ ÙÙŠ ØªØ­Ø¯ÙŠØ« Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª:", error);
       }
     },
     [
@@ -1301,10 +1422,11 @@ const getApiError = (error: unknown): ApiErrorLike => {
         false,
         activeTab,
         debouncedSearchQuery.trim() || undefined,
+        channel,
       );
       alert(t("conversations.deleteConversationSuccess"));
     } catch (error) {
-      console.error("فشل في حذف المحادثة:", error);
+      console.error("ÙØ´Ù„ ÙÙŠ Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©:", error);
       alert(t("conversations.deleteConversationFailed"));
     }
   }, [
@@ -1424,7 +1546,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     ],
   );
 
-  // 🆕 Sound & Notifications Functions (defined before Socket.IO useEffect)
+  // ðŸ†• Sound & Notifications Functions (defined before Socket.IO useEffect)
   const playNotificationSound = useCallback(() => {
     if (!soundEnabled) return;
     socketService.playNotificationSound();
@@ -1460,7 +1582,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
   );
 
   // Socket.IO
-  // 🔧 FIX: Use ref to track activeTab for socket handler to avoid stale closure
+  // ðŸ”§ FIX: Use ref to track activeTab for socket handler to avoid stale closure
   const activeTabRef = useRef<InboxTab>(activeTab);
   useEffect(() => {
     activeTabRef.current = activeTab;
@@ -1470,6 +1592,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
     if (!socket || !isConnected) return;
 
     const handleNewMessage = (data: SocketInboxMessage) => {
+      // ðŸ”§ Only handle messages for this inbox's channel (prevents cross-channel leakage)
+      if (data.channel && data.channel !== channel) return;
       if (
         selectedConversation &&
         data.conversationId === selectedConversation.id
@@ -1477,7 +1601,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         addMessage(data);
       }
 
-      // 🆕 Play sound and show notification for customer messages
+      // ðŸ†• Play sound and show notification for customer messages
       if (data.isFromCustomer) {
         playNotificationSound();
         if (
@@ -1493,13 +1617,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
         }
       }
 
-      // 🔧 OPTIMIZED: Use debounced loadConversations to prevent excessive API calls
+      // ðŸ”§ OPTIMIZED: Use debounced loadConversations to prevent excessive API calls
       debouncedLoadConversations(activeTabRef.current);
     };
 
     socket.on("new_message", handleNewMessage);
 
-    // 🆕 Handle read receipts - update message status to 'read'
+    // ðŸ†• Handle read receipts - update message status to 'read'
     const handleMessagesRead = (data: {
       conversationId: string;
       watermark: number;
@@ -1508,7 +1632,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         // Update all messages sent before watermark to 'read' status
         markMessagesAsRead(data.watermark);
         console.log(
-          "👁️ [READ-RECEIPT] Messages marked as read up to:",
+          "ðŸ‘ï¸ [READ-RECEIPT] Messages marked as read up to:",
           new Date(data.watermark),
         );
       }
@@ -1594,7 +1718,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     fetchPostDetails,
   ]);
 
-  // 🆕 Load messages for search when search query changes
+  // ðŸ†• Load messages for search when search query changes
   useEffect(() => {
     if (!debouncedSearchQuery || debouncedSearchQuery.trim() === "") {
       return;
@@ -1655,7 +1779,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     loadAllMessagesForConversation,
   ]);
 
-  // 🆕 Block Customer Functions
+  // ðŸ†• Block Customer Functions
   const checkBlockStatus = useCallback(async () => {
     if (!selectedConversation?.pageId || !selectedConversation?.customerId) {
       setIsBlocked(false);
@@ -1750,7 +1874,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     const repliedSet = new Set<string>();
     if (messages.length === 0) return repliedSet;
 
-    // 🔧 OPTIMIZED: Single pass algorithm - more efficient than nested loops
+    // ðŸ”§ OPTIMIZED: Single pass algorithm - more efficient than nested loops
     // Sort messages by timestamp once
     const sortedMessages = [...messages].sort((a, b) => {
       const timeA = new Date(a.timestamp).getTime();
@@ -1780,23 +1904,23 @@ const getApiError = (error: unknown): ApiErrorLike => {
     return repliedSet;
   }, [messages]);
 
-  // إزالة padding و overflow من parent main element في Layout
+  // Ø¥Ø²Ø§Ù„Ø© padding Ùˆ overflow Ù…Ù† parent main element ÙÙŠ Layout
   useEffect(() => {
     const mainElement = document.querySelector("main");
     if (mainElement) {
-      // حفظ الـ classes الأصلية
+      // Ø­ÙØ¸ Ø§Ù„Ù€ classes Ø§Ù„Ø£ØµÙ„ÙŠØ©
       const originalClasses = mainElement.className;
-      // إزالة padding و overflow وإضافة overflow-hidden و h-full
+      // Ø¥Ø²Ø§Ù„Ø© padding Ùˆ overflow ÙˆØ¥Ø¶Ø§ÙØ© overflow-hidden Ùˆ h-full
       mainElement.classList.remove("p-6", "overflow-y-auto");
       mainElement.classList.add("p-0", "overflow-hidden", "flex-1", "h-full");
 
       return () => {
-        // استعادة الـ classes الأصلية عند إغلاق الصفحة
+        // Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù€ classes Ø§Ù„Ø£ØµÙ„ÙŠØ© Ø¹Ù†Ø¯ Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„ØµÙØ­Ø©
         mainElement.className = originalClasses;
       };
     }
 
-    // 🆕 New apps layout (no <main>, uses app-shell-content instead)
+    // ðŸ†• New apps layout (no <main>, uses app-shell-content instead)
     const appContent = document.querySelector(".app-shell-content");
     if (appContent) {
       const origContentOverflow = appContent.style.overflow;
@@ -1883,9 +2007,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
     : showProfilePanel;
   const profilePanelToggleTitle = isWideDesktop
     ? isProfilePanelActive
-      ? "إخفاء بيانات العميل"
-      : "إظهار بيانات العميل"
-    : "بيانات العميل";
+      ? t("facebookInbox.hideCustomerData")
+      : t("facebookInbox.showCustomerData")
+    : t("facebookInbox.customerData");
 
   const handleBackToConversationList = useCallback(() => {
     setShowSidebar(true);
@@ -1897,7 +2021,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
   const handleCopyConversationLink = useCallback(
     (conversationId: string) => {
-      const conversationLink = `${window.location.origin}/facebook-inbox?conversation=${conversationId}`;
+      const conversationLink = `${window.location.origin}${inboxPath}?conversation=${conversationId}`;
 
       navigator.clipboard
         .writeText(conversationLink)
@@ -2088,8 +2212,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="business-inbox-empty p-8">
-                <div className="text-6xl mb-4">💬</div>
-                <p>لا توجد محادثات</p>
+                <div className="text-6xl mb-4">ðŸ’¬</div>
+                <p>{t("facebookInbox.noConversations")}</p>
               </div>
             ) : (
               <div>
@@ -2137,11 +2261,11 @@ const getApiError = (error: unknown): ApiErrorLike => {
               {/* Chat Header - simplified, Status & Assignment moved to sidebar */}
               <div className="business-inbox-header business-inbox-chat-header p-2 sm:p-3">
                 <div className="business-inbox-header-row business-inbox-chat-header-row">
-                  {/* زر الرجوع للموبايل */}
+                  {/* Ø²Ø± Ø§Ù„Ø±Ø¬ÙˆØ¹ Ù„Ù„Ù…ÙˆØ¨Ø§ÙŠÙ„ */}
                   <button
                     onClick={handleBackToConversationList}
                     className="md:hidden business-chip-button p-2 rounded-lg transition-colors"
-                    title="رجوع للمحادثات"
+                    title={t("facebookInbox.backToConversations")}
                   >
                     <ArrowRight size={20} />
                   </button>
@@ -2199,7 +2323,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                           }
                           className="business-icon-button rounded-xl transition-colors"
                           data-tone={showMobileActionMenu ? "primary" : undefined}
-                          title="المزيد"
+                          title={t("facebookInbox.more")}
                           aria-expanded={showMobileActionMenu}
                         >
                           <MoreHorizontal size={18} />
@@ -2241,7 +2365,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                             onClick={() => setShowDesktopMoreMenu((current) => !current)}
                             className="business-icon-button rounded-xl transition-colors"
                             data-tone={showDesktopMoreMenu ? "primary" : undefined}
-                            title="المزيد من الإجراءات"
+                            title={t("facebookInbox.moreActions")}
                             aria-expanded={showDesktopMoreMenu}
                           >
                             <MoreHorizontal size={18} />
@@ -2252,7 +2376,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                               <div
                                 className="fixed inset-0 z-20"
                                 onClick={() => setShowDesktopMoreMenu(false)}
-                                aria-label="إغلاق القائمة"
+                                aria-label={t("facebookInbox.closeMenu")}
                               />
                               <div className="business-dropdown-surface absolute left-0 top-full z-30 mt-2 p-2 w-56 flex flex-col gap-1">
                                 <button
@@ -2264,7 +2388,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                   }}
                                 >
                                   <ShoppingCartIcon className="h-5 w-5" />
-                                  <span>إنشاء طلب سريع</span>
+                                  <span>{t("facebookInbox.createQuickOrder")}</span>
                                 </button>
 
                                 <button
@@ -2296,7 +2420,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                   }}
                                 >
                                   <StickyNote className="h-5 w-5" />
-                                  <span>{showNotes ? "إخفاء الملاحظات" : "عرض الملاحظات"}</span>
+                                  <span>{showNotes ? t("facebookInbox.hideNotes") : t("facebookInbox.showNotes")}</span>
                                 </button>
 
                                 <button
@@ -2308,7 +2432,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                   }}
                                 >
                                   <ClockIcon className="h-5 w-5" />
-                                  <span>غفوة المحادثة</span>
+                                  <span>{t("facebookInbox.snooze")}</span>
                                 </button>
 
                                 <div className="h-px my-1" style={{ background: "var(--business-muted-line)" }} />
@@ -2323,7 +2447,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                   }}
                                 >
                                   <TrashIcon className="h-5 w-5" />
-                                  <span>حذف المحادثة</span>
+                                  <span>{t("facebookInbox.deleteConversation")}</span>
                                 </button>
                               </div>
                             </>
@@ -2360,7 +2484,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                           onClick={() => setShowQuickOrderModal(true)}
                           className="business-icon-button rounded-xl transition-colors"
                           data-tone="warning"
-                          title="إنشاء طلب سريع"
+                          title={t("facebookInbox.createQuickOrder")}
                         >
                           <ShoppingCartIcon className="h-5 w-5" />
                         </button>
@@ -2422,7 +2546,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                       type="button"
                       className="fixed inset-0 z-20 bg-black/10 md:hidden"
                       onClick={() => setShowMobileActionMenu(false)}
-                      aria-label="إغلاق قائمة الإجراءات"
+                      aria-label={t("facebookInbox.closeMenu")}
                     />
                     <div className="business-inbox-mobile-action-menu business-dropdown-surface absolute inset-x-3 top-full z-30 mt-2 p-2 md:hidden">
                       <button
@@ -2434,7 +2558,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         }}
                       >
                         <ShoppingCartIcon className="h-5 w-5" />
-                        <span>إنشاء طلب سريع</span>
+                        <span>{t("facebookInbox.createQuickOrder")}</span>
                       </button>
 
                       <button
@@ -2463,7 +2587,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         onClick={handleToggleNotesPanel}
                       >
                         <StickyNote size={18} />
-                        <span>{showNotes ? "إخفاء الملاحظات" : "عرض الملاحظات"}</span>
+                        <span>{showNotes ? t("facebookInbox.hideNotes") : t("facebookInbox.showNotes")}</span>
                       </button>
 
                       <button
@@ -2475,7 +2599,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         }}
                       >
                         <CheckCircleIcon className="h-5 w-5" />
-                        <span>تحديد كمنتهي</span>
+                        <span>{t("facebookInbox.markAsDone")}</span>
                       </button>
 
                       <button
@@ -2489,8 +2613,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         <StarIcon className="h-5 w-5" />
                         <span>
                           {selectedConversation.priority
-                            ? "إلغاء الأولوية"
-                            : "تحديد كأولوية"}
+        ? t("facebookInbox.clearPriority")
+        : t("facebookInbox.setPriority")}
                         </span>
                       </button>
 
@@ -2503,7 +2627,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         }}
                       >
                         <ClockIcon className="h-5 w-5" />
-                        <span>غفوة المحادثة</span>
+                        <span>{t("facebookInbox.snooze")}</span>
                       </button>
 
                       <button
@@ -2516,7 +2640,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         }}
                       >
                         <TrashIcon className="h-5 w-5" />
-                        <span>حذف المحادثة</span>
+                        <span>{t("facebookInbox.deleteConversation")}</span>
                       </button>
                     </div>
                   </>
@@ -2597,13 +2721,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   onCancelReply={handleCancelReply}
                   onOpenTextGallery={() => setShowTextGallery(true)}
                   onOpenImageGallery={() => setShowImageGallery(true)}
+                  onOpenProductPicker={() => setShowProductPicker(true)}
                 />
               </div>
             </>
           ) : (
             <div className="business-chat-stage flex items-center justify-center h-full">
               <div className="text-center">
-                {/* زر فتح القائمة على الموبايل */}
+                {/* Ø²Ø± ÙØªØ­ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù…ÙˆØ¨Ø§ÙŠÙ„ */}
                 <button
                   onClick={() => setShowSidebar(true)}
                   className="md:hidden mb-4 business-icon-button !w-14 !h-14 rounded-full shadow-lg"
@@ -2613,22 +2738,22 @@ const getApiError = (error: unknown): ApiErrorLike => {
                     color: "white",
                     borderColor: "transparent",
                   }}
-                  title="عرض المحادثات"
+                  title={t("facebookInbox.showConversations")}
                 >
                   <Menu size={24} />
                 </button>
-                <div className="text-6xl mb-4">💬</div>
+                <div className="text-6xl mb-4">ðŸ’¬</div>
                 <h3
                   className="text-lg font-medium mb-2"
                   style={{ color: "var(--color-foreground)" }}
                 >
-                  اختر محادثة
+                  {t("facebookInbox.selectConversation")}
                 </h3>
                 <p
                   className="text-sm"
                   style={{ color: "var(--color-muted-foreground)" }}
                 >
-                  اختر محادثة من القائمة
+                  {t("facebookInbox.selectConversationHint")}
                 </p>
               </div>
             </div>
@@ -2659,12 +2784,12 @@ const getApiError = (error: unknown): ApiErrorLike => {
               onAssign={handleAssignment}
               disabled={updating}
               onCopyConversationLink={(conversationId) => {
-                const conversationLink = `${window.location.origin}/facebook-inbox?conversation=${conversationId}`;
+                const conversationLink = `${window.location.origin}${inboxPath}?conversation=${conversationId}`;
 
                 navigator.clipboard
                   .writeText(conversationLink)
                   .catch((err) => {
-                    console.error("❌ Failed to copy link:", err);
+                    console.error("âŒ Failed to copy link:", err);
                     alert(t("conversations.conversationLinkAlert", { link: conversationLink }));
                   });
               }}
@@ -2702,7 +2827,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 type="button"
                 onClick={() => setShowProfilePanel(false)}
                 className="business-icon-button absolute left-3 top-3 z-40 rounded-full"
-                title="إغلاق بيانات العميل"
+                title={t("facebookInbox.closeCustomerData")}
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -2719,24 +2844,24 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 currentAssigneeName={selectedConversation!.assignedToName ?? null}
                 onAssign={handleAssignment}
                 disabled={updating}
-                // 🆕 Copy Conversation Link
+                // ðŸ†• Copy Conversation Link
                 onCopyConversationLink={(conversationId) => {
-                  const conversationLink = `${window.location.origin}/facebook-inbox?conversation=${conversationId}`;
+                  const conversationLink = `${window.location.origin}${inboxPath}?conversation=${conversationId}`;
 
                   navigator.clipboard
                     .writeText(conversationLink)
                     .then(() => {
                       console.log(
-                        "✅ Conversation link copied:",
+                        "âœ… Conversation link copied:",
                         conversationLink,
                       );
                     })
                     .catch((err) => {
-                      console.error("❌ Failed to copy link:", err);
+                      console.error("âŒ Failed to copy link:", err);
                       alert(t("conversations.conversationLinkAlert", { link: conversationLink }));
                     });
                 }}
-                // 🆕 Block Customer Props
+                // ðŸ†• Block Customer Props
                 isBlocked={isBlocked}
                 checkingBlockStatus={checkingBlockStatus}
                 blocking={blocking}
@@ -2750,14 +2875,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   setShowBlockModal(false);
                   setBlockReason("");
                 }}
-                // 🆕 Sound & Notifications Props
+                // ðŸ†• Sound & Notifications Props
                 soundEnabled={soundEnabled}
                 notificationsEnabled={notificationsEnabled}
                 onSoundToggle={() => setSoundEnabled(!soundEnabled)}
                 onNotificationsToggle={() =>
                   setNotificationsEnabled(!notificationsEnabled)
                 }
-                // 🆕 Quick Order
+                // ðŸ†• Quick Order
                 onCreateOrder={() => setShowQuickOrderModal(true)}
               />
             </div>
@@ -2776,7 +2901,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
             color: "color-mix(in srgb, var(--business-warning) 78%, black)",
           }}
         >
-          ⚠️ غير متصل
+              {t("facebookInbox.disconnected")}
         </div>
       )}
 
@@ -2795,7 +2920,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
         onSelectMultipleImages={handleSelectMultipleImagesFromGallery}
       />
 
-      {/* 🆕 Block Customer Modal */}
+      {/* ðŸ†• Product Image Picker Modal */}
+      <ProductImagePickerModal
+        isOpen={showProductPicker}
+        onClose={() => setShowProductPicker(false)}
+        onSendProduct={handleSendProductImages}
+      />
+
+      {/* ðŸ†• Block Customer Modal */}
       {showBlockModal && selectedConversation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="business-modal-surface p-6 w-full max-w-md">
@@ -2803,14 +2935,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
               className="text-lg font-semibold mb-4"
               style={{ color: "var(--color-foreground)" }}
             >
-              حظر العميل على صفحة الفيس بوك
+              {t("facebookInbox.blockOnFacebook")}
             </h3>
             <p
               className="text-sm mb-4"
               style={{ color: "var(--color-muted-foreground)" }}
             >
-              سيتم حظر هذا العميل على صفحة الفيس بوك المحددة ولن يتم استقبال
-              رسائله.
+              {t("facebookInbox.blockOnFacebookDesc")}
             </p>
 
             <div className="mb-4">
@@ -2818,14 +2949,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 className="block text-sm font-medium mb-2"
                 style={{ color: "var(--color-foreground)" }}
               >
-                سبب الحظر (اختياري)
+                {t("facebookInbox.blockReason")}
               </label>
               <textarea
                 value={blockReason}
                 onChange={(e) => setBlockReason(e.target.value)}
                 className="business-chat-input"
                 rows={3}
-                placeholder="أدخل سبب الحظر..."
+                placeholder={t("facebookInbox.blockReasonPlaceholder")}
               />
             </div>
 
@@ -2837,7 +2968,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 }}
                 className="business-chip-button px-4 py-2 rounded-lg"
               >
-                إلغاء
+                {t("facebookInbox.cancel")}
               </button>
               <button
                 onClick={handleBlockCustomer}
@@ -2849,14 +2980,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   color: "white",
                 }}
               >
-                {blocking ? "جاري الحظر..." : "تأكيد الحظر"}
+                {blocking ? t("facebookInbox.blocking") : t("facebookInbox.confirmBlock")}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🆕 Blocked Customer Alert */}
+      {/* ðŸ†• Blocked Customer Alert */}
       {isBlocked && selectedConversation && (
         <div
           className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 rounded-lg p-4 shadow-lg max-w-md business-page-panel"
@@ -2872,13 +3003,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
               style={{ color: "var(--business-danger)" }}
             />
             <p className="text-sm" style={{ color: "var(--business-danger)" }}>
-              ⚠️ هذا العميل محظور على صفحة الفيس بوك - لن يتم استقبال رسائله
+              {t("facebookInbox.customerBlocked")}
             </p>
           </div>
         </div>
       )}
 
-      {/* 🆕 Quick Order Modal */}
+      {/* ðŸ†• Quick Order Modal */}
       {selectedConversation && (
         <QuickOrderModal
           isOpen={showQuickOrderModal}
@@ -2887,10 +3018,10 @@ const getApiError = (error: unknown): ApiErrorLike => {
           customerName={selectedConversation.customerName}
           conversationId={selectedConversation.id}
           customerId={selectedConversation.customerId}
-          platform="facebook"
+          platform={platform}
           pageName={selectedConversation.pageName || "Facebook"}
           onOrderCreated={(orderId) => {
-            console.log("✅ Order created:", orderId);
+            console.log("âœ… Order created:", orderId);
           }}
         />
       )}
@@ -2899,3 +3030,4 @@ const getApiError = (error: unknown): ApiErrorLike => {
 };
 
 export default FacebookInbox;
+

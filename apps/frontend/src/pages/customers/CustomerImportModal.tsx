@@ -1,8 +1,14 @@
-import { X as XMarkIcon, Upload as ArrowUpTrayIcon, Download as ArrowDownTrayIcon, Circle as DocumentArrowUpIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useRef } from "react";
 import { createPortal } from "react-dom";
-;
+import {
+  XMarkIcon,
+  ArrowUpTrayIcon,
+  ArrowDownTrayIcon,
+  DocumentArrowUpIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import * as XLSX from "xlsx";
 

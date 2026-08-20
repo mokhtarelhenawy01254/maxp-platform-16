@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, Boxes, FileText, Hash, Loader2, MessageSquare, Pencil, Plus, RefreshCw, Shield, Tag, Trash2, X as XMarkIcon } from "lucide-react";

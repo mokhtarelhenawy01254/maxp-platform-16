@@ -17,6 +17,16 @@ import { indexedDBStorage } from "../services/indexedDBStorage";
 
 export type WhatsAppProvider = "BAILEYS" | "META_CLOUD";
 
+export type WhatsAppSidebarFilter = "all" | "unreplied" | "unread" | "groups" | "statuses";
+
+export interface WhatsAppConversationCounts {
+  all: number;
+  unread: number;
+  groups: number;
+  unreplied: number;
+  archived: number;
+}
+
 export interface Session {
   id: string;
   name: string;
@@ -72,8 +82,16 @@ export interface Contact {
     content: string | null;
     messageType: string;
     fromMe: boolean;
+    senderId?: string | null;
+    senderName?: string | null;
     timestamp: string;
   };
+  matchedMessage?: {
+    content: string | null;
+    messageType: string;
+    fromMe: boolean;
+    timestamp: string;
+  } | null;
   window: {
     isOpen: boolean;
     remainingSeconds: number;
@@ -101,6 +119,7 @@ export interface Message {
   senderId?: string;
   senderName?: string;
   participant?: string;
+  participantName?: string;
   metadata?: any;
   interactiveData?: string;
 }
@@ -115,6 +134,7 @@ export interface QuickReply {
 
 interface ConversationsResponse {
   conversations: Contact[];
+  counts?: WhatsAppConversationCounts;
   pagination: {
     page: number;
     limit: number;
@@ -236,6 +256,7 @@ export const useWhatsAppSessions = (
 export const useWhatsAppConversations = (
   sessionId: string,
   limit: number = 30,
+  filters: { filter?: WhatsAppSidebarFilter; search?: string; archived?: boolean } = {},
   options?: Omit<
     UseInfiniteQueryOptions<
       ConversationsResponse,
@@ -254,13 +275,28 @@ export const useWhatsAppConversations = (
     readonly unknown[],
     number
   >({
-    queryKey: ["whatsapp", "conversations", sessionId, limit],
+    queryKey: [
+      "whatsapp",
+      "conversations",
+      sessionId,
+      limit,
+      filters.filter || "all",
+      filters.search || "",
+      filters.archived || false,
+    ],
     queryFn: async ({ pageParam = 1 }) => {
       const cacheKey = `whatsapp_conversations_${sessionId}`;
       let response;
       try {
         response = await api.get<ConversationsResponse>("/whatsapp/conversations", {
-          params: { sessionId, page: pageParam, limit },
+          params: {
+            sessionId,
+            page: pageParam,
+            limit,
+            filter: filters.filter === "all" ? undefined : filters.filter,
+            search: filters.search || undefined,
+            archived: filters.archived || undefined,
+          },
         });
       } catch (error) {
         if (pageParam === 1) {
@@ -281,6 +317,7 @@ export const useWhatsAppConversations = (
 
       const result = {
         conversations: response.data.conversations || [],
+        counts: response.data.counts,
         pagination: response.data.pagination || {},
       };
 
@@ -311,7 +348,7 @@ export const useWhatsAppConversations = (
       return undefined;
     },
     staleTime: 10 * 1000,
-    refetchInterval: 15 * 1000,
+    refetchInterval: 30 * 1000,
     refetchIntervalInBackground: false,
     gcTime: 10 * 60 * 1000, // 10 minutes
     ...options,

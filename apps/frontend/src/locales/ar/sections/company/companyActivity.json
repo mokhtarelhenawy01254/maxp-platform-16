@@ -1,0 +1,88 @@
+{
+  "title": "نشاطات الشركة",
+  "tabs": {
+    "dashboard": "لوحة التحكم",
+    "allActivities": "جميع النشاطات",
+    "mostActiveUsers": "أكثر المستخدمين نشاطاً",
+    "criticalActivities": "النشاطات الحساسة"
+  },
+  "stats": {
+    "totalActivities": "إجمالي النشاطات",
+    "activeUsers": "المستخدمين النشطين",
+    "criticalActivities": "النشاطات الحرجة",
+    "highSeverity": "النشاطات العالية"
+  },
+  "charts": {
+    "distributionByCategory": "توزيع النشاطات حسب التصنيف",
+    "dailyActivities": "النشاطات اليومية (آخر 30 يوم)",
+    "total": "الإجمالي",
+    "success": "نجح",
+    "failure": "فشل"
+  },
+  "filters": {
+    "category": "التصنيف",
+    "severity": "الخطورة",
+    "status": "الحالة",
+    "search": "بحث",
+    "searchPlaceholder": "ابحث في الوصف...",
+    "exportCsv": "تصدير CSV",
+    "all": "الكل"
+  },
+  "table": {
+    "user": "المستخدم",
+    "dateTime": "التاريخ والوقت",
+    "category": "التصنيف",
+    "action": "الإجراء",
+    "description": "الوصف",
+    "severity": "الخطورة",
+    "status": "الحالة",
+    "details": "تفاصيل",
+    "noActivities": "لا توجد نشاطات",
+    "rowsPerPage": "عدد الصفوف:",
+    "displayedRows": "{{from}}-{{to}} من {{count}}"
+  },
+  "categories": {
+    "AUTH": "المصادقة",
+    "ADS": "الإعلانات",
+    "CONVERSATIONS": "المحادثات",
+    "BILLING": "الفواتير",
+    "SETTINGS": "الإعدادات",
+    "SUPPORT": "الدعم الفني",
+    "FILES": "الملفات",
+    "USERS": "المستخدمين",
+    "COMPANY": "الشركة",
+    "REPORTS": "التقارير"
+  },
+  "actions": {
+    "CREATE": "إنشاء",
+    "UPDATE": "تعديل",
+    "DELETE": "حذف",
+    "LOGIN": "تسجيل دخول",
+    "LOGOUT": "تسجيل خروج",
+    "UPLOAD": "رفع",
+    "DOWNLOAD": "تحميل",
+    "VIEW": "عرض",
+    "SEND": "إرسال",
+    "RECEIVE": "استقبال",
+    "ACTIVATE": "تفعيل",
+    "DEACTIVATE": "إيقاف"
+  },
+  "severity": {
+    "LOW": "منخفض",
+    "MEDIUM": "متوسط",
+    "HIGH": "عالي",
+    "CRITICAL": "حرج"
+  },
+  "activityDetails": {
+    "title": "تفاصيل النشاط",
+    "unknownUser": "غير معروف",
+    "ipAddress": "عنوان IP",
+    "browser": "المتصفح",
+    "notAvailable": "غير متوفر",
+    "close": "إغلاق"
+  },
+  "errors": {
+    "fetchFailed": "حدث خطأ أثناء جلب النشاطات",
+    "exportFailed": "حدث خطأ أثناء تصدير النشاطات"
+  }
+}

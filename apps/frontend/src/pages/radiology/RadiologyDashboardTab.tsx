@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, fetchJson, RadiologyStatusMap, RadiologyOrderStatusMap } from "./shared";
 
@@ -81,12 +81,12 @@ export default function RadiologyDashboardTab() {
   if (error) return <div className="text-red-500">{error}</div>;
 
   const cards = [
-    { label: t("radiology.dashboard.todayAppointments"), value: todayAppointments ?? "ΓÇö", to: "/radiology/schedule" },
-    { label: t("radiology.dashboard.studiesToday"), value: stats?.studiesToday ?? "ΓÇö" },
-    { label: t("radiology.dashboard.awaitingReport"), value: stats?.awaiting ?? "ΓÇö" },
-    { label: t("radiology.dashboard.reportsReady"), value: stats?.ready ?? "ΓÇö" },
-    { label: t("radiology.dashboard.emergencyCases"), value: stats?.emergency ?? "ΓÇö" },
-    { label: t("radiology.dashboard.totalCollected"), value: stats?.revenue != null ? `${Number(stats.revenue).toFixed(0)} ${t("radiology.currency")}` : "ΓÇö" },
+    { label: t("radiology.dashboard.todayAppointments"), value: todayAppointments ?? "—", to: "/radiology/schedule" },
+    { label: t("radiology.dashboard.studiesToday"), value: stats?.studiesToday ?? "—" },
+    { label: t("radiology.dashboard.awaitingReport"), value: stats?.awaiting ?? "—" },
+    { label: t("radiology.dashboard.reportsReady"), value: stats?.ready ?? "—" },
+    { label: t("radiology.dashboard.emergencyCases"), value: stats?.emergency ?? "—" },
+    { label: t("radiology.dashboard.totalCollected"), value: stats?.revenue != null ? `${Number(stats.revenue).toFixed(0)} ${t("radiology.currency")}` : "—" },
   ];
 
   return (

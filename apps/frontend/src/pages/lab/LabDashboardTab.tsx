@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { api, bookingApi, fetchJson, LAB_STATUS_MAP } from "./shared";
 
 interface OrderItem { status?: string; reportStatus?: string; total?: number; paid?: number; remaining?: number; }
@@ -25,11 +25,11 @@ export default function LabDashboardTab() {
         try {
           const rep = await fetchJson<{ totals?: { collected?: number; billed?: number } }>(bookingApi("reports/revenue"));
           revenue = rep.totals?.billed;
-        } catch { /* reports may be empty ΓÇö leave undefined */ }
+        } catch { /* reports may be empty — leave undefined */ }
 
         setStats({ ordersToday: orders.total ?? items.length, pending: inProgress, resultsPending, signed, revenue, collected });
       } catch (e) {
-        setError(e instanceof Error ? e.message : "╪«╪╖╪ú");
+        setError(e instanceof Error ? e.message : "خطأ");
       }
     })();
   }, []);
@@ -37,12 +37,12 @@ export default function LabDashboardTab() {
   if (error) return <div className="text-red-500">{error}</div>;
 
   const cards = [
-    { label: "╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è┘ê┘à", value: stats?.ordersToday ?? "ΓÇö" },
-    { label: "┘é┘è╪» ╪º┘ä╪¬╪¡┘ä┘è┘ä", value: stats?.pending ?? "ΓÇö" },
-    { label: "╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä┘å╪¬╪º╪ª╪¼", value: stats?.resultsPending ?? "ΓÇö" },
-    { label: "┘à┘ê┘é╪╣╪⌐ / ┘à╪│┘ä┘à╪⌐", value: stats?.signed ?? "ΓÇö" },
-    { label: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒", value: stats?.revenue != null ? `${Number(stats.revenue).toFixed(0)} ╪¼` : "ΓÇö" },
-    { label: "╪º┘ä┘à╪¡╪╡┘ä", value: stats?.collected != null ? `${Number(stats.collected).toFixed(0)} ╪¼` : "ΓÇö" },
+    { label: "طلبات اليوم", value: stats?.ordersToday ?? "—" },
+    { label: "قيد التحليل", value: stats?.pending ?? "—" },
+    { label: "بانتظار النتائج", value: stats?.resultsPending ?? "—" },
+    { label: "موقعة / مسلمة", value: stats?.signed ?? "—" },
+    { label: "إجمالي الفواتير", value: stats?.revenue != null ? `${Number(stats.revenue).toFixed(0)} ج` : "—" },
+    { label: "المحصل", value: stats?.collected != null ? `${Number(stats.collected).toFixed(0)} ج` : "—" },
   ];
 
   return (
@@ -56,14 +56,14 @@ export default function LabDashboardTab() {
         ))}
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-        <h3 className="font-semibold mb-3">╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬</h3>
+        <h3 className="font-semibold mb-3">حالات الطلبات</h3>
         <div className="flex flex-wrap gap-2">
           {Object.entries(LAB_STATUS_MAP).map(([k, v]) => (
             <span key={k} className={`px-3 py-1 rounded-full text-xs ${v.color}`}>{v.label}</span>
           ))}
         </div>
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">┘ä┘ê╪¡╪⌐ ╪º┘ä┘à╪╣┘à┘ä ΓÇö ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ê╪º┘ä┘ü┘ê╪º╪¬┘è╪▒.</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400">لوحة المعمل — بيانات الطلبات والفواتير.</p>
     </div>
   );
 }

@@ -1,5 +1,13 @@
 import React from "react";
-import { Calendar, Tag, User, Mail, Clock, Star, TrendingUp } from 'lucide-react';
+import {
+  Calendar,
+  Tag,
+  User,
+  Mail,
+  Clock,
+  Star,
+  TrendingUp,
+} from "lucide-react";
 import { Ticket } from "../../../services/supportService";
 
 interface DetailsPanelProps {

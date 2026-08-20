@@ -9,6 +9,12 @@ model Company {
   currency                        String                           @default("EGP")
   isActive                        Boolean                          @default(true)
   settings                        String?
+  loyaltySystem                   String                           @default("TIERS")
+  loyaltySettings                 String?
+  // --- Loyalty modernization (برنامج الولاء الحديث) ---
+  maxDiscountCap                  Float?                           @default(0.25) // max total discount fraction (0.25 = 25%) — أقصى نسبة خصم إجمالية
+  cashbackReturnWindowDays        Int?                             @default(14) // return-grace window before points release — مهلة الإرجاع قبل إطلاق النقاط
+  dynamicCashbackEnabled          Boolean                          @default(false) // margin-aware cashback engine toggle — مفتاح محرك الكاش باك حسب الهامش
   createdAt                       DateTime                         @default(now())
   updatedAt                       DateTime                         @updatedAt
   slug                            String?                          @unique
@@ -55,6 +61,7 @@ model Company {
   activity_logs                   ActivityLog[]
   affiliate_settings              AffiliateSetting?
   affiliates                      Affiliate[]
+  loyaltyActivities              LoyaltyActivity[]
   aiInteractions                  AiInteraction[]
   aiKeys                          AiKey[]
   aiSetting                       AiSetting?
@@ -89,10 +96,14 @@ model Company {
   conversion_events               ConversionEvent[]
   coupons                         Coupon[]
   customerLists                   CustomerList[]
+  occasions                       Occasion[]
   customerLoyaltyPrograms         CustomerLoyaltyProgram[]
   customerLoyaltyRecords          CustomerLoyaltyRecord[]
   customerLoyaltyTiers            CustomerLoyaltyTier[]
+  customerLoyaltyVouchers         CustomerLoyaltyVoucher[]
+  customerMagicLinks              CustomerMagicLink[]
   customerNotificationPreferences CustomerNotificationPreference[]
+  customerNotificationSchedules   CustomerNotificationSchedule[]
   customerWallets                 CustomerWallet[]
   customerBlockRules              CustomerBlockRule[]
   customerBlockSettings           CustomerBlockSettings?
@@ -105,6 +116,7 @@ model Company {
   employeeNotificationPreferences EmployeeNotificationPreference[]
   enterprisePlans                 EnterprisePlan[]
   facebookAdAccounts              FacebookAdAccount[]
+  facebookAdsConnectionSources    FacebookAdsConnectionSource[]
   facebookAdsBudgetAlertLogs      FacebookAdsBudgetAlertLog[]
   facebookAdsBudgetAlertRules     FacebookAdsBudgetAlertRule[]
   facebookAdsAiDraftRuns          FacebookAdsAiDraftRun[]
@@ -123,6 +135,8 @@ model Company {
   facebookProductCatalogs         FacebookProductCatalog[]
   faqs                            Faq[]
   footerSettings                  FooterSettings?
+  cartConversionLogs              CartConversionLog[]
+  cartContactLogs                 CartContactLog[]
   guestCarts                      GuestCart[]
   guestOrders                     GuestOrder[]
   homepageTemplates               HomepageTemplate[]
@@ -210,6 +224,7 @@ model Company {
   returnReasons                   ReturnReason[]
   returnRequests                  ReturnRequest[]
   returnSettings                  ReturnSettings?
+  returnTypes                     ReturnType[]
   sentMessageStats                SentMessageStat[]
   shippingZones                   ShippingZone[]
   storePages                      StorePage[]
@@ -249,6 +264,14 @@ model Company {
   whatsappFollowUpFlows           WhatsAppFollowUpFlow[]
   customerJourneys                CustomerJourney[]
   leadCategories                  LeadCategory[]
+  botAutomationSettings           BotAutomationSettings?
+  botAutomationRules              BotAutomationRule[]
+  botConversationStarters         BotConversationStarter[]
+  botPersistentMenus              BotPersistentMenu[]
+  botUnsubscribes                 BotUnsubscribe[]
+  botCustomFields                 BotCustomField[]
+  botCustomerFieldValues          BotCustomerFieldValue[]
+  botSegments                     BotSegment[]
   leadFollowUpSettings            LeadFollowUpSettings?
   leadFollowUpEnrollments         LeadFollowUpEnrollment[]
   wishlists                       Wishlist[]
@@ -283,9 +306,33 @@ model Company {
   moderatorDashboardCaches         ModeratorDashboardCache[]
    inboxSettings                    InboxSettings?
    followUp                         FollowUp?
-   bookingBranches                  BookingBranch[]
-   bookingDoctors                   BookingDoctor[]
-   bookingServices                  BookingService[]
+    bookingBranches                  BookingBranch[]
+    bookingDoctors                   BookingDoctor[]
+    bookingServices                  BookingService[]
+    bookingServiceCategories         BookingServiceCategory[]
+    bookingDoctorServices            BookingDoctorService[]
+    doctorAvailabilities             DoctorAvailability[]
+    patients                         Patient[]
+    medicalInvoices                  MedicalInvoice[]
+    medicalPayments                  MedicalPayment[]
+    referringPhysicians              ReferringPhysician[]
+    priceLists                       PriceList[]
+    cashierShifts                    CashierShift[]
+    insuranceCompanies               InsuranceCompany[]
+    insuranceMemberTypes             InsuranceMemberType[]
+    patientDocuments                 PatientDocument[]
+    labTests                         LabTest[]
+    labTestParameters                LabTestParameter[]
+    labOrders                        LabOrder[]
+    labCultures                      LabCulture[]
+    labCultureOrganisms              LabCultureOrganism[]
+    labCultureAntibiotics            LabCultureAntibiotic[]
+    labContracts                     LabContract[]
+    labHomeVisits                    LabHomeVisit[]
+    labSampleTypes                   LabSampleType[]
+    examLabels                       ExamLabel[]
+    reportDeliveries                 ReportDelivery[]
+    transactionLogs                  TransactionLog[]
     educationSubjects                EducationSubject[]
     services                         Service[]
     serviceOrders                    ServiceOrder[]
@@ -313,11 +360,9 @@ model Company {
    wholesaleStatements              WholesaleStatement[]
     wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
    overlayCampaigns                  OverlayCampaign[]
-     orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
-  cartConversionLogs            CartConversionLog[]
-  cartContactLogs               CartContactLog[]
+    orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
 
-    @@index([businessSpecialtyId])
+   @@index([businessSpecialtyId])
   @@map("companies")
 }
 

@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
+const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
 
 const ACTIVE_STATUSES = ['ACTIVE', 'TRIAL'];
 
@@ -17,7 +17,7 @@ const parseOrderMetadata = (raw) => {
 };
 
 /**
- * ╪¡╪│╪º╪¿ ╪¬┘â┘ä┘ü╪⌐ ╪¬╪╖╪¿┘è┘é╪º╪¬ ╪º┘ä╪»┘ü╪╣ ╪¡╪│╪¿ ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à (PPU) ┘ä╪┤╪▒┘â╪⌐ ╪╣┘ä┘ë ╪╖┘ä╪¿ ┘à╪╣┘è┘å.
+ * حساب تكلفة تطبيقات الدفع حسب الاستخدام (PPU) لشركة على طلب معين.
  * Returns: { apps: [{ companyAppId, appSlug, appName, cost, quantity, method }], totalCost }
  */
 async function computePpuCosts({ companyId, orderTotal, itemsCount }) {
@@ -93,10 +93,10 @@ async function computePpuCosts({ companyId, orderTotal, itemsCount }) {
 }
 
 /**
- * ┘ü┘ê╪º╪¬┘è╪▒ ╪¬╪╖╪¿┘è┘é╪º╪¬ PPU ╪╣┘ä┘ë ╪╖┘ä╪¿ ╪¼╪»┘è╪».
- * - ╪Ñ╪░╪º ┘â╪º┘å ╪º┘ä╪▒╪╡┘è╪» ┘è┘â┘ü┘è: ╪«╪╡┘à ╪░╪▒┘è + ╪¬╪│╪¼┘è┘ä Transaction + appUsageLog.
- * - ╪Ñ╪░╪º ┘ä┘à ┘è┘â┘å ┘â╪º┘ü┘è╪º┘ï ┘ê┘â╪º┘å orderId ┘à╪¬╪º╪¡╪º┘ï: ╪¬╪╣┘ä┘è┘é ╪º┘ä╪╖┘ä╪¿ (billingHold) ┘ê╪│╪¼┘æ┘ä ┘ü╪º╪¬┘ê╪▒╪⌐ PENDING
- *   ┘ä┘è╪¬┘à ╪¬╪¡╪╡┘è┘ä┘ç╪º ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪╣┘å╪» ╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪» (processPendingUsageCharges).
+ * فواتير تطبيقات PPU على طلب جديد.
+ * - إذا كان الرصيد يكفي: خصم ذري + تسجيل Transaction + appUsageLog.
+ * - إذا لم يكن كافياً وكان orderId متاحاً: تعليق الطلب (billingHold) وسجّل فاتورة PENDING
+ *   ليتم تحصيلها تلقائياً عند شحن الرصيد (processPendingUsageCharges).
  */
 async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount, metadata, orderId }) {
   try {
@@ -118,10 +118,10 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
 
     const balance = Number(wallet.balance);
 
-    // ≡ƒÜº ╪º┘ä╪▒╪╡┘è╪» ┘ä╪º ┘è┘â┘ü┘è ΓåÆ ╪¬╪╣┘ä┘è┘é ╪º┘ä╪╖┘ä╪¿ ╪¡╪¬┘ë ┘è┘Å╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪»
+    // 🚧 الرصيد لا يكفي → تعليق الطلب حتى يُشحن الرصيد
     if (balance < totalCost) {
       if (!orderId) {
-        console.error(`Γ¥î [PPU-BILLING] Insufficient balance for ${companyId}: need ${totalCost}, have ${balance} (no orderId ΓÇö skipped)`);
+        console.error(`❌ [PPU-BILLING] Insufficient balance for ${companyId}: need ${totalCost}, have ${balance} (no orderId — skipped)`);
         return { billed: false, reason: 'insufficient-balance', deductions: [] };
       }
 
@@ -133,7 +133,7 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
               companyId,
               type: 'APP_USAGE',
               amount: totalCost,
-              description: `╪▒╪│┘ê┘à ╪º╪│╪¬╪«╪»╪º┘à ╪║┘è╪▒ ┘à╪¡╪╡┘ä╪⌐ - ╪╖┘ä╪¿ #${orderNumber}`,
+              description: `رسوم استخدام غير محصلة - طلب #${orderNumber}`,
               status: 'PENDING',
               referenceId: orderId,
             },
@@ -164,9 +164,9 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
         });
       });
 
-      console.warn(`ΓÅ╕∩╕Å [PPU-BILLING] Order #${orderNumber} HOLD for company ${companyId}: need ${totalCost}, have ${balance}`);
+      console.warn(`⏸️ [PPU-BILLING] Order #${orderNumber} HOLD for company ${companyId}: need ${totalCost}, have ${balance}`);
 
-      // ╪Ñ╪┤╪╣╪º╪▒ ┘ü┘ê╪▒┘è ┘ä┘à╪»┘è╪▒┘è ╪º┘ä╪┤╪▒┘â╪⌐ ╪ú┘å ╪º┘ä╪╖┘ä╪¿ ┘à╪╣┘ä┘æ┘é ╪¿╪│╪¿╪¿ ╪º┘ä╪▒╪╡┘è╪»
+      // إشعار فوري لمديري الشركة أن الطلب معلّق بسبب الرصيد
       try {
         const admins = await prisma.user.findMany({
           where: {
@@ -182,20 +182,20 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
               companyId,
               userId: admin.id,
               type: 'order_billing_hold',
-              title: 'ΓÅ╕∩╕Å ╪╖┘ä╪¿ ┘à╪╣┘ä┘æ┘é ╪¿╪│╪¿╪¿ ╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐',
-              message: `╪º┘ä╪╖┘ä╪¿ #${orderNumber} ┘ä┘à ┘è╪╕┘ç╪▒ ┘ü┘è ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ä╪ú┘å ╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐ (${balance} ╪¼.┘à) ┘ä╪º ┘è┘â┘ü┘è ╪¬┘â┘ä┘ü╪⌐ ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à (${totalCost} ╪¼.┘à). ╪º╪┤╪¡┘å ╪▒╪╡┘è╪»┘â ┘ä┘è┘Å╪«╪╡┘à ╪º┘ä┘à╪¿┘ä╪║ ┘ê┘è╪╕┘ç╪▒ ╪º┘ä╪╖┘ä╪¿ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï.`,
+              title: '⏸️ طلب معلّق بسبب رصيد المحفظة',
+              message: `الطلب #${orderNumber} لم يظهر في قائمة الطلبات لأن رصيد المحفظة (${balance} ج.م) لا يكفي تكلفة الاستخدام (${totalCost} ج.م). اشحن رصيدك ليُخصم المبلغ ويظهر الطلب تلقائياً.`,
               data: { orderNumber, orderId, amount: totalCost, balance },
             },
           });
         }
       } catch (notifyError) {
-        console.error('ΓÜá∩╕Å [PPU-BILLING] Failed to notify hold:', notifyError.message);
+        console.error('⚠️ [PPU-BILLING] Failed to notify hold:', notifyError.message);
       }
 
       return { billed: false, held: true, heldAmount: totalCost, billingHistoryId: billing.id, deductions: [] };
     }
 
-    // Γ£à ╪º┘ä╪▒╪╡┘è╪» ┘â╪º┘ü┘ì ΓåÆ ╪«╪╡┘à ╪░╪▒┘è ┘ä┘â┘ä ╪¬╪╖╪¿┘è┘é ┘à╪╣ ╪¡┘à╪º┘è╪⌐ ┘à┘å ╪º┘ä╪º╪▓╪»┘ê╪º╪¼
+    // ✅ الرصيد كافٍ → خصم ذري لكل تطبيق مع حماية من الازدواج
     const deductions = [];
 
     for (const item of apps) {
@@ -203,7 +203,7 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
         return await prisma.$transaction(async (tx) => {
           const referenceId = `ORDER_${orderNumber}_${item.appSlug}`;
 
-          // Idempotency: ┘à┘å╪╣ ╪«╪╡┘à ┘à╪▓╪»┘ê╪¼ ╪Ñ╪░╪º ╪ú┘Å╪╣┘è╪»╪¬ ┘å┘ü╪│ ╪º┘ä╪╣┘à┘ä┘è╪⌐
+          // Idempotency: منع خصم مزدوج إذا أُعيدت نفس العملية
           const existing = await tx.transaction.findFirst({
             where: { walletId: wallet.id, referenceId },
             select: { id: true },
@@ -212,7 +212,7 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
             return { alreadyBilled: true };
           }
 
-          // ╪«╪╡┘à ╪░╪▒┘è: ┘ü┘é╪╖ ╪Ñ╪░╪º ┘â╪º┘å ╪º┘ä╪▒╪╡┘è╪» >= ╪º┘ä╪¬┘â┘ä┘ü╪⌐
+          // خصم ذري: فقط إذا كان الرصيد >= التكلفة
           const updated = await tx.companyWallet.updateMany({
             where: { companyId, balance: { gte: item.cost } },
             data: {
@@ -231,7 +231,7 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
               amount: item.cost,
               type: 'DEDUCT',
               status: 'COMPLETED',
-              description: `PPU: ${item.appName} - ${item.method === 'PERCENTAGE' ? `${item.cost}╪¼` : `${item.cost} ╪¼`}`,
+              description: `PPU: ${item.appName} - ${item.method === 'PERCENTAGE' ? `${item.cost}ج` : `${item.cost} ج`}`,
               referenceId,
             },
           });
@@ -258,19 +258,19 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
       });
 
       if (result.alreadyBilled) {
-        console.log(`ΓÅ¡∩╕Å [PPU-BILLING] Already billed ${item.appSlug} for order ${orderNumber}`);
+        console.log(`⏭️ [PPU-BILLING] Already billed ${item.appSlug} for order ${orderNumber}`);
       } else {
         deductions.push({ appSlug: item.appSlug, appName: item.appName, cost: item.cost, method: item.method, usageLogId: result.usageLogId });
       }
     }
 
     if (deductions.length > 0) {
-      console.log(`Γ£à [PPU-BILLING] Billed company ${companyId} for order ${orderNumber}:`, deductions);
+      console.log(`✅ [PPU-BILLING] Billed company ${companyId} for order ${orderNumber}:`, deductions);
     }
 
     return { billed: deductions.length > 0, deductions };
   } catch (error) {
-    console.error('Γ¥î [PPU-BILLING] Error:', error.message);
+    console.error('❌ [PPU-BILLING] Error:', error.message);
     return { billed: false, error: error.message, deductions: [] };
   }
 }

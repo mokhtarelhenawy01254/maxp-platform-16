@@ -1,7 +1,6 @@
-import { X as XMarkIcon, Plus as PlusIcon, Circle as SwatchIcon } from 'lucide-react';
 import React from "react";
 import { ProductAttribute } from "../../types";
-;
+import { XMarkIcon, PlusIcon, SwatchIcon } from "@heroicons/react/24/outline";
 
 interface AttributesTabProps {
   attributeMode: "templates" | "custom";

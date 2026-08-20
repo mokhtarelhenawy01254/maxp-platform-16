@@ -1,6 +1,7 @@
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const sharp = require("sharp");
 const { getMetaGraphApiVersion } = require("../config/metaApi");
+const { decryptField } = require("../utils/fieldEncryption");
 
 const FACEBOOK_GRAPH_API_VERSION = getMetaGraphApiVersion();
 const META_GRAPH_API_BASE_URL = (
@@ -350,7 +351,7 @@ const getStoredMessageMediaUrl = (message) => {
 };
 
 const resolveWhatsAppMetaMediaConfig = (session) => {
-  const accessToken = session?.metaAccessToken;
+  const accessToken = session?.metaAccessToken ? decryptField(session.metaAccessToken) : null;
   if (!accessToken) {
     return null;
   }

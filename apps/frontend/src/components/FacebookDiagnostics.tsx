@@ -1,8 +1,16 @@
-import { Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, X as XCircleIcon, Info as InformationCircleIcon, RefreshCw as ArrowPathIcon, Clock as ClockIcon, Server as ServerIcon, Circle as CircleStackIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
-;
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+  InformationCircleIcon,
+  ArrowPathIcon,
+  ClockIcon,
+  ServerIcon,
+  CircleStackIcon,
+} from "@heroicons/react/24/outline";
 
 interface DiagnosticIssue {
   type: string;

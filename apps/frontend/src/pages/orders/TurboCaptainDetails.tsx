@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiClient } from '../../services/api';
 import { toast } from 'sonner';
@@ -53,15 +53,15 @@ const statusBadgeClass = (status: string) => {
 
 const statusArabic = (status: string) => {
   const s = (status || '').toLowerCase().trim();
-  if (s === 'delivered') return '╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à';
-  if (s === 'remitted') return '╪¬┘à ╪º┘ä╪¬┘ê╪▒┘è╪»';
-  if (s.startsWith('returned')) return '┘à╪▒╪¬╪¼╪╣';
-  if (s === 'delayed') return '┘à╪ñ╪¼┘ä╪⌐';
-  if (s === 'processing') return '┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░';
-  if (s === 'turbo_sent') return '┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒';
-  if (s === 'turbo_saved') return '┘à╪¡┘ü┘ê╪╕╪⌐';
-  if (s === 'out_for_delivery') return '┘à╪│┘ä┘à╪⌐ ┘ä┘ä┘à┘å╪»┘ê╪¿';
-  if (s === 'created') return '┘à┘å╪┤╪ú╪⌐';
+  if (s === 'delivered') return 'تم التسليم';
+  if (s === 'remitted') return 'تم التوريد';
+  if (s.startsWith('returned')) return 'مرتجع';
+  if (s === 'delayed') return 'مؤجلة';
+  if (s === 'processing') return 'قيد التنفيذ';
+  if (s === 'turbo_sent') return 'قيد الانتظار';
+  if (s === 'turbo_saved') return 'محفوظة';
+  if (s === 'out_for_delivery') return 'مسلمة للمندوب';
+  if (s === 'created') return 'منشأة';
   return s;
 };
 
@@ -110,15 +110,15 @@ const TurboCaptainDetails: React.FC = () => {
     <div className="p-6" dir="rtl">
       <div className="mb-6">
         <Link to="/orders/turbo-captains" className="text-sm text-blue-600 hover:text-blue-800 mb-2 inline-block">
-          ΓåÉ ╪º┘ä╪╣┘ê╪»╪⌐ ┘ä╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä┘à┘å╪»┘ê╪¿┘è┘å
+          ← العودة لتقارير المندوبين
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           {captain?.name || captainName}
         </h1>
         {captain && (
           <div className="flex gap-4 mt-2 text-sm text-gray-500">
-            {captain.phone && <span>≡ƒô₧ {captain.phone}</span>}
-            {captain.branch && <span>≡ƒôì {captain.branch}{captain.branchPhone ? ` (${captain.branchPhone})` : ''}</span>}
+            {captain.phone && <span>📞 {captain.phone}</span>}
+            {captain.branch && <span>📍 {captain.branch}{captain.branchPhone ? ` (${captain.branchPhone})` : ''}</span>}
           </div>
         )}
       </div>
@@ -127,23 +127,23 @@ const TurboCaptainDetails: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-xs text-gray-500 mt-1">╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪┤╪¡┘å╪º╪¬</div>
+            <div className="text-xs text-gray-500 mt-1">إجمالي الشحنات</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-green-600">{stats.delivered + stats.remitted}</div>
-            <div className="text-xs text-gray-500 mt-1">╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à</div>
+            <div className="text-xs text-gray-500 mt-1">تم التسليم</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-red-600">{stats.returned}</div>
-            <div className="text-xs text-gray-500 mt-1">┘à╪▒╪¬╪¼╪╣╪º╪¬</div>
+            <div className="text-xs text-gray-500 mt-1">مرتجعات</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-amber-600">{stats.active}</div>
-            <div className="text-xs text-gray-500 mt-1">┘å╪┤╪╖</div>
+            <div className="text-xs text-gray-500 mt-1">نشط</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.deliveryRate}%</div>
-            <div className="text-xs text-gray-500 mt-1">┘å╪│╪¿╪⌐ ╪º┘ä╪¬╪│┘ä┘è┘à</div>
+            <div className="text-xs text-gray-500 mt-1">نسبة التسليم</div>
           </div>
         </div>
       )}
@@ -152,7 +152,7 @@ const TurboCaptainDetails: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {Object.keys(stats.delayReasons).length > 0 && (
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg shadow p-4">
-              <h3 className="text-sm font-bold text-amber-800 dark:text-amber-200 mb-2">ΓÅ░ ╪ú╪│╪¿╪º╪¿ ╪º┘ä╪¬╪ú╪«┘è╪▒</h3>
+              <h3 className="text-sm font-bold text-amber-800 dark:text-amber-200 mb-2">⏰ أسباب التأخير</h3>
               {Object.entries(stats.delayReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
                 <div key={reason} className="flex justify-between text-sm py-1 border-b border-amber-100 last:border-0">
                   <span className="text-amber-700 dark:text-amber-300 truncate ml-2">{reason}</span>
@@ -163,7 +163,7 @@ const TurboCaptainDetails: React.FC = () => {
           )}
           {Object.keys(stats.returnReasons).length > 0 && (
             <div className="bg-red-50 dark:bg-red-900/20 rounded-lg shadow p-4">
-              <h3 className="text-sm font-bold text-red-800 dark:text-red-200 mb-2">Γ¥î ╪ú╪│╪¿╪º╪¿ ╪º┘ä╪º╪▒╪¬╪¼╪º╪╣</h3>
+              <h3 className="text-sm font-bold text-red-800 dark:text-red-200 mb-2">❌ أسباب الارتجاع</h3>
               {Object.entries(stats.returnReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
                 <div key={reason} className="flex justify-between text-sm py-1 border-b border-red-100 last:border-0">
                   <span className="text-red-700 dark:text-red-300 truncate ml-2">{reason}</span>
@@ -187,7 +187,7 @@ const TurboCaptainDetails: React.FC = () => {
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
               }`}
             >
-              {f === '' ? '╪º┘ä┘â┘ä' : f === 'delivered' ? '╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à' : f === 'returned' ? '┘à╪▒╪¬╪¼╪╣' : f === 'active' ? '┘å╪┤╪╖' : '┘à╪ñ╪¼┘ä╪⌐'}
+              {f === '' ? 'الكل' : f === 'delivered' ? 'تم التسليم' : f === 'returned' ? 'مرتجع' : f === 'active' ? 'نشط' : 'مؤجلة'}
             </button>
           ))}
         </div>
@@ -196,21 +196,21 @@ const TurboCaptainDetails: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">╪º┘ä╪╖┘ä╪¿</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">╪º┘ä╪╣┘à┘è┘ä</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">╪¡╪º┘ä╪⌐ ╪º┘ä┘å╪╕╪º┘à</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">╪¡╪º┘ä╪⌐ Turbo</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">╪│╪¿╪¿ ╪º┘ä╪¬╪ú╪«┘è╪▒</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">╪│╪¿╪¿ ╪º┘ä╪º╪▒╪¬╪¼╪º╪╣</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">╪º┘ä╪¬╪º╪▒┘è╪«</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">الطلب</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">العميل</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">الإجمالي</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">حالة النظام</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">حالة Turbo</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">سبب التأخير</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">سبب الارتجاع</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">التاريخ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {orders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    ┘ä╪º ╪¬┘ê╪¼╪» ╪╖┘ä╪¿╪º╪¬ ╪¿┘ç╪░╪º ╪º┘ä┘ü┘ä╪¬╪▒
+                    لا توجد طلبات بهذا الفلتر
                   </td>
                 </tr>
               ) : (
@@ -226,7 +226,7 @@ const TurboCaptainDetails: React.FC = () => {
                       {o.customerPhone && <div className="text-xs text-gray-500 ltr">{o.customerPhone}</div>}
                     </td>
                     <td className="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {parseFloat(o.total.toString()).toFixed(0)} ╪¼.┘à
+                      {parseFloat(o.total.toString()).toFixed(0)} ج.م
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass(o.status)}`}>
@@ -261,15 +261,15 @@ const TurboCaptainDetails: React.FC = () => {
               disabled={page <= 1}
               className="px-3 py-1 rounded text-sm bg-gray-100 dark:bg-gray-700 disabled:opacity-50"
             >
-              ╪º┘ä╪│╪º╪¿┘é
+              السابق
             </button>
-            <span className="text-sm text-gray-500">╪╡┘ü╪¡╪⌐ {page} ┘à┘å {totalPages}</span>
+            <span className="text-sm text-gray-500">صفحة {page} من {totalPages}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
               className="px-3 py-1 rounded text-sm bg-gray-100 dark:bg-gray-700 disabled:opacity-50"
             >
-              ╪º┘ä╪¬╪º┘ä┘è
+              التالي
             </button>
           </div>
         )}

@@ -1,5 +1,6 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 const WalletService = require('../services/walletService');
+const pendingBillingService = require('../services/pendingBillingService');
 
 class WalletController {
   // --- Company Wallet & Billing Logic ---
@@ -191,8 +192,6 @@ class WalletController {
       }
 
       const totalAmount = finalAmount + bonus;
-      const balanceBefore = wallet.balance;
-      const balanceAfter = parseFloat(balanceBefore) + totalAmount;
 
       const result = await executeWithRetry(async () => {
         return await getSharedPrismaClient().$transaction(async (tx) => {
@@ -200,8 +199,8 @@ class WalletController {
           const updatedWallet = await tx.companyWallet.update({
             where: { id: wallet.id },
             data: {
-              balance: balanceAfter
-              // totalDeposited not in schema
+              balance: { increment: totalAmount },
+              totalDeposited: { increment: totalAmount }
             }
           });
 
@@ -236,6 +235,16 @@ class WalletController {
           return { wallet: updatedWallet, transaction };
         });
       });
+
+      // 🚀 تحصيل رسوم الاستخدام المؤجلة تلقائياً بعد شحن الرصيد
+      try {
+        const pendingResult = await pendingBillingService.processPendingUsageCharges(companyId);
+        if (pendingResult.processed > 0) {
+          console.log(`✅ [WALLET-RECHARGE] Auto-collected ${pendingResult.processed} pending charge(s), released ${pendingResult.released.length} order(s) for company ${companyId}`);
+        }
+      } catch (pendingError) {
+        console.error('⚠️ [WALLET-RECHARGE] Error processing pending charges:', pendingError.message);
+      }
 
       res.json({
         success: true,
@@ -334,6 +343,21 @@ class WalletController {
         });
       });
 
+      // 🚧 الطلبات المعلّقة بانتظار شحن الرصيد (billingHoldAmount != null)
+      // أو بسبب انتهاء اشتراك الطلبات اليدوية (billingHoldAmount == null)
+      const [billingHeldAgg, subscriptionHeldCount] = await executeWithRetry(async () => {
+        return await Promise.all([
+          getSharedPrismaClient().order.aggregate({
+            where: { companyId, billingHoldAt: { not: null }, billingHoldAmount: { not: null } },
+            _count: { id: true },
+            _sum: { billingHoldAmount: true }
+          }),
+          getSharedPrismaClient().order.count({
+            where: { companyId, billingHoldAt: { not: null }, billingHoldAmount: null }
+          })
+        ]);
+      });
+
       // Get usage breakdown by feature
       const usageByFeature = await executeWithRetry(async () => {
         return await getSharedPrismaClient().appUsageLog.groupBy({
@@ -369,7 +393,12 @@ class WalletController {
             currency: wallet?.currency || 'EGP'
           },
           activeApps: activeApps.length,
-          usageBreakdown: usageByFeature
+          usageBreakdown: usageByFeature,
+          heldOrders: {
+            count: (billingHeldAgg._count.id || 0) + subscriptionHeldCount,
+            amount: parseFloat(billingHeldAgg._sum.billingHoldAmount || 0),
+            subscriptionCount: subscriptionHeldCount
+          }
         }
       });
     } catch (error) {
@@ -400,7 +429,7 @@ class WalletController {
       }
       const { startDate, endDate, groupBy = 'day' } = req.query;
 
-      const where = { companyId };
+      const where = { companyApp: { companyId } };
 
       if (startDate || endDate) {
         where.createdAt = {};
@@ -437,8 +466,8 @@ class WalletController {
       // Group by feature
       const byFeature = await executeWithRetry(async () => {
         return await getSharedPrismaClient().appUsageLog.groupBy({
-          by: ['feature', 'action'],
-          where: { companyApp: { companyId } },
+          by: ['feature'],
+          where,
           _sum: {
             totalCost: true,
             quantity: true

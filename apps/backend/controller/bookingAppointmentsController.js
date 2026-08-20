@@ -1,8 +1,31 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { findOrCreatePatient } = require('../services/bookingPatientService');
+const { notifyAppointmentConfirmed, notifyAppointmentCancelled } = require('../services/bookingNotificationService');
 const { v4: uuidv4 } = require('uuid');
 
 const BOOKING_SLOT_DURATION = 30;
 const BOOKING_LAST_SLOT = '20:00';
+const BOOKING_TIMELINE_DAY_START = '08:00';
+const BOOKING_TIMELINE_DAY_END = '22:00';
+const BOOKING_TIMELINE_SLOT_STEP = 5;
+
+const timeToMinutes = (timeStr) => {
+  if (!timeStr) return null;
+  const [h, m] = String(timeStr).split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+};
+
+const formatMinutes = (total) => {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+};
+
+const formatDoctorName = (doc) => {
+  if (!doc) return '';
+  return `${doc.title ? `${doc.title} ` : ''}${doc.name || ''}`.trim();
+};
 
 const getAllAppointments = async (req, res) => {
   try {
@@ -59,6 +82,7 @@ const getAllAppointments = async (req, res) => {
       id: a.id, customerId: a.customerId || '', customerName: a.customerName,
       customerEmail: a.customerEmail, customerPhone: a.customerPhone,
       customerGender: a.customerGender,
+      patientId: a.patientId,
       staffId: a.staffId, staffName: a.staffName,
       title: a.title, description: a.description,
       appointmentDate: a.appointmentDate.toISOString().split('T')[0],
@@ -68,6 +92,8 @@ const getAllAppointments = async (req, res) => {
       doctorId: a.doctorId, serviceId: a.serviceId, serviceName: a.serviceName,
       source: a.source, paymentRequired: a.paymentRequired, paymentStatus: a.paymentStatus,
       meetingLink: a.meetingLink, notes: a.notes,
+      diagnosis: a.diagnosis, treatmentPlan: a.treatmentPlan, prescription: a.prescription,
+      vitals: a.vitals, followUpDate: a.followUpDate ? a.followUpDate.toISOString().split('T')[0] : null,
       createdById: a.createdById, createdByType: a.createdByType, createdByName: a.createdByName,
       confirmedAt: a.confirmedAt, createdAt: a.createdAt.toISOString()
     }));
@@ -84,7 +110,7 @@ const getAvailableSlots = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { branchId, date, gender } = req.query;
+    const { branchId, date, gender, doctorId, serviceId } = req.query;
     if (!branchId || !date) {
       return res.status(400).json({ success: false, error: 'معرف الفرع والتاريخ مطلوبان' });
     }
@@ -92,18 +118,26 @@ const getAvailableSlots = async (req, res) => {
     const branch = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id: branchId, companyId } });
     if (!branch) return res.status(404).json({ success: false, error: 'الفرع غير موجود' });
 
+    // Service duration (default 30 minutes)
+    let serviceDuration = BOOKING_SLOT_DURATION;
+    if (serviceId) {
+      const service = await getSharedPrismaClient().bookingService.findFirst({ where: { id: serviceId, companyId } });
+      if (service) serviceDuration = service.durationMinutes || BOOKING_SLOT_DURATION;
+    }
+
     const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
     branch.workingDays = tryParse(branch.workingDays);
     branch.genderDays = tryParse(branch.genderDays);
 
-    const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(date).getDay()];
+    const dayOfWeek = new Date(date).getDay();
+    const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dayOfWeek];
 
     // Check gender-based access if genderDays is configured
     if (gender && branch.genderDays) {
       const genderMap = branch.genderDays;
       const genderLower = gender.toLowerCase();
       const allowedDays = genderLower === 'male' ? genderMap.male : genderMap.female;
-      if (allowedDays && !allowedDays.includes(dayName)) {
+      if (allowedDays && allowedDays.length > 0 && !allowedDays.includes(dayName)) {
         return res.json({ success: true, data: [], message: 'اليوم غير متاح لهذا الجنس' });
       }
     }
@@ -116,10 +150,25 @@ const getAvailableSlots = async (req, res) => {
       if (e) endHour = parseInt(e.split(':')[0]);
     }
 
+    // Doctor availability overrides branch hours for that doctor's slots
+    let doctorAvailability = null;
+    if (doctorId) {
+      doctorAvailability = await getSharedPrismaClient().doctorAvailability.findFirst({
+        where: { doctorId, companyId, dayOfWeek, isAvailable: true },
+      });
+      if (doctorAvailability) {
+        startHour = parseInt(doctorAvailability.startTime.split(':')[0]);
+        endHour = parseInt(doctorAvailability.endTime.split(':')[0]);
+      } else {
+        return res.json({ success: true, data: [], message: 'الطبيب غير متاح في هذا اليوم' });
+      }
+    }
+
     // Get existing appointments for this branch and date
     const existingAppointments = await getSharedPrismaClient().appointment.findMany({
       where: {
         companyId, branchId,
+        ...(doctorId ? { doctorId } : {}),
         appointmentDate: new Date(date),
         status: { notIn: ['cancelled', 'no_show'] }
       },
@@ -129,40 +178,43 @@ const getAvailableSlots = async (req, res) => {
     // Max bookings per slot from branch config
     const maxPerSlot = branch.maxBookingsPerSlot ?? 1;
 
-    // Count existing appointments per time window (30-min bucket)
-    const countInWindow = (time) => {
-      const [h, m] = time.split(':').map(Number);
-      const windowStart = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-      const windowEndM = m + BOOKING_SLOT_DURATION;
-      const windowEnd = `${(h + Math.floor(windowEndM / 60)).toString().padStart(2, '0')}:${(windowEndM % 60).toString().padStart(2, '0')}`;
-      return existingAppointments.filter(apt =>
-        apt.startTime === windowStart || (apt.endTime && apt.endTime > windowStart && apt.startTime < windowEnd)
-      ).length;
+    // Slot occupies [start, start+duration); a candidate is free when it does not overlap any existing slot
+    const overlapsAny = (startTimeStr, durationMin) => {
+      const [sh, sm] = startTimeStr.split(':').map(Number);
+      const startMinTotal = sh * 60 + sm;
+      const endMinTotal = startMinTotal + durationMin;
+      for (const apt of existingAppointments) {
+        const [ah, am] = apt.startTime.split(':').map(Number);
+        const aptStart = ah * 60 + am;
+        let aptEnd = aptStart + BOOKING_SLOT_DURATION;
+        if (apt.endTime) {
+          const [eh, em] = apt.endTime.split(':').map(Number);
+          aptEnd = eh * 60 + em;
+        }
+        if (startMinTotal < aptEnd && endMinTotal > aptStart) return true;
+      }
+      return false;
     };
 
-    // Generate slots (first every hour, then every 30min)
+    const countAtStart = (startTimeStr) => existingAppointments.filter(a => a.startTime === startTimeStr).length;
+
+    // Generate candidate slots within [startHour, endHour) aligned to the service duration
     const slots = [];
-    const lastSlot = BOOKING_LAST_SLOT;
-    const lastSlotHour = parseInt(lastSlot.split(':')[0]);
-
-    // First pass: full hours
-    for (let hour = startHour; hour < lastSlotHour; hour++) {
-      const timeString = `${hour.toString().padStart(2, '0')}:00`;
-      const endTimeString = `${(hour + 1).toString().padStart(2, '0')}:00`;
-      const booked = countInWindow(timeString);
-      slots.push({ startTime: timeString, endTime: endTimeString, duration: BOOKING_SLOT_DURATION, available: booked < maxPerSlot, bookedCount: booked, maxPerSlot });
-    }
-
-    // If all full hours are at max, try half-hour slots
-    const allFull = slots.every(s => !s.available);
-    if (allFull) {
-      for (let hour = startHour; hour < lastSlotHour; hour++) {
-        const timeString = `${hour.toString().padStart(2, '0')}:30`;
-        const endHourTime = hour + 1;
-        const endTimeString = `${endHourTime.toString().padStart(2, '0')}:30`;
-        const booked = countInWindow(timeString);
-        slots.push({ startTime: timeString, endTime: endTimeString, duration: BOOKING_SLOT_DURATION, available: booked < maxPerSlot, bookedCount: booked, maxPerSlot });
-      }
+    const effectiveEndHour = Math.min(endHour, parseInt(BOOKING_LAST_SLOT.split(':')[0]));
+    const endMinTotal = effectiveEndHour * 60;
+    for (let minTotal = startHour * 60; minTotal + serviceDuration <= endMinTotal; minTotal += 30) {
+      const h = Math.floor(minTotal / 60);
+      const m = minTotal % 60;
+      const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const endH = Math.floor((minTotal + serviceDuration) / 60);
+      const endM = (minTotal + serviceDuration) % 60;
+      const endTimeString = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      const booked = countAtStart(timeString);
+      slots.push({
+        startTime: timeString, endTime: endTimeString, duration: serviceDuration,
+        available: !overlapsAny(timeString, serviceDuration) && booked < maxPerSlot,
+        bookedCount: booked, maxPerSlot
+      });
     }
 
     res.json({ success: true, data: slots });
@@ -172,17 +224,118 @@ const getAvailableSlots = async (req, res) => {
   }
 };
 
+const getTimeline = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { date, branchId, serviceId } = req.query;
+    if (!date) return res.status(400).json({ success: false, error: 'التاريخ مطلوب' });
+
+    const prisma = getSharedPrismaClient();
+    const dayOfWeek = new Date(date).getDay();
+
+    const [doctors, appointments] = await Promise.all([
+      prisma.bookingDoctor.findMany({
+        where: { companyId, ...(branchId ? { branchId } : {}), isActive: true },
+        include: {
+          branch: { select: { id: true, name: true } },
+          availability: true,
+        },
+        orderBy: [{ title: 'asc' }, { name: 'asc' }],
+      }),
+      prisma.appointment.findMany({
+        where: {
+          companyId,
+          appointmentDate: new Date(date),
+          ...(branchId ? { branchId } : {}),
+          ...(serviceId ? { serviceId } : {}),
+        },
+        include: {
+          doctor: { select: { id: true, title: true, name: true, specialty: true } },
+          service: { select: { id: true, name: true } },
+          branch: { select: { id: true, name: true } },
+        },
+        orderBy: { startTime: 'asc' },
+      }),
+    ]);
+
+    const resources = (doctors || []).map((doc) => {
+      const availability = (doc.availability || []).find(a => a.dayOfWeek === dayOfWeek && a.isAvailable);
+      const startTime = availability ? availability.startTime : BOOKING_TIMELINE_DAY_START;
+      const endTime = availability ? availability.endTime : BOOKING_TIMELINE_DAY_END;
+      const startMin = timeToMinutes(startTime) ?? timeToMinutes(BOOKING_TIMELINE_DAY_START);
+      const endMin = timeToMinutes(endTime) ?? timeToMinutes(BOOKING_TIMELINE_DAY_END);
+      const slots = [];
+      for (let m = startMin; m < endMin; m += BOOKING_TIMELINE_SLOT_STEP) {
+        slots.push({ time: formatMinutes(m) });
+      }
+      return {
+        doctorId: doc.id,
+        doctorName: formatDoctorName(doc) || doc.id,
+        specialty: doc.specialty || '',
+        branchId: doc.branchId,
+        branchName: doc.branch?.name || '',
+        startTime,
+        endTime,
+        isAvailable: !!availability,
+        slots,
+      };
+    });
+
+    const formattedAppointments = (appointments || []).map(a => ({
+      id: a.id,
+      customerId: a.customerId || '',
+      patientId: a.patientId || '',
+      customerName: a.customerName,
+      customerEmail: a.customerEmail || '',
+      customerPhone: a.customerPhone || '',
+      customerGender: a.customerGender || '',
+      branchId: a.branchId || '',
+      branchName: a.branch?.name || '',
+      doctorId: a.doctorId || '',
+      doctorName: a.doctor ? formatDoctorName(a.doctor) : '',
+      serviceId: a.serviceId || '',
+      serviceName: a.serviceName || a.service?.name || '',
+      title: a.title || '',
+      description: a.description || '',
+      appointmentDate: a.appointmentDate.toISOString().split('T')[0],
+      startTime: a.startTime,
+      endTime: a.endTime || '',
+      duration: a.duration || 30,
+      status: a.status,
+      bookingStatus: a.bookingStatus || '',
+      reportStatus: a.reportStatus || '',
+      room: a.room || '',
+      preparationNote: a.preparationNote || '',
+      notes: a.notes || '',
+      source: a.source || '',
+      paymentRequired: a.paymentRequired,
+      paymentStatus: a.paymentStatus || '',
+      diagnosis: a.diagnosis || '',
+      treatmentPlan: a.treatmentPlan || '',
+      prescription: a.prescription || '',
+      followUpDate: a.followUpDate ? a.followUpDate.toISOString().split('T')[0] : null,
+      createdAt: a.createdAt ? a.createdAt.toISOString() : '',
+    }));
+
+    res.json({ success: true, data: { resources, appointments: formattedAppointments } });
+  } catch (error) {
+    console.error('Error fetching timeline:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الجدول الزمني' });
+  }
+};
+
 const createAppointment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const body = req.body;
-    console.log('[BOOKING-DEBUG] createAppointment body:', JSON.stringify(body));
     let customerName = body.customerName || 'مريض';
     let appointmentDate = body.appointmentDate || new Date().toISOString().split('T')[0];
     let startTime = body.startTime || '00:00';
-    let { customerPhone, customerEmail, customerGender, branchId, doctorId, serviceId, serviceName, title, description, type, source, notes, paymentRequired } = body;
+    let { customerPhone, customerEmail, customerGender, branchId, doctorId, serviceId, serviceName, title, description, type, source, notes, paymentRequired, diagnosis, treatmentPlan, prescription, vitals, followUpDate, room, preparationNote } = body;
     if (doctorId === '') doctorId = undefined;
     if (serviceId === '') serviceId = undefined;
     if (!branchId) return res.status(400).json({ success: false, error: 'الفرع مطلوب' });
@@ -191,6 +344,19 @@ const createAppointment = async (req, res) => {
     const branch = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id: branchId, companyId } });
     if (!branch) return res.status(400).json({ success: false, error: 'الفرع غير موجود' });
 
+    // Find-or-create the patient's medical file and link the appointment
+    const { id: patientId } = await findOrCreatePatient({
+      companyId,
+      customerName,
+      customerPhone,
+      customerGender,
+      customerEmail,
+      customerId: body.customerId || undefined,
+      nationalId: body.nationalId || undefined,
+      nationalIdImage: body.nationalIdImage || undefined,
+      address: body.address || undefined,
+    });
+
     const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
     branch.genderDays = tryParse(branch.genderDays);
 
@@ -198,23 +364,72 @@ const createAppointment = async (req, res) => {
       const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(appointmentDate).getDay()];
       const genderLower = customerGender.toLowerCase();
       const allowedDays = genderLower === 'male' ? branch.genderDays.male : branch.genderDays.female;
-      if (allowedDays && !allowedDays.includes(dayName)) {
+      if (allowedDays && allowedDays.length > 0 && !allowedDays.includes(dayName)) {
         return res.status(400).json({ success: false, error: 'اليوم غير متاح لهذا الجنس' });
       }
     }
 
-    // Check slot availability (count-based, respect maxBookingsPerSlot)
+    // Check slot availability (count-based, respect maxBookingsPerSlot) with real overlap check
     const maxPerSlot = branch.maxBookingsPerSlot ?? 1;
     const existingCount = await getSharedPrismaClient().appointment.count({
       where: {
         companyId, branchId,
+        ...(doctorId ? { doctorId } : {}),
         appointmentDate: new Date(appointmentDate),
         startTime, status: { notIn: ['cancelled', 'no_show'] }
       }
     });
     if (existingCount >= maxPerSlot) return res.status(400).json({ success: false, error: `هذا الوقت ممتلئ (الحد الأقصى: ${maxPerSlot})` });
 
-    const duration = BOOKING_SLOT_DURATION;
+    // Resolve service duration for the appointment
+    let serviceDuration = BOOKING_SLOT_DURATION;
+    if (serviceId) {
+      const service = await getSharedPrismaClient().bookingService.findFirst({ where: { id: serviceId, companyId } });
+      if (!service) return res.status(400).json({ success: false, error: 'الخدمة غير موجودة' });
+      serviceDuration = service.durationMinutes || BOOKING_SLOT_DURATION;
+    }
+
+    // Reject if the requested slot overlaps an existing active appointment in the same branch/doctor
+    const overlapping = await getSharedPrismaClient().appointment.findMany({
+      where: {
+        companyId, branchId,
+        ...(doctorId ? { doctorId } : {}),
+        appointmentDate: new Date(appointmentDate),
+        status: { notIn: ['cancelled', 'no_show'] }
+      },
+      select: { startTime: true, endTime: true }
+    });
+    const [reqSH, reqSM] = startTime.split(':').map(Number);
+    const reqStartMin = reqSH * 60 + reqSM;
+    const reqEndMin = reqStartMin + serviceDuration;
+    const hasOverlap = overlapping.some(apt => {
+      const [ah, am] = apt.startTime.split(':').map(Number);
+      const aptStart = ah * 60 + am;
+      let aptEnd = aptStart + BOOKING_SLOT_DURATION;
+      if (apt.endTime) {
+        const [eh, em] = apt.endTime.split(':').map(Number);
+        aptEnd = eh * 60 + em;
+      }
+      return reqStartMin < aptEnd && reqEndMin > aptStart;
+    });
+    if (hasOverlap) return res.status(400).json({ success: false, error: 'هذا الوقت متعارض مع موعد موجود' });
+
+    // Doctor availability gate when a specific doctor is booked
+    if (doctorId) {
+      const dayOfWeek = new Date(appointmentDate).getDay();
+      const avail = await getSharedPrismaClient().doctorAvailability.findFirst({
+        where: { doctorId, companyId, dayOfWeek, isAvailable: true },
+      });
+      if (!avail) {
+        return res.status(400).json({ success: false, error: 'الطبيب غير متاح في هذا اليوم' });
+      }
+      const inHours = startTime >= avail.startTime && startTime < avail.endTime;
+      if (!inHours) {
+        return res.status(400).json({ success: false, error: `الطبيب متاح من ${avail.startTime} إلى ${avail.endTime}` });
+      }
+    }
+
+    const duration = serviceDuration;
     const [startHour, startMinute] = startTime.split(':').map(Number);
     const endMin = startMinute + duration;
     const endH = startHour + Math.floor(endMin / 60);
@@ -226,6 +441,7 @@ const createAppointment = async (req, res) => {
         id: uuidv4(), companyId,
         customerName: customerName.trim(),
         customerEmail, customerPhone, customerGender,
+        patientId,
         branchId, doctorId, serviceId, serviceName,
         staffId: doctorId || branchId, staffName: serviceName || title || 'موعد',
         title: title || serviceName || 'موعد جديد',
@@ -236,6 +452,9 @@ const createAppointment = async (req, res) => {
         source: source || (req.user.role === 'AI_SERVICE' ? 'ai-service' : 'dashboard'),
         notes, paymentRequired: paymentRequired || false,
         paymentStatus: paymentRequired ? 'pending' : null,
+        room: room || null, preparationNote: preparationNote || null,
+        diagnosis, treatmentPlan, prescription, vitals,
+        followUpDate: followUpDate ? new Date(followUpDate) : null,
         createdById: req.user.id,
         createdByType: req.user.role === 'AI_SERVICE' ? 'ai_service' : 'user',
         createdByName: req.user.role === 'AI_SERVICE' ? (body.createdByName || 'AI Service') : `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim()
@@ -247,6 +466,7 @@ const createAppointment = async (req, res) => {
       id: appointment.id, customerName: appointment.customerName,
       customerEmail: appointment.customerEmail, customerPhone: appointment.customerPhone,
       customerGender: appointment.customerGender,
+      patientId: appointment.patientId,
       branchId: appointment.branchId, branchName: appointment.branch?.name || '',
       doctorId: appointment.doctorId, serviceId: appointment.serviceId,
       serviceName: appointment.serviceName,
@@ -254,6 +474,10 @@ const createAppointment = async (req, res) => {
       appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
       startTime: appointment.startTime, endTime: appointment.endTime,
       duration: appointment.duration, status: appointment.status,
+      bookingStatus: appointment.bookingStatus || '',
+      reportStatus: appointment.reportStatus || '',
+      room: appointment.room || '',
+      preparationNote: appointment.preparationNote || '',
       source: appointment.source,
       paymentRequired: appointment.paymentRequired, paymentStatus: appointment.paymentStatus,
       createdById: appointment.createdById,
@@ -278,19 +502,53 @@ const updateAppointment = async (req, res) => {
     const existing = await getSharedPrismaClient().appointment.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
-    const allowedFields = ['customerName', 'customerPhone', 'customerEmail', 'customerGender', 'appointmentDate', 'startTime', 'endTime', 'branchId', 'doctorId', 'serviceId', 'serviceName', 'title', 'description', 'notes', 'status'];
+    const allowedFields = ['customerName', 'customerPhone', 'customerEmail', 'customerGender', 'appointmentDate', 'startTime', 'endTime', 'branchId', 'doctorId', 'serviceId', 'serviceName', 'title', 'description', 'notes', 'status', 'patientId', 'diagnosis', 'treatmentPlan', 'prescription', 'vitals', 'followUpDate', 'room', 'preparationNote', 'bookingStatus', 'reportStatus'];
+    const fkFields = new Set(['branchId', 'doctorId', 'serviceId', 'patientId']);
     const data = {};
     for (const field of allowedFields) {
-      if (req.body[field] !== undefined) data[field] = req.body[field];
+      const value = req.body[field];
+      if (value === undefined) continue;
+      if (fkFields.has(field) && value === '') continue;
+      data[field] = value;
     }
     if (data.appointmentDate) data.appointmentDate = new Date(data.appointmentDate);
+    if (data.followUpDate) data.followUpDate = new Date(data.followUpDate);
     if (data.status === 'confirmed') data.confirmedAt = new Date();
 
-    const appointment = await getSharedPrismaClient().appointment.update({
+    const rescheduled = (data.appointmentDate instanceof Date
+      && existing.appointmentDate instanceof Date
+      && data.appointmentDate.getTime() !== existing.appointmentDate.getTime())
+      || (data.startTime !== undefined && existing.startTime !== undefined && data.startTime !== existing.startTime);
+    if (rescheduled) {
+      data.labelPrinted = false;
+      data.resultDelivered = false;
+      data.deliveredWithoutReport = false;
+    }
+
+    const prisma = getSharedPrismaClient();
+    const assertInCompany = async (model, id, error) => {
+      if (!id) return true;
+      const record = await prisma[model].findFirst({ where: { id, companyId }, select: { id: true } });
+      if (!record) return false;
+      return true;
+    };
+    if (!(await assertInCompany('bookingBranch', data.branchId, 'الفرع غير موجود'))) return res.status(400).json({ success: false, error: 'الفرع غير موجود' });
+    if (!(await assertInCompany('bookingDoctor', data.doctorId, 'الطبيب غير موجود'))) return res.status(400).json({ success: false, error: 'الطبيب غير موجود' });
+    if (!(await assertInCompany('bookingService', data.serviceId, 'الخدمة غير موجودة'))) return res.status(400).json({ success: false, error: 'الخدمة غير موجودة' });
+    if (!(await assertInCompany('patient', data.patientId, 'المريض غير موجود'))) return res.status(400).json({ success: false, error: 'المريض غير موجود' });
+
+    const appointment = await prisma.appointment.update({
       where: { id },
       data,
       include: { branch: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } }
     });
+
+    if (rescheduled) {
+      await prisma.reportDelivery.updateMany({
+        where: { appointmentId: id, companyId },
+        data: { status: 'NOT_READY', deliveredAt: null, deliveredBy: null },
+      });
+    }
 
     const formatted = {
       id: appointment.id, customerName: appointment.customerName,
@@ -303,7 +561,14 @@ const updateAppointment = async (req, res) => {
       appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
       startTime: appointment.startTime, endTime: appointment.endTime,
       duration: appointment.duration, status: appointment.status,
+      bookingStatus: appointment.bookingStatus || '',
+      reportStatus: appointment.reportStatus || '',
+      room: appointment.room || '',
+      preparationNote: appointment.preparationNote || '',
       notes: appointment.notes,
+      diagnosis: appointment.diagnosis, treatmentPlan: appointment.treatmentPlan,
+      prescription: appointment.prescription, vitals: appointment.vitals,
+      followUpDate: appointment.followUpDate ? appointment.followUpDate.toISOString().split('T')[0] : null,
       createdAt: appointment.createdAt.toISOString()
     };
 
@@ -335,6 +600,13 @@ const updateAppointmentStatus = async (req, res) => {
       include: { branch: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } }
     });
 
+    // Notify patient on confirm / cancel
+    if (status === 'confirmed' && appointment.customerPhone) {
+      notifyAppointmentConfirmed(companyId, appointment.id).catch(e => console.error('notify confirmed failed:', e.message));
+    } else if (status === 'cancelled' && appointment.customerPhone) {
+      notifyAppointmentCancelled(companyId, appointment).catch(e => console.error('notify cancelled failed:', e.message));
+    }
+
     res.json({ success: true, data: appointment });
   } catch (error) {
     console.error('Error updating appointment status:', error);
@@ -359,7 +631,11 @@ const confirmAppointment = async (req, res) => {
       data: { status: 'confirmed', confirmedAt: new Date() }
     });
 
-    // TODO: Send WhatsApp confirmation to customer + center notification
+    // Send WhatsApp confirmation to the patient
+    if (appointment.customerPhone) {
+      notifyAppointmentConfirmed(companyId, id).catch(e => console.error('notify confirmed failed:', e.message));
+    }
+
     res.json({ success: true, message: 'تم تأكيد الموعد' });
   } catch (error) {
     console.error('Error confirming appointment:', error);
@@ -414,4 +690,4 @@ const bulkDelete = async (req, res) => {
   }
 };
 
-module.exports = { getAllAppointments, getAvailableSlots, createAppointment, updateAppointment, updateAppointmentStatus, confirmAppointment, bulkUpdateStatus, bulkDelete };
+module.exports = { getAllAppointments, getAvailableSlots, getTimeline, createAppointment, updateAppointment, updateAppointmentStatus, confirmAppointment, bulkUpdateStatus, bulkDelete };

@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -55,8 +55,8 @@ describe('bookingPatientsInsurance', () => {
     await createPatient(
       companyReq({
         body: {
-          firstName: '╪ú╪¡┘à╪»',
-          title: '╪»┘â╪¬┘ê╪▒',
+          firstName: 'أحمد',
+          title: 'دكتور',
           insuranceNumber: 'INS-123456',
           insuranceCompanyId: 'ins-1',
           memberTypeId: 'mt-1',
@@ -82,7 +82,7 @@ describe('bookingPatientsInsurance', () => {
     expect(prisma.patient.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         companyId: 'company-1',
-        title: '╪»┘â╪¬┘ê╪▒',
+        title: 'دكتور',
         insuranceNumber: 'INS-123456',
         insuranceCompanyId: 'ins-1',
         memberTypeId: 'mt-1',
@@ -104,12 +104,12 @@ describe('bookingPatientsInsurance', () => {
 
     const res = createResponse();
     await createPatient(
-      companyReq({ body: { firstName: '╪ú╪¡┘à╪»', insuranceCompanyId: 'ins-foreign' } }),
+      companyReq({ body: { firstName: 'أحمد', insuranceCompanyId: 'ins-foreign' } }),
       res
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+    expect(res.payload.error).toBe('شركة التأمين غير موجودة');
     expect(prisma.insuranceCompany.findFirst).toHaveBeenCalledWith({
       where: { id: 'ins-foreign', companyId: 'company-1' },
       select: { id: true },
@@ -128,12 +128,12 @@ describe('bookingPatientsInsurance', () => {
 
     const res = createResponse();
     await createPatient(
-      companyReq({ body: { firstName: '╪ú╪¡┘à╪»', memberTypeId: 'mt-foreign' } }),
+      companyReq({ body: { firstName: 'أحمد', memberTypeId: 'mt-foreign' } }),
       res
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('┘å┘ê╪╣ ╪º┘ä╪╣╪╢┘ê┘è╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(res.payload.error).toBe('نوع العضوية غير موجود');
     expect(prisma.insuranceMemberType.findFirst).toHaveBeenCalledWith({
       where: { id: 'mt-foreign', companyId: 'company-1' },
       select: { id: true },
@@ -157,7 +157,7 @@ describe('bookingPatientsInsurance', () => {
       companyReq({
         params: { id: 'p1' },
         body: {
-          title: '┘à┘ç┘å╪»╪│',
+          title: 'مهندس',
           insuranceNumber: 'INS-999',
           insuranceCompanyId: 'ins-2',
           memberTypeId: 'mt-2',
@@ -175,7 +175,7 @@ describe('bookingPatientsInsurance', () => {
     expect(prisma.patient.update).toHaveBeenCalledWith({
       where: { id: 'p1' },
       data: expect.objectContaining({
-        title: '┘à┘ç┘å╪»╪│',
+        title: 'مهندس',
         insuranceNumber: 'INS-999',
         insuranceCompanyId: 'ins-2',
         memberTypeId: 'mt-2',
@@ -204,7 +204,7 @@ describe('bookingPatientsInsurance', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+    expect(res.payload.error).toBe('شركة التأمين غير موجودة');
     expect(prisma.patient.update).not.toHaveBeenCalled();
   });
 
@@ -225,7 +225,7 @@ describe('bookingPatientsInsurance', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('┘å┘ê╪╣ ╪º┘ä╪╣╪╢┘ê┘è╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(res.payload.error).toBe('نوع العضوية غير موجود');
     expect(prisma.patient.update).not.toHaveBeenCalled();
   });
 
@@ -312,10 +312,10 @@ describe('bookingPatientsInsurance', () => {
         findMany: jest.fn().mockResolvedValue([
           {
             id: 'p1',
-            firstName: '╪ú╪¡┘à╪»',
+            firstName: 'أحمد',
             insuranceNumber: 'INS-1',
-            insuranceCompany: { id: 'ins-1', name: '╪º┘ä╪¬╪ú┘à┘è┘å ╪º┘ä╪░┘ç╪¿┘è' },
-            memberType: { id: 'mt-1', name: '╪▒╪¿ ╪º┘ä╪ú╪│╪▒╪⌐', coveragePercent: 80 },
+            insuranceCompany: { id: 'ins-1', name: 'التأمين الذهبي' },
+            memberType: { id: 'mt-1', name: 'رب الأسرة', coveragePercent: 80 },
             _count: { appointments: 2 },
           },
         ]),
@@ -336,9 +336,9 @@ describe('bookingPatientsInsurance', () => {
         }),
       })
     );
-    expect(res.payload.data[0].insuranceCompany.name).toBe('╪º┘ä╪¬╪ú┘à┘è┘å ╪º┘ä╪░┘ç╪¿┘è');
+    expect(res.payload.data[0].insuranceCompany.name).toBe('التأمين الذهبي');
     expect(res.payload.data[0].memberType.coveragePercent).toBe(80);
-    expect(res.payload.data[0].memberType.name).toBe('╪▒╪¿ ╪º┘ä╪ú╪│╪▒╪⌐');
+    expect(res.payload.data[0].memberType.name).toBe('رب الأسرة');
   });
 
   test('getPatientById includes insuranceCompany and memberType', async () => {
@@ -347,10 +347,10 @@ describe('bookingPatientsInsurance', () => {
         findFirst: jest.fn().mockResolvedValue({
           id: 'p1',
           companyId: 'company-1',
-          firstName: '╪ú╪¡┘à╪»',
+          firstName: 'أحمد',
           insuranceNumber: 'INS-1',
-          insuranceCompany: { id: 'ins-1', name: '╪º┘ä╪¬╪ú┘à┘è┘å ╪º┘ä╪░┘ç╪¿┘è' },
-          memberType: { id: 'mt-1', name: '╪▒╪¿ ╪º┘ä╪ú╪│╪▒╪⌐', coveragePercent: 80 },
+          insuranceCompany: { id: 'ins-1', name: 'التأمين الذهبي' },
+          memberType: { id: 'mt-1', name: 'رب الأسرة', coveragePercent: 80 },
           referringPhysician: null,
           priceList: null,
           appointments: [],
@@ -372,7 +372,7 @@ describe('bookingPatientsInsurance', () => {
         }),
       })
     );
-    expect(res.payload.data.insuranceCompany.name).toBe('╪º┘ä╪¬╪ú┘à┘è┘å ╪º┘ä╪░┘ç╪¿┘è');
+    expect(res.payload.data.insuranceCompany.name).toBe('التأمين الذهبي');
     expect(res.payload.data.memberType.coveragePercent).toBe(80);
   });
 
@@ -382,10 +382,10 @@ describe('bookingPatientsInsurance', () => {
         findFirst: jest.fn().mockResolvedValue({
           id: 'p1',
           companyId: 'company-1',
-          firstName: '╪ú╪¡┘à╪»',
+          firstName: 'أحمد',
           insuranceNumber: 'INS-1',
-          insuranceCompany: { id: 'ins-1', name: '╪º┘ä╪¬╪ú┘à┘è┘å ╪º┘ä╪░┘ç╪¿┘è' },
-          memberType: { id: 'mt-1', name: '╪▒╪¿ ╪º┘ä╪ú╪│╪▒╪⌐', coveragePercent: 80 },
+          insuranceCompany: { id: 'ins-1', name: 'التأمين الذهبي' },
+          memberType: { id: 'mt-1', name: 'رب الأسرة', coveragePercent: 80 },
           referringPhysician: null,
           priceList: null,
           appointments: [],
@@ -409,7 +409,7 @@ describe('bookingPatientsInsurance', () => {
         }),
       })
     );
-    expect(res.payload.data.insuranceCompany.name).toBe('╪º┘ä╪¬╪ú┘à┘è┘å ╪º┘ä╪░┘ç╪¿┘è');
-    expect(res.payload.data.memberType.name).toBe('╪▒╪¿ ╪º┘ä╪ú╪│╪▒╪⌐');
+    expect(res.payload.data.insuranceCompany.name).toBe('التأمين الذهبي');
+    expect(res.payload.data.memberType.name).toBe('رب الأسرة');
   });
 });

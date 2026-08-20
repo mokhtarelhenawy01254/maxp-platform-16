@@ -1,4 +1,4 @@
-﻿# Return Requests Deduplication Fix ΓÇö 2026-07-23
+# Return Requests Deduplication Fix — 2026-07-23
 
 ## Problem
 The `/returns` page displayed duplicate `ReturnRequest` records for the same order. Multiple code paths created requests without database-level uniqueness, and race conditions between `ensureShippingReturnRequestsSynced` (runs on every page load), `autoCreateReturnRequest` (runs on order status change), and the manual/public creation endpoints allowed duplicates.

@@ -8,7 +8,24 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, Clock, DollarSign, Edit, Loader2, Pause, Play, Plus, Target, Trash2, TrendingDown, TrendingUp, Zap } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Zap,
+  Plus,
+  Trash2,
+  Edit,
+  Play,
+  Pause,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Target,
+  Loader2,
+  ChevronDown,
+} from "lucide-react";
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 // ============================================
@@ -131,7 +148,7 @@ const AutomationRules: React.FC = () => {
       setRules(data);
     } catch (error: any) {
       console.error("Error loading rules:", error);
-      toast.error("فشل في تحميل القواعد");
+      tToast.error("AutomationRules.failed_load_3df3");
     } finally {
       setLoading(false);
     }
@@ -139,7 +156,7 @@ const AutomationRules: React.FC = () => {
 
   const handleCreateRule = async () => {
     if (!formData.name.trim()) {
-      toast.error("اسم القاعدة مطلوب");
+      tToast.error("AutomationRules.name_required_4c30");
       return;
     }
 
@@ -162,7 +179,7 @@ const AutomationRules: React.FC = () => {
         },
       });
 
-      toast.success("تم إنشاء القاعدة بنجاح");
+      tToast.success("AutomationRules.success_create_b833");
       setShowCreateModal(false);
       resetForm();
       await loadRules();
@@ -179,10 +196,10 @@ const AutomationRules: React.FC = () => {
 
     try {
       await facebookAdsService.deleteAutomatedRule(ruleId);
-      toast.success("تم حذف القاعدة");
+      tToast.success("AutomationRules.success_delete_5fdc");
       await loadRules();
     } catch (error: any) {
-      toast.error("فشل في حذف القاعدة");
+      tToast.error("AutomationRules.failed_delete_4c17");
     }
   };
 

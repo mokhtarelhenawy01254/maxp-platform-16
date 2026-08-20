@@ -580,6 +580,65 @@ export interface FacebookSavedAdAccount {
   updatedAt: string;
 }
 
+export interface FacebookAdsConnectionSourceStatus {
+  id: string;
+  facebookUserId: string;
+  facebookUserName?: string | null;
+  facebookUserEmail?: string | null;
+  status: string;
+  hasToken: boolean;
+  syncedAdAccountsCount: number;
+  connectedAt?: string | null;
+  lastSyncedAt?: string | null;
+  lastError?: string | null;
+}
+
+export interface FacebookAdsSavedAdAccountStatus {
+  id: string;
+  accountId: string;
+  name: string;
+  currency: string;
+  timezone?: string | null;
+  isActive: boolean;
+  connectionSourceId?: string | null;
+  connectionSource?: {
+    id: string;
+    facebookUserName?: string | null;
+    facebookUserEmail?: string | null;
+  } | null;
+  tokenSource?: string;
+  hasIsolatedToken: boolean;
+}
+
+export interface FacebookAdsRemoteSourceStatus {
+  sourceId: string;
+  checked: boolean;
+  ok: boolean;
+  accountsCount: number;
+  error?: string | null;
+}
+
+export interface FacebookAdsConnectionStatus {
+  success?: boolean;
+  connected: boolean;
+  connectedFacebookAccountsCount: number;
+  isolatedAdAccountsCount: number;
+  savedAdAccounts: FacebookAdsSavedAdAccountStatus[];
+  connectionSources: FacebookAdsConnectionSourceStatus[];
+  remoteSources: FacebookAdsRemoteSourceStatus[];
+  remote: {
+    checked: boolean;
+    ok: boolean;
+    accountsCount: number;
+    error?: string | null;
+  };
+  activeAdAccount?: { accountId: string } | null;
+  pageConnection: {
+    connectedPagesCount: number;
+    messengerTokensProtected: boolean;
+  };
+}
+
 export type FacebookAdsBudgetAlertScope = "AD_ACCOUNT" | "CAMPAIGN";
 export type FacebookAdsBudgetAlertMetric =
   | "ACCOUNT_BALANCE"
@@ -1516,6 +1575,8 @@ export const getCampaignInsights = async (
 /**
  * جلب ملخص أداء الحملات مع توصيات تحسين
  */
+const LONG_TIMEOUT = 35000;
+
 export const getAdsPerformanceSummary = async (
   startDate?: string,
   endDate?: string,
@@ -1528,11 +1589,12 @@ export const getAdsPerformanceSummary = async (
     if (adAccountId) params.append("adAccountId", adAccountId);
 
     const query = params.toString();
-    const response = (await apiClient.get(
+    const response = await apiClient.get(
       `/facebook-ads/reports/performance-summary${query ? `?${query}` : ""}`,
-    )) as { data: { data: FacebookAdsPerformanceSummary } };
+      { timeout: LONG_TIMEOUT },
+    );
 
-    return response.data.data;
+    return (response.data as any).data;
   } catch (error: unknown) {
     console.error("❌ Error fetching Ads performance summary:", error);
     throw error;
@@ -1551,11 +1613,12 @@ export const getAdsDecisionSummary = async (
     if (adAccountId) params.append("adAccountId", adAccountId);
 
     const query = params.toString();
-    const response = (await apiClient.get(
+    const response = await apiClient.get(
       `/facebook-ads/reports/decision-summary${query ? `?${query}` : ""}`,
-    )) as { data: { data: FacebookAdsDecisionSummary } };
+      { timeout: LONG_TIMEOUT },
+    );
 
-    return response.data.data;
+    return (response.data as any).data;
   } catch (error: unknown) {
     console.error("❌ Error fetching Ads decision summary:", error);
     throw error;
@@ -3287,6 +3350,79 @@ export const searchAdLibrary = async (
   }
 };
 
+/**
+ * جلب حالة ربط الإعلانات المعزول (المصادر + الحسابات + صحة التوكنات).
+ */
+export async function getAdsConnectionStatus(): Promise<FacebookAdsConnectionStatus> {
+  try {
+    const response = await apiClient.get<FacebookAdsConnectionStatus>(
+      "/facebook-ads/connection/status",
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (isNotFoundError(error) || getAxiosStatus(error) === 400) {
+      return {
+        connected: false,
+        connectedFacebookAccountsCount: 0,
+        isolatedAdAccountsCount: 0,
+        savedAdAccounts: [],
+        connectionSources: [],
+        remoteSources: [],
+        remote: { checked: false, ok: false, accountsCount: 0, error: null },
+        activeAdAccount: null,
+        pageConnection: {
+          connectedPagesCount: 0,
+          messengerTokensProtected: true,
+        },
+      };
+    }
+    throw error;
+  }
+}
+
+/**
+ * إنشاء رابط تفويض Meta لإعلانات معزولة (business_management + ads_management).
+ */
+export async function getAdsAuthorizationUrl(params: {
+  companyId: string;
+  returnOrigin?: string;
+}): Promise<{ success: boolean; authUrl?: string; message?: string }> {
+  try {
+    const response = await apiClient.get<{
+      success: boolean;
+      authUrl?: string;
+      message?: string;
+    }>("/facebook-oauth/ads-authorize", {
+      params: {
+        companyId: params.companyId,
+        returnOrigin: params.returnOrigin,
+      },
+    });
+    return response.data;
+  } catch (error: unknown) {
+    console.error("❌ Error creating Facebook Ads auth URL:", error);
+    throw error;
+  }
+}
+
+/**
+ * فصل مصدر إعلانات معزول (لا يمس توكنات الصفحات/الماسنجر).
+ */
+export async function disconnectAdsConnectionSource(
+  sourceId: string,
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const response = await apiClient.delete<{
+      success: boolean;
+      message?: string;
+    }>(`/facebook-ads/connection/sources/${sourceId}`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error("❌ Error disconnecting Facebook Ads source:", error);
+    throw error;
+  }
+}
+
 export const facebookAdsService = {
   // 🚀 Full Ad Creation (Campaign + AdSet + Ad)
   createFullAd,
@@ -3366,6 +3502,11 @@ export const facebookAdsService = {
   getAdAccounts,
   saveAdAccount,
   getSavedAdAccounts,
+
+  // Isolated Ads Connection
+  getAdsConnectionStatus,
+  getAdsAuthorizationUrl,
+  disconnectAdsConnectionSource,
   getBudgetAlertRules,
   createBudgetAlertRule,
   updateBudgetAlertRule,

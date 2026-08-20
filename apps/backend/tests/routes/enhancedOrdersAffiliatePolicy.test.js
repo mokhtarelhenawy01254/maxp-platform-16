@@ -57,6 +57,8 @@ jest.mock("../../utils/planLimitPayloads", () => ({
 
 jest.mock("../../services/whatsapp/WhatsAppNotificationService", () => ({
   sendOrderCreatedNotification: jest.fn().mockResolvedValue({ success: true }),
+  sendOrderStatusNotification: jest.fn().mockResolvedValue({ success: true }),
+  sendOrderCreationNotification: jest.fn().mockResolvedValue({ success: true }),
 }));
 
 const enhancedOrdersRoutes = require("../../routes/enhancedOrders");

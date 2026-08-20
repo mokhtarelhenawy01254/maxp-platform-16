@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { TruckIcon, DocumentArrowDownIcon, XMarkIcon, PlusIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 

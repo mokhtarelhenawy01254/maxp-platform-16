@@ -1,21 +1,21 @@
-﻿# Incomplete Orders Recovery Reports & Phone Filter Fix
+# Incomplete Orders Recovery Reports & Phone Filter Fix
 
 Date: 2026-08-02
-Area: `orders` ΓÇö incomplete orders (`/orders/incomplete`)
+Area: `orders` — incomplete orders (`/orders/incomplete`)
 
 ## Problem
 
 ### 1. Empty-phone carts leak into the recovery list
 
 The storefront checkout draft always writes a flat `phone` key into `checkoutData`
-(`publicOrdersRoutes.js` ΓÇö `normalizeCheckoutDraftText` returns `""` when blank).
+(`publicOrdersRoutes.js` — `normalizeCheckoutDraftText` returns `""` when blank).
 The old `hasPhone` filter only checked **key presence** in the JSON string:
 
 ```js
 { checkoutData: { contains: '"phone"' } }
 ```
 
-So a cart with `"phone":""` passed the filter, appeared in the UI with "╪║┘è╪▒ ┘à╪¡╪»╪»"
+So a cart with `"phone":""` passed the filter, appeared in the UI with "غير محدد"
 phone, and had its call/WhatsApp/convert actions disabled.
 
 ### 2. No way to measure recovery (conversions + team performance)
@@ -31,26 +31,26 @@ phone, and had its call/WhatsApp/convert actions disabled.
 
 ### Backend
 
-- `routes/orders.js` ΓÇö `GET /orders-new/incomplete`
+- `routes/orders.js` — `GET /orders-new/incomplete`
   - `hasPhone=true` now requires a **non-empty** phone value:
     key present AND NOT empty-value pattern (`"phone":""`).
   - `hasPhone=false` returns carts with no phone key or only empty phone values.
   - Omit `hasPhone` to get all carts.
 
-- `prisma/schema/orders.prisma` ΓÇö new model `CartConversionLog`
+- `prisma/schema/orders.prisma` — new model `CartConversionLog`
   (`cart_conversion_logs`) recording:
   - `cartId`, `orderId`, `orderNumber`
   - `employeeId`, `employeeName` (who performed the convert)
   - `companyId`, `cartValue`, `governorate`, `channel` (`admin-convert`)
   - `convertedAt`
 
-- `prisma/schema/core.prisma` ΓÇö added `cartConversionLogs` back-relation on `Company`.
+- `prisma/schema/core.prisma` — added `cartConversionLogs` back-relation on `Company`.
 
-- `routes/orders.js` ΓÇö `POST /orders-new/incomplete/:cartId/convert`
+- `routes/orders.js` — `POST /orders-new/incomplete/:cartId/convert`
   - After a successful internal order creation, writes a `CartConversionLog`
     (captures `req.user.id` + name). Non-fatal if logging fails.
 
-- `routes/orders.js` ΓÇö new `GET /orders-new/incomplete/reports?days=N`
+- `routes/orders.js` — new `GET /orders-new/incomplete/reports?days=N`
   (registered **before** `/incomplete/:cartId` to avoid route capture). Returns:
   - `pipeline`: current snapshot `total / active / lost / totalValue / activeValue / lostValue`
   - `recovery`: `converted`, `convertedValue`, `avgConvertedValue`, `recoveryRate`
@@ -63,7 +63,7 @@ phone, and had its call/WhatsApp/convert actions disabled.
 - `src/pages/orders/IncompleteOrders.tsx`
   - New tri-state phone filter: `with_phone` (default) / `no_phone` / `all`,
     mapped to `hasPhone=true|false|omitted`.
-  - Header "╪º┘ä╪¬┘é╪º╪▒┘è╪▒" (Reports) link to `/orders/incomplete/reports`.
+  - Header "التقارير" (Reports) link to `/orders/incomplete/reports`.
 
 - `src/pages/orders/IncompleteReports.tsx` (new page)
   - Period selector (7/30/90 days).
@@ -72,7 +72,7 @@ phone, and had its call/WhatsApp/convert actions disabled.
   - Conversion trend bar chart (recharts) + recent conversions list.
   - Team performance table (employee, conversions, recovered value, average).
 
-- `src/App.tsx` ΓÇö route `/orders/incomplete/reports` registered before `/:cartId`.
+- `src/App.tsx` — route `/orders/incomplete/reports` registered before `/:cartId`.
 
 - i18n: new `orders.incomplete*` keys in `locales/ar` and `locales/en`.
 
@@ -112,7 +112,7 @@ tabs would change the counts, making stable tab badges impossible.
 
 ### Changes
 
-- `routes/orders.js` ΓÇö `GET /orders-new/incomplete` and `/incomplete/reports`:
+- `routes/orders.js` — `GET /orders-new/incomplete` and `/incomplete/reports`:
   - `activeClause` / `lostClause` now follow the per-row `lastActivity` rule
     (`COALESCE(checkoutUpdatedAt, checkoutStartedAt, updatedAt)`):
     - active = recent checkoutUpdatedAt, OR (null checkoutUpdatedAt AND recent
@@ -125,27 +125,27 @@ tabs would change the counts, making stable tab badges impossible.
 
 ### How returning customers behave
 
-Cart status is **not stored** ΓÇö it is derived at query time from the last-activity
+Cart status is **not stored** — it is derived at query time from the last-activity
 timestamp versus `incompleteOrderLostAfterHours` (default 24h). The storefront
 checkout-draft save always sets `checkoutUpdatedAt = now`
 (`publicOrdersRoutes.js`), so:
 
-- A customer returns and updates checkout ΓåÆ `checkoutUpdatedAt` refreshes ΓåÆ the
+- A customer returns and updates checkout → `checkoutUpdatedAt` refreshes → the
   cart is classified **active** again automatically (moves from "lost" to
-  "incomplete"). This is observable in the "╪ó╪«╪▒ ┘å╪┤╪º╪╖" column.
-- A customer never returns ΓåÆ the cart stays **lost**.
-- A customer places the order ΓåÆ the cart is converted to a real order and removed
+  "incomplete"). This is observable in the "آخر نشاط" column.
+- A customer never returns → the cart stays **lost**.
+- A customer places the order → the cart is converted to a real order and removed
   (the GuestCart row is deleted by the internal create-order flow).
 
 ### Frontend
 
 - `src/pages/orders/IncompleteOrders.tsx`: the status filter dropdown was replaced
-  with two tabs **╪║┘è╪▒ ┘à┘â╪¬┘à┘ä / ┘à┘ü┘é┘ê╪»**, each with a live count badge fed by the
-  global `stats.active` / `stats.lost`. Default tab is **╪║┘è╪▒ ┘à┘â╪¬┘à┘ä** (active).
+  with two tabs **غير مكتمل / مفقود**, each with a live count badge fed by the
+  global `stats.active` / `stats.lost`. Default tab is **غير مكتمل** (active).
 
 ### Tests
 
-- `apps/backend/tests/integration/incompleteOrdersRoute.test.js` ΓÇö new describe
+- `apps/backend/tests/integration/incompleteOrdersRoute.test.js` — new describe
   "Incomplete orders status tabs (active vs lost)":
   - `status=active` returns a cart updated recently even when it started long ago.
   - `status=lost` returns only carts with no recent activity.
@@ -167,7 +167,7 @@ endpoint). The recovery report now breaks down `recovery.byTeam` vs `recovery.na
 - New model `CartContactLog` (`cart_contact_logs`): `cartId`, `companyId`,
   `employeeId`, `employeeName`, `method` (call/whatsapp/email), `result`
   (answered/no_reply/busy/wrong_number), `note`, `createdAt`.
-- New endpoint `POST /orders-new/incomplete/:cartId/contact` ΓÇö records an outreach
+- New endpoint `POST /orders-new/incomplete/:cartId/contact` — records an outreach
   attempt (captures `req.user`).
 - Reports `team` section now includes per-employee `contacts`, `responses`
   (result = answered) and `responseRate` (responses / contacts), in addition to
@@ -176,23 +176,23 @@ endpoint). The recovery report now breaks down `recovery.byTeam` vs `recovery.na
 ### 3. Priority recovery list
 
 - `GET /orders-new/incomplete` supports `sortBy=priority` which orders by
-  `total DESC, checkoutUpdatedAt ASC` ΓÇö highest-value carts first, and among equal
+  `total DESC, checkoutUpdatedAt ASC` — highest-value carts first, and among equal
   value the most stale (closest to being lost) first.
 - The incomplete orders page adds a "Priority" sort option (default) and a
   **Log contact** action per row that opens a small modal (method / result / note).
 
 ### Frontend
 
-- `src/pages/orders/IncompleteOrders.tsx` ΓÇö "Log contact" button + modal.
-- `src/pages/orders/IncompleteReports.tsx` ΓÇö byTeam/natural breakdown chips and team
+- `src/pages/orders/IncompleteOrders.tsx` — "Log contact" button + modal.
+- `src/pages/orders/IncompleteReports.tsx` — byTeam/natural breakdown chips and team
   contacts/responses/response-rate columns.
 
 ## Report period range (presets + custom)
 
 `GET /orders-new/incomplete/reports` now supports either:
 
-- `days=N` ΓÇö last N days (default 30), or
-- `from=YYYY-MM-DD&to=YYYY-MM-DD` ΓÇö a custom inclusive date range (`to` covers the
+- `days=N` — last N days (default 30), or
+- `from=YYYY-MM-DD&to=YYYY-MM-DD` — a custom inclusive date range (`to` covers the
   whole day up to 23:59:59.999). When `from` is provided it takes precedence over
   `days`.
 

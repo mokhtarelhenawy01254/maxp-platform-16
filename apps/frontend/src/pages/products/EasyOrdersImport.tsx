@@ -1,7 +1,16 @@
-import { ShoppingBag as ShoppingBagIcon, Download as ArrowDownTrayIcon, Check as CheckCircleIcon, X as XCircleIcon, AlertTriangle as ExclamationTriangleIcon, Search as MagnifyingGlassIcon, Settings as Cog6ToothIcon, RefreshCw as ArrowPathIcon, File as DocumentTextIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  ShoppingBagIcon,
+  ArrowDownTrayIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  MagnifyingGlassIcon,
+  Cog6ToothIcon,
+  ArrowPathIcon,
+  DocumentTextIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 

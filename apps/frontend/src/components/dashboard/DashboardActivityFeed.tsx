@@ -1,7 +1,10 @@
-import { MessageSquare as ChatBubbleLeftRightIcon, Circle as UserGroupIcon, ShoppingBag as ShoppingCartIcon, Circle as MegaphoneIcon, Download as ArrowDownTrayIcon, Bell as BellIcon, Star as SparklesIcon, Phone as PhoneIcon, File as DocumentTextIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  ChatBubbleLeftRightIcon, UserGroupIcon, ShoppingCartIcon,
+  MegaphoneIcon, ArrowDownTrayIcon, BellIcon, SparklesIcon,
+  PhoneIcon, DocumentTextIcon,
+} from "@heroicons/react/24/outline";
 import type { DashboardData } from "../../pages/dashboard/types";
 import type { LiveActivity } from "../../hooks/useDashboardLiveSync";
 

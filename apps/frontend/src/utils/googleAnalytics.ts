@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Google Analytics 4 (GA4) + Google Ads conversion tracking utility.
  *
  * Loads the standard `gtag` snippet once and configures both the GA4
@@ -59,7 +59,7 @@ const injectGtagScript = (id: string): void => {
 
 /**
  * Loads Google Analytics 4 and optionally Google Ads conversion tracking.
- * Safe to call multiple times ΓÇö each ID is only configured once.
+ * Safe to call multiple times — each ID is only configured once.
  */
 export const loadGoogleAnalytics = (
   measurementIdParam?: string | null,

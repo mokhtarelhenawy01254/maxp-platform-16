@@ -1,6 +1,12 @@
-import { Monitor as ComputerDesktopIcon, Plus as PlusIcon, Tag as TagIcon, RefreshCw as ArrowPathIcon, Circle as ClipboardDocumentListIcon, Circle as UserGroupIcon } from 'lucide-react';
 import React, { useState } from "react";
-;
+import {
+  ComputerDesktopIcon,
+  PlusIcon,
+  TagIcon,
+  ArrowPathIcon,
+  ClipboardDocumentListIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/outline";
 import AssetList from "./AssetList";
 import AssetStats from "./AssetStats";
 import AssetCategories from "./AssetCategories";

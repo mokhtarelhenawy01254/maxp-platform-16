@@ -1,4 +1,4 @@
-﻿{
+{
   "pageTitle": "Apps",
   "pageSubtitle": "Find all available apps to improve your store, boost sales, or achieve specific functions your store needs.",
   "title": "MaxP Marketplace",
@@ -46,8 +46,8 @@
   "emptySearchDesc": "We couldn't find any apps matching your search. Try different keywords or browse categories.",
   "emptySearchSuggest": "Popular searches",
   "clearAllFilters": "Clear all filters",
-  "loadingTools": "Loading toolsΓÇª",
-  "searchPlaceholder": "Search apps, features, or developersΓÇª",
+  "loadingTools": "Loading tools…",
+  "searchPlaceholder": "Search apps, features, or developers…",
   "searchSuggestions": "Suggestions",
   "searchHistory": "Recent searches",
   "searchNoHistory": "No recent searches",
@@ -119,7 +119,7 @@
   "confirmBulkActivate": "Are you sure you want to activate {{count}} tools at once?",
   "bulkActivateTitle": "Activate {{count}} tools at once",
   "bulkActivateConfirm": "{{count}} tools will be activated together. This may take a while and cannot be undone.",
-  "activatingProgress": "Activating {{name}}ΓÇª {{progress}}%",
+  "activatingProgress": "Activating {{name}}… {{progress}}%",
   "activatedSuccess": "Activated {{count}} tools successfully!",
   "activatedWithErrors": "Activated {{count}} tools, {{fail}} failed",
   "bulkActivateError": "An error occurred during bulk activation",

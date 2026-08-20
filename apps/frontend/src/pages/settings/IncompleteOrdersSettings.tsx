@@ -1,14 +1,15 @@
-import { Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../../services/api";
 import { toast } from "sonner";
-;
+import { tToast } from "../../utils/i18n-toast";
+import { CheckCircleIcon, ArrowPathIcon, ClockIcon } from "@heroicons/react/24/outline";
 
 const MIN_HOURS = 1;
 const MAX_HOURS = 720;
 
 const IncompleteOrdersSettings: React.FC = () => {
   const [hours, setHours] = useState<number>(24);
+  const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -27,10 +28,11 @@ const IncompleteOrdersSettings: React.FC = () => {
         } else {
           setHours(24);
         }
+        setShowIncompleteInOrders(Boolean(response.data.data?.showIncompleteCartsInOrders));
       }
     } catch (error) {
       console.error("Error fetching incomplete order settings:", error);
-      toast.error("خطأ في جلب إعدادات الطلبات غير المكتملة");
+      tToast.error("IncompleteOrdersSettings.error_fetch_53e5");
     } finally {
       setLoading(false);
     }
@@ -46,15 +48,16 @@ const IncompleteOrdersSettings: React.FC = () => {
       setSaving(true);
       const response = await apiClient.put("/order-settings", {
         incompleteOrderLostAfterHours: hours,
+        showIncompleteCartsInOrders: showIncompleteInOrders,
       });
 
       if (response.data?.success) {
-        toast.success("تم حفظ الإعدادات بنجاح");
+        tToast.success("IncompleteOrdersSettings.success_save_8fed");
         fetchSettings();
       }
     } catch (error) {
       console.error("Error saving incomplete order settings:", error);
-      toast.error("خطأ في حفظ الإعدادات");
+      tToast.error("IncompleteOrdersSettings.error_save_bccf");
     } finally {
       setSaving(false);
     }
@@ -110,6 +113,29 @@ const IncompleteOrdersSettings: React.FC = () => {
           <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
             مثال: إذا كانت القيمة {hours} ساعة، أي طلب لم يتم تحديثه خلال هذه المدة
             سيظهر في قائمة الطلبات المفقودة.
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-start gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showIncompleteInOrders}
+            onClick={() => setShowIncompleteInOrders((prev) => !prev)}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${showIncompleteInOrders ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${showIncompleteInOrders ? "translate-x-6" : "translate-x-1"}`}
+            />
+          </button>
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              عرض الطلبات غير المكتملة في صفحة الطلبات
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              عند التفعيل تظهر السلال غير المكتملة (النشطة والمفقودة) داخل قائمة الطلبات الرئيسية،
+              مع إمكانية فلترتها بحالة "غير مكتمل" أو "مفقود".
+            </p>
           </div>
         </div>
 

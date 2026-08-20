@@ -1,11 +1,11 @@
-﻿const core = require('../../services/orderMovementCore');
+const core = require('../../services/orderMovementCore');
 
 const BUCKETS = [
-  { key: '<1d', label: '╪ú┘é┘ä ┘à┘å ┘è┘ê┘à', max: 24 },
-  { key: '1-3d', label: '1-3 ╪ú┘è╪º┘à', max: 72 },
-  { key: '3-7d', label: '3-7 ╪ú┘è╪º┘à', max: 168 },
-  { key: '7-30d', label: '7-30 ┘è┘ê┘à', max: 720 },
-  { key: '>30d', label: '╪ú┘â╪½╪▒ ┘à┘å 30 ┘è┘ê┘à', max: Infinity }
+  { key: '<1d', label: 'أقل من يوم', max: 24 },
+  { key: '1-3d', label: '1-3 أيام', max: 72 },
+  { key: '3-7d', label: '3-7 أيام', max: 168 },
+  { key: '7-30d', label: '7-30 يوم', max: 720 },
+  { key: '>30d', label: 'أكثر من 30 يوم', max: Infinity }
 ];
 
 const bucketKeyFor = (ageHours) => {
@@ -26,7 +26,7 @@ const handler = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
 
     const { startDate, endDate } = req.query;
@@ -148,7 +148,7 @@ const handler = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¡╪│╪º╪¿ ╪¬╪¡┘ä┘è┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘é╪⌐' });
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء حساب تحليل الطلبات المعلقة' });
   }
 };
 

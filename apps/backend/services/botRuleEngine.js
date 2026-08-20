@@ -1,12 +1,12 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 function normalizeBotText(text) {
   if (!text || typeof text !== 'string') return '';
   let t = text.toLowerCase();
   t = t.replace(/[\u064B-\u0652\u0640]/g, '');
-  t = t.replace(/[╪ú╪Ñ╪ó]/g, '╪º');
-  t = t.replace(/┘ë/g, '┘è');
-  t = t.replace(/╪⌐/g, '┘ç');
+  t = t.replace(/[أإآ]/g, 'ا');
+  t = t.replace(/ى/g, 'ي');
+  t = t.replace(/ة/g, 'ه');
   t = t.replace(/[^\p{L}\p{N}\s]/gu, ' ');
   t = t.replace(/\s+/g, ' ').trim();
   return t;
@@ -19,7 +19,7 @@ function normalizeKeywordList(value) {
       const parsed = JSON.parse(value);
       if (Array.isArray(parsed)) return parsed;
     } catch (e) { /* not json */ }
-    return value.split(/[,╪î\n]/).map((k) => k.trim()).filter(Boolean);
+    return value.split(/[,،\n]/).map((k) => k.trim()).filter(Boolean);
   }
   return [];
 }

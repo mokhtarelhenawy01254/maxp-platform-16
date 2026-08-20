@@ -1,5 +1,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { v4: uuidv4 } = require('uuid');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
 
 const getAll = async (req, res) => {
   try {
@@ -225,11 +227,13 @@ const submitPublic = async (req, res) => {
 
     let customerId = null;
     if (phone) {
-      let customer = await getSharedPrismaClient().customer.findFirst({ where: { phone, companyId: form.companyId } });
+      let customer = await findCustomerByPhone(getSharedPrismaClient(), phone, form.companyId);
       if (!customer) {
-        customer = await getSharedPrismaClient().customer.create({
-          data: { companyId: form.companyId, firstName: typeof firstName === 'string' ? firstName.substring(0, 50) : '', lastName: typeof lastName === 'string' ? lastName.substring(0, 50) : '', phone: String(phone).substring(0, 20), status: 'LEAD' }
-        });
+        customer = await safeCreateCustomer(
+          getSharedPrismaClient(),
+          { data: { companyId: form.companyId, firstName: typeof firstName === 'string' ? firstName.substring(0, 50) : '', lastName: typeof lastName === 'string' ? lastName.substring(0, 50) : '', phone: String(phone).substring(0, 20), phoneNormalized: toCanonicalE164(phone), status: 'LEAD' } },
+          buildPhoneWhere(phone, form.companyId)
+        );
       }
       customerId = customer.id;
     }

@@ -1,4 +1,4 @@
-﻿const { validationResult } = require('express-validator');
+const { validationResult } = require('express-validator');
 const { userValidationRules } = require('../../middleware/inputValidation');
 
 const createResponse = () => {
@@ -31,7 +31,7 @@ describe('userValidationRules phone requirement', () => {
       .array()
       .filter((error) => error.path === 'phone')
       .map((error) => error.msg);
-    expect(phoneErrors).toContain('╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ┘à╪╖┘ä┘ê╪¿');
+    expect(phoneErrors).toContain('رقم الهاتف مطلوب');
   });
 
   it('rejects an empty phone field with a required message', async () => {
@@ -40,7 +40,7 @@ describe('userValidationRules phone requirement', () => {
       .array()
       .filter((error) => error.path === 'phone')
       .map((error) => error.msg);
-    expect(phoneErrors).toContain('╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ┘à╪╖┘ä┘ê╪¿');
+    expect(phoneErrors).toContain('رقم الهاتف مطلوب');
   });
 
   it('accepts a valid phone', async () => {
@@ -89,7 +89,7 @@ describe('authController register phone requirement', () => {
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ message: '╪¼┘à┘è╪╣ ╪º┘ä╪¡┘é┘ê┘ä ┘à╪╖┘ä┘ê╪¿╪⌐' }),
+      expect.objectContaining({ message: 'جميع الحقول مطلوبة' }),
     );
   });
 });

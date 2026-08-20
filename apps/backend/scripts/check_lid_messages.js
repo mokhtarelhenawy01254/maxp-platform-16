@@ -1,4 +1,4 @@
-﻿const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const p = new PrismaClient();
 async function main() {
     const sid = 'cms3ycqtd005bjul9s2hbyvol';

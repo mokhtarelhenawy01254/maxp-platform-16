@@ -1,7 +1,14 @@
-import { Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Trash2 as TrashIcon, Plus as PlusIcon, ExternalLink as ArrowTopRightOnSquareIcon, RefreshCw as ArrowPathIcon, Circle as UserGroupIcon, MessageSquare as ChatBubbleLeftRightIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-;
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  TrashIcon,
+  PlusIcon,
+  ArrowTopRightOnSquareIcon,
+  ArrowPathIcon,
+  UserGroupIcon,
+  ChatBubbleLeftRightIcon,
+} from "@heroicons/react/24/outline";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { envConfig } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
@@ -9,6 +16,7 @@ import {
   emitFacebookPageSync,
   subscribeToFacebookPageSync,
 } from "../../utils/facebookPageSync";
+import { useTranslation } from "react-i18next";
 import i18n, { getDirection } from "../../i18n";
 
 interface FacebookPage {
@@ -630,9 +638,7 @@ const FacebookOAuth: React.FC = () => {
           : oauthStatus?.accounts?.find((account) => account.id === key);
       return {
         key,
-        label: account?.name
-          ? t("facebookOAuth.accountGroupTitle", { name: account.name })
-          : t("facebookOAuth.unknownAccount"),
+        label: account?.name || t("facebookOAuth.unknownAccount"),
         items,
       };
     });
@@ -963,10 +969,10 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                     </span>
                   </div>
                   {group.items.map((page) => (
-                <div
-                  key={page.id}
-                  className="flex items-start justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
+                    <div
+                      key={page.id}
+                      className="flex items-start justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    >
                   <div className="flex items-start flex-1 min-w-0">
                     <input
                       type="checkbox"
@@ -1051,7 +1057,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                     </button>
                   </div>
                 </div>
-                  ))}
+                ))}
                 </div>
               ))}
             </div>

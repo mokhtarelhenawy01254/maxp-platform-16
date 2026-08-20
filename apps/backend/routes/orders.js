@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const socketService = require('../services/socketService');
 const { v4: uuidv4 } = require('uuid');
 const verifyToken = require('../utils/verifyToken');
@@ -24,7 +24,7 @@ const {
 } = require('../utils/orderAttribution');
 const { detectAbandonReason } = require('../utils/incompleteAbandonReason');
 
-// ΓöÇΓöÇ Dynamic Status Code Cache ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Dynamic Status Code Cache ──────────────────────────────────────────
 // Loads ALL known status codes (system + custom) from orderStatusConfig
 // so custom statuses like BDONKODTERBO also work in the main page filter.
 let _knownStatusCodes = null;
@@ -104,7 +104,7 @@ router.use((req, res, next) => {
     return res.status(403).json({
       success: false,
       code: 'MERCHANT_ORDER_ROUTE_NOT_ALLOWED',
-      message: '╪º┘ä╪¬╪º╪¼╪▒ ┘è╪│╪¬╪«╪»┘à ┘à╪│╪º╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à┘ê╪¡╪» ┘ü┘é╪╖ ┘ä┘ä╪╣╪▒╪╢ ┘ê╪¬╪¡╪»┘è╪½ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¬┘å┘ü┘è╪░ ╪º┘ä╪«╪º╪╡╪⌐ ╪¿┘ç'
+      message: 'التاجر يستخدم مسار الطلبات الموحد فقط للعرض وتحديث طلبات التنفيذ الخاصة به'
     });
   }
 
@@ -121,7 +121,7 @@ router.use((req, res, next) => {
 });
 
 
-// const prisma = getSharedPrismaClient(); // Γ¥î Removed to prevent early loading issues
+// const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 const toSafeOrderAmount = (value) => {
   const numericValue = Number(value);
@@ -817,7 +817,7 @@ const resolveGuestOrderAmounts = (guestOrder, shippingZones = []) => {
   };
 };
 
-// ╪¬┘å╪│┘è┘é ╪│┘ä╪⌐ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐ (guestCart) ┘ä╪¬┘å╪º╪│╪¿ ╪┤┘â┘ä ╪╡┘ü ╪º┘ä╪╖┘ä╪¿ ┘ü┘è ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+// تنسيق سلة غير مكتملة (guestCart) لتناسب شكل صف الطلب في صفحة الطلبات
 const formatIncompleteCartRow = (cart, lostThreshold) => {
   let items = [];
   try {
@@ -1013,7 +1013,7 @@ const isCancellationStatus = (status) => {
   return normalizedStatus === 'CANCELLED' || normalizedStatus === 'CANCELED';
 };
 
-const getCancellationReasonError = () => '╪│╪¿╪¿ ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿ ┘à╪╖┘ä┘ê╪¿ ╪╣┘å╪» ╪º╪«╪¬┘è╪º╪▒ ╪¡╪º┘ä╪⌐ ┘à┘ä╪║┘è';
+const getCancellationReasonError = () => 'سبب إلغاء الطلب مطلوب عند اختيار حالة ملغي';
 
 const checkOrderEditPermission = async (req, orderIdentifier) => {
   if (req.user && ['MODERATOR', 'EMPLOYEE'].includes(req.user.role)) {
@@ -1081,7 +1081,7 @@ const updateAnyOrderStatus = async ({
           ? currentMetadata.preparationStatus
           : order.status;
 
-      // ≡ƒöÆ Enforce the "problem hold" rules server-side (ON_HOLD_PREP requires
+      // 🔒 Enforce the "problem hold" rules server-side (ON_HOLD_PREP requires
       // a reason note; a held order cannot move forward until released).
       const { assertPreparationHoldRule } = preparationQueueService;
       await assertPreparationHoldRule({
@@ -1091,7 +1091,7 @@ const updateAnyOrderStatus = async ({
         isOverride: options.isOverride || false,
       });
 
-      // ΓÜÖ∩╕Å Respect the advanced workflow when enabled and transitions exist for
+      // ⚙️ Respect the advanced workflow when enabled and transitions exist for
       // the current stage (fall back to allowing otherwise).
       if (!skipTransitionValidation) {
         const workflowConfig = order.company?.orderWorkflowConfig;
@@ -1195,7 +1195,7 @@ const updateAnyOrderStatus = async ({
       return { orderType: 'guest', order: updatedGuestOrder };
     }
 
-    const notFoundError = new Error('╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    const notFoundError = new Error('الطلب غير موجود');
     notFoundError.statusCode = 404;
     throw notFoundError;
   }
@@ -1356,13 +1356,13 @@ const permanentlyDeleteAnyOrder = async ({ orderIdentifier, companyId }) => {
   throw createBulkOrderError('Order not found', 404);
 };
 
-// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ (┘à╪│┘ê╪»╪º╪¬ ╪º┘ä╪┤┘è┘â ╪ó┘ê╪¬)
+// الحصول على الطلبات غير المكتملة (مسودات الشيك آوت)
 router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
+        message: 'غير مصرح - يجب تسجيل الدخول'
       });
     }
 
@@ -1373,7 +1373,7 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
+        message: 'غير مصرح - معرف الشركة مطلوب'
       });
     }
 
@@ -1396,7 +1396,7 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         lostAfterHours = parsed;
       }
     } catch (settingsError) {
-      console.warn('ΓÜá∩╕Å [ORDERS] Failed to load incomplete order settings:', settingsError.message);
+      console.warn('⚠️ [ORDERS] Failed to load incomplete order settings:', settingsError.message);
     }
 
     const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
@@ -1452,7 +1452,7 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         : (status === 'expired' || status === 'lost') ? lostClause
           : null;
 
-    // ╪º┘ä┘é╪º╪╣╪»╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ╪¿╪»┘ê┘å ┘ü┘ä╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ΓÇö ╪╣╪┤╪º┘å ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪¬╪¿┘ê┘è╪¿╪º╪¬ ╪¬┘ü╪╢┘ä ╪½╪º╪¿╪¬╪⌐
+    // القاعدة الأساسية بدون فلتر الحالة — عشان إحصائيات التبويبات تفضل ثابتة
     const buildBaseWhere = () => {
       return { companyId, ...(filterClauses.length ? { AND: filterClauses } : {}) };
     };
@@ -1469,7 +1469,7 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     const sortField = allowedSorts[sortBy];
     let orderBy;
     if (sortBy === 'priority') {
-      // ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐: ╪º┘ä╪ú╪╣┘ä┘ë ┘é┘è┘à╪⌐ ╪ú┘ê┘ä┘ï╪º╪î ┘ê╪¿┘è┘å ┘å┘ü╪│ ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪ú┘é╪»┘à ┘å╪┤╪º╪╖┘ï╪º ╪ú┘ê┘ä┘ï╪º (╪º┘ä╪ú┘é╪▒╪¿ ┘ä┘ä╪╢┘è╪º╪╣)
+      // الأولوية: الأعلى قيمة أولًا، وبين نفس القيمة الأقدم نشاطًا أولًا (الأقرب للضياع)
       orderBy = [{ total: 'desc' }, { checkoutUpdatedAt: 'asc' }];
     } else if (sortField) {
       orderBy = [{ [sortField]: sortDir }];
@@ -1581,22 +1581,22 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Γ¥î Error fetching incomplete orders:', error);
+    console.error('❌ Error fetching incomplete orders:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐',
+      message: 'خطأ في جلب الطلبات غير المكتملة',
       error: error.message
     });
   }
 });
 
-// ╪¬┘é╪º╪▒┘è╪▒ ╪º╪│╪¬╪▒╪»╪º╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ (Recovery Pipeline + ╪ú╪»╪º╪í ╪º┘ä┘ü╪▒┘è┘é)
+// تقارير استرداد الطلبات غير المكتملة (Recovery Pipeline + أداء الفريق)
 router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
+        message: 'غير مصرح - يجب تسجيل الدخول'
       });
     }
 
@@ -1607,7 +1607,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
+        message: 'غير مصرح - معرف الشركة مطلوب'
       });
     }
 
@@ -1622,7 +1622,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         lostAfterHours = parsed;
       }
     } catch (settingsError) {
-      console.warn('ΓÜá∩╕Å [ORDERS] reports: failed to load incomplete settings:', settingsError.message);
+      console.warn('⚠️ [ORDERS] reports: failed to load incomplete settings:', settingsError.message);
     }
 
     const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
@@ -1641,7 +1641,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       ]
     };
 
-    // ┘ü╪¬╪▒╪⌐ ╪▓┘à┘å┘è╪⌐: ╪Ñ┘à╪º days (╪ó╪«╪▒ N ┘è┘ê┘à) ╪ú┘ê from/to ┘à╪«╪╡╪╡
+    // فترة زمنية: إما days (آخر N يوم) أو from/to مخصص
     const fromRaw = (req.query.from || '').toString();
     const toRaw = (req.query.to || '').toString();
     let since;
@@ -1658,7 +1658,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     if (toRaw) {
       const parsedTo = new Date(toRaw);
       if (!Number.isNaN(parsedTo.getTime())) {
-        // ┘è╪┤┘à┘ä ╪º┘ä┘è┘ê┘à ┘â╪º┘à┘ä╪º┘ï ╪¡╪¬┘ë ╪ó╪«╪▒ ┘ä╪¡╪╕╪⌐
+        // يشمل اليوم كاملاً حتى آخر لحظة
         toDate = new Date(parsedTo.getTime() + 24 * 60 * 60 * 1000 - 1);
       }
     }
@@ -1733,7 +1733,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       const key = c.employeeId;
       const entry = teamMap.get(key) || {
         employeeId: c.employeeId,
-        employeeName: c.employeeName || '╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü',
+        employeeName: c.employeeName || 'غير معروف',
         conversions: 0,
         value: 0,
         contacts: 0,
@@ -1752,7 +1752,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       if (!entry) {
         entry = {
           employeeId: ct.employeeId,
-          employeeName: ct.employeeName || '╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü',
+          employeeName: ct.employeeName || 'غير معروف',
           conversions: 0,
           value: 0,
           contacts: 0,
@@ -1809,16 +1809,14 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       },
     });
   } catch (error) {
-    console.error('Γ¥î Error fetching incomplete orders reports:', error);
+    console.error('❌ Error fetching incomplete orders reports:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐',
+      message: 'خطأ في جلب تقارير الطلبات غير المكتملة',
       error: error.message
-});
+    });
   }
 });
-
-// تقارير استرداد الطلبات غير المكتملة (Recovery Pipeline + أداء الفريق)
 
 // تفاصيل طلب غير مكتمل واحد
 router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res) => {
@@ -1826,7 +1824,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
+        message: 'غير مصرح - يجب تسجيل الدخول'
       });
     }
 
@@ -1837,7 +1835,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
+        message: 'غير مصرح - معرف الشركة مطلوب'
       });
     }
 
@@ -1848,7 +1846,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     if (!cartId) {
       return res.status(400).json({
         success: false,
-        message: '┘à╪╣╪▒┘ü ╪º┘ä╪│┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿'
+        message: 'معرف السلة مطلوب'
       });
     }
 
@@ -1860,7 +1858,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
         lostAfterHours = parsed;
       }
     } catch (settingsError) {
-      console.warn('ΓÜá∩╕Å [ORDERS] Failed to load incomplete order settings:', settingsError.message);
+      console.warn('⚠️ [ORDERS] Failed to load incomplete order settings:', settingsError.message);
     }
 
     const now = new Date();
@@ -1876,7 +1874,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     if (!cart) {
       return res.status(404).json({
         success: false,
-        message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»'
+        message: 'الطلب غير موجود'
       });
     }
 
@@ -1935,20 +1933,20 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
       }
     });
   } catch (error) {
-    console.error('Γ¥î Error fetching incomplete order details:', error);
+    console.error('❌ Error fetching incomplete order details:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä',
+      message: 'خطأ في جلب تفاصيل الطلب غير المكتمل',
       error: error.message
     });
   }
 });
 
-// ╪¬╪¡┘ê┘è┘ä ╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä ╪Ñ┘ä┘ë ╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è
+// تحويل طلب غير مكتمل إلى طلب حقيقي
 router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä' });
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
     }
 
     const merchant = isMerchantUser(req.user)
@@ -1956,12 +1954,12 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       : null;
     const companyId = merchant?.companyId || req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
-      return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪│┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
     }
 
     const cart = await getSharedPrismaClient().guestCart.findFirst({
@@ -1969,7 +1967,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     });
 
     if (!cart) {
-      return res.status(404).json({ success: false, message: '╪º┘ä╪│┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      return res.status(404).json({ success: false, message: 'السلة غير موجودة' });
     }
 
     let checkoutData = {};
@@ -1990,7 +1988,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       items = [];
     }
 
-    const guestName = checkoutData.guestName || checkoutData.fullName || checkoutData.customerName || checkoutData.name || '╪╣┘à┘è┘ä';
+    const guestName = checkoutData.guestName || checkoutData.fullName || checkoutData.customerName || checkoutData.name || 'عميل';
     const guestPhone = checkoutData.guestPhone || checkoutData.customerPhone || checkoutData.phoneNumber || checkoutData.mobileNumber || checkoutData.phone || checkoutData.mobile || '';
     const guestEmail = checkoutData.guestEmail || checkoutData.customerEmail || checkoutData.emailAddress || checkoutData.email || '';
     const governorate = checkoutData.governorate || checkoutData.city || checkoutData.gov || '';
@@ -1998,7 +1996,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const notes = checkoutData.notes || '';
 
     if (!guestPhone) {
-      return res.status(400).json({ success: false, message: '╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ┘à╪╖┘ä┘ê╪¿ ┘ä╪¬╪¡┘ê┘è┘ä ╪º┘ä╪╖┘ä╪¿' });
+      return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لتحويل الطلب' });
     }
 
     const total = typeof cart.total === 'string' ? parseFloat(cart.total) || 0 : Number(cart.total || 0);
@@ -2037,7 +2035,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const result = createResponse.data;
 
     if (result?.success && result?.data) {
-      // ╪│╪¼┘ä ╪ú╪½╪▒ ╪º┘ä╪¬╪¡┘ê┘è┘ä ┘é╪¿┘ä ╪¡╪░┘ü ╪º┘ä┘Ç GuestCart (╪¿┘è╪¬┘à ╪º┘ä╪¡╪░┘ü ╪¼┘ê┘ç ╪º┘ä┘Ç internal API)
+      // سجل أثر التحويل قبل حذف الـ GuestCart (بيتم الحذف جوه الـ internal API)
       try {
         const employee = req.user || {};
         await getSharedPrismaClient().cartConversionLog.create({
@@ -2054,32 +2052,32 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
           },
         });
       } catch (logError) {
-        console.error('ΓÜá∩╕Å [ORDERS] Failed to record cart conversion log:', logError.message);
+        console.error('⚠️ [ORDERS] Failed to record cart conversion log:', logError.message);
       }
 
       return res.json({
         success: true,
-        message: '╪¬┘à ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä ╪Ñ┘ä┘ë ╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è',
+        message: 'تم تحويل الطلب غير المكتمل إلى طلب حقيقي',
         data: result.data,
       });
     }
 
-    throw new Error(result?.message || '┘ü╪┤┘ä ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿');
+    throw new Error(result?.message || 'فشل إنشاء الطلب');
   } catch (error) {
-    console.error('Γ¥î Error converting incomplete order:', error.message);
+    console.error('❌ Error converting incomplete order:', error.message);
     const detail = error.response?.data?.message || error.response?.data?.error || error.message;
     return res.status(500).json({
       success: false,
-      message: detail || '╪«╪╖╪ú ┘ü┘è ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä',
+      message: detail || 'خطأ في تحويل الطلب غير المكتمل',
     });
   }
 });
 
-// ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪¬┘ê╪º╪╡┘ä (╪º╪¬╪╡╪º┘ä/┘ê╪º╪¬╪│╪º╪¿/╪Ñ┘è┘à┘è┘ä) ╪╣┘ä┘ë ╪│┘ä╪⌐ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐
+// تسجيل محاولة تواصل (اتصال/واتساب/إيميل) على سلة غير مكتملة
 router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä' });
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
     }
 
     const merchant = isMerchantUser(req.user)
@@ -2087,18 +2085,18 @@ router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async 
       : null;
     const companyId = merchant?.companyId || req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
-      return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪│┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
     }
 
     const allowedMethods = ['call', 'whatsapp', 'email'];
     const method = (req.body?.method || 'call').toString().toLowerCase();
     if (!allowedMethods.includes(method)) {
-      return res.status(400).json({ success: false, message: '╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪¬┘ê╪º╪╡┘ä ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, message: 'طريقة التواصل غير صالحة' });
     }
 
     const result = (req.body?.result || '').toString().trim().slice(0, 80) || null;
@@ -2118,24 +2116,24 @@ router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async 
       select: { id: true, cartId: true, method: true, result: true, createdAt: true },
     });
 
-    return res.json({ success: true, message: '╪¬┘à ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪¬┘ê╪º╪╡┘ä', data: log });
+    return res.json({ success: true, message: 'تم تسجيل محاولة التواصل', data: log });
   } catch (error) {
-    console.error('Γ¥î Error logging incomplete cart contact:', error.message);
-    return res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪¬┘ê╪º╪╡┘ä' });
+    console.error('❌ Error logging incomplete cart contact:', error.message);
+    return res.status(500).json({ success: false, message: 'خطأ في تسجيل محاولة التواصل' });
   }
 });
 
-// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¿╪│┘è╪╖╪⌐
-// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¿╪│┘è╪╖╪⌐ (┘à╪╣ Pagination & Filtering)
+// الحصول على الطلبات البسيطة
+// الحصول على الطلبات البسيطة (مع Pagination & Filtering)
 router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
   try {
-    // ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë companyId ┘à┘å ╪º┘ä┘à╪│╪¬╪«╪»┘à ╪º┘ä┘à╪╡╪º╪»┘é ╪╣┘ä┘è┘ç
-    // ╪º┘ä╪¬╪ú┘â╪» ┘à┘å ┘ê╪¼┘ê╪» req.user ┘ê companyId (verifyToken.authenticateToken ┘è╪¼╪¿ ╪ú┘å ┘è╪╢┘à┘å ╪░┘ä┘â)
+    // الحصول على companyId من المستخدم المصادق عليه
+    // التأكد من وجود req.user و companyId (verifyToken.authenticateToken يجب أن يضمن ذلك)
     if (!req.user) {
       console.error(`[ORDERS] /simple - req.user is null/undefined`);
       return res.status(401).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
+        message: 'غير مصرح - يجب تسجيل الدخول'
       });
     }
 
@@ -2154,7 +2152,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       console.error(`[ORDERS] /simple - Missing companyId. req.user:`, req.user);
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿',
+        message: 'غير مصرح - معرف الشركة مطلوب',
         debug: process.env.NODE_ENV !== 'production' ? {
           hasUser: !!req.user,
           userId: req.user?.id,
@@ -2167,7 +2165,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const orderDetailFeatureAccess = await getOrderDetailFeatureAccess(companyId);
 
-    // ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬: ╪╣╪▒╪╢ ╪º┘ä╪│┘ä╪º┘ä ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ ╪»╪º╪«┘ä ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+    // إعدادات الطلبات: عرض السلال غير المكتملة داخل صفحة الطلبات
     let showIncompleteCarts = false;
     let lostAfterHours = 24;
     try {
@@ -2178,7 +2176,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         lostAfterHours = parsedLost;
       }
     } catch (settingsError) {
-      console.warn('ΓÜá∩╕Å [ORDERS] /simple failed to load order settings:', settingsError.message);
+      console.warn('⚠️ [ORDERS] /simple failed to load order settings:', settingsError.message);
     }
     if (req.query.includeIncomplete === 'true') showIncompleteCarts = true;
 
@@ -2199,7 +2197,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       ]
     };
 
-    // ╪º╪│╪¬╪«╪▒╪º╪¼ ┘à╪╣╪º┘à┘ä╪º╪¬ ╪º┘ä┘ü┘ä╪¬╪▒╪⌐ ┘ê╪º┘ä╪╡┘ü╪¡╪º╪¬
+    // استخراج معاملات الفلترة والصفحات
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const status = req.query.status;
@@ -2220,22 +2218,22 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
 
     // "Fetch Top N" Strategy:
-    // ┘ä╪¼┘ä╪¿ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪▒┘é┘à P╪î ┘å╪¡╪¬╪º╪¼ ┘ä╪¼┘ä╪¿ ╪ú┘ê┘ä (P * limit) ╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä╪¼╪»┘ê┘ä┘è┘å
-    // ╪½┘à ╪»┘à╪¼┘ç┘à╪î ╪¬╪▒╪¬┘è╪¿┘ç┘à╪î ┘ê╪ú╪«╪░ ╪º┘ä╪┤╪▒┘è╪¡╪⌐ ╪º┘ä┘à┘å╪º╪│╪¿╪⌐.
-    // ╪¬╪¡╪│┘è┘å: ╪Ñ╪░╪º ┘â╪º┘å╪¬ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë╪î ┘ä╪º ┘å╪¡╪¬╪º╪¼ ┘ä╪¼┘ä╪¿ ╪ú┘â╪½╪▒ ┘à┘å limit ┘ä┘â┘ä ╪¼╪»┘ê┘ä.
+    // لجلب الصفحة رقم P، نحتاج لجلب أول (P * limit) عنصر من الجدولين
+    // ثم دمجهم، ترتيبهم، وأخذ الشريحة المناسبة.
+    // تحسين: إذا كانت الصفحة الأولى، لا نحتاج لجلب أكثر من limit لكل جدول.
     const fetchLimit = Math.max(limit, (page * limit) + limit);
 
     // Log only in development
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`≡ƒôª [ORDERS] Fetching page ${page} (limit ${limit}) for company: ${companyId}`);
+      console.log(`📦 [ORDERS] Fetching page ${page} (limit ${limit}) for company: ${companyId}`);
     }
 
-    // ╪¿┘å╪º╪í ╪┤╪▒┘ê╪╖ ╪º┘ä╪¿╪¡╪½ (Where Clause)
+    // بناء شروط البحث (Where Clause)
     const whereClause = { companyId };
     const guestWhereClause = { companyId };
 
-    // ≡ƒÜº ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐ ┘ä╪│╪¿╪¿ ╪¬╪¡╪╡┘è┘ä ╪º┘ä╪▒╪╡┘è╪» (billing hold) ┘à╪«┘ü┘è╪⌐ ┘à┘å ╪º┘ä┘é╪º╪ª┘à╪⌐
-    // ╪º┘ü╪¬╪▒╪º╪╢┘è╪º┘ï ╪¡╪¬┘ë ┘è┘Å╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪» ┘ê┘è╪¬┘à ╪º┘ä╪«╪╡┘à ╪¬┘ä┘é╪º╪ª┘è╪º┘ï. ┘è┘à┘â┘å ┘â╪┤┘ü┘ç╪º ╪╣╪¿╪▒ includeHeld=true
+    // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية من القائمة
+    // افتراضياً حتى يُشحن الرصيد ويتم الخصم تلقائياً. يمكن كشفها عبر includeHeld=true
     const includeHeldOrders = req.query.includeHeld === 'true';
     if (!includeHeldOrders) {
       whereClause.billingHoldAt = null;
@@ -2252,11 +2250,11 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     addMerchantOrderScope(whereClause, merchant);
     disableGuestOrderScope(guestWhereClause, merchant);
 
-    // ≡ƒò╡∩╕Å Affiliate Filtering Logic (`affiliateId` may be a comma-separated list)
+    // 🕵️ Affiliate Filtering Logic (`affiliateId` may be a comma-separated list)
     let affiliateIds = String(req.query.affiliateId || '')
       .split(',').map((s) => s.trim()).filter(Boolean);
 
-    // ≡ƒöÆ Security: If user is an AFFILIATE, enforce their own affiliateId
+    // 🔒 Security: If user is an AFFILIATE, enforce their own affiliateId
     if (req.user.role === 'AFFILIATE') {
       const affiliate = await getSharedPrismaClient().affiliate.findUnique({
         where: { userId: req.user.id }
@@ -2288,7 +2286,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // guestWhereClause.createdBy = req.query.createdBy; 
     }
 
-    console.log('≡ƒöì [ORDERS-GET] Filters:', {
+    console.log('🔍 [ORDERS-GET] Filters:', {
       role: req.user.role,
       userId: req.user.id,
       affiliateIdArg: req.query.affiliateId,
@@ -2438,7 +2436,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         whereClause.OR = statusOrBranches;
       }
 
-      // Guest orders carry statuses on a separate table ΓÇö mirror the OR across
+      // Guest orders carry statuses on a separate table — mirror the OR across
       // order.status and turboShipmentStatus.
       const guestStatusBranches = [];
       if (guestStatusValues.length > 0) {
@@ -2460,7 +2458,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     }
     const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts;
     if (incompleteOnlyView) {
-      // ╪╣┘å╪» ╪º┘ä┘ü┘ä╪¬╪▒╪⌐ ╪¿┘Ç "╪║┘è╪▒ ┘à┘â╪¬┘à┘ä" ┘å╪╣╪▒╪╢ ╪º┘ä╪│┘ä╪º┘ä ╪º┘ä┘å╪┤╪╖╪⌐ ┘ü┘é╪╖ (╪¿╪»┘ê┘å ╪╖┘ä╪¿╪º╪¬ ╪¡┘é┘è┘é┘è╪⌐)
+      // عند الفلترة بـ "غير مكتمل" نعرض السلال النشطة فقط (بدون طلبات حقيقية)
       whereClause.id = '__incomplete_carts_only__';
       guestWhereClause.id = '__incomplete_carts_only__';
     }
@@ -2623,7 +2621,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       Object.assign(guestWhereClause, { OR: guestOrFields });
     }
 
-    // 5. Filter by Source Type (┘à╪╡╪»╪▒ ╪º┘ä╪╖┘ä╪¿) ΓÇö may be a comma-separated list
+    // 5. Filter by Source Type (مصدر الطلب) — may be a comma-separated list
     const sourceTypes = String(sourceType || '')
       .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
     if (sourceTypes.length > 0) {
@@ -2642,7 +2640,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
-    // ╪¿┘å╪º╪í ┘ü┘ä╪¬╪▒ ╪º┘ä╪│┘ä╪º┘ä ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ (guestCart) ΓÇö ╪¬┘Å╪»┘à╪¼ ┘ü┘è ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪╣┘å╪» ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪Ñ╪╣╪»╪º╪»
+    // بناء فلتر السلال غير المكتملة (guestCart) — تُدمج في القائمة عند تفعيل الإعداد
     const includeIncompleteCarts =
       showIncompleteCarts &&
       !onlyUnseen &&
@@ -2677,8 +2675,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         }
         cartAnd.push({ createdAt: createdAtFilter });
       }
-      // ╪º╪│╪¬╪¿╪╣╪º╪» ╪º┘ä╪│┘ä╪º┘ä ╪º┘ä┘ä┘è ╪º╪¬╪¡┘ê┘ä╪¬ ╪¿╪º┘ä┘ü╪╣┘ä ┘ä╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è (┘ü╪┤┘ä ╪¡╪░┘ü┘ç╪º ┘ê┘é╪¬ ╪º┘ä╪¬╪¡┘ê┘è┘ä)
-      // ╪¡╪¬┘ë ┘ä╪º ╪¬╪╕┘ç╪▒ ╪º┘ä╪│┘ä╪⌐ + ╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪¡┘ê┘ä ┘â╪│╪╖╪▒┘è┘å ┘à╪¬┘â╪▒╪▒┘è┘å ┘ü┘è ╪º┘ä┘é╪º╪ª┘à╪⌐.
+      // استبعاد السلال اللي اتحولت بالفعل لطلب حقيقي (فشل حذفها وقت التحويل)
+      // حتى لا تظهر السلة + الطلب المحول كسطرين متكررين في القائمة.
       try {
         const convertedCarts = await getSharedPrismaClient().cartConversionLog.findMany({
           where: {
@@ -2695,14 +2693,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           cartAnd.push({ cartId: { notIn: convertedCartIds } });
         }
       } catch (convErr) {
-        console.warn('ΓÜá∩╕Å [ORDERS] Failed to load converted cart ids:', convErr.message);
+        console.warn('⚠️ [ORDERS] Failed to load converted cart ids:', convErr.message);
       }
       if (cartAnd.length > 0) {
         cartQueryWhere.AND = cartAnd;
       }
     }
 
-    // ╪¬┘å┘ü┘è╪░ ╪º┘ä╪º╪│╪¬╪╣┘ä╪º┘à╪º╪¬ (Top N)
+    // تنفيذ الاستعلامات (Top N)
     // Debug: Log query structure before execution (development only)
     if (process.env.NODE_ENV !== 'production') {
       console.log('[ORDERS-DEBUG] Query structure:', JSON.stringify({
@@ -2717,7 +2715,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }, null, 2));
     }
 
-    // ΓöÇΓöÇ Custom status filter (BDONKODTERBO etc.) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Custom status filter (BDONKODTERBO etc.) ──────────────────────
     // Prisma's typed enum rejects values not in the OrderStatus enum,
     // so we fetch IDs via raw SQL first, then use typed Prisma queries.
     const customStatusFilter = whereClause._customStatusFilter;
@@ -2728,10 +2726,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       delete whereClause._customStatusFilter;
       const prisma = getSharedPrismaClient();
       // Prep statuses are stored under their mapped order.status while the real
-      // stage lives in metadata.preparationStatus ΓÇö match both so filtering by
+      // stage lives in metadata.preparationStatus — match both so filtering by
       // e.g. PREPARING also finds orders persisted as PROCESSING.
       // But exclude orders whose order.status is already terminal (e.g.
-      // DELIVERED) ΓÇö their stale metadata.preparationStatus from the prep phase
+      // DELIVERED) — their stale metadata.preparationStatus from the prep phase
       // must not pull them back into a prep-stage filter.
       const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
       const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
@@ -2836,7 +2834,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);
 
-    // ΓöÇΓöÇ ╪º┘ä╪│┘ä╪º┘ä ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ (guestCart) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── السلال غير المكتملة (guestCart) ─────────────────────────────
     let formattedIncompleteCarts = [];
     let totalIncomplete = 0;
     if (cartQueryWhere) {
@@ -2874,7 +2872,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         const matchingRegularOrderNumbers = await getSharedPrismaClient().order.findMany({
           where: {
             companyId,
-            // mode insensitive ╪╣╪┤╪º┘å ┘è┘à╪│┘â ┘å┘ü╪│ ╪º┘ä╪▒┘é┘à ╪¿╪╡┘è╪║ ┘à╪«╪¬┘ä┘ü╪⌐ (╪¡╪▒┘ê┘ü ┘â╪¿┘è╪▒╪⌐/╪╡╪║┘è╪▒╪⌐)
+            // mode insensitive عشان يمسك نفس الرقم بصيغ مختلفة (حروف كبيرة/صغيرة)
             orderNumber: { in: filteredGuestOrderNumbers, mode: 'insensitive' }
           },
           distinct: ['orderNumber'],
@@ -2887,7 +2885,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           matchingRegularOrderNumbers.map((order) => normalizeOrderKey(order.orderNumber))
         );
 
-        // ┘å╪¡╪¬┘ü╪╕ ╪¿╪ú╪▒┘é╪º┘à ╪º┘ä╪╢┘è┘ü ╪º┘ä┘ä┘è ┘ä┘è┘ç╪º ┘à┘é╪º╪¿┘ä ┘ü┘è ╪¼╪»┘ê┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣╪º╪»┘è╪⌐ (normalized)
+        // نحتفظ بأرقام الضيف اللي ليها مقابل في جدول الطلبات العادية (normalized)
         shadowedGuestOrderNumberSet = new Set(
           filteredGuestOrderNumbers.filter((n) => regularNormalizedKeys.has(normalizeOrderKey(n)))
         );
@@ -2920,12 +2918,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           })
         : [];
 
-    console.log(`≡ƒôª [ORDERS] Found ${regularOrders.length} regular, ${guestOrders.length} guest (Top ${fetchLimit})`);
+    console.log(`📦 [ORDERS] Found ${regularOrders.length} regular, ${guestOrders.length} guest (Top ${fetchLimit})`);
 
     // Debug: Log items for first few orders BEFORE mapping
     if (regularOrders.length > 0) {
       const firstOrder = regularOrders[0];
-      console.log(`≡ƒöì [ORDERS-DEBUG] First order BEFORE mapping:`, {
+      console.log(`🔍 [ORDERS-DEBUG] First order BEFORE mapping:`, {
         orderNumber: firstOrder.orderNumber,
         orderId: firstOrder.id,
         itemsCount: firstOrder.orderItems ? firstOrder.orderItems.length : 0,
@@ -2936,10 +2934,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       const itemsCount = await getSharedPrismaClient().orderItem.count({
         where: { orderId: firstOrder.id }
       });
-      console.log(`≡ƒöì [ORDERS-DEBUG] Items count in database for order ${firstOrder.orderNumber}:`, itemsCount);
+      console.log(`🔍 [ORDERS-DEBUG] Items count in database for order ${firstOrder.orderNumber}:`, itemsCount);
     }
 
-    // ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬ (Mapping)
+    // تحويل البيانات (Mapping)
     const formattedRegularOrders = regularOrders.map(order => {
       const merchantOrderScope = serializeMerchantOrderScope(order.merchantOrders?.[0], order);
       const orderMetadata = safeParseOrderMetadata(order.metadata);
@@ -2972,7 +2970,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Debug logging for all orders to help diagnose the issue
       const orderIndex = regularOrders.indexOf(order);
       if (orderIndex < 5) {
-        console.log(`≡ƒôª [ORDER-API] Order #${orderIndex + 1} - ${order.orderNumber}:`, {
+        console.log(`📦 [ORDER-API] Order #${orderIndex + 1} - ${order.orderNumber}:`, {
           hasCustomer: !!order.customer,
           customerId: order.customerId,
           customerFirstName: order.customer?.firstName || 'N/A',
@@ -2984,7 +2982,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
       // Debug: Log items for first few orders
       if (regularOrders.indexOf(order) < 3) {
-        console.log(`≡ƒôª [ORDER-ITEMS] Order ${order.orderNumber}:`, {
+        console.log(`📦 [ORDER-ITEMS] Order ${order.orderNumber}:`, {
           hasItems: !!order.orderItems,
           itemsIsArray: Array.isArray(order.orderItems),
           itemsLength: order.orderItems?.length || 0,
@@ -3021,8 +3019,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           return {
             id: item.id,
             productId: item.productId,
-            name: item.productName || item.product?.name || parsedMetadata.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
-            productName: item.productName || item.product?.name || parsedMetadata.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
+            name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
+            productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
             price: item.price,
             quantity: item.quantity,
             total: item.total,
@@ -3134,16 +3132,16 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     );
 
     if (filteredGuestOrders.length !== formattedGuestOrders.length) {
-      console.log('≡ƒº╣ [ORDERS] Deduped guest orders:', {
+      console.log('🧹 [ORDERS] Deduped guest orders:', {
         removed: formattedGuestOrders.length - filteredGuestOrders.length,
         remaining: filteredGuestOrders.length,
         shadowedByRegularOrders: shadowedGuestOrderNumberSet.size
       });
     }
 
-    // ╪»┘à╪¼ ┘ê╪¬╪▒╪¬┘è╪¿ (Merge & Sort) ΓÇö ╪º┘ä╪¬╪▒╪¬┘è╪¿ ┘ä╪º╪▓┘à ┘è╪╖╪º╪¿┘é ╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪¼┘ä╪¿ ┘à┘å ╪º┘ä╪»╪º╪¬╪º╪¿┘è╪▓
-    // (createdAt desc ╪½┘à id desc) ╪╣╪┤╪º┘å ╪º┘ä╪┤╪▒┘è╪¡╪⌐ (slice) ╪¬┘ü╪╢┘ä ╪½╪º╪¿╪¬╪⌐ ╪¿┘è┘å ╪º┘ä╪╡┘ü╪¡╪º╪¬
-    // ┘ê╪¬┘à┘å╪╣ ╪¬┘â╪▒╪º╪▒/┘ü┘é╪»╪º┘å ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪╣┘å╪» ╪¬╪│╪º┘ê┘è ╪º┘ä╪¬┘ê╪º╪▒┘è╪« ╪ú┘ê ╪╣┘å╪» ┘ê╪╡┘ê┘ä ╪╖┘ä╪¿╪º╪¬ ╪¼╪»┘è╪»╪⌐.
+    // دمج وترتيب (Merge & Sort) — الترتيب لازم يطابق ترتيب الجلب من الداتابيز
+    // (createdAt desc ثم id desc) عشان الشريحة (slice) تفضل ثابتة بين الصفحات
+    // وتمنع تكرار/فقدان الطلبات عند تساوي التواريخ أو عند وصول طلبات جديدة.
     const allFetchedOrders = [...formattedRegularOrders, ...filteredGuestOrders, ...formattedIncompleteCarts]
       .sort((a, b) => {
         const timeDiff = new Date(b.createdAt) - new Date(a.createdAt);
@@ -3151,17 +3149,17 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         return String(b.id || '').localeCompare(String(a.id || ''));
       });
 
-    // ╪¬╪╖╪¿┘è┘é Pagination (Slice)
-    // ╪¿┘à╪º ╪ú┘å┘å╪º ╪¼┘ä╪¿┘å╪º Top N╪î ┘ü╪º┘ä╪╡┘ü╪¡╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ ┘ç┘è ╪ó╪«╪▒ (limit) ╪╣┘å╪╡╪▒ ┘ü┘è ╪º┘ä┘à╪╡┘ü┘ê┘ü╪⌐ ╪º┘ä┘à╪»┘à╪¼╪⌐
-    // ┘ê┘ä┘â┘å ┘è╪¼╪¿ ╪ú┘å ┘å╪ú╪«╪░ ┘ü┘è ╪º┘ä╪º╪╣╪¬╪¿╪º╪▒ ╪º┘ä┘Ç offset
-    // ╪º┘ä┘Ç offset ╪º┘ä╪¡┘é┘è┘é┘è ┘ü┘è ╪º┘ä┘à╪╡┘ü┘ê┘ü╪⌐ ╪º┘ä┘à╪»┘à╪¼╪⌐ ┘ç┘ê (page - 1) * limit
+    // تطبيق Pagination (Slice)
+    // بما أننا جلبنا Top N، فالصفحة المطلوبة هي آخر (limit) عنصر في المصفوفة المدمجة
+    // ولكن يجب أن نأخذ في الاعتبار الـ offset
+    // الـ offset الحقيقي في المصفوفة المدمجة هو (page - 1) * limit
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const slicedOrders = allFetchedOrders.slice(startIndex, endIndex);
 
-    // ╪┤╪¿┘â╪⌐ ╪ú┘à╪º┘å ┘å┘ç╪º╪ª┘è╪⌐: ╪Ñ╪▓╪º┘ä╪⌐ ╪ú┘è ╪¬┘â╪▒╪º╪▒ ╪¡╪│╪¿ ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿/╪º┘ä┘à╪╣╪▒┘ü ╪»╪º╪«┘ä ┘å┘ü╪│ ╪º┘ä╪╡┘ü╪¡╪⌐
-    // (┘è╪║╪╖┘è ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘ä┘è ╪º┘ä╪║╪▒╪¿┘ä╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ┘à╪ú┘à╪┤╪¬┘ç╪º ╪¿╪│╪¿╪¿ ╪º╪«╪¬┘ä╪º┘ü ╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪¡╪▒┘ü/╪º┘ä┘à╪│╪º┘ü╪º╪¬
-    // ╪ú┘ê ┘ê╪¼┘ê╪» ╪º┘ä╪│┘ä╪⌐ ┘à╪¡┘ê┘ä╪⌐ + ╪╖┘ä╪¿ ╪¡┘é┘è┘é┘è ╪¿┘å┘ü╪│ ╪º┘ä┘à╪╣╪▒┘ü). ┘å╪¡╪¬┘ü╪╕ ╪¿╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë (╪º┘ä╪ú╪¡╪»╪½).
+    // شبكة أمان نهائية: إزالة أي تكرار حسب رقم الطلب/المعرف داخل نفس الصفحة
+    // (يغطي الحالات اللي الغربلة الأساسية مأمشتها بسبب اختلاف حالة الأحرف/المسافات
+    // أو وجود السلة محولة + طلب حقيقي بنفس المعرف). نحتفظ بالنسخة الأولى (الأحدث).
     const seenKeys = new Set();
     const paginatedOrders = [];
     for (const order of slicedOrders) {
@@ -3177,7 +3175,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal + (cartQueryWhere ? totalIncomplete : 0), 0);
 
-    console.log(`≡ƒôè [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
+    console.log(`📊 [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
 
     res.json({
       success: true,
@@ -3194,10 +3192,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Γ¥î Error fetching simple orders:', error);
+    console.error('❌ Error fetching simple orders:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
+      message: 'خطأ في جلب الطلبات',
       error: error.message
     });
   }
@@ -3212,25 +3210,25 @@ router.get('/preparation/queue', verifyToken.authenticateToken, async (req, res)
 
     res.json(payload);
   } catch (error) {
-    console.error('Γ¥î Error fetching preparation orders:', error);
+    console.error('❌ Error fetching preparation orders:', error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.statusCode ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪¬╪¼┘ç┘è╪▓ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
+      message: error.statusCode ? error.message : 'خطأ في جلب قائمة تجهيز الطلبات',
       error: error.message
     });
   }
 });
 
-// ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¿╪│┘è╪╖╪⌐
+// إحصائيات الطلبات البسيطة
 router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
   try {
-    // Γ£à ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë companyId ┘à┘å ╪º┘ä┘à╪│╪¬╪«╪»┘à ╪º┘ä┘à╪╡╪º╪»┘é ╪╣┘ä┘è┘ç
+    // ✅ الحصول على companyId من المستخدم المصادق عليه
     const companyId = req.user?.companyId || null;
 
-    // Γ£à ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ┘à╪╣╪º┘à┘ä╪º╪¬ ╪º┘ä╪¬╪º╪▒┘è╪« (dateFrom ┘ê dateTo)
+    // ✅ الحصول على معاملات التاريخ (dateFrom و dateTo)
     const { dateFrom, dateTo } = req.query;
 
-    console.log(`≡ƒôè [ORDERS-STATS] Request from user:`, {
+    console.log(`📊 [ORDERS-STATS] Request from user:`, {
       userId: req.user?.id,
       email: req.user?.email,
       companyId: companyId,
@@ -3239,16 +3237,16 @@ router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
     });
 
     if (!companyId) {
-      console.error('Γ¥î [ORDERS-STATS] No companyId found in request');
+      console.error('❌ [ORDERS-STATS] No companyId found in request');
       return res.status(400).json({
         success: false,
-        message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
+        message: 'معرف الشركة مطلوب'
       });
     }
 
     const stats = await simpleOrderService.getSimpleStats(companyId, dateFrom || null, dateTo || null);
 
-    console.log(`Γ£à [ORDERS-STATS] Stats sent for companyId: ${companyId}`, {
+    console.log(`✅ [ORDERS-STATS] Stats sent for companyId: ${companyId}`, {
       totalOrders: stats.totalOrders,
       totalRevenue: stats.totalRevenue,
       dateFrom,
@@ -3261,16 +3259,16 @@ router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Γ¥î Error fetching simple stats:', error);
+    console.error('❌ Error fetching simple stats:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬',
+      message: 'خطأ في جلب الإحصائيات',
       error: error.message
     });
   }
 });
 
-// ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪º┘ä╪¿╪│┘è╪╖
+// تحديث حالة الطلب البسيط
 router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -3278,7 +3276,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
 
     // Debug logging
     if (process.env.NODE_ENV !== 'production') {
-      console.log('≡ƒöì [ORDER-STATUS-UPDATE] Request received:', {
+      console.log('🔍 [ORDER-STATUS-UPDATE] Request received:', {
         orderNumber,
         hasUser: !!req.user,
         userId: req.user?.id,
@@ -3290,13 +3288,13 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     const initialCompanyId = req.user?.companyId || req.user?.effectiveCompanyId;
 
     if (!initialCompanyId) {
-      console.error('Γ¥î [ORDER-STATUS-UPDATE] Missing companyId:', {
+      console.error('❌ [ORDER-STATUS-UPDATE] Missing companyId:', {
         hasUser: !!req.user,
         user: req.user
       });
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿',
+        message: 'غير مصرح - معرف الشركة مطلوب',
         debug: process.env.NODE_ENV !== 'production' ? {
           hasUser: !!req.user,
           userId: req.user?.id,
@@ -3311,12 +3309,12 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     if (!status) {
       return res.status(400).json({
         success: false,
-        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘à╪╖┘ä┘ê╪¿╪⌐'
+        message: 'حالة الطلب مطلوبة'
       });
     }
 
-    // ≡ƒöº Use OrderService for proper auto-shipping logic
-    console.log('≡ƒöº [ORDER-STATUS-UPDATE] Using OrderService for proper Turbo integration...');
+    // 🔧 Use OrderService for proper auto-shipping logic
+    console.log('🔧 [ORDER-STATUS-UPDATE] Using OrderService for proper Turbo integration...');
 
     const userId = req.user?.id;
     const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
@@ -3335,7 +3333,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
       : null;
     const companyId = merchant?.companyId || initialCompanyId;
     
-    // ≡ƒÜÇ SPEED OPTIMIZATION: Fetch order once with necessary relations
+    // 🚀 SPEED OPTIMIZATION: Fetch order once with necessary relations
     const order = await getSharedPrismaClient().order.findFirst({
       where: {
         OR: [
@@ -3374,14 +3372,14 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
         if (!merchantOrder) {
           return res.status(404).json({
             success: false,
-            message: '┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘å╪» ┘ä┘ç╪░╪º ╪º┘ä╪¬╪º╪¼╪▒'
+            message: 'هذا الطلب غير مسند لهذا التاجر'
           });
         }
 
         if (String(merchantOrder.fulfillmentSource || '').toUpperCase() !== 'MERCHANT') {
           return res.status(403).json({
             success: false,
-            message: '╪º┘ä╪┤╪▒┘â╪⌐ ┘ç┘è ╪º┘ä┘à╪│╪ñ┘ê┘ä╪⌐ ╪╣┘å ╪¬╪¼┘ç┘è╪▓ ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿╪î ╪ú╪»┘ê╪º╪¬ ╪º┘ä╪¬╪¼┘ç┘è╪▓ ╪║┘è╪▒ ┘à╪¬╪º╪¡╪⌐ ┘ä┘ä╪¬╪º╪¼╪▒'
+            message: 'الشركة هي المسؤولة عن تجهيز هذا الطلب، أدوات التجهيز غير متاحة للتاجر'
           });
         }
         scopedMerchantOrder = merchantOrder;
@@ -3394,7 +3392,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
             ? currentMetadata.preparationStatus
             : order.status;
 
-        // ≡ƒöÆ Enforce the "problem hold" rules server-side so they cannot be
+        // 🔒 Enforce the "problem hold" rules server-side so they cannot be
         // bypassed with a direct API call: ON_HOLD_PREP requires a reason note,
         // and a held order cannot move forward until it is released.
         await preparationQueueService.assertPreparationHoldRule({
@@ -3404,9 +3402,9 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           isOverride: req.body.isOverride || false,
         });
 
-        // ΓÜÖ∩╕Å Respect the advanced workflow when enabled (transition rules +
+        // ⚙️ Respect the advanced workflow when enabled (transition rules +
         // approvals). We only enforce it here when the company has actually
-        // configured transitions for the current stage ΓÇö otherwise we fall back
+        // configured transitions for the current stage — otherwise we fall back
         // to allowing the move so an empty workflow config never locks the queue.
         const workflowConfig = order.company?.orderWorkflowConfig;
         if (workflowConfig?.enabled) {
@@ -3436,7 +3434,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
             if (wfResult?.status === 'pending') {
               return res.json({
                 success: true,
-                message: '╪¬┘à ╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐.',
+                message: 'تم تقديم طلب تغيير الحالة للمراجعة.',
                 data: {
                   orderType: 'regular',
                   orderNumber,
@@ -3448,7 +3446,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           }
         }
 
-        // ≡ƒöÆ Enforce the "requireStockBeforePreparing" rule server-side so it
+        // 🔒 Enforce the "requireStockBeforePreparing" rule server-side so it
         // cannot be bypassed with a direct API call.
         const companySettings = parseOrderMetadata(order.company?.settings);
         const prepSettings = companySettings.orderPreparation || {};
@@ -3485,7 +3483,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           }
         });
 
-        // ≡ƒº╛ Auto Invoice Generation (background)
+        // 🧾 Auto Invoice Generation (background)
         (async () => {
           try {
             const prisma = getSharedPrismaClient();
@@ -3498,17 +3496,17 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
               if (targetStatuses.includes(statusUpper) || targetStatuses.includes(mappedStatus) || targetStatuses.includes('*')) {
                 const { generateInvoiceForOrder } = require('../services/orderInvoiceService');
                 await generateInvoiceForOrder(order.id, userId);
-                console.log(`Γ£à [INVOICE-AUTO] Auto-generated invoice for order ${orderNumber} on preparation status ${statusUpper}`);
+                console.log(`✅ [INVOICE-AUTO] Auto-generated invoice for order ${orderNumber} on preparation status ${statusUpper}`);
               }
             }
           } catch (invoiceError) {
-            console.error('ΓÜá∩╕Å [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
+            console.error('⚠️ [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
           }
         })();
 
         return res.json({
           success: true,
-          message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪¬╪¼┘ç┘è╪▓ ╪¿┘å╪¼╪º╪¡',
+          message: 'تم تحديث حالة التجهيز بنجاح',
           data: {
             orderType: 'regular',
             orderNumber,
@@ -3532,7 +3530,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
       if (updatedOrder?.workflowStatus === 'pending') {
         return res.json({
           success: true,
-          message: '╪¬┘à ╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐.',
+          message: 'تم تقديم طلب تغيير الحالة للمراجعة.',
           data: {
             orderType: 'regular',
             orderNumber,
@@ -3552,7 +3550,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
 
       return res.json({
         success: true,
-        message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
+        message: 'تم تحديث حالة الطلب بنجاح',
         data: {
           orderType: 'regular',
           orderNumber,
@@ -3566,7 +3564,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     if (merchant) {
       return res.status(404).json({
         success: false,
-        message: '┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘å╪» ┘ä┘ç╪░╪º ╪º┘ä╪¬╪º╪¼╪▒'
+        message: 'هذا الطلب غير مسند لهذا التاجر'
       });
     }
 
@@ -3582,11 +3580,11 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     if (!guestOrder) {
       return res.status(404).json({
         success: false,
-        message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»'
+        message: 'الطلب غير موجود'
       });
     }
 
-    // ≡ƒöÆ Enforce the "problem hold" rules for guest orders too.
+    // 🔒 Enforce the "problem hold" rules for guest orders too.
     const guestMetadata = parseOrderMetadata(guestOrder.metadata);
     await preparationQueueService.assertPreparationHoldRule({
       currentPreparationStatus:
@@ -3608,7 +3606,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
 
     return res.json({
       success: true,
-      message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
+      message: 'تم تحديث حالة الطلب بنجاح',
       data: {
         orderType: 'guest',
         orderNumber,
@@ -3617,16 +3615,16 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     });
 
   } catch (error) {
-    console.error('Γ¥î Error updating simple order status:', error);
+    console.error('❌ Error updating simple order status:', error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.statusCode && error.statusCode < 500 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿',
+      message: error.statusCode && error.statusCode < 500 ? error.message : 'خطأ في تحديث حالة الطلب',
       error: error.message
     });
   }
 });
 
-// ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º╪¬╪╡╪º┘ä
+// تسجيل محاولة اتصال
 router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -3655,7 +3653,7 @@ router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, 
     });
 
     if (!order) {
-      return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
     }
 
     const [log, updatedOrder] = await getSharedPrismaClient().$transaction([
@@ -3678,7 +3676,7 @@ router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, 
 
     res.json({
       success: true,
-      message: '╪¬┘à ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘å╪¼╪º╪¡',
+      message: 'تم تسجيل محاولة الاتصال بنجاح',
       data: {
         callAttempts: updatedOrder.callAttempts,
         lastCallAttemptAt: updatedOrder.lastCallAttemptAt
@@ -3686,11 +3684,11 @@ router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, 
     });
   } catch (error) {
     console.error('Error logging call attempt:', error);
-    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪º╪¬╪╡╪º┘ä' });
+    res.status(500).json({ success: false, message: 'خطأ في تسجيل محاولة الاتصال' });
   }
 });
 
-// ╪¬╪╣┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿ ┘â┘à┘é╪▒┘ê╪í
+// تعليم الطلب كمقروء
 router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -3700,7 +3698,7 @@ router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async 
     const companyId = merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
     const order = await getSharedPrismaClient().order.findFirst({
@@ -3728,13 +3726,13 @@ router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async 
         where: { id: order.id },
         data: { isViewed: true }
       });
-      return res.json({ success: true, message: '╪¬┘à ╪¬╪╣┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿ ┘â┘à┘é╪▒┘ê╪í' });
+      return res.json({ success: true, message: 'تم تعليم الطلب كمقروء' });
     }
 
     if (merchant) {
       return res.status(404).json({
         success: false,
-        message: '┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘å╪» ┘ä┘ç╪░╪º ╪º┘ä╪¬╪º╪¼╪▒'
+        message: 'هذا الطلب غير مسند لهذا التاجر'
       });
     }
 
@@ -3752,23 +3750,23 @@ router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async 
         where: { id: guestOrder.id },
         data: { isViewed: true }
       });
-      return res.json({ success: true, message: '╪¬┘à ╪¬╪╣┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿ ┘â┘à┘é╪▒┘ê╪í' });
+      return res.json({ success: true, message: 'تم تعليم الطلب كمقروء' });
     }
 
-    return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
 
   } catch (error) {
     console.error('Error marking order as viewed:', error);
-    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪º┘ä╪╣┘à┘ä┘è╪⌐' });
+    res.status(500).json({ success: false, message: 'خطأ في العملية' });
   }
 });
 
-// ╪¼┘ä╪¿ ╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪║┘è╪▒ ╪º┘ä┘à┘é╪▒┘ê╪í╪⌐
+// جلب عدد الطلبات الجديدة غير المقروءة
 router.get('/simple/new-count', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
     const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
@@ -3801,16 +3799,16 @@ router.get('/simple/new-count', verifyToken.authenticateToken, async (req, res) 
     });
   } catch (error) {
     console.error('Error fetching new orders count:', error);
-    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐' });
+    res.status(500).json({ success: false, message: 'خطأ في جلب عدد الطلبات الجديدة' });
   }
 });
 
-// ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪║┘è╪▒ ╪º┘ä┘à┘é╪▒┘ê╪í╪⌐
+// جلب قائمة الطلبات الجديدة غير المقروءة
 router.get('/simple/new-list', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
     const limit = parseInt(req.query.limit) || 10;
@@ -3883,16 +3881,16 @@ router.get('/simple/new-list', verifyToken.authenticateToken, async (req, res) =
     });
   } catch (error) {
     console.error('Error fetching new orders list:', error);
-    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪¼╪»┘è╪»╪⌐' });
+    res.status(500).json({ success: false, message: 'خطأ في جلب قائمة الطلبات الجديدة' });
   }
 });
 
-// ╪¬╪╣┘ä┘è┘à ┘â┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘â┘à┘é╪▒┘ê╪í╪⌐
+// تعليم كل الطلبات كمقروءة
 router.post('/simple/mark-all-viewed', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
     const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
@@ -3919,16 +3917,16 @@ router.post('/simple/mark-all-viewed', verifyToken.authenticateToken, async (req
 
     res.json({
       success: true,
-      message: `╪¬┘à ╪¬╪╣┘ä┘è┘à ${totalUpdated} ╪╖┘ä╪¿ ┘â┘à┘é╪▒┘ê╪í`,
+      message: `تم تعليم ${totalUpdated} طلب كمقروء`,
       data: { updated: totalUpdated }
     });
   } catch (error) {
     console.error('Error marking all orders as viewed:', error);
-    res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪¬╪╣┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘â┘à┘é╪▒┘ê╪í╪⌐' });
+    res.status(500).json({ success: false, message: 'خطأ في تعليم الطلبات كمقروءة' });
   }
 });
 
-// ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ┘ä┘ä╪╖┘ä╪¿ ╪º┘ä╪¿╪│┘è╪╖
+// تحديث حالة الدفع للطلب البسيط
 router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -3936,7 +3934,7 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
 
     // Debug logging
     if (process.env.NODE_ENV !== 'production') {
-      console.log('≡ƒöì [PAYMENT-STATUS-UPDATE] Request received:', {
+      console.log('🔍 [PAYMENT-STATUS-UPDATE] Request received:', {
         orderNumber,
         hasUser: !!req.user,
         userId: req.user?.id,
@@ -3951,13 +3949,13 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
     const companyId = merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
-      console.error('Γ¥î [PAYMENT-STATUS-UPDATE] Missing companyId:', {
+      console.error('❌ [PAYMENT-STATUS-UPDATE] Missing companyId:', {
         hasUser: !!req.user,
         user: req.user
       });
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿',
+        message: 'غير مصرح - معرف الشركة مطلوب',
         debug: process.env.NODE_ENV !== 'production' ? {
           hasUser: !!req.user,
           userId: req.user?.id,
@@ -3971,14 +3969,14 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
     if (isMerchantUser(req.user)) {
       return res.status(403).json({
         success: false,
-        message: '╪╡┘ä╪º╪¡┘è╪º╪¬ ╪º┘ä╪¬╪º╪¼╪▒ ┘ä╪º ╪¬╪│┘à╪¡ ╪¿╪¬╪╣╪»┘è┘ä ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ┘à┘å ╪┤╪º╪┤╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬'
+        message: 'صلاحيات التاجر لا تسمح بتعديل حالة الدفع من شاشة الطلبات'
       });
     }
 
     if (!paymentStatus) {
       return res.status(400).json({
         success: false,
-        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ┘à╪╖┘ä┘ê╪¿╪⌐'
+        message: 'حالة الدفع مطلوبة'
       });
     }
 
@@ -4022,7 +4020,7 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
             changedBy: userId
           });
         } catch (e) {
-          console.error('Γ¥î [CASHBACK] Failed to apply cashback for paid order:', {
+          console.error('❌ [CASHBACK] Failed to apply cashback for paid order:', {
             orderId: existingRegularOrder.id,
             companyId,
             error: e?.message
@@ -4030,10 +4028,10 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
         }
       }
 
-      console.log(`Γ£à [PAYMENT-STATUS-UPDATE] Updated regular order: ${orderNumber}`);
+      console.log(`✅ [PAYMENT-STATUS-UPDATE] Updated regular order: ${orderNumber}`);
       return res.json({
         success: true,
-        message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ╪¿┘å╪¼╪º╪¡',
+        message: 'تم تحديث حالة الدفع بنجاح',
         data: { orderType: 'regular', orderNumber, paymentStatus: paymentStatus.toUpperCase() }
       });
     }
@@ -4051,37 +4049,37 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
     if (existingGuestOrder) {
       return res.status(400).json({
         success: false,
-        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ┘à╪¬╪º╪¡╪⌐ ╪¡╪º┘ä┘è╪º┘ï ┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ê┘ü'
+        message: 'حالة الدفع غير متاحة حالياً لطلبات الضيوف'
       });
     }
 
     // If neither order type found
     return res.status(404).json({
       success: false,
-      message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»'
+      message: 'الطلب غير موجود'
     });
 
     const orderType = regularOrder.count > 0 ? 'regular' : 'guest';
-    console.log(`Γ£à [PAYMENT-STATUS-UPDATE] Updated ${orderType} order: ${orderNumber}`);
+    console.log(`✅ [PAYMENT-STATUS-UPDATE] Updated ${orderType} order: ${orderNumber}`);
 
     res.json({
       success: true,
-      message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣ ╪¿┘å╪¼╪º╪¡',
+      message: 'تم تحديث حالة الدفع بنجاح',
       data: { orderType, orderNumber, paymentStatus: paymentStatus.toUpperCase() }
     });
 
   } catch (error) {
-    console.error('Γ¥î Error updating payment status:', error);
+    console.error('❌ Error updating payment status:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣',
+      message: 'خطأ في تحديث حالة الدفع',
       error: error.message
     });
   }
 });
 
 /**
- * ≡ƒÜº ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐ ╪¿╪º┘å╪¬╪╕╪º╪▒ ╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪» (billing hold) ΓÇö ╪¿╪¿┘è╪º┘å╪º╪¬ ┘à┘é┘å┘æ╪╣╪⌐
+ * 🚧 الطلبات المعلّقة بانتظار شحن الرصيد (billing hold) — ببيانات مقنّعة
  * GET /api/v1/orders-new/billing-holds
  */
 router.get('/billing-holds', verifyToken.authenticateToken, async (req, res) => {
@@ -4089,7 +4087,7 @@ router.get('/billing-holds', verifyToken.authenticateToken, async (req, res) => 
     const companyId = req.user?.companyId;
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
     const maskName = (name) => {
@@ -4160,16 +4158,16 @@ router.get('/billing-holds', verifyToken.authenticateToken, async (req, res) => 
       },
     });
   } catch (error) {
-    console.error('Γ¥î [BILLING-HOLDS] Error:', error.message);
+    console.error('❌ [BILLING-HOLDS] Error:', error.message);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐',
+      message: 'خطأ في جلب الطلبات المعلّقة',
       error: error.message,
     });
   }
 });
 
-// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪¼┘à┘è╪╣ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+// الحصول على جميع الطلبات
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, status, customerId } = req.query;
@@ -4178,11 +4176,11 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ ╪¿╪º┘ä┘ê╪╡┘ê┘ä - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
+        message: 'غير مصرح بالوصول - معرف الشركة مطلوب'
       });
     }
 
-    const where = { companyId }; // ┘ü┘ä╪¬╪▒╪⌐ ╪¿┘Ç companyId
+    const where = { companyId }; // فلترة بـ companyId
     const duplicateSettings = await orderService.getDuplicateSettings(companyId);
     if (status) where.status = status;
     else where.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
@@ -4249,16 +4247,16 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Γ¥î Error fetching orders:', error);
+    console.error('❌ Error fetching orders:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
+      message: 'خطأ في جلب الطلبات',
       error: error.message
     });
   }
 });
 
-// ╪Ñ╪╢╪º┘ü╪⌐ ┘à┘ä╪º╪¡╪╕╪⌐ ┘ä┘ä╪╖┘ä╪¿
+// إضافة ملاحظة للطلب
 router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -4268,11 +4266,11 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
     const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
     }
 
     if (!content || !content.trim()) {
-      return res.status(400).json({ success: false, message: '┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, message: 'محتوى الملاحظة مطلوب' });
     }
 
     // 1. Try to find regular order by id OR orderNumber
@@ -4286,7 +4284,7 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
     });
 
     if (regularOrder) {
-      // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪Ñ╪╢╪º┘ü╪⌐ ┘à┘ä╪º╪¡╪╕╪⌐ ╪¬╪╣╪»┘æ┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿.
+      // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): إضافة ملاحظة تعدّل بيانات الطلب.
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.status);
 
@@ -4305,7 +4303,7 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
         }
       });
 
-      console.log(`Γ£à [ORDER-NOTE] Added note to regular order: ${orderNumber}`);
+      console.log(`✅ [ORDER-NOTE] Added note to regular order: ${orderNumber}`);
       return res.json({ success: true, data: note });
     }
 
@@ -4320,7 +4318,7 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
     });
 
     if (guestOrder) {
-      // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐) ΓÇö ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ê┘ü.
+      // 🔒 قفل تعديل بيانات الأوردر (لكل حالة) — طلبات الضيوف.
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.status);
 
@@ -4339,22 +4337,22 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
         }
       });
 
-      console.log(`Γ£à [ORDER-NOTE] Added note to guest order: ${orderNumber}`);
+      console.log(`✅ [ORDER-NOTE] Added note to guest order: ${orderNumber}`);
       return res.json({ success: true, data: note });
     }
 
     // Order not found
-    return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
 
   } catch (error) {
-    console.error('Γ¥î Error adding note:', error);
+    console.error('❌ Error adding note:', error);
     const statusCode = error.statusCode || 500;
-    const message = statusCode === 403 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐';
+    const message = statusCode === 403 ? error.message : 'خطأ في إضافة الملاحظة';
     res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
 
-// ╪¬╪╣╪»┘è┘ä ┘à┘ä╪º╪¡╪╕╪⌐ ╪╖┘ä╪¿
+// تعديل ملاحظة طلب
 router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { noteId } = req.params;
@@ -4364,11 +4362,11 @@ router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req,
     const userRole = req.user?.role;
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
     }
 
     if (!content || !content.trim()) {
-      return res.status(400).json({ success: false, message: '┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, message: 'محتوى الملاحظة مطلوب' });
     }
 
     // Find the note with its order/guestOrder to verify company ownership
@@ -4381,21 +4379,21 @@ router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req,
     });
 
     if (!existingNote) {
-      return res.status(404).json({ success: false, message: '╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      return res.status(404).json({ success: false, message: 'الملاحظة غير موجودة' });
     }
 
     // Verify company ownership through related order or guestOrder
     const noteCompanyId = existingNote.order?.companyId || existingNote.guestOrder?.companyId;
     if (!noteCompanyId || noteCompanyId !== companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘ä╪º ╪¬┘å╪¬┘à┘è ┘ä╪┤╪▒┘â╪¬┘â' });
+      return res.status(403).json({ success: false, message: 'غير مصرح - الملاحظة لا تنتمي لشركتك' });
     }
 
     // Permission check: only the author or admins can edit
     if (existingNote.authorId !== userId && userRole !== 'COMPANY_ADMIN' && userRole !== 'SUPER_ADMIN') {
-      return res.status(403).json({ success: false, message: '┘è┘à┘â┘å┘â ╪¬╪╣╪»┘è┘ä ┘à┘ä╪º╪¡╪╕╪º╪¬┘â ┘ü┘é╪╖' });
+      return res.status(403).json({ success: false, message: 'يمكنك تعديل ملاحظاتك فقط' });
     }
 
-    // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪¬╪╣╪»┘è┘ä ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘è╪╣╪»┘æ┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿.
+    // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): تعديل الملاحظة يعدّل بيانات الطلب.
     const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
     const lockStatus = existingNote.order?.status || existingNote.guestOrder?.status;
     await assertOrderStatusEditable(getSharedPrismaClient(), companyId, lockStatus);
@@ -4410,18 +4408,18 @@ router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req,
       }
     });
 
-    console.log(`Γ£à [ORDER-NOTE] Updated note: ${noteId}`);
+    console.log(`✅ [ORDER-NOTE] Updated note: ${noteId}`);
     return res.json({ success: true, data: updatedNote });
 
   } catch (error) {
-    console.error('Γ¥î Error updating note:', error);
+    console.error('❌ Error updating note:', error);
     const statusCode = error.statusCode || 500;
-    const message = statusCode === 403 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¬╪╣╪»┘è┘ä ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐';
+    const message = statusCode === 403 ? error.message : 'خطأ في تعديل الملاحظة';
     res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
 
-// ╪¡╪░┘ü ┘à┘ä╪º╪¡╪╕╪⌐ ╪╖┘ä╪¿
+// حذف ملاحظة طلب
 router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { noteId } = req.params;
@@ -4430,7 +4428,7 @@ router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req
     const userRole = req.user?.role;
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
     }
 
     // Find the note with its order/guestOrder to verify company ownership
@@ -4443,44 +4441,44 @@ router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req
     });
 
     if (!existingNote) {
-      return res.status(404).json({ success: false, message: '╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      return res.status(404).json({ success: false, message: 'الملاحظة غير موجودة' });
     }
 
     // Verify company ownership through related order or guestOrder
     const noteCompanyId = existingNote.order?.companyId || existingNote.guestOrder?.companyId;
     if (!noteCompanyId || noteCompanyId !== companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘ä╪º ╪¬┘å╪¬┘à┘è ┘ä╪┤╪▒┘â╪¬┘â' });
+      return res.status(403).json({ success: false, message: 'غير مصرح - الملاحظة لا تنتمي لشركتك' });
     }
 
     // Permission check: only the author or admins can delete
     if (existingNote.authorId !== userId && userRole !== 'COMPANY_ADMIN' && userRole !== 'SUPER_ADMIN') {
-      return res.status(403).json({ success: false, message: '┘è┘à┘â┘å┘â ╪¡╪░┘ü ┘à┘ä╪º╪¡╪╕╪º╪¬┘â ┘ü┘é╪╖' });
+      return res.status(403).json({ success: false, message: 'يمكنك حذف ملاحظاتك فقط' });
     }
 
-    // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪¡╪░┘ü ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ┘è╪╣╪»┘æ┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿.
+    // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): حذف الملاحظة يعدّل بيانات الطلب.
     const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
     const lockStatus = existingNote.order?.status || existingNote.guestOrder?.status;
     await assertOrderStatusEditable(getSharedPrismaClient(), companyId, lockStatus);
 
     await getSharedPrismaClient().orderNote.delete({ where: { id: noteId } });
 
-    console.log(`Γ£à [ORDER-NOTE] Deleted note: ${noteId}`);
-    return res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐ ╪¿┘å╪¼╪º╪¡' });
+    console.log(`✅ [ORDER-NOTE] Deleted note: ${noteId}`);
+    return res.json({ success: true, message: 'تم حذف الملاحظة بنجاح' });
 
   } catch (error) {
-    console.error('Γ¥î Error deleting note:', error);
+    console.error('❌ Error deleting note:', error);
     const statusCode = error.statusCode || 500;
-    const message = statusCode === 403 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘à┘ä╪º╪¡╪╕╪⌐';
+    const message = statusCode === 403 ? error.message : 'خطأ في حذف الملاحظة';
     res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
 
-// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪╖┘ä╪¿ ╪¿╪│┘è╪╖ ┘à╪¡╪»╪» ╪¿╪º┘ä╪▒┘é┘à
+// الحصول على طلب بسيط محدد بالرقم
 // Verify / reject a wallet payment proof uploaded by the customer at checkout
 router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä' });
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
     }
 
     const merchant = isMerchantUser(req.user)
@@ -4489,7 +4487,7 @@ router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticate
     const companyId = merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
-      return res.status(403).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
     }
 
     const { orderNumber } = req.params;
@@ -4497,7 +4495,7 @@ router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticate
     const normalizedAction = String(action || '').toUpperCase();
 
     if (!['VERIFY', 'REJECT'].includes(normalizedAction)) {
-      return res.status(400).json({ success: false, message: '╪º┘ä╪Ñ╪¼╪▒╪º╪í ┘è╪¼╪¿ ╪ú┘å ┘è┘â┘ê┘å VERIFY ╪ú┘ê REJECT' });
+      return res.status(400).json({ success: false, message: 'الإجراء يجب أن يكون VERIFY أو REJECT' });
     }
 
     const prisma = getSharedPrismaClient();
@@ -4517,13 +4515,13 @@ router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticate
     ]);
 
     if (!guestOrder && !regularOrder) {
-      return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
     }
 
     let verifiedProof = null;
     let matched = false;
 
-    // Guest order ΓÇö storefront orders are stored as guest orders. Update its proof.
+    // Guest order — storefront orders are stored as guest orders. Update its proof.
     if (guestOrder) {
       const metadata = safeParseOrderMetadata(guestOrder.metadata);
       const proof = metadata?.walletPaymentProof;
@@ -4546,7 +4544,7 @@ router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticate
       }
     }
 
-    // Regular order mirror ΓÇö same proof, and when VERIFYing also mark the
+    // Regular order mirror — same proof, and when VERIFYing also mark the
     // payment as completed so the payment column reflects the approval.
     if (regularOrder) {
       const metadata = safeParseOrderMetadata(regularOrder.metadata);
@@ -4582,20 +4580,20 @@ router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticate
     }
 
     if (!matched) {
-      return res.status(400).json({ success: false, message: '┘ä╪º ┘è┘ê╪¼╪» ╪Ñ╪½╪¿╪º╪¬ ╪»┘ü╪╣ ┘à╪¡┘ü╪╕╪⌐ ┘ä┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿' });
+      return res.status(400).json({ success: false, message: 'لا يوجد إثبات دفع محفظة لهذا الطلب' });
     }
 
     return res.json({
       success: true,
       message:
         normalizedAction === 'VERIFY'
-          ? '╪¬┘à ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪Ñ╪½╪¿╪º╪¬ ╪º┘ä╪»┘ü╪╣ ┘ê╪º╪╣╪¬┘à╪º╪» ╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣'
-          : '╪¬┘à ╪▒┘ü╪╢ ╪Ñ╪½╪¿╪º╪¬ ╪º┘ä╪»┘ü╪╣',
+          ? 'تم التحقق من إثبات الدفع واعتماد حالة الدفع'
+          : 'تم رفض إثبات الدفع',
       data: { walletPaymentProof: verifiedProof },
     });
   } catch (error) {
-    console.error('Γ¥î [WALLET-PROOF] Verify error:', error?.message);
-    return res.status(500).json({ success: false, message: '╪«╪╖╪ú ┘ü┘è ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪Ñ╪½╪¿╪º╪¬ ╪º┘ä╪»┘ü╪╣' });
+    console.error('❌ [WALLET-PROOF] Verify error:', error?.message);
+    return res.status(500).json({ success: false, message: 'خطأ في التحقق من إثبات الدفع' });
   }
 });
 
@@ -4603,19 +4601,19 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
   try {
     const { orderNumber } = req.params;
 
-    // ╪º┘ä╪¬╪ú┘â╪» ┘à┘å ┘ê╪¼┘ê╪» req.user (verifyToken.authenticateToken ┘è╪¼╪¿ ╪ú┘å ┘è╪╢┘à┘å ╪░┘ä┘â)
+    // التأكد من وجود req.user (verifyToken.authenticateToken يجب أن يضمن ذلك)
     if (!req.user) {
-      console.error('Γ¥î [ORDER-DETAIL] req.user is null/undefined');
+      console.error('❌ [ORDER-DETAIL] req.user is null/undefined');
       return res.status(401).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘è╪¼╪¿ ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä'
+        message: 'غير مصرح - يجب تسجيل الدخول'
       });
     }
 
     // Debug logging (development only)
     if (process.env.NODE_ENV !== 'production') {
-      console.log('≡ƒöì [ORDER-DETAIL] Request for order:', orderNumber);
-      console.log('≡ƒöì [ORDER-DETAIL] req.user:', { id: req.user.id, email: req.user.email, companyId: req.user.companyId });
+      console.log('🔍 [ORDER-DETAIL] Request for order:', orderNumber);
+      console.log('🔍 [ORDER-DETAIL] req.user:', { id: req.user.id, email: req.user.email, companyId: req.user.companyId });
     }
 
     const merchant = isMerchantUser(req.user)
@@ -4624,14 +4622,14 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
     const companyId = merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
-      console.error('Γ¥î [ORDER-DETAIL] Missing companyId!', {
+      console.error('❌ [ORDER-DETAIL] Missing companyId!', {
         user: req.user,
         hasUser: !!req.user,
         orderNumber
       });
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿',
+        message: 'غير مصرح - معرف الشركة مطلوب',
         debug: process.env.NODE_ENV !== 'production' ? {
           hasUser: !!req.user,
           userId: req.user?.id,
@@ -4644,7 +4642,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
     const orderDetailFeatureAccess = await getOrderDetailFeatureAccess(companyId);
 
-    console.log('≡ƒöì [ORDER-DETAIL] Searching for order:', {
+    console.log('🔍 [ORDER-DETAIL] Searching for order:', {
       orderNumber,
       companyId,
       merchantId: merchant?.id || null
@@ -4720,10 +4718,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             id: true,
             productId: true,
             productName: true,
-            productColor: true,  // Γ£à FIX: Include color
-            productSize: true,   // Γ£à FIX: Include size
-            productSku: true,    // Γ£à FIX: Include SKU
-            productDetails: true, // Γ£à FIX: Include details
+            productColor: true,  // ✅ FIX: Include color
+            productSize: true,   // ✅ FIX: Include size
+            productSku: true,    // ✅ FIX: Include SKU
+            productDetails: true, // ✅ FIX: Include details
             price: true,
             quantity: true,
             total: true,
@@ -4731,10 +4729,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             productVariant: {
               select: {
                 id: true,
-                name: true,  // Γ£à Correct: Variant name (e.g. "Red / L")
-                type: true,  // Γ£à Correct: Variant type
+                name: true,  // ✅ Correct: Variant name (e.g. "Red / L")
+                type: true,  // ✅ Correct: Variant type
                 sku: true,
-                metadata: true // Γ£à Correct: JSON metadata
+                metadata: true // ✅ Correct: JSON metadata
               }
             },
             product: {
@@ -4819,11 +4817,11 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       if (merchant) {
         return res.status(404).json({
           success: false,
-          message: '┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘å╪» ┘ä┘ç╪░╪º ╪º┘ä╪¬╪º╪¼╪▒'
+          message: 'هذا الطلب غير مسند لهذا التاجر'
         });
       }
 
-      console.log('≡ƒöì [ORDER-DETAIL] Regular order not found, trying guest order...');
+      console.log('🔍 [ORDER-DETAIL] Regular order not found, trying guest order...');
       guestOrder = await getSharedPrismaClient().guestOrder.findFirst({
         where: {
           OR: [
@@ -4855,7 +4853,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
               }
             }
           },
-          orderNotes: { // Γ£à FIX: GuestOrder uses orderNotes (camelCase)
+          orderNotes: { // ✅ FIX: GuestOrder uses orderNotes (camelCase)
             include: {
               user: {
                 select: {
@@ -4880,13 +4878,13 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
       if (guestOrder) {
         isGuestOrder = true;
-        console.log('Γ£à [ORDER-DETAIL] Found guest order:', orderNumber);
+        console.log('✅ [ORDER-DETAIL] Found guest order:', orderNumber);
       }
     }
 
     // If neither found, return 404
     if (!order && !guestOrder) {
-      console.error('Γ¥î [ORDER-DETAIL] Order not found:', {
+      console.error('❌ [ORDER-DETAIL] Order not found:', {
         orderNumber,
         companyId,
         searchedRegular: true,
@@ -4894,7 +4892,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       });
       return res.status(404).json({
         success: false,
-        message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»',
+        message: 'الطلب غير موجود',
         orderNumber,
         companyId
       });
@@ -4902,7 +4900,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
     // Debug: Log items for regular order
     if (order) {
-      console.log(`≡ƒöì [ORDER-DETAIL] Regular order found:`, {
+      console.log(`🔍 [ORDER-DETAIL] Regular order found:`, {
         orderNumber: order.orderNumber,
         orderId: order.id,
         hasItems: !!order.orderItems,
@@ -4923,8 +4921,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       const itemsCount = await getSharedPrismaClient().orderItem.count({
         where: { orderId: order.id }
       });
-      console.log(`≡ƒöì [ORDER-DETAIL] Items count in database for order ${order.orderNumber}:`, itemsCount);
-      console.log(`≡ƒô¥ [ORDER-DETAIL] Notes found:`, order.orderNotes?.length || 0); // DEBUG LOG
+      console.log(`🔍 [ORDER-DETAIL] Items count in database for order ${order.orderNumber}:`, itemsCount);
+      console.log(`📝 [ORDER-DETAIL] Notes found:`, order.orderNotes?.length || 0); // DEBUG LOG
     }
 
     const prisma = getSharedPrismaClient();
@@ -4974,7 +4972,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         try { shippingAddress = JSON.parse(shippingAddress); } catch (e) { shippingAddress = {}; }
       }
 
-      // Γ£à FIX: Batch-fetch all missing variant details in ONE query (avoid N+1)
+      // ✅ FIX: Batch-fetch all missing variant details in ONE query (avoid N+1)
       const validItems = Array.isArray(items) ? items : [];
       const missingVariantIds = validItems
         .filter(item => {
@@ -5056,8 +5054,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
           return {
             id: item.productId || item.id || '',
             productId: item.productId || '',
-            productName: item.name || item.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
-            name: item.name || item.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
+            productName: item.name || item.productName || 'منتج غير محدد',
+            name: item.name || item.productName || 'منتج غير محدد',
             productColor: color,
             productSize: size,
             productDetails: details,
@@ -5085,10 +5083,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
           isGuestOrder: true,
           ...safeParseOrderMetadata(guestOrder.metadata),
         },
-        // Γ£à Wallet payment proof (screenshot + transfer details) for manual verification
+        // ✅ Wallet payment proof (screenshot + transfer details) for manual verification
         walletPaymentProof:
           safeParseOrderMetadata(guestOrder.metadata)?.walletPaymentProof || null,
-        // Γ£à Turbo Shipping Fields - Get from GuestOrder
+        // ✅ Turbo Shipping Fields - Get from GuestOrder
         turboShipmentId: guestOrder.turboShipmentId || null,
         turboTrackingNumber: guestOrder.turboTrackingNumber || null,
         turboShipmentStatus: guestOrder.turboShipmentStatus || null,
@@ -5118,7 +5116,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         statusHistory: guestOrder.OrderStatusHistory || []
       };
 
-      console.log('≡ƒôª [ORDER-DETAIL] GuestOrder Turbo fields:', {
+      console.log('📦 [ORDER-DETAIL] GuestOrder Turbo fields:', {
         turboShipmentId: formattedOrder.turboShipmentId,
         turboTrackingNumber: formattedOrder.turboTrackingNumber,
         turboShipmentStatus: formattedOrder.turboShipmentStatus,
@@ -5150,7 +5148,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         // Keep as string if parsing fails
       }
 
-      // ╪¬╪¡┘ê┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ┘ä┘ä╪╡┘è╪║╪⌐ ╪º┘ä┘à╪¬┘ê╪º┘ü┘é╪⌐ ┘à╪╣ ╪º┘ä┘Ç frontend
+      // تحويل البيانات للصيغة المتوافقة مع الـ frontend
       // PRIORITY: Use order.customerName from WooCommerce first
       let finalCustomerName = '';
 
@@ -5194,9 +5192,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
           return {
             id: item.id,
             productId: item.productId,
-            name: item.productName || item.product?.name || parsedMetadata.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
-            productName: item.productName || item.product?.name || parsedMetadata.productName || '┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à╪¡╪»╪»',
-            // Γ£à FIX: Add productColor, productSize, and productDetails directly for frontend
+            name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
+            productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
+            // ✅ FIX: Add productColor, productSize, and productDetails directly for frontend
             productColor: item.productColor || parsedMetadata.color || parsedMetadata.productColor || parsedMetadata.originalData?.productColor || '',
             productSize: item.productSize || parsedMetadata.size || parsedMetadata.productSize || parsedMetadata.originalData?.productSize || '',
             productDetails: item.productDetails || parsedMetadata.details || parsedMetadata.productDetails || '',
@@ -5238,7 +5236,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             }
           : orderMetadata,
         merchantOrder: merchantOrderScope || undefined,
-        // Γ£à Wallet payment proof (screenshot + transfer details) for manual verification
+        // ✅ Wallet payment proof (screenshot + transfer details) for manual verification
         walletPaymentProof:
           orderMetadata?.walletPaymentProof || null,
         // Turbo Shipping Fields
@@ -5286,7 +5284,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         statusHistory: order.statusHistory || []
       };
 
-      console.log('≡ƒôª [ORDER-DETAIL] Regular Order Turbo fields:', {
+      console.log('📦 [ORDER-DETAIL] Regular Order Turbo fields:', {
         turboShipmentId: formattedOrder.turboShipmentId,
         turboTrackingNumber: formattedOrder.turboTrackingNumber,
         turboShipmentStatus: formattedOrder.turboShipmentStatus,
@@ -5307,16 +5305,16 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
     });
 
   } catch (error) {
-    console.error('Γ¥î Error fetching simple order:', error);
+    console.error('❌ Error fetching simple order:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿',
+      message: 'خطأ في جلب الطلب',
       error: error.message
     });
   }
 });
 
-// ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪╖┘ä╪¿ ┘à╪¡╪»╪»
+// الحصول على طلب محدد
 router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -5326,7 +5324,7 @@ router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»'
+        message: 'الطلب غير موجود'
       });
     }
 
@@ -5336,18 +5334,18 @@ router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Γ¥î Error fetching order:', error);
+    console.error('❌ Error fetching order:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪╖┘ä╪¿',
+      message: 'خطأ في جلب الطلب',
       error: error.message
     });
   }
 });
 
-// ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿
+// تحديث حالة الطلب
 router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
-  console.log(`≡ƒöì [ORDERS-ROUTE-DEBUG] PATCH /:orderNumber/status called:`);
+  console.log(`🔍 [ORDERS-ROUTE-DEBUG] PATCH /:orderNumber/status called:`);
   console.log(`   - Order Number: ${req.params.orderNumber}`);
   console.log(`   - New Status: ${req.body.status}`);
   console.log(`   - Company ID: ${req.user?.companyId}`);
@@ -5358,10 +5356,10 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     const { status, notes, isOverride = false } = req.body;
 
     if (!status) {
-      console.log(`Γ¥î [ORDERS-ROUTE-DEBUG] Missing status`);
+      console.log(`❌ [ORDERS-ROUTE-DEBUG] Missing status`);
       return res.status(400).json({
         success: false,
-        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘à╪╖┘ä┘ê╪¿╪⌐'
+        message: 'حالة الطلب مطلوبة'
       });
     }
 
@@ -5388,10 +5386,10 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     } catch (_) { /* fallback to built-in list */ }
 
     if (!validStatuses.has(normalizedStatus)) {
-      console.log(`Γ¥î [ORDERS-ROUTE-DEBUG] Invalid status: ${status}`);
+      console.log(`❌ [ORDERS-ROUTE-DEBUG] Invalid status: ${status}`);
       return res.status(400).json({
         success: false,
-        message: '╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐'
+        message: 'حالة الطلب غير صحيحة'
       });
     }
 
@@ -5400,12 +5398,12 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¬╪ú┘â┘è╪» ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ┘ä╪ú┘å┘â ┘ä╪│╪¬ ┘à┘å ┘é╪º┘à ╪¿╪¬╪│╪¼┘è┘ä┘ç'
+        message: 'ليس لديك صلاحية لتعديل أو تأكيد هذا الطلب لأنك لست من قام بتسجيله'
       });
     }
     // ----------------------------
 
-    console.log(`≡ƒô₧ [ORDERS-ROUTE-DEBUG] Calling orderService.updateOrderStatus...`);
+    console.log(`📞 [ORDERS-ROUTE-DEBUG] Calling orderService.updateOrderStatus...`);
     const userId = req.user?.id;
     const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
     const order = await orderService.updateOrderStatus(orderNumber, companyId, normalizedStatus, statusNotes, userId, userName, null, isOverride);
@@ -5413,7 +5411,7 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     if (order?.workflowStatus === 'pending') {
       return res.json({
         success: true,
-        message: '╪¬┘à ╪¬┘é╪»┘è┘à ╪╖┘ä╪¿ ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐.',
+        message: 'تم تقديم طلب تغيير الحالة للمراجعة.',
         data: {
           workflowStatus: 'pending',
           requestId: order.workflowRequestId
@@ -5423,21 +5421,21 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
 
     res.json({
       success: true,
-      message: '╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
+      message: 'تم تحديث حالة الطلب بنجاح',
       data: order
     });
 
   } catch (error) {
-    console.error('Γ¥î Error updating order status:', error);
+    console.error('❌ Error updating order status:', error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.statusCode && error.statusCode < 500 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿',
+      message: error.statusCode && error.statusCode < 500 ? error.message : 'خطأ في تحديث حالة الطلب',
       error: error.message
     });
   }
 });
 
-// ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿
+// تأكيد الطلب
 router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -5450,7 +5448,7 @@ router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, 
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¬╪ú┘â┘è╪» ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ┘ä╪ú┘å┘â ┘ä╪│╪¬ ┘à┘å ┘é╪º┘à ╪¿╪¬╪│╪¼┘è┘ä┘ç'
+        message: 'ليس لديك صلاحية لتعديل أو تأكيد هذا الطلب لأنك لست من قام بتسجيله'
       });
     }
     // ----------------------------
@@ -5459,21 +5457,21 @@ router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, 
 
     res.json({
       success: true,
-      message: '╪¬┘à ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
+      message: 'تم تأكيد الطلب بنجاح',
       data: order
     });
 
   } catch (error) {
-    console.error('Γ¥î Error confirming order:', error);
+    console.error('❌ Error confirming order:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿',
+      message: 'خطأ في تأكيد الطلب',
       error: error.message
     });
   }
 });
 
-// ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿
+// إلغاء الطلب
 router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -5486,7 +5484,7 @@ router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, r
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¬╪ú┘â┘è╪» ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ┘ä╪ú┘å┘â ┘ä╪│╪¬ ┘à┘å ┘é╪º┘à ╪¿╪¬╪│╪¼┘è┘ä┘ç'
+        message: 'ليس لديك صلاحية لتعديل أو تأكيد هذا الطلب لأنك لست من قام بتسجيله'
       });
     }
     // ----------------------------
@@ -5495,21 +5493,21 @@ router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, r
 
     res.json({
       success: true,
-      message: '╪¬┘à ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
+      message: 'تم إلغاء الطلب بنجاح',
       data: order
     });
 
   } catch (error) {
-    console.error('Γ¥î Error cancelling order:', error);
+    console.error('❌ Error cancelling order:', error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.statusCode && error.statusCode < 500 ? error.message : '╪«╪╖╪ú ┘ü┘è ╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿',
+      message: error.statusCode && error.statusCode < 500 ? error.message : 'خطأ في إلغاء الطلب',
       error: error.message
     });
   }
 });
 
-// ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+// إحصائيات الطلبات
 router.get('/stats/summary', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { days = 30, companyId } = req.query;
@@ -5517,7 +5515,7 @@ router.get('/stats/summary', verifyToken.authenticateToken, async (req, res) => 
     if (!companyId) {
       return res.status(400).json({
         success: false,
-        message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
+        message: 'معرف الشركة مطلوب'
       });
     }
 
@@ -5529,16 +5527,16 @@ router.get('/stats/summary', verifyToken.authenticateToken, async (req, res) => 
     });
 
   } catch (error) {
-    console.error('Γ¥î Error fetching order stats:', error);
+    console.error('❌ Error fetching order stats:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬',
+      message: 'خطأ في جلب إحصائيات الطلبات',
       error: error.message
     });
   }
 });
 
-// ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä
+// طلبات العميل
 router.get('/customer/:customerId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { customerId } = req.params;
@@ -5554,16 +5552,16 @@ router.get('/customer/:customerId', verifyToken.authenticateToken, async (req, r
     });
 
   } catch (error) {
-    console.error('Γ¥î Error fetching customer orders:', error);
+    console.error('❌ Error fetching customer orders:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä',
+      message: 'خطأ في جلب طلبات العميل',
       error: error.message
     });
   }
 });
 
-// ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ╪¿╪│┘è╪╖ ┘à┘å ╪º┘ä┘à╪¡╪º╪»╪½╪⌐ (╪¿╪º╪│╪¬╪«╪»╪º┘à EnhancedOrderService)
+// إنشاء طلب بسيط من المحادثة (باستخدام EnhancedOrderService)
 router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     const EnhancedOrderService = require('../services/enhancedOrderService');
@@ -5571,11 +5569,11 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const companyId = req.user?.companyId;
 
-    // ≡ƒöì Check if user has an affiliate profile (regardless of role)
+    // 🔍 Check if user has an affiliate profile (regardless of role)
     let affiliateId = null;
     let orderSource = 'manual';
 
-    console.log('≡ƒöì [ORDER-DEBUG] Checking affiliate for userId:', req.user?.id, 'Role:', req.user?.role);
+    console.log('🔍 [ORDER-DEBUG] Checking affiliate for userId:', req.user?.id, 'Role:', req.user?.role);
 
     try {
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
@@ -5584,7 +5582,7 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
         where: { userId: req.user.id }
       });
 
-      console.log('≡ƒöì [ORDER-DEBUG] Affiliate query result:', affiliate ? `Found ID: ${affiliate.id}` : 'Not Found');
+      console.log('🔍 [ORDER-DEBUG] Affiliate query result:', affiliate ? `Found ID: ${affiliate.id}` : 'Not Found');
 
       // Only set affiliateId if one exists AND the user explicitly wants to act as affiliate
       // OR if they are strictly an AFFILIATE role
@@ -5592,10 +5590,10 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       if (affiliate) {
         affiliateId = affiliate.id;
         orderSource = 'AFFILIATE_DIRECT';
-        console.log('Γ£à [ORDER-DEBUG] Affiliate detected:', { affiliateId, userId: req.user.id, role: req.user.role });
+        console.log('✅ [ORDER-DEBUG] Affiliate detected:', { affiliateId, userId: req.user.id, role: req.user.role });
       }
     } catch (affiliateError) {
-      console.error('ΓÜá∩╕Å [ORDER-DEBUG] Error fetching affiliate:', affiliateError);
+      console.error('⚠️ [ORDER-DEBUG] Error fetching affiliate:', affiliateError);
     }
 
     const {
@@ -5617,19 +5615,19 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡ - ┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿'
+        message: 'غير مصرح - معرف الشركة مطلوب'
       });
     }
 
-    // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐
+    // التحقق من البيانات المطلوبة
     if (!items || items.length === 0) {
       return res.status(400).json({
         success: false,
-        message: '╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐'
+        message: 'بيانات الطلب غير مكتملة'
       });
     }
 
-    // ╪º┘ä┘ê╪╢╪╣ ╪º┘ä╪│┘ç┘ä: ┘é╪▒╪º╪í╪⌐ ╪Ñ╪╣╪»╪º╪» ╪º╪│╪¬┘è╪▒╪º╪» ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä╪¬┘ä┘é╪º╪ª┘è
+    // الوضع السهل: قراءة إعداد استيراد المنتجات التلقائي
     let easyWarehouseMode = false;
     try {
       const { getSharedPrismaClient: getPrisma } = require('../services/sharedDatabase');
@@ -5642,12 +5640,12 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       easyWarehouseMode = false;
     }
 
-    // Γ£¿ Logging ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪│╪¬┘ä┘à╪⌐ ┘à┘å Frontend
-    console.log('≡ƒöì [ORDER-DEBUG] Received items from Frontend:', JSON.stringify(items, null, 2));
+    // ✨ Logging للبيانات المستلمة من Frontend
+    console.log('🔍 [ORDER-DEBUG] Received items from Frontend:', JSON.stringify(items, null, 2));
 
-    // ╪¬╪¡┘ê┘è┘ä items ┘ä┘ä╪╡┘è╪║╪⌐ ╪º┘ä┘à╪¬┘ê╪º┘ü┘é╪⌐ ┘à╪╣ EnhancedOrderService
+    // تحويل items للصيغة المتوافقة مع EnhancedOrderService
     const products = items.map(item => {
-      console.log(`≡ƒöì [ORDER-DEBUG] Processing item:`, {
+      console.log(`🔍 [ORDER-DEBUG] Processing item:`, {
         productName: item.productName,
         productColor: item.productColor,
         productSize: item.productSize,
@@ -5666,42 +5664,42 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       };
     });
 
-    console.log('Γ£à [ORDER-DEBUG] Converted products:', JSON.stringify(products, null, 2));
+    console.log('✅ [ORDER-DEBUG] Converted products:', JSON.stringify(products, null, 2));
 
-    // ╪¬╪¡╪╢┘è╪▒ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿ ╪¿┘å┘ü╪│ ╪╡┘è╪║╪⌐ ╪«╪»┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¡╪│┘å╪⌐
+    // تحضير بيانات الطلب بنفس صيغة خدمة الطلبات المحسنة
     const orderData = {
       companyId,
       customerId,
       conversationId,
 
-      // ┘à╪╣┘ä┘ê┘à╪º╪¬ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬
+      // معلومات المنتجات
       productName: products.map(p => p.productName).join(', '),
       productColor: products[0]?.productColor,
       productSize: products[0]?.productSize,
       productPrice: products[0]?.price,
       quantity: products.reduce((sum, p) => sum + p.quantity, 0),
 
-      // ┘à╪╣┘ä┘ê┘à╪º╪¬ ╪º┘ä╪┤╪¡┘å
+      // معلومات الشحن
       customerAddress: address || shippingAddress || '',
-      city: city || '╪║┘è╪▒ ┘à╪¡╪»╪»',
+      city: city || 'غير محدد',
       governorate: governorate || '',
       customerPhone: customerPhone || '',
 
-      // ╪º┘ä╪¬┘â╪º┘ä┘è┘ü
+      // التكاليف
       subtotal: parseFloat(subtotal) || 0,
       shipping: parseFloat(shipping) || 0,
       total: parseFloat(total) || 0,
 
-      // ┘à┘ä╪º╪¡╪╕╪º╪¬
+      // ملاحظات
       notes: notes || '',
 
-      // ╪º┘ä╪¡╪º┘ä╪⌐
+      // الحالة
       status: status || undefined,
 
-      // ╪º┘ä┘ê╪╢╪╣ ╪º┘ä╪│┘ç┘ä: ╪º╪│╪¬┘è╪▒╪º╪» ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è┘ï╪º
+      // الوضع السهل: استيراد المنتجات تلقائيًا
       easyWarehouseMode,
 
-      // ┘à╪╣┘ä┘ê┘à╪º╪¬ ╪º┘ä╪º╪│╪¬╪«╪▒╪º╪¼
+      // معلومات الاستخراج
       extractionMethod: 'manual_order_modal',
       confidence: 1.0,
       sourceType: 'manual',
@@ -5713,11 +5711,11 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       createdBy: req.user.id,
       createdByName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email,
 
-      // ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ┘ä┘ä╪¡┘ü╪╕ ┘ü┘è OrderItems
+      // المنتجات للحفظ في OrderItems
       products: products
     };
 
-    console.log('≡ƒô¥ [ORDER-DEBUG] Final orderData:', {
+    console.log('📝 [ORDER-DEBUG] Final orderData:', {
       companyId,
       customerId,
       conversationId,
@@ -5734,17 +5732,17 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       }))
     });
 
-    // ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿╪º╪│╪¬╪«╪»╪º┘à ╪«╪»┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¡╪│┘å╪⌐
+    // إنشاء الطلب باستخدام خدمة الطلبات المحسنة
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
 
     await enhancedOrderService.disconnect();
 
     if (result.success) {
-      console.log('Γ£à Order created successfully:', result.order.orderNumber);
+      console.log('✅ Order created successfully:', result.order.orderNumber);
 
       res.status(201).json({
         success: true,
-        message: '╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
+        message: 'تم إنشاء الطلب بنجاح',
         data: result.order
       });
     } else {
@@ -5752,41 +5750,41 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
     }
 
   } catch (error) {
-    console.error('Γ¥î Error creating order:', error);
+    console.error('❌ Error creating order:', error);
     if (error.payload && error.statusCode) {
       return res.status(error.statusCode).json(error.payload);
     }
 
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿',
+      message: 'خطأ في إنشاء الطلب',
       error: error.message
     });
   }
 });
 
-// ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ╪¿╪│┘è╪╖ (┘ä┘ä╪º╪«╪¬╪¿╪º╪▒)
+// إنشاء طلب بسيط (للاختبار)
 router.post('/create-simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     const orderData = req.body;
 
-    // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐
+    // التحقق من البيانات المطلوبة
     const requiredFields = ['productName', 'productPrice'];
     for (const field of requiredFields) {
       if (!orderData[field]) {
         return res.status(400).json({
           success: false,
-          message: `${field} ┘à╪╖┘ä┘ê╪¿`
+          message: `${field} مطلوب`
         });
       }
     }
 
     const result = await simpleOrderService.createSimpleOrder(orderData);
 
-    // ╪¡┘ü╪╕ ╪º┘ä╪╖┘ä╪¿ ┘ü┘è ┘à┘ä┘ü
+    // حفظ الطلب في ملف
     await simpleOrderService.saveOrderToFile(result.order);
 
-    // ≡ƒô▒ ╪Ñ╪▒╪│╪º┘ä ╪Ñ╪┤╪╣╪º╪▒ WhatsApp ╪¬┘ä┘é╪º╪ª┘è ┘ä┘ä╪╖┘ä╪¿ ╪º┘ä╪¼╪»┘è╪»
+    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
     try {
       const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
@@ -5802,50 +5800,50 @@ router.post('/create-simple', verifyToken.authenticateToken, async (req, res) =>
         },
         total: result.order.total,
         currency: 'EGP',
-        items: result.order.items || result.order.orderItems || [] // Γ£à Include items for WhatsApp notification
+        items: result.order.items || result.order.orderItems || [] // ✅ Include items for WhatsApp notification
       };
 
       await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
-      console.log('Γ£à [WHATSAPP] Order notification sent for:', result.order.orderNumber);
+      console.log('✅ [WHATSAPP] Order notification sent for:', result.order.orderNumber);
     } catch (whatsappError) {
-      console.log('ΓÜá∩╕Å [WHATSAPP] Failed to send notification:', whatsappError.message);
+      console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
     }
 
     res.status(201, {
       success: true,
-      message: '╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
+      message: 'تم إنشاء الطلب بنجاح',
       data: result.order
     });
 
   } catch (error) {
-    console.error('Γ¥î Error creating simple order:', error);
+    console.error('❌ Error creating simple order:', error);
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿',
+      message: 'خطأ في إنشاء الطلب',
       error: error.message
     });
   }
 });
 
-// ╪Ñ┘å╪┤╪º╪í ╪╖┘ä╪¿ ┘è╪»┘ê┘è (┘ä┘ä╪º╪«╪¬╪¿╪º╪▒)
+// إنشاء طلب يدوي (للاختبار)
 router.post('/create', verifyToken.authenticateToken, async (req, res) => {
   try {
     const orderData = req.body;
 
-    // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐
+    // التحقق من البيانات المطلوبة
     const requiredFields = ['customerId', 'companyId', 'productName', 'productPrice'];
     for (const field of requiredFields) {
       if (!orderData[field]) {
         return res.status(400).json({
           success: false,
-          message: `${field} ┘à╪╖┘ä┘ê╪¿`
+          message: `${field} مطلوب`
         });
       }
     }
 
     const order = await orderService.createOrderFromConversation(orderData);
 
-    // ≡ƒô▒ ╪Ñ╪▒╪│╪º┘ä ╪Ñ╪┤╪╣╪º╪▒ WhatsApp ╪¬┘ä┘é╪º╪ª┘è ┘ä┘ä╪╖┘ä╪¿ ╪º┘ä╪¼╪»┘è╪»
+    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
     try {
       const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
@@ -5861,30 +5859,30 @@ router.post('/create', verifyToken.authenticateToken, async (req, res) => {
         },
         total: order.total,
         currency: 'EGP',
-        items: order.items || order.orderItems || [] // Γ£à Include items for WhatsApp notification
+        items: order.items || order.orderItems || [] // ✅ Include items for WhatsApp notification
       };
 
       await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
-      console.log('Γ£à [WHATSAPP] Order notification sent for:', order.orderNumber);
+      console.log('✅ [WHATSAPP] Order notification sent for:', order.orderNumber);
     } catch (whatsappError) {
-      console.log('ΓÜá∩╕Å [WHATSAPP] Failed to send notification:', whatsappError.message);
+      console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
     }
 
     res.status(201).json({
       success: true,
-      message: '╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡',
+      message: 'تم إنشاء الطلب بنجاح',
       data: order
     });
 
   } catch (error) {
-    console.error('Γ¥î Error creating order:', error);
+    console.error('❌ Error creating order:', error);
     if (error.payload && error.statusCode) {
       return res.status(error.statusCode).json(error.payload);
     }
 
     res.status(500).json({
       success: false,
-      message: '╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿',
+      message: 'خطأ في إنشاء الطلب',
       error: error.message
     });
   }
@@ -5945,7 +5943,7 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: `╪¬┘à ╪¬╪¡╪»┘è╪½ ${successCount} ╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡`,
+      message: `تم تحديث ${successCount} طلب بنجاح`,
       data: {
         totalRequested: orderIds.length,
         successCount,
@@ -5954,7 +5952,7 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Γ¥î Error bulk updating orders:', error);
+    console.error('❌ Error bulk updating orders:', error);
     res.status(500).json({ success: false, message: 'Failed to update orders', error: error.message });
   }
 });
@@ -5987,11 +5985,11 @@ router.post('/bulk/status/by-filters', verifyToken.authenticateToken, async (req
 
     res.json({
       success: true,
-      message: `╪¬┘à ╪¬╪¡╪»┘è╪½ ${result.successCount} ╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡`,
+      message: `تم تحديث ${result.successCount} طلب بنجاح`,
       data: result
     });
   } catch (error) {
-    console.error('Γ¥î Error bulk updating orders by filters:', error);
+    console.error('❌ Error bulk updating orders by filters:', error);
     res.status(error.statusCode || 500).json({
       success: false,
       message: error.statusCode ? error.message : 'Failed to update orders by filters',
@@ -6066,7 +6064,7 @@ router.post('/bulk/delete', verifyToken.authenticateToken, verifyToken.requireRo
     });
 
   } catch (error) {
-    console.error('Γ¥î Error deleting orders:', error);
+    console.error('❌ Error deleting orders:', error);
     res.status(500).json({ success: false, message: 'Failed to delete orders', error: error.message });
   }
 });
@@ -6207,7 +6205,7 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
     res.send(buffer);
 
   } catch (error) {
-    console.error('Γ¥î Error exporting orders:', error);
+    console.error('❌ Error exporting orders:', error);
     res.status(500).json({ success: false, message: 'Export failed', error: error.message });
   }
 });
@@ -6228,7 +6226,7 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¬╪ú┘â┘è╪» ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿ ┘ä╪ú┘å┘â ┘ä╪│╪¬ ┘à┘å ┘é╪º┘à ╪¿╪¬╪│╪¼┘è┘ä┘ç'
+        message: 'ليس لديك صلاحية لتعديل أو تأكيد هذا الطلب لأنك لست من قام بتسجيله'
       });
     }
     // ----------------------------
@@ -6253,35 +6251,35 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         socketService.getIO().to(`company_${companyId}`).emit('order:updated', result.socketPayload);
       }
     } catch (socketError) {
-      console.error('Γ¥î [ORDER-UPDATE] Error emitting socket update:', socketError);
+      console.error('❌ [ORDER-UPDATE] Error emitting socket update:', socketError);
     }
 
     // --- LOG MODIFICATION ---
     try {
       const changedFields = result.updatedFields || [];
       const fieldLabels = {
-        shippingAddress: '╪º┘ä╪╣┘å┘ê╪º┘å',
-        customerName: '╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä',
-        customerPhone: '╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü',
-        alternativePhone: '╪º┘ä╪▒┘é┘à ╪º┘ä╪¿╪»┘è┘ä',
-        city: '╪º┘ä┘à╪»┘è┘å╪⌐',
-        governorate: '╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐',
-        notes: '╪º┘ä┘à┘ä╪º╪¡╪╕╪º╪¬',
-        metadataPatch: '╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪╢╪º┘ü┘è╪⌐',
+        shippingAddress: 'العنوان',
+        customerName: 'اسم العميل',
+        customerPhone: 'رقم الهاتف',
+        alternativePhone: 'الرقم البديل',
+        city: 'المدينة',
+        governorate: 'المحافظة',
+        notes: 'الملاحظات',
+        metadataPatch: 'البيانات الإضافية',
       };
       const mappedFields = changedFields
         .map((f) => fieldLabels[f] || f)
         .filter(Boolean);
 
-      let reason = '╪¬╪╣╪»┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ┘ä┘ä╪╖┘ä╪¿';
+      let reason = 'تعديل البيانات الأساسية للطلب';
       if (mappedFields.length > 0) {
-        reason = `╪¬╪╣╪»┘è┘ä: ${mappedFields.join('╪î ')}`;
+        reason = `تعديل: ${mappedFields.join('، ')}`;
       } else if (changedFields.length === 0) {
         reason = null;
       }
 
       if (reason) {
-        const userName = req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : '╪º┘ä┘å╪╕╪º┘à';
+        const userName = req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : 'النظام';
 
         if (result.orderType === 'regular') {
           const order = await getSharedPrismaClient().order.findUnique({
@@ -6296,7 +6294,7 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
                 oldStatus: order.status,
                 reason,
                 changedBy: req.user.id,
-                userName: userName || '╪º┘ä┘å╪╕╪º┘à',
+                userName: userName || 'النظام',
               },
             });
           }
@@ -6308,25 +6306,25 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
               oldStatus: 'PENDING',
               reason,
               changedBy: req.user.id,
-              userName: userName || '╪º┘ä┘å╪╕╪º┘à',
+              userName: userName || 'النظام',
             },
           });
         }
       }
     } catch (logError) {
-      console.error('Γ¥î [ORDER-UPDATE] Error logging modification:', logError);
+      console.error('❌ [ORDER-UPDATE] Error logging modification:', logError);
     }
     // ------------------------
 
     return res.json({ success: true, message: 'Order updated successfully' });
 
   } catch (error) {
-    console.error('Γ¥î [ORDER-UPDATE] Error updating order:', error);
+    console.error('❌ [ORDER-UPDATE] Error updating order:', error);
     if (error.stack) console.error(error.stack);
     const statusCode = error.statusCode || 500;
     const message = statusCode === 400 || statusCode === 404 || statusCode === 403
       ? error.message
-      : '┘ü╪┤┘ä ╪¬╪¡╪»┘è╪½ ╪º┘ä╪ú┘ê╪▒╪»╪▒';
+      : 'فشل تحديث الأوردر';
     res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
@@ -6345,12 +6343,12 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
 
 
 
-    // Γ£à Validation: Check items
+    // ✅ Validation: Check items
     const itemsValidation = validateOrderItems(items);
     if (!itemsValidation.isValid) {
       return res.status(400).json({
         success: false,
-        message: itemsValidation.error || '┘è┘ê╪¼╪» ╪«╪╖╪ú ┘ü┘è ╪º┘ä┘à┘å╪¬╪¼╪º╪¬'
+        message: itemsValidation.error || 'يوجد خطأ في المنتجات'
       });
     }
 
@@ -6365,8 +6363,8 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
     });
 
     if (regularOrder) {
-      // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪¬╪╣╪»┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬/╪º┘ä╪ú╪│╪╣╪º╪▒ ΓÇö ┘ä┘ê
-      // ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ ╪║┘è╪▒ ┘à╪│┘à┘ê╪¡ ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬┘ç╪º╪î ┘å╪▒┘ü╪╢.
+      // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): تعديل المنتجات/الأسعار — لو
+      // الحالة الحالية غير مسموح تعديل بياناتها، نرفض.
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.status);
 
@@ -6379,7 +6377,7 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
 
         // Create new items
         for (const item of items) {
-          // ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ┘ê╪¼┘ê╪» ╪º┘ä┘à┘å╪¬╪¼ ┘é╪¿┘ä ╪Ñ╪╢╪º┘ü╪¬┘ç
+          // التحقق من وجود المنتج قبل إضافته
           let validProductId = null;
           if (item.productId) {
             try {
@@ -6388,28 +6386,28 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
                 select: { id: true, companyId: true }
               });
 
-              // ╪º┘ä╪¬╪ú┘â╪» ┘à┘å ╪ú┘å ╪º┘ä┘à┘å╪¬╪¼ ┘à┘ê╪¼┘ê╪» ┘ê╪ú┘å┘ç ╪¬╪º╪¿╪╣ ┘ä┘å┘ü╪│ ╪º┘ä╪┤╪▒┘â╪⌐
+              // التأكد من أن المنتج موجود وأنه تابع لنفس الشركة
               if (product && product.companyId === companyId) {
                 validProductId = item.productId;
               } else {
-                console.log(`ΓÜá∩╕Å [ORDER-UPDATE] Product ${item.productId} not found or belongs to different company, using null`);
+                console.log(`⚠️ [ORDER-UPDATE] Product ${item.productId} not found or belongs to different company, using null`);
               }
             } catch (productError) {
-              console.log(`ΓÜá∩╕Å [ORDER-UPDATE] Error checking product ${item.productId}:`, productError.message);
+              console.log(`⚠️ [ORDER-UPDATE] Error checking product ${item.productId}:`, productError.message);
             }
           }
 
           await prisma.orderItem.create({
             data: {
               orderId: regularOrder.id,
-              productId: validProductId, // null ╪Ñ╪░╪º ┘ä┘à ┘è┘â┘å ╪º┘ä┘à┘å╪¬╪¼ ┘à┘ê╪¼┘ê╪»╪º┘ï
+              productId: validProductId, // null إذا لم يكن المنتج موجوداً
               quantity: item.quantity,
               price: item.price,
               total: item.total,
-              productName: item.productName || item.name || null, // Γ£à FIX: Persist product details
-              productColor: item.productColor || item.color || null, // Γ£à FIX: Persist product details
-              productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null), // Γ£à FIX: Persist product details
-              productDetails: item.productDetails || item.details || null, // Γ£à FIX: Persist product details
+              productName: item.productName || item.name || null, // ✅ FIX: Persist product details
+              productColor: item.productColor || item.color || null, // ✅ FIX: Persist product details
+              productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null), // ✅ FIX: Persist product details
+              productDetails: item.productDetails || item.details || null, // ✅ FIX: Persist product details
               productSku: item.productSku || item.sku || null,
               metadata: JSON.stringify(item.metadata || {})
             }
@@ -6449,13 +6447,13 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
             orderId: regularOrder.id,
             status: regularOrder.status,
             oldStatus: regularOrder.status,
-            reason: '╪¬╪╣╪»┘è┘ä ┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä╪╖┘ä╪¿',
+            reason: 'تعديل منتجات الطلب',
             changedBy: req.user.id,
-            userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : '╪º┘ä┘å╪╕╪º┘à'
+            userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'النظام'
           }
         });
       } catch (logError) {
-        console.error('Γ¥î [ORDER-UPDATE] Error logging items modification:', logError);
+        console.error('❌ [ORDER-UPDATE] Error logging items modification:', logError);
       }
       // ------------------------
 
@@ -6468,7 +6466,7 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
     });
 
     if (guestOrder) {
-      // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐) ΓÇö ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ê┘ü (┘à┘å╪¬╪¼╪º╪¬/╪ú╪│╪╣╪º╪▒).
+      // 🔒 قفل تعديل بيانات الأوردر (لكل حالة) — طلبات الضيوف (منتجات/أسعار).
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.status);
 
@@ -6506,11 +6504,11 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
     res.status(404).json({ success: false, message: 'Order not found' });
 
   } catch (error) {
-    console.error('Γ¥î Error updating order items:', error);
+    console.error('❌ Error updating order items:', error);
     const statusCode = error.statusCode || 500;
     const message = statusCode === 403
       ? error.message
-      : '┘ü╪┤┘ä ╪¬╪¡╪»┘è╪½ ┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒';
+      : 'فشل تحديث منتجات الأوردر';
     res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });
@@ -6531,7 +6529,7 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: '┘ä┘è╪│ ┘ä╪»┘è┘â ╪╡┘ä╪º╪¡┘è╪⌐ ┘ä╪¬╪╣╪»┘è┘ä ┘ç╪░╪º ╪º┘ä╪╖┘ä╪¿'
+        message: 'ليس لديك صلاحية لتعديل هذا الطلب'
       });
     }
 
@@ -6547,22 +6545,22 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
     });
 
     if (!order) {
-      return res.status(404).json({ success: false, message: '╪º┘ä╪╖┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
     }
 
-    // ≡ƒöÆ ┘é┘ü┘ä ╪¬╪╣╪»┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒ (┘ä┘â┘ä ╪¡╪º┘ä╪⌐): ╪º┘ä╪¬╪ú╪¼┘è┘ä ┘è╪╣╪»┘æ┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿
-    // (╪¬╪º╪▒┘è╪« ╪º┘ä╪¬╪│┘ä┘è┘à/┘à┘ä╪º╪¡╪╕╪º╪¬ ╪º┘ä╪¼╪»┘ê┘ä╪⌐) ΓÇö ┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ ╪║┘è╪▒ ┘à╪│┘à┘ê╪¡ ╪¬╪╣╪»┘è┘ä
-    // ╪¿┘è╪º┘å╪º╪¬┘ç╪º╪î ┘å╪▒┘ü╪╢.
+    // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): التأجيل يعدّل بيانات الطلب
+    // (تاريخ التسليم/ملاحظات الجدولة) — لو الحالة الحالية غير مسموح تعديل
+    // بياناتها، نرفض.
     const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
     await assertOrderStatusEditable(prisma, companyId, order.status);
 
     if (!scheduledDeliveryDate) {
-      return res.status(400).json({ success: false, message: '╪¬╪º╪▒┘è╪« ╪º┘ä╪¬╪│┘ä┘è┘à ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, message: 'تاريخ التسليم مطلوب' });
     }
 
     const deliveryDate = new Date(scheduledDeliveryDate);
     if (isNaN(deliveryDate.getTime())) {
-      return res.status(400).json({ success: false, message: '╪¬╪º╪▒┘è╪« ╪º┘ä╪¬╪│┘ä┘è┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, message: 'تاريخ التسليم غير صالح' });
     }
 
     const updateData = {
@@ -6587,10 +6585,10 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
         status: updateData.status || order.status,
         oldStatus: order.status,
         changedBy: req.user?.id,
-        userName: req.user?.firstName ? `${req.user.firstName} ${req.user.lastName || ''}`.trim() : '╪º┘ä┘å╪╕╪º┘à',
+        userName: req.user?.firstName ? `${req.user.firstName} ${req.user.lastName || ''}`.trim() : 'النظام',
         reason: scheduledNotes
-          ? `╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪Ñ┘ä┘ë ${deliveryDate.toLocaleDateString('ar-EG')} - ${scheduledNotes}`
-          : `╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪Ñ┘ä┘ë ${deliveryDate.toLocaleDateString('ar-EG')}`
+          ? `تأجيل الطلب إلى ${deliveryDate.toLocaleDateString('ar-EG')} - ${scheduledNotes}`
+          : `تأجيل الطلب إلى ${deliveryDate.toLocaleDateString('ar-EG')}`
       }
     });
 
@@ -6605,14 +6603,14 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
         });
       }
     } catch (socketError) {
-      console.error('Γ¥î [ORDER-SCHEDULE] Socket error:', socketError);
+      console.error('❌ [ORDER-SCHEDULE] Socket error:', socketError);
     }
 
-    return res.json({ success: true, message: '╪¬┘à ╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡' });
+    return res.json({ success: true, message: 'تم تأجيل الطلب بنجاح' });
   } catch (error) {
-    console.error('Γ¥î [ORDER-SCHEDULE] Error:', error);
+    console.error('❌ [ORDER-SCHEDULE] Error:', error);
     const statusCode = error.statusCode || 500;
-    const message = statusCode === 403 ? error.message : '┘ü╪┤┘ä ╪¬╪ú╪¼┘è┘ä ╪º┘ä╪╖┘ä╪¿';
+    const message = statusCode === 403 ? error.message : 'فشل تأجيل الطلب';
     res.status(statusCode).json({ success: false, message, error: error.message });
   }
 });

@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { AlertTriangle } from 'lucide-react';
+import { useTranslation } from "react-i18next";
+import { AlertTriangle } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useVisualTheme } from "../../contexts/VisualThemeContext";
 import i18n from "../../i18n";

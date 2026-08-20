@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -30,9 +30,9 @@ const getTokenRole = (): string | null => {
 };
 
 const navItems = [
-  { path: "/account", label: "┘å╪╕╪▒╪⌐ ╪╣╪º┘à╪⌐", icon: LayoutDashboard },
-  { path: "/account/cashback", label: "╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ┘ê╪º┘ä┘à╪¡┘ü╪╕╪⌐", icon: Wallet },
-  { path: "/account/profile", label: "╪¿┘è╪º┘å╪º╪¬┘è", icon: User },
+  { path: "/account", label: "نظرة عامة", icon: LayoutDashboard },
+  { path: "/account/cashback", label: "الكاش باك والمحفظة", icon: Wallet },
+  { path: "/account/profile", label: "بياناتي", icon: User },
 ];
 
 const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
@@ -43,8 +43,8 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
   const location = useLocation();
   const { isLoading, isAuthenticated, logout } = useAuth();
 
-  // ≡ƒöù ╪»╪«┘ê┘ä ╪│╪▒┘è╪╣ ┘à┘å ╪▒╪º╪¿╪╖ ┘ê╪º╪¬╪│╪º╪¿ (╪▓╪▒ "╪╡┘ü╪¡╪⌐ ╪º┘ä╪╣┘à┘è┘ä"):
-  // ?token= ╪¿┘è╪¼┘è ┘à┘å /magic-login ΓÇö ╪¿┘å╪«╪▓┘å┘ç ┘ê╪¿╪╣╪»┘è┘å ┘å╪╣┘à┘ä reload ╪╣╪┤╪º┘å ╪º┘ä┘Ç auth ┘è┘é╪▒╪º┘ç.
+  // 🔗 دخول سريع من رابط واتساب (زر "صفحة العميل"):
+  // ?token= بيجي من /magic-login — بنخزنه وبعدين نعمل reload عشان الـ auth يقراه.
   const [hasMagicToken, setHasMagicToken] = React.useState(() => {
     const params = new URLSearchParams(window.location.search);
     return !!params.get("token");
@@ -61,7 +61,7 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
     }
   }, []);
 
-  // ┘ç┘ê┘è╪⌐ ╪º┘ä╪┤╪▒┘â╪⌐ (┘ä┘ê╪¼┘ê + ╪º╪│┘à + ┘ä┘ê┘å) ΓÇö ┘à┘å ╪º┘ä┘Ç token ╪ú┘ê subdomain ╪º┘ä┘à╪¬╪¼╪▒
+  // هوية الشركة (لوجو + اسم + لون) — من الـ token أو subdomain المتجر
   const tokenCompanyId = (() => {
     try {
       const token = tokenManager.getAccessToken();
@@ -91,7 +91,7 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
       >
         <div className="text-center text-gray-500">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-indigo-600" />
-          <p className="mt-4">╪¼╪º╪▒┘è ┘ü╪¬╪¡ ╪¡╪│╪º╪¿┘â...</p>
+          <p className="mt-4">جاري فتح حسابك...</p>
         </div>
       </div>
     );
@@ -110,7 +110,7 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="rounded-md p-2 hover:bg-gray-100"
-            aria-label="╪º┘ä┘é╪º╪ª┘à╪⌐"
+            aria-label="القائمة"
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -124,7 +124,7 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
             ) : (
               <ShieldCheck size={20} />
             )}
-            {branding.name || "╪¡╪│╪º╪¿┘è"}
+            {branding.name || "حسابي"}
           </Link>
           <div className="w-10" />
         </div>
@@ -165,7 +165,7 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
               style={{ color: accentColor }}
             >
               <ShieldCheck size={22} />
-              ╪¡╪│╪º╪¿┘è
+              حسابي
             </Link>
           </div>
 
@@ -197,7 +197,7 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
               className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
             >
               <LogOut size={20} />
-              ╪¬╪│╪¼┘è┘ä ╪«╪▒┘ê╪¼
+              تسجيل خروج
             </button>
           </div>
         </aside>

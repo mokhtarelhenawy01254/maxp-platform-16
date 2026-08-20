@@ -1,4 +1,4 @@
-﻿const magicLinkService = require('../../services/customerMagicLinkService');
+const magicLinkService = require('../../services/customerMagicLinkService');
 
 describe('customerMagicLinkService', () => {
   const companyId = 'company-1';
@@ -30,7 +30,7 @@ describe('customerMagicLinkService', () => {
         expiresAt: expect.any(Date),
       }),
     });
-    // ╪º┘ä╪¬┘ê┘â┘å ┘à┘ê┘ä┘æ╪» ╪╣╪┤┘ê╪º╪ª┘è╪º┘ï (64 hex ╪¡╪▒┘ü) ┘ê┘à╪«╪▓┘æ┘å ┘ü┘è DB ΓÇö ┘ê╪º┘ä┘Ç service ╪¿┘è╪▒╪¼┘æ╪╣ ┘å┘ü╪│ ╪º┘ä╪¬┘ê┘â┘å
+    // التوكن مولّد عشوائياً (64 hex حرف) ومخزّن في DB — والـ service بيرجّع نفس التوكن
     expect(result.token).toMatch(/^[a-f0-9]{64}$/);
     expect(result.id).toBe('link-1');
   });

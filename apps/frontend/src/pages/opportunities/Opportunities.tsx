@@ -1,10 +1,17 @@
-import { Activity as ChartBarIcon, Plus as PlusIcon, Eye as EyeIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Filter as FunnelIcon, DollarSign as CurrencyDollarIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { buildApiUrl } from "../../utils/urlHelper";
-;
+import {
+  ChartBarIcon,
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  FunnelIcon,
+  CurrencyDollarIcon,
+} from "@heroicons/react/24/outline";
 
 interface Opportunity {
   id: string;
@@ -142,11 +149,11 @@ const Opportunities: React.FC = () => {
       if (data.success) {
         fetchOpportunities();
         fetchPipelineStats();
-        alert("تم تحديث مرحلة الفرصة بنجاح");
+        alert(i18n.t("Opportunities.success_update_e8ba"));
       }
     } catch (error) {
       console.error("Error updating opportunity stage:", error);
-      alert("فشل في تحديث مرحلة الفرصة");
+      alert(i18n.t("Opportunities.failed_update_25e9"));
     }
   };
 

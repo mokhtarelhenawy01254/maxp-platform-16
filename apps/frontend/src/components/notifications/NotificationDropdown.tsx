@@ -1,23 +1,36 @@
-import { Bell as BellIcon, X as XMarkIcon, Check as CheckIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, X as XCircleIcon, Eye as EyeIcon, Trash2 as TrashIcon, Circle as BellSolidIcon } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
-;
-;
+import {
+  BellIcon,
+  XMarkIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  XCircleIcon,
+  EyeIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
 import { socketService } from "../../services/socketService";
 import {
   showBrowserNotification,
 } from "../../utils/browserNotifications";
 import {
   cacheNotificationSettings,
+  getIncompleteOrderSoundPattern,
+  getIncompleteOrderSoundVolume,
+  getOrderSoundVolume,
   isQuietHoursActive,
   readCachedNotificationSettings,
+  shouldPlayIncompleteOrderSound,
+  shouldPlayOrderSound,
   shouldShowBrowserNotificationForType,
   type NotificationSettingsData,
 } from "../../utils/notificationSettings";
+import type { OrderSoundPattern } from "../../services/orderSoundPatterns";
 
 export interface NotificationItem {
   id: string;
@@ -72,6 +85,16 @@ interface OrderCreatedEventPayload {
   };
 }
 
+interface IncompleteOrderEventPayload {
+  cartId?: string;
+  companyId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  total?: number;
+  itemCount?: number;
+  createdAt?: string | Date;
+}
+
 const normalizeNotificationItem = (
   notification: RealtimeNotificationPayload,
 ): NotificationItem => ({
@@ -112,6 +135,30 @@ const buildOrderNotificationItem = (
       kind: "order_created",
       orderId: order.id,
       orderNumber,
+    },
+  };
+};
+
+const buildIncompleteOrderNotificationItem = (
+  cart: IncompleteOrderEventPayload,
+): NotificationItem => {
+  const customerName = cart.customerName || "عميل";
+  const amount = typeof cart.total === "number" ? cart.total : null;
+  const itemCount = cart.itemCount || 0;
+
+  return {
+    id: `incomplete-${cart.cartId || Date.now()}`,
+    type: "warning",
+    title: "طلب غير مكتمل",
+    message:
+      amount && amount > 0
+        ? `${customerName} • ${amount} ج.م (${itemCount} منتج)`
+        : `${customerName} بدأ طلب ولم يكمله`,
+    timestamp: new Date(cart.createdAt || new Date()),
+    isRead: false,
+    metadata: {
+      kind: "order_incomplete",
+      cartId: cart.cartId,
     },
   };
 };
@@ -281,6 +328,19 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     const handleNewOrder = (order: OrderCreatedEventPayload) => {
       const orderNotification = buildOrderNotificationItem(order);
 
+      // 🔊 إنذار صوتي عالي لتنبيه الموظفين بقدوم طلب جديد
+      try {
+        const currentPreferences = notificationPreferencesRef.current;
+        if (shouldPlayOrderSound(currentPreferences)) {
+          socketService.playOrderAlarm({
+            volume: getOrderSoundVolume(currentPreferences),
+            pattern: currentPreferences?.channels?.sound?.pattern || "alarm",
+          });
+        }
+      } catch (soundError) {
+        console.error("❌ [SOUND] Error playing order alarm:", soundError);
+      }
+
       setNotifications((prev) => {
         const deduped = prev.filter(
           (currentNotification) => currentNotification.id !== orderNotification.id,
@@ -333,6 +393,47 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
     socketService.on("notification:new", handleNewNotification);
     socketService.on("order:created", handleNewOrder);
+
+    const handleNewIncompleteOrder = (cart: IncompleteOrderEventPayload) => {
+      const incompleteItem = buildIncompleteOrderNotificationItem(cart);
+
+      setNotifications((prev) => {
+        const deduped = prev.filter((n) => n.id !== incompleteItem.id);
+        return [incompleteItem, ...deduped];
+      });
+
+      window.dispatchEvent(
+        new CustomEvent("show-toast", {
+          detail: {
+            message: incompleteItem.title,
+            type: "warning",
+          },
+        }),
+      );
+
+      // 🔊 صوت مخصص للطلب غير المكتمل (لو مفعل في الإعدادات)
+      const currentPreferences = notificationPreferencesRef.current;
+      if (!shouldPlayIncompleteOrderSound(currentPreferences)) {
+        return;
+      }
+
+      try {
+        socketService.playOrderAlarm({
+          volume: getIncompleteOrderSoundVolume(currentPreferences),
+          pattern: getIncompleteOrderSoundPattern(
+            currentPreferences,
+          ) as OrderSoundPattern,
+          durationMs: 3500,
+        });
+      } catch (soundError) {
+        console.error(
+          "❌ [SOUND] Error playing incomplete-order sound:",
+          soundError,
+        );
+      }
+    };
+    socketService.on("order:incomplete:new", handleNewIncompleteOrder);
+
     window.addEventListener(
       "notification-settings:updated",
       handleSettingsUpdated,
@@ -341,6 +442,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     return () => {
       socketService.off("notification:new", handleNewNotification);
       socketService.off("order:created", handleNewOrder);
+      socketService.off("order:incomplete:new", handleNewIncompleteOrder);
       window.removeEventListener(
         "notification-settings:updated",
         handleSettingsUpdated,
@@ -504,8 +606,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                  aria-label="إغلاق الإشعارات"
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -589,7 +690,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                           {!notification.isRead && (
                             <button
                               onClick={() => markAsRead(notification.id)}
-                              className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                              className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-200"
                               title="تحديد كمقروء"
                             >
                               <EyeIcon className="w-4 h-4" />
@@ -597,7 +698,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                           )}
                           <button
                             onClick={() => deleteNotification(notification.id)}
-                            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                            className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-200"
                             title="حذف"
                           >
                             <TrashIcon className="w-4 h-4" />

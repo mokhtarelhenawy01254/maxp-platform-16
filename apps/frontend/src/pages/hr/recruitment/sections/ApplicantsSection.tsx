@@ -1,9 +1,23 @@
-import { Circle as UserGroupIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Mail as EnvelopeIcon, Phone as PhoneIcon, File as DocumentTextIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, Eye as EyeIcon, Star as StarIcon, Plus as PlusIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  UserGroupIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  DocumentTextIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  EyeIcon,
+  StarIcon,
+  PlusIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
+import { tToast } from "../../../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -151,7 +165,7 @@ const ApplicantsSection: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم حذف المتقدم بنجاح");
+        tToast.success("ApplicantsSection.success_delete_026c");
         setApplicants((currentApplicants) =>
           currentApplicants.filter(
             (currentApplicant) => currentApplicant.id !== applicant.id,
@@ -165,7 +179,7 @@ const ApplicantsSection: React.FC = () => {
 
         fetchApplicants();
       } else {
-        toast.error("فشل حذف المتقدم");
+        tToast.error("ApplicantsSection.failed_delete_951f");
       }
     } catch (error: any) {
       console.error("Error deleting applicant:", error);
@@ -192,17 +206,17 @@ const ApplicantsSection: React.FC = () => {
         `/hr/recruitment/applicants/${applicantId}/status`,
         { status },
       );
-      toast.success("تم تحديث حالة المتقدم");
+      tToast.success("ApplicantsSection.success_update_status_7ae4");
       fetchApplicants();
     } catch (error) {
-      toast.error("فشل في تحديث الحالة");
+      tToast.error("ApplicantsSection.failed_update_a9eb");
     }
   };
 
   const handleAddApplicant = async () => {
     try {
       if (!newApplicant.name || !newApplicant.email || !newApplicant.jobId) {
-        toast.error("يرجى تعبئة الحقول المطلوبة");
+        tToast.error("ApplicantsSection.msg_0d23");
         return;
       }
 
@@ -219,7 +233,7 @@ const ApplicantsSection: React.FC = () => {
         payload,
       );
       if (response.data.success) {
-        toast.success("تم إضافة المتقدم بنجاح 🎉");
+        tToast.success("ApplicantsSection.success_add_3282");
         setShowAddModal(false);
         resetAddForm();
         fetchApplicants();

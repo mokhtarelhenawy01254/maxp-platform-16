@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Ban, CalendarDays, CheckCircle2, ClipboardList, FileCheck2, Loader2, RefreshCw, Send, Stethoscope, UserRound, XCircle } from "lucide-react";
 import { BookingAppointment, BookingBranch, BookingDoctor, BOOKING_STATUS_MAP, MODAL_INPUT_CLS, REPORT_STATUS_MAP, api, fetchJson } from "./shared";
@@ -37,9 +37,9 @@ const LEGACY_TO_BOOKING: Record<string, string> = {
 };
 
 const SUB_TABS: { id: SubTab; label: string; icon: typeof CalendarDays }[] = [
-  { id: "reception", label: "╪º╪│╪¬┘é╪¿╪º┘ä", icon: UserRound },
-  { id: "doctor", label: "╪╖╪º╪¿┘ê╪▒ ╪º┘ä╪╖╪¿┘è╪¿", icon: Stethoscope },
-  { id: "reports", label: "╪º┘ä╪¬┘é╪º╪▒┘è╪▒", icon: ClipboardList },
+  { id: "reception", label: "استقبال", icon: UserRound },
+  { id: "doctor", label: "طابور الطبيب", icon: Stethoscope },
+  { id: "reports", label: "التقارير", icon: ClipboardList },
 ];
 
 const todayStr = () => {
@@ -87,7 +87,7 @@ export default function WorkflowPage() {
         setRows(await fetchJson<WorkflowRow[]>(api(`workflow/queues/reports?${q.toString()}`)));
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬";
+      const msg = e instanceof Error ? e.message : "فشل تحميل البيانات";
       if (opts?.quiet) { console.error("refresh workflow queue", e); return; }
       setError(msg);
       toast.error(msg);
@@ -110,7 +110,7 @@ export default function WorkflowPage() {
         await fetchJson(api(path), { method: "PUT", body: JSON.stringify(body) });
         toast.success(successMsg);
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "┘ü╪┤┘ä╪¬ ╪º┘ä╪╣┘à┘ä┘è╪⌐");
+        toast.error(e instanceof Error ? e.message : "فشلت العملية");
         setBusyId(null);
         return;
       }
@@ -131,34 +131,34 @@ export default function WorkflowPage() {
 
   const assignDoctor = (row: WorkflowRow, docId: string) => {
     if (!docId) return;
-    void action(`workflow/appointments/${row.id}/assign-doctor`, { doctorId: docId }, "╪¬┘à ╪¬╪╣┘è┘è┘å ╪º┘ä╪╖╪¿┘è╪¿", row.id);
+    void action(`workflow/appointments/${row.id}/assign-doctor`, { doctorId: docId }, "تم تعيين الطبيب", row.id);
   };
 
   const advanceBooking = (row: WorkflowRow) => {
     const next = nextBooking(row);
     if (!next) return;
-    void action(`workflow/appointments/${row.id}/booking-status`, { status: next }, `╪¬┘à ╪º┘ä╪º┘å╪¬┘é╪º┘ä ╪Ñ┘ä┘ë ${bookingLabel(next) || next}`, row.id);
+    void action(`workflow/appointments/${row.id}/booking-status`, { status: next }, `تم الانتقال إلى ${bookingLabel(next) || next}`, row.id);
   };
 
   const cancelBooking = (row: WorkflowRow) => {
-    void action(`workflow/appointments/${row.id}/booking-status`, { status: "CANCELLED" }, "╪¬┘à ╪Ñ┘ä╪║╪º╪í ╪º┘ä┘à┘ê╪╣╪»", row.id);
+    void action(`workflow/appointments/${row.id}/booking-status`, { status: "CANCELLED" }, "تم إلغاء الموعد", row.id);
   };
 
   const missBooking = (row: WorkflowRow) => {
-    void action(`workflow/appointments/${row.id}/booking-status`, { status: "MISSED" }, "╪¬┘à ╪¬╪│╪¼┘è┘ä ╪╣╪»┘à ╪º┘ä╪¡╪╢┘ê╪▒", row.id);
+    void action(`workflow/appointments/${row.id}/booking-status`, { status: "MISSED" }, "تم تسجيل عدم الحضور", row.id);
   };
 
   const advanceReport = (row: WorkflowRow) => {
     const next = nextReport(row);
     if (!next) return;
-    void action(`workflow/appointments/${row.id}/report-status`, { status: next }, `╪¬┘à ╪º┘ä╪º┘å╪¬┘é╪º┘ä ╪Ñ┘ä┘ë ${reportLabel(next) || next}`, row.id);
+    void action(`workflow/appointments/${row.id}/report-status`, { status: next }, `تم الانتقال إلى ${reportLabel(next) || next}`, row.id);
   };
 
   const toggleDeliveredWithoutReport = (row: WorkflowRow) => {
     void action(
       `workflow/appointments/${row.id}/delivered-without-report`,
       { value: !row.deliveredWithoutReport },
-      "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¬╪│┘ä┘è┘à ╪¿╪»┘ê┘å ╪¬┘é╪▒┘è╪▒",
+      "تم تحديث التسليم بدون تقرير",
       row.id,
     );
   };
@@ -167,14 +167,14 @@ export default function WorkflowPage() {
     void action(
       `workflow/appointments/${row.id}/result-delivered`,
       { value: !row.resultDelivered },
-      "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¬╪│┘ä┘è┘à ╪º┘ä┘å╪¬┘è╪¼╪⌐",
+      "تم تحديث تسليم النتيجة",
       row.id,
     );
   };
 
-  const rowPatientName = (row: WorkflowRow) => row.patient?.name || row.customerName || "ΓÇö";
+  const rowPatientName = (row: WorkflowRow) => row.patient?.name || row.customerName || "—";
   const rowPatientPhone = (row: WorkflowRow) => row.patient?.phone || row.customerPhone || "";
-  const rowDoctorName = (row: WorkflowRow) => row.assignedDoctorName || row.doctorName || "ΓÇö";
+  const rowDoctorName = (row: WorkflowRow) => row.assignedDoctorName || row.doctorName || "—";
 
   const actionBtn =
     "p-1.5 rounded text-white disabled:opacity-40 disabled:cursor-not-allowed";
@@ -182,7 +182,7 @@ export default function WorkflowPage() {
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-bold">╪│┘è╪▒ ╪╣┘à┘ä ╪º┘ä┘â╪┤┘ü</h2>
+        <h2 className="text-xl font-bold">سير عمل الكشف</h2>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
             <CalendarDays className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
@@ -198,7 +198,7 @@ export default function WorkflowPage() {
             className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
           >
             <RefreshCw className="w-4 h-4" />
-            ╪¬╪¡╪»┘è╪½
+            تحديث
           </button>
         </div>
       </div>
@@ -223,7 +223,7 @@ export default function WorkflowPage() {
       {activeTab === "reception" && (
         <div className="flex flex-wrap gap-3 mb-4">
           <select className={MODAL_INPUT_CLS + " w-56"} value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-            <option value="">┘â┘ä ╪º┘ä┘ü╪▒┘ê╪╣</option>
+            <option value="">كل الفروع</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
@@ -234,7 +234,7 @@ export default function WorkflowPage() {
       {activeTab === "doctor" && (
         <div className="flex flex-wrap gap-3 mb-4">
           <select className={MODAL_INPUT_CLS + " w-56"} value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
-            <option value="">╪º╪«╪¬╪▒ ╪º┘ä╪╖╪¿┘è╪¿...</option>
+            <option value="">اختر الطبيب...</option>
             {doctors.map((d) => (
               <option key={d.id} value={d.id}>{`${d.title || ""} ${d.name || ""}`.trim()}</option>
             ))}
@@ -243,7 +243,7 @@ export default function WorkflowPage() {
       )}
 
       {activeTab === "doctor" && !doctorId && (
-        <p className="text-center py-12 text-gray-400 dark:text-gray-500">╪º╪«╪¬╪▒ ╪╖╪¿┘è╪¿╪º┘ï ┘ä╪╣╪▒╪╢ ┘é╪º╪ª┘à╪⌐ ╪º┘ä┘â╪┤┘ê┘ü</p>
+        <p className="text-center py-12 text-gray-400 dark:text-gray-500">اختر طبيباً لعرض قائمة الكشوف</p>
       )}
 
       {loading ? (
@@ -253,13 +253,13 @@ export default function WorkflowPage() {
       ) : error ? (
         <p className="text-center py-12 text-red-500">{error}</p>
       ) : rows.length === 0 ? (
-        <p className="text-center py-12 text-gray-400 dark:text-gray-500">┘ä╪º ╪¬┘ê╪¼╪» ┘à┘ê╪º╪╣┘è╪»</p>
+        <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</p>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-x-auto">
           <table className="w-full min-w-[900px]">
             <thead>
               <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
-                {["╪º┘ä┘à╪▒┘è╪╢", "╪º┘ä╪«╪»┘à╪⌐", "╪º┘ä┘ê┘é╪¬", activeTab === "doctor" ? "╪º┘ä╪¬╪┤╪«┘è╪╡" : "╪º┘ä╪╖╪¿┘è╪¿", "╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪¼╪▓", "╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒", "╪Ñ╪¼╪▒╪º╪í╪º╪¬"].map((h) => (
+                {["المريض", "الخدمة", "الوقت", activeTab === "doctor" ? "التشخيص" : "الطبيب", "حالة الحجز", "حالة التقرير", "إجراءات"].map((h) => (
                   <th key={h} className="text-right py-3 px-4">{h}</th>
                 ))}
               </tr>
@@ -271,11 +271,11 @@ export default function WorkflowPage() {
                     <span className="font-medium">{rowPatientName(row)}</span>
                     {rowPatientPhone(row) && <span className="block text-xs text-gray-400 dark:text-gray-500" dir="ltr">{rowPatientPhone(row)}</span>}
                   </td>
-                  <td className="py-3 px-4">{row.serviceName || "ΓÇö"}</td>
+                  <td className="py-3 px-4">{row.serviceName || "—"}</td>
                   <td className="py-3 px-4" dir="ltr">{row.startTime || ""}</td>
                   <td className="py-3 px-4">
                     {activeTab === "doctor" ? (
-                      <span>{row.diagnosis || "ΓÇö"}</span>
+                      <span>{row.diagnosis || "—"}</span>
                     ) : (
                       rowDoctorName(row)
                     )}
@@ -291,7 +291,7 @@ export default function WorkflowPage() {
                           disabled={busyId === row.id}
                           onChange={(e) => assignDoctor(row, e.target.value)}
                         >
-                          <option value="">╪¬╪╣┘è┘è┘å ╪╖╪¿┘è╪¿...</option>
+                          <option value="">تعيين طبيب...</option>
                           {doctors.map((d) => (
                             <option key={d.id} value={d.id}>{`${d.title || ""} ${d.name || ""}`.trim()}</option>
                           ))}
@@ -301,7 +301,7 @@ export default function WorkflowPage() {
                         <button
                           onClick={() => advanceBooking(row)}
                           disabled={busyId === row.id}
-                          title={`╪º┘ä╪«╪╖┘ê╪⌐ ╪º┘ä╪¬╪º┘ä┘è╪⌐: ${bookingLabel(nextBooking(row)) || nextBooking(row)}`}
+                          title={`الخطوة التالية: ${bookingLabel(nextBooking(row)) || nextBooking(row)}`}
                           className={`${actionBtn} bg-blue-600 hover:bg-blue-700`}
                         >
                           <CheckCircle2 className="w-4 h-4" />
@@ -311,7 +311,7 @@ export default function WorkflowPage() {
                         <button
                           onClick={() => advanceReport(row)}
                           disabled={busyId === row.id}
-                          title={`╪º┘ä╪¬┘é╪▒┘è╪▒ ╪º┘ä╪¬╪º┘ä┘è: ${reportLabel(nextReport(row)) || nextReport(row)}`}
+                          title={`التقرير التالي: ${reportLabel(nextReport(row)) || nextReport(row)}`}
                           className={`${actionBtn} bg-indigo-600 hover:bg-indigo-700`}
                         >
                           <FileCheck2 className="w-4 h-4" />
@@ -321,7 +321,7 @@ export default function WorkflowPage() {
                         <button
                           onClick={() => toggleDeliveredWithoutReport(row)}
                           disabled={busyId === row.id}
-                          title={row.deliveredWithoutReport ? "╪Ñ┘ä╪║╪º╪í ╪º┘ä╪¬╪│┘ä┘è┘à ╪¿╪»┘ê┘å ╪¬┘é╪▒┘è╪▒" : "╪¬╪│┘ä┘è┘à ╪¿╪»┘ê┘å ╪¬┘é╪▒┘è╪▒"}
+                          title={row.deliveredWithoutReport ? "إلغاء التسليم بدون تقرير" : "تسليم بدون تقرير"}
                           className={`${actionBtn} ${row.deliveredWithoutReport ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-500 hover:bg-gray-600"}`}
                         >
                           <Send className="w-4 h-4" />
@@ -331,7 +331,7 @@ export default function WorkflowPage() {
                         <button
                           onClick={() => toggleResultDelivered(row)}
                           disabled={busyId === row.id}
-                          title={row.resultDelivered ? "╪Ñ┘ä╪║╪º╪í ╪¬╪│┘ä┘è┘à ╪º┘ä┘å╪¬┘è╪¼╪⌐" : "╪¬╪│┘ä┘è┘à ╪º┘ä┘å╪¬┘è╪¼╪⌐"}
+                          title={row.resultDelivered ? "إلغاء تسليم النتيجة" : "تسليم النتيجة"}
                           className={`${actionBtn} ${row.resultDelivered ? "bg-teal-600 hover:bg-teal-700" : "bg-gray-500 hover:bg-gray-600"}`}
                         >
                           <Send className="w-4 h-4" />
@@ -340,7 +340,7 @@ export default function WorkflowPage() {
                       <button
                         onClick={() => missBooking(row)}
                         disabled={busyId === row.id}
-                        title="┘ä┘à ┘è╪¡╪╢╪▒"
+                        title="لم يحضر"
                         className={`${actionBtn} bg-orange-500 hover:bg-orange-600`}
                       >
                         <Ban className="w-4 h-4" />
@@ -348,7 +348,7 @@ export default function WorkflowPage() {
                       <button
                         onClick={() => cancelBooking(row)}
                         disabled={busyId === row.id}
-                        title="╪Ñ┘ä╪║╪º╪í"
+                        title="إلغاء"
                         className={`${actionBtn} bg-red-500 hover:bg-red-600`}
                       >
                         <XCircle className="w-4 h-4" />

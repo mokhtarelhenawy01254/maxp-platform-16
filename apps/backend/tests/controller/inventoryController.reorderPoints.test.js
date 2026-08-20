@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   product: {
     findMany: jest.fn(),
   },
@@ -318,7 +318,7 @@ describe('inventoryController reorder points', () => {
       await getReorderPoints(createRequest({ view: 'product' }), res);
 
       const payload = res.json.mock.calls[0][0];
-      // gap = 10 - 0 = 10, price = 300 ΓåÆ 3000
+      // gap = 10 - 0 = 10, price = 300 → 3000
       expect(payload.data.summary.atRiskValue).toBe(3000);
       expect(payload.data.items[0].price).toBe(300);
     });
@@ -354,7 +354,7 @@ describe('inventoryController reorder points', () => {
     });
 
     test('summary counts are computed before stockFilter is applied', async () => {
-      // Two products: p-1 (10 available, point 5 ΓåÆ safe), p-2 (0 available ΓåÆ out)
+      // Two products: p-1 (10 available, point 5 → safe), p-2 (0 available → out)
       mockPrisma.order.findMany.mockResolvedValue([]);
 
       const res = createMockResponse();

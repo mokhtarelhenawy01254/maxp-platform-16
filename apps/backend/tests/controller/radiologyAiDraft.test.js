@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -32,14 +32,14 @@ const req = (overrides = {}) => ({
 const createStudy = (overrides = {}) => ({
   id: 'study-1',
   companyId: 'company-1',
-  examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒',
+  examTypeName: 'أشعة مقطعية على الصدر',
   modality: 'CT',
-  patientAge: '45 ╪│┘å╪⌐',
-  patientGender: '╪░┘â╪▒',
+  patientAge: '45 سنة',
+  patientGender: 'ذكر',
   patientFlags: ['diabetic'],
   images: [],
-  report: { reportText: '╪¬┘é╪▒┘è╪▒ ╪│╪º╪¿┘é' },
-  examType: { name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒' },
+  report: { reportText: 'تقرير سابق' },
+  examType: { name: 'أشعة مقطعية على الصدر' },
   ...overrides,
 });
 
@@ -60,7 +60,7 @@ describe('radiologyAiReportController', () => {
     await controller.generateDraft(req({ user: {}, params: { id: 'study-1' } }), res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, error: 'غير مصرح' });
     expect(prisma.radiologyStudy.findFirst).not.toHaveBeenCalled();
   });
 
@@ -73,7 +73,7 @@ describe('radiologyAiReportController', () => {
     await controller.generateDraft(req({ params: { id: 'study-1' } }), res);
 
     expect(res.statusCode).toBe(404);
-    expect(res.payload).toEqual({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    expect(res.payload).toEqual({ success: false, error: 'الحالة غير موجودة' });
   });
 
   test('happy path returns draft via OpenAI-compatible endpoint', async () => {
@@ -86,7 +86,7 @@ describe('radiologyAiReportController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
     global.fetch.mockResolvedValue({
       ok: true,
-      json: async () => ({ choices: [{ message: { content: '╪º┘ä┘å╪¬╪º╪ª╪¼:\n...\n╪º┘ä╪º┘å╪╖╪¿╪º╪╣:\n...' } }] }),
+      json: async () => ({ choices: [{ message: { content: 'النتائج:\n...\nالانطباع:\n...' } }] }),
     });
 
     const res = createResponse();
@@ -101,7 +101,7 @@ describe('radiologyAiReportController', () => {
     const url = global.fetch.mock.calls[0][0];
     expect(String(url).endsWith('/chat/completions')).toBe(true);
     const body = JSON.parse(global.fetch.mock.calls[0][1].body);
-    expect(body.messages[1].content).toContain('╪╣╪»╪» ╪º┘ä╪╡┘ê╪▒: 12');
+    expect(body.messages[1].content).toContain('عدد الصور: 12');
   });
 
   test('returns AI_NOT_CONFIGURED when no AI key exists', async () => {
@@ -149,28 +149,28 @@ describe('radiologyAiReportController', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toEqual({ success: false, error: '┘å╪╖╪º┘é ╪º┘ä╪º┘é╪¬╪▒╪º╪¡ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+    expect(res.payload).toEqual({ success: false, error: 'نطاق الاقتراح غير صحيح' });
     expect(prisma.radiologyStudy.findFirst).not.toHaveBeenCalled();
   });
 
   test('buildAiDraftPrompt handles focus and examName', () => {
     const prompt = service.buildAiDraftPrompt({
-      examName: '╪ú╪┤╪╣╪⌐ ╪│┘è┘å┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒',
+      examName: 'أشعة سينية على الصدر',
       modality: 'XRAY',
-      patientAge: '30 ╪│┘å╪⌐',
-      patientGender: '╪ú┘å╪½┘ë',
+      patientAge: '30 سنة',
+      patientGender: 'أنثى',
       patientFlags: ['pregnancy'],
       imagesCount: 2,
-      existingReportText: '╪¬┘é╪▒┘è╪▒ ╪│╪º╪¿┘é',
+      existingReportText: 'تقرير سابق',
       focus: 'impression',
-      additionalContext: '╪ú┘ä┘à ┘ü┘è ╪º┘ä╪¼┘ç╪⌐ ╪º┘ä┘è┘à┘å┘ë',
+      additionalContext: 'ألم في الجهة اليمنى',
     });
 
-    expect(prompt.system).toContain('╪ú╪«╪╡╪º╪ª┘è ╪ú╪┤╪╣╪⌐');
-    expect(prompt.user).toContain('╪º┘ä╪º┘å╪╖╪¿╪º╪╣');
-    expect(prompt.user).toContain('╪ú╪┤╪╣╪⌐ ╪│┘è┘å┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒');
-    expect(prompt.user).toContain('╪º┘â╪¬╪¿ ┘é╪│┘à ╪º┘ä╪º┘å╪╖╪¿╪º╪╣ ┘ü┘é╪╖');
-    expect(prompt.user).not.toContain('╪º┘â╪¬╪¿ ┘é╪│┘à ╪º┘ä┘å╪¬╪º╪ª╪¼ ┘ü┘é╪╖');
-    expect(prompt.user).toContain('╪¡┘à┘ä');
+    expect(prompt.system).toContain('أخصائي أشعة');
+    expect(prompt.user).toContain('الانطباع');
+    expect(prompt.user).toContain('أشعة سينية على الصدر');
+    expect(prompt.user).toContain('اكتب قسم الانطباع فقط');
+    expect(prompt.user).not.toContain('اكتب قسم النتائج فقط');
+    expect(prompt.user).toContain('حمل');
   });
 });

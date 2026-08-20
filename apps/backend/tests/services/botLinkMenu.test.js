@@ -1,4 +1,4 @@
-﻿const { waLink, meLink } = require('../../services/botLinkService');
+const { waLink, meLink } = require('../../services/botLinkService');
 const { buildMenuItems } = require('../../services/botMenuService');
 
 jest.mock('../../services/sharedDatabase', () => ({
@@ -7,13 +7,13 @@ jest.mock('../../services/sharedDatabase', () => ({
 
 describe('botLinkService waLink', () => {
   test('builds wa.me link with encoded text', () => {
-    expect(waLink('01012345678', '╪ú┘ç┘ä╪º┘ï╪î ╪╣╪º┘è╪▓ ╪ú╪╣╪▒┘ü ╪º┘ä╪ú╪│╪╣╪º╪▒')).toBe(
-      `https://wa.me/201012345678?text=${encodeURIComponent('╪ú┘ç┘ä╪º┘ï╪î ╪╣╪º┘è╪▓ ╪ú╪╣╪▒┘ü ╪º┘ä╪ú╪│╪╣╪º╪▒')}`
+    expect(waLink('01012345678', 'أهلاً، عايز أعرف الأسعار')).toBe(
+      `https://wa.me/201012345678?text=${encodeURIComponent('أهلاً، عايز أعرف الأسعار')}`
     );
   });
 
   test('strips non-digit chars from phone', () => {
-    expect(waLink('+20 100 123 4567', '┘à╪▒╪¡╪¿╪º')).toBe(`https://wa.me/201001234567?text=${encodeURIComponent('┘à╪▒╪¡╪¿╪º')}`);
+    expect(waLink('+20 100 123 4567', 'مرحبا')).toBe(`https://wa.me/201001234567?text=${encodeURIComponent('مرحبا')}`);
   });
 
   test('handles 00 international prefix', () => {
@@ -21,8 +21,8 @@ describe('botLinkService waLink', () => {
   });
 
   test('returns null without phone', () => {
-    expect(waLink('', '┘à╪▒╪¡╪¿╪º')).toBeNull();
-    expect(waLink(null, '┘à╪▒╪¡╪¿╪º')).toBeNull();
+    expect(waLink('', 'مرحبا')).toBeNull();
+    expect(waLink(null, 'مرحبا')).toBeNull();
   });
 
   test('omits query when text empty', () => {
@@ -46,17 +46,17 @@ describe('botLinkService meLink', () => {
 
 describe('botMenuService buildMenuItems', () => {
   test('builds postback items with default payload', () => {
-    const items = buildMenuItems([{ type: 'postback', title: '╪º┘ä╪ú╪│╪╣╪º╪▒' }]);
-    expect(items).toEqual([{ type: 'postback', title: '╪º┘ä╪ú╪│╪╣╪º╪▒', payload: 'MENU_╪º┘ä╪ú╪│╪╣╪º╪▒' }]);
+    const items = buildMenuItems([{ type: 'postback', title: 'الأسعار' }]);
+    expect(items).toEqual([{ type: 'postback', title: 'الأسعار', payload: 'MENU_الأسعار' }]);
   });
 
   test('builds web_url items', () => {
     const items = buildMenuItems([
-      { type: 'web_url', title: '╪º┘ä┘à┘ê┘é╪╣', url: 'https://maxp.online' },
+      { type: 'web_url', title: 'الموقع', url: 'https://maxp.online' },
     ]);
     expect(items[0]).toEqual({
       type: 'web_url',
-      title: '╪º┘ä┘à┘ê┘é╪╣',
+      title: 'الموقع',
       url: 'https://maxp.online',
       webview_height_ratio: 'full',
     });
@@ -67,7 +67,7 @@ describe('botMenuService buildMenuItems', () => {
   });
 
   test('keeps provided payload', () => {
-    const items = buildMenuItems([{ type: 'postback', title: '╪«╪»┘à╪⌐', payload: 'SERVICE' }]);
+    const items = buildMenuItems([{ type: 'postback', title: 'خدمة', payload: 'SERVICE' }]);
     expect(items[0].payload).toBe('SERVICE');
   });
 });

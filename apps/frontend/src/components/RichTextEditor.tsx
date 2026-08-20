@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useCallback, useId } from "react";
+import i18n from "../i18n";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { uploadFiles } from "../utils/apiHelpers";
@@ -62,7 +63,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
       } catch (error) {
         console.error("Error uploading image:", error);
-        alert("فشل في رفع الصورة");
+        alert(i18n.t("RichTextEditor.msg_c246"));
       }
     };
   }, []);

@@ -1,9 +1,18 @@
-import { Link as LinkIcon, Plus as PlusIcon, X as XMarkIcon, ArrowRight as ArrowRightIcon, ArrowLeft as ArrowLeftIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-;
+import {
+  LinkIcon,
+  PlusIcon,
+  XMarkIcon,
+  ArrowRightIcon,
+  ArrowLeftIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 
 interface Task {
   id: string;
@@ -105,11 +114,11 @@ const TaskDependencies: React.FC<TaskDependenciesProps> = ({
         setSelectedTaskId("");
         onUpdate?.();
       } else {
-        alert(data.error || "فشل في إضافة التبعية");
+        alert(data.error || i18n.t("TaskDependencies.failed_add_c36d"));
       }
     } catch (error) {
       console.error("Error adding dependency:", error);
-      alert("فشل في إضافة التبعية");
+      alert(i18n.t("TaskDependencies.failed_add_c36d"));
     } finally {
       setLoading(false);
     }

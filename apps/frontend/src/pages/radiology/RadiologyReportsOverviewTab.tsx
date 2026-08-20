@@ -1,1 +1,1 @@
-﻿export { default } from "@/pages/admin/booking/BookingReportsTab";
+export { default } from "@/pages/admin/booking/BookingReportsTab";

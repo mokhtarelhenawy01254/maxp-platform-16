@@ -1,7 +1,7 @@
-﻿# Auto-Discount Loyalty System (╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è)
+# Auto-Discount Loyalty System (الخصم التلقائي)
 
 **Date**: 2026-08-06
-**Domain**: HR ΓÇö Customer Loyalty
+**Domain**: HR — Customer Loyalty
 **Type**: Feature
 
 ## Overview
@@ -13,7 +13,7 @@ cashback** in the customer's wallet.
 
 Each company picks **one** system at a time (`Company.loyaltySystem` =
 `TIERS` | `AUTO_DISCOUNT`). Activating one disables the other. The admin chooses
-from the **╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬** tab via a selector; the auto-discount settings
+from the **إعدادات المستويات** tab via a selector; the auto-discount settings
 form appears when `AUTO_DISCOUNT` is selected.
 
 ## Settings (`Company.loyaltySettings` JSON + `loyaltySystem`)
@@ -22,28 +22,28 @@ form appears when `AUTO_DISCOUNT` is selected.
 {
   "system": "AUTO_DISCOUNT",
   "enabled": true,
-  "discountPercent": 10,          // ╪«╪╡┘à ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪º┘ä╪¼╪º┘è
-  "validityDays": 3,              // ╪╡┘ä╪º╪¡┘è╪⌐ ╪º┘ä┘â┘ê╪¿┘ê┘å
+  "discountPercent": 10,          // خصم الأوردر الجاي
+  "validityDays": 3,              // صلاحية الكوبون
   "convertExpiredToCashback": true,
-  "pointsPerAmount": 5,           // 5╪¼ ┘ä┘â┘ä ┘å┘é╪╖╪⌐ (┘â┘ä 100╪¼ ΓåÆ 20 ┘å┘é╪╖╪⌐)
-  "pointsRedemptionValue": 1,     // ┘â┘ä ┘å┘é╪╖╪⌐ = 1╪¼ ╪╣┘å╪» ╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä
+  "pointsPerAmount": 5,           // 5ج لكل نقطة (كل 100ج → 20 نقطة)
+  "pointsRedemptionValue": 1,     // كل نقطة = 1ج عند الاستبدال
   "redeemPointsEnabled": true
 }
 ```
 
 ## New model: `CustomerLoyaltyVoucher`
 
-Per delivered order ΓåÆ one voucher (`percent`, `amount`, `expiresAt`,
+Per delivered order → one voucher (`percent`, `amount`, `expiresAt`,
 `status: ACTIVE | USED | EXPIRED | CONVERTED | CANCELLED`).
 
 ## Flows
 
-- **Delivered order** (`orderService`): if `AUTO_DISCOUNT` active ΓåÆ issue voucher
+- **Delivered order** (`orderService`): if `AUTO_DISCOUNT` active → issue voucher
   (10%, +3 days) instead of the instant cashback program. Points still awarded.
-- **Checkout (public order)**: if the customer has an ACTIVE voucher ΓåÆ apply its
+- **Checkout (public order)**: if the customer has an ACTIVE voucher → apply its
   % to the order, mark voucher `USED`, stamp `metadata.autoDiscount.usedVoucherId`.
 - **Expiry** (`cron/autoDiscountVoucherCron.js`, every hour): ACTIVE vouchers past
-  `expiresAt` ΓåÆ credit `amount` to wallet (`CONVERTED`) or mark `EXPIRED` if
+  `expiresAt` → credit `amount` to wallet (`CONVERTED`) or mark `EXPIRED` if
   conversion disabled.
 - **Cancel / return**: `reverseVoucherForOrder` cancels vouchers issued by the
   order, reverses a converted voucher's wallet cashback, restores an ACTIVE
@@ -53,21 +53,21 @@ Per delivered order ΓåÆ one voucher (`percent`, `amount`, `expiresAt`,
 
 ## API
 
-- `GET  /api/v1/hr/customer-loyalty/system-settings` ΓÇö current system + settings.
-- `PUT  /api/v1/hr/customer-loyalty/system-settings` ΓÇö pick system + save settings.
+- `GET  /api/v1/hr/customer-loyalty/system-settings` — current system + settings.
+- `PUT  /api/v1/hr/customer-loyalty/system-settings` — pick system + save settings.
 
 ## Frontend
 
-- `AutoDiscountSettings.tsx` ΓÇö settings form (percent, days, convert toggle,
+- `AutoDiscountSettings.tsx` — settings form (percent, days, convert toggle,
   points rates).
-- `TierConfigTab.tsx` ΓÇö system selector (┘å╪╕╪º┘à ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ / ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è);
+- `TierConfigTab.tsx` — system selector (نظام المستويات / الخصم التلقائي);
   renders the auto-discount form when selected.
 
 ## Follow-up (not in this change)
 
-- ~~Points redemption at checkout~~ ΓåÆ **Done**: storefront `redeemPoints` flag;
+- ~~Points redemption at checkout~~ → **Done**: storefront `redeemPoints` flag;
   backend (public order) deducts `min(points, floor(total/value))` and applies
-  `pointsUsed ├ù pointsRedemptionValue` to the final total; stamped in
+  `pointsUsed × pointsRedemptionValue` to the final total; stamped in
   `metadata.pointsRedemption` and echoed in the response
   (`pointsRedemptionApplied`, `pointsUsed`, `pointsValue`). UI toggle shown in
   `PaymentSection` when the customer has points.

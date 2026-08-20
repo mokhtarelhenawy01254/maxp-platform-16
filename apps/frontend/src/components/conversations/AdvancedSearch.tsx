@@ -1,6 +1,14 @@
-import { Search as MagnifyingGlassIcon, Filter as FunnelIcon, Circle as CalendarDaysIcon, User as UserIcon, Tag as TagIcon, X as XMarkIcon, Sliders as AdjustmentsHorizontalIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
-;
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  CalendarDaysIcon,
+  UserIcon,
+  TagIcon,
+  XMarkIcon,
+  AdjustmentsHorizontalIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 
 interface SearchFilters {
   query: string;

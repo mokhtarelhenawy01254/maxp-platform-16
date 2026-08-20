@@ -1,4 +1,4 @@
-﻿import { createWorker } from "tesseract.js";
+import { createWorker } from "tesseract.js";
 
 const OCR_BASE = `${import.meta.env.BASE_URL || "/"}tesseract/`;
 
@@ -30,8 +30,8 @@ export interface CardOcrResult {
 
 const normalizeDigits = (raw: string): string =>
   raw
-    .replace(/[┘á-┘⌐]/g, d => String("┘á┘í┘ó┘ú┘ñ┘Ñ┘ª┘º┘¿┘⌐".indexOf(d)))
-    .replace(/[█░-█╣]/g, d => String("█░█▒█▓█│█┤█╡█╢█╖█╕█╣".indexOf(d)))
+    .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
     .replace(/\D/g, "");
 
 const findNationalId = (text: string): string | null => {

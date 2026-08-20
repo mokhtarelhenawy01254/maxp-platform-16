@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Ban, Search, Shield } from 'lucide-react';
+import { Ban, Search, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,7 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
       setBlocklist(response.data.blocklist || []);
     } catch (error) {
       console.error("Error fetching blocklist:", error);
-      toast.error("فشل جلب قائمة المحظورين");
+      tToast.error("PrivacySettingsDialog.failed_fetch_6cd1");
     } finally {
       setLoading(false);
     }
@@ -129,21 +130,21 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
   const handleUnblock = async (jid: string) => {
     try {
       await api.post("/whatsapp/contacts/unblock", { sessionId, jid });
-      toast.success("تم إلغاء الحظر بنجاح");
+      tToast.success("PrivacySettingsDialog.msg_0f47");
       await fetchBlocklist();
     } catch {
-      toast.error("فشل إلغاء الحظر");
+      tToast.error("PrivacySettingsDialog.msg_4588");
     }
   };
 
   const handleBlock = async (jid: string) => {
     try {
       await api.post("/whatsapp/contacts/block", { sessionId, jid });
-      toast.success("تم الحظر بنجاح");
+      tToast.success("PrivacySettingsDialog.msg_7f33");
       setBlockSearchQuery("");
       await fetchBlocklist();
     } catch {
-      toast.error("فشل الحظر");
+      tToast.error("PrivacySettingsDialog.msg_b631");
     }
   };
 
@@ -159,9 +160,9 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
         setting: key,
         value,
       });
-      toast.success("تم تحديث الإعدادات");
+      tToast.success("PrivacySettingsDialog.success_update_8d4d");
     } catch {
-      toast.error("فشل تحديث الإعدادات");
+      tToast.error("PrivacySettingsDialog.failed_update_bf9a");
       await fetchPrivacySettings();
     }
   };

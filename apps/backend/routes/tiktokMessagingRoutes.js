@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tiktokMessagingRoutes.js
  *
  * TikTok Business Messaging routes, mounted at /api/v1/tiktok/messaging.
@@ -18,21 +18,21 @@ function getVerifyToken() {
   return (process.env.TIKTOK_WEBHOOK_VERIFY_TOKEN || '').trim();
 }
 
-// ΓöÇΓöÇΓöÇ Webhook verification (GET) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Webhook verification (GET) ──────────────────────────────────────────────
 router.get('/webhook', async (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
   if (mode === 'subscribe' && token && token === getVerifyToken()) {
-    console.log(`Γ£à ${LOG_PREFIX} webhook verified`);
+    console.log(`✅ ${LOG_PREFIX} webhook verified`);
     return res.status(200).send(challenge || 'ok');
   }
-  console.warn(`ΓÜá∩╕Å ${LOG_PREFIX} webhook verification failed`);
+  console.warn(`⚠️ ${LOG_PREFIX} webhook verification failed`);
   return res.sendStatus(403);
 });
 
-// ΓöÇΓöÇΓöÇ Incoming messages (POST) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Incoming messages (POST) ────────────────────────────────────────────────
 router.post('/webhook', async (req, res) => {
   // Always ack quickly so TikTok doesn't retry forever.
   res.status(200).json({ success: true });
@@ -53,33 +53,33 @@ router.post('/webhook', async (req, res) => {
       const timestamp = evt?.timestamp ? new Date(evt.timestamp) : new Date();
 
       if (!fromOpenId) {
-        console.warn(`ΓÜá∩╕Å ${LOG_PREFIX} message event without sender, skipping`);
+        console.warn(`⚠️ ${LOG_PREFIX} message event without sender, skipping`);
         continue;
       }
 
       // Resolve company from the payload (company_id) or fall back to settings lookup.
       const companyId = evt?.company_id || evt?.to_app?.company_id || evt?.business?.company_id || null;
       if (!companyId) {
-        console.warn(`ΓÜá∩╕Å ${LOG_PREFIX} message event without company_id, skipping`);
+        console.warn(`⚠️ ${LOG_PREFIX} message event without company_id, skipping`);
         continue;
       }
 
       await handleTikTokMessage({ fromOpenId, messageId, text, timestamp, attachments: null }, companyId);
     }
   } catch (err) {
-    console.error(`Γ¥î ${LOG_PREFIX} error processing webhook:`, err.message);
+    console.error(`❌ ${LOG_PREFIX} error processing webhook:`, err.message);
   }
 });
 
-// ΓöÇΓöÇΓöÇ Status (authenticated) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Status (authenticated) ──────────────────────────────────────────────────
 router.get('/status', verifyToken.authenticateToken, async (req, res) => {
   const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
   try {
     const status = await tiktokMessagingService.getStatus(companyId);
     return res.json({ success: true, data: status });
   } catch (err) {
-    console.error(`Γ¥î ${LOG_PREFIX} getStatus failed:`, err.message);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ╪¼┘ä╪¿ ╪¡╪º┘ä╪⌐ ╪▒╪│╪º╪ª┘ä TikTok' });
+    console.error(`❌ ${LOG_PREFIX} getStatus failed:`, err.message);
+    return res.status(500).json({ success: false, error: 'فشل جلب حالة رسائل TikTok' });
   }
 });
 
@@ -90,8 +90,8 @@ router.put('/status', verifyToken.authenticateToken, async (req, res) => {
     const status = await tiktokMessagingService.saveStatus(companyId, { enabled });
     return res.json({ success: true, data: status });
   } catch (err) {
-    console.error(`Γ¥î ${LOG_PREFIX} saveStatus failed:`, err.message);
-    return res.status(500).json({ success: false, error: '┘ü╪┤┘ä ╪¡┘ü╪╕ ╪¡╪º┘ä╪⌐ ╪▒╪│╪º╪ª┘ä TikTok' });
+    console.error(`❌ ${LOG_PREFIX} saveStatus failed:`, err.message);
+    return res.status(500).json({ success: false, error: 'فشل حفظ حالة رسائل TikTok' });
   }
 });
 

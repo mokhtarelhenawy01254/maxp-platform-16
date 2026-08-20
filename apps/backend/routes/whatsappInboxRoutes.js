@@ -59,6 +59,13 @@ router.post(
 );
 
 router.post(
+  '/conversations/:conversationId/send-existing-image',
+  conversationAccessGuard,
+  requireDbPermission('inbox.send'),
+  inboxController.sendExistingImage
+);
+
+router.post(
   '/conversations/:conversationId/messages/:messageId/correct',
   conversationAccessGuard,
   requireDbPermission('inbox.send'),

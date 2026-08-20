@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const request = require("supertest");
 
 let mockCurrentUser = {
@@ -95,14 +95,14 @@ describe("botAutomationRoutes", () => {
     test("returns saved settings", async () => {
       mockPrisma.botAutomationSettings.findUnique.mockResolvedValue({
         welcomeEnabled: true,
-        welcomeMessage: '╪ú┘ç┘ä╪º┘ï ╪¿┘â ≡ƒæï',
+        welcomeMessage: 'أهلاً بك 👋',
         defaultReplyEnabled: true,
-        defaultReply: '┘å╪▒╪» ╪╣┘ä┘è┘â ┘é╪▒┘è╪¿',
+        defaultReply: 'نرد عليك قريب',
         channels: JSON.stringify(['WHATSAPP']),
       });
       const res = await request(app).get("/api/v1/bot-automation/settings");
       expect(res.status).toBe(200);
-      expect(res.body.data.welcomeMessage).toBe('╪ú┘ç┘ä╪º┘ï ╪¿┘â ≡ƒæï');
+      expect(res.body.data.welcomeMessage).toBe('أهلاً بك 👋');
       expect(res.body.data.channels).toEqual(['WHATSAPP']);
     });
   });
@@ -114,9 +114,9 @@ describe("botAutomationRoutes", () => {
         .put("/api/v1/bot-automation/settings")
         .send({
           welcomeEnabled: true,
-          welcomeMessage: '╪ú┘ç┘ä╪º┘ï ╪¿┘â',
+          welcomeMessage: 'أهلاً بك',
           defaultReplyEnabled: true,
-          defaultReply: '┘å╪▒╪» ╪╣┘ä┘è┘â ┘é╪▒┘è╪¿',
+          defaultReply: 'نرد عليك قريب',
           channels: ['facebook', 'WHATSAPP', 'INVALID'],
         });
       expect(res.status).toBe(200);
@@ -132,32 +132,32 @@ describe("botAutomationRoutes", () => {
       const res = await request(app)
         .post("/api/v1/bot-automation/rules")
         .send({
-          name: '╪º┘ä╪ú╪│╪╣╪º╪▒',
+          name: 'الأسعار',
           channels: ['WHATSAPP'],
           matchMode: 'CONTAINS',
-          keywords: ['╪│╪╣╪▒', '╪º┘ä╪│╪╣╪▒'],
+          keywords: ['سعر', 'السعر'],
           replyType: 'TEXT',
-          replyText: '╪º┘ä╪ú╪│╪╣╪º╪▒ ╪¬╪¿╪»╪ú ┘à┘å 100 ╪¼┘å┘è┘ç',
+          replyText: 'الأسعار تبدأ من 100 جنيه',
           priority: 3,
         });
       expect(res.status).toBe(200);
       const data = mockPrisma.botAutomationRule.create.mock.calls[0][0].data;
-      expect(data.name).toBe('╪º┘ä╪ú╪│╪╣╪º╪▒');
-      expect(JSON.parse(data.keywords)).toEqual(['╪│╪╣╪▒', '╪º┘ä╪│╪╣╪▒']);
+      expect(data.name).toBe('الأسعار');
+      expect(JSON.parse(data.keywords)).toEqual(['سعر', 'السعر']);
       expect(data.priority).toBe(3);
     });
 
     test("rejects rule without keywords", async () => {
       const res = await request(app)
         .post("/api/v1/bot-automation/rules")
-        .send({ name: '┘ü╪º╪╢┘è', channels: ['WHATSAPP'], replyType: 'TEXT', replyText: 'x' });
+        .send({ name: 'فاضي', channels: ['WHATSAPP'], replyType: 'TEXT', replyText: 'x' });
       expect(res.status).toBe(400);
     });
 
     test("rejects rule with no valid channel", async () => {
       const res = await request(app)
         .post("/api/v1/bot-automation/rules")
-        .send({ name: '┘â', channels: ['TIKTOK'], keywords: ['a'], replyType: 'TEXT', replyText: 'x' });
+        .send({ name: 'ك', channels: ['TIKTOK'], keywords: ['a'], replyType: 'TEXT', replyText: 'x' });
       expect(res.status).toBe(400);
     });
   });
@@ -168,7 +168,7 @@ describe("botAutomationRoutes", () => {
       mockPrisma.botAutomationRule.update.mockResolvedValue({});
       const res = await request(app)
         .put("/api/v1/bot-automation/rules/r1")
-        .send({ name: '┘à╪¡╪»╪½', channels: ['WHATSAPP'], keywords: ['╪│╪╣╪▒'], replyType: 'TEXT', replyText: '╪¼╪»┘è╪»' });
+        .send({ name: 'محدث', channels: ['WHATSAPP'], keywords: ['سعر'], replyType: 'TEXT', replyText: 'جديد' });
       expect(res.status).toBe(200);
     });
 
@@ -176,7 +176,7 @@ describe("botAutomationRoutes", () => {
       mockPrisma.botAutomationRule.findFirst.mockResolvedValue(null);
       const res = await request(app)
         .put("/api/v1/bot-automation/rules/r-other")
-        .send({ name: 'x', channels: ['WHATSAPP'], keywords: ['╪│╪╣╪▒'], replyType: 'TEXT', replyText: 'y' });
+        .send({ name: 'x', channels: ['WHATSAPP'], keywords: ['سعر'], replyType: 'TEXT', replyText: 'y' });
       expect(res.status).toBe(404);
     });
   });
@@ -199,19 +199,19 @@ describe("botAutomationRoutes", () => {
   describe("conversation starters", () => {
     test("lists starters with parsed channels", async () => {
       mockPrisma.botConversationStarter.findMany.mockResolvedValue([
-        { id: 's1', name: '╪º┘ä╪ú╪│╪╣╪º╪▒', channels: JSON.stringify(['WHATSAPP']), message: '╪º┘ä╪│┘ä╪º┘à ╪╣┘ä┘è┘â┘à', refCode: '', isEnabled: true, sortOrder: 1 },
+        { id: 's1', name: 'الأسعار', channels: JSON.stringify(['WHATSAPP']), message: 'السلام عليكم', refCode: '', isEnabled: true, sortOrder: 1 },
       ]);
       const res = await request(app).get("/api/v1/bot-automation/starters");
       expect(res.status).toBe(200);
       expect(res.body.data[0].channels).toEqual(['WHATSAPP']);
-      expect(res.body.data[0].name).toBe('╪º┘ä╪ú╪│╪╣╪º╪▒');
+      expect(res.body.data[0].name).toBe('الأسعار');
     });
 
     test("creates starter", async () => {
       mockPrisma.botConversationStarter.create.mockResolvedValue({ id: 's-new' });
       const res = await request(app)
         .post("/api/v1/bot-automation/starters")
-        .send({ name: '╪¬╪│╪╣┘è╪▒', channels: ['WHATSAPP', 'FACEBOOK'], message: '┘â╪º┘à ╪│╪╣╪▒╪ƒ', refCode: 'pricing' });
+        .send({ name: 'تسعير', channels: ['WHATSAPP', 'FACEBOOK'], message: 'كام سعر؟', refCode: 'pricing' });
       expect(res.status).toBe(200);
       const data = mockPrisma.botConversationStarter.create.mock.calls[0][0].data;
       expect(JSON.parse(data.channels)).toEqual(['WHATSAPP', 'FACEBOOK']);
@@ -227,12 +227,12 @@ describe("botAutomationRoutes", () => {
 
     test("builds starter links", async () => {
       mockPrisma.botConversationStarter.findMany.mockResolvedValue([
-        { id: 's1', name: '╪º┘ä╪ú╪│╪╣╪º╪▒', channels: JSON.stringify(['WHATSAPP', 'FACEBOOK']), message: '┘à╪▒╪¡╪¿╪º', refCode: 'pricing', isEnabled: true, sortOrder: 0 },
+        { id: 's1', name: 'الأسعار', channels: JSON.stringify(['WHATSAPP', 'FACEBOOK']), message: 'مرحبا', refCode: 'pricing', isEnabled: true, sortOrder: 0 },
       ]);
       mockBuildStarterLinks.mockResolvedValue({
         starterId: 's1',
-        name: '╪º┘ä╪ú╪│╪╣╪º╪▒',
-        message: '┘à╪▒╪¡╪¿╪º',
+        name: 'الأسعار',
+        message: 'مرحبا',
         channels: [{ channel: 'WHATSAPP', url: 'https://wa.me/201012345678' }],
       });
       const res = await request(app).get("/api/v1/bot-automation/starters/links");
@@ -253,13 +253,13 @@ describe("botAutomationRoutes", () => {
       mockPrisma.botPersistentMenu.findUnique.mockResolvedValue({
         isEnabled: true,
         pageId: 'page-1',
-        items: JSON.stringify([{ type: 'postback', title: '╪º┘ä╪ú╪│╪╣╪º╪▒', payload: 'MENU_PRICE' }]),
+        items: JSON.stringify([{ type: 'postback', title: 'الأسعار', payload: 'MENU_PRICE' }]),
       });
       mockGetFacebookPage.mockResolvedValue({ pageId: 'page-1', pageName: 'Swan' });
       const res = await request(app).get("/api/v1/bot-automation/menu");
       expect(res.status).toBe(200);
       expect(res.body.data.hasPageConnected).toBe(true);
-      expect(res.body.data.items[0].title).toBe('╪º┘ä╪ú╪│╪╣╪º╪▒');
+      expect(res.body.data.items[0].title).toBe('الأسعار');
     });
 
     test("PUT saves menu and pushes to Facebook when page connected", async () => {
@@ -268,7 +268,7 @@ describe("botAutomationRoutes", () => {
       mockPushPersistentMenu.mockResolvedValue({ success: true });
       const res = await request(app)
         .put("/api/v1/bot-automation/menu")
-        .send({ isEnabled: true, items: [{ type: 'postback', title: '╪º┘ä╪ú╪│╪╣╪º╪▒' }] });
+        .send({ isEnabled: true, items: [{ type: 'postback', title: 'الأسعار' }] });
       expect(res.status).toBe(200);
       expect(mockPushPersistentMenu).toHaveBeenCalled();
       expect(res.body.push.success).toBe(true);

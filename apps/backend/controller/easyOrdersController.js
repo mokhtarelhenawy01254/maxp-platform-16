@@ -3,6 +3,7 @@ const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedD
 const axios = require('axios');
 const { resolveProductMediaState } = require('../utils/productMediaUtils');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
+const { validateStock } = require('../utils/stockValidation');
 
 /**
  * استيراد منتج واحد من Easy Orders
@@ -81,7 +82,8 @@ const importProductFromEasyOrders = async (req, res) => {
       const skuExists = await getSharedPrismaClient().product.findFirst({
         where: {
           sku: sku,
-          companyId
+          companyId,
+          deletedAt: null
         }
       });
 
@@ -149,6 +151,10 @@ const importProductFromEasyOrders = async (req, res) => {
       return res.status(400).json(productLimitCheck.payload);
     }
 
+    // قصّ المخزون غير المنطقي بدلاً من تخزينه
+    const stockResult = validateStock(stock);
+    const normalizedStock = stockResult.ok ? (parseInt(stock, 10) || 0) : 0;
+
     const product = await getSharedPrismaClient().product.create({
       data: {
         name: name.trim(),
@@ -158,7 +164,7 @@ const importProductFromEasyOrders = async (req, res) => {
         cost: cost ? parseFloat(cost) : null,
         sku: sku || null,
         barcode: barcode || null,
-        stock: stock !== undefined ? parseInt(stock) : 0,
+        stock: normalizedStock,
         trackInventory: trackInventory !== undefined ? Boolean(trackInventory) : true,
         companyId,
         categoryId,
@@ -259,6 +265,26 @@ const importProductsBulk = async (req, res) => {
           }
         }
 
+        // التحقق من وجود SKU مكرر — تخطي بدلاً من إعادة تسميته
+        if (productData.sku) {
+          const existingBySku = await getSharedPrismaClient().product.findFirst({
+            where: {
+              sku: productData.sku,
+              companyId,
+              deletedAt: null
+            }
+          });
+
+          if (existingBySku) {
+            results.skipped.push({
+              product: productData,
+              reason: 'منتج بنفس رمز SKU موجود بالفعل',
+              existingProduct: existingBySku
+            });
+            continue;
+          }
+        }
+
         // معالجة الفئة
         let categoryId = null;
         if (productData.category && productData.category.trim() !== '') {
@@ -311,6 +337,12 @@ const importProductsBulk = async (req, res) => {
           continue;
         }
 
+        // قصّ المخزون غير المنطقي بدلاً من تخزينه
+        const bulkStockResult = validateStock(productData.stock);
+        const bulkNormalizedStock = bulkStockResult.ok
+          ? (parseInt(productData.stock, 10) || 0)
+          : 0;
+
         const product = await getSharedPrismaClient().product.create({
           data: {
             name: productData.name.trim(),
@@ -320,7 +352,7 @@ const importProductsBulk = async (req, res) => {
             cost: productData.cost ? parseFloat(productData.cost) : null,
             sku: productData.sku || null,
             barcode: productData.barcode || null,
-            stock: productData.stock !== undefined ? parseInt(productData.stock) : 0,
+            stock: bulkNormalizedStock,
             trackInventory: productData.trackInventory !== undefined ? Boolean(productData.trackInventory) : true,
             companyId,
             categoryId,
@@ -634,7 +666,7 @@ const importSelectedProducts = async (req, res) => {
           }
         }
 
-        // التحقق من وجود SKU مكرر وتغييره إذا لزم الأمر
+        // التحقق من وجود SKU مكرر — تخطي بدلاً من إعادة تسميته (يمنع توليد مكررات)
         const productLimitCheck = await ensureWithinPlanLimit(companyId, 'products', 1);
         if (!productLimitCheck.allowed) {
           results.failed.push({
@@ -644,28 +676,23 @@ const importSelectedProducts = async (req, res) => {
           continue;
         }
 
-        let finalSku = productData.sku;
+        let finalSku = productData.sku || null;
         if (productData.sku) {
-          let skuExists = true;
-          let counter = 1;
-          let originalSku = productData.sku;
-
-          while (skuExists) {
-            const existingProductBySku = await getSharedPrismaClient().product.findFirst({
-              where: {
-                sku: finalSku,
-                companyId
-              }
-            });
-
-            if (existingProductBySku) {
-              // إنشاء SKU جديد بإضافة رقم
-              finalSku = `${originalSku}-${counter}`;
-              counter++;
-              console.log(`⚠️ [EASY-ORDERS] SKU "${originalSku}" موجود، تم تغييره إلى "${finalSku}"`);
-            } else {
-              skuExists = false;
+          const existingProductBySku = await getSharedPrismaClient().product.findFirst({
+            where: {
+              sku: productData.sku,
+              companyId,
+              deletedAt: null
             }
+          });
+
+          if (existingProductBySku) {
+            results.skipped.push({
+              product: productData,
+              reason: 'منتج بنفس رمز SKU موجود بالفعل',
+              existingProduct: existingProductBySku
+            });
+            continue;
           }
         }
 
@@ -706,6 +733,12 @@ const importSelectedProducts = async (req, res) => {
           });
         }
 
+        // قصّ المخزون غير المنطقي بدلاً من تخزينه
+        const selectedStockResult = validateStock(productData.stock);
+        const selectedNormalizedStock = selectedStockResult.ok
+          ? (parseInt(productData.stock, 10) || 0)
+          : 0;
+
         // إنشاء المنتج
         const product = await getSharedPrismaClient().product.create({
           data: {
@@ -716,7 +749,7 @@ const importSelectedProducts = async (req, res) => {
             cost: productData.cost ? parseFloat(productData.cost) : null,
             sku: finalSku || null,
             barcode: productData.barcode || null,
-            stock: productData.stock !== undefined ? parseInt(productData.stock) : 0,
+            stock: selectedNormalizedStock,
             trackInventory: productData.trackInventory !== undefined ? Boolean(productData.trackInventory) : true,
             companyId,
             categoryId,

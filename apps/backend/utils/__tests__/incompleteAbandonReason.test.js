@@ -1,4 +1,4 @@
-﻿const {
+const {
   detectAbandonReason,
   getMissingShippingFields,
   parseJsonObject,

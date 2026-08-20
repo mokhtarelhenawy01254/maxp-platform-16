@@ -1,14 +1,14 @@
-﻿/**
- * ≡ƒôè Radiology TAT Controller ΓÇö ╪¬╪¡┘ä┘è┘ä╪º╪¬ ┘ê┘é╪¬ ╪º┘ä╪»┘ê╪▒╪º┘å (Turnaround Time)
+/**
+ * 📊 Radiology TAT Controller — تحليلات وقت الدوران (Turnaround Time)
  *
- * ┘è╪│╪¬┘å╪» ╪Ñ┘ä┘ë RadiologyStudyStatusHistory + RadiologyStudy (┘à┘é┘è╪»╪⌐ ╪¿┘Ç companyId
- * ┘ê┘å╪╖╪º┘é ╪¬╪º╪▒┘è╪« ┘à┘å query: dateFrom/dateTo ΓÇö ╪º┘ü╪¬╪▒╪º╪╢┘è: ╪ó╪«╪▒ 30 ┘è┘ê┘à).
+ * يستند إلى RadiologyStudyStatusHistory + RadiologyStudy (مقيدة بـ companyId
+ * ونطاق تاريخ من query: dateFrom/dateTo — افتراضي: آخر 30 يوم).
  *
- * - stageTimes: ┘à╪¬┘ê╪│╪╖/╪ú╪»┘å┘ë/╪ú┘é╪╡┘ë ╪│╪º╪╣╪º╪¬ ┘ä┘â┘ä ╪º┘å╪¬┘é╪º┘ä ┘à╪▒╪¡┘ä╪⌐ (╪¿╪¬╪▒╪¬┘è╪¿ ╪¡╪▒┘â╪º╪¬ ╪º┘ä╪»╪▒╪º╪│╪⌐ ┘ä┘â┘ä dimension).
- * - byModality: ┘à┘é╪º┘è┘è╪│ ╪▓┘à┘å ╪º┘ä╪¬╪│┘ä┘è┘à ╪º┘ä┘â┘ä┘è ┘à╪¼┘à╪╣╪⌐ ╪¡╪│╪¿ modality.
- * - byRadiologist: ┘å┘ü╪│ ╪º┘ä┘à┘é╪º┘è┘è╪│ ╪¡╪│╪¿ assignedRadiologistName.
- * - stuckEmergencies: ╪¡╪º┘ä╪º╪¬ ╪╖╪º╪▒╪ª╪⌐ ╪╣╪º┘ä┘é╪⌐ (╪║┘è╪▒ ┘à╪│┘ä┘æ┘à╪⌐/┘à┘ä╪║╪º╪⌐ ┘ê╪ú┘é╪»┘à ┘à┘å ╪¡╪»).
- * - overall: ┘à╪¬┘ê╪│╪╖ ╪▓┘à┘å ╪º┘ä╪»┘ê╪▒╪º┘å ╪º┘ä┘â┘ä┘è (╪Ñ┘å╪┤╪º╪í ΓåÆ ╪¬╪│┘ä┘è┘à) ┘ä┘ä╪»╪▒╪º╪│╪º╪¬ ╪º┘ä┘à╪│┘ä┘æ┘à╪⌐.
+ * - stageTimes: متوسط/أدنى/أقصى ساعات لكل انتقال مرحلة (بترتيب حركات الدراسة لكل dimension).
+ * - byModality: مقاييس زمن التسليم الكلي مجمعة حسب modality.
+ * - byRadiologist: نفس المقاييس حسب assignedRadiologistName.
+ * - stuckEmergencies: حالات طارئة عالقة (غير مسلّمة/ملغاة وأقدم من حد).
+ * - overall: متوسط زمن الدوران الكلي (إنشاء → تسليم) للدراسات المسلّمة.
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
@@ -53,7 +53,7 @@ const finalizeStats = (map, mapper) =>
 const getTatStatistics = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { dateFrom, dateTo, limit } = req.query;
     const prisma = getSharedPrismaClient();
@@ -76,9 +76,9 @@ const getTatStatistics = async (req, res) => {
       take: limitNum,
     });
 
-    // ΓöÇΓöÇ stageTimes: ╪º┘å╪¬┘é╪º┘ä╪º╪¬ ╪º┘ä┘à╪▒╪º╪¡┘ä (diff ╪¿┘è┘å ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘à╪¬╪╣╪º┘é╪¿╪⌐ ┘ä┘â┘ä dimension) ΓöÇΓöÇ
+    // ── stageTimes: انتقالات المراحل (diff بين الحالات المتعاقبة لكل dimension) ──
     const stageMap = new Map();
-    // ΓöÇΓöÇ delivery by modality / radiologist: ╪▓┘à┘å ╪º┘ä╪¬╪│┘ä┘è┘à ╪º┘ä┘â┘ä┘è (createdAt ΓåÆ DELIVERED) ΓöÇΓöÇ
+    // ── delivery by modality / radiologist: زمن التسليم الكلي (createdAt → DELIVERED) ──
     const modalityMap = new Map();
     const radiologistMap = new Map();
     const deliveredStudies = [];
@@ -104,15 +104,15 @@ const getTatStatistics = async (req, res) => {
         }
       }
 
-      // ╪▓┘à┘å ╪º┘ä╪¬╪│┘ä┘è┘à ╪º┘ä┘â┘ä┘è: createdAt ΓåÆ ╪ú┘ê┘ä ╪¡╪▒┘â╪⌐ DELIVERED (╪¿╪ú┘è dimension)
+      // زمن التسليم الكلي: createdAt → أول حركة DELIVERED (بأي dimension)
       const deliveredRow = history.find((h) => String(h.status).toUpperCase() === 'DELIVERED');
       const deliveredAt = deliveredRow ? deliveredRow.createdAt : null;
       const turnaround = deliveredAt ? hoursBetween(study.createdAt, deliveredAt) : null;
       if (turnaround !== null) {
         deliveredStudies.push(turnaround);
-        const modKey = study.modality || '╪║┘è╪▒ ┘à╪¡╪»╪»';
+        const modKey = study.modality || 'غير محدد';
         mergeStats(modalityMap, modKey, turnaround, () => ({ modality: modKey }));
-        const radioName = study.assignedRadiologistName || '╪║┘è╪▒ ┘à╪¡╪»╪»';
+        const radioName = study.assignedRadiologistName || 'غير محدد';
         mergeStats(radiologistMap, radioName, turnaround, () => ({ radiologist: radioName }));
       }
     }
@@ -135,7 +135,7 @@ const getTatStatistics = async (req, res) => {
           }
         : null;
 
-    // ΓöÇΓöÇ stuckEmergencies: ╪╖╪º╪▒╪ª╪⌐ ╪║┘è╪▒ ┘à╪│┘ä┘æ┘à╪⌐/┘à┘ä╪║╪º╪⌐ ┘ê╪ú┘é╪»┘à ┘à┘å ╪º┘ä╪¡╪» ΓöÇΓöÇ
+    // ── stuckEmergencies: طارئة غير مسلّمة/ملغاة وأقدم من الحد ──
     const stuckCutoff = new Date(Date.now() - STUCK_HOURS * 60 * 60 * 1000);
     const stuckEmergencies = await prisma.radiologyStudy.findMany({
       where: {
@@ -164,7 +164,7 @@ const getTatStatistics = async (req, res) => {
     });
   } catch (error) {
     console.error('Error computing radiology TAT statistics:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪│╪º╪¿ ╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬ ┘ê┘é╪¬ ╪º┘ä╪»┘ê╪▒╪º┘å' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حساب إحصائيات وقت الدوران' });
   }
 };
 

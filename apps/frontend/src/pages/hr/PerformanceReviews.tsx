@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { BarChart, BarChart3, Calendar, Edit, Plus, Star, Trash2, TrendingUp, User } from 'lucide-react';
+import {
+  BarChart3,
+  Plus,
+  Star,
+  Calendar,
+  User,
+  TrendingUp,
+  Edit,
+  Trash2,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface PerformanceReview {
   id: string;
@@ -64,7 +74,7 @@ const PerformanceReviews: React.FC = () => {
       setReviews(response.data.reviews || []);
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      toast.error("فشل في جلب التقييمات");
+      tToast.error("PerformanceReviews.failed_fetch_f64e");
     } finally {
       setLoading(false);
     }
@@ -75,11 +85,11 @@ const PerformanceReviews: React.FC = () => {
 
     try {
       await api.delete(`/hr/performance-reviews/${id}`);
-      toast.success("تم حذف التقييم بنجاح");
+      tToast.success("PerformanceReviews.success_delete_9529");
       setReviews(reviews.filter((r) => r.id !== id));
     } catch (error) {
       console.error("Error deleting review:", error);
-      toast.error("فشل في حذف التقييم");
+      tToast.error("PerformanceReviews.failed_delete_4e3b");
     }
   };
 

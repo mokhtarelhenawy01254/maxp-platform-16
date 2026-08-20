@@ -209,6 +209,53 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     storefrontSettings?.company?.currency ||
     "EGP";
   const companyId = storefrontSettings?.company?.id || getCompanyId();
+  const walletPaymentSettings =
+    (storefrontSettings?.storefront?.settings as any)?.walletPaymentSettings || null;
+  const walletEnabled = Boolean(walletPaymentSettings?.walletNumber?.trim());
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "wallet">(
+    walletEnabled ? "cod" : "cod",
+  );
+  const [walletProofImageUrl, setWalletProofImageUrl] = useState("");
+  const [walletProofUploading, setWalletProofUploading] = useState(false);
+  const [walletTransferRef, setWalletTransferRef] = useState("");
+  const walletFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleWalletProofFile = async (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setValidationErrors([
+        prefersArabicCopy
+          ? "صيغة الملف يجب أن تكون صورة (JPG/PNG)."
+          : "The file must be an image (JPG/PNG).",
+      ]);
+      return;
+    }
+    setWalletProofUploading(true);
+    try {
+      const res = await storefrontApi.uploadWalletProof(file);
+      const url = res?.data?.imageUrl || res?.imageUrl;
+      if (!url) {
+        setValidationErrors([
+          prefersArabicCopy
+            ? "فشل رفع صورة الإيصال. حاول مرة أخرى."
+            : "Failed to upload the receipt. Try again.",
+        ]);
+        return;
+      }
+      setWalletProofImageUrl(String(url));
+      setValidationErrors((prev) => prev.filter((e) => !e.includes("صورة")));
+    } catch (err) {
+      console.error("[WALLET-PROOF] Upload failed:", err);
+      setValidationErrors([
+        prefersArabicCopy
+          ? "فشل رفع صورة الإيصال. حاول مرة أخرى."
+          : "Failed to upload the receipt. Try again.",
+      ]);
+    } finally {
+      setWalletProofUploading(false);
+    }
+  };
+
   const marketplacePreviewThemeId = resolvePreviewThemeId();
   const pdpQuickOrderSettings = getPdpQuickOrderSettingsFromDesignTokens(
     storefrontSettings?.storefrontSettings?.designTokens,
@@ -387,7 +434,17 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       : !requiresVariantSelection || Boolean(activeSelection?.isSelectionReady);
   const resolvedSubtotal =
     activeQuantityOffer?.offerTotal ?? pricing.lineSubtotal;
-  const total = resolvedSubtotal + shippingCost;
+  const walletDiscountEnabled = Boolean(walletPaymentSettings?.discountEnabled);
+  const walletDiscountPercent = Math.max(
+    0,
+    Number(walletPaymentSettings?.discountPercent || 0),
+  );
+  const walletDiscountActive = walletDiscountEnabled && walletDiscountPercent > 0;
+  const walletDiscount =
+    walletDiscountActive && (paymentMethod === "wallet" || paymentMethod === "card")
+      ? (Number(resolvedSubtotal) || 0) * (walletDiscountPercent / 100)
+      : 0;
+  const total = Math.max(0, resolvedSubtotal + shippingCost - walletDiscount);
   const minimumOrder = useMinimumOrderSettings(resolvedSubtotal, currency);
   const shippingQuoteItems = useMemo(
     () => [
@@ -608,6 +665,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         shippingCost,
         subtotal: resolvedSubtotal,
         total,
+        attribution: getOrderAttributionPayload() || undefined,
         items: draftItems.map((item) => ({
           productId: item.productId,
           variantId: item.variantId || undefined,
@@ -805,6 +863,26 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     setIsSubmitting(true);
 
     try {
+      if (paymentMethod === "wallet") {
+        if (walletProofUploading) {
+          setValidationErrors([
+            prefersArabicCopy
+              ? "جارٍ رفع صورة الإيصال، انتظر قليلًا."
+              : "Uploading the receipt, please wait.",
+          ]);
+          setIsSubmitting(false);
+          return;
+        }
+        if (!walletProofImageUrl) {
+          setValidationErrors([
+            prefersArabicCopy
+              ? "يرجى رفع صورة إيصال التحويل لإتمام الدفع بالمحفظة."
+              : "Please upload the transfer receipt to pay by wallet.",
+          ]);
+          setIsSubmitting(false);
+          return;
+        }
+      }
       const quickOrderItems = buildQuickOrderCartItemsForSubmit();
       if (!quickOrderItems?.length) {
         setIsSubmitting(false);
@@ -851,10 +929,19 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
             attributeSummary,
             quantityOfferLabel: activeQuantityOffer?.offerLabel || "",
           }),
-          paymentMethod: "cod",
+          paymentMethod,
           shippingCost,
           subtotal: resolvedSubtotal,
           total,
+          ...(paymentMethod === "wallet" && walletProofImageUrl
+            ? {
+                walletProof: {
+                  imageUrl: walletProofImageUrl,
+                  walletNumber: walletPaymentSettings?.walletNumber || undefined,
+                  transferRef: walletTransferRef.trim() || undefined,
+                },
+              }
+            : {}),
         },
         quickOrderItems,
         resolvedSubtotal,
@@ -870,7 +957,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 guestName: resolvedFullName || fallbackCustomerName,
                 guestEmail: "",
                 guestPhone: contactPhone,
-                paymentMethod: "cod",
+                paymentMethod,
                 notes: payload.notes,
                 shippingAddress: {
                   governorate: resolvedGovernorate || undefined,
@@ -946,7 +1033,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         total: resolvedOrderTotal,
         phone: contactPhone,
         customerName: resolvedFullName || fallbackCustomerName,
-        paymentMethod: "cod",
+        paymentMethod,
         items: [
           ...quickOrderItems.map((item) => ({
             id: item.id,
@@ -1582,6 +1669,18 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     </span>
                   </div>
                 ) : null}
+                {walletDiscount > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
+                  <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
+                    <span>
+                      {prefersArabicCopy
+                        ? `خصم الدفع الإلكتروني (${walletDiscountPercent}%)`
+                        : `Electronic payment discount (${walletDiscountPercent}%)`}
+                    </span>
+                    <span className="font-semibold text-emerald-600">
+                      -{formatStorefrontCurrency(walletDiscount, currency)}
+                    </span>
+                  </div>
+                ) : null}
                 {shouldRenderInlineTotalRow ? (
                   <div className="flex items-center justify-between gap-4 text-base font-black">
                     <span className="text-foreground">{totalLabel}</span>
@@ -1604,6 +1703,113 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     style={{ width: `${minimumOrder.progress}%` }}
                   />
                 </div>
+              </div>
+            ) : null}
+
+            {walletEnabled ? (
+              <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-800/60 dark:bg-emerald-950/20">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                    {prefersArabicCopy ? "طريقة الدفع" : "Payment method"}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("cod")}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                        paymentMethod === "cod"
+                          ? "border-emerald-600 bg-emerald-600 text-white"
+                          : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
+                      }`}
+                    >
+                      {prefersArabicCopy ? "الدفع عند الاستلام" : "Cash on delivery"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("wallet")}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                        paymentMethod === "wallet"
+                          ? "border-emerald-600 bg-emerald-600 text-white"
+                          : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
+                      }`}
+                    >
+                      {prefersArabicCopy ? "الدفع بالمحفظة" : "Wallet payment"}
+                    </button>
+                    {walletDiscountActive && walletPaymentSettings?.showDiscountBadge !== false ? (
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                        🎁 {prefersArabicCopy
+                          ? `خصم ${walletDiscountPercent}%`
+                          : `${walletDiscountPercent}% off`}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                {paymentMethod === "wallet" ? (
+                  <div className="space-y-3 border-t border-emerald-200 pt-3 dark:border-emerald-800/60">
+                    <div className="text-sm text-emerald-900 dark:text-emerald-100">
+                      <p className="font-bold">
+                        {prefersArabicCopy
+                          ? "حوّل المبلغ على رقم المحفظة ثم ارفع إيصال التحويل"
+                          : "Transfer the amount to the wallet number, then upload the receipt"}
+                      </p>
+                      <p className="mt-1 text-emerald-800 dark:text-emerald-200">
+                        {prefersArabicCopy ? "رقم المحفظة" : "Wallet number"}:{" "}
+                        <span className="font-black" dir="ltr">{walletPaymentSettings.walletNumber}</span>
+                        {walletPaymentSettings.recipientName ? (
+                          <> · {prefersArabicCopy ? "المستلم" : "Recipient"}: <span className="font-bold">{walletPaymentSettings.recipientName}</span></>
+                        ) : null}
+                      </p>
+                      {walletPaymentSettings.instructions ? (
+                        <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+                          {walletPaymentSettings.instructions}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-emerald-900 dark:text-emerald-100">
+                        {prefersArabicCopy ? "صورة إيصال التحويل" : "Transfer receipt image"}{" "}
+                        <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        ref={walletFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        disabled={walletProofUploading}
+                        onChange={(e) => void handleWalletProofFile(e.target.files?.[0])}
+                        className="block w-full text-xs text-emerald-900 file:mr-2 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700 disabled:opacity-50 dark:text-emerald-100"
+                      />
+                      {walletProofUploading ? (
+                        <p className="mt-1 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+                          {prefersArabicCopy ? "جارٍ رفع الإيصال..." : "Uploading receipt..."}
+                        </p>
+                      ) : walletProofImageUrl ? (
+                        <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                          {prefersArabicCopy ? "تم رفع الإيصال بنجاح" : "Receipt uploaded"}
+                          <button type="button" onClick={() => walletFileInputRef.current?.click()} className="text-emerald-800 underline dark:text-emerald-200">
+                            {prefersArabicCopy ? "استبدال" : "Replace"}
+                          </button>
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-emerald-900 dark:text-emerald-100">
+                        {prefersArabicCopy ? "رقم العملية / مرجع التحويل (اختياري)" : "Transfer reference (optional)"}
+                      </label>
+                      <input
+                        type="text"
+                        value={walletTransferRef}
+                        onChange={(e) => setWalletTransferRef(e.target.value)}
+                        placeholder={prefersArabicCopy ? "مثال: 123456789" : "e.g. 123456789"}
+                        className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:border-emerald-700 dark:bg-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

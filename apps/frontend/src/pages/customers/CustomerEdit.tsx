@@ -1,8 +1,14 @@
-import { ArrowRight as ArrowRightIcon, User as UserIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Pin as MapPinIcon, Check as CheckIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-;
+import { useTranslation } from "react-i18next";
+import {
+  ArrowRightIcon,
+  UserIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  MapPinIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 

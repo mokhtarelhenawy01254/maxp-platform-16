@@ -26,7 +26,8 @@ const RATE_LIMITS = {
   DEFAULT: { windowMs: 60000, maxRequests: 100 },
   AUTH: { windowMs: 60000, maxRequests: 10 },
   READ: { windowMs: 60000, maxRequests: 60 },
-  STATS: { windowMs: 60000, maxRequests: 30 }
+  STATS: { windowMs: 60000, maxRequests: 30 },
+  AGENT_ACTIONS: { windowMs: 60000, maxRequests: 60 }, // 60 per minute per company (workspace actions)
 };
 
 /**

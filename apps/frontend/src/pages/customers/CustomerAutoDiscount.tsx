@@ -1,10 +1,10 @@
-﻿import React from "react";
+import React from "react";
 import AutoDiscountSettings from "./AutoDiscountSettings";
 import { BadgePercent } from "lucide-react";
 
 /**
- * ╪╡┘ü╪¡╪⌐ "╪º┘ä╪«╪╡┘à ╪¿╪╣╪» ╪º┘ä╪¿┘è╪╣":
- * ╪Ñ╪»╪º╪▒╪⌐ ┘å╪╕╪º┘à ┘â┘ê╪¿┘ê┘å ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ╪¿╪╣╪» ╪¬╪│┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿ (┘à┘å┘ü╪╡┘ä╪⌐ ╪╣┘å ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬).
+ * صفحة "الخصم بعد البيع":
+ * إدارة نظام كوبون الخصم التلقائي بعد تسليم الطلب (منفصلة عن إعدادات المستويات).
  */
 const CustomerAutoDiscount: React.FC = () => {
   return (
@@ -14,9 +14,9 @@ const CustomerAutoDiscount: React.FC = () => {
           <BadgePercent className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">╪º┘ä╪«╪╡┘à ╪¿╪╣╪» ╪º┘ä╪¿┘è╪╣</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">الخصم بعد البيع</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            ╪Ñ╪»╪º╪▒╪⌐ ┘â┘ê╪¿┘ê┘å ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ╪¿╪╣╪» ╪¬╪│┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿ ┘ê┘å╪│╪¿╪⌐ ╪º┘ä╪«╪╡┘à ┘ê┘à╪»╪⌐ ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐.
+            إدارة كوبون الخصم التلقائي بعد تسليم الطلب ونسبة الخصم ومدة الصلاحية.
           </p>
         </div>
       </div>

@@ -123,6 +123,19 @@ describe('WhatsAppManager message capture helpers', () => {
         expect(__testing.shouldEnableFullHistorySync({ importHistory: false })).toBe(false);
     });
 
+    test('hides history protocol artifacts while keeping real unsupported messages visible', () => {
+        expect(__testing.isHistorySystemMessage({
+            message: { protocolMessage: { type: 5 } }
+        })).toBe(true);
+        expect(__testing.isHistorySystemMessage({
+            messageStubType: 12,
+            message: {}
+        })).toBe(true);
+        expect(__testing.isHistorySystemMessage({
+            message: { pollCreationMessage: { name: 'Poll' } }
+        })).toBe(false);
+    });
+
     test('treats forbidden socket closes as reconnectable instead of relink-required', () => {
         expect(__testing.getDisconnectRecoveryDecision(403, '', false)).toMatchObject({
             isForbidden: true,
@@ -240,6 +253,20 @@ describe('WhatsAppManager message capture helpers', () => {
         expect(__testing.getMessageStatusFromBaileysStatus('DELIVERY_ACK')).toBe('DELIVERED');
         expect(__testing.getMessageStatusFromBaileysStatus('READ')).toBe('READ');
         expect(__testing.getMessageStatusFromBaileysStatus(undefined)).toBeNull();
+    });
+
+    test('maps Baileys ERROR (0) to FAILED and PLAYED (5) to READ', () => {
+        expect(__testing.getMessageStatusFromBaileysStatus(0)).toBe('FAILED');
+        expect(__testing.getMessageStatusFromBaileysStatus(5)).toBe('READ');
+        expect(__testing.getMessageStatusFromBaileysStatus('ERROR')).toBe('FAILED');
+        expect(__testing.getMessageStatusFromBaileysStatus('PLAYED')).toBe('READ');
+    });
+
+    test('never downgrades DELIVERED/READ to FAILED but allows SENT->FAILED', () => {
+        expect(__testing.shouldApplyMessageStatus('SENT', 'FAILED')).toBe(true);
+        expect(__testing.shouldApplyMessageStatus('PENDING', 'FAILED')).toBe(true);
+        expect(__testing.shouldApplyMessageStatus('DELIVERED', 'FAILED')).toBe(false);
+        expect(__testing.shouldApplyMessageStatus('READ', 'FAILED')).toBe(false);
     });
 
     test('getSocketReadyState extracts websocket readyState from diverse Baileys locations', () => {

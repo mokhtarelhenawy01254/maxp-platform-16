@@ -1,7 +1,13 @@
-import { X as XMarkIcon, Plus as PlusIcon, Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, ShoppingBag as ShoppingCartIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
-;
+import {
+  XMarkIcon,
+  PlusIcon,
+  CheckCircleIcon,
+  ArrowPathIcon,
+  ShoppingCartIcon,
+} from "@heroicons/react/24/outline";
 
 interface Product {
   id: string;
@@ -161,11 +167,11 @@ const OrderModal: React.FC<OrderModalProps> = ({
           handleClose();
         }, 2000);
       } else {
-        alert("فشل في إنشاء الطلب: " + (data.error || "خطأ غير معروف"));
+        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("OrderModal.msg_fe97")));
       }
     } catch (error) {
       console.error("❌ Error creating order:", error);
-      alert("حدث خطأ أثناء إنشاء الطلب");
+      alert(i18n.t("OrderModal.error_error_430a"));
     } finally {
       setCreatingOrder(false);
     }

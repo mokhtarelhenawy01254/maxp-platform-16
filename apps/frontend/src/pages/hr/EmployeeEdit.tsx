@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
-import { Save, ArrowRight, User, Shield, DollarSign } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import { Save, ArrowRight, User, Shield, DollarSign } from "lucide-react";
 import api from "../../services/api";
 
 import { Button } from "../../components/ui/button";
@@ -93,7 +94,7 @@ const EmployeeEdit: React.FC = () => {
         });
       } catch (error: any) {
         console.error("❌ Error fetching employee data:", error);
-        toast.error("فشل في تحميل بيانات الموظف");
+        tToast.error("EmployeeEdit.failed_load_e53e");
         navigate("/hr/employees");
       } finally {
         setLoading(false);
@@ -129,7 +130,7 @@ const EmployeeEdit: React.FC = () => {
         data: response.data,
       });
 
-      toast.success("تم تحديث بيانات الموظف بنجاح");
+      tToast.success("EmployeeEdit.success_update_9e9c");
       navigate(`/hr/employees/${id}`);
     } catch (error: any) {
       console.error("❌ [EMPLOYEE-UPDATE] Error updating employee:", {

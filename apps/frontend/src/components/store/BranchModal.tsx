@@ -1,7 +1,6 @@
-import { X as XMarkIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React from "react";
-;
+import { useTranslation } from "react-i18next";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Branch } from "../../services/storeSettingsService";
 
 interface BranchModalProps {

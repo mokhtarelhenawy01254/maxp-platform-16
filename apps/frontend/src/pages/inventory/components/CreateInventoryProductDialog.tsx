@@ -1,6 +1,10 @@
-import { Image as PhotoIcon, Plus as PlusIcon, Trash2 as TrashIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useMemo, useState } from "react";
-;
+import {
+  PhotoIcon,
+  PlusIcon,
+  TrashIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { uploadFiles } from "../../../utils/apiHelpers";
 import { getImageUrl, normalizeImagePath } from "../../../utils/imageUrl";

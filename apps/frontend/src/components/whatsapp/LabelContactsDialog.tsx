@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { RefreshCw, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
@@ -123,11 +123,11 @@ const LabelContactsDialog: React.FC<LabelContactsDialogProps> = ({
         "/whatsapp/labels/sync",
         { sessionId },
       );
-      toast.success(response.data.message || "╪¬┘à╪¬ ╪º┘ä┘à╪▓╪º┘à┘å╪⌐");
+      toast.success(response.data.message || "تمت المزامنة");
       onSynced?.();
       await loadContacts();
     } catch {
-      toast.error("┘ü╪┤┘ä╪¬ ╪º┘ä┘à╪▓╪º┘à┘å╪⌐");
+      toast.error("فشلت المزامنة");
     } finally {
       setSyncing(false);
     }
@@ -145,7 +145,7 @@ const LabelContactsDialog: React.FC<LabelContactsDialogProps> = ({
               className="inline-flex size-5 rounded-full border border-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]"
               style={{ backgroundColor: label?.color || "#25D366" }}
             />
-            {label?.name || "╪º┘ä╪¬╪╡┘å┘è┘ü"}
+            {label?.name || "التصنيف"}
             <span className="rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-primary)]">
               {total}
             </span>
@@ -158,7 +158,7 @@ const LabelContactsDialog: React.FC<LabelContactsDialogProps> = ({
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="╪º╪¿╪¡╪½ ╪¿╪º╪│┘à ╪ú┘ê ╪▒┘é┘à..."
+              placeholder="ابحث باسم أو رقم..."
               className="h-11 rounded-[18px] ps-10 bg-white/80"
             />
           </div>
@@ -167,16 +167,16 @@ const LabelContactsDialog: React.FC<LabelContactsDialogProps> = ({
             <div className="space-y-2 rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/65 p-3">
               {loading ? (
                 <div className="px-4 py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                  ╪¼╪º╪▒┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╣┘à┘ä╪º╪í...
+                  جاري تحميل العملاء...
                 </div>
               ) : contacts.length === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <Users className="mx-auto mb-3 size-8 text-[color:var(--color-muted-foreground)]" />
                   <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                    ┘ä╪º ┘è┘ê╪¼╪» ╪╣┘à┘ä╪º╪í ╪╣┘ä┘ë ┘ç╪░╪º ╪º┘ä╪¬╪╡┘å┘è┘ü
+                    لا يوجد عملاء على هذا التصنيف
                   </p>
                   <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
-                    ╪º╪│╪¬╪«╪»┘à "┘à╪▓╪º┘à┘å╪⌐" ┘ä╪│╪¡╪¿ ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘à┘å ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ┘ê╪¬╪¡╪»┘è╪½ ╪º┘ä╪╣┘à┘ä╪º╪í
+                    استخدم "مزامنة" لسحب القائمة من الواتساب وتحديث العملاء
                   </p>
                 </div>
               ) : (
@@ -205,7 +205,7 @@ const LabelContactsDialog: React.FC<LabelContactsDialogProps> = ({
                       </p>
                       {contact.isGroup ? (
                         <p className="text-[10px] text-[color:var(--color-muted-foreground)]">
-                          ┘à╪¼┘à┘ê╪╣╪⌐
+                          مجموعة
                         </p>
                       ) : null}
                     </div>
@@ -218,11 +218,11 @@ const LabelContactsDialog: React.FC<LabelContactsDialogProps> = ({
 
         <DialogFooter className="border-t border-[color:var(--shell-control-border)] bg-white/55">
           <Button variant="outline" onClick={onClose}>
-            ╪Ñ╪║┘ä╪º┘é
+            إغلاق
           </Button>
           <Button variant="secondary" onClick={handleSync} disabled={syncing}>
             <RefreshCw className={cn("size-4", syncing && "animate-spin")} />
-            {syncing ? "╪¼╪º╪▒┘è ╪º┘ä┘à╪▓╪º┘à┘å╪⌐..." : "┘à╪▓╪º┘à┘å╪⌐ ┘à┘å ╪º┘ä┘ê╪º╪¬╪│╪º╪¿"}
+            {syncing ? "جاري المزامنة..." : "مزامنة من الواتساب"}
           </Button>
         </DialogFooter>
       </DialogContent>

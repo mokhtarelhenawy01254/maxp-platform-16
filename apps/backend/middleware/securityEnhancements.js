@@ -320,6 +320,7 @@ const securityHeaders = (req, res, next) => {
       'https://www.googletagmanager.com',
       'https://www.google-analytics.com',
       'https://analytics.tiktok.com',
+      "'sha256-mmS9HhnyD6ltKC5u9zc0Y/jTrAHsA7eDDJ018bmfJCk='",
     ].join(' '),
     [
       "script-src-elem 'self'",
@@ -330,6 +331,7 @@ const securityHeaders = (req, res, next) => {
       'https://www.googletagmanager.com',
       'https://www.google-analytics.com',
       'https://analytics.tiktok.com',
+      "'sha256-mmS9HhnyD6ltKC5u9zc0Y/jTrAHsA7eDDJ018bmfJCk='",
     ].join(' '),
     "img-src 'self' data: blob: https:",
     "connect-src 'self' https: ws: wss:",

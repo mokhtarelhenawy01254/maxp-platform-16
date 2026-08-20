@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Download, File, FileText, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+  Calendar,
+  FileText,
+  TrendingUp,
+  TrendingDown,
+  Download,
+  RefreshCw,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
@@ -12,6 +19,7 @@ import {
 } from "../../../components/ui/select";
 import api from "../../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface LeaveReport {
   totalRequests: number;
@@ -66,7 +74,7 @@ const LeaveReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      toast.error("فشل في جلب التقرير");
+      tToast.error("LeaveReport.failed_fetch_8d4c");
       setReport(null);
     } finally {
       setLoading(false);
@@ -74,7 +82,7 @@ const LeaveReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    toast.success("جاري تصدير التقرير...");
+    tToast.success("LeaveReport.msg_f68b");
   };
 
   return (

@@ -1,6 +1,20 @@
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Brush, Clipboard, Copy, Image as ImageIcon, Package, Palette, Pencil, Plus, RefreshCw, Search, ShoppingBag, Trash2, TrendingUp, Upload, X } from 'lucide-react';
+import { useTranslation } from "react-i18next";
+import {
+  Plus,
+  X,
+  Upload,
+  Copy,
+  Trash2,
+  Pencil,
+  Image as ImageIcon,
+  Package,
+  Palette,
+  RefreshCw,
+  Search,
+  ShoppingBag,
+  TrendingUp,
+} from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import { uploadService } from "../../services/uploadService";

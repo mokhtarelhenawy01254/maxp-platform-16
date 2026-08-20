@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
@@ -72,7 +72,7 @@ export default function RadiologyInvoicesTab() {
                 return (
                   <tr key={i.id} className="border-b dark:border-gray-700/50 last:border-0">
                     <td className="py-3 px-4" dir="ltr">{i.invoiceNumber}</td>
-                    <td className="py-3 px-4 font-medium">{i.patient ? `${i.patient.firstName} ${i.patient.lastName || ""}` : "ΓÇö"}</td>
+                    <td className="py-3 px-4 font-medium">{i.patient ? `${i.patient.firstName} ${i.patient.lastName || ""}` : "—"}</td>
                     <td className="py-3 px-4">{fmtMoney(net(i), t("radiology.currency"))}</td>
                     <td className="py-3 px-4">{fmtMoney(i.amountPaid, t("radiology.currency"))}</td>
                     <td className="py-3 px-4">{fmtMoney(remaining(i), t("radiology.currency"))}</td>

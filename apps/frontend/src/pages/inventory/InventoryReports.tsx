@@ -1,7 +1,13 @@
-import { Activity as ChartBarIcon, RefreshCw as ArrowPathIcon, Circle as ArrowTrendingUpIcon, AlertTriangle as ExclamationTriangleIcon, Archive as ArchiveBoxIcon, DollarSign as CurrencyDollarIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-;
+import {
+  ChartBarIcon,
+  ArrowPathIcon,
+  ArrowTrendingUpIcon,
+  ExclamationTriangleIcon,
+  ArchiveBoxIcon,
+  CurrencyDollarIcon,
+} from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import { useCurrency } from "../../hooks/useCurrency";
 

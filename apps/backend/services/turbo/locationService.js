@@ -1,4 +1,4 @@
-﻿const axios = require('axios');
+const axios = require('axios');
 const { FALLBACK_GOVERNMENTS, CACHE_TTL } = require('../../utils/turbo/constants');
 const { findGovernmentByCity } = require('../../utils/turbo/governorateMapper');
 
@@ -114,11 +114,11 @@ class LocationService {
     }
 
     const normalize = (s) => String(s || '').toLowerCase().trim()
-      .replace(/[╪ú╪Ñ╪ó]/g, '╪º')
-      .replace(/╪⌐/g, '┘ç')
-      .replace(/┘ë/g, '┘è')
-      .replace(/╪ñ/g, '┘ê')
-      .replace(/╪ª/g, '┘è')
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/ؤ/g, 'و')
+      .replace(/ئ/g, 'ي')
       .replace(/\s+/g, ' ');
 
     const nQuery = normalize(query);
@@ -134,7 +134,7 @@ class LocationService {
       });
     };
 
-    // 1) Governorate appears in the text ΓåÆ restrict search to those govs only.
+    // 1) Governorate appears in the text → restrict search to those govs only.
     const matchedGovs = govs.filter((g) => {
       const gn = normalize(g.name);
       return nQuery.includes(gn) || gn.includes(nQuery)
@@ -166,7 +166,7 @@ class LocationService {
       }
     }
 
-    // Governorate-only match (no area name found) ΓåÆ include governorate as a fallback row.
+    // Governorate-only match (no area name found) → include governorate as a fallback row.
     if (!matches.length && matchedGovs.length) {
       for (const g of matchedGovs.slice(0, 3)) {
         pushMatch(g, null, 0.6);

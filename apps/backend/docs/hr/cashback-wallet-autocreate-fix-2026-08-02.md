@@ -1,14 +1,14 @@
-﻿# Cashback Auto-Create Wallet Fix
+# Cashback Auto-Create Wallet Fix
 
 **Date**: 2026-08-02
-**Domain**: HR ΓÇö Customer Loyalty / Wallet
+**Domain**: HR — Customer Loyalty / Wallet
 **Type**: Bugfix
 
 ## Problem
 
 Cashback was never applied to orders placed through the public storefront
 (checkout / COD). `applyCashbackForPaidOrder` calls
-`WalletService.addCashback` ΓåÆ `addToWallet`, which threw
+`WalletService.addCashback` → `addToWallet`, which threw
 `Wallet not found` when the customer had no `CustomerWallet` row, and the
 error was swallowed by the `.catch()` in `orderService.updateOrderStatus`.
 
@@ -21,7 +21,7 @@ no wallet, so cashback silently failed. Loyalty *points* still worked because
 
 ## Fix
 
-`apps/backend/services/walletService.js` ΓÇö `addToWallet` now auto-creates a
+`apps/backend/services/walletService.js` — `addToWallet` now auto-creates a
 wallet for the customer when none exists (resolving `companyId` from the
 customer record and delegating to `WalletService.createWallet`), instead of
 throwing `Wallet not found`. This makes cashback (and any other wallet credit)

@@ -1083,7 +1083,8 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
     const senderId = webhookEvent.sender.id;
     // 🆕 Handle referral events without message object (OPEN_THREAD events)
-    const messageText = webhookEvent.message?.text || null;
+    // Prefer the quick_reply payload (button tap) over the button title so rules/flows match on payload values.
+    const messageText = resolveInboundMessageText(webhookEvent);
     let attachments = webhookEvent.message?.attachments || null;
 
     // 🆕 Extract postId from webhookEvent (fast - already extracted in webhookController)
@@ -2004,6 +2005,141 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
       console.log(`⏱️ [TIMING-${messageId.slice(-8)}] [${Date.now() - handleStartTime}ms] ✅ [HANDLE] Total handleFacebookMessage time - Message should be visible now!`);
 
+      // ── 🤖 Bot automation for Facebook Messenger (no-AI rules: welcome / keyword / default) ──
+      let botHandledFb = false;
+      const fbBotText = (messageText || (messageType === 'TEXT' ? content : '') || '').trim();
+      if (fbBotText && customer.companyId && pageData?.pageAccessToken) {
+        try {
+          const { isUnsubscribeText, isUnsubscribed, recordUnsubscribe, UNSUBSCRIBE_CONFIRMATION } = require('../services/botUnsubscribeService');
+          const alreadyUnsubscribed = await isUnsubscribed(customer.companyId, customer.id, 'FACEBOOK');
+          const isStop = isUnsubscribeText(fbBotText);
+          if (isStop || alreadyUnsubscribed) {
+            if (isStop) {
+              await recordUnsubscribe(customer.companyId, customer.id, 'FACEBOOK', fbBotText.slice(0, 200));
+              await sendProductionFacebookMessage(
+                senderId,
+                UNSUBSCRIBE_CONFIRMATION,
+                'TEXT',
+                messagePageId,
+                pageData.pageAccessToken
+              );
+            }
+            botHandledFb = true;
+          }
+
+          const { evaluateInboundBotReply } = require('../services/botRuleEngine');
+          const firstContact = (await prisma.message.count({
+            where: { conversationId: conversation.id }
+          })) <= 1;
+
+          const evaluation = await evaluateInboundBotReply({
+            companyId: customer.companyId,
+            text: fbBotText,
+            channel: 'FACEBOOK',
+            customer: {
+              firstName: customer.firstName,
+              lastName: customer.lastName,
+            },
+            isFirstMessage: firstContact,
+          });
+
+          if (evaluation?.kind && (evaluation.replyText || evaluation.mediaUrl)) {
+            const { sendFacebookRichMessage } = require('../services/botMessageSender');
+            const fbResult = evaluation.buttons && evaluation.buttons.length > 0
+              ? await sendFacebookRichMessage({
+                  senderId,
+                  pageId: messagePageId,
+                  pageAccessToken: pageData.pageAccessToken,
+                  text: evaluation.replyText,
+                  mediaUrl: evaluation.replyType === 'IMAGE' ? evaluation.mediaUrl : null,
+                  buttons: evaluation.buttons,
+                })
+              : await sendProductionFacebookMessage(
+                  senderId,
+                  evaluation.replyType === 'IMAGE' ? evaluation.mediaUrl : evaluation.replyText,
+                  evaluation.replyType === 'IMAGE' ? 'IMAGE' : 'TEXT',
+                  messagePageId,
+                  pageData.pageAccessToken
+                );
+            if (fbResult?.success) {
+              await prisma.message.create({
+                data: {
+                  conversationId: conversation.id,
+                  content: evaluation.replyText,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  senderId: null,
+                  metadata: JSON.stringify({
+                    platform: 'facebook',
+                    source: evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'),
+                    ruleId: evaluation.ruleId || null,
+                  }),
+                },
+              }).catch((e) => console.error('[BOT-RULES] Failed to save FB bot reply:', e.message));
+              botHandledFb = true;
+            }
+          }
+        } catch (e) {
+          console.error('❌ [BOT-RULES] Error in Facebook bot automation:', e.message);
+        }
+      }
+
+      if (!botHandledFb && customer?.id) {
+        try {
+          const { onCustomerReply } = require('../services/botFlowRuntime');
+          const flowResult = await onCustomerReply({
+            companyId: customer.companyId,
+            customerId: customer.id,
+            channel: 'FACEBOOK',
+            text: fbBotText,
+            sendStep: async (step) => {
+              const { sendFacebookRichMessage } = require('../services/botMessageSender');
+              if (step.buttons && step.buttons.length > 0) {
+                await sendFacebookRichMessage({
+                  senderId,
+                  pageId: messagePageId,
+                  pageAccessToken: pageData.pageAccessToken,
+                  text: step.content,
+                  mediaUrl: step.mediaUrl || null,
+                  buttons: step.buttons,
+                });
+              } else if (step.mediaUrl) {
+                await sendProductionFacebookMessage(
+                  senderId,
+                  step.mediaUrl,
+                  'IMAGE',
+                  messagePageId,
+                  pageData.pageAccessToken
+                );
+              } else {
+                await sendProductionFacebookMessage(
+                  senderId,
+                  step.content,
+                  'TEXT',
+                  messagePageId,
+                  pageData.pageAccessToken
+                );
+              }
+              await prisma.message.create({
+                data: {
+                  conversationId: conversation.id,
+                  content: step.content,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  senderId: null,
+                  metadata: JSON.stringify({ platform: 'facebook', source: 'flow_step' }),
+                },
+              }).catch(() => {});
+            },
+          });
+          if (flowResult?.handled) {
+            botHandledFb = true;
+          }
+        } catch (e) {
+          console.error('❌ [BOT-FLOW] Error in Facebook flow handling:', e.message);
+        }
+      }
+
       // ── 🤖 AI Auto-Reply for Facebook Messenger (fire-and-forget, never blocks the webhook) ──
       const hasCustomerTextForAi = isValidMessageContent(messageText || content);
       const hasCustomerAttachmentsForAi = Array.isArray(attachmentsData) && attachmentsData.length > 0;
@@ -2011,6 +2147,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         messageText || (messageType === 'TEXT' ? content : '')
       ).trim();
       const shouldRunFacebookAiAutoReply = Boolean(
+        !botHandledFb &&
         customer.companyId &&
         (hasCustomerTextForAi || hasCustomerAttachmentsForAi) &&
         (aiCustomerContent || hasCustomerAttachmentsForAi)
@@ -2855,13 +2992,378 @@ async function sendInstagramMessage({ recipientId, messageText, igAccountId, pag
   }
 }
 
+async function handleTikTokMessage(inbound, companyId) {
+  try {
+    const senderId = inbound?.fromOpenId;
+    const messageId = inbound?.messageId || `tiktok_msg_${Date.now()}`;
+    const messageText = inbound?.text || '';
+    const attachments = inbound?.attachments || null;
+    const timestamp = inbound?.timestamp || new Date();
+
+    if (!senderId || !companyId) {
+      console.error('❌ [TT-MSG] Missing senderId or companyId');
+      return;
+    }
+
+    console.log(`🎵 [TT-MSG] Received message ${messageId} from TikTok user ${senderId}`);
+
+    // ── 1. Find or create customer (keyed on tiktokId + companyId) ──────
+    let customer = await safeQuery(async () => {
+      const prisma = getSharedPrismaClient();
+      return await prisma.customer.findUnique({
+        where: { tiktokId_companyId: { tiktokId: senderId, companyId } }
+      });
+    });
+
+    if (!customer) {
+      try {
+        customer = await safeQuery(async () => {
+          const prisma = getSharedPrismaClient();
+          return await prisma.customer.create({
+            data: {
+              tiktokId: senderId,
+              firstName: 'عميل',
+              lastName: 'تيك توك',
+              email: `tiktok_${senderId}@example.com`,
+              phone: '',
+              companyId,
+              metadata: JSON.stringify({ source: 'tiktok_dm', senderId })
+            }
+          });
+        });
+      } catch (createErr) {
+        if (createErr.code === 'P2002') {
+          customer = await safeQuery(async () => {
+            const prisma = getSharedPrismaClient();
+            return await prisma.customer.findUnique({
+              where: { tiktokId_companyId: { tiktokId: senderId, companyId } }
+            });
+          });
+        } else {
+          throw createErr;
+        }
+      }
+    }
+
+    if (!customer) {
+      console.error('❌ [TT-MSG] Could not find or create customer for', senderId);
+      return;
+    }
+
+    // ── 2. Find or create TIKTOK conversation ───────────────────────────
+    let isNewConversation = false;
+    let conversation = await safeQuery(async () => {
+      const prisma = getSharedPrismaClient();
+      return await prisma.conversation.findFirst({
+        where: {
+          customerId: customer.id,
+          channel: 'TIKTOK',
+          status: { in: ['ACTIVE', 'RESOLVED'] }
+        },
+        orderBy: { updatedAt: 'desc' }
+      });
+    });
+
+    const ttMeta = JSON.stringify({
+      platform: 'tiktok',
+      source: 'direct_message',
+      businessOpenId: inbound?.businessOpenId || null
+    });
+
+    if (!conversation) {
+      conversation = await safeQuery(async () => {
+        const prisma = getSharedPrismaClient();
+        return await prisma.conversation.create({
+          data: {
+            customerId: customer.id,
+            companyId,
+            channel: 'TIKTOK',
+            status: 'ACTIVE',
+            lastMessageAt: timestamp,
+            metadata: ttMeta,
+            lastMessageIsFromCustomer: true,
+            unreadCount: 1
+          }
+        });
+      });
+      isNewConversation = true;
+    } else {
+      conversation = await safeQuery(async () => {
+        const prisma = getSharedPrismaClient();
+        return await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: {
+            status: 'ACTIVE',
+            lastMessageAt: timestamp,
+            metadata: ttMeta,
+            lastMessageIsFromCustomer: true,
+            unreadCount: { increment: 1 }
+          }
+        });
+      });
+    }
+
+    // ── 3. Determine message type & content ───────────────────────────────
+    let messageType = 'TEXT';
+    let content = messageText || '';
+
+    if (attachments && attachments.length > 0) {
+      const att = attachments[0];
+      const attType = att.type?.toLowerCase();
+      if (attType === 'image') { messageType = 'IMAGE'; content = att.url || '[صورة]'; }
+      else if (attType === 'video') { messageType = 'VIDEO'; content = att.url || '[فيديو]'; }
+      else if (attType === 'audio') { messageType = 'AUDIO'; content = att.url || '[صوت]'; }
+      else if (attType === 'file') { messageType = 'FILE'; content = att.url || '[ملف]'; }
+      else { content = att.url || messageText || `[${att.type}]`; }
+    }
+
+    if (!content && messageType === 'TEXT') {
+      console.log('⚠️ [TT-MSG] Empty message, skipping');
+      return;
+    }
+
+    // ── 4. Save message ────────────────────────────────────────────────────
+    const savedMessage = await safeQuery(async () => {
+      const prisma = getSharedPrismaClient();
+      return await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          content,
+          type: messageType,
+          isFromCustomer: true,
+          isRead: false,
+          metadata: JSON.stringify({
+            tiktokMessageId: messageId,
+            senderId,
+            platform: 'tiktok'
+          })
+        }
+      });
+    });
+
+    // ── 5. Emit Socket.IO ──────────────────────────────────────────────────
+    try {
+      const socketService = require('../services/socketService');
+      const io = socketService.getIO();
+      if (io) {
+        const socketPayload = {
+          id: savedMessage.id,
+          conversationId: conversation.id,
+          content: savedMessage.content,
+          type: savedMessage.type.toLowerCase(),
+          isFromCustomer: true,
+          timestamp: savedMessage.createdAt,
+          companyId,
+          platform: 'tiktok',
+          channel: 'TIKTOK',
+          isNewConversation,
+          customer: {
+            id: customer.id,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            tiktokId: senderId
+          }
+        };
+        io.to(`company_${companyId}`).emit('new_message', socketPayload);
+        if (isNewConversation) {
+          io.to(`company_${companyId}`).emit('new_conversation', { ...socketPayload, conversation });
+        }
+      }
+    } catch (socketErr) {
+      console.error('⚠️ [TT-MSG] Socket emit error:', socketErr.message);
+    }
+
+    // ── 6. AI Auto-Reply for TikTok ──────────────────────────────────────
+    const hasCustomerTextForAi = messageText && messageText.trim().length > 0;
+    const hasCustomerAttachmentsForAi = attachments && attachments.length > 0;
+    const aiCustomerContent = [
+      messageText || '',
+      attachments && attachments.length > 0
+        ? `[${attachments.map(a => a.type || 'attachment').join(', ')}]`
+        : ''
+    ].filter(Boolean).join('\n\n').trim();
+
+    const shouldRunTikTokAiAutoReply = Boolean(
+      customer.companyId &&
+      (hasCustomerTextForAi || hasCustomerAttachmentsForAi) &&
+      aiCustomerContent
+    );
+
+    if (shouldRunTikTokAiAutoReply) {
+      setImmediate(async () => {
+        try {
+          console.log(`🤖 [TT-AI-AUTOREPLY] Triggered AI auto-reply for TikTok user: ${senderId}`);
+          const { getSharedPrismaClient } = require('../services/sharedDatabase');
+          const prisma = getSharedPrismaClient();
+          const { getEffectiveAiAutoReplySetting } = require('../services/aiSettingsResolver');
+          const aiSetting = await getEffectiveAiAutoReplySetting(customer.companyId, prisma);
+          if (!aiSetting?.autoReplyEnabled) { console.log('🤖 [TT-AI-AUTOREPLY] AI auto-reply disabled for company'); return; }
+          if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
+            try {
+              const hours = JSON.parse(typeof aiSetting.workingHours === 'string' ? aiSetting.workingHours : '{}');
+              const now = new Date();
+              const dayName = now.toLocaleString('en', { weekday: 'long', timeZone: 'Africa/Cairo' }).toLowerCase();
+              const today = hours[dayName];
+              if (today && !today.enabled) { console.log('🤖 [TT-AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
+              if (today && today.start && today.end) {
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const [startH, startM] = today.start.split(':').map(Number);
+                const [endH, endM] = today.end.split(':').map(Number);
+                const startMin = startH * 60 + startM;
+                const endMin = endH * 60 + endM;
+                if (currentMinutes < startMin || currentMinutes > endMin) { console.log('🤖 [TT-AI-AUTOREPLY] Outside working hours (time)'); return; }
+              }
+            } catch(e) { /* continue if parsing fails */ }
+          }
+
+          if (conversation && conversation.aiEnabled === false) {
+            console.log('🤖 [TT-AI-AUTOREPLY] AI auto-reply disabled for conversation');
+            return;
+          }
+
+          const aiSdkClient = require('../services/aiSdkClient');
+          const ttAttachments = attachments && attachments.length > 0
+            ? attachments.map(a => ({ type: a.type || 'image', url: a.url || '', detail: 'high' })).filter(a => a.url)
+            : undefined;
+
+          const result = await aiSdkClient.sendChatMessage({
+            companyId: customer.companyId,
+            customerId: customer.id,
+            message: aiCustomerContent,
+            threadId: conversation.id,
+            channel: 'TIKTOK',
+            attachments: ttAttachments
+          });
+
+          if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+            const { flagThreadForHumanTakeover } = require('../services/silentEscalationService');
+            await flagThreadForHumanTakeover({
+              companyId: customer.companyId,
+              conversationId: conversation.id,
+              customerId: customer.id,
+              reason: result.escalation?.reason || 'ai_failure',
+              customerMessage: aiCustomerContent,
+              channel: 'TIKTOK',
+            });
+            return;
+          }
+
+          const replyText = result.reply;
+
+          if (replyText) {
+            console.log(`🤖 [TT-AI-AUTOREPLY] AI generated TikTok response: "${replyText.substring(0, 50)}..."`);
+
+            const replyId = require('crypto').randomUUID();
+            const savedReply = await safeQuery(async () => {
+              return await prisma.message.create({
+                data: {
+                  id: replyId,
+                  content: replyText,
+                  type: 'TEXT',
+                  conversationId: conversation.id,
+                  isFromCustomer: false,
+                  senderId: null,
+                  metadata: JSON.stringify({
+                    platform: 'tiktok',
+                    source: 'ai_reply',
+                    isTikTokReply: true,
+                    timestamp: new Date(),
+                    instantSave: true
+                  }),
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }
+              });
+            }, 3);
+
+            const socketService2 = require('../services/socketService');
+            const io2 = socketService2.getIO();
+            if (io2) {
+              const socketData = {
+                id: savedReply.id,
+                conversationId: savedReply.conversationId,
+                content: savedReply.content,
+                type: savedReply.type.toLowerCase(),
+                isFromCustomer: savedReply.isFromCustomer,
+                timestamp: savedReply.createdAt,
+                metadata: JSON.parse(savedReply.metadata),
+                senderId: null,
+                senderName: 'AI Agent',
+                lastMessageIsFromCustomer: false,
+                lastCustomerMessageIsUnread: false,
+                companyId: customer.companyId,
+                platform: 'tiktok',
+                channel: 'TIKTOK'
+              };
+              io2.to(`company_${customer.companyId}`).emit('new_message', socketData);
+            }
+
+            await safeQuery(async () => {
+              return await prisma.conversation.update({
+                where: { id: conversation.id },
+                data: {
+                  lastMessageAt: new Date(),
+                  lastMessagePreview: replyText.length > 100 ? replyText.substring(0, 100) + '...' : replyText,
+                  lastMessageIsFromCustomer: false,
+                  unreadCount: 0,
+                  updatedAt: new Date()
+                }
+              });
+            }, 3);
+
+            // Deliver the AI reply to the TikTok user via Business Messaging API.
+            const tiktokMessagingService = require('../services/tiktok/tiktokMessagingService');
+            const sent = await tiktokMessagingService.sendTextMessage({
+              companyId: customer.companyId,
+              toOpenId: senderId,
+              text: replyText
+            });
+
+            if (sent?.success) {
+              console.log(`✅ [TT-AI-AUTOREPLY] AI reply sent to TikTok user ${senderId}`);
+              await safeQuery(async () => {
+                return await prisma.message.update({
+                  where: { id: savedReply.id },
+                  data: {
+                    metadata: JSON.stringify({
+                      ...JSON.parse(savedReply.metadata),
+                      tiktokMessageId: sent.data?.message_id || null,
+                      sentToTikTok: true
+                    })
+                  }
+                });
+              }, 2);
+            } else {
+              console.warn(`⚠️ [TT-AI-AUTOREPLY] TikTok delivery failed:`, sent?.message || sent?.error);
+            }
+          }
+        } catch (aiErr) {
+          console.error('❌ [TT-AI-AUTOREPLY] AI processing error:', aiErr.message);
+        }
+      });
+    }
+
+    console.log(`✅ [TT-MSG] Saved TikTok message ${messageId} for company ${companyId}`);
+  } catch (error) {
+    console.error('❌ [TT-MSG] Error handling TikTok message:', error.message);
+  }
+}
+
+function resolveInboundMessageText(webhookEvent) {
+  const quickReplyPayload = webhookEvent?.message?.quick_reply?.payload || null;
+  const postbackPayload = webhookEvent?._isPostback ? webhookEvent._postbackPayload : null;
+  return quickReplyPayload || postbackPayload || webhookEvent?.message?.text || null;
+}
+
 module.exports = {
   sendFacebookMessage,
   sendFacebookMessageViaDeliveryOutbox,
   sendInstagramMessage,
   handleMessageDirectly,
   handleFacebookMessage,
+  resolveInboundMessageText,
   handleInstagramMessage,
+  handleTikTokMessage,
   getPageToken,
   updatePageTokenCache,
   diagnoseFacebookSending,

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, Clock, UserX, Download, RefreshCw, TrendingDown } from 'lucide-react';
+import {
+  AlertTriangle,
+  Clock,
+  UserX,
+  Download,
+  RefreshCw,
+  TrendingDown,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
@@ -13,6 +20,7 @@ import {
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface LateAbsenceReport {
   totalLateArrivals: number;
@@ -83,7 +91,7 @@ const LateAbsenceReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      toast.error("فشل في جلب التقرير");
+      tToast.error("LateAbsenceReport.failed_fetch_c08d");
       setReport(null);
     } finally {
       setLoading(false);
@@ -91,7 +99,7 @@ const LateAbsenceReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    toast.success("جاري تصدير التقرير...");
+    tToast.success("LateAbsenceReport.msg_fffa");
   };
 
   return (

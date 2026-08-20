@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Star, ShieldAlert, Award, AlertTriangle, Save, Loader } from 'lucide-react';
+import {
+  Star,
+  ShieldAlert,
+  Award,
+  AlertTriangle,
+  Save,
+  Loader,
+} from "lucide-react";
 import { returnService } from "../../services/returnService";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 const RatingSettingsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -40,9 +48,9 @@ const RatingSettingsManager: React.FC = () => {
     setSaving(true);
     try {
       await returnService.updateSettings(settings);
-      toast.success("تم حفظ الإعدادات بنجاح");
+      tToast.success("RatingSettingsManager.success_save_3111");
     } catch (error) {
-      toast.error("فشل حفظ الإعدادات");
+      tToast.error("RatingSettingsManager.failed_save_dfaf");
     } finally {
       setSaving(false);
     }

@@ -1,4 +1,4 @@
-﻿# WhatsApp History LID and Artifact Fix
+# WhatsApp History LID and Artifact Fix
 
 ## Problem
 

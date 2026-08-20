@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   PlusIcon,
@@ -27,8 +27,8 @@ const SEGMENT_FIELDS = [
 const OPS = [
   { key: "eq", label: "=" },
   { key: "contains", label: "contains" },
-  { key: "gte", label: "ΓëÑ" },
-  { key: "lte", label: "Γëñ" },
+  { key: "gte", label: "≥" },
+  { key: "lte", label: "≤" },
 ] as const;
 
 const AudienceTab: React.FC = () => {
@@ -197,7 +197,7 @@ const AudienceTab: React.FC = () => {
                 <h4 className="font-medium text-gray-900 dark:text-white">{s.name}</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {s.rules.length} {t("botStudio.rulesCount")}
-                  {previews[s.id] !== undefined && ` ┬╖ ${previews[s.id]} ${t("botStudio.customers")}`}
+                  {previews[s.id] !== undefined && ` · ${previews[s.id]} ${t("botStudio.customers")}`}
                 </p>
               </div>
               <div className="flex gap-1 shrink-0">
@@ -240,7 +240,7 @@ const AudienceTab: React.FC = () => {
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">{u.customerName || u.customerId}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {u.channel} ┬╖ {u.phone || "ΓÇö"} ┬╖ {new Date(u.unsubscribedAt).toLocaleDateString()}
+                  {u.channel} · {u.phone || "—"} · {new Date(u.unsubscribedAt).toLocaleDateString()}
                 </p>
               </div>
               <button

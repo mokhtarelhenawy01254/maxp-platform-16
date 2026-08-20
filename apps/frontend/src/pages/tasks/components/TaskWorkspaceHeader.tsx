@@ -1,6 +1,13 @@
-import { Download as ArrowDownTrayIcon, Check as CheckCircleIcon, Clock as ClockIcon, AlertTriangle as ExclamationCircleIcon, Circle as FolderPlusIcon, Plus as PlusIcon, Circle as QueueListIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  ArrowDownTrayIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ExclamationCircleIcon,
+  FolderPlusIcon,
+  PlusIcon,
+  QueueListIcon,
+} from "@heroicons/react/24/outline";
 
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";

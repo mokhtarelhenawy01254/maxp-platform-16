@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, BarChart, BarChart3, Bot, Check, ChevronDown, Clock, Globe, Headphones, LayoutDashboard, Menu, MessageCircle, Phone, SendHorizontal, Shield, Smartphone, Sparkles, Star, Users, X, Zap } from 'lucide-react';
+import {
+  MessageCircle, Bot, Users, BarChart3, Check, ChevronDown,
+  ArrowLeft, Smartphone, Headphones, LayoutDashboard, X,
+  SendHorizontal, Sparkles, Zap, Shield, Globe, Clock, Menu, Star,
+} from "lucide-react";
 import { usePlatformSiteMetaPixel } from "../../hooks/usePlatformSiteMetaPixel";
 import "./messagingLanding.css";
 
@@ -167,7 +172,7 @@ const MessagingLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}&action=free`);
       return;
     }
-    if (!bundle) { alert("الباقة غير متوفرة"); return; }
+    if (!bundle) { alert(i18n.t("MessagingLanding.msg_ccb3")); return; }
     setSubscribing(true);
     setActionType("free");
     try {
@@ -180,11 +185,11 @@ const MessagingLanding: React.FC = () => {
       if (data.success) {
         navigate("/admin/ai-hub?tab=sandbox");
       } else {
-        alert(data.message || "فشل التفعيل");
+        alert(data.message || i18n.t("MessagingLanding.msg_9dca"));
         setSubscribing(false);
       }
     } catch {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("MessagingLanding.msg_c26f"));
       setSubscribing(false);
     }
   };
@@ -195,7 +200,7 @@ const MessagingLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}&action=paid`);
       return;
     }
-    if (!bundle) { alert("الباقة غير متوفرة"); return; }
+    if (!bundle) { alert(i18n.t("MessagingLanding.msg_ccb3")); return; }
     setSubscribing(true);
     setActionType("paid");
     try {
@@ -207,12 +212,14 @@ const MessagingLanding: React.FC = () => {
       const data = await res.json();
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
+      } else if (data.success && data.data?.walletPaid) {
+        navigate("/admin/ai-hub?tab=sandbox");
       } else {
-        alert(data.message || "فشل إنشاء الدفع");
+        alert(data.message || i18n.t("MessagingLanding.failed_create_931a"));
         setSubscribing(false);
       }
     } catch {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("MessagingLanding.msg_c26f"));
       setSubscribing(false);
     }
   };

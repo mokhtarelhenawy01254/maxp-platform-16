@@ -1,7 +1,17 @@
-import { Truck as TruckIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Clock as ClockIcon, DollarSign as CurrencyDollarIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Activity as ChartBarIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useMemo, useState } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  TruckIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 import { ShippingZone, CanonicalGovernorate } from "../../services/storeSettingsService";
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
 import { ShippingMethodsModal } from "./ShippingMethodsModal";

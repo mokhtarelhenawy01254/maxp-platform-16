@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Service Worker Cache Management & Purge Utilities
  * Ensures stored caches (pages, assets, api) are cleanly wiped on updates or logout.
  */

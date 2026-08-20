@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import SankeyTab from "../tabs/SankeyTab";
 
 jest.mock("../orderMovementShared", () => require("../testSupport").buildSharedMock());
@@ -14,7 +14,7 @@ const sankeyData = {
   totalOrders: 5,
   modes: { manual: 8, auto: 2 },
   nodes: [
-    { id: "START", name: "╪¿╪»╪º┘è╪⌐" },
+    { id: "START", name: "بداية" },
     { id: "DELIVERED", name: "DELIVERED" },
   ],
   links: [{ source: 0, target: 1, value: 5, manual: 5, auto: 0, revenue: 100 }],
@@ -30,11 +30,11 @@ describe("SankeyTab", () => {
 
     render(<SankeyTab {...props} />);
 
-    await waitFor(() => expect(screen.getByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪¡╪▒┘â╪º╪¬")).toBeInTheDocument());
-    expect(screen.getByText("╪¡╪▒┘â╪º╪¬ ┘è╪»┘ê┘è╪⌐")).toBeInTheDocument();
-    expect(screen.getByText("╪«╪▒┘è╪╖╪⌐ ╪¬╪»┘ü┘é ╪¡╪▒┘â╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬")).toBeInTheDocument();
-    expect(screen.getByText("╪ú╪╣┘ä┘ë ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪»╪«┘ê┘ä╪º┘ï")).toBeInTheDocument();
-    expect(screen.getByText("╪ú╪╣┘ä┘ë ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪«╪▒┘ê╪¼╪º┘ï")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("إجمالي الحركات")).toBeInTheDocument());
+    expect(screen.getByText("حركات يدوية")).toBeInTheDocument();
+    expect(screen.getByText("خريطة تدفق حركة الطلبات")).toBeInTheDocument();
+    expect(screen.getByText("أعلى الحالات دخولاً")).toBeInTheDocument();
+    expect(screen.getByText("أعلى الحالات خروجاً")).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith("sankey", { startDate: "2026-05-01", endDate: "2026-08-11", mode: "all" });
   });
 
@@ -47,7 +47,7 @@ describe("SankeyTab", () => {
   });
 
   test("renders error state on failure", async () => {
-    mockFetch.mockRejectedValue(new Error("┘ü╪┤┘ä"));
+    mockFetch.mockRejectedValue(new Error("فشل"));
 
     render(<SankeyTab {...props} />);
 

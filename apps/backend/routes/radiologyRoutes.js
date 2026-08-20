@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const controller = require('../controller/radiologyController');
@@ -16,7 +16,7 @@ const upload = multer({
     if (name.endsWith('.dcm') || mimetype === 'application/dicom' || mimetype === 'application/octet-stream') {
       cb(null, true);
     } else {
-      cb(new Error('┘è┘Å╪│┘à╪¡ ┘ü┘é╪╖ ╪¿┘à┘ä┘ü╪º╪¬ DICOM (dcm.)'));
+      cb(new Error('يُسمح فقط بملفات DICOM (dcm.)'));
     }
   },
 });
@@ -70,15 +70,15 @@ router.delete('/studies/:id/images/:imageId', verifyToken.requireRole(MANAGER_RO
 router.use((err, _req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ success: false, error: '╪¡╪¼┘à ╪º┘ä┘à┘ä┘ü ┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä╪¡╪» ╪º┘ä┘à╪│┘à┘ê╪¡' });
+      return res.status(400).json({ success: false, error: 'حجم الملف يتجاوز الحد المسموح' });
     }
     if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({ success: false, error: '╪╣╪»╪» ╪º┘ä┘à┘ä┘ü╪º╪¬ ┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä╪¡╪» ╪º┘ä┘à╪│┘à┘ê╪¡' });
+      return res.status(400).json({ success: false, error: 'عدد الملفات يتجاوز الحد المسموح' });
     }
     return res.status(400).json({ success: false, error: err.message });
   }
   if (err) {
-    return res.status(400).json({ success: false, error: err.message || '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪▒┘ü╪╣ ╪º┘ä┘à┘ä┘ü╪º╪¬' });
+    return res.status(400).json({ success: false, error: err.message || 'حدث خطأ أثناء رفع الملفات' });
   }
   next();
 });

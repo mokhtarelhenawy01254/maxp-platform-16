@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 import BookingReportsTab from "../BookingReportsTab";
 
@@ -32,7 +32,7 @@ describe("BookingReportsTab", () => {
 
     render(<BookingReportsTab />);
 
-    await screen.findByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒");
+    await screen.findByText("إجمالي الفواتير");
     await new Promise((r) => setTimeout(r, 150));
 
     const branchesCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes("/booking/branches")).length;
@@ -53,8 +53,8 @@ describe("BookingReportsTab", () => {
 
     render(<BookingReportsTab />);
 
-    await screen.findByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒");
+    await screen.findByText("إجمالي الفواتير");
     expect(screen.getByText("100.00")).toBeInTheDocument();
-    expect(screen.getAllByText("┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("لا توجد بيانات").length).toBeGreaterThan(0);
   });
 });

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
 import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
@@ -792,7 +794,7 @@ const ProductImageLandingPage: React.FC = () => {
         location.search,
       );
 
-      toast.success("تم إرسال الطلب بنجاح.");
+      tToast.success("ProductImageLandingPage.success_send_29d8");
       const purchaseTracking = {
         eventId: pixelEventId,
         orderNumber: String(orderId),
@@ -846,7 +848,7 @@ const ProductImageLandingPage: React.FC = () => {
     return (
       <section className="product-image-landing product-image-landing--empty" dir="rtl">
         <div className="pil-empty-panel">
-          <p>{landingError || "صفحة الهبوط المصورة غير جاهزة لهذا المنتج بعد."}</p>
+          <p>{landingError || i18n.t("ProductImageLandingPage.msg_648c")}</p>
           <Link to={buildStorefrontPath(location.pathname, `/product/${id || ""}`, location.search)}>
             العودة لصفحة المنتج
           </Link>

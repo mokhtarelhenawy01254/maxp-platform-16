@@ -1,6 +1,16 @@
-import { Circle as PaperAirplaneIcon, Circle as PaperClipIcon, MessageSquare as ChatBubbleLeftRightIcon, Info as InformationCircleIcon, Search as MagnifyingGlassIcon, Trash2 as TrashIcon, Check as CheckIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
-;
+import SavedReplies from "../../components/conversations/SavedReplies";
+import CustomerProfile from "../../components/conversations/CustomerProfile";
+import {
+  PaperAirplaneIcon,
+  PaperClipIcon,
+  ChatBubbleLeftRightIcon,
+  InformationCircleIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
+  CheckIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import apiService, {
   Message,
   Conversation,
@@ -10,9 +20,6 @@ import apiService, {
 import { config } from "../../config";
 import { tokenManager } from "../../utils/tokenManager";
 import LinkifiedText from "../../components/common/LinkifiedText";
-import SavedReplies from "../../components/conversations/SavedReplies";
-import CustomerProfile from "../../components/conversations/CustomerProfile";
-import { getImageUrl } from "../../utils/urlConverter";
 
 const MOCK_CONVERSATIONS: Conversation[] = [
   {
@@ -680,7 +687,7 @@ const MessengerChat: React.FC = () => {
                       {message.type === "image" && message.fileUrl && (
                         <div className="mb-2">
                           <img
-                            src={getImageUrl(message)}
+                            src={message.fileUrl}
                             alt={message.fileName}
                             className="rounded-lg max-h-48 object-cover"
                           />
@@ -820,14 +827,16 @@ const MessengerChat: React.FC = () => {
       </div>
 
       {/* مكون الردود المحفوظة */}
-      <SavedReplies
-        isOpen={showSavedReplies}
-        onClose={() => setShowSavedReplies(false)}
-        onSelectReply={(reply: SavedReply) => {
-          setNewMessage(reply.content);
-          setShowSavedReplies(false);
-        }}
-      />
+      {showSavedReplies && (
+        <SavedReplies
+          replies={savedReplies}
+          onClose={() => setShowSavedReplies(false)}
+          onUseReply={(reply: SavedReply) => {
+            setNewMessage(reply.content);
+            setShowSavedReplies(false);
+          }}
+        />
+      )}
 
       {/* مكون ملف العميل */}
       {showCustomerProfile && customerProfile && selectedConversation && (

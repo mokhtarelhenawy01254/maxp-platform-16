@@ -1,7 +1,6 @@
-import { Activity as ChartBarIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/utils";
-;
+import { ChartBarIcon } from "@heroicons/react/24/outline";
 import type { DashboardData } from "../../pages/dashboard/types";
 
 type Props = {

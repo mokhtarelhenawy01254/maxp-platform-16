@@ -1,10 +1,18 @@
-import { Plus as PlusIcon, Pencil as PencilIcon, ShoppingBag as ShoppingBagIcon, Eye as EyeIcon, DollarSign as BanknotesIcon, Check as CheckCircleIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  PlusIcon,
+  PencilIcon,
+  ShoppingBagIcon,
+  EyeIcon,
+  BanknotesIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Merchant {
   id: string;
@@ -226,7 +234,7 @@ const MerchantsList: React.FC = () => {
         setMerchantPayouts(payoutsResponse.data.data || []);
       }
     } catch (_error: unknown) {
-      toast.error("حدث خطأ أثناء جلب التجار");
+      tToast.error("MerchantsList.error_error_2f2d");
     } finally {
       setLoading(false);
     }
@@ -245,7 +253,7 @@ const MerchantsList: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم تسجيل تحويل مستحقات التاجر");
+        tToast.success("MerchantsList.success_login_3fe0");
         await loadMerchants();
       }
     } catch (error: unknown) {
@@ -268,7 +276,7 @@ const MerchantsList: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم إلغاء طلب سحب التاجر");
+        tToast.success("MerchantsList.msg_8395");
         await loadMerchants();
       }
     } catch (error: unknown) {

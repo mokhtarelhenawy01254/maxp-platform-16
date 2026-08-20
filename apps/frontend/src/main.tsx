@@ -5,6 +5,32 @@ import {
   installChunkLoadRecovery,
   recoverFromChunkLoadError,
 } from "./utils/chunkLoadRecovery";
+import { clearAllSWCaches } from "./utils/swCacheFlush";
+
+// Auto-purge legacy SW caches once for all existing clients
+const SW_MIGRATION_VERSION = "maxp_sw_v3_20260729";
+if (typeof window !== "undefined") {
+  try {
+    if (localStorage.getItem("maxp:sw_migrated") !== SW_MIGRATION_VERSION) {
+      void clearAllSWCaches().then(() => {
+        try {
+          localStorage.setItem("maxp:sw_migrated", SW_MIGRATION_VERSION);
+        } catch {
+          // Ignore storage quota error
+        }
+      });
+    }
+  } catch {
+    // Ignore private browsing error
+  }
+}
+
+// Listen for new service worker and auto-refresh when detected
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    window.location.reload();
+  });
+}
 
 const OPTIONAL_GOOGLE_FONTS_ID = "optional-google-fonts";
 const OPTIONAL_GOOGLE_FONTS_HREF =
@@ -15,7 +41,7 @@ const ADMIN_CRITICAL_GOOGLE_FONTS_HREF =
 
 let adminShellAssetsPromise: Promise<void> | null = null;
 
-type RootWindow = Window & typeof globalThis & { __MAXP_APP_ROOT__?: Root };
+type RootWindow = Window & typeof globalThis & { __MAXP_APP_ROOT__?: Root; __SW_UPDATE_PENDING__?: boolean };
 
 // Get root element
 const rootElement = document.getElementById("root");
@@ -206,7 +232,47 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
+// Service Worker auto-update: notify user when a new version is ready (Production only)
+if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MODE === "production")) {
+  // Unregister any legacy "/sw.js" registration so the renamed worker doesn't
+  // keep controlling the page alongside the new "/sw-v4.js" worker.
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => {
+      if (r.active && /\/sw\.js$/.test(r.active.scriptURL) && !/\/sw-v4\.js$/.test(r.active.scriptURL)) {
+        r.unregister();
+      }
+    });
+  });
+  navigator.serviceWorker.register("/sw-v4.js").then((reg) => {
+    const notify = () => {
+      window.__SW_UPDATE_PENDING__ = true;
+      window.dispatchEvent(new CustomEvent("sw-update-ready"));
+    };
 
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      notify();
+    }
+
+    reg.addEventListener("updatefound", () => {
+      const installing = reg.installing;
+      if (!installing) return;
+      installing.addEventListener("statechange", () => {
+        if (installing.state === "installed" && navigator.serviceWorker.controller) {
+          notify();
+        }
+      });
+    });
+  });
+
+  // Auto-reload when new controller takes over
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+}
 
 // Hot Module Replacement (HMR) for development
 if (import.meta.hot) {

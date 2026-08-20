@@ -352,6 +352,11 @@ class OrderDetailsUpdateService {
 
     const regularOrder = await this.findRegularOrder(orderIdentifier, companyId);
     if (regularOrder) {
+      // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): لو الحالة الحالية غير مسموح
+      // تعديل بياناتها، نرفض أي تعديل (اسم/تليفون/عنوان/ملاحظات/ميتا).
+      const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+      await assertOrderStatusEditable(prisma, companyId, regularOrder.status);
+
       const { metadata, shippingAddress, updateData } = this.buildRegularUpdateData(regularOrder, input);
       const updatedOrder = await prisma.order.update({
         where: { id: regularOrder.id },
@@ -379,6 +384,10 @@ class OrderDetailsUpdateService {
 
     const guestOrder = await this.findGuestOrder(orderIdentifier, companyId);
     if (guestOrder) {
+      // 🔒 قفل تعديل بيانات الأوردر (لكل حالة) — طلبات الضيوف.
+      const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+      await assertOrderStatusEditable(prisma, companyId, guestOrder.status);
+
       const { metadata, shippingAddress, updateData } = this.buildGuestUpdateData(guestOrder, input);
       const updatedOrder = await prisma.guestOrder.update({
         where: { id: guestOrder.id },

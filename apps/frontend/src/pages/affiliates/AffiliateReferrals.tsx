@@ -1,9 +1,14 @@
-import { Circle as ArrowTrendingUpIcon, Check as CheckCircleIcon, Clock as ClockIcon, Link as LinkIcon, Circle as UserGroupIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  ArrowTrendingUpIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  LinkIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/outline";
 
 interface ReferralCustomer {
   id: string;

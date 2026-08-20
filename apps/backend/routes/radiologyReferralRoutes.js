@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const marketingReps = require('../controller/radiologyMarketingRepsController');
 const referralSources = require('../controller/radiologyReferralSourcesController');
@@ -9,14 +9,14 @@ const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
 
 router.use(verifyToken.authenticateToken);
 
-// Marketing reps (┘à┘å╪»┘ê╪¿┘è ╪º┘ä╪¬╪│┘ê┘è┘é)
+// Marketing reps (مندوبي التسويق)
 router.get('/marketing-reps', marketingReps.listMarketingReps);
 router.post('/marketing-reps', verifyToken.requireRole(MANAGER_ROLES), marketingReps.createMarketingRep);
 router.put('/marketing-reps/:id', verifyToken.requireRole(MANAGER_ROLES), marketingReps.updateMarketingRep);
 router.delete('/marketing-reps/:id', verifyToken.requireRole(MANAGER_ROLES), marketingReps.deleteMarketingRep);
 router.get('/marketing-reps/portfolio', marketingReps.repPortfolio);
 
-// Referral sources (╪¼┘ç╪º╪¬ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐)
+// Referral sources (جهات الإحالة)
 router.get('/referral-sources', referralSources.listSources);
 router.post('/referral-sources', verifyToken.requireRole(MANAGER_ROLES), referralSources.createSource);
 router.put('/referral-sources/:id', verifyToken.requireRole(MANAGER_ROLES), referralSources.updateSource);
@@ -24,7 +24,7 @@ router.delete('/referral-sources/:id', verifyToken.requireRole(MANAGER_ROLES), r
 router.put('/referral-sources/:id/physicians', verifyToken.requireRole(MANAGER_ROLES), referralSources.setSourcePhysicians);
 router.get('/referring-physicians/:id/sources', referralSources.getPhysicianSources);
 
-// External partners (╪º┘ä╪┤╪▒┘â╪º╪í ╪º┘ä╪«╪º╪▒╪¼┘è┘ê┘å)
+// External partners (الشركاء الخارجيون)
 router.get('/external-partners', externalPartners.listExternalPartners);
 router.post('/external-partners', verifyToken.requireRole(MANAGER_ROLES), externalPartners.createExternalPartner);
 router.put('/external-partners/:id', verifyToken.requireRole(MANAGER_ROLES), externalPartners.updateExternalPartner);

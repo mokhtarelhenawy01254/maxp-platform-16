@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import {
@@ -81,7 +81,7 @@ const AttributionCell: React.FC<{ attribution?: OrderAttributionData | null }> =
 }) => {
   if (!attribution) {
     return (
-      <span className="text-sm text-gray-300 dark:text-gray-600">ΓÇö</span>
+      <span className="text-sm text-gray-300 dark:text-gray-600">—</span>
     );
   }
 
@@ -437,7 +437,7 @@ const IncompleteOrders: React.FC = () => {
       color: "text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30",
       sub: statsAreServer
         ? formatPrice(stats.activeValue)
-        : `${formatPrice(stats.activeValue)} ┬╖ ${t("orders.incompletePageStats")}`,
+        : `${formatPrice(stats.activeValue)} · ${t("orders.incompletePageStats")}`,
     },
     {
       label: t("orders.incompleteStatusLost"),
@@ -446,7 +446,7 @@ const IncompleteOrders: React.FC = () => {
       color: "text-red-600 bg-red-50 dark:text-red-300 dark:bg-red-900/30",
       sub: statsAreServer
         ? formatPrice(stats.lostValue)
-        : `${formatPrice(stats.lostValue)} ┬╖ ${t("orders.incompletePageStats")}`,
+        : `${formatPrice(stats.lostValue)} · ${t("orders.incompletePageStats")}`,
     },
     {
       label: t("orders.totalValue"),
@@ -780,7 +780,7 @@ const IncompleteOrders: React.FC = () => {
                               </span>
                               {governorate && (
                                 <>
-                                  <span className="text-gray-300 dark:text-gray-600">┬╖</span>
+                                  <span className="text-gray-300 dark:text-gray-600">·</span>
                                   <span>{governorate}</span>
                                 </>
                               )}
@@ -843,7 +843,7 @@ const IncompleteOrders: React.FC = () => {
                               </span>
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-300 dark:text-gray-600">ΓÇö</span>
+                            <span className="text-sm text-gray-300 dark:text-gray-600">—</span>
                           )}
                         </div>
                       </td>
@@ -991,7 +991,7 @@ const IncompleteOrders: React.FC = () => {
               {totalOrders}
             </span>{" "}
             {t("orders.orders2")}{" "}
-            <span className="text-gray-300 dark:text-gray-600 mx-1">┬╖</span>
+            <span className="text-gray-300 dark:text-gray-600 mx-1">·</span>
             {t("orders.showing")}{" "}
             <span className="font-medium text-gray-700 dark:text-gray-200">
               {(page - 1) * limit + 1}

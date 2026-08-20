@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ExternalLink, RefreshCw, TrendingUp } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
 import { updateCompetitorStatus } from './useCompetitorStatus';

@@ -1,9 +1,18 @@
-import { Settings as Cog6ToothIcon, Circle as SwatchIcon, ShieldCheck as ShieldCheckIcon, Zap as BoltIcon, Plus as PlusIcon, Trash2 as TrashIcon, Check as CheckCircleIcon, Circle as TrophyIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  Cog6ToothIcon,
+  SwatchIcon,
+  ShieldCheckIcon,
+  BoltIcon,
+  PlusIcon,
+  TrashIcon,
+  CheckCircleIcon,
+  TrophyIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 
 interface StatusItem {
   value: string;
@@ -205,15 +214,15 @@ const DevTaskSettings = () => {
       });
       const data = await res.json();
       if (data.success) {
-        alert("تم حفظ الإعدادات بنجاح");
+        alert(i18n.t("DevTaskSettings.success_save_eb53"));
         // Refresh settings to confirm save
         await fetchSettings();
       } else {
-        alert("فشل الحفظ: " + (data.message || "خطأ غير معروف"));
+        alert("فشل الحفظ: " + (data.message || i18n.t("DevTaskSettings.msg_74b2")));
       }
     } catch (error) {
       console.error("❌ Save error:", error);
-      alert("حدث خطأ أثناء الحفظ");
+      alert(i18n.t("DevTaskSettings.error_error_3bd3"));
     } finally {
       setSaving(false);
     }
@@ -988,7 +997,7 @@ const DevTaskSettings = () => {
                             },
                           });
                         } else {
-                          alert("يرجى ملء جميع الحقول المطلوبة");
+                          alert(i18n.t("DevTaskSettings.msg_fdf4"));
                         }
                       }}
                       className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded px-3 py-2 text-sm flex items-center justify-center gap-1"

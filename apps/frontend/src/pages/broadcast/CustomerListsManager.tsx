@@ -1,6 +1,14 @@
-import { Plus as PlusIcon, Circle as UserGroupIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Filter as FunnelIcon, Search as MagnifyingGlassIcon, Eye as EyeIcon, Download as ArrowDownTrayIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  PlusIcon,
+  UserGroupIcon,
+  PencilIcon,
+  TrashIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  EyeIcon,
+  ArrowDownTrayIcon,
+} from "@heroicons/react/24/outline";
 import { broadcastService } from "../../services/broadcastService";
 import CreateListModal from "../../components/broadcast/CreateListModal";
 

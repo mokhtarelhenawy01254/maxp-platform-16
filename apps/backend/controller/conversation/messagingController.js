@@ -518,6 +518,52 @@ const postMessageConverstation = async (req, res) => {
       }
     }
 
+    // 🎵 TIKTOK SENDING LOGIC
+    let tiktokSent = false;
+    if (conversation && conversation.channel === 'TIKTOK') {
+      try {
+        const recipientTikTokId = conversation.customer?.tiktokId;
+        if (!recipientTikTokId) {
+          console.error('❌ [TIKTOK-SEND] No TikTok ID found for customer');
+        } else {
+          const tiktokMessagingService = require('../../services/tiktok/tiktokMessagingService');
+          const ttResult = await tiktokMessagingService.sendTextMessage({
+            companyId: conversation.companyId,
+            toOpenId: recipientTikTokId,
+            text: message
+          });
+
+          if (ttResult?.success) {
+            tiktokSent = true;
+            console.log(`✅ [TIKTOK-SEND] Message sent to TikTok user ${recipientTikTokId}`);
+            if (savedMessage) {
+              try {
+                await executeWithRetry(async () => {
+                  const prismaClient = getSharedPrismaClient();
+                  return await prismaClient.message.update({
+                    where: { id: savedMessage.id },
+                    data: {
+                      metadata: JSON.stringify({
+                        ...JSON.parse(savedMessage.metadata || '{}'),
+                        tiktokMessageId: ttResult.data?.message_id || null,
+                        sentToTikTok: true
+                      })
+                    }
+                  });
+                }, 2);
+              } catch (updateError) {
+                console.error('⚠️ [TIKTOK-SEND] Failed updating message metadata:', updateError.message);
+              }
+            }
+          } else {
+            console.error('❌ [TIKTOK-SEND] TikTok delivery failed:', ttResult?.message || ttResult?.error);
+          }
+        }
+      } catch (ttError) {
+        console.error('❌ [TIKTOK-SEND] Error sending TikTok message:', ttError.response?.data || ttError.message);
+      }
+    }
+
     // ⚡ Track total execution time
     const totalTime = Date.now() - startTime;
     if (totalTime > 500) {
@@ -535,19 +581,23 @@ const postMessageConverstation = async (req, res) => {
         isFromCustomer: false,
         isFacebookReply: conversation.channel === 'FACEBOOK',
         isInstagramReply: conversation.channel === 'INSTAGRAM',
+        isTikTokReply: conversation.channel === 'TIKTOK',
         facebookMessageId: facebookMessageId,
         sentAt: new Date()
       },
-      message: facebookSent ? 'Reply sent successfully' : (instagramSent ? 'Reply sent to Instagram' : 'Failed to send'),
+      message: facebookSent ? 'Reply sent successfully' : (instagramSent ? 'Reply sent to Instagram' : (tiktokSent ? 'Reply sent to TikTok' : 'Failed to send')),
       facebookSent: facebookSent,
       facebookError: facebookErrorDetails,
       instagramSent: instagramSent,
+      tiktokSent: tiktokSent,
       debug: {
         hasCustomer: !!conversation?.customer,
         hasFacebookId: !!conversation?.customer?.facebookId,
         hasInstagramId: !!conversation?.customer?.instagramId,
+        hasTikTokId: !!conversation?.customer?.tiktokId,
         facebookSent: facebookSent,
         instagramSent: instagramSent,
+        tiktokSent: tiktokSent,
         channel: conversation.channel,
         executionTime: `${totalTime}ms`
       }

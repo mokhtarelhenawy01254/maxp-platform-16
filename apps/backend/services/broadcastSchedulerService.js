@@ -61,12 +61,53 @@ class BroadcastSchedulerService {
 
     console.log('🚀 [BroadcastScheduler] Starting broadcast scheduler...');
 
+    // إعادة جدولة الحملات اللي انقطعت (كانت في منتصف الإرسال لما العملية ماتت)
+    this.resumeInterruptedCampaigns().catch(err =>
+      console.error('❌ [BroadcastScheduler] Resume interrupted campaigns failed:', err.message)
+    );
+
     // فحص كل 5 دقائق للحملات المجدولة (تقليل الضغط على قاعدة البيانات)
     this.cronJob = cron.schedule('*/5 * * * *', async () => {
       await this.checkScheduledCampaigns();
     });
 
     console.log('✅ [BroadcastScheduler] Scheduler started - checking every 5 minutes');
+  }
+
+  /**
+   * إعادة جدولة الحملات العالقة في حالة 'sending' (انقطعت العملية في منتصف الإرسال)
+   * — نرجعها لـ 'scheduled' عشان الـ cron يكمّلها من الـ pending بس (من غير تكرار إرسال)
+   */
+  async resumeInterruptedCampaigns() {
+    try {
+      const stuckCampaigns = await safeQuery(async () => {
+        return await getSharedPrismaClient().broadcastCampaign.findMany({
+          where: { status: 'sending' },
+          select: { id: true, name: true }
+        });
+      }, 5);
+
+      if (stuckCampaigns.length === 0) {
+        console.log('✅ [BroadcastScheduler] No interrupted campaigns to resume');
+        return;
+      }
+
+      console.log(`♻️ [BroadcastScheduler] Resuming ${stuckCampaigns.length} interrupted campaign(s)`);
+      for (const campaign of stuckCampaigns) {
+        await safeQuery(async () => {
+          return await getSharedPrismaClient().broadcastCampaign.update({
+            where: { id: campaign.id },
+            data: {
+              status: 'scheduled',
+              sentAt: null
+            }
+          });
+        }, 5);
+        console.log(`♻️ [BroadcastScheduler] Campaign ${campaign.id} (${campaign.name}) requeued for resume`);
+      }
+    } catch (error) {
+      console.error('❌ [BroadcastScheduler] Error resuming interrupted campaigns:', error.message);
+    }
   }
 
   /**
@@ -190,7 +231,8 @@ class BroadcastSchedulerService {
     const { sendFacebookMessage } = require('../utils/allFunctions');
     const socketService = require('./socketService');
     const WhatsAppMessageHandler = require('./whatsapp').WhatsAppMessageHandler;
-
+    const MetaCloudProvider = require('./whatsapp/providers/MetaCloudProvider');
+    const { buildBroadcastBodyParams, hasOrderVariables, getTemplateHeaderFormat, buildBroadcastHeaderParams } = require('../utils/broadcastTemplateParams');
     console.log(`📊 [BroadcastScheduler] Starting to send campaign ${campaign.id}`);
 
     // تحديث حالة الحملة إلى "sending"
@@ -315,35 +357,63 @@ class BroadcastSchedulerService {
       });
     }, 5);
 
-    // إنشاء سجلات المستلمين
-    const recipients = conversations.map(conv => ({
-      campaignId: campaign.id,
-      conversationId: conv.id,
-      customerPhone: conv.customer.phone || '',
-      customerName: `${conv.customer.firstName} ${conv.customer.lastName}`,
-      messengerUserId: conv.customer.facebookId,
-      status: 'pending'
-    }));
+    // Resume-safe: إذا كانت الحملة انقطعت (status 'sending' عند crash) يكون المستلمين موجودين
+    // — نعيد استخدامهم ونكمل الـ pending بس من غير تكرار الإرسال
+    const existingRecipients = await safeQuery(async () => {
+      return await getSharedPrismaClient().broadcastRecipient.findMany({
+        where: { campaignId: campaign.id },
+        select: { conversationId: true, status: true }
+      });
+    }, 5);
+
+    const resuming = existingRecipients && existingRecipients.length > 0;
+
+    let recipients;
+    if (resuming) {
+      const statusByConv = new Map(existingRecipients.map(r => [r.conversationId, r.status]));
+      const pendingConvs = conversations.filter(c => statusByConv.get(c.id) === 'pending');
+      console.log(`♻️ [BroadcastScheduler] Campaign ${campaign.id} resuming — ${pendingConvs.length} pending of ${existingRecipients.length} existing recipients`);
+      recipients = pendingConvs.map(conv => ({
+        campaignId: campaign.id,
+        conversationId: conv.id,
+        customerPhone: conv.customer.phone || '',
+        customerName: `${conv.customer.firstName} ${conv.customer.lastName}`,
+        messengerUserId: conv.customer.facebookId,
+        status: 'pending'
+      }));
+      conversations = pendingConvs;
+    } else {
+      recipients = conversations.map(conv => ({
+        campaignId: campaign.id,
+        conversationId: conv.id,
+        customerPhone: conv.customer.phone || '',
+        customerName: `${conv.customer.firstName} ${conv.customer.lastName}`,
+        messengerUserId: conv.customer.facebookId,
+        status: 'pending'
+      }));
+    }
 
     if (recipients.length > 0) {
-      await safeQuery(async () => {
-        return await getSharedPrismaClient().broadcastRecipient.createMany({
-        data: recipients
-        });
-      }, 5);
+      if (!resuming) {
+        await safeQuery(async () => {
+          return await getSharedPrismaClient().broadcastRecipient.createMany({
+          data: recipients
+          });
+        }, 5);
+      }
     } else {
-      console.log('⚠️ [BroadcastScheduler] No recipients found for campaign');
-      
+      const hadAnySent = resuming && existingRecipients.some(r => r.status === 'sent');
+      const hadAnyPendingOrSent = resuming && existingRecipients.some(r => r.status === 'pending' || r.status === 'sent');
+      console.log('✅ [BroadcastScheduler] No pending recipients left — campaign already fully processed');
       await safeQuery(async () => {
         return await getSharedPrismaClient().broadcastCampaign.update({
         where: { id: campaign.id },
         data: {
-          status: 'failed',
-          failureReason: 'No active recipients found'
+          status: hadAnySent ? 'sent' : 'failed',
+          failureReason: hadAnyPendingOrSent ? null : 'All recipients failed during interrupted send'
         }
         });
       }, 5);
-      
       return;
     }
 
@@ -377,10 +447,67 @@ class BroadcastSchedulerService {
       }
     }
 
+    // Fetch template body text from Meta API so body params match the template's
+    // expected variable count (Meta rejects mismatches with #132000).
+    let templateBodyText = '';
+    let templateHeaderFormat = null;
+    let boundLocalVariables = null;
+    let needOrderForCustomer = false;
+    if (isWhatsApp) {
+      try {
+        const metaTemplates = await MetaCloudProvider.listTemplates(waSessionId);
+        const targetMetaTemplate = metaTemplates.find(t => t.name === campaign.waTemplateName);
+        if (targetMetaTemplate) {
+          templateBodyText = targetMetaTemplate.components?.find(c => c.type === 'BODY')?.text || '';
+          templateHeaderFormat = getTemplateHeaderFormat(targetMetaTemplate);
+        }
+      } catch (tmplErr) {
+        console.warn(`⚠️ [BroadcastScheduler] Could not fetch template body text: ${tmplErr.message}`);
+      }
+
+      // 🚨 PRODUCTION-FIX (broadcast semantics): ترتيب متغيرات القالب المحلي المربوط
+      // ({position, name}) حتى لا يُرسل firstName/lastName في خانة رقم الطلب
+      // (مشكلة قالب deliveredmsj72rwc وقت البث الجماعي).
+      try {
+        const boundLocal = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+          where: { companyId: campaign.companyId, metaTemplateName: campaign.waTemplateName },
+          select: { variables: true }
+        });
+        if (boundLocal?.variables) {
+          const parsed = JSON.parse(boundLocal.variables);
+          if (Array.isArray(parsed)) boundLocalVariables = parsed;
+        }
+      } catch (e) {
+        console.warn(`⚠️ [BroadcastScheduler] Could not load bound local template variables: ${e?.message || e}`);
+      }
+      needOrderForCustomer = hasOrderVariables(boundLocalVariables);
+    }
+
     // إرسال الرسائل
-    let sentCount = 0;
-    let failedCount = 0;
+    let sentCount = resuming ? existingRecipients.filter(r => r.status === 'sent').length : 0;
+    let failedCount = resuming ? existingRecipients.filter(r => r.status === 'failed').length : 0;
     const totalRecipients = conversations.length;
+
+    // 🐢 Pacing حسب إعدادات الشركة (messagesPerMinute) — بيحمي من حظر Meta
+    // ويحترم الـ config الفعلي بدل التأخير الثابت 100ms
+    let sendDelayMs = 100;
+    try {
+      const bcastSettings = await safeQuery(async () => {
+        return await getSharedPrismaClient().broadcastSettings.findUnique({
+          where: { companyId: campaign.companyId },
+          select: { messagesPerMinute: true }
+        });
+      }, 3);
+      const mpm = Number(bcastSettings?.messagesPerMinute);
+      if (mpm && mpm > 0) {
+        sendDelayMs = Math.max(100, Math.floor(60000 / mpm));
+        console.log(`🐢 [BroadcastScheduler] Campaign ${campaign.id} paced at ${mpm} msg/min → ${sendDelayMs}ms between sends`);
+      } else {
+        console.log(`🐢 [BroadcastScheduler] Campaign ${campaign.id} no messagesPerMinute configured — using default ${sendDelayMs}ms`);
+      }
+    } catch (settingsErr) {
+      console.warn(`⚠️ [BroadcastScheduler] Could not load broadcast settings for pacing: ${settingsErr.message}`);
+    }
 
     const io = socketService.getIO();
     
@@ -426,37 +553,47 @@ class BroadcastSchedulerService {
 
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
 
-          // Build template body parameters from customer data
-          const bodyParams = [];
-          if (conv.customer.firstName) {
-            bodyParams.push({ type: 'text', text: conv.customer.firstName });
+          // Build template body parameters to MATCH the template's expected variable count.
+          // Meta rejects with (#132000) if the count differs.
+          // 🆕 لو القالب فيه متغيرات طلب → نجلب أحدث طلب للعميل لملء قيمها الصحيحة.
+          let orderForCustomer = null;
+          if (needOrderForCustomer) {
+            try {
+              orderForCustomer = await getSharedPrismaClient().order.findFirst({
+                where: { companyId: campaign.companyId, customerId: conv.customer.id },
+                orderBy: { createdAt: 'desc' },
+                select: {
+                  orderNumber: true, total: true, subtotal: true, shipping: true,
+                  currency: true, turboTrackingNumber: true, status: true
+                }
+              });
+            } catch (orderErr) {
+              console.warn(`⚠️ [BroadcastScheduler] Could not fetch latest order for ${conv.customer.firstName}: ${orderErr?.message || orderErr}`);
+            }
           }
-          if (conv.customer.lastName) {
-            bodyParams.push({ type: 'text', text: conv.customer.lastName });
-          }
+          const bodyParams = buildBroadcastBodyParams(templateBodyText, conv.customer, boundLocalVariables, orderForCustomer);
 
-          const components = bodyParams.length > 0
-            ? [{ type: 'body', parameters: bodyParams }]
-            : [];
+          // header يأتي أولاً في components (إن كان قالب الحملة هيدره وسائط ولها وسيط)
+          const components = [];
+          if (templateHeaderFormat?.hasMedia && campaign.waHeaderMedia) {
+            const headerParam = buildBroadcastHeaderParams(campaign.waHeaderMedia, templateHeaderFormat.format.toLowerCase());
+            if (headerParam) components.push(headerParam);
+          }
+          if (bodyParams.length > 0) {
+            components.push({ type: 'body', parameters: bodyParams });
+          }
 
           let result;
           try {
             result = await WhatsAppMessageHandler.sendTemplateMessage(
               waSessionId, to, campaign.waTemplateName,
               { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-              { metadata: { isBroadcast: true, campaignId: campaign.id }, senderId: campaign.creatorId }
+              { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: templateBodyText, senderId: campaign.creatorId }
             );
           } catch (sendErr) {
-            if (components.length > 0) {
-              console.log(`⚠️ [BroadcastScheduler] Re-trying template ${campaign.waTemplateName} without body params for ${to}`);
-              result = await WhatsAppMessageHandler.sendTemplateMessage(
-                waSessionId, to, campaign.waTemplateName,
-                { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
-                { metadata: { isBroadcast: true, campaignId: campaign.id }, senderId: campaign.creatorId }
-              );
-            } else {
-              throw sendErr;
-            }
+            // Parameters now always match the template's variable count, so no
+            // params-less retry: it would re-fail with (#132000) for variable templates.
+            throw sendErr;
           }
 
           sentCount++;
@@ -696,8 +833,8 @@ class BroadcastSchedulerService {
           });
         }
 
-        // تأخير صغير لتجنب rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // تأخير وفق pacing الشركة لتجنب rate limiting
+        await new Promise(resolve => setTimeout(resolve, sendDelayMs));
 
       } catch (error) {
         console.error(`❌ [BroadcastScheduler] Error sending to ${conv.customer.firstName}:`, error.message);
@@ -734,11 +871,12 @@ class BroadcastSchedulerService {
     }
 
     // تحديث إحصائيات الحملة
+    const finalRecipientCount = resuming ? existingRecipients.length : recipients.length;
     await safeQuery(async () => {
       return await getSharedPrismaClient().broadcastCampaign.update({
       where: { id: campaign.id },
       data: {
-        recipientCount: recipients.length,
+        recipientCount: finalRecipientCount,
         sentCount: sentCount,
         failedCount: failedCount,
         deliveredCount: 0, // ponytail: starts at 0, updated by webhooks on actual delivery

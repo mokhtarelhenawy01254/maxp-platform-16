@@ -1,7 +1,14 @@
-import { Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Check as CheckCircleIcon, Lock as LockClosedIcon, Ban as NoSymbolIcon, Bell as BellIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState } from 'react';
-;
+import {
+    PlusIcon,
+    PencilIcon,
+    TrashIcon,
+    CheckCircleIcon,
+    LockClosedIcon,
+    NoSymbolIcon,
+    BellIcon
+} from '@heroicons/react/24/outline';
 import orderWorkflowService, { OrderStatusDefinition } from '../../../services/orderWorkflowService';
 
 interface Props {

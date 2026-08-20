@@ -1,13 +1,13 @@
-﻿/**
- * ╪│┘ä╪│┘ä╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐ ┘ü┘è ┘å╪╕╪º┘à ╪º┘ä╪ú╪┤╪╣╪⌐ (RHOS):
- *   ╪º┘ä┘à╪▒┘è╪╢ ΓåÉ ╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪╣╪º┘ä╪¼ (referringPhysicianId) ΓåÉ ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐ (referralSourceId) ΓåÉ ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é (marketingRepId)
+/**
+ * سلسلة الإحالة في نظام الأشعة (RHOS):
+ *   المريض ← الطبيب المعالج (referringPhysicianId) ← جهة الإحالة (referralSourceId) ← مندوب التسويق (marketingRepId)
  *
- * ╪º┘ä┘à┘å╪»┘ê╪¿ ╪º┘ä┘à┘é╪¬╪▒╪¡: ┘à┘å╪»┘ê╪¿ ╪º┘ä╪╖╪¿┘è╪¿ ╪ú┘ê┘ä╪º┘ï (╪ú┘é╪▒╪¿ ┘ä┘ä╪¡╪º┘ä╪⌐)╪î ╪½┘à ┘à┘å╪»┘ê╪¿ ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐╪î ╪½┘à null.
+ * المندوب المقترح: مندوب الطبيب أولاً (أقرب للحالة)، ثم مندوب جهة الإحالة، ثم null.
  */
 
 /**
- * ╪º┘é╪¬╪▒╪º╪¡ ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é ╪º┘ä┘à╪│╪ñ┘ê┘ä ╪¿┘å╪º╪í┘ï ╪╣┘ä┘ë ╪º┘ä╪╖╪¿┘è╪¿ ┘ê/╪ú┘ê ╪º┘ä╪¼┘ç╪⌐.
- * ╪º┘ä┘é╪º╪╣╪»╪⌐: ┘à┘å╪»┘ê╪¿ ╪º┘ä╪╖╪¿┘è╪¿ ┘è╪│╪¿┘é ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¼┘ç╪⌐ ΓÇö ┘ê╪Ñ┘ä╪º null (┘ä╪º ╪º┘ü╪¬╪▒╪º╪╢ ╪«╪º╪╖╪ª).
+ * اقتراح مندوب التسويق المسؤول بناءً على الطبيب و/أو الجهة.
+ * القاعدة: مندوب الطبيب يسبق مندوب الجهة — وإلا null (لا افتراض خاطئ).
  * @param {{ physician?: { marketingRepId?: string | null } | null, source?: { marketingRepId?: string | null } | null }} ctx
  */
 const suggestMarketingRep = (ctx = {}) => {
@@ -19,8 +19,8 @@ const suggestMarketingRep = (ctx = {}) => {
 };
 
 /**
- * ╪¼┘ä╪¿ ╪º┘ä╪╖╪¿┘è╪¿ ┘ê╪º┘ä╪¼┘ç╪⌐ ╪º┘ä┘à╪«╪¬╪º╪▒┘è┘å (company-scoped) ┘ä╪¡╪│╪º╪¿ ╪º┘ä┘à┘å╪»┘ê╪¿ ╪º┘ä┘à┘é╪¬╪▒╪¡ ╪╣┘å╪» ╪Ñ┘å╪┤╪º╪í/╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪ú┘ê ╪¡╪¼╪▓.
- * ┘ä╪º ┘è╪▒┘à┘è ╪ú╪¿╪»╪º┘ï ΓÇö ┘è╪╣┘è╪» ╪º┘ä┘é┘è┘à null ╪╣┘å╪» ╪╣╪»┘à ╪º┘ä╪¬╪╖╪º╪¿┘é (╪º┘ä╪¬╪ú┘â╪» ┘à┘å ╪º┘ä╪º┘å╪¬┘à╪º╪í ┘ä┘ä╪┤╪▒┘â╪⌐).
+ * جلب الطبيب والجهة المختارين (company-scoped) لحساب المندوب المقترح عند إنشاء/تحديث حالة أو حجز.
+ * لا يرمي أبداً — يعيد القيم null عند عدم التطابق (التأكد من الانتماء للشركة).
  * @returns {Promise<{ physician: object|null, source: object|null, rep: object|null }>}
  */
 const resolveReferralContext = async (prisma, { companyId, referringPhysicianId, referralSourceId }) => {
@@ -45,8 +45,8 @@ const resolveReferralContext = async (prisma, { companyId, referringPhysicianId,
 };
 
 /**
- * ╪¿┘å╪º╪í ╪¡┘é┘ä ╪º┘ä┘à┘å╪»┘ê╪¿ ╪º┘ä┘å┘ç╪º╪ª┘è: ╪º┘é╪¬╪▒╪º╪¡ ╪¬┘ä┘é╪º╪ª┘è ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪¬╪¼╪º┘ê╪▓.
- * ┘ä┘ê ╪ú┘Å╪▒╪│┘ä marketingRepId ╪╡╪▒╪º╪¡╪⌐┘ï ┘å╪│╪¬╪«╪»┘à┘ç╪î ┘ê╪Ñ┘ä╪º ┘å╪º┘é╪¬╪▒╪¡ ┘à┘å ╪º┘ä╪│┘è╪º┘é.
+ * بناء حقل المندوب النهائي: اقتراح تلقائي قابلة للتجاوز.
+ * لو أُرسل marketingRepId صراحةً نستخدمه، وإلا ناقترح من السياق.
  * @returns {Promise<{ marketingRepId: string|null, marketingRepName: string|null }>}
  */
 const resolveMarketingRepForStudy = async (prisma, { companyId, referringPhysicianId, referralSourceId, marketingRepId }) => {

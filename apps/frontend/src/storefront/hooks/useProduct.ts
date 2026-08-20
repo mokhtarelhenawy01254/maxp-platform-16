@@ -158,12 +158,33 @@ const fetchPublicStorefrontProduct = async (
   const response = await storefrontFetch(endpoint);
   if (response.success) {
     const product = normalizeStorefrontProduct(response.data);
-    if (response.data?.canonicalSlug) {
-      (product as any)._canonicalSlug = response.data.canonicalSlug;
+
+    // اللينك القديم لمنتج محوّل (تحويل مكرر لعرض تقديمي): نوجّه المتصفح
+    // للينك الكنسوني عشان الـ reviews/المشاركة/السلة تشتغل على الـ slug الصحيح.
+    const redirectedFrom = response.data?.redirectedFrom;
+    const canonicalSlug = response.data?.canonicalSlug || response.data?.slug;
+    const canonicalPresentation = response.data?.presentation?.slug;
+    if (
+      redirectedFrom &&
+      canonicalSlug &&
+      typeof window !== 'undefined' &&
+      !resolveStorefrontProductPreviewMode()
+    ) {
+      const pathPrefix = window.location.pathname.includes('/store/')
+        ? '/store'
+        : window.location.pathname.includes('/shop/')
+          ? '/shop'
+          : '';
+      const targetPath = canonicalPresentation
+        ? `${pathPrefix}/products/${encodeURIComponent(canonicalSlug)}/${encodeURIComponent(canonicalPresentation)}`
+        : `${pathPrefix}/products/${encodeURIComponent(canonicalSlug)}`;
+      const currentPath = window.location.pathname;
+      if (currentPath !== targetPath) {
+        // replace يعمل update للـ URL + تحميل من غير ما يضيف entry في الـ history
+        window.location.replace(targetPath);
+      }
     }
-    if (response.data?.presentation) {
-      (product as any)._presentation = response.data.presentation;
-    }
+
     return product;
   }
 

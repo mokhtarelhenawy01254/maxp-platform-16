@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AlertCircle, AlertTriangle, Brain, ChevronDown, ChevronRight, Loader2, Settings, User, Users, Wrench, Zap } from 'lucide-react';
+import { Brain, Users, Wrench, Zap, User, ChevronDown, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import { sandboxApi, type AgentProfileResponse, type AgentSkillDetail } from "../services/sandboxApi";
 import type { AgentConfig } from "../types/sandbox.types";
 

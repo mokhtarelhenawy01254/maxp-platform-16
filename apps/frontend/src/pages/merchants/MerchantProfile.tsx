@@ -1,10 +1,10 @@
-import { ArrowLeft as ArrowLeftIcon, Pencil as PencilIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
-;
+import { tToast } from "../../utils/i18n-toast";
+import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
 
 interface MerchantProduct {
   id: string;
@@ -265,7 +265,7 @@ const MerchantProfile: React.FC = () => {
 
   useEffect(() => {
     if (!id) {
-      toast.error("تعذر تحديد التاجر المطلوب");
+      tToast.error("MerchantProfile.msg_5068");
       navigate("/merchants");
       return;
     }
@@ -395,7 +395,7 @@ const MerchantProfile: React.FC = () => {
       >(`/merchants/${id}`, formData);
 
       if (response.data.success) {
-        toast.success("تم تحديث بيانات التاجر بنجاح");
+        tToast.success("MerchantProfile.success_update_a91e");
         navigate(`/merchants/${id}`);
       }
     } catch (error: unknown) {
@@ -413,7 +413,7 @@ const MerchantProfile: React.FC = () => {
     }
 
     if (!linkForm.productId) {
-      toast.error("اختر منتجًا أولًا");
+      tToast.error("MerchantProfile.msg_f1ca");
       return;
     }
 
@@ -421,12 +421,12 @@ const MerchantProfile: React.FC = () => {
     const stock = Number(linkForm.stock || "0");
 
     if (!Number.isFinite(merchantPrice) || merchantPrice <= 0) {
-      toast.error("أدخل سعر تاجر صحيحًا");
+      tToast.error("MerchantProfile.msg_39bc");
       return;
     }
 
     if (!Number.isFinite(stock) || stock < 0) {
-      toast.error("أدخل قيمة مخزون صحيحة");
+      tToast.error("MerchantProfile.msg_c969");
       return;
     }
 
@@ -444,7 +444,7 @@ const MerchantProfile: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم ربط المنتج بالتاجر بنجاح");
+        tToast.success("MerchantProfile.msg_2366");
         setLinkForm({
           productId: "",
           merchantSku: "",

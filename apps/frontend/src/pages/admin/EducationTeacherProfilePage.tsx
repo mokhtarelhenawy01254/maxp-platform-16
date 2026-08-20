@@ -1,7 +1,10 @@
-import { User as UserIcon, Mail as EnvelopeIcon, Phone as PhoneIcon, Circle as AcademicCapIcon, Clock as ClockIcon, Check as CheckCircleIcon, X as XCircleIcon, Circle as WalletIcon, ArrowRight as ArrowRightIcon, Star as StarIcon, Circle as BriefcaseIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-;
+import {
+  UserIcon, EnvelopeIcon, PhoneIcon, AcademicCapIcon,
+  ClockIcon, CheckCircleIcon, XCircleIcon, WalletIcon,
+  ArrowRightIcon, StarIcon, BriefcaseIcon
+} from "@heroicons/react/24/outline";
 
 const SESSION_STATUS: Record<string, { label: string; color: string }> = {
   SCHEDULED: { label: "مجدولة", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },

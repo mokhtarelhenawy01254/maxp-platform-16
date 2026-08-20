@@ -1,5 +1,5 @@
 import type { CompanyData, CompanyUser, FacebookPage } from "./companyDetailsTypes";
-import { Globe, Mail, MoreVertical, Phone, Shield, Trash2, UserPlus, UserRoundX, Users } from 'lucide-react';
+import { MoreVertical, Globe, Mail, Phone, Shield, Trash2, UserPlus, UserRoundX, Users } from "lucide-react"
 import { Badge } from "../../../components/ui/badge"
 import { Button } from "../../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"

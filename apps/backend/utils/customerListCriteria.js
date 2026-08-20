@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Customer list criteria engine.
  *
  * Converts a stored list `criteria` object into a Prisma `Customer` where clause
@@ -11,7 +11,7 @@
  *   latest (limit), oldest (limit), minTotalSpent (amount),
  *   minOrdersCount (count), paymentStatus (status + days),
  *   city, customerRating, combo (AND of conditions),
- *   preset (champions | atRisk | loyal | new) ΓÇö RFM-ready smart templates
+ *   preset (champions | atRisk | loyal | new) — RFM-ready smart templates
  */
 
 const ORDER_STATUSES = [
@@ -36,8 +36,8 @@ const ORDER_EXCLUDED_STATUSES = ['CANCELLED', 'TRASH', 'DRAFT', 'DUPLICATE_ORDER
 
 const PRESETS = {
   champions: {
-    label: '╪ú┘ü╪╢┘ä ╪º┘ä╪╣┘à┘ä╪º╪í',
-    description: '╪╣┘à┘ä╪º╪í ┘å╪┤╪╖┘ê┘å╪î ┘â╪½╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬╪î ┘ê╪ú┘å┘ü╪º┘é┘ç┘à ┘à╪▒╪¬┘ü╪╣ ΓÇö ╪º╪│╪¬┘ç╪»┘ü┘ç┘à ╪¿╪╣╪▒┘ê╪╢ ╪º┘ä┘ê┘ä╪º╪í',
+    label: 'أفضل العملاء',
+    description: 'عملاء نشطون، كثر الطلبات، وأنفاقهم مرتفع — استهدفهم بعروض الولاء',
     icon: 'crown',
     criteria: {
       type: 'combo',
@@ -49,8 +49,8 @@ const PRESETS = {
     },
   },
   loyal: {
-    label: '╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä╪ú┘ê┘ü┘è╪º╪í',
-    description: '╪╣┘à┘ä╪º╪í ┘è╪╖┘ä╪¿┘ê┘å ╪¿╪º┘å╪¬╪╕╪º┘à (5 ╪╖┘ä╪¿╪º╪¬ ╪ú┘ê ╪ú┘â╪½╪▒) ΓÇö ╪▒╪┤┘æ╪¡┘ç┘à ┘ä╪¿╪▒┘å╪º┘à╪¼ ╪º┘ä┘ê┘ä╪º╪í',
+    label: 'العملاء الأوفياء',
+    description: 'عملاء يطلبون بانتظام (5 طلبات أو أكثر) — رشّحهم لبرنامج الولاء',
     icon: 'heart',
     criteria: {
       type: 'combo',
@@ -61,8 +61,8 @@ const PRESETS = {
     },
   },
   atRisk: {
-    label: '╪╣┘à┘ä╪º╪í ┘à╪╣╪▒╪╢┘ê┘å ┘ä┘ä┘ü┘é╪»╪º┘å',
-    description: '┘â╪º┘å┘ê╪º ┘à╪┤╪¬╪▒┘è┘å ┘ä┘â┘å ┘ä┘à ┘è╪¬┘ê╪º╪╡┘ä┘ê╪º ┘à┘å╪░ 30 ┘è┘ê┘à ΓÇö ╪ú╪▒╪│┘ä ╪¡┘à┘ä╪⌐ ╪Ñ╪╣╪º╪»╪⌐ ╪¬┘å╪┤┘è╪╖',
+    label: 'عملاء معرضون للفقدان',
+    description: 'كانوا مشترين لكن لم يتواصلوا منذ 30 يوم — أرسل حملة إعادة تنشيط',
     icon: 'alert',
     criteria: {
       type: 'combo',
@@ -73,8 +73,8 @@ const PRESETS = {
     },
   },
   new: {
-    label: '╪╣┘à┘ä╪º╪í ╪¼╪»╪»',
-    description: '╪ú╪¡╪»╪½ 100 ╪╣┘à┘è┘ä ΓÇö ╪▒╪¡┘æ╪¿ ╪¿┘ç┘à ┘ê╪╣╪▒┘æ┘ü┘ç┘à ╪╣┘ä┘ë ┘à┘å╪¬╪¼╪º╪¬┘â',
+    label: 'عملاء جدد',
+    description: 'أحدث 100 عميل — رحّب بهم وعرّفهم على منتجاتك',
     icon: 'sparkle',
     criteria: {
       type: 'latest',
@@ -115,7 +115,7 @@ function daysAgo(days) {
 
 /**
  * Build the Prisma Customer where clause (+ orderBy/take) for a criteria.
- * Pure ΓÇö no DB access. Returns:
+ * Pure — no DB access. Returns:
  *   { where, orderBy?, take? }
  */
 function buildCustomerListWhere(companyId, rawCriteria) {
@@ -271,7 +271,7 @@ function buildCustomerListWhere(companyId, rawCriteria) {
       if (conditions.length === 0) return { where: { ...base, status: 'ACTIVE' } };
       const parts = conditions.map((c) => buildCustomerListWhere(companyId, c));
 
-      // ╪º╪¼┘à╪╣ ╪º┘ä┘Ç where ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ╪¿┘Ç AND╪î ┘à╪╣ ╪¬┘à╪▒┘è╪▒ ╪╣┘ä╪º┘à╪º╪¬ ╪º┘ä┘Ç aggregation
+      // اجمع الـ where الأساسية بـ AND، مع تمرير علامات الـ aggregation
       const simpleWheres = parts.filter((p) => !p._minTotalSpent && !p._minOrdersCount).map((p) => p.where);
       const aggregateFlags = parts.filter((p) => p._minTotalSpent || p._minOrdersCount);
 
@@ -283,7 +283,7 @@ function buildCustomerListWhere(companyId, rawCriteria) {
 
       if (aggregateFlags.length === 0) return { where };
 
-      // ╪┤╪▒┘ê╪╖ ╪º┘ä┘Ç aggregation ╪»╪º╪«┘ä combo
+      // شروط الـ aggregation داخل combo
       const minSpent = aggregateFlags.find((p) => p._minTotalSpent != null)?._minTotalSpent;
       const minCount = aggregateFlags.find((p) => p._minOrdersCount != null)?._minOrdersCount;
       const out = { where };
@@ -296,7 +296,7 @@ function buildCustomerListWhere(companyId, rawCriteria) {
       const presetKey = criteria.preset || criteria.name;
       const preset = PRESETS[presetKey];
       if (!preset) return { where: { ...base, status: 'ACTIVE' } };
-      // ┘ê╪│┘æ╪╣ ╪º┘ä┘Ç preset ╪Ñ┘ä┘ë ╪¿┘å┘è╪¬┘ç ╪º┘ä┘ü╪╣┘ä┘è╪⌐
+      // وسّع الـ preset إلى بنيته الفعلية
       const expanded = { ...preset.criteria };
       return buildCustomerListWhere(companyId, expanded);
     }
@@ -307,10 +307,10 @@ function buildCustomerListWhere(companyId, rawCriteria) {
 }
 
 /**
- * ╪º╪│╪¬╪«╪▒╪º╪¼ ┘â┘ä ╪┤╪▒┘ê╪╖ ╪º┘ä┘Ç aggregation (minTotalSpent / minOrdersCount) ┘à┘å ┘à╪╣╪º┘è┘è╪▒
- * ┘é╪» ╪¬┘â┘ê┘å ┘à╪¬╪»╪º╪«┘ä╪⌐ (combo / preset). ┘è╪╣┘è╪» ┘à╪╡┘ü┘ê┘ü╪⌐ ┘à┘å
+ * استخراج كل شروط الـ aggregation (minTotalSpent / minOrdersCount) من معايير
+ * قد تكون متداخلة (combo / preset). يعيد مصفوفة من
  *   { type: 'minTotalSpent'|'minOrdersCount', value }
- * ╪¿╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪╕┘ç┘ê╪▒.
+ * بترتيب الظهور.
  */
 function extractAggregates(rawCriteria, acc = []) {
   const criteria = parseCriteria(rawCriteria);
@@ -338,8 +338,8 @@ function extractAggregates(rawCriteria, acc = []) {
 }
 
 /**
- * ╪¡┘ä ╪┤╪▒┘ê╪╖ ╪º┘ä┘Ç aggregation ┘ê╪Ñ╪▒╪¼╪º╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘à╪╖╪º╪¿┘é┘è┘å ┘ä┘â┘ä ╪┤╪▒╪╖ (AND).
- * ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä┘å┘ç╪º╪ª┘è╪⌐: ┘é╪º╪ª┘à╪⌐ ┘à╪╣╪▒┘ü╪º╪¬ ╪¬┘à╪▒ ╪╣╪¿╪▒ ┘â┘ä ╪º┘ä╪┤╪▒┘ê╪╖╪î ╪ú┘ê null ╪Ñ┘å ┘ä┘à ╪¬┘ê╪¼╪» aggregations.
+ * حل شروط الـ aggregation وإرجاع العملاء المطابقين لكل شرط (AND).
+ * القيمة النهائية: قائمة معرفات تمر عبر كل الشروط، أو null إن لم توجد aggregations.
  */
 async function resolveAggregateCustomerIds(prisma, companyId, rawCriteria) {
   const aggregates = extractAggregates(rawCriteria);
@@ -359,7 +359,7 @@ async function resolveAggregateCustomerIds(prisma, companyId, rawCriteria) {
 
   const valid = rows.filter((r) => r.customerId);
 
-  // ┘ä┘â┘ä ╪┤╪▒╪╖╪î ┘à╪¼┘à┘ê╪╣╪⌐ ┘à╪╣╪▒┘ü╪º╪¬ (Set) ┘à╪╖╪º╪¿┘é╪⌐
+  // لكل شرط، مجموعة معرفات (Set) مطابقة
   const candidateSets = aggregates.map((agg) => {
     if (agg.type === 'minTotalSpent') {
       return new Set(valid.filter((r) => Number(r._sum?.total ?? 0) >= agg.value).map((r) => r.customerId));
@@ -367,17 +367,17 @@ async function resolveAggregateCustomerIds(prisma, companyId, rawCriteria) {
     return new Set(valid.filter((r) => (r._count?.customerId ?? 0) >= agg.value).map((r) => r.customerId));
   });
 
-  // ╪¬┘é╪º╪╖╪╣ ┘â┘ä ╪º┘ä┘à╪¼┘à┘ê╪╣╪º╪¬ (AND)
+  // تقاطع كل المجموعات (AND)
   if (candidateSets.length === 0) return [];
   const intersection = [...candidateSets[0]].filter((id) => candidateSets.every((s) => s.has(id)));
   return intersection;
 }
 
 /**
- * ╪¬╪╖╪¿┘è┘é ╪┤╪▒╪╖ ╪º┘ä╪º╪│╪¬╪½┘å╪º╪í (excludeContactedInDays):
- * ┘è╪│╪¬╪¿╪╣╪» ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä╪░┘è┘å ╪¬┘ê╪º╪╡┘ä ┘à╪╣┘ç┘à ╪ú┘ê ╪¬┘ê╪º╪╡┘ä┘ê╪º ╪«┘ä╪º┘ä ╪ó╪«╪▒ N ┘è┘ê┘à ΓÇö
- * ╪ú┘è ┘ä╪»┘è┘ç┘à ╪▒╪│╪º┘ä╪⌐ (┘ê╪º╪▒╪»╪⌐ ╪ú┘ê ╪╡╪º╪»╪▒╪⌐) ╪»╪º╪«┘ä ╪º┘ä┘ü╪¬╪▒╪⌐.
- * ┘è┘Å╪╣╪»┘æ┘ä ╪º┘ä┘Ç where ┘â┘Ç NOT ╪╣┘ä┘ë conversations.messages.
+ * تطبيق شرط الاستثناء (excludeContactedInDays):
+ * يستبعد العملاء الذين تواصل معهم أو تواصلوا خلال آخر N يوم —
+ * أي لديهم رسالة (واردة أو صادرة) داخل الفترة.
+ * يُعدّل الـ where كـ NOT على conversations.messages.
  */
 function applyContactExclusion(where, criteria) {
   const excludeDays = toPositiveInt(criteria.excludeContactedInDays, null);
@@ -431,64 +431,64 @@ function criteriaToSummary(criteria) {
   let summary;
   switch (type) {
     case 'all':
-      summary = '╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å';
+      summary = 'جميع العملاء النشطين';
       break;
     case 'active':
-      summary = `┘å╪┤╪╖ ╪«┘ä╪º┘ä ╪ó╪«╪▒ ${toPositiveInt(c.hours ?? c.lastActivity, 24)} ╪│╪º╪╣╪⌐`;
+      summary = `نشط خلال آخر ${toPositiveInt(c.hours ?? c.lastActivity, 24)} ساعة`;
       break;
     case 'inactive':
-      summary = `╪║┘è╪▒ ┘å╪┤╪╖ ┘à┘å╪░ ${toPositiveInt(c.days ?? c.lastActivity, 30)} ┘è┘ê┘à`;
+      summary = `غير نشط منذ ${toPositiveInt(c.days ?? c.lastActivity, 30)} يوم`;
       break;
     case 'tag':
-      summary = `┘è╪¡┘à┘ä ┘ê╪│┘à: ${c.tag || ''}`;
+      summary = `يحمل وسم: ${c.tag || ''}`;
       break;
     case 'orderStatus':
       summary = c.days
-        ? `╪╖┘ä╪¿╪º╪¬ ╪¿╪¡╪º┘ä╪⌐ ${c.status} ╪«┘ä╪º┘ä ╪ó╪«╪▒ ${c.days} ┘è┘ê┘à`
-        : `╪╖┘ä╪¿╪º╪¬ ╪¿╪¡╪º┘ä╪⌐ ${c.status}`;
+        ? `طلبات بحالة ${c.status} خلال آخر ${c.days} يوم`
+        : `طلبات بحالة ${c.status}`;
       break;
     case 'returnRequest':
       summary = c.days
-        ? `┘à╪▒╪¬╪¼╪╣╪º╪¬ ╪¿╪¡╪º┘ä╪⌐ ${c.status || '╪º┘ä┘â┘ä'} ╪«┘ä╪º┘ä ╪ó╪«╪▒ ${c.days} ┘è┘ê┘à`
-        : `┘à╪▒╪¬╪¼╪╣╪º╪¬ ╪¿╪¡╪º┘ä╪⌐ ${c.status || '╪º┘ä┘â┘ä'}`;
+        ? `مرتجعات بحالة ${c.status || 'الكل'} خلال آخر ${c.days} يوم`
+        : `مرتجعات بحالة ${c.status || 'الكل'}`;
       break;
     case 'paymentStatus':
       summary = c.days
-        ? `╪»┘ü╪╣ ╪¿╪¡╪º┘ä╪⌐ ${c.status} ╪«┘ä╪º┘ä ╪ó╪«╪▒ ${c.days} ┘è┘ê┘à`
-        : `╪»┘ü╪╣ ╪¿╪¡╪º┘ä╪⌐ ${c.status}`;
+        ? `دفع بحالة ${c.status} خلال آخر ${c.days} يوم`
+        : `دفع بحالة ${c.status}`;
       break;
     case 'city':
-      summary = `┘à┘å ┘à╪»┘è┘å╪⌐: ${c.city || ''}`;
+      summary = `من مدينة: ${c.city || ''}`;
       break;
     case 'customerRating':
-      summary = `╪º┘ä╪¬┘é┘è┘è┘à: ${c.rating || ''}`;
+      summary = `التقييم: ${c.rating || ''}`;
       break;
     case 'latest':
-      summary = `╪ú╪¡╪»╪½ ${toPositiveInt(c.limit, 100)} ╪╣┘à┘è┘ä`;
+      summary = `أحدث ${toPositiveInt(c.limit, 100)} عميل`;
       break;
     case 'oldest':
-      summary = `╪ú┘é╪»┘à ${toPositiveInt(c.limit, 100)} ╪╣┘à┘è┘ä`;
+      summary = `أقدم ${toPositiveInt(c.limit, 100)} عميل`;
       break;
     case 'minTotalSpent':
-      summary = `╪Ñ╪¼┘à╪º┘ä┘è ╪Ñ┘å┘ü╪º┘é ΓëÑ ${c.amount}`;
+      summary = `إجمالي إنفاق ≥ ${c.amount}`;
       break;
     case 'minOrdersCount':
-      summary = `╪╣╪»╪» ╪╖┘ä╪¿╪º╪¬ ΓëÑ ${c.count}`;
+      summary = `عدد طلبات ≥ ${c.count}`;
       break;
     case 'combo':
-      summary = '┘é╪º╪ª┘à╪⌐ ┘à╪«╪╡┘æ╪╡╪⌐ (╪┤╪▒┘ê╪╖ ┘à╪¬╪╣╪»╪»╪⌐)';
+      summary = 'قائمة مخصّصة (شروط متعددة)';
       break;
     case 'preset': {
       const preset = PRESETS[c.preset || c.name];
-      summary = preset ? preset.label : '┘é╪º╪ª┘à╪⌐ ╪¼╪º┘ç╪▓╪⌐';
+      summary = preset ? preset.label : 'قائمة جاهزة';
       break;
     }
     default:
-      summary = '╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å';
+      summary = 'جميع العملاء النشطين';
   }
 
   if (toPositiveInt(c.excludeContactedInDays, null)) {
-    summary += ` | ╪¿╪»┘ê┘å ┘à╪▒╪º╪│┘ä╪⌐ ╪«┘ä╪º┘ä ╪ó╪«╪▒ ${c.excludeContactedInDays} ┘è┘ê┘à`;
+    summary += ` | بدون مراسلة خلال آخر ${c.excludeContactedInDays} يوم`;
   }
   return summary;
 }

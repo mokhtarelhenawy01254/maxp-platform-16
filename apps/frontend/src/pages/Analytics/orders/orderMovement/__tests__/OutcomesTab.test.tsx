@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import OutcomesTab from "../tabs/OutcomesTab";
 
 jest.mock("../orderMovementShared", () => require("../testSupport").buildSharedMock());
@@ -24,7 +24,7 @@ const outcomesData = {
     { status: "DELIVERED", count: 7, percent: 70, revenue: 700, avgOrderValue: 100, isTerminal: true },
     { status: "CANCELLED", count: 2, percent: 20, revenue: 200, avgOrderValue: 100, isTerminal: true },
   ],
-  reasons: [{ reason: "╪º┘ä╪╣┘à┘è┘ä ╪▒┘ü╪╢", count: 2, revenue: 200, status: "CANCELLED" }],
+  reasons: [{ reason: "العميل رفض", count: 2, revenue: 200, status: "CANCELLED" }],
   modeSplit: { manual: 9, auto: 1 },
 };
 
@@ -36,13 +36,13 @@ describe("OutcomesTab", () => {
 
     render(<OutcomesTab {...props} />);
 
-    await waitFor(() => expect(screen.getByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬")).toBeInTheDocument());
-    expect(screen.getByText("┘à┘Å╪│┘ä┘Ä┘æ┘à")).toBeInTheDocument();
-    expect(screen.getByText("┘å╪│╪¿╪⌐ ╪º┘ä┘å╪¼╪º╪¡")).toBeInTheDocument();
-    expect(screen.getByText("╪º┘ä╪Ñ┘è╪▒╪º╪» ╪º┘ä╪╢╪º╪ª╪╣")).toBeInTheDocument();
-    expect(screen.getByText("╪¬┘ê╪▓┘è╪╣ ╪º┘ä┘å╪¬╪º╪ª╪¼")).toBeInTheDocument();
-    expect(screen.getByText("╪ú╪│╪¿╪º╪¿ ╪º┘ä┘ü╪┤┘ä")).toBeInTheDocument();
-    expect(screen.getByText("╪º┘ä╪╣┘à┘è┘ä ╪▒┘ü╪╢")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("إجمالي الطلبات")).toBeInTheDocument());
+    expect(screen.getByText("مُسلَّم")).toBeInTheDocument();
+    expect(screen.getByText("نسبة النجاح")).toBeInTheDocument();
+    expect(screen.getByText("الإيراد الضائع")).toBeInTheDocument();
+    expect(screen.getByText("توزيع النتائج")).toBeInTheDocument();
+    expect(screen.getByText("أسباب الفشل")).toBeInTheDocument();
+    expect(screen.getByText("العميل رفض")).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith("outcomes", { startDate: "2026-05-01", endDate: "2026-08-11", mode: "all" });
   });
 
@@ -55,7 +55,7 @@ describe("OutcomesTab", () => {
   });
 
   test("renders error state on failure", async () => {
-    mockFetch.mockRejectedValue(new Error("┘ü╪┤┘ä"));
+    mockFetch.mockRejectedValue(new Error("فشل"));
 
     render(<OutcomesTab {...props} />);
 

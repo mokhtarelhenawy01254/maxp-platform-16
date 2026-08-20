@@ -1,6 +1,6 @@
 import React from "react";
-import * as Dialog from "@radix-ui/react-dialog";
-import { Sparkles, Star, X } from 'lucide-react';
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { Sparkles, X } from "lucide-react";
 import type { ProductVariant } from "../hooks/useProducts";
 import VariantSelector from "./VariantSelector";
 import QuantitySelector from "./QuantitySelector";
@@ -69,13 +69,13 @@ const MobileVariantSheet: React.FC<MobileVariantSheetProps> = ({
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[88] bg-[#2d211e]/58 backdrop-blur-[3px] md:hidden" />
-        <Dialog.Content className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] z-[89] mx-auto flex max-h-[78vh] w-[calc(100%-2rem)] max-w-md flex-col overflow-hidden rounded-[1.55rem] border border-[#ddd1c5] bg-[rgba(255,252,248,0.985)] shadow-[0_34px_90px_-46px_rgba(91,57,40,0.48)] md:hidden">
-          <Dialog.Title className="sr-only">
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[88] bg-[#2d211e]/58 backdrop-blur-[3px] md:hidden" />
+        <DialogPrimitive.Popup className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] z-[89] mx-auto flex max-h-[78vh] w-[calc(100%-2rem)] max-w-md flex-col overflow-hidden rounded-[1.55rem] border border-[#ddd1c5] bg-[rgba(255,252,248,0.985)] shadow-[0_34px_90px_-46px_rgba(91,57,40,0.48)] md:hidden">
+          <DialogPrimitive.Title className="sr-only">
             {prefersArabicCopy ? "اختيار المقاس واللون" : "Choose size and color"}
-          </Dialog.Title>
+          </DialogPrimitive.Title>
 
           <div className="px-4 pt-3">
             <div className="mx-auto h-1.5 w-14 rounded-full bg-[#dccfc4]" aria-hidden="true" />
@@ -112,15 +112,17 @@ const MobileVariantSheet: React.FC<MobileVariantSheetProps> = ({
                   ) : null}
                 </div>
 
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#8d7469] transition-colors hover:text-[#2d211e]"
-                    aria-label={prefersArabicCopy ? "إغلاق" : "Close"}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </Dialog.Close>
+                <DialogPrimitive.Close
+                  render={
+                    <button
+                      type="button"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#8d7469] transition-colors hover:text-[#2d211e]"
+                      aria-label={prefersArabicCopy ? "إغلاق" : "Close"}
+                    />
+                  }
+                >
+                  <X className="h-4 w-4" />
+                </DialogPrimitive.Close>
               </div>
 
               <div className="border-t border-[#efe3d8] pt-4">
@@ -210,9 +212,9 @@ const MobileVariantSheet: React.FC<MobileVariantSheetProps> = ({
               </div>
             </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
 

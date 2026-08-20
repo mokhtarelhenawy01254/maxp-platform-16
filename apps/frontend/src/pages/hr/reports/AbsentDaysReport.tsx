@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { CalendarX2, Users, TrendingUp, Download, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -45,18 +45,18 @@ interface AbsentDaysReportData {
 }
 
 const months = [
-  "┘è┘å╪º┘è╪▒",
-  "┘ü╪¿╪▒╪º┘è╪▒",
-  "┘à╪º╪▒╪│",
-  "╪ú╪¿╪▒┘è┘ä",
-  "┘à╪º┘è┘ê",
-  "┘è┘ê┘å┘è┘ê",
-  "┘è┘ê┘ä┘è┘ê",
-  "╪ú╪║╪│╪╖╪│",
-  "╪│╪¿╪¬┘à╪¿╪▒",
-  "╪ú┘â╪¬┘ê╪¿╪▒",
-  "┘å┘ê┘ü┘à╪¿╪▒",
-  "╪»┘è╪│┘à╪¿╪▒",
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
 ];
 
 const formatDate = (dateStr: string): string => {
@@ -97,7 +97,7 @@ const AbsentDaysReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching absent days report:", error);
-      toast.error("╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¼┘ä╪¿ ╪¬┘é╪▒┘è╪▒ ╪ú┘è╪º┘à ╪º┘ä╪║┘è╪º╪¿");
+      toast.error("حدث خطأ أثناء جلب تقرير أيام الغياب");
       setReport(null);
     } finally {
       setLoading(false);
@@ -106,18 +106,18 @@ const AbsentDaysReport: React.FC = () => {
 
   const handleExport = () => {
     if (!report || report.employees.length === 0) {
-      toast.error("┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘ä┘ä╪¬╪╡╪»┘è╪▒");
+      toast.error("لا توجد بيانات للتصدير");
       return;
     }
 
     const rows: Array<Record<string, string | number>> = report.employees.map(
       (emp) => ({
-        ╪º┘ä┘à┘ê╪╕┘ü: emp.name,
-        "╪▒┘é┘à ╪º┘ä┘à┘ê╪╕┘ü": emp.employeeNumber,
-        ╪º┘ä┘é╪│┘à: emp.department,
-        "╪╣╪»╪» ╪ú┘è╪º┘à ╪º┘ä╪║┘è╪º╪¿": emp.absentDays,
-        "╪ú┘è╪º┘à ╪º┘ä╪║┘è╪º╪¿": emp.absentDates.map(formatDate).join("╪î "),
-        "┘å╪│╪¿╪⌐ ╪º┘ä╪¡╪╢┘ê╪▒ %": emp.attendanceRate,
+        الموظف: emp.name,
+        "رقم الموظف": emp.employeeNumber,
+        القسم: emp.department,
+        "عدد أيام الغياب": emp.absentDays,
+        "أيام الغياب": emp.absentDates.map(formatDate).join("، "),
+        "نسبة الحضور %": emp.attendanceRate,
       }),
     );
 
@@ -146,7 +146,7 @@ const AbsentDaysReport: React.FC = () => {
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2">
-              <Label className="dark:text-gray-300">╪º┘ä╪┤┘ç╪▒</Label>
+              <Label className="dark:text-gray-300">الشهر</Label>
               <Select
                 value={selectedMonth.toString()}
                 onValueChange={(v) => setSelectedMonth(parseInt(v ?? "1"))}
@@ -169,7 +169,7 @@ const AbsentDaysReport: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="dark:text-gray-300">╪º┘ä╪│┘å╪⌐</Label>
+              <Label className="dark:text-gray-300">السنة</Label>
               <Select
                 value={selectedYear.toString()}
                 onValueChange={(v) =>
@@ -200,7 +200,7 @@ const AbsentDaysReport: React.FC = () => {
                 className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 <RefreshCw className="h-4 w-4 ml-2" />
-                ╪¬╪¡╪»┘è╪½
+                تحديث
               </Button>
               <Button
                 variant="outline"
@@ -208,7 +208,7 @@ const AbsentDaysReport: React.FC = () => {
                 className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 <Download className="h-4 w-4 ml-2" />
-                ╪¬╪╡╪»┘è╪▒
+                تصدير
               </Button>
             </div>
           </div>
@@ -228,7 +228,7 @@ const AbsentDaysReport: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-rose-100 text-sm font-medium">
-                        ┘å╪│╪¿╪⌐ ╪º┘ä╪¡╪╢┘ê╪▒
+                        نسبة الحضور
                       </p>
                       <h3 className="text-3xl font-bold mt-1">
                         {report.attendanceRate || 0}%
@@ -250,7 +250,7 @@ const AbsentDaysReport: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                        ╪Ñ╪¼┘à╪º┘ä┘è ╪ú┘è╪º┘à ╪º┘ä╪║┘è╪º╪¿
+                        إجمالي أيام الغياب
                       </p>
                       <h3 className="text-3xl font-bold mt-1 text-rose-600 dark:text-rose-400">
                         {report.totalAbsentDays || 0}
@@ -266,7 +266,7 @@ const AbsentDaysReport: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                        ╪ú┘è╪º┘à ╪º┘ä╪╣┘à┘ä ┘ü┘è ╪º┘ä╪┤┘ç╪▒
+                        أيام العمل في الشهر
                       </p>
                       <h3 className="text-3xl font-bold mt-1 text-amber-600 dark:text-amber-400">
                         {report.totalWorkingDays || 0}
@@ -282,7 +282,7 @@ const AbsentDaysReport: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                        ╪╣╪»╪» ╪º┘ä┘à┘ê╪╕┘ü┘è┘å
+                        عدد الموظفين
                       </p>
                       <h3 className="text-3xl font-bold mt-1 text-blue-600 dark:text-blue-400">
                         {report.totalEmployees || 0}
@@ -298,7 +298,7 @@ const AbsentDaysReport: React.FC = () => {
               <CardHeader className="border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 p-4">
                 <CardTitle className="text-lg font-semibold dark:text-white flex items-center gap-2">
                   <CalendarX2 className="h-5 w-5 text-primary" />
-                  ╪ú┘è╪º┘à ╪º┘ä╪║┘è╪º╪¿ ╪º┘ä╪¬┘ü╪╡┘è┘ä┘è╪⌐ ┘ä┘â┘ä ┘à┘ê╪╕┘ü
+                  أيام الغياب التفصيلية لكل موظف
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -306,11 +306,11 @@ const AbsentDaysReport: React.FC = () => {
                   <Table>
                     <TableHeader className="bg-gray-50 dark:bg-gray-900/50">
                       <TableRow>
-                        <TableHead className="text-right">╪º┘ä┘à┘ê╪╕┘ü</TableHead>
-                        <TableHead className="text-right">╪º┘ä┘é╪│┘à</TableHead>
-                        <TableHead className="text-right">╪╣╪»╪» ╪ú┘è╪º┘à ╪º┘ä╪║┘è╪º╪¿</TableHead>
-                        <TableHead className="text-right">╪º┘ä┘å╪│╪¿╪⌐</TableHead>
-                        <TableHead className="text-right w-2/5">╪ú┘è╪º┘à ╪º┘ä╪║┘è╪º╪¿</TableHead>
+                        <TableHead className="text-right">الموظف</TableHead>
+                        <TableHead className="text-right">القسم</TableHead>
+                        <TableHead className="text-right">عدد أيام الغياب</TableHead>
+                        <TableHead className="text-right">النسبة</TableHead>
+                        <TableHead className="text-right w-2/5">أيام الغياب</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -362,7 +362,7 @@ const AbsentDaysReport: React.FC = () => {
                                 </div>
                               ) : (
                                 <span className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">
-                                  ┘ä╪º ┘è┘ê╪¼╪» ╪║┘è╪º╪¿
+                                  لا يوجد غياب
                                 </span>
                               )}
                             </TableCell>
@@ -374,7 +374,7 @@ const AbsentDaysReport: React.FC = () => {
                             colSpan={5}
                             className="text-center py-8 text-gray-500 dark:text-gray-400"
                           >
-                            ┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘ä┘ä┘à┘ê╪╕┘ü┘è┘å
+                            لا توجد بيانات للموظفين
                           </TableCell>
                         </TableRow>
                       )}

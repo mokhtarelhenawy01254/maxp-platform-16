@@ -5,8 +5,10 @@ import {
   returnService,
   ContactAttempt,
   ActivityLog,
+  ReturnType,
+  ReturnShippingCompany,
 } from "../../services/returnService";
-import { Calendar, Check, CheckCircle, Clock, MessageCircle, Phone, Shield, X, XCircle } from 'lucide-react';
+import { X, Phone, MessageCircle, Shield, Calendar, Truck } from 'lucide-react';
 import { toast } from "sonner";
 
 interface ReturnDetailsModalProps {
@@ -34,22 +36,109 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   const [contactNotes, setContactNotes] = useState("");
 
   // Review Form
-  const [status, setStatus] = useState(request.status);
+  const [reasonId, setReasonId] = useState(request.reasonId || "");
+  const [customerNotes, setCustomerNotes] = useState(
+    request.customerNotes || "",
+  );
   const [responsibleParty, setResponsibleParty] = useState(
     request.responsibleParty,
   );
   const [adminNotes, setAdminNotes] = useState(request.adminNotes || "");
-  const [rejectionReason, setRejectionReason] = useState(
-    request.rejectionReason || "",
+  const [shippingReturnCost, setShippingReturnCost] = useState(
+    request.shippingReturnCost !== undefined && request.shippingReturnCost !== null
+      ? String(request.shippingReturnCost)
+      : "",
   );
-  const [isReviewed, setIsReviewed] = useState(request.isReviewed);
+  const [settlementAmount, setSettlementAmount] = useState(
+    request.settlementAmount !== undefined && request.settlementAmount !== null
+      ? String(request.settlementAmount)
+      : "",
+  );
+  const isReviewed = true;
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Return Type & Shipping Company
+  const [shippingCompanies, setShippingCompanies] = useState<
+    ReturnShippingCompany[]
+  >([]);
+  const [returnTypes, setReturnTypes] = useState<ReturnType[]>([]);
+  const [shippingCompanyId, setShippingCompanyId] = useState(
+    request.shippingCompanyId || "",
+  );
+  const [returnTypeId, setReturnTypeId] = useState(request.returnTypeId || "");
+
+  // Categories & Reasons for dropdown
+  const [categories, setCategories] = useState<any[]>([]);
+  const [reasons, setReasons] = useState<any[]>([]);
+
+  const responsiblePartyOptions = categories.reduce((acc: any[], cat: any) => {
+    if (!acc.find((a) => a.value === cat.defaultRole)) {
+      acc.push({ value: cat.defaultRole, label: cat.name });
+    }
+    return acc;
+  }, []);
+
+  // Activity Log Filter
+  const [activityFilter, setActivityFilter] = useState<string>("");
 
   useEffect(() => {
     if (activeTab !== "details") {
       fetchLogs();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    returnService.getCategories().then((res) => setCategories(res.data)).catch(() => {});
+    returnService.getReasons().then((res) => setReasons(res.data)).catch(() => {});
+  }, []);
+
+  // Load shipping companies and their return types
+  useEffect(() => {
+    returnService
+      .getReturnShippingCompanies()
+      .then((res) => {
+        const companies: ReturnShippingCompany[] = res.data?.data || [];
+        setShippingCompanies(companies);
+        if (request.shippingCompanyId) {
+          const company = companies.find((c) => c.id === request.shippingCompanyId);
+          setReturnTypes(company?.returnTypes || []);
+        } else {
+          setReturnTypes(companies.flatMap((c) => c.returnTypes || []));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // When a return type is selected, suggest the return shipping cost based on the cost model
+  const applyReturnTypeCost = (type: ReturnType | undefined) => {
+    if (!type) return;
+    if (type.costModel === "FIXED" && type.fixedAmount != null) {
+      setShippingReturnCost(String(type.fixedAmount));
+    } else if (type.costModel === "NONE") {
+      setShippingReturnCost("0");
+    } else if (type.costModel === "FULL") {
+      const orderShippingCost =
+        request.order?.shippingCost != null ? request.order.shippingCost : 0;
+      setShippingReturnCost(String(orderShippingCost));
+    }
+  };
+
+  const handleShippingCompanyChange = (value: string) => {
+    setShippingCompanyId(value);
+    setReturnTypeId("");
+    if (!value) {
+      setReturnTypes([]);
+      return;
+    }
+    const company = shippingCompanies.find((c) => c.id === value);
+    setReturnTypes(company?.returnTypes || []);
+  };
+
+  const handleReturnTypeChange = (value: string) => {
+    setReturnTypeId(value);
+    const type = returnTypes.find((rt) => rt.id === value);
+    applyReturnTypeCost(type);
+  };
 
   const fetchLogs = async () => {
     setLoadingLogs(true);
@@ -69,26 +158,24 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   };
 
   const handleSaveReview = async () => {
-    if (!status) {
-      toast.error(t('returns.k_116'));
-      return;
-    }
     if (!responsibleParty) {
       toast.error(t('returns.k_117'));
-      return;
-    }
-    if (status === "REJECTED" && !rejectionReason.trim()) {
-      toast.error(t('returns.k_118'));
       return;
     }
     setSubmittingReview(true);
     try {
       await returnService.updateRequest(request.id, {
-        status,
+        reasonId: reasonId || undefined,
+        customerNotes,
         responsibleParty,
         adminNotes,
-        rejectionReason,
         isReviewed,
+        returnTypeId: returnTypeId || undefined,
+        shippingCompanyId: shippingCompanyId || undefined,
+        shippingReturnCost:
+          shippingReturnCost === "" ? null : parseFloat(shippingReturnCost),
+        settlementAmount:
+          settlementAmount === "" ? null : parseFloat(settlementAmount),
       });
       toast.success(t('returns.k_119'));
       onUpdate();
@@ -117,47 +204,17 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return (
-          <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <CheckCircle size={12} /> {t('returns.k_135')}
-          </span>
-        );
-      case "REJECTED":
-        return (
-          <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <XCircle size={12} /> {t('returns.k_15')}
-          </span>
-        );
-      case "COMPLETED":
-        return (
-          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <CheckCircle size={12} /> {t('returns.k_16')}
-          </span>
-        );
-      default:
-        return (
-          <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <Clock size={12} /> {t('returns.k_1')}
-          </span>
-        );
-    }
-  };
-
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/35 backdrop-blur-[2px] flex items-center justify-center z-50 p-4"
       dir="rtl"
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl h-[80vh] flex flex-col shadow-xl">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl h-[80vh] flex flex-col shadow-xl mx-2 md:mx-0">
         {/* Header */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-lg">
           <div>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
               {t('returns.k_189')}{request.order?.orderNumber}
-              {getStatusBadge(request.status)}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {new Date(request.createdAt).toLocaleString("ar-EG")}
@@ -197,146 +254,133 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-800">
           {activeTab === "details" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                  <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                    {t('returns.k_193')}
+              {/* COD Deposit & Shipping */}
+              {(request.order?.codDepositPaid || request.shippingReturnCost) && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/30">
+                  <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">
+                    💰 التسوية المالية
                   </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_194')}
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {request.customer?.firstName}{" "}
-                        {request.customer?.lastName}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_195')}
-                      </span>
-                      <span
-                        className="font-medium text-gray-900 dark:text-white"
-                        dir="ltr"
-                      >
-                        {request.customer?.phone}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_196')}
-                      </span>
-                      <span className="font-medium text-blue-600 dark:text-blue-400">
-                        {request.customer?.customerRating} (
-                        {request.customer?.successScore?.toFixed(1)}%)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                  <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                    {t('returns.k_197')}
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_198')}
-                      </span>
-                      <span className="font-medium text-red-600 dark:text-red-400 font-bold">
-                        {request.reason?.reason}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_199')}
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {request.refundAmount || "-"}
-                      </span>
-                    </div>
-                    {request.isReviewed && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    {request.order?.codDepositPaid && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">
-                          {t('returns.k_200')}
+                        <span className="text-gray-500 dark:text-gray-400">دفعة مسبقة (COD Deposit):</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {request.order.codDepositAmount} {request.order.currency}
+                          {request.order.codDepositRefunded ? " ✅ مستردة" : " ❌ لم تسترد"}
                         </span>
-                        <span className="font-medium text-xs text-gray-900 dark:text-white">
-                          {request.reviewedAt
-                            ? new Date(request.reviewedAt).toLocaleDateString()
-                            : "-"}
+                      </div>
+                    )}
+                    {request.shippingReturnCost && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">تكلفة الشحن الراجع:</span>
+                        <span className="font-medium text-red-600 dark:text-red-400">
+                          {request.shippingReturnCost} {request.order?.currency}
                         </span>
+                      </div>
+                    )}
+                    {request.settlementAmount && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">صافي التسوية:</span>
+                        <span className={`font-medium ${request.settlementAmount >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {request.settlementAmount} {request.order?.currency}
+                        </span>
+                      </div>
+                    )}
+                    {request.productCondition && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">حالة المنتج عند الاستلام:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{request.productCondition}</span>
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800/30">
-                <h3 className="text-sm font-bold text-yellow-800 dark:text-yellow-300 mb-2">
-                  {t('returns.k_156')}
-                </h3>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {request.customerNotes || t('returns.k_123')}
-                </p>
-              </div>
+              )}
 
               {/* Enhanced Review Form */}
               <div className="bg-white dark:bg-gray-900/50 border-2 border-blue-100 dark:border-blue-900/30 p-4 rounded-lg space-y-4">
                 <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
                   <Shield size={16} /> {t('returns.k_201')}
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      {t('returns.k_202')}
-                    </label>
-                    <select
-                      value={responsibleParty}
-                      onChange={(e) =>
-                        setResponsibleParty(e.target.value as any)
-                      }
-                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
-                    >
-                      <option value="CUSTOMER">
-                        {t('returns.k_203')}
-                      </option>
-                      <option value="STORE">
-                        {t('returns.k_204')}
-                      </option>
-                      <option value="SHIPPING">{t('returns.k_124')}</option>
-                      <option value="OTHER">{t('returns.k_31')}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      {t('returns.k_205')}
-                    </label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as any)}
-                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
-                    >
-                      <option value="PENDING">{t('returns.k_1')}</option>
-                      <option value="APPROVED">{t('returns.k_25')}</option>
-                      <option value="REJECTED">{t('returns.k_26')}</option>
-                      <option value="COMPLETED">{t('returns.k_16')}</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {t('returns.k_202')}
+                  </label>
+                  <select
+                    value={responsibleParty}
+                    onChange={(e) => {
+                      setResponsibleParty(e.target.value as any);
+                      setReasonId("");
+                    }}
+                    className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                  >
+                    <option value="">{t('returns.k_30')}</option>
+                    {responsiblePartyOptions.map((opt: any) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 </div>
-                {status === "REJECTED" && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      {t('returns.k_206')}
-                    </label>
-                    <input
-                      type="text"
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder={t('returns.k_125')}
-                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {t('returns.k_154')}
+                  </label>
+                  <select
+                    value={reasonId}
+                    onChange={(e) => {
+                      const selectedReason = reasons.find((r) => r.id === e.target.value);
+                      setReasonId(e.target.value);
+                      if (selectedReason?.category?.defaultRole) {
+                        setResponsibleParty(selectedReason.category.defaultRole);
+                      }
+                    }}
+                    className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                  >
+                    <option value="">{t('returns.k_30')}</option>
+                    {categories
+                      .filter((cat: any) => cat.defaultRole === responsibleParty)
+                      .map((cat: any) => (
+                        <optgroup key={cat.id} label={cat.name}>
+                          {reasons
+                            .filter((r: any) => r.categoryId === cat.id)
+                            .map((reason: any) => (
+                              <option key={reason.id} value={reason.id}>
+                                {reason.reason}
+                                {reason.description && ` - ${reason.description}`}
+                              </option>
+                            ))}
+                        </optgroup>
+                      ))}
+                    {reasons.filter((r: any) => {
+                      const cat = categories.find((c: any) => c.id === r.categoryId);
+                      return !cat || cat.defaultRole === 'OTHER';
+                    }).length > 0 && (
+                      <optgroup label={t('returns.k_31')}>
+                        {reasons
+                          .filter((r: any) => {
+                            const cat = categories.find((c: any) => c.id === r.categoryId);
+                            return !cat || cat.defaultRole === 'OTHER';
+                          })
+                          .map((reason: any) => (
+                            <option key={reason.id} value={reason.id}>
+                              {reason.reason}
+                              {reason.description && ` - ${reason.description}`}
+                            </option>
+                          ))}
+                      </optgroup>
+                    )}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {t('returns.k_156')}
+                  </label>
+                  <textarea
+                    value={customerNotes}
+                    onChange={(e) => setCustomerNotes(e.target.value)}
+                    rows={2}
+                    placeholder={t('returns.k_35')}
+                    className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     {t('returns.k_207')}
@@ -348,20 +392,87 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                   />
                 </div>
-                <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="isReviewed"
-                    checked={isReviewed}
-                    onChange={(e) => setIsReviewed(e.target.checked)}
-                    className="rounded text-blue-600 dark:text-blue-400"
-                  />
-                  <label
-                    htmlFor="isReviewed"
-                    className="text-xs font-bold text-gray-700 dark:text-gray-300"
-                  >
-                    {t('returns.k_208')}
-                  </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('returns.k_254')}
+                    </label>
+                    <select
+                      value={shippingCompanyId}
+                      onChange={(e) =>
+                        handleShippingCompanyChange(e.target.value)
+                      }
+                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                    >
+                      <option value="">{t('returns.k_30')}</option>
+                      {shippingCompanies.map((sc) => (
+                        <option key={sc.id} value={sc.id}>
+                          {sc.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('returns.k_255')}
+                    </label>
+                    <select
+                      value={returnTypeId}
+                      onChange={(e) => handleReturnTypeChange(e.target.value)}
+                      disabled={!shippingCompanyId}
+                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md disabled:opacity-50"
+                    >
+                      <option value="">{t('returns.k_30')}</option>
+                      {returnTypes.map((rt) => (
+                        <option key={rt.id} value={rt.id}>
+                          {rt.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {returnTypeId &&
+                  (() => {
+                    const rt = returnTypes.find((x) => x.id === returnTypeId);
+                    return rt ? (
+                      <p className="text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                        <Truck size={12} /> {t('returns.k_256')}:{" "}
+                        {rt.costModel === "FIXED"
+                          ? `${rt.fixedAmount} ${request.order?.currency || t('returns.k_22')}`
+                          : rt.costModel === "NONE"
+                            ? "0"
+                            : request.order?.shippingCost ?? 0}{" "}
+                        {request.order?.currency || t('returns.k_22')}
+                      </p>
+                    ) : null;
+                  })()}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('returns.k_228')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={shippingReturnCost}
+                      onChange={(e) => setShippingReturnCost(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('returns.k_229')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={settlementAmount}
+                      onChange={(e) => setSettlementAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -377,7 +488,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                   <Phone size={16} /> {t('returns.k_209')}
                 </h3>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                       {t('returns.k_210')}
@@ -494,13 +605,42 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 <p className="text-center text-gray-500 dark:text-gray-400">
                   {t('returns.k_144')}
                 </p>
-              ) : activityLog.length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  {t('returns.k_217')}
-                </p>
               ) : (
-                <div className="relative border-r-2 border-gray-200 dark:border-gray-700 mr-4 space-y-8">
-                  {activityLog.map((log) => (
+                <>
+                  <div className="flex gap-2 flex-wrap border-b border-gray-100 dark:border-gray-700 pb-3">
+                    <button
+                      onClick={() => setActivityFilter("")}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        activityFilter === ""
+                          ? "bg-blue-600 dark:bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      {t('returns.k_13')}
+                    </button>
+                    {Array.from(new Set(activityLog.map((l) => l.action))).map((action) => (
+                      <button
+                        key={action}
+                        onClick={() => setActivityFilter(action)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          activityFilter === action
+                            ? "bg-blue-600 dark:bg-blue-500 text-white"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        }`}
+                      >
+                        {action}
+                      </button>
+                    ))}
+                  </div>
+                  {activityLog.filter((l) => !activityFilter || l.action === activityFilter).length === 0 ? (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      {t('returns.k_217')}
+                    </p>
+                  ) : (
+                    <div className="relative border-r-2 border-gray-200 dark:border-gray-700 mr-4 space-y-8">
+                      {activityLog
+                        .filter((l) => !activityFilter || l.action === activityFilter)
+                        .map((log) => (
                     <div
                       key={log.id}
                       className="relative flex items-start gap-4 mr-[-9px]"
@@ -533,9 +673,11 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                   ))}
                 </div>
               )}
-            </div>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-lg flex justify-end gap-2">

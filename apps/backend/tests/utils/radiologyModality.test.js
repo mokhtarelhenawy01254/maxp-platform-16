@@ -1,4 +1,4 @@
-﻿const { normalizeModality, resolveModality, MODALITY_BY_CATEGORY } = require('../../utils/radiologyModality');
+const { normalizeModality, resolveModality, MODALITY_BY_CATEGORY } = require('../../utils/radiologyModality');
 
 describe('radiologyModality', () => {
   test('maps canonical English categories', () => {
@@ -18,15 +18,15 @@ describe('radiologyModality', () => {
   });
 
   test('maps common Arabic category names', () => {
-    expect(normalizeModality('╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐')).toBe('CT');
-    expect(normalizeModality('┘à┘é╪╖╪╣┘è╪⌐')).toBe('CT');
-    expect(normalizeModality('╪▒┘å┘è┘å ┘à╪║┘å╪º╪╖┘è╪│┘è')).toBe('MR');
-    expect(normalizeModality('╪│┘ê┘å╪º╪▒')).toBe('US');
-    expect(normalizeModality('╪»┘è┘â╪│╪º')).toBe('DXA');
+    expect(normalizeModality('أشعة مقطعية')).toBe('CT');
+    expect(normalizeModality('مقطعية')).toBe('CT');
+    expect(normalizeModality('رنين مغناطيسي')).toBe('MR');
+    expect(normalizeModality('سونار')).toBe('US');
+    expect(normalizeModality('ديكسا')).toBe('DXA');
   });
 
   test('returns null for unknown categories', () => {
-    expect(normalizeModality('╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒')).toBeNull();
+    expect(normalizeModality('أشعة الصدر')).toBeNull();
     expect(normalizeModality('')).toBeNull();
     expect(normalizeModality(null)).toBeNull();
     expect(normalizeModality(undefined)).toBeNull();
@@ -34,12 +34,12 @@ describe('radiologyModality', () => {
 
   test('resolveModality prefers a stored category modality over the name', () => {
     expect(resolveModality({ name: 'Dental', modality: 'DENTAL' })).toBe('DENTAL');
-    expect(resolveModality({ name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', modality: null })).toBe('CT');
+    expect(resolveModality({ name: 'أشعة مقطعية', modality: null })).toBe('CT');
   });
 
   test('resolveModality keeps legacy behavior for plain strings', () => {
     expect(resolveModality('Dental')).toBe('DENTAL');
-    expect(resolveModality('╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒')).toBe('╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒');
+    expect(resolveModality('أشعة الصدر')).toBe('أشعة الصدر');
     expect(resolveModality(null)).toBeNull();
   });
 

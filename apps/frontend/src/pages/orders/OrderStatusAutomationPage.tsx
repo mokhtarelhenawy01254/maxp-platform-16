@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { apiClient } from "../../services/apiClient";
 import { TrashIcon, ClockIcon, ArrowRightIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { BoltIcon } from "@heroicons/react/24/solid";
@@ -223,7 +223,7 @@ export default function OrderStatusAutomationPage() {
       {/* Event-Based Automation Section */}
       <div className="mb-6 rounded-[22px] border border-slate-200/70 bg-white/70 p-5 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/50">
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
-          ╪º┘ä╪ú╪¬┘à╪¬╪⌐ ╪º┘ä┘à╪¿┘å┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪ú╪¡╪»╪º╪½
+          الأتمتة المبنية على الأحداث
         </h3>
         {loadingSettings ? (
           <div className="flex justify-center p-4">
@@ -235,7 +235,7 @@ export default function OrderStatusAutomationPage() {
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/[0.02]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ╪╣┘å╪» ╪╖╪¿╪º╪╣╪⌐ ╪º┘ä╪╖┘ä╪¿
+                  تغيير الحالة عند طباعة الطلب
                 </span>
                 <button
                   onClick={() => handleUpdateSetting("printAutomationEnabled", !eventSettings.printAutomationEnabled)}
@@ -255,7 +255,7 @@ export default function OrderStatusAutomationPage() {
               {eventSettings.printAutomationEnabled && (
                 <div className="mt-3">
                   <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
-                    ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪│╪¬┘ç╪»┘ü╪⌐
+                    الحالة المستهدفة
                   </label>
                   <select
                     value={eventSettings.printAutomationStatus}
@@ -263,7 +263,7 @@ export default function OrderStatusAutomationPage() {
                     className="w-full rounded-lg border border-slate-200/70 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-slate-900 dark:text-white transition"
                     dir="rtl"
                   >
-                    <option value="" className="dark:bg-slate-900">╪º╪«╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪⌐...</option>
+                    <option value="" className="dark:bg-slate-900">اختر الحالة...</option>
                     {statuses.map((s) => (
                       <option key={s.code} value={s.code} className="dark:bg-slate-900">
                         {getStatusName(s.code)}
@@ -278,7 +278,7 @@ export default function OrderStatusAutomationPage() {
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/[0.02]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐ ╪╣┘å╪» ╪º┘ä╪Ñ╪▒╪│╪º┘ä ┘ä╪¬╪▒╪¿┘ê ┘ê╪╡╪»┘ê╪▒ ╪¿┘ê┘ä┘è╪╡╪⌐
+                  تغيير الحالة عند الإرسال لتربو وصدور بوليصة
                 </span>
                 <button
                   onClick={() => handleUpdateSetting("turboAutomationEnabled", !eventSettings.turboAutomationEnabled)}
@@ -298,7 +298,7 @@ export default function OrderStatusAutomationPage() {
               {eventSettings.turboAutomationEnabled && (
                 <div className="mt-3">
                   <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
-                    ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪│╪¬┘ç╪»┘ü╪⌐
+                    الحالة المستهدفة
                   </label>
                   <select
                     value={eventSettings.turboAutomationStatus}
@@ -306,7 +306,7 @@ export default function OrderStatusAutomationPage() {
                     className="w-full rounded-lg border border-slate-200/70 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-slate-900 dark:text-white transition"
                     dir="rtl"
                   >
-                    <option value="" className="dark:bg-slate-900">╪º╪«╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪⌐...</option>
+                    <option value="" className="dark:bg-slate-900">اختر الحالة...</option>
                     {statuses.map((s) => (
                       <option key={s.code} value={s.code} className="dark:bg-slate-900">
                         {getStatusName(s.code)}

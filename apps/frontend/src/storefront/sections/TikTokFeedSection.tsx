@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from "react";
+import React, { useEffect } from "react";
 
 interface TikTokFeedSectionProps {
   username?: string;
@@ -59,9 +59,9 @@ const TikTokFeedSection: React.FC<TikTokFeedSectionProps> = ({
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted px-6 py-16 text-center">
             <h2 className="text-2xl font-bold text-foreground">
-              {title || "╪¬╪º╪¿╪╣┘å╪º ╪╣┘ä┘ë TikTok"}
+              {title || "تابعنا على TikTok"}
             </h2>
-            <p className="mt-3 text-muted-foreground">╪¡╪│╪º╪¿ TikTok ╪║┘è╪▒ ┘à╪╢╪¿┘ê╪╖</p>
+            <p className="mt-3 text-muted-foreground">حساب TikTok غير مضبوط</p>
           </div>
         </div>
       </section>
@@ -75,10 +75,10 @@ const TikTokFeedSection: React.FC<TikTokFeedSectionProps> = ({
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
-            {title || "╪¬╪º╪¿╪╣┘å╪º ╪╣┘ä┘ë TikTok"}
+            {title || "تابعنا على TikTok"}
           </h2>
           {count > 0 && (
-            <p className="mt-2 text-muted-foreground">{`╪ú╪¡╪»╪½ ${count} ┘à┘é╪º╪╖╪╣ ┘ü┘è╪»┘è┘ê`}</p>
+            <p className="mt-2 text-muted-foreground">{`أحدث ${count} مقاطع فيديو`}</p>
           )}
         </div>
         <div className="flex justify-center">

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../services/apiClient';
@@ -72,12 +72,12 @@ interface ApiErrorShape {
   message?: string;
 }
 
-/** Build STATUS_COLORS from SYSTEM_STATUS_DEFS ΓÇö single source of truth */
+/** Build STATUS_COLORS from SYSTEM_STATUS_DEFS — single source of truth */
 const STATUS_COLORS: Record<string, string> = Object.fromEntries(
   Object.entries(SYSTEM_STATUS_DEFS).map(([code, def]) => [code, def.colorClass])
 );
 
-/** English labels for statuses not in the original 14 ΓÇö extend as needed */
+/** English labels for statuses not in the original 14 — extend as needed */
 const STATUS_EN_LABELS: Record<string, string> = {
   SCHEDULED: 'Scheduled',
   ON_HOLD: 'On Hold',
@@ -104,7 +104,7 @@ const STATUS_EN_LABELS: Record<string, string> = {
   PENDING_CANCELLATION: 'Pending Cancellation',
 };
 
-/** Build STATUS_FALLBACKS from SYSTEM_STATUS_DEFS ΓÇö single source of truth */
+/** Build STATUS_FALLBACKS from SYSTEM_STATUS_DEFS — single source of truth */
 const STATUS_FALLBACKS: Record<string, { ar: string; en: string }> = Object.fromEntries(
   Object.entries(SYSTEM_STATUS_DEFS).map(([code, def]) => [
     code,
@@ -244,7 +244,7 @@ const AgentWorkspace: React.FC = () => {
 
   const formatDate = (dateStr: string | null | undefined) => {
     const parsed = safeParseDate(dateStr);
-    if (!parsed) return 'ΓÇö';
+    if (!parsed) return '—';
     return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
       parsed,
     );
@@ -252,7 +252,7 @@ const AgentWorkspace: React.FC = () => {
 
   const formatTime = (dateStr: string | null | undefined) => {
     const parsed = safeParseDate(dateStr);
-    if (!parsed) return 'ΓÇö';
+    if (!parsed) return '—';
     return new Intl.DateTimeFormat(locale, {
       hour: '2-digit',
       minute: '2-digit',
@@ -746,7 +746,7 @@ const AgentWorkspace: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // ΓöÇΓöÇΓöÇ Server-driven list ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ─── Server-driven list ──────────────────────────────────────────────────
   // The list is filtered + sorted server-side by activeTab; `orders` already
   // reflects the active tab, and tab counters come from server `stats`.
 
@@ -778,7 +778,7 @@ const AgentWorkspace: React.FC = () => {
     <div className="max-w-6xl 2xl:max-w-7xl mx-auto p-3 pb-20 sm:p-6">
 
       <h1 className="sr-only">{t('orders.workspaceTitle')}</h1>
-      {/* ΓöÇΓöÇΓöÇ Compact Control Bar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* ─── Compact Control Bar ─────────────────────────────────────────── */}
       <div className="mb-3 flex items-center gap-2 lg:justify-between">
         <label className="sr-only" htmlFor="workspace-mobile-section">
           {t('orders.workspaceSection')}
@@ -859,7 +859,7 @@ const AgentWorkspace: React.FC = () => {
           >
             {resolveCopy(
               'orders.retryLoading',
-              '╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐',
+              'إعادة المحاولة',
               'Try again',
             )}
           </button>
@@ -870,7 +870,7 @@ const AgentWorkspace: React.FC = () => {
         <OrderConfirmationQueue embedded />
       ) : (
         <>
-      {/* ΓöÇΓöÇΓöÇ Orders Inbox ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* ─── Orders Inbox ────────────────────────────────────────────────── */}
       {orders.length === 0 ? (
         <div
           className="bg-white dark:bg-gray-800 rounded-xl p-8 sm:p-12 text-center shadow-sm border border-gray-100 dark:border-gray-700"
@@ -894,7 +894,7 @@ const AgentWorkspace: React.FC = () => {
                 ? t('orders.noAssignedOrders')
                 : resolveCopy(
                     'orders.noOrdersInFilter',
-                    '┘ä╪º ╪¬┘ê╪¼╪» ╪╖┘ä╪¿╪º╪¬ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪ª╪⌐',
+                    'لا توجد طلبات في هذه الفئة',
                     'No orders in this category',
                   )}
           </p>
@@ -906,7 +906,7 @@ const AgentWorkspace: React.FC = () => {
             >
               {resolveCopy(
                 'orders.retryLoading',
-                '╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐',
+                'إعادة المحاولة',
                 'Try again',
               )}
             </button>
@@ -937,7 +937,7 @@ const AgentWorkspace: React.FC = () => {
                     statusFallback.en,
                   )
                 : statusKey;
-              const location = [order.governorate, order.city].filter(Boolean).join('╪î ') || 'ΓÇö';
+              const location = [order.governorate, order.city].filter(Boolean).join('، ') || '—';
               const orderItemsSummary = summarizeOrderDocumentItems(order.items);
 
               return (
@@ -998,7 +998,7 @@ const AgentWorkspace: React.FC = () => {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-black text-gray-900 dark:text-white">
-                        {order.customerName || 'ΓÇö'}
+                        {order.customerName || '—'}
                       </p>
                       <p className="truncate font-mono text-xs text-gray-500 dark:text-gray-400" dir="ltr">
                         {order.customerPhone || t("orders.noPhone")}
@@ -1037,7 +1037,7 @@ const AgentWorkspace: React.FC = () => {
                           ? formatTime(order.lastCallAt)
                           : resolveCopy(
                               'orders.noCallsYet',
-                              '┘ä╪º ┘è┘ê╪¼╪»',
+                              'لا يوجد',
                               'No calls yet',
                             )}
                       </span>
@@ -1070,8 +1070,8 @@ const AgentWorkspace: React.FC = () => {
                       {currentAction === 'confirm'
                         ? resolveCopy(
                             'orders.confirmingOrder',
-                            '╪¼╪º╪▒┘ì ╪º┘ä╪¬╪ú┘â┘è╪»ΓÇª',
-                            'ConfirmingΓÇª',
+                            'جارٍ التأكيد…',
+                            'Confirming…',
                           )
                         : t('orders.confirmOrder')}
                     </button>
@@ -1104,8 +1104,8 @@ const AgentWorkspace: React.FC = () => {
                         {currentAction === 'log-call'
                           ? resolveCopy(
                               'orders.loggingCall',
-                              '╪¼╪º╪▒┘ì ╪º┘ä╪¬╪│╪¼┘è┘äΓÇª',
-                              'LoggingΓÇª',
+                              'جارٍ التسجيل…',
+                              'Logging…',
                             )
                           : t('orders.logCall')}
                       </button>
@@ -1119,8 +1119,8 @@ const AgentWorkspace: React.FC = () => {
                       {currentAction === 'details'
                         ? resolveCopy(
                             'orders.loadingDetails',
-                            '╪¼╪º╪▒┘ì ╪º┘ä╪¬╪¡┘à┘è┘äΓÇª',
-                            'LoadingΓÇª',
+                            'جارٍ التحميل…',
+                            'Loading…',
                           )
                         : t('orders.viewDetails')}
                       <ChevronRightIcon className={`h-3.5 w-3.5 ${currentAction === 'details' ? 'animate-pulse' : ''}`} />
@@ -1138,8 +1138,8 @@ const AgentWorkspace: React.FC = () => {
                       {currentAction === 'cancel'
                         ? resolveCopy(
                             'orders.cancellingOrder',
-                            '╪¼╪º╪▒┘ì ╪º┘ä╪Ñ┘ä╪║╪º╪íΓÇª',
-                            'CancellingΓÇª',
+                            'جارٍ الإلغاء…',
+                            'Cancelling…',
                           )
                         : t('orders.cancelOrder')}
                     </button>
@@ -1291,8 +1291,8 @@ const AgentWorkspace: React.FC = () => {
                 {busyOrders[followUpOrder.id] === 'follow-up'
                   ? resolveCopy(
                       'orders.savingFollowUp',
-                      '╪¼╪º╪▒┘ì ╪º┘ä╪¡┘ü╪╕ΓÇª',
-                      'SavingΓÇª',
+                      'جارٍ الحفظ…',
+                      'Saving…',
                     )
                   : t('orders.followUpSave')}
               </button>

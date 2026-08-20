@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 jest.mock('../../services/bookingPatientService', () => ({
@@ -34,7 +34,7 @@ const createResponse = () => {
 };
 
 const req = (overrides = {}) => ({
-  user: { id: 'user-1', companyId: 'company-1', firstName: '┘à╪¡┘à╪»', lastName: '╪╣┘ä┘è' },
+  user: { id: 'user-1', companyId: 'company-1', firstName: 'محمد', lastName: 'علي' },
   params: {},
   body: {},
   query: {},
@@ -46,16 +46,16 @@ describe('booking regression + tenant-isolation fixes', () => {
     jest.clearAllMocks();
   });
 
-  describe('updateAppointment ΓÇö empty-string foreign keys', () => {
+  describe('updateAppointment — empty-string foreign keys', () => {
     const makePrisma = () => {
       const prisma = {
         appointment: {
           findFirst: jest.fn().mockResolvedValue({ id: 'apt-1', companyId: 'company-1' }),
           update: jest.fn().mockResolvedValue({
-            id: 'apt-1', companyId: 'company-1', customerName: '╪│╪º╪▒╪⌐',
+            id: 'apt-1', companyId: 'company-1', customerName: 'سارة',
             customerPhone: null, customerEmail: null, customerGender: null,
             branchId: null, doctorId: null, serviceId: null, serviceName: null,
-            patientId: null, title: '┘à┘ê╪╣╪»', description: null,
+            patientId: null, title: 'موعد', description: null,
             appointmentDate: new Date('2026-08-07'), startTime: '10:00', endTime: null,
             duration: 30, status: 'pending', notes: null,
             diagnosis: null, treatmentPlan: null, prescription: null, vitals: null,
@@ -72,7 +72,7 @@ describe('booking regression + tenant-isolation fixes', () => {
 
       const res = createResponse();
       await updateAppointment(
-        req({ params: { id: 'apt-1' }, body: { branchId: '', doctorId: '', serviceId: '', patientId: '', notes: '┘à┘ä╪º╪¡╪╕╪⌐' } }),
+        req({ params: { id: 'apt-1' }, body: { branchId: '', doctorId: '', serviceId: '', patientId: '', notes: 'ملاحظة' } }),
         res,
       );
 
@@ -83,7 +83,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       expect(data).not.toHaveProperty('doctorId');
       expect(data).not.toHaveProperty('serviceId');
       expect(data).not.toHaveProperty('patientId');
-      expect(data.notes).toBe('┘à┘ä╪º╪¡╪╕╪⌐');
+      expect(data.notes).toBe('ملاحظة');
       expect(prisma.appointment.findFirst).toHaveBeenCalledWith({ where: { id: 'apt-1', companyId: 'company-1' } });
     });
 
@@ -93,14 +93,14 @@ describe('booking regression + tenant-isolation fixes', () => {
 
       const res = createResponse();
       await updateAppointment(
-        req({ params: { id: 'apt-1' }, body: { branchId: 'branch-1', serviceName: '┘â╪┤┘ü' } }),
+        req({ params: { id: 'apt-1' }, body: { branchId: 'branch-1', serviceName: 'كشف' } }),
         res,
       );
 
       expect(res.statusCode).toBe(200);
       const { data } = prisma.appointment.update.mock.calls[0][0];
       expect(data.branchId).toBe('branch-1');
-      expect(data.serviceName).toBe('┘â╪┤┘ü');
+      expect(data.serviceName).toBe('كشف');
       expect(prisma.bookingBranch.findFirst).toHaveBeenCalledWith({
         where: { id: 'branch-1', companyId: 'company-1' },
         select: { id: true },
@@ -108,10 +108,10 @@ describe('booking regression + tenant-isolation fixes', () => {
     });
   });
 
-  describe('finalizeDraft ΓÇö cross-tenant FK validation', () => {
+  describe('finalizeDraft — cross-tenant FK validation', () => {
     const draft = {
       id: 'draft-1', companyId: 'company-1', status: 'in_progress',
-      customerName: '╪ú╪¡┘à╪»', customerPhone: '0100', appointmentDate: new Date('2026-08-07'),
+      customerName: 'أحمد', customerPhone: '0100', appointmentDate: new Date('2026-08-07'),
       startTime: '10:00', customerGender: 'male',
     };
 
@@ -129,7 +129,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       await finalizeDraft(req({ params: { id: 'draft-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘ü╪▒╪╣ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('الفرع غير موجود');
       expect(prisma.bookingBranch.findFirst).toHaveBeenCalledWith({ where: { id: 'branch-foreign', companyId: 'company-1' } });
       expect(prisma.appointment.create).not.toHaveBeenCalled();
     });
@@ -148,7 +148,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       await finalizeDraft(req({ params: { id: 'draft-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä╪«╪»┘à╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الخدمة غير موجودة');
       expect(prisma.bookingService.findFirst).toHaveBeenCalledWith({ where: { id: 'service-foreign', companyId: 'company-1' } });
       expect(prisma.appointment.create).not.toHaveBeenCalled();
     });
@@ -167,7 +167,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       await finalizeDraft(req({ params: { id: 'draft-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä╪╖╪¿┘è╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('الطبيب غير موجود');
       expect(prisma.appointment.create).not.toHaveBeenCalled();
     });
 
@@ -177,9 +177,9 @@ describe('booking regression + tenant-isolation fixes', () => {
           findFirst: jest.fn().mockResolvedValue({ ...draft, branchId: 'branch-1', serviceId: 'service-1', doctorId: 'doctor-1' }),
           update: jest.fn().mockResolvedValue({ id: 'draft-1', status: 'completed' }),
         },
-        bookingBranch: { findFirst: jest.fn().mockResolvedValue({ id: 'branch-1', name: '┘ü╪▒╪╣ 1' }) },
-        bookingService: { findFirst: jest.fn().mockResolvedValue({ id: 'service-1', name: '┘â╪┤┘ü' }) },
-        bookingDoctor: { findFirst: jest.fn().mockResolvedValue({ id: 'doctor-1', name: '╪». ╪ú╪¡┘à╪»' }) },
+        bookingBranch: { findFirst: jest.fn().mockResolvedValue({ id: 'branch-1', name: 'فرع 1' }) },
+        bookingService: { findFirst: jest.fn().mockResolvedValue({ id: 'service-1', name: 'كشف' }) },
+        bookingDoctor: { findFirst: jest.fn().mockResolvedValue({ id: 'doctor-1', name: 'د. أحمد' }) },
         appointment: { create: jest.fn().mockResolvedValue({ id: 'appt-1' }) },
       };
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -201,8 +201,8 @@ describe('booking regression + tenant-isolation fixes', () => {
     });
   });
 
-  describe('createService ΓÇö foreign reference validation', () => {
-    const baseBody = { name: '┘â╪┤┘ü' };
+  describe('createService — foreign reference validation', () => {
+    const baseBody = { name: 'كشف' };
 
     test('rejects a categoryId from another company', async () => {
       const prisma = {
@@ -217,7 +217,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       await createService(req({ body: { ...baseBody, categoryId: 'cat-foreign' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘é╪│┘à ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('القسم غير موجود');
       expect(prisma.bookingService.create).not.toHaveBeenCalled();
     });
 
@@ -234,7 +234,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       await createService(req({ body: { ...baseBody, branches: ['branch-foreign'] } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪ú╪¡╪» ╪º┘ä┘ü╪▒┘ê╪╣ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('أحد الفروع غير موجود');
       expect(prisma.bookingBranch.count).toHaveBeenCalledWith({
         where: { companyId: 'company-1', id: { in: ['branch-foreign'] } },
       });
@@ -254,7 +254,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       await createService(req({ body: { ...baseBody, doctorIds: ['doctor-1', 'doctor-foreign'] } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪ú╪¡╪» ╪º┘ä╪ú╪╖╪¿╪º╪í ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('أحد الأطباء غير موجود');
       expect(prisma.bookingDoctor.count).toHaveBeenCalledWith({
         where: { companyId: 'company-1', id: { in: ['doctor-1', 'doctor-foreign'] } },
       });
@@ -282,7 +282,7 @@ describe('booking regression + tenant-isolation fixes', () => {
     });
   });
 
-  describe('updateService ΓÇö foreign reference validation', () => {
+  describe('updateService — foreign reference validation', () => {
     test('rejects a categoryId from another company', async () => {
       const prisma = {
         bookingService: { findFirst: jest.fn().mockResolvedValue({ id: 'svc-1', companyId: 'company-1' }), update: jest.fn() },
@@ -296,7 +296,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       await updateService(req({ params: { id: 'svc-1' }, body: { categoryId: 'cat-foreign' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘é╪│┘à ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('القسم غير موجود');
       expect(prisma.bookingService.update).not.toHaveBeenCalled();
     });
 
@@ -313,12 +313,12 @@ describe('booking regression + tenant-isolation fixes', () => {
       await updateService(req({ params: { id: 'svc-1' }, body: { doctorIds: ['doctor-foreign'] } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪ú╪¡╪» ╪º┘ä╪ú╪╖╪¿╪º╪í ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('أحد الأطباء غير موجود');
       expect(prisma.bookingDoctorService.deleteMany).not.toHaveBeenCalled();
     });
   });
 
-  describe('bookingDoctors ΓÇö foreign reference validation', () => {
+  describe('bookingDoctors — foreign reference validation', () => {
     test('createDoctor rejects a serviceId from another company', async () => {
       const prisma = {
         bookingBranch: { findFirst: jest.fn().mockResolvedValue({ id: 'branch-1' }) },
@@ -329,12 +329,12 @@ describe('booking regression + tenant-isolation fixes', () => {
 
       const res = createResponse();
       await createDoctor(
-        req({ body: { branchId: 'branch-1', title: '╪»┘â╪¬┘ê╪▒', serviceIds: ['service-foreign'] } }),
+        req({ body: { branchId: 'branch-1', title: 'دكتور', serviceIds: ['service-foreign'] } }),
         res,
       );
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪ú╪¡╪» ╪º┘ä╪«╪»┘à╪º╪¬ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('أحد الخدمات غير موجود');
       expect(prisma.bookingDoctor.create).not.toHaveBeenCalled();
     });
 
@@ -351,7 +351,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       await updateDoctor(req({ params: { id: 'doc-1' }, body: { branchId: 'branch-foreign' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘ü╪▒╪╣ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('الفرع غير موجود');
       expect(prisma.bookingDoctor.update).not.toHaveBeenCalled();
     });
 
@@ -368,12 +368,12 @@ describe('booking regression + tenant-isolation fixes', () => {
       await updateDoctor(req({ params: { id: 'doc-1' }, body: { serviceIds: ['service-foreign'] } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪ú╪¡╪» ╪º┘ä╪«╪»┘à╪º╪¬ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('أحد الخدمات غير موجود');
       expect(prisma.bookingDoctorService.deleteMany).not.toHaveBeenCalled();
     });
   });
 
-  describe('getAvailableSlots ΓÇö still works with the clinic-v2 Appointment fields', () => {
+  describe('getAvailableSlots — still works with the clinic-v2 Appointment fields', () => {
     const branch = {
       id: 'branch-1', companyId: 'company-1',
       workingDays: '{"fri":"09:00-17:00"}',
@@ -442,12 +442,12 @@ describe('booking regression + tenant-isolation fixes', () => {
     });
   });
 
-  describe('patient financial summary ΓÇö additionAmount in outstanding', () => {
+  describe('patient financial summary — additionAmount in outstanding', () => {
     test('getPatientById counts additionAmount toward outstanding', async () => {
       const prisma = {
         patient: {
           findFirst: jest.fn().mockResolvedValue({
-            id: 'p1', companyId: 'company-1', firstName: '╪ú╪¡┘à╪»', gender: 'MALE',
+            id: 'p1', companyId: 'company-1', firstName: 'أحمد', gender: 'MALE',
             referringPhysician: null, priceList: null, appointments: [],
             invoices: [
               { id: 'inv-1', status: 'UNPAID', total: 100, discount: 20, additionAmount: 10, amountPaid: 0 },
@@ -469,7 +469,7 @@ describe('booking regression + tenant-isolation fixes', () => {
       const prisma = {
         patient: {
           findFirst: jest.fn().mockResolvedValue({
-            id: 'p1', companyId: 'company-1', firstName: '╪ú╪¡┘à╪»', gender: 'MALE',
+            id: 'p1', companyId: 'company-1', firstName: 'أحمد', gender: 'MALE',
             referringPhysician: null, priceList: null, appointments: [], _count: { appointments: 0 },
           }),
         },

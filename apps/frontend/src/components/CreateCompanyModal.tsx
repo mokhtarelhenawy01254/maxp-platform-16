@@ -1,7 +1,17 @@
-import { X as XMarkIcon, Circle as BuildingOffice2Icon, Mail as EnvelopeIcon, Phone as PhoneIcon, Globe as GlobeAltIcon, Pin as MapPinIcon, DollarSign as CurrencyDollarIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState } from "react";
-;
+import {
+  XMarkIcon,
+  BuildingOffice2Icon,
+  EnvelopeIcon,
+  PhoneIcon,
+  GlobeAltIcon,
+  MapPinIcon,
+  CurrencyDollarIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../i18n";
+import { tToast } from "../utils/i18n-toast";
 import { apiClient } from "../services/apiClient";
 
 interface CreateCompanyModalProps {
@@ -94,11 +104,11 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
       });
 
       if (response.data.success) {
-        toast.success("تم إنشاء الشركة بنجاح! 🎉");
+        tToast.success("CreateCompanyModal.success_create_60f4");
         onSuccess();
         handleClose();
       } else {
-        toast.error(response.data.message || "فشل في إنشاء الشركة");
+        toast.error(response.data.message || i18n.t("CreateCompanyModal.failed_create_0bca"));
       }
     } catch (error: any) {
       console.error("Error creating company:", error);

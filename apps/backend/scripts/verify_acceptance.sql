@@ -1,4 +1,4 @@
-﻿-- 1. Migration verification
+-- 1. Migration verification
 SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'whatsapp_session_history_imports') AS table_exists;
 SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'whathistoryimportstatus') AS enum_exists;
 

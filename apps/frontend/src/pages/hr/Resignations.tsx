@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Calculator, Calendar, Check, CheckCircle, File, FileText, Plus, X, XCircle } from 'lucide-react';
+import {
+  FileText,
+  Plus,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  Calculator,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import SettlementDetailsModal from "./SettlementDetailsModal";
 
 interface Resignation {
@@ -43,7 +51,7 @@ const Resignations: React.FC = () => {
       setResignations(response.data.resignations || []);
     } catch (error) {
       console.error("Error fetching resignations:", error);
-      toast.error("فشل في جلب الاستقالات");
+      tToast.error("Resignations.failed_fetch_eabb");
     } finally {
       setLoading(false);
     }

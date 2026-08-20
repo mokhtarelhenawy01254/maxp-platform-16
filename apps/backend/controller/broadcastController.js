@@ -5,6 +5,12 @@ const WhatsAppMessageHandler = require('../services/whatsapp').WhatsAppMessageHa
 const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
 const socketService = require('../services/socketService');
 const { recordSentMessageStat } = require('../utils/statsRecorder');
+const { buildBroadcastBodyParams, countTemplateParams, hasOrderVariables, getTemplateHeaderFormat, buildBroadcastHeaderParams } = require('../utils/broadcastTemplateParams');
+const {
+  buildEffectiveCustomerListWhere,
+  resolveAggregateCustomerIds,
+  criteriaToSummary,
+} = require('../utils/customerListCriteria');
 
 console.log('🚀 [BROADCAST CONTROLLER] تم تحميل وحدة تحكم البرودكاست بنجاح');
 
@@ -56,6 +62,7 @@ exports.createCampaign = async (req, res) => {
       targetAudience,
       waTemplateName,
       waLanguageCode,
+      waHeaderMedia,
       whatsAppSessionId,
       leadCategoryId,
       scheduledAt,
@@ -165,6 +172,7 @@ exports.createCampaign = async (req, res) => {
         targetAudience,
         waTemplateName: waTemplateName || null,
         waLanguageCode: waLanguageCode || 'en',
+        waHeaderMedia: waHeaderMedia || null,
         whatsAppSessionId: whatsAppSessionId || null,
         leadCategoryId: leadCategoryId || null,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
@@ -684,18 +692,18 @@ exports.sendCampaign = async (req, res) => {
         const cleanPhone = phone.replace(/[^0-9]/g, '');
         if (!cleanPhone) continue;
         try {
-          let customer = await getSharedPrismaClient().customer.findFirst({
-            where: { companyId, phone: { contains: cleanPhone } }
-          });
+          const { findCustomerByPhone } = require('../utils/customerIdentity');
+          let customer = await findCustomerByPhone(getSharedPrismaClient(), cleanPhone, companyId);
           if (!customer) {
             customer = await getSharedPrismaClient().customer.create({
               data: {
                 id: generateId(),
                 companyId,
                 phone: cleanPhone,
+                phoneNormalized: require('../utils/phoneNormalization').toCanonicalE164(cleanPhone),
                 firstName: cleanPhone,
                 lastName: '',
-                source: 'manual'
+                metadata: JSON.stringify({ source: 'manual_campaign' })
               }
             });
           }
@@ -910,15 +918,35 @@ exports.sendCampaign = async (req, res) => {
 
       // Fetch template body text from Meta API so chat history displays real text content
       let templateBodyText = '';
+      let templateHeaderFormat = null;
       try {
         const metaTemplates = await MetaCloudProvider.listTemplates(waSessionId);
         const targetMetaTemplate = metaTemplates.find(t => t.name === campaign.waTemplateName);
         if (targetMetaTemplate) {
           templateBodyText = targetMetaTemplate.components?.find(c => c.type === 'BODY')?.text || '';
+          templateHeaderFormat = getTemplateHeaderFormat(targetMetaTemplate);
         }
       } catch (tmplErr) {
         console.warn('⚠️ [SEND CAMPAIGN] Could not fetch template body text:', tmplErr.message);
       }
+
+      // 🚨 PRODUCTION-FIX (broadcast semantics): نجلب ترتيب متغيرات القالب المحلي المربوط
+      // ({position, name}) حتى نملأ كل موضع بقيمته الصحيحة — مش كان بيترسل firstName/lastName
+      // في كل المواضع (اسم العميل كان بيظهر مكان رقم الطلب في قالب deliveredmsj72rwc).
+      let boundLocalVariables = null;
+      try {
+        const boundLocal = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+          where: { companyId, metaTemplateName: campaign.waTemplateName },
+          select: { variables: true }
+        });
+        if (boundLocal?.variables) {
+          const parsed = JSON.parse(boundLocal.variables);
+          if (Array.isArray(parsed)) boundLocalVariables = parsed;
+        }
+      } catch (e) {
+        console.warn('⚠️ [SEND CAMPAIGN] Could not load bound local template variables:', e?.message || e);
+      }
+      const needOrderForCustomer = hasOrderVariables(boundLocalVariables);
 
       // تطبيق الحد الأقصى للمستلمين إذا تم تحديده
       const maxRecipients = parseInt(req.body.limit) || 0;
@@ -958,18 +986,39 @@ exports.sendCampaign = async (req, res) => {
 
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
 
-          // Build template body parameters from customer data
-          const bodyParams = [];
-          if (conv.customer.firstName) {
-            bodyParams.push({ type: 'text', text: conv.customer.firstName });
-          }
-          if (conv.customer.lastName) {
-            bodyParams.push({ type: 'text', text: conv.customer.lastName });
-          }
+          // Build template body parameters to MATCH the template's expected variable count.
+          // Meta rejects with (#132000) if the count differs — e.g. a 4-var template sent
+          // with only firstName/lastName (2 params) always failed.
+          const templateParamCount = countTemplateParams(templateBodyText);
 
-          const components = bodyParams.length > 0
-            ? [{ type: 'body', parameters: bodyParams }]
-            : [];
+          // 🆕 لو القالب مربوط بقالب محلي فيه متغيرات طلب → نجلب أحدث طلب للعميل
+          // عشان رقم الطلب/الإجمالي ينزلوا صح بدل اسم العميل.
+          let orderForCustomer = null;
+          if (needOrderForCustomer) {
+            try {
+              orderForCustomer = await getSharedPrismaClient().order.findFirst({
+                where: { companyId, customerId: conv.customer.id },
+                orderBy: { createdAt: 'desc' },
+                select: {
+                  orderNumber: true, total: true, subtotal: true, shipping: true,
+                  currency: true, turboTrackingNumber: true, status: true
+                }
+              });
+            } catch (orderErr) {
+              console.warn(`⚠️ [SEND CAMPAIGN] Could not fetch latest order for ${conv.customer.firstName}:`, orderErr?.message || orderErr);
+            }
+          }
+          const bodyParams = buildBroadcastBodyParams(templateBodyText, conv.customer, boundLocalVariables, orderForCustomer);
+
+          // header يأتي أولاً في components (إن كان قالب الحملة هيدره وسائط ولها صورة/وسيط)
+          const components = [];
+          if (templateHeaderFormat?.hasMedia && campaign.waHeaderMedia) {
+            const headerParam = buildBroadcastHeaderParams(campaign.waHeaderMedia, templateHeaderFormat.format.toLowerCase());
+            if (headerParam) components.push(headerParam);
+          }
+          if (bodyParams.length > 0) {
+            components.push({ type: 'body', parameters: bodyParams });
+          }
 
           // Resolve variables in templateBodyText if present
           let resolvedBody = templateBodyText;
@@ -989,16 +1038,9 @@ exports.sendCampaign = async (req, res) => {
               { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: resolvedBody, senderId: campaign.creatorId }
             );
           } catch (sendErr) {
-            if (components.length > 0) {
-              console.log(`⚠️ [SEND CAMPAIGN] Re-trying template ${campaign.waTemplateName} without body params for ${to}`);
-              result = await WhatsAppMessageHandler.sendTemplateMessage(
-                waSessionId, to, campaign.waTemplateName,
-                { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
-                { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: templateBodyText, senderId: campaign.creatorId }
-              );
-            } else {
-              throw sendErr;
-            }
+            // Parameters now always match the template's variable count, so no
+            // params-less retry: it would re-fail with (#132000) for variable templates.
+            throw sendErr;
           }
 
           sentCount++;
@@ -1671,68 +1713,92 @@ exports.getCampaignAnalytics = async (req, res) => {
 /**
  * إنشاء قائمة عملاء جديدة
  */
+async function computeCustomerListCount(prisma, companyId, criteria) {
+  const { where, take } = await buildEffectiveCustomerListWhere(prisma, companyId, criteria);
+  if (take) {
+    const rows = await prisma.customer.findMany({ where, take, select: { id: true } });
+    return rows.length;
+  }
+  return prisma.customer.count({ where });
+}
+
+/**
+ * درجة RFM مبسطة (0–100) من الإنفاق والتكرار والحداثة.
+ * تقريب عملي لنماذج 2026 دون الحاجة لبيانات تاريخية ضخمة.
+ */
+function computeRfmScore(totalSpent, ordersCount, lastActivity) {
+  let score = 0;
+  // Monetary (0–40)
+  const m = Number(totalSpent) || 0;
+  if (m >= 20000) score += 40;
+  else if (m >= 10000) score += 34;
+  else if (m >= 5000) score += 28;
+  else if (m >= 2000) score += 22;
+  else if (m >= 1000) score += 16;
+  else if (m >= 500) score += 10;
+  else if (m > 0) score += 5;
+
+  // Frequency (0–30)
+  const f = Number(ordersCount) || 0;
+  if (f >= 20) score += 30;
+  else if (f >= 10) score += 24;
+  else if (f >= 5) score += 18;
+  else if (f >= 3) score += 12;
+  else if (f >= 1) score += 6;
+
+  // Recency (0–30)
+  const days = lastActivity
+    ? Math.max(0, (Date.now() - new Date(lastActivity).getTime()) / 86400000)
+    : 999;
+  if (days <= 3) score += 30;
+  else if (days <= 7) score += 26;
+  else if (days <= 14) score += 22;
+  else if (days <= 30) score += 16;
+  else if (days <= 60) score += 10;
+  else if (days <= 90) score += 5;
+
+  return Math.min(100, Math.round(score));
+}
+
+function rfmTierFor(score) {
+  if (score >= 70) return 'gold';
+  if (score >= 45) return 'silver';
+  if (score >= 25) return 'bronze';
+  return 'lead';
+}
+
 exports.createCustomerList = async (req, res) => {
   try {
-    console.log('➕ [CREATE CUSTOMER LIST] بدء إنشاء قائمة عملاء جديدة');
     const companyId = req.user.companyId;
     const { name, description, criteria } = req.body;
-    console.log(`🔍 [CREATE CUSTOMER LIST] معرف الشركة: ${companyId}`);
-    console.log('📝 [CREATE CUSTOMER LIST] بيانات القائمة:', { name, description, criteria });
 
-    // التحقق من الحقول المطلوبة
     if (!name || !criteria) {
-      console.log('❌ [CREATE CUSTOMER LIST] بيانات مفقودة');
       return res.status(400).json({
         success: false,
         message: 'الاسم والمعايير مطلوبة'
       });
     }
 
-    // حساب عدد العملاء بناءً على المعايير
-    console.log('🔍 [CREATE CUSTOMER LIST] حساب عدد العملاء بناءً على المعايير');
-    let whereCondition = { companyId };
+    const prisma = getSharedPrismaClient();
 
-    if (criteria.type === 'active' && criteria.lastActivity) {
-      const hours = parseInt(criteria.lastActivity);
-      const dateThreshold = new Date();
-      dateThreshold.setHours(dateThreshold.getHours() - hours);
-      whereCondition.status = 'ACTIVE';
-      whereCondition.messages = {
-        some: {
-          isFromCustomer: true,
-          createdAt: {
-            gte: dateThreshold
-          }
-        }
-      };
-    } else if (criteria.type === 'inactive' && criteria.lastActivity) {
-      const days = parseInt(criteria.lastActivity);
-      const dateThreshold = new Date();
-      dateThreshold.setDate(dateThreshold.getDate() - days);
-      whereCondition.updatedAt = { lt: dateThreshold };
-    } else if (criteria.type === 'tag' && criteria.tag) {
-      // 🏷️ فلتر بالوسم — يبحث في حقل tags الخاص بالعميل المرتبط بالمحادثة
-      whereCondition.customer = { tags: { contains: `"${criteria.tag}"` } };
-    } else if (criteria.type === 'all') {
-      whereCondition.status = 'ACTIVE';
+    const existing = await prisma.customerList.findFirst({
+      where: { companyId, name: name.trim() }
+    });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'يوجد قائمة بهذا الاسم بالفعل' });
     }
 
-    const count = await getSharedPrismaClient().conversation.count({ where: whereCondition });
-    console.log(`📊 [CREATE CUSTOMER LIST] عدد العملاء المطابقين: ${count}`);
+    const count = await computeCustomerListCount(prisma, companyId, criteria);
 
-    // إنشاء القائمة
-    console.log('💾 [CREATE CUSTOMER LIST] حفظ القائمة في قاعدة البيانات');
-    const list = await getSharedPrismaClient().customerList.create({
+    const list = await prisma.customerList.create({
       data: {
-        name,
+        name: name.trim(),
         description: description || '',
         criteria: JSON.stringify(criteria),
         count,
         companyId
       }
     });
-
-    console.log(`✅ [CREATE CUSTOMER LIST] تم إنشاء القائمة بنجاح - معرف القائمة: ${list.id}`);
 
     res.status(201).json({
       success: true,
@@ -1742,12 +1808,119 @@ exports.createCustomerList = async (req, res) => {
 
   } catch (error) {
     console.error('❌ [CREATE CUSTOMER LIST] خطأ في إنشاء القائمة:', error.message);
-    console.error('🔍 [CREATE CUSTOMER LIST] تفاصيل الخطأ:', error);
     res.status(500).json({
       success: false,
       message: 'فشل في إنشاء القائمة',
       error: error.message
     });
+  }
+};
+
+exports.updateCustomerList = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { listId } = req.params;
+    const { name, description, criteria } = req.body;
+
+    if (!name || !criteria) {
+      return res.status(400).json({ success: false, message: 'الاسم والمعايير مطلوبة' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const list = await prisma.customerList.findFirst({ where: { id: listId, companyId } });
+    if (!list) {
+      return res.status(404).json({ success: false, message: 'القائمة غير موجودة' });
+    }
+    if (list.isDefault) {
+      return res.status(400).json({ success: false, message: 'لا يمكن تعديل قائمة افتراضية' });
+    }
+
+    const duplicate = await prisma.customerList.findFirst({
+      where: { companyId, name: name.trim(), id: { not: listId } }
+    });
+    if (duplicate) {
+      return res.status(409).json({ success: false, message: 'يوجد قائمة بهذا الاسم بالفعل' });
+    }
+
+    const count = await computeCustomerListCount(prisma, companyId, criteria);
+
+    const updated = await prisma.customerList.update({
+      where: { id: listId },
+      data: {
+        name: name.trim(),
+        description: description || '',
+        criteria: JSON.stringify(criteria),
+        count
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'تم تحديث القائمة بنجاح',
+      data: updated
+    });
+
+  } catch (error) {
+    console.error('❌ [UPDATE CUSTOMER LIST] خطأ في تحديث القائمة:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'فشل في تحديث القائمة',
+      error: error.message
+    });
+  }
+};
+
+exports.refreshCustomerListCount = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { listId } = req.params;
+
+    const prisma = getSharedPrismaClient();
+    const list = await prisma.customerList.findFirst({ where: { id: listId, companyId } });
+    if (!list) {
+      return res.status(404).json({ success: false, message: 'القائمة غير موجودة' });
+    }
+
+    const criteria = typeof list.criteria === 'string' ? JSON.parse(list.criteria) : list.criteria;
+    const count = await computeCustomerListCount(prisma, companyId, criteria);
+
+    const updated = await prisma.customerList.update({
+      where: { id: listId },
+      data: { count }
+    });
+
+    res.json({
+      success: true,
+      message: 'تم تحديث عدد العملاء',
+      data: { id: listId, count }
+    });
+
+  } catch (error) {
+    console.error('❌ [REFRESH CUSTOMER LIST] خطأ في تحديث العدد:', error.message);
+    res.status(500).json({ success: false, message: 'فشل في تحديث عدد العملاء', error: error.message });
+  }
+};
+
+exports.previewCustomerListCount = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { criteria } = req.body;
+
+    if (!criteria) {
+      return res.status(400).json({ success: false, message: 'المعايير مطلوبة' });
+    }
+
+    const count = await computeCustomerListCount(getSharedPrismaClient(), companyId, criteria);
+
+    res.json({
+      success: true,
+      data: { count }
+    });
+
+  } catch (error) {
+    console.error('❌ [PREVIEW CUSTOMER LIST] خطأ في معاينة العدد:', error.message);
+    res.status(500).json({ success: false, message: 'فشل في معاينة عدد العملاء', error: error.message });
   }
 };
 
@@ -1801,6 +1974,14 @@ exports.getCustomerLists = async (req, res) => {
       }
     });
 
+    const staleAfterDays = 7;
+    const now = Date.now();
+    const listsWithStale = lists.map((l) => ({
+      ...l,
+      criteria: typeof l.criteria === 'string' ? JSON.parse(l.criteria) : l.criteria,
+      isStale: now - new Date(l.updatedAt).getTime() > staleAfterDays * 86400000,
+    }));
+
     console.log(`📝 [GET CUSTOMER LISTS] تم جلب ${lists.length} قائمة مخصصة`);
 
     // Add default lists
@@ -1827,7 +2008,7 @@ exports.getCustomerLists = async (req, res) => {
         createdAt: new Date(),
         updatedAt: new Date()
       },
-      ...lists
+      ...listsWithStale
     ];
 
     console.log(`✅ [GET CUSTOMER LISTS] تم إرجاع ${allLists.length} قائمة (شاملة القائمة الافتراضية)`);
@@ -1854,215 +2035,128 @@ exports.getCustomerLists = async (req, res) => {
 /**
  * الحصول على العملاء في قائمة محددة
  */
+const DEFAULT_LIST_CRITERIA = {
+  all: { type: 'all' },
+  'active-24h': { type: 'active', hours: 24 },
+};
+
 exports.getCustomersInList = async (req, res) => {
   try {
-    console.log('👥 [GET CUSTOMERS IN LIST] بدء جلب العملاء في القائمة');
     const companyId = req.user.companyId;
     const { listId } = req.params;
-    const { page = 1, limit = 100 } = req.query;
-    console.log(`🔍 [GET CUSTOMERS IN LIST] معرف الشركة: ${companyId}, معرف القائمة: ${listId}, الصفحة: ${page}, الحد: ${limit}`);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 200);
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const skip = (page - 1) * limit;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const prisma = getSharedPrismaClient();
 
-    // حالة خاصة: جميع العملاء
-    if (listId === 'all') {
-      console.log('🌐 [GET CUSTOMERS IN LIST] جلب جميع العملاء النشطين');
-      const conversations = await getSharedPrismaClient().conversation.findMany({
-        where: {
-          companyId,
-          status: 'ACTIVE'
-        },
-        skip,
-        take: parseInt(limit),
-        include: {
-          customer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-              facebookId: true,
-              createdAt: true,
-              updatedAt: true
-            }
-          }
-        },
-        orderBy: {
-          updatedAt: 'desc'
-        }
+    let criteria;
+    let isDefault = false;
+
+    if (DEFAULT_LIST_CRITERIA[listId]) {
+      criteria = DEFAULT_LIST_CRITERIA[listId];
+      isDefault = true;
+    } else {
+      const list = await prisma.customerList.findFirst({
+        where: { id: listId, companyId }
       });
-
-      console.log(`📊 [GET CUSTOMERS IN LIST] تم جلب ${conversations.length} محادثة نشطة`);
-
-      // تحويل البيانات لصيغة Customer
-      const customers = conversations.map(conv => ({
-        id: conv.customer.id,
-        name: `${conv.customer.firstName || ''} ${conv.customer.lastName || ''}`.trim(),
-        email: conv.customer.email || '',
-        phone: conv.customer.phone || '',
-        lastActivity: conv.updatedAt,
-        totalSpent: 0, // يمكن حسابها من Orders
-        location: 'غير محدد',
-        status: conv.status === 'ACTIVE' ? 'active' : 'inactive'
-      }));
-
-      console.log(`✅ [GET CUSTOMERS IN LIST] تم تحويل ${customers.length} عميل للإرجاع`);
-
-      return res.json({
-        success: true,
-        data: customers
-      });
-    }
-
-    // حالة خاصة: العملاء النشطين في آخر 24 ساعة
-    if (listId === 'active-24h') {
-      console.log('⏰ [GET CUSTOMERS IN LIST] جلب العملاء النشطين في آخر 24 ساعة');
-      const last24Hours = new Date();
-      last24Hours.setHours(last24Hours.getHours() - 24);
-
-      const conversations = await getSharedPrismaClient().conversation.findMany({
-        where: {
-          companyId,
-          status: 'ACTIVE',
-          messages: {
-            some: {
-              isFromCustomer: true,
-              createdAt: {
-                gte: last24Hours
-              }
-            }
-          }
-        },
-        skip,
-        take: parseInt(limit),
-        include: {
-          customer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-              facebookId: true,
-              createdAt: true,
-              updatedAt: true
-            }
-          }
-        },
-        orderBy: {
-          updatedAt: 'desc'
-        }
-      });
-
-      console.log(`📊 [GET CUSTOMERS IN LIST] تم جلب ${conversations.length} محادثة نشطة في آخر 24 ساعة`);
-
-      // تحويل البيانات لصيغة Customer
-      const customers = conversations.map(conv => ({
-        id: conv.customer.id,
-        name: `${conv.customer.firstName || ''} ${conv.customer.lastName || ''}`.trim(),
-        email: conv.customer.email || '',
-        phone: conv.customer.phone || '',
-        lastActivity: conv.updatedAt,
-        totalSpent: 0,
-        location: 'غير محدد',
-        status: conv.status === 'ACTIVE' ? 'active' : 'inactive'
-      }));
-
-      console.log(`✅ [GET CUSTOMERS IN LIST] تم تحويل ${customers.length} عميل للإرجاع`);
-
-      return res.json({
-        success: true,
-        data: customers
-      });
-    }
-
-    console.log(`📋 [GET CUSTOMERS IN LIST] البحث عن القائمة المخصصة: ${listId}`);
-    // للقوائم المخصصة
-    const list = await getSharedPrismaClient().customerList.findFirst({
-      where: {
-        id: listId,
-        companyId
+      if (!list) {
+        return res.status(404).json({ success: false, message: 'القائمة غير موجودة' });
       }
-    });
-
-    if (!list) {
-      console.log('❌ [GET CUSTOMERS IN LIST] القائمة غير موجودة');
-      return res.status(404).json({
-        success: false,
-        message: 'القائمة غير موجودة'
-      });
+      criteria = typeof list.criteria === 'string' ? JSON.parse(list.criteria) : list.criteria;
     }
 
-    console.log(`📝 [GET CUSTOMERS IN LIST] تم العثور على القائمة: ${list.name}`);
+    const { where, orderBy, take } = await buildEffectiveCustomerListWhere(prisma, companyId, criteria);
 
-    // جلب العملاء بناءً على معايير القائمة
-    let whereCondition = { companyId };
-
-    // تطبيق المعايير حسب نوع القائمة
-    const criteria = typeof list.criteria === 'string' ? JSON.parse(list.criteria) : list.criteria;
-    if (criteria.type === 'active' && criteria.lastActivity) {
-      const hours = parseInt(criteria.lastActivity);
-      const dateThreshold = new Date();
-      dateThreshold.setHours(dateThreshold.getHours() - hours);
-
-      whereCondition.status = 'ACTIVE';
-      whereCondition.messages = {
-        some: {
-          isFromCustomer: true,
-          createdAt: {
-            gte: dateThreshold
-          }
-        }
-      };
-    } else if (criteria.type === 'tag' && criteria.tag) {
-      // 🏷️ فلتر بالوسم
-      whereCondition.customer = { tags: { contains: `"${criteria.tag}"` } };
-    } else if (criteria.type === 'all') {
-      whereCondition.status = 'ACTIVE';
+    const effectiveWhere = { ...where };
+    if (search) {
+      effectiveWhere.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
-    const conversations = await getSharedPrismaClient().conversation.findMany({
-      where: whereCondition,
+    let effectiveOrderBy = orderBy || { updatedAt: 'desc' };
+    let effectiveTake = take || undefined;
+
+    const total = await prisma.customer.count({ where: effectiveWhere });
+
+    const customers = await prisma.customer.findMany({
+      where: effectiveWhere,
       skip,
-      take: parseInt(limit),
-      include: {
-        customer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-            createdAt: true,
-            updatedAt: true
-          }
-        }
-      },
-      orderBy: {
-        updatedAt: 'desc'
+      take: effectiveTake ?? limit,
+      orderBy: effectiveOrderBy,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        status: true,
+        tags: true,
+        customerRating: true,
+        createdAt: true,
+        updatedAt: true,
       }
     });
 
-    const customers = conversations.map(conv => ({
-      id: conv.customer.id,
-      name: `${conv.customer.firstName || ''} ${conv.customer.lastName || ''}`.trim(),
-      email: conv.customer.email || '',
-      phone: conv.customer.phone || '',
-      lastActivity: conv.updatedAt,
-      totalSpent: 0,
-      location: 'غير محدد',
-      status: conv.status === 'ACTIVE' ? 'active' : 'inactive'
-    }));
+    // إجمالي الإنفاق وعدد الطلبات الحقيقيين لكل عميل في هذه الصفحة
+    const ids = customers.map((c) => c.id);
+    let spendMap = new Map();
+    if (ids.length > 0) {
+      const orders = await prisma.order.groupBy({
+        by: ['customerId'],
+        where: {
+          companyId,
+          customerId: { in: ids },
+          status: { notIn: ['CANCELLED', 'TRASH', 'DRAFT', 'DUPLICATE_ORDER'] },
+        },
+        _sum: { total: true },
+        _count: { customerId: true },
+      });
+      orders.forEach((o) => {
+        spendMap.set(o.customerId, {
+          totalSpent: Number(o._sum?.total ?? 0),
+          ordersCount: o._count?.customerId ?? 0,
+        });
+      });
+    }
+
+    const data = customers.map((c) => {
+      const spend = spendMap.get(c.id) || { totalSpent: 0, ordersCount: 0 };
+      const rfmScore = computeRfmScore(spend.totalSpent, spend.ordersCount, c.updatedAt);
+      return {
+        id: c.id,
+        name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'عميل بدون اسم',
+        email: c.email || '',
+        phone: c.phone || '',
+        lastActivity: c.updatedAt,
+        createdAt: c.createdAt,
+        totalSpent: spend.totalSpent,
+        ordersCount: spend.ordersCount,
+        rfmScore,
+        rfmTier: rfmTierFor(rfmScore),
+        location: 'غير محدد',
+        status: c.status === 'ACTIVE' ? 'active' : 'inactive',
+        rating: c.customerRating || 'UNKNOWN',
+        tags: c.tags || '',
+      };
+    });
 
     res.json({
       success: true,
-      data: customers
+      data,
+      total,
+      page,
+      limit: limit,
+      hasMore: page * limit < total,
     });
 
   } catch (error) {
     console.error('❌ [GET CUSTOMERS IN LIST] خطأ في جلب العملاء:', error.message);
-    console.error('🔍 [GET CUSTOMERS IN LIST] تفاصيل الخطأ:', error);
     res.status(500).json({
       success: false,
       message: 'فشل في جلب العملاء',

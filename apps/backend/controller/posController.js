@@ -71,18 +71,26 @@ const createPOSOrder = async (req, res) => {
     // If new customer or guest
     if (!customerId || customerId === 'new') {
       if (customer?.name && customer?.phone) {
-        // Create new customer
-        const newCustomer = await getSharedPrismaClient().customer.create({
-          data: {
-            firstName: customer.name.split(' ')[0] || 'عميل',
-            lastName: customer.name.split(' ').slice(1).join(' ') || 'كاشير',
-            phone: customer.phone,
-            companyId: companyId,
-            status: 'ACTIVE',
-            metadata: JSON.stringify({ source: 'pos' })
-          }
-        });
-        customerId = newCustomer.id;
+        // منع التكرار: لو الرقم موجود نستخدم العميل الموجود
+        const { findCustomerByPhone } = require('../utils/customerIdentity');
+        const existing = await findCustomerByPhone(getSharedPrismaClient(), customer.phone, companyId);
+        if (existing) {
+          customerId = existing.id;
+        } else {
+          // Create new customer
+          const newCustomer = await getSharedPrismaClient().customer.create({
+            data: {
+              firstName: customer.name.split(' ')[0] || 'عميل',
+              lastName: customer.name.split(' ').slice(1).join(' ') || 'كاشير',
+              phone: customer.phone,
+              phoneNormalized: require('../utils/phoneNormalization').toCanonicalE164(customer.phone),
+              companyId: companyId,
+              status: 'ACTIVE',
+              metadata: JSON.stringify({ source: 'pos' })
+            }
+          });
+          customerId = newCustomer.id;
+        }
       } else {
         // Find or create generic "Walk-in Customer"
         // For PostgreSQL, use case-insensitive text search instead of contains

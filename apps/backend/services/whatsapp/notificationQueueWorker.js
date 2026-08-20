@@ -1,10 +1,10 @@
-﻿/**
- * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º1.1):
- * ╪╖╪º╪¿┘ê╪▒ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿ ΓÇö ┘à╪╣╪º┘ä╪¼╪⌐ WhatsAppNotificationQueue ╪╣╪¿╪▒ BullMQ.
- * ┘è╪¡┘ä ┘à╪┤┘â┘ä╪⌐ processNotificationQueue() ╪º┘ä┘à┘è╪¬╪⌐ ΓåÆ quiet-hours + ╪º┘ä┘à╪¼╪»┘ê┘ä╪⌐ ╪¬┘Å╪▒╪│┘ä ╪º┘ä╪ó┘å.
+/**
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1):
+ * طابور إشعارات واتساب — معالجة WhatsAppNotificationQueue عبر BullMQ.
+ * يحل مشكلة processNotificationQueue() الميتة → quiet-hours + المجدولة تُرسل الآن.
  *
- * ┘à╪▒╪¼╪╣ ╪º┘ä┘å┘à╪╖: queues/webhookQueue.js + services/queueService.js
- * (BullMQ + ioredis ┘à╪½╪¿╪¬╪º┘å ╪¿╪º┘ä┘ü╪╣┘ä ┘ü┘è package.json).
+ * مرجع النمط: queues/webhookQueue.js + services/queueService.js
+ * (BullMQ + ioredis مثبتان بالفعل في package.json).
  */
 const { Worker, Queue } = require('bullmq');
 const redisConfig = require('../../config/redis');
@@ -12,14 +12,14 @@ const { processNotificationQueue } = require('./WhatsAppNotificationService');
 const { getSharedPrismaClient } = require('../sharedDatabase');
 
 const QUEUE_NAME = 'whatsapp-notifications';
-const OVERDUE_THRESHOLD_MS = 2 * 60 * 1000; // 2 ╪»┘é┘è┘é╪⌐
-const OVERDUE_ALERT_AT = 10; // ╪╣╪┤┘æ╪▒┘è╪⌐ ╪╣┘å╪º╪╡╪▒ ┘à╪│╪¬╪¡┘é╪⌐ ╪ú┘ê ╪ú┘â╪½╪▒ = ╪¬┘å╪¿┘è┘ç
+const OVERDUE_THRESHOLD_MS = 2 * 60 * 1000; // 2 دقيقة
+const OVERDUE_ALERT_AT = 10; // عشّرية عناصر مستحقة أو أكثر = تنبيه
 
 let worker = null;
 let fallbackTimer = null;
 let started = false;
 
-// ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º5.3): ╪¬┘å╪¿┘è┘ç ╪╣┘å╪» ╪¬╪▒╪º┘â┘à ╪º┘ä╪╖╪º╪¿┘ê╪▒
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §5.3): تنبيه عند تراكم الطابور
 async function checkOverdueAndAlert() {
   try {
     const prisma = getSharedPrismaClient();
@@ -28,7 +28,7 @@ async function checkOverdueAndAlert() {
       where: { status: 'PENDING', scheduledAt: { lte: new Date(Date.now() - OVERDUE_THRESHOLD_MS) } },
     });
     if (overdue > OVERDUE_ALERT_AT) {
-      console.error(`≡ƒÜ¿ [NOTIF-QUEUE] ${overdue} notifications overdue (>2min) ΓÇö check worker/Redis/META_CLOUD`);
+      console.error(`🚨 [NOTIF-QUEUE] ${overdue} notifications overdue (>2min) — check worker/Redis/META_CLOUD`);
     }
   } catch (err) {
     console.error('[NOTIF-QUEUE] overdue check failed:', err.message);
@@ -49,17 +49,17 @@ function isRedisConfigured() {
 }
 
 /**
- * ┘à╪¡┘ü┘æ╪▓ (trigger) BullMQ ΓÇö ╪º┘ä┘Ç Worker ┘ç┘å╪º ┘ü┘é╪╖ "┘è┘ê┘é╪╕" ╪º┘ä┘à╪╣╪º┘ä╪¼ ╪º┘ä╪»┘ê╪▒┘è
- * ╪º┘ä╪░┘è ┘è┘ä╪¬┘é╪╖ PENDING ┘à┘å WhatsAppNotificationQueue.
- * ╪ú╪¿┘é┘è┘å╪º processNotificationQueue ┘â┘à╪╡╪»╪▒ ╪º┘ä╪¡┘é┘è┘é╪⌐ ╪º┘ä┘ê╪¡┘è╪» (┘ä╪º ╪¬┘â╪▒╪º╪▒ ┘à┘å╪╖┘é).
- * ╪º┘ä┘Ç repeat job (┘â┘ä ╪»┘é┘è┘é╪⌐) ┘è┘Å╪»╪º╪▒ ╪¿┘ê╪º╪│╪╖╪⌐ BullMQ/Redis╪î ┘ü┘ä╪º ┘è╪¬┘â╪▒╪▒ ╪╣╪¿╪▒
- * ┘å╪│╪« ┘à╪¬╪╣╪»╪»╪⌐ ┘à┘å ╪º┘ä┘Ç backend.
+ * محفّز (trigger) BullMQ — الـ Worker هنا فقط "يوقظ" المعالج الدوري
+ * الذي يلتقط PENDING من WhatsAppNotificationQueue.
+ * أبقينا processNotificationQueue كمصدر الحقيقة الوحيد (لا تكرار منطق).
+ * الـ repeat job (كل دقيقة) يُدار بواسطة BullMQ/Redis، فلا يتكرر عبر
+ * نسخ متعددة من الـ backend.
  */
 function startNotificationQueueWorker() {
   if (started) return;
 
   if (!isRedisConfigured()) {
-    console.warn('ΓÜá∩╕Å [NOTIF-QUEUE] Redis ╪║┘è╪▒ ┘à┘Å╪╣╪» ΓÇö ╪º┘ä╪╖╪º╪¿┘ê╪▒ ╪│┘è╪╣┘à┘ä ╪¿┘Ç fallback polling');
+    console.warn('⚠️ [NOTIF-QUEUE] Redis غير مُعد — الطابور سيعمل بـ fallback polling');
     startFallbackPolling();
     return;
   }
@@ -76,13 +76,13 @@ function startNotificationQueueWorker() {
   );
 
   worker.on('failed', (job, err) =>
-    console.error(`Γ¥î [NOTIF-QUEUE] Job ${job?.id} failed:`, err.message)
+    console.error(`❌ [NOTIF-QUEUE] Job ${job?.id} failed:`, err.message)
   );
   worker.on('error', (err) =>
-    console.error(`Γ¥î [NOTIF-QUEUE] Worker error:`, err.message)
+    console.error(`❌ [NOTIF-QUEUE] Worker error:`, err.message)
   );
 
-  // ╪¼╪»┘ê┘ä╪⌐ ╪¬┘â╪▒╪º╪▒┘è╪⌐: ╪»┘ü╪╣╪⌐ ┘â┘ä 60 ╪½╪º┘å┘è╪⌐. BullMQ ┘è╪╢┘à┘å ╪╣╪»┘à ╪¬┘â╪▒╪º╪▒ ╪º┘ä┘Ç repeat ╪╣╪¿╪▒ ╪º┘ä┘Ç instances.
+  // جدولة تكرارية: دفعة كل 60 ثانية. BullMQ يضمن عدم تكرار الـ repeat عبر الـ instances.
   const queue = new Queue(QUEUE_NAME, { connection: redisConfig });
   queue
     .add(
@@ -97,12 +97,12 @@ function startNotificationQueueWorker() {
     .catch((e) => console.error('[NOTIF-QUEUE] schedule failed:', e.message));
 
   started = true;
-  console.log('Γ£à [NOTIF-QUEUE] WhatsApp notification queue worker started');
+  console.log('✅ [NOTIF-QUEUE] WhatsApp notification queue worker started');
 }
 
 /**
- * fallback: polling ╪¿╪│┘è╪╖ ╪¿╪»┘ê┘å Redis (┘è╪¡╪º┘â┘è ╪º┘ä╪│┘ä┘ê┘â ╪º┘ä┘à┘é╪╡┘ê╪»).
- * ╪º╪│╪¬╪«╪»┘à ┘ü┘è ╪º┘ä╪¿┘è╪ª╪º╪¬ ╪¿╪»┘ê┘å Redis ┘ü┘é╪╖.
+ * fallback: polling بسيط بدون Redis (يحاكي السلوك المقصود).
+ * استخدم في البيئات بدون Redis فقط.
  */
 function startFallbackPolling() {
   if (started) return;
@@ -115,7 +115,7 @@ function startFallbackPolling() {
   }, 60000);
   if (typeof fallbackTimer.unref === 'function') fallbackTimer.unref();
   started = true;
-  console.log('Γ£à [NOTIF-QUEUE] Fallback polling started (60s)');
+  console.log('✅ [NOTIF-QUEUE] Fallback polling started (60s)');
 }
 
 async function stopNotificationQueueWorker() {

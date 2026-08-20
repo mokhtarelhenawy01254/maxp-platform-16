@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -676,7 +676,7 @@ const PreparationQueue: React.FC = () => {
   const stageCounts = summary.stageCounts;
   const totalPages = Math.max(1, pagination.pages);
   // NOTE: server-side pagination already ran; this is just the inventory-enriched
-  // version of the current page's orders ΓÇö not a client-side slice.
+  // version of the current page's orders — not a client-side slice.
   const enrichedOrders = preparationOrders;
   const visibleOrdersCount = summary.filteredTotal;
   const currentPageCount = enrichedOrders.length;
@@ -827,7 +827,7 @@ const PreparationQueue: React.FC = () => {
       }
 
       // A held-for-problem order (ON_HOLD_PREP) cannot move directly to a
-      // forward preparation stage ΓÇö it must be released first.
+      // forward preparation stage — it must be released first.
       const forwardStages = new Set([
         "PREPARING",
         "PROCESSING",
@@ -964,7 +964,7 @@ const PreparationQueue: React.FC = () => {
 
         // Skip refresh when the caller (e.g. handleMarkAsShortageHold /
         // handleReleaseShortageHold) will trigger handleSingleStatusUpdate,
-        // which already calls fetchAll ΓÇö avoids a double network round-trip.
+        // which already calls fetchAll — avoids a double network round-trip.
         if (!options?.skipRefresh) {
           void fetchAll();
         }
@@ -1634,8 +1634,8 @@ const PreparationQueue: React.FC = () => {
           return;
         }
 
-        // ╪º╪¿┘å┘É URL ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖╪¿╪º╪╣╪⌐: ┘ü┘ê╪º╪¬┘è╪▒ DB ╪╣╪¿╪▒ ids╪î ┘ê╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ╪╣╪¿╪▒ sessionStorage
-        // (┘â┘ä╪º ╪º┘ä┘å┘ê╪╣┘è┘å ┘è┘Å╪╣╪▒╪╢ ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪¿┘å┘ü╪│ ╪┤╪▒┘è╪╖ ╪º┘ä╪¬┘é╪│┘è┘à ┘ê┘à┘â┘ê┘æ┘å ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐)
+        // ابنِ URL صفحة الطباعة: فواتير DB عبر ids، وطلبات الضيف عبر sessionStorage
+        // (كلا النوعين يُعرض في نفس الصفحة بنفس شريط التقسيم ومكوّن الفاتورة)
         const params = new URLSearchParams();
         if (invoices.length > 0) {
           params.set("ids", invoices.map((inv) => inv.id).join(","));
@@ -1655,7 +1655,7 @@ const PreparationQueue: React.FC = () => {
         const printUrl = `/orders/invoices/print-multiple${params.toString() ? `?${params.toString()}` : ""}`;
         navigate(printUrl);
 
-        // ╪▒╪│╪º┘ä╪⌐ ┘ê╪º╪╢╪¡╪⌐ ╪¿╪º┘ä╪ú╪╣╪»╪º╪» (┘ü┘ê╪º╪¬┘è╪▒ + ╪¿┘ê┘ä┘è╪╡╪º╪¬ ╪╢┘è┘ü)╪î ┘à╪╣ ╪¬┘å╪¿┘è┘ç ┘à┘å┘ü╪╡┘ä ┘ä┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¬╪╣╪½╪▒╪⌐
+        // رسالة واضحة بالأعداد (فواتير + بوليصات ضيف)، مع تنبيه منفصل للطلبات المتعثرة
         toast.success(
           t('preparation.page.bulkPrintSummary', {
             invoiceCount: invoices.length,
@@ -1951,7 +1951,7 @@ const PreparationQueue: React.FC = () => {
                   ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
                   : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-200"
               }`}
-              title={showFilters ? '╪Ñ╪«┘ü╪º╪í ╪º┘ä┘ü┘ä╪º╪¬╪▒' : '╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä┘ü┘ä╪º╪¬╪▒'}
+              title={showFilters ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -2086,7 +2086,7 @@ const PreparationQueue: React.FC = () => {
                 const actionLabel =
                   statusSelections[order.orderNumber] &&
                   statusSelections[order.orderNumber] !== defaultTargetStatus
-                    ? "╪¬╪╖╪¿┘è┘é ╪º┘ä┘à╪▒╪¡┘ä╪⌐ ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐"
+                    ? "تطبيق المرحلة المختارة"
                     : getQuickActionLabel(order.stage);
                 const qcCompleted = enabledQcChecks.every(
                   (key) => qcChecklistState[order.orderNumber]?.[key] === true,

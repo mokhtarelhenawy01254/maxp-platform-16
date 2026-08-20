@@ -1,6 +1,6 @@
-﻿/**
- * diag-meta-update.js ΓÇö ┘è╪╣┘à┘ä ╪»╪º╪«┘ä /var/www/backend2
- * ┘è╪¼╪▒┘æ╪¿ ╪╣╪»╪⌐ ╪╡┘è╪║ URL ┘ä╪¬╪╣╪»┘è┘ä ┘é╪º┘ä╪¿ Meta Cloud API ┘ê┘è╪╖╪¿╪╣ ╪º┘ä╪º╪│╪¬╪¼╪º╪¿╪⌐ ╪º┘ä╪«╪º┘à
+/**
+ * diag-meta-update.js — يعمل داخل /var/www/backend2
+ * يجرّب عدة صيغ URL لتعديل قالب Meta Cloud API ويطبع الاستجابة الخام
  */
 const path = require('path');
 const backendRoot = path.resolve(__dirname, '..');
@@ -28,7 +28,7 @@ async function main() {
   });
   console.log('LOCAL metaTemplateName=' + local.metaTemplateName + ' metaTemplateId=' + local.metaTemplateId + ' status=' + local.metaTemplateStatus);
 
-  // ╪¼┘ä╪¿ template id ┘à┘å ┘à┘è╪¬╪º
+  // جلب template id من ميتا
   const listRes = await axios.get(`https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates`, {
     headers: { Authorization: `Bearer ${accessToken}` }, timeout: 30000,
   });
@@ -38,11 +38,11 @@ async function main() {
   console.log('FOUND name=' + (found && found.name) + ' id=' + templateId + ' status=' + (found && found.status));
   if (!templateId) { console.log('NO_TEMPLATE_ID'); return; }
 
-  // ╪º┘ä╪¿┘å╪º╪í
+  // البناء
   const { buildMetaTemplatePayload } = require(path.join(backendRoot, 'utils/metaTemplatePayload'));
   const built = buildMetaTemplatePayload(local);
   const bodyWithExample = built.variableCount > 0
-    ? { type: 'BODY', text: built.bodyText, example: { body_text: [Array.from({ length: built.variableCount }, (_, i) => `┘é┘è┘à╪⌐ ${i + 1}`)] } }
+    ? { type: 'BODY', text: built.bodyText, example: { body_text: [Array.from({ length: built.variableCount }, (_, i) => `قيمة ${i + 1}`)] } }
     : { type: 'BODY', text: built.bodyText };
   const components = [bodyWithExample];
   if (built.buttonsComponent) components.push(built.buttonsComponent);
@@ -64,22 +64,22 @@ async function main() {
     }
   }
 
-  // A) POST /{templateId}  ΓÇö ╪º┘ä┘Ç endpoint ╪º┘ä╪╡╪¡┘è╪¡ ╪¡╪│╪¿ ┘ê╪½╪º╪ª┘é ┘à┘è╪¬╪º 2026 (POST ┘à╪¿╪º╪┤╪▒╪⌐ ╪╣┘ä┘ë ╪º┘ä┘Ç template-id)
+  // A) POST /{templateId}  — الـ endpoint الصحيح حسب وثائق ميتا 2026 (POST مباشرة على الـ template-id)
   await tryUrl('A: directTemplateId', 'post', `https://graph.facebook.com/${apiVersion}/${templateId}`, {
     components, category: built.metaCategory,
   });
 
-  // B) POST /message_templates?name=X  (┘â╪º┘å╪¬ ╪¬┘ü╪┤┘ä ╪¿┘Ç 2388024)
+  // B) POST /message_templates?name=X  (كانت تفشل بـ 2388024)
   await tryUrl('B: byNameQuery', 'post', `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(local.metaTemplateName)}`, {
     components, category: built.metaCategory,
   });
 
-  // C) POST /message_templates/{id}  (┘â╪º┘å╪¬ ╪¬┘ü╪┤┘ä ╪¿┘Ç 2500)
+  // C) POST /message_templates/{id}  (كانت تفشل بـ 2500)
   await tryUrl('C: messageTemplatesById', 'post', `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates/${templateId}`, {
     components, category: built.metaCategory,
   });
 
-  // D) GET /{templateId} ΓÇö ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪º┘ä┘é╪º┘ä╪¿ ┘à╪¿╪º╪┤╪▒╪⌐ ╪¿╪º┘ä┘Ç id
+  // D) GET /{templateId} — التحقق من القالب مباشرة بالـ id
   await tryUrl('D: getTemplateById', 'get', `https://graph.facebook.com/${apiVersion}/${templateId}`, null);
 
   await prisma.$disconnect();

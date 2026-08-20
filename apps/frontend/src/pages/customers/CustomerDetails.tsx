@@ -1,9 +1,28 @@
-import { ArrowRight as ArrowRightIcon, Pencil as PencilIcon, Trash2 as TrashIcon, MessageSquare as ChatBubbleLeftRightIcon, ShoppingBag as ShoppingBagIcon, Clock as ClockIcon, File as DocumentTextIcon, User as UserIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Pin as MapPinIcon, Tag as TagIcon, Plus as PlusIcon, X as XMarkIcon, Download as ArrowDownTrayIcon, AlertTriangle as ExclamationTriangleIcon, Calendar as CalendarIcon, Ban as NoSymbolIcon, Check as CheckCircleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-;
+import { useTranslation } from "react-i18next";
+import {
+  ArrowRightIcon,
+  PencilIcon,
+  TrashIcon,
+  ChatBubbleLeftRightIcon,
+  ShoppingBagIcon,
+  DocumentTextIcon,
+  UserIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  MapPinIcon,
+  TagIcon,
+  PlusIcon,
+  XMarkIcon,
+  ArrowDownTrayIcon,
+  ExclamationTriangleIcon,
+  CalendarIcon,
+  NoSymbolIcon,
+  CheckCircleIcon,
+  StarIcon,
+  BanknotesIcon,
+} from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -78,6 +97,22 @@ interface CustomerDetailsData {
     isBlocked: boolean;
     rule?: CustomerBlockRule | null;
   };
+  loyalty?: Array<{
+    programId: string;
+    programName?: string | null;
+    programType?: string;
+    points: number;
+    totalEarned: number;
+    tierName?: string | null;
+    status?: string;
+  }>;
+  wallet?: {
+    balance: number;
+    totalEarned: number;
+    totalSpent: number;
+    currency: string;
+  } | null;
+  cashbackTotal?: number;
 }
 
 const CustomerDetails: React.FC = () => {
@@ -447,9 +482,11 @@ const CustomerDetails: React.FC = () => {
   const recentOrders = data.recentOrders || [];
   const recentConversations = data.recentConversations || [];
   const notes = data.notes || [];
-  const activities = data.activities || [];
   const activeBlockRule = data.customerBlock?.rule || null;
   const isCustomerBlocked = Boolean(data.customerBlock?.isBlocked && activeBlockRule);
+  const loyaltyPoints = (data.loyalty || []).reduce((sum, r) => sum + r.points, 0);
+  const cashbackAmount = data.cashbackTotal || 0;
+  const walletBalance = data.wallet?.balance || 0;
 
   return (
     <div className="space-y-6">
@@ -603,6 +640,31 @@ const CustomerDetails: React.FC = () => {
             </div>
           </div>
         </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+          <div className="flex items-center gap-3">
+            <StarIcon className="h-8 w-8 text-amber-500" />
+            <div>
+              <p className="text-sm text-gray-500">نقاط الولاء</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loyaltyPoints}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+          <div className="flex items-center gap-3">
+            <BanknotesIcon className="h-8 w-8 text-emerald-500" />
+            <div>
+              <p className="text-sm text-gray-500">الكاش باك (رصيد المحفظة)</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {formatCurrency(cashbackAmount)}
+              </p>
+              <p className="text-xs text-gray-400">
+                رصيد المحفظة: {formatCurrency(walletBalance)}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -618,7 +680,6 @@ const CustomerDetails: React.FC = () => {
                 icon: ChatBubbleLeftRightIcon,
               },
               { key: "notes", label: t("customers.tabs.notes"), icon: DocumentTextIcon },
-              { key: "activity", label: t("customers.tabs.activity"), icon: ClockIcon },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -638,6 +699,7 @@ const CustomerDetails: React.FC = () => {
         <div className="p-6">
           {/* Info Tab */}
           {activeTab === "info" && (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -710,6 +772,31 @@ const CustomerDetails: React.FC = () => {
                       </div>
                     )}
                   </div>
+                  {customer.customerRating &&
+                    customer.customerRating !== "UNKNOWN" && (
+                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                        <StarIcon className="h-5 w-5" />
+                        <span>التقييم: {customer.customerRating}</span>
+                      </div>
+                    )}
+                  {customer.createdAt && (
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                      <CalendarIcon className="h-5 w-5" />
+                      <span>عميل منذ {formatDate(customer.createdAt)}</span>
+                    </div>
+                  )}
+                  {customer.updatedAt && (
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                      <CalendarIcon className="h-5 w-5" />
+                      <span>آخر تحديث {formatDate(customer.updatedAt)}</span>
+                    </div>
+                  )}
+                  {customer.notes ? (
+                    <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                      <DocumentTextIcon className="h-5 w-5 mt-0.5" />
+                      <span>{customer.notes}</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div className="space-y-4">
@@ -757,6 +844,7 @@ const CustomerDetails: React.FC = () => {
                 </div>
               </div>
             </div>
+            </>
           )}
 
           {/* Orders Tab */}
@@ -901,55 +989,6 @@ const CustomerDetails: React.FC = () => {
                 <p className="text-center text-gray-500 py-8">
                   {t("customers.noNotes")}
                 </p>
-              )}
-            </div>
-          )}
-
-          {/* Activity Tab */}
-          {activeTab === "activity" && (
-            <div>
-              {activities.length > 0 ? (
-                <div className="relative">
-                  <div className="absolute right-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
-                  <div className="space-y-4">
-                    {activities.map((activity, i) => (
-                      <div key={i} className="relative pr-10">
-                        <div
-                          className={`absolute right-2 w-4 h-4 rounded-full ${activity.type === "order"
-                            ? "bg-indigo-500"
-                            : activity.type === "conversation"
-                              ? "bg-green-500"
-                              : "bg-yellow-500"
-                            }`}
-                        />
-                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">
-                                {activity.title}
-                              </p>
-                              {activity.status && (
-                                <span className="text-sm text-gray-500">
-                                  {activity.status}
-                                </span>
-                              )}
-                              {activity.content && (
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                                  {activity.content}
-                                </p>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(activity.timestamp)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-center text-gray-500 py-8">{t("customers.noActivities")}</p>
               )}
             </div>
           )}

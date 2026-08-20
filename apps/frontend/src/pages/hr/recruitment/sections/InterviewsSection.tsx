@@ -1,9 +1,23 @@
-import { Circle as CalendarDaysIcon, Clock as ClockIcon, User as UserIcon, Video as VideoCameraIcon, Pin as MapPinIcon, Plus as PlusIcon, Check as CheckCircleIcon, X as XCircleIcon, Phone as PhoneIcon, Building as BuildingOfficeIcon, X as XMarkIcon, Pencil as PencilIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  CalendarDaysIcon,
+  ClockIcon,
+  UserIcon,
+  VideoCameraIcon,
+  MapPinIcon,
+  PlusIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  PhoneIcon,
+  BuildingOfficeIcon,
+  XMarkIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
+import { tToast } from "../../../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -75,7 +89,7 @@ const InterviewsSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching interviews:", error);
-      toast.error("فشل في جلب المقابلات");
+      tToast.error("InterviewsSection.failed_fetch_cbf5");
     } finally {
       setLoading(false);
     }
@@ -111,7 +125,7 @@ const InterviewsSection: React.FC = () => {
         !newInterview.date ||
         !newInterview.time
       ) {
-        toast.error("يرجى تعبئة جميع الحقول المطلوبة");
+        tToast.error("InterviewsSection.msg_faf7");
         return;
       }
 
@@ -126,7 +140,7 @@ const InterviewsSection: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم جدولة المقابلة بنجاح 🎉");
+        tToast.success("InterviewsSection.msg_d55d");
         setShowScheduleModal(false);
         resetForm();
         fetchInterviews();
@@ -144,12 +158,12 @@ const InterviewsSection: React.FC = () => {
         { status },
       );
       if (response.data.success) {
-        toast.success("تم تحديث الحالة بنجاح");
+        tToast.success("InterviewsSection.success_update_a5d2");
         fetchInterviews();
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      toast.error("فشل تحديث الحالة");
+      tToast.error("InterviewsSection.failed_update_fa1c");
     }
   };
 

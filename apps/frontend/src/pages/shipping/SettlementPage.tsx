@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -17,9 +17,9 @@ import shippingSettlementService, {
 } from "../../services/shippingSettlementService";
 
 const SETTLEMENT_STATUS_OPTIONS = [
-  { value: "", labelKey: "shippingSettlement.allStatuses", fallback: "┘â┘ä ╪º┘ä╪¡╪º┘ä╪º╪¬" },
-  { value: "PENDING", labelKey: "shippingSettlement.pending", fallback: "┘é┘è╪» ╪º┘ä╪¬╪│┘ê┘è╪⌐" },
-  { value: "SETTLED", labelKey: "shippingSettlement.settled", fallback: "╪¬┘à ╪º┘ä╪¬╪│┘ê┘è╪⌐" }
+  { value: "", labelKey: "shippingSettlement.allStatuses", fallback: "كل الحالات" },
+  { value: "PENDING", labelKey: "shippingSettlement.pending", fallback: "قيد التسوية" },
+  { value: "SETTLED", labelKey: "shippingSettlement.settled", fallback: "تم التسوية" }
 ];
 
 const SettlementPage: React.FC = () => {
@@ -48,7 +48,7 @@ const SettlementPage: React.FC = () => {
       const res = await shippingSettlementService.getSummary();
       setSummary(Array.isArray(res.data) ? res.data : []);
     } catch (error: any) {
-      toast.error(error?.message || "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ┘à┘ä╪«╪╡ ╪º┘ä╪¬╪│┘ê┘è╪º╪¬");
+      toast.error(error?.message || "تعذر تحميل ملخص التسويات");
     } finally {
       setLoadingSummary(false);
     }
@@ -68,7 +68,7 @@ const SettlementPage: React.FC = () => {
       setTotalPages(res.pagination?.pages || 1);
       setTotalOrders(res.pagination?.total || 0);
     } catch (error: any) {
-      toast.error(error?.message || "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪º┘ä╪┤╪¡┘å╪º╪¬");
+      toast.error(error?.message || "تعذر تحميل الشحنات");
     } finally {
       setLoadingOrders(false);
     }
@@ -131,11 +131,11 @@ const SettlementPage: React.FC = () => {
       try {
         setProcessing(true);
         const res = await shippingSettlementService.settle({ shippingCompanyId });
-        toast.success(`╪¬┘à╪¬ ╪¬╪│┘ê┘è╪⌐ ${res.data.updated} ╪┤╪¡┘å╪⌐`);
+        toast.success(`تمت تسوية ${res.data.updated} شحنة`);
         setSelectedIds([]);
         await Promise.all([loadSummary(), loadOrders()]);
       } catch (error: any) {
-        toast.error(error?.message || "╪¬╪╣╪░╪▒ ╪¬┘å┘ü┘è╪░ ╪º┘ä╪¬╪│┘ê┘è╪⌐");
+        toast.error(error?.message || "تعذر تنفيذ التسوية");
       } finally {
         setProcessing(false);
       }
@@ -143,7 +143,7 @@ const SettlementPage: React.FC = () => {
     }
 
     if (selectedIds.length === 0) {
-      toast.error("╪¡╪»╪» ╪┤╪¡┘å╪º╪¬ ┘ä┘ä╪¬╪│┘ê┘è╪⌐ ╪ú┘ê┘ä╪º┘ï");
+      toast.error("حدد شحنات للتسوية أولاً");
       return;
     }
     const shipmentIds = selectedIds.filter((id) => sourceTypeOf.get(id) !== "TURBO");
@@ -151,11 +151,11 @@ const SettlementPage: React.FC = () => {
     try {
       setProcessing(true);
       const res = await shippingSettlementService.settle({ shipmentIds, turboOrderIds });
-      toast.success(`╪¬┘à╪¬ ╪¬╪│┘ê┘è╪⌐ ${res.data.updated} ╪┤╪¡┘å╪⌐`);
+      toast.success(`تمت تسوية ${res.data.updated} شحنة`);
       setSelectedIds([]);
       await Promise.all([loadSummary(), loadOrders()]);
     } catch (error: any) {
-      toast.error(error?.message || "╪¬╪╣╪░╪▒ ╪¬┘å┘ü┘è╪░ ╪º┘ä╪¬╪│┘ê┘è╪⌐");
+      toast.error(error?.message || "تعذر تنفيذ التسوية");
     } finally {
       setProcessing(false);
     }
@@ -168,10 +168,10 @@ const SettlementPage: React.FC = () => {
       const res = isTurbo
         ? await shippingSettlementService.unsettle([], [id])
         : await shippingSettlementService.unsettle([id]);
-      toast.success(`╪¬┘à ╪º┘ä╪¬╪▒╪º╪¼╪╣ ╪╣┘å ╪¬╪│┘ê┘è╪⌐ ${res.data.updated} ╪┤╪¡┘å╪⌐`);
+      toast.success(`تم التراجع عن تسوية ${res.data.updated} شحنة`);
       await Promise.all([loadSummary(), loadOrders()]);
     } catch (error: any) {
-      toast.error(error?.message || "╪¬╪╣╪░╪▒ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ╪╣┘å ╪º┘ä╪¬╪│┘ê┘è╪⌐");
+      toast.error(error?.message || "تعذر التراجع عن التسوية");
     } finally {
       setProcessing(false);
     }
@@ -184,45 +184,45 @@ const SettlementPage: React.FC = () => {
 
   const getStatusBadge = (order: SettlementOrder) => {
     if (order.settlementStatus === "SETTLED") {
-      return <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 dark:bg-green-900/25 dark:text-green-300">{t("shippingSettlement.settled", "╪¬┘à ╪º┘ä╪¬╪│┘ê┘è╪⌐")}</span>;
+      return <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 dark:bg-green-900/25 dark:text-green-300">{t("shippingSettlement.settled", "تم التسوية")}</span>;
     }
     if (!order.delivered) {
-      return <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">{t("shippingSettlement.notDelivered", "╪║┘è╪▒ ┘à╪│┘ä┘æ┘à")}</span>;
+      return <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">{t("shippingSettlement.notDelivered", "غير مسلّم")}</span>;
     }
-    return <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/25 dark:text-amber-300">{t("shippingSettlement.pending", "┘é┘è╪» ╪º┘ä╪¬╪│┘ê┘è╪⌐")}</span>;
+    return <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/25 dark:text-amber-300">{t("shippingSettlement.pending", "قيد التسوية")}</span>;
   };
 
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("shippingSettlement.title", "╪¬╪│┘ê┘è╪º╪¬ ╪┤╪▒┘â╪º╪¬ ╪º┘ä╪┤╪¡┘å")}
+          {t("shippingSettlement.title", "تسويات شركات الشحن")}
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t("shippingSettlement.description", "╪¬┘é┘ü┘è┘ä ╪¡╪│╪º╪¿╪º╪¬ ╪º┘ä╪┤╪¡┘å╪º╪¬ ╪º┘ä┘à╪│┘ä┘æ┘à╪⌐ ┘à╪╣ ╪┤╪▒┘â╪º╪¬ ╪º┘ä╪┤╪¡┘å")}
+          {t("shippingSettlement.description", "تقفيل حسابات الشحنات المسلّمة مع شركات الشحن")}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.pendingAmount", "┘à╪│╪¬╪¡┘é ╪º┘ä╪¬╪¡╪╡┘è┘ä ┘à┘å ╪º┘ä╪┤╪▒┘â╪º╪¬")}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.pendingAmount", "مستحق التحصيل من الشركات")}</div>
           <div className="mt-1 text-2xl font-black text-amber-600 dark:text-amber-400">{formatPrice(totalPending)}</div>
         </div>
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.deliveredCount", "╪┤╪¡┘å╪º╪¬ ┘à╪│┘ä┘æ┘à╪⌐ ╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä╪¬╪│┘ê┘è╪⌐")}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.deliveredCount", "شحنات مسلّمة بانتظار التسوية")}</div>
           <div className="mt-1 text-2xl font-black text-gray-900 dark:text-white">{totalDelivered}</div>
         </div>
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.settledAmount", "╪¬┘à╪¬ ╪¬╪│┘ê┘è╪¬┘ç")}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.settledAmount", "تمت تسويته")}</div>
           <div className="mt-1 text-2xl font-black text-green-600 dark:text-green-400">{formatPrice(totalSettled)}</div>
         </div>
       </div>
 
       {loadingSummary ? (
-        <div className="p-6 text-center text-sm text-gray-500">╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...</div>
+        <div className="p-6 text-center text-sm text-gray-500">جاري التحميل...</div>
       ) : summary.length === 0 ? (
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800">
-          {t("shippingSettlement.noCompanies", "┘ä╪º ╪¬┘ê╪¼╪» ╪┤╪▒┘â╪º╪¬ ╪┤╪¡┘å")}
+          {t("shippingSettlement.noCompanies", "لا توجد شركات شحن")}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -244,7 +244,7 @@ const SettlementPage: React.FC = () => {
                 <TruckIcon className="h-5 w-5 text-gray-400" />
               </div>
               <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                <span>{item.deliveredShipments} {t("shippingSettlement.deliveredCount", "┘à╪│┘ä┘æ┘à╪⌐")}</span>
+                <span>{item.deliveredShipments} {t("shippingSettlement.deliveredCount", "مسلّمة")}</span>
                 <span className="font-bold text-amber-600 dark:text-amber-400">{formatPrice(item.pendingAmount)}</span>
               </div>
               {item.deliveredShipments > 0 && (
@@ -257,7 +257,7 @@ const SettlementPage: React.FC = () => {
                     disabled={processing}
                     className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
                   >
-                    {t("shippingSettlement.settleCompany", "╪¬╪│┘ê┘è╪⌐ ╪º┘ä┘â┘ä")}
+                    {t("shippingSettlement.settleCompany", "تسوية الكل")}
                   </button>
                 </div>
               )}
@@ -273,7 +273,7 @@ const SettlementPage: React.FC = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={String(t("shippingSettlement.search", "╪º╪¿╪¡╪½ ╪¿╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿ ╪ú┘ê ╪º┘ä╪¬╪¬╪¿╪╣ ╪ú┘ê ╪º┘ä╪╣┘à┘è┘ä..."))}
+              placeholder={String(t("shippingSettlement.search", "ابحث برقم الطلب أو التتبع أو العميل..."))}
               className="min-h-[42px] w-full rounded-xl border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm dark:border-gray-600 dark:bg-gray-900"
             />
           </div>
@@ -316,7 +316,7 @@ const SettlementPage: React.FC = () => {
               onClick={() => setSelectedCompanyId("")}
               className="text-xs text-indigo-600 hover:underline"
             >
-              {t("shippingSettlement.clearCompany", "╪Ñ╪▓╪º┘ä╪⌐ ╪º┘ä┘ü┘ä╪¬╪▒")}
+              {t("shippingSettlement.clearCompany", "إزالة الفلتر")}
             </button>
           </div>
         )}
@@ -330,7 +330,7 @@ const SettlementPage: React.FC = () => {
                 checked={allSelected}
                 onChange={toggleSelectAll}
               />
-              {t("shippingSettlement.selectAll", "╪¬╪¡╪»┘è╪» ╪º┘ä┘â┘ä")}
+              {t("shippingSettlement.selectAll", "تحديد الكل")}
             </label>
             <span className="text-xs text-gray-500">{selectedIds.length}</span>
           </div>
@@ -341,29 +341,29 @@ const SettlementPage: React.FC = () => {
               className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
             >
               <BanknotesIcon className="ml-1 inline h-4 w-4" />
-              {t("shippingSettlement.settleSelected", "╪¬╪│┘ê┘è╪⌐ ╪º┘ä┘à╪¡╪»╪»")}
+              {t("shippingSettlement.settleSelected", "تسوية المحدد")}
             </button>
           </div>
         </div>
 
         <div className="mt-3 overflow-x-auto">
           {loadingOrders ? (
-            <div className="p-6 text-center text-sm text-gray-500">╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...</div>
+            <div className="p-6 text-center text-sm text-gray-500">جاري التحميل...</div>
           ) : orders.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-500">
-              {t("shippingSettlement.noOrders", "┘ä╪º ╪¬┘ê╪¼╪» ╪┤╪¡┘å╪º╪¬")}
+              {t("shippingSettlement.noOrders", "لا توجد شحنات")}
             </div>
           ) : (
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
                   <th className="py-2 pl-3" />
-                  <th className="py-2">{t("shippingSettlement.order", "╪º┘ä╪╖┘ä╪¿")}</th>
-                  <th className="py-2">{t("shippingSettlement.customer", "╪º┘ä╪╣┘à┘è┘ä")}</th>
-                  <th className="py-2">{t("shippingSettlement.tracking", "╪º┘ä╪¬╪¬╪¿╪╣")}</th>
-                  <th className="py-2">{t("shippingSettlement.date", "╪º┘ä╪¬╪º╪▒┘è╪«")}</th>
-                  <th className="py-2">{t("shippingSettlement.amount", "╪º┘ä┘à╪¿┘ä╪║")}</th>
-                  <th className="py-2">{t("shippingSettlement.status", "╪º┘ä╪¡╪º┘ä╪⌐")}</th>
+                  <th className="py-2">{t("shippingSettlement.order", "الطلب")}</th>
+                  <th className="py-2">{t("shippingSettlement.customer", "العميل")}</th>
+                  <th className="py-2">{t("shippingSettlement.tracking", "التتبع")}</th>
+                  <th className="py-2">{t("shippingSettlement.date", "التاريخ")}</th>
+                  <th className="py-2">{t("shippingSettlement.amount", "المبلغ")}</th>
+                  <th className="py-2">{t("shippingSettlement.status", "الحالة")}</th>
                   <th className="py-2" />
                 </tr>
               </thead>
@@ -379,9 +379,9 @@ const SettlementPage: React.FC = () => {
                         disabled={!order.delivered || order.settlementStatus === "SETTLED"}
                       />
                     </td>
-                    <td className="py-2 font-bold">{order.order?.orderNumber || "ΓÇö"}</td>
-                    <td className="py-2">{order.order?.customerName || "ΓÇö"}</td>
-                    <td className="py-2 text-xs text-gray-500">{order.trackingNumber || order.externalShipmentId || "ΓÇö"}</td>
+                    <td className="py-2 font-bold">{order.order?.orderNumber || "—"}</td>
+                    <td className="py-2">{order.order?.customerName || "—"}</td>
+                    <td className="py-2 text-xs text-gray-500">{order.trackingNumber || order.externalShipmentId || "—"}</td>
                     <td className="py-2 text-xs text-gray-500">{formatDate(order.createdAt)}</td>
                     <td className="py-2 font-semibold">{order.order ? formatPrice(order.order.total) : formatPrice(order.cost)}</td>
                     <td className="py-2">{getStatusBadge(order)}</td>
@@ -393,7 +393,7 @@ const SettlementPage: React.FC = () => {
                           className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
                         >
                           <ArrowPathIcon className="h-3.5 w-3.5" />
-                          {t("shippingSettlement.unsettle", "╪¬╪▒╪º╪¼╪╣")}
+                          {t("shippingSettlement.unsettle", "تراجع")}
                         </button>
                       )}
                     </td>
@@ -413,14 +413,14 @@ const SettlementPage: React.FC = () => {
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 className="rounded-lg border px-3 py-1 disabled:opacity-50"
               >
-                {t("shippingSettlement.previous", "╪º┘ä╪│╪º╪¿┘é")}
+                {t("shippingSettlement.previous", "السابق")}
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                 className="rounded-lg border px-3 py-1 disabled:opacity-50"
               >
-                {t("shippingSettlement.next", "╪º┘ä╪¬╪º┘ä┘è")}
+                {t("shippingSettlement.next", "التالي")}
               </button>
             </div>
           </div>
@@ -429,7 +429,7 @@ const SettlementPage: React.FC = () => {
 
       <div className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-800">
         <CheckCircleIcon className="h-4 w-4 text-green-500" />
-        {t("shippingSettlement.hint", "╪º┘ä╪¬╪│┘ê┘è╪⌐ ╪¬╪┤┘à┘ä ╪º┘ä╪┤╪¡┘å╪º╪¬ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿╪╖┘ä╪¿╪º╪¬ ╪¿╪¡╪º┘ä╪⌐ DELIVERED ┘ü┘é╪╖")}
+        {t("shippingSettlement.hint", "التسوية تشمل الشحنات المرتبطة بطلبات بحالة DELIVERED فقط")}
         <XCircleIcon className="h-4 w-4 text-gray-400" />
       </div>
     </div>

@@ -1,4 +1,3 @@
-import { ArrowLeft as ArrowLeftIcon, Check as CheckCircleIcon } from 'lucide-react';
 /**
  * Create Custom Audience Page
  *
@@ -7,8 +6,9 @@ import { ArrowLeft as ArrowLeftIcon, Check as CheckCircleIcon } from 'lucide-rea
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   CreateCustomAudienceData,
@@ -51,7 +51,7 @@ const CreateCustomAudience: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error loading Ad Accounts:", error);
-      toast.error("فشل في تحميل حسابات Facebook Ads");
+      tToast.error("CreateCustomAudience.failed_load_0ade");
     } finally {
       setLoadingAccounts(false);
     }
@@ -68,11 +68,11 @@ const CreateCustomAudience: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          toast.error("يرجى إدخال اسم الجمهور");
+          tToast.error("CreateCustomAudience.please_name_d64c");
           return false;
         }
         if (!formData.audienceType) {
-          toast.error("يرجى اختيار نوع الجمهور");
+          tToast.error("CreateCustomAudience.msg_fefb");
           return false;
         }
         return true;
@@ -81,11 +81,11 @@ const CreateCustomAudience: React.FC = () => {
           formData.audienceType === "CUSTOMER_LIST" &&
           (!formData.customerList || formData.customerList.length === 0)
         ) {
-          toast.error("يرجى إضافة قائمة عملاء");
+          tToast.error("CreateCustomAudience.please_add_0126");
           return false;
         }
         if (formData.audienceType === "WEBSITE" && !formData.pixelId) {
-          toast.error("يرجى إدخال Pixel ID");
+          tToast.error("CreateCustomAudience.msg_7a97");
           return false;
         }
         return true;
@@ -116,7 +116,7 @@ const CreateCustomAudience: React.FC = () => {
     try {
       setLoading(true);
       await facebookAdsService.createCustomAudience(formData);
-      toast.success("تم إنشاء الجمهور بنجاح");
+      tToast.success("CreateCustomAudience.success_create_d55e");
       navigate("/advertising/facebook-ads/audiences");
     } catch (error: any) {
       console.error("Error creating custom audience:", error);

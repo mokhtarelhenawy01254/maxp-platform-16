@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
@@ -59,8 +59,8 @@ def test_order_created_enqueues(client):
                 "company_id": "comp1",
                 "order_number": "ORD-1",
                 "customer_phone": "01012345678",
-                "address_text": "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒ ╪┤╪º╪▒╪╣ 9",
-                "governorate": "╪º┘ä┘é╪º┘ç╪▒╪⌐",
+                "address_text": "مدينة نصر شارع 9",
+                "governorate": "القاهرة",
             },
             headers={"Authorization": "Bearer test-service-token"},
         )
@@ -75,4 +75,4 @@ def test_order_created_enqueues(client):
     payload = kwargs.kwargs["payload"]
     assert payload["company_id"] == "comp1"
     assert payload["order_number"] == "ORD-1"
-    assert payload["address_text"] == "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒ ╪┤╪º╪▒╪╣ 9"
+    assert payload["address_text"] == "مدينة نصر شارع 9"

@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle, AlertTriangle, Award, Calendar, Check, CheckCircle, Clock, DollarSign, Download, File, FileText, RefreshCw, Target, TrendingUp, User } from 'lucide-react';
+import {
+  User,
+  Download,
+  RefreshCw,
+  Calendar,
+  Clock,
+  DollarSign,
+  FileText,
+  AlertCircle,
+  TrendingUp,
+  Award,
+  Target,
+  CheckCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
@@ -14,6 +27,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface EmployeeReportData {
   employee: {
@@ -145,25 +159,25 @@ const EmployeeReport: React.FC = () => {
       setEmployees(response.data?.employees || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
-      toast.error("فشل في جلب قائمة الموظفين");
+      tToast.error("EmployeeReport.failed_fetch_50e6");
     }
   };
 
   const fetchReport = async () => {
     if (!selectedEmployee) {
-      toast.error("الرجاء اختيار موظف");
+      tToast.error("EmployeeReport.msg_57a7");
       return;
     }
 
     if (!startDate || !endDate) {
-      toast.error("الرجاء تحديد الفترة الزمنية");
+      tToast.error("EmployeeReport.msg_5832");
       return;
     }
 
     try {
       setLoading(true);
       if (new Date(startDate) > new Date(endDate)) {
-        toast.error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+        tToast.error("EmployeeReport.msg_8609");
         return;
       }
 
@@ -230,7 +244,7 @@ const EmployeeReport: React.FC = () => {
     link.download = `employee_report_${report.employee.name}_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
 
-    toast.success("تم تصدير التقرير بنجاح");
+    tToast.success("EmployeeReport.msg_9b34");
   };
 
   const handlePrint = () => {

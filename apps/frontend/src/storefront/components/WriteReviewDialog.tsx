@@ -1,5 +1,5 @@
 import React from "react";
-import * as Dialog from "@radix-ui/react-dialog";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { toast } from "sonner";
 import { storefrontFetch } from "../../utils/storefrontApi";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
@@ -342,10 +342,10 @@ const WriteReviewDialog: React.FC<WriteReviewDialogProps> = ({
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
-        <Dialog.Content
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
+        <DialogPrimitive.Popup
           className="fixed inset-x-0 bottom-0 z-[91] flex max-h-[82dvh] flex-col overflow-hidden rounded-t-[1.75rem] border border-border bg-card shadow-2xl animate-in slide-in-from-bottom duration-200 sm:left-[50%] sm:top-[50%] sm:w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-2rem)] sm:max-w-xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[1.5rem] sm:zoom-in-95"
         >
           <div className="mx-auto mt-2 h-1.5 w-14 rounded-full bg-border/80 sm:hidden" aria-hidden="true" />
@@ -354,9 +354,9 @@ const WriteReviewDialog: React.FC<WriteReviewDialogProps> = ({
               <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
                 {dialogBadge}
               </span>
-              <Dialog.Title className="mt-2.5 text-lg font-black text-foreground sm:mt-3 sm:text-2xl">
+              <DialogPrimitive.Title className="mt-2.5 text-lg font-black text-foreground sm:mt-3 sm:text-2xl">
                 {dialogTitle}
-              </Dialog.Title>
+              </DialogPrimitive.Title>
               <p className="mt-1.5 text-sm leading-5 text-muted-foreground sm:hidden">
                 {dialogDescriptionMobile}
               </p>
@@ -364,11 +364,18 @@ const WriteReviewDialog: React.FC<WriteReviewDialogProps> = ({
                 {dialogDescription}
               </p>
             </div>
-            <Dialog.Close className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-sm font-semibold text-muted-foreground transition hover:text-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2">
+            <DialogPrimitive.Close
+              render={
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-sm font-semibold text-muted-foreground transition hover:text-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2"
+                />
+              }
+            >
               <span aria-hidden="true" className="sm:hidden">X</span>
               <span className="hidden sm:inline">{closeLabel}</span>
               <span className="sr-only sm:hidden">{closeLabel}</span>
-            </Dialog.Close>
+            </DialogPrimitive.Close>
           </div>
 
           <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
@@ -544,9 +551,9 @@ const WriteReviewDialog: React.FC<WriteReviewDialogProps> = ({
               </div>
             </div>
           </form>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
 

@@ -1,9 +1,8 @@
-import { Circle as ArrowUturnLeftIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import { ArrowUturnLeftIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 

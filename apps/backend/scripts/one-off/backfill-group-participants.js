@@ -1,13 +1,13 @@
-﻿const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const BATCH_SIZE = 500;
 
 /**
- * ╪¿╪º┘â┘ü┘è┘ä ╪º┘ä┘à╪┤╪º╪▒┘â (participant) ┘ü┘è ╪▒╪│╪º╪ª┘ä ╪º┘ä╪¼╪▒┘ê╪¿╪º╪¬ ╪º┘ä┘é╪»┘è┘à╪⌐.
- * Baileys ╪º┘ä╪¡╪»┘è╪½╪⌐ ╪¿╪¬╪¿╪╣╪¬ ╪▒╪º╪│┘ä ╪º┘ä╪¼╪▒┘ê╪¿ ┘ü┘è ╪º┘ä┘à╪┤╪º╪▒┘â ╪╣┘ä┘ë ╪º┘ä┘à╪│╪¬┘ê┘ë ╪º┘ä╪ú╪╣┘ä┘ë (metadata.participant)
- * ┘à╪┤ ┘ü┘è key.participant ΓÇö ┘ü┘Ç ╪º┘ä╪▒╪│╪º╪ª┘ä ╪º┘ä┘ä┘è ╪º╪¬╪«╪▓┘å╪¬ ┘é╪¿┘ä ╪º┘ä╪Ñ╪╡┘ä╪º╪¡ ┘â╪º┘å╪¬ participant=null.
- * ╪º┘ä╪│┘â╪▒┘è╪¿╪¬ ╪»┘ç ╪¿┘è┘à┘ä╪ú ╪º┘ä┘à╪┤╪º╪▒┘â ┘à┘å ╪º┘ä┘Ç metadata ┘ä┘ä╪▒╪│╪º╪ª┘ä ╪º┘ä┘é╪»┘è┘à╪⌐.
+ * باكفيل المشارك (participant) في رسائل الجروبات القديمة.
+ * Baileys الحديثة بتبعت راسل الجروب في المشارك على المستوى الأعلى (metadata.participant)
+ * مش في key.participant — فـ الرسائل اللي اتخزنت قبل الإصلاح كانت participant=null.
+ * السكريبت ده بيملأ المشارك من الـ metadata للرسائل القديمة.
  */
 async function main() {
   console.log('=== Backfilling group message participants from metadata ===');
@@ -16,7 +16,7 @@ async function main() {
   let scanned = 0;
   let cursor = null;
 
-  // ┘å┘à╪▒ ╪╣┘ä┘ë ╪º┘ä╪▒╪│╪º╪ª┘ä ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪¬╪╡╪º╪╣╪»┘è ┘ä┘à╪╣╪▒┘ü ╪º┘ä╪╡┘ü (id) ΓÇö ╪¿╪»┘ê┘å ╪¬╪▒┘é┘è┘à ╪╡┘ü╪¡╪º╪¬ ╪½┘é┘è┘ä.
+  // نمر على الرسائل بالترتيب التصاعدي لمعرف الصف (id) — بدون ترقيم صفحات ثقيل.
   for (;;) {
     const rows = await prisma.whatsAppMessage.findMany({
       where: {
@@ -39,7 +39,7 @@ async function main() {
       try {
         meta = JSON.parse(row.metadata);
       } catch {
-        continue; // metadata ╪║┘è╪▒ ╪╡╪º┘ä╪¡ ΓÇö ┘å╪¬╪¼╪º┘ç┘ä┘ç
+        continue; // metadata غير صالح — نتجاهله
       }
       const participant =
         (meta && typeof meta === 'object' && (meta.participant || meta?.key?.participant)) || null;
@@ -52,7 +52,7 @@ async function main() {
     }
 
     if (updates.length > 0) {
-      // ╪¬┘å┘ü┘è╪░ ╪º┘ä╪¬╪¡╪»┘è╪½╪º╪¬ ╪¿╪┤┘â┘ä ┘à╪¬┘ê╪º╪▓┘è ╪╢┘à┘å ╪º┘ä╪»┘ü╪╣╪⌐
+      // تنفيذ التحديثات بشكل متوازي ضمن الدفعة
       await Promise.all(updates);
       updated += updates.length;
     }

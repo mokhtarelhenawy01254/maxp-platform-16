@@ -1,8 +1,16 @@
-import { DollarSign as BanknotesIcon, Settings as Cog6ToothIcon, Circle as DocumentMagnifyingGlassIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, DollarSign as CurrencyDollarIcon, CreditCard as CreditCardIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-;
+import {
+  BanknotesIcon,
+  Cog6ToothIcon,
+  DocumentMagnifyingGlassIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+  CreditCardIcon,
+} from '@heroicons/react/24/outline';
 import { storefrontSettingsService, type StorefrontSettings } from '../../services/storefrontSettingsService';
 import { apiClient } from '../../services/apiClient';
 

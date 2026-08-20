@@ -1,5 +1,26 @@
-import { ShoppingBag as ShoppingCartIcon, MessageSquare as ChatBubbleLeftRightIcon, Star as SparklesIcon, Circle as UserGroupIcon, Circle as CubeIcon, DollarSign as CurrencyDollarIcon, Activity as ChartBarIcon, File as DocumentTextIcon, Store as BuildingStorefrontIcon, Eye as EyeIcon, Bell as BellIcon, Check as CheckCircleIcon, Circle as BuildingOffice2Icon, Circle as CalendarDaysIcon, Heart as HeartIcon, Truck as TruckIcon, Circle as ScaleIcon, Circle as HandRaisedIcon, Circle as UserPlusIcon, Circle as NewspaperIcon, Circle as AcademicCapIcon } from 'lucide-react';
-;
+import {
+  ShoppingCartIcon,
+  ChatBubbleLeftRightIcon,
+  SparklesIcon,
+  UserGroupIcon,
+  CubeIcon,
+  CurrencyDollarIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
+  BuildingStorefrontIcon,
+  EyeIcon,
+  BellIcon,
+  CheckCircleIcon,
+  BuildingOffice2Icon,
+  CalendarDaysIcon,
+  HeartIcon,
+  TruckIcon,
+  ScaleIcon,
+  HandRaisedIcon,
+  UserPlusIcon,
+  NewspaperIcon,
+  AcademicCapIcon,
+} from "@heroicons/react/24/outline";
 import type { WidgetDefinition, WidgetData } from "./types";
 
 function fmt(n: number | null | undefined): string {

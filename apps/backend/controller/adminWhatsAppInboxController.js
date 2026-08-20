@@ -79,6 +79,24 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
+exports.sendExistingImage = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const { imageUrl, filename, caption } = req.body;
+    if (!imageUrl || !filename) {
+      return res.status(400).json({ error: 'Image URL and filename are required' });
+    }
+    const result = await whatsappInboxService.sendExistingImage(
+      req.params.conversationId, companyId, req.user.id, req.user.role,
+      imageUrl, filename, caption || '',
+    );
+    res.status(201).json({ success: true, ...result });
+  } catch (error) {
+    const status = error.message?.includes('locked') ? 403 : 500;
+    res.status(status).json({ error: error.message || 'Failed to send image' });
+  }
+};
+
 exports.updateStatus = async (req, res) => {
   try {
     const companyId = getCompanyId(req);

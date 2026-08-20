@@ -1,4 +1,4 @@
-﻿# Known Bugs & Resolution Log
+# Known Bugs & Resolution Log
 
 ## [2026-03-09] WhatsApp Workspace Scrolling & RTL Layout Fixes
 

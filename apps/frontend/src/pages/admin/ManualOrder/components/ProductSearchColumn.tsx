@@ -1,11 +1,16 @@
-import { Search as MagnifyingGlassIcon, Plus as PlusIcon, Archive as ArchiveBoxIcon, X as XMarkIcon, ChevronRight as ChevronRightIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  MagnifyingGlassIcon,
+  PlusIcon,
+  ArchiveBoxIcon,
+  XMarkIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
 import { authService } from "../../../../services/authService";
 import { config } from "../../../../config";
 import { toast } from "sonner";
-import { getPrimaryImageUrl } from "../../../../utils/imageUrl";
+import { getPrimaryImageUrl, buildOptimizedUploadImageUrl } from "../../../../utils/imageUrl";
 import { parseVariantAttributes } from "../utils/variantAttributes";
 
 interface ProductVariant {
@@ -301,7 +306,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
           <input
             id="manual-order-product-search"
             type="text"
-            placeholder={t('manualOrder.k_1')}
+            placeholder={t('manualOrder.k_139')}
             className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
             value={searchQuery}
             onChange={(e) => {
@@ -355,13 +360,14 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
               >
                 {/* Image - Now larger and on top */}
                 <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
+                    {product.image ? (
+                      <img
+                        src={buildOptimizedUploadImageUrl(product.image, { width: 300 })}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
                       <ArchiveBoxIcon className="w-12 h-12" />
                     </div>

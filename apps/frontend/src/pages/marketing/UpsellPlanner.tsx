@@ -1,7 +1,13 @@
-import { Circle as CalculatorIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, Circle as ArrowTrendingUpIcon, Circle as SaveIcon, Trash2 as TrashIcon, Star as SparklesIcon, Check as CheckCircleIcon, X as XCircleIcon, Settings as Cog6ToothIcon, RefreshCw as ArrowPathIcon, Circle as WalletIcon, Circle as GiftIcon, ArrowUp as ArrowUpIcon, ArrowDown as ArrowDownIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  CalculatorIcon, ExclamationTriangleIcon, InformationCircleIcon, ArrowTrendingUpIcon,
+  BookmarkIcon as SaveIcon, TrashIcon,
+  SparklesIcon, CheckCircleIcon, XCircleIcon,
+  Cog6ToothIcon, ArrowPathIcon,
+  WalletIcon, GiftIcon,
+  ArrowUpIcon, ArrowDownIcon,
+} from "@heroicons/react/24/outline";
 import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Backfill: Populate new turbo captain/branch/delay/return fields from existing turboMetadata
  * Run: node scripts/backfill_turbo_fields.js
  */
@@ -6,7 +6,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('≡ƒöü Backfilling turbo captain/branch/delay/return fields from turboMetadata...\n');
+  console.log('🔁 Backfilling turbo captain/branch/delay/return fields from turboMetadata...\n');
 
   // Standard Orders
   const orders = await prisma.order.findMany({
@@ -34,7 +34,7 @@ async function main() {
     }
   }
 
-  console.log(`Γ£à Orders updated: ${updated}/${orders.length}`);
+  console.log(`✅ Orders updated: ${updated}/${orders.length}`);
 
   // Guest Orders
   const guestOrders = await prisma.guestOrder.findMany({
@@ -62,8 +62,8 @@ async function main() {
     }
   }
 
-  console.log(`Γ£à GuestOrders updated: ${guestUpdated}/${guestOrders.length}`);
-  console.log('\nΓ£à Backfill complete!');
+  console.log(`✅ GuestOrders updated: ${guestUpdated}/${guestOrders.length}`);
+  console.log('\n✅ Backfill complete!');
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

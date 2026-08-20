@@ -1,7 +1,14 @@
-import { RefreshCw as ArrowPathIcon, Activity as ChartBarIcon, Check as CheckCircleIcon, Circle as MegaphoneIcon, ShieldCheck as ShieldCheckIcon, Star as SparklesIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
-;
+import {
+  ArrowPathIcon,
+  ChartBarIcon,
+  CheckCircleIcon,
+  MegaphoneIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   DEFAULT_PLATFORM_SITE_META_PIXEL_SETTINGS,
   platformSiteMetaPixelService,
@@ -71,7 +78,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
       setSettings(nextSettings);
     } catch (error) {
       console.error("Failed to load platform site Meta pixel settings", error);
-      toast.error("فشل تحميل إعدادات Meta Pixel للموقع العام");
+      tToast.error("PlatformSiteMetaPixel.failed_load_41c7");
     } finally {
       setLoading(false);
     }
@@ -132,7 +139,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
     const pixelId = trimmedPixelId;
 
     if (settings.isEnabled && !PIXEL_ID_REGEX.test(pixelId)) {
-      toast.error("Pixel ID يجب أن يكون 15 أو 16 رقمًا");
+      tToast.error("PlatformSiteMetaPixel.msg_3ee4");
       return;
     }
 
@@ -143,7 +150,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
         pixelId,
       });
       setSettings(savedSettings);
-      toast.success("تم حفظ إعدادات Meta Pixel للموقع العام");
+      tToast.success("PlatformSiteMetaPixel.success_save_9b3e");
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||

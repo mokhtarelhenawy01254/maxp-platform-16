@@ -1,9 +1,7 @@
-import { cn } from '@/lib/utils';
-import { toast } from 'react-hot-toast';
 "use client"
 
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CheckCircleIcon, InfoIcon, AlertTriangleIcon, XOctagonIcon, Loader2Icon } from 'lucide-react'
+import { CheckCircleIcon, InfoIcon, AlertTriangleIcon, XOctagonIcon, Loader2Icon } from "lucide-react"
 import { useTheme } from "../theme-provider"
 
 const Toaster = ({ ...props }: ToasterProps) => {

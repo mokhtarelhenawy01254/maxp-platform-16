@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
+const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
 
 const parseOrderMetadata = (raw) => {
   if (!raw) return {};
@@ -15,11 +15,11 @@ const parseOrderMetadata = (raw) => {
 };
 
 /**
- * ╪¬╪¡╪╡┘è┘ä ╪▒╪│┘ê┘à ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à ╪º┘ä┘à╪ñ╪¼┘ä╪⌐ (PENDING APP_USAGE) ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪¿╪╣╪» ╪┤╪¡┘å ╪º┘ä╪▒╪╡┘è╪».
- * - ╪¬┘Å╪▒╪¬┘Ä┘æ╪¿ ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒ ┘à┘å ╪º┘ä╪ú┘é╪»┘à ╪Ñ┘ä┘ë ╪º┘ä╪ú╪¡╪»╪½.
- * - ┘ä┘â┘ä ┘ü╪º╪¬┘ê╪▒╪⌐: ╪«╪╡┘à ╪░╪▒┘è ┘à┘å ╪º┘ä┘à╪¡┘ü╪╕╪⌐ (┘ü┘é╪╖ ╪Ñ┘å ┘â╪º┘å ╪º┘ä╪▒╪╡┘è╪» ┘è┘â┘ü┘è) + ╪¬╪│╪¼┘è┘ä Transaction + appUsageLog
- *   + ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪Ñ┘ä┘ë SUCCESS + ╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪╣┘ä┘æ┘é (┘à╪│╪¡ billingHold).
- * - ┘è╪¬┘ê┘é┘ü ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪╣┘å╪» ┘å┘é╪╡ ╪º┘ä╪▒╪╡┘è╪» ┘ê┘è┘Å╪¡╪º┘ê┘ä ┘ü┘è ╪º┘ä╪┤╪¡┘å╪⌐ ╪º┘ä╪¬╪º┘ä┘è╪⌐.
+ * تحصيل رسوم الاستخدام المؤجلة (PENDING APP_USAGE) تلقائياً بعد شحن الرصيد.
+ * - تُرتَّب الفواتير من الأقدم إلى الأحدث.
+ * - لكل فاتورة: خصم ذري من المحفظة (فقط إن كان الرصيد يكفي) + تسجيل Transaction + appUsageLog
+ *   + تحويل الفاتورة إلى SUCCESS + إظهار الطلب المعلّق (مسح billingHold).
+ * - يتوقف تلقائياً عند نقص الرصيد ويُحاول في الشحنة التالية.
  */
 async function processPendingUsageCharges(companyId, opts = {}) {
   try {
@@ -55,7 +55,7 @@ async function processPendingUsageCharges(companyId, opts = {}) {
       try {
         await executeWithRetry(async () => {
           await prisma.$transaction(async (tx) => {
-            // 1. ╪«╪╡┘à ╪░╪▒┘è ┘à┘å ╪º┘ä┘à╪¡┘ü╪╕╪⌐
+            // 1. خصم ذري من المحفظة
             const updated = await tx.companyWallet.updateMany({
               where: { companyId, balance: { gte: amount } },
               data: {
@@ -65,25 +65,25 @@ async function processPendingUsageCharges(companyId, opts = {}) {
             });
             if (updated.count === 0) throw new Error('INSUFFICIENT_BALANCE');
 
-            // 2. ╪¬╪│╪¼┘è┘ä ╪º┘ä╪¡╪▒┘â╪⌐ ┘ü┘è ╪│╪¼┘ä ╪º┘ä┘à╪¡┘ü╪╕╪⌐
+            // 2. تسجيل الحركة في سجل المحفظة
             await tx.transaction.create({
               data: {
                 walletId: wallet.id,
                 amount,
                 type: 'DEDUCT',
                 status: 'COMPLETED',
-                description: `╪¬╪¡╪╡┘è┘ä ╪▒╪│┘ê┘à ╪º╪│╪¬╪«╪»╪º┘à ┘à╪ñ╪¼┘ä╪⌐ - ${charge.description || '╪╖┘ä╪¿'}`.trim(),
+                description: `تحصيل رسوم استخدام مؤجلة - ${charge.description || 'طلب'}`.trim(),
                 referenceId: `PENDING_${charge.id}`,
               },
             });
 
-            // 3. ╪¬╪¡┘ê┘è┘ä ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪Ñ┘ä┘ë SUCCESS
+            // 3. تحويل الفاتورة إلى SUCCESS
             await tx.billingHistory.update({
               where: { id: charge.id },
               data: { status: 'SUCCESS' },
             });
 
-            // 4. ╪¬╪│╪¼┘è┘ä ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à ╪¡╪│╪¿ ╪º┘ä┘Ç breakdown ╪º┘ä┘à╪«╪▓┘æ┘å ┘ü┘è ╪º┘ä╪╖┘ä╪¿
+            // 4. تسجيل الاستخدام حسب الـ breakdown المخزّن في الطلب
             if (orderId) {
               const order = await tx.order.findUnique({
                 where: { id: orderId },
@@ -121,7 +121,7 @@ async function processPendingUsageCharges(companyId, opts = {}) {
                   });
                 }
 
-                // 5. ╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä╪╖┘ä╪¿ (╪Ñ╪▓╪º┘ä╪⌐ ╪º┘ä╪¬╪╣┘ä┘è┘é)
+                // 5. إظهار الطلب (إزالة التعليق)
                 if (order.billingHoldAt) {
                   await tx.order.update({
                     where: { id: order.id },
@@ -137,7 +137,7 @@ async function processPendingUsageCharges(companyId, opts = {}) {
         balance -= amount;
         processed += 1;
       } catch (error) {
-        console.error(`Γ¥î [PENDING-BILLING] Failed to collect charge ${charge.id}:`, error.message);
+        console.error(`❌ [PENDING-BILLING] Failed to collect charge ${charge.id}:`, error.message);
         failed.push(charge.id);
         break;
       }
@@ -146,20 +146,20 @@ async function processPendingUsageCharges(companyId, opts = {}) {
     const remaining = pending.length - processed;
 
     if (processed > 0) {
-      console.log(`Γ£à [PENDING-BILLING] Collected ${processed} pending charge(s) for company ${companyId}, released ${released.length} order(s), ${remaining} remaining`);
+      console.log(`✅ [PENDING-BILLING] Collected ${processed} pending charge(s) for company ${companyId}, released ${released.length} order(s), ${remaining} remaining`);
     }
 
     return { processed, released, remaining, failed };
   } catch (error) {
-    console.error('Γ¥î [PENDING-BILLING] Error:', error.message);
+    console.error('❌ [PENDING-BILLING] Error:', error.message);
     return { processed: 0, released: [], remaining: 0, failed: [], error: error.message };
   }
 }
 
 /**
- * ╪¬╪╣┘ä┘è┘é ╪╖┘ä╪¿ ┘è╪»┘ê┘è ╪¼╪»┘è╪» ╪¿╪│╪¿╪¿ ╪º┘å╪¬┘ç╪º╪í ╪º╪┤╪¬╪▒╪º┘â ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐.
- * ╪º┘ä╪╖┘ä╪¿ ┘è╪¿┘é┘ë ┘à┘ê╪¼┘ê╪» ┘ä┘â┘å┘ç ┘à╪«┘ü┘è ┘à┘å ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ (billingHoldAt) ┘ê┘è╪╕┘ç╪▒ ┘à╪º╪│┘â┘ï╪º
- * ┘ü┘è "┘à╪▓┘è╪» ╪º┘ä┘à╪╣┘ä┘ê┘à╪º╪¬" ╪¡╪¬┘ë ┘è╪¬╪¼╪»╪» ╪º┘ä╪º╪┤╪¬╪▒╪º┘â.
+ * تعليق طلب يدوي جديد بسبب انتهاء اشتراك الطلبات اليدوية.
+ * الطلب يبقى موجود لكنه مخفي من قائمة الطلبات (billingHoldAt) ويظهر ماسكًا
+ * في "مزيد المعلومات" حتى يتجدد الاشتراك.
  */
 async function holdOrderForExpiredSubscription({ companyId, orderId, orderNumber }) {
   const prisma = getSharedPrismaClient();
@@ -191,23 +191,23 @@ async function holdOrderForExpiredSubscription({ companyId, orderId, orderNumber
           companyId,
           userId: admin.id,
           type: 'order_subscription_hold',
-          title: 'ΓÅ╕∩╕Å ╪╖┘ä╪¿ ┘è╪»┘ê┘è ┘à╪╣┘ä┘æ┘é ╪¿╪│╪¿╪¿ ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪º╪┤╪¬╪▒╪º┘â',
-          message: `╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘è╪»┘ê┘è #${orderNumber} ┘à╪«┘ü┘è ┘à┘å ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ä╪ú┘å ╪º╪┤╪¬╪▒╪º┘â ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐ ┘à┘å╪¬┘ç┘è. ╪¼╪»┘æ╪» ╪º╪┤╪¬╪▒╪º┘â┘â ┘ä┘è╪╕┘ç╪▒ ╪º┘ä╪╖┘ä╪¿ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï.`,
+          title: '⏸️ طلب يدوي معلّق بسبب انتهاء الاشتراك',
+          message: `الطلب اليدوي #${orderNumber} مخفي من قائمة الطلبات لأن اشتراك الطلبات اليدوية منتهي. جدّد اشتراكك ليظهر الطلب تلقائياً.`,
           data: { orderId, orderNumber },
         },
       });
     }
   } catch (notifyError) {
-    console.error('ΓÜá∩╕Å [SUB-HOLD] Failed to notify admins:', notifyError.message);
+    console.error('⚠️ [SUB-HOLD] Failed to notify admins:', notifyError.message);
   }
 
-  console.warn(`ΓÅ╕∩╕Å [SUB-HOLD] Manual order #${orderNumber} held for company ${companyId} (subscription expired)`);
+  console.warn(`⏸️ [SUB-HOLD] Manual order #${orderNumber} held for company ${companyId} (subscription expired)`);
   return updated;
 }
 
 /**
- * ╪¬╪¡╪▒┘è╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘è╪»┘ê┘è╪⌐ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐ ╪¿╪│╪¿╪¿ ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪º╪┤╪¬╪▒╪º┘â ╪╣┘å╪» ╪╣┘ê╪»╪⌐ ╪º┘ä╪º╪┤╪¬╪▒╪º┘â
- * ╪Ñ┘ä┘ë ╪¡╪º┘ä╪⌐ ACTIVE/TRIAL (╪¬╪¼╪»┘è╪»/╪¬╪▒┘é┘è╪⌐/╪¬┘ü╪╣┘è┘ä).
+ * تحرير الطلبات اليدوية المعلّقة بسبب انتهاء الاشتراك عند عودة الاشتراك
+ * إلى حالة ACTIVE/TRIAL (تجديد/ترقية/تفعيل).
  */
 async function releaseSubscriptionHeldOrders(companyId) {
   const prisma = getSharedPrismaClient();
@@ -248,7 +248,7 @@ async function releaseSubscriptionHeldOrders(companyId) {
   }
 
   if (released > 0) {
-    console.log(`Γ£à [SUB-RELEASE] Released ${released} subscription-held order(s) for company ${companyId}`);
+    console.log(`✅ [SUB-RELEASE] Released ${released} subscription-held order(s) for company ${companyId}`);
   }
 
   return { released, subscriptionActive: true };

@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 class EasyWarehouseService {
   get prisma() {

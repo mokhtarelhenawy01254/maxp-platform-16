@@ -1,6 +1,7 @@
 // rebuild-v2
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { resolve, dirname } from 'path';
@@ -52,6 +53,13 @@ const STOREFRONT_RUNTIME_THEME_MODULE_PATTERN =
 const APP_UI_PRIMITIVES_MODULE_PATTERN =
   /\/src\/(?:components\/ui\/|lib\/utils\.ts$)/;
 
+// Tiny admin bootstrap utilities. These are statically imported by the entry
+// chunk (main.tsx) and must never be absorbed into a big route chunk — doing
+// so forces the whole route chunk (e.g. route-hr, route-dashboard) to be
+// executed on every page load.
+const APP_BOOTSTRAP_CORE_MODULE_PATTERN =
+  /\/src\/(?:bootstrap\/requestTarget|utils\/(?:chunkLoadRecovery|swCacheFlush))\.ts$/;
+
 const shouldFilterStorefrontPreloads = (
   filename: string,
   deps: string[] = [],
@@ -67,6 +75,22 @@ const filterStorefrontDeferredPreloads = (deps: string[]): string[] =>
     return !STOREFRONT_DEFERRED_PRELOAD_CHUNKS.some((pattern) =>
       pattern.test(normalizedDep),
     );
+  });
+
+// Route chunks that are statically imported by the admin entry/App chunk and
+// therefore MUST execute during startup. All other route chunks are loaded
+// lazily on navigation, so we do not preload them (saves bandwidth + parse).
+const ADMIN_STARTUP_ROUTE_CHUNK_PATTERN =
+  /^route-(?:storefront|dashboard|auth|inbox|super-admin|public)-/;
+
+const filterLazyRoutePreloads = (deps: string[]): string[] =>
+  deps.filter((dep) => {
+    const normalizedDep = dep.replace(/\\/g, '/');
+    const basename = normalizedDep.split('/').pop() || '';
+    if (!/^route-[^/]+\.js$/.test(basename)) {
+      return true;
+    }
+    return ADMIN_STARTUP_ROUTE_CHUNK_PATTERN.test(basename);
   });
 
 const getPackageName = (normalizedId: string): string | null => {
@@ -147,19 +171,7 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
   if (
     normalizedId.includes('/jspdf/') ||
     normalizedId.includes('/jspdf-autotable/') ||
-    normalizedId.includes('/xlsx/')
-  ) {
-    return 'vendor-documents';
-  }
-
-  if (
-    normalizedId.includes('/lucide-react/') ||
-    normalizedId.includes('/@heroicons/')
-  ) {
-    return 'vendor-icons-bundle';
-  }
-
-  if (
+    normalizedId.includes('/xlsx/') ||
     packageName === 'i18next' ||
     packageName === 'react-i18next' ||
     packageName === 'i18next-browser-languagedetector'
@@ -179,11 +191,6 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
   // Isolate icon sets
   if (packageName === 'lucide-react' || packageName === '@heroicons/react' || packageName === 'react-icons') {
     return 'vendor-icons';
-  }
-
-  // Isolate Radix UI primitives
-  if (packageName.startsWith('@radix-ui/')) {
-    return 'vendor-radix';
   }
 
   // Keep tiny class-name helpers independent from MUI. Storefront sections use
@@ -310,6 +317,9 @@ export default defineConfig(({ mode }) => {
       sourcemap: false,
     },
     root: '.',
+    worker: {
+      format: 'es',
+    },
     // Path resolution
     resolve: {
       dedupe: Array.from(REACT_RUNTIME_PACKAGES),
@@ -333,11 +343,76 @@ export default defineConfig(({ mode }) => {
           find: 'use-sync-external-store',
           replacement: resolve(FRONTEND_NODE_MODULES, 'use-sync-external-store'),
         },
+        { find: 'react-router', replacement: resolve(FRONTEND_NODE_MODULES, 'react-router') },
+        { find: 'react-router-dom', replacement: resolve(FRONTEND_NODE_MODULES, 'react-router-dom') },
         { find: '@', replacement: resolve(__dirname, 'src') },
+        { find: '@icr/polyseg-wasm', replacement: resolve(__dirname, 'src/components/radiology/polysegStub.js') },
       ],
     },
     plugins: [
       react(),
+      VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw-v4.js',
+        includeAssets: ['favicon.ico'],
+        manifest: {
+          name: 'MaxP - منصة إدارة التواصل والتجارة الإلكترونية',
+          short_name: 'MaxP',
+          description: 'منصة متكاملة لإدارة التواصل والتجارة الإلكترونية للشركات',
+          theme_color: '#3B82F6',
+          background_color: '#f9fafb',
+          display: 'standalone',
+          display_override: ['window-controls-overlay', 'standalone'],
+          scope: '/',
+          start_url: '/',
+          orientation: 'portrait-primary',
+          lang: 'ar',
+          dir: 'rtl',
+          id: 'com.maxp.platform',
+          categories: ['business', 'communication', 'ecommerce'],
+          shortcuts: [
+            {
+              name: 'المحادثات',
+              short_name: 'محادثات',
+              url: '/conversations',
+              icons: [{ src: '/icons/shortcut-conversations.svg', sizes: '96x96' }],
+            },
+            {
+              name: 'الطلبات',
+              short_name: 'طلبات',
+              url: '/orders',
+              icons: [{ src: '/icons/shortcut-orders.svg', sizes: '96x96' }],
+            },
+            {
+              name: 'المنتجات',
+              short_name: 'منتجات',
+              url: '/products',
+              icons: [{ src: '/icons/shortcut-products.svg', sizes: '96x96' }],
+            },
+          ],
+          icons: [
+            { src: '/icons/icon-72x72.svg', sizes: '72x72', type: 'image/svg+xml' },
+            { src: '/icons/icon-96x96.svg', sizes: '96x96', type: 'image/svg+xml' },
+            { src: '/icons/icon-128x128.svg', sizes: '128x128', type: 'image/svg+xml' },
+            { src: '/icons/icon-144x144.svg', sizes: '144x144', type: 'image/svg+xml' },
+            { src: '/icons/icon-152x152.svg', sizes: '152x152', type: 'image/svg+xml' },
+            { src: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+            { src: '/icons/icon-384x384.svg', sizes: '384x384', type: 'image/svg+xml' },
+            { src: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
+            { src: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
+          ],
+        },
+        injectManifest: {
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+          // index.html is served dynamically by the backend per-company (SEO
+          // shell for tenant storefronts like swan.maxp.online). Precaching it
+          // fails with a 401 on subdomains (the backend only treats extensionless
+          // paths as public storefront shells), which aborts the SW install.
+          // Navigations are already handled by the NetworkFirst route in sw-v4.js.
+          globIgnores: ['**/tesseract/**', '**/index.html'],
+        },
+      }),
       !disableCompression &&
         viteCompression({
           algorithm: 'gzip',
@@ -393,7 +468,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: proxyTarget,
-          changeOrigin: false,
+          changeOrigin: true,
           timeout: 120000,
           proxyTimeout: 120000,
           configure: (proxy) => {
@@ -456,14 +531,41 @@ export default defineConfig(({ mode }) => {
         '@base-ui/react/dialog',
         '@base-ui/react/alert-dialog',
       ],
+      // Node-only codecs (used by the radiology DICOM viewer) must not be
+      // pre-bundled: they `require('fs')`/`path` and crash the esbuild
+      // dep-optimizer at dev startup. They load fine as raw modules.
+      exclude: [
+        '@cornerstonejs/codec-charls',
+        '@cornerstonejs/codec-libjpeg-turbo-8bit',
+        '@cornerstonejs/codec-openjpeg',
+        '@cornerstonejs/codec-openjph',
+        '@cornerstonejs/core',
+        '@cornerstonejs/dicom-image-loader',
+        '@cornerstonejs/tools',
+      ],
     },
 
     build: {
+      // The radiology DICOM codec wrappers `require("fs")`/`path` inside
+      // `if(ENVIRONMENT_IS_NODE)` guards that never run in the browser.
+      // Leave those Node built-ins as raw `require()` calls instead of letting
+      // the CJS transform resolve them, otherwise the build fails with
+      // `Failed to resolve entry for package "fs"`.
+      commonjsOptions: {
+        ignore: [
+          'fs', 'path', 'buffer', 'child_process', 'stream', 'util', 'url',
+          'zlib', 'os', 'crypto', 'net', 'http', 'https', 'events', 'assert',
+          'string_decoder', 'tty', 'querystring', 'punycode', 'dns', 'timers',
+          'constants', 'module', 'vm', 'worker_threads', 'process', 'tls',
+          'dgram', 'readline', 'cluster',
+        ],
+      },
       modulePreload: {
         resolveDependencies(filename, deps) {
-          return shouldFilterStorefrontPreloads(filename, deps)
+          const storefrontFiltered = shouldFilterStorefrontPreloads(filename, deps)
             ? filterStorefrontDeferredPreloads(deps)
             : deps;
+          return filterLazyRoutePreloads(storefrontFiltered);
         },
       },
       minify: buildMinifier,
@@ -491,6 +593,23 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       reportCompressedSize: false,
       rollupOptions: {
+        // Node built-ins referenced by the emscripten DICOM codec wrappers
+        // inside `if(ENVIRONMENT_IS_NODE)` guards (never executed in browser).
+        // Keep them external so Rollup stops failing with
+        // `Failed to resolve entry for package "fs"` while the radiology
+        // viewer's lazy chunk is built.
+        external(id) {
+          return (
+            id.startsWith('node:') ||
+            [
+              'fs', 'path', 'buffer', 'child_process', 'stream', 'util', 'url',
+              'zlib', 'os', 'crypto', 'net', 'http', 'https', 'events', 'assert',
+              'string_decoder', 'tty', 'querystring', 'punycode', 'dns', 'timers',
+              'constants', 'module', 'vm', 'worker_threads', 'process', 'tls',
+              'dgram', 'readline', 'cluster',
+            ].includes(id)
+          );
+        },
         // maxParallelFileOps removed — default (20) is faster for CI/CD
         onwarn(warning, warn) {
           if (
@@ -506,12 +625,22 @@ export default defineConfig(({ mode }) => {
           warn(warning);
         },
         output: {
+          // Avoid hoisting every transitively-imported chunk into the entry
+          // chunk. This stops the entry from eagerly importing all route
+          // chunks (and executing them) on every page load.
+          hoistTransitiveImports: false,
           manualChunks(id) {
             const normalizedId = id.replace(/\\/g, '/');
 
             if (APP_UI_PRIMITIVES_MODULE_PATTERN.test(normalizedId)) {
               return 'app-ui-primitives';
             }
+
+            if (APP_BOOTSTRAP_CORE_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-bootstrap-core';
+            }
+
+            if (normalizedId.includes('@cornerstonejs') || normalizedId.includes(NODE_MODULES_SEGMENT + 'dicom-parser/')) return 'cornerstone';
 
             // Route-based chunk grouping for app source files
             if (
@@ -566,6 +695,7 @@ if (normalizedId.includes('SuperAdminAIKeyManager')) return 'route-ai-key-manage
               if (normalizedId.includes('/src/pages/broadcast/')) return 'route-broadcast';
               if (normalizedId.includes('/src/pages/whatsapp-inbox/')) return 'route-whatsapp-inbox';
               if (normalizedId.includes('/src/pages/pos/')) return 'route-pos';
+              if (normalizedId.includes('/src/pages/radiology/')) return 'route-radiology';
               if (normalizedId.includes('/src/pages/wallet/')) return 'route-wallet';
               if (normalizedId.includes('/src/pages/categories/')) return 'route-categories';
                             if (normalizedId.includes('/src/pages/tickets/')) return 'route-tickets';

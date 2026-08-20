@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/orderMovementCore', () => ({
+jest.mock('../../../services/orderMovementCore', () => ({
   fetchOrderMovementData: jest.fn(),
   buildTransitions: jest.fn(),
   normalizeDateRange: jest.fn(({ startDate, endDate }) => {
@@ -110,8 +110,8 @@ const makeOrder = (id, orderNumber, status, total, history) => ({
   total: String(total),
   createdAt: new Date('2026-05-01T00:00:00.000Z'),
   updatedAt: new Date('2026-06-29T00:00:00.000Z'),
-  customerName: `╪╣┘à┘è┘ä ${id}`,
-  governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+  customerName: `عميل ${id}`,
+  governorate: 'القاهرة',
   statusHistory: history
 });
 
@@ -213,11 +213,11 @@ describe('orderMovement agingController', () => {
     });
 
     expect(res.payload.data.buckets).toEqual([
-      { key: '<1d', label: '╪ú┘é┘ä ┘à┘å ┘è┘ê┘à', count: 0, revenue: 0 },
-      { key: '1-3d', label: '1-3 ╪ú┘è╪º┘à', count: 2, revenue: 550 },
-      { key: '3-7d', label: '3-7 ╪ú┘è╪º┘à', count: 1, revenue: 300 },
-      { key: '7-30d', label: '7-30 ┘è┘ê┘à', count: 1, revenue: 400 },
-      { key: '>30d', label: '╪ú┘â╪½╪▒ ┘à┘å 30 ┘è┘ê┘à', count: 1, revenue: 500 }
+      { key: '<1d', label: 'أقل من يوم', count: 0, revenue: 0 },
+      { key: '1-3d', label: '1-3 أيام', count: 2, revenue: 550 },
+      { key: '3-7d', label: '3-7 أيام', count: 1, revenue: 300 },
+      { key: '7-30d', label: '7-30 يوم', count: 1, revenue: 400 },
+      { key: '>30d', label: 'أكثر من 30 يوم', count: 1, revenue: 500 }
     ]);
 
     expect(res.payload.data.orders.map((o) => o.orderNumber)).toEqual([
@@ -234,8 +234,8 @@ describe('orderMovement agingController', () => {
       status: 'ON_HOLD',
       ageHours: 1392,
       total: 500,
-      customerName: '╪╣┘à┘è┘ä order-E',
-      governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+      customerName: 'عميل order-E',
+      governorate: 'القاهرة',
       lastTransitionAt: new Date('2026-05-03T00:00:00.000Z'),
       lastTransitionBy: 'Huda',
       lastTransitionAuto: false,
@@ -263,11 +263,11 @@ describe('orderMovement agingController', () => {
       stuckOver7d: 0
     });
     expect(res.payload.data.buckets).toEqual([
-      { key: '<1d', label: '╪ú┘é┘ä ┘à┘å ┘è┘ê┘à', count: 0, revenue: 0 },
-      { key: '1-3d', label: '1-3 ╪ú┘è╪º┘à', count: 0, revenue: 0 },
-      { key: '3-7d', label: '3-7 ╪ú┘è╪º┘à', count: 0, revenue: 0 },
-      { key: '7-30d', label: '7-30 ┘è┘ê┘à', count: 0, revenue: 0 },
-      { key: '>30d', label: '╪ú┘â╪½╪▒ ┘à┘å 30 ┘è┘ê┘à', count: 0, revenue: 0 }
+      { key: '<1d', label: 'أقل من يوم', count: 0, revenue: 0 },
+      { key: '1-3d', label: '1-3 أيام', count: 0, revenue: 0 },
+      { key: '3-7d', label: '3-7 أيام', count: 0, revenue: 0 },
+      { key: '7-30d', label: '7-30 يوم', count: 0, revenue: 0 },
+      { key: '>30d', label: 'أكثر من 30 يوم', count: 0, revenue: 0 }
     ]);
     expect(res.payload.data.orders).toEqual([]);
   });
@@ -277,7 +277,7 @@ describe('orderMovement agingController', () => {
     await callRouter({ user: { id: 'user-1' }, query: {} }, res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
     expect(core.getSharedPrismaClient).not.toHaveBeenCalled();
   });
 

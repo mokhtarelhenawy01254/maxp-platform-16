@@ -1,6 +1,6 @@
-﻿/**
+/**
  * @module FlowCanvas
- * @description Flow editor ΓÇö drag-to-reorder step nodes with a live
+ * @description Flow editor — drag-to-reorder step nodes with a live
  * WhatsApp message preview. Uses @dnd-kit. Styled with the platform's
  * unified design tokens (shadcn / Tailwind).
  */
@@ -67,10 +67,10 @@ interface FlowCanvasProps {
 }
 
 const variableReplacements: Record<string, string> = {
-  "{firstName}": "╪ú╪¡┘à╪»",
-  "{lastName}": "┘à╪¡┘à╪»",
+  "{firstName}": "أحمد",
+  "{lastName}": "محمد",
   "{orderNumber}": "ORD-2024",
-  "{totalPrice}": "1,250 ╪¼.┘à",
+  "{totalPrice}": "1,250 ج.م",
 };
 
 function applyVariables(content: string): string {
@@ -87,9 +87,9 @@ function sortStepOrder(steps: FlowStep[]): FlowStep[] {
     .map((step, index) => ({ ...step, stepOrder: index + 1 }));
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────
 // Validation
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────
 
 type ValidationSeverity = "error" | "warning";
 
@@ -119,7 +119,7 @@ function validateFlow(steps: FlowStep[]): FlowIssue[] {
       issues.push({
         stepId: step.id,
         severity: "warning",
-        message: `Step ${index + 1} is ${step.content.length} characters ΓÇö risk of truncation`,
+        message: `Step ${index + 1} is ${step.content.length} characters — risk of truncation`,
       });
     }
 
@@ -127,7 +127,7 @@ function validateFlow(steps: FlowStep[]): FlowIssue[] {
       issues.push({
         stepId: step.id,
         severity: "warning",
-        message: `Step ${index + 1} has a ${step.delayDays}-day delay ΓÇö consider splitting the flow`,
+        message: `Step ${index + 1} has a ${step.delayDays}-day delay — consider splitting the flow`,
       });
     }
 
@@ -260,7 +260,7 @@ export function FlowCanvas({
                 variant="outline"
                 size="sm"
                 onClick={onOpenCopilot}
-                title={`${t("whatsappJourney.copilot.open")} (ΓîÿK)`}
+                title={`${t("whatsappJourney.copilot.open")} (⌘K)`}
               >
                 <Sparkles className="size-3.5" />
                 {t("whatsappJourney.copilot.title")}
@@ -333,7 +333,7 @@ export function FlowCanvas({
   );
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────
 
 interface SortableStepProps {
   step: FlowStep;
@@ -396,7 +396,7 @@ function SortableStep({
         transition={{ duration: 0.3, delay: index * 0.06 }}
         className="group relative flex items-stretch gap-0"
       >
-        {/* ΓöÇΓöÇ Timeline rail column ΓöÇΓöÇ */}
+        {/* ── Timeline rail column ── */}
         <div className="relative flex w-6 shrink-0 flex-col items-center">
           {/* Node dot */}
           <span
@@ -426,7 +426,7 @@ function SortableStep({
           )}
         </div>
 
-        {/* ΓöÇΓöÇ Step card ΓöÇΓöÇ */}
+        {/* ── Step card ── */}
         <div
           className={cn(
             "min-w-0 flex-1 rounded-xl p-3.5 transition-all duration-200",
@@ -519,7 +519,7 @@ function SortableStep({
               )}
             </div>
 
-            {/* Actions ΓÇö show on hover */}
+            {/* Actions — show on hover */}
             {isAdmin && (
               <div className="flex shrink-0 items-start gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                 <button
@@ -547,7 +547,7 @@ function SortableStep({
   );
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────
 
 function ValidationBadge({
   errorCount,
@@ -596,7 +596,7 @@ function ValidationBadge({
   );
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────
 
 function FlowEmptyState({ onAdd, isAdmin }: { onAdd: () => void; isAdmin: boolean }) {
   const { t } = useTranslation();
@@ -628,7 +628,7 @@ function FlowEmptyState({ onAdd, isAdmin }: { onAdd: () => void; isAdmin: boolea
   );
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────
 
 interface WhatsAppPreviewPaneProps {
   step: FlowStep | null;
@@ -660,7 +660,7 @@ function WhatsAppPreviewPane({ step, totalSteps }: WhatsAppPreviewPaneProps) {
                 current: stepNumber,
                 total: totalSteps,
               })
-            : "ΓÇö"}
+            : "—"}
         </motion.span>
       </div>
 
@@ -708,7 +708,7 @@ function WhatsAppPreviewPane({ step, totalSteps }: WhatsAppPreviewPaneProps) {
                 className="mt-1 text-end"
                 style={{ fontSize: 10, color: "#888" }}
               >
-                12:05 PM Γ£ôΓ£ô
+                12:05 PM ✓✓
               </div>
             </motion.div>
           ) : (
@@ -739,7 +739,7 @@ function WhatsAppPreviewPane({ step, totalSteps }: WhatsAppPreviewPaneProps) {
               <code className="rounded bg-[color:var(--color-muted)] px-1.5 py-0.5 text-[color:var(--color-foreground)]">
                 {token}
               </code>
-              <span className="text-[color:var(--color-muted-foreground)]">ΓåÆ {value}</span>
+              <span className="text-[color:var(--color-muted-foreground)]">→ {value}</span>
             </li>
           ))}
         </ul>

@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, Award, BarChart, BarChart3, Book, Calendar, ChevronLeft, Clock, DollarSign, File, FileText, GraduationCap, Settings, TrendingUp, Users } from 'lucide-react';
+import {
+  Clock,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Users,
+  Award,
+  GraduationCap,
+  AlertTriangle,
+  FileText,
+  BarChart3,
+  ChevronLeft,
+} from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import AttendanceReport from "./AttendanceReport";
@@ -9,11 +21,15 @@ import PerformanceReport from "./PerformanceReport";
 import TurnoverReport from "./TurnoverReport";
 import OvertimeReport from "./OvertimeReport";
 import LateAbsenceReport from "./LateAbsenceReport";
+import AbsentDaysReport from "./AbsentDaysReport";
+import AttendanceSheetReport from "./AttendanceSheetReport";
 import EmployeeReport from "./EmployeeReport";
 
 type TabId =
   | "employee"
   | "attendance"
+  | "attendance-sheet"
+  | "absent-days"
   | "leaves"
   | "payroll"
   | "performance"
@@ -62,6 +78,18 @@ const HRReportsHub: React.FC = () => {
       label: "تقرير الحضور",
       icon: Clock,
       description: "الحضور والانصراف والتأخير",
+    },
+    {
+      id: "attendance-sheet",
+      label: "كشف الحضور الشهري",
+      icon: Calendar,
+      description: "حالة كل موظف يومياً + أوقات الحضور والانصراف",
+    },
+    {
+      id: "absent-days",
+      label: "تقرير أيام الغياب",
+      icon: Calendar,
+      description: "تواريخ أيام الغياب لكل موظف",
     },
     {
       id: "leaves",
@@ -199,6 +227,8 @@ const HRReportsHub: React.FC = () => {
             <ErrorBoundary>
               {activeTab === "employee" && <EmployeeReport />}
               {activeTab === "attendance" && <AttendanceReport />}
+              {activeTab === "attendance-sheet" && <AttendanceSheetReport />}
+              {activeTab === "absent-days" && <AbsentDaysReport />}
               {activeTab === "leaves" && <LeaveReport />}
               {activeTab === "payroll" && <PayrollReport />}
               {activeTab === "performance" && <PerformanceReport />}

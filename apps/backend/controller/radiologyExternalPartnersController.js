@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const normalizeText = (value) => {
   if (value === undefined || value === null) return null;
@@ -9,7 +9,7 @@ const normalizeText = (value) => {
 const listExternalPartners = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, includeInactive } = req.query;
     const where = { companyId };
@@ -29,17 +29,17 @@ const listExternalPartners = async (req, res) => {
     res.json({ success: true, data: partners });
   } catch (error) {
     console.error('Error listing radiology external partners:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪┤╪▒┘â╪º╪í ╪º┘ä╪«╪º╪▒╪¼┘è┘è┘å' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الشركاء الخارجيين' });
   }
 };
 
 const createExternalPartner = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { name, phone, contactName } = req.body || {};
-    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪┤╪▒┘è┘â ┘à╪╖┘ä┘ê╪¿' });
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم الشريك مطلوب' });
 
     const partner = await getSharedPrismaClient().radiologyExternalPartner.create({
       data: {
@@ -52,24 +52,24 @@ const createExternalPartner = async (req, res) => {
     res.json({ success: true, data: partner });
   } catch (error) {
     console.error('Error creating radiology external partner:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪┤╪▒┘è┘â' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الشريك' });
   }
 };
 
 const updateExternalPartner = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyExternalPartner.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪┤╪▒┘è┘â ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الشريك غير موجود' });
 
     const data = {};
     if (body.name !== undefined) {
-      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪┤╪▒┘è┘â ┘à╪╖┘ä┘ê╪¿' });
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم الشريك مطلوب' });
       data.name = String(body.name).trim();
     }
     if (body.phone !== undefined) data.phone = normalizeText(body.phone);
@@ -80,25 +80,25 @@ const updateExternalPartner = async (req, res) => {
     res.json({ success: true, data: partner });
   } catch (error) {
     console.error('Error updating radiology external partner:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪┤╪▒┘è┘â' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الشريك' });
   }
 };
 
 const deleteExternalPartner = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyExternalPartner.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪┤╪▒┘è┘â ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الشريك غير موجود' });
 
     await prisma.radiologyExternalPartner.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä╪┤╪▒┘è┘â', data: { id } });
+    res.json({ success: true, message: 'تم حذف الشريك', data: { id } });
   } catch (error) {
     console.error('Error deleting radiology external partner:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä╪┤╪▒┘è┘â' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف الشريك' });
   }
 };
 

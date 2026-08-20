@@ -936,6 +936,61 @@ describe('Storefront public routes', () => {
     expect(orderMetadata.attribution.landingPath).toContain('&utm_content=creative_a');
   });
 
+  test('POST /api/v1/public/orders mirrors wallet payment method and wallet proof onto the regular order', async () => {
+    const walletProof = {
+      imageUrl: '/uploads/wallet-proofs/test-wallet-proof.png',
+      walletNumber: '01270388115',
+      transferRef: 'WALLET-TEST-REF-123',
+    };
+
+    const response = await request(app)
+      .post('/api/v1/public/orders')
+      .query({ companyId: company.id })
+      .send({
+        guestName: 'Wallet Checkout User',
+        guestPhone: '01044444444',
+        shippingAddress: {
+          governorate: 'Cairo',
+          city: 'Cairo',
+          addressLine1: '77 Wallet Street',
+        },
+        paymentMethod: 'wallet',
+        walletProof,
+        items: [
+          {
+            productId: alphaProduct.id,
+            variantId: alphaVariant.id,
+            quantity: 1,
+            price: 1,
+          },
+        ],
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+
+    const savedGuestOrder = await prisma.guestOrder.findUnique({
+      where: { id: response.body.data.id },
+    });
+    const guestMetadata = JSON.parse(savedGuestOrder.metadata || '{}');
+    expect(guestMetadata.walletPaymentProof).toMatchObject(walletProof);
+
+    const persistedOrder = await prisma.order.findUnique({
+      where: {
+        companyId_orderNumber: {
+          companyId: company.id,
+          orderNumber: response.body.data.orderNumber,
+        },
+      },
+    });
+
+    expect(persistedOrder).toBeTruthy();
+    expect(persistedOrder.paymentMethod).toBe('WALLET');
+
+    const orderMetadata = JSON.parse(persistedOrder.metadata || '{}');
+    expect(orderMetadata.walletPaymentProof).toMatchObject(walletProof);
+  });
+
   test('POST /api/v1/public/orders preserves quantity offer metadata, applies free shipping, and logs app usage', async () => {
     const quantityOfferGroupId = `qo-group-${Date.now()}`;
     const quantityOfferLabel = 'اشتري القطعتين بـ1980 بدل 2180';
@@ -1119,6 +1174,14 @@ describe('Storefront public routes', () => {
         subtotal: 990,
         shippingCost: 75,
         total: 1065,
+        attribution: {
+          source: 'tiktok',
+          medium: 'paid_social',
+          platform: 'tiktok',
+          campaignName: 'تيك توك صيف',
+          campaignId: 'tt-777',
+          ttclid: 'ttclid_xyz',
+        },
         items: [
           {
             productId: alphaProduct.id,
@@ -1153,6 +1216,13 @@ describe('Storefront public routes', () => {
       phone: '01044444444',
       governorate: 'Cairo',
     });
+    expect(JSON.parse(firstSavedCart.checkoutData || '{}').attribution).toEqual(
+      expect.objectContaining({
+        source: 'tiktok',
+        campaignName: 'تيك توك صيف',
+        campaignId: 'tt-777',
+      }),
+    );
 
     const firstStartedAt = firstSavedCart.checkoutStartedAt.toISOString();
 

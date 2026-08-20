@@ -1,6 +1,16 @@
-import { Search as MagnifyingGlassIcon, Filter as FunnelIcon, Edit as PencilSquareIcon, Trash2 as TrashIcon, Circle as UserPlusIcon, Circle as ArrowUturnLeftIcon, Circle as DocumentDuplicateIcon, Check as CheckIcon, X as XMarkIcon, ChevronDown as ChevronDownIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  UserPlusIcon,
+  ArrowUturnLeftIcon,
+  DocumentDuplicateIcon,
+  CheckIcon,
+  XMarkIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
@@ -11,6 +21,8 @@ import {
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { toast } from "sonner";
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
 import AssetForm from "./AssetForm";
 import AssetAssignmentModal from "./AssetAssignmentModal";
 
@@ -95,14 +107,14 @@ const AssetList: React.FC<AssetListProps> = ({ refreshTrigger }) => {
   const handleClone = async (id: string) => {
     if (!window.confirm("هل أنت متأكد من استنساخ هذا الأصل؟")) return;
 
-    const toastId = toast.loading("جاري استنساخ الأصل...");
+    const toastId = tToast.loading("AssetList.msg_b785");
     try {
       const response = await companyAwareApi.post(`/hr/assets/${id}/clone`);
       if (response.data.success) {
-        toast.success(response.data.message || "تم الاستنساخ بنجاح", { id: toastId });
+        toast.success(response.data.message || i18n.t("AssetList.msg_c0e9"), { id: toastId });
         fetchAssets(1, true); // Refresh list
       } else {
-        toast.error(response.data.message || "فشل في استنساخ الأصل", { id: toastId });
+        toast.error(response.data.message || i18n.t("AssetList.msg_20bb"), { id: toastId });
       }
     } catch (error: any) {
       console.error("Error cloning asset:", error);
@@ -516,7 +528,7 @@ const AssetList: React.FC<AssetListProps> = ({ refreshTrigger }) => {
                         key={status.key}
                         className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-right text-white focus:bg-white/10"
                         onSelect={async () => {
-                          const toastId = toast.loading("جاري تحديث الحالة...");
+                          const toastId = tToast.loading("AssetList.loading_update_4408");
                           try {
                             await Promise.all(
                               selectedIds.map((assetId) =>

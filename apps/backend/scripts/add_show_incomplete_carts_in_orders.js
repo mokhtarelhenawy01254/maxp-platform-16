@@ -1,9 +1,9 @@
-﻿/**
- * ╪Ñ╪╢╪º┘ü╪⌐ ╪Ñ╪╣╪»╪º╪» "╪╣╪▒╪╢ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐ ┘ü┘è ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬" ╪Ñ┘ä┘ë OrderInvoiceSettings.
+/**
+ * إضافة إعداد "عرض الطلبات غير المكتملة في صفحة الطلبات" إلى OrderInvoiceSettings.
  *
- * ╪ó┘à┘å (idempotent): ADD COLUMN IF NOT EXISTS.
+ * آمن (idempotent): ADD COLUMN IF NOT EXISTS.
  *
- * ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à: node scripts/add_show_incomplete_carts_in_orders.js [--dry-run]
+ * الاستخدام: node scripts/add_show_incomplete_carts_in_orders.js [--dry-run]
  */
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
@@ -19,17 +19,17 @@ async function main() {
     : 'ALTER TABLE "order_invoice_settings" ADD COLUMN IF NOT EXISTS "showIncompleteCartsInOrders" BOOLEAN NOT NULL DEFAULT false';
 
   if (DRY_RUN) {
-    console.log(`Γ£à (dry-run) ${sql}`);
+    console.log(`✅ (dry-run) ${sql}`);
   } else {
     await prisma.$executeRawUnsafe(sql);
-    console.log('Γ£à Column showIncompleteCartsInOrders added to order_invoice_settings');
+    console.log('✅ Column showIncompleteCartsInOrders added to order_invoice_settings');
   }
 
   await prisma.$disconnect();
-  console.log('≡ƒÄë Migration complete.');
+  console.log('🎉 Migration complete.');
 }
 
 main().catch((e) => {
-  console.error('Γ¥î Failed:', e.message);
+  console.error('❌ Failed:', e.message);
   process.exit(1);
 });

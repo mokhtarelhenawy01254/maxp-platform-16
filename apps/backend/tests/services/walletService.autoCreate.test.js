@@ -1,4 +1,4 @@
-﻿const WalletService = require('../../services/walletService');
+const WalletService = require('../../services/walletService');
 const sharedDatabase = require('../../services/sharedDatabase');
 
 jest.mock('../../services/sharedDatabase', () => ({

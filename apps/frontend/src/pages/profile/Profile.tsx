@@ -1,8 +1,39 @@
-import { Camera as CameraIcon, Pencil as PencilIcon, Check as CheckIcon, X as XMarkIcon, Clock as ClockIcon, Star as StarIcon, Circle as TrophyIcon, Circle as CalendarDaysIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Pin as MapPinIcon, Circle as BriefcaseIcon, Building as BuildingOfficeIcon, DollarSign as CurrencyDollarIcon, File as DocumentTextIcon, User as UserIcon, Circle as CakeIcon, Star as SparklesIcon, Circle as GiftIcon, Heart as HeartIcon, Monitor as ComputerDesktopIcon, Circle as ClipboardDocumentListIcon, ShieldCheck as ShieldCheckIcon, Activity as ChartBarIcon, Circle as BellAlertIcon, Check as IdentificationIcon, Circle as WalletIcon, Circle as ArrowTrendingUpIcon, Circle as UserGroupIcon, DollarSign as BanknotesIcon, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useDateFormat } from "../../hooks/useDateFormat";
-;
+import {
+  CameraIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon,
+  ClockIcon,
+  StarIcon,
+  TrophyIcon,
+  CalendarDaysIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  MapPinIcon,
+  BriefcaseIcon,
+  BuildingOfficeIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  UserIcon,
+  CakeIcon,
+  SparklesIcon,
+  GiftIcon,
+  HeartIcon,
+  ComputerDesktopIcon,
+  ClipboardDocumentListIcon,
+  ShieldCheckIcon,
+  ChartBarIcon,
+  BellAlertIcon,
+  IdentificationIcon,
+  WalletIcon,
+  ArrowTrendingUpIcon,
+  UserGroupIcon,
+  BanknotesIcon,
+  ShoppingBagIcon,
+} from "@heroicons/react/24/outline";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useTheme } from "../../hooks/useTheme";
 import api from "../../services/api";
@@ -10,6 +41,8 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useSearchParams } from "react-router-dom";
+import { DefaultPageSelector } from "../../components/settings/DefaultPageSelector";
+import { apiClient } from "../../services/apiClient";
 
 interface Employee {
   id: string;
@@ -83,28 +116,6 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
   return maybeError.response?.data?.error || fallback;
 };
 
-const statusConfig: Record<string, { label: string; color: string; dot: string; glow: string }> = {
-  ACTIVE: { label: "نشط", color: "bg-emerald-500/15 text-emerald-400 ring-emerald-500/30", dot: "bg-emerald-400", glow: "shadow-emerald-500/20" },
-  ON_LEAVE: { label: "في إجازة", color: "bg-amber-500/15 text-amber-400 ring-amber-500/30", dot: "bg-amber-400", glow: "shadow-amber-500/20" },
-  SUSPENDED: { label: "موقوف", color: "bg-red-500/15 text-red-400 ring-red-500/30", dot: "bg-red-400", glow: "shadow-red-500/20" },
-  TERMINATED: { label: "منتهي", color: "bg-slate-500/15 text-slate-400 ring-slate-500/30", dot: "bg-slate-400", glow: "" },
-};
-
-const contractLabels: Record<string, string> = {
-  FULL_TIME: "دوام كامل",
-  PART_TIME: "دوام جزئي",
-  CONTRACT: "عقد",
-  TEMPORARY: "مؤقت",
-  INTERNSHIP: "تدريب",
-  FREELANCE: "حر",
-};
-
-const maritalLabels: Record<string, string> = {
-  SINGLE: "أعزب / عزباء",
-  MARRIED: "متزوج / ة",
-  DIVORCED: "مطلق / ة",
-  WIDOWED: "أرمل / ة",
-};
 
 const AnimatedNumber = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
   const [display, setDisplay] = useState(0);
@@ -153,15 +164,14 @@ const InfoField = ({
   </div>
 );
 
-const ALL_TABS = [
-  { value: "overview", label: "نظرة عامة", icon: ChartBarIcon },
-  { value: "personal", label: "البيانات الشخصية", icon: IdentificationIcon },
-  { value: "job", label: "الوظيفة والراتب", icon: WalletIcon, requiresHr: true },
-  { value: "custody", label: "عهدتي", icon: ComputerDesktopIcon, requiresHr: true },
-  { value: "documents", label: "المستندات", icon: DocumentTextIcon, requiresHr: true },
-  { value: "warnings", label: "الإنذارات", icon: BellAlertIcon, requiresHr: true },
-  { value: "events", label: "المناسبات", icon: CakeIcon, requiresHr: true },
-];
+
+const sectionAccents: Record<string, { bar: string; text: string; iconBg: string }> = {
+  violet: { bar: "from-violet-500/20 to-violet-500/0", text: "text-violet-600 dark:text-violet-400", iconBg: "bg-violet-500/10 dark:bg-violet-500/15" },
+  emerald: { bar: "from-emerald-500/20 to-emerald-500/0", text: "text-emerald-600 dark:text-emerald-400", iconBg: "bg-emerald-500/10 dark:bg-emerald-500/15" },
+  rose: { bar: "from-rose-500/20 to-rose-500/0", text: "text-rose-600 dark:text-rose-400", iconBg: "bg-rose-500/10 dark:bg-rose-500/15" },
+  indigo: { bar: "from-indigo-500/20 to-indigo-500/0", text: "text-indigo-600 dark:text-indigo-400", iconBg: "bg-indigo-500/10 dark:bg-indigo-500/15" },
+  amber: { bar: "from-amber-500/20 to-amber-500/0", text: "text-amber-600 dark:text-amber-400", iconBg: "bg-amber-500/10 dark:bg-amber-500/15" },
+};
 
 const SectionCard = ({
   icon: Icon,
@@ -174,24 +184,19 @@ const SectionCard = ({
   accent?: string;
   children: React.ReactNode;
 }) => {
-  const accents: Record<string, string> = {
-    violet: "from-violet-500/20 to-violet-500/0 text-violet-600 dark:text-violet-400",
-    emerald: "from-emerald-500/20 to-emerald-500/0 text-emerald-600 dark:text-emerald-400",
-    rose: "from-rose-500/20 to-rose-500/0 text-rose-600 dark:text-rose-400",
-    indigo: "from-indigo-500/20 to-indigo-500/0 text-indigo-600 dark:text-indigo-400",
-    amber: "from-amber-500/20 to-amber-500/0 text-amber-600 dark:text-amber-400",
-  };
-  const cls = accents[accent] || accents.violet;
+  const a = sectionAccents[accent] || sectionAccents.violet;
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-slate-900/80 backdrop-blur-xl shadow-sm dark:shadow-xl transition-all duration-300"
     >
-      <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${cls.split(" ")[0]} ${cls.split(" ")[1]}`} />
+      <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${a.bar}`} />
       <div className="p-6">
-        <h3 className={`flex items-center gap-2.5 text-sm font-bold uppercase tracking-widest mb-6 ${cls.split(" ")[2]}`}>
-          <Icon className="w-4 h-4" />
+        <h3 className={`flex items-center gap-2.5 text-sm font-bold uppercase tracking-widest mb-6 ${a.text}`}>
+          <span className={`w-6 h-6 rounded-lg ${a.iconBg} flex items-center justify-center`}>
+            <Icon className="w-3.5 h-3.5" />
+          </span>
           {title}
         </h3>
         {children}
@@ -201,6 +206,36 @@ const SectionCard = ({
 };
 
 const Profile: React.FC = () => {
+  const { t } = useTranslation();
+  const statusConfig: Record<string, { label: string; color: string; dot: string; glow: string }> = {
+    ACTIVE: { label: t("employee.common.statusActive"), color: "bg-emerald-500/15 text-emerald-400 ring-emerald-500/30", dot: "bg-emerald-400", glow: "shadow-emerald-500/20" },
+    ON_LEAVE: { label: t("employee.common.statusOnLeave"), color: "bg-amber-500/15 text-amber-400 ring-amber-500/30", dot: "bg-amber-400", glow: "shadow-amber-500/20" },
+    SUSPENDED: { label: t("employee.common.statusSuspended"), color: "bg-red-500/15 text-red-400 ring-red-500/30", dot: "bg-red-400", glow: "shadow-red-500/20" },
+    TERMINATED: { label: t("employee.common.statusTerminated"), color: "bg-slate-500/15 text-slate-400 ring-slate-500/30", dot: "bg-slate-400", glow: "" },
+  };
+  const contractLabels: Record<string, string> = {
+    FULL_TIME: t("employee.common.contractFullTime"),
+    PART_TIME: t("employee.common.contractPartTime"),
+    CONTRACT: t("employee.common.contractContract"),
+    TEMPORARY: t("employee.common.contractTemporary"),
+    INTERNSHIP: t("employee.common.contractIntern"),
+    FREELANCE: t("employee.common.contractFreelance"),
+  };
+  const maritalLabels: Record<string, string> = {
+    SINGLE: t("employee.common.maritalSingle"),
+    MARRIED: t("employee.common.maritalMarried"),
+    DIVORCED: t("employee.common.maritalDivorced"),
+    WIDOWED: t("employee.common.maritalWidowed"),
+  };
+  const ALL_TABS = [
+    { value: "overview", label: t("employee.common.overview"), icon: ChartBarIcon },
+    { value: "personal", label: t("employee.common.personalInfo"), icon: IdentificationIcon },
+    { value: "job", label: t("employee.common.jobAndSalary"), icon: WalletIcon, requiresHr: true },
+    { value: "custody", label: t("employee.common.myCustody"), icon: ComputerDesktopIcon, requiresHr: true },
+    { value: "documents", label: t("employee.common.documents"), icon: DocumentTextIcon, requiresHr: true },
+    { value: "warnings", label: t("employee.common.warnings"), icon: BellAlertIcon, requiresHr: true },
+    { value: "events", label: t("employee.common.occasions"), icon: CakeIcon, requiresHr: true },
+  ];
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
   const { derivedTheme } = useTheme();
@@ -219,8 +254,10 @@ const Profile: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [myCustody, setMyCustody] = useState<CustodyAsset[]>([]);
   const [warnings, setWarnings] = useState<WarningRecord[]>([]);
+  const [defaultPage, setDefaultPage] = useState("/apps");
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
-  const TABS = useMemo(() => ALL_TABS.filter(t => !t.requiresHr || hasHrBasic), [hasHrBasic]);
+  const TABS = useMemo(() => ALL_TABS.filter(tab => !tab.requiresHr || hasHrBasic), [hasHrBasic]);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -326,17 +363,43 @@ const Profile: React.FC = () => {
     return () => clearTimeout(timer);
   }, [fetchProfileData]);
 
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setSettingsLoading(true);
+        const res = await apiClient.get("/user/settings", { _skipErrorToast: true } as Record<string, unknown>);
+        if (res.data?.success && res.data?.data?.defaultPage) {
+          setDefaultPage(res.data.data.defaultPage);
+        }
+      } catch {
+        // silent
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleDefaultPageChange = async (page: string) => {
+    setDefaultPage(page);
+    try {
+      await apiClient.put("/user/settings", { settings: { defaultPage: page } });
+    } catch {
+      // silent
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       const response = await api.put("/hr/employees/me", formData);
       if (response.data.success) {
-        toast.success("تم تحديث بياناتك بنجاح ✓");
+        toast.success(t("employee.profile.saveSuccess"));
         setIsEditing(false);
         fetchProfileData();
       }
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "حدث خطأ أثناء التحديث"));
+      toast.error(getApiErrorMessage(error, t("employee.profile.saveError")));
     } finally {
       setSaving(false);
     }
@@ -347,7 +410,7 @@ const Profile: React.FC = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("الرجاء اختيار ملف صورة صالح"); return; }
+    if (!file.type.startsWith("image/")) { toast.error(t("employee.profile.invalidImage")); return; }
     try {
       setUploading(true);
       const fd = new FormData();
@@ -355,10 +418,10 @@ const Profile: React.FC = () => {
       const res = await api.post("/user/image-gallery/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
       if (res.data?.success) {
         if (employee?.id) await api.put(`/hr/employees/${employee.id}`, { avatar: res.data.image.url });
-        toast.success("تم تحديث الصورة الشخصية بنجاح");
+        toast.success(t("employee.profile.avatarUpdated"));
         fetchProfileData();
       }
-    } catch { toast.error("فشل في رفع الصورة. يرجى المحاولة مرة أخرى."); }
+    } catch { toast.error(t("employee.profile.avatarFailed")); }
     finally { setUploading(false); }
   };
 
@@ -383,8 +446,11 @@ const Profile: React.FC = () => {
     const now = new Date();
     const years = now.getFullYear() - start.getFullYear();
     const months = now.getMonth() - start.getMonth();
-    if (years > 0) return `${years} سنة${months > 0 ? ` و ${months} شهر` : ""}`;
-    return `${months} شهر`;
+    if (years > 0) {
+      if (months > 0) return t("employee.profile.tenureYearsMonths", { years, months });
+      return t("employee.profile.tenureYears", { years });
+    }
+    return t("employee.profile.tenureMonths", { months });
   };
 
   const getNextOccasion = (dateStr: string) => {
@@ -408,7 +474,7 @@ const Profile: React.FC = () => {
             <div className={`absolute inset-0 rounded-full border-2 ${derivedTheme === 'dark' ? 'border-violet-500/20' : 'border-violet-200'}`} />
             <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-violet-500 animate-spin" />
           </div>
-          <p className={`text-sm ${derivedTheme === 'dark' ? 'text-slate-400' : 'text-slate-600'} font-medium`}>جاري تحميل ملفك الشخصي...</p>
+          <p className={`text-sm ${derivedTheme === 'dark' ? 'text-slate-400' : 'text-slate-600'} font-medium`}>{t("employee.profile.loading")}</p>
         </div>
       </div>
     );
@@ -416,52 +482,52 @@ const Profile: React.FC = () => {
 
   if (isMerchantUser || isAffiliateUser) {
     const externalUser = user as typeof user & MerchantUserExtras;
-    const companyName = user?.company?.name || "الشركة المرتبط بها";
-    const fullName = `${formData.firstName} ${formData.lastName}`.trim() || user?.email || "حساب المستخدم";
+    const companyName = user?.company?.name || t("employee.profile.noCompany");
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim() || user?.email || t("employee.profile.userAccount");
     const portalPath = isMerchantUser ? "/merchant-portal" : "/affiliates/dashboard";
-    const accountTitle = isMerchantUser ? "حساب تاجر دروب شيبنج" : "حساب مسوق أفليت";
+    const accountTitle = isMerchantUser ? t("employee.profile.merchantAccount") : t("employee.profile.affiliateAccount");
     const accountDescription = isMerchantUser
-      ? `هذا الحساب مخصص لإدارة منتجات وطلبات التاجر فقط داخل شركة ${companyName}.`
-      : `هذا الحساب مخصص لإدارة روابطك، منتجاتك، طلباتك، وعُمولاتك فقط داخل شركة ${companyName}.`;
-    const portalCta = isMerchantUser ? "فتح بورتال التاجر" : "فتح لوحة المسوق";
-    const toolsHeading = isMerchantUser ? "الأدوات المتاحة للتاجر" : "الأدوات المتاحة للمسوق";
+      ? t("employee.profile.merchantAccountDesc", { company: companyName })
+      : t("employee.profile.affiliateAccountDesc", { company: companyName });
+    const portalCta = isMerchantUser ? t("employee.profile.merchantPortal") : t("employee.profile.affiliateDashboard");
+    const toolsHeading = isMerchantUser ? t("employee.profile.merchantTools") : t("employee.profile.affiliateTools");
     const tools = isMerchantUser
       ? [
           {
-            label: "منتجاتي ومخزوني",
-            description: "تحديث سعر التاجر، المخزون، وحالة المزامنة للمنتجات المرتبطة بك.",
+            label: t("employee.profile.merchantProducts"),
+            description: t("employee.profile.merchantProductsDesc"),
             to: "/merchant-portal#merchant-products",
             icon: ClipboardDocumentListIcon,
           },
           {
-            label: "طلبات الدروب شيبنج",
-            description: "متابعة طلباتك وتحديث الحالة ورقم التتبع بدون رؤية طلبات تجار آخرين.",
+            label: t("employee.profile.merchantOrders"),
+            description: t("employee.profile.merchantOrdersDesc"),
             to: "/merchant-portal#merchant-orders",
             icon: ChartBarIcon,
           },
           {
-            label: "عمولاتي ومستحقاتي",
-            description: "عرض نسبة التاجر ومؤشرات الاستحقاق الخاصة بحسابك فقط.",
+            label: t("employee.profile.merchantCommissions"),
+            description: t("employee.profile.merchantCommissionsDesc"),
             to: "/merchant-portal#merchant-commissions",
             icon: BanknotesIcon,
           },
         ]
       : [
           {
-            label: "لوحة المسوق",
-            description: "متابعة كود الأفليت، الروابط، المبيعات، ونظرة عامة على الأداء.",
+            label: t("employee.profile.affiliateDashboardTitle"),
+            description: t("employee.profile.affiliateDashboardDesc"),
             to: "/affiliates/dashboard",
             icon: ChartBarIcon,
           },
           {
-            label: "منتجاتي وطلباتي",
-            description: "استيراد منتجات الشركة، إنشاء طلبات، ومراجعة طلباتك المرتبطة فقط.",
+            label: t("employee.profile.affiliateProducts"),
+            description: t("employee.profile.affiliateProductsDesc"),
             to: "/affiliates/products",
             icon: ShoppingBagIcon,
           },
           {
-            label: "العملاء والعمولات",
-            description: "متابعة العملاء المرتبطين بك وطلبات السحب والعمولات الخاصة بحسابك.",
+            label: t("employee.profile.affiliateClients"),
+            description: t("employee.profile.affiliateClientsDesc"),
             to: "/affiliates/commission",
             icon: BanknotesIcon,
           },
@@ -519,11 +585,11 @@ const Profile: React.FC = () => {
           </section>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {[
-              { label: "البريد الإلكتروني", value: formData.email || "—", icon: EnvelopeIcon },
-              { label: "رقم الهاتف", value: formData.phone || externalUser?.phone || "—", icon: PhoneIcon },
-              { label: "الشركة", value: companyName, icon: BuildingOfficeIcon },
-            ].map((item) => (
+              {[
+                { label: t("employee.profile.email"), value: formData.email || "—", icon: EnvelopeIcon },
+                { label: t("employee.profile.phone"), value: formData.phone || externalUser?.phone || "—", icon: PhoneIcon },
+                { label: t("employee.profile.noCompany"), value: companyName, icon: BuildingOfficeIcon },
+              ].map((item) => (
               <div
                 key={item.label}
                 className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition dark:border-white/[0.06] dark:bg-slate-900/80"
@@ -542,10 +608,10 @@ const Profile: React.FC = () => {
               <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-sm font-bold text-amber-600 dark:text-amber-300">{toolsHeading}</p>
-                  <h2 className="text-xl font-black text-slate-950 dark:text-white">صلاحيات محدودة ومباشرة</h2>
+                  <h2 className="text-xl font-black text-slate-950 dark:text-white">{t("employee.profile.limitedPermissions")}</h2>
                 </div>
                 <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-                  لا تظهر هنا بيانات الموظفين أو الرواتب أو العهد أو ملفات الشركة الداخلية؛ أي إدارة للشركة تظل مع مقدم الخدمة.
+                  {t("employee.profile.companyDataNote")}
                 </p>
               </div>
 
@@ -571,13 +637,22 @@ const Profile: React.FC = () => {
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-300">
                   <ShoppingBagIcon className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-950 dark:text-white mb-1">لم يتم تفعيل {isMerchantUser ? "بورتال التاجر" : "لوحة المسوق"}</h3>
+                <h3 className="text-lg font-bold text-slate-950 dark:text-white mb-1">{t("employee.profile.portalNotActivated", { portal: isMerchantUser ? t("employee.profile.merchantPortalName") : t("employee.profile.affiliateBoardName") })}</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                  للوصول إلى أدوات {isMerchantUser ? "التاجر" : "المسوق"}، يرجى تثبيت تطبيق Affiliate Pro من متجر التطبيقات.
+                  {t("employee.profile.notActivatedDesc", { role: isMerchantUser ? t("employee.profile.merchantRole") : t("employee.profile.affiliateRole") })}
                 </p>
               </div>
             </section>
           )}
+
+          {/* Default Landing Page - Merchant/Affiliate */}
+          <section className="mt-6 rounded-3xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-slate-900/80 p-6 shadow-sm">
+            <DefaultPageSelector
+              value={defaultPage}
+              onChange={handleDefaultPageChange}
+              disabled={settingsLoading}
+            />
+          </section>
         </div>
       </motion.div>
     );
@@ -585,29 +660,29 @@ const Profile: React.FC = () => {
 
   const statsData = [
     {
-      label: "تاريخ الانضمام",
+      label: t("employee.profile.joinDate"),
       value: employee?.hireDate ? formatDate(employee.hireDate) : "—",
       icon: CalendarDaysIcon,
       gradient: "from-violet-600 to-indigo-600",
       glow: "shadow-violet-500/30",
     },
     {
-      label: "مدة الخدمة",
+      label: t("employee.profile.serviceDuration"),
       value: calculateTenure(employee?.hireDate || ""),
       icon: ClockIcon,
       gradient: "from-indigo-600 to-blue-600",
       glow: "shadow-indigo-500/30",
     },
     {
-      label: "رصيد إجازة سنوية",
-      value: `${employee?.annualLeaveBalance ?? 0} يوم`,
+      label: t("employee.profile.annualLeave"),
+      value: `${employee?.annualLeaveBalance ?? 0} ${t("employee.common.day")}`,
       icon: SparklesIcon,
       gradient: "from-emerald-600 to-teal-600",
       glow: "shadow-emerald-500/30",
     },
     {
-      label: "رصيد إجازة مرضية",
-      value: `${employee?.sickLeaveBalance ?? 0} يوم`,
+      label: t("employee.profile.sickLeave"),
+      value: `${employee?.sickLeaveBalance ?? 0} ${t("employee.common.day")}`,
       icon: ShieldCheckIcon,
       gradient: "from-amber-500 to-orange-600",
       glow: "shadow-amber-500/30",
@@ -670,13 +745,13 @@ const Profile: React.FC = () => {
                       className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/40 disabled:opacity-60"
                     >
                       {saving ? <div className="w-4 h-4 border-2 border-transparent border-t-white rounded-full animate-spin" /> : <CheckIcon className="w-4 h-4" />}
-                      {saving ? "جاري الحفظ..." : "حفظ"}
+                      {saving ? t("employee.common.saving") : t("employee.common.save")}
                     </button>
                     <button
                       onClick={() => setIsEditing(false)}
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium bg-black/30 hover:bg-black/50 text-white rounded-xl transition-all border border-white/20 backdrop-blur"
                     >
-                      <XMarkIcon className="w-4 h-4" /> إلغاء
+                      <XMarkIcon className="w-4 h-4" /> {t("employee.common.cancel")}
                     </button>
                   </motion.div>
                 ) : (
@@ -688,7 +763,7 @@ const Profile: React.FC = () => {
                     onClick={() => setIsEditing(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-black/30 hover:bg-black/50 text-white rounded-xl transition-all border border-white/20 backdrop-blur hover:border-violet-400/50"
                   >
-                    <PencilIcon className="w-4 h-4" /> تعديل الملف
+                    <PencilIcon className="w-4 h-4" /> {t("profile.editProfile")}
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -730,7 +805,7 @@ const Profile: React.FC = () => {
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 rounded-2xl transition-all duration-300 flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center gap-1">
                       <CameraIcon className="w-6 h-6 text-white" />
-                      <span className="text-[10px] text-white/90 font-semibold">تغيير الصورة</span>
+                      <span className="text-[10px] text-white/90 font-semibold">{t("employee.profile.updateAvatar")}</span>
                     </div>
                   </div>
                 )}
@@ -745,13 +820,13 @@ const Profile: React.FC = () => {
                       value={formData.firstName}
                       onChange={(e) => setFormData(p => ({ ...p, firstName: e.target.value }))}
                       className="px-3 py-2 text-lg font-bold rounded-xl border border-violet-500/40 bg-violet-50 dark:bg-violet-950/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-violet-500 outline-none w-36"
-                      placeholder="الاسم الأول"
+                      placeholder={t("employee.profile.firstNamePlaceholder")}
                     />
                     <input
                       value={formData.lastName}
                       onChange={(e) => setFormData(p => ({ ...p, lastName: e.target.value }))}
                       className="px-3 py-2 text-lg font-bold rounded-xl border border-violet-500/40 bg-violet-50 dark:bg-violet-950/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-violet-500 outline-none w-36"
-                      placeholder="اسم العائلة"
+                      placeholder={t("employee.profile.lastNamePlaceholder")}
                     />
                   </div>
                 ) : (
@@ -768,12 +843,12 @@ const Profile: React.FC = () => {
                   )}
                   <span className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400">
                     <BriefcaseIcon className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
-                    {employee?.position?.title || "موظف"}
+                    {employee?.position?.title || t("employee.profile.employeeTitle")}
                   </span>
                   <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                   <span className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400">
                     <BuildingOfficeIcon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                    {employee?.department?.name || "بدون قسم"}
+                    {employee?.department?.name || t("employee.profile.noDepartment")}
                   </span>
                   {employee?.employeeNumber && (
                     <span className="font-mono text-xs bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-lg border border-violet-200 dark:border-violet-500/20">
@@ -843,15 +918,14 @@ const Profile: React.FC = () => {
                   </div>
                 )}
 
-                {/* Quick Contact */}
                 <div className="grid grid-cols-1 gap-4">
                   <div className="p-5 rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">معلومات الاتصال السريعة</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">{t("employee.profile.quickContact")}</p>
                     <div className="space-y-3">
                       {[
-                        { icon: EnvelopeIcon, value: formData.email, label: "البريد الإلكتروني" },
-                        { icon: PhoneIcon, value: formData.phone, label: "الهاتف", editable: true, fkey: "phone" as keyof typeof formData },
-                        { icon: MapPinIcon, value: formData.city ? `${formData.city}، ${formData.country}` : formData.country || "", label: "الموقع" },
+                        { icon: EnvelopeIcon, value: formData.email, label: t("employee.profile.email") },
+                        { icon: PhoneIcon, value: formData.phone, label: t("employee.profile.phone"), editable: true, fkey: "phone" as keyof typeof formData },
+                        { icon: MapPinIcon, value: formData.city ? `${formData.city}، ${formData.country}` : formData.country || "", label: t("employee.profile.location") },
                       ].map((item) => (
                         <div key={item.label} className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-violet-500/10 dark:bg-violet-500/15 flex items-center justify-center shrink-0">
@@ -871,16 +945,24 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Default Landing Page */}
+                <div className="rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-white dark:bg-slate-800/30 p-5 transition-all">
+                  <DefaultPageSelector
+                    value={defaultPage}
+                    onChange={handleDefaultPageChange}
+                    disabled={settingsLoading}
+                  />
+                </div>
               </TabsContent>
 
               {/* ── Personal ── */}
               <TabsContent value="personal" className="mt-0 focus-visible:outline-none space-y-5">
-                <SectionCard icon={UserIcon} title="البيانات الشخصية" accent="violet">
+                <SectionCard icon={UserIcon} title={t("employee.common.personalInfo")} accent="violet">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-                    <InfoField label="الاسم الكامل" value={`${formData.firstName} ${formData.lastName}`} />
-
+                    <InfoField label={t("employee.profile.fullName")} value={`${formData.firstName} ${formData.lastName}`} />
                     <div className="group">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">تاريخ الميلاد</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">{t("employee.profile.dateOfBirth")}</p>
                       {isEditing ? (
                         <input
                           type="date"
@@ -890,98 +972,98 @@ const Profile: React.FC = () => {
                         />
                       ) : (
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-200">
-                          {employee?.dateOfBirth ? `${formatDate(employee.dateOfBirth)} (${calculateAge(employee.dateOfBirth)} عاماً)` : "—"}
+                          {employee?.dateOfBirth ? `${formatDate(employee.dateOfBirth)} (${calculateAge(employee.dateOfBirth)} ${t("employee.profile.yearsOld")})` : "—"}
                         </p>
                       )}
                     </div>
 
                     <div className="group">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">الجنس</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">{t("employee.profile.gender")}</p>
                       {isEditing ? (
                         <select
                           value={formData.gender}
                           onChange={(e) => setFormData(p => ({ ...p, gender: e.target.value }))}
                           className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none"
                         >
-                          <option value="">غير محدد</option>
-                          <option value="MALE">ذكر</option>
-                          <option value="FEMALE">أنثى</option>
+                          <option value="">{t("employee.profile.genderNotSpecified")}</option>
+                          <option value="MALE">{t("employee.profile.genderMale")}</option>
+                          <option value="FEMALE">{t("employee.profile.genderFemale")}</option>
                         </select>
                       ) : (
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-200">
-                          {formData.gender === "MALE" ? "ذكر" : formData.gender === "FEMALE" ? "أنثى" : "—"}
+                          {formData.gender === "MALE" ? t("employee.profile.genderMale") : formData.gender === "FEMALE" ? t("employee.profile.genderFemale") : "—"}
                         </p>
                       )}
                     </div>
 
-                    <InfoField label="رقم الهوية" editing={isEditing} {...field("nationalId")} />
-                    <InfoField label="البريد الإلكتروني" value={formData.email} />
+                    <InfoField label={t("employee.profile.nationalId")} editing={isEditing} {...field("nationalId")} />
+                    <InfoField label={t("employee.profile.email")} value={formData.email} />
 
                     {/* Marital status with select */}
                     <div className="group">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">الحالة الاجتماعية</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">{t("employee.profile.maritalStatus")}</p>
                       {isEditing ? (
                         <select
                           value={formData.maritalStatus}
                           onChange={(e) => setFormData(p => ({ ...p, maritalStatus: e.target.value }))}
                           className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none"
                         >
-                          <option value="">غير محدد</option>
-                          <option value="SINGLE">أعزب / عزباء</option>
-                          <option value="MARRIED">متزوج / ة</option>
-                          <option value="DIVORCED">مطلق / ة</option>
-                          <option value="WIDOWED">أرمل / ة</option>
+                          <option value="">{t("employee.profile.maritalNotSpecified")}</option>
+                          <option value="SINGLE">{t("employee.common.maritalSingle")}</option>
+                          <option value="MARRIED">{t("employee.common.maritalMarried")}</option>
+                          <option value="DIVORCED">{t("employee.common.maritalDivorced")}</option>
+                          <option value="WIDOWED">{t("employee.common.maritalWidowed")}</option>
                         </select>
                       ) : (
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{maritalLabels[formData.maritalStatus] || "—"}</p>
                       )}
                     </div>
 
-                    <InfoField label="رقم الهاتف" editing={isEditing} {...field("phone")} />
+                    <InfoField label={t("employee.profile.phone")} editing={isEditing} {...field("phone")} />
                   </div>
                 </SectionCard>
 
-                <SectionCard icon={MapPinIcon} title="بيانات العنوان" accent="indigo">
+                <SectionCard icon={MapPinIcon} title={t("employee.profile.addressTitle")} accent="indigo">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-6">
-                    <InfoField label="العنوان التفصيلي" editing={isEditing} {...field("address")} />
-                    <InfoField label="المدينة" editing={isEditing} {...field("city")} />
-                    <InfoField label="الدولة" editing={isEditing} {...field("country")} />
+                    <InfoField label={t("employee.profile.detailedAddress")} editing={isEditing} {...field("address")} />
+                    <InfoField label={t("employee.profile.city")} editing={isEditing} {...field("city")} />
+                    <InfoField label={t("employee.profile.country")} editing={isEditing} {...field("country")} />
                   </div>
                 </SectionCard>
 
-                <SectionCard icon={HeartIcon} title="جهة الاتصال في الطوارئ" accent="rose">
+                <SectionCard icon={HeartIcon} title={t("employee.profile.emergencyContact")} accent="rose">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-6">
-                    <InfoField label="الاسم" editing={isEditing} {...field("emergencyContactName")} />
-                    <InfoField label="صلة القرابة" editing={isEditing} {...field("emergencyContactRelation")} />
-                    <InfoField label="رقم الهاتف" editing={isEditing} {...field("emergencyContactPhone")} />
+                    <InfoField label={t("employee.profile.emergencyContactName")} editing={isEditing} {...field("emergencyContactName")} />
+                    <InfoField label={t("employee.profile.emergencyContactRelation")} editing={isEditing} {...field("emergencyContactRelation")} />
+                    <InfoField label={t("employee.profile.emergencyContactPhone")} editing={isEditing} {...field("emergencyContactPhone")} />
                   </div>
                 </SectionCard>
               </TabsContent>
 
               {/* ── Job & Salary ── */}
               <TabsContent value="job" className="mt-0 focus-visible:outline-none space-y-5">
-                <SectionCard icon={BriefcaseIcon} title="التفاصيل الوظيفية" accent="indigo">
+                <SectionCard icon={BriefcaseIcon} title={t("employee.profile.jobDetails")} accent="indigo">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
                     {[
-                      { label: "الرقم الوظيفي", value: employee?.employeeNumber || "" },
-                      { label: "المسمى الوظيفي", value: employee?.position?.title || "" },
-                      { label: "القسم", value: employee?.department?.name || "" },
-                      { label: "نوع العقد", value: contractLabels[employee?.contractType || ""] || employee?.contractType || "" },
-                      { label: "تاريخ الانضمام", value: employee?.hireDate ? formatDate(employee.hireDate) : "" },
-                      { label: "مدة الخدمة", value: calculateTenure(employee?.hireDate || "") },
-                      { label: "المدير المباشر", value: employee?.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : "" },
+                      { label: t("employee.profile.employeeNumber"), value: employee?.employeeNumber || "" },
+                      { label: t("employee.profile.jobTitle"), value: employee?.position?.title || "" },
+                      { label: t("employee.profile.department"), value: employee?.department?.name || "" },
+                      { label: t("employee.profile.contractType"), value: contractLabels[employee?.contractType || ""] || employee?.contractType || "" },
+                      { label: t("employee.profile.joinDate"), value: employee?.hireDate ? formatDate(employee.hireDate) : "" },
+                      { label: t("employee.profile.serviceDuration"), value: calculateTenure(employee?.hireDate || "") },
+                      { label: t("employee.profile.directManager"), value: employee?.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : "" },
                     ].map((item) => (
                       <InfoField key={item.label} label={item.label} value={item.value} />
                     ))}
                   </div>
                 </SectionCard>
 
-                <SectionCard icon={BanknotesIcon} title="المعلومات المالية" accent="emerald">
+                <SectionCard icon={BanknotesIcon} title={t("employee.profile.financialInfo")} accent="emerald">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
                     {[
-                      { label: "الراتب الأساسي", value: employee?.baseSalary, suffix: "", unit: "جنيه / شهر", accent: "emerald" },
-                      { label: "رصيد الإجازة السنوية", value: employee?.annualLeaveBalance, suffix: "", unit: "يوم متاح", accent: "indigo" },
-                      { label: "رصيد الإجازة المرضية", value: employee?.sickLeaveBalance, suffix: "", unit: "يوم متاح", accent: "violet" },
+                      { label: t("employee.profile.baseSalary"), value: employee?.baseSalary, suffix: "", unit: t("employee.profile.egpMonth"), accent: "emerald" },
+                      { label: t("employee.profile.annualLeaveBalance"), value: employee?.annualLeaveBalance, suffix: "", unit: t("employee.profile.dayAvailable"), accent: "indigo" },
+                      { label: t("employee.profile.sickLeaveBalance"), value: employee?.sickLeaveBalance, suffix: "", unit: t("employee.profile.dayAvailable"), accent: "violet" },
                     ].map((item) => {
                       const accentMap: Record<string, string> = {
                         emerald: "from-emerald-600 to-teal-600 shadow-emerald-500/30",
@@ -1002,8 +1084,8 @@ const Profile: React.FC = () => {
                   </div>
                   {(employee?.bankName || employee?.bankIban) && (
                     <div className="pt-5 border-t border-slate-100 dark:border-white/[0.06] grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                      <InfoField label="اسم البنك" value={employee?.bankName || ""} />
-                      <InfoField label="رقم IBAN" value={employee?.bankIban || ""} />
+                      <InfoField label={t("employee.profile.bankName")} value={employee?.bankName || ""} />
+                      <InfoField label={t("employee.profile.iban")} value={employee?.bankIban || ""} />
                     </div>
                   )}
                 </SectionCard>
@@ -1011,13 +1093,13 @@ const Profile: React.FC = () => {
 
               {/* ── Custody ── */}
               <TabsContent value="custody" className="mt-0 focus-visible:outline-none">
-                <SectionCard icon={ClipboardDocumentListIcon} title={`الأصول المسلمة لي ${myCustody.length > 0 ? `(${myCustody.length})` : ""}`} accent="violet">
+                <SectionCard icon={ClipboardDocumentListIcon} title={`${t("employee.profile.myAssets")} ${myCustody.length > 0 ? `(${myCustody.length})` : ""}`} accent="violet">
                   {myCustody.length === 0 ? (
                     <div className="text-center py-16">
                       <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-violet-500/10 flex items-center justify-center">
                         <ComputerDesktopIcon className="w-10 h-10 text-violet-500/40" />
                       </div>
-                      <p className="text-slate-500 text-sm">لا توجد عهدة مسلمة لك حالياً</p>
+                      <p className="text-slate-500 text-sm">{t("employee.profile.noCustody")}</p>
                     </div>
                   ) : (
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1032,14 +1114,14 @@ const Profile: React.FC = () => {
                               <ComputerDesktopIcon className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                             </div>
                             <span className={`text-xs px-2 py-1 rounded-full font-medium ${asset.status === "ASSIGNED" ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-slate-100 dark:bg-slate-500/15 text-slate-600 dark:text-slate-400"}`}>
-                              {asset.status === "ASSIGNED" ? "مُسلّم" : asset.status}
+                              {asset.status === "ASSIGNED" ? t("employee.profile.statusAssigned") : asset.status}
                             </span>
                           </div>
                           <h4 className="font-semibold text-slate-900 dark:text-white mb-2">{asset.name}</h4>
                           <div className="space-y-1 text-xs text-slate-500">
-                            {asset.code && <div className="flex justify-between"><span>الكود</span><span className="font-mono text-slate-600 dark:text-slate-400">{asset.code}</span></div>}
-                            {asset.serialNumber && <div className="flex justify-between"><span>الرقم التسلسلي</span><span className="font-mono text-slate-600 dark:text-slate-400">{asset.serialNumber}</span></div>}
-                            {asset.assignedDate && <div className="flex justify-between"><span>تاريخ الاستلام</span><span>{formatDate(asset.assignedDate)}</span></div>}
+                            {asset.code && <div className="flex justify-between"><span>{t("employee.custody.code")}</span><span className="font-mono text-slate-600 dark:text-slate-400">{asset.code}</span></div>}
+                            {asset.serialNumber && <div className="flex justify-between"><span>{t("employee.custody.serialNumber")}</span><span className="font-mono text-slate-600 dark:text-slate-400">{asset.serialNumber}</span></div>}
+                            {asset.assignedDate && <div className="flex justify-between"><span>{t("employee.custody.receiveDate")}</span><span>{formatDate(asset.assignedDate)}</span></div>}
                           </div>
                         </motion.div>
                       ))}
@@ -1050,13 +1132,13 @@ const Profile: React.FC = () => {
 
               {/* ── Documents ── */}
               <TabsContent value="documents" className="mt-0 focus-visible:outline-none">
-                <SectionCard icon={DocumentTextIcon} title="مستنداتي" accent="indigo">
+                <SectionCard icon={DocumentTextIcon} title={t("employee.profile.myDocuments")} accent="indigo">
                   {!employee?.documents_rel?.length ? (
                     <div className="text-center py-16">
                       <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
                         <DocumentTextIcon className="w-10 h-10 text-indigo-500/40" />
                       </div>
-                      <p className="text-slate-500 text-sm">لا توجد مستندات مرفقة في ملفك</p>
+                      <p className="text-slate-500 text-sm">{t("employee.profile.noDocuments")}</p>
                     </div>
                   ) : (
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1083,23 +1165,23 @@ const Profile: React.FC = () => {
 
               {/* ── Warnings ── */}
               <TabsContent value="warnings" className="mt-0 focus-visible:outline-none">
-                <SectionCard icon={BellAlertIcon} title={`سجل الإنذارات ${warnings.length > 0 ? `(${warnings.length})` : ""}`} accent="rose">
+                <SectionCard icon={BellAlertIcon} title={`${t("employee.profile.warningsLog")} ${warnings.length > 0 ? `(${warnings.length})` : ""}`} accent="rose">
                   {warnings.length === 0 ? (
                     <div className="text-center py-16">
                       <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
                         <ShieldCheckIcon className="w-10 h-10 text-emerald-500/60" />
                       </div>
-                      <p className="text-emerald-400 text-sm font-semibold">ممتاز! لا توجد إنذارات مسجلة</p>
-                      <p className="text-slate-500 text-xs mt-1">سجلك نظيف تماماً</p>
+                      <p className="text-emerald-400 text-sm font-semibold">{t("employee.profile.noWarnings")}</p>
+                      <p className="text-slate-500 text-xs mt-1">{t("employee.profile.cleanRecord")}</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {warnings.map((warning) => {
                         const sev = warning.severity === "critical"
-                          ? { border: "border-red-500/30 dark:border-red-500/30 bg-red-50 dark:bg-red-500/5", badge: "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400", label: "خطير" }
+                          ? { border: "border-red-500/30 dark:border-red-500/30 bg-red-50 dark:bg-red-500/5", badge: "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400", label: t("employee.profile.warningSeverityCritical") }
                           : warning.severity === "major"
-                            ? { border: "border-orange-500/30 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/5", badge: "bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400", label: "جسيم" }
-                            : { border: "border-blue-500/30 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/5", badge: "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400", label: "تنبيه" };
+                            ? { border: "border-orange-500/30 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/5", badge: "bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400", label: t("employee.profile.warningSeverityMajor") }
+                            : { border: "border-blue-500/30 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/5", badge: "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400", label: t("employee.profile.warningSeverityAlert") };
                         return (
                           <div key={warning.id} className={`p-5 rounded-xl border ${sev.border} transition-all`}>
                             <div className="flex items-start justify-between mb-3">
@@ -1112,7 +1194,7 @@ const Profile: React.FC = () => {
                             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{warning.description}</p>
                             {warning.actionTaken && (
                               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
-                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-500 mb-1">الإجراء المتخذ:</p>
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-500 mb-1">{t("employee.profile.actionTaken")}</p>
                                 <p className="text-sm text-slate-700 dark:text-slate-300">{warning.actionTaken}</p>
                               </div>
                             )}
@@ -1122,18 +1204,18 @@ const Profile: React.FC = () => {
                                   onClick={async () => {
                                     try {
                                       const res = await api.post(`/hr/warnings/${warning.id}/acknowledge`);
-                                      if (res.data.success) { toast.success("تم تأكيد الاستلام بنجاح"); fetchMyWarnings(); }
-                                    } catch { toast.error("فشل في تأكيد الاستلام"); }
+                                      if (res.data.success) { toast.success(t("employee.profile.acknowledgeSuccess")); fetchMyWarnings(); }
+                                    } catch { toast.error(t("employee.profile.acknowledgeFailed")); }
                                   }}
                                   className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all"
                                 >
-                                  <CheckIcon className="w-3.5 h-3.5" /> تأكيد الاستلام
+                                  <CheckIcon className="w-3.5 h-3.5" /> {t("employee.warnings.acknowledge")}
                                 </button>
                               </div>
                             ) : (
                               <div className="mt-3 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs">
                                 <CheckIcon className="w-3.5 h-3.5" />
-                                <span>تم تأكيد الاستلام في {formatDate(warning.acknowledgedAt)}</span>
+                                <span>{t("employee.warnings.acknowledged", { date: formatDate(warning.acknowledgedAt) })}</span>
                               </div>
                             )}
                           </div>
@@ -1159,22 +1241,22 @@ const Profile: React.FC = () => {
                       <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
                         <CakeIcon className="w-8 h-8 text-white" />
                       </div>
-                      <h3 className={`text-lg font-bold ${derivedTheme === 'dark' ? 'text-white' : 'text-pink-900'} mb-2`}>عيد ميلادك القادم</h3>
+                      <h3 className={`text-lg font-bold ${derivedTheme === 'dark' ? 'text-white' : 'text-pink-900'} mb-2`}>{t("employee.profile.nextBirthday")}</h3>
                       {employee?.dateOfBirth ? (
                         <>
                           <p className={`text-sm ${derivedTheme === 'dark' ? 'text-pink-300/70' : 'text-pink-600/70'} mb-6`}>{formatDate(getNextOccasion(employee.dateOfBirth)?.date.toISOString() || "")}</p>
                           <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
                             <div className={`p-4 rounded-xl ${derivedTheme === 'dark' ? 'bg-white/10' : 'bg-white/60'} backdrop-blur shadow-sm`}>
                               <span className={`block text-3xl font-extrabold ${derivedTheme === 'dark' ? 'text-pink-300' : 'text-pink-600'}`}>{getNextOccasion(employee.dateOfBirth)?.days}</span>
-                              <span className={`text-xs ${derivedTheme === 'dark' ? 'text-pink-300/60' : 'text-pink-600/60'}`}>يوم متبقي</span>
+                              <span className={`text-xs ${derivedTheme === 'dark' ? 'text-pink-300/60' : 'text-pink-600/60'}`}>{t("employee.profile.daysRemaining")}</span>
                             </div>
                             <div className={`p-4 rounded-xl ${derivedTheme === 'dark' ? 'bg-white/10' : 'bg-white/60'} backdrop-blur shadow-sm`}>
                               <span className={`block text-3xl font-extrabold ${derivedTheme === 'dark' ? 'text-rose-300' : 'text-rose-600'}`}>{(calculateAge(employee.dateOfBirth) as number) + 1}</span>
-                              <span className={`text-xs ${derivedTheme === 'dark' ? 'text-rose-300/60' : 'text-rose-600/60'}`}>عامًا</span>
+                              <span className={`text-xs ${derivedTheme === 'dark' ? 'text-rose-300/60' : 'text-rose-600/60'}`}>{t("employee.profile.yearsOld")}</span>
                             </div>
                           </div>
                         </>
-                      ) : <p className="text-slate-500 text-sm">لم يتم تسجيل تاريخ الميلاد</p>}
+                      ) : <p className="text-slate-500 text-sm">{t("employee.profile.noBirthdaySet")}</p>}
                     </div>
                   </motion.div>
 
@@ -1191,22 +1273,22 @@ const Profile: React.FC = () => {
                       <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
                         <GiftIcon className="w-8 h-8 text-white" />
                       </div>
-                      <h3 className={`text-lg font-bold ${derivedTheme === 'dark' ? 'text-white' : 'text-violet-900'} mb-2`}>ذكرى انضمامك</h3>
+                      <h3 className={`text-lg font-bold ${derivedTheme === 'dark' ? 'text-white' : 'text-violet-900'} mb-2`}>{t("employee.profile.workAnniversary")}</h3>
                       {employee?.hireDate ? (
                         <>
                           <p className="text-sm text-violet-600 dark:text-violet-300/70 mb-6">{formatDate(getNextOccasion(employee.hireDate)?.date.toISOString() || "")}</p>
                           <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
                             <div className="p-4 rounded-xl bg-white/40 dark:bg-white/10 backdrop-blur border border-white/20">
                               <span className="block text-3xl font-extrabold text-violet-600 dark:text-violet-300">{getNextOccasion(employee.hireDate)?.days}</span>
-                              <span className="text-xs text-violet-600/60 dark:text-violet-300/60">يوم متبقي</span>
+                              <span className="text-xs text-violet-600/60 dark:text-violet-300/60">{t("employee.profile.daysRemaining")}</span>
                             </div>
                             <div className="p-4 rounded-xl bg-white/40 dark:bg-white/10 backdrop-blur border border-white/20">
                               <span className="block text-3xl font-extrabold text-indigo-600 dark:text-indigo-300">{Math.floor((new Date().getTime() - new Date(employee.hireDate).getTime()) / (1000 * 60 * 60 * 24))}</span>
-                              <span className="text-xs text-indigo-600/60 dark:text-indigo-300/60">يوم عمل</span>
+                              <span className="text-xs text-indigo-600/60 dark:text-indigo-300/60">{t("employee.profile.daysWorked")}</span>
                             </div>
                           </div>
                         </>
-                      ) : <p className="text-slate-500 dark:text-slate-500 text-sm">لم يتم تسجيل تاريخ الانضمام</p>}
+                      ) : <p className="text-slate-500 dark:text-slate-500 text-sm">{t("employee.profile.noJoinDateSet")}</p>}
                     </div>
                   </motion.div>
                 </div>

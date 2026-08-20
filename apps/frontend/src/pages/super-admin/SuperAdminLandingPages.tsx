@@ -1,7 +1,12 @@
-import { RefreshCw as ArrowPathIcon, ExternalLink as ArrowTopRightOnSquareIcon, Check as CheckCircleIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-;
+import {
+  ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { lpAdminService, type LpPage } from "../../services/lpAdminService";
 import i18n from "../../i18n";
 
@@ -31,7 +36,7 @@ const SuperAdminLandingPages: React.FC = () => {
       const rawBundles = Array.isArray(bundleData) ? bundleData : bundleData?.data || [];
       setBundles(rawBundles.map((b: any) => ({ slug: b.slug, name: b.name, price: b.monthlyPrice })));
     } catch {
-      toast.error("فشل تحميل الصفحات");
+      tToast.error("SuperAdminLandingPages.failed_load_65d1");
     } finally {
       setLoading(false);
     }
@@ -46,7 +51,7 @@ const SuperAdminLandingPages: React.FC = () => {
       setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       toast.success(updated.isActive ? "تم تفعيل الصفحة" : "تم إخفاء الصفحة");
     } catch {
-      toast.error("فشل تحديث حالة الصفحة");
+      tToast.error("SuperAdminLandingPages.failed_update_status_4f34");
     } finally {
       setToggling(null);
     }
@@ -57,9 +62,9 @@ const SuperAdminLandingPages: React.FC = () => {
       setSaving(page.id);
       const updated = await lpAdminService.update(page.id, { bundleSlug });
       setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      toast.success("تم ربط الباقة");
+      tToast.success("SuperAdminLandingPages.msg_bae8");
     } catch {
-      toast.error("فشل تحديث الباقة");
+      tToast.error("SuperAdminLandingPages.failed_update_dddb");
     } finally {
       setSaving(null);
     }
@@ -70,9 +75,9 @@ const SuperAdminLandingPages: React.FC = () => {
       setSaving(page.id);
       const updated = await lpAdminService.update(page.id, { activationType });
       setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      toast.success("تم تحديث نوع التفعيل");
+      tToast.success("SuperAdminLandingPages.success_update_e302");
     } catch {
-      toast.error("فشل تحديث نوع التفعيل");
+      tToast.error("SuperAdminLandingPages.failed_update_58c9");
     } finally {
       setSaving(null);
     }

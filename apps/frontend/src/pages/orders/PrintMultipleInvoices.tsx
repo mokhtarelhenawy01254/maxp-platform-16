@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import InvoiceContent, { getInvoicePages, type InvoiceData } from "../../components/orders/InvoiceContent";
@@ -77,8 +77,8 @@ function toInvoiceData(inv: Invoice): InvoiceData {
 }
 
 /**
- * ╪º┘ä╪┤┘â┘ä ╪º┘ä┘ä┘è ╪¿┘è╪▒╪¼╪╣┘ç bulk-generate ┘ä┘â┘ä ╪╖┘ä╪¿ ╪╢┘è┘ü (┘à╪╖╪º╪¿┘é ┘ä┘Ç mapGuestOrderForPrint ┘ü┘è ╪º┘ä┘Ç backend).
- * ╪¿┘å╪«╪▓┘æ┘å┘ç ┘ü┘è sessionStorage ┘ê┘å╪¿┘å┘è ┘à┘å┘ç InvoiceData ╪¿╪»┘ê┘å ╪º┘ä╪¡╪º╪¼╪⌐ ┘ä╪╡┘ü DB.
+ * الشكل اللي بيرجعه bulk-generate لكل طلب ضيف (مطابق لـ mapGuestOrderForPrint في الـ backend).
+ * بنخزّنه في sessionStorage ونبني منه InvoiceData بدون الحاجة لصف DB.
  */
 interface GuestOrderPrint {
   id: string;
@@ -110,27 +110,27 @@ interface GuestOrderPrint {
   }>;
 }
 
-/** ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪┤╪▒┘â╪⌐ ╪º┘ä┘ä┘è ╪¿╪¬╪¬╪▒┘â╪¿ ┘à╪╣ ┘â┘ä ╪╖┘ä╪¿ ╪╢┘è┘ü (┘à┘ü┘è┘ç╪º╪┤ ╪┤╪▒┘â╪⌐ ┘ü┘è ╪¼╪»┘ê┘ä ╪º┘ä╪╢┘è┘ü) */
+/** بيانات الشركة اللي بتتركب مع كل طلب ضيف (مفيهاش شركة في جدول الضيف) */
 export interface GuestPrintCompanyInfo {
   companyName: string;
   companyPhone?: string | null;
   companyLogo?: string | null;
 }
 
-/** ╪¡┘à┘ê┘ä╪⌐ ╪º┘ä┘Ç sessionStorage ╪¬╪¡╪¬ ┘à┘ü╪¬╪º╪¡ guestKey: { company, orders } */
+/** حمولة الـ sessionStorage تحت مفتاح guestKey: { company, orders } */
 export interface GuestPrintPayload {
   company: GuestPrintCompanyInfo;
   orders: GuestOrderPrint[];
 }
 
-/** ┘à┘ü╪¬╪º╪¡ prefix ┘à┘ê╪¡┘æ╪» ┘ä╪¬╪¿╪º╪»┘ä ╪¡┘à┘ê┘ä╪⌐ ╪╖╪¿╪º╪╣╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ╪╣╪¿╪▒ sessionStorage */
+/** مفتاح prefix موحّد لتبادل حمولة طباعة طلبات الضيف عبر sessionStorage */
 export const GUEST_PRINT_STORAGE_PREFIX = "maxp:print-guest:";
-/** ╪ú┘å╪┤╪ª ┘à┘ü╪¬╪º╪¡╪º┘ï ┘ü╪▒┘è╪»╪º┘ï ┘ä╪»┘ü╪╣╪⌐ ╪╖╪¿╪º╪╣╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪╢┘è┘ü */
+/** أنشئ مفتاحاً فريداً لدفعة طباعة طلبات ضيف */
 export function makeGuestPrintKey(): string {
   return `${GUEST_PRINT_STORAGE_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** ╪«╪▓┘æ┘å ╪¡┘à┘ê┘ä╪⌐ ╪╖╪¿╪º╪╣╪⌐ ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ┘ü┘è sessionStorage ┘ê╪º╪▒╪¼╪╣ ╪º┘ä┘à┘ü╪¬╪º╪¡ */
+/** خزّن حمولة طباعة طلبات الضيف في sessionStorage وارجع المفتاح */
 export function storeGuestPrintPayload(payload: GuestPrintPayload): string {
   const key = makeGuestPrintKey();
   try {
@@ -149,7 +149,7 @@ function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintComp
     companyName: company.companyName,
     companyPhone: company.companyPhone,
     companyLogo: company.companyLogo,
-    customerName: guest.customerName || "╪╣┘à┘è┘ä ╪║┘è╪▒ ┘à╪¡╪»╪»",
+    customerName: guest.customerName || "عميل غير محدد",
     customerPhone: guest.customerPhone,
     customerEmail: guest.customerEmail,
     customerAddress: guest.customerAddress,
@@ -167,7 +167,7 @@ function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintComp
       orderNumber: guest.orderNumber,
       turboTrackingNumber: guest.turboTrackingNumber,
       orderItems: (guest.items || []).map((item) => ({
-        productName: item.productName || "┘à┘å╪¬╪¼",
+        productName: item.productName || "منتج",
         quantity: Number(item.quantity || 1),
         price: Number(item.price || 0),
         total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
@@ -188,9 +188,9 @@ interface PageSlot {
 
 /**
  * Print layout modes:
- *  - "single"  ΓåÆ one invoice per A5 page   (1 slot / sheet, no grid)
- *  - "2up"     ΓåÆ two invoices per A4 page   (2 slots / sheet, stacked vertically)
- *  - "grid"    ΓåÆ four invoices per A4 page  (2├ù2 grid)
+ *  - "single"  → one invoice per A5 page   (1 slot / sheet, no grid)
+ *  - "2up"     → two invoices per A4 page   (2 slots / sheet, stacked vertically)
+ *  - "grid"    → four invoices per A4 page  (2×2 grid)
  */
 type PrintLayout = "single" | "2up" | "grid";
 
@@ -211,7 +211,7 @@ const SLOTS_PER_SHEET: Record<PrintLayout, number> = {
 const PrintMultipleInvoices: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  // ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ╪º┘ä┘à╪¡┘ê┘æ┘ä╪⌐ ┘ä┘Ç InvoiceData (┘à╪╡╪»╪▒┘ç╪º sessionStorage╪î ┘à╪┤ DB)
+  // طلبات الضيف المحوّلة لـ InvoiceData (مصدرها sessionStorage، مش DB)
   const [guestSlots, setGuestSlots] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -224,7 +224,7 @@ const PrintMultipleInvoices: React.FC = () => {
       const ids = searchParams.get("ids");
       const guestKey = searchParams.get("guestKey");
 
-      // ╪¡┘à┘æ┘ä ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ┘à┘å sessionStorage ┘ä┘ê ┘à┘ê╪¼┘ê╪»╪⌐
+      // حمّل طلبات الضيف من sessionStorage لو موجودة
       let guests: InvoiceData[] = [];
       if (guestKey) {
         try {
@@ -238,13 +238,13 @@ const PrintMultipleInvoices: React.FC = () => {
         } catch (e) {
           console.error("Failed reading guest print payload:", e);
         } finally {
-          // ┘å╪╕┘æ┘ü ╪º┘ä┘à┘ü╪¬╪º╪¡ ╪╣╪┤╪º┘å ┘à┘è╪¬lera┘æ┘â╪┤
+          // نظّف المفتاح عشان ميتleraّكش
           try { sessionStorage.removeItem(guestKey); } catch { /* ignore */ }
         }
         setGuestSlots(guests);
       }
 
-      // ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒ ╪º┘ä╪╣╪º╪»┘è╪⌐ ┘à┘å DB
+      // الفواتير العادية من DB
       const fetched: Invoice[] = [];
       if (ids) {
         const invoiceIds = ids.split(",");
@@ -259,14 +259,14 @@ const PrintMultipleInvoices: React.FC = () => {
       }
       setInvoices(fetched);
 
-      // ┘ä┘ê ┘à┘ü┘è╪┤ ┘ü┘ê╪º╪¬┘è╪▒ ┘ê┘ä╪º ╪╖┘ä╪¿╪º╪¬ ╪╢┘è┘ü ΓåÆ ╪«╪╖╪ú
+      // لو مفيش فواتير ولا طلبات ضيف → خطأ
       if (fetched.length === 0 && guests.length === 0) {
-        setError("┘ä┘à ┘è╪¬┘à ╪¬╪¡╪»┘è╪» ┘ü┘ê╪º╪¬┘è╪▒");
+        setError("لم يتم تحديد فواتير");
       }
       setLoading(false);
     } catch (err: unknown) {
       console.error("Error fetching invoices:", err);
-      setError("╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒");
+      setError("خطأ في جلب الفواتير");
       setLoading(false);
     }
   }, [searchParams]);
@@ -274,7 +274,7 @@ const PrintMultipleInvoices: React.FC = () => {
   useEffect(() => { void fetchInvoices(); }, [fetchInvoices]);
 
   // Expand every invoice into its page chunks, collect all slots
-  // (┘è╪»┘à╪¼ ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒ ╪º┘ä╪╣╪º╪»┘è╪⌐ + ╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪╢┘è┘ü ┘ü┘è ┘é╪º╪ª┘à╪⌐ ╪╣╪▒╪╢ ┘ê╪º╪¡╪»╪⌐)
+  // (يدمج الفواتير العادية + طلبات الضيف في قائمة عرض واحدة)
   const allSlots: PageSlot[] = useMemo(() => {
     const slots: PageSlot[] = [];
     invoices.forEach((inv) => {
@@ -300,7 +300,7 @@ const PrintMultipleInvoices: React.FC = () => {
     }
   }, [allSlots, loading, autoLayout]);
 
-  // Increment print count for DB invoices only (skip guest orders ΓÇö ┘ä╪º ┘è┘ê╪¼╪» ┘ä┘ç╪º ╪│╪¼┘ä ┘ü╪º╪¬┘ê╪▒╪⌐)
+  // Increment print count for DB invoices only (skip guest orders — لا يوجد لها سجل فاتورة)
   const printedRef = useRef(false);
   useEffect(() => {
     if (!loading && invoices.length > 0 && !printedRef.current) {
@@ -447,7 +447,7 @@ const PrintMultipleInvoices: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">╪¼╪º╪▒┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒...</p>
+          <p className="text-gray-600">جاري تحميل الفواتير...</p>
         </div>
       </div>
     );
@@ -483,13 +483,13 @@ const PrintMultipleInvoices: React.FC = () => {
         }
       `}</style>
 
-      {/* ΓöÇΓöÇ Controls ΓöÇΓöÇ */}
+      {/* ── Controls ── */}
       <div className="no-print fixed top-4 right-4 z-50 flex items-center gap-3 bg-white p-3 rounded-xl shadow-xl border border-gray-200" dir="rtl">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-bold text-gray-700">
-            ╪¬┘å╪│┘è┘é ╪º┘ä╪╖╪¿╪º╪╣╪⌐:
+            تنسيق الطباعة:
             {autoLayout && (
-              <span className="ml-1 text-blue-500 text-[10px] font-normal">(╪¬┘ä┘é╪º╪ª┘è)</span>
+              <span className="ml-1 text-blue-500 text-[10px] font-normal">(تلقائي)</span>
             )}
           </label>
           <select
@@ -500,12 +500,12 @@ const PrintMultipleInvoices: React.FC = () => {
             }}
             className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
           >
-            <option value="grid">4 ┘ü┘ê╪º╪¬┘è╪▒ ┘ü┘è A4 (╪¬┘ê┘ü┘è╪▒ ┘ê╪▒┘é)</option>
-            <option value="2up">2 ┘ü┘ê╪º╪¬┘è╪▒ ┘ü┘è A4 (╪ú┘ê╪│╪╣)</option>
-            <option value="single">┘ü╪º╪¬┘ê╪▒╪⌐ ┘â╪º┘à┘ä╪⌐ (A5 / ╪¡╪▒╪º╪▒┘è)</option>
+            <option value="grid">4 فواتير في A4 (توفير ورق)</option>
+            <option value="2up">2 فواتير في A4 (أوسع)</option>
+            <option value="single">فاتورة كاملة (A5 / حراري)</option>
           </select>
           <span className="text-[10px] text-gray-400">
-            {allSlots.length} ┘ü╪º╪¬┘ê╪▒╪⌐ ┬╖ {sheets.length} ┘ê╪▒┘é╪⌐
+            {allSlots.length} فاتورة · {sheets.length} ورقة
           </span>
         </div>
         <button
@@ -517,7 +517,7 @@ const PrintMultipleInvoices: React.FC = () => {
               d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
             />
           </svg>
-          ╪╖╪¿╪º╪╣╪⌐ ({invoices.length + guestSlots.length})
+          طباعة ({invoices.length + guestSlots.length})
         </button>
       </div>
 

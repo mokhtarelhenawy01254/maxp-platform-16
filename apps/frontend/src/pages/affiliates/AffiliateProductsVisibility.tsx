@@ -1,10 +1,18 @@
-import { Eye as EyeIcon, EyeOff as EyeSlashIcon, Search as MagnifyingGlassIcon, Check as CheckIcon, X as XMarkIcon, Sliders as AdjustmentsHorizontalIcon, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  MagnifyingGlassIcon,
+  CheckIcon,
+  XMarkIcon,
+  AdjustmentsHorizontalIcon,
+  ShoppingBagIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 type VisibilityMode = "ALL" | "HIDDEN" | "SELECTED";
 
@@ -82,7 +90,7 @@ const AffiliatePicker: React.FC<{
           setAffiliates(res.data.data);
         }
       } catch {
-        toast.error("فشل تحميل قائمة المسوقين");
+        tToast.error("AffiliateProductsVisibility.failed_load_20b1");
       } finally {
         setLoading(false);
       }
@@ -185,7 +193,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         setTotal(res.data.pagination.total);
       }
     } catch {
-      toast.error("فشل تحميل المنتجات");
+      tToast.error("AffiliateProductsVisibility.failed_load_e3ee");
     } finally {
       setLoading(false);
     }
@@ -210,7 +218,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         fetchProducts();
       }
     } catch {
-      toast.error("فشل التحديث");
+      tToast.error("AffiliateProductsVisibility.msg_d8af");
     } finally {
       setSavingId(null);
     }
@@ -229,7 +237,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         fetchProducts();
       }
     } catch {
-      toast.error("فشل التحديث الجماعي");
+      tToast.error("AffiliateProductsVisibility.msg_eddc");
     }
   };
 

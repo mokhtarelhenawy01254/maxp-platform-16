@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const normalizePhone = (phone) => {
   if (!phone) return null;
@@ -14,7 +14,7 @@ const normalizeGender = (g) => {
 const splitName = (name) => {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   return {
-    firstName: parts[0] || '┘à╪▒┘è╪╢',
+    firstName: parts[0] || 'مريض',
     lastName: parts.slice(1).join(' ') || null,
   };
 };

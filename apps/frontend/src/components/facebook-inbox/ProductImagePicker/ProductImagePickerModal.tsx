@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   MagnifyingGlassIcon,
@@ -75,10 +75,10 @@ const buildProductImages = (product: any): ProductImage[] => {
   const allUrls = Array.from(new Set([...candidates, ...variantImages]));
 
   const baseName =
-    (product.name || "┘à┘å╪¬╪¼")
+    (product.name || "منتج")
       .replace(/[\\/:*?"<>|]/g, "")
       .trim()
-      .slice(0, 40) || "┘à┘å╪¬╪¼";
+      .slice(0, 40) || "منتج";
 
   return allUrls.map((url, index) => ({
     url,
@@ -293,13 +293,13 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
             </svg>
             <h3 className="text-xl font-bold" style={headingStyle}>
               {selectedProduct
-                ? "╪╡┘ê╪▒ ╪º┘ä┘à┘å╪¬╪¼"
-                : "┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä┘à┘ê┘é╪╣"}
+                ? "صور المنتج"
+                : "منتجات الموقع"}
             </h3>
             <span className="text-sm" style={mutedStyle}>
               {selectedProduct
-                ? `(${productImages.length} ╪╡┘ê╪▒╪⌐)`
-                : `(${products.length} ┘à┘å╪¬╪¼)`}
+                ? `(${productImages.length} صورة)`
+                : `(${products.length} منتج)`}
             </span>
           </div>
           <button
@@ -336,7 +336,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="╪¿╪¡╪½ ╪╣┘å ┘à┘å╪¬╪¼..."
+                  placeholder="بحث عن منتج..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="business-chat-input w-full pl-4 pr-10 py-2"
@@ -373,7 +373,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                     className="h-12 w-12 opacity-50"
                     style={mutedStyle}
                   />
-                  <p>┘ä╪º ╪¬┘ê╪¼╪» ┘à┘å╪¬╪¼╪º╪¬</p>
+                  <p>لا توجد منتجات</p>
                 </div>
               ) : (
                 <>
@@ -418,7 +418,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                                 className="text-xs font-bold sm:text-sm"
                                 style={primaryStyle}
                               >
-                                {product.price} ╪¼.┘à
+                                {product.price} ج.م
                               </span>
                               <button
                                 type="button"
@@ -470,7 +470,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                       onClick={loadMoreProducts}
                       className="mt-4 w-full rounded-2xl border-2 border-dashed border-gray-200 py-3 text-sm font-semibold text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-400"
                     >
-                      ╪╣╪▒╪╢ ╪º┘ä┘à╪▓┘è╪» ┘à┘å ╪º┘ä┘à┘å╪¬╪¼╪º╪¬
+                      عرض المزيد من المنتجات
                     </button>
                   )}
                 </>
@@ -487,7 +487,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                     {selectedProduct.name}
                   </span>
                   <span className="text-xs font-bold" style={primaryStyle}>
-                    {selectedProduct.price} ╪¼.┘à
+                    {selectedProduct.price} ج.م
                   </span>
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-2">
@@ -497,15 +497,15 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                     className="business-chip-button px-3 py-1.5 text-sm"
                   >
                     {selectedImages.size === productImages.length
-                      ? "╪Ñ┘ä╪║╪º╪í ╪º┘ä┘â┘ä"
-                      : "╪¬╪¡╪»┘è╪» ╪º┘ä┘â┘ä"}
+                      ? "إلغاء الكل"
+                      : "تحديد الكل"}
                   </button>
                   <button
                     type="button"
                     onClick={handleBackToProducts}
                     className="business-chip-button px-3 py-1.5 text-sm"
                   >
-                    ΓåÉ ╪▒╪¼┘ê╪╣ ┘ä┘ä┘à┘å╪¬╪¼╪º╪¬
+                    ← رجوع للمنتجات
                   </button>
                 </div>
               </div>
@@ -519,7 +519,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                     className="h-12 w-12 opacity-50"
                     style={mutedStyle}
                   />
-                  <p>┘ä╪º ╪¬┘ê╪¼╪» ╪╡┘ê╪▒ ┘ä┘ç╪░╪º ╪º┘ä┘à┘å╪¬╪¼</p>
+                  <p>لا توجد صور لهذا المنتج</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -583,7 +583,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                     ) : (
                       <ArchiveBoxIcon className="h-5 w-5" />
                     )}
-                    <span>╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪╡┘ê╪▒ ({selectedImages.size})</span>
+                    <span>إرسال الصور ({selectedImages.size})</span>
                   </button>
                   <button
                     type="button"
@@ -602,12 +602,12 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                     ) : (
                       <ArchiveBoxIcon className="h-5 w-5" />
                     )}
-                    <span>╪╡┘ê╪▒ + ╪º╪│┘à ┘ê╪│╪╣╪▒ ({selectedImages.size})</span>
+                    <span>صور + اسم وسعر ({selectedImages.size})</span>
                   </button>
                 </div>
               ) : (
                 <span className="text-sm" style={mutedStyle}>
-                  ╪º╪«╪¬╪▒ ╪º┘ä╪╡┘ê╪▒ ╪º┘ä┘ä┘è ╪╣╪º┘è╪▓ ╪¬╪¿╪╣╪¬ ┘à┘å┘ç╪º
+                  اختر الصور اللي عايز تبعت منها
                 </span>
               )}
             </div>
@@ -618,9 +618,9 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
           <span>
             {selectedProduct
               ? selectedImages.size > 0
-                ? `≡ƒÆí ╪º╪«╪¬╪º╪▒┘è ╪▓╪▒ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘à┘å╪º╪│╪¿ ΓÇö ╪╡┘ê╪▒ ┘ü┘é╪╖ ╪ú┘ê ╪╡┘ê╪▒ + ╪º╪│┘à ┘ê╪│╪╣╪▒ ╪º┘ä┘à┘å╪¬╪¼`
-                : "≡ƒÆí ╪ú┘ä╪║┘è ╪¬╪¡╪»┘è╪» ╪º┘ä╪╡┘ê╪▒ ╪º┘ä┘ä┘è ┘à╪┤ ╪╣╪º┘è╪▓╪º┘ç╪º ╪½┘à ╪º╪╢╪║╪╖┘è ╪▓╪▒ ╪º┘ä╪Ñ╪▒╪│╪º┘ä"
-              : "≡ƒÆí ╪º╪«╪¬╪º╪▒┘è ┘à┘å╪¬╪¼ ┘ä╪╣╪▒╪╢ ╪╡┘ê╪▒┘ç ┘ê╪Ñ╪▒╪│╪º┘ä┘ç╪º ┘â╪▒╪│╪º┘ä╪⌐"}
+                ? `💡 اختاري زر الإرسال المناسب — صور فقط أو صور + اسم وسعر المنتج`
+                : "💡 ألغي تحديد الصور اللي مش عايزاها ثم اضغطي زر الإرسال"
+              : "💡 اختاري منتج لعرض صوره وإرسالها كرسالة"}
           </span>
         </div>
       </div>

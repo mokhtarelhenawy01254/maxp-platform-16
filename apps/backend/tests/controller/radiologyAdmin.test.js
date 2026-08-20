@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -45,7 +45,7 @@ const createPrisma = () => ({
 });
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -60,15 +60,15 @@ describe('radiologyAppointmentsController', () => {
 
   test('creates an appointment resolving exam name', async () => {
     const prisma = createPrisma();
-    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: '╪ú╪┤╪╣╪⌐ CT' }]);
+    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: 'أشعة CT' }]);
     prisma.radiologyAppointment.create.mockImplementation(({ data }) => Promise.resolve({ id: 'a1', ...data }));
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await appointments.createAppointment(req({ body: { patientName: '┘à╪▒┘è╪╢', examTypeId: 'et-1', appointmentDate: '2026-08-15', appointmentTime: '10:30' } }), res);
+    await appointments.createAppointment(req({ body: { patientName: 'مريض', examTypeId: 'et-1', appointmentDate: '2026-08-15', appointmentTime: '10:30' } }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyAppointment.create).toHaveBeenCalledWith({ data: expect.objectContaining({ patientName: '┘à╪▒┘è╪╢', examTypeName: '╪ú╪┤╪╣╪⌐ CT', status: 'SCHEDULED' }) });
+    expect(prisma.radiologyAppointment.create).toHaveBeenCalledWith({ data: expect.objectContaining({ patientName: 'مريض', examTypeName: 'أشعة CT', status: 'SCHEDULED' }) });
   });
 
   test('rejects missing patient name', async () => {
@@ -105,7 +105,7 @@ describe('radiologyAppointmentsController', () => {
     const prisma = createPrisma();
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
-    await appointments.createAppointment(req({ user: {}, body: { patientName: '┘à' } }), res);
+    await appointments.createAppointment(req({ user: {}, body: { patientName: 'م' } }), res);
     expect(res.statusCode).toBe(403);
   });
 
@@ -117,7 +117,7 @@ describe('radiologyAppointmentsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await appointments.createAppointment(req({ body: { patientId: 'pat-1', patientName: '┘à╪▒┘è╪╢', examTypeId: 'et-1' } }), res);
+    await appointments.createAppointment(req({ body: { patientId: 'pat-1', patientName: 'مريض', examTypeId: 'et-1' } }), res);
 
     expect(res.statusCode).toBe(200);
     expect(prisma.radiologyAppointment.create).toHaveBeenCalledWith({ data: expect.objectContaining({ patientId: 'pat-1', status: 'SCHEDULED' }) });
@@ -130,10 +130,10 @@ describe('radiologyAppointmentsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await appointments.createAppointment(req({ body: { patientId: 'foreign', patientName: '┘à╪▒┘è╪╢', examTypeId: 'et-1' } }), res);
+    await appointments.createAppointment(req({ body: { patientId: 'foreign', patientName: 'مريض', examTypeId: 'et-1' } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪º┘ä┘à╪▒┘è╪╢ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐');
+    expect(res.payload.error).toBe('المريض لا ينتمي لهذه الشركة');
     expect(prisma.radiologyAppointment.create).not.toHaveBeenCalled();
   });
 
@@ -146,7 +146,7 @@ describe('radiologyAppointmentsController', () => {
     const res = createResponse();
     await appointments.createAppointment(req({
       body: {
-        patientName: '┘à╪▒┘è╪╢',
+        patientName: 'مريض',
         examTypeId: 'et-1',
         patientFlags: ['pregnancy', 'contrast_allergy', 'pregnancy'],
       },
@@ -180,10 +180,10 @@ describe('radiologyAppointmentsController', () => {
   test('convertToStudy sets priceSnapshot, modality, billingType and carries patientId', async () => {
     const prisma = createPrisma();
     prisma.radiologyAppointment.findFirst.mockResolvedValue({
-      id: 'ap-1', companyId: 'company-1', patientId: 'pat-1', patientName: '┘à╪▒┘è╪╢', patientPhone: '011', patientGender: 'F',
-      patientAge: '30', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒', status: 'SCHEDULED',
+      id: 'ap-1', companyId: 'company-1', patientId: 'pat-1', patientName: 'مريض', patientPhone: '011', patientGender: 'F',
+      patientAge: '30', examTypeId: 'et-1', examTypeName: 'أشعة مقطعية على الصدر', status: 'SCHEDULED',
     });
-    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒', category: 'CT', price: 500, isActive: true }]);
+    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: 'أشعة مقطعية على الصدر', category: 'CT', price: 500, isActive: true }]);
     prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
     prisma.radiologyAppointment.update.mockResolvedValue({});
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -202,11 +202,11 @@ describe('radiologyAppointmentsController', () => {
   test('convertToStudy carries patientFlags from the appointment', async () => {
     const prisma = createPrisma();
     prisma.radiologyAppointment.findFirst.mockResolvedValue({
-      id: 'ap-1', companyId: 'company-1', patientId: 'pat-1', patientName: '┘à╪▒┘è╪╢', patientPhone: '011', patientGender: 'F',
-      patientAge: '30', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒', status: 'SCHEDULED',
+      id: 'ap-1', companyId: 'company-1', patientId: 'pat-1', patientName: 'مريض', patientPhone: '011', patientGender: 'F',
+      patientAge: '30', examTypeId: 'et-1', examTypeName: 'أشعة مقطعية على الصدر', status: 'SCHEDULED',
       nationalId: '29901010123456', insuranceNumber: 'INS-1', patientFlags: '["pregnancy","renal"]',
     });
-    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒', category: 'CT', price: 500, isActive: true }]);
+    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: 'أشعة مقطعية على الصدر', category: 'CT', price: 500, isActive: true }]);
     prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
     prisma.radiologyAppointment.update.mockResolvedValue({});
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -223,31 +223,31 @@ describe('radiologyAppointmentsController', () => {
 
   test('convertToStudy rejects an unpriced exam', async () => {
     const prisma = createPrisma();
-    prisma.radiologyAppointment.findFirst.mockResolvedValue({ id: 'ap-1', companyId: 'company-1', patientName: '┘à', examTypeId: 'et-1', examTypeName: '╪▒┘å┘è┘å', status: 'SCHEDULED' });
-    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: '╪▒┘å┘è┘å', category: 'MRI', price: 0, isActive: true }]);
+    prisma.radiologyAppointment.findFirst.mockResolvedValue({ id: 'ap-1', companyId: 'company-1', patientName: 'م', examTypeId: 'et-1', examTypeName: 'رنين', status: 'SCHEDULED' });
+    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: 'رنين', category: 'MRI', price: 0, isActive: true }]);
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
     await appointments.convertToStudy(req({ params: { id: 'ap-1' } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toContain('╪║┘è╪▒ ┘à╪│╪╣┘æ╪▒');
+    expect(res.payload.error).toContain('غير مسعّر');
     expect(prisma.radiologyStudy.create).not.toHaveBeenCalled();
   });
 
   test('convertToStudy creates one study per exam for a multi-exam booking', async () => {
     const prisma = createPrisma();
     prisma.radiologyAppointment.findFirst.mockResolvedValue({
-      id: 'ap-1', companyId: 'company-1', patientId: 'pat-1', patientName: '┘à╪▒┘è╪╢', patientPhone: '011', patientGender: 'F',
-      patientAge: '30', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒', status: 'SCHEDULED',
-      examTypeIds: '["et-1","et-2"]', insuranceCompanyId: 'ins-1', deviceId: 'dev-1', deviceName: '╪¼┘ç╪º╪▓ CT',
+      id: 'ap-1', companyId: 'company-1', patientId: 'pat-1', patientName: 'مريض', patientPhone: '011', patientGender: 'F',
+      patientAge: '30', examTypeId: 'et-1', examTypeName: 'أشعة الصدر', status: 'SCHEDULED',
+      examTypeIds: '["et-1","et-2"]', insuranceCompanyId: 'ins-1', deviceId: 'dev-1', deviceName: 'جهاز CT',
     });
     prisma.radiologyExamType.findMany.mockResolvedValue([
-      { id: 'et-1', name: '╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒', category: 'X-Ray', price: 300, isActive: true },
-      { id: 'et-2', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒', category: 'CT', price: 500, isActive: true },
+      { id: 'et-1', name: 'أشعة الصدر', category: 'X-Ray', price: 300, isActive: true },
+      { id: 'et-2', name: 'أشعة مقطعية على الصدر', category: 'CT', price: 500, isActive: true },
     ]);
     prisma.radiologyEntityPrice.findFirst.mockResolvedValue({ price: 700 });
-    prisma.insuranceCompany.findFirst.mockResolvedValue({ name: '┘à╪º┘è ╪▒╪º┘è' });
+    prisma.insuranceCompany.findFirst.mockResolvedValue({ name: 'ماي راي' });
     prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 's-' + data.examTypeId, ...data }));
     prisma.radiologyAppointment.update.mockResolvedValue({});
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -260,12 +260,12 @@ describe('radiologyAppointmentsController', () => {
     const first = prisma.radiologyStudy.create.mock.calls[0][0].data;
     const second = prisma.radiologyStudy.create.mock.calls[1][0].data;
     expect(first.examTypeId).toBe('et-1');
-    expect(first.examTypeName).toBe('╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒');
+    expect(first.examTypeName).toBe('أشعة الصدر');
     expect(second.examTypeId).toBe('et-2');
-    expect(second.examTypeName).toBe('╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐ ╪╣┘ä┘ë ╪º┘ä╪╡╪»╪▒');
+    expect(second.examTypeName).toBe('أشعة مقطعية على الصدر');
     expect(first.studyNumber).not.toBe(second.studyNumber);
     expect(first.deviceId).toBe('dev-1');
-    expect(first.deviceName).toBe('╪¼┘ç╪º╪▓ CT');
+    expect(first.deviceName).toBe('جهاز CT');
     expect(first.billingType).toBe('INSURANCE');
     expect(first.priceSnapshot).toBe(700);
     expect(res.payload.data.studies).toHaveLength(2);
@@ -275,17 +275,17 @@ describe('radiologyAppointmentsController', () => {
     const prisma = createPrisma();
     prisma.patient.findFirst.mockResolvedValue({ id: 'pat-1' });
     prisma.radiologyExamType.findMany.mockResolvedValue([
-      { id: 'et-1', name: '╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒' },
-      { id: 'et-2', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐' },
+      { id: 'et-1', name: 'أشعة الصدر' },
+      { id: 'et-2', name: 'أشعة مقطعية' },
     ]);
-    prisma.radiologyDevice.findFirst.mockResolvedValue({ id: 'dev-1', name: '╪¼┘ç╪º╪▓ CT' });
+    prisma.radiologyDevice.findFirst.mockResolvedValue({ id: 'dev-1', name: 'جهاز CT' });
     prisma.radiologyAppointment.create.mockImplementation(({ data }) => Promise.resolve({ id: 'ap-1', ...data }));
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
     await appointments.createAppointment(req({
       body: {
-        patientId: 'pat-1', patientName: '┘à╪▒┘è╪╢',
+        patientId: 'pat-1', patientName: 'مريض',
         examTypeIds: ['et-1', 'et-2'], deviceId: 'dev-1',
       },
     }), res);
@@ -294,36 +294,36 @@ describe('radiologyAppointmentsController', () => {
     const data = prisma.radiologyAppointment.create.mock.calls[0][0].data;
     expect(data.examTypeIds).toBe('["et-1","et-2"]');
     expect(data.examTypeId).toBe('et-1');
-    expect(data.examTypeName).toBe('╪ú╪┤╪╣╪⌐ ╪º┘ä╪╡╪»╪▒');
+    expect(data.examTypeName).toBe('أشعة الصدر');
     expect(data.deviceId).toBe('dev-1');
-    expect(data.deviceName).toBe('╪¼┘ç╪º╪▓ CT');
+    expect(data.deviceName).toBe('جهاز CT');
   });
 });
 
 describe('radiologyReferringPhysiciansController', () => {
   test('creates a physician with validated commission type', async () => {
     const prisma = createPrisma();
-    prisma.radiologyReferringPhysician.create.mockResolvedValue({ id: 'p1', name: '╪». ┘à╪¡┘ê┘ä' });
+    prisma.radiologyReferringPhysician.create.mockResolvedValue({ id: 'p1', name: 'د. محول' });
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await physicians.createPhysician(req({ body: { name: '╪». ┘à╪¡┘ê┘ä', commissionType: 'PERCENTAGE', commissionValue: 10 } }), res);
+    await physicians.createPhysician(req({ body: { name: 'د. محول', commissionType: 'PERCENTAGE', commissionValue: 10 } }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyReferringPhysician.create).toHaveBeenCalledWith({ data: expect.objectContaining({ name: '╪». ┘à╪¡┘ê┘ä', commissionType: 'PERCENTAGE', commissionValue: 10 }) });
+    expect(prisma.radiologyReferringPhysician.create).toHaveBeenCalledWith({ data: expect.objectContaining({ name: 'د. محول', commissionType: 'PERCENTAGE', commissionValue: 10 }) });
   });
 
   test('rejects invalid commission type', async () => {
     const prisma = createPrisma();
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
-    await physicians.createPhysician(req({ body: { name: '╪». ┘à╪¡┘ê┘ä', commissionType: 'XXX' } }), res);
+    await physicians.createPhysician(req({ body: { name: 'د. محول', commissionType: 'XXX' } }), res);
     expect(res.statusCode).toBe(400);
   });
 
   test('computes commissions for studies', async () => {
     const prisma = createPrisma();
-    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'p1', name: '╪». ┘à╪¡┘ê┘ä', commissionType: 'PERCENTAGE', commissionValue: 10 }]);
+    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'p1', name: 'د. محول', commissionType: 'PERCENTAGE', commissionValue: 10 }]);
     prisma.radiologyStudy.findMany.mockResolvedValue([{ referringPhysicianId: 'p1', examTypeId: 'et-1', additionAmount: 100 }]);
     prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', price: 1000 }]);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -338,7 +338,7 @@ describe('radiologyReferringPhysiciansController', () => {
 
   test('uses the entity-resolved priceSnapshot for commissions when present', async () => {
     const prisma = createPrisma();
-    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'p1', name: '╪». ┘à╪¡┘ê┘ä', commissionType: 'PERCENTAGE', commissionValue: 10 }]);
+    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'p1', name: 'د. محول', commissionType: 'PERCENTAGE', commissionValue: 10 }]);
     prisma.radiologyStudy.findMany.mockResolvedValue([{ referringPhysicianId: 'p1', examTypeId: 'et-1', priceSnapshot: 850, additionAmount: 150 }]);
     prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', price: 1000 }]);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -356,14 +356,14 @@ describe('radiologyReferringPhysiciansController', () => {
 describe('radiologyExamAdditionsController', () => {
   test('creates an addition with price', async () => {
     const prisma = createPrisma();
-    prisma.radiologyExamAddition.create.mockResolvedValue({ id: 'ad1', name: '╪╡╪¿╪║╪⌐' });
+    prisma.radiologyExamAddition.create.mockResolvedValue({ id: 'ad1', name: 'صبغة' });
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await additions.createAddition(req({ body: { name: '╪╡╪¿╪║╪⌐', price: 150 } }), res);
+    await additions.createAddition(req({ body: { name: 'صبغة', price: 150 } }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyExamAddition.create).toHaveBeenCalledWith({ data: expect.objectContaining({ name: '╪╡╪¿╪║╪⌐', price: 150 }) });
+    expect(prisma.radiologyExamAddition.create).toHaveBeenCalledWith({ data: expect.objectContaining({ name: 'صبغة', price: 150 }) });
   });
 
   test('rejects missing name', async () => {
@@ -392,7 +392,7 @@ describe('radiologyStatisticsController', () => {
   test('aggregates studies by status/modality/radiologist', async () => {
     const prisma = createPrisma();
     prisma.radiologyStudy.findMany.mockResolvedValue([
-      { status: 'DELIVERED', modality: 'CT', assignedRadiologistName: '╪». ╪│', referralDoctor: '╪». ┘à' },
+      { status: 'DELIVERED', modality: 'CT', assignedRadiologistName: 'د. س', referralDoctor: 'د. م' },
       { status: 'PENDING_REPORT', modality: 'CT', assignedRadiologistName: null, referralDoctor: null },
     ]);
     prisma.radiologyExamType.findMany.mockResolvedValue([{ category: 'CT' }, { category: 'MRI' }]);
@@ -441,7 +441,7 @@ describe('radiologyPaymentsController', () => {
     await payments.recordStudyPayment(req({ params: { id: 'study-1' }, body: { amount: 200 } }), res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toContain('┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä┘à╪¬╪¿┘é┘è');
+    expect(res.payload.error).toContain('يتجاوز المتبقي');
     expect(prisma.radiologyStudyPayment.create).not.toHaveBeenCalled();
   });
 
@@ -502,7 +502,7 @@ describe('radiologyPaymentsController financialSummary', () => {
       { billingType: 'INSURANCE', priceSnapshot: 1000, additionAmount: 0, paidAmount: 0 },
     ]);
     prisma.radiologyInsuranceInvoice.findMany.mockResolvedValue([
-      { insuranceCompanyId: 'c1', insuranceCompanyName: '╪º┘ä╪ú┘ç╪▒╪º┘à', totalAmount: 1000, paidAmount: 400, remainingAmount: 600, status: 'PARTIAL' },
+      { insuranceCompanyId: 'c1', insuranceCompanyName: 'الأهرام', totalAmount: 1000, paidAmount: 400, remainingAmount: 600, status: 'PARTIAL' },
     ]);
     prisma.radiologyInsuranceLedgerEntry.findMany.mockResolvedValue([{ amount: 400 }]);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -524,9 +524,9 @@ describe('radiologyAppointmentsController convertToStudy', () => {
   test('creates a study from an appointment and marks it DONE', async () => {
     const prisma = createPrisma();
     prisma.radiologyAppointment.findFirst.mockResolvedValue({
-      id: 'appt-1', companyId: 'company-1', status: 'SCHEDULED', patientName: '┘à╪▒┘è╪╢', patientPhone: '010', patientGender: 'male', patientAge: '20', examTypeId: 'et-1', examTypeName: '╪ú╪┤╪╣╪⌐ CT',
+      id: 'appt-1', companyId: 'company-1', status: 'SCHEDULED', patientName: 'مريض', patientPhone: '010', patientGender: 'male', patientAge: '20', examTypeId: 'et-1', examTypeName: 'أشعة CT',
     });
-    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: '╪ú╪┤╪╣╪⌐ CT', category: 'CT', price: 400, isActive: true }]);
+    prisma.radiologyExamType.findMany.mockResolvedValue([{ id: 'et-1', name: 'أشعة CT', category: 'CT', price: 400, isActive: true }]);
     prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: 'study-1', ...data }));
     prisma.radiologyAppointment.update.mockResolvedValue({ id: 'appt-1', status: 'DONE' });
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -535,7 +535,7 @@ describe('radiologyAppointmentsController convertToStudy', () => {
     await appointments.convertToStudy(req({ params: { id: 'appt-1' } }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyStudy.create).toHaveBeenCalledWith({ data: expect.objectContaining({ patientName: '┘à╪▒┘è╪╢', examTypeName: '╪ú╪┤╪╣╪⌐ CT', status: 'PENDING_IMAGING' }) });
+    expect(prisma.radiologyStudy.create).toHaveBeenCalledWith({ data: expect.objectContaining({ patientName: 'مريض', examTypeName: 'أشعة CT', status: 'PENDING_IMAGING' }) });
     expect(prisma.radiologyAppointment.update).toHaveBeenCalledWith({ where: { id: 'appt-1' }, data: expect.objectContaining({ status: 'DONE' }) });
   });
 
@@ -560,10 +560,10 @@ describe('radiologyShiftsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await shifts.openShift(req({ body: { cashierName: '╪┤╪▒┘ê┘é' } }), res);
+    await shifts.openShift(req({ body: { cashierName: 'شروق' } }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyShift.create).toHaveBeenCalledWith({ data: expect.objectContaining({ cashierName: '╪┤╪▒┘ê┘é', status: 'OPEN' }) });
+    expect(prisma.radiologyShift.create).toHaveBeenCalledWith({ data: expect.objectContaining({ cashierName: 'شروق', status: 'OPEN' }) });
   });
 
   test('rejects opening a shift when one is already open', async () => {
@@ -572,7 +572,7 @@ describe('radiologyShiftsController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await shifts.openShift(req({ body: { cashierName: '╪┤╪▒┘ê┘é' } }), res);
+    await shifts.openShift(req({ body: { cashierName: 'شروق' } }), res);
 
     expect(res.statusCode).toBe(400);
     expect(prisma.radiologyShift.create).not.toHaveBeenCalled();
@@ -580,7 +580,7 @@ describe('radiologyShiftsController', () => {
 
   test('getActiveShift summarizes payments and refunds by method', async () => {
     const prisma = createPrisma();
-    prisma.radiologyShift.findFirst.mockResolvedValue({ id: 'shift-1', status: 'OPEN', cashierName: '╪┤╪▒┘ê┘é' });
+    prisma.radiologyShift.findFirst.mockResolvedValue({ id: 'shift-1', status: 'OPEN', cashierName: 'شروق' });
     prisma.radiologyShiftPayment.findMany.mockResolvedValue([
       { type: 'PAYMENT', amount: 500, method: 'CASH' },
       { type: 'PAYMENT', amount: 300, method: 'CARD' },
@@ -601,7 +601,7 @@ describe('radiologyShiftsController', () => {
 
   test('closes an open shift', async () => {
     const prisma = createPrisma();
-    prisma.radiologyShift.findFirst.mockResolvedValue({ id: 'shift-1', status: 'OPEN', cashierName: '╪┤╪▒┘ê┘é' });
+    prisma.radiologyShift.findFirst.mockResolvedValue({ id: 'shift-1', status: 'OPEN', cashierName: 'شروق' });
     prisma.radiologyShiftPayment.findMany.mockResolvedValue([{ type: 'PAYMENT', amount: 500, method: 'CASH' }]);
     prisma.radiologyShift.update.mockResolvedValue({ id: 'shift-1', status: 'CLOSED', closedAt: new Date() });
     getSharedPrismaClient.mockReturnValue(prisma);

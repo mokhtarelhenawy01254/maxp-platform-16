@@ -1,4 +1,4 @@
-﻿
+
 
 ---
 ## [2026-03-09] WhatsApp Workspace Scroll & RTL Layout Resolved
@@ -22,5 +22,5 @@ Added 6 Jest test files covering all turbo sub-services (96 tests, all passing):
 - 	ests/services/turbo/labelService.test.js (10 tests)
 - 	ests/services/turbo/ticketService.test.js (17 tests)
 
-Phase 2 refactoring (turboService.js ΓåÆ thin 114-line facade) was confirmed complete.
+Phase 2 refactoring (turboService.js → thin 114-line facade) was confirmed complete.
 One bug discovered during testing: phone normalization lse if logic in shipmentService (see Bugs.md).

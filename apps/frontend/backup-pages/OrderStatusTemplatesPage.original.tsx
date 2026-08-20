@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -29,7 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-// ╪¡╪» Meta Cloud API ┘ä╪╖┘ê┘ä ┘å╪╡ ╪º┘ä╪▒╪│╪º┘ä╪⌐ (body) ΓÇö ╪¬╪¼╪º┘ê╪▓┘ç ┘è╪│╪¿╪¿ ╪▒┘ü╪╢ ╪º┘ä┘é╪º┘ä╪¿
+// حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
 
 const INCOMPLETE_CART_EVENT_TYPE = "INCOMPLETE_CART_FIRST_APPEARANCE";
@@ -136,8 +136,8 @@ const emptyTemplateForm = (): TemplateFormState => ({
   isActive: true,
   hasButtons: true,
   buttons: [
-    { id: "confirm", text: "╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒", action: "CONFIRMED" },
-    { id: "cancel", text: "╪Ñ┘ä╪║╪º╪í ╪º┘ä╪ú┘ê╪▒╪»╪▒", action: "CANCELLED" }
+    { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED" },
+    { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED" }
   ],
   sendMode: "direct",
   metaTemplateName: "",
@@ -148,44 +148,44 @@ const emptyTemplateForm = (): TemplateFormState => ({
   headerUsesOrderProduct: false,
 });
 
-const DEFAULT_TEMPLATE_CONTENT = `┘à╪▒╪¡╪¿╪º┘ï {{customerName}} ≡ƒæï
+const DEFAULT_TEMPLATE_CONTENT = `مرحباً {{customerName}} 👋
 
-┘å┘ê╪» ╪Ñ╪╣┘ä╪º┘à┘â ╪ú┘å ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿┘â ╪▒┘é┘à {{orderNumber}} ┘é╪» ╪¬╪║┘è╪▒╪¬ ╪Ñ┘ä┘ë: *{{status}}*
+نود إعلامك أن حالة طلبك رقم {{orderNumber}} قد تغيرت إلى: *{{status}}*
 
 {{orderItems}}
-╪┤┘â╪▒╪º┘ï ┘ä╪¬╪╣╪º┘à┘ä┘â ┘à╪╣┘å╪º! Γ£¿`;
+شكراً لتعاملك معنا! ✨`;
 
 const ORDER_VARIABLES = [
-  { var: "{{customerName}}", desc: "╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä" },
-  { var: "{{customerPhone}}", desc: "╪▒┘é┘à ┘ç╪º╪¬┘ü ╪º┘ä╪╣┘à┘è┘ä" },
-  { var: "{{orderNumber}}", desc: "╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{orderDate}}", desc: "╪¬╪º╪▒┘è╪« ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{orderItems}}", desc: "╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ (╪º┘ä╪º╪│┘à╪î ╪º┘ä┘ä┘ê┘å╪î ╪º┘ä┘à┘é╪º╪│╪î ╪º┘ä┘â┘à┘è╪⌐)" },
-  { var: "{{status}}", desc: "╪º╪│┘à ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘å╪╡┘è (┘à╪½╪º┘ä: ┘é┘è╪» ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐)" },
-  { var: "{{total}}", desc: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{subtotal}}", desc: "╪º┘ä┘à╪¼┘à┘ê╪╣ ╪º┘ä┘ü╪▒╪╣┘è" },
-  { var: "{{shipping}}", desc: "┘é┘è┘à╪⌐ ╪º┘ä╪┤╪¡┘å" },
-  { var: "{{currency}}", desc: "╪º┘ä╪╣┘à┘ä╪⌐ (┘à╪½╪º┘ä: EGP)" },
-  { var: "{{trackingNumber}}", desc: "╪▒┘é┘à ╪º┘ä╪¬╪¬╪¿╪╣" },
-  { var: "{{trackingLink}}", desc: "╪▒╪º╪¿╪╖ ╪¬╪¬╪¿╪╣ ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{estimatedDays}}", desc: "╪º┘ä╪ú┘è╪º┘à ╪º┘ä╪¬┘é╪»┘è╪▒┘è╪⌐ ┘ä┘ä╪┤╪¡┘å" },
-  { var: "{{reason}}", desc: "╪│╪¿╪¿ ╪º┘ä╪Ñ┘ä╪║╪º╪í ╪ú┘ê ╪º┘ä╪▒┘ü╪╢" },
+  { var: "{{customerName}}", desc: "اسم العميل" },
+  { var: "{{customerPhone}}", desc: "رقم هاتف العميل" },
+  { var: "{{orderNumber}}", desc: "رقم الطلب" },
+  { var: "{{orderDate}}", desc: "تاريخ الطلب" },
+  { var: "{{orderItems}}", desc: "تفاصيل المنتجات (الاسم، اللون، المقاس، الكمية)" },
+  { var: "{{status}}", desc: "اسم الحالة النصي (مثال: قيد المعالجة)" },
+  { var: "{{total}}", desc: "إجمالي الطلب" },
+  { var: "{{subtotal}}", desc: "المجموع الفرعي" },
+  { var: "{{shipping}}", desc: "قيمة الشحن" },
+  { var: "{{currency}}", desc: "العملة (مثال: EGP)" },
+  { var: "{{trackingNumber}}", desc: "رقم التتبع" },
+  { var: "{{trackingLink}}", desc: "رابط تتبع الطلب" },
+  { var: "{{estimatedDays}}", desc: "الأيام التقديرية للشحن" },
+  { var: "{{reason}}", desc: "سبب الإلغاء أو الرفض" },
 ];
 
 const TABS = [
-  { key: "all", labelKey: "orders.statusTabs.all", label: "╪º┘ä┘â┘ä" },
-  { key: "order", labelKey: "orders.statusTabs.orders", label: "╪º┘ä╪╖┘ä╪¿╪º╪¬" },
-  { key: "payment", labelKey: "orders.statusTabs.payment", label: "╪º┘ä╪»┘ü╪╣" },
-  { key: "preparation", labelKey: "orders.statusTabs.preparation", label: "╪º┘ä╪¬╪¼┘ç┘è╪▓" },
-  { key: "shipping", labelKey: "orders.statusTabs.shipping", label: "╪º┘ä╪┤╪¡┘å" },
-  { key: "incomplete", labelKey: "orders.statusTabs.incomplete", label: "╪▒╪│╪º╪ª┘ä ╪º┘ä╪ú┘ê╪▒╪»╪▒ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä" },
-  { key: "reports", labelKey: "orders.statusTabs.reports", label: "╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬" },
+  { key: "all", labelKey: "orders.statusTabs.all", label: "الكل" },
+  { key: "order", labelKey: "orders.statusTabs.orders", label: "الطلبات" },
+  { key: "payment", labelKey: "orders.statusTabs.payment", label: "الدفع" },
+  { key: "preparation", labelKey: "orders.statusTabs.preparation", label: "التجهيز" },
+  { key: "shipping", labelKey: "orders.statusTabs.shipping", label: "الشحن" },
+  { key: "incomplete", labelKey: "orders.statusTabs.incomplete", label: "رسائل الأوردر غير المكتمل" },
+  { key: "reports", labelKey: "orders.statusTabs.reports", label: "تقارير الحالات" },
 ];
 
 const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
-  { value: "CONFIRMED", label: "╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿" },
-  { value: "PROCESSING", label: "╪¬╪ú╪¼┘è┘ä ╪º┘ä╪¬╪│┘ä┘è┘à" },
-  { value: "CANCELLED", label: "╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿" },
+  { value: "CONFIRMED", label: "تأكيد الطلب" },
+  { value: "PROCESSING", label: "تأجيل التسليم" },
+  { value: "CANCELLED", label: "إلغاء الطلب" },
 ];
 
 const LARGE_GROUP_THRESHOLD = 4;
@@ -194,14 +194,14 @@ type FilterChip = "all" | "custom" | "meta_bound" | "no_template" | "disabled";
 type SortMode = "alphabetical" | "statusType" | "recent";
 
 const SAMPLE_VARIABLES: Record<string, string> = {
-  customerName: "╪ú╪¡┘à╪» ┘à╪¡┘à╪»",
+  customerName: "أحمد محمد",
   orderNumber: "ORD-12345",
   customerPhone: "01001234567",
   total: "500",
   currency: "EGP",
   itemCount: "3",
-  orderItems: "1. ╪¬┘è╪┤┘è╪▒╪¬ ╪ú╪¡┘à╪▒ | ╪º┘ä┘à┘é╪º╪│: L | ╪º┘ä┘â┘à┘è╪⌐: 2",
-  status: "┘é┘è╪» ╪º┘ä╪¬╪¼┘ç┘è╪▓",
+  orderItems: "1. تيشيرت أحمر | المقاس: L | الكمية: 2",
+  status: "قيد التجهيز",
   trackingNumber: "TRK-98765",
   trackingLink: "https://maxp.online/track/TRK-98765",
   estimatedDays: "2-3",
@@ -215,8 +215,8 @@ function resolveVariablesForPreview(content: string): string {
 }
 
 /**
- * ╪╣╪▒╪╢ ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º (╪º┘ä┘ä┘è ┘ü┘è┘ç {{1}}╪î {{2}}...) ╪¿┘é┘è┘à ┘å┘à┘ê╪░╪¼┘è╪⌐ ΓÇö
- * ╪¿┘è╪▒╪¿╪╖ ┘â┘ä ╪▒┘é┘à ┘à┘è╪¬╪º ╪¿╪º┘ä┘à╪¬╪║┘è╪▒ ╪º┘ä┘à╪¡┘ä┘è ╪º┘ä┘à╪╖╪º╪¿┘é ╪¡╪│╪¿ ╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪╕┘ç┘ê╪▒.
+ * عرض نص قالب ميتا (اللي فيه {{1}}، {{2}}...) بقيم نموذجية —
+ * بيربط كل رقم ميتا بالمتغير المحلي المطابق حسب ترتيب الظهور.
  */
 function resolveMetaBodyPreview(metaBody: string, localContent: string): string {
   if (!metaBody) return "";
@@ -229,9 +229,9 @@ function resolveMetaBodyPreview(metaBody: string, localContent: string): string 
 }
 
 /**
- * ╪¬╪▒╪¬┘è╪¿ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è ┘ä╪¿┘å╪º╪í ┘à╪¡╪¬┘ê┘ë ┘à╪¡┘ä┘è ┘à┘å ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º
- * ({{1}} ΓåÆ {{customerName}}╪î {{2}} ΓåÆ {{orderNumber}}...)
- * ┘à╪¿┘è╪¬╪│┘ê┘æ┘ë╪┤ ┘à╪╣ ╪ú┘è ┘é╪º┘ä╪¿ ΓÇö ╪º┘ä┘à╪│╪¬╪«╪»┘à ┘è┘é╪»╪▒ ┘è╪╣╪»┘æ┘ä┘ç╪î ╪¿╪│ ╪¿┘è╪║╪╖┘è ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä╪┤╪º╪ª╪╣╪⌐.
+ * ترتيب المتغيرات الافتراضي لبناء محتوى محلي من نص قالب ميتا
+ * ({{1}} → {{customerName}}، {{2}} → {{orderNumber}}...)
+ * مبيتسوّىش مع أي قالب — المستخدم يقدر يعدّله، بس بيغطي الحالة الشائعة.
  */
 const META_TO_LOCAL_DEFAULT_ORDER: string[] = [
   "customerName",
@@ -250,9 +250,9 @@ const META_TO_LOCAL_DEFAULT_ORDER: string[] = [
 ];
 
 /**
- * ╪¿┘å╪º╪í ┘à╪¡╪¬┘ê┘ë ┘à╪¡┘ä┘è ╪¬┘ä┘é╪º╪ª┘è ┘à┘å ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º:
- * ╪¿┘è╪¡┘ê┘æ┘ä ┘â┘ä {{N}} ┘ü┘è ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪Ñ┘ä┘ë {{variable}} ┘à╪¡┘ä┘è ╪¡╪│╪¿ ╪¬╪▒╪¬┘è╪¿ ╪º┘ü╪¬╪▒╪º╪╢┘è╪î
- * ┘ê╪¿┘è┘é┘ü┘ä ╪╣┘ä┘ë {{N}} ╪º┘ä┘ä┘è ╪╣╪»╪»┘ç╪º ╪ú┘â╪¬╪▒ ┘à┘å ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐ (┘à╪┤ ╪¿┘è╪¡╪░┘ü ╪º┘ä┘å╪╡).
+ * بناء محتوى محلي تلقائي من نص قالب ميتا:
+ * بيحوّل كل {{N}} في نص قالب ميتا إلى {{variable}} محلي حسب ترتيب افتراضي،
+ * وبيقفل على {{N}} اللي عددها أكتر من المتغيرات المتاحة (مش بيحذف النص).
  */
 function buildLocalContentFromMetaBody(metaBody: string): string {
   if (!metaBody) return "";
@@ -266,8 +266,8 @@ function buildLocalContentFromMetaBody(metaBody: string): string {
 export { resolveVariablesForPreview, buildLocalContentFromMetaBody };
 
 /**
- * WhatsAppBubblePreview ΓÇö ┘à╪╣╪º┘è┘å╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐ ┘ä╪┤┘â┘ä ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘ü┘è ┘à╪¡╪º╪»╪½╪⌐ ┘ê╪º╪¬╪│╪º╪¿.
- * ╪¿╪¬╪▒╪│┘à bubble ╪ú╪«╪╢╪▒ ╪¿┘Ç timestamp ┘ê┘à╪¬╪║┘è╪▒╪º╪¬ ┘à╪¡┘ä┘ê┘ä╪⌐ + ╪º┘ä╪ú╪▓╪▒╪º╪▒ ╪º┘ä╪¬┘ü╪º╪╣┘ä┘è╪⌐.
+ * WhatsAppBubblePreview — معاينة مباشرة لشكل الرسالة في محادثة واتساب.
+ * بترسم bubble أخضر بـ timestamp ومتغيرات محلولة + الأزرار التفاعلية.
  */
 interface WhatsAppBubblePreviewProps {
   content: string;
@@ -300,7 +300,7 @@ export function WhatsAppBubblePreview({ content, buttons, hasButtons }: WhatsApp
 
       <p className="whitespace-pre-wrap break-words pr-5 font-[system-ui]">
         {formatWhatsAppText(resolved) || (
-          <span className="text-slate-400 dark:text-slate-500">┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪│╪¬╪╕┘ç╪▒ ┘ç┘å╪º...</span>
+          <span className="text-slate-400 dark:text-slate-500">معاينة الرسالة ستظهر هنا...</span>
         )}
       </p>
 
@@ -323,16 +323,16 @@ export function WhatsAppBubblePreview({ content, buttons, hasButtons }: WhatsApp
 }
 
 function isCustomContent(status: StatusWithTemplate): boolean {
-  const GENERIC_PATTERN = /╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿┘â ╪Ñ┘ä┘ë/;
+  const GENERIC_PATTERN = /تم تغيير حالة طلبك إلى/;
   return !!status.template?.content && !GENERIC_PATTERN.test(status.template.content);
 }
 
 type TemplateSlot = "regular" | "meta";
 
 /**
- * ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪╣╪▒┘ê╪╢ ┘ü┘è slot ┘à┘è╪¬╪º:
- * ┘é╪º┘ä╪¿ ┘é┘å╪º╪⌐ META_CLOUD (╪º┘ä┘å┘à┘ê╪░╪¼ ╪º┘ä╪¼╪»┘è╪») ╪ú┘ê ╪¬┘ê╪º┘ü┘é ┘é╪»┘è┘à:
- * ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º╪»┘è ╪º┘ä┘ä┘è ╪╣┘ä┘è┘ç ╪▒╪¿╪╖ ┘à┘è╪¬╪º (channel ┘é╪»┘è┘à ╪¿╪»┘ê┘å META_CLOUD).
+ * القالب المعروض في slot ميتا:
+ * قالب قناة META_CLOUD (النموذج الجديد) أو توافق قديم:
+ * القالب العادي اللي عليه ربط ميتا (channel قديم بدون META_CLOUD).
  */
 function getMetaSlotTemplate(status: StatusWithTemplate): Template | null {
   if (status.metaTemplate) return status.metaTemplate;
@@ -399,15 +399,15 @@ function parseTemplateButtons(raw?: string): TemplateButton[] {
       }))
       .filter((b) => b.id || b.text);
   } catch (e) {
-    // ≡ƒöÄ ┘å┘Å╪│╪¼┘æ┘ä ╪º┘ä╪«╪╖╪ú ╪╣╪┤╪º┘å ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪ú╪▓╪▒╪º╪▒ ╪º┘ä┘ü╪º╪│╪»╪⌐ ┘à╪º ╪¬╪«╪¬┘ü┘è╪┤ ╪¿╪╡┘à╪¬ ╪ú╪½┘å╪º╪í ╪º┘ä╪¬╪╖┘ê┘è╪▒
+    // 🔎 نُسجّل الخطأ عشان بيانات الأزرار الفاسدة ما تختفيش بصمت أثناء التطوير
     console.warn("[TEMPLATE-BUTTONS] Failed to parse buttons JSON:", (e as Error)?.message);
     return [];
   }
 }
 
 /**
- * ╪º╪│╪¬╪«╪▒╪º╪¼ ╪ú╪│┘à╪º╪í ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¡┘ä┘è╪⌐ ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ ╪º┘ä┘ä┘è ╪¿╪¬╪╕┘ç╪▒ ╪¿┘è┘ç ┘ü┘è ╪º┘ä┘à╪¡╪¬┘ê┘ë.
- * ╪¿┘è╪¬┘à ╪º╪│╪¬╪«╪»╪º┘à┘ç ┘ä╪▒╪¿╪╖ ┘â┘ä ┘à╪¬╪║┘è╪▒ ┘à╪¡┘ä┘è {{customerName}} ╪¿╪▒┘é┘à ┘à┘è╪¬╪º {{1}}╪î {{2}}... ╪¿╪╡╪▒┘è╪º┘ï.
+ * استخراج أسماء المتغيرات المحلية بالترتيب اللي بتظهر بيه في المحتوى.
+ * بيتم استخدامه لربط كل متغير محلي {{customerName}} برقم ميتا {{1}}، {{2}}... بصرياً.
  */
 function extractLocalVariableOrder(content: string): string[] {
   const seen = new Set<string>();
@@ -461,9 +461,9 @@ export default function OrderStatusTemplatesPage() {
   const [metaAutoFilled, setMetaAutoFilled] = useState(false);
   const [unbindTarget, setUnbindTarget] = useState<StatusWithTemplate | null>(null);
 
-  // ΓÜí Cache ╪¼┘ä╪│╪º╪¬ ╪º┘ä┘à┘è╪¬╪º (TTL 30 ╪½╪º┘å┘è╪⌐) ΓÇö ┘à┘å╪╣ refetch ╪╣┘å╪» ┘ü╪¬╪¡ dialogs ┘à╪¬╪¬╪º┘ä┘è╪⌐
+  // ⚡ Cache جلسات الميتا (TTL 30 ثانية) — منع refetch عند فتح dialogs متتالية
   const metaSessionsCacheRef = useRef<{ data: typeof metaSessions; at: number } | null>(null);
-  // ΓÜí ┘å╪╣┘è╪» ╪¼┘ä╪¿ ╪º┘ä┘Ç preview ╪¿╪╣╪» ╪Ñ╪║┘ä╪º┘é ╪º┘ä╪»┘è╪º┘ä┘ê╪¼ ┘ü┘é╪╖ ┘ä┘ê ╪¡╪╡┘ä ╪¬╪╣╪»┘è┘ä ┘ü╪╣┘ä┘è
+  // ⚡ نعيد جلب الـ preview بعد إغلاق الديالوج فقط لو حصل تعديل فعلي
   const dialogDirtyRef = useRef(false);
 
   const [settings, setSettings] = useState<SettingsForm | null>(null);
@@ -492,7 +492,7 @@ export default function OrderStatusTemplatesPage() {
       }
     } catch (err) {
       console.error("Failed to fetch statuses with templates", err);
-      toast.error(t("orders.loadError", "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¿┘è╪º┘å╪º╪¬"));
+      toast.error(t("orders.loadError", "حدث خطأ في تحميل البيانات"));
     } finally {
       setLoading(false);
     }
@@ -526,18 +526,18 @@ export default function OrderStatusTemplatesPage() {
         setDeliveryPreview(map);
       }
     } catch (err) {
-      // silent fail ΓÇö ╪º┘ä┘Ç preview ┘à┘è╪▓╪⌐ ┘à╪│╪º╪╣╪»╪⌐
+      // silent fail — الـ preview ميزة مساعدة
       console.error("Failed to fetch delivery preview", err);
     }
   }, []);
 
   useEffect(() => {
-    document.title = `${t("orders.statusTemplatesTitle", "┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪¡╪º┘ä╪º╪¬")} | MaxP`;
-    // ΓÜí Promise.allSettled: ┘å╪¼┘à╪╣ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪│╪¬┘é┘ä╪⌐ ┘ä╪¬╪¼┘å╪¿ waterfall ┘ê╪Ñ╪«┘ü╪º╪í ╪º┘ä┘Ç loading ╪«╪º╪╖╪ª
+    document.title = `${t("orders.statusTemplatesTitle", "قوالب الواتساب للحالات")} | MaxP`;
+    // ⚡ Promise.allSettled: نجمع الطلبات المستقلة لتجنب waterfall وإخفاء الـ loading خاطئ
     Promise.allSettled([fetchData(), fetchSettings(), fetchDeliveryPreview()]);
   }, [fetchData, fetchSettings, fetchDeliveryPreview, t]);
 
-  // ┘å╪╣┘è╪» ╪¼┘ä╪¿ ╪º┘ä┘Ç preview ╪¿╪╣╪» ╪Ñ╪║┘ä╪º┘é ╪º┘ä╪»┘è╪º┘ä┘ê╪¼ ┘ü┘é╪╖ ┘ä┘ê ╪¡╪╡┘ä ╪¬╪╣╪»┘è┘ä ┘ü╪╣┘ä┘è (┘ê┘ä┘è╪│ "╪Ñ┘ä╪║╪º╪í" ╪¿╪»┘ê┘å ╪¬╪║┘è┘è╪▒)
+  // نعيد جلب الـ preview بعد إغلاق الديالوج فقط لو حصل تعديل فعلي (وليس "إلغاء" بدون تغيير)
   useEffect(() => {
     if (dialogOpen === false) {
       if (dialogDirtyRef.current) {
@@ -555,13 +555,13 @@ export default function OrderStatusTemplatesPage() {
     setOriginalMetaTemplateName("");
     setMetaAutoFilled(false);
     setTemplateForm({
-      name: slot === "meta" ? `┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ${status.name}` : `┘é╪º┘ä╪¿ ${status.name}`,
+      name: slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`,
       content: slot === "meta" && status.template?.content ? status.template.content : DEFAULT_TEMPLATE_CONTENT,
       isActive: true,
       hasButtons: true,
       buttons: [
-        { id: "confirm", text: "╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒", action: "CONFIRMED" },
-        { id: "cancel", text: "╪Ñ┘ä╪║╪º╪í ╪º┘ä╪ú┘ê╪▒╪»╪▒", action: "CANCELLED" }
+        { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED" },
+        { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED" }
       ],
       sendMode: slot === "meta" ? "bind_meta" : "direct",
       metaTemplateName: "",
@@ -587,7 +587,7 @@ export default function OrderStatusTemplatesPage() {
     setMetaAutoFilled(false);
     setShowLocalRef(slot === "meta" && !!metaName);
     setTemplateForm({
-      name: target?.name || (slot === "meta" ? `┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ${status.name}` : `┘é╪º┘ä╪¿ ${status.name}`),
+      name: target?.name || (slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`),
       content: target?.content || DEFAULT_TEMPLATE_CONTENT,
       isActive: target?.isActive ?? true,
       hasButtons: target?.hasButtons ?? true,
@@ -605,8 +605,8 @@ export default function OrderStatusTemplatesPage() {
   };
 
   /**
-   * ┘ê╪╢╪╣ "╪¬╪║┘è┘è╪▒ ╪º┘ä┘é╪º┘ä╪¿": ╪┤╪º╪┤╪⌐ ╪¿╪│┘è╪╖╪⌐ ┘ä╪▒╪¿╪╖ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪» ┘à╪«╪¬┘ä┘ü.
-   * ┘à╪┤ ╪¿┘è╪╣╪»┘æ┘ä ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ ΓÇö ╪¿╪│ ╪¿┘è╪»┘ê╪▒ ╪╣┘ä┘ë ┘é╪º┘ä╪¿ ┘à╪╣╪¬┘à╪» ╪¬╪º┘å┘è ┘ê┘è╪▒╪¿╪╖┘ç.
+   * وضع "تغيير القالب": شاشة بسيطة لربط قالب ميتا معتمد مختلف.
+   * مش بيعدّل محتوى الرسالة الحالية — بس بيدور على قالب معتمد تاني ويربطه.
    */
   const openSwitchDialog = (status: StatusWithTemplate) => {
     const current = getMetaSlotTemplate(status);
@@ -619,7 +619,7 @@ export default function OrderStatusTemplatesPage() {
     setMetaAutoFilled(false);
     setShowLocalRef(false);
     setTemplateForm({
-      name: current?.name || `┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ${status.name}`,
+      name: current?.name || `قالب ميتا ${status.name}`,
       content: current?.content || DEFAULT_TEMPLATE_CONTENT,
       isActive: current?.isActive ?? true,
       hasButtons: current?.hasButtons ?? true,
@@ -639,7 +639,7 @@ export default function OrderStatusTemplatesPage() {
   const persistLocalTemplate = useCallback(async (): Promise<string | null> => {
     if (!selectedStatus) return null;
     if (!templateForm.content.trim()) {
-      toast.error(t("orders.templateContentRequired", "┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿"));
+      toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
       return null;
     }
     const saveButtons = templateForm.hasButtons
@@ -681,7 +681,7 @@ export default function OrderStatusTemplatesPage() {
       }
       if (isEdit) {
         await apiClient.put(`/whatsapp/notifications/templates/${selectedTemplate!.id}`, payload);
-        toast.success(t("orders.templateUpdated", "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘å╪¼╪º╪¡"));
+        toast.success(t("orders.templateUpdated", "تم تحديث القالب بنجاح"));
         dialogDirtyRef.current = true;
         return selectedTemplate!.id;
       } else {
@@ -689,10 +689,10 @@ export default function OrderStatusTemplatesPage() {
         const created = (res?.data as { template?: { id?: string } })?.template;
         const newTemplateId = created?.id;
         if (!newTemplateId) {
-          toast.error(t("orders.templateSaveError", "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿"));
+          toast.error(t("orders.templateSaveError", "حدث خطأ في حفظ القالب"));
           return null;
         }
-        toast.success(t("orders.templateCreated", "╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘å╪¼╪º╪¡"));
+        toast.success(t("orders.templateCreated", "تم إنشاء القالب بنجاح"));
         dialogDirtyRef.current = true;
         setSelectedStatus((prev) => {
           if (!prev) return prev;
@@ -720,7 +720,7 @@ export default function OrderStatusTemplatesPage() {
         return newTemplateId;
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || t("orders.templateSaveError", "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿"));
+      toast.error(err?.response?.data?.message || t("orders.templateSaveError", "حدث خطأ في حفظ القالب"));
       return null;
     } finally {
       setSaving(false);
@@ -729,7 +729,7 @@ export default function OrderStatusTemplatesPage() {
 
   const uploadHeaderMedia = useCallback(async (file: File) => {
     if (!selectedMetaSession) {
-      toast.error(t("orders.selectMetaSession", "╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï"));
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
       return;
     }
     setHeaderUploading(true);
@@ -745,12 +745,12 @@ export default function OrderStatusTemplatesPage() {
       const data = res.data;
       if (data?.success && data.mediaId) {
         setTemplateForm((p) => ({ ...p, headerMediaHandle: data.mediaId!, headerMediaName: data.fileName || file.name }));
-        toast.success(t("orders.headerMediaUploaded", "╪¬┘à ╪▒┘ü╪╣ ╪º┘ä┘ê╪│┘è╪╖ ΓÇö ╪¼╪º┘ç╪▓ ┘ä┘ä┘å╪┤╪▒ ╪╣┘ä┘ë ┘à┘è╪¬╪º"));
+        toast.success(t("orders.headerMediaUploaded", "تم رفع الوسيط — جاهز للنشر على ميتا"));
       } else {
-        toast.error(data?.error || t("orders.headerMediaUploadFailed", "┘ü╪┤┘ä ╪▒┘ü╪╣ ╪º┘ä┘ê╪│┘è╪╖"));
+        toast.error(data?.error || t("orders.headerMediaUploadFailed", "فشل رفع الوسيط"));
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.headerMediaUploadFailed", "┘ü╪┤┘ä ╪▒┘ü╪╣ ╪º┘ä┘ê╪│┘è╪╖"));
+      toast.error(err?.response?.data?.error || t("orders.headerMediaUploadFailed", "فشل رفع الوسيط"));
     } finally {
       setHeaderUploading(false);
     }
@@ -778,7 +778,7 @@ export default function OrderStatusTemplatesPage() {
   const handleResubmitMeta = async () => {
     if (!selectedTemplate?.id) return;
     if (!templateForm.content.trim()) {
-      toast.error(t("orders.templateContentRequired", "┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿"));
+      toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
       return;
     }
     const saved = await persistLocalTemplate();
@@ -790,45 +790,45 @@ export default function OrderStatusTemplatesPage() {
       });
       const data = res.data;
       if (data?.applied && data?.success) {
-        // ╪¬┘à ╪¬╪╣╪»┘è┘ä ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à┘ê╪¼┘ê╪» ┘å┘ü╪│┘ç ╪¿╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä╪¼╪»┘è╪» ΓÇö ┘à┘è╪¬╪º ╪¬╪╣┘è╪» ┘à╪▒╪º╪¼╪╣╪¬┘ç ╪¬┘ä┘é╪º╪ª┘è╪º┘ï
+        // تم تعديل قالب ميتا الموجود نفسه بالمحتوى الجديد — ميتا تعيد مراجعته تلقائياً
         const status = data.verifiedStatus || "PENDING";
         toast.success(
           data.message ||
-          t("orders.metaResubmitted", `╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º ΓÇö ╪º┘ä╪¡╪º┘ä╪⌐: ${status}`)
+          t("orders.metaResubmitted", `تم تحديث القالب على ميتا — الحالة: ${status}`)
         );
         setDialogOpen(false);
       } else if (data?.success && data?.metaTemplateName) {
-        // (╪¬┘ê╪º┘ü┘é ┘ä┘ä╪«┘ä┘ü) ┘ü┘è ╪¡╪º┘ä ╪ú┘å╪┤╪ú ╪º┘ä╪«╪º╪»┘à ┘é╪º┘ä╪¿╪º┘ï ╪¼╪»┘è╪»╪º┘ï
+        // (توافق للخلف) في حال أنشأ الخادم قالباً جديداً
         toast.success(
           data.message ||
-          t("orders.metaResubmittedNew", "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º ΓÇö ╪│┘è╪¬┘à ╪¬┘ü╪╣┘è┘ä┘ç ╪¿╪╣╪» ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐")
+          t("orders.metaResubmittedNew", "تم تحديث القالب على ميتا — سيتم تفعيله بعد الموافقة")
         );
         setDialogOpen(false);
       } else if (data?.applied === false) {
         toast.warning(
           data.applyReason ||
-          t("orders.metaNotApplied", "┘à┘è╪¬╪º ┘ä╪│┘ç ╪┤╪º┘è┘ä╪⌐ ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪»┘è┘à ΓÇö ╪¼╪▒╪¿ ╪¬╪º┘å┘è ╪¿╪╣╪» ╪┤┘ê┘è╪⌐")
+          t("orders.metaNotApplied", "ميتا لسه شايلة المحتوى القديم — جرب تاني بعد شوية")
         );
       } else {
         toast.warning(
           data?.applyReason ||
-          t("orders.metaResubmitted", "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º ΓÇö ┘ç┘è╪¬╪▒╪º╪¼╪╣ ╪¬╪º┘å┘è")
+          t("orders.metaResubmitted", "تم تحديث القالب على ميتا — هيتراجع تاني")
         );
       }
       fetchData();
       fetchDeliveryPreview();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.metaResubmitFailed", "┘ü╪┤┘ä ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º"));
+      toast.error(err?.response?.data?.error || t("orders.metaResubmitFailed", "فشل تحديث القالب على ميتا"));
     } finally {
       setResubmittingMeta(false);
     }
   };
 
   const toggleNotify = async (status: StatusWithTemplate) => {
-    if (togglingId) return; // ┘à┘å╪╣ ╪º┘ä╪╢╪║╪╖ ╪º┘ä┘à╪¬┘â╪▒╪▒ (double-click guard)
+    if (togglingId) return; // منع الضغط المتكرر (double-click guard)
     const nextValue = !status.notifyCustomer;
     setTogglingId(status.id);
-    // Optimistic update + rollback ╪╣┘ä┘ë ╪º┘ä┘ü╪┤┘ä
+    // Optimistic update + rollback على الفشل
     const prevStatuses = statuses;
     setStatuses((prev) =>
       prev.map((s) => (s.id === status.id ? { ...s, notifyCustomer: nextValue } : s))
@@ -845,13 +845,13 @@ export default function OrderStatusTemplatesPage() {
       }
       toast.success(
         nextValue
-          ? t("orders.notifyEnabled", "╪¬┘à ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘ä┘ç╪░┘ç ╪º┘ä╪¡╪º┘ä╪⌐")
-          : t("orders.notifyDisabled", "╪¬┘à ╪Ñ┘è┘é╪º┘ü ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘ä┘ç╪░┘ç ╪º┘ä╪¡╪º┘ä╪⌐")
+          ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة")
+          : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة")
       );
     } catch (err: any) {
-      // Rollback: ┘å╪╣┘è╪» ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪╡┘ä┘è╪⌐ ┘ä┘ê ┘ü╪┤┘ä ╪º┘ä┘Ç API
+      // Rollback: نعيد الحالة الأصلية لو فشل الـ API
       setStatuses(prevStatuses);
-      toast.error(err?.response?.data?.message || t("orders.toggleError", "╪¡╪»╪½ ╪«╪╖╪ú"));
+      toast.error(err?.response?.data?.message || t("orders.toggleError", "حدث خطأ"));
     } finally {
       setTogglingId(null);
     }
@@ -879,16 +879,16 @@ export default function OrderStatusTemplatesPage() {
 
   const publishToMeta = async (templateId: string) => {
     if (!selectedMetaSession) {
-      toast.error(t("orders.selectMetaSession", "╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï"));
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
       return;
     }
     setPublishingId(templateId);
     try {
       await apiClient.post(`/whatsapp-notifications/templates/${templateId}/publish`, { sessionId: selectedMetaSession });
-      toast.success(t("orders.publishedToMeta", "╪¬┘à ╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘é╪º┘ä╪¿ ┘ä┘à┘è╪¬╪º ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐"));
+      toast.success(t("orders.publishedToMeta", "تم إرسال القالب لميتا للمراجعة"));
       fetchAvailableMetaTemplates();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.publishFailed", "┘ü╪┤┘ä ╪º┘ä┘å╪┤╪▒ ╪╣┘ä┘ë ┘à┘è╪¬╪º"));
+      toast.error(err?.response?.data?.error || t("orders.publishFailed", "فشل النشر على ميتا"));
     } finally {
       setPublishingId(null);
     }
@@ -896,11 +896,11 @@ export default function OrderStatusTemplatesPage() {
 
   const createMetaTemplate = async () => {
     if (!selectedMetaSession) {
-      toast.error(t("orders.selectMetaSession", "╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï"));
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
       return;
     }
     if (!templateForm.content.trim()) {
-      toast.error(t("orders.templateContentRequired", "┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿"));
+      toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
       return;
     }
     const templateId = await persistLocalTemplate();
@@ -925,7 +925,7 @@ export default function OrderStatusTemplatesPage() {
 
   const bindMetaTemplate = async (templateId: string, metaTemplateName: string, metaTemplateLanguage: string) => {
     if (!selectedMetaSession) {
-      toast.error(t("orders.selectMetaSession", "╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï"));
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
       return;
     }
     setBindingId(templateId);
@@ -935,11 +935,11 @@ export default function OrderStatusTemplatesPage() {
         metaTemplateName,
         metaTemplateLanguage,
       });
-      toast.success(t("orders.boundToMeta", "╪¬┘à ╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»"));
+      toast.success(t("orders.boundToMeta", "تم ربط القالب بقالب ميتا المعتمد"));
       setDialogOpen(false);
       fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.bindFailed", "┘ü╪┤┘ä ╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘à┘è╪¬╪º"));
+      toast.error(err?.response?.data?.error || t("orders.bindFailed", "فشل ربط القالب بميتا"));
     } finally {
       setBindingId(null);
     }
@@ -960,13 +960,13 @@ export default function OrderStatusTemplatesPage() {
         metaTemplateId: null,
         metaTemplateStatus: null,
       });
-      toast.success(t("orders.unboundToMeta", "╪¬┘à ┘ü┘â ╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º"));
+      toast.success(t("orders.unboundToMeta", "تم فك ربط القالب بقالب ميتا"));
       setUnbindTarget(null);
       dialogDirtyRef.current = true;
       fetchData();
       fetchDeliveryPreview();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.bindFailed", "┘ü╪┤┘ä ╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘à┘è╪¬╪º"));
+      toast.error(err?.response?.data?.error || t("orders.bindFailed", "فشل ربط القالب بميتا"));
       setUnbindTarget(null);
     }
   };
@@ -980,7 +980,7 @@ export default function OrderStatusTemplatesPage() {
   const syncMetaStatuses = async () => {
     const metaSessionId = selectedMetaSession || metaSessions[0]?.id;
     if (!metaSessionId) {
-      toast.error(t("orders.selectMetaSession", "╪º╪«╪¬╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ╪ú┘ê┘ä╪º┘ï"));
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
       return;
     }
     setSyncingStatus(true);
@@ -990,19 +990,19 @@ export default function OrderStatusTemplatesPage() {
       if (data?.success) {
         const synced = data.synced ?? 0;
         if (synced === 0) {
-          toast.success(t("orders.metaSyncUpToDate", "┘â┘ä ╪º┘ä┘é┘ê╪º┘ä╪¿ ┘à╪¡╪»┘æ╪½╪⌐ ΓÇö ┘à┘ü┘è╪┤ ╪¡╪º╪¼╪⌐ ╪º╪¬╪║┘è╪▒╪¬"));
+          toast.success(t("orders.metaSyncUpToDate", "كل القوالب محدّثة — مفيش حاجة اتغيرت"));
         } else {
-          toast.success(t("orders.metaSyncDone", `╪¬┘à╪¬ ┘à╪▓╪º┘à┘å╪⌐ ${synced} ┘é╪º┘ä╪¿`));
+          toast.success(t("orders.metaSyncDone", `تمت مزامنة ${synced} قالب`));
           const rejectedCount = Object.values(deliveryPreview).filter((p) => p.metaTemplateStatus === "REJECTED").length;
           if (rejectedCount > 0) {
-            toast.warning(t("orders.metaSyncRejected", `${rejectedCount} ┘é╪º┘ä╪¿ ╪º╪¬╪▒┘ü╪╢ ┘à┘å ┘à┘è╪¬╪º ΓÇö ╪▒╪º╪¼╪╣┘ç┘à`));
+            toast.warning(t("orders.metaSyncRejected", `${rejectedCount} قالب اترفض من ميتا — راجعهم`));
           }
         }
         fetchData();
         fetchDeliveryPreview();
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.metaSyncFailed", "┘ü╪┤┘ä╪¬ ╪º┘ä┘à╪▓╪º┘à┘å╪⌐ ┘à┘å ┘à┘è╪¬╪º"));
+      toast.error(err?.response?.data?.error || t("orders.metaSyncFailed", "فشلت المزامنة من ميتا"));
     } finally {
       setSyncingStatus(false);
     }
@@ -1011,21 +1011,21 @@ export default function OrderStatusTemplatesPage() {
   const handleSaveSettings = async () => {
     if (!settings) return;
 
-    // ≡ƒº¬ Validation ┘é╪¿┘ä ╪º┘ä╪¡┘ü╪╕
+    // 🧪 Validation قبل الحفظ
     const rate = Number(settings.rateLimitPerMinute);
     if (!Number.isFinite(rate) || rate <= 0 || rate > 60) {
-      toast.error(t("orders.settingsRateInvalid", "╪º┘ä╪¡╪» ╪º┘ä╪ú┘é╪╡┘ë ┘ä┘ä╪▒╪│╪º╪ª┘ä ┘ü┘è ╪º┘ä╪»┘é┘è┘é╪⌐ ┘è╪¼╪¿ ╪ú┘å ┘è┘â┘ê┘å ╪¿┘è┘å 1 ┘ê 60"));
+      toast.error(t("orders.settingsRateInvalid", "الحد الأقصى للرسائل في الدقيقة يجب أن يكون بين 1 و 60"));
       return;
     }
     if (settings.quietHoursEnabled) {
       const startMin = timeToMinutes(settings.quietHoursStart || "");
       const endMin = timeToMinutes(settings.quietHoursEnd || "");
       if (startMin == null || endMin == null) {
-        toast.error(t("orders.settingsQuietHoursInvalid", "╪╡┘è╪║╪⌐ ╪│╪º╪╣╪º╪¬ ╪º┘ä┘ç╪»┘ê╪í ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐"));
+        toast.error(t("orders.settingsQuietHoursInvalid", "صيغة ساعات الهدوء غير صحيحة"));
         return;
       }
       if (startMin === endMin) {
-        toast.error(t("orders.settingsQuietHoursSame", "╪¿╪»╪º┘è╪⌐ ┘ê┘å┘ç╪º┘è╪⌐ ╪│╪º╪╣╪º╪¬ ╪º┘ä┘ç╪»┘ê╪í ┘ä╪º ┘è┘à┘â┘å ╪ú┘å ╪¬╪¬╪╖╪º╪¿┘é╪º"));
+        toast.error(t("orders.settingsQuietHoursSame", "بداية ونهاية ساعات الهدوء لا يمكن أن تتطابقا"));
         return;
       }
     }
@@ -1034,11 +1034,11 @@ export default function OrderStatusTemplatesPage() {
     try {
       const res = await apiClient.put("/whatsapp/notifications/settings", settings);
       if (res.data?.success) {
-        toast.success(t("orders.settingsSaved", "╪¬┘à ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬"));
+        toast.success(t("orders.settingsSaved", "تم حفظ الإعدادات"));
         dialogDirtyRef.current = true;
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.settingsError", "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬"));
+      toast.error(err?.response?.data?.error || t("orders.settingsError", "فشل حفظ الإعدادات"));
     } finally {
       setSettingsSaving(false);
     }
@@ -1160,7 +1160,7 @@ export default function OrderStatusTemplatesPage() {
   const metaContentChanged = dialogSlot === "meta" && !!selectedTemplate?.id && templateForm.content !== (selectedTemplate?.content || "");
   const isMetaBound = dialogSlot === "meta" && !!originalMetaTemplateName;
 
-  // ┘ü╪º┘ä┘è╪»┘è╪┤┘å ┘é╪¿┘ä ╪º┘ä╪¡┘ü╪╕: ╪╣╪»╪» ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¡┘ä┘è╪⌐ ┘ä╪º╪▓┘à ┘è╪╖╪º╪¿┘é ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪«╪¬╪º╪▒
+  // فاليديشن قبل الحفظ: عدد المتغيرات المحلية لازم يطابق قالب ميتا المختار
   const metaVariableMismatch = (() => {
     if (dialogSlot !== "meta" || !templateForm.metaTemplateName) return null;
     const metaBody = (() => {
@@ -1175,20 +1175,20 @@ export default function OrderStatusTemplatesPage() {
   })();
 
   const metaDialogTitle = (() => {
-    if (dialogMode === "switch") return `╪¬╪║┘è┘è╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º: ${selectedStatus?.name}`;
+    if (dialogMode === "switch") return `تغيير قالب ميتا: ${selectedStatus?.name}`;
     if (dialogSlot !== "meta") {
-      return `${selectedTemplate?.id ? "╪¬╪╣╪»┘è┘ä ┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿" : "╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿"}: ${selectedStatus?.name}`;
+      return `${selectedTemplate?.id ? "تعديل قالب واتساب" : "إنشاء قالب واتساب"}: ${selectedStatus?.name}`;
     }
-    if (dialogMode === "create") return `╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º: ${selectedStatus?.name}`;
-    if (isMetaBound && metaContentChanged) return `╪¬╪¡╪»┘è╪½ ┘à╪¡╪¬┘ê┘ë ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º: ${selectedStatus?.name}`;
-    return `╪¬╪╣╪»┘è┘ä ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º: ${selectedStatus?.name}`;
+    if (dialogMode === "create") return `إنشاء قالب ميتا: ${selectedStatus?.name}`;
+    if (isMetaBound && metaContentChanged) return `تحديث محتوى قالب ميتا: ${selectedStatus?.name}`;
+    return `تعديل قالب ميتا: ${selectedStatus?.name}`;
   })();
 
   /**
-   * ╪º╪«╪¬┘è╪º╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ΓåÆ ╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à╪¡┘ä┘è ╪¬┘ä┘é╪º╪ª┘è╪º┘ï (auto-fill):
-   * - ┘ä┘ê ╪º┘ä┘é╪º┘ä╪¿ ┘à╪▒╪¿┘ê╪╖ ╪¿╪¡╪º┘ä╪⌐ ╪¬╪º┘å┘è╪⌐ (boundLocalContent) ΓåÆ ┘å┘å╪│╪« ┘à╪¡╪¬┘ê╪º┘ç╪º ╪º┘ä╪╡╪¡ (╪ú┘ü╪╢┘ä ┘à╪╡╪»╪▒ ┘ä┘ä┘à╪¬╪║┘è╪▒╪º╪¬).
-   * - ╪║┘è╪▒ ┘â╪»┘ç ΓåÆ ┘å╪¿┘å┘è ┘à╪¡╪¬┘ê┘ë ┘à┘å ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ({{N}} ΓåÆ ┘à╪¬╪║┘è╪▒ ┘à╪¡┘ä┘è ╪º┘ü╪¬╪▒╪º╪╢┘è).
-   * - ┘à╪┤ ╪¿┘å┘ä╪║┘è ┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à╪│╪¬╪«╪»┘à ┘ä┘ê ┘ç┘ê ┘â╪¬╪¿┘ç ┘ê┘à╪¬╪╖╪º╪¿┘é ╪¿╪º┘ä┘ü╪╣┘ä (┘ü┘è┘ç ┘à╪¬╪║┘è╪▒╪º╪¬ ┘â┘ü╪º┘è╪⌐).
+   * اختيار قالب ميتا → تحديث المحتوى المحلي تلقائياً (auto-fill):
+   * - لو القالب مربوط بحالة تانية (boundLocalContent) → ننسخ محتواها الصح (أفضل مصدر للمتغيرات).
+   * - غير كده → نبني محتوى من نص قالب ميتا ({{N}} → متغير محلي افتراضي).
+   * - مش بنلغي محتوى المستخدم لو هو كتبه ومتطابق بالفعل (فيه متغيرات كفاية).
    */
   const handleMetaTemplateSelect = (name: string) => {
     const selected = availableMetaTemplates.find((m) => m.name === name);
@@ -1225,10 +1225,10 @@ export default function OrderStatusTemplatesPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-              {t("orders.statusTemplatesTitle", "┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪¡╪º┘ä╪º╪¬")}
+              {t("orders.statusTemplatesTitle", "قوالب الواتساب للحالات")}
             </h1>
             <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              {t("orders.statusTemplatesDesc", "╪Ñ╪»╪º╪▒╪⌐ ┘é┘ê╪º┘ä╪¿ ╪▒╪│╪º╪ª┘ä ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬")}
+              {t("orders.statusTemplatesDesc", "إدارة قوالب رسائل الواتساب المرتبطة بحالات الطلبات")}
             </p>
           </div>
         </div>
@@ -1272,18 +1272,18 @@ export default function OrderStatusTemplatesPage() {
           }`}
         >
           <Cog6ToothIcon className="h-4 w-4" />
-          {t("orders.settingsTab", "╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬")}
+          {t("orders.settingsTab", "الإعدادات")}
         </button>
       </div>
 
       {activeTab === "reports" ? (
         <StatusReportTab statuses={statuses} />
       ) : activeTab === "settings" ? (
-        /* ΓÜÖ∩╕Å Settings Panel */
+        /* ⚙️ Settings Panel */
         <div data-testid="settings-panel" className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
           <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
             <Cog6ToothIcon className="ml-1.5 inline h-5 w-5" />
-            ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪╖┘ä╪¿╪º╪¬
+            إعدادات إشعارات واتساب للطلبات
           </h2>
 
           {settingsLoading ? (
@@ -1291,19 +1291,19 @@ export default function OrderStatusTemplatesPage() {
               <span className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
             </div>
           ) : !settings ? (
-            <p className="text-sm text-slate-400">{t("orders.settingsNone", "┘ä╪º ╪¬┘ê╪¼╪» ╪Ñ╪╣╪»╪º╪»╪º╪¬")}</p>
+            <p className="text-sm text-slate-400">{t("orders.settingsNone", "لا توجد إعدادات")}</p>
           ) : (
             <div className="space-y-5 max-w-xl">
               {/* General toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">{t("orders.settingsEnableNotifications", "╪¬┘ü╪╣┘è┘ä ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿")}</p>
-                  <p className="text-xs text-slate-500">╪¬╪┤╪║┘è┘ä ╪ú┘ê ╪Ñ┘è┘é╪º┘ü ╪¼┘à┘è╪╣ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{t("orders.settingsEnableNotifications", "تفعيل إشعارات واتساب")}</p>
+                  <p className="text-xs text-slate-500">تشغيل أو إيقاف جميع إشعارات الواتساب</p>
                 </div>
                 <Switch
                   checked={settings.isEnabled}
                   onCheckedChange={(val) => setSettings((p) => p ? { ...p, isEnabled: val } : p)}
-                  aria-label="╪¬┘ü╪╣┘è┘ä ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘ê╪º╪¬╪│╪º╪¿"
+                  aria-label="تفعيل إشعارات واتساب"
                 />
               </div>
 
@@ -1312,13 +1312,13 @@ export default function OrderStatusTemplatesPage() {
               {/* Order notifications toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬</p>
-                  <p className="text-xs text-slate-500">╪Ñ╪▒╪│╪º┘ä ╪▒╪│╪º┘ä╪⌐ ┘ê╪º╪¬╪│╪º╪¿ ╪╣┘å╪» ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">إشعارات حالات الطلبات</p>
+                  <p className="text-xs text-slate-500">إرسال رسالة واتساب عند تغيير حالة الطلب</p>
                 </div>
                 <Switch
                   checked={settings.orderNotificationsEnabled}
                   onCheckedChange={(val) => setSettings((p) => p ? { ...p, orderNotificationsEnabled: val } : p)}
-                  aria-label="╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬"
+                  aria-label="إشعارات حالات الطلبات"
                 />
               </div>
 
@@ -1326,23 +1326,23 @@ export default function OrderStatusTemplatesPage() {
 
               {/* Default session */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-900 dark:text-white">╪º┘ä╪¼┘ä╪│╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐</label>
-                <p className="mb-2 text-xs text-slate-500">╪¼┘ä╪│╪⌐ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ╪º┘ä┘ä┘è ┘ç╪¬╪¬╪¿╪╣╪¬ ┘à┘å┘ç╪º ╪º┘ä╪▒╪│╪º┘è┘ä</p>
+                <label className="mb-1 block text-sm font-medium text-slate-900 dark:text-white">الجلسة الأساسية</label>
+                <p className="mb-2 text-xs text-slate-500">جلسة الواتساب اللي هتتبعت منها الرسايل</p>
                 <select
                   value={settings.defaultSessionId || ""}
                   onChange={(e) => setSettings((p) => p ? { ...p, defaultSessionId: e.target.value || null } : p)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 >
-                  <option value="">╪¬┘ä┘é╪º╪ª┘è (╪ú┘è ╪¼┘ä╪│╪⌐ ┘à╪¬╪╡┘ä╪⌐)</option>
+                  <option value="">تلقائي (أي جلسة متصلة)</option>
                   {settingsSessions.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} {s.phoneNumber ? `(${s.phoneNumber})` : ""} - {s.status === "CONNECTED" ? "≡ƒƒó" : "≡ƒö┤"}
+                      {s.name} {s.phoneNumber ? `(${s.phoneNumber})` : ""} - {s.status === "CONNECTED" ? "🟢" : "🔴"}
                     </option>
                   ))}
                 </select>
                 {defaultSessionInfo && (
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="text-slate-500 dark:text-slate-400">╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪¡╪º┘ä┘è╪⌐:</span>
+                    <span className="text-slate-500 dark:text-slate-400">طريقة الإرسال الحالية:</span>
                     <span
                       className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium ${
                         defaultSessionInfo.provider === "META_CLOUD"
@@ -1350,11 +1350,11 @@ export default function OrderStatusTemplatesPage() {
                           : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
                       }`}
                     >
-                      {defaultSessionInfo.provider === "META_CLOUD" ? "Γÿü∩╕Å Meta Cloud API" : "≡ƒô▒ Baileys"}
+                      {defaultSessionInfo.provider === "META_CLOUD" ? "☁️ Meta Cloud API" : "📱 Baileys"}
                     </span>
                     <span className="text-slate-400 dark:text-slate-500">{defaultSessionInfo.name}</span>
                     {defaultSessionInfo.provider === "META_CLOUD" && !Object.values(deliveryPreview).some((item) => item.riskLevel === "none") && (
-                      <span className="text-amber-500 dark:text-amber-400">╪¬╪¡┘é┘é ┘à┘å ╪¡╪º┘ä╪⌐ ┘â┘ä ┘é╪º┘ä╪¿</span>
+                      <span className="text-amber-500 dark:text-amber-400">تحقق من حالة كل قالب</span>
                     )}
                   </div>
                 )}
@@ -1365,7 +1365,7 @@ export default function OrderStatusTemplatesPage() {
                     className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                   >
                     <ArrowPathIcon className={`h-3.5 w-3.5 ${syncingStatus ? "animate-spin" : ""}`} />
-                    ┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä╪¡╪º┘ä╪º╪¬ ┘à┘å ┘à┘è╪¬╪º
+                    مزامنة الحالات من ميتا
                   </button>
                 )}
               </div>
@@ -1375,13 +1375,13 @@ export default function OrderStatusTemplatesPage() {
               {/* Sticky session */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">{t("orders.settingsStickySession", "╪¬╪½╪¿┘è╪¬ ╪º┘ä╪¼┘ä╪│╪⌐ (Sticky Session)")}</p>
-                  <p className="text-xs text-slate-500">┘å┘ü╪│ ╪º┘ä╪╣┘à┘è┘ä ┘è╪│╪¬╪«╪»┘à ┘å┘ü╪│ ╪º┘ä╪¼┘ä╪│╪⌐ ╪»╪º┘è┘à┘ï╪º</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{t("orders.settingsStickySession", "تثبيت الجلسة (Sticky Session)")}</p>
+                  <p className="text-xs text-slate-500">نفس العميل يستخدم نفس الجلسة دايمًا</p>
                 </div>
                 <Switch
                   checked={settings.stickySessionEnabled}
                   onCheckedChange={(val) => setSettings((p) => p ? { ...p, stickySessionEnabled: val } : p)}
-                  aria-label="╪¬╪½╪¿┘è╪¬ ╪º┘ä╪¼┘ä╪│╪⌐"
+                  aria-label="تثبيت الجلسة"
                 />
               </div>
 
@@ -1393,20 +1393,20 @@ export default function OrderStatusTemplatesPage() {
                   <div>
                     <p className="text-sm font-medium text-slate-900 dark:text-white">
                       <ClockIcon className="ml-1 inline h-4 w-4" />
-                      ╪│╪º╪╣╪º╪¬ ╪º┘ä┘ç╪»┘ê╪í
+                      ساعات الهدوء
                     </p>
-                    <p className="text-xs text-slate-500">┘à╪º ╪¬╪▒╪│┘ä╪┤ ╪▒╪│╪º┘è┘ä ┘ü┘è ╪º┘ä┘ê┘é╪¬ ╪»┘ç</p>
+                    <p className="text-xs text-slate-500">ما ترسلش رسايل في الوقت ده</p>
                   </div>
                   <Switch
                     checked={settings.quietHoursEnabled}
                     onCheckedChange={(val) => setSettings((p) => p ? { ...p, quietHoursEnabled: val } : p)}
-                    aria-label="╪│╪º╪╣╪º╪¬ ╪º┘ä┘ç╪»┘ê╪í"
+                    aria-label="ساعات الهدوء"
                   />
                 </div>
                 {settings.quietHoursEnabled && (
                   <div className="mt-2 flex items-center gap-3">
                     <div>
-                      <label className="text-xs text-slate-500">┘à┘å</label>
+                      <label className="text-xs text-slate-500">من</label>
                       <input
                         type="time"
                         value={settings.quietHoursStart}
@@ -1414,9 +1414,9 @@ export default function OrderStatusTemplatesPage() {
                         className="mt-1 block rounded-lg border border-slate-200 px-3 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       />
                     </div>
-                    <span className="mt-5 text-slate-400">ΓåÆ</span>
+                    <span className="mt-5 text-slate-400">→</span>
                     <div>
-                      <label className="text-xs text-slate-500">╪Ñ┘ä┘ë</label>
+                      <label className="text-xs text-slate-500">إلى</label>
                       <input
                         type="time"
                         value={settings.quietHoursEnd}
@@ -1434,7 +1434,7 @@ export default function OrderStatusTemplatesPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-900 dark:text-white">
                   <BoltIcon className="ml-1 inline h-4 w-4" />
-                  ╪¡╪» ╪º┘ä╪Ñ╪▒╪│╪º┘ä (╪▒╪│╪º┘ä╪⌐/╪»┘é┘è┘é╪⌐)
+                  حد الإرسال (رسالة/دقيقة)
                 </label>
                 <input
                   type="number"
@@ -1456,7 +1456,7 @@ export default function OrderStatusTemplatesPage() {
                 {settingsSaving && (
                   <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 )}
-                {t("orders.saveSettings", "╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬")}
+                {t("orders.saveSettings", "حفظ الإعدادات")}
               </button>
             </div>
           )}
@@ -1468,8 +1468,8 @@ export default function OrderStatusTemplatesPage() {
             <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
               <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
               <span>
-                {statusesWithoutTemplate.length} ╪¡╪º┘ä╪⌐ ╪¿╪»┘ê┘å ┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿
-                {activeTab !== "all" ? " ┘ü┘è ┘ç╪░╪º ╪º┘ä┘é╪│┘à" : ""}
+                {statusesWithoutTemplate.length} حالة بدون قالب واتساب
+                {activeTab !== "all" ? " في هذا القسم" : ""}
               </span>
             </div>
           )}
@@ -1479,8 +1479,8 @@ export default function OrderStatusTemplatesPage() {
             <div className="mb-4 flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/30 dark:bg-sky-900/20 dark:text-sky-300">
               <GlobeAltIcon className="mt-0.5 h-5 w-5 shrink-0" />
               <span>
-                ╪╣┘å╪»┘â {boundMetaCount} ┘é╪º┘ä╪¿ ┘à╪▒╪¿┘ê╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪» ΓÇö ┘ä┘â┘å ╪º┘ä╪¼┘ä╪│╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ┘ä┘ä╪Ñ╪▒╪│╪º┘ä ┘à╪┤ Meta Cloud API.
-                ╪º┘ä┘é┘ê╪º┘ä╪¿ ╪º┘ä┘à╪▒╪¿┘ê╪╖╪⌐ ╪¿┘à┘è╪¬╪º ┘ç╪¬╪¬╪¿╪╣╪¬ ┘ü╪╣┘ä┘è┘ï╪º ╪¿╪│ ┘ä┘ê ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪¿┘è╪¬┘à ┘à┘å ╪¼┘ä╪│╪⌐ Meta Cloud. ╪º╪«╪¬╪º╪▒ ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ┘à┘å ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬.
+                عندك {boundMetaCount} قالب مربوط بقالب ميتا معتمد — لكن الجلسة الأساسية للإرسال مش Meta Cloud API.
+                القوالب المربوطة بميتا هتتبعت فعليًا بس لو الإرسال بيتم من جلسة Meta Cloud. اختار جلسة ميتا من الإعدادات.
               </span>
             </div>
           )}
@@ -1492,7 +1492,7 @@ export default function OrderStatusTemplatesPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="╪º╪¿╪¡╪½ ╪¿╪º╪│┘à ╪º┘ä╪¡╪º┘ä╪⌐ ╪ú┘ê ╪º┘ä┘â┘ê╪»..."
+                placeholder="ابحث باسم الحالة أو الكود..."
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
               <svg
@@ -1513,11 +1513,11 @@ export default function OrderStatusTemplatesPage() {
 
             <div className="flex flex-wrap items-center gap-1">
               {([
-                { key: "all", labelKey: "orders.statusChips.all", label: "╪º┘ä┘â┘ä" },
-                { key: "custom", labelKey: "orders.statusChips.custom", label: "┘à╪«╪╡╪╡╪⌐" },
-                { key: "meta_bound", labelKey: "orders.statusChips.metaBound", label: "┘à╪▒╪¿┘ê╪╖╪⌐ ╪¿┘à┘è╪¬╪º" },
-                { key: "no_template", labelKey: "orders.statusChips.noTemplate", label: "╪¿╪»┘ê┘å ┘é╪º┘ä╪¿" },
-                { key: "disabled", labelKey: "orders.statusChips.disabled", label: "┘à╪¬┘ê┘é┘ü╪⌐" },
+                { key: "all", labelKey: "orders.statusChips.all", label: "الكل" },
+                { key: "custom", labelKey: "orders.statusChips.custom", label: "مخصصة" },
+                { key: "meta_bound", labelKey: "orders.statusChips.metaBound", label: "مربوطة بميتا" },
+                { key: "no_template", labelKey: "orders.statusChips.noTemplate", label: "بدون قالب" },
+                { key: "disabled", labelKey: "orders.statusChips.disabled", label: "متوقفة" },
               ] as const).map((chip) => (
                 <button
                   key={chip.key}
@@ -1538,9 +1538,9 @@ export default function OrderStatusTemplatesPage() {
               onChange={(e) => setSortMode(e.target.value as SortMode)}
               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
-              <option value="statusType">╪¡╪│╪¿ ╪º┘ä╪¬╪¿┘ê┘è╪¿</option>
-              <option value="alphabetical">╪ú╪¿╪¼╪»┘è</option>
-              <option value="recent">╪ó╪«╪▒ ╪¬╪╣╪»┘è┘ä</option>
+              <option value="statusType">حسب التبويب</option>
+              <option value="alphabetical">أبجدي</option>
+              <option value="recent">آخر تعديل</option>
             </select>
 
             <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -1550,7 +1550,7 @@ export default function OrderStatusTemplatesPage() {
                 onChange={(e) => setShowInternal(e.target.checked)}
                 className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               />
-              ╪╣╪▒╪╢ ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪»╪º╪«┘ä┘è╪⌐ ({internalCount})
+              عرض الحالات الداخلية ({internalCount})
             </label>
           </div>
 
@@ -1575,13 +1575,13 @@ export default function OrderStatusTemplatesPage() {
               <DocumentTextIcon className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">
                 {searchQuery || activeChip !== "all"
-                  ? "┘ä╪º ╪¬┘ê╪¼╪» ╪¡╪º┘ä╪º╪¬ ┘à╪╖╪º╪¿┘é╪⌐ ┘ä╪¿╪¡╪½┘â"
-                  : "┘ä╪º ╪¬┘ê╪¼╪» ╪¡╪º┘ä╪º╪¬ ╪¿╪╣╪»"}
+                  ? "لا توجد حالات مطابقة لبحثك"
+                  : "لا توجد حالات بعد"}
               </p>
               <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
                 {searchQuery || activeChip !== "all"
-                  ? "╪¼╪▒┘æ╪¿ ╪¬╪║┘è┘è╪▒ ┘â┘ä┘à╪º╪¬ ╪º┘ä╪¿╪¡╪½ ╪ú┘ê ╪Ñ┘ä╪║╪º╪í ╪º┘ä┘ü┘ä╪º╪¬╪▒ ┘ä╪▒╪ñ┘è╪⌐ ┘â┘ä ╪º┘ä╪¡╪º┘ä╪º╪¬."
-                  : "╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪«╪º╪╡╪⌐ ╪¿╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ç╪¬╪╕┘ç╪▒ ┘ç┘å╪º ╪ú┘ê┘ä ┘à╪º ╪¬╪¬╪╢╪º┘ü."}
+                  ? "جرّب تغيير كلمات البحث أو إلغاء الفلاتر لرؤية كل الحالات."
+                  : "الحالات الخاصة بالطلبات هتظهر هنا أول ما تتضاف."}
               </p>
               {(searchQuery || activeChip !== "all") && (
                 <button
@@ -1593,7 +1593,7 @@ export default function OrderStatusTemplatesPage() {
                   className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-indigo-700"
                 >
                   <XCircleIcon className="h-3.5 w-3.5" />
-                  ┘à╪│╪¡ ╪º┘ä┘ü┘ä╪º╪¬╪▒
+                  مسح الفلاتر
                 </button>
               )}
             </div>
@@ -1644,7 +1644,7 @@ export default function OrderStatusTemplatesPage() {
         <DialogContent
           data-testid="template-dialog"
           showCloseButton
-          closeLabel={t("orders.close", "╪Ñ╪║┘ä╪º┘é") as string}
+          closeLabel={t("orders.close", "إغلاق") as string}
           className="max-h-[90vh] max-w-2xl overflow-y-auto p-5 sm:max-w-2xl"
         >
           <DialogHeader>
@@ -1652,13 +1652,13 @@ export default function OrderStatusTemplatesPage() {
               {metaDialogTitle}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              ┘å┘à┘ê╪░╪¼ ╪Ñ┘å╪┤╪º╪í ┘ê╪¬╪╣╪»┘è┘ä ┘é╪º┘ä╪¿ ╪▒╪│╪º┘ä╪⌐ ┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪¡╪º┘ä╪⌐
+              نموذج إنشاء وتعديل قالب رسالة واتساب للحالة
             </DialogDescription>
           </DialogHeader>
           {dialogOpen && selectedStatus && dialogMode === "switch" && (
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">┘å┘ê╪╣ ╪º┘ä╪¡╪»╪½</label>
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
                 <input
                   type="text"
                   value={selectedStatus.code}
@@ -1669,19 +1669,19 @@ export default function OrderStatusTemplatesPage() {
 
               <div className="rounded-lg border border-blue-200 p-3 dark:border-blue-800/40">
                 <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
-                  ╪º╪«╪¬╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»
+                  اختر قالب ميتا المعتمد
                 </label>
                 <p className="-mt-0.5 mb-2 text-[10px] text-slate-400 dark:text-slate-500">
                   {isMetaBound
-                    ? `╪º┘ä╪▒╪¿╪╖ ╪º┘ä╪¡╪º┘ä┘è: ${originalMetaTemplateName} ΓÇö ╪º╪«╪¬╪º╪▒ ┘é╪º┘ä╪¿ ╪¬╪º┘å┘è ╪╣╪┤╪º┘å ╪¬╪║┘è┘æ╪▒┘ç (┘à╪┤ ╪¿┘è╪║┘è┘æ╪▒ ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐).`
-                    : "╪º╪«╪¬╪º╪▒ ┘é╪º┘ä╪¿ ┘à╪╣╪¬┘à╪» ┘ê╪▒╪¿╪╖┘ç ╪¿╪º┘ä╪¡╪º┘ä╪⌐ ΓÇö ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä┘ä┘è ┘ç╪¬╪¬╪¿╪╣╪¬ ┘ç┘è ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘å┘ü╪│┘ç."}
+                    ? `الربط الحالي: ${originalMetaTemplateName} — اختار قالب تاني عشان تغيّره (مش بيغيّر محتوى الرسالة).`
+                    : "اختار قالب معتمد وربطه بالحالة — الرسالة اللي هتتبعت هي نص قالب ميتا نفسه."}
                 </p>
                 {metaSessions.length > 0 ? (
                   <>
                     <select
                       value={selectedMetaSession}
                       onChange={(e) => { setSelectedMetaSession(e.target.value); }}
-                      aria-label="╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ┘ä┘ä╪▒╪¿╪╖"
+                      aria-label="جلسة ميتا للربط"
                       className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                     >
                       {metaSessions.map((s) => (
@@ -1691,35 +1691,35 @@ export default function OrderStatusTemplatesPage() {
                       ))}
                     </select>
                     {loadingMetaTemplates ? (
-                      <p className="text-xs text-slate-400">╪¼╪º╪▒ ╪¬╪¡┘à┘è┘ä ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º...</p>
+                      <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
                     ) : availableMetaTemplates.length > 0 ? (
                       <select
                         value={templateForm.metaTemplateName}
                         onChange={(e) => setTemplateForm((p) => ({ ...p, metaTemplateName: e.target.value }))}
-                        aria-label="┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»"
+                        aria-label="قالب ميتا المعتمد"
                         className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       >
-                        <option value="">╪º╪«╪¬╪▒ ┘é╪º┘ä╪¿...</option>
+                        <option value="">اختر قالب...</option>
                         {availableMetaTemplates.map((mt) => {
                           const boundEvents = mt.boundToEventTypes?.length
-                            ? mt.boundToEventTypes.join("╪î ")
+                            ? mt.boundToEventTypes.join("، ")
                             : (mt.boundToEventType || "");
                           return (
                             <option key={mt.name} value={mt.name}>
                               {mt.name} {mt.category ? `(${mt.category})` : ""}
-                              {boundEvents ? ` - ┘à╪▒╪¿┘ê╪╖ ╪¿┘Ç ${boundEvents}` : ""}
+                              {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
                             </option>
                           );
                         })}
                       </select>
                     ) : (
                       <p className="text-xs text-slate-400">
-                        ┘ä╪º ╪¬┘ê╪¼╪» ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪»╪⌐ ΓÇö ╪º╪╣┘à┘ä ┘é╪º┘ä╪¿ ╪¼╪»┘è╪» ┘à┘å ┬½╪º┘å╪┤╪º╪í ┘é╪º┘ä╪¿┬╗ ┘ü┘è ╪º┘ä┘â╪º╪▒╪¬.
+                        لا توجد قوالب ميتا معتمدة — اعمل قالب جديد من «انشاء قالب» في الكارت.
                       </p>
                     )}
                   </>
                 ) : (
-                  <p className="text-xs text-slate-400">┘ä╪º ╪¬┘ê╪¼╪» ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ┘à╪¬╪╡┘ä╪⌐ ┘ä╪▒╪¿╪╖ ╪º┘ä┘é┘ê╪º┘ä╪¿</p>
+                  <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>
                 )}
               </div>
 
@@ -1727,7 +1727,7 @@ export default function OrderStatusTemplatesPage() {
                 <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
                   <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-blue-500 dark:text-blue-400">
                     <GlobeAltIcon className="h-3 w-3" />
-                    ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä┘ä┘è ┘ç╪¬╪¬╪¿╪╣╪¬ ┘ä┘ä╪╣┘à┘è┘ä (┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º)
+                    الرسالة اللي هتتبعت للعميل (نص قالب ميتا)
                   </p>
                   <div
                     dir="auto"
@@ -1738,14 +1738,14 @@ export default function OrderStatusTemplatesPage() {
                     </p>
                   </div>
                   <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                    ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪¿╪¬╪¬┘é╪▒┘è ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘à┘å ╪º┘ä╪╖┘ä╪¿ ΓÇö ╪º┘ä┘å╪╡ ╪»┘ç ┘ç┘ê ╪º┘ä┘ä┘è ┘ç┘è┘ê╪╡┘ä┘â ┘ä┘ä╪╣┘à┘è┘ä ╪¿╪º┘ä╪╕╪¿╪╖.
+                    المتغيرات بتتقري تلقائياً من الطلب — النص ده هو اللي هيوصلك للعميل بالظبط.
                   </p>
                 </div>
               )}
 
               {metaVariableMismatch && (
                 <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-[11px] leading-relaxed text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300" role="alert">
-                  ΓÜá∩╕Å ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪¡╪¬╪º╪¼ <strong>{metaVariableMismatch.metaCount} ┘à╪¬╪║┘è╪▒╪º╪¬</strong>╪î ┘ä┘â┘å ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ ┘ü┘è┘ç <strong>{metaVariableMismatch.localCount} ┘ü┘é╪╖</strong>. ╪¿╪»┘æ┘ä ┘à┘å ┘ê╪╢╪╣ ┬½╪¬╪╣╪»┘è┘ä┬╗ ╪╣╪┤╪º┘å ╪¬╪╣╪»┘æ┘ä ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘ê╪¬╪╢┘è┘ü ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘å╪º┘é╪╡╪⌐.
+                  ⚠️ قالب ميتا محتاج <strong>{metaVariableMismatch.metaCount} متغيرات</strong>، لكن محتوى الرسالة الحالية فيه <strong>{metaVariableMismatch.localCount} فقط</strong>. بدّل من وضع «تعديل» عشان تعدّل الرسالة وتضيف المتغيرات الناقصة.
                 </p>
               )}
 
@@ -1754,7 +1754,7 @@ export default function OrderStatusTemplatesPage() {
                   onClick={() => setDialogOpen(false)}
                   className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
-                  ╪Ñ┘ä╪║╪º╪í
+                  إلغاء
                 </button>
                 <button
                   onClick={handleSave}
@@ -1762,7 +1762,7 @@ export default function OrderStatusTemplatesPage() {
                   className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                 >
                   {saving || bindingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
-                  {isMetaBound ? "╪¡┘ü╪╕ ╪º┘ä╪¬╪║┘è┘è╪▒" : "╪º╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿"}
+                  {isMetaBound ? "حفظ التغيير" : "اربط القالب"}
                 </button>
               </div>
             </div>
@@ -1771,7 +1771,7 @@ export default function OrderStatusTemplatesPage() {
           {dialogOpen && selectedStatus && dialogMode !== "switch" && (
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">┘å┘ê╪╣ ╪º┘ä╪¡╪»╪½</label>
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
                 <input
                   type="text"
                   value={selectedStatus.code}
@@ -1781,13 +1781,13 @@ export default function OrderStatusTemplatesPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">╪º╪│┘à ╪º┘ä┘é╪º┘ä╪¿</label>
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">اسم القالب</label>
                 <input
                   type="text"
                   value={templateForm.name}
                   onChange={(e) => setTemplateForm((p) => ({ ...p, name: e.target.value }))}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  placeholder="┘à╪½╪º┘ä: ┘é╪º┘ä╪¿ ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿"
+                  placeholder="مثال: قالب تأكيد الطلب"
                 />
               </div>
 
@@ -1799,21 +1799,21 @@ export default function OrderStatusTemplatesPage() {
               }`}>
                 {dialogSlot === "meta" ? (
                   isMetaBound && metaBindingChanged ? (
-                    <>≡ƒöä <strong>╪¬╪¿╪»┘è┘ä ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º</strong> ΓÇö ┘ç╪¬╪║┘è╪▒ ╪º┘ä╪▒╪¿╪╖ ┘à┘å <code>{originalMetaTemplateName}</code> ┘ä┘é╪º┘ä╪¿ ╪¼╪»┘è╪». ╪º╪╢╪║╪╖ ┬½╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º┬╗ ╪╣╪┤╪º┘å ╪º┘ä╪¬╪¿╪»┘è┘ä ┘è╪¬╪│╪¼┘æ┘ä.</>
+                    <>🔄 <strong>تبديل قالب ميتا</strong> — هتغير الربط من <code>{originalMetaTemplateName}</code> لقالب جديد. اضغط «حفظ وربط بقالب ميتا» عشان التبديل يتسجّل.</>
                   ) : isMetaBound ? (
-                    <>Γÿü∩╕Å <strong>┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪▒╪¿┘ê╪╖ ╪¡╪º┘ä┘è╪º┘ï</strong> ΓÇö ╪╣╪»┘æ┘ä ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘ç┘å╪º╪î ╪¿╪╣╪»┘è┘å ╪º╪╢╪║╪╖ ┬½╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»┬╗ ╪╣╪┤╪º┘å ┘à┘è╪¬╪º ╪¬╪▒╪º╪¼╪╣ ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä╪¼╪»┘è╪»╪⌐.</>
+                    <>☁️ <strong>قالب ميتا مربوط حالياً</strong> — عدّل محتوى الرسالة هنا، بعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة.</>
                   ) : (
-                    <>Γÿü∩╕Å <strong>╪º╪«╪¬╪º╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪»</strong> ΓÇö ╪º╪«╪¬╪º╪▒ ╪º┘ä┘é╪º┘ä╪¿ ┘à┘å ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘ê╪¿╪╣╪»┘è┘å ╪º╪╢╪║╪╖ ┬½╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º┬╗. ╪¿┘è╪┤╪¬╪║┘ä ╪¿╪│ ┘à╪╣ ╪¼┘ä╪│╪⌐ <code>Meta Cloud API</code>.</>
+                    <>☁️ <strong>اختار قالب ميتا معتمد</strong> — اختار القالب من القائمة وبعدين اضغط «حفظ وربط بقالب ميتا». بيشتغل بس مع جلسة <code>Meta Cloud API</code>.</>
                   )
                 ) : (
-                  <>≡ƒô▒ <strong>╪º┘ä┘å╪╡ ╪º┘ä┘ä┘è ╪¿╪¬┘â╪¬╪¿┘ç ┘ç┘å╪º ┘ç┘ê ╪º┘ä┘ä┘è ╪¿┘è╪¬╪º╪¿╪╣╪¬ ┘ä┘ä╪╣┘à┘è┘ä ┘à╪¿╪º╪┤╪▒╪⌐</strong> ╪╣╪¿╪▒ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ (Baileys). ┘ä┘ê ╪╣┘à┘ä╪¬ ┘â┘à╪º┘å ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘ä┘å┘ü╪│ ╪º┘ä╪¡╪º┘ä╪⌐╪î ┘à┘è╪¬╪º ┘ä┘ç ╪º┘ä╪ú╪│╪¿┘é┘è╪⌐ ┘ä┘à╪º ╪º┘ä╪¼┘ä╪│╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ╪¬┘â┘ê┘å Meta Cloud.</>
+                  <>📱 <strong>النص اللي بتكتبه هنا هو اللي بيتابعت للعميل مباشرة</strong> عبر الواتساب (Baileys). لو عملت كمان قالب ميتا لنفس الحالة، ميتا له الأسبقية لما الجلسة الأساسية تكون Meta Cloud.</>
                 )}
               </div>
 
               {dialogSlot === "meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
-                  ΓÜá∩╕Å ╪º┘ä╪¼┘ä╪│╪⌐ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "╪║┘è╪▒ ┘à┘è╪¬╪º"} ΓÇö
-                  ╪º┘ä┘é┘ê╪º┘ä╪¿ ╪º┘ä┘à╪▒╪¿┘ê╪╖╪⌐ ╪¿┘à┘è╪¬╪º ┘à╪┤ ┘ç╪¬╪¬╪¿╪╣╪¬ ╪Ñ┘ä╪º ┘ä┘ê ╪║┘è┘æ╪▒╪¬ ╪º┘ä╪¼┘ä╪│╪⌐ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ┘à┘å ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬.
+                  ⚠️ الجلسة الافتراضية الحالية {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "غير ميتا"} —
+                  القوالب المربوطة بميتا مش هتتبعت إلا لو غيّرت الجلسة الافتراضية من الإعدادات.
                 </div>
               )}
 
@@ -1821,12 +1821,12 @@ export default function OrderStatusTemplatesPage() {
               {dialogSlot === "meta" && (
                 <div className="space-y-3 rounded-lg border border-blue-200 p-3 dark:border-blue-800/40">
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    ╪º╪«╪¬╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»
+                    اختر قالب ميتا المعتمد
                   </label>
                   <p className="-mt-2 text-[10px] text-slate-400 dark:text-slate-500">
                     {isMetaBound
-                      ? "╪º╪«╪¬╪º╪▒ ┘é╪º┘ä╪¿ ┘à╪«╪¬┘ä┘ü ╪╣╪┤╪º┘å ╪¬╪║┘è┘æ╪▒ ╪º┘ä╪▒╪¿╪╖ ΓÇö ╪º┘ä╪¬╪║┘è┘è╪▒ ┘è╪¬╪│╪¼┘æ┘ä ┘ä┘à╪º ╪¬╪╢╪║╪╖ ╪¡┘ü╪╕."
-                      : "╪º╪«╪¬╪º╪▒ ╪º┘ä┘é╪º┘ä╪¿ ┘ê╪¿╪╣╪»┘è┘å ╪º╪╢╪║╪╖ ┬½╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º┬╗ ╪¬╪¡╪¬ ΓÇö ╪º╪«╪¬┘è╪º╪▒┘â ┘à╪┤ ╪¿┘è╪¬╪¡┘ü╪╕ ┘ä┘ê╪¡╪»┘ç."}
+                      ? "اختار قالب مختلف عشان تغيّر الربط — التغيير يتسجّل لما تضغط حفظ."
+                      : "اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده."}
                   </p>
                   {metaSessions.length > 0 ? (
                     <>
@@ -1841,12 +1841,12 @@ export default function OrderStatusTemplatesPage() {
                         ) : (
                           <PlusIcon className="h-3.5 w-3.5" />
                         )}
-                        ╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¼╪»┘è╪»
+                        إنشاء قالب ميتا جديد
                       </button>
                       <select
                         value={selectedMetaSession}
                         onChange={(e) => { setSelectedMetaSession(e.target.value); }}
-                        aria-label="╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ┘ä┘ä╪▒╪¿╪╖"
+                        aria-label="جلسة ميتا للربط"
                         className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       >
                         {metaSessions.map((s) => (
@@ -1856,24 +1856,24 @@ export default function OrderStatusTemplatesPage() {
                         ))}
                       </select>
                       {loadingMetaTemplates ? (
-                        <p className="text-xs text-slate-400">╪¼╪º╪▒ ╪¬╪¡┘à┘è┘ä ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º...</p>
+                        <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
                       ) : availableMetaTemplates.length > 0 ? (
                         <>
                           <select
                             value={templateForm.metaTemplateName}
                             onChange={(e) => handleMetaTemplateSelect(e.target.value)}
-                            aria-label="┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪»"
+                            aria-label="قالب ميتا المعتمد"
                             className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           >
-                            <option value="">╪º╪«╪¬╪▒ ┘é╪º┘ä╪¿...</option>
+                            <option value="">اختر قالب...</option>
                             {availableMetaTemplates.map((mt) => {
                               const boundEvents = mt.boundToEventTypes?.length
-                                ? mt.boundToEventTypes.join("╪î ")
+                                ? mt.boundToEventTypes.join("، ")
                                 : (mt.boundToEventType || "");
                               return (
                                 <option key={mt.name} value={mt.name}>
                                   {mt.name} {mt.category ? `(${mt.category})` : ""}
-                                  {boundEvents ? ` - ┘à╪▒╪¿┘ê╪╖ ╪¿┘Ç ${boundEvents}` : ""}
+                                  {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
                                 </option>
                               );
                             })}
@@ -1883,7 +1883,7 @@ export default function OrderStatusTemplatesPage() {
                             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
                               <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-blue-500 dark:text-blue-400">
                                 <GlobeAltIcon className="h-3 w-3" />
-                                ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä┘ä┘è ┘ç╪¬╪¬╪¿╪╣╪¬ ┘ä┘ä╪╣┘à┘è┘ä (┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º)
+                                الرسالة اللي هتتبعت للعميل (نص قالب ميتا)
                               </p>
                               <div
                                 dir="auto"
@@ -1894,7 +1894,7 @@ export default function OrderStatusTemplatesPage() {
                                 </p>
                               </div>
                               <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                                ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪¿╪¬╪¬┘é╪▒┘è ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ┘à┘å ╪º┘ä╪╖┘ä╪¿ ΓÇö ╪º┘ä┘å╪╡ ╪»┘ç ┘ç┘ê ╪º┘ä┘ä┘è ┘ç┘è┘ê╪╡┘ä┘â ┘ä┘ä╪╣┘à┘è┘ä ╪¿╪º┘ä╪╕╪¿╪╖.
+                                المتغيرات بتتقري تلقائيًا من الطلب — النص ده هو اللي هيوصلك للعميل بالظبط.
                               </p>
                             </div>
                           )}
@@ -1906,42 +1906,42 @@ export default function OrderStatusTemplatesPage() {
                             if (!selectedMt || otherBoundEvents.length === 0) return null;
                             return (
                               <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
-                                Γä╣∩╕Å ╪º┘ä┘é╪º┘ä╪¿ ╪»┘ç ┘à╪▒╪¿┘ê╪╖ ╪¡╪º┘ä┘è╪º┘ï ╪¿┘â┘à╪º┘å: {otherBoundEvents.join("╪î ")} ΓÇö ┘å┘ü╪│ ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘ç╪¬╪¬╪¿╪╣╪¬ ┘ä┘è┘ç┘à. ┘ä┘ê ╪╣╪º┘è╪▓ ╪▒╪│╪º┘ä╪⌐ ┘à╪«╪¬┘ä┘ü╪⌐ ┘ä╪¡╪º┘ä╪⌐╪î ╪º╪╣┘à┘ä ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¼╪»┘è╪».
+                                ℹ️ القالب ده مربوط حالياً بكمان: {otherBoundEvents.join("، ")} — نفس الرسالة هتتبعت ليهم. لو عايز رسالة مختلفة لحالة، اعمل قالب ميتا جديد.
                               </div>
                             );
                           })()}
 
-                          {/* Variable mapping {{1}} ΓåÆ customerName ΓÇö ╪¿╪╡╪▒┘è ┘ê┘ê╪º╪╢╪¡ */}
+                          {/* Variable mapping {{1}} → customerName — بصري وواضح */}
                           {selectedMetaBody && (() => {
                             const localVars = extractLocalVariableOrder(templateForm.content);
                             const metaNums = [...selectedMetaBody.matchAll(/\{\{(\d+)\}\}/g)].map((m) => m[1]);
                             if (localVars.length === 0 || metaNums.length === 0) return null;
                             const pairs = metaNums.map((n, i) => ({
                               meta: `{{${n}}}`,
-                              local: localVars[i] ? `{{${localVars[i]}}}` : "ΓÇö",
-                              desc: localVars[i] ? (VARIABLE_DESCRIPTIONS[localVars[i]] || "") : "╪║┘è╪▒ ┘à╪¬┘ê┘ü╪▒",
+                              local: localVars[i] ? `{{${localVars[i]}}}` : "—",
+                              desc: localVars[i] ? (VARIABLE_DESCRIPTIONS[localVars[i]] || "") : "غير متوفر",
                               matched: !!localVars[i],
                             }));
                             return (
                               <div className="mt-2 rounded-lg border border-slate-200 p-2 dark:border-slate-700">
                                 <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                                  ╪¬╪╖╪º╪¿┘é ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬
+                                  تطابق المتغيرات
                                 </p>
                                 <div className="space-y-1">
                                   {pairs.map((pr) => (
                                     <div key={pr.meta} className="flex items-center gap-2 text-[11px]">
                                       <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{pr.meta}</span>
-                                      <span className="text-slate-400">ΓåÉ</span>
+                                      <span className="text-slate-400">←</span>
                                       <span className={`rounded px-1.5 py-0.5 font-mono ${pr.matched ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"}`}>
                                         {pr.local}
                                       </span>
                                       {pr.desc && <span className="text-slate-500 dark:text-slate-400">{pr.desc}</span>}
-                                      {!pr.matched && <span className="text-red-500">ΓÜá∩╕Å ┘à╪¬╪║┘è╪▒ ┘å╪º┘é╪╡ ┘ü┘è ╪º┘ä┘å╪╡ ╪º┘ä┘à╪¡┘ä┘è</span>}
+                                      {!pr.matched && <span className="text-red-500">⚠️ متغير ناقص في النص المحلي</span>}
                                     </div>
                                   ))}
                                 </div>
                                 <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
-                                  ┘à┘è╪¬╪º ╪¿╪¬╪▒┘é┘æ┘à ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪¿╪¬╪▒╪¬┘è╪¿ ╪╕┘ç┘ê╪▒┘ç╪º╪¢ ╪¬╪ú┘â╪» ╪Ñ┘å ┘â┘ä ╪▒┘é┘à ┘à┘è╪¬╪º ┘ä┘è┘ç ┘à╪¬╪║┘è╪▒ ┘à╪¡┘ä┘è ┘à╪╖╪º╪¿┘é.
+                                  ميتا بترقّم المتغيرات بترتيب ظهورها؛ تأكد إن كل رقم ميتا ليه متغير محلي مطابق.
                                 </p>
                               </div>
                             );
@@ -1949,29 +1949,29 @@ export default function OrderStatusTemplatesPage() {
 
                           {selectedTemplate?.metaTemplateName && !metaBindingChanged && (
                             <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
-                              ╪º┘ä╪▒╪¿╪╖ ╪º┘ä╪¡╪º┘ä┘è: {selectedTemplate.metaTemplateName}
+                              الربط الحالي: {selectedTemplate.metaTemplateName}
                               {selectedTemplate.metaTemplateStatus ? ` (${selectedTemplate.metaTemplateStatus})` : ""}
                             </div>
                           )}
                           {metaBindingChanged && (
                             <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
-                              ╪º┘ä╪¬╪¿╪»┘è┘ä: ┘à┘å ┬½{originalMetaTemplateName}┬╗ ╪Ñ┘ä┘ë ┬½{templateForm.metaTemplateName}┬╗ ΓÇö ╪º╪╢╪║╪╖ ┬½╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º┬╗ ┘ä┘ä╪¬╪ú┘â┘è╪».
+                              التبديل: من «{originalMetaTemplateName}» إلى «{templateForm.metaTemplateName}» — اضغط «حفظ وربط بقالب ميتا» للتأكيد.
                             </div>
                           )}
                           {metaAutoFilled && (
                             <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300">
-                              Γ£à ╪º╪¬╪¿┘å┘ë ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à╪¡┘ä┘è ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘à┘å ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪«╪¬╪º╪▒ ΓÇö ╪▒╪º╪¼╪╣ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ┘ü┘ê┘é ┘ê╪╣╪»┘æ┘ä ┘ä┘ê ┘à╪¡╪¬╪º╪¼.
+                              ✅ اتبنى المحتوى المحلي تلقائياً من قالب ميتا المختار — راجع المتغيرات فوق وعدّل لو محتاج.
                             </div>
                           )}
                         </>
                       ) : (
                         <p className="text-xs text-slate-400">
-                          ┘ä╪º ╪¬┘ê╪¼╪» ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪»╪⌐ ΓÇö ╪º╪╢╪║╪╖ ┬½╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¼╪»┘è╪»┬╗ ╪╣╪┤╪º┘å ╪¬┘å╪┤╪▒ ┘é╪º┘ä╪¿ ╪¼╪»┘è╪» ╪╣┘ä┘ë ┘à┘è╪¬╪º ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐.
+                          لا توجد قوالب ميتا معتمدة — اضغط «إنشاء قالب ميتا جديد» عشان تنشر قالب جديد على ميتا للمراجعة.
                         </p>
                       )}
                     </>
                   ) : (
-                    <p className="text-xs text-slate-400">┘ä╪º ╪¬┘ê╪¼╪» ╪¼┘ä╪│╪⌐ ┘à┘è╪¬╪º ┘à╪¬╪╡┘ä╪⌐ ┘ä╪▒╪¿╪╖ ╪º┘ä┘é┘ê╪º┘ä╪¿</p>
+                    <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>
                   )}
                 </div>
               )}
@@ -1981,7 +1981,7 @@ export default function OrderStatusTemplatesPage() {
                 {dialogSlot === "meta" && (
                   <div className="mb-3 space-y-1">
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                      ╪╡┘ê╪▒╪⌐ ╪º┘ä╪▒╪ú╪│ (HEADER) ΓÇö ╪º╪«╪¬┘è╪º╪▒┘è
+                      صورة الرأس (HEADER) — اختياري
                     </label>
                     <div className="flex items-center gap-2">
                       {templateForm.headerMediaHandle ? (
@@ -1995,14 +1995,14 @@ export default function OrderStatusTemplatesPage() {
                             onClick={() => setTemplateForm((p) => ({ ...p, headerMediaHandle: "", headerMediaName: "" }))}
                             className="shrink-0 text-[11px] font-medium text-red-500 hover:text-red-600"
                           >
-                            ╪Ñ╪▓╪º┘ä╪⌐
+                            إزالة
                           </button>
                         </div>
                       ) : (
                         <div className="flex h-10 flex-1 items-center gap-2">
                           <label className="flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
                             <PhotoIcon className="size-4" />
-                            {headerUploading ? "╪¼╪º╪▒┘è ╪º┘ä╪▒┘ü╪╣ ╪Ñ┘ä┘ë ┘à┘è╪¬╪º..." : "╪º╪«╪¬╪▒ ╪╡┘ê╪▒╪⌐ ┘ä┘ä╪▒╪ú╪│"}
+                            {headerUploading ? "جاري الرفع إلى ميتا..." : "اختر صورة للرأس"}
                             <input
                               type="file"
                               accept="image/*"
@@ -2019,7 +2019,7 @@ export default function OrderStatusTemplatesPage() {
                       )}
                     </div>
                     <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      ╪╣┘å╪» ╪º╪«╪¬┘è╪º╪▒ ╪╡┘ê╪▒╪⌐╪î ┘è┘Å╪▒┘ü╪╣ ╪º┘ä┘é╪º┘ä╪¿ ╪╣┘ä┘ë ┘à┘è╪¬╪º ╪¿┘ç┘è╪»╪▒ IMAGE ╪¿╪╡┘ê╪▒╪⌐ ╪º┘ä╪▒╪ú╪│ (╪¬┘Å╪│╪¬╪«╪»┘à ┘â╪╣┘è┘æ┘å╪⌐ ┘ä┘ä┘à┘ê╪º┘ü┘é╪⌐).
+                      عند اختيار صورة، يُرفع القالب على ميتا بهيدر IMAGE بصورة الرأس (تُستخدم كعيّنة للموافقة).
                     </p>
                     <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
                       <input
@@ -2029,11 +2029,11 @@ export default function OrderStatusTemplatesPage() {
                         className="size-4 accent-indigo-600"
                       />
                       <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
-                        ╪º╪│╪¬╪«╪»┘à ╪╡┘ê╪▒╪⌐ ╪º┘ä┘à┘å╪¬╪¼ ┘à┘å ╪º┘ä╪╖┘ä╪¿ ┘ê┘é╪¬ ╪º┘ä╪Ñ╪▒╪│╪º┘ä
+                        استخدم صورة المنتج من الطلب وقت الإرسال
                       </span>
                     </label>
                     <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      ┘ä┘ê ┘à┘ü╪╣┘æ┘ä╪î ┘â┘ä ╪▒╪│╪º┘ä╪⌐ ┘ä┘ä╪╣┘à┘è┘ä ┘ç╪¬╪¬╪¿╪╣╪¬ ╪¿┘è┘ç╪º ╪╡┘ê╪▒╪⌐ ╪ú┘ê┘ä ┘à┘å╪¬╪¼ ╪╖┘ä╪¿┘ç (┘à╪¬╪║┘è╪▒╪⌐ ┘ä┘â┘ä ╪╖┘ä╪¿). ┘ä┘ê ╪¿╪»┘ê┘å ╪¬╪¡╪»┘è╪» ╪╡┘ê╪▒╪⌐ ╪½╪º╪¿╪¬╪⌐╪î ╪º┘ä┘é╪º┘ä╪¿ ┘ç┘è╪¡╪¬╪º╪¼ ╪╡┘ê╪▒╪⌐ ╪╣┘è┘æ┘å╪⌐ ┘ä┘ä┘à┘ê╪º┘ü┘é╪⌐.
+                      لو مفعّل، كل رسالة للعميل هتتبعت بيها صورة أول منتج طلبه (متغيرة لكل طلب). لو بدون تحديد صورة ثابتة، القالب هيحتاج صورة عيّنة للموافقة.
                     </p>
                   </div>
                 )}
@@ -2046,26 +2046,26 @@ export default function OrderStatusTemplatesPage() {
                     >
                       <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                         <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showLocalRef ? "rotate-180" : ""}`} />
-                        {selectedTemplate?.metaTemplateName ? "┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐" : "╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¡┘ä┘è (┘ä╪¬╪╖╪º╪¿┘é ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬)"}
+                        {selectedTemplate?.metaTemplateName ? "محتوى الرسالة" : "المرجع المحلي (لتطابق المتغيرات)"}
                       </span>
                       <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
-                        {showLocalRef ? "╪Ñ╪«┘ü╪º╪í" : "╪╣╪▒╪╢"}
+                        {showLocalRef ? "إخفاء" : "عرض"}
                       </span>
                     </button>
                     {selectedTemplate?.metaTemplateName ? (
                       <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                        ╪º┘ä┘å╪╡ ╪»┘ç ┘ç┘ê ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä┘ä┘è ┘ç╪¬╪¬╪¿╪╣╪¬ ┘ä┘ä╪╣┘à┘è┘ä ╪╣╪¿╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ΓÇö ╪╣╪»┘æ┘ä ╪╣┘ä┘è┘ç ┘ê╪¿╪╣╪»┘è┘å ╪º╪╢╪║╪╖ ┬½╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»┬╗ ╪╣╪┤╪º┘å ┘à┘è╪¬╪º ╪¬╪▒╪º╪¼╪╣ ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä╪¼╪»┘è╪»╪⌐.
+                        النص ده هو محتوى الرسالة اللي هتتبعت للعميل عبر قالب ميتا — عدّل عليه وبعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة.
                       </p>
                     ) : (
                       <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                        ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è ╪»┘ç ┘à╪┤ ╪º┘ä┘ä┘è ┘ç┘è╪¬╪¬╪¿╪╣╪¬ ΓÇö ╪¿┘è╪│╪¬╪«╪»┘à ╪¿╪│ ╪╣╪┤╪º┘å ┘å╪▒╪¿╪╖ ┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä╪╖┘ä╪¿ ╪¿╪ú╪▒┘é╪º┘à ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ({"{{1}}"} ΓåÉ {"{{customerName}}"}) .
+                        القالب المحلي ده مش اللي هيتتبعت — بيستخدم بس عشان نربط متغيرات الطلب بأرقام قالب ميتا ({"{{1}}"} ← {"{{customerName}}"}) .
                       </p>
                     )}
                   </div>
                 ) : (
                   <div className="mb-1 flex items-center justify-between">
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                      ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ <span className="text-red-500">*</span>
+                      محتوى الرسالة <span className="text-red-500">*</span>
                     </label>
                     <span
                       className={`text-[10px] font-medium tabular-nums ${
@@ -2089,19 +2089,19 @@ export default function OrderStatusTemplatesPage() {
                     value={templateForm.content}
                     onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value.slice(0, META_BODY_CHAR_LIMIT + 200) }))}
                     rows={7}
-                    aria-label={dialogSlot === "meta" ? "┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è" : "┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐"}
+                    aria-label={dialogSlot === "meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"}
                     className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
                       templateForm.content.length > META_BODY_CHAR_LIMIT
                         ? "border-red-400 dark:border-red-500"
                         : "border-slate-200"
                     }`}
-                    placeholder="╪º┘â╪¬╪¿ ╪▒╪│╪º┘ä╪¬┘â ┘ç┘å╪º..."
+                    placeholder="اكتب رسالتك هنا..."
                   />
 
                   {/* Live WhatsApp-style preview */}
                   <div className="rounded-lg border border-slate-200 bg-[#e5ddd5] p-3 dark:border-slate-700 dark:bg-slate-900/60">
                     <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      ┘à╪╣╪º┘è┘å╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐
+                      معاينة مباشرة
                     </p>
                     <WhatsAppBubblePreview
                       content={templateForm.content}
@@ -2113,7 +2113,7 @@ export default function OrderStatusTemplatesPage() {
 
                 {templateForm.content.length > META_BODY_CHAR_LIMIT && (
                   <p className="mt-1 text-[11px] text-red-600 dark:text-red-400" role="alert">
-                    ΓÜá∩╕Å ╪º┘ä┘å╪╡ ╪ú╪╖┘ê┘ä ┘à┘å ╪¡╪» ┘à┘è╪¬╪º ({META_BODY_CHAR_LIMIT} ╪¡╪▒┘ü) ΓÇö ╪º┘ä┘é╪º┘ä╪¿ ┘ç┘è╪¬╪▒┘ü╪╢ ╪╣┘å╪» ╪º┘ä┘å╪┤╪▒ ╪╣┘ä┘ë Meta Cloud API.
+                    ⚠️ النص أطول من حد ميتا ({META_BODY_CHAR_LIMIT} حرف) — القالب هيترفض عند النشر على Meta Cloud API.
                   </p>
                 )}
 
@@ -2123,7 +2123,7 @@ export default function OrderStatusTemplatesPage() {
                   className="mt-1 flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
                 >
                   <ChevronDownIcon className={`h-3 w-3 transition ${showVariables ? "rotate-180" : ""}`} />
-                  {showVariables ? "╪Ñ╪«┘ü╪º╪í ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬" : "╪╣╪▒╪╢ ┘â┘ä ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐"}
+                  {showVariables ? "إخفاء المتغيرات" : "عرض كل المتغيرات المتاحة"}
                 </button>
 
                 {showVariables && (
@@ -2131,8 +2131,8 @@ export default function OrderStatusTemplatesPage() {
                     <table className="w-full text-[11px]">
                       <thead>
                         <tr className="bg-slate-50 text-right dark:bg-slate-800">
-                          <th className="px-2 py-1 font-medium text-slate-500">╪º┘ä┘à╪¬╪║┘è╪▒</th>
-                          <th className="px-2 py-1 font-medium text-slate-500">╪º┘ä┘ê╪╡┘ü</th>
+                          <th className="px-2 py-1 font-medium text-slate-500">المتغير</th>
+                          <th className="px-2 py-1 font-medium text-slate-500">الوصف</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -2151,7 +2151,7 @@ export default function OrderStatusTemplatesPage() {
 
                 {dialogSlot === "meta" && showLocalRef && (
                   <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
-                    ┘ä┘ê ╪║┘è┘æ╪▒╪¬ ╪º┘ä┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¡┘ä┘è ┘ê╪╢╪║╪╖╪¬ "╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º" ┘è╪¬╪│╪¼┘æ┘ä ΓÇö ╪ú┘ê "╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»" ╪╣╪┤╪º┘å ┘à┘è╪¬╪º ╪¬╪▒╪º╪¼╪╣┘ç.
+                    لو غيّرت المرجع المحلي وضغطت "حفظ وربط بقالب ميتا" يتسجّل — أو "إرسال للمراجعة من جديد" عشان ميتا تراجعه.
                   </p>
                 )}
                 </>
@@ -2161,23 +2161,23 @@ export default function OrderStatusTemplatesPage() {
               {dialogSlot === "meta" && templateForm.metaTemplateName ? (
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Γä╣∩╕Å ╪º┘ä╪ú╪▓╪▒╪º╪▒ ╪º┘ä╪¬┘ü╪º╪╣┘ä┘è╪⌐ ╪¿╪¬╪¬╪º╪«╪░ ┘à┘å ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪¬┘à╪» ΓÇö ╪º┘ä╪ú╪▓╪▒╪º╪▒ ╪º┘ä┘ä┘è ┘ç┘å╪º ╪¿╪¬╪¬╪│╪¬╪«╪»┘à ╪¿╪│ ┘ü┘è ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘à╪¡┘ä┘è╪⌐.
+                    ℹ️ الأزرار التفاعلية بتتاخذ من قالب ميتا المعتمد — الأزرار اللي هنا بتتستخدم بس في المعاينة المحلية.
                   </p>
                 </div>
               ) : (
               <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                    ╪º┘ä╪ú╪▓╪▒╪º╪▒ ╪º┘ä╪¬┘ü╪º╪╣┘ä┘è╪⌐
+                    الأزرار التفاعلية
                   </label>
                   <Switch
                     checked={templateForm.hasButtons}
                     onCheckedChange={(val) => setTemplateForm((p) => ({ ...p, hasButtons: val }))}
-                    aria-label="╪º┘ä╪ú╪▓╪▒╪º╪▒ ╪º┘ä╪¬┘ü╪º╪╣┘ä┘è╪⌐"
+                    aria-label="الأزرار التفاعلية"
                   />
                 </div>
                 <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  ┘ä┘à╪º ╪º┘ä╪╣┘à┘è┘ä ┘è╪╢╪║╪╖ ╪╣┘ä┘ë ╪º┘ä╪▓╪▒╪î ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ┘ç╪¬╪¬╪║┘è╪▒ ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ┘ä┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪¡╪»╪»╪⌐ ╪ú╪»┘å╪º┘ç
+                  لما العميل يضغط على الزر، حالة الطلب هتتغير تلقائيًا للحالة المحددة أدناه
                 </p>
 
                 {templateForm.hasButtons && (
@@ -2188,17 +2188,17 @@ export default function OrderStatusTemplatesPage() {
                         className="flex items-end gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-2 dark:border-slate-700 dark:bg-slate-800/40"
                       >
                         <div className="flex-1">
-                          <label className="mb-0.5 block text-[10px] font-medium text-slate-400 dark:text-slate-500">┘å╪╡ ╪º┘ä╪▓╪▒</label>
+                          <label className="mb-0.5 block text-[10px] font-medium text-slate-400 dark:text-slate-500">نص الزر</label>
                           <input
                             type="text"
                             value={btn.text}
                             onChange={(e) => updateButton(idx, { text: e.target.value })}
                             className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                            placeholder="┘à╪½╪º┘ä: ╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒"
+                            placeholder="مثال: تأكيد الأوردر"
                           />
                         </div>
                         <div className="flex-1">
-                          <label className="mb-0.5 block text-[10px] font-medium text-slate-400 dark:text-slate-500">╪╣┘å╪» ╪º┘ä╪╢╪║╪╖</label>
+                          <label className="mb-0.5 block text-[10px] font-medium text-slate-400 dark:text-slate-500">عند الضغط</label>
                           <select
                             value={btn.action}
                             onChange={(e) => updateButton(idx, { action: e.target.value })}
@@ -2214,7 +2214,7 @@ export default function OrderStatusTemplatesPage() {
                         <button
                           type="button"
                           onClick={() => removeButton(idx)}
-                          title="╪¡╪░┘ü ╪º┘ä╪▓╪▒"
+                          title="حذف الزر"
                           className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                         >
                           <XCircleIcon className="h-4 w-4" />
@@ -2229,10 +2229,10 @@ export default function OrderStatusTemplatesPage() {
                         className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
                       >
                         <PlusIcon className="h-3.5 w-3.5" />
-                        ╪Ñ╪╢╪º┘ü╪⌐ ╪▓╪▒
+                        إضافة زر
                       </button>
                     )}
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{t("orders.buttonsMaxHint", "╪º┘ä╪¡╪» ╪º┘ä╪ú┘é╪╡┘ë 3 ╪ú╪▓╪▒╪º╪▒ ┘ä┘â┘ä ╪▒╪│╪º┘ä╪⌐")}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{t("orders.buttonsMaxHint", "الحد الأقصى 3 أزرار لكل رسالة")}</p>
                   </div>
                 )}
               </div>
@@ -2247,7 +2247,7 @@ export default function OrderStatusTemplatesPage() {
                   className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
                 <label htmlFor="template-active" className="text-sm text-slate-700 dark:text-slate-300">
-                  ┘é╪º┘ä╪¿ ┘å╪┤╪╖
+                  قالب نشط
                 </label>
               </div>
 
@@ -2256,24 +2256,24 @@ export default function OrderStatusTemplatesPage() {
                 onClick={() => setDialogOpen(false)}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                ╪Ñ┘ä╪║╪º╪í
+                إلغاء
               </button>
               {dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged && (
                 <button
                   onClick={handleResubmitMeta}
                   disabled={saving || resubmittingMeta || !!bindingId}
-                  title="╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪╣┘ä┘ë ┘à┘è╪¬╪º ┘ê┘è╪▒╪¼╪╣ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ╪¬╪º┘å┘è"
+                  title="تحديث المحتوى على ميتا ويرجع للمراجعة تاني"
                   className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40"
                 >
                   {resubmittingMeta ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <ArrowPathIcon className="h-4 w-4" />}
-                  ╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»
+                  إرسال للمراجعة من جديد
                 </button>
               )}
               {!(dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged) && (
               <button
                 onClick={handleSave}
                 disabled={saving || resubmittingMeta || !!bindingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim())}
-                title={metaVariableMismatch ? `╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è ┘à╪¡╪¬╪º╪¼ ${metaVariableMismatch.missing} ┘à╪¬╪║┘è╪▒╪º╪¬ ╪Ñ╪╢╪º┘ü┘è╪⌐` : undefined}
+                title={metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
                   dialogSlot === "meta" && metaBindingChanged
                     ? "bg-blue-600 hover:bg-blue-700"
@@ -2283,31 +2283,31 @@ export default function OrderStatusTemplatesPage() {
                 {saving || bindingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
                 {dialogSlot === "meta"
                   ? metaBindingChanged
-                    ? "╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º"
+                    ? "حفظ وربط بقالب ميتا"
                     : isMetaBound
-                      ? "╪¡┘ü╪╕"
+                      ? "حفظ"
                       : templateForm.metaTemplateName
-                        ? "╪¡┘ü╪╕ ┘ê╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º"
-                        : "╪¡┘ü╪╕ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º"
-                  : "╪¡┘ü╪╕"}
+                        ? "حفظ وربط بقالب ميتا"
+                        : "حفظ قالب ميتا"
+                  : "حفظ"}
               </button>
               )}
             </div>
 
             {metaVariableMismatch && (
               <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2 text-[11px] leading-relaxed text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300" role="alert">
-                ΓÜá∩╕Å ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪¡╪¬╪º╪¼ <strong>{metaVariableMismatch.metaCount} ┘à╪¬╪║┘è╪▒╪º╪¬</strong>╪î ┘ä┘â┘å ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à╪¡┘ä┘è ┘ü┘è┘ç <strong>{metaVariableMismatch.localCount} ┘ü┘é╪╖</strong> ΓÇö ╪ú╪╢┘ü <strong>{metaVariableMismatch.missing}</strong> ┘à╪¬╪║┘è╪▒╪º╪¬ ({ORDER_VARIABLES.slice(0, 4).map((v) => v.var).join("╪î ")}) ╪╣╪┤╪º┘å ╪¬┘é╪»╪▒ ╪¬╪¡┘ü╪╕ ┘ê╪¬╪▒╪¿╪╖.
+                ⚠️ قالب ميتا محتاج <strong>{metaVariableMismatch.metaCount} متغيرات</strong>، لكن المحتوى المحلي فيه <strong>{metaVariableMismatch.localCount} فقط</strong> — أضف <strong>{metaVariableMismatch.missing}</strong> متغيرات ({ORDER_VARIABLES.slice(0, 4).map((v) => v.var).join("، ")}) عشان تقدر تحفظ وتربط.
               </p>
             )}
 
             {dialogSlot === "meta" && !metaVariableMismatch && (
               <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
                 {metaBindingChanged ? (
-                  <>┘ç╪¬╪║┘è╪▒ ╪º┘ä╪▒╪¿╪╖ ┘à┘å ┬½{originalMetaTemplateName}┬╗ ┘ä┘é╪º┘ä╪¿ ╪¼╪»┘è╪» ΓÇö ╪º┘ä╪¬╪║┘è┘è╪▒ ┘è╪¬╪│╪¼┘æ┘ä ┘ä┘à╪º ╪¬╪╢╪║╪╖ ╪¡┘ü╪╕.</>
+                  <>هتغير الربط من «{originalMetaTemplateName}» لقالب جديد — التغيير يتسجّل لما تضغط حفظ.</>
                 ) : isMetaBound && metaContentChanged ? (
-                  <>╪╣╪»┘æ┘ä╪¬ ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪▒╪│╪º┘ä╪⌐ ΓÇö ╪º╪╢╪║╪╖ ┬½╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»┬╗ ╪╣╪┤╪º┘å ┘à┘è╪¬╪º ╪¬╪▒╪º╪¼╪╣ ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä╪¼╪»┘è╪»╪⌐ (╪º┘ä╪▒╪│╪º┘è┘ä ┘ç╪¬╪¬┘ê┘é┘ü ┘ä╪¡╪» ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐).</>
+                  <>عدّلت محتوى الرسالة — اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة (الرسايل هتتوقف لحد الموافقة).</>
                 ) : (
-                  <>╪ú┘è ╪¬╪╣╪»┘è┘ä ╪╣┘ä┘ë ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪ú┘ê ╪º┘ä╪ú╪▓╪▒╪º╪▒ ┘ê╪¿╪╣╪»┘è┘å ┬½╪Ñ╪▒╪│╪º┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ┘à┘å ╪¼╪»┘è╪»┬╗ ┘ç┘è╪¿╪╣╪¬ ╪º┘ä┘é╪º┘ä╪¿ ┘ä┘à┘è╪¬╪º ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ΓÇö ┘ç┘è╪¬┘ê┘é┘ü ╪╣┘å ╪º┘ä╪Ñ╪▒╪│╪º┘ä ┘ä╪¡╪» ┘à╪º ┘è┘ê╪º┘ü┘é┘ê╪º ╪¬╪º┘å┘è.</>
+                  <>أي تعديل على المحتوى أو الأزرار وبعدين «إرسال للمراجعة من جديد» هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.</>
                 )}
               </p>
             )}
@@ -2318,10 +2318,10 @@ export default function OrderStatusTemplatesPage() {
 
       <ConfirmDialog
         open={!!unbindTarget}
-        title={t("orders.unbindConfirmTitle", "┘ü┘â ╪▒╪¿╪╖ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º")}
-        content={t("orders.unbindConfirmContent", "┘ç┘ä ╪¬╪▒┘è╪» ┘ü┘â ╪▒╪¿╪╖ ┘ç╪░╪º ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º╪ƒ ╪¿╪╣╪» ╪º┘ä┘ü┘â╪î ╪º┘ä╪▒╪│╪º┘ä╪⌐ ┘ç╪¬╪¬╪¿╪╣╪¬ ┘â┘Ç ┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è.")}
-        confirmLabel={t("orders.unbindConfirmYes", "┘å╪╣┘à╪î ┘ü┘â ╪º┘ä╪▒╪¿╪╖") as string}
-        cancelLabel={t("orders.unbindConfirmCancel", "╪Ñ┘ä╪║╪º╪í") as string}
+        title={t("orders.unbindConfirmTitle", "فك ربط القالب بقالب ميتا")}
+        content={t("orders.unbindConfirmContent", "هل تريد فك ربط هذا القالب بقالب ميتا؟ بعد الفك، الرسالة هتتبعت كـ واتساب عادي.")}
+        confirmLabel={t("orders.unbindConfirmYes", "نعم، فك الربط") as string}
+        cancelLabel={t("orders.unbindConfirmCancel", "إلغاء") as string}
         confirmColor="error"
         onConfirm={() => unbindTarget && unbindMeta(unbindTarget)}
         onCancel={() => setUnbindTarget(null)}
@@ -2369,7 +2369,7 @@ function StatusRow({
     warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
     danger: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
   };
-  const deliveryIcons = { none: "≡ƒƒó", warning: "≡ƒƒí", danger: "≡ƒö┤" };
+  const deliveryIcons = { none: "🟢", warning: "🟡", danger: "🔴" };
 
   return (
     <div
@@ -2391,12 +2391,12 @@ function StatusRow({
               </span>
               {status.isSystemStatus && (
                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                  {t("orders.system", "┘å╪╕╪º┘à┘è")}
+                  {t("orders.system", "نظامي")}
                 </span>
               )}
               {status.statusType && status.statusType !== "order" && (
                 <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
-                  {status.statusType === "preparation" ? "╪¬╪¼┘ç┘è╪▓" : status.statusType === "shipping" ? "╪┤╪¡┘å" : status.statusType === "payment" ? "╪»┘ü╪╣" : status.statusType === "incomplete" ? "╪║┘è╪▒ ┘à┘â╪¬┘à┘ä" : status.statusType}
+                  {status.statusType === "preparation" ? "تجهيز" : status.statusType === "shipping" ? "شحن" : status.statusType === "payment" ? "دفع" : status.statusType === "incomplete" ? "غير مكتمل" : status.statusType}
                 </span>
               )}
             </div>
@@ -2418,7 +2418,7 @@ function StatusRow({
                 ) : (
                   <BellSlashIcon className="h-3 w-3" />
                 )}
-                {status.notifyCustomer ? "┘à┘ü╪╣┘ä" : "┘à╪¬┘ê┘é┘ü"}
+                {status.notifyCustomer ? "مفعل" : "متوقف"}
               </button>
             </div>
           </div>
@@ -2430,7 +2430,7 @@ function StatusRow({
             title={p.message}
             className={`inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition hover:opacity-80 ${deliveryColors[p.riskLevel]}`}
           >
-            {deliveryIcons[p.riskLevel]} ≡ƒöù ╪º╪▒╪¿╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º
+            {deliveryIcons[p.riskLevel]} 🔗 اربط بقالب ميتا
           </button>
         ) : p ? (
           <span
@@ -2438,7 +2438,7 @@ function StatusRow({
             title={p.message}
           >
             {deliveryIcons[p.riskLevel]}
-            {!isMobile && (p.message.length > 40 ? `${p.message.substring(0, 40)}ΓÇª` : p.message)}
+            {!isMobile && (p.message.length > 40 ? `${p.message.substring(0, 40)}…` : p.message)}
           </span>
         ) : null}
       </div>
@@ -2532,18 +2532,18 @@ function StatusTemplateSlot({
   const statusLabel = isMeta
     ? bound
       ? metaStatus === "APPROVED"
-        ? "Γ£à ┘à╪╣╪¬┘à╪»"
+        ? "✅ معتمد"
         : metaStatus === "REJECTED"
-          ? "Γ¥î ┘à╪▒┘ü┘ê╪╢"
+          ? "❌ مرفوض"
           : metaStatus
-            ? `ΓÅ│ ${metaStatus}`
-            : "┘é┘è╪» ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐"
+            ? `⏳ ${metaStatus}`
+            : "قيد المراجعة"
       : template
-        ? "┘à╪¡┘ü┘ê╪╕ (╪¿╪»┘ê┘å ╪▒╪¿╪╖)"
-        : "╪¿╪»┘ê┘å ┘é╪º┘ä╪¿"
+        ? "محفوظ (بدون ربط)"
+        : "بدون قالب"
     : template
-      ? "┘è┘ê╪¼╪» ┘é╪º┘ä╪¿"
-      : "╪¿╪»┘ê┘å ┘é╪º┘ä╪¿";
+      ? "يوجد قالب"
+      : "بدون قالب";
 
   return (
     <div
@@ -2553,7 +2553,7 @@ function StatusTemplateSlot({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${colors.badge}`}>
           {isMeta ? <GlobeAltIcon className="h-3 w-3" /> : <DocumentTextIcon className="h-3 w-3" />}
-          {isMeta ? "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º" : "┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è"}
+          {isMeta ? "قالب ميتا" : "واتساب عادي"}
         </span>
         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadge}`}>
           {isMeta && bound ? <CheckCircleIcon className="h-3 w-3" /> : null}
@@ -2564,7 +2564,7 @@ function StatusTemplateSlot({
       {isMeta && bound && template?.metaTemplateName && (
         <p className="mt-1.5 truncate font-mono text-[11px] text-blue-700 dark:text-blue-300" dir="ltr">
           {template.metaTemplateName}
-          {isLegacy ? " (╪¬┘ê╪╡┘è┘ü ┘é╪»┘è┘à)" : ""}
+          {isLegacy ? " (توصيف قديم)" : ""}
         </p>
       )}
 
@@ -2572,7 +2572,7 @@ function StatusTemplateSlot({
         {template ? (
           <>
             <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-              {template.name || "┘é╪º┘ä╪¿ ╪║┘è╪▒ ┘à╪│┘à┘æ┘ë"}
+              {template.name || "قالب غير مسمّى"}
             </p>
             {hasContent && (
               <p className="mt-0.5 line-clamp-2 whitespace-pre-wrap break-words text-xs text-slate-600 dark:text-slate-400">
@@ -2582,7 +2582,7 @@ function StatusTemplateSlot({
           </>
         ) : (
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {isMeta ? "┘ä╪º ┘è┘ê╪¼╪» ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘ä┘ç╪░┘ç ╪º┘ä╪¡╪º┘ä╪⌐" : "┘ä╪º ┘è┘ê╪¼╪» ┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è ΓÇö ╪º╪│╪¬╪«╪»┘à ╪▓╪▒ ╪º┘ä╪Ñ┘å╪┤╪º╪í"}
+            {isMeta ? "لا يوجد قالب ميتا لهذه الحالة" : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
           </p>
         )}
       </div>
@@ -2594,18 +2594,18 @@ function StatusTemplateSlot({
             className="flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition hover:bg-white dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20"
           >
             <DocumentTextIcon className="h-3 w-3" />
-            {isPreviewExpanded ? "╪Ñ╪«┘ü╪º╪í" : "┘à╪╣╪º┘è┘å╪⌐"}
+            {isPreviewExpanded ? "إخفاء" : "معاينة"}
           </button>
         )}
         {isMeta && (
           <button
             onClick={onSwitch}
             disabled={!status.notifyCustomer}
-            title={!status.notifyCustomer ? "┘ü╪╣┘æ┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ╪ú┘ê┘ä╪º┘ï" : ""}
+            title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
             className="flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-[11px] font-medium text-blue-600 transition hover:bg-white dark:bg-white/10 dark:text-blue-400 dark:hover:bg-white/20 disabled:opacity-50"
           >
             <GlobeAltIcon className="h-3 w-3" />
-            {bound ? "╪¬╪║┘è┘è╪▒ ╪º┘ä┘é╪º┘ä╪¿" : "╪º╪«╪¬┘è╪º╪▒ ┘é╪º┘ä╪¿ ┘à╪╣╪¬┘à╪»"}
+            {bound ? "تغيير القالب" : "اختيار قالب معتمد"}
           </button>
         )}
         {template ? (
@@ -2614,13 +2614,13 @@ function StatusTemplateSlot({
             className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${colors.accent}`}
           >
             <PencilSquareIcon className="h-3 w-3" />
-            {isMeta ? "╪¬╪╣╪»┘è┘ä ╪º┘ä┘à╪¡╪¬┘ê┘ë" : "╪¬╪╣╪»┘è┘ä"}
+            {isMeta ? "تعديل المحتوى" : "تعديل"}
           </button>
         ) : !isMeta ? (
           <button
             onClick={onCreate}
             disabled={!status.notifyCustomer}
-            title={!status.notifyCustomer ? "┘ü╪╣┘æ┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ╪ú┘ê┘ä╪º┘ï" : ""}
+            title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
             className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
               status.notifyCustomer
                 ? "bg-indigo-600 text-white hover:bg-indigo-700"
@@ -2628,14 +2628,14 @@ function StatusTemplateSlot({
             }`}
           >
             <PlusIcon className="h-3 w-3" />
-            ╪Ñ┘å╪┤╪º╪í
+            إنشاء
           </button>
         ) : null}
         {isMeta && (
           <button
             onClick={onCreate}
             disabled={!status.notifyCustomer}
-            title={!status.notifyCustomer ? "┘ü╪╣┘æ┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ╪ú┘ê┘ä╪º┘ï" : ""}
+            title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
             className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
               status.notifyCustomer
                 ? "bg-indigo-600 text-white hover:bg-indigo-700"
@@ -2643,7 +2643,7 @@ function StatusTemplateSlot({
             }`}
           >
             <PlusIcon className="h-3 w-3" />
-            ╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿
+            إنشاء قالب
           </button>
         )}
         {isMeta && bound && onUnbind && (
@@ -2652,7 +2652,7 @@ function StatusTemplateSlot({
             className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
           >
             <XCircleIcon className="h-3 w-3" />
-            ┘ü┘â ╪º┘ä╪▒╪¿╪╖
+            فك الربط
           </button>
         )}
       </div>
@@ -2660,7 +2660,7 @@ function StatusTemplateSlot({
       {hasContent && isPreviewExpanded && (
         <div className="mt-2 rounded-md bg-white/70 p-2 dark:bg-white/5">
           <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘â╪º┘à┘ä╪⌐
+            المعاينة الكاملة
           </p>
           <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
             {resolveVariablesForPreview(previewContent)}
@@ -2699,24 +2699,24 @@ function GroupHeader({ members, isNoTemplate, onExpand }: GroupHeaderProps) {
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
             {isNoTemplate
-              ? `${members.length} ╪¡╪º┘ä╪⌐ ╪¿╪»┘ê┘å ┘é╪º┘ä╪¿`
-              : `${members.length} ╪¡╪º┘ä╪⌐ ╪¿┘å┘ü╪│ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º┘à`}
+              ? `${members.length} حالة بدون قالب`
+              : `${members.length} حالة بنفس القالب العام`}
           </span>
           <button
             onClick={onExpand}
             className="text-xs text-indigo-600 hover:underline dark:text-indigo-400"
           >
-            ╪╣╪▒╪╢ ╪º┘ä╪¬┘ü╪º╪╡┘è┘ä
+            عرض التفاصيل
           </button>
         </div>
         <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-600 dark:bg-slate-700 dark:text-slate-400">
-          {members.map((m) => m.code).slice(0, 5).join("╪î ")}
-          {members.length > 5 ? "ΓÇª" : ""}
+          {members.map((m) => m.code).slice(0, 5).join("، ")}
+          {members.length > 5 ? "…" : ""}
         </span>
       </div>
       {!isNoTemplate && (members[0]?.template?.content || members[0]?.metaTemplate?.content) && (
         <p className="mt-2 line-clamp-1 text-xs italic text-slate-500 dark:text-slate-500">
-          "{(members[0].template?.content || members[0].metaTemplate?.content || "").substring(0, 80)}ΓÇª"
+          "{(members[0].template?.content || members[0].metaTemplate?.content || "").substring(0, 80)}…"
         </p>
       )}
     </div>
@@ -2804,8 +2804,8 @@ function reportRangeParams(range: ReportRange, startDate: string, endDate: strin
   return { startDate, endDate };
 }
 
-// ┘å┘ü╪│ ╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¬╪¡┘ê┘è┘ä ┘ü┘è backend/utils (ORDER_STATUS_TO_EVENT_TYPE) ΓÇö
-// ╪╣╪┤╪º┘å ┘å╪╖╪º╪¿┘é ╪¡╪º┘ä╪⌐ ┘à╪╣┘è┘æ┘å╪⌐ ┘ü┘è ╪º┘ä╪╡┘ü╪¡╪⌐ ┘à╪╣ ╪º┘ä┘Ç eventType ╪º┘ä┘à╪¬╪«╪▓┘æ┘å ┘ü╪╣┘ä┘ï╪º ┘ü┘è ╪º┘ä╪│╪¼┘ä.
+// نفس خريطة التحويل في backend/utils (ORDER_STATUS_TO_EVENT_TYPE) —
+// عشان نطابق حالة معيّنة في الصفحة مع الـ eventType المتخزّن فعلًا في السجل.
 function persistedEventTypeForCode(code: string): string {
   const map: Record<string, string> = {
     CONFIRMED: "ORDER_CONFIRMED",
@@ -2913,8 +2913,8 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
             : String(it.messageType).toUpperCase() !== "TEMPLATE"
       );
       const header = [
-        "╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿", "╪º┘ä╪╣┘à┘è┘ä", "╪º┘ä┘ç╪º╪¬┘ü", "╪º┘ä╪¡╪º┘ä╪⌐", "╪º╪│┘à ╪º┘ä┘é╪º┘ä╪¿", "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º",
-        "╪º┘ä┘å┘ê╪╣", "╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘ê╪╡┘è┘ä", "╪º┘ä┘ê┘é╪¬", "╪º┘ä╪│╪¿╪¿",
+        "رقم الطلب", "العميل", "الهاتف", "الحالة", "اسم القالب", "قالب ميتا",
+        "النوع", "حالة التوصيل", "الوقت", "السبب",
       ];
       const rows = items.map((it) => [
         it.orderNumber,
@@ -2923,7 +2923,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
         statusNameMap.get(it.eventType) || it.eventType,
         it.templateName,
         it.metaTemplateName,
-        String(it.messageType).toUpperCase() === "TEMPLATE" ? "┘à┘è╪¬╪º" : "╪╣╪º╪»┘è",
+        String(it.messageType).toUpperCase() === "TEMPLATE" ? "ميتا" : "عادي",
         it.status,
         it.sentAt ? new Date(it.sentAt).toLocaleString("ar-EG") : it.createdAt ? new Date(it.createdAt).toLocaleString("ar-EG") : "",
         it.errorCode ? `[${it.errorCode}] ${it.failureReason || ""}` : (it.failureReason || ""),
@@ -2939,7 +2939,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      toast.error(t("orders.reportExportError", "┘ü╪┤┘ä ╪¬╪╡╪»┘è╪▒ ╪º┘ä╪¬┘é╪▒┘è╪▒"));
+      toast.error(t("orders.reportExportError", "فشل تصدير التقرير"));
     } finally {
       setExporting(false);
     }
@@ -2953,7 +2953,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
     return rows;
   }, [data, typeFilter]);
 
-  // ╪¡╪º┘ä╪º╪¬ ┘à┘ü╪╣┘æ┘ä╪⌐ ┘ä┘ä╪Ñ╪┤╪╣╪º╪▒ ┘ä┘â┘å ┘à┘ü┘è╪┤ ┘ä┘è┘ç╪º ╪ú┘è ╪Ñ╪▒╪│╪º┘ä ┘ü┘è ╪º┘ä┘ü╪¬╪▒╪⌐ ΓÇö ┘à╪ñ╪┤╪▒ ╪Ñ┘å ╪º┘ä┘é╪º┘ä╪¿ ┘à╪┤ ╪┤╪║╪º┘ä
+  // حالات مفعّلة للإشعار لكن مفيش ليها أي إرسال في الفترة — مؤشر إن القالب مش شغال
   const enabledWithoutSends = useMemo(() => {
     if (!data) return [];
     const reported = new Set(data.byStatus.map((r) => r.eventType));
@@ -2963,11 +2963,11 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
   const summary = data?.summary;
   const kpis = summary
     ? [
-        { label: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪Ñ╪▒╪│╪º┘ä╪º╪¬", value: summary.total, color: "text-slate-900 dark:text-white", bg: "bg-slate-100 dark:bg-slate-800" },
-        { label: "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º", value: summary.meta, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-900/30" },
-        { label: "┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è", value: summary.regular, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-900/30" },
-        { label: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à", value: summary.delivered, color: "text-green-600 dark:text-green-400", bg: "bg-green-100 dark:bg-green-900/30" },
-        { label: "┘ü╪┤┘ä", value: summary.failed, color: "text-red-600 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/30" },
+        { label: "إجمالي الإرسالات", value: summary.total, color: "text-slate-900 dark:text-white", bg: "bg-slate-100 dark:bg-slate-800" },
+        { label: "قالب ميتا", value: summary.meta, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-900/30" },
+        { label: "واتساب عادي", value: summary.regular, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-900/30" },
+        { label: "تم التسليم", value: summary.delivered, color: "text-green-600 dark:text-green-400", bg: "bg-green-100 dark:bg-green-900/30" },
+        { label: "فشل", value: summary.failed, color: "text-red-600 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/30" },
       ]
     : [];
 
@@ -2979,23 +2979,23 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
     PENDING: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
   };
   const statusLabel: Record<string, string> = {
-    DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à",
-    READ: "┘à┘é╪▒┘ê╪í╪⌐",
-    SENT: "┘à╪▒╪│┘ä╪⌐",
-    FAILED: "┘ü╪┤┘ä",
-    PENDING: "┘é┘è╪» ╪º┘ä╪Ñ╪▒╪│╪º┘ä",
+    DELIVERED: "تم التسليم",
+    READ: "مقروءة",
+    SENT: "مرسلة",
+    FAILED: "فشل",
+    PENDING: "قيد الإرسال",
   };
 
   return (
     <div className="space-y-4" data-testid="status-report-tab">
-      {/* Toolbar: ┘å╪╖╪º┘é ╪º┘ä╪¬╪º╪▒┘è╪« + ╪º┘ä┘ü┘ä╪¬╪▒╪⌐ + ╪¬╪╡╪»┘è╪▒ */}
+      {/* Toolbar: نطاق التاريخ + الفلترة + تصدير */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900/50">
           {([
-            { key: "today", label: "╪º┘ä┘è┘ê┘à" },
-            { key: "yesterday", label: "╪ú┘à╪│" },
-            { key: "7d", label: "╪ó╪«╪▒ 7 ╪ú┘è╪º┘à" },
-            { key: "custom", label: "┘ü╪¬╪▒╪⌐ ┘à╪«╪╡╪╡╪⌐" },
+            { key: "today", label: "اليوم" },
+            { key: "yesterday", label: "أمس" },
+            { key: "7d", label: "آخر 7 أيام" },
+            { key: "custom", label: "فترة مخصصة" },
           ] as const).map((r) => (
             <button
               key={r.key}
@@ -3018,15 +3018,15 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
               value={startDate}
               onChange={(e) => setStartDate(e.target.value || localDateStr(new Date()))}
               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              aria-label="┘à┘å ╪¬╪º╪▒┘è╪«"
+              aria-label="من تاريخ"
             />
-            <span className="text-xs text-slate-400">ΓåÆ</span>
+            <span className="text-xs text-slate-400">→</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value || localDateStr(new Date()))}
               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              aria-label="╪Ñ┘ä┘ë ╪¬╪º╪▒┘è╪«"
+              aria-label="إلى تاريخ"
             />
           </div>
         )}
@@ -3035,11 +3035,11 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
           className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          aria-label="┘ü┘ä╪¬╪▒╪⌐ ┘å┘ê╪╣ ╪º┘ä╪Ñ╪▒╪│╪º┘ä"
+          aria-label="فلترة نوع الإرسال"
         >
-          <option value="all">┘â┘ä ╪º┘ä╪ú┘å┘ê╪º╪╣</option>
-          <option value="meta">┘é╪º┘ä╪¿ ┘à┘è╪¬╪º</option>
-          <option value="regular">┘ê╪º╪¬╪│╪º╪¿ ╪╣╪º╪»┘è</option>
+          <option value="all">كل الأنواع</option>
+          <option value="meta">قالب ميتا</option>
+          <option value="regular">واتساب عادي</option>
         </select>
 
         <button
@@ -3047,7 +3047,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
           className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
           <ArrowPathIcon className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          ╪¬╪¡╪»┘è╪½
+          تحديث
         </button>
 
         <button
@@ -3060,7 +3060,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
           ) : (
             <DocumentTextIcon className="h-3.5 w-3.5" />
           )}
-          ╪¬╪╡╪»┘è╪▒ CSV
+          تصدير CSV
         </button>
       </div>
 
@@ -3071,7 +3071,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
       ) : !summary ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/70 py-16 text-center dark:border-white/10">
           <DocumentTextIcon className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘ä┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐</p>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">لا توجد بيانات لهذه الفترة</p>
         </div>
       ) : (
         <>
@@ -3089,9 +3089,9 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
               <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
-                <span className="font-semibold">╪¡╪º┘ä╪º╪¬ ┘à┘ü╪╣┘æ┘ä╪⌐ ╪¿╪»┘ê┘å ╪Ñ╪▒╪│╪º┘ä╪º╪¬ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐:</span>{" "}
-                {enabledWithoutSends.map((s) => s.name).join("╪î ")}
-                <span className="block text-xs opacity-80">┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ ╪»┘è ┘â╪º┘å ╪º┘ä┘à┘ü╪▒┘ê╪╢ ╪¬╪¬╪¿╪╣╪¬ ┘ü┘è┘ç╪º ╪▒╪│╪º┘è┘ä╪î ╪▒╪º╪¼╪╣ ┘é╪º┘ä╪¿┘ç╪º ┘à┘å ╪¬╪¿┘ê┘è╪¿ ┬½╪º┘ä┘â┘ä┬╗.</span>
+                <span className="font-semibold">حالات مفعّلة بدون إرسالات في هذه الفترة:</span>{" "}
+                {enabledWithoutSends.map((s) => s.name).join("، ")}
+                <span className="block text-xs opacity-80">لو الحالة دي كان المفروض تتبعت فيها رسايل، راجع قالبها من تبويب «الكل».</span>
               </div>
             </div>
           )}
@@ -3102,12 +3102,12 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
               <table className="w-full text-right text-xs">
                 <thead>
                   <tr className="border-b border-slate-200/70 bg-slate-50 text-[11px] text-slate-500 dark:border-white/10 dark:bg-slate-800/50 dark:text-slate-400">
-                    <th className="px-3 py-2.5 font-medium">╪º┘ä╪¡╪º┘ä╪⌐</th>
-                    <th className="px-3 py-2.5 text-center font-medium">╪Ñ╪¼┘à╪º┘ä┘è</th>
-                    <th className="px-3 py-2.5 text-center font-medium">┘à┘è╪¬╪º</th>
-                    <th className="px-3 py-2.5 text-center font-medium">╪╣╪º╪»┘è</th>
-                    <th className="px-3 py-2.5 text-center font-medium">╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à</th>
-                    <th className="px-3 py-2.5 text-center font-medium">┘ü╪┤┘ä</th>
+                    <th className="px-3 py-2.5 font-medium">الحالة</th>
+                    <th className="px-3 py-2.5 text-center font-medium">إجمالي</th>
+                    <th className="px-3 py-2.5 text-center font-medium">ميتا</th>
+                    <th className="px-3 py-2.5 text-center font-medium">عادي</th>
+                    <th className="px-3 py-2.5 text-center font-medium">تم التسليم</th>
+                    <th className="px-3 py-2.5 text-center font-medium">فشل</th>
                     <th className="px-3 py-2.5 text-center font-medium" />
                   </tr>
                 </thead>
@@ -3115,7 +3115,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
                   {visibleRows.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
-                        ┘ä╪º ╪¬┘ê╪¼╪» ╪Ñ╪▒╪│╪º┘ä╪º╪¬ ┘ä┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐
+                        لا توجد إرسالات لهذه الفترة
                       </td>
                     </tr>
                   )}
@@ -3155,19 +3155,19 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
                                   <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-indigo-500/20 border-t-indigo-500" />
                                 </div>
                               ) : !detail || detail.items.length === 0 ? (
-                                <p className="py-4 text-center text-xs text-slate-400">┘ä╪º ╪¬┘ê╪¼╪» ╪▒╪│╪º╪ª┘ä ╪¬┘ü╪╡┘è┘ä┘è╪⌐ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐</p>
+                                <p className="py-4 text-center text-xs text-slate-400">لا توجد رسائل تفصيلية في هذه الفترة</p>
                               ) : (
                                 <div className="overflow-x-auto rounded-lg border border-slate-200/70 bg-white dark:border-white/10 dark:bg-slate-900/50">
                                   <table className="w-full text-right text-[11px]">
                                     <thead>
                                       <tr className="border-b border-slate-200/70 bg-slate-50 text-[10px] text-slate-500 dark:border-white/10 dark:bg-slate-800/50 dark:text-slate-400">
-                                        <th className="px-3 py-2 font-medium">╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿</th>
-                                        <th className="px-3 py-2 font-medium">╪º┘ä╪╣┘à┘è┘ä</th>
-                                        <th className="px-3 py-2 font-medium">╪º┘ä┘ç╪º╪¬┘ü</th>
-                                        <th className="px-3 py-2 font-medium">╪º┘ä┘é╪º┘ä╪¿</th>
-                                        <th className="px-3 py-2 font-medium">╪º┘ä┘å┘ê╪╣</th>
-                                        <th className="px-3 py-2 font-medium">╪º┘ä╪¡╪º┘ä╪⌐</th>
-                                        <th className="px-3 py-2 font-medium">╪º┘ä┘ê┘é╪¬</th>
+                                        <th className="px-3 py-2 font-medium">رقم الطلب</th>
+                                        <th className="px-3 py-2 font-medium">العميل</th>
+                                        <th className="px-3 py-2 font-medium">الهاتف</th>
+                                        <th className="px-3 py-2 font-medium">القالب</th>
+                                        <th className="px-3 py-2 font-medium">النوع</th>
+                                        <th className="px-3 py-2 font-medium">الحالة</th>
+                                        <th className="px-3 py-2 font-medium">الوقت</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -3182,15 +3182,15 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
                                         .map((it) => (
                                           <tr key={it.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                                             <td className="px-3 py-2 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                                              {it.orderNumber || "ΓÇö"}
+                                              {it.orderNumber || "—"}
                                             </td>
-                                            <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{it.customerName || "ΓÇö"}</td>
+                                            <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{it.customerName || "—"}</td>
                                             <td className="px-3 py-2 font-mono text-slate-500 dark:text-slate-400" dir="ltr">
-                                              {it.recipientPhone || "ΓÇö"}
+                                              {it.recipientPhone || "—"}
                                             </td>
                                             <td className="px-3 py-2">
                                               <span className="font-medium text-slate-700 dark:text-slate-300">
-                                                {it.templateName || "╪¿╪»┘ê┘å ┘é╪º┘ä╪¿"}
+                                                {it.templateName || "بدون قالب"}
                                               </span>
                                               {it.metaTemplateName && (
                                                 <span className="block truncate font-mono text-[10px] text-blue-500 dark:text-blue-400" dir="ltr">
@@ -3201,11 +3201,11 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
                                             <td className="px-3 py-2">
                                               {String(it.messageType).toUpperCase() === "TEMPLATE" ? (
                                                 <span className="rounded-full bg-blue-100 px-2 py-0.5 font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                                  Γÿü∩╕Å ┘à┘è╪¬╪º
+                                                  ☁️ ميتا
                                                 </span>
                                               ) : (
                                                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                                  ≡ƒô▒ ╪╣╪º╪»┘è
+                                                  📱 عادي
                                                 </span>
                                               )}
                                             </td>
@@ -3225,7 +3225,7 @@ function StatusReportTab({ statuses }: { statuses: StatusWithTemplate[] }) {
                                                     dateStyle: "short",
                                                     timeStyle: "short",
                                                   })
-                                                : "ΓÇö"}
+                                                : "—"}
                                             </td>
                                           </tr>
                                         ))}

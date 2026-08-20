@@ -1,4 +1,4 @@
-﻿"""Add agentPaused + pauseReason columns to ai_settings
+"""Add agentPaused + pauseReason columns to ai_settings
 
 Revision ID: 0025
 Revises: 0024

@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Bulk Status Update",
   "description": "Download the Excel template, fill order numbers and statuses, then upload the file.",
   "step1Title": "1. Download template",
@@ -17,6 +17,6 @@
   "result": "Result",
   "reason": "Reason",
   "allUpdated": "All orders updated successfully",
-  "partialUpdated": "Partially updated ΓÇö check results",
+  "partialUpdated": "Partially updated — check results",
   "uploadFailed": "Failed to process file"
 }

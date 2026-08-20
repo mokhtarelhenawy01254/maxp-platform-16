@@ -1,9 +1,9 @@
-﻿import type { ApiLike } from "../types";
+import type { ApiLike } from "../types";
 import type { TemplateScopeConfig, EventRow, Template } from "../types";
 
 /**
- * ┘å╪╖╪º┘é ╪º┘ä╪╣┘à┘ä╪º╪í ΓÇö /customers/customer-notifications
- * ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘ê┘ä╪º╪í/╪º┘ä┘â╪º╪┤ ╪¿╪º┘â/╪º┘ä╪¬┘é╪│┘è┘à ┘à╪╣ ╪¼╪»┘ê┘ä╪⌐ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ┘ê┘é┘å┘ê╪º╪¬┘ç.
+ * نطاق العملاء — /customers/customer-notifications
+ * إشعارات الولاء/الكاش باك/التقسيم مع جدولة الإرسال وقنواته.
  */
 
 const EVENT_GROUPS: Record<string, string[]> = {
@@ -27,22 +27,22 @@ const EVENT_GROUPS: Record<string, string[]> = {
 const ALL_EVENTS = Object.values(EVENT_GROUPS).flat();
 
 const CUSTOMER_VARIABLES = [
-  { var: "{customerName}", desc: "╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä" },
-  { var: "{points}", desc: "╪╣╪»╪» ╪º┘ä┘å┘é╪º╪╖ ╪º┘ä┘à┘â╪¬╪│╪¿╪⌐/╪º┘ä┘à╪│╪¬╪¿╪»┘ä╪⌐" },
-  { var: "{currentPoints}", desc: "╪▒╪╡┘è╪» ╪º┘ä┘å┘é╪º╪╖ ╪º┘ä╪¡╪º┘ä┘è" },
-  { var: "{reason}", desc: "╪│╪¿╪¿ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐/╪º┘ä╪«╪╡┘à" },
-  { var: "{tierName}", desc: "╪º╪│┘à ╪º┘ä┘à╪│╪¬┘ê┘ë ╪º┘ä╪¼╪»┘è╪»" },
-  { var: "{expiryDate}", desc: "╪¬╪º╪▒┘è╪« ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐" },
-  { var: "{programName}", desc: "╪º╪│┘à ╪¿╪▒┘å╪º┘à╪¼ ╪º┘ä┘ê┘ä╪º╪í" },
-  { var: "{cashAmount}", desc: "┘é┘è┘à╪⌐ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â/╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä" },
-  { var: "{currency}", desc: "╪º┘ä╪╣┘à┘ä╪⌐ (╪¼.┘à)" },
-  { var: "{orderNumber}", desc: "╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{balance}", desc: "╪▒╪╡┘è╪» ╪º┘ä┘à╪¡┘ü╪╕╪⌐ ╪º┘ä╪¡╪º┘ä┘è" },
-  { var: "{qualityTier}", desc: "╪¬╪╡┘å┘è┘ü ╪º┘ä╪¼┘ê╪»╪⌐ (VIP/╪╣╪º┘ä┘è/┘à╪¬┘ê╪│╪╖/┘à┘å╪«┘ü╪╢)" },
-  { var: "{score}", desc: "╪»╪▒╪¼╪⌐ ╪º┘ä╪¼┘ê╪»╪⌐ ┘à┘å 100" },
-  { var: "{discountPercent}", desc: "┘å╪│╪¿╪⌐ ╪«╪╡┘à ┘â┘ê╪¿┘ê┘å ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è" },
-  { var: "{voucherAmount}", desc: "┘é┘è┘à╪⌐ ┘â┘ê╪¿┘ê┘å ╪º┘ä╪«╪╡┘à ╪¿╪º┘ä╪╣┘à┘ä╪⌐" },
-  { var: "{validityDays}", desc: "╪╣╪»╪» ╪ú┘è╪º┘à ╪╡┘ä╪º╪¡┘è╪⌐ ┘â┘ê╪¿┘ê┘å ╪º┘ä╪«╪╡┘à" },
+  { var: "{customerName}", desc: "اسم العميل" },
+  { var: "{points}", desc: "عدد النقاط المكتسبة/المستبدلة" },
+  { var: "{currentPoints}", desc: "رصيد النقاط الحالي" },
+  { var: "{reason}", desc: "سبب الإضافة/الخصم" },
+  { var: "{tierName}", desc: "اسم المستوى الجديد" },
+  { var: "{expiryDate}", desc: "تاريخ انتهاء الصلاحية" },
+  { var: "{programName}", desc: "اسم برنامج الولاء" },
+  { var: "{cashAmount}", desc: "قيمة الكاش باك/الاستبدال" },
+  { var: "{currency}", desc: "العملة (ج.م)" },
+  { var: "{orderNumber}", desc: "رقم الطلب" },
+  { var: "{balance}", desc: "رصيد المحفظة الحالي" },
+  { var: "{qualityTier}", desc: "تصنيف الجودة (VIP/عالي/متوسط/منخفض)" },
+  { var: "{score}", desc: "درجة الجودة من 100" },
+  { var: "{discountPercent}", desc: "نسبة خصم كوبون الخصم التلقائي" },
+  { var: "{voucherAmount}", desc: "قيمة كوبون الخصم بالعملة" },
+  { var: "{validityDays}", desc: "عدد أيام صلاحية كوبون الخصم" },
 ];
 
 const CUSTOMER_META_ORDER: string[] = [
@@ -64,7 +64,7 @@ const CUSTOMER_META_ORDER: string[] = [
   "validityDays",
 ];
 
-const DEFAULT_CONTENT = `┘à╪▒╪¡╪¿╪º┘ï {customerName} ≡ƒæï\n\n{reason}\n\n╪┤┘â╪▒╪º┘ï ┘ä╪¬╪╣╪º┘à┘ä┘â ┘à╪╣┘å╪º! Γ£¿`;
+const DEFAULT_CONTENT = `مرحباً {customerName} 👋\n\n{reason}\n\nشكراً لتعاملك معنا! ✨`;
 
 interface ScheduleRow {
   id: string;
@@ -81,7 +81,7 @@ interface ScheduleRow {
 
 type TemplateItem = Omit<Template, "id"> & { id: string | null };
 
-// ╪¬┘ê╪¡┘è╪» ╪╡┘è╪║╪⌐ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬: {var} ΓåÆ {{var}} ┘ä┘ä╪╣╪▒╪╢ ╪»╪º╪«┘ä ╪º┘ä┘à╪¡╪▒╪▒ ╪º┘ä┘à┘ê╪¡╪»
+// توحيد صيغة المتغيرات: {var} → {{var}} للعرض داخل المحرر الموحد
 function normalizeToDouble(content: string): string {
   return content.replace(/\{(\w+)\}/g, "{{$1}}");
 }
@@ -103,21 +103,21 @@ function slotTemplate(
 
 export const customerScopeConfig: TemplateScopeConfig = {
   scope: "customers",
-  documentTitle: "╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í",
-  title: "╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í",
-  description: "╪Ñ╪»╪º╪▒╪⌐ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä┘ê┘ä╪º╪í ┘ê╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ┘ê╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘ê╪¬┘é╪│┘è┘à ╪º┘ä╪╣┘à┘ä╪º╪í ΓÇö ╪º┘ä┘é┘ê╪º┘ä╪¿ ┘ê┘à┘ê╪º╪╣┘è╪» ╪º┘ä╪Ñ╪▒╪│╪º┘ä",
+  documentTitle: "إشعارات العملاء",
+  title: "إشعارات العملاء",
+  description: "إدارة إشعارات الولاء والكاش باك والخصم التلقائي وتقسيم العملاء — القوالب ومواعيد الإرسال",
   variableSyntax: "single",
   variables: CUSTOMER_VARIABLES,
   sampleVariables: {
-    customerName: "╪╣┘à┘è┘ä┘å╪º ╪º┘ä┘â╪▒┘è┘à",
+    customerName: "عميلنا الكريم",
     points: "50",
     currentPoints: "120",
-    reason: "╪╖┘ä╪¿ #10025",
-    tierName: "╪░┘ç╪¿┘è",
+    reason: "طلب #10025",
+    tierName: "ذهبي",
     expiryDate: "2026-09-01",
-    programName: "╪¿╪▒┘å╪º┘à╪¼ ╪º┘ä┘ê┘ä╪º╪í",
+    programName: "برنامج الولاء",
     cashAmount: "25.00",
-    currency: "╪¼.┘à",
+    currency: "ج.م",
     orderNumber: "10025",
     balance: "75.00",
     qualityTier: "VIP",
@@ -153,7 +153,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
         ? {
             ...regular,
             id: regular.id || "",
-            name: regular.name || "┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿",
+            name: regular.name || "قالب واتساب",
             content: normalizeToDouble(regular.content || ""),
             isActive: regular.isActive ?? true,
             eventType: row.eventType,
@@ -163,7 +163,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
         ? {
             ...meta,
             id: meta.id || "",
-            name: meta.name || "┘é╪º┘ä╪¿ ┘à┘è╪¬╪º",
+            name: meta.name || "قالب ميتا",
             content: normalizeToDouble(meta.content || ""),
             isActive: meta.isActive ?? true,
             eventType: row.eventType,
@@ -191,8 +191,8 @@ export const customerScopeConfig: TemplateScopeConfig = {
       };
     });
 
-    // ΓÜí ┘é┘ê╪º┘ä╪¿ ┘à┘å╪º╪│╪¿╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í (category = OCCASION) ΓÇö ┘à╪¼┘à┘ê╪╣╪⌐ ╪¡╪│╪¿ eventType
-    // ┘â┘ä ┘à┘å╪º╪│╪¿╪⌐ ┘ä┘è┘ç╪º ╪│┘ä┘ê╪⌐ ╪╣╪º╪»┘è╪⌐ (┘ê╪º╪¬╪│╪º╪¿) + ╪│┘ä┘ê╪⌐ ┘ê╪º╪¬╪│╪º╪¿ ╪¿┘è╪▓┘å╪│ (┘à┘è╪¬╪º) ╪▓┘è ╪¿╪º┘é┘è ╪º┘ä╪ú╪¡╪»╪º╪½
+    // ⚡ قوالب مناسبات العملاء (category = OCCASION) — مجموعة حسب eventType
+    // كل مناسبة ليها سلوة عادية (واتساب) + سلوة واتساب بيزنس (ميتا) زي باقي الأحداث
     const occasionTemplates = all.filter((t) => String(t.category || "").toUpperCase() === "OCCASION");
     const occasionGroups = new Map<string, TemplateItem[]>();
     for (const t of occasionTemplates) {
@@ -209,7 +209,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
         ? {
             ...regular,
             id: regular.id || "",
-            name: regular.name || "┘é╪º┘ä╪¿ ┘à┘å╪º╪│╪¿╪⌐",
+            name: regular.name || "قالب مناسبة",
             content: normalizeToDouble(regular.content || ""),
             isActive: regular.isActive ?? true,
             eventType,
@@ -219,7 +219,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
         ? {
             ...meta,
             id: meta.id || "",
-            name: meta.name || "┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿ ╪¿┘è╪▓┘å╪│",
+            name: meta.name || "قالب واتساب بيزنس",
             content: normalizeToDouble(meta.content || ""),
             isActive: meta.isActive ?? true,
             eventType,
@@ -229,7 +229,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
       return {
         id: regular?.id || meta?.id || eventType,
         code: eventType,
-        name: regular?.name || meta?.name || "┘é╪º┘ä╪¿ ┘à┘å╪º╪│╪¿╪⌐",
+        name: regular?.name || meta?.name || "قالب مناسبة",
         color: "#8B5CF6",
         sortOrder: 1000 + idx,
         statusType: "occasion",
@@ -244,12 +244,12 @@ export const customerScopeConfig: TemplateScopeConfig = {
       };
     });
 
-    // ╪╡┘ü ╪º┘ü╪¬╪▒╪º╪╢┘è ┘ä╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘å╪º╪│╪¿╪⌐ ╪¼╪»┘è╪» ┘à┘å ╪»╪º╪«┘ä ╪º┘ä╪¬╪¿┘ê┘è╪¿
-    // ╪º┘ä┘â┘ê╪» ┘ü╪▒┘è╪» ┘ä┘â┘ä ╪¼┘ä╪¿ ╪╣╪┤╪º┘å ┘â┘ä ┘à┘å╪º╪│╪¿╪⌐ ╪¼╪»┘è╪»╪⌐ ╪¬╪º╪«╪» eventType ╪«╪º╪╡ ╪¿┘è┘ç╪º
+    // صف افتراضي لإنشاء قالب مناسبة جديد من داخل التبويب
+    // الكود فريد لكل جلب عشان كل مناسبة جديدة تاخد eventType خاص بيها
     const newOccasionRow: EventRow = {
       id: "__new_occasion__",
       code: `CUSTOMER_OCCASION_${Date.now().toString(36)}`,
-      name: "┘à┘å╪º╪│╪¿╪⌐ ╪¼╪»┘è╪»╪⌐",
+      name: "مناسبة جديدة",
       color: "#8B5CF6",
       sortOrder: 100000,
       statusType: "occasion",
@@ -304,13 +304,13 @@ export const customerScopeConfig: TemplateScopeConfig = {
   metaOpsBase: "/whatsapp-notifications/templates",
 
   tabs: [
-    { key: "schedule", label: "╪¼╪»┘ê┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬", kind: "schedule", isSpecial: true },
-    { key: "occasions", label: "┘é┘ê╪º┘ä╪¿ ┘à┘å╪º╪│╪¿╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í", kind: "list", filter: (r) => r.category === "OCCASION", count: (rows) => rows.filter((r) => r.category === "OCCASION").length },
-    { key: "loyalty", label: "┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ê┘ä╪º╪í", kind: "list", filter: (r) => EVENT_GROUPS["loyalty"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["loyalty"]!.includes(r.code)).length },
-    { key: "cashback", label: "┘é┘ê╪º┘ä╪¿ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â", kind: "list", filter: (r) => EVENT_GROUPS["cashback"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cashback"]!.includes(r.code)).length },
-    { key: "quality", label: "┘é┘ê╪º┘ä╪¿ ╪º┘ä╪¬┘é╪│┘è┘à", kind: "list", filter: (r) => EVENT_GROUPS["quality"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["quality"]!.includes(r.code)).length },
-    { key: "autoDiscount", label: "┘é┘ê╪º┘ä╪¿ ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è", kind: "list", filter: (r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code)).length },
-    { key: "reports", label: "╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪▒╪│╪º╪ª┘ä", kind: "reports", isSpecial: true },
+    { key: "schedule", label: "جدول الإشعارات", kind: "schedule", isSpecial: true },
+    { key: "occasions", label: "قوالب مناسبات العملاء", kind: "list", filter: (r) => r.category === "OCCASION", count: (rows) => rows.filter((r) => r.category === "OCCASION").length },
+    { key: "loyalty", label: "قوالب الولاء", kind: "list", filter: (r) => EVENT_GROUPS["loyalty"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["loyalty"]!.includes(r.code)).length },
+    { key: "cashback", label: "قوالب الكاش باك", kind: "list", filter: (r) => EVENT_GROUPS["cashback"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cashback"]!.includes(r.code)).length },
+    { key: "quality", label: "قوالب التقسيم", kind: "list", filter: (r) => EVENT_GROUPS["quality"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["quality"]!.includes(r.code)).length },
+    { key: "autoDiscount", label: "قوالب الخصم التلقائي", kind: "list", filter: (r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code)).length },
+    { key: "reports", label: "تقارير الرسائل", kind: "reports", isSpecial: true },
   ],
 
   features: {
@@ -327,19 +327,19 @@ export const customerScopeConfig: TemplateScopeConfig = {
     sortModes: ["alphabetical", "recent"],
     categoryMode: "manual",
     dialogCategoryOptions: [
-      { value: "CUSTOMER", label: "UTILITY (┘à┘Å┘ê╪╡┘ë ╪¿┘ç ┘ä┘ä┘ê┘ä╪º╪í)" },
-      { value: "SYSTEM", label: "UTILITY (┘å╪╕╪º┘à┘è)" },
-      { value: "MARKETING", label: "MARKETING (╪¬╪▒┘ê┘è╪¼┘è)" },
-      { value: "GENERAL", label: "UTILITY (╪╣╪º┘à)" },
-      { value: "OCCASION", label: "OCCASION (┘à┘å╪º╪│╪¿╪º╪¬)" },
+      { value: "CUSTOMER", label: "UTILITY (مُوصى به للولاء)" },
+      { value: "SYSTEM", label: "UTILITY (نظامي)" },
+      { value: "MARKETING", label: "MARKETING (ترويجي)" },
+      { value: "GENERAL", label: "UTILITY (عام)" },
+      { value: "OCCASION", label: "OCCASION (مناسبات)" },
     ],
   },
 
   gateCreateOnNotify: false,
 
-  // ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í ┘â┘ä┘ç╪º (┘ê┘ä╪º╪í/┘â╪º╪┤ ╪¿╪º┘â/╪¬┘é╪│┘è┘à/╪«╪╡┘à ╪¬┘ä┘é╪º╪ª┘è) ╪¿╪¬╪¬╪«╪▓┘å ╪¿┘Ç category MARKETING ┘ü┘è
-  // whatsAppNotificationLog ΓÇö ┘ü┘ä╪¬╪▒╪⌐ ╪º┘ä┘ü╪ª╪⌐ ╪¿╪¬╪║╪╖┘è ╪º┘ä┘Ç 13 ╪¡╪»╪½ ╪¿╪┤┘â┘ä ╪ó┘à┘å
-  // (╪ú╪¡╪»╪º╪½ AUTO_DISCOUNT_* ┘à╪┤ ┘ü┘è enum ╪º┘ä╪│╪¼┘ä╪î ┘ü┘à┘è┘å┘ü╪╣╪┤ ┘å┘ü┘ä╪¬╪▒┘ç┘à ╪¿╪º┘ä┘Ç eventType).
+  // إشعارات العملاء كلها (ولاء/كاش باك/تقسيم/خصم تلقائي) بتتخزن بـ category MARKETING في
+  // whatsAppNotificationLog — فلترة الفئة بتغطي الـ 13 حدث بشكل آمن
+  // (أحداث AUTO_DISCOUNT_* مش في enum السجل، فمينفعش نفلترهم بالـ eventType).
   reportCategories: ["MARKETING"],
 
   endpoints: {

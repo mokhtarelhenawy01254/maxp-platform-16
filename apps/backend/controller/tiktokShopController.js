@@ -1,4 +1,4 @@
-﻿const tiktokShopService = require('../services/tiktok/tiktokShopService');
+const tiktokShopService = require('../services/tiktok/tiktokShopService');
 
 function sanitizeAccount(account) {
   return {
@@ -14,25 +14,25 @@ function sanitizeAccount(account) {
 const getAccountStatus = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const account = await tiktokShopService.getAccount(companyId);
     if (!account) return res.json({ success: true, data: { connected: false } });
 
     res.json({ success: true, data: sanitizeAccount(account) });
   } catch (error) {
-    res.status(500).json({ success: false, error: '╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪│╪º╪¿' });
+    res.status(500).json({ success: false, error: 'خطأ في جلب حالة الحساب' });
   }
 };
 
 const saveAccount = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { shopId, appKey, appSecret, accessToken, shopName, region } = req.body || {};
     if (!shopId || !appKey || !appSecret || !accessToken) {
-      return res.status(400).json({ success: false, error: '╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪▒╪¿╪╖ ┘å╪º┘é╪╡╪⌐' });
+      return res.status(400).json({ success: false, error: 'بيانات الربط ناقصة' });
     }
 
     const account = await tiktokShopService.saveAccount(companyId, {
@@ -46,14 +46,14 @@ const saveAccount = async (req, res) => {
 
     res.json({ success: true, data: sanitizeAccount(account) });
   } catch (error) {
-    res.status(500).json({ success: false, error: '╪«╪╖╪ú ┘ü┘è ╪¡┘ü╪╕ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪▒╪¿╪╖' });
+    res.status(500).json({ success: false, error: 'خطأ في حفظ بيانات الربط' });
   }
 };
 
 const syncOrders = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const pageSize = req.body?.pageSize || req.query?.pageSize;
     const orders = await tiktokShopService.fetchOrders({ companyId, pageSize });
@@ -63,14 +63,14 @@ const syncOrders = async (req, res) => {
     if (error?.code === 'NO_ACCOUNT') {
       return res.status(400).json({ success: false, error: error.message });
     }
-    res.status(500).json({ success: false, error: '╪«╪╖╪ú ┘ü┘è ┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬' });
+    res.status(500).json({ success: false, error: 'خطأ في مزامنة الطلبات' });
   }
 };
 
 const syncProducts = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const pageSize = req.body?.pageSize || req.query?.pageSize;
     const products = await tiktokShopService.fetchProducts({ companyId, pageSize });
@@ -80,7 +80,7 @@ const syncProducts = async (req, res) => {
     if (error?.code === 'NO_ACCOUNT') {
       return res.status(400).json({ success: false, error: error.message });
     }
-    res.status(500).json({ success: false, error: '╪«╪╖╪ú ┘ü┘è ┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬' });
+    res.status(500).json({ success: false, error: 'خطأ في مزامنة المنتجات' });
   }
 };
 

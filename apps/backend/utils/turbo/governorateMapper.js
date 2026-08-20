@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Turbo Governorate Mapper Utilities
- * ╪»┘ê╪º┘ä ┘à╪╖╪º╪¿┘é╪⌐ ╪º┘ä┘à╪¡╪º┘ü╪╕╪º╪¬ ┘ê╪º┘ä┘à╪»┘å ┘ä╪┤╪¡┘å Turbo
+ * دوال مطابقة المحافظات والمدن لشحن Turbo
  */
 
 const { GOVERNORATE_MAP, CITY_TO_GOVERNMENT_MAP, FALLBACK_GOVERNMENTS } = require('./constants');
@@ -36,7 +36,7 @@ function getTurboGovernorateName(governorate) {
 }
 
 function findGovernmentByCity(cityName, governments = null) {
-  if (!cityName) return '╪º┘ä┘é╪º┘ç╪▒╪⌐';
+  if (!cityName) return 'القاهرة';
 
   const cleanCity = cleanLocationName(cityName).toLowerCase().trim();
 

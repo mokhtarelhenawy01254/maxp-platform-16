@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -23,8 +23,8 @@ const listsResponse = {
   data: [
     {
       id: 'all',
-      name: '╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í',
-      description: '╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å',
+      name: 'جميع العملاء',
+      description: 'جميع العملاء النشطين',
       count: 500,
       criteria: { type: 'all' },
       isDefault: true,
@@ -33,8 +33,8 @@ const listsResponse = {
     },
     {
       id: 'list_vip',
-      name: '╪╣┘à┘ä╪º╪í VIP',
-      description: '┘â╪¿╪º╪▒ ╪º┘ä╪╣┘à┘ä╪º╪í',
+      name: 'عملاء VIP',
+      description: 'كبار العملاء',
       count: 42,
       criteria: { type: 'orderStatus', status: 'DELIVERED', days: 30 },
       createdAt: '2026-07-01T00:00:00Z',
@@ -57,7 +57,7 @@ jest.mock('../../../services/broadcastService', () => ({
 
 jest.mock('../../../services/customerService', () => ({
   customerService: {
-    getDistinctTags: jest.fn().mockResolvedValue([{ name: 'VIP' }, { name: '╪¼╪»╪»' }]),
+    getDistinctTags: jest.fn().mockResolvedValue([{ name: 'VIP' }, { name: 'جدد' }]),
   },
 }));
 
@@ -88,105 +88,105 @@ describe('CustomerLists', () => {
       </MemoryRouter>,
     );
 
-  test('┘è╪╣╪▒╪╢ ╪º┘ä╪╣┘å╪º┘ê┘è┘å ┘ê╪º┘ä┘é┘ê╪º╪ª┘à ┘ê╪º┘ä╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬', async () => {
+  test('يعرض العناوين والقوائم والإحصائيات', async () => {
     renderPage();
 
-    expect(await screen.findByText('╪Ñ╪»╪º╪▒╪⌐ ┘é┘ê╪º╪ª┘à ╪º┘ä╪╣┘à┘ä╪º╪í')).toBeInTheDocument();
-    expect(screen.getByText('╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í')).toBeInTheDocument();
-    expect(screen.getByText('╪╣┘à┘ä╪º╪í VIP')).toBeInTheDocument();
-    expect(screen.getByText('┘Ñ┘á┘á')).toBeInTheDocument();
-    expect(screen.getByText('┘ñ┘ó')).toBeInTheDocument();
+    expect(await screen.findByText('إدارة قوائم العملاء')).toBeInTheDocument();
+    expect(screen.getByText('جميع العملاء')).toBeInTheDocument();
+    expect(screen.getByText('عملاء VIP')).toBeInTheDocument();
+    expect(screen.getByText('٥٠٠')).toBeInTheDocument();
+    expect(screen.getByText('٤٢')).toBeInTheDocument();
   });
 
-  test('┘è┘é┘ê┘à ╪¿┘ü┘ä╪¬╪▒╪⌐ ╪º┘ä┘é┘ê╪º╪ª┘à ╪¿╪º┘ä╪¿╪¡╪½', async () => {
+  test('يقوم بفلترة القوائم بالبحث', async () => {
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    const search = screen.getByPlaceholderText('╪º╪¿╪¡╪½ ┘ü┘è ╪º┘ä┘é┘ê╪º╪ª┘à...');
+    const search = screen.getByPlaceholderText('ابحث في القوائم...');
     await userEvent.type(search, 'VIP');
 
-    expect(screen.queryByText('╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í')).not.toBeInTheDocument();
-    expect(screen.getByText('╪╣┘à┘ä╪º╪í VIP')).toBeInTheDocument();
+    expect(screen.queryByText('جميع العملاء')).not.toBeInTheDocument();
+    expect(screen.getByText('عملاء VIP')).toBeInTheDocument();
   });
 
-  test('┘è┘ü╪¬╪¡ ┘å╪º┘ü╪░╪⌐ ╪º┘ä╪Ñ┘å╪┤╪º╪í ┘ê┘è╪╣╪▒╪╢ ┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä╪╣╪»╪»', async () => {
+  test('يفتح نافذة الإنشاء ويعرض معاينة العدد', async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getByRole('button', { name: /┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐/ }));
-    expect(await screen.findByText('╪Ñ┘å╪┤╪º╪í ┘é╪º╪ª┘à╪⌐ ╪╣┘à┘ä╪º╪í ╪¼╪»┘è╪»╪⌐')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /قائمة جديدة/ }));
+    expect(await screen.findByText('إنشاء قائمة عملاء جديدة')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(broadcastService.previewCustomerListCount).toHaveBeenCalled();
     });
   });
 
-  test('┘è┘å╪┤╪ª ┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐ ╪╣┘å╪» ╪º┘ä╪¡┘ü╪╕', async () => {
+  test('ينشئ قائمة جديدة عند الحفظ', async () => {
     const user = userEvent.setup();
     broadcastService.createCustomerList.mockResolvedValue({ success: true, data: { id: 'new' } });
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getByRole('button', { name: /┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐/ }));
-    await screen.findByText('╪Ñ┘å╪┤╪º╪í ┘é╪º╪ª┘à╪⌐ ╪╣┘à┘ä╪º╪í ╪¼╪»┘è╪»╪⌐');
+    await user.click(screen.getByRole('button', { name: /قائمة جديدة/ }));
+    await screen.findByText('إنشاء قائمة عملاء جديدة');
 
-    const nameInput = screen.getByLabelText('╪º╪│┘à ╪º┘ä┘é╪º╪ª┘à╪⌐ *');
-    await user.type(nameInput, '┘é╪º╪ª┘à╪⌐ ╪¬╪¼╪▒┘è╪¿┘è╪⌐');
+    const nameInput = screen.getByLabelText('اسم القائمة *');
+    await user.type(nameInput, 'قائمة تجريبية');
 
-    await user.click(screen.getByRole('button', { name: '╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º╪ª┘à╪⌐' }));
+    await user.click(screen.getByRole('button', { name: 'إنشاء القائمة' }));
 
     await waitFor(() => {
       expect(broadcastService.createCustomerList).toHaveBeenCalledWith(
-        expect.objectContaining({ name: '┘é╪º╪ª┘à╪⌐ ╪¬╪¼╪▒┘è╪¿┘è╪⌐' }),
+        expect.objectContaining({ name: 'قائمة تجريبية' }),
       );
     });
   });
 
-  test('┘è┘ü╪¬╪¡ ╪º┘ä╪¬╪╣╪»┘è┘ä ┘ä┘é╪º╪ª┘à╪⌐ ┘à╪«╪╡╪╡╪⌐ ┘à╪╣ ╪¿┘è╪º┘å╪º╪¬┘ç╪º', async () => {
+  test('يفتح التعديل لقائمة مخصصة مع بياناتها', async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getAllByRole('button', { name: /╪¬╪╣╪»┘è┘ä/ })[0]);
+    await user.click(screen.getAllByRole('button', { name: /تعديل/ })[0]);
 
-    expect(await screen.findByText('╪¬╪╣╪»┘è┘ä ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í')).toBeInTheDocument();
-    expect(screen.getByLabelText('╪º╪│┘à ╪º┘ä┘é╪º╪ª┘à╪⌐ *')).toHaveValue('╪╣┘à┘ä╪º╪í VIP');
+    expect(await screen.findByText('تعديل قائمة العملاء')).toBeInTheDocument();
+    expect(screen.getByLabelText('اسم القائمة *')).toHaveValue('عملاء VIP');
   });
 
-  test('┘è╪¡╪░┘ü ┘é╪º╪ª┘à╪⌐ ┘à╪«╪╡╪╡╪⌐ ╪¿╪╣╪» ╪º┘ä╪¬╪ú┘â┘è╪»', async () => {
+  test('يحذف قائمة مخصصة بعد التأكيد', async () => {
     const user = userEvent.setup();
     broadcastService.deleteCustomerList.mockResolvedValue({ success: true });
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getAllByRole('button', { name: '╪¡╪░┘ü' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'حذف' })[0]);
 
-    expect(await screen.findByText('╪¡╪░┘ü ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '╪¡╪░┘ü' }));
+    expect(await screen.findByText('حذف قائمة العملاء')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'حذف' }));
 
     await waitFor(() => {
       expect(broadcastService.deleteCustomerList).toHaveBeenCalledWith('list_vip');
     });
   });
 
-  test('╪▓╪▒ ┘ê╪º╪¬╪│╪º╪¿ ┘è┘å┘é┘ä ╪Ñ┘ä┘ë template-broadcast ┘à╪╣ listId', async () => {
+  test('زر واتساب ينقل إلى template-broadcast مع listId', async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getAllByRole('button', { name: /┘ê╪º╪¬╪│╪º╪¿/ })[1]);
+    await user.click(screen.getAllByRole('button', { name: /واتساب/ })[1]);
 
     expect(mockNavigate).toHaveBeenCalledWith('/whatsapp/template-broadcast?listId=list_vip');
   });
 
-  test('┘è╪╣╪▒╪╢ ╪ú╪╣╪╢╪º╪í ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘ü┘è ╪º┘ä┘Ç Sheet ┘à╪╣ ╪º┘ä╪¬╪▒┘é┘è┘à', async () => {
+  test('يعرض أعضاء القائمة في الـ Sheet مع الترقيم', async () => {
     const user = userEvent.setup();
     broadcastService.getCustomersInListPaginated.mockResolvedValue({
       success: true,
       data: [
-        { id: 'c1', name: '┘à╪¡┘à╪» ╪ú╪¡┘à╪»', phone: '201000', email: '', lastActivity: '2026-01-01', status: 'active', rating: 'EXCELLENT', tags: '', totalSpent: 5000, ordersCount: 5, rfmScore: 76, rfmTier: 'gold' },
-        { id: 'c2', name: '╪│╪º╪▒╪⌐ ╪╣┘ä┘è', phone: '201001', email: '', lastActivity: '2026-01-02', status: 'inactive', rating: 'GOOD', tags: '', totalSpent: 100, ordersCount: 1, rfmScore: 10, rfmTier: 'lead' },
+        { id: 'c1', name: 'محمد أحمد', phone: '201000', email: '', lastActivity: '2026-01-01', status: 'active', rating: 'EXCELLENT', tags: '', totalSpent: 5000, ordersCount: 5, rfmScore: 76, rfmTier: 'gold' },
+        { id: 'c2', name: 'سارة علي', phone: '201001', email: '', lastActivity: '2026-01-02', status: 'inactive', rating: 'GOOD', tags: '', totalSpent: 100, ordersCount: 1, rfmScore: 10, rfmTier: 'lead' },
       ],
       total: 2,
       page: 1,
@@ -194,54 +194,54 @@ describe('CustomerLists', () => {
       hasMore: false,
     });
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getAllByRole('button', { name: /╪º┘ä╪ú╪╣╪╢╪º╪í/ })[1]);
+    await user.click(screen.getAllByRole('button', { name: /الأعضاء/ })[1]);
 
-    expect(await screen.findByText('┘à╪¡┘à╪» ╪ú╪¡┘à╪»')).toBeInTheDocument();
-    expect(screen.getByText('╪│╪º╪▒╪⌐ ╪╣┘ä┘è')).toBeInTheDocument();
-    expect(screen.getByText(/╪░┘ç╪¿┘è/)).toBeInTheDocument();
+    expect(await screen.findByText('محمد أحمد')).toBeInTheDocument();
+    expect(screen.getByText('سارة علي')).toBeInTheDocument();
+    expect(screen.getByText(/ذهبي/)).toBeInTheDocument();
     expect(broadcastService.getCustomersInListPaginated).toHaveBeenCalledWith('list_vip', 1, 20, '');
   });
 
-  test('┘è┘å╪│╪« ┘é╪º╪ª┘à╪⌐ ┘à╪«╪╡╪╡╪⌐ (Duplicate)', async () => {
+  test('ينسخ قائمة مخصصة (Duplicate)', async () => {
     const user = userEvent.setup();
     broadcastService.createCustomerList.mockResolvedValue({ success: true, data: { id: 'copy' } });
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getAllByRole('button', { name: /┘å╪│╪«/ })[0]);
+    await user.click(screen.getAllByRole('button', { name: /نسخ/ })[0]);
 
     await waitFor(() => {
       expect(broadcastService.createCustomerList).toHaveBeenCalledWith(
-        expect.objectContaining({ name: '╪╣┘à┘ä╪º╪í VIP (┘å╪│╪«╪⌐)' }),
+        expect.objectContaining({ name: 'عملاء VIP (نسخة)' }),
       );
     });
   });
 
-  test('┘è╪╣╪▒╪╢ ┘é┘ê╪º┘ä╪¿ RFM ┘ü┘è ┘å╪º┘ü╪░╪⌐ ╪º┘ä╪Ñ┘å╪┤╪º╪í', async () => {
+  test('يعرض قوالب RFM في نافذة الإنشاء', async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getByRole('button', { name: /┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐/ }));
-    await screen.findByText('╪Ñ┘å╪┤╪º╪í ┘é╪º╪ª┘à╪⌐ ╪╣┘à┘ä╪º╪í ╪¼╪»┘è╪»╪⌐');
+    await user.click(screen.getByRole('button', { name: /قائمة جديدة/ }));
+    await screen.findByText('إنشاء قائمة عملاء جديدة');
 
-    expect(screen.getByText('╪ú┘ü╪╢┘ä ╪º┘ä╪╣┘à┘ä╪º╪í')).toBeInTheDocument();
-    expect(screen.getByText('╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä╪ú┘ê┘ü┘è╪º╪í')).toBeInTheDocument();
-    expect(screen.getByText('┘à╪╣╪▒╪╢┘ê┘å ┘ä┘ä┘ü┘é╪»╪º┘å')).toBeInTheDocument();
-    expect(screen.getByText('╪╣┘à┘ä╪º╪í ╪¼╪»╪»')).toBeInTheDocument();
+    expect(screen.getByText('أفضل العملاء')).toBeInTheDocument();
+    expect(screen.getByText('العملاء الأوفياء')).toBeInTheDocument();
+    expect(screen.getByText('معرضون للفقدان')).toBeInTheDocument();
+    expect(screen.getByText('عملاء جدد')).toBeInTheDocument();
   });
 
-  test('╪º╪«╪¬┘è╪º╪▒ ┘é╪º┘ä╪¿ RFM ┘è╪╢╪¿╪╖ ╪º┘ä┘à╪╣╪º┘è┘è╪▒ ┘ê┘è╪╣╪º┘è┘å ╪º┘ä╪╣╪»╪»', async () => {
+  test('اختيار قالب RFM يضبط المعايير ويعاين العدد', async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText('╪╣┘à┘ä╪º╪í VIP');
+    await screen.findByText('عملاء VIP');
 
-    await user.click(screen.getByRole('button', { name: /┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐/ }));
-    await screen.findByText('╪Ñ┘å╪┤╪º╪í ┘é╪º╪ª┘à╪⌐ ╪╣┘à┘ä╪º╪í ╪¼╪»┘è╪»╪⌐');
+    await user.click(screen.getByRole('button', { name: /قائمة جديدة/ }));
+    await screen.findByText('إنشاء قائمة عملاء جديدة');
 
-    await user.click(screen.getByText('╪ú┘ü╪╢┘ä ╪º┘ä╪╣┘à┘ä╪º╪í'));
+    await user.click(screen.getByText('أفضل العملاء'));
 
     await waitFor(() => {
       expect(broadcastService.previewCustomerListCount).toHaveBeenCalledWith(

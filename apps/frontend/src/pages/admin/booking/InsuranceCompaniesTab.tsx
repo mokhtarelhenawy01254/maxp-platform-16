@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PlusIcon, PencilIcon, TrashIcon, X as XMarkIcon, Building2 as BuildingIcon } from "lucide-react";
 import { api, fetchJson, getAuthHeaders, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, InsuranceCompany, PriceList } from "./shared";
 
@@ -43,7 +43,7 @@ export default function InsuranceCompaniesTab() {
           fetchJson<PriceList[]>(api("price-lists")).then(setPriceLists).catch(() => setPriceLists([]))
         ]);
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡┘à┘è┘ä ╪┤╪▒┘â╪º╪¬ ╪º┘ä╪¬╪ú┘à┘è┘å");
+        setError(e instanceof Error ? e.message : "حدث خطأ في تحميل شركات التأمين");
       } finally {
         setLoading(false);
       }
@@ -53,7 +53,7 @@ export default function InsuranceCompaniesTab() {
   const mutate = async (url: string, method: string, body?: Record<string, unknown>) => {
     const res = await fetch(url, { method, headers: getAuthHeaders(), body: body ? JSON.stringify(body) : undefined });
     const data = await res.json();
-    if (!data.success) throw new Error(data.error || data.message || "┘ü╪┤┘ä╪¬ ╪º┘ä╪╣┘à┘ä┘è╪⌐");
+    if (!data.success) throw new Error(data.error || data.message || "فشلت العملية");
     return data.data;
   };
 
@@ -96,34 +96,34 @@ export default function InsuranceCompaniesTab() {
       setForm(null);
       await loadCompanies();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡┘ü╪╕ ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å");
+      setError(e instanceof Error ? e.message : "حدث خطأ في حفظ شركة التأمين");
     } finally {
       setSaving(false);
     }
   };
 
   const deleteCompany = async (c: InsuranceCompanyRow) => {
-    if (!window.confirm(`╪¬╪ú┘â┘è╪» ╪¡╪░┘ü ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å "${c.name}"╪ƒ`)) return;
+    if (!window.confirm(`تأكيد حذف شركة التأمين "${c.name}"؟`)) return;
     try {
       await mutate(api(`insurance-companies/${c.id}`), "DELETE");
       await loadCompanies();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å");
+      setError(e instanceof Error ? e.message : "حدث خطأ في حذف شركة التأمين");
     }
   };
 
   if (loading) {
-    return <div className="text-center py-16 text-gray-400 dark:text-gray-500">╪¼╪º╪▒┘ì ╪º┘ä╪¬╪¡┘à┘è┘ä...</div>;
+    return <div className="text-center py-16 text-gray-400 dark:text-gray-500">جارٍ التحميل...</div>;
   }
 
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <div>
-          <h2 className="text-xl font-bold">╪┤╪▒┘â╪º╪¬ ╪º┘ä╪¬╪ú┘à┘è┘å</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">╪Ñ╪»╪º╪▒╪⌐ ╪┤╪▒┘â╪º╪¬ ╪º┘ä╪¬╪ú┘à┘è┘å ╪º┘ä╪¬╪╣╪º┘é╪»┘è╪⌐ ┘ê╪▒╪¿╪╖┘ç╪º ╪¿┘é┘ê╪º╪ª┘à ╪º┘ä╪ú╪│╪╣╪º╪▒</p>
+          <h2 className="text-xl font-bold">شركات التأمين</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">إدارة شركات التأمين التعاقدية وربطها بقوائم الأسعار</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />╪┤╪▒┘â╪⌐ ╪¼╪»┘è╪»╪⌐</button>
+        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />شركة جديدة</button>
       </div>
 
       {error && (
@@ -136,20 +136,20 @@ export default function InsuranceCompaniesTab() {
       {companies.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-12 text-center text-gray-400 dark:text-gray-500">
           <BuildingIcon className="w-10 h-10 mx-auto mb-3" />
-          ┘ä╪º ╪¬┘ê╪¼╪» ╪┤╪▒┘â╪º╪¬ ╪¬╪ú┘à┘è┘å ╪¿╪╣╪»
+          لا توجد شركات تأمين بعد
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
-                <th className="text-right py-3 px-4">╪º╪│┘à</th>
-                <th className="text-right py-3 px-4 whitespace-nowrap">┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒</th>
-                <th className="text-right py-3 px-4 whitespace-nowrap">╪¬┘ä┘è┘ü┘ê┘å 1</th>
-                <th className="text-right py-3 px-4">┘ü╪º┘â╪│</th>
-                <th className="text-right py-3 px-4">┘à╪│╪ñ┘ê┘ä</th>
-                <th className="text-right py-3 px-4">╪¡╪º┘ä╪⌐</th>
-                <th className="text-right py-3 px-4">╪Ñ╪¼╪▒╪º╪í</th>
+                <th className="text-right py-3 px-4">اسم</th>
+                <th className="text-right py-3 px-4 whitespace-nowrap">قائمة الأسعار</th>
+                <th className="text-right py-3 px-4 whitespace-nowrap">تليفون 1</th>
+                <th className="text-right py-3 px-4">فاكس</th>
+                <th className="text-right py-3 px-4">مسؤول</th>
+                <th className="text-right py-3 px-4">حالة</th>
+                <th className="text-right py-3 px-4">إجراء</th>
               </tr>
             </thead>
             <tbody>
@@ -160,30 +160,30 @@ export default function InsuranceCompaniesTab() {
                     {c.priceList ? (
                       <span className="text-blue-600 dark:text-blue-400">{c.priceList.name}</span>
                     ) : (
-                      <span className="text-gray-400 dark:text-gray-500">ΓÇö</span>
+                      <span className="text-gray-400 dark:text-gray-500">—</span>
                     )}
                   </td>
-                  <td className="py-3 px-4 whitespace-nowrap">{c.phone1 || "ΓÇö"}</td>
-                  <td className="py-3 px-4">{c.fax || "ΓÇö"}</td>
+                  <td className="py-3 px-4 whitespace-nowrap">{c.phone1 || "—"}</td>
+                  <td className="py-3 px-4">{c.fax || "—"}</td>
                   <td className="py-3 px-4">
                     {c.contactName ? (
                       <div>
                         <div>{c.contactName}</div>
                         {c.contactPhone && <div className="text-xs text-gray-400 dark:text-gray-500">{c.contactPhone}</div>}
                       </div>
-                    ) : "ΓÇö"}
+                    ) : "—"}
                   </td>
                   <td className="py-3 px-4">
                     {c.isActive ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">┘å╪┤╪╖</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">نشط</span>
                     ) : (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">┘à╪╣╪╖┘ä╪⌐</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">معطلة</span>
                     )}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex gap-1">
-                      <button onClick={() => openEdit(c)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title="╪¬╪╣╪»┘è┘ä"><PencilIcon className="w-4 h-4" /></button>
-                      <button onClick={() => deleteCompany(c)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="╪¡╪░┘ü"><TrashIcon className="w-4 h-4" /></button>
+                      <button onClick={() => openEdit(c)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
+                      <button onClick={() => deleteCompany(c)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="حذف"><TrashIcon className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -197,18 +197,18 @@ export default function InsuranceCompaniesTab() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setForm(null)}>
           <div className={`${MODAL_CONTENT_CLS}`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold">{form.id ? "╪¬╪╣╪»┘è┘ä ╪┤╪▒┘â╪⌐ ╪¬╪ú┘à┘è┘å" : "╪┤╪▒┘â╪⌐ ╪¬╪ú┘à┘è┘å ╪¼╪»┘è╪»╪⌐"}</h3>
+              <h3 className="text-lg font-bold">{form.id ? "تعديل شركة تأمين" : "شركة تأمين جديدة"}</h3>
               <button onClick={() => setForm(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">╪º┘ä╪º╪│┘à</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label>
                 <input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">قائمة الأسعار</label>
                 <select className={MODAL_INPUT_CLS} value={form.priceListId} onChange={e => setForm({ ...form, priceListId: e.target.value })}>
-                  <option value="">╪¿╪»┘ê┘å ┘é╪º╪ª┘à╪⌐ ╪ú╪│╪╣╪º╪▒</option>
+                  <option value="">بدون قائمة أسعار</option>
                   {priceLists
                     .filter(l => l.isActive || l.id === form.priceListId)
                     .map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
@@ -216,32 +216,32 @@ export default function InsuranceCompaniesTab() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">╪¬┘ä┘è┘ü┘ê┘å 1</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">تليفون 1</label>
                   <input className={MODAL_INPUT_CLS} value={form.phone1} onChange={e => setForm({ ...form, phone1: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">┘ü╪º┘â╪│</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">فاكس</label>
                   <input className={MODAL_INPUT_CLS} value={form.fax} onChange={e => setForm({ ...form, fax: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">╪º╪│┘à ╪º┘ä┘à╪│╪ñ┘ê┘ä</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم المسؤول</label>
                   <input className={MODAL_INPUT_CLS} value={form.contactName} onChange={e => setForm({ ...form, contactName: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">╪¬┘ä┘è┘ü┘ê┘å ╪º┘ä┘à╪│╪ñ┘ê┘ä</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">تليفون المسؤول</label>
                   <input className={MODAL_INPUT_CLS} value={form.contactPhone} onChange={e => setForm({ ...form, contactPhone: e.target.value })} />
                 </div>
               </div>
               {form.id && (
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   <input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />
-                  ┘à┘ü╪╣┘æ┘ä╪⌐
+                  مفعّلة
                 </label>
               )}
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setForm(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">╪Ñ┘ä╪║╪º╪í</button>
-              <button onClick={saveCompany} disabled={saving || !form.name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">╪¡┘ü╪╕</button>
+              <button onClick={() => setForm(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
+              <button onClick={saveCompany} disabled={saving || !form.name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuthSimple";
 import { apiClient } from "../services/apiClient";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -9,6 +10,7 @@ import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { toast } from "sonner";
 
 const CustomerPayments = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -32,7 +34,7 @@ const CustomerPayments = () => {
       }
     } catch (err) {
       console.error("خطأ في جلب البيانات:", err);
-      setError("خطأ في الاتصال بالخادم");
+      setError(t("billing.payments.serverError"));
     } finally { setLoading(false); }
   };
 
@@ -41,17 +43,17 @@ const CustomerPayments = () => {
 
   const handleRecharge = async () => {
     const amount = parseFloat(rechargeAmount);
-    if (!amount || amount <= 0) { toast.error("أدخل مبلغاً صحيحاً"); return; }
+    if (!amount || amount <= 0) { toast.error(t("billing.payments.enterValidAmount")); return; }
     setRecharging(true);
     try {
       const res = await apiClient.post("/wallet/kashier/create-session", { amount });
       if (res.data?.success && res.data?.data?.sessionUrl) {
         window.location.href = res.data.data.sessionUrl;
       } else {
-        toast.error(res.data?.message || "فشل إنشاء جلسة الدفع");
+        toast.error(res.data?.message || t("billing.payments.sessionFailed"));
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "خطأ في الاتصال ببوابة الدفع");
+      toast.error(err.response?.data?.message || t("billing.payments.gatewayError"));
     } finally {
       setRecharging(false);
     }
@@ -65,7 +67,7 @@ const CustomerPayments = () => {
 
   return (
     <div className="p-3 min-h-screen bg-background transition-colors duration-200">
-      <h1 className="text-2xl font-bold mb-4">المدفوعات</h1>
+      <h1 className="text-2xl font-bold mb-4">{t("billing.payments.title")}</h1>
 
       {error && <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert>}
 
@@ -73,14 +75,14 @@ const CustomerPayments = () => {
         <div className="rounded-xl border bg-card text-card-foreground p-4 mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">رصيد المحفظة</p>
-              <p className="text-2xl font-bold">{toNumber(wallet.balance).toFixed(2)} ج.م</p>
+              <p className="text-sm text-muted-foreground">{t("billing.payments.walletBalance")}</p>
+              <p className="text-2xl font-bold">{toNumber(wallet.balance).toFixed(2)} {t("billing.payments.currency")}</p>
             </div>
             <button
               onClick={() => setShowRechargeModal(true)}
               className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition"
             >
-              شحن
+              {t("billing.payments.recharge")}
             </button>
           </div>
         </div>
@@ -88,16 +90,16 @@ const CustomerPayments = () => {
 
       <div className="rounded-xl border bg-card text-card-foreground">
         <div className="p-4">
-          <h2 className="text-base font-semibold mb-4">سجل الحركات</h2>
+          <h2 className="text-base font-semibold mb-4">{t("billing.payments.transactionHistory")}</h2>
           {transactions.length === 0 ? (
-            <Alert><AlertDescription>لا توجد حركات حالياً</AlertDescription></Alert>
+            <Alert><AlertDescription>{t("billing.payments.noTransactions")}</AlertDescription></Alert>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الوصف</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>التاريخ</TableHead>
+                  <TableHead>{t("billing.payments.description")}</TableHead>
+                  <TableHead>{t("billing.payments.amount")}</TableHead>
+                  <TableHead>{t("billing.payments.date")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -105,9 +107,9 @@ const CustomerPayments = () => {
                   <TableRow key={tx.id}>
                     <TableCell>{tx.description || tx.paymentNumber || "-"}</TableCell>
                     <TableCell className="font-bold text-green-600 dark:text-green-400">
-                      {toNumber(tx.amount) >= 0 ? "+" : ""}{toNumber(tx.amount).toFixed(2)} ج.م
+                      {toNumber(tx.amount) >= 0 ? "+" : ""}{toNumber(tx.amount).toFixed(2)} {t("billing.payments.currency")}
                     </TableCell>
-                    <TableCell>{tx.createdAt ? formatDate(tx.createdAt) : "غير محدد"}</TableCell>
+                    <TableCell>{tx.createdAt ? formatDate(tx.createdAt) : t("billing.payments.notSpecified")}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -120,14 +122,14 @@ const CustomerPayments = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">شحن المحفظة</h2>
+              <h2 className="text-lg font-bold">{t("billing.payments.rechargeWallet")}</h2>
               <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(""); }} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <input
               type="number"
               value={rechargeAmount}
               onChange={(e) => setRechargeAmount(e.target.value)}
-              placeholder="المبلغ (جنيه)"
+              placeholder={t("billing.payments.amountPlaceholder")}
               min="1"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 mb-4 focus:outline-none focus:ring-2 focus:ring-stone-900"
             />
@@ -136,7 +138,7 @@ const CustomerPayments = () => {
               disabled={recharging || !rechargeAmount}
               className="w-full bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 text-white px-4 py-3 rounded-xl font-bold transition"
             >
-              {recharging ? "جاري الشحن..." : "تأكيد الشحن"}
+              {recharging ? t("billing.payments.recharging") : t("billing.payments.confirmRecharge")}
             </button>
           </div>
         </div>

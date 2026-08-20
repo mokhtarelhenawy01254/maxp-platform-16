@@ -1,9 +1,9 @@
-﻿# Backend & System Architecture
+# Backend & System Architecture
 
 ## Overview
 MaxP Platform provides unified e-commerce, CRM, HR, and WhatsApp multi-channel inbox management.
 
-## Frontend Layout Architecture ΓÇö WhatsApp Workspace
+## Frontend Layout Architecture — WhatsApp Workspace
 ```mermaid
 graph TD
     Layout["Layout (h-screen overflow-hidden)"] --> Main["main.business-shell-main (flex-1 overflow-hidden min-h-0)"]

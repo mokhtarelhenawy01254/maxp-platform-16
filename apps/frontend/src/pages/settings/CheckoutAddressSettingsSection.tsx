@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
   MapPinIcon,
@@ -41,8 +41,8 @@ const parseSettings = (
 };
 
 /**
- * ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪Ñ╪»╪«╪º┘ä ╪º┘ä╪╣┘å┘ê╪º┘å ┘ü┘è ╪º┘ä╪┤┘è┘â ╪ú┘ê╪¬ (╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ + ╪º┘ä┘à┘å╪╖┘é╪⌐).
- * ╪¬╪¬╪¡┘â┘à ┘ü┘è ╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪¬╪╣╪▒┘ü ╪╣┘ä┘ë ╪º┘ä┘à┘å╪╖┘é╪⌐: ┘å╪╡ ╪¡╪▒ + AI ┘è┘é╪¬╪▒╪¡╪î ╪ú┘ê ┘é┘ê╪º╪ª┘à ┘à┘å╪│╪»┘ä╪⌐.
+ * إعدادات إدخال العنوان في الشيك أوت (المحافظة + المنطقة).
+ * تتحكم في طريقة التعرف على المنطقة: نص حر + AI يقترح، أو قوائم منسدلة.
  */
 const CheckoutAddressSettingsSection: React.FC<{
   settings: { checkoutAddressSettings?: unknown };
@@ -81,7 +81,7 @@ const CheckoutAddressSettingsSection: React.FC<{
     } catch (error) {
       console.error("[CheckoutAddressSettings] Save failed:", error);
       toast.error(
-        "╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪º┘ä╪¡┘ü╪╕: " +
+        "حدث خطأ أثناء الحفظ: " +
           ((error as { message?: string })?.message || "Unknown error"),
       );
     } finally {
@@ -102,7 +102,7 @@ const CheckoutAddressSettingsSection: React.FC<{
         }
         tToast.success("StoreSettings.msg_126b");
       } catch (error) {
-        toast.error("╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪º┘ä╪º╪│╪¬╪╣╪º╪»╪⌐: " + ((error as { message?: string })?.message || ""));
+        toast.error("حدث خطأ أثناء الاستعادة: " + ((error as { message?: string })?.message || ""));
       }
     })();
   };
@@ -164,11 +164,11 @@ const CheckoutAddressSettingsSection: React.FC<{
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪╣┘å┘ê╪º┘å (╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ ┘ê╪º┘ä┘à┘å╪╖┘é╪⌐)
+              إعدادات العنوان (المحافظة والمنطقة)
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              ╪╖╪▒┘è┘é╪⌐ ╪Ñ╪»╪«╪º┘ä ╪╣┘å┘ê╪º┘å ╪º┘ä╪╣┘à┘è┘ä ┘ü┘è ╪╡┘ü╪¡╪⌐ ╪º┘ä╪┤┘è┘â ╪ú┘ê╪¬ ┘ê╪º┘ä╪¬╪╣╪▒┘ü ╪╣┘ä┘ë ┘à┘å╪╖┘é╪¬┘ç ╪╣┘ä┘ë
-              ╪«╪▒┘è╪╖╪⌐ ╪┤╪▒┘â╪⌐ ╪º┘ä╪┤╪¡┘å.
+              طريقة إدخال عنوان العميل في صفحة الشيك أوت والتعرف على منطقته على
+              خريطة شركة الشحن.
             </p>
           </div>
         </div>
@@ -177,7 +177,7 @@ const CheckoutAddressSettingsSection: React.FC<{
       <div className="mt-6 space-y-5">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            ╪╖╪▒┘è┘é╪⌐ ╪Ñ╪»╪«╪º┘ä ╪º┘ä╪╣┘å┘ê╪º┘å
+            طريقة إدخال العنوان
           </label>
           <select
             value={form.mode}
@@ -188,43 +188,43 @@ const CheckoutAddressSettingsSection: React.FC<{
             }
             className={selectClassName}
           >
-            <option value="hybrid">Hybrid ΓÇö ┘å╪╡ ╪¡╪▒ + AI ┘è┘é╪¬╪▒╪¡ (┘à┘Å┘ê╪╡┘ë ╪¿┘ç)</option>
-            <option value="ai_parse">AI ┘â╪º┘à┘ä ╪¿╪»┘ê┘å ╪¬╪ú┘â┘è╪»</option>
-            <option value="dropdown">┘é┘ê╪º╪ª┘à ┘à┘å╪│╪»┘ä╪⌐ (╪º┘ä╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐)</option>
+            <option value="hybrid">Hybrid — نص حر + AI يقترح (مُوصى به)</option>
+            <option value="ai_parse">AI كامل بدون تأكيد</option>
+            <option value="dropdown">قوائم منسدلة (الطريقة الحالية)</option>
           </select>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Hybrid: ╪º┘ä╪╣┘à┘è┘ä ┘è┘â╪¬╪¿ ╪º┘ä╪╣┘å┘ê╪º┘å╪î ┘ê╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è ┘è╪¡╪»╪» ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ ┘ê╪º┘ä┘à┘å╪╖┘é╪⌐
-            ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘ê┘è╪╣╪▒╪╢┘ç╪º ┘ä┘ä╪¬╪ú┘â┘è╪». Dropdown: ╪º┘ä┘é┘ê╪º╪ª┘à ╪º┘ä╪¬┘é┘ä┘è╪»┘è╪⌐.
+            Hybrid: العميل يكتب العنوان، والذكاء الاصطناعي يحدد المحافظة والمنطقة
+            تلقائياً ويعرضها للتأكيد. Dropdown: القوائم التقليدية.
           </p>
         </div>
 
         <div className="rounded-xl border border-gray-100 dark:border-gray-800 px-4 divide-y divide-gray-100 dark:divide-gray-800">
           {toggleRow(
             "aiEnabled",
-            "╪¬┘ü╪╣┘è┘ä ╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è ┘ä┘ä╪¬╪╣╪▒┘ü ╪╣┘ä┘ë ╪º┘ä╪╣┘å┘ê╪º┘å",
-            "╪º╪│╪¬╪«╪»╪º┘à AI ┘ä╪¬╪¡╪»┘è╪» ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ ┘ê╪º┘ä┘à┘å╪╖┘é╪⌐ ┘à┘å ╪º┘ä╪╣┘å┘ê╪º┘å ╪º┘ä┘à┘â╪¬┘ê╪¿",
+            "تفعيل الذكاء الاصطناعي للتعرف على العنوان",
+            "استخدام AI لتحديد المحافظة والمنطقة من العنوان المكتوب",
           )}
           {toggleRow(
             "showConfirmationToCustomer",
-            "╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä┘å╪¬┘è╪¼╪⌐ ┘ä┘ä╪╣┘à┘è┘ä ┘ä┘ä╪¬╪ú┘â┘è╪»",
-            "╪╣╪▒╪╢ ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ ┘ê╪º┘ä┘à┘å╪╖┘é╪⌐ ╪º┘ä┘à╪¬╪╣╪▒┘ü ╪╣┘ä┘è┘ç╪º ┘ä┘è╪╣╪¬┘à╪»┘ç╪º ╪º┘ä╪╣┘à┘è┘ä",
+            "إظهار النتيجة للعميل للتأكيد",
+            "عرض المحافظة والمنطقة المتعرف عليها ليعتمدها العميل",
             !form.aiEnabled,
           )}
           {toggleRow(
             "merchantCombobox",
-            "╪¿╪¡╪½ ╪░┘â┘è ┘ü┘è ┘ä┘ê╪¡╪⌐ ╪º┘ä╪¬╪¡┘â┘à",
-            "╪¬┘ü╪╣┘è┘ä ╪º┘ä╪¿╪¡╪½ ╪º┘ä┘å╪╡┘è ╪╣┘å ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ ┘ê╪º┘ä┘à┘å╪╖┘é╪⌐ ┘ü┘è ╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘è╪»┘ê┘è",
+            "بحث ذكي في لوحة التحكم",
+            "تفعيل البحث النصي عن المحافظة والمنطقة في الطلب اليدوي",
           )}
           {toggleRow(
             "cacheResults",
-            "╪¬╪«╪▓┘è┘å ┘å╪¬╪º╪ª╪¼ ╪º┘ä╪¬╪╣╪▒┘ü ┘à╪ñ┘é╪¬╪º┘ï",
-            "╪Ñ╪╣╪º╪»╪⌐ ╪º╪│╪¬╪«╪»╪º┘à ┘å╪¬╪º╪ª╪¼ ┘å┘ü╪│ ╪º┘ä╪╣┘å┘ê╪º┘å ╪¿╪»┘ä╪º┘ï ┘à┘å ╪º╪│╪¬╪»╪╣╪º╪í ╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è ┘â┘ä ┘à╪▒╪⌐",
+            "تخزين نتائج التعرف مؤقتاً",
+            "إعادة استخدام نتائج نفس العنوان بدلاً من استدعاء الذكاء الاصطناعي كل مرة",
             !form.aiEnabled,
           )}
           {toggleRow(
             "logRawAddress",
-            "╪¬╪│╪¼┘è┘ä ╪º┘ä╪╣┘å┘ê╪º┘å ╪º┘ä╪«╪º┘à",
-            "╪¡┘ü╪╕ ┘å╪╡ ╪º┘ä╪╣┘å┘ê╪º┘å ┘â┘à╪º ┘â╪¬╪¿┘ç ╪º┘ä╪╣┘à┘è┘ä ┘ü┘è ╪│╪¼┘ä ╪º┘ä╪¬╪¡┘ä┘è┘ä ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐",
+            "تسجيل العنوان الخام",
+            "حفظ نص العنوان كما كتبه العميل في سجل التحليل للمراجعة",
           )}
         </div>
 
@@ -232,21 +232,21 @@ const CheckoutAddressSettingsSection: React.FC<{
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                ╪º┘ä┘å┘à┘ê╪░╪¼ ╪º┘ä┘à╪│╪¬╪«╪»┘à
+                النموذج المستخدم
               </label>
               <select
                 value={form.model}
                 onChange={(e) => update({ model: e.target.value })}
                 className={selectClassName}
               >
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (╪│╪▒┘è╪╣)</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro (╪»┘é┘è┘é)</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (سريع)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro (دقيق)</option>
                 <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                ┘å╪│╪¿╪⌐ ╪º┘ä╪½┘é╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ ({Math.round((form.confidenceThreshold || 0.7) * 100)}%)
+                نسبة الثقة المطلوبة ({Math.round((form.confidenceThreshold || 0.7) * 100)}%)
               </label>
               <input
                 type="range"
@@ -279,7 +279,7 @@ const CheckoutAddressSettingsSection: React.FC<{
             ) : (
               <CheckCircleIcon className="w-4 h-4" />
             )}
-            ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬
+            حفظ الإعدادات
           </button>
           <button
             type="button"
@@ -287,16 +287,16 @@ const CheckoutAddressSettingsSection: React.FC<{
             disabled={saving}
             className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            ╪º╪│╪¬╪╣╪º╪»╪⌐ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è
+            استعادة الافتراضي
           </button>
         </div>
 
         <div className="flex items-start gap-2 text-xs text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800/50 rounded-lg p-3 border border-gray-100 dark:border-gray-800">
           <SparklesIcon className="w-4 h-4 mt-0.5 shrink-0 text-indigo-400" />
           <span>
-            ╪╣┘å╪» ╪¬┘ü╪╣┘è┘ä ╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è╪î ┘è┘Å╪¡┘ü╪╕ ╪º┘ä╪╣┘å┘ê╪º┘å ┘â┘à╪º ┘â╪¬╪¿┘ç ╪º┘ä╪╣┘à┘è┘ä ┘ê┘è╪¡┘ê┘ä┘ç
-            ╪º┘ä┘å╪╕╪º┘à ╪Ñ┘ä┘ë ┘à╪¡╪º┘ü╪╕╪⌐ + ┘à┘å╪╖┘é╪⌐ ╪╣┘ä┘ë ╪«╪▒┘è╪╖╪⌐ ╪┤╪▒┘â╪⌐ ╪º┘ä╪┤╪¡┘å. ╪Ñ╪░╪º ┘ä┘à ┘è╪¬┘à┘â┘å ┘à┘å
-            ╪¬╪¡╪»┘è╪» ╪º┘ä┘à┘å╪╖┘é╪⌐ ╪¿╪»┘é╪⌐╪î ┘è╪▒╪│┘ä ╪│╪ñ╪º┘ä╪º┘ï ┘ä┘ä╪╣┘à┘è┘ä ╪╣╪¿╪▒ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ ┘ä┘ä╪¬╪ú┘â┘è╪».
+            عند تفعيل الذكاء الاصطناعي، يُحفظ العنوان كما كتبه العميل ويحوله
+            النظام إلى محافظة + منطقة على خريطة شركة الشحن. إذا لم يتمكن من
+            تحديد المنطقة بدقة، يرسل سؤالاً للعميل عبر الواتساب للتأكيد.
           </span>
         </div>
       </div>

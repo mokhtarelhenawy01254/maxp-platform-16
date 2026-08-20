@@ -1,10 +1,21 @@
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Database, File, FileText, HelpCircle, Info, Loader2, Server, Sparkles, Star, X, XCircle } from 'lucide-react';
+import {
+  Sparkles,
+  CheckCircle2,
+  Database,
+  XCircle,
+  AlertTriangle,
+  FileText,
+  HelpCircle,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 type ProductEmbeddingItem = {
   id: string;

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { resolvePostAuthDestination } from "../../utils/postAuthRouting";
@@ -14,15 +14,15 @@ interface AccessDeniedProps {
  * working escape route (their allowed home) instead of a dead-end page.
  */
 const AccessDenied: React.FC<AccessDeniedProps> = ({
-  title = "┘à┘à┘å┘ê╪╣ ╪º┘ä┘ê╪╡┘ê┘ä",
-  message = "┘ä┘è╪│ ┘ä╪»┘è┘â ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ ┘ä┘ä┘ê╪╡┘ê┘ä ┘ä┘ç╪░┘ç ╪º┘ä╪╡┘ü╪¡╪⌐",
+  title = "ممنوع الوصول",
+  message = "ليس لديك الصلاحية المطلوبة للوصول لهذه الصفحة",
   showBack = true,
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const resolvedHome = resolvePostAuthDestination(user);
-  // Never offer the page the user is currently denied from ΓÇö avoid a bounce loop.
+  // Never offer the page the user is currently denied from — avoid a bounce loop.
   const homePath =
     resolvedHome === location.pathname ? "/marketplace" : resolvedHome;
 
@@ -36,7 +36,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
           onClick={() => navigate(homePath, { replace: true })}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ml-2"
         >
-          ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘ä╪╡┘ü╪¡╪¬┘â ╪º┘ä╪▒╪ª┘è╪│┘è╪⌐
+          الانتقال لصفحتك الرئيسية
         </button>
         {showBack && (
           <button
@@ -44,7 +44,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
             onClick={() => window.history.back()}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
           >
-            ╪º┘ä╪╣┘ê╪»╪⌐
+            العودة
           </button>
         )}
       </div>

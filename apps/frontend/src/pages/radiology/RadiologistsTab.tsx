@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, X as XMarkIcon, RefreshCw, Loader2, Search } from "lucide-react";
@@ -31,7 +31,7 @@ const emptyForm = (): RadiologistForm => ({
 });
 
 const locationLabel = (value: string) =>
-  RADIOLOGIST_LOCATIONS.find(l => l.value === value)?.label || value || "ΓÇö";
+  RADIOLOGIST_LOCATIONS.find(l => l.value === value)?.label || value || "—";
 
 export default function RadiologistsTab() {
   const { t } = useTranslation();

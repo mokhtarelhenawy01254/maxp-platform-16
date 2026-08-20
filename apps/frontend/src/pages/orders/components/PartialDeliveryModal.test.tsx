@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import PartialDeliveryModal from "./PartialDeliveryModal";
@@ -53,14 +52,14 @@ describe("PartialDeliveryModal", () => {
       />,
     );
 
-    expect(screen.getByText("تسليم جزئي للطلب")).toBeInTheDocument();
+    expect(screen.getByText("orders.partialDeliveryTitle")).toBeInTheDocument();
     expect(screen.getByText("فستان شيفون")).toBeInTheDocument();
     expect(screen.getByText("حذاء رياضي")).toBeInTheDocument();
-    expect(screen.getByText("تأكيد التسليم الجزئي")).toBeInTheDocument();
+    expect(screen.getByText("orders.partialDeliveryAction")).toBeInTheDocument();
   });
 
-  it("does not render when closed", () => {
-    const { container } = render(
+  it("does not render content when closed", () => {
+    render(
       <PartialDeliveryModal
         isOpen={false}
         onClose={jest.fn()}
@@ -69,7 +68,9 @@ describe("PartialDeliveryModal", () => {
       />,
     );
 
-    expect(container.innerHTML).toBe("");
+    // The Dialog portal is always mounted, but the content should not be visible.
+    expect(screen.queryByText("orders.partialDeliveryTitle")).not.toBeInTheDocument();
+    expect(screen.queryByText("orders.partialDeliveryAction")).not.toBeInTheDocument();
   });
 
   it("shows default delivered quantities equal to item quantities", () => {
@@ -103,9 +104,9 @@ describe("PartialDeliveryModal", () => {
     const inputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     fireEvent.change(inputs[0], { target: { value: "2" } });
 
-    fireEvent.click(screen.getByText("تأكيد التسليم الجزئي"));
+    fireEvent.click(screen.getByText("orders.partialDeliveryAction"));
 
-    await screen.findByText("تأكيد التسليم الجزئي");
+    await screen.findByText("orders.partialDeliveryAction");
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
 
@@ -129,13 +130,13 @@ describe("PartialDeliveryModal", () => {
       />,
     );
 
-    expect(screen.getAllByText(/مكتمل/)).toHaveLength(2);
+    expect(screen.getAllByText(/orders\.partialDeliveryComplete/)).toHaveLength(2);
 
     const inputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     fireEvent.change(inputs[0], { target: { value: "1" } });
 
-    expect(screen.getByText("مرتجع: 2")).toBeInTheDocument();
-    expect(screen.getByText(/مكتمل/)).toBeInTheDocument();
+    expect(screen.getByText("orders.partialDeliveryReturned")).toBeInTheDocument();
+    expect(screen.getByText(/orders\.partialDeliveryComplete/)).toBeInTheDocument();
   });
 
   it("disables confirm button when all quantities are zero", () => {
@@ -152,7 +153,7 @@ describe("PartialDeliveryModal", () => {
     fireEvent.change(inputs[0], { target: { value: "0" } });
     fireEvent.change(inputs[1], { target: { value: "0" } });
 
-    const confirmBtn = screen.getByText("تأكيد التسليم الجزئي");
+    const confirmBtn = screen.getByText("orders.partialDeliveryAction");
     expect(confirmBtn).toBeDisabled();
   });
 });

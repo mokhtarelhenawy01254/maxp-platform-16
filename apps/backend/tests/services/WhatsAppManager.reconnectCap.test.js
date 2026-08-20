@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
     getSharedPrismaClient: jest.fn(() => ({})),
     safeQuery: jest.fn(async (operation) => operation()),
     executeWithRetry: jest.fn(async (operation) => operation())
@@ -47,7 +47,7 @@ describe('WhatsAppManager reconnect-failure cap', () => {
         expect(update).toHaveBeenCalledWith(expect.objectContaining({
             data: expect.objectContaining({ status: 'QR_PENDING' })
         }));
-        // ╪¿╪╣╪» ╪º┘ä╪º╪│╪¬╪│┘ä╪º┘à╪î ╪º┘ä╪╣╪»╪º╪» ┘è╪▒╪¼╪╣ ╪╡┘ü╪▒
+        // بعد الاستسلام، العداد يرجع صفر
         expect(__testing.getReconnectFailureCount(sessionId)).toBe(0);
     });
 });

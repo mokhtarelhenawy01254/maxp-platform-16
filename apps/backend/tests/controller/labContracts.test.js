@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -42,8 +42,8 @@ describe('labContractsController', () => {
     test('returns company-scoped active contracts ordered by name asc', async () => {
       const prisma = createMockPrisma();
       prisma.labContract.findMany.mockResolvedValue([
-        { id: 'c2', companyId: 'c1', name: '┘à╪│╪¬╪┤┘ü┘ë ╪º┘ä┘å┘ê╪▒', region: '╪º┘ä┘é╪º┘ç╪▒╪⌐', discountType: 'PERCENTAGE', discountPercent: 10, externalSample: false, isActive: true },
-        { id: 'c1', companyId: 'c1', name: '┘à╪╣┘à┘ä ╪º┘ä┘ü╪º', region: '╪º┘ä╪¼┘è╪▓╪⌐', discountType: 'CUSTOM', discountPercent: 0, externalSample: true, isActive: true }
+        { id: 'c2', companyId: 'c1', name: 'مستشفى النور', region: 'القاهرة', discountType: 'PERCENTAGE', discountPercent: 10, externalSample: false, isActive: true },
+        { id: 'c1', companyId: 'c1', name: 'معمل الفا', region: 'الجيزة', discountType: 'CUSTOM', discountPercent: 0, externalSample: true, isActive: true }
       ]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -64,15 +64,15 @@ describe('labContractsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.getAllContracts({ user: { companyId: 'c1' }, query: { search: '╪º┘ä┘å┘ê╪▒' } }, res);
+      await controller.getAllContracts({ user: { companyId: 'c1' }, query: { search: 'النور' } }, res);
 
       expect(prisma.labContract.findMany).toHaveBeenCalledWith({
         where: {
           companyId: 'c1',
           isActive: true,
           OR: [
-            { name: { contains: '╪º┘ä┘å┘ê╪▒', mode: 'insensitive' } },
-            { region: { contains: '╪º┘ä┘å┘ê╪▒', mode: 'insensitive' } }
+            { name: { contains: 'النور', mode: 'insensitive' } },
+            { region: { contains: 'النور', mode: 'insensitive' } }
           ]
         },
         orderBy: { name: 'asc' }
@@ -108,7 +108,7 @@ describe('labContractsController', () => {
       await controller.createContract({ user: { companyId: 'c1' }, body: { name: '' } }, res);
       expect(res.statusCode).toBe(400);
       expect(res.payload.success).toBe(false);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä╪¬╪╣╪º┘é╪» ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم التعاقد مطلوب');
     });
 
     test('creates a contract with normalized fields and defaults', async () => {
@@ -116,9 +116,9 @@ describe('labContractsController', () => {
       prisma.labContract.create.mockResolvedValue({
         id: 'c-new',
         companyId: 'c1',
-        name: '┘à╪╣┘à┘ä ╪º┘ä┘ü╪º',
-        region: '╪º┘ä╪¼┘è╪▓╪⌐',
-        governorate: '╪º┘ä╪¼┘è╪▓╪⌐',
+        name: 'معمل الفا',
+        region: 'الجيزة',
+        governorate: 'الجيزة',
         discountType: 'PERCENTAGE',
         discountPercent: 10,
         externalSample: true,
@@ -129,16 +129,16 @@ describe('labContractsController', () => {
       const res = createResponse();
       await controller.createContract({
         user: { companyId: 'c1' },
-        body: { name: '  ┘à╪╣┘à┘ä ╪º┘ä┘ü╪º  ', region: '╪º┘ä╪¼┘è╪▓╪⌐', governorate: '╪º┘ä╪¼┘è╪▓╪⌐', discountType: 'percentage', discountPercent: '10', externalSample: 'true' }
+        body: { name: '  معمل الفا  ', region: 'الجيزة', governorate: 'الجيزة', discountType: 'percentage', discountPercent: '10', externalSample: 'true' }
       }, res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.labContract.create).toHaveBeenCalledWith({
         data: {
           companyId: 'c1',
-          name: '┘à╪╣┘à┘ä ╪º┘ä┘ü╪º',
-          region: '╪º┘ä╪¼┘è╪▓╪⌐',
-          governorate: '╪º┘ä╪¼┘è╪▓╪⌐',
+          name: 'معمل الفا',
+          region: 'الجيزة',
+          governorate: 'الجيزة',
           discountType: 'PERCENTAGE',
           discountPercent: 10,
           externalSample: true
@@ -149,11 +149,11 @@ describe('labContractsController', () => {
 
     test('clamps discountPercent to 0-100', async () => {
       const prisma = createMockPrisma();
-      prisma.labContract.create.mockResolvedValue({ id: 'c-new', name: '╪¬╪╣╪º┘é╪»', discountType: 'PERCENTAGE', discountPercent: 100, externalSample: false });
+      prisma.labContract.create.mockResolvedValue({ id: 'c-new', name: 'تعاقد', discountType: 'PERCENTAGE', discountPercent: 100, externalSample: false });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createContract({ user: { companyId: 'c1' }, body: { name: '╪¬╪╣╪º┘é╪»', discountPercent: 150 } }, res);
+      await controller.createContract({ user: { companyId: 'c1' }, body: { name: 'تعاقد', discountPercent: 150 } }, res);
 
       expect(prisma.labContract.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ discountPercent: 100 })
@@ -161,7 +161,7 @@ describe('labContractsController', () => {
       expect(res.statusCode).toBe(200);
 
       const res2 = createResponse();
-      await controller.createContract({ user: { companyId: 'c1' }, body: { name: '╪¬╪╣╪º┘é╪»', discountPercent: -20 } }, res2);
+      await controller.createContract({ user: { companyId: 'c1' }, body: { name: 'تعاقد', discountPercent: -20 } }, res2);
       expect(prisma.labContract.create).toHaveBeenLastCalledWith(expect.objectContaining({
         data: expect.objectContaining({ discountPercent: 0 })
       }));
@@ -170,14 +170,14 @@ describe('labContractsController', () => {
     test('rejects an invalid discountType', async () => {
       getSharedPrismaClient.mockReturnValue(createMockPrisma());
       const res = createResponse();
-      await controller.createContract({ user: { companyId: 'c1' }, body: { name: '╪¬╪╣╪º┘é╪»', discountType: 'FIXED' } }, res);
+      await controller.createContract({ user: { companyId: 'c1' }, body: { name: 'تعاقد', discountType: 'FIXED' } }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘å┘ê╪╣ ╪º┘ä╪«╪╡┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡');
+      expect(res.payload.error).toBe('نوع الخصم غير صالح');
     });
 
     test('returns 403 when companyId is missing', async () => {
       const res = createResponse();
-      await controller.createContract({ user: {}, body: { name: '╪¬╪╣╪º┘é╪»' } }, res);
+      await controller.createContract({ user: {}, body: { name: 'تعاقد' } }, res);
       expect(res.statusCode).toBe(403);
       expect(res.payload.success).toBe(false);
     });
@@ -186,8 +186,8 @@ describe('labContractsController', () => {
   describe('updateContract', () => {
     test('updates only whitelisted fields and clamps discountPercent', async () => {
       const prisma = createMockPrisma();
-      prisma.labContract.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1', name: '┘é╪»┘è┘à' });
-      prisma.labContract.update.mockResolvedValue({ id: 'c1', name: '┘à╪¡╪»╪½', region: '╪º┘ä┘é╪º┘ç╪▒╪⌐', governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐', discountType: 'CUSTOM', discountPercent: 100, externalSample: true, isActive: false });
+      prisma.labContract.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1', name: 'قديم' });
+      prisma.labContract.update.mockResolvedValue({ id: 'c1', name: 'محدث', region: 'القاهرة', governorate: 'القاهرة', discountType: 'CUSTOM', discountPercent: 100, externalSample: true, isActive: false });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -195,9 +195,9 @@ describe('labContractsController', () => {
         user: { companyId: 'c1' },
         params: { id: 'c1' },
         body: {
-          name: '┘à╪¡╪»╪½',
-          region: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
-          governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+          name: 'محدث',
+          region: 'القاهرة',
+          governorate: 'القاهرة',
           discountType: 'custom',
           discountPercent: 200,
           externalSample: true,
@@ -210,9 +210,9 @@ describe('labContractsController', () => {
       expect(prisma.labContract.update).toHaveBeenCalledWith({
         where: { id: 'c1' },
         data: {
-          name: '┘à╪¡╪»╪½',
-          region: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
-          governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+          name: 'محدث',
+          region: 'القاهرة',
+          governorate: 'القاهرة',
           discountType: 'CUSTOM',
           discountPercent: 100,
           externalSample: true,
@@ -223,7 +223,7 @@ describe('labContractsController', () => {
 
     test('rejects an invalid discountType on update', async () => {
       const prisma = createMockPrisma();
-      prisma.labContract.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1', name: '┘é╪»┘è┘à' });
+      prisma.labContract.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1', name: 'قديم' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -233,7 +233,7 @@ describe('labContractsController', () => {
         body: { discountType: 'INVALID' }
       }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘å┘ê╪╣ ╪º┘ä╪«╪╡┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡');
+      expect(res.payload.error).toBe('نوع الخصم غير صالح');
     });
 
     test('returns 404 for a contract from another company', async () => {
@@ -244,7 +244,7 @@ describe('labContractsController', () => {
       await controller.updateContract({ user: { companyId: 'c1' }, params: { id: 'other' }, body: { name: 'x' } }, res);
       expect(res.statusCode).toBe(404);
       expect(res.payload.success).toBe(false);
-      expect(res.payload.error).toBe('╪º┘ä╪¬╪╣╪º┘é╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('التعاقد غير موجود');
     });
   });
 
@@ -261,7 +261,7 @@ describe('labContractsController', () => {
       expect(res.statusCode).toBe(200);
       expect(prisma.labContract.findFirst).toHaveBeenCalledWith({ where: { id: 'c1', companyId: 'c1' } });
       expect(prisma.labContract.update).toHaveBeenCalledWith({ where: { id: 'c1' }, data: { isActive: false } });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä╪¬╪╣╪º┘é╪»');
+      expect(res.payload.message).toBe('تم حذف التعاقد');
     });
 
     test('returns 404 for a contract from another company', async () => {
@@ -272,7 +272,7 @@ describe('labContractsController', () => {
       await controller.deleteContract({ user: { companyId: 'c1' }, params: { id: 'other' } }, res);
       expect(res.statusCode).toBe(404);
       expect(res.payload.success).toBe(false);
-      expect(res.payload.error).toBe('╪º┘ä╪¬╪╣╪º┘é╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('التعاقد غير موجود');
     });
   });
 });

@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const tiktokAuthController = require('../controller/tiktokAuthController');
 const verifyToken = require('../utils/verifyToken');

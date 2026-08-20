@@ -52,8 +52,8 @@ export const shouldBootstrapStorefront = (
     return false;
   }
 
-  // Exclude customer-portal paths — these are handled by the customer portal,
-  // never by the storefront rendering engine.
+  // بوابة العميل (حسابي / تسجيل دخول العملاء) تُعرض من تطبيق المنصة حتى على
+  // subdomain المتجر — حتى لا تُستورد مكونات البوابة جوه محرك المتجر (اعتماد دائري)
   if (
     pathname === "/account" ||
     pathname.startsWith("/account/") ||

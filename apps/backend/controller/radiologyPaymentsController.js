@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { attachToActiveShift } = require('./radiologyShiftsController');
 const { recordRadiologyStatusHistory } = require('../utils/radiologyStatusHistory');
 
@@ -37,12 +37,12 @@ const recomputeAppointmentPaid = async (prisma, appointmentId, total) => {
 const getAppointmentPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
-    if (!appointment) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪¼╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
 
     const total = getAppointmentTotal(appointment);
     const payments = await prisma.radiologyAppointmentPayment.findMany({ where: { appointmentId: id }, orderBy: { createdAt: 'desc' } });
@@ -61,28 +61,28 @@ const getAppointmentPayment = async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting radiology appointment payment:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪»┘ü╪╣' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب بيانات الدفع' });
   }
 };
 
 const recordAppointmentPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { amount, method, note } = req.body || {};
     const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'المبلغ غير صحيح' });
 
     const prisma = getSharedPrismaClient();
     const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
-    if (!appointment) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪¼╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
 
     const total = getAppointmentTotal(appointment);
     const paidSoFar = (await prisma.radiologyAppointmentPayment.aggregate({ where: { appointmentId: id }, _sum: { amount: true } }))._sum?.amount || 0;
     if (paidSoFar + amt > total) {
-      return res.status(400).json({ success: false, error: `╪º┘ä┘à╪¿┘ä╪║ ┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä┘à╪¬╪¿┘é┘è (${Math.max(0, total - paidSoFar).toFixed(0)} ╪¼)` });
+      return res.status(400).json({ success: false, error: `المبلغ يتجاوز المتبقي (${Math.max(0, total - paidSoFar).toFixed(0)} ج)` });
     }
 
     const m = String(method || 'CASH').toUpperCase();
@@ -102,27 +102,27 @@ const recordAppointmentPayment = async (req, res) => {
     res.json({ success: true, data: { payment, appointment: updated, total, paidAmount: paid, remaining: Math.max(0, total - paid), paymentStatus: status } });
   } catch (error) {
     console.error('Error recording radiology appointment payment:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»┘ü╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة' });
   }
 };
 
 const refundAppointmentPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { amount, note } = req.body || {};
     const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'المبلغ غير صحيح' });
 
     const prisma = getSharedPrismaClient();
     const appointment = await prisma.radiologyAppointment.findFirst({ where: { id, companyId } });
-    if (!appointment) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪¼╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
 
     const payments = await prisma.radiologyAppointmentPayment.findMany({ where: { appointmentId: id }, select: { amount: true } });
     const paid = payments.reduce((s, p) => s + p.amount, 0);
-    if (amt > paid) return res.status(400).json({ success: false, error: '┘à╪¿┘ä╪║ ╪º┘ä╪º╪│╪¬╪▒╪¼╪º╪╣ ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä┘à╪»┘ü┘ê╪╣' });
+    if (amt > paid) return res.status(400).json({ success: false, error: 'مبلغ الاسترجاع أكبر من المدفوع' });
 
     const payment = await prisma.radiologyAppointmentPayment.create({
       data: {
@@ -130,7 +130,7 @@ const refundAppointmentPayment = async (req, res) => {
         appointmentId: id,
         amount: -amt,
         method: 'REFUND',
-        note: note ? `╪º╪│╪¬╪▒╪¼╪º╪╣: ${String(note)}` : '╪º╪│╪¬╪▒╪¼╪º╪╣ ╪»┘ü╪╣╪⌐',
+        note: note ? `استرجاع: ${String(note)}` : 'استرجاع دفعة',
         paidBy: req.user?.id || req.user?.email || null,
       },
     });
@@ -141,19 +141,19 @@ const refundAppointmentPayment = async (req, res) => {
     res.json({ success: true, data: { refund: payment, appointment: updated, total, paidAmount: newPaid, remaining: Math.max(0, total - newPaid), paymentStatus: status } });
   } catch (error) {
     console.error('Error refunding radiology appointment payment:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪º╪│╪¬╪▒╪¼╪º╪╣ ╪º┘ä╪»┘ü╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في استرجاع الدفعة' });
   }
 };
 
 const getStudyPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const total = getStudyTotal(study);
     const payments = await prisma.radiologyStudyPayment.findMany({ where: { studyId: id }, orderBy: { createdAt: 'desc' } });
@@ -172,7 +172,7 @@ const getStudyPayment = async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting radiology study payment:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪»┘ü╪╣' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب بيانات الدفع' });
   }
 };
 
@@ -190,21 +190,21 @@ const recomputePaid = async (prisma, studyId, total) => {
 const recordStudyPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { amount, method, note } = req.body || {};
     const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'المبلغ غير صحيح' });
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const total = getStudyTotal(study);
     const paidSoFar = (await prisma.radiologyStudyPayment.aggregate({ where: { studyId: id }, _sum: { amount: true } }))._sum?.amount || 0;
     if (paidSoFar + amt > total) {
-      return res.status(400).json({ success: false, error: `╪º┘ä┘à╪¿┘ä╪║ ┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä┘à╪¬╪¿┘é┘è (${Math.max(0, total - paidSoFar).toFixed(0)} ╪¼)` });
+      return res.status(400).json({ success: false, error: `المبلغ يتجاوز المتبقي (${Math.max(0, total - paidSoFar).toFixed(0)} ج)` });
     }
 
     const m = String(method || 'CASH').toUpperCase();
@@ -229,32 +229,32 @@ const recordStudyPayment = async (req, res) => {
       status,
       changedBy: req.user?.id || req.user?.email || null,
       userName: req.user?.firstName ? ([req.user.firstName, req.user.lastName].filter(Boolean).join(' ')) : (req.user?.email || null),
-      reason: note ? String(note) : '╪¬╪│╪¼┘è┘ä ╪»┘ü╪╣╪⌐',
+      reason: note ? String(note) : 'تسجيل دفعة',
     });
     res.json({ success: true, data: { payment, study: updated, total, paidAmount: paid, remaining: Math.max(0, total - paid), paymentStatus: status } });
   } catch (error) {
     console.error('Error recording radiology study payment:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»┘ü╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة' });
   }
 };
 
 const refundStudyPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { amount, note } = req.body || {};
     const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'المبلغ غير صحيح' });
 
     const prisma = getSharedPrismaClient();
     const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
-    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const payments = await prisma.radiologyStudyPayment.findMany({ where: { studyId: id }, select: { amount: true } });
     const paid = payments.reduce((s, p) => s + p.amount, 0);
-    if (amt > paid) return res.status(400).json({ success: false, error: '┘à╪¿┘ä╪║ ╪º┘ä╪º╪│╪¬╪▒╪¼╪º╪╣ ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä┘à╪»┘ü┘ê╪╣' });
+    if (amt > paid) return res.status(400).json({ success: false, error: 'مبلغ الاسترجاع أكبر من المدفوع' });
 
     const payment = await prisma.radiologyStudyPayment.create({
       data: {
@@ -262,7 +262,7 @@ const refundStudyPayment = async (req, res) => {
         studyId: id,
         amount: -amt,
         method: 'REFUND',
-        note: note ? `╪º╪│╪¬╪▒╪¼╪º╪╣: ${String(note)}` : '╪º╪│╪¬╪▒╪¼╪º╪╣ ╪»┘ü╪╣╪⌐',
+        note: note ? `استرجاع: ${String(note)}` : 'استرجاع دفعة',
         paidBy: req.user?.id || req.user?.email || null,
       },
     });
@@ -278,19 +278,19 @@ const refundStudyPayment = async (req, res) => {
       status,
       changedBy: req.user?.id || req.user?.email || null,
       userName: req.user?.firstName ? ([req.user.firstName, req.user.lastName].filter(Boolean).join(' ')) : (req.user?.email || null),
-      reason: note ? `╪º╪│╪¬╪▒╪¼╪º╪╣: ${String(note)}` : '╪º╪│╪¬╪▒╪¼╪º╪╣ ╪»┘ü╪╣╪⌐',
+      reason: note ? `استرجاع: ${String(note)}` : 'استرجاع دفعة',
     });
     res.json({ success: true, data: { refund: payment, study: updated, total, paidAmount: newPaid, remaining: Math.max(0, total - newPaid), paymentStatus: status } });
   } catch (error) {
     console.error('Error refunding radiology study payment:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪º╪│╪¬╪▒╪¼╪º╪╣ ╪º┘ä╪»┘ü╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في استرجاع الدفعة' });
   }
 };
 
 const financialSummary = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const prisma = getSharedPrismaClient();
     const [studies, invoices, ledger] = await Promise.all([
@@ -313,7 +313,7 @@ const financialSummary = async (req, res) => {
 
     const byEntity = invoices.reduce((acc, inv) => {
       const key = inv.insuranceCompanyId;
-      if (!acc[key]) acc[key] = { insuranceCompanyId: key, name: inv.insuranceCompanyName || 'ΓÇö', total: 0, paid: 0, remaining: 0 };
+      if (!acc[key]) acc[key] = { insuranceCompanyId: key, name: inv.insuranceCompanyName || '—', total: 0, paid: 0, remaining: 0 };
       acc[key].total += inv.totalAmount;
       acc[key].paid += inv.paidAmount;
       acc[key].remaining += inv.remainingAmount;
@@ -332,7 +332,7 @@ const financialSummary = async (req, res) => {
     });
   } catch (error) {
     console.error('Error computing radiology financial summary:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪│╪º╪¿ ╪º┘ä┘à┘ä╪«╪╡ ╪º┘ä┘à╪º┘ä┘è' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حساب الملخص المالي' });
   }
 };
 

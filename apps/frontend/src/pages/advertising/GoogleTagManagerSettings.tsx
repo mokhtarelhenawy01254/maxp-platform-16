@@ -1,6 +1,9 @@
-import { Activity as ChartBarIcon, Circle as RocketLaunchIcon, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  ChartBarIcon,
+  RocketLaunchIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 import { SettingsPageLayout } from "../../components/settings/SettingsPageLayout";
 import { SettingsSection } from "../../components/settings/SettingsSection";
 import { InputSetting, ToggleSetting } from "../../components/settings/SettingControls";

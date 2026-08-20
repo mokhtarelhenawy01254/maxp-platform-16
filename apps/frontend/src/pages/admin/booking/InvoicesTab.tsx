@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookingInvoice, BookingPatient, CashierShift, INVOICE_STATUS_MAP, PAYMENT_METHOD_LABEL, api, fetchJson } from "./shared";
 import { Banknote, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { toast } from "sonner";
@@ -25,9 +25,9 @@ interface Props {
 }
 
 const EXPENSE_SPLIT_LABEL: Record<string, { label: string; color: string }> = {
-  PATIENT: { label: "╪º┘ä┘à╪▒┘è╪╢", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  INSURANCE: { label: "╪º┘ä╪¬╪ú┘à┘è┘å", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
-  BOTH: { label: "┘à╪┤╪¬╪▒┘â", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+  PATIENT: { label: "المريض", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  INSURANCE: { label: "التأمين", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
+  BOTH: { label: "مشترك", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
 };
 
 const fmt = (n: number) => Number(n || 0).toFixed(2);
@@ -60,7 +60,7 @@ export default function InvoicesTab({
         body: JSON.stringify({ openingBalance: Number(openingBalance) || 0 }),
       });
       setShift(data);
-    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "┘ü╪┤┘ä ┘ü╪¬╪¡ ╪º┘ä╪┤┘è┘ü╪¬"); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "فشل فتح الشيفت"); }
     finally { setShiftBusy(false); }
   };
 
@@ -73,7 +73,7 @@ export default function InvoicesTab({
         body: JSON.stringify({ closingBalance: Number(closingBalance) || 0 }),
       });
       setShift(data);
-    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "┘ü╪┤┘ä ╪Ñ╪║┘ä╪º┘é ╪º┘ä╪┤┘è┘ü╪¬"); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "فشل إغلاق الشيفت"); }
     finally { setShiftBusy(false); }
   };
 
@@ -86,7 +86,7 @@ export default function InvoicesTab({
       });
       window.location.reload();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "┘ü╪┤┘ä ╪º┘ä╪º╪│╪¬╪▒╪»╪º╪»");
+      toast.error(e instanceof Error ? e.message : "فشل الاسترداد");
       throw e;
     }
   };
@@ -105,55 +105,55 @@ export default function InvoicesTab({
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-bold">╪º┘ä┘à╪»┘ü┘ê╪╣╪º╪¬ ┘ê╪º┘ä╪¬╪¡╪╡┘è┘ä</h2>
+        <h2 className="text-xl font-bold">المدفوعات والتحصيل</h2>
         <div className="flex flex-wrap gap-3">
           <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={statusFilter} onChange={e => onStatusFilterChange(e.target.value)}>
-            <option value="">┘â┘ä ╪º┘ä╪¡╪º┘ä╪º╪¬</option>
+            <option value="">كل الحالات</option>
             {Object.entries(INVOICE_STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
-          <div className="relative"><Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" /><input className="border dark:border-gray-600 rounded-lg pr-9 pl-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="╪¿╪¡╪½..." value={search} onChange={e => onSearchChange(e.target.value)} /></div>
-          <button onClick={onNew} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Plus className="w-4 h-4" />┘ü╪º╪¬┘ê╪▒╪⌐ ╪¼╪»┘è╪»╪⌐</button>
+          <div className="relative"><Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" /><input className="border dark:border-gray-600 rounded-lg pr-9 pl-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="بحث..." value={search} onChange={e => onSearchChange(e.target.value)} /></div>
+          <button onClick={onNew} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Plus className="w-4 h-4" />فاتورة جديدة</button>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4 mb-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div>
-            <p className="font-bold text-sm">{shift ? `╪º┘ä╪┤┘è┘ü╪¬ ┘à┘ü╪¬┘ê╪¡ ΓÇö ${shift.cashierName}` : "┘ä╪º ┘è┘ê╪¼╪» ╪┤┘è┘ü╪¬ ┘à┘ü╪¬┘ê╪¡"}</p>
+            <p className="font-bold text-sm">{shift ? `الشيفت مفتوح — ${shift.cashierName}` : "لا يوجد شيفت مفتوح"}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {shift ? `╪▒╪╡┘è╪» ╪º┘ä╪¿╪»╪º┘è╪⌐: ${fmt(shift.openingBalance)}` : "╪º┘ü╪¬╪¡ ╪┤┘è┘ü╪¬ ┘ä╪¿╪»╪í ╪º┘ä╪¬╪¡╪╡┘è┘ä"}
+              {shift ? `رصيد البداية: ${fmt(shift.openingBalance)}` : "افتح شيفت لبدء التحصيل"}
             </p>
           </div>
           {shift ? (
             <div className="flex flex-wrap items-center gap-2">
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">╪▒╪╡┘è╪» ╪º┘ä╪Ñ╪║┘ä╪º┘é</label>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">رصيد الإغلاق</label>
                 <input type="number" className="w-32 border dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100" value={closingBalance} onChange={e => setClosingBalance(e.target.value)} />
               </div>
-              <button onClick={closeShift} disabled={shiftBusy} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm">╪Ñ╪║┘ä╪º┘é ╪º┘ä╪┤┘è┘ü╪¬</button>
+              <button onClick={closeShift} disabled={shiftBusy} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm">إغلاق الشيفت</button>
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">╪▒╪╡┘è╪» ╪º┘ä╪¿╪»╪º┘è╪⌐</label>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">رصيد البداية</label>
                 <input type="number" className="w-32 border dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100" value={openingBalance} onChange={e => setOpeningBalance(e.target.value)} />
               </div>
-              <button onClick={openShift} disabled={shiftBusy} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">┘ü╪¬╪¡ ╪┤┘è┘ü╪¬</button>
+              <button onClick={openShift} disabled={shiftBusy} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">فتح شيفت</button>
             </div>
           )}
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-center py-12 text-gray-400 dark:text-gray-500">┘ä╪º ╪¬┘ê╪¼╪» ┘ü┘ê╪º╪¬┘è╪▒</p>
+        <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد فواتير</p>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
           <table className="w-full">
-            <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐", "╪º┘ä┘à╪▒┘è╪╢", "╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", "╪º┘ä╪«╪╡┘à", "╪º┘ä╪╡╪º┘ü┘è", "╪º┘ä┘à╪│╪»╪»", "╪º┘ä┘à╪¬╪¿┘é┘è", "╪º┘ä╪¡╪º┘ä╪⌐", "╪º┘ä╪»┘ü╪╣╪º╪¬", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
+            <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["رقم الفاتورة", "المريض", "الإجمالي", "الخصم", "الصافي", "المسدد", "المتبقي", "الحالة", "الدفعات", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
             <tbody>{filtered.map(inv => (
               <tr key={inv.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
                 <td className="py-3 px-4 font-medium" dir="ltr">{inv.invoiceNumber}</td>
-                <td className="py-3 px-4">{inv.patient ? `${inv.patient.firstName} ${inv.patient.lastName || ""}` : "ΓÇö"}<span className="block text-xs text-gray-400 dark:text-gray-500" dir="ltr">{inv.patient?.phone || ""}</span></td>
+                <td className="py-3 px-4">{inv.patient ? `${inv.patient.firstName} ${inv.patient.lastName || ""}` : "—"}<span className="block text-xs text-gray-400 dark:text-gray-500" dir="ltr">{inv.patient?.phone || ""}</span></td>
                 <td className="py-3 px-4">{fmt(inv.total)}</td>
                 <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{fmt(inv.discount)}</td>
                 <td className="py-3 px-4 font-medium">{fmt(inv.net ?? Math.max(0, inv.total - inv.discount + (inv.additionAmount || 0)))}</td>
@@ -168,15 +168,15 @@ export default function InvoicesTab({
                   )}
                 </td>
                 <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">
-                  {inv.payments?.length ? inv.payments.map(p => <div key={p.id} className={p.amount < 0 ? "text-red-500" : ""}>{fmt(p.amount)} {PAYMENT_METHOD_LABEL[p.method] || p.method}{p.reason ? ` ΓÇö ${p.reason}` : ""}</div>) : "ΓÇö"}
+                  {inv.payments?.length ? inv.payments.map(p => <div key={p.id} className={p.amount < 0 ? "text-red-500" : ""}>{fmt(p.amount)} {PAYMENT_METHOD_LABEL[p.method] || p.method}{p.reason ? ` — ${p.reason}` : ""}</div>) : "—"}
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex gap-1 justify-end">
                     {inv.remaining > 0 && inv.status !== "REFUNDED" && (
-                      <button onClick={() => onPay(inv)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title="╪¬╪│╪¼┘è┘ä ╪»┘ü╪╣╪⌐"><Banknote className="w-4 h-4" /></button>
+                      <button onClick={() => onPay(inv)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title="تسجيل دفعة"><Banknote className="w-4 h-4" /></button>
                     )}
-                    <button onClick={() => onEdit(inv)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="╪¬╪╣╪»┘è┘ä"><Pencil className="w-4 h-4" /></button>
-                    <button onClick={() => onDelete(inv.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="╪¡╪░┘ü"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => onEdit(inv)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => onDelete(inv.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </td>
               </tr>

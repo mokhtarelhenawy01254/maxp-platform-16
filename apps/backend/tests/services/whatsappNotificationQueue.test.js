@@ -1,4 +1,4 @@
-﻿const { isRateLimitedSendError, queueSendPacingDelay } = require('../../services/whatsapp/WhatsAppNotificationService');
+const { isRateLimitedSendError, queueSendPacingDelay } = require('../../services/whatsapp/WhatsAppNotificationService');
 
 describe('notification queue pacing', () => {
   it('detects rate-limit errors by httpStatus 429', () => {

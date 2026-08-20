@@ -69,7 +69,7 @@ const showServiceWorkerNotification = async ({
       : null;
   const registration =
     existingRegistration ||
-    (await navigator.serviceWorker.register("/push-sw.js", { scope: "/" }));
+    (await navigator.serviceWorker.register("/sw-v4.js", { scope: "/" }));
 
   await registration.showNotification(title, {
     body,

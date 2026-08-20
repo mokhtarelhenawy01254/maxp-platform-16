@@ -1,6 +1,6 @@
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { ArrowLeft, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
 import { updateCompetitorStatus } from './useCompetitorStatus';

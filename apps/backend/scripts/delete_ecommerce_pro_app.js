@@ -1,4 +1,4 @@
-﻿// Hard-deletes the ecommerce-pro marketplace app and all related records.
+// Hard-deletes the ecommerce-pro marketplace app and all related records.
 // Run once against the target DB after deploying the code that removed
 // ecommerce-pro from the marketplace seed and gating references.
 //
@@ -19,7 +19,7 @@ async function main() {
   const app = await prisma.marketplaceApp.findUnique({ where: { slug: SLUG } });
 
   if (!app) {
-    console.log(`[delete:${SLUG}] App not found ΓÇö nothing to delete.`);
+    console.log(`[delete:${SLUG}] App not found — nothing to delete.`);
     await prisma.$disconnect();
     return;
   }

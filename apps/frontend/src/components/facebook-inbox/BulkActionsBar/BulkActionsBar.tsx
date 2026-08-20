@@ -1,6 +1,10 @@
-import { X as XMarkIcon, Check as CheckCircleIcon, Circle as UserPlusIcon, Tag as TagIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  XMarkIcon,
+  CheckCircleIcon,
+  UserPlusIcon,
+  TagIcon,
+} from "@heroicons/react/24/outline";
 
 interface BulkActionsBarProps {
   selectedCount: number;

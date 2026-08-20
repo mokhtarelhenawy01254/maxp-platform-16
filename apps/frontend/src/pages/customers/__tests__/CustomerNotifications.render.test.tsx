@@ -1,6 +1,6 @@
-﻿/**
- * CustomerNotifications (╪╣╪¿╪▒ TemplateCenter) ΓÇö ╪º┘ä╪¬╪ú┘â╪» ┘à┘å ╪╣╪▒╪╢ ╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪¼╪»┘ê┘ä╪⌐
- * ┘ê╪┤╪▒┘è╪╖ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪¬╪¼╪▒┘è╪¿┘è ┘ê╪¬╪¿┘ê┘è╪¿╪º╪¬ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪╣┘à┘ä╪º╪í.
+/**
+ * CustomerNotifications (عبر TemplateCenter) — التأكد من عرض تبويب الجدولة
+ * وشريط الإرسال التجريبي وتبويبات قوالب العملاء.
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
 import React from "react";
@@ -37,9 +37,9 @@ const SCHEDULE = {
       activeChannel: "BAILEYS",
       delayValue: 24,
       delayUnit: "HOURS",
-      label: "┘â╪│╪¿ ┘å┘é╪º╪╖",
+      label: "كسب نقاط",
       category: "loyalty",
-      trigger: "╪╣┘å╪» ┘â╪│╪¿ ┘å┘é╪º╪╖",
+      trigger: "عند كسب نقاط",
     },
     {
       id: "s2",
@@ -48,9 +48,9 @@ const SCHEDULE = {
       activeChannel: "META_CLOUD",
       delayValue: 0,
       delayUnit: "HOURS",
-      label: "┘â╪º╪┤ ╪¿╪º┘â",
+      label: "كاش باك",
       category: "cashback",
-      trigger: "╪╣┘å╪» ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â",
+      trigger: "عند إضافة الكاش باك",
     },
   ],
 };
@@ -74,41 +74,41 @@ function renderPage() {
   );
 }
 
-describe("CustomerNotifications ╪╣╪¿╪▒ TemplateCenter", () => {
+describe("CustomerNotifications عبر TemplateCenter", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockApi();
   });
 
-  test("┘è╪╣╪▒╪╢ ╪º┘ä╪╣┘å┘ê╪º┘å + ╪┤╪▒┘è╪╖ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪¬╪¼╪▒┘è╪¿┘è + ╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪¼╪»┘ê┘ä╪⌐ ┘â┘à┘ü╪¬╪º╪¡ ╪º┘ü╪¬╪▒╪º╪╢┘è", async () => {
+  test("يعرض العنوان + شريط الإرسال التجريبي + تبويب الجدولة كمفتاح افتراضي", async () => {
     renderPage();
-    expect(await screen.findByText("╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í")).toBeInTheDocument();
-    // ╪┤╪▒┘è╪╖ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪¬╪¼╪▒┘è╪¿┘è (╪«╪º╪╡ ╪¿╪º┘ä╪╣┘à┘ä╪º╪í)
+    expect(await screen.findByText("إشعارات العملاء")).toBeInTheDocument();
+    // شريط الإرسال التجريبي (خاص بالعملاء)
     expect(screen.getByPlaceholderText("01000000000")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /╪Ñ╪▒╪│╪º┘ä ╪¬╪¼╪▒┘è╪¿┘è/ })).toBeInTheDocument();
-    // ╪º┘ä╪¬╪¿┘ê┘è╪¿╪º╪¬
-    expect(screen.getByRole("button", { name: /╪¼╪»┘ê┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒╪º╪¬/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /┘é┘ê╪º┘ä╪¿ ┘à┘å╪º╪│╪¿╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ê┘ä╪º╪í/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /┘é┘ê╪º┘ä╪¿ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /┘é┘ê╪º┘ä╪¿ ╪º┘ä╪¬┘é╪│┘è┘à/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /إرسال تجريبي/ })).toBeInTheDocument();
+    // التبويبات
+    expect(screen.getByRole("button", { name: /جدول الإشعارات/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /قوالب مناسبات العملاء/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /قوالب الولاء/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /قوالب الكاش باك/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /قوالب التقسيم/ })).toBeInTheDocument();
   });
 
-  test("╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪¼╪»┘ê┘ä╪⌐ ┘è╪╣╪▒╪╢ ╪ú╪¡╪»╪º╪½ ╪º┘ä╪╣┘à┘ä╪º╪í ╪¿┘é┘è┘à┘ç╪º ┘à┘å ╪º┘ä┘Ç schedule", async () => {
+  test("تبويب الجدولة يعرض أحداث العملاء بقيمها من الـ schedule", async () => {
     renderPage();
-    expect((await screen.findAllByText("┘â╪│╪¿ ┘å┘é╪º╪╖")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("┘â╪º╪┤ ╪¿╪º┘â").length).toBeGreaterThan(0);
-    expect(screen.getByText("╪╣┘å╪» ┘â╪│╪¿ ┘å┘é╪º╪╖")).toBeInTheDocument();
-    expect(screen.getByText("24 ╪│╪º╪╣╪⌐")).toBeInTheDocument();
+    expect((await screen.findAllByText("كسب نقاط")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("كاش باك").length).toBeGreaterThan(0);
+    expect(screen.getByText("عند كسب نقاط")).toBeInTheDocument();
+    expect(screen.getByText("24 ساعة")).toBeInTheDocument();
   });
 
-  test("┘à┘ü╪¬╪º╪¡ ╪º┘ä╪¬╪¿╪»┘è┘ä ┘ü┘è ╪º┘ä╪¼╪»┘ê┘ä╪⌐ ╪¿┘è┘â╪¬╪¿ ┘ä┘ä┘Ç schedule ╪╣┘å╪» ╪º┘ä╪¡┘ü╪╕", async () => {
+  test("مفتاح التبديل في الجدولة بيكتب للـ schedule عند الحفظ", async () => {
     renderPage();
     const user = userEvent.setup();
-    await screen.findAllByText("┘â╪│╪¿ ┘å┘é╪º╪╖");
+    await screen.findAllByText("كسب نقاط");
 
-    await user.click(screen.getAllByRole("button", { name: /╪¬╪╣╪»┘è┘ä/ })[0]);
-    await user.click(screen.getByRole("button", { name: /╪¡┘ü╪╕/ }));
+    await user.click(screen.getAllByRole("button", { name: /تعديل/ })[0]);
+    await user.click(screen.getByRole("button", { name: /حفظ/ }));
 
     expect(apiClient.put).toHaveBeenCalledWith(
       "/hr/customer-loyalty/notifications/schedule",
@@ -116,17 +116,17 @@ describe("CustomerNotifications ╪╣╪¿╪▒ TemplateCenter", () => {
     );
   });
 
-  test("┘è╪╣╪▒╪╢ ╪¬╪¿┘ê┘è╪¿ ╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪▒╪│╪º╪ª┘ä ╪º┘ä╪«╪º╪╡ ╪¿╪º┘ä╪╣┘à┘ä╪º╪í ╪¿╪»┘ê┘å ╪¬╪¿┘ê┘è╪¿╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒╪▓ (╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬/╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬)", async () => {
+  test("يعرض تبويب تقارير الرسائل الخاص بالعملاء بدون تبويبات الأوردرز (تقارير الحالات/الإعدادات)", async () => {
     renderPage();
-    await screen.findAllByText("┘â╪│╪¿ ┘å┘é╪º╪╖");
-    // ╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪¬┘é╪▒┘è╪▒ ╪º┘ä╪«╪º╪╡ ╪¿╪º┘ä╪╣┘à┘ä╪º╪í (MARKETING) ┘à┘ê╪¼┘ê╪»
-    expect(screen.getByRole("button", { name: /╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪▒╪│╪º╪ª┘ä/ })).toBeInTheDocument();
-    // ╪¬╪¿┘ê┘è╪¿╪º╪¬ ╪º┘ä╪ú┘ê╪▒╪»╪▒╪▓ (╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬/╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬) ┘à╪┤ ┘à┘ê╪¼┘ê╪»╪⌐ ┘ü┘è ┘å╪╖╪º┘é ╪º┘ä╪╣┘à┘ä╪º╪í
-    expect(screen.queryByRole("button", { name: /╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪º╪¬/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬$/ })).not.toBeInTheDocument();
+    await screen.findAllByText("كسب نقاط");
+    // تبويب التقرير الخاص بالعملاء (MARKETING) موجود
+    expect(screen.getByRole("button", { name: /تقارير الرسائل/ })).toBeInTheDocument();
+    // تبويبات الأوردرز (تقارير الحالات/الإعدادات) مش موجودة في نطاق العملاء
+    expect(screen.queryByRole("button", { name: /تقارير الحالات/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^الإعدادات$/ })).not.toBeInTheDocument();
   });
 
-  test("╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ┘ü┘è ┘å╪╖╪º┘é ╪º┘ä╪╣┘à┘ä╪º╪í ╪¬╪¡┘ä ┘à╪¬╪║┘è╪▒╪º╪¬┘ç┘à ╪¿┘é┘è┘à ┘å┘à┘ê╪░╪¼┘è╪⌐ (points/customerName)", async () => {
+  test("المعاينة في نطاق العملاء تحل متغيراتهم بقيم نموذجية (points/customerName)", async () => {
     apiClient.get.mockImplementation((url: string) => {
       if (url === "/hr/customer-loyalty/notifications/schedule") {
         return Promise.resolve({
@@ -140,9 +140,9 @@ describe("CustomerNotifications ╪╣╪¿╪▒ TemplateCenter", () => {
                 activeChannel: "BAILEYS",
                 delayValue: 0,
                 delayUnit: "HOURS",
-                label: "┘â╪│╪¿ ┘å┘é╪º╪╖",
+                label: "كسب نقاط",
                 category: "loyalty",
-                trigger: "╪╣┘å╪» ┘â╪│╪¿ ┘å┘é╪º╪╖",
+                trigger: "عند كسب نقاط",
               },
             ],
           },
@@ -156,8 +156,8 @@ describe("CustomerNotifications ╪╣╪¿╪▒ TemplateCenter", () => {
               {
                 id: "t1",
                 eventType: "LOYALTY_POINTS_AWARDED",
-                name: "┘é╪º┘ä╪¿ ┘å┘é╪º╪╖",
-                content: "┘â╪│╪¿╪¬ {points} ┘å┘é╪╖╪⌐ ┘è╪º {customerName}",
+                name: "قالب نقاط",
+                content: "كسبت {points} نقطة يا {customerName}",
                 channel: "BAILEYS",
                 isActive: true,
               },
@@ -170,9 +170,9 @@ describe("CustomerNotifications ╪╣╪¿╪▒ TemplateCenter", () => {
     });
     renderPage();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: /┘é┘ê╪º┘ä╪¿ ╪º┘ä┘ê┘ä╪º╪í/ }));
-    await user.click(await screen.findByRole("button", { name: /^┘à╪╣╪º┘è┘å╪⌐/ }));
-    expect(screen.getAllByText(/50 ┘å┘é╪╖╪⌐/).length).toBeGreaterThan(0);
+    await user.click(await screen.findByRole("button", { name: /قوالب الولاء/ }));
+    await user.click(await screen.findByRole("button", { name: /^معاينة/ }));
+    expect(screen.getAllByText(/50 نقطة/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/\[points\]/)).not.toBeInTheDocument();
   });
 });

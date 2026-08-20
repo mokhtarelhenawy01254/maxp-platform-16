@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/orderMovementCore', () => ({
+jest.mock('../../../services/orderMovementCore', () => ({
   fetchOrderMovementData: jest.fn(),
   buildTransitions: jest.fn(),
   normalizeDateRange: jest.fn(({ startDate, endDate }) => {
@@ -54,16 +54,16 @@ const baseRequest = {
   requestedBy: 'user-3',
   fromStatusId: 'st-1',
   toStatusId: 'st-2',
-  reason: '╪º┘ä╪╣┘à┘è┘ä ╪º╪│╪¬┘ä┘à ╪º┘ä╪╖┘ä╪¿',
+  reason: 'العميل استلم الطلب',
   status: 'approved',
   reviewedBy: 'user-5',
   reviewedAt: new Date('2026-05-01T12:00:00.000Z'),
   createdAt: new Date('2026-05-01T10:00:00.000Z'),
   order: { orderNumber: 'ORD-1001' },
-  fromStatus: { name: '┘à╪ñ┘â╪»', code: 'CONFIRMED' },
-  toStatus: { name: '╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à', code: 'DELIVERED' },
-  requestor: { firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è' },
-  reviewer: { firstName: '╪╣┘ä┘è', lastName: '╪¡╪│┘å' }
+  fromStatus: { name: 'مؤكد', code: 'CONFIRMED' },
+  toStatus: { name: 'تم التسليم', code: 'DELIVERED' },
+  requestor: { firstName: 'أحمد', lastName: 'علي' },
+  reviewer: { firstName: 'علي', lastName: 'حسن' }
 };
 
 describe('approvalsController', () => {
@@ -86,9 +86,9 @@ describe('approvalsController', () => {
         reviewedAt: null,
         createdAt: new Date('2026-05-01T11:00:00.000Z'),
         order: { orderNumber: 'ORD-1002' },
-        fromStatus: { name: '┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒', code: 'PENDING' },
-        toStatus: { name: '┘à╪ñ┘â╪»', code: 'CONFIRMED' },
-        requestor: { firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è' },
+        fromStatus: { name: 'قيد الانتظار', code: 'PENDING' },
+        toStatus: { name: 'مؤكد', code: 'CONFIRMED' },
+        requestor: { firstName: 'أحمد', lastName: 'علي' },
         reviewer: null
       },
       {
@@ -97,16 +97,16 @@ describe('approvalsController', () => {
         requestedBy: 'user-4',
         fromStatusId: 'st-1',
         toStatusId: 'st-4',
-        reason: '╪º┘ä╪╣┘à┘è┘ä ╪ú┘ä╪║┘ë ╪º┘ä╪╖┘ä╪¿',
+        reason: 'العميل ألغى الطلب',
         status: 'rejected',
         reviewedBy: 'user-5',
         reviewedAt: new Date('2026-05-02T13:00:00.000Z'),
         createdAt: new Date('2026-05-02T08:00:00.000Z'),
         order: { orderNumber: 'ORD-1003' },
-        fromStatus: { name: '┘à╪ñ┘â╪»', code: 'CONFIRMED' },
-        toStatus: { name: '┘à┘ä╪║┘è', code: 'CANCELLED' },
-        requestor: { firstName: '╪│╪º╪▒╪⌐', lastName: '┘à╪¡┘à╪»' },
-        reviewer: { firstName: '╪╣┘ä┘è', lastName: '╪¡╪│┘å' }
+        fromStatus: { name: 'مؤكد', code: 'CONFIRMED' },
+        toStatus: { name: 'ملغي', code: 'CANCELLED' },
+        requestor: { firstName: 'سارة', lastName: 'محمد' },
+        reviewer: { firstName: 'علي', lastName: 'حسن' }
       },
       {
         id: 'req-4',
@@ -114,16 +114,16 @@ describe('approvalsController', () => {
         requestedBy: 'user-7',
         fromStatusId: null,
         toStatusId: 'st-2',
-        reason: '╪¬╪│┘ä┘è┘à ╪º┘ä╪╖┘ä╪¿',
+        reason: 'تسليم الطلب',
         status: 'approved',
         reviewedBy: 'user-6',
         reviewedAt: new Date('2026-05-02T10:00:00.000Z'),
         createdAt: new Date('2026-05-02T09:00:00.000Z'),
         order: { orderNumber: 'ORD-1004' },
         fromStatus: null,
-        toStatus: { name: '╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à', code: 'DELIVERED' },
+        toStatus: { name: 'تم التسليم', code: 'DELIVERED' },
         requestor: null,
-        reviewer: { firstName: '┘à┘å┘ë', lastName: '╪«╪º┘ä╪»' }
+        reviewer: { firstName: 'منى', lastName: 'خالد' }
       }
     ];
 
@@ -173,13 +173,13 @@ describe('approvalsController', () => {
         orderId: 'order-1',
         orderNumber: 'ORD-1001',
         requestedBy: 'user-3',
-        requestedByName: '╪ú╪¡┘à╪» ╪╣┘ä┘è',
-        fromStatus: { name: '┘à╪ñ┘â╪»', code: 'CONFIRMED' },
-        toStatus: { name: '╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à', code: 'DELIVERED' },
-        reason: '╪º┘ä╪╣┘à┘è┘ä ╪º╪│╪¬┘ä┘à ╪º┘ä╪╖┘ä╪¿',
+        requestedByName: 'أحمد علي',
+        fromStatus: { name: 'مؤكد', code: 'CONFIRMED' },
+        toStatus: { name: 'تم التسليم', code: 'DELIVERED' },
+        reason: 'العميل استلم الطلب',
         status: 'approved',
         reviewedBy: 'user-5',
-        reviewedByName: '╪╣┘ä┘è ╪¡╪│┘å',
+        reviewedByName: 'علي حسن',
         reviewedAt: new Date('2026-05-01T12:00:00.000Z'),
         createdAt: new Date('2026-05-01T10:00:00.000Z')
       })
@@ -188,8 +188,8 @@ describe('approvalsController', () => {
     expect(data.requests[3].fromStatus).toBeNull();
 
     expect(data.reviewers).toEqual([
-      { name: '╪╣┘ä┘è ╪¡╪│┘å', reviewedCount: 2, approved: 1, rejected: 1, avgReviewHours: 3.5 },
-      { name: '┘à┘å┘ë ╪«╪º┘ä╪»', reviewedCount: 1, approved: 1, rejected: 0, avgReviewHours: 1 }
+      { name: 'علي حسن', reviewedCount: 2, approved: 1, rejected: 1, avgReviewHours: 3.5 },
+      { name: 'منى خالد', reviewedCount: 1, approved: 1, rejected: 0, avgReviewHours: 1 }
     ]);
 
     expect(prisma.orderStatusChangeRequest.findMany).toHaveBeenCalledWith(
@@ -264,7 +264,7 @@ describe('approvalsController', () => {
     );
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
     expect(core.getSharedPrismaClient).not.toHaveBeenCalled();
   });
 

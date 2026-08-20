@@ -1,10 +1,21 @@
-import { Store as BuildingStorefrontIcon, Truck as TruckIcon, Circle as GiftIcon, File as DocumentTextIcon, CreditCard as CreditCardIcon, Pencil as PencilIcon, Trash2 as TrashIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
-;
+import {
+  BuildingStorefrontIcon,
+  TruckIcon,
+  GiftIcon,
+  DocumentTextIcon,
+  CreditCardIcon,
+  WalletIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import {
   storeSettingsService,
@@ -22,6 +33,7 @@ import { CheckoutFormSection } from "../../components/store/CheckoutFormSection"
 import { FooterSettingsSection } from "../../components/store/FooterSettingsSection";
 import { BranchModal } from "../../components/store/BranchModal";
 import { ShippingModalV2 } from "../../components/store/ShippingModalV2";
+import { CheckoutAddressSettingsSection } from "./CheckoutAddressSettingsSection";
 import PromotionSettings from "./PromotionSettings";
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
 import {
@@ -68,6 +80,7 @@ type StoreSettingsTab =
   | "shipping"
   | "storefront"
   | "checkout"
+  | "payment"
   | "footer"
   | "promotion"
   | "delivery"
@@ -81,6 +94,7 @@ const VALID_STORE_SETTINGS_TABS = new Set<StoreSettingsTab>([
   "shipping",
   "storefront",
   "checkout",
+  "payment",
   "footer",
   "promotion",
   "delivery",
@@ -1147,25 +1161,25 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
         {!hideNavigation ? (
           <aside className="lg:w-72 flex-shrink-0">
             <nav className="flex flex-col space-y-2 bg-gray-50/50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-              {tabsWithCheckout.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id as StoreSettingsTab)}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-3.5 text-sm font-semibold rounded-xl transition-all duration-200
-                    ${activeTab === tab.id
-                      ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-gray-600"
-                      : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/50"
-                    }
-                  `}
-                >
-                  <div className={`p-1.5 rounded-lg ${activeTab === tab.id ? "bg-indigo-50 dark:bg-indigo-900/30" : "bg-transparent"}`}>
-                    <tab.icon className="h-5 w-5" />
-                  </div>
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+                {tabsWithCheckout.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id as StoreSettingsTab)}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-3.5 text-sm font-semibold rounded-xl transition-all duration-200
+                      ${activeTab === tab.id
+                        ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-gray-600"
+                        : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                      }
+                    `}
+                  >
+                    <div className={`p-1.5 rounded-lg ${activeTab === tab.id ? "bg-indigo-50 dark:bg-indigo-900/30" : "bg-transparent"}`}>
+                      <tab.icon className="h-5 w-5" />
+                    </div>
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
           </aside>
         ) : null}
 
@@ -1189,6 +1203,13 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                   shippingClasses={shippingClasses}
                   promotionSettings={promotionSettings}
                   onUpdatePromotionSettings={handleUpdatePromotionSettings}
+                />
+
+                <CheckoutAddressSettingsSection
+                  settings={storefrontSettings}
+                  onChange={(patch) =>
+                    setStorefrontSettings((prev) => ({ ...prev, ...patch }))
+                  }
                 />
 
                 <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
@@ -1417,10 +1438,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                 <PromotionSettings />
               </div>
             ) : activeTab === "payment" ? (
-              <PaymentGatewaySettingsSection
+              <PaymentSettingsPanel
                 settings={storefrontSettings}
                 onChange={setStorefrontSettings}
-                onSave={() => { /* Save handled internally by the component */ }}
                 loading={loading}
               />
             ) : null}
@@ -1461,12 +1481,235 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
   );
 };
 
+const PAYMENT_CARD_CLS =
+  "bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-5 shadow-sm";
+const PAYMENT_LABEL_CLS =
+  "block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5";
+const PAYMENT_INPUT_CLS =
+  "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-gray-900 placeholder:text-slate-400 shadow-sm transition-colors focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-900/30";
+const PAYMENT_PRIMARY_BTN_CLS =
+  "inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm shadow-indigo-600/20";
+
+const WalletPaymentSettingsSection: React.FC<{
+  settings: StorefrontSettings;
+  onChange: (settings: Partial<StorefrontSettings>) => void;
+  loading: boolean;
+}> = ({ settings, onChange, loading }) => {
+  const parseWalletSettings = (): {
+    enabled: boolean;
+    walletNumber: string;
+    recipientName: string;
+    instructions: string;
+    discountEnabled: boolean;
+    discountPercent: number;
+    showDiscountBadge: boolean;
+  } => {
+    const raw = settings.walletPaymentSettings as
+      | string
+      | Record<string, unknown>
+      | null
+      | undefined;
+    if (!raw) {
+      return {
+        enabled: false,
+        walletNumber: "",
+        recipientName: "",
+        instructions: "",
+        discountEnabled: false,
+        discountPercent: 0,
+        showDiscountBadge: true,
+      };
+    }
+    const parsed =
+      typeof raw === "string"
+        ? (() => {
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return {};
+            }
+          })()
+        : raw;
+    return {
+      enabled: parsed?.enabled === true,
+      walletNumber: String(parsed?.walletNumber || ""),
+      recipientName: String(parsed?.recipientName || ""),
+      instructions: String(parsed?.instructions || ""),
+      discountEnabled: parsed?.discountEnabled === true,
+      discountPercent: Number(parsed?.discountPercent || 0),
+      showDiscountBadge: parsed?.showDiscountBadge !== false,
+    };
+  };
+
+  const [form, setForm] = useState(parseWalletSettings);
+  const [saving, setSaving] = useState(false);
+
+  const parseEnabledMethods = (raw: unknown): string[] => {
+    try {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? parsed.map(String) : ["cod"];
+    } catch {
+      return ["cod"];
+    }
+  };
+
+  const [enabledMethods, setEnabledMethods] = useState<string[]>(
+    parseEnabledMethods(settings.enabledPaymentMethods)
+  );
+  useEffect(() => {
+    if (settings.enabledPaymentMethods) {
+      setEnabledMethods(parseEnabledMethods(settings.enabledPaymentMethods));
+    }
+  }, [settings.enabledPaymentMethods]);
+
+  const toggleWalletPaymentMethod = () => {
+    setEnabledMethods((prev) =>
+      prev.includes("wallet")
+        ? prev.filter((m) => m !== "wallet")
+        : [...prev, "wallet"]
+    );
+  };
+
+  useEffect(() => {
+    setForm(parseWalletSettings());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.walletPaymentSettings]);
+
+  const update = (key: keyof typeof form, value: string | boolean | number) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const result = await storefrontSettingsService.updateSettings({
+        walletPaymentSettings: { ...form, enabled: true },
+        enabledPaymentMethods: JSON.stringify(enabledMethods),
+      });
+      if (result?.data) {
+        onChange(result.data);
+      }
+      toast.success("تم حفظ إعدادات الدفع بالمحفظة بنجاح");
+    } catch (error) {
+      console.error("[WALLET-SETTINGS] Failed to save:", error);
+      toast.error("حدث خطأ أثناء الحفظ: " + (error?.message || "Unknown error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className={PAYMENT_CARD_CLS}>
+      <div className="flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-800/50 dark:bg-indigo-950/20 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            تفعيل طريقة الدفع بالمحفظة
+          </p>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            اظهر خيار «محفظة إلكترونية» للعملاء أثناء إتمام الطلب.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleWalletPaymentMethod}
+          aria-pressed={enabledMethods.includes("wallet")}
+          className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all select-none ${
+            enabledMethods.includes("wallet")
+              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-600/10"
+              : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:bg-gray-50 dark:hover:border-gray-500 dark:hover:bg-gray-700/40"
+          }`}
+        >
+          <span
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              enabledMethods.includes("wallet") ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                enabledMethods.includes("wallet") ? "translate-x-4" : "translate-x-0.5"
+              }`}
+            />
+          </span>
+          <span>محفظة إلكترونية</span>
+          <span
+            className={`text-xs font-bold ${
+              enabledMethods.includes("wallet")
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-gray-400"
+            }`}
+          >
+            {enabledMethods.includes("wallet") ? "مفعّل" : "غير مفعّل"}
+          </span>
+        </button>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          الدفع بالمحفظة (تحويل + رفع إيصال)
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+          يظهر للعميل في صفحة الشيك أوت خيار تحويل المبلغ على رقم محفظة ثم رفع صورة الإيصال. فعّل خيار «محفظة إلكترونية» من الزرار بالأعلى، واكتب رقم المحفظة واسم المستلم.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label className={PAYMENT_LABEL_CLS}>
+            رقم المحفظة (مثال: فودافون كاش)
+          </label>
+          <input
+            type="text"
+            value={form.walletNumber}
+            onChange={(e) => update("walletNumber", e.target.value)}
+            className={PAYMENT_INPUT_CLS}
+            dir="ltr"
+            placeholder="01xxxxxxxxx"
+          />
+        </div>
+        <div>
+          <label className={PAYMENT_LABEL_CLS}>
+            اسم المستلم
+          </label>
+          <input
+            type="text"
+            value={form.recipientName}
+            onChange={(e) => update("recipientName", e.target.value)}
+            className={PAYMENT_INPUT_CLS}
+            placeholder="مثال: سوان ستور"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className={PAYMENT_LABEL_CLS}>
+          تعليمات إضافية للعميل (اختياري)
+        </label>
+        <textarea
+          value={form.instructions}
+          onChange={(e) => update("instructions", e.target.value)}
+          className={`${PAYMENT_INPUT_CLS} resize-none`}
+          rows={3}
+          placeholder="مثال: برجاء كتابة اسمك في خانة البيان عند التحويل"
+        />
+      </div>
+
+      <div className="flex justify-end pt-2">
+        <button
+          onClick={handleSave}
+          disabled={saving || loading}
+          className={PAYMENT_PRIMARY_BTN_CLS}
+        >
+          {saving ? "جارٍ الحفظ..." : "حفظ إعدادات المحفظة"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const PaymentGatewaySettingsSection: React.FC<{
   settings: StorefrontSettings;
   onChange: (settings: Partial<StorefrontSettings>) => void;
-  onSave: () => void;
   loading: boolean;
-}> = ({ settings, onChange, onSave, loading }) => {
+}> = ({ settings, onChange, loading }) => {
   const [gatewayConfig, setGatewayConfig] = useState<{
     merchantId: string;
     apiKey: string;
@@ -1481,14 +1724,23 @@ const PaymentGatewaySettingsSection: React.FC<{
 
   const [isEditing, setIsEditing] = useState(false);
 
+  const parseEnabledMethods = (raw: unknown): string[] => {
+    try {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? parsed.map(String) : ["cod"];
+    } catch {
+      return ["cod"];
+    }
+  };
+
   const [enabledMethods, setEnabledMethods] = useState<string[]>(
-    settings.enabledPaymentMethods
-      ? JSON.parse(settings.enabledPaymentMethods)
-      : ["cod"]
+    parseEnabledMethods(settings.enabledPaymentMethods)
   );
 
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "testing">("disconnected");
   const [testMessage, setTestMessage] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
 
   const isConfigured = gatewayConfig.merchantId && gatewayConfig.apiKey && gatewayConfig.secretKey;
 
@@ -1513,11 +1765,7 @@ const PaymentGatewaySettingsSection: React.FC<{
       hasConfig = Boolean(config.merchantId && config.apiKey && config.secretKey);
     }
     if (settings.enabledPaymentMethods) {
-      setEnabledMethods(
-        typeof settings.enabledPaymentMethods === "string"
-          ? JSON.parse(settings.enabledPaymentMethods)
-          : settings.enabledPaymentMethods
-      );
+      setEnabledMethods(parseEnabledMethods(settings.enabledPaymentMethods));
     }
     // Check connection status on load using the parsed settings
     const config = settings.paymentGatewayConfig
@@ -1568,7 +1816,7 @@ const PaymentGatewaySettingsSection: React.FC<{
         setEnabledMethods(["cod"]);
         setIsEditing(true);
       }
-      toast.success("تم إزالة إعدادات بوابة الدفع بنجاح");
+      tToast.success("StoreSettings.msg_126b");
     } catch (error) {
       console.error("[DELETE] Failed to delete settings:", error);
       toast.error("حدث خطأ أثناء الحذف: " + (error?.message || "Unknown error"));
@@ -1603,7 +1851,7 @@ const PaymentGatewaySettingsSection: React.FC<{
         });
         setIsEditing(false);
       }
-      toast.success("تم حفظ إعدادات بوابة الدفع بنجاح");
+      tToast.success("StoreSettings.success_save_ccce");
     } catch (error) {
       console.error("[SAVE] Failed to save payment gateway settings:", error);
       toast.error("حدث خطأ أثناء الحفظ: " + (error?.message || error?.response?.data?.message || "Unknown error"));
@@ -1655,121 +1903,192 @@ const PaymentGatewaySettingsSection: React.FC<{
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
               إعدادات بوابة الدفع - Kashier
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              أدخل مفاتيح Kashier لتفعيل الدفع بالبطاقات في متجرك.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
               connectionStatus === "connected"
-                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
                 : connectionStatus === "testing"
-                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
+                : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
             }`}>
               {connectionStatus === "connected" && (
                 <>
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                   متصل
                 </>
               )}
               {connectionStatus === "testing" && (
                 <>
-                  <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                   جاري الاختبار...
                 </>
               )}
               {connectionStatus === "disconnected" && (
                 <>
-                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                   غير متصل
                 </>
               )}
             </span>
-            {isConfigured && connectionStatus !== "testing" && (
-              <button
-                onClick={testConnection}
-                disabled={connectionStatus === "testing" || loading}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-white text-indigo-600 border border-indigo-300 hover:bg-indigo-50 dark:bg-gray-800 dark:text-indigo-400 dark:border-indigo-700 disabled:opacity-50"
-              >
-                {connectionStatus === "testing" ? "جاري الاختبار..." : "اختبار الاتصال"}
-              </button>
-            )}
           </div>
-        </div>
-        {testMessage && (
-          <p className={`mt-2 text-sm ${connectionStatus === "connected" ? "text-green-600 dark:text-green-400" : connectionStatus === "disconnected" ? "text-red-600 dark:text-red-400" : "text-yellow-600 dark:text-yellow-400"}`}>
-            {testMessage}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+            أدخل مفاتيح Kashier لتفعيل الدفع بالبطاقات في متجرك.
           </p>
-        )}
+        </div>
+        <div className="flex items-center gap-3 flex-wrap shrink-0">
+          {isConfigured && connectionStatus !== "testing" && (
+            <button
+              onClick={testConnection}
+              disabled={connectionStatus === "testing" || loading}
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 shadow-sm dark:bg-gray-800 dark:text-indigo-400 dark:border-indigo-700 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            >
+              {connectionStatus === "testing" ? "جاري الاختبار..." : "اختبار الاتصال"}
+            </button>
+          )}
+        </div>
       </div>
+      <div className="flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-800/50 dark:bg-indigo-950/20 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            تفعيل الدفع عند الاستلام (الكاشير)
+          </p>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            اظهر خيار «الدفع عند الاستلام» للعملاء أثناء إتمام الطلب.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => handleMethodToggle("cod")}
+          aria-pressed={enabledMethods.includes("cod")}
+          className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all select-none ${
+            enabledMethods.includes("cod")
+              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-600/10"
+              : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:bg-gray-50 dark:hover:border-gray-500 dark:hover:bg-gray-700/40"
+          }`}
+        >
+          <span
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              enabledMethods.includes("cod") ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                enabledMethods.includes("cod") ? "translate-x-4" : "translate-x-0.5"
+              }`}
+            />
+          </span>
+          <span>الكاشير (الدفع عند الاستلام)</span>
+          <span
+            className={`text-xs font-bold ${
+              enabledMethods.includes("cod")
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-gray-400"
+            }`}
+          >
+            {enabledMethods.includes("cod") ? "مفعّل" : "غير مفعّل"}
+          </span>
+        </button>
+      </div>
+      {testMessage && (
+        <p className={`text-sm ${connectionStatus === "connected" ? "text-green-600 dark:text-green-400" : connectionStatus === "disconnected" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
+          {testMessage}
+        </p>
+      )}
 
       {isEditing ? (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-base font-semibold text-gray-900 dark:text-white">
-              بيانات الاعتماد (Credentials)
-            </h4>
+        <div className={PAYMENT_CARD_CLS}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                بيانات الاعتماد (Credentials)
+              </h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                أدخل مفاتيح التاجر من لوحة تحكم Kashier.
+              </p>
+            </div>
             {isConfigured && (
               <button
                 onClick={() => setIsEditing(false)}
-                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
               >
                 إلغاء التعديل
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={PAYMENT_LABEL_CLS}>
                 Merchant ID
               </label>
               <input
                 type="text"
                 value={gatewayConfig.merchantId}
                 onChange={(e) => handleConfigChange("merchantId", e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className={PAYMENT_INPUT_CLS}
                 placeholder="MID-XXXX-XXX"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={PAYMENT_LABEL_CLS}>
                 API Key
               </label>
-              <input
-                type="password"
-                value={gatewayConfig.apiKey}
-                onChange={(e) => handleConfigChange("apiKey", e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              />
+              <div className="relative">
+                <input
+                  type={showApiKey ? "text" : "password"}
+                  value={gatewayConfig.apiKey}
+                  onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+                  className={`${PAYMENT_INPUT_CLS} pl-10`}
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowApiKey((prev) => !prev)}
+                  className="absolute inset-y-0 left-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                  aria-label={showApiKey ? "إخفاء المفتاح" : "إظهار المفتاح"}
+                >
+                  {showApiKey ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={PAYMENT_LABEL_CLS}>
                 Secret Key
               </label>
-              <input
-                type="password"
-                value={gatewayConfig.secretKey}
-                onChange={(e) => handleConfigChange("secretKey", e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              />
+              <div className="relative">
+                <input
+                  type={showSecretKey ? "text" : "password"}
+                  value={gatewayConfig.secretKey}
+                  onChange={(e) => handleConfigChange("secretKey", e.target.value)}
+                  className={`${PAYMENT_INPUT_CLS} pl-10`}
+                  placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowSecretKey((prev) => !prev)}
+                  className="absolute inset-y-0 left-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                  aria-label={showSecretKey ? "إخفاء المفتاح" : "إظهار المفتاح"}
+                >
+                  {showSecretKey ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={PAYMENT_LABEL_CLS}>
                 الوضع
               </label>
               <select
                 value={gatewayConfig.mode}
                 onChange={(e) => handleConfigChange("mode", e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className={PAYMENT_INPUT_CLS}
               >
                 <option value="test">Test (Sandbox)</option>
                 <option value="live">Live</option>
@@ -1778,11 +2097,11 @@ const PaymentGatewaySettingsSection: React.FC<{
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-4">
+        <div className={PAYMENT_CARD_CLS}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-700 pb-4">
             <div>
               <h4 className="text-base font-semibold text-gray-900 dark:text-white">
-                بيانات الربط الحالية
+                بيانات الاعتماد (Credentials)
               </h4>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 تفاصيل الاتصال النشط ببوابة دفع Kashier.
@@ -1791,14 +2110,14 @@ const PaymentGatewaySettingsSection: React.FC<{
             <div className="flex gap-2">
               <button
                 onClick={() => setIsEditing(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-900"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 shadow-sm dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-900 transition-colors"
               >
                 <PencilIcon className="w-3.5 h-3.5" />
                 تعديل البيانات
               </button>
               <button
                 onClick={handleDelete}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30 transition-colors"
               >
                 <TrashIcon className="w-3.5 h-3.5" />
                 إزالة الإعدادات
@@ -1806,16 +2125,16 @@ const PaymentGatewaySettingsSection: React.FC<{
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
               <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">Merchant ID</span>
-              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800/80 inline-block">
                 {gatewayConfig.merchantId}
               </span>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">الوضع (Mode)</span>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded inline-block uppercase ${
+              <span className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg inline-block uppercase ${
                 gatewayConfig.mode === "live"
                   ? "bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/50"
                   : "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50"
@@ -1823,15 +2142,15 @@ const PaymentGatewaySettingsSection: React.FC<{
                 {gatewayConfig.mode === "live" ? "Live" : "Test (Sandbox)"}
               </span>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">API Key</span>
-              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800/80 inline-block">
                 {gatewayConfig.apiKey}
               </span>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">Secret Key</span>
-              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800/80 inline-block">
                 {gatewayConfig.secretKey}
               </span>
             </div>
@@ -1839,36 +2158,58 @@ const PaymentGatewaySettingsSection: React.FC<{
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
-        <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-          طرق الدفع المفعّلة
-        </h4>
+      <div className={PAYMENT_CARD_CLS}>
+        <div>
+          <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+            طرق الدفع المفعّلة
+          </h4>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            حدد الطرق التي ستظهر للعملاء أثناء إتمام الطلب.
+          </p>
+        </div>
         <div className="flex flex-wrap gap-3">
-          {["cod", "card", "wallet"].map((method) => (
-            <label
-              key={method}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 cursor-pointer transition-colors ${
-                enabledMethods.includes(method)
-                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
-                  : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-indigo-400"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={enabledMethods.includes(method)}
-                onChange={() => handleMethodToggle(method)}
-                className="sr-only"
-              />
-              <span className="text-sm font-medium">
-                {method === "cod" && "الدفع عند الاستلام"}
-                {method === "card" && "بطاقة ائتمان / خصم"}
-                {method === "wallet" && "محفظة إلكترونية"}
-              </span>
-            </label>
-          ))}
+          {["card"].map((method) => {
+            const isOn = enabledMethods.includes(method);
+            const methodLabel = "بطاقة ائتمان / خصم";
+            return (
+              <button
+                key={method}
+                type="button"
+                onClick={() => handleMethodToggle(method)}
+                aria-pressed={isOn}
+                className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all select-none ${
+                  isOn
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-600/10"
+                    : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:bg-gray-50 dark:hover:border-gray-500 dark:hover:bg-gray-700/40"
+                }`}
+              >
+                <span
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    isOn ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isOn ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </span>
+                <span>{methodLabel}</span>
+                <span
+                  className={`text-xs font-bold ${
+                    isOn
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-gray-400"
+                  }`}
+                >
+                  {isOn ? "مفعّل" : "غير مفعّل"}
+                </span>
+              </button>
+            );
+          })}
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          اختر طرق الدفع التي تظهر للعملاء في صفحة الشيك أوت.
+          اختر طرق الدفع التي تريد إظهارها للعملاء.
         </p>
       </div>
 
@@ -1876,7 +2217,7 @@ const PaymentGatewaySettingsSection: React.FC<{
         {isEditing && isConfigured && (
           <button
             onClick={() => setIsEditing(false)}
-            className="px-6 py-3 rounded-lg text-sm font-semibold bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
           >
             إلغاء
           </button>
@@ -1884,10 +2225,67 @@ const PaymentGatewaySettingsSection: React.FC<{
         <button
           onClick={handleSave}
           disabled={loading}
-          className="px-6 py-3 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className={PAYMENT_PRIMARY_BTN_CLS}
         >
-          {loading ? "جاري الحفظ..." : "حفظ الإعدادات"}
+          {loading ? "جاري الحفظ..." : "حفظ إعدادات البوابة"}
         </button>
+      </div>
+    </div>
+  );
+};
+
+const PAYMENT_SUB_TABS = [
+  { id: "gateway", label: "بطاقات الدفع", icon: CreditCardIcon },
+  { id: "wallet", label: "الدفع بالمحفظة", icon: WalletIcon },
+] as const;
+
+type PaymentSubTabId = (typeof PAYMENT_SUB_TABS)[number]["id"];
+
+const PaymentSettingsPanel: React.FC<{
+  settings: StorefrontSettings;
+  onChange: (settings: Partial<StorefrontSettings>) => void;
+  loading: boolean;
+}> = ({ settings, onChange, loading }) => {
+  const [activeSubTab, setActiveSubTab] = useState<PaymentSubTabId>("gateway");
+
+  return (
+    <div className="space-y-6">
+      <div className="inline-flex items-center gap-1 rounded-2xl border border-gray-100 bg-white p-1 shadow-sm dark:border-gray-700 dark:bg-gray-800/80">
+        {PAYMENT_SUB_TABS.map((tab) => {
+          const isActive = activeSubTab === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveSubTab(tab.id)}
+              aria-pressed={isActive}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                isActive
+                  ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20"
+                  : "text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/40"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={activeSubTab === "gateway" ? "block" : "hidden"}>
+        <PaymentGatewaySettingsSection
+          settings={settings}
+          onChange={onChange}
+          loading={loading}
+        />
+      </div>
+      <div className={activeSubTab === "wallet" ? "block" : "hidden"}>
+        <WalletPaymentSettingsSection
+          settings={settings}
+          onChange={onChange}
+          loading={loading}
+        />
       </div>
     </div>
   );

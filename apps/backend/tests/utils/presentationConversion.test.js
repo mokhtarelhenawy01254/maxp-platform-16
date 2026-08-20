@@ -1,4 +1,4 @@
-﻿const {
+const {
   buildPresentationResponse,
   findConvertedPresentationBySlug,
   findUniquePresentationSlug,
@@ -11,7 +11,7 @@ describe('presentationConversion slugify', () => {
   });
 
   test('keeps Arabic characters', () => {
-    expect(slugify(' ┘à┘å╪¬╪¼ ╪¬╪¼╪▒┘è╪¿┘è ')).toBe('┘à┘å╪¬╪¼-╪¬╪¼╪▒┘è╪¿┘è');
+    expect(slugify(' منتج تجريبي ')).toBe('منتج-تجريبي');
   });
 
   test('collapses multiple dashes and strips leading/trailing dashes', () => {

@@ -1,5 +1,5 @@
-﻿function cleanNameToken(token) {
-  return String(token || '').replace(/^[~*_.\-ΓÇôΓÇö\s]+|[~*_.\-ΓÇôΓÇö\s]+$/g, '').trim();
+function cleanNameToken(token) {
+  return String(token || '').replace(/^[~*_.\-–—\s]+|[~*_.\-–—\s]+$/g, '').trim();
 }
 
 function splitCustomerName(fullName) {

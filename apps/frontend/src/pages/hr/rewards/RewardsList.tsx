@@ -1,9 +1,10 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import { ConfirmDialog } from "../../../components/hr/ConfirmDialog";
 import {
   canUserApproveReward,
@@ -13,7 +14,23 @@ import {
   normalizeRewardStatus,
   type RewardUiStatus,
 } from "./rewardRecordUtils";
-import { AlertCircle, AlertTriangle, Award, Check, CheckCircle, Clock, DollarSign, Edit, Eye, Filter, Plus, RefreshCw, Search, Trash2, X, XCircle } from 'lucide-react';
+import {
+  Award,
+  Search,
+  Filter,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  RefreshCw,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertCircle,
+  Check,
+  X,
+} from "lucide-react";
 
 interface RewardRecord {
   id: string;
@@ -167,7 +184,7 @@ const RewardsList: React.FC = () => {
     try {
       setDeleting(true);
       await apiClient.delete(`/hr/rewards/records/${deleteTarget.id}`);
-      toast.success("تم حذف المكافأة بنجاح");
+      tToast.success("RewardsList.success_delete_7170");
       setDeleteConfirmOpen(false);
       setDeleteTarget(null);
 

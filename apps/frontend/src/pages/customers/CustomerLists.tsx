@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users, Layers, Plus, Search, RefreshCw, Pencil, Trash2, Eye,
@@ -67,14 +67,14 @@ interface ListMember {
 }
 
 const RFM_TIER_META: Record<string, { label: string; cls: string }> = {
-  gold: { label: "╪░┘ç╪¿┘è", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" },
-  silver: { label: "┘ü╪╢┘è", cls: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200" },
-  bronze: { label: "╪¿╪▒┘ê┘å╪▓┘è", cls: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" },
-  lead: { label: "╪╣╪º╪»┘è", cls: "bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]" },
+  gold: { label: "ذهبي", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" },
+  silver: { label: "فضي", cls: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200" },
+  bronze: { label: "برونزي", cls: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" },
+  lead: { label: "عادي", cls: "bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]" },
 };
 
 function rfmTierMeta(tier?: string): { label: string; cls: string } {
-  return RFM_TIER_META[tier || "lead"] ?? RFM_TIER_META["lead"] ?? { label: "╪╣╪º╪»┘è", cls: "" };
+  return RFM_TIER_META[tier || "lead"] ?? RFM_TIER_META["lead"] ?? { label: "عادي", cls: "" };
 }
 
 const ORDER_STATUSES = [
@@ -90,54 +90,54 @@ const PAYMENT_STATUSES = ['PENDING', 'COMPLETED', 'PARTIALLY_PAID', 'FAILED', 'R
 const RATINGS = ['EXCELLENT', 'GOOD', 'AVERAGE', 'POOR', 'UNKNOWN'];
 
 const STATUS_LABELS: Record<string, string> = {
-  DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à",
-  PENDING: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒",
-  CONFIRMED: "┘à╪ñ┘â╪»",
-  SCHEDULED: "┘à╪¼╪»┘ê┘ä",
-  PROCESSING: "┘é┘è╪» ╪º┘ä╪¬╪¼┘ç┘è╪▓",
-  SHIPPED: "╪¬┘à ╪º┘ä╪┤╪¡┘å",
-  CANCELLED: "┘à┘ä╪║┘è",
-  REFUNDED: "┘à╪│╪¬╪▒╪¼╪╣",
-  RETURNED: "┘à╪▒╪¬╪¼╪╣",
-  PARTIALLY_RETURNED: "┘à╪▒╪¬╪¼╪╣ ╪¼╪▓╪ª┘è╪º┘ï",
-  EXCHANGED: "┘à╪│╪¬╪¿╪»┘ä",
-  PARTIALLY_REFUNDED: "┘à╪│╪¬╪▒╪¼╪╣ ╪¼╪▓╪ª┘è╪º┘ï",
-  READY_TO_SHIP: "╪¼╪º┘ç╪▓ ┘ä┘ä╪┤╪¡┘å",
-  ON_HOLD: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒",
-  OUT_FOR_DELIVERY: "╪«╪º╪▒╪¼ ┘ä┘ä╪¬┘ê╪╡┘è┘ä",
-  LOST: "╪╢╪º╪ª╪╣",
-  PREPARING: "┘è╪¬┘à ╪¬╪¼┘ç┘è╪▓┘ç",
-  QUALITY_CHECK: "┘ü╪¡╪╡ ╪º┘ä╪¼┘ê╪»╪⌐",
-  PACKAGED: "╪¬┘à ╪º┘ä╪¬╪║┘ä┘è┘ü",
-  PARTIALLY_DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è╪º┘ï",
-  STOCK_SHORTAGE: "┘å┘é╪╡ ┘ü┘è ╪º┘ä┘à╪«╪▓┘ê┘å",
-  PENDING_CANCELLATION: "╪Ñ┘ä╪║╪º╪í ┘à╪╣┘ä┘é",
-  APPROVED: "┘à┘ê╪º┘ü┘é╪⌐",
-  REJECTED: "┘à╪▒┘ü┘ê╪╢",
-  COMPLETED: "┘à┘â╪¬┘à┘ä",
-  PARTIALLY_PAID: "┘à╪»┘ü┘ê╪╣ ╪¼╪▓╪ª┘è╪º┘ï",
-  FAILED: "┘ü╪┤┘ä",
-  EXCELLENT: "┘à┘à╪¬╪º╪▓",
-  GOOD: "╪¼┘è╪»",
-  AVERAGE: "┘à╪¬┘ê╪│╪╖",
-  POOR: "╪╢╪╣┘è┘ü",
-  UNKNOWN: "╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü",
+  DELIVERED: "تم التسليم",
+  PENDING: "قيد الانتظار",
+  CONFIRMED: "مؤكد",
+  SCHEDULED: "مجدول",
+  PROCESSING: "قيد التجهيز",
+  SHIPPED: "تم الشحن",
+  CANCELLED: "ملغي",
+  REFUNDED: "مسترجع",
+  RETURNED: "مرتجع",
+  PARTIALLY_RETURNED: "مرتجع جزئياً",
+  EXCHANGED: "مستبدل",
+  PARTIALLY_REFUNDED: "مسترجع جزئياً",
+  READY_TO_SHIP: "جاهز للشحن",
+  ON_HOLD: "قيد الانتظار",
+  OUT_FOR_DELIVERY: "خارج للتوصيل",
+  LOST: "ضائع",
+  PREPARING: "يتم تجهيزه",
+  QUALITY_CHECK: "فحص الجودة",
+  PACKAGED: "تم التغليف",
+  PARTIALLY_DELIVERED: "تم التسليم جزئياً",
+  STOCK_SHORTAGE: "نقص في المخزون",
+  PENDING_CANCELLATION: "إلغاء معلق",
+  APPROVED: "موافقة",
+  REJECTED: "مرفوض",
+  COMPLETED: "مكتمل",
+  PARTIALLY_PAID: "مدفوع جزئياً",
+  FAILED: "فشل",
+  EXCELLENT: "ممتاز",
+  GOOD: "جيد",
+  AVERAGE: "متوسط",
+  POOR: "ضعيف",
+  UNKNOWN: "غير معروف",
 };
 
 const CRITERIA_TYPES = [
-  { value: "all", label: "╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å", icon: Users, hint: "┘â┘ä ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å" },
-  { value: "active", label: "┘å╪┤╪╖ ╪«┘ä╪º┘ä ┘ü╪¬╪▒╪⌐", icon: Clock, hint: "╪╣┘à┘ä╪º╪í ╪¬┘ê╪º╪╡┘ä┘ê╪º ╪«┘ä╪º┘ä ╪ó╪«╪▒ X ╪│╪º╪╣╪⌐" },
-  { value: "inactive", label: "╪║┘è╪▒ ┘å╪┤╪╖ ┘à┘å╪░ ┘ü╪¬╪▒╪⌐", icon: Clock, hint: "╪╣┘à┘ä╪º╪í ┘ä┘à ┘è╪¬┘ê╪º╪╡┘ä┘ê╪º ┘à┘å╪░ X ┘è┘ê┘à" },
-  { value: "tag", label: "┘è╪¡┘à┘ä ┘ê╪│┘à (Tag)", icon: Tag, hint: "╪╣┘à┘ä╪º╪í ┘ä╪»┘è┘ç┘à ┘ê╪│┘à ┘à╪¡╪»╪»" },
-  { value: "orderStatus", label: "╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿ ╪«┘ä╪º┘ä ┘ü╪¬╪▒╪⌐", icon: ShoppingBag, hint: "╪╣┘à┘ä╪º╪í ╪╣┘å╪»┘ç┘à ╪╖┘ä╪¿ ╪¿╪¡╪º┘ä╪⌐ ┘à╪╣┘è┘å╪⌐" },
-  { value: "returnRequest", label: "╪╖┘ä╪¿╪º╪¬ ┘à╪▒╪¬╪¼╪╣", icon: FileText, hint: "╪╣┘à┘ä╪º╪í ┘é╪º┘à┘ê╪º ╪¿╪╖┘ä╪¿ ┘à╪▒╪¬╪¼╪╣" },
-  { value: "paymentStatus", label: "╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣", icon: Wallet, hint: "╪╣┘à┘ä╪º╪í ╪¿╪¡╪º┘ä╪⌐ ╪»┘ü╪╣ ┘ä╪╖┘ä╪¿╪º╪¬┘ç┘à" },
-  { value: "city", label: "╪º┘ä┘à╪»┘è┘å╪⌐", icon: Landmark, hint: "╪╣┘à┘ä╪º╪í ┘à┘å ┘à╪»┘è┘å╪⌐ ┘à╪╣┘è┘å╪⌐" },
-  { value: "customerRating", label: "╪º┘ä╪¬┘é┘è┘è┘à", icon: Star, hint: "╪╣┘à┘ä╪º╪í ╪¿╪¬┘é┘è┘è┘à ┘à╪¡╪»╪»" },
-  { value: "latest", label: "╪º┘ä╪ú╪¡╪»╪½", icon: ArrowDownUp, hint: "╪ú╪¡╪»╪½ N ╪╣┘à┘ä╪º╪í" },
-  { value: "oldest", label: "╪º┘ä╪ú┘é╪»┘à", icon: ArrowDownUp, hint: "╪ú┘é╪»┘à N ╪╣┘à┘ä╪º╪í" },
-  { value: "minTotalSpent", label: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪Ñ┘å┘ü╪º┘é", icon: Wallet, hint: "╪╣┘à┘ä╪º╪í ╪ú┘å┘ü┘é┘ê╪º ╪ú┘â╪½╪▒ ┘à┘å ┘à╪¿┘ä╪║" },
-  { value: "minOrdersCount", label: "╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬", icon: ShoppingBag, hint: "╪╣┘à┘ä╪º╪í ┘ä╪»┘è┘ç┘à N ╪╖┘ä╪¿ ╪ú┘ê ╪ú┘â╪½╪▒" },
+  { value: "all", label: "جميع العملاء النشطين", icon: Users, hint: "كل العملاء النشطين" },
+  { value: "active", label: "نشط خلال فترة", icon: Clock, hint: "عملاء تواصلوا خلال آخر X ساعة" },
+  { value: "inactive", label: "غير نشط منذ فترة", icon: Clock, hint: "عملاء لم يتواصلوا منذ X يوم" },
+  { value: "tag", label: "يحمل وسم (Tag)", icon: Tag, hint: "عملاء لديهم وسم محدد" },
+  { value: "orderStatus", label: "حالة طلب خلال فترة", icon: ShoppingBag, hint: "عملاء عندهم طلب بحالة معينة" },
+  { value: "returnRequest", label: "طلبات مرتجع", icon: FileText, hint: "عملاء قاموا بطلب مرتجع" },
+  { value: "paymentStatus", label: "حالة الدفع", icon: Wallet, hint: "عملاء بحالة دفع لطلباتهم" },
+  { value: "city", label: "المدينة", icon: Landmark, hint: "عملاء من مدينة معينة" },
+  { value: "customerRating", label: "التقييم", icon: Star, hint: "عملاء بتقييم محدد" },
+  { value: "latest", label: "الأحدث", icon: ArrowDownUp, hint: "أحدث N عملاء" },
+  { value: "oldest", label: "الأقدم", icon: ArrowDownUp, hint: "أقدم N عملاء" },
+  { value: "minTotalSpent", label: "إجمالي الإنفاق", icon: Wallet, hint: "عملاء أنفقوا أكثر من مبلغ" },
+  { value: "minOrdersCount", label: "عدد الطلبات", icon: ShoppingBag, hint: "عملاء لديهم N طلب أو أكثر" },
 ] as const;
 
 type CriteriaType = (typeof CRITERIA_TYPES)[number]["value"];
@@ -145,27 +145,27 @@ type CriteriaType = (typeof CRITERIA_TYPES)[number]["value"];
 const SMART_PRESETS = [
   {
     value: "champions",
-    label: "╪ú┘ü╪╢┘ä ╪º┘ä╪╣┘à┘ä╪º╪í",
+    label: "أفضل العملاء",
     icon: Crown,
-    hint: "┘å╪┤╪╖┘ê┘å + ┘â╪½┘è╪▒┘ê ╪º┘ä╪╖┘ä╪¿╪º╪¬ + ╪Ñ┘å┘ü╪º┘é ┘à╪▒╪¬┘ü╪╣ ΓÇö ╪╣╪▒╪╢ ┘ê┘ä╪º╪í",
+    hint: "نشطون + كثيرو الطلبات + إنفاق مرتفع — عرض ولاء",
   },
   {
     value: "loyal",
-    label: "╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä╪ú┘ê┘ü┘è╪º╪í",
+    label: "العملاء الأوفياء",
     icon: Heart,
-    hint: "5 ╪╖┘ä╪¿╪º╪¬ ╪ú┘ê ╪ú┘â╪½╪▒ ΓÇö ╪▒╪┤┘æ╪¡┘ç┘à ┘ä╪¿╪▒┘å╪º┘à╪¼ ╪º┘ä┘ê┘ä╪º╪í",
+    hint: "5 طلبات أو أكثر — رشّحهم لبرنامج الولاء",
   },
   {
     value: "atRisk",
-    label: "┘à╪╣╪▒╪╢┘ê┘å ┘ä┘ä┘ü┘é╪»╪º┘å",
+    label: "معرضون للفقدان",
     icon: AlertTriangle,
-    hint: "┘â╪º┘å┘ê╪º ┘à╪┤╪¬╪▒┘è┘å ┘ä┘â┘å ╪║┘è╪▒ ┘å╪┤╪╖┘è┘å 30 ┘è┘ê┘à ΓÇö ╪ú╪╣╪» ╪º┘ä╪¬┘å╪┤┘è╪╖",
+    hint: "كانوا مشترين لكن غير نشطين 30 يوم — أعد التنشيط",
   },
   {
     value: "new",
-    label: "╪╣┘à┘ä╪º╪í ╪¼╪»╪»",
+    label: "عملاء جدد",
     icon: Sparkles,
-    hint: "╪ú╪¡╪»╪½ 100 ╪╣┘à┘è┘ä ΓÇö ╪▒╪¡┘æ╪¿ ╪¿┘ç┘à",
+    hint: "أحدث 100 عميل — رحّب بهم",
   },
 ] as const;
 
@@ -192,27 +192,27 @@ function buildPresetCriteria(preset: string): Record<string, any> {
 }
 
 function criteriaSummary(criteria: any): string {
-  if (!criteria) return "╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å";
+  if (!criteria) return "جميع العملاء النشطين";
   const c = typeof criteria === "string" ? (() => { try { return JSON.parse(criteria); } catch { return {}; } })() : criteria;
   const type = c.type || "all";
   switch (type) {
-    case "active": return `┘å╪┤╪╖ ╪«┘ä╪º┘ä ╪ó╪«╪▒ ${c.hours ?? 24} ╪│╪º╪╣╪⌐`;
-    case "inactive": return `╪║┘è╪▒ ┘å╪┤╪╖ ┘à┘å╪░ ${c.days ?? 7} ┘è┘ê┘à`;
-    case "tag": return `┘è╪¡┘à┘ä ┘ê╪│┘à: ${c.tag}`;
-    case "orderStatus": return c.days ? `╪╖┘ä╪¿╪º╪¬ "${STATUS_LABELS[c.status] || c.status}" ╪«┘ä╪º┘ä ${c.days} ┘è┘ê┘à` : `╪╖┘ä╪¿╪º╪¬ ╪¿╪¡╪º┘ä╪⌐ "${STATUS_LABELS[c.status] || c.status}"`;
-    case "returnRequest": return c.days ? `┘à╪▒╪¬╪¼╪╣╪º╪¬ "${STATUS_LABELS[c.status] || c.status || "╪º┘ä┘â┘ä"}" ╪«┘ä╪º┘ä ${c.days} ┘è┘ê┘à` : `┘à╪▒╪¬╪¼╪╣╪º╪¬ ╪¿╪¡╪º┘ä╪⌐ "${STATUS_LABELS[c.status] || c.status || "╪º┘ä┘â┘ä"}"`;
-    case "paymentStatus": return c.days ? `╪»┘ü╪╣ "${STATUS_LABELS[c.status] || c.status}" ╪«┘ä╪º┘ä ${c.days} ┘è┘ê┘à` : `╪»┘ü╪╣ ╪¿╪¡╪º┘ä╪⌐ "${STATUS_LABELS[c.status] || c.status}"`;
-    case "city": return `┘à┘å ┘à╪»┘è┘å╪⌐: ${c.city}`;
-    case "customerRating": return `╪º┘ä╪¬┘é┘è┘è┘à: ${STATUS_LABELS[c.rating] || c.rating}`;
-    case "latest": return `╪ú╪¡╪»╪½ ${c.limit ?? 100} ╪╣┘à┘è┘ä`;
-    case "oldest": return `╪ú┘é╪»┘à ${c.limit ?? 100} ╪╣┘à┘è┘ä`;
-    case "minTotalSpent": return `╪Ñ╪¼┘à╪º┘ä┘è ╪Ñ┘å┘ü╪º┘é ΓëÑ ${c.amount}`;
-    case "minOrdersCount": return `╪╣╪»╪» ╪╖┘ä╪¿╪º╪¬ ΓëÑ ${c.count}`;
+    case "active": return `نشط خلال آخر ${c.hours ?? 24} ساعة`;
+    case "inactive": return `غير نشط منذ ${c.days ?? 7} يوم`;
+    case "tag": return `يحمل وسم: ${c.tag}`;
+    case "orderStatus": return c.days ? `طلبات "${STATUS_LABELS[c.status] || c.status}" خلال ${c.days} يوم` : `طلبات بحالة "${STATUS_LABELS[c.status] || c.status}"`;
+    case "returnRequest": return c.days ? `مرتجعات "${STATUS_LABELS[c.status] || c.status || "الكل"}" خلال ${c.days} يوم` : `مرتجعات بحالة "${STATUS_LABELS[c.status] || c.status || "الكل"}"`;
+    case "paymentStatus": return c.days ? `دفع "${STATUS_LABELS[c.status] || c.status}" خلال ${c.days} يوم` : `دفع بحالة "${STATUS_LABELS[c.status] || c.status}"`;
+    case "city": return `من مدينة: ${c.city}`;
+    case "customerRating": return `التقييم: ${STATUS_LABELS[c.rating] || c.rating}`;
+    case "latest": return `أحدث ${c.limit ?? 100} عميل`;
+    case "oldest": return `أقدم ${c.limit ?? 100} عميل`;
+    case "minTotalSpent": return `إجمالي إنفاق ≥ ${c.amount}`;
+    case "minOrdersCount": return `عدد طلبات ≥ ${c.count}`;
     case "preset": {
       const preset = SMART_PRESETS.find((p) => p.value === c.preset);
-      return preset ? preset.label : "┘é╪º╪ª┘à╪⌐ ╪¼╪º┘ç╪▓╪⌐";
+      return preset ? preset.label : "قائمة جاهزة";
     }
-    default: return "╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å";
+    default: return "جميع العملاء النشطين";
   }
 }
 
@@ -279,7 +279,7 @@ const CustomerLists: React.FC = () => {
         newThisMonth,
       });
     } catch (err: any) {
-      toast.error(err?.message || "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡┘à┘è┘ä ┘é┘ê╪º╪ª┘à ╪º┘ä╪╣┘à┘ä╪º╪í");
+      toast.error(err?.message || "فشل في تحميل قوائم العملاء");
     } finally {
       setLoading(false);
     }
@@ -292,7 +292,7 @@ const CustomerLists: React.FC = () => {
       const res = await customerService.getDistinctTags();
       const tags = Array.isArray(res) ? res.map((t: any) => (typeof t === "string" ? t : t?.name)).filter(Boolean) : [];
       setAvailableTags(tags);
-    } catch { /* ╪¬╪¼╪º┘ç┘ä */ }
+    } catch { /* تجاهل */ }
   }, []);
 
   useEffect(() => { void loadTags(); }, [loadTags]);
@@ -365,21 +365,21 @@ const CustomerLists: React.FC = () => {
   }, [formCriteria, dialogOpen]);
 
   const handleSave = async () => {
-    if (!formName.trim()) { toast.error("╪º╪│┘à ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘à╪╖┘ä┘ê╪¿"); return; }
+    if (!formName.trim()) { toast.error("اسم القائمة مطلوب"); return; }
     setSaving(true);
     try {
       const payload = { name: formName.trim(), description: formDescription.trim(), criteria: formCriteria };
       if (editingList) {
         await broadcastService.updateCustomerList(editingList.id, payload);
-        toast.success("╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪¿┘å╪¼╪º╪¡");
+        toast.success("تم تحديث القائمة بنجاح");
       } else {
         await broadcastService.createCustomerList(payload);
-        toast.success("╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪¿┘å╪¼╪º╪¡");
+        toast.success("تم إنشاء القائمة بنجاح");
       }
       setDialogOpen(false);
       void loadLists(true);
     } catch (err: any) {
-      toast.error(err?.message || "┘ü╪┤┘ä ┘ü┘è ╪º┘ä╪¡┘ü╪╕");
+      toast.error(err?.message || "فشل في الحفظ");
     } finally {
       setSaving(false);
     }
@@ -390,11 +390,11 @@ const CustomerLists: React.FC = () => {
     setDeleting(true);
     try {
       await broadcastService.deleteCustomerList(deleteTarget.id);
-      toast.success("╪¬┘à ╪¡╪░┘ü ╪º┘ä┘é╪º╪ª┘à╪⌐");
+      toast.success("تم حذف القائمة");
       setDeleteTarget(null);
       void loadLists(true);
     } catch (err: any) {
-      toast.error(err?.message || "┘ü╪┤┘ä ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘é╪º╪ª┘à╪⌐");
+      toast.error(err?.message || "فشل في حذف القائمة");
     } finally {
       setDeleting(false);
     }
@@ -405,10 +405,10 @@ const CustomerLists: React.FC = () => {
     setRefreshingId(list.id);
     try {
       await broadcastService.refreshCustomerListCount(list.id);
-      toast.success("╪¬┘à ╪¬╪¡╪»┘è╪½ ╪╣╪»╪» ╪º┘ä╪╣┘à┘ä╪º╪í");
+      toast.success("تم تحديث عدد العملاء");
       void loadLists(true);
     } catch (err: any) {
-      toast.error(err?.message || "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪╣╪»╪»");
+      toast.error(err?.message || "فشل في تحديث العدد");
     } finally {
       setRefreshingId(null);
     }
@@ -420,14 +420,14 @@ const CustomerLists: React.FC = () => {
     try {
       const criteria = typeof list.criteria === "string" ? (() => { try { return JSON.parse(list.criteria); } catch { return {}; } })() : (list.criteria || {});
       await broadcastService.createCustomerList({
-        name: `${list.name} (┘å╪│╪«╪⌐)`,
+        name: `${list.name} (نسخة)`,
         description: list.description || "",
         criteria,
       });
-      toast.success("╪¬┘à ╪Ñ┘å╪┤╪º╪í ┘å╪│╪«╪⌐ ┘à┘å ╪º┘ä┘é╪º╪ª┘à╪⌐");
+      toast.success("تم إنشاء نسخة من القائمة");
       void loadLists(true);
     } catch (err: any) {
-      toast.error(err?.message || "┘ü╪┤┘ä ┘ü┘è ┘å╪│╪« ╪º┘ä┘é╪º╪ª┘à╪⌐");
+      toast.error(err?.message || "فشل في نسخ القائمة");
     } finally {
       setSaving(false);
     }
@@ -442,7 +442,7 @@ const CustomerLists: React.FC = () => {
       setMembers(res?.data || []);
       setMembersTotal(res?.total ?? (res?.data?.length || 0));
     } catch (err: any) {
-      toast.error(err?.message || "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╣┘à┘ä╪º╪í");
+      toast.error(err?.message || "فشل في تحميل العملاء");
       setMembers([]);
       setMembersTotal(0);
     } finally {
@@ -462,7 +462,7 @@ const CustomerLists: React.FC = () => {
 
   const exportCsv = () => {
     if (!members.length) return;
-    const header = ["╪º┘ä╪º╪│┘à", "╪º┘ä┘ç╪º╪¬┘ü", "╪º┘ä╪¿╪▒┘è╪»", "╪ó╪«╪▒ ┘å╪┤╪º╪╖", "╪º┘ä╪¬┘é┘è┘è┘à"];
+    const header = ["الاسم", "الهاتف", "البريد", "آخر نشاط", "التقييم"];
     const rows = members.map((m) => [m.name, m.phone, m.email, m.lastActivity, m.rating]);
     const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -475,11 +475,11 @@ const CustomerLists: React.FC = () => {
   };
 
   const formatDate = (date: string | undefined) => {
-    if (!date) return "ΓÇö";
+    if (!date) return "—";
     try {
       return new Date(date).toLocaleString("ar-EG");
     } catch {
-      return "ΓÇö";
+      return "—";
     }
   };
 
@@ -499,20 +499,20 @@ const CustomerLists: React.FC = () => {
                 </Badge>
                 <div className="space-y-0.5 sm:space-y-1">
                   <h1 className="text-balance font-heading text-xl font-semibold tracking-normal text-[color:var(--color-foreground)] sm:text-[2rem]">
-                    ╪Ñ╪»╪º╪▒╪⌐ ┘é┘ê╪º╪ª┘à ╪º┘ä╪╣┘à┘ä╪º╪í
+                    إدارة قوائم العملاء
                   </h1>
                   <p className="max-w-3xl text-xs leading-5 text-[color:var(--color-muted-foreground)] sm:text-sm sm:leading-6 sm:text-[0.95rem]">
-                    ╪ú┘å╪┤╪ª ┘é┘ê╪º╪ª┘à ╪╣┘à┘ä╪º╪í ╪░┘â┘è╪⌐ ╪¡╪│╪¿ ╪º┘ä┘å╪┤╪º╪╖ ┘ê╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ê╪º┘ä┘à╪▒╪¬╪¼╪╣╪º╪¬╪î ╪½┘à ╪ú╪▒╪│┘ä┘ç╪º ┘à╪¿╪º╪┤╪▒╪⌐ ╪╣╪¿╪▒ ┘ê╪º╪¬╪│╪º╪¿.
+                    أنشئ قوائم عملاء ذكية حسب النشاط والطلبات والمرتجعات، ثم أرسلها مباشرة عبر واتساب.
                   </p>
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 lg:justify-end">
               <Button variant="outline" size="sm" className="rounded-full" onClick={() => void loadLists()}>
-                <RefreshCw className="size-4" /> ╪¬╪¡╪»┘è╪½
+                <RefreshCw className="size-4" /> تحديث
               </Button>
               <Button size="sm" className="rounded-full" onClick={openCreate}>
-                <Plus className="size-4" /> ┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐
+                <Plus className="size-4" /> قائمة جديدة
               </Button>
             </div>
           </div>
@@ -521,10 +521,10 @@ const CustomerLists: React.FC = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <WhatsAppMetricCard label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘é┘ê╪º╪ª┘à" value={stats.totalLists.toLocaleString("ar-EG")} hint="┘é┘ê╪º╪ª┘à ╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ┘ê┘à╪«╪╡╪╡╪⌐" icon={Layers} tone="primary" />
-        <WhatsAppMetricCard label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╣┘à┘ä╪º╪í" value={stats.totalMembers.toLocaleString("ar-EG")} hint="╪╣╪¿╪▒ ┘â┘ä ╪º┘ä┘é┘ê╪º╪ª┘à" icon={Users} tone="info" />
-        <WhatsAppMetricCard label="┘å╪┤╪╖ ╪«┘ä╪º┘ä 24 ╪│╪º╪╣╪⌐" value={stats.active24h.toLocaleString("ar-EG")} hint="╪╣┘à┘ä╪º╪í ╪¬┘ê╪º╪╡┘ä┘ê╪º ╪º┘ä┘è┘ê┘à" icon={TrendingUp} tone="success" />
-        <WhatsAppMetricCard label="┘é┘ê╪º╪ª┘à ╪¼╪»┘è╪»╪⌐ ┘ç╪░╪º ╪º┘ä╪┤┘ç╪▒" value={stats.newThisMonth.toLocaleString("ar-EG")} hint="┘à╪«╪╡╪╡╪⌐ ╪ú┘Å┘å╪┤╪ª╪¬ ╪¡╪»┘è╪½╪º┘ï" icon={Sparkles} tone="danger" />
+        <WhatsAppMetricCard label="إجمالي القوائم" value={stats.totalLists.toLocaleString("ar-EG")} hint="قوائم افتراضية ومخصصة" icon={Layers} tone="primary" />
+        <WhatsAppMetricCard label="إجمالي العملاء" value={stats.totalMembers.toLocaleString("ar-EG")} hint="عبر كل القوائم" icon={Users} tone="info" />
+        <WhatsAppMetricCard label="نشط خلال 24 ساعة" value={stats.active24h.toLocaleString("ar-EG")} hint="عملاء تواصلوا اليوم" icon={TrendingUp} tone="success" />
+        <WhatsAppMetricCard label="قوائم جديدة هذا الشهر" value={stats.newThisMonth.toLocaleString("ar-EG")} hint="مخصصة أُنشئت حديثاً" icon={Sparkles} tone="danger" />
       </div>
 
       {/* Toolbar */}
@@ -535,7 +535,7 @@ const CustomerLists: React.FC = () => {
             ref={searchInputRef}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="╪º╪¿╪¡╪½ ┘ü┘è ╪º┘ä┘é┘ê╪º╪ª┘à..."
+            placeholder="ابحث في القوائم..."
             className="h-10 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] pr-9"
           />
         </div>
@@ -543,9 +543,9 @@ const CustomerLists: React.FC = () => {
           <ListFilter className="size-4 text-[color:var(--color-muted-foreground)]" />
           <div className="flex flex-wrap gap-1 rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-1">
             {([
-              { value: "all", label: "╪º┘ä┘â┘ä" },
-              { value: "custom", label: "╪º┘ä┘à╪«╪╡╪╡╪⌐" },
-              { value: "default", label: "╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐" },
+              { value: "all", label: "الكل" },
+              { value: "custom", label: "المخصصة" },
+              { value: "default", label: "الافتراضية" },
             ] as const).map((f) => (
               <button
                 key={f.value}
@@ -582,16 +582,16 @@ const CustomerLists: React.FC = () => {
             <Layers className="size-7" />
           </div>
           <div className="space-y-1">
-            <p className="font-semibold text-[color:var(--color-foreground)]">┘ä╪º ╪¬┘ê╪¼╪» ┘é┘ê╪º╪ª┘à ╪¿╪╣╪»</p>
+            <p className="font-semibold text-[color:var(--color-foreground)]">لا توجد قوائم بعد</p>
             <p className="max-w-sm text-sm text-[color:var(--color-muted-foreground)]">
               {searchTerm || filterType !== "all"
-                ? "┘ä┘à ┘è╪¬┘à ╪º┘ä╪╣╪½┘ê╪▒ ╪╣┘ä┘ë ┘é┘ê╪º╪ª┘à ╪¬╪╖╪º╪¿┘é ╪º┘ä╪¿╪¡╪½."
-                : "╪ú┘å╪┤╪ª ╪ú┘ê┘ä ┘é╪º╪ª┘à╪⌐ ╪╣┘à┘ä╪º╪í ╪░┘â┘è╪⌐ ┘ä╪º╪│╪¬┘ç╪»╪º┘ü ╪¡┘à┘ä╪º╪¬┘â ╪¿╪┤┘â┘ä ╪»┘é┘è┘é."}
+                ? "لم يتم العثور على قوائم تطابق البحث."
+                : "أنشئ أول قائمة عملاء ذكية لاستهداف حملاتك بشكل دقيق."}
             </p>
           </div>
           {!searchTerm && filterType === "all" && (
             <Button className="rounded-full" onClick={openCreate}>
-              <Plus className="size-4" /> ╪Ñ┘å╪┤╪º╪í ┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐
+              <Plus className="size-4" /> إنشاء قائمة جديدة
             </Button>
           )}
         </div>
@@ -610,13 +610,13 @@ const CustomerLists: React.FC = () => {
                   <div className="min-w-0">
                     <h3 className="truncate font-semibold text-[color:var(--color-foreground)]">{list.name}</h3>
                     <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                      {list.isDefault ? "┘é╪º╪ª┘à╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐" : formatDate(list.updatedAt)}
+                      {list.isDefault ? "قائمة افتراضية" : formatDate(list.updatedAt)}
                     </p>
                   </div>
                 </div>
                 {list.isDefault && (
                   <Badge className="shrink-0 rounded-full bg-[color:color-mix(in_srgb,var(--color-info)_15%,var(--color-card))] text-[color:var(--color-info)]">
-                    ╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐
+                    افتراضية
                   </Badge>
                 )}
               </div>
@@ -634,33 +634,33 @@ const CustomerLists: React.FC = () => {
                 <span className="text-2xl font-bold text-[color:var(--color-foreground)]">
                   {list.count.toLocaleString("ar-EG")}
                 </span>
-                <span className="text-sm text-[color:var(--color-muted-foreground)]">╪╣┘à┘è┘ä</span>
+                <span className="text-sm text-[color:var(--color-muted-foreground)]">عميل</span>
                 {!list.isDefault && list.isStale ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" title="┘ä┘à ┘è╪¬┘à ╪¬╪¡╪»┘è╪½ ┘ç╪░╪º ╪º┘ä╪╣╪»╪» ┘à┘å╪░ ╪ú┘â╪½╪▒ ┘à┘å 7 ╪ú┘è╪º┘à">
-                    <Clock className="size-3" /> ┘é╪»┘è┘à
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" title="لم يتم تحديث هذا العدد منذ أكثر من 7 أيام">
+                    <Clock className="size-3" /> قديم
                   </span>
                 ) : null}
               </div>
 
               <div className="mt-auto flex flex-wrap gap-1.5 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] pt-3">
                 <Button variant="outline" size="sm" className="rounded-full" onClick={() => void openDetail(list)}>
-                  <Eye className="size-3.5" /> ╪º┘ä╪ú╪╣╪╢╪º╪í
+                  <Eye className="size-3.5" /> الأعضاء
                 </Button>
                 <Button variant="outline" size="sm" className="rounded-full" onClick={() => handleWhatsAppSend(list)}>
-                  <Send className="size-3.5" /> ┘ê╪º╪¬╪│╪º╪¿
+                  <Send className="size-3.5" /> واتساب
                 </Button>
                 {!list.isDefault && (
                   <>
                     <Button variant="outline" size="sm" className="rounded-full" onClick={() => openEdit(list)}>
-                      <Pencil className="size-3.5" /> ╪¬╪╣╪»┘è┘ä
+                      <Pencil className="size-3.5" /> تعديل
                     </Button>
-                    <Button variant="outline" size="sm" className="rounded-full" onClick={() => void handleDuplicate(list)} title="┘å╪│╪« ┘é╪º╪ª┘à╪⌐ ┘à╪┤╪º╪¿┘ç╪⌐">
-                      <Copy className="size-3.5" /> ┘å╪│╪«
+                    <Button variant="outline" size="sm" className="rounded-full" onClick={() => void handleDuplicate(list)} title="نسخ قائمة مشابهة">
+                      <Copy className="size-3.5" /> نسخ
                     </Button>
                     <Button variant="outline" size="sm" className="rounded-full" onClick={() => void handleRefreshCount(list)} disabled={refreshingId === list.id}>
                       {refreshingId === list.id ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
                     </Button>
-                    <Button variant="ghost" size="sm" className="mr-auto rounded-full text-destructive hover:text-destructive" onClick={() => setDeleteTarget(list)} aria-label="╪¡╪░┘ü">
+                    <Button variant="ghost" size="sm" className="mr-auto rounded-full text-destructive hover:text-destructive" onClick={() => setDeleteTarget(list)} aria-label="حذف">
                       <Trash2 className="size-3.5" />
                     </Button>
                   </>
@@ -675,21 +675,21 @@ const CustomerLists: React.FC = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingList ? "╪¬╪╣╪»┘è┘ä ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í" : "╪Ñ┘å╪┤╪º╪í ┘é╪º╪ª┘à╪⌐ ╪╣┘à┘ä╪º╪í ╪¼╪»┘è╪»╪⌐"}</DialogTitle>
+            <DialogTitle>{editingList ? "تعديل قائمة العملاء" : "إنشاء قائمة عملاء جديدة"}</DialogTitle>
             <DialogDescription>
-              ╪¡╪»╪» ┘à╪╣╪º┘è┘è╪▒ ╪░┘â┘è╪⌐ ┘ä╪º╪│╪¬┘ç╪»╪º┘ü ╪╣┘à┘ä╪º╪í ┘à╪¡╪»╪»┘è┘å╪î ╪½┘à ╪ú╪▒╪│┘ä ╪º┘ä╪¡┘à┘ä╪⌐ ╪╣╪¿╪▒ ┘ê╪º╪¬╪│╪º╪¿.
+              حدد معايير ذكية لاستهداف عملاء محددين، ثم أرسل الحملة عبر واتساب.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="list-name">╪º╪│┘à ╪º┘ä┘é╪º╪ª┘à╪⌐ *</Label>
-                <Input id="list-name" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="┘à╪½╪º┘ä: ╪╣┘à┘ä╪º╪í VIP" />
+                <Label htmlFor="list-name">اسم القائمة *</Label>
+                <Input id="list-name" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: عملاء VIP" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="list-description">┘ê╪╡┘ü ╪º┘ä┘é╪º╪ª┘à╪⌐</Label>
-                <Input id="list-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="┘ê╪╡┘ü ╪º╪«╪¬┘è╪º╪▒┘è" />
+                <Label htmlFor="list-description">وصف القائمة</Label>
+                <Input id="list-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="وصف اختياري" />
               </div>
             </div>
 
@@ -697,7 +697,7 @@ const CustomerLists: React.FC = () => {
 
             {/* Smart RFM presets */}
             <div className="space-y-1.5">
-              <Label>╪º╪¿╪»╪ú ┘à┘å ┘é╪º┘ä╪¿ ╪¼╪º┘ç╪▓</Label>
+              <Label>ابدأ من قالب جاهز</Label>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {SMART_PRESETS.map((p) => {
                   const active = formCriteria.type === "preset" && formCriteria.preset === p.value;
@@ -729,10 +729,10 @@ const CustomerLists: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label>╪ú┘ê ╪¡╪»╪» ┘à╪╣┘è╪º╪▒╪º┘ï ┘è╪»┘ê┘è╪º┘ï</Label>
+              <Label>أو حدد معياراً يدوياً</Label>
               <Select value={formCriteriaType} onValueChange={(v) => changeCriteriaType((v ?? "all") as string)}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="╪º╪«╪¬╪▒ ╪º┘ä┘à╪╣┘è╪º╪▒" />
+                  <SelectValue placeholder="اختر المعيار" />
                 </SelectTrigger>
                 <SelectContent>
                   {CRITERIA_TYPES.map((ct) => (
@@ -755,39 +755,39 @@ const CustomerLists: React.FC = () => {
             <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/30 p-4">
               {formCriteriaType === "active" && (
                 <div className="space-y-1.5">
-                  <Label>╪«┘ä╪º┘ä ╪ó╪«╪▒ (╪│╪º╪╣╪⌐)</Label>
+                  <Label>خلال آخر (ساعة)</Label>
                   <Input type="number" min={1} value={formCriteria.hours ?? 24} onChange={(e) => updateCriteriaField("hours", parseInt(e.target.value) || 1)} />
                 </div>
               )}
               {formCriteriaType === "inactive" && (
                 <div className="space-y-1.5">
-                  <Label>╪║┘è╪▒ ┘å╪┤╪╖ ┘à┘å╪░ (┘è┘ê┘à)</Label>
+                  <Label>غير نشط منذ (يوم)</Label>
                   <Input type="number" min={1} value={formCriteria.days ?? 7} onChange={(e) => updateCriteriaField("days", parseInt(e.target.value) || 1)} />
                 </div>
               )}
               {formCriteriaType === "tag" && (
                 <div className="space-y-1.5">
-                  <Label>╪º┘ä┘ê╪│┘à (Tag)</Label>
+                  <Label>الوسم (Tag)</Label>
                   {availableTags.length > 0 ? (
                     <Select value={formCriteria.tag || ""} onValueChange={(v) => updateCriteriaField("tag", v ?? "")}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="╪º╪«╪¬╪▒ ┘ê╪│┘à╪º┘ï" /></SelectTrigger>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="اختر وسماً" /></SelectTrigger>
                       <SelectContent>
                         {availableTags.map((tag) => (
-                          <SelectItem key={tag} value={tag}>≡ƒÅ╖∩╕Å {tag}</SelectItem>
+                          <SelectItem key={tag} value={tag}>🏷️ {tag}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Input value={formCriteria.tag || ""} onChange={(e) => updateCriteriaField("tag", e.target.value)} placeholder="╪º╪│┘à ╪º┘ä┘ê╪│┘à" />
+                    <Input value={formCriteria.tag || ""} onChange={(e) => updateCriteriaField("tag", e.target.value)} placeholder="اسم الوسم" />
                   )}
                 </div>
               )}
               {(formCriteriaType === "orderStatus" || formCriteriaType === "returnRequest" || formCriteriaType === "paymentStatus") && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label>{formCriteriaType === "returnRequest" ? "╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪▒╪¬╪¼╪╣" : formCriteriaType === "paymentStatus" ? "╪¡╪º┘ä╪⌐ ╪º┘ä╪»┘ü╪╣" : "╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿"}</Label>
+                    <Label>{formCriteriaType === "returnRequest" ? "حالة المرتجع" : formCriteriaType === "paymentStatus" ? "حالة الدفع" : "حالة الطلب"}</Label>
                     <Select value={formCriteria.status || ""} onValueChange={(v) => updateCriteriaField("status", v ?? "")}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="╪º╪«╪¬╪▒ ╪º┘ä╪¡╪º┘ä╪⌐" /></SelectTrigger>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="اختر الحالة" /></SelectTrigger>
                       <SelectContent>
                         {(formCriteriaType === "returnRequest" ? RETURN_STATUSES : formCriteriaType === "paymentStatus" ? PAYMENT_STATUSES : ORDER_STATUSES).map((s) => (
                           <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>
@@ -796,20 +796,20 @@ const CustomerLists: React.FC = () => {
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>╪«┘ä╪º┘ä ╪ó╪«╪▒ (┘è┘ê┘à)</Label>
+                    <Label>خلال آخر (يوم)</Label>
                     <Input type="number" min={1} value={formCriteria.days ?? 30} onChange={(e) => updateCriteriaField("days", parseInt(e.target.value) || 1)} />
                   </div>
                 </div>
               )}
               {formCriteriaType === "city" && (
                 <div className="space-y-1.5">
-                  <Label>╪º┘ä┘à╪»┘è┘å╪⌐ / ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐</Label>
-                  <Input value={formCriteria.city || ""} onChange={(e) => updateCriteriaField("city", e.target.value)} placeholder="┘à╪½╪º┘ä: ╪º┘ä┘é╪º┘ç╪▒╪⌐" />
+                  <Label>المدينة / المحافظة</Label>
+                  <Input value={formCriteria.city || ""} onChange={(e) => updateCriteriaField("city", e.target.value)} placeholder="مثال: القاهرة" />
                 </div>
               )}
               {formCriteriaType === "customerRating" && (
                 <div className="space-y-1.5">
-                  <Label>╪º┘ä╪¬┘é┘è┘è┘à</Label>
+                  <Label>التقييم</Label>
                   <Select value={formCriteria.rating || "EXCELLENT"} onValueChange={(v) => updateCriteriaField("rating", v ?? "EXCELLENT")}>
                     <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -822,24 +822,24 @@ const CustomerLists: React.FC = () => {
               )}
               {(formCriteriaType === "latest" || formCriteriaType === "oldest") && (
                 <div className="space-y-1.5">
-                  <Label>╪╣╪»╪» ╪º┘ä╪╣┘à┘ä╪º╪í</Label>
+                  <Label>عدد العملاء</Label>
                   <Input type="number" min={1} value={formCriteria.limit ?? 100} onChange={(e) => updateCriteriaField("limit", parseInt(e.target.value) || 1)} />
                 </div>
               )}
               {formCriteriaType === "minTotalSpent" && (
                 <div className="space-y-1.5">
-                  <Label>╪Ñ╪¼┘à╪º┘ä┘è ╪Ñ┘å┘ü╪º┘é ΓëÑ (╪¼┘å┘è┘ç / ┘ê╪¡╪»╪⌐ ╪º┘ä╪╣┘à┘ä╪⌐)</Label>
+                  <Label>إجمالي إنفاق ≥ (جنيه / وحدة العملة)</Label>
                   <Input type="number" min={0} value={formCriteria.amount ?? 1000} onChange={(e) => updateCriteriaField("amount", parseFloat(e.target.value) || 0)} />
                 </div>
               )}
               {formCriteriaType === "minOrdersCount" && (
                 <div className="space-y-1.5">
-                  <Label>╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬ ΓëÑ</Label>
+                  <Label>عدد الطلبات ≥</Label>
                   <Input type="number" min={1} value={formCriteria.count ?? 2} onChange={(e) => updateCriteriaField("count", parseInt(e.target.value) || 1)} />
                 </div>
               )}
               {formCriteriaType === "all" && (
-                <p className="text-sm text-[color:var(--color-muted-foreground)]">╪│╪¬╪┤┘à┘ä ┘ç╪░┘ç ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪¼┘à┘è╪╣ ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘å╪┤╪╖┘è┘å.</p>
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">ستشمل هذه القائمة جميع العملاء النشطين.</p>
               )}
             </div>
             ) : (
@@ -850,7 +850,7 @@ const CustomerLists: React.FC = () => {
                     <>
                       {preset ? <preset.icon className="size-4 text-[color:var(--color-primary)]" /> : <Sparkles className="size-4 text-[color:var(--color-primary)]" />}
                       <span className="text-sm font-medium text-[color:var(--color-foreground)]">
-                        {preset ? preset.label : "┘é╪º┘ä╪¿ ╪¼╪º┘ç╪▓"} ΓÇö {preset ? preset.hint : "╪│┘è╪¬┘à ╪¬╪╖╪¿┘è┘é ╪º┘ä┘à╪╣╪º┘è┘è╪▒ ╪º┘ä╪░┘â┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï"}
+                        {preset ? preset.label : "قالب جاهز"} — {preset ? preset.hint : "سيتم تطبيق المعايير الذكية تلقائياً"}
                       </span>
                     </>
                   );
@@ -862,9 +862,9 @@ const CustomerLists: React.FC = () => {
             <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/30 p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <Label>╪º╪│╪¬╪½┘å╪º╪í ╪º┘ä┘à╪▒╪º╪│┘Ä┘ä┘è┘å ╪¡╪»┘è╪½╪º┘ï</Label>
+                  <Label>استثناء المراسَلين حديثاً</Label>
                   <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                    ╪º╪│╪¬╪¿╪╣╪» ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä╪░┘è┘å ╪ú╪▒╪│┘ä┘ê╪º ╪Ñ┘ä┘è┘â ╪ú┘ê ╪ú┘Å╪▒╪│┘ä ╪Ñ┘ä┘è┘ç┘à ╪«┘ä╪º┘ä ╪ó╪«╪▒ (┘è┘ê┘à). ┘è┘à┘å╪╣ ╪Ñ╪▓╪╣╪º╪¼ ╪╣┘à┘ä╪º╪í ╪¬┘ê╪º╪╡┘ä┘ê╪º ┘à╪ñ╪«╪▒╪º┘ï.
+                    استبعد العملاء الذين أرسلوا إليك أو أُرسل إليهم خلال آخر (يوم). يمنع إزعاج عملاء تواصلوا مؤخراً.
                   </p>
                 </div>
                 <div className="w-32 shrink-0">
@@ -872,14 +872,14 @@ const CustomerLists: React.FC = () => {
                     value={formCriteria.excludeContactedInDays ? String(formCriteria.excludeContactedInDays) : "0"}
                     onValueChange={(v) => updateCriteriaField("excludeContactedInDays", v === "0" ? undefined : parseInt(v || "0", 10))}
                   >
-                    <SelectTrigger className="h-11"><SelectValue placeholder="╪¿╪»┘ê┘å ╪º╪│╪¬╪½┘å╪º╪í" /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="بدون استثناء" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">╪¿╪»┘ê┘å ╪º╪│╪¬╪½┘å╪º╪í</SelectItem>
-                      <SelectItem value="1">┘è┘ê┘à ┘ê╪º╪¡╪»</SelectItem>
-                      <SelectItem value="3">3 ╪ú┘è╪º┘à</SelectItem>
-                      <SelectItem value="7">7 ╪ú┘è╪º┘à</SelectItem>
-                      <SelectItem value="14">14 ┘è┘ê┘à</SelectItem>
-                      <SelectItem value="30">30 ┘è┘ê┘à</SelectItem>
+                      <SelectItem value="0">بدون استثناء</SelectItem>
+                      <SelectItem value="1">يوم واحد</SelectItem>
+                      <SelectItem value="3">3 أيام</SelectItem>
+                      <SelectItem value="7">7 أيام</SelectItem>
+                      <SelectItem value="14">14 يوم</SelectItem>
+                      <SelectItem value="30">30 يوم</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -890,25 +890,25 @@ const CustomerLists: React.FC = () => {
             <div className="flex items-center justify-between rounded-2xl border border-[color:color-mix(in_srgb,var(--color-primary)_20%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_6%,var(--color-card))] px-4 py-3">
               <div className="flex items-center gap-2">
                 <Users className="size-4 text-[color:var(--color-primary)]" />
-                <span className="text-sm font-medium text-[color:var(--color-foreground)]">╪╣╪»╪» ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘à╪¬┘ê┘é╪╣</span>
+                <span className="text-sm font-medium text-[color:var(--color-foreground)]">عدد العملاء المتوقع</span>
               </div>
               {previewLoading ? (
                 <Loader2 className="size-4 animate-spin text-[color:var(--color-primary)]" />
               ) : previewCount !== null ? (
                 <span className="text-lg font-bold text-[color:var(--color-primary)]">
-                  {previewCount.toLocaleString("ar-EG")} <span className="text-xs font-normal text-[color:var(--color-muted-foreground)]">╪╣┘à┘è┘ä</span>
+                  {previewCount.toLocaleString("ar-EG")} <span className="text-xs font-normal text-[color:var(--color-muted-foreground)]">عميل</span>
                 </span>
               ) : (
-                <span className="text-sm text-[color:var(--color-muted-foreground)]">╪║┘è╪▒ ┘à╪¬╪º╪¡</span>
+                <span className="text-sm text-[color:var(--color-muted-foreground)]">غير متاح</span>
               )}
             </div>
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-full" onClick={() => setDialogOpen(false)}>╪Ñ┘ä╪║╪º╪í</Button>
+            <Button variant="outline" className="rounded-full" onClick={() => setDialogOpen(false)}>إلغاء</Button>
             <Button className="rounded-full" onClick={() => void handleSave()} disabled={saving}>
               {saving ? <Loader2 className="size-4 animate-spin" /> : editingList ? <Pencil className="size-4" /> : <Plus className="size-4" />}
-              {editingList ? "╪¡┘ü╪╕ ╪º┘ä╪¬╪╣╪»┘è┘ä╪º╪¬" : "╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º╪ª┘à╪⌐"}
+              {editingList ? "حفظ التعديلات" : "إنشاء القائمة"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -918,16 +918,16 @@ const CustomerLists: React.FC = () => {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>╪¡╪░┘ü ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í</AlertDialogTitle>
+            <AlertDialogTitle>حذف قائمة العملاء</AlertDialogTitle>
             <AlertDialogDescription>
-              ┘ç┘ä ╪ú┘å╪¬ ┘à╪¬╪ú┘â╪» ┘à┘å ╪¡╪░┘ü ┘é╪º╪ª┘à╪⌐ "{deleteTarget?.name}"╪ƒ ┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪¬╪▒╪º╪¼╪╣ ╪╣┘å ┘ç╪░╪º ╪º┘ä╪Ñ╪¼╪▒╪º╪í.
+              هل أنت متأكد من حذف قائمة "{deleteTarget?.name}"؟ لا يمكن التراجع عن هذا الإجراء.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full">╪Ñ┘ä╪║╪º╪í</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full">إلغاء</AlertDialogCancel>
             <AlertDialogAction className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive" onClick={() => void confirmDelete()} disabled={deleting}>
               {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-              ╪¡╪░┘ü
+              حذف
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -944,7 +944,7 @@ const CustomerLists: React.FC = () => {
               <div className="min-w-0">
                 <SheetTitle className="truncate">{detailList?.name}</SheetTitle>
                 <SheetDescription className="truncate">
-                  {criteriaSummary(detailList?.criteria)} ΓÇó {membersTotal.toLocaleString("ar-EG")} ╪╣┘à┘è┘ä
+                  {criteriaSummary(detailList?.criteria)} • {membersTotal.toLocaleString("ar-EG")} عميل
                 </SheetDescription>
               </div>
             </div>
@@ -964,12 +964,12 @@ const CustomerLists: React.FC = () => {
                       if (detailList) void openDetail(detailList, 1, v);
                     }, 350);
                   }}
-                  placeholder="╪º╪¿╪¡╪½ ┘ü┘è ╪º┘ä╪ú╪╣╪╢╪º╪í..."
+                  placeholder="ابحث في الأعضاء..."
                   className="h-10 rounded-full border-[color:var(--shell-control-border)] pr-9"
                 />
               </div>
               <Button variant="outline" size="sm" className="rounded-full" onClick={exportCsv} disabled={!members.length}>
-                <FileDown className="size-4" /> ╪¬╪╡╪»┘è╪▒ CSV
+                <FileDown className="size-4" /> تصدير CSV
               </Button>
             </div>
 
@@ -982,19 +982,19 @@ const CustomerLists: React.FC = () => {
             ) : members.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[color:var(--shell-control-border)] px-6 py-12 text-center">
                 <Users className="size-8 text-[color:var(--color-muted-foreground)] opacity-40" />
-                <p className="text-sm text-[color:var(--color-muted-foreground)]">┘ä╪º ┘è┘ê╪¼╪» ╪╣┘à┘ä╪º╪í ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘é╪º╪ª┘à╪⌐</p>
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">لا يوجد عملاء في هذه القائمة</p>
               </div>
             ) : (
               <div className="rounded-2xl border border-[color:var(--shell-control-border)]">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="text-right">╪º┘ä╪╣┘à┘è┘ä</TableHead>
-                      <TableHead className="text-right">╪º┘ä┘ç╪º╪¬┘ü</TableHead>
-                      <TableHead className="text-right">╪º┘ä╪Ñ┘å┘ü╪º┘é</TableHead>
-                      <TableHead className="text-right">╪º┘ä┘é┘è┘à╪⌐</TableHead>
-                      <TableHead className="text-right">╪ó╪«╪▒ ┘å╪┤╪º╪╖</TableHead>
-                      <TableHead className="text-right">╪º┘ä╪¡╪º┘ä╪⌐</TableHead>
+                      <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">الهاتف</TableHead>
+                      <TableHead className="text-right">الإنفاق</TableHead>
+                      <TableHead className="text-right">القيمة</TableHead>
+                      <TableHead className="text-right">آخر نشاط</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1011,10 +1011,10 @@ const CustomerLists: React.FC = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell dir="ltr" className="text-sm">{m.phone || "ΓÇö"}</TableCell>
+                        <TableCell dir="ltr" className="text-sm">{m.phone || "—"}</TableCell>
                         <TableCell dir="ltr" className="text-sm font-medium">
                           {(m.totalSpent ?? 0).toLocaleString("ar-EG")}
-                          <span className="mr-1 text-xs text-[color:var(--color-muted-foreground)]">╪¼.┘à</span>
+                          <span className="mr-1 text-xs text-[color:var(--color-muted-foreground)]">ج.م</span>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
@@ -1027,13 +1027,13 @@ const CustomerLists: React.FC = () => {
                                 )}>
                                   <Star className="size-3" />
                                   {tier.label}
-                                  {typeof m.rfmScore === "number" ? ` ΓÇó ${m.rfmScore}` : ""}
+                                  {typeof m.rfmScore === "number" ? ` • ${m.rfmScore}` : ""}
                                 </span>
                               );
                             })()}
                             {(m.ordersCount ?? 0) > 0 ? (
                               <span className="text-[10px] text-[color:var(--color-muted-foreground)]">
-                                {m.ordersCount} ╪╖┘ä╪¿
+                                {m.ordersCount} طلب
                               </span>
                             ) : null}
                           </div>
@@ -1047,7 +1047,7 @@ const CustomerLists: React.FC = () => {
                               : "bg-[color:color-mix(in_srgb,var(--color-muted)]_100%,transparent)] text-[color:var(--color-muted-foreground)]",
                           )}>
                             {m.status === "active" ? <CheckCircle2 className="size-3" /> : <Ban className="size-3" />}
-                            {m.status === "active" ? "┘å╪┤╪╖" : "╪║┘è╪▒ ┘å╪┤╪╖"}
+                            {m.status === "active" ? "نشط" : "غير نشط"}
                           </span>
                         </TableCell>
                       </TableRow>
@@ -1060,14 +1060,14 @@ const CustomerLists: React.FC = () => {
             {membersTotal > PER_PAGE && (
               <div className="flex items-center justify-between pt-1">
                 <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                  ╪º┘ä╪╡┘ü╪¡╪⌐ {membersPage} ┘à┘å {Math.ceil(membersTotal / PER_PAGE)}
+                  الصفحة {membersPage} من {Math.ceil(membersTotal / PER_PAGE)}
                 </p>
                 <div className="flex items-center gap-1">
                   <Button variant="outline" size="sm" className="rounded-full" disabled={membersPage <= 1} onClick={() => void handleMemberPage(membersPage - 1)}>
-                    ╪º┘ä╪│╪º╪¿┘é
+                    السابق
                   </Button>
                   <Button variant="outline" size="sm" className="rounded-full" disabled={membersPage * PER_PAGE >= membersTotal} onClick={() => void handleMemberPage(membersPage + 1)}>
-                    ╪º┘ä╪¬╪º┘ä┘è
+                    التالي
                   </Button>
                 </div>
               </div>
@@ -1076,7 +1076,7 @@ const CustomerLists: React.FC = () => {
 
           <SheetFooter className="border-t border-[color:var(--shell-control-border)] pt-3">
             <Button className="w-full rounded-full" onClick={() => detailList && handleWhatsAppSend(detailList)}>
-              <Send className="size-4" /> ╪Ñ╪▒╪│╪º┘ä ╪╣╪¿╪▒ ┘ê╪º╪¬╪│╪º╪¿ ({membersTotal.toLocaleString("ar-EG")} ╪╣┘à┘è┘ä)
+              <Send className="size-4" /> إرسال عبر واتساب ({membersTotal.toLocaleString("ar-EG")} عميل)
             </Button>
           </SheetFooter>
         </SheetContent>

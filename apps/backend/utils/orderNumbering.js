@@ -1,10 +1,10 @@
-﻿/**
+/**
  * Unified order/study numbering for radiology.
  *
  * Every booking converts to one order number `ORD-YYYYMMDD-<seq>` shared by all
  * its studies (stored on each study as `accessionNumber`), and every study gets
  * a unique study number `ORD-YYYYMMDD-<seq>-<LETTER>` where the letter reflects
- * the exam index inside the booking (0ΓåÆA, 25ΓåÆZ, 26ΓåÆA1, 27ΓåÆB1, ...).
+ * the exam index inside the booking (0→A, 25→Z, 26→A1, 27→B1, ...).
  */
 
 const { getDateStringInTimezone } = require('./dateUtils');
@@ -22,7 +22,7 @@ const orderSeq = (bookingNo) => {
 };
 
 /**
- * ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪┤╪¬╪▒┘â ┘ä┘â┘ä ┘ü╪¡┘ê╪╡╪º╪¬ ╪º┘ä╪¡╪¼╪▓: ORD-YYYYMMDD-<seq>
+ * رقم الطلب المشترك لكل فحوصات الحجز: ORD-YYYYMMDD-<seq>
  */
 function generateOrderStudyNumber({ bookingNo, date } = {}) {
   return `ORD-${datePart(date)}-${orderSeq(bookingNo)}`;
@@ -35,14 +35,14 @@ const examLetter = (index) => {
 };
 
 /**
- * ╪▒┘é┘à ╪¡╪º┘ä╪⌐ ┘ü╪▒┘è╪»: ORD-YYYYMMDD-<seq>-<LETTER>
+ * رقم حالة فريد: ORD-YYYYMMDD-<seq>-<LETTER>
  */
 function generateStudyNumber({ bookingNo, examIndex = 0, date } = {}) {
   return `${generateOrderStudyNumber({ bookingNo, date })}-${examLetter(examIndex)}`;
 }
 
 /**
- * ╪º╪│╪¬╪«╪▒╪º╪¼ ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪┤╪¬╪▒┘â ┘à┘å ╪▒┘é┘à ╪º┘ä╪¡╪º┘ä╪⌐ (╪º┘ä╪¼╪▓╪í ┘é╪¿┘ä ╪ó╪«╪▒ -).
+ * استخراج رقم الطلب المشترك من رقم الحالة (الجزء قبل آخر -).
  */
 function deriveAccession(studyNumber) {
   if (!studyNumber) return null;

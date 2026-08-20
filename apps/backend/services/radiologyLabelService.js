@@ -1,4 +1,4 @@
-﻿const path = require('path');
+const path = require('path');
 const PDFDocument = require('pdfkit');
 const { shapeArabic } = require('../utils/arabicShaping');
 
@@ -7,9 +7,9 @@ const FONT = path.join(__dirname, '..', 'fonts', 'NotoSansArabic-Regular.ttf');
 const AR = (s) => shapeArabic(String(s ?? ''));
 
 const fmtDate = (d) => {
-  if (!d) return 'ΓÇö';
+  if (!d) return '—';
   const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return 'ΓÇö';
+  if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
@@ -58,17 +58,17 @@ function generateStudyLabel(study) {
     doc.registerFont('Noto', FONT);
     doc.font('Noto');
 
-    doc.fontSize(10).fillColor('#2563eb').text(AR('┘à╪▒┘â╪▓ ╪º┘ä╪ú╪┤╪╣╪⌐'), 20, 18, { align: 'right' });
+    doc.fontSize(10).fillColor('#2563eb').text(AR('مركز الأشعة'), 20, 18, { align: 'right' });
     doc.fontSize(16).fillColor('#111827').text(AR(study.studyNumber || ''), 20, 34, { align: 'right' });
     doc.moveTo(20, 58).lineTo(330, 58).strokeColor('#e5e7eb').lineWidth(1).stroke();
 
-    doc.fontSize(11).fillColor('#111827').text(AR(study.patientName || 'ΓÇö'), 20, 66, { align: 'right' });
+    doc.fontSize(11).fillColor('#111827').text(AR(study.patientName || '—'), 20, 66, { align: 'right' });
     doc.fontSize(9).fillColor('#4b5563').text(
-      `${AR('╪º┘ä┘ü╪¡╪╡:')} ${AR(study.examTypeName || study.modality || 'ΓÇö')}`,
+      `${AR('الفحص:')} ${AR(study.examTypeName || study.modality || '—')}`,
       20, 84, { align: 'right' }
     );
     doc.fontSize(9).fillColor('#4b5563').text(
-      `${AR('╪º┘ä╪¬╪º╪▒┘è╪«:')} ${AR(fmtDate(study.createdAt))}`,
+      `${AR('التاريخ:')} ${AR(fmtDate(study.createdAt))}`,
       20, 100, { align: 'right' }
     );
 

@@ -1,6 +1,11 @@
-import { ShieldCheck as ShieldCheckIcon, Clipboard as ClipboardDocumentCheckIcon, DollarSign as CurrencyDollarIcon, Zap as BoltIcon, Circle as ScaleIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  ShieldCheckIcon,
+  ClipboardDocumentCheckIcon,
+  CurrencyDollarIcon,
+  BoltIcon,
+  ScaleIcon,
+} from "@heroicons/react/24/outline";
 
 const WhyAssetsSection: React.FC = () => {
   const reasons = [

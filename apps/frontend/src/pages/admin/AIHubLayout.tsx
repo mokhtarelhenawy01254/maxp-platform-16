@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next';
 import React, { useLayoutEffect, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Bot, Building, Building2, Loader2, Navigation, Send } from 'lucide-react';
+import { useTranslation } from "react-i18next";
+import { Bot, Building2, Send, Loader2 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import tokenManager from "../../utils/tokenManager";
@@ -12,9 +12,13 @@ import ChannelRoutingPage from "./ChannelRoutingPage";
 import AgentSkillsPage from "./AgentSkillsPage";
 import AgentToolsPage from "./AgentToolsPage";
 const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
+const WebChatWidgetPage = React.lazy(() => import("./WebChatWidgetPage"));
+const AgentTrainingPage = React.lazy(() => import("./AgentTrainingPage"));
 
 const TABS = [
   { key: "sandbox", labelKey: "aiHub.tabs.sandbox" },
+  { key: "train", labelKey: "aiHub.tabs.train" },
+  { key: "widget", labelKey: "aiHub.tabs.widget" },
   { key: "skills", labelKey: "aiHub.tabs.skills" },
   { key: "tools", labelKey: "aiHub.tabs.tools" },
   { key: "routing", labelKey: "aiHub.tabs.routing" },
@@ -187,6 +191,8 @@ export default function AIHubLayout() {
           </div>
         }>
           {currentTab === "sandbox" && <AIAgentSandboxPage />}
+          {currentTab === "train" && <div className="h-full overflow-y-auto"><AgentTrainingPage /></div>}
+          {currentTab === "widget" && <div className="h-full overflow-y-auto"><WebChatWidgetPage /></div>}
           {currentTab === "skills" && <div className="h-full overflow-y-auto"><AgentSkillsPage /></div>}
           {currentTab === "tools" && <div className="h-full overflow-y-auto"><AgentToolsPage /></div>}
           {currentTab === "routing" && <div className="h-full overflow-y-auto"><ChannelRoutingPage /></div>}

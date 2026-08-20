@@ -1,10 +1,25 @@
-import { X as XMarkIcon, MessageSquare as ChatBubbleLeftRightIcon, Star as StarIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, Printer as PrinterIcon, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import React, { useState, useEffect, useRef } from "react";
-;
+﻿import React, { useState, useEffect, useRef } from "react";
+import {
+  XMarkIcon,
+  ChatBubbleLeftRightIcon,
+  StarIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  PrinterIcon,
+  ShoppingBagIcon,
+  UserCircleIcon,
+  ClipboardDocumentListIcon,
+  CalculatorIcon,
+  PencilSquareIcon,
+  DocumentTextIcon,
+  CheckBadgeIcon,
+} from "@heroicons/react/24/outline";
 import { useCurrency } from "../../hooks/useCurrency";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { cancellationService, CancellationReason } from "../../services/cancellationService";
+import { useAuth } from "../../hooks/useAuthSimple";
+import type { OrderDetailsType } from "../../pages/orders/types";
 import { Link } from "react-router-dom";
 import OrderPartnerOperationsCard from "./OrderPartnerOperationsCard";
 
@@ -39,6 +54,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 }) => {
   const { formatPrice } = useCurrency();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<"details" | "update" | "history">(
+    "details",
+  );
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,15 +75,15 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
 
   const fallbackStatuses: StatusOption[] = [
-    { code: "PENDING", name: "قيد الانتظار" },
-    { code: "CONFIRMED", name: "مؤكد" },
-    { code: "ON_HOLD", name: "معلق" },
-    { code: "PROCESSING", name: "قيد التجهيز" },
-    { code: "SHIPPED", name: "تم الشحن" },
-    { code: "DELIVERED", name: "تم التسليم" },
-    { code: "CANCELLED", name: "ملغي" },
-    { code: "REFUNDED", name: "مسترد" },
-    { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً" },
+    { code: "PENDING", name: "Ù‚ÙŠØ¯ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø±" },
+    { code: "CONFIRMED", name: "Ù…Ø¤ÙƒØ¯" },
+    { code: "ON_HOLD", name: "Ù…Ø¹Ù„Ù‚" },
+    { code: "PROCESSING", name: "Ù‚ÙŠØ¯ Ø§Ù„ØªØ¬Ù‡ÙŠØ²" },
+    { code: "SHIPPED", name: "ØªÙ… Ø§Ù„Ø´Ø­Ù†" },
+    { code: "DELIVERED", name: "ØªÙ… Ø§Ù„ØªØ³Ù„ÙŠÙ…" },
+    { code: "CANCELLED", name: "Ù…Ù„ØºÙŠ" },
+    { code: "REFUNDED", name: "Ù…Ø³ØªØ±Ø¯" },
+    { code: "PARTIALLY_REFUNDED", name: "Ù…Ø³ØªØ±Ø¯ Ø¬Ø²Ø¦ÙŠØ§Ù‹" },
   ];
 
   const normalizeItems = (rawItems: any): any[] => {
@@ -91,12 +110,12 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           item.productName ||
           item.name ||
           item.product?.name ||
-          "منتج غير محدد",
+          "Ù…Ù†ØªØ¬ ØºÙŠØ± Ù…Ø­Ø¯Ø¯",
         name:
           item.name ||
           item.productName ||
           item.product?.name ||
-          "منتج غير محدد",
+          "Ù…Ù†ØªØ¬ ØºÙŠØ± Ù…Ø­Ø¯Ø¯",
         price: safePrice,
         quantity: safeQuantity,
         total:
@@ -138,7 +157,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       order?.metadata?.merchantScope?.fulfillmentSource ||
       "",
   ).toUpperCase();
-  const canManageOrderStatus =
+  const canManageOrderStatus = !isMerchantScopedOrder;
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -162,6 +181,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       setPendingCancellationStatus(null);
       setCancellationReason("");
       setError(null);
+      setActiveTab("details");
     }
   }, [isOpen, order?.orderNumber]);
 
@@ -242,7 +262,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
   const handleStatusSelect = (newStatus: string) => {
     if (!canManageOrderStatus) {
-      setError("الشركة مسؤولة عن تجهيز هذا الطلب، ويمكنك متابعته فقط من هنا");
+      setError(t("orders.merchantFulfillmentReadOnly"));
       return;
     }
 
@@ -300,17 +320,38 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
     try {
       setIsPrinting(true);
       setError(null);
+      // ÙØªØ­ Ù†Ø§ÙØ°Ø© Ø§Ù„Ø·Ø¨Ø§Ø¹Ø© ÙÙˆØ±Ø§Ù‹ Ø¶Ù…Ù† ØªÙØ§Ø¹Ù„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù„ØªØ¬Ù†Ø¨ Ø­Ø¬Ø¨Ù‡Ø§ Ø¨ÙˆØ§Ø³Ø·Ø© Ù…Ø§Ù†Ø¹ Ø§Ù„Ù†ÙˆØ§ÙØ° Ø§Ù„Ù…Ù†Ø¨Ø«Ù‚Ø©
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        setError(
+          t("orders.invoiceError") ||
+            "Error generating invoice",
+        );
+        return;
+      }
       const response = await apiClient.post("/order-invoices/bulk-generate", {
         orderIds: [order.orderNumber],
       });
 
       if (response.data.success && response.data.data.invoices?.length > 0) {
         const invoice = response.data.data.invoices[0];
-        window.open(
-          `/orders/invoices/print-multiple?ids=${invoice.id}`,
-          "_blank",
-        );
+        printWindow.location.href = `/orders/invoices/print-multiple?ids=${invoice.id}`;
+      } else if (response.data.success && response.data.data.guestOrders?.length > 0) {
+        // Ø·Ù„Ø¨ Ø¶ÙŠÙ ÙØ±Ø¯ÙŠ: Ø§Ø¹Ø±Ø¶Ù‡ ÙÙŠ ØµÙØ­Ø© print-multiple Ø§Ù„Ù…ÙˆØ­Ù‘Ø¯Ø© (Ù†ÙØ³ Ø´Ø±ÙŠØ· Ø§Ù„ØªÙ‚Ø³ÙŠÙ… ÙˆØ§Ù„Ø£ÙƒÙˆØ§Ø¯)
+        const { storeGuestPrintPayload } = await import("../../pages/orders/PrintMultipleInvoices");
+        const guestKey = storeGuestPrintPayload({
+          company: {
+            companyName: user?.company?.name || "",
+            companyPhone: user?.company?.phone || null,
+            companyLogo: user?.company?.logo || null,
+          },
+          orders: response.data.data.guestOrders.map(
+            (entry: { order: OrderDetailsType }) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number],
+          ),
+        });
+        printWindow.location.href = `/orders/invoices/print-multiple?guestKey=${encodeURIComponent(guestKey)}`;
       } else {
+        printWindow.close();
         setError(
           t("orders.invoiceGenerationFailed") || "Failed to generate invoice",
         );
@@ -351,11 +392,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   };
 
   const getConfidenceColor = (confidence?: number) => {
-    if (!confidence) return "text-gray-500";
+    if (!confidence) return "text-muted-foreground";
 
-    if (confidence >= 0.8) return "text-green-600";
-    if (confidence >= 0.6) return "text-yellow-600";
-    return "text-red-600";
+    if (confidence >= 0.8) return "text-success";
+    if (confidence >= 0.6) return "text-warning";
+    return "text-destructive";
   };
 
   const [governments, setGovernments] = useState<any[]>([]);
@@ -377,6 +418,15 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   }, [isOpen]);
 
   if (!isOpen || !order) return null;
+
+  const renderSectionHeader = (icon: React.ReactNode, title: string) => (
+    <h4 className="font-semibold text-foreground mb-1.5 flex items-center gap-1.5 text-xs">
+      <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+        {icon}
+      </span>
+      {title}
+    </h4>
+  );
 
   const getConfidenceIcon = (confidence?: number) => {
     if (!confidence) return <InformationCircleIcon className="h-4 w-4" />;
@@ -401,7 +451,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 backdrop-blur-md dark:bg-slate-950/75 sm:items-center sm:p-4 overscroll-contain"
+      className="fixed inset-0 z-50 flex justify-center bg-slate-950/55 backdrop-blur-md dark:bg-slate-950/75 sm:p-4 overscroll-contain modal-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
       role="dialog"
       aria-modal="true"
@@ -410,29 +460,70 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="relative flex max-h-[calc(100vh-0.5rem)] w-full flex-col overflow-y-auto rounded-t-[30px] border border-slate-200/70 bg-white/96 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900/96 sm:max-h-[calc(100vh-2rem)] sm:w-11/12 sm:rounded-[28px] md:w-3/5 lg:w-1/2 xl:w-2/5 max-w-3xl"
+        className="relative flex max-h-[calc(100vh-0.5rem)] flex-col overflow-hidden rounded-t-[28px] border border-slate-200/70 bg-white/96 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900/96 sm:max-h-[calc(100vh-2rem)] sm:rounded-[24px] modal-panel"
       >
-        <div className="px-4 pb-5 pt-3 sm:px-5">
-          <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden" />
-          <div className="space-y-6">
+        <div className="mx-auto mt-2.5 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden" />
+        <div className="flex-1 overflow-y-auto px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4 sm:pt-3">
+          <div className="space-y-3">
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <ShoppingBagIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              <h3
-                id="modal-title"
-                className="text-xl font-semibold text-gray-900 dark:text-gray-100"
-              >
-                {t("orders.orderDetails")} #{order.orderNumber}
-              </h3>
+          <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ShoppingBagIcon className="h-4 w-4" />
+              </span>
+              <div>
+                <h3
+                  id="modal-title"
+                  className="text-base font-black text-foreground leading-tight"
+                >
+                  {t("orders.orderDetails")}
+                </h3>
+                <p className="text-[11px] font-medium text-muted-foreground leading-tight" dir="ltr">
+                  #{order.orderNumber}
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label={String(t("orders.close"))}
             >
-              <XMarkIcon className="h-6 w-6" />
+              <XMarkIcon className="h-4 w-4" />
             </button>
+          </div>
+
+          {/* Tabs */}
+          <div
+            role="tablist"
+            aria-label={t("orders.detailTabs.update")}
+            className="flex items-center gap-0.5 rounded-xl border border-border/60 bg-card/40 p-0.5 backdrop-blur-sm"
+          >
+            {(
+              [
+                { key: "details", icon: UserCircleIcon },
+                { key: "update", icon: PencilSquareIcon },
+                { key: "history", icon: ClipboardDocumentListIcon },
+              ] as const
+            ).map(({ key, icon: Icon }) => {
+              const isActive = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`tab-panel-${key}`}
+                  onClick={() => setActiveTab(key)}
+                  className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-background hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-3 w-3" />
+                  {t(`orders.detailTabs.${key}`)}
+                </button>
+              );
+            })}
           </div>
 
           {/* Error Message */}
@@ -453,29 +544,32 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
             </div>
           )}
 
+          {/* Tab: Details */}
+          {activeTab === "details" && (
+            <>
           {/* Customer Info */}
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400">●</span>
-              {t("orders.customerInfo")}
-            </h4>
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {renderSectionHeader(
+              <UserCircleIcon className="h-3.5 w-3.5" />,
+              t("orders.customerInfo"),
+            )}
+            <div className="bg-card/60 border border-border/60 rounded-xl p-2.5 backdrop-blur-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
                     {t("orders.name")}
                   </span>
-                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                  <span className="text-sm text-foreground font-semibold leading-tight">
                     {getCustomerDisplayName()}
                   </span>
                 </div>
                 {order.customerPhone && (
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
                       {t("orders.phone")}
                     </span>
                     <span
-                      className="text-gray-900 dark:text-gray-100 font-medium"
+                      className="text-sm text-foreground font-semibold leading-tight"
                       dir="ltr"
                     >
                       {order.customerPhone}
@@ -484,10 +578,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
                 {(order.governorate || order.shippingAddress?.governorate) && (
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
                       {t("orders.governorate")}
                     </span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    <span className="text-sm text-foreground font-semibold leading-tight">
                       {getLocationDisplayName(
                         order.governorate || order.shippingAddress?.governorate,
                       )}
@@ -496,10 +590,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
                 {(order.city || order.shippingAddress?.city) && (
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
                       {t("orders.city")}
                     </span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    <span className="text-sm text-foreground font-semibold leading-tight">
                       {getLocationDisplayName(
                         order.city || order.shippingAddress?.city,
                       )}
@@ -512,13 +606,13 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
           {/* Order Items */}
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400">●</span>
-              {t("orders.products")}
-            </h4>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-h-60 overflow-y-auto">
+            {renderSectionHeader(
+              <ClipboardDocumentListIcon className="h-3.5 w-3.5" />,
+              t("orders.products"),
+            )}
+            <div className="bg-card/60 border border-border/60 rounded-xl overflow-hidden max-h-48 overflow-y-auto backdrop-blur-sm">
               {!displayItems || displayItems.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                <div className="p-4 text-center text-muted-foreground">
                   {t("orders.noProducts")}
                 </div>
               ) : (
@@ -526,23 +620,23 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                   {displayItems.map((item: any, index: number) => (
                     <div
                       key={index}
-                      className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      className="p-2 hover:bg-muted/40 transition-colors"
                     >
                       <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+                          <p className="font-medium text-foreground text-sm leading-tight mb-0.5">
                             {item.productName ||
                               item.name ||
                               t("orders.productNotSpecified")}
                           </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <p className="text-sm text-muted-foreground">
                             {t("orders.quantity")}: {item.quantity}
                           </p>
                           {(item.productColor ||
                             item.productSize ||
                             item.metadata?.color ||
                             item.metadata?.size) && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex gap-3">
+                            <div className="text-xs text-muted-foreground mt-1 flex gap-3">
                               {(item.productColor || item.metadata?.color) && (
                                 <span>
                                   🎨 {item.productColor || item.metadata?.color}
@@ -574,7 +668,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
+                          <p className="font-semibold text-foreground text-sm">
                             {formatPrice(
                               item.total || item.price * item.quantity,
                             )}
@@ -600,51 +694,58 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
           {/* Order Summary */}
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400">●</span>
-              {t("orders.orderSummary")}
-            </h4>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+            {renderSectionHeader(
+              <CalculatorIcon className="h-3.5 w-3.5" />,
+              t("orders.orderSummary"),
+            )}
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 backdrop-blur-sm">
               <div className="space-y-2">
-                <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <div className="flex justify-between text-foreground">
                   <span>{t("orders.subtotal")}:</span>
                   <span className="font-medium">
                     {formatPrice(order.subtotal || 0)}
                   </span>
                 </div>
                 {order.tax > 0 && (
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <div className="flex justify-between text-foreground">
                     <span>{t("orders.tax")}:</span>
                     <span className="font-medium">
                       {formatPrice(order.tax)}
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <div className="flex justify-between text-foreground">
                   <span>{t("orders.shipping")}:</span>
                   <span className="font-medium">
                     {formatPrice(order.shipping || 0)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-3 border-t-2 border-blue-300 dark:border-blue-700 text-lg font-bold text-gray-900 dark:text-gray-100">
+                <div className="flex justify-between pt-2 border-t-2 border-primary/30 text-base font-bold text-foreground">
                   <span>{t("orders.total")}:</span>
-                  <span className="text-blue-600 dark:text-blue-400">
+                  <span className="text-primary">
                     {formatPrice(order.total || 0)}
                   </span>
                 </div>
               </div>
             </div>
           </div>
+            </>
+          )}
 
-          {/* Update Status Section */}
+          {/* Tab: Update */}
+          {activeTab === "update" && (
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400">●</span>
-              {t("orders.updateOrder")}
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderSectionHeader(
+              <PencilSquareIcon className="h-3.5 w-3.5" />,
+              t("orders.updateOrder"),
+            )}
+            {renderSectionHeader(
+              <PencilSquareIcon className="h-3.5 w-3.5" />,
+              t("orders.updateOrder"),
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-card/60 border border-border/60 rounded-xl p-2.5 backdrop-blur-sm">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   {t("orders.orderStatus")}
                 </label>
                 <select
@@ -669,23 +770,23 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                     type="checkbox"
                     checked={isOverride}
                     onChange={(e) => setIsOverride(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    className="h-4 w-4 rounded border-input text-warning focus:ring-warning"
                   />
                   <label
                     htmlFor="override-checkbox-modal"
-                    className="text-sm text-gray-600 dark:text-gray-400"
+                    className="text-sm text-muted-foreground"
                   >
-                    تجاوز قواعد المسار (Override)
+                    {t("orders.overridePathRules")}
                   </label>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   {t("orders.paymentStatus")}
                 </label>
                 {isGuestOrder || !canManagePaymentStatus ? (
-                  <div className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    {isGuestOrder ? t("orders.notSpecified") : "تدار من صلاحيات الشركة"}
+                  <div className="w-full px-3 py-2 border border-input rounded-lg bg-muted/50 text-muted-foreground">
+                    {isGuestOrder ? t("orders.notSpecified") : t("orders.manageCompanyOnly")}
                   </div>
                 ) : (
                   <select
@@ -701,9 +802,9 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
               </div>
               {pendingCancellationStatus && (
-                <div className="md:col-span-2 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900/50 dark:bg-red-950/20">
-                  <label className="block text-sm font-medium text-red-900 dark:text-red-100 mb-2">
-                    سبب الإلغاء <span className="text-red-500">*</span>
+                <div className="sm:col-span-2 rounded-xl border border-destructive/30 bg-destructive/5 p-2.5">
+                  <label className="block text-sm font-medium text-destructive mb-2">
+                    {t("orders.cancelReasonTitle")} <span className="text-destructive">*</span>
                   </label>
                   {cancellationReasonOptions.length > 0 ? (
                     <select
@@ -713,9 +814,9 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                         setError(null);
                       }}
                       disabled={isUpdating || cancellationReasonOptionsLoading}
-                      className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100 mb-3"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/20 disabled:opacity-60 mb-3"
                     >
-                      <option value="">اختر سبب الإلغاء...</option>
+                      <option value="">{t("orders.cancelReasonSelect")}</option>
                       {cancellationReasonOptions.map((reason) => (
                         <option key={reason.id} value={reason.reason}>
                           {reason.reason}
@@ -728,25 +829,25 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                       onChange={(e) => setCancellationReason(e.target.value)}
                       rows={2}
                       disabled={isUpdating}
-                      className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100 mb-3"
-                      placeholder="سبب الإلغاء..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/20 disabled:opacity-60 mb-3"
+                      placeholder={t("orders.cancelReasonPlaceholder")}
                     />
                   )}
                   {cancellationReasonOptionsLoading ? (
-                    <p className="mb-2 text-xs text-red-700/80 dark:text-red-200/80">
-                      جاري تحميل الأسباب الجاهزة...
+                    <p className="mb-2 text-xs text-destructive/80">
+                      {t("orders.cancelLoadingReasons")}
                     </p>
                   ) : null}
-                  <label className="block text-sm font-medium text-red-900 dark:text-red-100 mb-1">
-                    ملاحظة إضافية <span className="text-red-400">(اختياري)</span>
+                  <label className="block text-sm font-medium text-destructive mb-1">
+                    {t("orders.cancelAdditionalNotes")} <span className="text-destructive/60">({t("orders.cancelAdditionalNotesOptional")})</span>
                   </label>
                   <textarea
                     value={cancellationAdditionalNotes}
                     onChange={(e) => setCancellationAdditionalNotes(e.target.value)}
                     rows={2}
                     disabled={isUpdating}
-                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100"
-                    placeholder="أضف ملاحظة إضافية (اختياري)..."
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/20 disabled:opacity-60"
+                    placeholder={t("orders.cancelAdditionalNotesPlaceholder")}
                   />
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row-reverse">
                     <button
@@ -786,21 +887,25 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 </div>
               )}
               {!canManageOrderStatus && (
-                <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                  الشركة مسؤولة عن تجهيز هذا الطلب من مخزنها؛ شاشة الطلبات هنا للمتابعة فقط.
+                <div className="sm:col-span-2 rounded-xl border border-warning/30 bg-warning/5 p-2.5 text-xs font-medium text-warning-foreground">
+                  {t("orders.merchantFulfillmentNotice")}
                 </div>
               )}
             </div>
           </div>
+          )}
 
+          {/* Tab: History */}
+          {activeTab === "history" && (
+          <>
           {/* Conversation Link */}
           {order.conversationId && (
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                <span className="text-blue-600 dark:text-blue-400">●</span>
-                {t("orders.conversation")}
-              </h4>
-              <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              {renderSectionHeader(
+                <ChatBubbleLeftRightIcon className="h-3.5 w-3.5" />,
+                t("orders.conversation"),
+              )}
+              <div className="bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
                 <button
                   onClick={() => {
                     const isWhatsApp =
@@ -812,7 +917,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                       : `/facebook-inbox?conversation=${order.conversationId}`;
                     window.open(url, "_blank", "noopener,noreferrer");
                   }}
-                  className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
                 >
                   <ChatBubbleLeftRightIcon className="h-5 w-5" />
                   {t("orders.viewConversation")}
@@ -824,49 +929,65 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {/* Notes */}
           {order.notes && (
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                <span className="text-blue-600 dark:text-blue-400">●</span>
-                {t("orders.notes")}
-              </h4>
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              {renderSectionHeader(
+                <DocumentTextIcon className="h-3.5 w-3.5" />,
+                t("orders.notes"),
+              )}
+              <div className="bg-warning/5 border border-warning/20 rounded-2xl p-3 backdrop-blur-sm">
+                <p className="text-sm text-foreground whitespace-pre-wrap">
                   {order.notes}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                onClick={handlePrintInvoice}
-                disabled={isPrinting}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                <PrinterIcon className="h-5 w-5" />
-                {isPrinting ? t("orders.printing") : t("orders.printInvoice")}
-              </button>
-              <Link
-                to={`/orders/${encodeURIComponent(String(order.orderNumber || ""))}`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
-              >
-                <ShoppingBagIcon className="h-5 w-5" />
-                {t("orders.viewFullDetails")}
-              </Link>
+          {/* Empty state when no history items */}
+          {!order.conversationId && !order.notes && (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-card/30 py-10 text-center">
+              <ClipboardDocumentListIcon className="h-8 w-8 text-muted-foreground/60" />
+              <p className="text-sm text-muted-foreground">
+                {t("orders.noHistoryItems") || "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø³Ø¬Ù„Ø§Øª Ø¨Ø¹Ø¯"}
+              </p>
             </div>
-            <button
-              onClick={onClose}
-              className="w-full rounded-lg bg-gray-200 px-6 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 sm:w-auto"
-            >
-              {t("orders.close")}
-            </button>
-          </div>
+          )}
+          </>
+          )}
+
+          {/* Action Buttons removed — moved to sticky footer below */}
         </div>
       </div>
+        {/* Sticky Bottom Action Bar */}
+        <div className="sticky bottom-0 z-10 flex flex-col gap-1.5 border-t border-border/60 bg-background/90 px-3 py-2 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-4">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={handlePrintInvoice}
+              disabled={isPrinting}
+              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-success px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-success/90 disabled:opacity-50"
+            >
+              <PrinterIcon className="h-4 w-4" />
+              {isPrinting ? t("orders.printing") : t("orders.printInvoice")}
+            </button>
+            <Link
+              to={`/orders/${encodeURIComponent(String(order.orderNumber || ""))}`}
+              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <ShoppingBagIcon className="h-4 w-4" />
+              {t("orders.viewFullDetails")}
+            </Link>
+          </div>
+          <button
+            onClick={onClose}
+            className="inline-flex min-h-[36px] w-full items-center justify-center rounded-lg border border-border bg-background px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
+          >
+            {t("orders.close")}
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default EnhancedOrderModal;
+
+
+

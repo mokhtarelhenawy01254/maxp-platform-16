@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Baby,
@@ -113,18 +113,18 @@ const slugify = (value: string) =>
     .replace(/^-+|-+$/g, "");
 
 const categoryLabels: Record<string, string> = {
-  general: "╪╣╪º┘à",
-  ecommerce: "┘à╪¬╪¼╪▒ ╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è",
-  ECOMMERCE: "┘à╪¬╪¼╪▒ ╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è",
-  marketing: "╪¬╪│┘ê┘è┘é",
-  operations: "╪╣┘à┘ä┘è╪º╪¬",
-  support: "╪«╪»┘à╪⌐ ╪╣┘à┘ä╪º╪í",
-  crm: "╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í",
-  ai: "╪░┘â╪º╪í ╪º╪╡╪╖┘å╪º╪╣┘è",
+  general: "عام",
+  ecommerce: "متجر إلكتروني",
+  ECOMMERCE: "متجر إلكتروني",
+  marketing: "تسويق",
+  operations: "عمليات",
+  support: "خدمة عملاء",
+  crm: "إدارة العملاء",
+  ai: "ذكاء اصطناعي",
 };
 
 const categoryLabel = (category: string) =>
-  categoryLabels[category] || category || "╪╣╪º┘à";
+  categoryLabels[category] || category || "عام";
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (error && typeof error === "object") {
@@ -208,9 +208,9 @@ const specialtyAccentColors = [
 ];
 
 const formatDate = (value?: string | null): string => {
-  if (!value) return "╪║┘è╪▒ ┘à╪¬╪º╪¡";
+  if (!value) return "غير متاح";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "╪║┘è╪▒ ┘à╪¬╪º╪¡";
+  if (Number.isNaN(date.getTime())) return "غير متاح";
   return date.toLocaleString("ar-EG");
 };
 
@@ -222,15 +222,15 @@ const statusFilters: {
   label: string;
   color: string;
 }[] = [
-  { id: "ALL", label: "╪º┘ä┘â┘ä", color: "var(--muted-foreground)" },
-  { id: "ACTIVE", label: "┘å╪┤╪╖", color: "#10b981" },
-  { id: "INACTIVE", label: "┘à┘ê┘é┘ê┘ü", color: "#ef4444" },
-  { id: "AUTO", label: "╪¬╪½╪¿┘è╪¬ ╪¬┘ä┘é╪º╪ª┘è", color: "#8b5cf6" },
+  { id: "ALL", label: "الكل", color: "var(--muted-foreground)" },
+  { id: "ACTIVE", label: "نشط", color: "#10b981" },
+  { id: "INACTIVE", label: "موقوف", color: "#ef4444" },
+  { id: "AUTO", label: "تثبيت تلقائي", color: "#8b5cf6" },
 ];
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// Specialty Edit Screen ΓÇö ┘å┘ü╪│ ╪ú╪│┘ä┘ê╪¿ ┘à╪¡╪▒╪▒ ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ┘ü┘è ╪╡┘ü╪¡╪⌐ ╪º┘ä┘à╪º╪▒┘â╪¬ ╪¿┘ä┘è╪│
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ═══════════════════════════════════════════════════════════════════════
+// Specialty Edit Screen — نفس أسلوب محرر التطبيقات في صفحة الماركت بليس
+// ═══════════════════════════════════════════════════════════════════════
 const SpecialtyEditScreen = ({
   specialty,
   appOptions,
@@ -313,7 +313,7 @@ const SpecialtyEditScreen = ({
 
   const handleSave = async () => {
     if (!formState.nameAr.trim() || !formState.nameEn.trim()) {
-      toast.error("╪º┘ä╪º╪│┘à ╪¿╪º┘ä╪╣╪▒╪¿┘è ┘ê╪º┘ä╪Ñ┘å╪¼┘ä┘è╪▓┘è ┘à╪╖┘ä┘ê╪¿");
+      toast.error("الاسم بالعربي والإنجليزي مطلوب");
       return;
     }
 
@@ -331,26 +331,26 @@ const SpecialtyEditScreen = ({
 
       if (specialty) {
         await businessSpecialtyService.updateSpecialty(specialty.id, payload);
-        toast.success("╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è");
+        toast.success("تم تحديث النشاط التجاري");
       } else {
         await businessSpecialtyService.createSpecialty(payload);
-        toast.success("╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è");
+        toast.success("تم إنشاء النشاط التجاري");
       }
 
       onClose();
       void onRefresh();
     } catch (error) {
       console.error("Failed to save business specialty", error);
-      toast.error(getErrorMessage(error, "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è"));
+      toast.error(getErrorMessage(error, "فشل حفظ النشاط التجاري"));
     } finally {
       setSaving(false);
     }
   };
 
   const sections = [
-    { id: "general", label: "╪╣╪º┘à", icon: Briefcase },
-    { id: "description", label: "╪º┘ä┘ê╪╡┘ü", icon: Pencil },
-    { id: "apps", label: "╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬", icon: Package },
+    { id: "general", label: "عام", icon: Briefcase },
+    { id: "description", label: "الوصف", icon: Pencil },
+    { id: "apps", label: "التطبيقات", icon: Package },
   ];
 
   return (
@@ -362,7 +362,7 @@ const SpecialtyEditScreen = ({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            aria-label="╪▒╪¼┘ê╪╣ ┘ä┘ä┘é╪º╪ª┘à╪⌐"
+            aria-label="رجوع للقائمة"
             onClick={onClose}
           >
             <ArrowRight className="h-4 w-4" />
@@ -370,14 +370,14 @@ const SpecialtyEditScreen = ({
           <div className="min-w-0">
             <h2 className="truncate text-base font-bold">
               {specialty?.id
-                ? `╪¬╪╣╪»┘è┘ä ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è: ${specialty.nameAr || ""}`
-                : "╪Ñ┘å╪┤╪º╪í ┘å╪┤╪º╪╖ ╪¬╪¼╪º╪▒┘è ╪¼╪»┘è╪»"}
+                ? `تعديل النشاط التجاري: ${specialty.nameAr || ""}`
+                : "إنشاء نشاط تجاري جديد"}
             </h2>
           </div>
         </div>
         <div className="flex flex-shrink-0 gap-1.5">
           <Button variant="outline" size="sm" onClick={onClose}>
-            ╪Ñ┘ä╪║╪º╪í
+            إلغاء
           </Button>
           <Button
             variant="default"
@@ -390,7 +390,7 @@ const SpecialtyEditScreen = ({
             ) : (
               <Save className="h-3.5 w-3.5" />
             )}
-            {saving ? "╪¼╪º╪▒┘ì ╪º┘ä╪¡┘ü╪╕..." : "╪¡┘ü╪╕"}
+            {saving ? "جارٍ الحفظ..." : "حفظ"}
           </Button>
         </div>
       </div>
@@ -420,7 +420,7 @@ const SpecialtyEditScreen = ({
           <div className="grid grid-cols-12 gap-3">
             <div className="col-span-12 md:col-span-6">
               <div className="space-y-1">
-                <Label htmlFor="specialty-name-ar">╪º┘ä╪º╪│┘à ╪¿╪º┘ä╪╣╪▒╪¿┘è</Label>
+                <Label htmlFor="specialty-name-ar">الاسم بالعربي</Label>
                 <Input
                   id="specialty-name-ar"
                   name="nameAr"
@@ -428,13 +428,13 @@ const SpecialtyEditScreen = ({
                   onChange={(event) =>
                     setFieldValue("nameAr", event.target.value)
                   }
-                  placeholder="╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒"
+                  placeholder="التجارة والمتاجر"
                 />
               </div>
             </div>
             <div className="col-span-12 md:col-span-6">
               <div className="space-y-1">
-                <Label htmlFor="specialty-name-en">╪º┘ä╪º╪│┘à ╪¿╪º┘ä╪Ñ┘å╪¼┘ä┘è╪▓┘è</Label>
+                <Label htmlFor="specialty-name-en">الاسم بالإنجليزي</Label>
                 <Input
                   id="specialty-name-en"
                   name="nameEn"
@@ -449,7 +449,7 @@ const SpecialtyEditScreen = ({
             </div>
             <div className="col-span-12 md:col-span-4">
               <div className="space-y-1">
-                <Label htmlFor="specialty-slug">╪º┘ä╪▒╪º╪¿╪╖ ╪º┘ä┘à╪«╪¬╪╡╪▒ (slug)</Label>
+                <Label htmlFor="specialty-slug">الرابط المختصر (slug)</Label>
                 <Input
                   id="specialty-slug"
                   name="slug"
@@ -464,7 +464,7 @@ const SpecialtyEditScreen = ({
             </div>
             <div className="col-span-12 md:col-span-4">
               <div className="space-y-1">
-                <Label htmlFor="specialty-icon">╪º┘ä╪ú┘è┘é┘ê┘å╪⌐</Label>
+                <Label htmlFor="specialty-icon">الأيقونة</Label>
                 <Input
                   id="specialty-icon"
                   name="icon"
@@ -478,7 +478,7 @@ const SpecialtyEditScreen = ({
             </div>
             <div className="col-span-12 md:col-span-4">
               <div className="space-y-1">
-                <Label htmlFor="specialty-sort-order">╪º┘ä╪¬╪▒╪¬┘è╪¿</Label>
+                <Label htmlFor="specialty-sort-order">الترتيب</Label>
                 <Input
                   id="specialty-sort-order"
                   name="sortOrder"
@@ -513,7 +513,7 @@ const SpecialtyEditScreen = ({
                     }
                   />
                   <span className="text-sm">
-                    ╪¬╪½╪¿┘è╪¬ ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ╪╣┘å╪» ╪º┘ä╪¬╪│╪¼┘è┘ä
+                    تثبيت التطبيقات تلقائيًا عند التسجيل
                   </span>
                 </label>
                 <label className="flex items-center gap-1 cursor-pointer">
@@ -525,7 +525,7 @@ const SpecialtyEditScreen = ({
                       setFieldValue("isActive", event.target.checked)
                     }
                   />
-                  <span className="text-sm">╪¬┘ü╪╣┘è┘ä ╪º┘ä┘å╪┤╪º╪╖</span>
+                  <span className="text-sm">تفعيل النشاط</span>
                 </label>
               </div>
             </div>
@@ -536,7 +536,7 @@ const SpecialtyEditScreen = ({
           <div className="grid grid-cols-12 gap-3">
             <div className="col-span-12 md:col-span-6">
               <div className="space-y-1">
-                <Label htmlFor="specialty-desc-ar">╪º┘ä┘ê╪╡┘ü ╪¿╪º┘ä╪╣╪▒╪¿┘è</Label>
+                <Label htmlFor="specialty-desc-ar">الوصف بالعربي</Label>
                 <Textarea
                   id="specialty-desc-ar"
                   name="descriptionAr"
@@ -545,13 +545,13 @@ const SpecialtyEditScreen = ({
                   onChange={(event) =>
                     setFieldValue("descriptionAr", event.target.value)
                   }
-                  placeholder="┘à╪¬╪¼╪▒ ╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪î ┘à┘å╪¬╪¼╪º╪¬╪î ╪╖┘ä╪¿╪º╪¬╪î ╪╣╪▒┘ê╪╢ ┘ê┘à╪┤╪¬╪▒┘è╪º╪¬."
+                  placeholder="متجر إلكتروني، منتجات، طلبات، عروض ومشتريات."
                 />
               </div>
             </div>
             <div className="col-span-12 md:col-span-6">
               <div className="space-y-1">
-                <Label htmlFor="specialty-desc-en">╪º┘ä┘ê╪╡┘ü ╪¿╪º┘ä╪Ñ┘å╪¼┘ä┘è╪▓┘è</Label>
+                <Label htmlFor="specialty-desc-en">الوصف بالإنجليزي</Label>
                 <Textarea
                   id="specialty-desc-en"
                   name="descriptionEn"
@@ -572,10 +572,10 @@ const SpecialtyEditScreen = ({
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Label className="text-base">╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐</Label>
+                <Label className="text-base">التطبيقات المرتبطة</Label>
                 <p className="text-sm text-muted-foreground">
-                  ╪º╪«╪¬╪▒ ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ╪º┘ä╪¬┘è ╪│╪¬╪╕┘ç╪▒ ┘ê╪¬┘Å╪½╪¿┘æ╪¬ ┘ä╪┤╪▒┘â╪º╪¬ ┘ç╪░╪º ╪º┘ä┘å╪┤╪º╪╖ (
-                  {formState.appSlugs.length} ┘à╪«╪¬╪º╪▒).
+                  اختر التطبيقات التي ستظهر وتُثبّت لشركات هذا النشاط (
+                  {formState.appSlugs.length} مختار).
                 </p>
               </div>
               <div className="relative w-full md:w-64">
@@ -583,7 +583,7 @@ const SpecialtyEditScreen = ({
                 <Input
                   value={appQuery}
                   onChange={(event) => setAppQuery(event.target.value)}
-                  placeholder="╪º╪¿╪¡╪½ ╪╣┘å ╪¬╪╖╪¿┘è┘é..."
+                  placeholder="ابحث عن تطبيق..."
                   className="pr-10 text-right"
                 />
               </div>
@@ -592,7 +592,7 @@ const SpecialtyEditScreen = ({
             <ScrollArea className="h-72 rounded-xl border bg-muted/20 p-3">
               {filteredAppGroups.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  ┘ä╪º ╪¬┘ê╪¼╪» ╪¬╪╖╪¿┘è┘é╪º╪¬ ┘à╪¬╪º╪¡╪⌐ ┘à╪╖╪º╪¿┘é╪⌐ ┘ä┘ä╪¿╪¡╪½.
+                  لا توجد تطبيقات متاحة مطابقة للبحث.
                 </p>
               ) : (
                 <div className="space-y-5">
@@ -623,7 +623,7 @@ const SpecialtyEditScreen = ({
                                 onCheckedChange={(value) =>
                                   toggleAppSlug(option.slug, Boolean(value))
                                 }
-                                aria-label={`╪¬┘ü╪╣┘è┘ä ╪¬╪╖╪¿┘è┘é ${option.name}`}
+                                aria-label={`تفعيل تطبيق ${option.name}`}
                               />
                               <span className="min-w-0 flex-1 space-y-0.5">
                                 <span className="block text-sm font-medium text-foreground">
@@ -679,7 +679,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
       setAppOptions(options);
     } catch (error) {
       console.error("Failed to load business specialties", error);
-      toast.error(getErrorMessage(error, "┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪º┘ä┘å╪┤╪º╪╖╪º╪¬ ╪º┘ä╪¬╪¼╪º╪▒┘è╪⌐"));
+      toast.error(getErrorMessage(error, "فشل تحميل النشاطات التجارية"));
     } finally {
       setLoading(false);
     }
@@ -738,27 +738,27 @@ const BusinessSpecialtiesManagement: React.FC = () => {
 
     return [
       {
-        title: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘å╪┤╪º╪╖╪º╪¬",
+        title: "إجمالي النشاطات",
         value: specialties.length.toLocaleString("ar-EG"),
-        subtitle: "╪╣╪»╪» ╪º┘ä┘å╪┤╪º╪╖╪º╪¬ ╪º┘ä╪¬╪¼╪º╪▒┘è╪⌐ ╪º┘ä┘à╪¬╪º╪¡╪⌐ ┘ü┘è ╪┤╪º╪┤╪⌐ ╪º┘ä╪¬╪│╪¼┘è┘ä.",
+        subtitle: "عدد النشاطات التجارية المتاحة في شاشة التسجيل.",
         icon: Briefcase,
       },
       {
-        title: "╪º┘ä┘å╪┤╪º╪╖╪º╪¬ ╪º┘ä┘å╪┤╪╖╪⌐",
+        title: "النشاطات النشطة",
         value: active.length.toLocaleString("ar-EG"),
-        subtitle: "╪º┘ä╪╕╪º┘ç╪▒╪⌐ ┘ä┘ä╪╣┘à┘ä╪º╪í ╪╣┘å╪» ╪Ñ┘å╪┤╪º╪í ╪¡╪│╪º╪¿ ╪¼╪»┘è╪».",
+        subtitle: "الظاهرة للعملاء عند إنشاء حساب جديد.",
         icon: CheckCircle2,
       },
       {
-        title: "╪¬╪½╪¿┘è╪¬ ╪¬┘ä┘é╪º╪ª┘è ╪╣┘å╪» ╪º┘ä╪¬╪│╪¼┘è┘ä",
+        title: "تثبيت تلقائي عند التسجيل",
         value: autoInstall.length.toLocaleString("ar-EG"),
-        subtitle: "┘å╪┤╪º╪╖╪º╪¬ ╪¬╪½╪¿┘æ╪¬ ╪¬╪╖╪¿┘è┘é╪º╪¬┘ç╪º ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ┘ä┘ä╪┤╪▒┘â╪⌐ ╪º┘ä╪¼╪»┘è╪»╪⌐.",
+        subtitle: "نشاطات تثبّت تطبيقاتها تلقائيًا للشركة الجديدة.",
         icon: Zap,
       },
       {
-        title: "╪º┘ä╪┤╪▒┘â╪º╪¬ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐",
+        title: "الشركات المرتبطة",
         value: totalCompanies.toLocaleString("ar-EG"),
-        subtitle: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪┤╪▒┘â╪º╪¬ ╪º┘ä┘à╪│╪¼┘ä╪⌐ ╪¬╪¡╪¬ ┘ç╪░┘ç ╪º┘ä┘å╪┤╪º╪╖╪º╪¬.",
+        subtitle: "إجمالي الشركات المسجلة تحت هذه النشاطات.",
         icon: Store,
       },
     ];
@@ -815,7 +815,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
             (specialty) => specialty.id !== specialtyPendingRemoval.id,
           ),
         );
-        toast.success("╪¬┘à ╪¡╪░┘ü ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è");
+        toast.success("تم حذف النشاط التجاري");
       } else {
         setSpecialties((previous) =>
           previous.map((specialty) =>
@@ -824,14 +824,14 @@ const BusinessSpecialtiesManagement: React.FC = () => {
               : specialty,
           ),
         );
-        toast.success("╪¬┘à ╪Ñ┘è┘é╪º┘ü ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è ┘ä╪ú┘å┘ç ┘à╪▒╪¬╪¿╪╖ ╪¿╪┤╪▒┘â╪º╪¬");
+        toast.success("تم إيقاف النشاط التجاري لأنه مرتبط بشركات");
       }
 
       setSpecialtyPendingRemoval(null);
       await loadData();
     } catch (error) {
       console.error("Failed to remove business specialty", error);
-      toast.error(getErrorMessage(error, "┘ü╪┤┘ä ╪¡╪░┘ü ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è"));
+      toast.error(getErrorMessage(error, "فشل حذف النشاط التجاري"));
     } finally {
       setRemoving(false);
     }
@@ -840,7 +840,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
   const renderAppsPreview = (specialty: BusinessSpecialty, max = 3) => {
     if (specialty.appSlugs.length === 0) {
       return (
-        <span className="text-xs text-muted-foreground">╪¿╪»┘ê┘å ╪¬╪╖╪¿┘è┘é╪º╪¬</span>
+        <span className="text-xs text-muted-foreground">بدون تطبيقات</span>
       );
     }
 
@@ -905,11 +905,11 @@ const BusinessSpecialtiesManagement: React.FC = () => {
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          ╪º┘ä┘å╪┤╪º╪╖╪º╪¬ ╪º┘ä╪¬╪¼╪º╪▒┘è╪⌐ ┘ê╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬
+          النشاطات التجارية والتطبيقات
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          ┘â┘ä ┘å╪┤╪º╪╖ ╪¬╪¼╪º╪▒┘è ┘è╪╕┘ç╪▒ ┘ü┘è ╪┤╪º╪┤╪⌐ ╪º┘ä╪¬╪│╪¼┘è┘ä╪î ┘ê╪¬╪¡╪¬┘ç ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ╪º┘ä╪¬┘è ╪¬┘Å╪½╪¿┘Ä┘æ╪¬
-          ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ┘ä╪┤╪▒┘â╪º╪¬ ┘ç╪░╪º ╪º┘ä┘å╪┤╪º╪╖ ╪╣┘å╪» ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪¡╪│╪º╪¿.
+          كل نشاط تجاري يظهر في شاشة التسجيل، وتحته التطبيقات التي تُثبَّت
+          تلقائيًا لشركات هذا النشاط عند إنشاء الحساب.
         </p>
       </div>
 
@@ -956,13 +956,13 @@ const BusinessSpecialtiesManagement: React.FC = () => {
         <div className="grid grid-cols-12 gap-3 items-end">
           <div className="col-span-12 md:col-span-5">
             <div className="space-y-1.5">
-              <Label htmlFor="specialties-search">╪º┘ä╪¿╪¡╪½</Label>
+              <Label htmlFor="specialties-search">البحث</Label>
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="specialties-search"
                   className="w-full pr-10"
-                  placeholder="╪º╪¿╪¡╪½ ╪¿╪º┘ä╪º╪│┘à ╪ú┘ê ╪º┘ä╪▒╪º╪¿╪╖ ╪ú┘ê ╪º┘ä┘ê╪╡┘ü..."
+                  placeholder="ابحث بالاسم أو الرابط أو الوصف..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -971,7 +971,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
           </div>
           <div className="col-span-12 md:col-span-2">
             <div className="space-y-1.5">
-              <Label>╪º┘ä╪¬╪▒╪¬┘è╪¿</Label>
+              <Label>الترتيب</Label>
               <Select
                 value={sortBy}
                 onValueChange={(v) => setSortBy((v as SortOption) || "sortOrder")}
@@ -980,8 +980,8 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sortOrder">╪¡╪│╪¿ ╪º┘ä╪¬╪▒╪¬┘è╪¿</SelectItem>
-                  <SelectItem value="name">╪¡╪│╪¿ ╪º┘ä╪º╪│┘à</SelectItem>
+                  <SelectItem value="sortOrder">حسب الترتيب</SelectItem>
+                  <SelectItem value="name">حسب الاسم</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -996,7 +996,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                 className="flex-1 md:flex-none"
               >
                 <RefreshCw className={cn("h-4 w-4 ml-1", loading && "animate-spin")} />
-                ╪¬╪¡╪»┘è╪½
+                تحديث
               </Button>
               <Button
                 type="button"
@@ -1005,14 +1005,14 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                 className="flex-1 md:flex-none"
               >
                 <Plus className="h-4 w-4 ml-1" />
-                ╪Ñ┘å╪┤╪º╪í ┘å╪┤╪º╪╖
+                إنشاء نشاط
               </Button>
             </div>
           </div>
         </div>
         {filteredSpecialties.length !== specialties.length && (
           <span className="text-xs text-muted-foreground block mt-2">
-            ╪╣╪▒╪╢ {filteredSpecialties.length} ┘à┘å {specialties.length} ┘å╪┤╪º╪╖
+            عرض {filteredSpecialties.length} من {specialties.length} نشاط
           </span>
         )}
       </div>
@@ -1026,7 +1026,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
             style={{ minHeight: 200 }}
           >
             <p className="px-3 pt-1.5 pb-2 text-xs font-bold text-muted-foreground">
-              ╪º┘ä╪¡╪º┘ä╪⌐
+              الحالة
             </p>
             <div className="flex flex-col gap-0.5">
               {statusFilters.map((filter) => (
@@ -1071,11 +1071,11 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                 <Search className="h-8 w-8 text-muted-foreground/50" />
               </div>
               <p className="text-base font-semibold text-muted-foreground mt-4">
-                ┘ä╪º ╪¬┘ê╪¼╪» ┘å╪┤╪º╪╖╪º╪¬ ╪¬╪¼╪º╪▒┘è╪⌐ ┘à╪╖╪º╪¿┘é╪⌐
+                لا توجد نشاطات تجارية مطابقة
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                ╪ú┘å╪┤╪ª ┘å╪┤╪º╪╖┘ï╪º ╪¬╪¼╪º╪▒┘è┘ï╪º ┘ê╪º╪▒╪¿╪╖ ╪¿┘ç ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ┘ä┘è╪╕┘ç╪▒ ┘ä┘ä╪╣┘à┘ä╪º╪í ┘ü┘è ╪┤╪º╪┤╪⌐
-                ╪º┘ä╪¬╪│╪¼┘è┘ä.
+                أنشئ نشاطًا تجاريًا واربط به التطبيقات ليظهر للعملاء في شاشة
+                التسجيل.
               </p>
               <Button
                 type="button"
@@ -1083,7 +1083,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                 onClick={() => setEditingSpecialty({ item: null })}
               >
                 <Plus className="h-4 w-4 ml-1" />
-                ╪Ñ┘å╪┤╪º╪í ╪ú┘ê┘ä ┘å╪┤╪º╪╖
+                إنشاء أول نشاط
               </Button>
             </div>
           ) : (
@@ -1135,17 +1135,17 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                               <div className="mt-1.5 flex flex-wrap items-center gap-1">
                                 {specialty.isActive ? (
                                   <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-emerald-700 dark:text-emerald-400">
-                                    ┘ü╪╣┘æ╪º┘ä
+                                    فعّال
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center rounded-full bg-rose-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-rose-700 dark:text-rose-400">
-                                    ┘à┘ê┘é┘ê┘ü
+                                    موقوف
                                   </span>
                                 )}
                                 {specialty.autoInstallOnSignup && (
                                   <span className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-violet-700 dark:text-violet-400">
                                     <Zap className="size-2.5" />
-                                    ╪¬╪½╪¿┘è╪¬ ╪¬┘ä┘é╪º╪ª┘è
+                                    تثبيت تلقائي
                                   </span>
                                 )}
                               </div>
@@ -1157,7 +1157,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                       <CardContent className="flex flex-grow flex-col gap-3 p-4 pt-3">
                         {/* Description */}
                         <p className="line-clamp-2 text-sm text-muted-foreground">
-                          {specialty.descriptionAr || "┘ä╪º ┘è┘ê╪¼╪» ┘ê╪╡┘ü"}
+                          {specialty.descriptionAr || "لا يوجد وصف"}
                         </p>
 
                         {/* Stats Row */}
@@ -1167,7 +1167,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                               {appsCount}
                             </p>
                             <span className="text-[0.65rem] text-muted-foreground">
-                              ╪¬╪╖╪¿┘è┘é
+                              تطبيق
                             </span>
                           </div>
                           <div className="rounded-xl bg-muted/50 p-2 text-center">
@@ -1175,7 +1175,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                               {specialty.companyCount.toLocaleString("ar-EG")}
                             </p>
                             <span className="text-[0.65rem] text-muted-foreground">
-                              ╪┤╪▒┘â╪⌐
+                              شركة
                             </span>
                           </div>
                           <div className="rounded-xl bg-muted/50 p-2 text-center">
@@ -1183,7 +1183,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                               {specialty.sortOrder}
                             </p>
                             <span className="text-[0.65rem] text-muted-foreground">
-                              ╪º┘ä╪¬╪▒╪¬┘è╪¿
+                              الترتيب
                             </span>
                           </div>
                         </div>
@@ -1191,7 +1191,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                         {/* Apps preview */}
                         <div className="space-y-1.5">
                           <p className="text-xs font-semibold text-muted-foreground">
-                            ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ({appsCount})
+                            التطبيقات ({appsCount})
                           </p>
                           {renderAppsPreview(specialty)}
                         </div>
@@ -1205,7 +1205,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                             onClick={() => setDetailSpecialty(specialty)}
                           >
                             <Eye className="h-4 w-4 ml-1" />
-                            ╪º┘ä╪¬┘ü╪º╪╡┘è┘ä
+                            التفاصيل
                           </Button>
                           <div>
                             <TooltipProvider>
@@ -1214,7 +1214,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    aria-label={`╪¬╪╣╪»┘è┘ä ╪º┘ä┘å╪┤╪º╪╖ ${specialty.nameAr}`}
+                                    aria-label={`تعديل النشاط ${specialty.nameAr}`}
                                     onClick={() =>
                                       setEditingSpecialty({ item: specialty })
                                     }
@@ -1223,7 +1223,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>╪¬╪╣╪»┘è┘ä</TooltipContent>
+                                <TooltipContent>تعديل</TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                             <TooltipProvider>
@@ -1232,7 +1232,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    aria-label={`╪¡╪░┘ü ╪º┘ä┘å╪┤╪º╪╖ ${specialty.nameAr}`}
+                                    aria-label={`حذف النشاط ${specialty.nameAr}`}
                                     onClick={() =>
                                       setSpecialtyPendingRemoval(specialty)
                                     }
@@ -1241,7 +1241,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                                     <Trash2 className="h-4 w-4 text-red-500" />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>╪¡╪░┘ü</TooltipContent>
+                                <TooltipContent>حذف</TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           </div>
@@ -1265,9 +1265,9 @@ const BusinessSpecialtiesManagement: React.FC = () => {
       >
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è</DialogTitle>
+            <DialogTitle>تفاصيل النشاط التجاري</DialogTitle>
             <DialogDescription>
-              ╪¼┘à┘è╪╣ ╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä┘å╪┤╪º╪╖ ┘ê╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿┘ç.
+              جميع تفاصيل النشاط والتطبيقات المرتبطة به.
             </DialogDescription>
           </DialogHeader>
 
@@ -1303,23 +1303,23 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                       <p className="mt-0.5 truncate text-sm text-white/70" dir="ltr">
                         {detailSpecialty.slug}
                         {detailSpecialty.nameEn
-                          ? ` ΓÇó ${detailSpecialty.nameEn}`
+                          ? ` • ${detailSpecialty.nameEn}`
                           : ""}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {detailSpecialty.isActive ? (
                           <span className="inline-flex items-center rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
-                            ┘ü╪╣┘æ╪º┘ä
+                            فعّال
                           </span>
                         ) : (
                           <span className="inline-flex items-center rounded-full bg-rose-500/20 px-2.5 py-0.5 text-xs font-semibold text-rose-300">
-                            ┘à┘ê┘é┘ê┘ü
+                            موقوف
                           </span>
                         )}
                         {detailSpecialty.autoInstallOnSignup && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-semibold text-violet-300">
                             <Zap className="size-3" />
-                            ╪¬╪½╪¿┘è╪¬ ╪¬┘ä┘é╪º╪ª┘è ╪╣┘å╪» ╪º┘ä╪¬╪│╪¼┘è┘ä
+                            تثبيت تلقائي عند التسجيل
                           </span>
                         )}
                       </div>
@@ -1332,7 +1332,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <div className="col-span-12 md:col-span-6">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪º┘ä╪º╪│┘à ╪¿╪º┘ä╪╣╪▒╪¿┘è
+                        الاسم بالعربي
                       </span>
                       <p className="mt-0.5 text-sm font-semibold text-foreground">
                         {detailSpecialty.nameAr}
@@ -1342,17 +1342,17 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <div className="col-span-12 md:col-span-6">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪º┘ä╪º╪│┘à ╪¿╪º┘ä╪Ñ┘å╪¼┘ä┘è╪▓┘è
+                        الاسم بالإنجليزي
                       </span>
                       <p className="mt-0.5 text-sm font-semibold text-foreground" dir="ltr">
-                        {detailSpecialty.nameEn || "╪║┘è╪▒ ┘à╪¬╪º╪¡"}
+                        {detailSpecialty.nameEn || "غير متاح"}
                       </p>
                     </div>
                   </div>
                   <div className="col-span-6 md:col-span-3">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪º┘ä╪▒╪º╪¿╪╖ (slug)
+                        الرابط (slug)
                       </span>
                       <p className="mt-0.5 text-sm font-semibold text-foreground" dir="ltr">
                         {detailSpecialty.slug}
@@ -1362,7 +1362,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <div className="col-span-6 md:col-span-3">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪º┘ä╪ú┘è┘é┘ê┘å╪⌐
+                        الأيقونة
                       </span>
                       <div className="mt-0.5 flex items-center gap-2">
                         {(() => {
@@ -1382,7 +1382,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <div className="col-span-6 md:col-span-3">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪¬╪▒╪¬┘è╪¿ ╪º┘ä╪╣╪▒╪╢
+                        ترتيب العرض
                       </span>
                       <p className="mt-0.5 text-sm font-semibold text-foreground">
                         {detailSpecialty.sortOrder}
@@ -1392,7 +1392,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <div className="col-span-6 md:col-span-3">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪º┘ä╪┤╪▒┘â╪º╪¬ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐
+                        الشركات المرتبطة
                       </span>
                       <p className="mt-0.5 text-sm font-semibold text-foreground">
                         {detailSpecialty.companyCount.toLocaleString("ar-EG")}
@@ -1402,7 +1402,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <div className="col-span-6 md:col-span-6">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪¬╪º╪▒┘è╪« ╪º┘ä╪Ñ┘å╪┤╪º╪í
+                        تاريخ الإنشاء
                       </span>
                       <p className="mt-0.5 text-sm font-semibold text-foreground">
                         {formatDate(detailSpecialty.createdAt)}
@@ -1412,7 +1412,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <div className="col-span-6 md:col-span-6">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪ó╪«╪▒ ╪¬╪¡╪»┘è╪½
+                        آخر تحديث
                       </span>
                       <p className="mt-0.5 text-sm font-semibold text-foreground">
                         {formatDate(detailSpecialty.updatedAt)}
@@ -1422,20 +1422,20 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                   <div className="col-span-12 md:col-span-6">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪º┘ä┘ê╪╡┘ü ╪¿╪º┘ä╪╣╪▒╪¿┘è
+                        الوصف بالعربي
                       </span>
                       <p className="mt-0.5 text-sm leading-7 text-foreground">
-                        {detailSpecialty.descriptionAr || "╪¿╪»┘ê┘å ┘ê╪╡┘ü"}
+                        {detailSpecialty.descriptionAr || "بدون وصف"}
                       </p>
                     </div>
                   </div>
                   <div className="col-span-12 md:col-span-6">
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <span className="text-xs text-muted-foreground block">
-                        ╪º┘ä┘ê╪╡┘ü ╪¿╪º┘ä╪Ñ┘å╪¼┘ä┘è╪▓┘è
+                        الوصف بالإنجليزي
                       </span>
                       <p className="mt-0.5 text-sm leading-7 text-foreground" dir="ltr">
-                        {detailSpecialty.descriptionEn || "╪¿╪»┘ê┘å ┘ê╪╡┘ü"}
+                        {detailSpecialty.descriptionEn || "بدون وصف"}
                       </p>
                     </div>
                   </div>
@@ -1445,18 +1445,18 @@ const BusinessSpecialtiesManagement: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <Label className="text-base">
-                      ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ (
+                      التطبيقات المرتبطة (
                       {detailSpecialty.appSlugs.length})
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      ╪º┘ä╪¬╪╖╪¿┘è┘é╪º╪¬ ╪º┘ä╪¬┘è ╪¬┘Å╪½╪¿┘Ä┘æ╪¬ ╪¬┘ä┘é╪º╪ª┘è┘ï╪º ┘ä╪┤╪▒┘â╪º╪¬ ┘ç╪░╪º ╪º┘ä┘å╪┤╪º╪╖ ╪╣┘å╪»
-                      ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪¡╪│╪º╪¿.
+                      التطبيقات التي تُثبَّت تلقائيًا لشركات هذا النشاط عند
+                      إنشاء الحساب.
                     </p>
                   </div>
                   {detailSpecialty.appSlugs.length === 0 ? (
                     <div className="rounded-xl border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
                       <Package className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" />
-                      ┘ä╪º ╪¬┘ê╪¼╪» ╪¬╪╖╪¿┘è┘é╪º╪¬ ┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿┘ç╪░╪º ╪º┘ä┘å╪┤╪º╪╖.
+                      لا توجد تطبيقات مرتبطة بهذا النشاط.
                     </div>
                   ) : (
                     <div className="grid gap-2 md:grid-cols-2">
@@ -1526,7 +1526,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
               className="rounded-xl"
               onClick={() => setDetailSpecialty(null)}
             >
-              ╪Ñ╪║┘ä╪º┘é
+              إغلاق
             </Button>
             <Button
               type="button"
@@ -1540,7 +1540,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
               }}
             >
               <Pencil className="h-4 w-4 ml-1" />
-              ╪¬╪╣╪»┘è┘ä ╪º┘ä┘å╪┤╪º╪╖
+              تعديل النشاط
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1557,11 +1557,11 @@ const BusinessSpecialtiesManagement: React.FC = () => {
       >
         <DialogContent className="max-w-md text-right sm:text-right">
           <DialogHeader className="text-right">
-            <DialogTitle>╪¡╪░┘ü ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è╪ƒ</DialogTitle>
+            <DialogTitle>حذف النشاط التجاري؟</DialogTitle>
             <DialogDescription>
               {specialtyPendingRemoval?.companyCount
-                ? `╪º┘ä┘å╪┤╪º╪╖ ${specialtyPendingRemoval.nameAr} ┘à╪▒╪¬╪¿╪╖ ╪¿┘Ç ${specialtyPendingRemoval.companyCount.toLocaleString("ar-EG")} ╪┤╪▒┘â╪⌐╪î ┘ä╪░┘ä┘â ╪│┘è╪¬┘à ╪Ñ┘è┘é╪º┘ü┘ç ╪¿╪»┘ä┘ï╪º ┘à┘å ╪¡╪░┘ü ╪º┘ä╪│╪¼┘ä ╪¿╪º┘ä┘â╪º┘à┘ä.`
-                : `╪│┘è╪¬┘à ╪¡╪░┘ü ╪º┘ä┘å╪┤╪º╪╖ ${specialtyPendingRemoval?.nameAr || ""} ┘å┘ç╪º╪ª┘è┘ï╪º ┘ä╪ú┘å┘ç ╪║┘è╪▒ ┘à╪▒╪¬╪¿╪╖ ╪¿╪ú┘è ╪┤╪▒┘â╪⌐.`}
+                ? `النشاط ${specialtyPendingRemoval.nameAr} مرتبط بـ ${specialtyPendingRemoval.companyCount.toLocaleString("ar-EG")} شركة، لذلك سيتم إيقافه بدلًا من حذف السجل بالكامل.`
+                : `سيتم حذف النشاط ${specialtyPendingRemoval?.nameAr || ""} نهائيًا لأنه غير مرتبط بأي شركة.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:flex-row-reverse">
@@ -1572,7 +1572,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
               disabled={removing}
               onClick={() => setSpecialtyPendingRemoval(null)}
             >
-              ╪Ñ┘ä╪║╪º╪í
+              إلغاء
             </Button>
             <Button
               type="button"
@@ -1580,7 +1580,7 @@ const BusinessSpecialtiesManagement: React.FC = () => {
               disabled={removing}
               onClick={() => void handleRemoveSpecialty()}
             >
-              {removing ? "╪¼╪º╪▒┘ì ╪º┘ä╪¬┘å┘ü┘è╪░..." : "╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪░┘ü"}
+              {removing ? "جارٍ التنفيذ..." : "تأكيد الحذف"}
             </Button>
           </DialogFooter>
         </DialogContent>

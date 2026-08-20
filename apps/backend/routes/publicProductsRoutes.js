@@ -11,6 +11,9 @@ const {
   extractSubdomainMiddleware,
   requireCompany,
 } = require('../middleware/subdomainMiddleware');
+const {
+  findConvertedPresentationBySlug,
+} = require('../utils/presentationConversion');
 
 const router = express.Router();
 const ALLOWED_SORT_FIELDS = new Set(['createdAt', 'updatedAt', 'name', 'price']);
@@ -120,6 +123,67 @@ function withPublicActiveProductFilter(where = {}) {
   return {
     ...where,
     deletedAt: null,
+  };
+}
+
+/**
+ * يحمّل بيانات المنتج الأصلي لمنتج محوّل (تحويل مكرر لعرض تقديمي) ويرجّعها
+ * كـ JSON مباشرة بدل الـ 301 (الـ CDN بيعيد توجيه الـ redirect لصفحة HTML
+ * فبيتكسّر الـ SPA fetch). الـ frontend بياخد redirectedFrom ويعمل redirect بنفسه.
+ */
+async function loadConvertedProductPayload(prisma, companyId, slugOrId, req) {
+  const resolved = await findConvertedPresentationBySlug(prisma, companyId, slugOrId);
+  if (!resolved) {
+    return null;
+  }
+
+  const { presentation, targetProduct } = resolved;
+
+  const target = await prisma.product.findFirst({
+    where: {
+      id: targetProduct.id,
+      companyId,
+      deletedAt: null,
+      isActive: true,
+    },
+    select: PUBLIC_PRODUCT_SELECT,
+  });
+
+  if (!target) {
+    return null;
+  }
+
+  const demandSignals = await getProductDemandSignals(prisma, {
+    companyId,
+    productId: target.id,
+  });
+
+  const affiliatePricing = req
+    ? await resolveAffiliateProductPricing(prisma, req, target.id)
+    : null;
+
+  const presImages = presentation.images ? JSON.parse(presentation.images) : [];
+  const formatted = formatProductResponse({
+    ...target,
+    ...demandSignals,
+    images: presImages.length > 0 ? JSON.stringify(presImages) : target.images,
+    mainImage: presentation.mainImage || target.mainImage,
+    name: presentation.title || target.name,
+    description: presentation.description || target.description,
+  });
+
+  const result = affiliatePricing ? applyAffiliatePricing(formatted, affiliatePricing) : formatted;
+
+  result.canonicalSlug = target.slug;
+  result.presentation = {
+    id: presentation.id,
+    name: presentation.name,
+    slug: presentation.slug,
+  };
+
+  return {
+    success: true,
+    data: result,
   };
 }
 
@@ -1724,6 +1788,18 @@ router.get('/:id/:presentationSlug', async (req, res) => {
     });
 
     if (!product) {
+      // منتج محوّل (تحويل منتج مكرر إلى عرض تقديمي) — نرجّع بيانات المنتج
+      // الأصلي كـ JSON والـ frontend يعمل redirect بنفسه.
+      const converted = await loadConvertedProductPayload(
+        prisma,
+        req.companyId,
+        presentationSlug,
+        req,
+      );
+      if (converted) {
+        converted.data.redirectedFrom = presentationSlug;
+        return res.json(converted);
+      }
       return res.status(404).json({
         success: false,
         error: 'المنتج غير موجود',
@@ -1732,6 +1808,18 @@ router.get('/:id/:presentationSlug', async (req, res) => {
 
     const presentation = product.productPresentations?.[0];
     if (!presentation) {
+      // الرابط القديم لمنتج تم تحويله إلى عرض تقديمي — نرجّع بيانات المنتج
+      // الأصلي كـ JSON والـ frontend يعمل redirect بنفسه.
+      const converted = await loadConvertedProductPayload(
+        prisma,
+        req.companyId,
+        presentationSlug,
+        req,
+      );
+      if (converted) {
+        converted.data.redirectedFrom = presentationSlug;
+        return res.json(converted);
+      }
       return res.status(404).json({
         success: false,
         error: 'العرض التقديمي غير موجود',
@@ -1795,6 +1883,19 @@ router.get('/:id', async (req, res) => {
     });
 
     if (!product) {
+      // منتج محذوف/محوّل (تحويل منتج مكرر إلى عرض تقديمي) — نرجّع بيانات
+      // المنتج الأصلي كـ JSON والـ frontend يعمل redirect بنفسه (الـ 301
+      // بيتحول لصفحة HTML على الـ CDN وبيعطّل الـ SPA fetch).
+      const converted = await loadConvertedProductPayload(
+        prisma,
+        req.companyId,
+        id,
+        req,
+      );
+      if (converted) {
+        converted.data.redirectedFrom = id;
+        return res.json(converted);
+      }
       return res.status(404).json({
         success: false,
         error: 'المنتج غير موجود',

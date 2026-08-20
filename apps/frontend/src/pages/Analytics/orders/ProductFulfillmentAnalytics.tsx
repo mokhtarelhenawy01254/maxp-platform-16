@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircleIcon,
@@ -583,7 +583,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
                   {topDeliveredProduct.name}
                 </p>
               ) : (
-                <p className="text-sm text-gray-400">ΓÇö</p>
+                <p className="text-sm text-gray-400">—</p>
               )}
               {topDeliveredProduct && (
                 <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
@@ -601,7 +601,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
                   {topCancelledProduct.name}
                 </p>
               ) : (
-                <p className="text-sm text-gray-400">ΓÇö</p>
+                <p className="text-sm text-gray-400">—</p>
               )}
               {topCancelledProduct && (
                 <p className="mt-1 text-xs text-red-600 dark:text-red-400">
@@ -619,7 +619,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
                   {topReturnedProduct.name}
                 </p>
               ) : (
-                <p className="text-sm text-gray-400">ΓÇö</p>
+                <p className="text-sm text-gray-400">—</p>
               )}
               {topReturnedProduct && (
                 <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">

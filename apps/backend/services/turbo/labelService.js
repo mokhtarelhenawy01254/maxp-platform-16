@@ -1,4 +1,4 @@
-﻿const axios = require('axios');
+const axios = require('axios');
 const { handleError } = require('../../utils/turbo/errorHandler');
 const { getBestShippingAddressFields } = require('../../utils/turbo/addressParser');
 const { cleanLocationName } = require('../../utils/turbo/addressParser');
@@ -86,7 +86,7 @@ class LabelService {
 
     return {
       turboOrderCode: shipmentId, orderId, orderNumber, orderDate: createdAt || new Date().toISOString(),
-      status: orderData.turboShipmentStatus || '╪║┘è╪▒ ┘à╪¡╪»╪»', senderName: '╪║┘è╪▒ ┘à╪¡╪»╪»', senderAddress: '', senderCity: '', senderPhone: '',
+      status: orderData.turboShipmentStatus || 'غير محدد', senderName: 'غير محدد', senderAddress: '', senderCity: '', senderPhone: '',
       receiverName: customerName || '', receiverPhone: customerPhone || '', receiverPhone2: orderData.alternativePhone || '',
       receiverEmail: customerEmail || '', receiverAddress: address, receiverAddress2: addressFields.secondaryAddress || '',
       receiverCity: cityName, receiverState: governorate || '', receiverCountry: 'Egypt',

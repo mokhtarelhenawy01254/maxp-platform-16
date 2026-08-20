@@ -1,8 +1,18 @@
-import { Circle as PaperAirplaneIcon, Smile as FaceSmileIcon, Circle as PaperClipIcon, Search as MagnifyingGlassIcon, Circle as EllipsisVerticalIcon, Phone as PhoneIcon, Video as VideoCameraIcon, Info as InformationCircleIcon, Circle as UserCircleIcon, MessageSquare as ChatBubbleLeftRightIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
-import { useAuth } from '@/hooks/useAuthSimple';
 import React, { useState, useEffect, useRef } from "react";
-;
+import i18n from "../../i18n";
+import {
+  PaperAirplaneIcon,
+  FaceSmileIcon,
+  PaperClipIcon,
+  MagnifyingGlassIcon,
+  EllipsisVerticalIcon,
+  PhoneIcon,
+  VideoCameraIcon,
+  InformationCircleIcon,
+  UserCircleIcon,
+  ChatBubbleLeftRightIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -568,7 +578,7 @@ const Conversations: React.FC = () => {
       }
     } catch (error) {
       console.error("❌ Error sending message:", error);
-      alert("حدث خطأ أثناء إرسال الرسالة");
+      alert(i18n.t("Conversations.error_error_e429"));
       setNewMessage(messageContent); // إرجاع الرسالة في حالة الفشل
     }
   };

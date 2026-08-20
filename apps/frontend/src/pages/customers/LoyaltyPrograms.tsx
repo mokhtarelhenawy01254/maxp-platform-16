@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { apiClient } from "../../services/apiClient";
-import { Gift, Star, Crown, DollarSign, Users, Plus, RefreshCw, Edit, Trash2, Truck, Tag, Percent, AlertTriangle } from 'lucide-react';
+import {
+  Gift,
+  Star,
+  Crown,
+  DollarSign,
+  Users,
+  Plus,
+  RefreshCw,
+  Edit,
+  Trash2,
+  Truck,
+  Tag,
+  Percent,
+  AlertCircle,
+  Info,
+} from "lucide-react";
 
 interface CustomerLoyaltyProgram {
   id: string;
@@ -107,21 +123,34 @@ const LoyaltyPrograms: React.FC = () => {
     e.preventDefault();
     if (!editingProgram) return;
 
+    // إعدادات النقاط والكاش باك تُدار الآن بشكل عام (على مستوى الشركة).
+    // نستبعد حقول النقاط من هنا حتى لا تطغى التعديلات الفردية على الإعدادات العامة.
+    const {
+      pointsPerPurchase,
+      pointsPerAmount,
+      pointsPerReferral,
+      redemptionRate,
+      minimumPoints,
+      maxPointsPerTransaction,
+      expiryMonths,
+      ...payload
+    } = editingProgram;
+
     try {
       setIsSaving(true);
-      if (editingProgram.id) {
+      if (payload.id) {
         await apiClient.put(
-          `/hr/customer-loyalty/programs/${editingProgram.id}`,
-          editingProgram,
+          `/hr/customer-loyalty/programs/${payload.id}`,
+          payload,
         );
       } else {
-        await apiClient.post("/hr/customer-loyalty/programs", editingProgram);
+        await apiClient.post("/hr/customer-loyalty/programs", payload);
       }
       setIsModalOpen(false);
       fetchPrograms();
     } catch (error) {
       console.error("Error saving program:", error);
-      alert("حدث خطأ أثناء حفظ البرنامج");
+      alert(i18n.t("LoyaltyPrograms.error_error_b7ee"));
     } finally {
       setIsSaving(false);
     }
@@ -134,7 +163,7 @@ const LoyaltyPrograms: React.FC = () => {
       fetchPrograms();
     } catch (error) {
       console.error("Error deleting program:", error);
-      alert("حدث خطأ أثناء الحذف");
+      alert(i18n.t("LoyaltyPrograms.error_error_a7e1"));
     }
   };
 
@@ -615,138 +644,13 @@ const LoyaltyPrograms: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl space-y-4 border border-gray-100 dark:border-gray-800">
-                <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Star className="w-4 h-4 text-purple-600" />
-                  قواعد الربح والاستبدال
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {editingProgram.type === "POINTS" && (
-                    <>
-                      <div className="space-y-2">
-                        <label className="text-xs text-gray-500 font-medium whitespace-nowrap">
-                          كل عملية شراء بمبلغ (عملة)
-                        </label>
-                        <input
-                          type="number"
-                          value={editingProgram.pointsPerAmount || 1}
-                          onChange={(e) =>
-                            setEditingProgram({
-                              ...editingProgram,
-                              pointsPerAmount: Number(e.target.value),
-                            })
-                          }
-                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs text-gray-500 font-medium whitespace-nowrap">
-                          تساوي (نقاط)
-                        </label>
-                        <input
-                          type="number"
-                          value={editingProgram.pointsPerPurchase || 0}
-                          onChange={(e) =>
-                            setEditingProgram({
-                              ...editingProgram,
-                              pointsPerPurchase: Number(e.target.value),
-                            })
-                          }
-                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {editingProgram.type === "REFERRAL" && (
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-500 font-medium">
-                        النقاط المكتسبة لكل إحالة ناجحة
-                      </label>
-                      <input
-                        type="number"
-                        value={editingProgram.pointsPerReferral || 0}
-                        onChange={(e) =>
-                          setEditingProgram({
-                            ...editingProgram,
-                            pointsPerReferral: Number(e.target.value),
-                          })
-                        }
-                        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <label className="text-xs text-gray-500 font-medium">
-                      معدل الاستبدال (1 عملة = كم نقطة للاستبدال؟)
-                    </label>
-                    <input
-                      type="number"
-                      value={editingProgram.redemptionRate || 0}
-                      onChange={(e) =>
-                        setEditingProgram({
-                          ...editingProgram,
-                          redemptionRate: Number(e.target.value),
-                        })
-                      }
-                      placeholder="مثال: 100 يعادل أن كل 100 نقطة تخصم 1 عملة"
-                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs text-gray-500 font-medium">
-                      صلاحية النقاط (بالأشهر)
-                    </label>
-                    <input
-                      type="number"
-                      value={editingProgram.expiryMonths || 0}
-                      onChange={(e) =>
-                        setEditingProgram({
-                          ...editingProgram,
-                          expiryMonths: Number(e.target.value),
-                        })
-                      }
-                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs text-gray-500 font-medium">
-                      الحد الأدنى للنقاط لبدء الاستبدال
-                    </label>
-                    <input
-                      type="number"
-                      value={editingProgram.minimumPoints || 0}
-                      onChange={(e) =>
-                        setEditingProgram({
-                          ...editingProgram,
-                          minimumPoints: Number(e.target.value),
-                        })
-                      }
-                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs text-gray-500 font-medium">
-                      أقصى نقاط يمكن اكتسابها/استبدالها بالطلب الواحد
-                    </label>
-                    <input
-                      type="number"
-                      value={editingProgram.maxPointsPerTransaction || 0}
-                      onChange={(e) =>
-                        setEditingProgram({
-                          ...editingProgram,
-                          maxPointsPerTransaction: Number(e.target.value),
-                        })
-                      }
-                      placeholder="0 تعني بدون حد أقصى"
-                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-                    />
-                  </div>
-                </div>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 p-4 rounded-xl flex items-start gap-3 text-blue-700 dark:text-blue-300 text-sm">
+                <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <p>
+                  <strong>إعدادات النقاط عامة:</strong> تُدار قواعد كسب واستبدال
+                  النقاط من تبويب «النقاط» في صفحة الإعدادات، وتُطبَّق تلقائياً على
+                  جميع برامج الولاء.
+                </p>
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 pb-2">

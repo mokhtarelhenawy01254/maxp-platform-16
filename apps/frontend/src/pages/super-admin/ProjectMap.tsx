@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronDown, Globe, Lock } from 'lucide-react';
+import { ChevronRight, ChevronDown, Globe, Lock } from "lucide-react";
 import {
   projectStructure,
   ProjectNode,

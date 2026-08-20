@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircleIcon,
@@ -79,7 +79,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           className="ms-2 inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground disabled:opacity-50"
         >
           <XMarkIcon className="h-3.5 w-3.5" />
-          {t("orders.deselect", { defaultValue: "╪Ñ┘ä╪║╪º╪í ╪º┘ä╪¬╪¡╪»┘è╪»" })}
+          {t("orders.deselect", { defaultValue: "إلغاء التحديد" })}
         </button>
       </div>
 

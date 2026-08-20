@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
@@ -113,10 +113,10 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
       'green': '#22c55e', 'yellow': '#eab308', 'orange': '#f97316',
       'purple': '#a855f7', 'pink': '#ec4899', 'gray': '#6b7280', 'grey': '#6b7280',
       'brown': '#92400e', 'navy': '#1e3a5f', 'beige': '#f5f0e1', 'gold': '#f59e0b',
-      'silver': '#cbd5e1', '╪ú╪¡┘à╪▒': '#ef4444', '╪ú╪▓╪▒┘é': '#3b82f6', '╪ú╪«╪╢╪▒': '#22c55e',
-      '╪ú╪╡┘ü╪▒': '#eab308', '╪¿╪▒╪¬┘é╪º┘ä┘è': '#f97316', '╪¿┘å┘ü╪│╪¼┘è': '#a855f7', '┘ê╪▒╪»┘è': '#ec4899',
-      '╪ú╪│┘ê╪»': '#000', '╪ú╪¿┘è╪╢': '#fff', '╪▒┘à╪º╪»┘è': '#6b7280', '╪¿┘å┘è': '#92400e',
-      '┘â╪¡┘ä┘è': '#1e3a5f', '╪░┘ç╪¿┘è': '#f59e0b', '┘ü╪╢┘è': '#cbd5e1',
+      'silver': '#cbd5e1', 'أحمر': '#ef4444', 'أزرق': '#3b82f6', 'أخضر': '#22c55e',
+      'أصفر': '#eab308', 'برتقالي': '#f97316', 'بنفسجي': '#a855f7', 'وردي': '#ec4899',
+      'أسود': '#000', 'أبيض': '#fff', 'رمادي': '#6b7280', 'بني': '#92400e',
+      'كحلي': '#1e3a5f', 'ذهبي': '#f59e0b', 'فضي': '#cbd5e1',
     };
     return map[color?.toLowerCase()] || null;
   };
@@ -236,7 +236,7 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
-                  ╪º┘ä┘â┘ê╪»
+                  الكود
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemCustomer")}

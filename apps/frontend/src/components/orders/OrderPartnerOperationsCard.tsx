@@ -1,7 +1,12 @@
-import { ExternalLink as ArrowTopRightOnSquareIcon, Archive as ArchiveBoxIcon, Store as BuildingStorefrontIcon, Circle as CubeIcon, Circle as UserGroupIcon } from 'lucide-react';
 import React from "react";
 import { Link } from "react-router-dom";
-;
+import {
+  ArrowTopRightOnSquareIcon,
+  ArchiveBoxIcon,
+  BuildingStorefrontIcon,
+  CubeIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/outline";
 import { useCurrency } from "../../hooks/useCurrency";
 import { cn } from "../../lib/utils";
 

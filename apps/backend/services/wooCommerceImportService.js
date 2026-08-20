@@ -8,12 +8,30 @@ const {
     ensureWithinPlanLimit,
     createLimitExceededError,
 } = require('../utils/planLimitPayloads');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
 
 // Clear require cache to force reload
 const statusServicePath = require.resolve('./wooCommerceStatusService');
 delete require.cache[statusServicePath];
 
 const { mapWooStatusToLocal, cleanLocationName } = require('./wooCommerceStatusService');
+
+/**
+ * Normalizes a SKU for case-insensitive, whitespace-insensitive matching.
+ * Products can be stored untrimmed (import paths) or trimmed (productController),
+ * and Postgres collation is case-sensitive — so we index both raw and normalized keys.
+ */
+function normalizeSku(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+/** Builds the set of lookup variants for a SKU (raw, lower, upper). */
+function skuLookupVariants(value) {
+    const trimmed = String(value || '').trim();
+    if (!trimmed) return [];
+    return Array.from(new Set([trimmed, trimmed.toLowerCase(), trimmed.toUpperCase()].filter(Boolean)));
+}
 
 /**
  * Main function to import a single WooCommerce order.
@@ -145,12 +163,18 @@ async function importOrdersBatchOptimized(prisma, companyId, orders, options = {
     });
 
     existingProducts.forEach(p => {
-        if (p.sku) lookups.products.set(`SKU-${p.sku}`, p);
+        if (p.sku) {
+            lookups.products.set(`SKU-${p.sku}`, p);
+            lookups.products.set(`SKU-NORM-${normalizeSku(p.sku)}`, p);
+        }
         if (p.wooCommerceId) lookups.products.set(`WOO-${p.wooCommerceId}`, p);
     });
 
     existingVariants.forEach(v => {
-        if (v.sku) lookups.variants.set(`SKU-${v.sku}`, v);
+        if (v.sku) {
+            lookups.variants.set(`SKU-${v.sku}`, v);
+            lookups.variants.set(`SKU-NORM-${normalizeSku(v.sku)}`, v);
+        }
     });
 
     // 4. Process orders
@@ -242,8 +266,11 @@ async function createNewOrderOptimized(prisma, companyId, orderData, statusMappi
         const sku = (item.sku || item.productSku || '').trim();
         const wooPId = String(item.product_id || item.wooCommerceProductId || '');
 
-        let product = lookups.products.get(`SKU-${sku}`) || lookups.products.get(`WOO-${wooPId}`);
-        let variant = lookups.variants.get(`SKU-${sku}`);
+        let product = lookups.products.get(`SKU-NORM-${normalizeSku(sku)}`)
+            || lookups.products.get(`SKU-${sku}`)
+            || lookups.products.get(`WOO-${wooPId}`);
+        let variant = lookups.variants.get(`SKU-NORM-${normalizeSku(sku)}`)
+            || lookups.variants.get(`SKU-${sku}`);
 
         const metaData = item.meta_data || [];
         let color = null;
@@ -267,8 +294,8 @@ async function createNewOrderOptimized(prisma, companyId, orderData, statusMappi
                 productId: product ? product.id : null,
                 variantId: variant ? variant.id : null,
                 productName: cleanName,
-                productColor: color,
-                productSize: size,
+                productColor: color ? String(color) : null,
+                productSize: size != null ? String(size) : null,
                 productSku: sku || null,
                 quantity: parseInt(item.quantity) || 0,
                 price: parseFloat(item.price) || 0,
@@ -317,6 +344,16 @@ async function createNewOrder(prisma, companyId, orderData, statusMapping, trigg
  */
 async function updateExistingOrder(prisma, existingOrder, orderData, companyId, statusMapping, triggeredBy) {
     const normalizedData = mapWooOrderToLocalModel(orderData, companyId, statusMapping);
+
+    // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): مزامنة Woo تعدّل بيانات الطلب
+    // (المنتجات/الأسعار/العميل...). لو الحالة الحالية غير مسموح تعديل بياناتها،
+    // نتخطى تحديث هذا الطلب.
+    const { isOrderStatusEditingLocked } = require('../utils/orderStatusLock');
+    if (await isOrderStatusEditingLocked(prisma, companyId, existingOrder.status)) {
+        console.warn(`🔒 [WOO-IMPORT] Order ${existingOrder.orderNumber} is in a locked status — skipping content update.`);
+        return { status: 'skipped', order: existingOrder };
+    }
+
     const hasStatusChanged = existingOrder.status !== normalizedData.status || existingOrder.wooCommerceStatus !== normalizedData.wooCommerceStatus;
 
     const updatedOrder = await prisma.order.update({
@@ -329,6 +366,32 @@ async function updateExistingOrder(prisma, existingOrder, orderData, companyId, 
 
     if (hasStatusChanged) {
         await recordStatusHistory(prisma, existingOrder.id, normalizedData.status, existingOrder.status, triggeredBy, 'Synced from WooCommerce');
+
+        // 🚨 PRODUCTION-FIX (turbo-notification-gap): مزامنة Woo بتغيّر حالة الطلب تلقائياً
+        // من غير زرار — كان بيكتب history بس من غير إشعار WhatsApp للعميل. نبعث الإشعار
+        // بنفس منوال sendOrderStatusNotification + dedup (زي مسار الزرار اليدوي) من غير
+        // ما نعتمد على updateOrderStatus (عشان منعملش history مكرر/تحديث مكرر).
+        if (normalizedData.status) {
+            try {
+                const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+                const isDup = await WhatsAppNotificationService.isDuplicateNotification({
+                    companyId,
+                    orderId: existingOrder.id,
+                    eventType: normalizedData.status,
+                });
+                if (!isDup) {
+                    const notificationOrder = {
+                        ...existingOrder,
+                        status: normalizedData.status,
+                        customerPhone: existingOrder.customerPhone || existingOrder.customer?.phone,
+                        customerName: existingOrder.customerName || existingOrder.customer?.firstName,
+                    };
+                    await WhatsAppNotificationService.sendOrderStatusNotification(notificationOrder, normalizedData.status);
+                }
+            } catch (notifErr) {
+                console.warn(`⚠️ [WOO-IMPORT] WhatsApp status notification failed for ${existingOrder.orderNumber}:`, notifErr.message);
+            }
+        }
     }
 
     return { status: 'updated', order: updatedOrder };
@@ -367,20 +430,25 @@ async function findOrCreateCustomer(prisma, companyId, orderData) {
 
     let customer = null;
     if (email) customer = await prisma.customer.findFirst({ where: { companyId, email } });
-    if (!customer && phone) customer = await prisma.customer.findFirst({ where: { companyId, phone } });
+    if (!customer && phone) customer = await findCustomerByPhone(prisma, phone, companyId);
     if (customer) return customer.id;
 
-    const newCustomer = await prisma.customer.create({
+    const newCustomer = await safeCreateCustomer(
+      prisma,
+      {
         data: {
-            companyId,
-            firstName: nameParts[0] || 'عميل',
-            lastName: nameParts.slice(1).join(' ') || 'WooCommerce',
-            email,
-            phone,
-            notes: 'مستورد من WooCommerce',
-            status: 'ACTIVE'
+          companyId,
+          firstName: nameParts[0] || 'عميل',
+          lastName: nameParts.slice(1).join(' ') || 'WooCommerce',
+          email,
+          phone,
+          phoneNormalized: toCanonicalE164(phone),
+          notes: 'مستورد من WooCommerce',
+          status: 'ACTIVE'
         }
-    });
+      },
+      phone ? buildPhoneWhere(phone, companyId) : (email ? { companyId, email } : null)
+    );
     return newCustomer.id;
 }
 
@@ -396,11 +464,13 @@ async function createOrderItems(prisma, companyId, orderId, lineItems) {
 
         if (sku) {
             variant = await prisma.productVariant.findFirst({
-                where: { sku: sku, product: { companyId } },
+                where: { sku: { in: skuLookupVariants(sku) }, product: { companyId } },
                 include: { product: true }
             });
             if (variant) product = variant.product;
-            else product = await prisma.product.findFirst({ where: { companyId, sku } });
+            else product = await prisma.product.findFirst({
+                where: { companyId, sku: { in: skuLookupVariants(sku) } }
+            });
         }
 
         if (!product && wooProductId) {
@@ -429,8 +499,8 @@ async function createOrderItems(prisma, companyId, orderId, lineItems) {
                 productId: product ? product.id : null,
                 variantId: variant ? variant.id : null,
                 productName: cleanName,
-                productColor: color,
-                productSize: size,
+                productColor: color ? String(color) : null,
+                productSize: size != null ? String(size) : null,
                 productSku: sku || null,
                 quantity: parseInt(item.quantity) || 0,
                 price: parseFloat(item.price) || 0,

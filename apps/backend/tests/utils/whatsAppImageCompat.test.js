@@ -1,5 +1,5 @@
-﻿/**
- * ╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ┘ê╪¡╪»╪⌐ ╪¬┘ê╪º┘ü┘é ╪╡┘è╪║ ╪º┘ä╪╡┘ê╪▒ ┘à╪╣ WhatsApp Cloud API
+/**
+ * اختبارات وحدة توافق صيغ الصور مع WhatsApp Cloud API
  * (utils/whatsAppImageCompat.js)
  */
 

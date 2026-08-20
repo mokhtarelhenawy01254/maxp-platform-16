@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import Button from "../components/Button";
 import StorefrontProductImage from "../components/StorefrontProductImage";
 import QuantitySelector from "../components/QuantitySelector";
@@ -20,11 +21,12 @@ import { calculateVolumeDiscountPricing } from "../utils/volumeDiscounts";
 import { storefrontApi } from "../../utils/storefrontApi";
 import { trackStorefrontAppUsage } from "../utils/appUsageTracking";
 import { useCheckoutShippingQuote } from "../hooks/useCheckoutShippingQuote";
+import TierProgressBanner from "../components/TierProgressBanner";
 import {
   getStorefrontMarketplaceAppSettings,
   isStorefrontMarketplaceAppEnabled,
 } from "../utils/marketplaceApps";
-import { ArrowLeft, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ShoppingBag } from "lucide-react";
 import {
   getActiveStorePromotionFromCompany,
   calculateStorePromotionDiscount,
@@ -316,7 +318,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     useCartStore();
   const persistedCartItemCount =
     items.length === 0 ? getPersistedCartItemCount() : 0;
-  const { appliedCoupon, setAppliedCoupon, clearAppliedCoupon } =
+  const { appliedCoupon, setAppliedCoupon, clearAppliedCoupon, paymentMethod } =
     useCheckoutStore();
   const { settings: storefrontSettings } = useStorefrontSettings();
   const { theme } = useStorefrontTheme();
@@ -365,6 +367,41 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   const couponDiscount = storePromotion?.disableOtherDiscounts
     ? 0
     : Number(activeCoupon?.discountAmount || 0);
+
+  // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي) — كل نظام مستقل (ممكن يشتغلوا مع بعض)
+  const tierProgress = useCheckoutStore((s) => s.tierProgress);
+  const tiersEnabled = tierProgress?.tiersEnabled === true;
+  const autoDiscountEnabled = tierProgress?.autoDiscountEnabled === true;
+  const loyaltyFreeShipping = tiersEnabled ? Boolean(tierProgress?.rewards?.freeShipping) : false;
+  const loyaltyDiscountPercent = tiersEnabled ? Number(tierProgress?.rewards?.discountPercent || 0) : 0;
+  let loyaltyDiscount =
+    loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
+  let voucherDiscount =
+    autoDiscountEnabled && tierProgress?.activeVoucher
+      ? (Number(subtotal) || 0) * (Number(tierProgress.activeVoucher.percent) / 100)
+      : 0;
+  // مطابقة منطق الباك-إند: دمج الخصم حسب discountCombination + حد أقصى
+  const combination = tierProgress?.discountCombination || 'ADDITIVE';
+  const maxTotalPct = Number(tierProgress?.maxTotalDiscountPercent || 0);
+  const base = Number(subtotal) || 0;
+  let combined = 0;
+  if (combination === 'BEST') {
+    combined = Math.max(loyaltyDiscount, voucherDiscount);
+  } else if (combination === 'COMPOUND') {
+    const lp = base > 0 ? (loyaltyDiscount / base) * 100 : 0;
+    const vp = base > 0 ? (voucherDiscount / base) * 100 : 0;
+    combined = base * (1 - (1 - lp / 100) * (1 - vp / 100));
+  } else {
+    combined = loyaltyDiscount + voucherDiscount;
+  }
+  if (maxTotalPct > 0) {
+    const cap = base * (maxTotalPct / 100);
+    if (combined > cap) combined = cap;
+  }
+  if (combined !== loyaltyDiscount + voucherDiscount) {
+    loyaltyDiscount = combined;
+    voucherDiscount = 0;
+  }
 
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(
     storefrontSettings,
@@ -638,6 +675,21 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
         ? "سيتم حساب الشحن بمجرد اكتمال تحميل بيانات المتجر."
         : "Shipping will be calculated once storefront details finish loading.",
   });
+  const effectiveShipping =
+    loyaltyFreeShipping && Number(shippingCost) > 0 ? 0 : Number(shippingCost);
+  const walletPaymentSettings = (storefrontSettings?.storefront?.settings?.['walletPaymentSettings'] as
+    | { discountEnabled?: boolean; discountPercent?: number; showDiscountBadge?: boolean }
+    | undefined) || null;
+  const walletDiscountEnabled = Boolean(walletPaymentSettings?.discountEnabled);
+  const walletDiscountPercent = Math.max(
+    0,
+    Number(walletPaymentSettings?.discountPercent || 0),
+  );
+  const walletDiscountActive = walletDiscountEnabled && walletDiscountPercent > 0;
+  const walletDiscount =
+    walletDiscountActive && (paymentMethod === "wallet" || paymentMethod === "card")
+      ? (Number(subtotal) || 0) * (walletDiscountPercent / 100)
+      : 0;
   const showLineItems = parseBooleanSetting(
     sectionSettings?.showLineItems,
     isFittingRoomSummary,
@@ -660,7 +712,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     sectionSettings?.showNextSteps,
     shouldShowNextStepsCard,
   );
-  const estimatedTotal = Math.max(0, subtotal + shippingCost - couponDiscount - storePromotionDiscount);
+  const estimatedTotal = Math.max(0, subtotal + effectiveShipping - couponDiscount - storePromotionDiscount - loyaltyDiscount - voucherDiscount - walletDiscount);
   const resolvedFreeShippingText = quantityOfferFreeShippingActive
     ? quantityOfferFreeShippingText
     : freeShippingReachedText;
@@ -941,7 +993,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
 
     if (!normalizedCouponCode) {
       clearAppliedCoupon();
-      toast.error("أدخل كود الخصم أولًا.");
+      tToast.error("OrderSummary.msg_c088");
       return;
     }
 
@@ -1338,6 +1390,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           </div>
         ) : null}
 
+        <div className="mb-3">
+          <TierProgressBanner />
+        </div>
         <div className={totalsCardClassName}>
           <div className="flex justify-between text-foreground">
             <span className="text-[#6f6455]">{subtotalLabel}</span>
@@ -1347,14 +1402,36 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             <span className="text-[#6f6455]">{shippingLabel}</span>
             <span
               className={
-                checkoutFreeShippingActive && trimmedGovernorate && !isShippingLoading
+                (checkoutFreeShippingActive || loyaltyFreeShipping) && trimmedGovernorate && !isShippingLoading
                   ? "text-emerald-600"
                   : "text-[#6f6455]"
               }
             >
-              {resolvedShippingValueText}
+              {loyaltyFreeShipping && Number(shippingCost) > 0
+                ? "مجاني (مستوى الولاء)"
+                : resolvedShippingValueText}
             </span>
           </div>
+          {loyaltyDiscount > 0 ? (
+            <div className="flex justify-between text-foreground">
+              <span className="text-[#6f6455]">
+                {tiersEnabled ? 'خصم مستوى ' : ''}{loyaltyDiscountPercent}%
+              </span>
+              <span className="text-emerald-600">
+                -{formatStorefrontCurrency(loyaltyDiscount, currency)}
+              </span>
+            </div>
+          ) : null}
+          {voucherDiscount > 0 ? (
+            <div className="flex justify-between text-foreground">
+              <span className="text-[#6f6455]">
+                خصم الكوبون ({tierProgress?.activeVoucher?.percent}%)
+              </span>
+              <span className="text-emerald-600">
+                -{formatStorefrontCurrency(voucherDiscount, currency)}
+              </span>
+            </div>
+          ) : null}
           {couponDiscount > 0 ? (
             <div className="flex justify-between text-foreground">
               <span className="text-[#6f6455]">
@@ -1372,6 +1449,16 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
               </span>
               <span className="text-emerald-600">
                 -{formatStorefrontCurrency(storePromotionDiscount, currency)}
+              </span>
+            </div>
+          ) : null}
+          {walletDiscount > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
+            <div className="flex justify-between text-foreground">
+              <span className="text-[#6f6455]">
+                خصم الدفع الإلكتروني ({walletDiscountPercent}%)
+              </span>
+              <span className="text-emerald-600">
+                -{formatStorefrontCurrency(walletDiscount, currency)}
               </span>
             </div>
           ) : null}

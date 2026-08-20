@@ -1,6 +1,5 @@
-import { RefreshCw as ArrowPathIcon, Bell as BellIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
-;
+import { ArrowPathIcon, BellIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 
 import { Button } from "../../../components/ui/button";
 import type { TaskScopeFilter, TaskSortBy } from "../types";

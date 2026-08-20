@@ -1,4 +1,4 @@
-﻿name: Fix Frontend index.html
+name: Fix Frontend index.html
 
 on:
   workflow_dispatch:

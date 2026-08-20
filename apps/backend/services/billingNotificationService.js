@@ -53,6 +53,14 @@ class BillingNotificationService {
         await this.checkUpcomingRenewals();
       }, 2);
 
+      await safeQuery(async () => {
+        await this.checkLowBalances();
+      }, 2);
+
+      await safeQuery(async () => {
+        await this.sweepSubscriptionHeldOrders();
+      }, 2);
+
     } catch (error) {
       console.error('❌ [BILLING] Error in daily billing checks:', error.message);
     }
@@ -90,6 +98,98 @@ class BillingNotificationService {
       }
     } catch (error) {
       console.error('❌ [BILLING] Error checking upcoming renewals:', error.message);
+    }
+  }
+
+  /**
+   * Check for low wallet balances and notify company admins (once per day)
+   */
+  async checkLowBalances() {
+    try {
+      const lowBalanceWallets = await getSharedPrismaClient().companyWallet.findMany({
+        where: {
+          balance: { lt: 100 }, // أقل من 100 جنيه
+        },
+        include: {
+          company: {
+            select: { id: true, name: true }
+          }
+        }
+      });
+
+      for (const wallet of lowBalanceWallets) {
+        const companyId = wallet.companyId;
+        const balance = Number(wallet.balance);
+
+        // منع الإزعاج: لا نرسل تنبيهاً لنفس الشركة أكثر من مرة في اليوم
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const alreadyNotified = await getSharedPrismaClient().notification.count({
+          where: {
+            companyId,
+            type: 'wallet_low_balance',
+            createdAt: { gte: startOfDay },
+          },
+        });
+
+        if (alreadyNotified > 0) continue;
+
+        const admins = await getSharedPrismaClient().user.findMany({
+          where: {
+            companyId,
+            role: { in: ['OWNER', 'COMPANY_ADMIN', 'MANAGER'] },
+            isActive: true,
+          },
+          select: { id: true },
+        });
+
+        if (admins.length === 0) continue;
+
+        for (const admin of admins) {
+          await getSharedPrismaClient().notification.create({
+            data: {
+              companyId,
+              userId: admin.id,
+              type: 'wallet_low_balance',
+              title: '⚠️ رصيد المحفظة منخفض',
+              message: `رصيد محفظتك الحالي ${balance} جنيه. عند نفاد الرصيد سيتم تعليق الطلبات الجديدة من المتجر حتى يتم شحن الرصيد.`,
+              data: { balance },
+            },
+          });
+        }
+
+        console.log(`✅ [BILLING] Low balance notification sent to ${admins.length} admin(s) for company ${companyId}: ${balance} EGP`);
+      }
+    } catch (error) {
+      console.error('❌ [BILLING] Error in checkLowBalances:', error.message);
+    }
+  }
+
+  /**
+   * سكان يومي: تحرير الطلبات اليدوية المعلّقة بسبب انتهاء الاشتراك
+   * لكل الشركات اللي رجع اشتراك الطلبات اليدوية عندها ACTIVE/TRIAL.
+   */
+  async sweepSubscriptionHeldOrders() {
+    try {
+      const companies = await getSharedPrismaClient().order.findMany({
+        where: { billingHoldAt: { not: null }, billingHoldAmount: null },
+        distinct: ['companyId'],
+        select: { companyId: true },
+      });
+
+      if (companies.length === 0) return;
+
+      const { releaseSubscriptionHeldOrders } = require('./pendingBillingService');
+      for (const row of companies) {
+        try {
+          await releaseSubscriptionHeldOrders(row.companyId);
+        } catch (err) {
+          console.error(`⚠️ [BILLING] Sweep release failed for company ${row.companyId}:`, err.message);
+        }
+      }
+    } catch (error) {
+      console.error('❌ [BILLING] Error in sweepSubscriptionHeldOrders:', error.message);
     }
   }
 

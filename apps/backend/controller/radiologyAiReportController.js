@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const {
   buildAiDraftPrompt,
   resolveAiKey,
@@ -11,12 +11,12 @@ const generateDraft = async (req, res) => {
   const startedAt = Date.now();
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { focus, additionalContext } = req.body || {};
     if (focus !== undefined && focus !== null && !VALID_FOCUS.includes(focus)) {
-      return res.status(400).json({ success: false, error: '┘å╪╖╪º┘é ╪º┘ä╪º┘é╪¬╪▒╪º╪¡ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+      return res.status(400).json({ success: false, error: 'نطاق الاقتراح غير صحيح' });
     }
 
     const prisma = getSharedPrismaClient();
@@ -27,7 +27,7 @@ const generateDraft = async (req, res) => {
       }),
       prisma.radiologyStudyImage.count({ where: { studyId: id } }),
     ]);
-    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!study) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     const key = await resolveAiKey(prisma, companyId);
     if (!key) {
@@ -59,7 +59,7 @@ const generateDraft = async (req, res) => {
         user: prompt.user,
       });
     } catch (error) {
-      console.error('╪«╪╖╪ú ┘ü┘è ╪º╪│╪¬╪»╪╣╪º╪í ┘à╪▓┘ê╪» ╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è ┘ä╪¬┘ê┘ä┘è╪» ┘à╪│┘ê╪»╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒:', error);
+      console.error('خطأ في استدعاء مزود الذكاء الاصطناعي لتوليد مسودة التقرير:', error);
       return res.json({
         success: true,
         data: { draft: null, reason: 'AI_ERROR', model: key.model, provider: key.provider, latencyMs: Date.now() - startedAt },
@@ -71,8 +71,8 @@ const generateDraft = async (req, res) => {
       data: { draft: text, model: key.model, provider: key.provider, latencyMs: Date.now() - startedAt },
     });
   } catch (error) {
-    console.error('╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬┘ê┘ä┘è╪» ┘à╪│┘ê╪»╪⌐ ╪¬┘é╪▒┘è╪▒ ╪º┘ä╪ú╪┤╪╣╪⌐ ╪¿╪º┘ä╪░┘â╪º╪í ╪º┘ä╪º╪╡╪╖┘å╪º╪╣┘è:', error);
-    return res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬┘ê┘ä┘è╪» ┘à╪│┘ê╪»╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒' });
+    console.error('خطأ أثناء توليد مسودة تقرير الأشعة بالذكاء الاصطناعي:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ أثناء توليد مسودة التقرير' });
   }
 };
 

@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -51,7 +51,7 @@ describe('customerLoyaltyService.processExpiryWarnings (expiry notification path
         currentPoints: '50',
         lastPointsEarned: earnedDaysAgoForExpiryIn(5).toISOString(),
         metadata: null,
-        customerLoyaltyProgram: { id: 'prog-1', name: 'Prog', nameAr: '╪¿╪▒┘å╪º┘à╪¼', expiryMonths: 12 },
+        customerLoyaltyProgram: { id: 'prog-1', name: 'Prog', nameAr: 'برنامج', expiryMonths: 12 },
         customer: { id: customerId, phone: '0123456789', firstName: 'A', lastName: 'B' },
       },
     ]);
@@ -100,7 +100,7 @@ describe('customerLoyaltyService.getExpiringPoints (pre-expiry alert data)', () 
         pendingPoints: '0',
         lastPointsEarned: earnedDaysAgoForExpiryIn(7).toISOString(),
         metadata: null,
-        customerLoyaltyProgram: { id: 'prog-1', name: 'Prog', nameAr: '╪¿╪▒┘å╪º┘à╪¼', expiryMonths: 12 },
+        customerLoyaltyProgram: { id: 'prog-1', name: 'Prog', nameAr: 'برنامج', expiryMonths: 12 },
         customer: { id: customerId, phone: '0123456789', firstName: 'A', lastName: 'B' },
       },
     ]);

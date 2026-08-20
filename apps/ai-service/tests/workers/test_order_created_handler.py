@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -16,7 +16,7 @@ async def test_order_created_registered_in_handlers():
 
 @pytest.mark.asyncio
 async def test_handle_order_created_skips_when_missing_fields(monkeypatch):
-    """Missing company_id/order_number ΓåÆ skip, no agent resolution."""
+    """Missing company_id/order_number → skip, no agent resolution."""
     from src.workers import agent_worker
 
     resolved = []
@@ -44,7 +44,7 @@ async def test_handle_order_created_runs_agent(monkeypatch):
 
         async def process_task(self, task: dict[str, Any]) -> dict[str, Any]:
             processed.append(task)
-            return {"result": {"reply": "╪¬┘à ╪º┘ä╪¬╪ú┘â┘è╪»"}}
+            return {"result": {"reply": "تم التأكيد"}}
 
     class _MockSession:
         async def __aenter__(self):
@@ -64,8 +64,8 @@ async def test_handle_order_created_runs_agent(monkeypatch):
         "payload": {
             "company_id": "comp1",
             "order_number": "ORD-1",
-            "address_text": "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒ ╪┤╪º╪▒╪╣ 9",
-            "governorate": "╪º┘ä┘é╪º┘ç╪▒╪⌐",
+            "address_text": "مدينة نصر شارع 9",
+            "governorate": "القاهرة",
             "customer_phone": "01012345678",
         }
     })
@@ -80,7 +80,7 @@ async def test_handle_order_created_runs_agent(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_order_created_no_agent_skips(monkeypatch):
-    """No resolvable agent ΓåÆ graceful skip."""
+    """No resolvable agent → graceful skip."""
     from src.workers import agent_worker
 
     class _MockSession:

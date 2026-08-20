@@ -1,6 +1,10 @@
-import { Circle as ArrowsRightLeftIcon, Check as CheckIcon, ChevronDown as ChevronDownIcon, Building as BuildingOfficeIcon } from 'lucide-react';
 import React, { useEffect, useRef, useState } from "react";
-;
+import {
+  ArrowsRightLeftIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  BuildingOfficeIcon,
+} from "@heroicons/react/24/outline";
 
 import { useAuth } from "../../hooks/useAuthSimple";
 import {

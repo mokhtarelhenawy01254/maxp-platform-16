@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   // MaxP Web Chat Widget
   // Usage:
   //   <script src="https://<domain>/api/v1/public/widget/script.js"
@@ -51,7 +51,7 @@
   function savePending(p) { pending = p; try { sessionStorage.setItem(pendingKey, JSON.stringify(p)); } catch (e) {} }
   function clearPending(id) { if (pending && pending.requestId === id) { pending = null; try { sessionStorage.removeItem(pendingKey); } catch (e) {} } }
 
-  // ΓöÇΓöÇ Build the widget DOM ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Build the widget DOM ──────────────────────────────────────────────
   var btn = document.createElement('button');
   btn.id = 'mpw-btn';
   btn.type = 'button';

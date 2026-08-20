@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { Book, BookOpen } from 'lucide-react';
+import { BookOpen } from "lucide-react";
 import DOMPurify from "dompurify";
 
 interface AppExplanation {

@@ -1,20 +1,21 @@
-import { Activity as ChartBarIcon, Search as MagnifyingGlassIcon, Star as StarIcon, Download, QrCode, CheckCircle2, Smartphone } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import AppDownloadModal from '../../modals/AppDownloadModal';
+import { ChartBarIcon, MagnifyingGlassIcon, StarIcon } from '@heroicons/react/24/outline';
 import AppCard from './AppCard';
 import AppCardSkeleton from './AppCardSkeleton';
 import { sectionHasVisibleItems } from './helpers';
 import { APP_CATEGORIES, APP_REGISTRY, AppCategory } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
 import type { SidebarSection } from '../../../types/layout';
+import { apiClient } from '../../../services/apiClient';
 
 interface AppDashboardPageProps {
   userId?: string | null;
   companyId?: string | null;
   allSections?: SidebarSection[];
+  isLoading?: boolean;
 }
 
 type AppFilterCategory = AppCategory | 'all' | 'favorites';
@@ -45,6 +46,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
   userId,
   companyId,
   allSections = [],
+  isLoading = false,
 }) => {
   const { i18n, t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -55,22 +57,106 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
     () => `${FAVORITES_STORAGE_PREFIX}:${companyId || 'no-company'}:${userId || 'anonymous'}`,
     [companyId, userId],
   );
+  const favoritesScopeKey = useMemo(
+    () => String(companyId || 'no-company'),
+    [companyId],
+  );
   const [favorites, setFavorites] = useState<string[]>(() => {
     return readStoredFavorites(favoriteStorageKey);
   });
-  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   const isRtl = i18n.language?.startsWith('ar') ?? false;
 
   const visibleApps = useMemo(() => {
+    const seen = new Set<string>();
     return allSections
       .filter(sectionHasVisibleItems)
+      .filter((section) => {
+        if (seen.has(section.id)) return false;
+        seen.add(section.id);
+        return true;
+      })
       .map((section, index) => buildAppFromSection(section, index, t));
   }, [allSections, t]);
 
   useEffect(() => {
     setFavorites(readStoredFavorites(favoriteStorageKey));
   }, [favoriteStorageKey]);
+
+  // Sync favorites with the server (per user) so they carry across devices.
+  useEffect(() => {
+    let cancelled = false;
+
+    apiClient
+      .get<{ success: boolean; data: { appDashboardFavorites?: Record<string, string[]> } }>(
+        '/user/settings',
+        { _skipErrorToast: true } as Record<string, unknown>,
+      )
+      .then((res) => {
+        if (cancelled) return;
+        const serverFavorites = res.data?.data?.appDashboardFavorites;
+        const serverList = serverFavorites?.[favoritesScopeKey];
+        if (Array.isArray(serverList)) {
+          setFavorites(serverList);
+          try {
+            window.localStorage.setItem(favoriteStorageKey, JSON.stringify(serverList));
+          } catch {
+            // Ignore storage failures; server data still applies in-memory.
+          }
+        }
+      })
+      .catch(() => {
+        // Server unavailable → keep the localStorage value as-is.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [favoriteStorageKey, favoritesScopeKey]);
+
+  const favoritesPersistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestFavoritesRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    return () => {
+      if (favoritesPersistTimer.current) {
+        clearTimeout(favoritesPersistTimer.current);
+      }
+    };
+  }, []);
+
+  const persistFavorites = useCallback(
+    (next: string[]) => {
+      latestFavoritesRef.current = next;
+      try {
+        window.localStorage.setItem(favoriteStorageKey, JSON.stringify(next));
+      } catch {
+        // Favorites are a convenience; keep the UI responsive if storage is unavailable.
+      }
+
+      if (favoritesPersistTimer.current) {
+        clearTimeout(favoritesPersistTimer.current);
+      }
+      favoritesPersistTimer.current = setTimeout(() => {
+        apiClient
+          .put('/user/settings', {
+            settings: { appDashboardFavorites: { [favoritesScopeKey]: latestFavoritesRef.current } },
+          })
+          .catch(() => {
+            // Favorites sync is best-effort; local state still works offline.
+          });
+      }, 400);
+    },
+    [favoriteStorageKey, favoritesScopeKey],
+  );
+
+  const toggleFavorite = useCallback((appId: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId];
+      persistFavorites(next);
+      return next;
+    });
+  }, [persistFavorites]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -109,18 +195,6 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
     [searchParams, setSearchParams],
   );
 
-  const toggleFavorite = useCallback((appId: string) => {
-    setFavorites((prev) => {
-      const next = prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId];
-      try {
-        window.localStorage.setItem(favoriteStorageKey, JSON.stringify(next));
-      } catch {
-        // Favorites are a convenience; keep the UI responsive if storage is unavailable.
-      }
-      return next;
-    });
-  }, [favoriteStorageKey]);
-
   const filteredApps = useMemo(() => {
     let apps = visibleApps;
 
@@ -154,56 +228,8 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Featured MAX-P Mobile App Download Banner */}
-        <div className="mb-8 rounded-3xl bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 p-6 text-white shadow-xl border border-purple-500/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -z-0 pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-start sm:items-center gap-4">
-              <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 shrink-0">
-                <img src="/logo.png" alt="MAX-P" className="w-12 h-12 object-contain rounded-xl" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="bg-purple-500/30 text-purple-200 border border-purple-400/30 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                    📱 تطبيق الموبايل الرسمي (Android APK)
-                  </span>
-                  <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1">
-                    <CheckCircle2 size={13} /> جاهز للتحميل المباشر
-                  </span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white">
-                  تحميل تطبيق MAX-P لإدارة أعمالك من الهاتف 🚀
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
-                  تابع مبيعاتك، استلم التنبيهات الفورية، وأدر جميع العمليات مباشرة من هاتف الأندرويد بسرعة فائقة وتصميم متجاوب.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
-              <a
-                href="/downloads/maxp-app.apk"
-                download="maxp-app.apk"
-                className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold text-sm rounded-2xl shadow-lg hover:shadow-purple-500/25 flex items-center justify-center gap-2 transition-all active:scale-95"
-              >
-                <Download size={18} />
-                <span>تحميل ملف APK</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={() => setIsDownloadModalOpen(true)}
-                className="w-full sm:w-auto px-5 py-3.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 backdrop-blur-md transition-all cursor-pointer"
-              >
-                <QrCode size={18} />
-                <span>مسح كود QR</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="mb-8">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="hidden sm:block mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t('appDashboard.title')}
           </h1>
@@ -212,12 +238,12 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           </p>
         </div>
 
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="mb-3 sm:mb-6 flex flex-col sm:flex-row gap-2 sm:gap-4">
           <div className="relative flex-1">
             <label htmlFor="app-dashboard-search" className="sr-only">
               {t('appDashboard.searchLabel')}
             </label>
-            <MagnifyingGlassIcon aria-hidden="true" className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400`} />
+            <MagnifyingGlassIcon aria-hidden="true" className={`absolute ${isRtl ? 'right-2.5 sm:right-3' : 'left-2.5 sm:left-3'} top-1/2 -translate-y-1/2 h-3.5 sm:h-5 w-3.5 sm:w-5 text-gray-400`} />
             <input
               ref={searchInputRef}
               id="app-dashboard-search"
@@ -228,8 +254,8 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               placeholder={String(t('appDashboard.searchPlaceholder'))}
               autoComplete="off"
               className={`
-                w-full ${isRtl ? 'pr-10 pl-8' : 'pl-10 pr-8'} py-2.5
-                rounded-xl
+                w-full ${isRtl ? 'pr-8 pl-6' : 'pl-8 pr-6'} sm:${isRtl ? 'pr-10 pl-8' : 'pl-10 pr-8'} py-1.5 sm:py-2.5 text-sm sm:text-base
+                rounded-lg sm:rounded-xl
                 border border-gray-200 dark:border-gray-700
                 bg-white dark:bg-gray-800
                 text-gray-900 dark:text-white
@@ -242,7 +268,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               type="button"
               popovertarget="shortcuts-popover"
               popovertargetaction="toggle"
-              className={`inline-flex absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150`}
+              className={`hidden sm:inline-flex absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150`}
               title={String(t('appDashboard.shortcuts'))}
             >
               <span className="text-xs">⌘</span>K
@@ -270,13 +296,13 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           </div>
         </div>
 
-        <nav className="mb-6 flex flex-wrap gap-2" aria-label={String(t('appDashboard.categoryFilterLabel'))}>
+        <nav className="mb-3 sm:mb-6 flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:flex-wrap scrollbar-none" aria-label={String(t('appDashboard.categoryFilterLabel'))}>
           <button
             type="button"
             aria-pressed={selectedCategory === 'all'}
             onClick={() => updateDashboardParams({ category: 'all' })}
             className={`
-              px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
+              shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
               ${selectedCategory === 'all'
                 ? 'bg-indigo-500 text-white shadow-sm'
@@ -293,7 +319,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               aria-pressed={selectedCategory === 'favorites'}
               onClick={() => updateDashboardParams({ category: 'favorites' })}
               className={`
-                px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150 flex items-center gap-1.5
+                shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150 flex items-center gap-1 sm:gap-1.5
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400
                 ${selectedCategory === 'favorites'
                   ? 'bg-yellow-500 text-white shadow-sm'
@@ -301,7 +327,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
                 }
               `}
             >
-              <StarIcon aria-hidden="true" className="h-4 w-4" />
+              <StarIcon aria-hidden="true" className="h-3 sm:h-4 w-3 sm:w-4" />
               {t('appDashboard.category.favorites')}
             </button>
           )}
@@ -313,7 +339,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               aria-pressed={selectedCategory === cat}
               onClick={() => updateDashboardParams({ category: cat })}
               className={`
-                px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
+                shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
                 ${selectedCategory === cat
                   ? 'bg-indigo-500 text-white shadow-sm'
@@ -326,7 +352,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           ))}
         </nav>
 
-        <div className="mb-4 flex items-center justify-between">
+        <div className="hidden sm:flex mb-4 items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400" aria-hidden="true">
             {filteredApps.length} {t('appDashboard.title')}
           </p>
@@ -339,11 +365,28 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           }
         </div>
 
-        {visibleApps.length === 0 ? (
+        {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {Array.from({ length: 10 }).map((_, i) => (
               <AppCardSkeleton key={i} />
             ))}
+          </div>
+        ) : visibleApps.length === 0 ? (
+          <div className="text-center py-16">
+            <ChartBarIcon aria-hidden="true" className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
+            <p className="mt-4 text-base font-medium text-gray-700 dark:text-gray-200">
+              {t('appDashboard.noAppsTitle')}
+            </p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              {t('appDashboard.noAppsDescription')}
+            </p>
+            <button
+              type="button"
+              onClick={() => updateDashboardParams({ q: '', category: 'all' })}
+              className="mt-4 px-4 py-2 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              {t('appDashboard.clearFilters')}
+            </button>
           </div>
         ) : filteredApps.length === 0 ? (
           <div className="text-center py-16">
@@ -360,7 +403,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 @container">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 @container">
             {filteredApps.map((app, index) => (
               <div
                 key={app.id}
@@ -377,11 +420,6 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           </div>
         )}
       </div>
-
-      <AppDownloadModal
-        isOpen={isDownloadModalOpen}
-        onClose={() => setIsDownloadModalOpen(false)}
-      />
     </div>
   );
 };

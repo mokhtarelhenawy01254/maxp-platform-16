@@ -1,4 +1,4 @@
-﻿export type TemplateMeta = {
+export type TemplateMeta = {
   id: string;
   name: string;
   colors: {

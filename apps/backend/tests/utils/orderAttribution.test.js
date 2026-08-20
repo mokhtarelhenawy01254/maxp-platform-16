@@ -1,4 +1,4 @@
-﻿const {
+const {
   sanitizeOrderAttribution,
   extractAttributionFromCheckoutData,
 } = require('../../utils/orderAttribution');
@@ -9,7 +9,7 @@ describe('utils/orderAttribution', () => {
       source: 'facebook',
       medium: 'paid_social',
       platform: 'FACEBOOK',
-      campaignName: '╪│┘ê╪º┘å ╪╡┘è┘ü',
+      campaignName: 'سوان صيف',
       campaignId: '238475612',
       adSetId: 'ads-1',
       adId: 'ad-1',
@@ -21,7 +21,7 @@ describe('utils/orderAttribution', () => {
         platform: 'facebook',
         source: 'facebook',
         medium: 'paid_social',
-        campaignName: '╪│┘ê╪º┘å ╪╡┘è┘ü',
+        campaignName: 'سوان صيف',
         campaignId: '238475612',
       }),
     );

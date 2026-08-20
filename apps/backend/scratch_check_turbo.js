@@ -1,4 +1,4 @@
-﻿const axios = require('./node_modules/axios');
+const axios = require('./node_modules/axios');
 const { PrismaClient } = require('./node_modules/@prisma/client');
 
 async function main() {

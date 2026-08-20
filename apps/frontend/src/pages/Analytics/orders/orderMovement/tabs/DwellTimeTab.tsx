@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Clock, Gauge, Hourglass, Layers } from "lucide-react";
 import {
   BarChart,
@@ -71,7 +71,7 @@ export default function DwellTimeTab({ startDate, endDate, mode }: MovementFilte
       });
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪▓┘à┘å ╪º┘ä┘à┘â┘ê╪½");
+      setError(err instanceof Error ? err.message : "تعذر تحميل بيانات زمن المكوث");
     } finally {
       setLoading(false);
     }
@@ -104,41 +104,41 @@ export default function DwellTimeTab({ startDate, endDate, mode }: MovementFilte
       <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
-          label="╪ú╪¿╪╖╪ú ╪¡╪º┘ä╪⌐"
+          label="أبطأ حالة"
           value={slowest ? getStatusLabel(slowest.status) : "-"}
-          hint={slowest ? `┘à╪¬┘ê╪│╪╖ ${formatDuration(slowest.avgHours)}` : undefined}
+          hint={slowest ? `متوسط ${formatDuration(slowest.avgHours)}` : undefined}
           icon={Hourglass}
           gradient="from-orange-500 to-red-600"
         />
         <KpiCard
-          label="╪ú╪│╪▒╪╣ ╪¡╪º┘ä╪⌐"
+          label="أسرع حالة"
           value={fastest ? getStatusLabel(fastest.status) : "-"}
-          hint={fastest ? `┘à╪¬┘ê╪│╪╖ ${formatDuration(fastest.avgHours)}` : undefined}
+          hint={fastest ? `متوسط ${formatDuration(fastest.avgHours)}` : undefined}
           icon={Gauge}
           gradient="from-emerald-500 to-teal-600"
         />
         <KpiCard
-          label="┘à╪¬┘ê╪│╪╖ ╪▓┘à┘å ╪º┘ä╪»┘ê╪▒╪⌐"
+          label="متوسط زمن الدورة"
           value={cycleTime ? formatDuration(cycleTime.avgHours) : "-"}
           hint={
             cycleTime
-              ? `┘è╪»┘ê┘è ${formatDuration(cycleTime.manualAvgHours)} ┬╖ ╪¬┘ä┘é╪º╪ª┘è ${formatDuration(cycleTime.autoAvgHours)}`
+              ? `يدوي ${formatDuration(cycleTime.manualAvgHours)} · تلقائي ${formatDuration(cycleTime.autoAvgHours)}`
               : undefined
           }
           icon={Clock}
           gradient="from-indigo-500 to-violet-600"
         />
         <KpiCard
-          label="╪º┘ä╪╣┘è┘å╪º╪¬"
+          label="العينات"
           value={formatNumber(totalSamples)}
-          hint={cycleTime ? `${formatNumber(cycleTime.sampleSize)} ╪╖┘ä╪¿ ╪º┘â╪¬┘à┘ä` : undefined}
+          hint={cycleTime ? `${formatNumber(cycleTime.sampleSize)} طلب اكتمل` : undefined}
           icon={Layers}
           gradient="from-cyan-500 to-blue-600"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MovementCard title="╪º┘ä┘à┘â┘ê╪½ ┘ä┘â┘ä ╪¡╪º┘ä╪⌐" subtitle="┘à╪¬┘ê╪│╪╖ ╪º┘ä╪│╪º╪╣╪º╪¬ ┘à╪╣ ┘à╪ñ╪┤╪▒ P90">
+        <MovementCard title="المكوث لكل حالة" subtitle="متوسط الساعات مع مؤشر P90">
           <div className="space-y-4">
             {statuses.map((row) => {
               const width = maxAvg > 0 ? (row.avgHours / maxAvg) * 100 : 0;
@@ -150,7 +150,7 @@ export default function DwellTimeTab({ startDate, endDate, mode }: MovementFilte
                     <div className="flex items-center gap-2">
                       <StatusPill code={row.status} />
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatNumber(row.entries)} ╪╣┘è┘å╪⌐
+                        {formatNumber(row.entries)} عينة
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -177,7 +177,7 @@ export default function DwellTimeTab({ startDate, endDate, mode }: MovementFilte
                   </div>
                   <div className="mt-1 flex items-center justify-between text-[11px]">
                     <span className="text-gray-500 dark:text-gray-400">
-                      ╪º┘ä┘à╪¬┘ê╪│╪╖ {formatDuration(row.avgHours)}
+                      المتوسط {formatDuration(row.avgHours)}
                     </span>
                     <span
                       className={
@@ -195,7 +195,7 @@ export default function DwellTimeTab({ startDate, endDate, mode }: MovementFilte
           </div>
         </MovementCard>
 
-        <MovementCard title="┘à╪¬┘ê╪│╪╖ ╪º┘ä┘à┘â┘ê╪½ ╪¿╪º┘ä╪¡╪º┘ä╪⌐" subtitle="╪ú╪╣┘ä┘ë 15 ╪¡╪º┘ä╪⌐ ╪¡╪│╪¿ ╪º┘ä┘à╪¬┘ê╪│╪╖">
+        <MovementCard title="متوسط المكوث بالحالة" subtitle="أعلى 15 حالة حسب المتوسط">
           <div className="h-[360px] w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 40 }}>
@@ -215,7 +215,7 @@ export default function DwellTimeTab({ startDate, endDate, mode }: MovementFilte
                   formatter={(value) => formatDuration(Number(value))}
                   labelFormatter={(label) => String(label)}
                 />
-                <Bar dataKey="avgHours" name="┘à╪¬┘ê╪│╪╖ ╪º┘ä┘à┘â┘ê╪½" radius={[8, 8, 0, 0]}>
+                <Bar dataKey="avgHours" name="متوسط المكوث" radius={[8, 8, 0, 0]}>
                   {chartData.map((row, index) => (
                     <Cell key={row.status} fill={statusChartColor(row.status, index)} />
                   ))}

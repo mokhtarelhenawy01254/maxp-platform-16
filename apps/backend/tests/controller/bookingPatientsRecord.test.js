@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -42,8 +42,8 @@ const companyReq = (overrides = {}) => ({
 });
 
 const MEDICAL_HISTORY = {
-  conditions: [{ code: 'diabetes', label: '╪│┘â╪▒', checked: true }, { code: 'asthma', label: '╪▒╪¿┘ê', checked: false }],
-  allergies: [{ code: 'penicillin', label: '╪¡╪│╪º╪│┘è╪⌐ ╪¿┘å╪│┘ä┘è┘å', checked: true }],
+  conditions: [{ code: 'diabetes', label: 'سكر', checked: true }, { code: 'asthma', label: 'ربو', checked: false }],
+  allergies: [{ code: 'penicillin', label: 'حساسية بنسلين', checked: true }],
 };
 
 describe('bookingPatientsRecord', () => {
@@ -66,12 +66,12 @@ describe('bookingPatientsRecord', () => {
     await createPatient(
       companyReq({
         body: {
-          firstName: '╪ú╪¡┘à╪»',
+          firstName: 'أحمد',
           status: 'ACTIVE',
           source: 'whatsapp',
           maritalStatus: 'MARRIED',
-          occupation: '┘à┘ç┘å╪»╪│',
-          city: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+          occupation: 'مهندس',
+          city: 'القاهرة',
           medicalHistory: MEDICAL_HISTORY,
           referringPhysicianId: 'ref-1',
           priceListId: 'pl-1',
@@ -85,12 +85,12 @@ describe('bookingPatientsRecord', () => {
     expect(prisma.patient.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         companyId: 'company-1',
-        firstName: '╪ú╪¡┘à╪»',
+        firstName: 'أحمد',
         status: 'ACTIVE',
         source: 'whatsapp',
         maritalStatus: 'MARRIED',
-        occupation: '┘à┘ç┘å╪»╪│',
-        city: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+        occupation: 'مهندس',
+        city: 'القاهرة',
         medicalHistory: MEDICAL_HISTORY,
         referringPhysicianId: 'ref-1',
         priceListId: 'pl-1',
@@ -110,7 +110,7 @@ describe('bookingPatientsRecord', () => {
     const res = createResponse();
     await createPatient(
       companyReq({
-        body: { firstName: '╪ú╪¡┘à╪»', medicalHistory: JSON.stringify(MEDICAL_HISTORY) },
+        body: { firstName: 'أحمد', medicalHistory: JSON.stringify(MEDICAL_HISTORY) },
       }),
       res
     );
@@ -125,7 +125,7 @@ describe('bookingPatientsRecord', () => {
 
     const res = createResponse();
     await createPatient(
-      companyReq({ body: { firstName: '╪ú╪¡┘à╪»', medicalHistory: ['sugar', 'pressure'] } }),
+      companyReq({ body: { firstName: 'أحمد', medicalHistory: ['sugar', 'pressure'] } }),
       res
     );
 
@@ -139,7 +139,7 @@ describe('bookingPatientsRecord', () => {
       patient: {
         findFirst: jest.fn().mockResolvedValue({ id: 'p1', companyId: 'company-1' }),
         update: jest.fn().mockImplementation(async ({ where, data }) => ({
-          id: where.id, firstName: '╪ú╪¡┘à╪»', gender: 'MALE', ...data,
+          id: where.id, firstName: 'أحمد', gender: 'MALE', ...data,
         })),
       },
       referringPhysician: { findFirst: jest.fn().mockResolvedValue({ id: 'ref-2', companyId: 'company-1' }) },
@@ -155,8 +155,8 @@ describe('bookingPatientsRecord', () => {
           status: 'REVIEW',
           source: 'facebook',
           maritalStatus: 'SINGLE',
-          occupation: '╪╖╪¿┘è╪¿',
-          city: '╪º┘ä╪¼┘è╪▓╪⌐',
+          occupation: 'طبيب',
+          city: 'الجيزة',
           medicalHistory: MEDICAL_HISTORY,
           referringPhysicianId: 'ref-2',
           priceListId: 'pl-2',
@@ -173,8 +173,8 @@ describe('bookingPatientsRecord', () => {
         status: 'REVIEW',
         source: 'facebook',
         maritalStatus: 'SINGLE',
-        occupation: '╪╖╪¿┘è╪¿',
-        city: '╪º┘ä╪¼┘è╪▓╪⌐',
+        occupation: 'طبيب',
+        city: 'الجيزة',
         medicalHistory: MEDICAL_HISTORY,
         referringPhysicianId: 'ref-2',
         priceListId: 'pl-2',
@@ -190,7 +190,7 @@ describe('bookingPatientsRecord', () => {
     await updatePatient({ user: { id: 'user-1' }, params: { id: 'p1' }, body: {} }, res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, error: 'غير مصرح' });
     expect(prisma.patient.update).not.toHaveBeenCalled();
   });
 
@@ -204,12 +204,12 @@ describe('bookingPatientsRecord', () => {
 
     const res = createResponse();
     await createPatient(
-      companyReq({ body: { firstName: '╪ú╪¡┘à╪»', referringPhysicianId: 'ref-foreign' } }),
+      companyReq({ body: { firstName: 'أحمد', referringPhysicianId: 'ref-foreign' } }),
       res
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(res.payload.error).toBe('الطبيب المحوّل غير موجود');
     expect(prisma.referringPhysician.findFirst).toHaveBeenCalledWith({ where: { id: 'ref-foreign', companyId: 'company-1' }, select: { id: true } });
     expect(prisma.patient.create).not.toHaveBeenCalled();
   });
@@ -225,12 +225,12 @@ describe('bookingPatientsRecord', () => {
 
     const res = createResponse();
     await createPatient(
-      companyReq({ body: { firstName: '╪ú╪¡┘à╪»', priceListId: 'pl-foreign' } }),
+      companyReq({ body: { firstName: 'أحمد', priceListId: 'pl-foreign' } }),
       res
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+    expect(res.payload.error).toBe('قائمة الأسعار غير موجودة');
     expect(prisma.priceList.findFirst).toHaveBeenCalledWith({ where: { id: 'pl-foreign', companyId: 'company-1' }, select: { id: true } });
     expect(prisma.patient.create).not.toHaveBeenCalled();
   });
@@ -244,12 +244,12 @@ describe('bookingPatientsRecord', () => {
 
     const res = createResponse();
     await createPatient(
-      companyReq({ body: { firstName: '╪ú╪¡┘à╪»', customerId: 'cust-foreign' } }),
+      companyReq({ body: { firstName: 'أحمد', customerId: 'cust-foreign' } }),
       res
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪º┘ä╪╣┘à┘è┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(res.payload.error).toBe('العميل غير موجود');
     expect(prisma.customer.findFirst).toHaveBeenCalledWith({ where: { id: 'cust-foreign', companyId: 'company-1' }, select: { id: true } });
     expect(prisma.patient.create).not.toHaveBeenCalled();
   });
@@ -271,7 +271,7 @@ describe('bookingPatientsRecord', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+    expect(res.payload.error).toBe('قائمة الأسعار غير موجودة');
     expect(prisma.patient.update).not.toHaveBeenCalled();
   });
 
@@ -281,8 +281,8 @@ describe('bookingPatientsRecord', () => {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce({ id: 'source', companyId: 'company-1' })
-          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: '┘ç╪»┘ü', lastName: '┘à' })
-          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: '┘ç╪»┘ü', _count: { appointments: 4 } }),
+          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', lastName: 'م' })
+          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', _count: { appointments: 4 } }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       medicalInvoice: { updateMany: jest.fn().mockResolvedValue({ count: 3 }) },
@@ -364,7 +364,7 @@ describe('bookingPatientsRecord', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪»┘à╪¼ ┘à╪▒┘è╪╢ ┘à╪»┘à╪¼ ╪¿╪º┘ä┘ü╪╣┘ä');
+    expect(res.payload.error).toBe('لا يمكن دمج مريض مدمج بالفعل');
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -374,8 +374,8 @@ describe('bookingPatientsRecord', () => {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce({ id: 'source', companyId: 'company-1' })
-          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: '┘ç╪»┘ü', lastName: '┘à' })
-          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: '┘ç╪»┘ü', _count: { appointments: 0 } }),
+          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', lastName: 'م' })
+          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', _count: { appointments: 0 } }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       medicalInvoice: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
@@ -405,7 +405,7 @@ describe('bookingPatientsRecord', () => {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce({ id: 'source', companyId: 'company-1' })
-          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: '┘ç╪»┘ü', lastName: '┘à' }),
+          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', lastName: 'م' }),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       medicalInvoice: { updateMany: jest.fn() },
@@ -422,7 +422,7 @@ describe('bookingPatientsRecord', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪»┘à╪¼ ┘à╪▒┘è╪╢ ┘à╪»┘à╪¼ ╪¿╪º┘ä┘ü╪╣┘ä');
+    expect(res.payload.error).toBe('لا يمكن دمج مريض مدمج بالفعل');
     expect(prisma.medicalInvoice.updateMany).not.toHaveBeenCalled();
     expect(prisma.appointment.updateMany).not.toHaveBeenCalled();
     expect(prisma.transactionLog.create).not.toHaveBeenCalled();
@@ -454,10 +454,10 @@ describe('bookingPatientsRecord', () => {
         findFirst: jest.fn().mockResolvedValue({
           id: 'p1',
           companyId: 'company-1',
-          firstName: '╪ú╪¡┘à╪»',
+          firstName: 'أحمد',
           gender: 'MALE',
-          referringPhysician: { id: 'ref-1', name: '╪». ╪ú╪¡┘à╪»', specialty: '┘é┘ä╪¿' },
-          priceList: { id: 'pl-1', name: '┘é╪º╪ª┘à╪⌐ ╪ú╪│╪º╪│┘è╪⌐' },
+          referringPhysician: { id: 'ref-1', name: 'د. أحمد', specialty: 'قلب' },
+          priceList: { id: 'pl-1', name: 'قائمة أساسية' },
           appointments: [],
           invoices: [],
         }),
@@ -478,7 +478,7 @@ describe('bookingPatientsRecord', () => {
         }),
       })
     );
-    expect(res.payload.data.referringPhysician.name).toBe('╪». ╪ú╪¡┘à╪»');
+    expect(res.payload.data.referringPhysician.name).toBe('د. أحمد');
     expect(res.payload.data.priceList.id).toBe('pl-1');
     expect(res.payload.data.financialSummary).toEqual({
       invoiceCount: 0,
@@ -495,10 +495,10 @@ describe('bookingPatientsRecord', () => {
         findFirst: jest.fn().mockResolvedValue({
           id: 'p1',
           companyId: 'company-1',
-          firstName: '╪ú╪¡┘à╪»',
+          firstName: 'أحمد',
           gender: 'MALE',
-          referringPhysician: { id: 'ref-1', name: '╪». ╪ú╪¡┘à╪»', specialty: '┘é┘ä╪¿' },
-          priceList: { id: 'pl-1', name: '┘é╪º╪ª┘à╪⌐ ╪ú╪│╪º╪│┘è╪⌐' },
+          referringPhysician: { id: 'ref-1', name: 'د. أحمد', specialty: 'قلب' },
+          priceList: { id: 'pl-1', name: 'قائمة أساسية' },
           appointments: [{ id: 'appt-1', appointmentDate: new Date(), startTime: '10:00' }],
           _count: { appointments: 1 },
         }),
@@ -518,7 +518,7 @@ describe('bookingPatientsRecord', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.success).toBe(true);
-    expect(res.payload.data.referringPhysician.name).toBe('╪». ╪ú╪¡┘à╪»');
+    expect(res.payload.data.referringPhysician.name).toBe('د. أحمد');
     expect(res.payload.data.priceList.id).toBe('pl-1');
     expect(res.payload.data.latestAppointments).toHaveLength(1);
     expect(res.payload.data.invoicesSummary).toEqual({
@@ -536,7 +536,7 @@ describe('bookingPatientsRecord', () => {
         findFirst: jest.fn().mockResolvedValue({
           id: 'p1',
           companyId: 'company-1',
-          firstName: '╪ú╪¡┘à╪»',
+          firstName: 'أحمد',
           gender: 'MALE',
           referringPhysician: null,
           priceList: null,
@@ -570,7 +570,7 @@ describe('bookingPatientsRecord', () => {
     test('lists, creates, updates and soft-deletes referring physicians company-scoped', async () => {
       const prisma = {
         referringPhysician: {
-          findMany: jest.fn().mockResolvedValue([{ id: 'r1', name: '╪». ╪ú╪¡┘à╪»', isActive: true }]),
+          findMany: jest.fn().mockResolvedValue([{ id: 'r1', name: 'د. أحمد', isActive: true }]),
           create: jest.fn().mockImplementation(async ({ data }) => ({ id: 'r2', ...data })),
           findFirst: jest.fn().mockResolvedValue({ id: 'r1', companyId: 'company-1' }),
           update: jest.fn().mockImplementation(async ({ where, data }) => ({ id: where.id, ...data })),
@@ -589,24 +589,24 @@ describe('bookingPatientsRecord', () => {
 
       res = createResponse();
       await createReferringPhysician(
-        companyReq({ body: { name: '╪». ┘à╪¡┘à╪»', phone: '01000000000', specialty: '╪╣╪╕╪º┘à' } }),
+        companyReq({ body: { name: 'د. محمد', phone: '01000000000', specialty: 'عظام' } }),
         res
       );
       expect(res.statusCode).toBe(200);
       expect(prisma.referringPhysician.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ companyId: 'company-1', name: '╪». ┘à╪¡┘à╪»', phone: '01000000000', specialty: '╪╣╪╕╪º┘à' }),
+        data: expect.objectContaining({ companyId: 'company-1', name: 'د. محمد', phone: '01000000000', specialty: 'عظام' }),
       });
 
       res = createResponse();
       await updateReferringPhysician(
-        companyReq({ params: { id: 'r1' }, body: { specialty: '╪ú╪╖┘ü╪º┘ä', phone: '01111111111' } }),
+        companyReq({ params: { id: 'r1' }, body: { specialty: 'أطفال', phone: '01111111111' } }),
         res
       );
       expect(res.statusCode).toBe(200);
-      expect(res.payload.data.specialty).toBe('╪ú╪╖┘ü╪º┘ä');
+      expect(res.payload.data.specialty).toBe('أطفال');
       expect(prisma.referringPhysician.update).toHaveBeenCalledWith({
         where: { id: 'r1' },
-        data: expect.objectContaining({ specialty: '╪ú╪╖┘ü╪º┘ä', phone: '01111111111' }),
+        data: expect.objectContaining({ specialty: 'أطفال', phone: '01111111111' }),
       });
 
       res = createResponse();

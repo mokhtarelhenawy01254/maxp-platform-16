@@ -1,1 +1,193 @@
-﻿/** * ≡ƒåò PRODUCTION-FIX (broadcast template params): * Meta Cloud API rejects a template send with (#132000) "Number of parameters does * not match the expected number of params" when the body params count differs from * the template's {{N}} placeholder count. The legacy broadcast code always sent * firstName/lastName (max 2) which failed for every template with >2 variables. * * These pure helpers derive the expected parameter count from the template BODY text * and build exactly that many params, padded with customer data. *//** * ┘è╪│╪¬╪«╪▒╪¼ ╪╣╪»╪» ╪º┘ä┘à╪╣╪º┘à┘ä╪º╪¬ ╪º┘ä┘à╪¬┘ê┘é╪╣╪⌐ ┘à┘å ┘å╪╡ body ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º (╪ú┘é╪╡┘ë ┘ü┘ç╪▒╪│ {{N}}). * * @param {string} templateBodyText - ┘å╪╡ body ╪º┘ä┘é╪º┘ä╪¿ (┘ü┘è┘ç {{1}} {{2}} ...) * @returns {number} */function countTemplateParams(templateBodyText) {  const matches = (templateBodyText || '').match(/\{\{\s*\d+\s*\}\}/g) || [];  let max = 0;  for (const m of matches) {    const n = parseInt(m.replace(/\D/g, ''), 10);    if (n > max) max = n;  }  return max;}// ╪ú╪│┘à╪º╪í ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä╪«╪º╪╡╪⌐ ╪¿╪º┘ä╪╖┘ä╪¿╪º╪¬ ΓÇö ┘à┘à┘å┘ê╪╣ ╪¬╪╣╪¿╪ª╪¬┘ç╪º ╪¿╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä/┘ä┘é╪¿┘çconst ORDER_VARIABLE_NAMES = new Set([  'ordernumber', 'orderitems', 'orderdate', 'subtotal', 'shipping', 'total',  'currency', 'trackingnumber', 'trackinglink', 'estimateddays', 'reason',  'productimage', 'status',]);/** * ┘ç┘ä ┘è╪¡╪¬┘ê┘è ╪¬╪▒╪¬┘è╪¿ ┘à╪¬╪║┘è╪▒╪º╪¬ ┘é╪º┘ä╪¿ ┘à╪¡┘ä┘è ╪╣┘ä┘ë ┘à╪¬╪║┘è╪▒╪º╪¬ ╪╖┘ä╪¿╪ƒ * ┘ä┘ê ╪ó┘ç ΓåÆ ┘å╪¼┘ä╪¿ ╪ú╪¡╪»╪½ ╪╖┘ä╪¿ ┘ä┘ä╪╣┘à┘è┘ä ┘é╪¿┘ä ╪¬╪╣╪¿╪ª╪⌐ ╪º┘ä╪¿╪º╪▒╪º┘à╪▓. * * @param {{position: number, name: string}[]} localVariables * @returns {boolean} */function hasOrderVariables(localVariables) {  if (!Array.isArray(localVariables)) return false;  return localVariables.some((v) => {    const n = String(v?.name || '').toLowerCase().replace(/[^a-z]/g, '');    return ORDER_VARIABLE_NAMES.has(n) || n.startsWith('order') || n.includes('orderitem');  });}/** * ┘è┘Å╪¡┘ä ┘é┘è┘à╪⌐ ┘à╪¬╪║┘è╪▒ ┘à╪¡┘ä┘è ╪¡╪│╪¿ ╪º╪│┘à┘ç ┘à┘å ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä ┘ê╪ú╪¡╪»╪½ ╪╖┘ä╪¿ (╪Ñ┘å ┘ê┘Å╪¼╪»). * ┘è╪╣╪º┘ä╪¼ ┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä (customerName/firstName/customerPhone...) ┘ê ┘à╪¬╪║┘è╪▒╪º╪¬ * ╪º┘ä╪╖┘ä╪¿ (orderNumber/total/status...) ΓÇö ╪¡╪¬┘ë ┘ä╪º ┘è┘Å╪▒╪│┘Ä┘ä ╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä ╪ú┘ê ┘ä┘é╪¿┘ç * ┘ü┘è ╪«╪º┘å╪⌐ ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿ (┘à╪┤┘â┘ä╪⌐ ┘é╪º┘ä╪¿ deliveredmsj72rwc ┘ê┘é╪¬ ╪º┘ä╪¿╪½ ╪º┘ä╪¼┘à╪º╪╣┘è). * * @param {string} name - ╪º╪│┘à ╪º┘ä┘à╪¬╪║┘è╪▒ ╪º┘ä┘à╪¡┘ä┘è (┘à╪½╪º┘ä: orderNumber) * @param {Object} customer - ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä (firstName/lastName/phone) * @param {Object|null} order - ╪ú╪¡╪»╪½ ╪╖┘ä╪¿ ┘ä┘ä╪╣┘à┘è┘ä (┘à╪┤╪▒┘ê╪¡╪º╪¬ ╪º┘ä╪¡┘é┘ê┘ä ╪º╪«╪¬┘è╪º╪▒┘è╪⌐) * @returns {string} */function resolveBroadcastVariableValue(name, customer = {}, order = null) {  const n = String(name || '').toLowerCase();  const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || '╪╣╪▓┘è╪▓┘è ╪º┘ä╪╣┘à┘è┘ä';  if (n === 'fullname' || n === 'customerfullname') return fullName;  if (n === 'firstname' || n === 'customerfirstname') return customer.firstName || '╪╣╪▓┘è╪▓┘è ╪º┘ä╪╣┘à┘è┘ä';  if (n === 'lastname' || n === 'customerlastname') return customer.lastName || '';  if (n.includes('phone') || n.includes('mobile')) return customer.phone || '';  if (n.includes('customer') || n === 'name' || n.endsWith('name')) return fullName;  if (order) {    switch (n) {      case 'ordernumber': return order.orderNumber || '';      case 'total': return order.total != null ? String(order.total) : '';      case 'subtotal': return order.subtotal != null ? String(order.subtotal) : '';      case 'shipping': return order.shipping != null ? String(order.shipping) : '';      case 'currency': return order.currency || 'EGP';      case 'status': return order.statusLabel || order.status || '';      case 'trackingnumber': return order.turboTrackingNumber || '';      case 'trackinglink': return order.trackingLink || '';      case 'orderdate': return order.orderDateLabel || '';      case 'reason': return order.reason || '';      case 'orderitems': return order.orderItemsText || '';      default: return '';    }  }  return '';}/** * ┘è╪¿┘å┘è bodyParams ┘ä╪¬╪╖╪º╪¿┘é ╪╣╪»╪» ┘à╪╣╪º┘à┘ä╪º╪¬ ╪º┘ä┘é╪º┘ä╪¿. * * ≡ƒÜ¿ PRODUCTION-FIX (broadcast template semantics): * ┘ä┘à╪º ╪º┘ä┘é╪º┘ä╪¿ ┘à╪▒╪¿┘ê╪╖ ╪¿┘é╪º┘ä╪¿ ┘à╪¡┘ä┘è ┘à╪╣╪▒┘ê┘ü ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ (localVariables = [{position, name}]), * ┘å╪╣╪¿┘æ┘è ┘â┘ä ┘à┘ê╪╢╪╣ ╪¿╪º╪│┘à ┘à╪¬╪║┘è┘æ╪▒┘ç ╪º┘ä╪╡╪¡┘è╪¡ (customerNameΓåÆ╪º┘ä╪º╪│┘à╪î orderNumberΓåÆ╪▒┘é┘à ╪ú╪¡╪»╪½ ╪╖┘ä╪¿...) * ╪¿╪»┘ä ╪º┘ä╪¬╪╣╪¿╪ª╪⌐ ╪º┘ä╪╣╪┤┘ê╪º╪ª┘è╪⌐ [firstName, lastName, phone, fullName] ╪º┘ä╪¬┘è ┘â╪º┘å╪¬ ╪¬╪╢╪╣ * ╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä ┘ü┘è ╪«╪º┘å╪⌐ ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿ (┘à╪½╪º┘ä ╪¡┘é┘è┘é┘è: deliveredmsj72rwc). * * @param {string} templateBodyText - ┘å╪╡ body ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º * @param {Object} customer - ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä (firstName/lastName/phone) * @param {{position: number, name: string}[]|null} [localVariables] - ╪¬╪▒╪¬┘è╪¿ ┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è * @param {Object|null} [order] - ╪ú╪¡╪»╪½ ╪╖┘ä╪¿ ┘ä┘ä╪╣┘à┘è┘ä (┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä╪╖┘ä╪¿) * @returns {{type: string, text: string}[]} ΓÇö ┘à╪╡┘ü┘ê┘ü╪⌐ ┘ü╪º╪▒╪║╪⌐ ┘ä┘ê ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘ä╪º ┘à╪¬╪║┘è╪▒╪º╪¬ */function buildBroadcastBodyParams(templateBodyText, customer = {}, localVariables = null, order = null) {  const paramCount = countTemplateParams(templateBodyText);  if (paramCount === 0) return [];  const fullName =    `${customer.firstName || ''} ${customer.lastName || ''}`.trim() ||    '╪╣╪▓┘è╪▓┘è ╪º┘ä╪╣┘à┘è┘ä';  const fallbackValues = [    customer.firstName || '╪╣╪▓┘è╪▓┘è ╪º┘ä╪╣┘à┘è┘ä',    customer.lastName || '',    customer.phone || '',    fullName,  ];  const hasLocalMapping = Array.isArray(localVariables) && localVariables.length > 0;  const bodyParams = [];  for (let i = 0; i < paramCount; i++) {    let val;    if (hasLocalMapping) {      const def = localVariables.find((v) => Number(v.position) === i + 1);      val = def ? resolveBroadcastVariableValue(def.name, customer, order) : fallbackValues[i];    } else {      val = fallbackValues[i];    }    if (val === undefined || val === null || val === '') val = `┘é┘è┘à╪⌐ ${i + 1}`;    // ┘à┘è╪¬╪º ╪¬╪▒┘ü╪╢ ╪º┘ä╪ú╪│╪╖╪▒ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪»╪º╪«┘ä ┘à╪╣╪º┘à┘ä╪º╪¬ body ╪º┘ä┘é╪º┘ä╪¿ (#132018/#131008)    bodyParams.push({ type: 'text', text: String(val).replace(/\r?\n/g, ' ') });  }  return bodyParams;}/** * ┘è╪│╪¬╪«╪▒╪¼ ╪¬┘å╪│┘è┘é HEADER ┘à┘å ╪¬╪╣╪▒┘è┘ü ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º (listTemplates). * Meta template components ┘ä┘ä┘Ç HEADER: { type: 'HEADER', format: 'IMAGE'|'VIDEO'|'DOCUMENT'|'TEXT', ... } * * @param {object} templateDef - ╪╣┘å╪╡╪▒ ┘à┘å MetaCloudProvider.listTemplates * @returns {{format: string, hasMedia: boolean}|null} */function getTemplateHeaderFormat(templateDef) {  if (!templateDef?.components || !Array.isArray(templateDef.components)) return null;  const header = templateDef.components.find(c => String(c.type).toUpperCase() === 'HEADER');  if (!header) return null;  const format = String(header.format || 'TEXT').toUpperCase();  return {    format,    hasMedia: format !== 'TEXT'  };}/** * ┘è╪¿┘å┘è header component ┘à╪╣ ┘à╪╣╪º┘à┘ä ┘ê╪│╪º╪ª╪╖ (image/video/document) ┘ä┘ä╪Ñ╪▒╪│╪º┘ä ΓÇö * ┘è╪»╪╣┘à ╪╡┘ê╪▒╪⌐/┘ê╪│┘è╪╖╪º┘ï ┘à╪«╪¬┘ä┘ü╪º┘ï ┘ä┘â┘ä ╪▒╪│╪º┘ä╪⌐ ╪╣╪¿╪▒ media id ╪ú┘ê ╪▒╪º╪¿╪╖ HTTPS ╪╣╪º┘à. * * @param {string} media - media id (┘à┘å Resumable/Media API) ╪ú┘ê ╪▒╪º╪¿╪╖ HTTPS * @param {string} kind - 'image' | 'video' | 'document' (┘è┘Å╪│╪¬┘å╪¬╪¼ ┘à┘å header format ┘ä┘ê ╪║╪º╪ª╪¿) * @returns {object|null} component ╪¿╪╡┘è╪║╪⌐ ┘à┘è╪¬╪º╪î ╪ú┘ê null ┘ä┘ê ┘à┘ü┘è╪┤ ┘ê╪│┘è╪╖ */function buildBroadcastHeaderParams(media, kind = 'image') {  if (!media) return null;  const normalizedKind = String(kind).toLowerCase();  const validKinds = ['image', 'video', 'document'];  const type = validKinds.includes(normalizedKind) ? normalizedKind : 'image';  const mediaObj = /^https?:\/\//i.test(media)    ? { link: media }    : { id: media };  return {    type: 'header',    parameters: [      {        type,        [type]: mediaObj      }    ]  };}module.exports = {  countTemplateParams,  buildBroadcastBodyParams,  hasOrderVariables,  resolveBroadcastVariableValue,  getTemplateHeaderFormat,  buildBroadcastHeaderParams,};
+/**
+ * 🆕 PRODUCTION-FIX (broadcast template params):
+ * Meta Cloud API rejects a template send with (#132000) "Number of parameters does
+ * not match the expected number of params" when the body params count differs from
+ * the template's {{N}} placeholder count. The legacy broadcast code always sent
+ * firstName/lastName (max 2) which failed for every template with >2 variables.
+ *
+ * These pure helpers derive the expected parameter count from the template BODY text
+ * and build exactly that many params, padded with customer data.
+ */
+
+/**
+ * يستخرج عدد المعاملات المتوقعة من نص body قالب ميتا (أقصى فهرس {{N}}).
+ *
+ * @param {string} templateBodyText - نص body القالب (فيه {{1}} {{2}} ...)
+ * @returns {number}
+ */
+function countTemplateParams(templateBodyText) {
+  const matches = (templateBodyText || '').match(/\{\{\s*\d+\s*\}\}/g) || [];
+  let max = 0;
+  for (const m of matches) {
+    const n = parseInt(m.replace(/\D/g, ''), 10);
+    if (n > max) max = n;
+  }
+  return max;
+}
+
+// أسماء المتغيرات الخاصة بالطلبات — ممنوع تعبئتها باسم العميل/لقبه
+const ORDER_VARIABLE_NAMES = new Set([
+  'ordernumber', 'orderitems', 'orderdate', 'subtotal', 'shipping', 'total',
+  'currency', 'trackingnumber', 'trackinglink', 'estimateddays', 'reason',
+  'productimage', 'status',
+]);
+
+/**
+ * هل يحتوي ترتيب متغيرات قالب محلي على متغيرات طلب؟
+ * لو آه → نجلب أحدث طلب للعميل قبل تعبئة البارامز.
+ *
+ * @param {{position: number, name: string}[]} localVariables
+ * @returns {boolean}
+ */
+function hasOrderVariables(localVariables) {
+  if (!Array.isArray(localVariables)) return false;
+  return localVariables.some((v) => {
+    const n = String(v?.name || '').toLowerCase().replace(/[^a-z]/g, '');
+    return ORDER_VARIABLE_NAMES.has(n) || n.startsWith('order') || n.includes('orderitem');
+  });
+}
+
+/**
+ * يُحل قيمة متغير محلي حسب اسمه من بيانات العميل وأحدث طلب (إن وُجد).
+ * يعالج متغيرات العميل (customerName/firstName/customerPhone...) و متغيرات
+ * الطلب (orderNumber/total/status...) — حتى لا يُرسَل اسم العميل أو لقبه
+ * في خانة رقم الطلب (مشكلة قالب deliveredmsj72rwc وقت البث الجماعي).
+ *
+ * @param {string} name - اسم المتغير المحلي (مثال: orderNumber)
+ * @param {Object} customer - بيانات العميل (firstName/lastName/phone)
+ * @param {Object|null} order - أحدث طلب للعميل (مشروحات الحقول اختيارية)
+ * @returns {string}
+ */
+function resolveBroadcastVariableValue(name, customer = {}, order = null) {
+  const n = String(name || '').toLowerCase();
+  const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
+
+  if (n === 'fullname' || n === 'customerfullname') return fullName;
+  if (n === 'firstname' || n === 'customerfirstname') return customer.firstName || 'عزيزي العميل';
+  if (n === 'lastname' || n === 'customerlastname') return customer.lastName || '';
+  if (n.includes('phone') || n.includes('mobile')) return customer.phone || '';
+  if (n.includes('customer') || n === 'name' || n.endsWith('name')) return fullName;
+
+  if (order) {
+    switch (n) {
+      case 'ordernumber': return order.orderNumber || '';
+      case 'total': return order.total != null ? String(order.total) : '';
+      case 'subtotal': return order.subtotal != null ? String(order.subtotal) : '';
+      case 'shipping': return order.shipping != null ? String(order.shipping) : '';
+      case 'currency': return order.currency || 'EGP';
+      case 'status': return order.statusLabel || order.status || '';
+      case 'trackingnumber': return order.turboTrackingNumber || '';
+      case 'trackinglink': return order.trackingLink || '';
+      case 'orderdate': return order.orderDateLabel || '';
+      case 'reason': return order.reason || '';
+      case 'orderitems': return order.orderItemsText || '';
+      default: return '';
+    }
+  }
+  return '';
+}
+
+/**
+ * يبني bodyParams لتطابق عدد معاملات القالب.
+ *
+ * 🚨 PRODUCTION-FIX (broadcast template semantics):
+ * لما القالب مربوط بقالب محلي معروف المتغيرات (localVariables = [{position, name}]),
+ * نعبّي كل موضع باسم متغيّره الصحيح (customerName→الاسم، orderNumber→رقم أحدث طلب...)
+ * بدل التعبئة العشوائية [firstName, lastName, phone, fullName] التي كانت تضع
+ * اسم العميل في خانة رقم الطلب (مثال حقيقي: deliveredmsj72rwc).
+ *
+ * @param {string} templateBodyText - نص body قالب ميتا
+ * @param {Object} customer - بيانات العميل (firstName/lastName/phone)
+ * @param {{position: number, name: string}[]|null} [localVariables] - ترتيب متغيرات القالب المحلي
+ * @param {Object|null} [order] - أحدث طلب للعميل (لمتغيرات الطلب)
+ * @returns {{type: string, text: string}[]} — مصفوفة فارغة لو القالب بلا متغيرات
+ */
+function buildBroadcastBodyParams(templateBodyText, customer = {}, localVariables = null, order = null) {
+  const paramCount = countTemplateParams(templateBodyText);
+  if (paramCount === 0) return [];
+
+  const fullName =
+    `${customer.firstName || ''} ${customer.lastName || ''}`.trim() ||
+    'عزيزي العميل';
+
+  const fallbackValues = [
+    customer.firstName || 'عزيزي العميل',
+    customer.lastName || '',
+    customer.phone || '',
+    fullName,
+  ];
+
+  const hasLocalMapping = Array.isArray(localVariables) && localVariables.length > 0;
+
+  const bodyParams = [];
+  for (let i = 0; i < paramCount; i++) {
+    let val;
+    if (hasLocalMapping) {
+      const def = localVariables.find((v) => Number(v.position) === i + 1);
+      val = def ? resolveBroadcastVariableValue(def.name, customer, order) : fallbackValues[i];
+    } else {
+      val = fallbackValues[i];
+    }
+    if (val === undefined || val === null || val === '') val = `قيمة ${i + 1}`;
+    // ميتا ترفض الأسطر الجديدة داخل معاملات body القالب (#132018/#131008)
+    bodyParams.push({ type: 'text', text: String(val).replace(/\r?\n/g, ' ') });
+  }
+  return bodyParams;
+}
+
+/**
+ * يستخرج تنسيق HEADER من تعريف قالب ميتا (listTemplates).
+ * Meta template components للـ HEADER: { type: 'HEADER', format: 'IMAGE'|'VIDEO'|'DOCUMENT'|'TEXT', ... }
+ *
+ * @param {object} templateDef - عنصر من MetaCloudProvider.listTemplates
+ * @returns {{format: string, hasMedia: boolean}|null}
+ */
+function getTemplateHeaderFormat(templateDef) {
+  if (!templateDef?.components || !Array.isArray(templateDef.components)) return null;
+  const header = templateDef.components.find(c => String(c.type).toUpperCase() === 'HEADER');
+  if (!header) return null;
+  const format = String(header.format || 'TEXT').toUpperCase();
+  return {
+    format,
+    hasMedia: format !== 'TEXT'
+  };
+}
+
+/**
+ * يبني header component مع معامل وسائط (image/video/document) للإرسال —
+ * يدعم صورة/وسيطاً مختلفاً لكل رسالة عبر media id أو رابط HTTPS عام.
+ *
+ * @param {string} media - media id (من Resumable/Media API) أو رابط HTTPS
+ * @param {string} kind - 'image' | 'video' | 'document' (يُستنتج من header format لو غائب)
+ * @returns {object|null} component بصيغة ميتا، أو null لو مفيش وسيط
+ */
+function buildBroadcastHeaderParams(media, kind = 'image') {
+  if (!media) return null;
+
+  const normalizedKind = String(kind).toLowerCase();
+  const validKinds = ['image', 'video', 'document'];
+  const type = validKinds.includes(normalizedKind) ? normalizedKind : 'image';
+
+  const mediaObj = /^https?:\/\//i.test(media)
+    ? { link: media }
+    : { id: media };
+
+  return {
+    type: 'header',
+    parameters: [
+      {
+        type,
+        [type]: mediaObj
+      }
+    ]
+  };
+}
+
+module.exports = {
+  countTemplateParams,
+  buildBroadcastBodyParams,
+  hasOrderVariables,
+  resolveBroadcastVariableValue,
+  getTemplateHeaderFormat,
+  buildBroadcastHeaderParams,
+};

@@ -1,12 +1,16 @@
-import { Link as LinkIcon, Clipboard as ClipboardDocumentIcon, Settings as Cog6ToothIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { getBaseDomain } from "../../utils/storeUrl";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { copyAffiliateText } from "./affiliateClipboard";
-;
+import {
+  LinkIcon,
+  ClipboardDocumentIcon,
+  Cog6ToothIcon,
+} from "@heroicons/react/24/outline";
 
 interface ApiSuccess<T> {
   success: boolean;
@@ -289,7 +293,7 @@ const AffiliateSystemSettings: React.FC = () => {
 
                       const copied = await copyAffiliateText(link);
                       if (copied) {
-                        toast.success("تم نسخ الرابط بنجاح");
+                        tToast.success("AffiliateSystemSettings.msg_66a5");
                       } else {
                         toast.error(
                           "لم نتمكن من النسخ تلقائياً، انسخ الرابط يدوياً من الحقل.",

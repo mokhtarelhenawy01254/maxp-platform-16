@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api, getAuthHeaders, MODAL_INPUT_CLS, REPORT_STATUS_MAP, PAYMENT_METHOD_LABEL, fetchJson, BookingBranch, BookingDoctor } from "./shared";
 
 interface Props {
@@ -19,12 +19,12 @@ const ENDPOINTS: Record<SubTab, string> = {
 };
 
 const SUB_TABS: { id: SubTab; label: string }[] = [
-  { id: "revenue", label: "╪º┘ä╪Ñ┘è╪▒╪º╪»╪º╪¬" },
-  { id: "actualVsExpected", label: "╪º┘ä┘ü╪╣┘ä┘è ┘à┘é╪º╪¿┘ä ╪º┘ä┘à╪¬┘ê┘é╪╣" },
-  { id: "commissions", label: "╪╣┘à┘ê┘ä╪º╪¬ ╪º┘ä╪ú╪╖╪¿╪º╪í" },
-  { id: "dues", label: "╪º┘ä┘à╪│╪¬╪¡┘é╪º╪¬" },
-  { id: "refunds", label: "╪º┘ä╪º╪│╪¬╪▒╪»╪º╪»╪º╪¬" },
-  { id: "cashierDaily", label: "╪¡╪│╪º╪¿ ╪º┘ä┘â╪º╪┤┘è╪▒ ╪º┘ä┘è┘ê┘à┘è" },
+  { id: "revenue", label: "الإيرادات" },
+  { id: "actualVsExpected", label: "الفعلي مقابل المتوقع" },
+  { id: "commissions", label: "عمولات الأطباء" },
+  { id: "dues", label: "المستحقات" },
+  { id: "refunds", label: "الاستردادات" },
+  { id: "cashierDaily", label: "حساب الكاشير اليومي" },
 ];
 
 interface RevenueTotals { billed: number; discounts: number; collected: number; outstanding: number; invoiceCount: number; }
@@ -106,7 +106,7 @@ function DataTable({ headers, children }: { headers: string[]; children: ReactNo
 }
 
 const Empty = () => (
-  <p className="text-center py-12 text-gray-400 dark:text-gray-500">┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬</p>
+  <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد بيانات</p>
 );
 
 const tdCls = "py-3 px-4 border-b dark:border-gray-700";
@@ -148,10 +148,10 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
         if (doctorId) params.set("doctorId", doctorId);
         const res = await fetch(api(`reports/${ENDPOINTS[subTab]}?${params.toString()}`), { headers: getAuthHeaders() });
         const json = await res.json();
-        if (!json.success) throw new Error(json.error || "┘ü╪┤┘ä ╪¼┘ä╪¿ ╪º┘ä╪¬┘é╪▒┘è╪▒");
+        if (!json.success) throw new Error(json.error || "فشل جلب التقرير");
         if (!cancelled) setData(prev => ({ ...prev, [subTab]: json.data }));
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "┘ü╪┤┘ä ╪¼┘ä╪¿ ╪º┘ä╪¬┘é╪▒┘è╪▒");
+        if (!cancelled) setError(e instanceof Error ? e.message : "فشل جلب التقرير");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -164,22 +164,22 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-bold">╪º┘ä╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä┘à╪º┘ä┘è╪⌐ ┘ê╪º┘ä╪¬╪┤╪║┘è┘ä┘è╪⌐</h2>
+        <h2 className="text-xl font-bold">التقارير المالية والتشغيلية</h2>
         <div className="flex flex-wrap items-center gap-3">
           <input type="date" className={MODAL_INPUT_CLS} value={from} onChange={e => setFrom(e.target.value)} />
           <input type="date" className={MODAL_INPUT_CLS} value={to} onChange={e => setTo(e.target.value)} />
           <select className={MODAL_INPUT_CLS} value={branchId} onChange={e => setBranchId(e.target.value)}>
-            <option value="">┘â┘ä ╪º┘ä┘ü╪▒┘ê╪╣</option>
+            <option value="">كل الفروع</option>
             {branchOptions.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
           <select className={MODAL_INPUT_CLS} value={doctorId} onChange={e => setDoctorId(e.target.value)}>
-            <option value="">┘â┘ä ╪º┘ä╪ú╪╖╪¿╪º╪í</option>
+            <option value="">كل الأطباء</option>
             {doctorList.filter(d => !branchId || d.branchId === branchId).map(d => <option key={d.id} value={d.id}>{`${d.title || ""} ${d.name || ""}`.trim() || d.id}</option>)}
           </select>
           <button
             onClick={() => { setFrom(monthStartStr()); setTo(todayStr()); setBranchId(selectedBranchId || ""); setDoctorId(""); }}
             className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-          >╪Ñ╪╣╪º╪»╪⌐ ╪¬╪╣┘è┘è┘å</button>
+          >إعادة تعيين</button>
         </div>
       </div>
 
@@ -193,7 +193,7 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
         ))}
       </div>
 
-      {loading && <p className="text-center py-8 text-gray-400 dark:text-gray-500">╪¼╪º╪▒┘ì ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¬┘é╪▒┘è╪▒...</p>}
+      {loading && <p className="text-center py-8 text-gray-400 dark:text-gray-500">جارٍ تحميل التقرير...</p>}
       {!loading && error && <p className="text-center py-8 text-red-500">{error}</p>}
 
       {!loading && !error && subTab === "revenue" && (() => {
@@ -202,15 +202,15 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
         return (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <KpiCard label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒" value={fmt(d.totals.billed)} color="text-blue-600 dark:text-blue-400" />
-              <KpiCard label="╪º┘ä╪«╪╡┘ê┘à╪º╪¬" value={fmt(d.totals.discounts)} color="text-orange-600 dark:text-orange-400" />
-              <KpiCard label="╪º┘ä┘à╪¡╪╡┘æ┘ä" value={fmt(d.totals.collected)} color="text-green-600 dark:text-green-400" />
-              <KpiCard label="╪º┘ä┘à╪¬╪¿┘é┘è" value={fmt(d.totals.outstanding)} color="text-red-600 dark:text-red-400" />
+              <KpiCard label="إجمالي الفواتير" value={fmt(d.totals.billed)} color="text-blue-600 dark:text-blue-400" />
+              <KpiCard label="الخصومات" value={fmt(d.totals.discounts)} color="text-orange-600 dark:text-orange-400" />
+              <KpiCard label="المحصّل" value={fmt(d.totals.collected)} color="text-green-600 dark:text-green-400" />
+              <KpiCard label="المتبقي" value={fmt(d.totals.outstanding)} color="text-red-600 dark:text-red-400" />
             </div>
-            <h3 className="font-bold mb-3">╪¡╪│╪¿ ╪º┘ä╪╖╪¿┘è╪¿</h3>
+            <h3 className="font-bold mb-3">حسب الطبيب</h3>
             {d.byDoctor.length === 0 ? <Empty /> : (
               <div className="mb-6">
-                <DataTable headers={["╪º┘ä╪╖╪¿┘è╪¿", "╪º┘ä┘ü┘ê╪¬╪▒╪⌐", "╪º┘ä╪«╪╡┘à", "╪º┘ä┘à╪¡╪╡┘æ┘ä", "╪º┘ä┘à╪¬╪¿┘é┘è", "┘ü┘ê╪º╪¬┘è╪▒"]}>
+                <DataTable headers={["الطبيب", "الفوترة", "الخصم", "المحصّل", "المتبقي", "فواتير"]}>
                   {d.byDoctor.map(r => (
                     <tr key={r.id || "none"} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className={tdCls}>{r.name}</td>
@@ -224,9 +224,9 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
                 </DataTable>
               </div>
             )}
-            <h3 className="font-bold mb-3">╪¡╪│╪¿ ╪º┘ä╪«╪»┘à╪⌐</h3>
+            <h3 className="font-bold mb-3">حسب الخدمة</h3>
             {d.byService.length === 0 ? <Empty /> : (
-              <DataTable headers={["╪º┘ä╪«╪»┘à╪⌐", "╪º┘ä┘ü┘ê╪¬╪▒╪⌐", "╪º┘ä╪«╪╡┘à", "╪º┘ä┘à╪¡╪╡┘æ┘ä", "╪º┘ä┘à╪¬╪¿┘é┘è", "┘ü┘ê╪º╪¬┘è╪▒"]}>
+              <DataTable headers={["الخدمة", "الفوترة", "الخصم", "المحصّل", "المتبقي", "فواتير"]}>
                 {d.byService.map(r => (
                   <tr key={r.id || "none"} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className={tdCls}>{r.name}</td>
@@ -249,12 +249,12 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
         return (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              <KpiCard label="╪º┘ä┘à╪¬┘ê┘é╪╣" value={fmt(d.totals.expected)} color="text-blue-600 dark:text-blue-400" />
-              <KpiCard label="╪º┘ä┘ü╪╣┘ä┘è" value={fmt(d.totals.actual)} color="text-green-600 dark:text-green-400" />
-              <KpiCard label="╪º┘ä┘ü╪▒┘é (┘â╪┤┘ü ╪¬╪│╪▒┘è╪¿)" value={fmt(d.totals.variance)} color={d.totals.variance < 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"} />
+              <KpiCard label="المتوقع" value={fmt(d.totals.expected)} color="text-blue-600 dark:text-blue-400" />
+              <KpiCard label="الفعلي" value={fmt(d.totals.actual)} color="text-green-600 dark:text-green-400" />
+              <KpiCard label="الفرق (كشف تسريب)" value={fmt(d.totals.variance)} color={d.totals.variance < 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"} />
             </div>
             {d.rows.length === 0 ? <Empty /> : (
-              <DataTable headers={["╪º┘ä╪¬╪º╪▒┘è╪«", "╪º┘ä┘à╪¬┘ê┘é╪╣", "╪º┘ä┘ü╪╣┘ä┘è", "╪º┘ä┘ü╪▒┘é"]}>
+              <DataTable headers={["التاريخ", "المتوقع", "الفعلي", "الفرق"]}>
                 {d.rows.map(r => (
                   <tr key={r.date} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className={tdCls}>{r.date}</td>
@@ -275,17 +275,17 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
         return (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <KpiCard label="╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è" value={fmt(d.totals.gross)} color="text-blue-600 dark:text-blue-400" />
-              <KpiCard label="╪º┘ä╪╣┘à┘ê┘ä╪º╪¬" value={fmt(d.totals.commission)} color="text-orange-600 dark:text-orange-400" />
-              <KpiCard label="╪º┘ä╪╡╪º┘ü┘è" value={fmt(d.totals.net)} color="text-green-600 dark:text-green-400" />
-              <KpiCard label="╪║┘è╪▒ ┘à╪╣╪¬┘à╪»╪⌐" value={String(d.totals.unapprovedCount)} color="text-red-600 dark:text-red-400" />
+              <KpiCard label="الإجمالي" value={fmt(d.totals.gross)} color="text-blue-600 dark:text-blue-400" />
+              <KpiCard label="العمولات" value={fmt(d.totals.commission)} color="text-orange-600 dark:text-orange-400" />
+              <KpiCard label="الصافي" value={fmt(d.totals.net)} color="text-green-600 dark:text-green-400" />
+              <KpiCard label="غير معتمدة" value={String(d.totals.unapprovedCount)} color="text-red-600 dark:text-red-400" />
             </div>
             {d.rows.length === 0 ? <Empty /> : (
-              <DataTable headers={["╪º┘ä╪╖╪¿┘è╪¿", "╪º┘ä╪¬╪«╪╡╪╡", "╪º┘ä┘ü╪▒╪╣", "╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", "╪º┘ä┘å╪│╪¿╪⌐ %", "╪º┘ä╪╣┘à┘ê┘ä╪⌐", "╪º┘ä╪╡╪º┘ü┘è", "┘ü┘ê╪º╪¬┘è╪▒", "╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘é╪º╪▒┘è╪▒", "╪║┘è╪▒ ┘à╪╣╪¬┘à╪»╪⌐"]}>
+              <DataTable headers={["الطبيب", "التخصص", "الفرع", "الإجمالي", "النسبة %", "العمولة", "الصافي", "فواتير", "حالة التقارير", "غير معتمدة"]}>
                 {d.rows.map(r => (
                   <tr key={r.doctorId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className={tdCls}>{r.doctorName}</td>
-                    <td className={tdCls}>{r.specialty || "ΓÇö"}</td>
+                    <td className={tdCls}>{r.specialty || "—"}</td>
                     <td className={tdCls}>{r.branchName}</td>
                     <td className={tdCls}>{fmt(r.gross)}</td>
                     <td className={tdCls}>{r.commissionRate}%</td>
@@ -295,7 +295,7 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
                     <td className={tdCls}>
                       {r.byReportStatus.map((s, i) => (
                         <span key={i} className="inline-block mx-0.5 px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700">
-                          {REPORT_STATUS_MAP[s.status]?.label || (s.status === "NONE" ? "╪¿╪»┘ê┘å ╪¬┘é╪▒┘è╪▒" : s.status)}: {s.count}
+                          {REPORT_STATUS_MAP[s.status]?.label || (s.status === "NONE" ? "بدون تقرير" : s.status)}: {s.count}
                         </span>
                       ))}
                     </td>
@@ -314,10 +314,10 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
         return (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <KpiCard label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à╪│╪¬╪¡┘é" value={fmt(d.totals.outstanding)} color="text-red-600 dark:text-red-400" />
-              <KpiCard label="╪º┘ä┘à╪│╪»╪»" value={fmt(d.totals.paidBackTotal)} color="text-green-600 dark:text-green-400" />
-              <KpiCard label="┘ü┘ê╪º╪¬┘è╪▒ ┘à┘ü╪¬┘ê╪¡╪⌐" value={String(d.totals.invoiceCount)} color="text-blue-600 dark:text-blue-400" />
-              <KpiCard label="┘à╪▒╪╢┘ë" value={String(d.totals.patientCount)} color="text-purple-600 dark:text-purple-400" />
+              <KpiCard label="إجمالي المستحق" value={fmt(d.totals.outstanding)} color="text-red-600 dark:text-red-400" />
+              <KpiCard label="المسدد" value={fmt(d.totals.paidBackTotal)} color="text-green-600 dark:text-green-400" />
+              <KpiCard label="فواتير مفتوحة" value={String(d.totals.invoiceCount)} color="text-blue-600 dark:text-blue-400" />
+              <KpiCard label="مرضى" value={String(d.totals.patientCount)} color="text-purple-600 dark:text-purple-400" />
             </div>
             {d.patients.length === 0 ? <Empty /> : (
               <div className="space-y-4">
@@ -326,16 +326,16 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
                     <summary className="cursor-pointer flex flex-wrap justify-between items-center gap-2">
                       <div>
                         <p className="font-bold">{p.patientName}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500" dir="ltr">{p.patientPhone || "ΓÇö"}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500" dir="ltr">{p.patientPhone || "—"}</p>
                       </div>
                       <div className="flex gap-4 text-sm">
-                        <span>╪º┘ä┘à╪│╪¬╪¡┘é: <b className="text-red-600 dark:text-red-400">{fmt(p.totalOutstanding)}</b></span>
-                        <span>╪º┘ä┘à╪│╪»╪»: <b className="text-green-600 dark:text-green-400">{fmt(p.paidBackTotal)}</b></span>
-                        <span>┘ü┘ê╪º╪¬┘è╪▒: {p.invoiceCount}</span>
+                        <span>المستحق: <b className="text-red-600 dark:text-red-400">{fmt(p.totalOutstanding)}</b></span>
+                        <span>المسدد: <b className="text-green-600 dark:text-green-400">{fmt(p.paidBackTotal)}</b></span>
+                        <span>فواتير: {p.invoiceCount}</span>
                       </div>
                     </summary>
                     <div className="mt-3">
-                      <DataTable headers={["╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐", "╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", "╪º┘ä╪«╪╡┘à", "╪º┘ä╪╡╪º┘ü┘è", "╪º┘ä┘à╪│╪»╪»", "╪º┘ä┘à╪¬╪¿┘é┘è", "╪º┘ä╪¡╪º┘ä╪⌐", "╪º┘ä╪º╪│╪¬╪¡┘é╪º┘é"]}>
+                      <DataTable headers={["رقم الفاتورة", "الإجمالي", "الخصم", "الصافي", "المسدد", "المتبقي", "الحالة", "الاستحقاق"]}>
                         {p.invoices.map(inv => (
                           <tr key={inv.invoiceNumber} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td className={tdCls} dir="ltr">{inv.invoiceNumber}</td>
@@ -344,8 +344,8 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
                             <td className={tdCls}>{fmt(inv.net)}</td>
                             <td className={tdCls}>{fmt(inv.amountPaid)}</td>
                             <td className={tdCls}>{fmt(inv.remaining)}</td>
-                            <td className={tdCls}>{inv.status === "UNPAID" ? "╪║┘è╪▒ ┘à╪│╪»╪»╪⌐" : "┘à╪│╪»╪» ╪¼╪▓╪ª┘è╪º┘ï"}</td>
-                            <td className={tdCls}>{inv.dueDate || "ΓÇö"}</td>
+                            <td className={tdCls}>{inv.status === "UNPAID" ? "غير مسددة" : "مسدد جزئياً"}</td>
+                            <td className={tdCls}>{inv.dueDate || "—"}</td>
                           </tr>
                         ))}
                       </DataTable>
@@ -364,13 +364,13 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
         return (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <KpiCard label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪º╪│╪¬╪▒╪»╪º╪»╪º╪¬" value={fmt(d.summary.totalPayback)} color="text-red-600 dark:text-red-400" />
-              <KpiCard label="╪╣╪»╪» ╪º┘ä╪╣┘à┘ä┘è╪º╪¬" value={String(d.summary.count)} color="text-blue-600 dark:text-blue-400" />
+              <KpiCard label="إجمالي الاستردادات" value={fmt(d.summary.totalPayback)} color="text-red-600 dark:text-red-400" />
+              <KpiCard label="عدد العمليات" value={String(d.summary.count)} color="text-blue-600 dark:text-blue-400" />
             </div>
             {d.summary.cashiers.length > 0 && (
               <div className="mb-6">
-                <h3 className="font-bold mb-3">╪¡╪│╪¿ ╪º┘ä┘â╪º╪┤┘è╪▒</h3>
-                <DataTable headers={["╪º┘ä┘â╪º╪┤┘è╪▒", "╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", "╪º┘ä╪╣┘à┘ä┘è╪º╪¬"]}>
+                <h3 className="font-bold mb-3">حسب الكاشير</h3>
+                <DataTable headers={["الكاشير", "الإجمالي", "العمليات"]}>
                   {d.summary.cashiers.map(c => (
                     <tr key={c.cashierName} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className={tdCls}>{c.cashierName}</td>
@@ -382,15 +382,15 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
               </div>
             )}
             {d.rows.length === 0 ? <Empty /> : (
-              <DataTable headers={["╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐", "╪º┘ä┘à╪▒┘è╪╢", "╪º┘ä┘ç╪º╪¬┘ü", "╪º┘ä┘à╪¿┘ä╪║", "╪º┘ä╪╖╪▒┘è┘é╪⌐", "╪º┘ä╪│╪¿╪¿", "╪º┘ä┘â╪º╪┤┘è╪▒", "╪º┘ä╪¬╪º╪▒┘è╪«"]}>
+              <DataTable headers={["رقم الفاتورة", "المريض", "الهاتف", "المبلغ", "الطريقة", "السبب", "الكاشير", "التاريخ"]}>
                 {d.rows.map(r => (
                   <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className={tdCls} dir="ltr">{r.invoiceNumber || "ΓÇö"}</td>
-                    <td className={tdCls}>{r.patientName || "ΓÇö"}</td>
-                    <td className={tdCls} dir="ltr">{r.patientPhone || "ΓÇö"}</td>
+                    <td className={tdCls} dir="ltr">{r.invoiceNumber || "—"}</td>
+                    <td className={tdCls}>{r.patientName || "—"}</td>
+                    <td className={tdCls} dir="ltr">{r.patientPhone || "—"}</td>
                     <td className={tdCls}>{fmt(r.amount)}</td>
                     <td className={tdCls}>{PAYMENT_METHOD_LABEL[r.method] || r.method}</td>
-                    <td className={tdCls}>{r.reason || "ΓÇö"}</td>
+                    <td className={tdCls}>{r.reason || "—"}</td>
                     <td className={tdCls}>{r.cashierName}</td>
                     <td className={tdCls}>{r.paidAt}</td>
                   </tr>
@@ -404,23 +404,23 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
       {!loading && !error && subTab === "cashierDaily" && (() => {
         const d = data["cashierDaily"] as CashierDailyData | undefined;
         if (!d) return <Empty />;
-        const shiftLabel = (s: string) => s === "CLOSED" ? "┘à╪║┘ä┘é" : s === "OPEN" ? "┘à┘ü╪¬┘ê╪¡" : "┘ä╪º ┘è┘ê╪¼╪»";
+        const shiftLabel = (s: string) => s === "CLOSED" ? "مغلق" : s === "OPEN" ? "مفتوح" : "لا يوجد";
         return (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <KpiCard label="╪º┘ä┘à╪¡╪╡┘æ┘ä" value={fmt(d.totals.totalCollected)} color="text-green-600 dark:text-green-400" />
-              <KpiCard label="╪º┘ä╪«╪╡┘ê┘à╪º╪¬" value={fmt(d.totals.discounts)} color="text-orange-600 dark:text-orange-400" />
-              <KpiCard label="╪º┘ä╪º╪│╪¬╪▒╪»╪º╪»╪º╪¬" value={fmt(d.totals.paybacks)} color="text-red-600 dark:text-red-400" />
-              <KpiCard label="╪º┘ä╪╡╪º┘ü┘è" value={fmt(d.totals.netCollected)} color="text-blue-600 dark:text-blue-400" />
+              <KpiCard label="المحصّل" value={fmt(d.totals.totalCollected)} color="text-green-600 dark:text-green-400" />
+              <KpiCard label="الخصومات" value={fmt(d.totals.discounts)} color="text-orange-600 dark:text-orange-400" />
+              <KpiCard label="الاستردادات" value={fmt(d.totals.paybacks)} color="text-red-600 dark:text-red-400" />
+              <KpiCard label="الصافي" value={fmt(d.totals.netCollected)} color="text-blue-600 dark:text-blue-400" />
             </div>
             {d.rows.length === 0 ? <Empty /> : (
-              <DataTable headers={["╪º┘ä╪¬╪º╪▒┘è╪«", "╪º┘ä┘â╪º╪┤┘è╪▒", "╪º┘ä╪╖╪▒┘é", "╪º┘ä┘à╪¡╪╡┘æ┘ä", "╪º┘ä╪╣┘à┘ä┘è╪º╪¬", "╪«╪╡┘à", "╪º╪│╪¬╪▒╪»╪º╪»", "╪º┘ä╪╡╪º┘ü┘è", "╪º┘ä╪▒╪╡┘è╪» ╪º┘ä╪º┘ü╪¬╪¬╪º╪¡┘è", "╪º┘ä╪▒╪╡┘è╪» ╪º┘ä╪«╪¬╪º┘à┘è", "╪º┘ä┘ê╪▒╪»┘è╪⌐"]}>
+              <DataTable headers={["التاريخ", "الكاشير", "الطرق", "المحصّل", "العمليات", "خصم", "استرداد", "الصافي", "الرصيد الافتتاحي", "الرصيد الختامي", "الوردية"]}>
                 {d.rows.map(r => (
                   <tr key={`${r.date}-${r.cashierName}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className={tdCls}>{r.date}</td>
                     <td className={tdCls}>{r.cashierName}</td>
                     <td className={tdCls}>
-                      {r.byMethod.length === 0 ? "ΓÇö" : r.byMethod.map((m, i) => (
+                      {r.byMethod.length === 0 ? "—" : r.byMethod.map((m, i) => (
                         <span key={i} className="inline-block mx-0.5 px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700">
                           {PAYMENT_METHOD_LABEL[m.method] || m.method}: {fmt(m.amount)} ({m.count})
                         </span>
@@ -432,7 +432,7 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
                     <td className={tdCls}>{fmt(r.paybacks)}</td>
                     <td className={tdCls}>{fmt(r.netCollected)}</td>
                     <td className={tdCls}>{fmt(r.openingBalance)}</td>
-                    <td className={tdCls}>{r.closingBalance != null ? fmt(r.closingBalance) : "ΓÇö"}</td>
+                    <td className={tdCls}>{r.closingBalance != null ? fmt(r.closingBalance) : "—"}</td>
                     <td className={tdCls}>{shiftLabel(r.shiftStatus)}</td>
                   </tr>
                 ))}

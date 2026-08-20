@@ -144,6 +144,9 @@ export const useInboxConversations = () => {
   // Track current tab for pagination to work correctly
   const currentTabRef = useRef<string>("all");
 
+  // Track the last channel filter so "load more" pagination respects it.
+  const lastChannelRef = useRef<string | undefined>(undefined);
+
   const currentConversationIdRef = useRef<string | null>(null);
 
   // Store counts from API
@@ -169,6 +172,8 @@ export const useInboxConversations = () => {
           currentTabRef.current = tab; // Update current tab
         }
         setError(null);
+
+        if (channel) lastChannelRef.current = channel;
 
         const response = await apiClient.get(`conversations`, {
           params: {
@@ -305,7 +310,7 @@ export const useInboxConversations = () => {
   // Load more conversations - now uses currentTabRef to ensure correct pagination
   const loadMoreConversations = useCallback(() => {
     if (hasMoreConversations && !loading) {
-      loadConversations(conversationsPage + 1, true, currentTabRef.current);
+      loadConversations(conversationsPage + 1, true, currentTabRef.current, undefined, lastChannelRef.current);
     }
   }, [hasMoreConversations, loading, conversationsPage, loadConversations]);
 

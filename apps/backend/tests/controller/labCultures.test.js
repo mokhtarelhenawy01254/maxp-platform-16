@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -64,8 +64,8 @@ describe('labCulturesController', () => {
     test('returns paginated cultures with active counts ordered by name asc', async () => {
       const prisma = createMockPrisma();
       prisma.labCulture.findMany.mockResolvedValue([
-        { id: 'c1', name: '╪▓╪▒╪º╪╣╪⌐ ╪¿┘ê┘ä', category: '┘à┘è┘â╪▒┘ê╪¿┘è┘ê┘ä┘ê╪¼┘è╪º', sampleType: '╪¿┘ê┘ä', price: 150, isActive: true, _count: { organisms: 2, antibiotics: 3 } },
-        { id: 'c2', name: '╪▓╪▒╪º╪╣╪⌐ ╪»┘à', category: '┘à┘è┘â╪▒┘ê╪¿┘è┘ê┘ä┘ê╪¼┘è╪º', sampleType: '╪»┘à ┘ê╪▒┘è╪»┘è', price: 200, isActive: true, _count: { organisms: 0, antibiotics: 0 } }
+        { id: 'c1', name: 'زراعة بول', category: 'ميكروبيولوجيا', sampleType: 'بول', price: 150, isActive: true, _count: { organisms: 2, antibiotics: 3 } },
+        { id: 'c2', name: 'زراعة دم', category: 'ميكروبيولوجيا', sampleType: 'دم وريدي', price: 200, isActive: true, _count: { organisms: 0, antibiotics: 0 } }
       ]);
       prisma.labCulture.count.mockResolvedValue(9);
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -103,18 +103,18 @@ describe('labCulturesController', () => {
 
       const res = createResponse();
       await controller.getAllCultures(
-        { user: { companyId: 'c1' }, query: { search: '╪¿┘ê┘ä', category: '┘à┘è┘â╪▒┘ê╪¿┘è┘ê┘ä┘ê╪¼┘è╪º', page: '2', limit: '10' } },
+        { user: { companyId: 'c1' }, query: { search: 'بول', category: 'ميكروبيولوجيا', page: '2', limit: '10' } },
         res
       );
 
       const expectedWhere = {
         companyId: 'c1',
         isActive: true,
-        category: '┘à┘è┘â╪▒┘ê╪¿┘è┘ê┘ä┘ê╪¼┘è╪º',
+        category: 'ميكروبيولوجيا',
         OR: [
-          { name: { contains: '╪¿┘ê┘ä', mode: 'insensitive' } },
-          { category: { contains: '╪¿┘ê┘ä', mode: 'insensitive' } },
-          { sampleType: { contains: '╪¿┘ê┘ä', mode: 'insensitive' } }
+          { name: { contains: 'بول', mode: 'insensitive' } },
+          { category: { contains: 'بول', mode: 'insensitive' } },
+          { sampleType: { contains: 'بول', mode: 'insensitive' } }
         ]
       };
       expect(prisma.labCulture.findMany).toHaveBeenCalledWith({
@@ -161,12 +161,12 @@ describe('labCulturesController', () => {
       prisma.labCulture.findFirst.mockResolvedValue({
         id: 'c1',
         companyId: 'c1',
-        name: '╪▓╪▒╪º╪╣╪⌐ ╪¿┘ê┘ä',
+        name: 'زراعة بول',
         organisms: [
-          { id: 'o1', name: '╪Ñ┘è ┘â┘ê┘ä╪º┘è', sortOrder: 0 },
-          { id: 'o2', name: '┘à┘â┘ê╪▒╪º╪¬ ╪╣┘å┘é┘ê╪»┘è╪⌐', sortOrder: 1 }
+          { id: 'o1', name: 'إي كولاي', sortOrder: 0 },
+          { id: 'o2', name: 'مكورات عنقودية', sortOrder: 1 }
         ],
-        antibiotics: [{ id: 'a1', name: '╪ú┘à┘ê┘â╪│┘è╪│┘è┘ä┘è┘å', sortOrder: 0 }]
+        antibiotics: [{ id: 'a1', name: 'أموكسيسيلين', sortOrder: 0 }]
       });
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -210,10 +210,10 @@ describe('labCulturesController', () => {
       prisma.labCulture.create.mockResolvedValue({
         id: 'c-new',
         companyId: 'c1',
-        name: '╪▓╪▒╪º╪╣╪⌐ ╪¿┘ê┘ä',
+        name: 'زراعة بول',
         price: 150,
-        organisms: [{ id: 'o1', name: '╪Ñ┘è ┘â┘ê┘ä╪º┘è', sortOrder: 0 }],
-        antibiotics: [{ id: 'a1', name: '╪ú┘à┘ê┘â╪│┘è╪│┘è┘ä┘è┘å', sortOrder: 2 }]
+        organisms: [{ id: 'o1', name: 'إي كولاي', sortOrder: 0 }],
+        antibiotics: [{ id: 'a1', name: 'أموكسيسيلين', sortOrder: 2 }]
       });
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -221,12 +221,12 @@ describe('labCulturesController', () => {
       await controller.createCulture({
         user: { companyId: 'c1' },
         body: {
-          name: '╪▓╪▒╪º╪╣╪⌐ ╪¿┘ê┘ä',
-          category: '┘à┘è┘â╪▒┘ê╪¿┘è┘ê┘ä┘ê╪¼┘è╪º',
-          sampleType: '╪¿┘ê┘ä',
+          name: 'زراعة بول',
+          category: 'ميكروبيولوجيا',
+          sampleType: 'بول',
           price: '150',
-          organisms: [{ name: '╪Ñ┘è ┘â┘ê┘ä╪º┘è' }, { name: '┘à┘â┘ê╪▒╪º╪¬ ╪╣┘å┘é┘ê╪»┘è╪⌐' }],
-          antibiotics: [{ name: '╪ú┘à┘ê┘â╪│┘è╪│┘è┘ä┘è┘å', sortOrder: 2 }, { name: '╪│┘è┘ü╪¬╪▒┘è╪º┘â╪│┘ê┘å' }]
+          organisms: [{ name: 'إي كولاي' }, { name: 'مكورات عنقودية' }],
+          antibiotics: [{ name: 'أموكسيسيلين', sortOrder: 2 }, { name: 'سيفترياكسون' }]
         }
       }, res);
 
@@ -234,20 +234,20 @@ describe('labCulturesController', () => {
       expect(prisma.labCulture.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
           companyId: 'c1',
-          name: '╪▓╪▒╪º╪╣╪⌐ ╪¿┘ê┘ä',
-          category: '┘à┘è┘â╪▒┘ê╪¿┘è┘ê┘ä┘ê╪¼┘è╪º',
-          sampleType: '╪¿┘ê┘ä',
+          name: 'زراعة بول',
+          category: 'ميكروبيولوجيا',
+          sampleType: 'بول',
           price: 150,
           organisms: {
             create: [
-              expect.objectContaining({ companyId: 'c1', name: '╪Ñ┘è ┘â┘ê┘ä╪º┘è', sortOrder: 0 }),
-              expect.objectContaining({ companyId: 'c1', name: '┘à┘â┘ê╪▒╪º╪¬ ╪╣┘å┘é┘ê╪»┘è╪⌐', sortOrder: 1 })
+              expect.objectContaining({ companyId: 'c1', name: 'إي كولاي', sortOrder: 0 }),
+              expect.objectContaining({ companyId: 'c1', name: 'مكورات عنقودية', sortOrder: 1 })
             ]
           },
           antibiotics: {
             create: [
-              expect.objectContaining({ companyId: 'c1', name: '╪ú┘à┘ê┘â╪│┘è╪│┘è┘ä┘è┘å', sortOrder: 2 }),
-              expect.objectContaining({ companyId: 'c1', name: '╪│┘è┘ü╪¬╪▒┘è╪º┘â╪│┘ê┘å', sortOrder: 1 })
+              expect.objectContaining({ companyId: 'c1', name: 'أموكسيسيلين', sortOrder: 2 }),
+              expect.objectContaining({ companyId: 'c1', name: 'سيفترياكسون', sortOrder: 1 })
             ]
           }
         })
@@ -259,7 +259,7 @@ describe('labCulturesController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createCulture({ user: { companyId: 'c1' }, body: { name: '┘à╪▓╪▒╪╣╪⌐', price: -5 } }, res);
+      await controller.createCulture({ user: { companyId: 'c1' }, body: { name: 'مزرعة', price: -5 } }, res);
       expect(res.statusCode).toBe(400);
       expect(res.payload.success).toBe(false);
     });
@@ -271,10 +271,10 @@ describe('labCulturesController', () => {
       const res = createResponse();
       await controller.createCulture({
         user: { companyId: 'c1' },
-        body: { name: '┘à╪▓╪▒╪╣╪⌐', organisms: [{ sortOrder: 0 }] }
+        body: { name: 'مزرعة', organisms: [{ sortOrder: 0 }] }
       }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘â╪º╪ª┘å ╪º┘ä╪»┘é┘è┘é ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم الكائن الدقيق مطلوب');
     });
 
     test('rejects an antibiotic without a name', async () => {
@@ -284,15 +284,15 @@ describe('labCulturesController', () => {
       const res = createResponse();
       await controller.createCulture({
         user: { companyId: 'c1' },
-        body: { name: '┘à╪▓╪▒╪╣╪⌐', antibiotics: [{ sortOrder: 0 }] }
+        body: { name: 'مزرعة', antibiotics: [{ sortOrder: 0 }] }
       }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘à╪╢╪º╪» ╪º┘ä╪¡┘è┘ê┘è ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم المضاد الحيوي مطلوب');
     });
 
     test('returns 403 when companyId is missing', async () => {
       const res = createResponse();
-      await controller.createCulture({ user: {}, body: { name: '┘à╪▓╪▒╪╣╪⌐' } }, res);
+      await controller.createCulture({ user: {}, body: { name: 'مزرعة' } }, res);
       expect(res.statusCode).toBe(403);
       expect(res.payload.success).toBe(false);
     });
@@ -302,8 +302,8 @@ describe('labCulturesController', () => {
     test('updates whitelisted fields and replaces all organisms/antibiotics', async () => {
       const prisma = createMockPrisma();
       prisma.labCulture.findFirst
-        .mockResolvedValueOnce({ id: 'c1', companyId: 'c1', name: '┘é╪»┘è┘à' })
-        .mockResolvedValue({ id: 'c1', companyId: 'c1', name: '┘à╪¡╪»╪½', organisms: [], antibiotics: [] });
+        .mockResolvedValueOnce({ id: 'c1', companyId: 'c1', name: 'قديم' })
+        .mockResolvedValue({ id: 'c1', companyId: 'c1', name: 'محدث', organisms: [], antibiotics: [] });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -311,31 +311,31 @@ describe('labCulturesController', () => {
         user: { companyId: 'c1' },
         params: { id: 'c1' },
         body: {
-          name: '┘à╪¡╪»╪½',
+          name: 'محدث',
           price: 100,
-          organisms: [{ name: '╪¿┘â╪¬┘è╪▒┘è╪º ╪ú' }],
-          antibiotics: [{ name: '┘à╪╢╪º╪» ╪¿' }]
+          organisms: [{ name: 'بكتيريا أ' }],
+          antibiotics: [{ name: 'مضاد ب' }]
         }
       }, res);
 
       expect(prisma.labCultureOrganism.deleteMany).toHaveBeenCalledWith({ where: { cultureId: 'c1' } });
       expect(prisma.labCultureOrganism.createMany).toHaveBeenCalledWith({
-        data: [expect.objectContaining({ companyId: 'c1', cultureId: 'c1', name: '╪¿┘â╪¬┘è╪▒┘è╪º ╪ú', sortOrder: 0 })]
+        data: [expect.objectContaining({ companyId: 'c1', cultureId: 'c1', name: 'بكتيريا أ', sortOrder: 0 })]
       });
       expect(prisma.labCultureAntibiotic.deleteMany).toHaveBeenCalledWith({ where: { cultureId: 'c1' } });
       expect(prisma.labCultureAntibiotic.createMany).toHaveBeenCalledWith({
-        data: [expect.objectContaining({ companyId: 'c1', cultureId: 'c1', name: '┘à╪╢╪º╪» ╪¿', sortOrder: 0 })]
+        data: [expect.objectContaining({ companyId: 'c1', cultureId: 'c1', name: 'مضاد ب', sortOrder: 0 })]
       });
       expect(prisma.labCulture.update).toHaveBeenCalledWith({
         where: { id: 'c1' },
-        data: expect.objectContaining({ name: '┘à╪¡╪»╪½', price: 100 })
+        data: expect.objectContaining({ name: 'محدث', price: 100 })
       });
       expect(res.statusCode).toBe(200);
     });
 
     test('clears all organisms/antibiotics when empty arrays are provided', async () => {
       const prisma = createMockPrisma();
-      prisma.labCulture.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1', name: '┘é╪»┘è┘à' });
+      prisma.labCulture.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1', name: 'قديم' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -374,7 +374,7 @@ describe('labCulturesController', () => {
       expect(res.statusCode).toBe(200);
       expect(prisma.labCulture.findFirst).toHaveBeenCalledWith({ where: { id: 'c1', companyId: 'c1' } });
       expect(prisma.labCulture.update).toHaveBeenCalledWith({ where: { id: 'c1' }, data: { isActive: false } });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä┘à╪▓╪▒╪╣╪⌐');
+      expect(res.payload.message).toBe('تم حذف المزرعة');
     });
 
     test('returns 404 for a culture from another company', async () => {
@@ -393,14 +393,14 @@ describe('labCulturesController', () => {
       const prisma = createMockPrisma();
       prisma.labCulture.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1' });
       prisma.labCultureOrganism.findFirst.mockResolvedValue({ sortOrder: 4 });
-      prisma.labCultureOrganism.create.mockResolvedValue({ id: 'o-new', name: '╪Ñ┘è ┘â┘ê┘ä╪º┘è', sortOrder: 5 });
+      prisma.labCultureOrganism.create.mockResolvedValue({ id: 'o-new', name: 'إي كولاي', sortOrder: 5 });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.addOrganism({
         user: { companyId: 'c1' },
         params: { id: 'c1' },
-        body: { name: '╪Ñ┘è ┘â┘ê┘ä╪º┘è' }
+        body: { name: 'إي كولاي' }
       }, res);
 
       expect(res.statusCode).toBe(200);
@@ -408,7 +408,7 @@ describe('labCulturesController', () => {
         data: expect.objectContaining({
           companyId: 'c1',
           cultureId: 'c1',
-          name: '╪Ñ┘è ┘â┘ê┘ä╪º┘è',
+          name: 'إي كولاي',
           sortOrder: 5
         })
       });
@@ -423,12 +423,12 @@ describe('labCulturesController', () => {
       await controller.addOrganism({
         user: { companyId: 'c1' },
         params: { id: 'c1' },
-        body: { name: '╪¿┘â╪¬┘è╪▒┘è╪º', sortOrder: 7 }
+        body: { name: 'بكتيريا', sortOrder: 7 }
       }, res);
 
       expect(prisma.labCultureOrganism.findFirst).not.toHaveBeenCalled();
       expect(prisma.labCultureOrganism.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ name: '╪¿┘â╪¬┘è╪▒┘è╪º', sortOrder: 7 })
+        data: expect.objectContaining({ name: 'بكتيريا', sortOrder: 7 })
       });
     });
 
@@ -440,7 +440,7 @@ describe('labCulturesController', () => {
       const res = createResponse();
       await controller.addOrganism({ user: { companyId: 'c1' }, params: { id: 'c1' }, body: {} }, res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘â╪º╪ª┘å ╪º┘ä╪»┘é┘è┘é ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم الكائن الدقيق مطلوب');
     });
 
     test('returns 404 when the culture belongs to another company', async () => {
@@ -448,7 +448,7 @@ describe('labCulturesController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.addOrganism({ user: { companyId: 'c1' }, params: { id: 'other' }, body: { name: '╪¿┘â╪¬┘è╪▒┘è╪º' } }, res);
+      await controller.addOrganism({ user: { companyId: 'c1' }, params: { id: 'other' }, body: { name: 'بكتيريا' } }, res);
       expect(res.statusCode).toBe(404);
       expect(res.payload.success).toBe(false);
     });
@@ -458,7 +458,7 @@ describe('labCulturesController', () => {
     test('hard deletes the organism', async () => {
       const prisma = createMockPrisma();
       prisma.labCulture.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1' });
-      prisma.labCultureOrganism.findFirst.mockResolvedValue({ id: 'o1', cultureId: 'c1', companyId: 'c1', name: '╪Ñ┘è ┘â┘ê┘ä╪º┘è' });
+      prisma.labCultureOrganism.findFirst.mockResolvedValue({ id: 'o1', cultureId: 'c1', companyId: 'c1', name: 'إي كولاي' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -472,7 +472,7 @@ describe('labCulturesController', () => {
         where: { id: 'o1', cultureId: 'c1', companyId: 'c1' }
       });
       expect(prisma.labCultureOrganism.delete).toHaveBeenCalledWith({ where: { id: 'o1' } });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä┘â╪º╪ª┘å ╪º┘ä╪»┘é┘è┘é');
+      expect(res.payload.message).toBe('تم حذف الكائن الدقيق');
     });
 
     test('returns 404 when the organism is not found in the company', async () => {
@@ -495,14 +495,14 @@ describe('labCulturesController', () => {
       const prisma = createMockPrisma();
       prisma.labCulture.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1' });
       prisma.labCultureAntibiotic.findFirst.mockResolvedValue({ sortOrder: 2 });
-      prisma.labCultureAntibiotic.create.mockResolvedValue({ id: 'a-new', name: '╪ú┘à┘ê┘â╪│┘è╪│┘è┘ä┘è┘å', sortOrder: 3 });
+      prisma.labCultureAntibiotic.create.mockResolvedValue({ id: 'a-new', name: 'أموكسيسيلين', sortOrder: 3 });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
       await controller.addAntibiotic({
         user: { companyId: 'c1' },
         params: { id: 'c1' },
-        body: { name: '╪ú┘à┘ê┘â╪│┘è╪│┘è┘ä┘è┘å' }
+        body: { name: 'أموكسيسيلين' }
       }, res);
 
       expect(res.statusCode).toBe(200);
@@ -510,7 +510,7 @@ describe('labCulturesController', () => {
         data: expect.objectContaining({
           companyId: 'c1',
           cultureId: 'c1',
-          name: '╪ú┘à┘ê┘â╪│┘è╪│┘è┘ä┘è┘å',
+          name: 'أموكسيسيلين',
           sortOrder: 3
         })
       });
@@ -521,7 +521,7 @@ describe('labCulturesController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.addAntibiotic({ user: { companyId: 'c1' }, params: { id: 'other' }, body: { name: '┘à╪╢╪º╪»' } }, res);
+      await controller.addAntibiotic({ user: { companyId: 'c1' }, params: { id: 'other' }, body: { name: 'مضاد' } }, res);
       expect(res.statusCode).toBe(404);
       expect(res.payload.success).toBe(false);
     });
@@ -531,7 +531,7 @@ describe('labCulturesController', () => {
     test('hard deletes the antibiotic', async () => {
       const prisma = createMockPrisma();
       prisma.labCulture.findFirst.mockResolvedValue({ id: 'c1', companyId: 'c1' });
-      prisma.labCultureAntibiotic.findFirst.mockResolvedValue({ id: 'a1', cultureId: 'c1', companyId: 'c1', name: '╪ú┘à┘ê┘â╪│┘è╪│┘è┘ä┘è┘å' });
+      prisma.labCultureAntibiotic.findFirst.mockResolvedValue({ id: 'a1', cultureId: 'c1', companyId: 'c1', name: 'أموكسيسيلين' });
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -545,7 +545,7 @@ describe('labCulturesController', () => {
         where: { id: 'a1', cultureId: 'c1', companyId: 'c1' }
       });
       expect(prisma.labCultureAntibiotic.delete).toHaveBeenCalledWith({ where: { id: 'a1' } });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä┘à╪╢╪º╪» ╪º┘ä╪¡┘è┘ê┘è');
+      expect(res.payload.message).toBe('تم حذف المضاد الحيوي');
     });
 
     test('returns 404 when the antibiotic is not found in the company', async () => {

@@ -1,0 +1,54 @@
+{
+  "title": "Merchant Operations Summary",
+  "summaryDesc": "Monitoring {{ordersCount}} orders with {{piecesCount}} pieces in preparation",
+  "refresh": "Refresh",
+  "loadError": "Failed to load merchant operations summary",
+  "statCards": {
+    "inShipping": "In Shipping",
+    "delivered": "Delivered",
+    "payable": "Payable",
+    "notCompleted": "Not Completed"
+  },
+  "statSubValues": {
+    "ordersCount": "{{count}} orders",
+    "ordersCount_one": "{{count}} order",
+    "ordersCount_two": "{{count}} orders",
+    "ordersCount_few": "{{count}} orders",
+    "ordersCount_many": "{{count}} orders",
+    "piecesCount": "{{count}} pieces",
+    "piecesCount_one": "{{count}} piece",
+    "piecesCount_two": "{{count}} pieces",
+    "piecesCount_few": "{{count}} pieces",
+    "piecesCount_many": "{{count}} pieces",
+    "piecesAssigned": "{{count}} pieces assigned",
+    "piecesAssigned_one": "{{count}} piece assigned",
+    "piecesAssigned_two": "{{count}} pieces assigned",
+    "piecesAssigned_few": "{{count}} pieces assigned",
+    "piecesAssigned_many": "{{count}} pieces assigned"
+  },
+  "moneyCards": {
+    "expectedForMerchant": "Expected for Merchant",
+    "dueAfterDelivery": "Due After Delivery",
+    "inShippingValue": "In Shipping Value",
+    "shippingCost": "Shipping Cost",
+    "paid": "Paid: {{amount}}",
+    "noPaymentsRecorded": "No payments recorded"
+  },
+  "table": {
+    "order": "Order",
+    "status": "Status",
+    "shipping": "Shipping",
+    "pieces": "Pieces",
+    "expected": "Expected",
+    "due": "Due",
+    "noOrders": "No orders to show",
+    "merchantOrderStatus": "Status: {{status}}",
+    "noShippingCompany": "—"
+  },
+  "statuses": {
+    "PREPARATION": "Preparation",
+    "IN_SHIPPING": "In Shipping",
+    "DELIVERED": "Delivered",
+    "NOT_DELIVERED": "Not Delivered"
+  }
+}

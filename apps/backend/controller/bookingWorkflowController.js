@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getDateStringInTimezone } = require('../utils/dateUtils');
 
 const todayString = () => getDateStringInTimezone(new Date());
@@ -50,21 +50,21 @@ const APPOINTMENT_INCLUDE = {
 };
 
 const validateBookingTransition = (from, to) => {
-  if (!from || !to) return { valid: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' };
-  if (from === to) return { valid: false, error: `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ╪Ñ┘ä┘ë ┘å┘ü╪│ ╪º┘ä╪¡╪º┘ä╪⌐ "${from}"` };
+  if (!from || !to) return { valid: false, error: 'الحالة المطلوبة غير صحيحة' };
+  if (from === to) return { valid: false, error: `لا يمكن الانتقال إلى نفس الحالة "${from}"` };
   const allowed = BOOKING_TRANSITIONS[from];
   if (!Array.isArray(allowed) || !allowed.includes(to)) {
-    return { valid: false, error: `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘à┘å ╪¡╪º┘ä╪⌐ "${from}" ╪Ñ┘ä┘ë "${to}"` };
+    return { valid: false, error: `لا يمكن الانتقال من حالة "${from}" إلى "${to}"` };
   }
   return { valid: true };
 };
 
 const validateReportTransition = (from, to) => {
-  if (!from || !to) return { valid: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' };
-  if (from === to) return { valid: false, error: `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ╪Ñ┘ä┘ë ┘å┘ü╪│ ╪º┘ä╪¡╪º┘ä╪⌐ "${from}"` };
+  if (!from || !to) return { valid: false, error: 'الحالة المطلوبة غير صحيحة' };
+  if (from === to) return { valid: false, error: `لا يمكن الانتقال إلى نفس الحالة "${from}"` };
   const allowed = REPORT_TRANSITIONS[from];
   if (!Array.isArray(allowed) || !allowed.includes(to)) {
-    return { valid: false, error: `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘ü┘è ╪º┘ä╪¬┘é╪º╪▒┘è╪▒ ┘à┘å "${from}" ╪Ñ┘ä┘ë "${to}"` };
+    return { valid: false, error: `لا يمكن الانتقال في التقارير من "${from}" إلى "${to}"` };
   }
   return { valid: true };
 };
@@ -142,22 +142,22 @@ const formatAppointment = (a) => ({
 const updateBookingStatus = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    if (!req.body.status) return res.status(400).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿╪⌐' });
+    if (!req.body.status) return res.status(400).json({ success: false, error: 'الحالة مطلوبة' });
     const status = String(req.body.status).toUpperCase();
 
     const prisma = getSharedPrismaClient();
     const existing = await prisma.appointment.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
     const from = existing.bookingStatus || LEGACY_TO_BOOKING[existing.status] || 'UNCONFIRMED';
     const bookingValidation = validateBookingTransition(from, status);
     if (!bookingValidation.valid) {
       return res.status(400).json({
         success: false,
-        error: bookingValidation.error || `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘à┘å ╪¡╪º┘ä╪⌐ "${from}" ╪Ñ┘ä┘ë "${status}"`,
+        error: bookingValidation.error || `لا يمكن الانتقال من حالة "${from}" إلى "${status}"`,
       });
     }
 
@@ -186,34 +186,34 @@ const updateBookingStatus = async (req, res) => {
       entityType: 'APPOINTMENT',
       entityId: id,
       action: 'UPDATE',
-      description: `╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪¡╪¼╪▓ ╪Ñ┘ä┘ë ${status}`,
+      description: `تغيير حالة الحجز إلى ${status}`,
     });
     res.json({ success: true, data: formatAppointment(appointment) });
   } catch (error) {
     console.error('Error updating booking status:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä┘à┘ê╪╣╪»' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث حالة الموعد' });
   }
 };
 
 const updateReportStatus = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    if (!req.body.status) return res.status(400).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ┘à╪╖┘ä┘ê╪¿╪⌐' });
+    if (!req.body.status) return res.status(400).json({ success: false, error: 'الحالة مطلوبة' });
     const status = String(req.body.status).toUpperCase();
 
     const prisma = getSharedPrismaClient();
     const existing = await prisma.appointment.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
     const from = existing.reportStatus || 'PENDING';
     const reportValidation = validateReportTransition(from, status);
     if (!reportValidation.valid) {
       return res.status(400).json({
         success: false,
-        error: reportValidation.error || `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘ü┘è ╪º┘ä╪¬┘é╪º╪▒┘è╪▒ ┘à┘å "${from}" ╪Ñ┘ä┘ë "${status}"`,
+        error: reportValidation.error || `لا يمكن الانتقال في التقارير من "${from}" إلى "${status}"`,
       });
     }
 
@@ -225,25 +225,25 @@ const updateReportStatus = async (req, res) => {
     res.json({ success: true, data: formatAppointment(appointment) });
   } catch (error) {
     console.error('Error updating report status:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث حالة التقرير' });
   }
 };
 
 const assignDoctor = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { doctorId } = req.body;
-    if (!doctorId) return res.status(400).json({ success: false, error: '┘à╪╣╪▒┘ü ╪º┘ä╪╖╪¿┘è╪¿ ┘à╪╖┘ä┘ê╪¿' });
+    if (!doctorId) return res.status(400).json({ success: false, error: 'معرف الطبيب مطلوب' });
 
     const prisma = getSharedPrismaClient();
     const existing = await prisma.appointment.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
     const doctor = await prisma.bookingDoctor.findFirst({ where: { id: doctorId, companyId } });
-    if (!doctor) return res.status(400).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐' });
+    if (!doctor) return res.status(400).json({ success: false, error: 'الطبيب لا ينتمي لهذه الشركة' });
 
     const appointment = await prisma.appointment.update({
       where: { id },
@@ -253,24 +253,24 @@ const assignDoctor = async (req, res) => {
     res.json({ success: true, data: formatAppointment(appointment) });
   } catch (error) {
     console.error('Error assigning doctor:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪╣┘è┘è┘å ╪º┘ä╪╖╪¿┘è╪¿' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تعيين الطبيب' });
   }
 };
 
 const markDeliveredWithoutReport = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { value } = req.body;
     if (typeof value !== 'boolean') {
-      return res.status(400).json({ success: false, error: '┘é┘è┘à╪⌐ ╪º┘ä╪¡┘é┘ä ┘è╪¼╪¿ ╪ú┘å ╪¬┘â┘ê┘å ╪╡╪¡┘è╪¡╪⌐ ╪ú┘ê ╪«╪º╪╖╪ª╪⌐' });
+      return res.status(400).json({ success: false, error: 'قيمة الحقل يجب أن تكون صحيحة أو خاطئة' });
     }
 
     const prisma = getSharedPrismaClient();
     const existing = await prisma.appointment.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
     const appointment = await prisma.appointment.update({
       where: { id },
@@ -280,24 +280,24 @@ const markDeliveredWithoutReport = async (req, res) => {
     res.json({ success: true, data: formatAppointment(appointment) });
   } catch (error) {
     console.error('Error marking delivered without report:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¬╪│┘ä┘è┘à ╪¿╪»┘ê┘å ╪¬┘é╪▒┘è╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث التسليم بدون تقرير' });
   }
 };
 
 const markResultDelivered = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { value } = req.body;
     if (typeof value !== 'boolean') {
-      return res.status(400).json({ success: false, error: '┘é┘è┘à╪⌐ ╪º┘ä╪¡┘é┘ä ┘è╪¼╪¿ ╪ú┘å ╪¬┘â┘ê┘å ╪╡╪¡┘è╪¡╪⌐ ╪ú┘ê ╪«╪º╪╖╪ª╪⌐' });
+      return res.status(400).json({ success: false, error: 'قيمة الحقل يجب أن تكون صحيحة أو خاطئة' });
     }
 
     const prisma = getSharedPrismaClient();
     const existing = await prisma.appointment.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
     const appointment = await prisma.appointment.update({
       where: { id },
@@ -307,14 +307,14 @@ const markResultDelivered = async (req, res) => {
     res.json({ success: true, data: formatAppointment(appointment) });
   } catch (error) {
     console.error('Error marking result delivered:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¬╪│┘ä┘è┘à ╪º┘ä┘å╪¬┘è╪¼╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث تسليم النتيجة' });
   }
 };
 
 const receptionQueue = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { date, branchId } = req.query;
     const dateStr = date || todayString();
@@ -345,17 +345,17 @@ const receptionQueue = async (req, res) => {
     res.json({ success: true, data: appointments.map(formatAppointment) });
   } catch (error) {
     console.error('Error fetching reception queue:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪╖╪º╪¿┘ê╪▒ ╪º┘ä╪º╪│╪¬┘é╪¿╪º┘ä' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب طابور الاستقبال' });
   }
 };
 
 const doctorWorklist = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { date, doctorId } = req.query;
-    if (!doctorId) return res.status(400).json({ success: false, error: '┘à╪╣╪▒┘ü ╪º┘ä╪╖╪¿┘è╪¿ ┘à╪╖┘ä┘ê╪¿' });
+    if (!doctorId) return res.status(400).json({ success: false, error: 'معرف الطبيب مطلوب' });
     const dateStr = date || todayString();
 
     const appointments = await getSharedPrismaClient().appointment.findMany({
@@ -372,14 +372,14 @@ const doctorWorklist = async (req, res) => {
     res.json({ success: true, data: appointments.map(formatAppointment) });
   } catch (error) {
     console.error('Error fetching doctor worklist:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪╖╪¿┘è╪¿' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب قائمة الطبيب' });
   }
 };
 
 const reportWorklist = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { date } = req.query;
     const dateStr = date || todayString();
@@ -410,7 +410,7 @@ const reportWorklist = async (req, res) => {
     res.json({ success: true, data: appointments.map(formatAppointment) });
   } catch (error) {
     console.error('Error fetching report worklist:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪¬┘é╪º╪▒┘è╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب قائمة التقارير' });
   }
 };
 

@@ -1,6 +1,5 @@
-import { Zap as BoltIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
-;
+import { BoltIcon } from "@heroicons/react/24/outline";
 
 export interface QuickReply {
   id: string;

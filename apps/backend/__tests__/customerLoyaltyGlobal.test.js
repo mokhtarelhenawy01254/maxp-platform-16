@@ -1,8 +1,8 @@
-﻿/**
+/**
  * Regression test: global points & cashback settings
  * Verifies that updating cashback/points settings broadcasts to ALL company
  * programs, and that cashback `status` is applied ONLY to the cashback program
- * (the bug we fixed) ΓÇö not force-flipped onto every other loyalty program.
+ * (the bug we fixed) — not force-flipped onto every other loyalty program.
  */
 
 const mockPrisma = {
@@ -180,7 +180,7 @@ describe('getPointsSettings (global)', () => {
     const res = makeRes();
     await controller.getPointsSettings(req, res);
 
-    // found a non-cashback program on the first try ΓåÆ no fallback query
+    // found a non-cashback program on the first try → no fallback query
     expect(mockPrisma.customerLoyaltyProgram.findFirst).toHaveBeenCalledTimes(1);
     const data = res.json.mock.calls[0][0].data;
     expect(data.pointsPerAmount).toBe(2);

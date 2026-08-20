@@ -1,4 +1,4 @@
-﻿const playwright = require('playwright');
+const playwright = require('playwright');
 
 (async () => {
   const browser = await playwright.chromium.launch({ headless: true });
@@ -13,7 +13,7 @@
   await page.waitForTimeout(2000);
 
   // Fill login form (RTL - check correct selectors)
-  const emailInput = await page.$('input[type="email"], input[name="email"], input[placeholder*="╪¿╪▒┘è╪»"]');
+  const emailInput = await page.$('input[type="email"], input[name="email"], input[placeholder*="بريد"]');
   const passInput = await page.$('input[type="password"], input[name="password"]');
   
   if (!emailInput || !passInput) {

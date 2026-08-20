@@ -1,4 +1,4 @@
-﻿// Lab module - test catalog
+// Lab module - test catalog
 model LabTest {
   id           String   @id @default(cuid())
   companyId    String
@@ -40,7 +40,7 @@ model LabTestParameter {
   @@map("lab_test_parameters")
 }
 
-/// Lab order (patient requisition) ΓÇö reception intake
+/// Lab order (patient requisition) — reception intake
 model LabOrder {
   id             String    @id @default(cuid())
   companyId      String

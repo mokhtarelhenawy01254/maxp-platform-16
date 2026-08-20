@@ -1,4 +1,4 @@
-﻿import { ChevronRight, ChevronLeft, CalendarDays } from "lucide-react";
+import { ChevronRight, ChevronLeft, CalendarDays } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export type ViewMode = "list" | "day" | "week" | "month";
@@ -69,7 +69,7 @@ export default function ScheduleCalendar(props: {
           <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">{list.length ? `${list.length} ${t("radiology.scheduleCalendar.bookings")}` : ""}</div>
         ) : (
           <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
-            {list.length === 0 ? <div className="text-xs text-gray-400">ΓÇö</div> : list.map(a => (
+            {list.length === 0 ? <div className="text-xs text-gray-400">—</div> : list.map(a => (
               <button
                 key={a.id}
                 type="button"
@@ -78,8 +78,8 @@ export default function ScheduleCalendar(props: {
                 aria-label={a.patientName}
                 className={`text-[11px] px-1.5 py-0.5 rounded ${statusCls(a.status)} flex items-center justify-between w-full text-left ${onOpenAppointment ? "cursor-pointer hover:opacity-80" : ""}`}
               >
-                <span className="truncate">{a.patientName}{a.emergency ? " ΓÜí" : ""}</span>
-                <span className="whitespace-nowrap" dir="ltr">{a.appointmentTime || "ΓÇö"}</span>
+                <span className="truncate">{a.patientName}{a.emergency ? " ⚡" : ""}</span>
+                <span className="whitespace-nowrap" dir="ltr">{a.appointmentTime || "—"}</span>
               </button>
             ))}
           </div>
@@ -114,7 +114,7 @@ export default function ScheduleCalendar(props: {
               aria-label={`${t("radiology.scheduleCalendar.booking")} ${a.patientName}`}
               className={`flex items-center gap-3 px-4 py-3 text-sm w-full ${onOpenAppointment ? "cursor-pointer hover:opacity-80" : ""}`}
             >
-              <span className="font-mono whitespace-nowrap text-gray-500 dark:text-gray-400" dir="ltr">{a.appointmentTime || "ΓÇö"}</span>
+              <span className="font-mono whitespace-nowrap text-gray-500 dark:text-gray-400" dir="ltr">{a.appointmentTime || "—"}</span>
               <span className={`px-2 py-0.5 rounded-full text-xs ${statusCls(a.status)}`}>{a.status === "SCHEDULED" ? t("radiology.scheduleCalendar.scheduled") : a.status === "CHECKED_IN" ? t("radiology.scheduleCalendar.checkedIn") : a.status === "DONE" ? t("radiology.scheduleCalendar.done") : t("radiology.scheduleCalendar.cancelled")}</span>
               <span className="font-medium">{a.patientName}{a.emergency ? <span className="mr-1 text-xs text-red-500">{t("radiology.scheduleCalendar.emergency")}</span> : null}</span>
               <span className="text-gray-500 dark:text-gray-400 flex-1 truncate">{a.examTypeName || ""}{a.deviceName ? ` (${a.deviceName})` : ""}{a.additionAmount ? ` (+${Number(a.additionAmount).toFixed(0)}${t("radiology.currency")})` : ""}</span>
@@ -128,7 +128,7 @@ export default function ScheduleCalendar(props: {
   if (view === "week") {
     const start = egyptWeekStart(anchor);
     const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-    const weekLabel = `${fmtLabel(start)} ΓÇö ${fmtLabel(addDays(start, 6))}`;
+    const weekLabel = `${fmtLabel(start)} — ${fmtLabel(addDays(start, 6))}`;
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">

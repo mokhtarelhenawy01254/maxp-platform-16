@@ -1,8 +1,8 @@
-﻿/**
+/**
  * Single source of truth for "where does the user land after login / register".
  *
  * Precedence:
- *   1. session resume path (state.from ΓÇö freshest intent, validated)
+ *   1. session resume path (state.from — freshest intent, validated)
  *   2. last app page visited before logout (validated)
  *   3. saved default page (user.settings.defaultPage, then localStorage)
  *   4. role-based fallback
@@ -87,7 +87,7 @@ export const saveLastPath = (
   try {
     localStorage.setItem(getLastPathKey(user), pathname);
   } catch {
-    // storage unavailable ΓÇö ignore
+    // storage unavailable — ignore
   }
 };
 
@@ -125,7 +125,7 @@ export const resolvePostAuthDestination = (
   user?: PostAuthUser | null,
   stateFromPath?: string | null,
 ): string => {
-  // 1) Session resume (freshest intent ΓÇö redirected from a protected page).
+  // 1) Session resume (freshest intent — redirected from a protected page).
   if (stateFromPath && isResumePathAllowed(stateFromPath, user)) {
     return stateFromPath;
   }

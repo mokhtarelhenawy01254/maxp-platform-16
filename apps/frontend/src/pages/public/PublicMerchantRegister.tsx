@@ -7,6 +7,7 @@ import {
   isLocalLikeDomain,
 } from "../../utils/storeUrl";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
 
 interface ApiSuccess<T> {
@@ -62,7 +63,7 @@ const PublicMerchantRegister: React.FC = () => {
     e.preventDefault();
 
     if (requiresCompanyIdentifier && !companyIdentifier.trim()) {
-      toast.error("أدخل رابط الشركة أو الـ slug الخاص بها أولاً");
+      tToast.error("PublicMerchantRegister.msg_79bb");
       return;
     }
 
@@ -85,7 +86,7 @@ const PublicMerchantRegister: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم إنشاء حساب التاجر بنجاح! يمكنك تسجيل الدخول بعد تفعيل الشركة لحسابك");
+        tToast.success("PublicMerchantRegister.success_create_account_4e42");
         trackPlatformSiteCompleteRegistration("merchant_public_register", {
           destination: "pending-review",
           subdomain: subdomain || "root",

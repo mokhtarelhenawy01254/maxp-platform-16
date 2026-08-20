@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import InvoiceModal from "../InvoiceModal";
@@ -12,7 +12,7 @@ jest.mock("../../../../utils/tokenManager", () => ({
 jest.mock("sonner", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
 const patient: BookingPatient = {
-  id: "p1", firstName: "╪ú╪¡┘à╪»", lastName: "", phone: "01000000001", gender: "male", isActive: true, createdAt: "2024-01-01",
+  id: "p1", firstName: "أحمد", lastName: "", phone: "01000000001", gender: "male", isActive: true, createdAt: "2024-01-01",
 };
 
 afterEach(() => { jest.clearAllMocks(); cleanup(); });
@@ -34,7 +34,7 @@ describe("InvoiceModal", () => {
       <InvoiceModal invoice={{}} patients={[patient]} onClose={onClose} onSave={onSave} />
     );
     await fillValidForm(user, container);
-    const saveBtn = screen.getByText("╪¡┘ü╪╕");
+    const saveBtn = screen.getByText("حفظ");
     await user.click(saveBtn);
     await user.click(saveBtn);
     expect(onSave).toHaveBeenCalledTimes(1);
@@ -48,21 +48,21 @@ describe("InvoiceModal", () => {
       <InvoiceModal invoice={{}} patients={[patient]} onClose={jest.fn()} onSave={onSave} />
     );
     await fillValidForm(user, container);
-    const saveBtn = screen.getByText("╪¡┘ü╪╕");
+    const saveBtn = screen.getByText("حفظ");
     await user.click(saveBtn);
     expect(saveBtn).toBeDisabled();
   });
 
   test("onSave rejection keeps the modal open and shows an error toast", async () => {
     const user = userEvent.setup();
-    const onSave = jest.fn(() => Promise.reject(new Error("┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐")));
+    const onSave = jest.fn(() => Promise.reject(new Error("فشل حفظ الفاتورة")));
     const onClose = jest.fn();
     const { container } = render(
       <InvoiceModal invoice={{}} patients={[patient]} onClose={onClose} onSave={onSave} />
     );
     await fillValidForm(user, container);
-    await user.click(screen.getByText("╪¡┘ü╪╕"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐"));
+    await user.click(screen.getByText("حفظ"));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("فشل حفظ الفاتورة"));
     expect(onClose).not.toHaveBeenCalled();
   });
 });

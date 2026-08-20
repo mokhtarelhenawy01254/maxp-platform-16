@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const XLSX = require('xlsx');
@@ -33,22 +33,22 @@ router.get('/template', verifyToken.authenticateToken, verifyToken.requireRole(S
     res.setHeader('Content-Disposition', 'attachment; filename="bulk-status-template.xlsx"');
     res.send(buf);
   } catch (error) {
-    console.error('Γ¥î [BULK-STATUS] Error generating template:', error);
-    res.status(500).json({ success: false, message: '╪¬╪╣╪░╪▒ ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º┘ä╪¿' });
+    console.error('❌ [BULK-STATUS] Error generating template:', error);
+    res.status(500).json({ success: false, message: 'تعذر إنشاء القالب' });
   }
 });
 
 router.post('/', verifyToken.authenticateToken, verifyToken.requireRole(STATUS_ROLES), upload.single('file'), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à┘ü┘é┘ê╪»' });
-    if (!req.file) return res.status(400).json({ success: false, message: '╪º┘ä┘à┘ä┘ü ┘à╪╖┘ä┘ê╪¿' });
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    if (!req.file) return res.status(400).json({ success: false, message: 'الملف مطلوب' });
 
     const records = readSheetRows(req.file.buffer);
-    if (!records) return res.status(400).json({ success: false, message: '╪¬╪╣╪░╪▒ ┘é╪▒╪º╪í╪⌐ ╪º┘ä┘à┘ä┘ü╪î ╪º╪│╪¬╪«╪»┘à ┘é╪º┘ä╪¿ Excel ╪ú┘ê CSV' });
-    if (records.length === 0) return res.status(400).json({ success: false, message: '╪º┘ä┘à┘ä┘ü ┘ü╪º╪▒╪║' });
+    if (!records) return res.status(400).json({ success: false, message: 'تعذر قراءة الملف، استخدم قالب Excel أو CSV' });
+    if (records.length === 0) return res.status(400).json({ success: false, message: 'الملف فارغ' });
     if (records.length > MAX_ROWS) {
-      return res.status(400).json({ success: false, message: `╪º┘ä╪¡╪» ╪º┘ä╪ú┘é╪╡┘ë ${MAX_ROWS} ╪╡┘ü ┘ä┘â┘ä ┘à┘ä┘ü` });
+      return res.status(400).json({ success: false, message: `الحد الأقصى ${MAX_ROWS} صف لكل ملف` });
     }
 
     const userId = req.user?.id;
@@ -56,19 +56,19 @@ router.post('/', verifyToken.authenticateToken, verifyToken.requireRole(STATUS_R
 
     const results = [];
     for (const row of records) {
-      const orderNumber = String(row.orderNumber || row['╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿'] || row['order_number'] || '').trim();
-      const status = String(row.status || row['╪º┘ä╪¡╪º┘ä╪⌐'] || '').trim().toUpperCase();
+      const orderNumber = String(row.orderNumber || row['رقم الطلب'] || row['order_number'] || '').trim();
+      const status = String(row.status || row['الحالة'] || '').trim().toUpperCase();
 
       if (!orderNumber || !status) {
-        results.push({ orderNumber, status, success: false, message: '╪¿┘è╪º┘å╪º╪¬ ┘å╪º┘é╪╡╪⌐ (╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿ ╪ú┘ê ╪º┘ä╪¡╪º┘ä╪⌐)' });
+        results.push({ orderNumber, status, success: false, message: 'بيانات ناقصة (رقم الطلب أو الحالة)' });
         continue;
       }
 
       try {
-        await orderService.updateOrderStatus(orderNumber, companyId, status, '╪¬╪¡╪»┘è╪½ ╪¼┘à╪º╪╣┘è ┘à┘å ┘à┘ä┘ü Excel', userId, userName);
+        await orderService.updateOrderStatus(orderNumber, companyId, status, 'تحديث جماعي من ملف Excel', userId, userName);
         results.push({ orderNumber, status, success: true });
       } catch (error) {
-        results.push({ orderNumber, status, success: false, message: error.message || '┘ü╪┤┘ä ╪º┘ä╪¬╪¡╪»┘è╪½' });
+        results.push({ orderNumber, status, success: false, message: error.message || 'فشل التحديث' });
       }
     }
 
@@ -80,8 +80,8 @@ router.post('/', verifyToken.authenticateToken, verifyToken.requireRole(STATUS_R
 
     res.json({ success: true, data: { summary, results } });
   } catch (error) {
-    console.error('Γ¥î [BULK-STATUS] Error processing upload:', error);
-    res.status(500).json({ success: false, message: error.message || '╪¬╪╣╪░╪▒ ┘à╪╣╪º┘ä╪¼╪⌐ ╪º┘ä┘à┘ä┘ü' });
+    console.error('❌ [BULK-STATUS] Error processing upload:', error);
+    res.status(500).json({ success: false, message: error.message || 'تعذر معالجة الملف' });
   }
 });
 

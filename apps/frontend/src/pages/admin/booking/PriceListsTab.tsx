@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PlusIcon, PencilIcon, TrashIcon, X as XMarkIcon, FileText as DocumentTextIcon } from "lucide-react";
 import { api, fetchJson, getAuthHeaders, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, PriceList, BookingService } from "./shared";
 
@@ -71,7 +71,7 @@ export default function PriceListsTab() {
         await loadLists();
         await loadServices();
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡┘à┘è┘ä ┘é┘ê╪º╪ª┘à ╪º┘ä╪ú╪│╪╣╪º╪▒");
+        setError(e instanceof Error ? e.message : "حدث خطأ في تحميل قوائم الأسعار");
       } finally {
         setLoading(false);
       }
@@ -86,7 +86,7 @@ export default function PriceListsTab() {
   const mutate = async (url: string, method: string, body?: Record<string, unknown>) => {
     const res = await fetch(url, { method, headers: getAuthHeaders(), body: body ? JSON.stringify(body) : undefined });
     const data = await res.json();
-    if (!data.success) throw new Error(data.error || data.message || "┘ü╪┤┘ä╪¬ ╪º┘ä╪╣┘à┘ä┘è╪⌐");
+    if (!data.success) throw new Error(data.error || data.message || "فشلت العملية");
     return data.data;
   };
 
@@ -112,27 +112,27 @@ export default function PriceListsTab() {
       setListModal(null);
       await loadLists();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡┘ü╪╕ ╪º┘ä┘é╪º╪ª┘à╪⌐");
+      setError(e instanceof Error ? e.message : "حدث خطأ في حفظ القائمة");
     } finally {
       setSaving(false);
     }
   };
 
   const deleteList = async (l: PriceListRow) => {
-    if (!window.confirm(`╪¬╪ú┘â┘è╪» ╪¡╪░┘ü ╪º┘ä┘é╪º╪ª┘à╪⌐ "${l.name}"╪ƒ`)) return;
+    if (!window.confirm(`تأكيد حذف القائمة "${l.name}"؟`)) return;
     try {
       await mutate(api(`price-lists/${l.id}`), "DELETE");
       if (selectedId === l.id) setSelectedId("");
       await loadLists();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘é╪º╪ª┘à╪⌐");
+      setError(e instanceof Error ? e.message : "حدث خطأ في حذف القائمة");
     }
   };
 
   const saveOverride = async () => {
     if (!selected || selectedIsBase || !overrideServiceId) return;
     const price = Number(overridePrice);
-    if (Number.isNaN(price) || price < 0) { setError("╪º┘ä╪│╪╣╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡"); return; }
+    if (Number.isNaN(price) || price < 0) { setError("السعر غير صحيح"); return; }
     setOverrideSaving(true);
     try {
       await mutate(api(`price-lists/${selected.id}/items/${overrideServiceId}`), "PUT", { price });
@@ -141,7 +141,7 @@ export default function PriceListsTab() {
       await loadItems(selected.id);
       await loadLists();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡┘ü╪╕ ╪º┘ä╪│╪╣╪▒");
+      setError(e instanceof Error ? e.message : "حدث خطأ في حفظ السعر");
     } finally {
       setOverrideSaving(false);
     }
@@ -154,7 +154,7 @@ export default function PriceListsTab() {
       await loadItems(selected.id);
       await loadLists();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ╪▓╪º┘ä╪⌐ ╪º┘ä╪│╪╣╪▒");
+      setError(e instanceof Error ? e.message : "حدث خطأ في إزالة السعر");
     }
   };
 
@@ -172,17 +172,17 @@ export default function PriceListsTab() {
   const overrideOptions = useMemo(() => services.filter(s => !itemMap.has(s.id)), [services, itemMap]);
 
   if (loading) {
-    return <div className="text-center py-16 text-gray-400 dark:text-gray-500">╪¼╪º╪▒┘ì ╪º┘ä╪¬╪¡┘à┘è┘ä...</div>;
+    return <div className="text-center py-16 text-gray-400 dark:text-gray-500">جارٍ التحميل...</div>;
   }
 
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <div>
-          <h2 className="text-xl font-bold">┘é┘ê╪º╪ª┘à ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪º┘ä╪¬╪╣╪º┘é╪»┘è╪⌐</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">╪ú╪│╪╣╪º╪▒ ╪¬╪╣╪º┘é╪»┘è╪⌐ ┘ä┘â┘ä ╪╣┘à┘è┘ä ╪ú┘ê ╪¼┘ç╪⌐╪î ╪¬┘ê╪▒╪½ ┘à┘å ╪º┘ä┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐</p>
+          <h2 className="text-xl font-bold">قوائم الأسعار التعاقدية</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">أسعار تعاقدية لكل عميل أو جهة، تورث من القائمة الأساسية</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />┘é╪º╪ª┘à╪⌐ ╪¼╪»┘è╪»╪⌐</button>
+        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />قائمة جديدة</button>
       </div>
 
       {error && (
@@ -194,7 +194,7 @@ export default function PriceListsTab() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-2">
-          {lists.length === 0 && <p className="text-gray-400 dark:text-gray-500 text-center py-8 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">┘ä╪º ╪¬┘ê╪¼╪» ┘é┘ê╪º╪ª┘à ╪ú╪│╪╣╪º╪▒ ╪¿╪╣╪»</p>}
+          {lists.length === 0 && <p className="text-gray-400 dark:text-gray-500 text-center py-8 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">لا توجد قوائم أسعار بعد</p>}
           {lists.map(l => (
             <div
               key={l.id}
@@ -204,16 +204,16 @@ export default function PriceListsTab() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-bold truncate">{l.name}</h3>
-                  {l.isBase && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 whitespace-nowrap">╪ú╪│╪º╪│┘è╪⌐</span>}
-                  {!l.isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap">┘à╪╣╪╖┘ä╪⌐</span>}
+                  {l.isBase && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 whitespace-nowrap">أساسية</span>}
+                  {!l.isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap">معطلة</span>}
                 </div>
                 {l.description && <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{l.description}</p>}
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">╪ú╪│╪╣╪º╪▒ ┘à╪«╪╡╪╡╪⌐: {l.itemCount ?? 0}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">أسعار مخصصة: {l.itemCount ?? 0}</p>
               </div>
               <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                <button onClick={() => openEdit(l)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title="╪¬╪╣╪»┘è┘ä"><PencilIcon className="w-4 h-4" /></button>
+                <button onClick={() => openEdit(l)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
                 {!l.isBase && (
-                  <button onClick={() => deleteList(l)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="╪¡╪░┘ü"><TrashIcon className="w-4 h-4" /></button>
+                  <button onClick={() => deleteList(l)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="حذف"><TrashIcon className="w-4 h-4" /></button>
                 )}
               </div>
             </div>
@@ -224,36 +224,36 @@ export default function PriceListsTab() {
           {!selected ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-12 text-center text-gray-400 dark:text-gray-500">
               <DocumentTextIcon className="w-10 h-10 mx-auto mb-3" />
-              ╪º╪«╪¬╪▒ ┘é╪º╪ª┘à╪⌐ ╪ú╪│╪╣╪º╪▒ ┘ä╪╣╪▒╪╢ ╪¬┘ü╪º╪╡┘è┘ä┘ç╪º
+              اختر قائمة أسعار لعرض تفاصيلها
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b dark:border-gray-700">
                 <div>
                   <h3 className="font-bold">{selected.name}</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{selectedIsBase ? "┘ç╪░┘ç ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘ç┘è ╪º┘ä╪ú╪│╪º╪│╪î ╪¬┘Å╪╖╪¿┘Ä┘æ┘é ╪ú╪│╪╣╪º╪▒ ╪º┘ä╪«╪»┘à╪º╪¬ ┘â┘à╪º ┘ç┘è" : "╪º┘ä╪ú╪│╪╣╪º╪▒ ╪║┘è╪▒ ╪º┘ä┘à╪«╪╡╪╡╪⌐ ╪¬┘ê╪▒╪½ ┘à┘å ╪º┘ä╪│╪╣╪▒ ╪º┘ä╪ú╪│╪º╪│┘è ┘ä┘ä╪«╪»┘à╪⌐"}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{selectedIsBase ? "هذه القائمة هي الأساس، تُطبَّق أسعار الخدمات كما هي" : "الأسعار غير المخصصة تورث من السعر الأساسي للخدمة"}</p>
                 </div>
               </div>
 
               {!selectedIsBase && (
                 <div className="px-4 py-3 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex flex-wrap gap-2 items-end">
                   <div className="flex-1 min-w-[180px]">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">╪º┘ä╪«╪»┘à╪⌐</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">الخدمة</label>
                     <select className={MODAL_INPUT_CLS} value={overrideServiceId} onChange={e => {
                       setOverrideServiceId(e.target.value);
                       const svc = services.find(s => s.id === e.target.value);
                       const existing = svc ? itemMap.get(svc.id) : null;
                       setOverridePrice(existing ? String(existing.price) : (svc?.basePrice != null ? String(svc.basePrice) : ""));
                     }}>
-                      <option value="">╪º╪«╪¬╪▒ ╪«╪»┘à╪⌐...</option>
+                      <option value="">اختر خدمة...</option>
                       {overrideOptions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </div>
                   <div className="w-28">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">╪º┘ä╪│╪╣╪▒ (╪¼.┘à)</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">السعر (ج.م)</label>
                     <input type="number" min={0} className={MODAL_INPUT_CLS} value={overridePrice} onChange={e => setOverridePrice(e.target.value)} placeholder="0" />
                   </div>
-                  <button onClick={saveOverride} disabled={overrideSaving || !overrideServiceId || overridePrice === ""} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">╪¡┘ü╪╕ ╪º┘ä╪│╪╣╪▒</button>
+                  <button onClick={saveOverride} disabled={overrideSaving || !overrideServiceId || overridePrice === ""} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ السعر</button>
                 </div>
               )}
 
@@ -261,36 +261,36 @@ export default function PriceListsTab() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
-                      <th className="text-right py-3 px-4">╪º┘ä╪«╪»┘à╪⌐</th>
-                      <th className="text-right py-3 px-4 whitespace-nowrap">╪º┘ä╪│╪╣╪▒ ╪º┘ä╪ú╪│╪º╪│┘è</th>
-                      <th className="text-right py-3 px-4 whitespace-nowrap">╪º┘ä╪│╪╣╪▒ ╪º┘ä╪¬╪╣╪º┘é╪»┘è</th>
-                      <th className="text-right py-3 px-4 whitespace-nowrap">╪º┘ä╪│╪╣╪▒ ╪º┘ä┘ü╪╣┘ä┘è</th>
-                      {!selectedIsBase && <th className="text-right py-3 px-4">╪Ñ╪¼╪▒╪º╪í</th>}
+                      <th className="text-right py-3 px-4">الخدمة</th>
+                      <th className="text-right py-3 px-4 whitespace-nowrap">السعر الأساسي</th>
+                      <th className="text-right py-3 px-4 whitespace-nowrap">السعر التعاقدي</th>
+                      <th className="text-right py-3 px-4 whitespace-nowrap">السعر الفعلي</th>
+                      {!selectedIsBase && <th className="text-right py-3 px-4">إجراء</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {rows.length === 0 && (
-                      <tr><td colSpan={selectedIsBase ? 4 : 5} className="py-12 text-center text-gray-400 dark:text-gray-500">┘ä╪º ╪¬┘ê╪¼╪» ╪«╪»┘à╪º╪¬</td></tr>
+                      <tr><td colSpan={selectedIsBase ? 4 : 5} className="py-12 text-center text-gray-400 dark:text-gray-500">لا توجد خدمات</td></tr>
                     )}
                     {rows.map(({ service, item, basePrice, effective, overridden }) => (
                       <tr key={service.id} className="border-b dark:border-gray-700 last:border-b-0">
-                        <td className="py-3 px-4 font-medium">{service.name}{service.durationMinutes ? <span className="text-xs text-gray-400 mr-1">({service.durationMinutes} ╪»)</span> : null}</td>
-                        <td className="py-3 px-4 whitespace-nowrap">{basePrice} ╪¼.┘à</td>
+                        <td className="py-3 px-4 font-medium">{service.name}{service.durationMinutes ? <span className="text-xs text-gray-400 mr-1">({service.durationMinutes} د)</span> : null}</td>
+                        <td className="py-3 px-4 whitespace-nowrap">{basePrice} ج.م</td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           {overridden ? (
-                            <span className="text-blue-600 dark:text-blue-400 font-semibold">{item!.price} ╪¼.┘à</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold">{item!.price} ج.م</span>
                           ) : (
-                            <span className="text-gray-400 dark:text-gray-500">ΓÇö</span>
+                            <span className="text-gray-400 dark:text-gray-500">—</span>
                           )}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap font-semibold">
-                          {effective} ╪¼.┘à
-                          {overridden && basePrice !== effective && <span className={`text-xs mr-1 ${effective < basePrice ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>{effective < basePrice ? "╪«╪╡┘à" : "╪▓┘è╪º╪»╪⌐"}</span>}
+                          {effective} ج.م
+                          {overridden && basePrice !== effective && <span className={`text-xs mr-1 ${effective < basePrice ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>{effective < basePrice ? "خصم" : "زيادة"}</span>}
                         </td>
                         {!selectedIsBase && (
                           <td className="py-3 px-4">
                             {overridden && (
-                              <button onClick={() => removeOverride(item!)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50">╪Ñ╪▓╪º┘ä╪⌐</button>
+                              <button onClick={() => removeOverride(item!)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50">إزالة</button>
                             )}
                           </td>
                         )}
@@ -308,23 +308,23 @@ export default function PriceListsTab() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setListModal(null)}>
           <div className={`${MODAL_CONTENT_CLS}`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold">{listModal.id ? "╪¬╪╣╪»┘è┘ä ┘é╪º╪ª┘à╪⌐ ╪ú╪│╪╣╪º╪▒" : "┘é╪º╪ª┘à╪⌐ ╪ú╪│╪╣╪º╪▒ ╪¼╪»┘è╪»╪⌐"}</h3>
+              <h3 className="text-lg font-bold">{listModal.id ? "تعديل قائمة أسعار" : "قائمة أسعار جديدة"}</h3>
               <button onClick={() => setListModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">╪º┘ä╪º╪│┘à</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label>
                 <input className={MODAL_INPUT_CLS} value={listModal.name} onChange={e => setListModal({ ...listModal, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">╪º┘ä┘ê╪╡┘ü</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label>
                 <textarea className={MODAL_INPUT_CLS} rows={2} value={listModal.description} onChange={e => setListModal({ ...listModal, description: e.target.value })} />
               </div>
               {!listModal.id && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">╪º┘ä┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ (╪¬┘Å┘ê╪▒╪½ ┘à┘å┘ç╪º ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪║┘è╪▒ ╪º┘ä┘à╪«╪╡╪╡╪⌐)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القائمة الأساسية (تُورث منها الأسعار غير المخصصة)</label>
                   <select className={MODAL_INPUT_CLS} value={listModal.baseListId} onChange={e => setListModal({ ...listModal, baseListId: e.target.value })}>
-                    <option value="">╪¬┘ä┘é╪º╪ª┘è (╪ú┘ê┘ä ┘é╪º╪ª┘à╪⌐ ╪¬╪╡╪¿╪¡ ╪ú╪│╪º╪│┘è╪⌐)</option>
+                    <option value="">تلقائي (أول قائمة تصبح أساسية)</option>
                     {lists.filter(l => l.isBase && l.isActive).map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
                 </div>
@@ -332,13 +332,13 @@ export default function PriceListsTab() {
               {listModal.id && (
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   <input type="checkbox" checked={listModal.isActive} onChange={e => setListModal({ ...listModal, isActive: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />
-                  ┘à┘ü╪╣┘æ┘ä╪⌐
+                  مفعّلة
                 </label>
               )}
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setListModal(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">╪Ñ┘ä╪║╪º╪í</button>
-              <button onClick={saveList} disabled={saving || !listModal.name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">╪¡┘ü╪╕</button>
+              <button onClick={() => setListModal(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
+              <button onClick={saveList} disabled={saving || !listModal.name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
             </div>
           </div>
         </div>

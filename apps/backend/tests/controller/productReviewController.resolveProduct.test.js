@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   product: {
     findFirst: jest.fn(),
   },
@@ -48,7 +48,7 @@ const buildReq = (productId, overrides = {}) => ({
 
 const seedReviews = () => {
   mockPrisma.productReview.findMany.mockResolvedValue([
-    { id: 'rev-1', rating: 5, comment: '┘à┘à╪¬╪º╪▓', productId: 'prod-1' },
+    { id: 'rev-1', rating: 5, comment: 'ممتاز', productId: 'prod-1' },
   ]);
   mockPrisma.productReview.count.mockResolvedValue(1);
 };
@@ -111,7 +111,7 @@ describe('getProductReviews product resolution', () => {
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      error: '╪º┘ä┘à┘å╪¬╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»',
+      error: 'المنتج غير موجود',
     });
   });
 

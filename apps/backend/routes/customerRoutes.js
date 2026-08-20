@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const customerController = require('../controller/customerController');
 const customerWhatsAppController = require('../controller/customerWhatsAppController');
+const occasionController = require('../controller/occasionController');
 const verifyToken = require("../utils/verifyToken")
 const { requireDbPermission } = require('../middleware/rbacMiddleware');
 
@@ -12,62 +13,62 @@ const { requireDbPermission } = require('../middleware/rbacMiddleware');
 router.get('/ping', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // Sessions
-router.get('/whatsapp-notify/sessions', verifyToken.authenticateToken, customerWhatsAppController.getConnectedWhatsAppSessions);
-router.get('/whatsapp-notify/refresh-sessions', verifyToken.authenticateToken, customerWhatsAppController.refreshSessions);
+router.get('/whatsapp-notify/sessions', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getConnectedWhatsAppSessions);
+router.get('/whatsapp-notify/refresh-sessions', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.refreshSessions);
 
 // Customers & Products (for UI)
-router.get('/whatsapp-notify/customers', verifyToken.authenticateToken, customerWhatsAppController.getCustomersWithPhones);
-router.get('/whatsapp-notify/products', verifyToken.authenticateToken, customerWhatsAppController.getProductsForNotification);
+router.get('/whatsapp-notify/customers', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCustomersWithPhones);
+router.get('/whatsapp-notify/products', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getProductsForNotification);
 
 // Audience preview (count before sending)
-router.get('/whatsapp-notify/preview-audience', verifyToken.authenticateToken, customerWhatsAppController.previewAudience);
-router.get('/whatsapp-notify/preview-birthday-audience', verifyToken.authenticateToken, customerWhatsAppController.previewBirthdayAudience);
+router.get('/whatsapp-notify/preview-audience', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.previewAudience);
+router.get('/whatsapp-notify/preview-birthday-audience', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.previewBirthdayAudience);
 
 // Smart bulk send (filter-based - NEW)
-router.post('/whatsapp-notify/smart-send', verifyToken.authenticateToken, customerWhatsAppController.sendSmartBulkNotification);
-router.post('/whatsapp-notify/smart-send-birthday', verifyToken.authenticateToken, customerWhatsAppController.sendBirthdayBulkNotification);
-
-// 🎂 Birthday Automation & Tracking Endpoints
-router.get('/whatsapp-notify/birthday-analytics', verifyToken.authenticateToken, customerWhatsAppController.getBirthdayAnalyticsReports);
-router.get('/whatsapp-notify/birthday-automation/settings', verifyToken.authenticateToken, customerWhatsAppController.getBirthdayAutomationSettings);
-router.post('/whatsapp-notify/birthday-automation/settings', verifyToken.authenticateToken, customerWhatsAppController.saveBirthdayAutomationSettings);
-router.get('/whatsapp-notify/birthday-automation/today', verifyToken.authenticateToken, customerWhatsAppController.getTodayBirthdayTrack);
-router.get('/whatsapp-notify/birthday-automation/upcoming', verifyToken.authenticateToken, customerWhatsAppController.getUpcomingBirthdaysTrack);
-router.get('/whatsapp-notify/birthday-automation/missing', verifyToken.authenticateToken, customerWhatsAppController.getMissingBirthdaysTrack);
-router.get('/whatsapp-notify/birthday-analytics', verifyToken.authenticateToken, customerWhatsAppController.getBirthdayAnalyticsReports);
-router.get('/whatsapp-notify/occasions', verifyToken.authenticateToken, (req, res) => res.json({ success: true, occasions: [] }));
-router.post('/whatsapp-notify/birthday-automation/send-test', verifyToken.authenticateToken, customerWhatsAppController.sendTestBirthdayMessage);
-
-
-
+router.post('/whatsapp-notify/smart-send', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.sendSmartBulkNotification);
+router.post('/whatsapp-notify/smart-send-birthday', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.sendBirthdayBulkNotification);
 
 // Campaign status tracking
-router.get('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateToken, customerWhatsAppController.getCampaignStatus);
-router.delete('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateToken, customerWhatsAppController.stopCampaign);
+router.get('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCampaignStatus);
+router.delete('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.stopCampaign);
 
 // Campaign history (from DB)
-router.get('/whatsapp-notify/campaigns/history', verifyToken.authenticateToken, customerWhatsAppController.getCampaignHistory);
+router.get('/whatsapp-notify/campaigns/history', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCampaignHistory);
+
+// 🎉 جدولة حملات المناسبات (أوتوماتيك)
+router.post('/whatsapp-notify/occasions/schedule', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.scheduleOccasionCampaign);
+router.get('/whatsapp-notify/occasions/scheduled', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getScheduledOccasionCampaigns);
+
+// 🎉 إدارة المناسبات (إضافة/حذف/تعديل/نشر)
+router.get('/whatsapp-notify/occasions', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.listOccasions);
+router.post('/whatsapp-notify/occasions', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.createOccasion);
+router.put('/whatsapp-notify/occasions/:id', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.updateOccasion);
+router.delete('/whatsapp-notify/occasions/:id', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.deleteOccasion);
+router.post('/whatsapp-notify/occasions/:id/publish', verifyToken.authenticateToken, requireDbPermission('customers.view'), occasionController.publishOccasion);
 
 // Legacy manual send (kept for backward compat)
-router.post('/whatsapp-notify/send', verifyToken.authenticateToken, customerWhatsAppController.sendBulkWhatsAppNotification);
+router.post('/whatsapp-notify/send', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.sendBulkWhatsAppNotification);
 
 // ──────────────────────────────────────────────────
 // 👤 Customer CRUD
 // ──────────────────────────────────────────────────
 router.get('/', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getAllCustomer);
-router.post('/', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.createCustomer); // ✅ إنشاء عميل جديد
+router.post('/', verifyToken.authenticateToken, requireDbPermission('customers.create'), customerController.createCustomer); // ✅ إنشاء عميل جديد
 router.get('/search', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.searchCustomers); // ✅ بحث متقدم
+
+// 🔍 بحث سريع بالرقم (لصفحات الطلب اليدوي والطلب السريع) — لازم قبل /:customerId
+router.get('/by-phone/:phone', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerLookupByPhone);
 router.get('/export', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.exportCustomers); // ✅ تصدير CSV/JSON
 
-router.post('/import', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.importCustomersFromCSV); // 📥 Import customers
+router.post('/import', verifyToken.authenticateToken, requireDbPermission('customers.create'), customerController.importCustomersFromCSV); // 📥 Import customers
 
 // 🔒 Delete routes now secured
-router.delete('/cus', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.deleteAllCustomers);
-router.delete('/con', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.deleteAllConversations);
+router.delete('/cus', verifyToken.authenticateToken, requireDbPermission('customers.delete'), customerController.deleteAllCustomers);
+router.delete('/con', verifyToken.authenticateToken, requireDbPermission('customers.delete'), customerController.deleteAllConversations);
 
 // 🚫 Routes for blocking customers on Facebook pages
-router.post('/block', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.blockCustomerOnPage);
-router.post('/unblock', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.unblockCustomerOnPage);
+router.post('/block', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.blockCustomerOnPage);
+router.post('/unblock', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.unblockCustomerOnPage);
 router.get('/blocked/:pageId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getBlockedCustomersOnPage);
 router.get('/block-status', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.checkCustomerBlockStatus);
 
@@ -75,8 +76,8 @@ router.get('/block-status', verifyToken.authenticateToken, requireDbPermission('
 router.get('/tags/distinct', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getDistinctTags);
 
 // 🏷️ إدارة الوسوم (إعادة تسمية / حذف عبر جميع العملاء)
-router.put('/tags/rename', verifyToken.authenticateToken, requireDbPermission('customers.update'), customerController.renameTag);
-router.delete('/tags/:tagName', verifyToken.authenticateToken, requireDbPermission('customers.update'), customerController.deleteTag);
+router.put('/tags/rename', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.renameTag);
+router.delete('/tags/:tagName', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.deleteTag);
 
 // تفاصيل العميل
 router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerDetails);
@@ -89,16 +90,16 @@ router.get('/:customerId/activity', verifyToken.authenticateToken, requireDbPerm
 
 // 📝 ملاحظات العميل
 router.get('/:customerId/notes', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerNotes);
-router.post('/:customerId/notes', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.addCustomerNote);
-router.delete('/notes/:noteId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.deleteCustomerNote);
+router.post('/:customerId/notes', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.addCustomerNote);
+router.delete('/notes/:noteId', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.deleteCustomerNote);
 
 // 🗑️ حذف عميل محدد
-router.delete('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.deleteCustomer);
+router.delete('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.delete'), customerController.deleteCustomer);
 
 // 🏷️ تحديث علامات العميل
-router.put('/:customerId/tags', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.updateCustomerTags);
+router.put('/:customerId/tags', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.updateCustomerTags);
 
 // ✏️ تحديث بيانات العميل
-router.put('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.updateCustomer);
+router.put('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.updateCustomer);
 
 module.exports = router;

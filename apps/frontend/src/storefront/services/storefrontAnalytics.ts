@@ -3,7 +3,14 @@ import { getCompanyId } from "../../utils/storefrontApi";
 
 type AnalyticsPayload = Record<string, unknown>;
 
-const API_BASE = getApiUrl().replace(/\/$/, "");
+// Lazy memoized getter — never dereference imports at module scope (rollup chunk-hosting TDZ risk).
+let _apiBase: string | null = null;
+const getApiBase = (): string => {
+  if (!_apiBase) {
+    _apiBase = getApiUrl().replace(/\/$/, "");
+  }
+  return _apiBase;
+};
 const SESSION_DURATION_MS = 30 * 60 * 1000;
 
 const readStorage = (
@@ -105,7 +112,7 @@ const postAnalyticsEvent = async (
   }
 
   try {
-    await fetch(`${API_BASE}/analytics/track/${endpoint}`, {
+    await fetch(`${getApiBase()}/analytics/track/${endpoint}`, {
       method: "POST",
       credentials: "include",
       headers: {

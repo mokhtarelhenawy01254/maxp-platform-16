@@ -1,19 +1,71 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { tokenManager } from "../../utils/tokenManager";
+import { useCompanyBranding } from "../../hooks/useCompanyBranding";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
+import TikTokLoginButton from "../../storefront/components/TikTokLoginButton";
 
 const CustomerRegister: React.FC = () => {
   const navigate = useNavigate();
   const params = useParams();
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [step, setStep] = useState<"PHONE" | "OTP">("PHONE");
+
+  // الشركة الحالية (لأغراض عرض الهوية) — من الرابط أو subdomain المتجر
+  const brandingCompanyId = (() => {
+    const fromQuery = new URLSearchParams(window.location.search).get("companyId");
+    const fromPath = typeof params.companyId === "string" ? params.companyId : null;
+    const fromStorage = localStorage.getItem("storefront_companyId");
+    const subdomain = (() => {
+      const host = window.location.hostname.split(".");
+      if (host.length >= 3 && host[0] !== "www") return host[0];
+      return null;
+    })();
+    return (fromQuery || fromPath || fromStorage || subdomain || "").trim() || null;
+  })();
+  const branding = useCompanyBranding(brandingCompanyId);
+
+  // فحص هل الرقم عنده باسورد — حقل الباسورد يظهر فقط لو في باسورد
+  useEffect(() => {
+    const p = phone.trim();
+    if (p.length < 10) {
+      setHasPassword(null);
+      setPassword("");
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get("/public/customers/has-password", {
+          params: { phone: p, companyId: brandingCompanyId || undefined },
+        });
+        setHasPassword(!!res.data?.data?.hasPassword);
+      } catch {
+        setHasPassword(null);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [phone, brandingCompanyId]);
+
+  // Already-logged-in customers should not see the login form again.
+  useEffect(() => {
+    try {
+      const token = tokenManager.getAccessToken();
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload?.role === "CUSTOMER") {
+          navigate("/account", { replace: true });
+        }
+      }
+    } catch {
+      // ignore malformed token
+    }
+  }, [navigate]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -28,10 +80,17 @@ const CustomerRegister: React.FC = () => {
       const companyIdFromPath =
         typeof params.companyId === "string" ? params.companyId : null;
       const companyIdFromStorage = localStorage.getItem("storefront_companyId");
+      // على subdomain المتجر (مثل swan.maxp.online) بيبقى أول جزء من الـ hostname هو slug الشركة
+      const subdomainCompany = (() => {
+        const host = window.location.hostname.split(".");
+        if (host.length >= 3 && host[0] !== "www") return host[0];
+        return null;
+      })();
       const companyId = (
         companyIdFromQuery ||
         companyIdFromPath ||
         companyIdFromStorage ||
+        subdomainCompany ||
         ""
       ).trim();
 
@@ -54,46 +113,26 @@ const CustomerRegister: React.FC = () => {
         );
       }
 
-      if (step === "PHONE") {
-        const response = await apiClient.post(
-          `/public/customers/request-otp?companyId=${encodeURIComponent(companyId)}`,
-          { phone: normalizedPhone },
-        );
-
-        if (response.data?.success) {
-          setSuccessMessage("تم إرسال كود التحقق على واتساب");
-          setStep("OTP");
-          return;
-        }
-
-        setError(response.data?.message || "تعذر إرسال كود التحقق");
-        return;
-      }
-
-      const normalizedCode = code.trim();
-      if (!normalizedCode || normalizedCode.length !== 4) {
-        throw new Error("يرجى إدخال كود مكوّن من 4 أرقام");
-      }
-
       const response = await apiClient.post(
-        `/public/customers/verify-otp?companyId=${encodeURIComponent(companyId)}`,
-        {
-          phone: normalizedPhone,
-          code: normalizedCode,
-        },
+        `/public/customers/login-phone?companyId=${encodeURIComponent(companyId)}`,
+        { phone: normalizedPhone, password: password.trim() || undefined },
       );
 
       if (response.data?.success && response.data?.data?.token) {
         tokenManager.setAccessToken(response.data.data.token);
         setSuccessMessage("تم تسجيل الدخول بنجاح");
-        navigate("/account/whatsapp");
+        navigate("/account");
         return;
       }
 
       setError(response.data?.message || "تعذر تسجيل الدخول");
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
       setError(
-        err.response?.data?.message || err.message || "حدث خطأ أثناء التسجيل",
+        error.response?.data?.message || error.message || "حدث خطأ أثناء التسجيل",
       );
     } finally {
       setIsLoading(false);
@@ -103,8 +142,11 @@ const CustomerRegister: React.FC = () => {
   return (
     <AuthSurface
       title="دخول العملاء"
-      description="سجّل دخولك برقم واتساب المرتبط بالحساب للوصول السريع والآمن إلى تفاعلاتك وخدماتك."
+      description="سجّل دخولك برقم الهاتف للوصول السريع والآمن إلى تفاعلاتك وخدماتك."
       eyebrow="Customer Access"
+      companyLogo={branding.logo}
+      companyName={branding.name || null}
+      companyAccent={branding.accent || undefined}
       footer={
         <div className="business-auth-footer-stack">
           <div className="business-auth-link-row">
@@ -112,7 +154,7 @@ const CustomerRegister: React.FC = () => {
             <Link to="/auth/login">تسجيل الدخول للمنصة</Link>
           </div>
           <p className="business-auth-legal">
-            تسجيل دخول العملاء يعتمد على أرقام واتساب الموثقة داخل النظام.
+            تسجيل دخول العملاء يعتمد على أرقام الهواتف الموثقة داخل النظام.
           </p>
         </div>
       }
@@ -132,7 +174,7 @@ const CustomerRegister: React.FC = () => {
       <form onSubmit={handleSubmit} className="business-auth-form">
         <div className="business-auth-field">
           <label htmlFor="phone" className="business-auth-label">
-            رقم الهاتف المرتبط بواتساب
+            رقم الهاتف
           </label>
           <input
             id="phone"
@@ -146,29 +188,27 @@ const CustomerRegister: React.FC = () => {
             required
             className="business-auth-input business-auth-input--ltr"
             placeholder="01xxxxxxxxx"
-            disabled={isLoading || step === "OTP"}
+            disabled={isLoading}
           />
         </div>
 
-        {step === "OTP" ? (
+        {hasPassword === true ? (
           <div className="business-auth-field">
-            <label htmlFor="code" className="business-auth-label">
-              كود التحقق
+            <label htmlFor="password" className="business-auth-label">
+              كلمة المرور
             </label>
             <input
-              id="code"
-              name="code"
-              type="text"
-              inputMode="numeric"
-              value={code}
+              id="password"
+              name="password"
+              type="password"
+              value={password}
               onChange={(event) => {
-                setCode(event.target.value);
+                setPassword(event.target.value);
                 if (error) setError("");
               }}
               required
-              className="business-auth-input business-auth-code-input"
-              placeholder="1234"
-              maxLength={4}
+              className="business-auth-input"
+              placeholder="••••••"
               disabled={isLoading}
             />
           </div>
@@ -182,15 +222,25 @@ const CustomerRegister: React.FC = () => {
           {isLoading ? (
             <span className="business-inline-loader">
               <LoadingSpinner size="sm" color="white" />
-              <span>جاري التحقق...</span>
+              <span>جاري الدخول...</span>
             </span>
-          ) : step === "PHONE" ? (
-            "إرسال كود واتساب"
           ) : (
-            "تأكيد الدخول"
+            "دخول"
           )}
         </button>
       </form>
+
+      <div className="my-4 flex items-center gap-3 text-sm text-gray-500">
+        <span className="h-px flex-1 bg-gray-200" />
+        <span>أو</span>
+        <span className="h-px flex-1 bg-gray-200" />
+      </div>
+
+      <TikTokLoginButton
+        companyId={brandingCompanyId || undefined}
+        redirectPath="/account"
+        className="w-full"
+      />
     </AuthSurface>
   );
 };

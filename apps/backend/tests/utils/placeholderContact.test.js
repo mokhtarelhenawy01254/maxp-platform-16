@@ -1,4 +1,4 @@
-﻿const {
+const {
   isPlaceholderPhone,
   isPlaceholderEmail,
 } = require('../../utils/placeholderContact');

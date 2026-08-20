@@ -1,4 +1,4 @@
-﻿# Plan: Baileys History Sync Hardening
+# Plan: Baileys History Sync Hardening
 
 **Generated**: 2026-07-28  
 **Complexity**: High
@@ -45,13 +45,13 @@ The work is split into safe, testable increments. No destructive backfill or pro
   - Existing newer `lastMessageAt`/preview values are never overwritten by an older history item.
 - **Validation**: Unit tests for empty address-book chat, timestamp-only chat, retained-message-without-timestamp chat, matching contact name, group, newsletter, and stale-timestamp cases.
 
-### Task 1.2: Forward WhatsAppΓÇÖs official LID mappings through the Baileys history pipeline
+### Task 1.2: Forward WhatsApp’s official LID mappings through the Baileys history pipeline
 
 - **Location**: `apps/backend/patches/@whiskeysockets+baileys+6.7.23.patch` (or a maintained internal Baileys fork), `apps/backend/package.json`, `apps/backend/services/whatsapp/WhatsAppManager.js`
-- **Description**: Extend Baileys 6.7.23ΓÇÖs `processHistoryMessage` output to include `HistorySync.phoneNumberToLidMappings`, then expose it on `messaging-history.set`. Prefer a version-pinned `patch-package` patch or a maintained fork over runtime monkey-patching, because the function is consumed internally by Baileys. Apply mappings before importing messages, persist/merge them through the existing LID conversation logic, and pin the supported Baileys version.
+- **Description**: Extend Baileys 6.7.23’s `processHistoryMessage` output to include `HistorySync.phoneNumberToLidMappings`, then expose it on `messaging-history.set`. Prefer a version-pinned `patch-package` patch or a maintained fork over runtime monkey-patching, because the function is consumed internally by Baileys. Apply mappings before importing messages, persist/merge them through the existing LID conversation logic, and pin the supported Baileys version.
 - **Dependencies**: Task 1.1.
 - **Acceptance criteria**:
-  - A history payloadΓÇÖs `pnJid`/`lidJid` mapping resolves old incoming and outgoing LID messages without heuristic metadata searches.
+  - A history payload’s `pnJid`/`lidJid` mapping resolves old incoming and outgoing LID messages without heuristic metadata searches.
   - Updating Baileys fails CI if the patch no longer applies or the mapping payload changes shape.
   - No global phone-address book is created from mapping records; mappings exist only to resolve a conversation/message identity.
 - **Validation**: Patch application test plus fixtures containing direct mapping, missing mapping, and LID-first message ordering.
@@ -70,7 +70,7 @@ The work is split into safe, testable increments. No destructive backfill or pro
 ### Task 1.4: Make historical contact updates monotonic
 
 - **Location**: `apps/backend/services/whatsapp/WhatsAppManager.js`
-- **Description**: Update `lastMessageAt` and `lastMessagePreview` only if the incoming history message is at least as recent as the stored contactΓÇÖs latest message. Keep counters and unread values unchanged for history imports.
+- **Description**: Update `lastMessageAt` and `lastMessagePreview` only if the incoming history message is at least as recent as the stored contact’s latest message. Keep counters and unread values unchanged for history imports.
 - **Dependencies**: Task 1.1.
 - **Acceptance criteria**:
   - Importing an older batch never moves an inbox conversation backwards or replaces its latest preview.
@@ -93,7 +93,7 @@ The work is split into safe, testable increments. No destructive backfill or pro
 - **Description**: Add a session-scoped history-import state (at minimum: requested, in-progress, completed, failed, started/completed timestamps, last error, and counters). Persist state before importing each Baileys history payload. Treat `isLatest` only as a completion signal on the event-buffer-consolidated `messaging-history.set` payload: in Baileys 6.7.23 raw notifications calculate it locally from `creds.processedHistoryMessages`, while `event-buffer.js` retains it across its merged set. Do not mark complete on a raw/individual notification or solely from `progress`.
 - **Dependencies**: Sprint 1.
 - **Acceptance criteria**:
-  - UI/API can distinguish ΓÇ£not requestedΓÇ¥, ΓÇ£in progressΓÇ¥, ΓÇ£completedΓÇ¥, and ΓÇ£failedΓÇ¥.
+  - UI/API can distinguish “not requested”, “in progress”, “completed”, and “failed”.
   - A process restart cannot report success based only on an in-memory `historySync` object or a premature raw `isLatest` flag.
   - A failure includes a safe diagnostic message without storing sensitive raw message content in the session metadata.
 - **Validation**: Migration test, service tests for raw-like multi-notification fixtures versus one consolidated event, and a forced per-message DB failure.
@@ -146,7 +146,7 @@ The work is split into safe, testable increments. No destructive backfill or pro
 - **Dependencies**: Task 2.1.
 - **Acceptance criteria**:
   - Users see progress and can identify an incomplete/failed import.
-  - The UI never claims ΓÇ£history syncedΓÇ¥ merely because a single event was received.
+  - The UI never claims “history synced” merely because a single event was received.
 - **Validation**: API/service tests and frontend smoke test against mocked progress states.
 
 ### Task 3.3: Serialize health-check and socket-close reconnect decisions
@@ -176,7 +176,7 @@ The work is split into safe, testable increments. No destructive backfill or pro
 | --- | --- | --- |
 | Creating contacts from chats | Could recreate the previous 700+ empty-contact problem | Keep the activity gate: require `conversationTimestamp` or `lastMessageRecvTimestamp`; keep the `totalMessages > 0` API filter as a second line of defence. |
 | Forwarding official LID mappings | A runtime monkey-patch can silently break after a Baileys update | Use a version-pinned `patch-package` patch or maintained fork, plus a patch-application CI check. |
-| Fallback persistence for unsupported content | UI may display a confusing blank/unknown message | Use a clear ΓÇ£unsupported historical messageΓÇ¥ presentation and retain raw metadata only according to retention policy. |
+| Fallback persistence for unsupported content | UI may display a confusing blank/unknown message | Use a clear “unsupported historical message” presentation and retain raw metadata only according to retention policy. |
 | Durable checkpointing | Adds schema/migration complexity | Make the migration additive and nullable/default-safe; deploy before code that depends on the new fields. |
 | Retry/resume | Could duplicate messages or inflate counters | Keep a unique message identity and make all history side effects idempotent/disabled. |
 | Batch writes | A partial batch could be harder to diagnose | Wrap each bounded chunk in a transaction and update progress only after commit. |
@@ -192,6 +192,6 @@ The work is split into safe, testable increments. No destructive backfill or pro
 
 ## Confirmed Product Decisions
 
-- Unsupported historical messages appear as a clear ΓÇ£╪▒╪│╪º┘ä╪⌐ ╪║┘è╪▒ ┘à╪»╪╣┘ê┘à╪⌐ΓÇ¥ placeholder instead of a silent drop.
+- Unsupported historical messages appear as a clear “رسالة غير مدعومة” placeholder instead of a silent drop.
 - Retention accepts all history WhatsApp offers through Baileys; no application-side time or count cutoff is added.
 - Historical group participants are not imported as contacts. The group conversation itself is imported; a participant becomes a contact only after a direct message.

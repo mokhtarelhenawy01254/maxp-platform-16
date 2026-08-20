@@ -1,7 +1,15 @@
-import { Camera as CameraIcon, Pin as MapPinIcon, ChevronRight as ChevronRightIcon, Circle as AcademicCapIcon, Plus as PlusIcon, Trash2 as TrashIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationCircleIcon } from 'lucide-react';
 import React, { useState } from 'react';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
-;
+import { 
+  CameraIcon, 
+  MapPinIcon, 
+  ChevronRightIcon, 
+  AcademicCapIcon,
+  PlusIcon,
+  TrashIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon
+} from '@heroicons/react/24/outline';
 
 interface EducationEntry {
   id: string;

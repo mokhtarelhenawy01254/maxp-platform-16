@@ -1,9 +1,9 @@
-﻿/**
- * ╪Ñ╪╣╪º╪»╪⌐ ╪Ñ╪▒╪│╪º┘ä ┘é╪º┘ä╪¿ ╪Ñ┘ä┘ë ┘à┘è╪¬╪º ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐ ╪¿╪╣╪» ╪º┘ä╪¬╪╣╪»┘è┘ä (resubmit-meta):
- * - ╪¿┘è╪▒┘ü╪╢ ┘ä┘ê ╪º┘ä┘é╪º┘ä╪¿ ┘à╪┤ ┘à╪▒╪¿┘ê╪╖
- * - ┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ APPROVED/REJECTED/PAUSED ΓåÆ ╪¿┘è╪╣╪»┘æ┘ä ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à┘ê╪¼┘ê╪» ╪╣╪¿╪▒ POST /{templateId}
- * - ┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ PENDING (┘à┘è╪¬╪º ╪¬┘à┘å╪╣ ╪¬╪╣╪»┘è┘ä┘ç╪º╪î subcode 2388003) ΓåÆ ╪¿┘è┘å╪┤╪ª ┘é╪º┘ä╪¿╪º┘ï ╪¼╪»┘è╪»╪º┘ï ╪¿╪º╪│┘à ┘ü╪▒┘è╪»
- * - ╪¿┘è╪¡┘ü╪╕ metaTemplateId ┘ê╪¿┘è╪¡╪»┘æ╪½ ╪º┘ä╪¡╪º┘ä╪⌐
+/**
+ * إعادة إرسال قالب إلى ميتا للمراجعة بعد التعديل (resubmit-meta):
+ * - بيرفض لو القالب مش مربوط
+ * - لو الحالة APPROVED/REJECTED/PAUSED → بيعدّل القالب الموجود عبر POST /{templateId}
+ * - لو الحالة PENDING (ميتا تمنع تعديلها، subcode 2388003) → بينشئ قالباً جديداً باسم فريد
+ * - بيحفظ metaTemplateId وبيحدّث الحالة
  */
 jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
@@ -52,9 +52,9 @@ function makeReqRes(prisma) {
 const BOUND_TEMPLATE = {
   id: 't1',
   eventType: 'CONFIRMED',
-  name: '┘é╪º┘ä╪¿ ╪¬╪ú┘â┘è╪»',
+  name: 'قالب تأكيد',
   category: 'ORDER',
-  content: '┘à╪▒╪¡╪¿╪º {{customerName}}╪î ╪ú┘â╪» ╪╖┘ä╪¿┘â',
+  content: 'مرحبا {{customerName}}، أكد طلبك',
   hasButtons: false,
   buttons: null,
   metaTemplateName: 'order_confirm_ar',
@@ -69,22 +69,22 @@ describe('POST /templates/:id/resubmit-meta', () => {
     createTemplate.mockResolvedValue({ id: '12345', status: 'PENDING', name: 'order_confirm_ar_f1abc' });
     updateTemplate.mockResolvedValue({ success: true });
     listTemplates.mockResolvedValue([
-      { id: '778899', name: 'order_confirm_ar', status: 'APPROVED', category: 'UTILITY', components: [{ type: 'BODY', text: '┘à╪▒╪¡╪¿╪º {{1}}╪î ╪ú┘â╪» ╪╖┘ä╪¿┘â' }] },
+      { id: '778899', name: 'order_confirm_ar', status: 'APPROVED', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] },
     ]);
   });
 
-  test('┘è╪▒┘ü╪╢ ┘ä┘ê ╪º┘ä┘é╪º┘ä╪¿ ╪║┘è╪▒ ┘à╪▒╪¿┘ê╪╖ ╪¿┘é╪º┘ä╪¿ ┘à┘è╪¬╪º', async () => {
+  test('يرفض لو القالب غير مربوط بقالب ميتا', async () => {
     const prisma = buildPrisma({ template: { ...BOUND_TEMPLATE, metaTemplateName: null }, session: { id: 's1', provider: 'META_CLOUD' } });
     const { req, res } = makeReqRes(prisma);
     await resubmitMetaTemplate(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json.mock.calls[0][0].error).toContain('╪║┘è╪▒ ┘à╪▒╪¿┘ê╪╖');
+    expect(res.json.mock.calls[0][0].error).toContain('غير مربوط');
     expect(updateTemplate).not.toHaveBeenCalled();
   });
 
-  test('APPROVED ΓåÆ ╪¿┘è╪╣╪»┘æ┘ä ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à┘ê╪¼┘ê╪» ╪╣╪¿╪▒ POST /{templateId} ╪¿╪º┘ä┘à╪¡╪¬┘ê┘ë ╪º┘ä┘à╪╣╪»┘ä', async () => {
+  test('APPROVED → بيعدّل القالب الموجود عبر POST /{templateId} بالمحتوى المعدل', async () => {
     listTemplates.mockResolvedValue([
-      { id: '778899', name: 'order_confirm_ar', status: 'APPROVED', category: 'UTILITY', components: [{ type: 'BODY', text: '┘à╪▒╪¡╪¿╪º {{1}}╪î ╪ú┘â╪» ╪╖┘ä╪¿┘â' }] },
+      { id: '778899', name: 'order_confirm_ar', status: 'APPROVED', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] },
     ]);
     const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
     const { req, res } = makeReqRes(prisma);
@@ -110,9 +110,9 @@ describe('POST /templates/:id/resubmit-meta', () => {
     expect(body.action).toBe('edited');
   });
 
-  test('PENDING ΓåÆ ╪¿┘è┘å╪┤╪ª ┘é╪º┘ä╪¿╪º┘ï ╪¼╪»┘è╪»╪º┘ï ╪¿╪º╪│┘à ┘ü╪▒┘è╪» (┘ä╪ú┘å ┘à┘è╪¬╪º ╪¬┘à┘å╪╣ ╪¬╪╣╪»┘è┘ä PENDING)', async () => {
+  test('PENDING → بينشئ قالباً جديداً باسم فريد (لأن ميتا تمنع تعديل PENDING)', async () => {
     listTemplates.mockResolvedValue([
-      { id: '778899', name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: '┘à╪▒╪¡╪¿╪º {{1}}╪î ╪ú┘â╪» ╪╖┘ä╪¿┘â' }] },
+      { id: '778899', name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] },
     ]);
     const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
     const { req, res } = makeReqRes(prisma);
@@ -134,10 +134,10 @@ describe('POST /templates/:id/resubmit-meta', () => {
     expect(body.action).toBe('created');
   });
 
-  test('╪¿┘è╪▒╪¼╪╣ ╪«╪╖╪ú 500 ┘à╪╣ ╪▒╪│╪º┘ä╪⌐ ┘à┘è╪¬╪º ┘ä┘ê ┘ü╪┤┘ä ╪º┘ä╪¬╪╣╪»┘è┘ä', async () => {
+  test('بيرجع خطأ 500 مع رسالة ميتا لو فشل التعديل', async () => {
     const metaErr = new Error('Template not approved for update');
     metaErr.code = 100;
-    metaErr.metaError = { message: 'Template not approved for update', error_user_title: '╪║┘è╪▒ ┘à╪¬╪º╪¡', code: 100 };
+    metaErr.metaError = { message: 'Template not approved for update', error_user_title: 'غير متاح', code: 100 };
     updateTemplate.mockRejectedValue(metaErr);
     const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
     const { req, res } = makeReqRes(prisma);

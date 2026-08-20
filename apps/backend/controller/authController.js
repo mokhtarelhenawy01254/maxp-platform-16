@@ -122,7 +122,7 @@ const register = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const platformSignupCouponService = require('../services/platformSignupCouponService');
 
-    if (!email || !password || !firstName || !lastName) {
+    if (!email || !password || !firstName || !lastName || !phone) {
       return res.status(400).json({
         success: false,
         message: 'جميع الحقول مطلوبة'
@@ -243,8 +243,12 @@ const register = async (req, res) => {
       };
     }
 
+    const specialtyAppSlugs =
+      selectedSpecialty && selectedSpecialty.autoInstallOnSignup !== false
+        ? selectedSpecialty.appSlugs
+        : [];
     await initializeRegisteredCompany(company.id, totalTrialDays, {
-      specialtyAppSlugs: [],
+      specialtyAppSlugs,
       specialtySlug: selectedSpecialty?.slug || null,
     });
 
@@ -537,6 +541,7 @@ const login = async (req, res) => {
           isActive: true,
           timezone: true,
           lastLoginAt: true,
+          settings: true,
           company: {
             select: {
               id: true,

@@ -32,7 +32,15 @@ model ReturnRequest {
   isReviewed            Boolean                        @default(false)
   orderItemId           String?
   rejectionReason       String?
+  trackingNumber        String?
+  receivedStatus        ReturnReceivedStatus            @default(PENDING_RECEIVE)
+  receivedAt            DateTime?
+  productCondition      String?
+  shippingReturnCost    Decimal?                       @db.Decimal(10, 2)
+  settlementAmount      Decimal?                       @db.Decimal(10, 2)
   responsibleParty      ReturnRequestsResponsibleParty @default(OTHER)
+  returnTypeId          String?
+  shippingCompanyId     String?
   reviewedAt            DateTime?
   reviewedBy            String?
   returnActivityLogs    ReturnActivityLog[]
@@ -42,14 +50,42 @@ model ReturnRequest {
   customer              Customer                       @relation(fields: [customerId], references: [id], onDelete: Cascade)
   order                 Order                          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   returnReason          ReturnReason                   @relation(fields: [reasonId], references: [id])
+  returnType            ReturnType?                    @relation(fields: [returnTypeId], references: [id], onDelete: SetNull)
+  shippingCompany       ShippingCompany?               @relation(fields: [shippingCompanyId], references: [id], onDelete: SetNull)
 
+  @@unique([companyId, orderId])
   @@index([assignedTo])
-  @@index([companyId])
   @@index([customerId])
   @@index([orderId])
   @@index([reasonId])
   @@index([status])
+  @@index([trackingNumber])
+  @@index([returnTypeId])
+  @@index([shippingCompanyId])
   @@map("return_requests")
+}
+
+model ReturnType {
+  id                String             @id @default(cuid())
+  companyId         String
+  shippingCompanyId String?
+  name              String
+  code              ReturnTypeCode
+  costModel         ReturnTypeCostModel
+  fixedAmount       Decimal?           @db.Decimal(10, 2)
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shippingCompany   ShippingCompany?   @relation(fields: [shippingCompanyId], references: [id], onDelete: SetNull)
+  returnRequests    ReturnRequest[]
+
+  @@index([companyId])
+  @@index([shippingCompanyId])
+  @@index([code])
+  @@index([isActive])
+  @@unique([companyId, shippingCompanyId, code])
+  @@map("return_types")
 }
 
 model ReturnContactAttempt {

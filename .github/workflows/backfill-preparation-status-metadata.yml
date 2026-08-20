@@ -1,4 +1,4 @@
-﻿name: Run backend one-off script (backfill preparation status metadata)
+name: Run backend one-off script (backfill preparation status metadata)
 
 on:
   workflow_dispatch:

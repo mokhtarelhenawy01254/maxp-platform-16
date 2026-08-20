@@ -1,4 +1,4 @@
-﻿const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
 const { getJwtSecret } = require('./jwtSecret');
 
@@ -7,14 +7,14 @@ const authenticatePatientToken = async (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ success: false, message: '╪▒┘à╪▓ ╪º┘ä┘à╪╡╪º╪»┘é╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+    return res.status(401).json({ success: false, message: 'رمز المصادقة مطلوب' });
   }
 
   try {
     const decoded = jwt.verify(token, getJwtSecret());
     const patientId = decoded.patientId || decoded.id;
     if (!patientId) {
-      return res.status(401).json({ success: false, message: '╪▒┘à╪▓ ╪º┘ä┘à╪╡╪º╪»┘é╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+      return res.status(401).json({ success: false, message: 'رمز المصادقة غير صحيح' });
     }
 
     const prisma = await getSharedPrismaClientAsync();
@@ -24,17 +24,17 @@ const authenticatePatientToken = async (req, res, next) => {
     });
 
     if (!patient) {
-      return res.status(401).json({ success: false, message: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(401).json({ success: false, message: 'المريض غير موجود' });
     }
 
     if (!patient.isActive) {
-      return res.status(403).json({ success: false, message: '╪º┘ä╪¡╪│╪º╪¿ ╪║┘è╪▒ ┘å╪┤╪╖' });
+      return res.status(403).json({ success: false, message: 'الحساب غير نشط' });
     }
 
     req.patient = patient;
     next();
   } catch (error) {
-    return res.status(401).json({ success: false, message: '╪▒┘à╪▓ ╪º┘ä┘à╪╡╪º╪»┘é╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+    return res.status(401).json({ success: false, message: 'رمز المصادقة غير صحيح' });
   }
 };
 

@@ -1,12 +1,12 @@
-﻿/**
- * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º2.1-pre/┬º3.1) ΓÇö regression tests:
+/**
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1-pre/§3.1) — regression tests:
  * getPersistedNotificationEventType must map raw order status codes to valid
  * enum values so whatsAppNotificationLog/whatsAppNotificationQueue inserts
- * never throw an invalid-enum error (the ┬º1.1-pre duplicate-send virus).
+ * never throw an invalid-enum error (the §1.1-pre duplicate-send virus).
  */
 const { getPersistedNotificationEventType, isOrderCategory } = require('../../../services/whatsapp/notificationTypes');
 
-// ┘é┘è┘à WhatsAppNotificationLogsEventType ╪º┘ä╪╡╪º┘ä╪¡╪⌐ (schema.prisma:3669) ΓÇö ┘å╪│╪«╪⌐ ┘ü╪▒╪╣┘è╪⌐
+// قيم WhatsAppNotificationLogsEventType الصالحة (schema.prisma:3669) — نسخة فرعية
 const VALID_LOG_EVENT_TYPES = new Set([
   'ORDER_CREATED', 'ORDER_CONFIRMED', 'ORDER_PROCESSING', 'ORDER_SHIPPED',
   'ORDER_OUT_FOR_DELIVERY', 'ORDER_DELIVERED', 'ORDER_CANCELLED', 'ORDER_REFUNDED',
@@ -28,14 +28,14 @@ const VALID_LOG_EVENT_TYPES = new Set([
   'PRODUCT_REVIEW_REQUEST', 'BIRTHDAY_GREETING', 'DRAFT', 'PENDING',
 ]);
 
-describe('getPersistedNotificationEventType ΓÇö raw order status mapping (┬º2.1-pre + ┬º3.1)', () => {
+describe('getPersistedNotificationEventType — raw order status mapping (§2.1-pre + §3.1)', () => {
   test.each([
     ['RETURNED', 'ORDER_RETURNED'],
     ['PARTIALLY_RETURNED', 'ORDER_RETURNED'],
     ['EXCHANGED', 'ORDER_RETURNED'],
     ['REFUNDED', 'ORDER_REFUNDED'],
     ['PARTIALLY_REFUNDED', 'PARTIAL_REFUND'],
-  ])('%s ΓåÆ %s', (input, expected) => {
+  ])('%s → %s', (input, expected) => {
     expect(getPersistedNotificationEventType(input)).toBe(expected);
   });
 
@@ -46,7 +46,7 @@ describe('getPersistedNotificationEventType ΓÇö raw order status mapping (┬
     ['OUT_FOR_DELIVERY', 'ORDER_OUT_FOR_DELIVERY'],
     ['DELIVERED', 'ORDER_DELIVERED'],
     ['CANCELLED', 'ORDER_CANCELLED'],
-  ])('standard status %s ΓåÆ %s', (input, expected) => {
+  ])('standard status %s → %s', (input, expected) => {
     expect(getPersistedNotificationEventType(input)).toBe(expected);
   });
 
@@ -64,7 +64,7 @@ describe('getPersistedNotificationEventType ΓÇö raw order status mapping (┬
     ['TASK_COMMENTED', 'ANNOUNCEMENT'],
     ['TASK_STATUS_CHANGED', 'ANNOUNCEMENT'],
     ['TASK_DEADLINE_REMINDER', 'ANNOUNCEMENT'],
-  ])('%s ΓåÆ ANNOUNCEMENT', (input, expected) => {
+  ])('%s → ANNOUNCEMENT', (input, expected) => {
     expect(getPersistedNotificationEventType(input)).toBe(expected);
   });
 
@@ -84,11 +84,11 @@ describe('getPersistedNotificationEventType ΓÇö raw order status mapping (┬
     expect(getPersistedNotificationEventType('CUSTOM_EVENT')).toBe('CUSTOM_EVENT');
   });
 
-  // ≡ƒö┤ regression: every mapped output must be a valid enum value ΓÇö
+  // 🔴 regression: every mapped output must be a valid enum value —
   // otherwise the log/queue insert throws an invalid-enum error (duplicate-send virus).
-  // ┘à┘ä╪º╪¡╪╕╪⌐: PREPARING/PACKAGED ┘à╪│╪¬╪¿╪╣╪»╪⌐ ΓÇö ╪¬┘Å╪╖╪¿┘Ä┘æ╪╣ ╪Ñ┘ä┘ë PICKING/PACKED ┘é╪¿┘ä ╪º┘ä╪Ñ╪▒╪│╪º┘ä
-  // (normalizeWhatsAppOrderStatus ┘ü┘è orderService)╪î ┘ä╪░╪º ┘ä╪º ╪¬╪╡┘ä ┘ä┘ä┘Ç enum ╪ú╪¿╪»╪º┘ï ┘ü┘è ╪º┘ä┘à╪│╪º╪▒ ╪º┘ä╪¡╪º┘ä┘è.
-  test('≡ƒö┤ regression: mapped output is always a valid WhatsAppNotificationLogsEventType value', () => {
+  // ملاحظة: PREPARING/PACKAGED مستبعدة — تُطبَّع إلى PICKING/PACKED قبل الإرسال
+  // (normalizeWhatsAppOrderStatus في orderService)، لذا لا تصل للـ enum أبداً في المسار الحالي.
+  test('🔴 regression: mapped output is always a valid WhatsAppNotificationLogsEventType value', () => {
     const inputs = [
       'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'REFUNDED', 'PARTIALLY_REFUNDED',
       'CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED',
@@ -101,7 +101,7 @@ describe('getPersistedNotificationEventType ΓÇö raw order status mapping (┬
       // if it ever fails, print which input caused it:
       if (!VALID_LOG_EVENT_TYPES.has(output)) {
         // eslint-disable-next-line no-console
-        console.error(`INVALID ENUM OUTPUT: ${input} ΓåÆ ${output}`);
+        console.error(`INVALID ENUM OUTPUT: ${input} → ${output}`);
       }
     }
   });
@@ -121,7 +121,7 @@ describe('isOrderCategory', () => {
     expect(isOrderCategory('LOYALTY', 'LOYALTY_POINTS')).toBe(false);
   });
 
-  test('≡ƒö┤ regression: recognizes RAW order status codes as order events', () => {
+  test('🔴 regression: recognizes RAW order status codes as order events', () => {
     expect(isOrderCategory('MARKETING', 'delivered')).toBe(true);
     expect(isOrderCategory('MARKETING', 'DELIVERED')).toBe(true);
     expect(isOrderCategory('MARKETING', 'confirmed')).toBe(true);
@@ -131,7 +131,7 @@ describe('isOrderCategory', () => {
     expect(isOrderCategory('MARKETING', 'cancelled')).toBe(true);
   });
 
-  test('≡ƒö┤ regression: raw NON-order statuses stay non-order', () => {
+  test('🔴 regression: raw NON-order statuses stay non-order', () => {
     expect(isOrderCategory('MARKETING', 'NEWSLETTER_SUBSCRIBED')).toBe(false);
     expect(isOrderCategory('MARKETING', 'LOYALTY_POINTS')).toBe(false);
     expect(isOrderCategory('MARKETING', 'LEAVE_APPROVED')).toBe(false);

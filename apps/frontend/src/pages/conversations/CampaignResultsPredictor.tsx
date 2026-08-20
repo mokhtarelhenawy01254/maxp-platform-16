@@ -1,6 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
-;
-import { DollarSign as DollarSignIcon, Target as TargetIcon, BarChart as BarChart3Icon, RefreshCw as RefreshCwIcon, Download as DownloadIcon, AlertTriangle as AlertTriangleIcon, Circle as CalculatorIcon, Circle as ArrowTrendingUpIcon, Circle as ArrowTrendingDownIcon, Users as UsersIcon, Clock as ClockIcon } from 'lucide-react';
+import {
+  CalculatorIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  UsersIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
+import {
+  DollarSign as DollarSignIcon,
+  Target as TargetIcon,
+  BarChart3 as BarChart3Icon,
+  RefreshCw as RefreshCwIcon,
+  Download as DownloadIcon,
+  AlertTriangle as AlertTriangleIcon
+} from 'lucide-react';
 import { useAuth } from '../../hooks/useAuthSimple';
 import LineChart from '../../components/charts/LineChart';
 import BarChart from '../../components/charts/BarChart';

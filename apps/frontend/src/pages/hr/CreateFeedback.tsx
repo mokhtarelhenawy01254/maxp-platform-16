@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, ArrowRight, Info, Save, Star, User } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import { Save, ArrowRight, Star, User, Info, AlertCircle } from "lucide-react";
 import api from "../../services/api";
 
 import { Button } from "../../components/ui/button";
@@ -88,13 +89,13 @@ const CreateFeedback = () => {
             setValue("rating", currentFB.rating || 0);
             setValue("isAnonymous", currentFB.isAnonymous);
           } else {
-            toast.error("لم يتم العثور على التغذية الراجعة");
+            tToast.error("CreateFeedback.msg_ad77");
             navigate("/my-feedback");
           }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("فشل في تحميل البيانات");
+        tToast.error("CreateFeedback.failed_load_cfaf");
       } finally {
         setFetchingData(false);
       }
@@ -106,7 +107,7 @@ const CreateFeedback = () => {
     try {
       const isReviewType = ["PEER", "MANAGER", "SUBORDINATE"].includes(data.type);
       if (isReviewType && data.rating === 0) {
-        toast.error("يرجى اختيار تقييم");
+        tToast.error("CreateFeedback.msg_79e3");
         return;
       }
       setLoading(true);
@@ -118,10 +119,10 @@ const CreateFeedback = () => {
 
       if (isEdit) {
         await api.put(`/hr/feedback/${id}`, payload);
-        toast.success("تم تحديث الرسالة بنجاح");
+        tToast.success("CreateFeedback.success_update_293e");
       } else {
         await api.post("/hr/feedback", payload);
-        toast.success("تم الإرسال بنجاح");
+        tToast.success("CreateFeedback.msg_1de5");
       }
       navigate("/my-feedback");
     } catch (error) {

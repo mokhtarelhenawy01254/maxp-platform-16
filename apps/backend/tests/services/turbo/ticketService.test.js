@@ -1,4 +1,4 @@
-﻿jest.mock('axios', () => ({
+jest.mock('axios', () => ({
   post: jest.fn(),
   get: jest.fn(),
 }));
@@ -42,10 +42,10 @@ describe('TicketService', () => {
   describe('addTicket', () => {
     test('sends correct payload and returns ticket ID', async () => {
       axios.post.mockResolvedValue({
-        data: { success: 1, ticket_id: 'TKT-001', message: '╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪¬╪░┘â╪▒╪⌐' },
+        data: { success: 1, ticket_id: 'TKT-001', message: 'تم إنشاء التذكرة' },
       });
 
-      const result = await service.addTicket('┘à╪¡╪¬┘ê┘ë ╪º┘ä╪¬╪░┘â╪▒╪⌐', 3, 'TRK-001');
+      const result = await service.addTicket('محتوى التذكرة', 3, 'TRK-001');
 
       expect(result.success).toBe(true);
       expect(result.ticketId).toBe('TKT-001');
@@ -54,7 +54,7 @@ describe('TicketService', () => {
         expect.objectContaining({
           authentication_key: 'test-api-key',
           category_id: 3,
-          content: '┘à╪¡╪¬┘ê┘ë ╪º┘ä╪¬╪░┘â╪▒╪⌐',
+          content: 'محتوى التذكرة',
           code: 'TRK-001',
           priority: 'low',
           related_to: 'others',
@@ -65,27 +65,27 @@ describe('TicketService', () => {
 
     test('returns failure response on API error (success: 0)', async () => {
       axios.post.mockResolvedValue({
-        data: { success: 0, error_msg: '╪«╪╖╪ú ┘ü┘è ╪º┘ä╪¿┘è╪º┘å╪º╪¬' },
+        data: { success: 0, error_msg: 'خطأ في البيانات' },
       });
 
-      const result = await service.addTicket('┘à╪¡╪¬┘ê┘ë', 1);
+      const result = await service.addTicket('محتوى', 1);
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe('┘ü╪┤┘ä ┘ü┘è ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä╪¬╪░┘â╪▒╪⌐');
+      expect(result.message).toBe('فشل في إضافة التذكرة');
     });
   });
 
   describe('getInquiriesTypes', () => {
     test('returns inquiry categories on success', async () => {
       axios.get.mockResolvedValue({
-        data: { success: 1, data: [{ id: 1, name: '╪┤┘â┘ê┘ë' }, { id: 2, name: '╪º╪│╪¬┘ü╪│╪º╪▒' }] },
+        data: { success: 1, data: [{ id: 1, name: 'شكوى' }, { id: 2, name: 'استفسار' }] },
       });
 
       const result = await service.getInquiriesTypes();
 
       expect(result.success).toBe(true);
       expect(result.types).toHaveLength(2);
-      expect(result.types[0].name).toBe('╪┤┘â┘ê┘ë');
+      expect(result.types[0].name).toBe('شكوى');
     });
 
     test('returns failure on API error', async () => {
@@ -105,7 +105,7 @@ describe('TicketService', () => {
         data: {
           success: 1,
           feed: {
-            data: [{ id: 'TKT-001', subject: '┘à╪┤┘â┘ä╪⌐' }],
+            data: [{ id: 'TKT-001', subject: 'مشكلة' }],
             current_page: 1,
             per_page: 10,
             total: 1,
@@ -138,7 +138,7 @@ describe('TicketService', () => {
   describe('getTicket', () => {
     test('returns single ticket on success', async () => {
       axios.get.mockResolvedValue({
-        data: { success: 1, feed: { id: 'TKT-001', subject: '╪º╪│╪¬┘ü╪│╪º╪▒', replies: [] } },
+        data: { success: 1, feed: { id: 'TKT-001', subject: 'استفسار', replies: [] } },
       });
 
       const result = await service.getTicket('TKT-001');
@@ -151,7 +151,7 @@ describe('TicketService', () => {
 
     test('returns not-found response when ticket does not exist', async () => {
       axios.get.mockResolvedValue({
-        data: { success: 0, error_msg: '╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' },
+        data: { success: 0, error_msg: 'غير موجود' },
       });
 
       const result = await service.getTicket('TKT-MISSING');
@@ -190,13 +190,13 @@ describe('TicketService', () => {
   describe('replyToTicket', () => {
     test('sends FormData without image and returns success', async () => {
       axios.post.mockResolvedValue({
-        data: { success: 1, message: '╪¬┘à ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪»' },
+        data: { success: 1, message: 'تم إرسال الرد' },
       });
 
-      const result = await service.replyToTicket('TKT-001', '╪▒╪» ┘à┘å ╪º┘ä╪╣┘à┘è┘ä');
+      const result = await service.replyToTicket('TKT-001', 'رد من العميل');
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('╪¬┘à ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪»');
+      expect(result.message).toBe('تم إرسال الرد');
       expect(axios.post).toHaveBeenCalledWith(
         expect.stringContaining('/tickets/reply'),
         expect.any(Object), // FormData instance
@@ -206,7 +206,7 @@ describe('TicketService', () => {
 
     test('appends image buffer when imageFile provided', async () => {
       axios.post.mockResolvedValue({
-        data: { success: 1, message: '╪¬┘à ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪» ╪¿╪º┘ä╪╡┘ê╪▒╪⌐' },
+        data: { success: 1, message: 'تم إرسال الرد بالصورة' },
       });
 
       const FormData = require('form-data');
@@ -218,7 +218,7 @@ describe('TicketService', () => {
         mimetype: 'image/jpeg',
       };
 
-      await service.replyToTicket('TKT-001', '╪▒╪» ┘à╪╣ ╪╡┘ê╪▒╪⌐', imageFile);
+      await service.replyToTicket('TKT-001', 'رد مع صورة', imageFile);
 
       // FormData.append should have been called with 'image'
       const appendCalls = mockFormInstance.append.mock.calls.map(c => c[0]);
@@ -228,12 +228,12 @@ describe('TicketService', () => {
 
     test('returns failure when API returns success: 0', async () => {
       axios.post.mockResolvedValue({
-        data: { success: 0, error_msg: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' },
+        data: { success: 0, error_msg: 'غير مصرح' },
       });
 
-      const result = await service.replyToTicket('TKT-001', '╪▒╪»');
+      const result = await service.replyToTicket('TKT-001', 'رد');
       expect(result.success).toBe(false);
-      expect(result.message).toBe('┘ü╪┤┘ä ┘ü┘è ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪»');
+      expect(result.message).toBe('فشل في إرسال الرد');
     });
   });
 

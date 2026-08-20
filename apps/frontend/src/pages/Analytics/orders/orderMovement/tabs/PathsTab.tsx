@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Route, Package, GitFork, Gauge, ArrowLeft } from "lucide-react";
 import {
   fetchMovement,
@@ -65,7 +65,7 @@ export default function PathsTab({ startDate, endDate, mode }: MovementFilterPro
       const result = await fetchMovement<PathsData>("paths", { startDate, endDate, mode });
       setData(result);
     } catch {
-      setError("┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪¬╪¡┘ä┘è┘ä ╪º┘ä┘à╪│╪º╪▒╪º╪¬");
+      setError("فشل تحميل تحليل المسارات");
     } finally {
       setLoading(false);
     }
@@ -82,9 +82,9 @@ export default function PathsTab({ startDate, endDate, mode }: MovementFilterPro
   const paths = data?.topPaths || [];
 
   const donutData = [
-    { name: "┘å╪º╪¼╪¡", value: stats?.successPathCount || 0, color: "#10B981" },
-    { name: "┘ü╪º╪┤┘ä", value: stats?.failedPathCount || 0, color: "#EF4444" },
-    { name: "┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░", value: stats?.pendingPathCount || 0, color: "#F59E0B" },
+    { name: "ناجح", value: stats?.successPathCount || 0, color: "#10B981" },
+    { name: "فاشل", value: stats?.failedPathCount || 0, color: "#EF4444" },
+    { name: "قيد التنفيذ", value: stats?.pendingPathCount || 0, color: "#F59E0B" },
   ].filter((d) => d.value > 0);
 
   const totalPathOrders = paths.reduce((acc, p) => acc + p.orderCount, 0);
@@ -97,14 +97,14 @@ export default function PathsTab({ startDate, endDate, mode }: MovementFilterPro
     <div className="space-y-6">
       <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¡╪▒┘â╪⌐" value={formatNumber(data?.totalOrders)} icon={Package} gradient="from-indigo-500 to-violet-600" hint={`${formatNumber(data?.uniquePaths)} ┘à╪│╪º╪▒ ┘à╪«╪¬┘ä┘ü`} />
-        <KpiCard label="╪╣╪»╪» ╪º┘ä┘à╪│╪º╪▒╪º╪¬" value={formatNumber(data?.uniquePaths)} icon={GitFork} gradient="from-violet-500 to-purple-600" hint={`${mode === "all" ? "┘â┘ä ╪º┘ä╪¡╪▒┘â╪º╪¬" : mode === "manual" ? "╪¡╪▒┘â╪º╪¬ ┘è╪»┘ê┘è╪⌐ ┘ü┘é╪╖" : "╪¡╪▒┘â╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è╪⌐ ┘ü┘é╪╖"}`} />
-        <KpiCard label="╪ú╪╖┘ê┘ä ┘à╪│╪º╪▒" value={`${stats?.maxPathLength || 0} ╪¡╪º┘ä╪⌐`} icon={Route} gradient="from-fuchsia-500 to-pink-600" />
-        <KpiCard label="┘à╪¬┘ê╪│╪╖ ╪╖┘ê┘ä ╪º┘ä┘à╪│╪º╪▒" value={`${stats?.avgPathLength || 0} ╪¡╪º┘ä╪⌐`} icon={Gauge} gradient="from-sky-500 to-indigo-600" />
+        <KpiCard label="إجمالي الطلبات المحركة" value={formatNumber(data?.totalOrders)} icon={Package} gradient="from-indigo-500 to-violet-600" hint={`${formatNumber(data?.uniquePaths)} مسار مختلف`} />
+        <KpiCard label="عدد المسارات" value={formatNumber(data?.uniquePaths)} icon={GitFork} gradient="from-violet-500 to-purple-600" hint={`${mode === "all" ? "كل الحركات" : mode === "manual" ? "حركات يدوية فقط" : "حركات تلقائية فقط"}`} />
+        <KpiCard label="أطول مسار" value={`${stats?.maxPathLength || 0} حالة`} icon={Route} gradient="from-fuchsia-500 to-pink-600" />
+        <KpiCard label="متوسط طول المسار" value={`${stats?.avgPathLength || 0} حالة`} icon={Gauge} gradient="from-sky-500 to-indigo-600" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <MovementCard title="╪¡╪╡┘è┘ä╪⌐ ╪º┘ä┘å╪¬╪º╪ª╪¼" subtitle="╪¡╪│╪¿ ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪«┘è╪▒╪⌐ ┘ä┘ä┘à╪│╪º╪▒">
+        <MovementCard title="حصيلة النتائج" subtitle="حسب الحالة الأخيرة للمسار">
           {donutData.length > 0 ? (
             <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -120,30 +120,30 @@ export default function PathsTab({ startDate, endDate, mode }: MovementFilterPro
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState message="┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘ä┘ä╪╣╪▒╪╢" />
+            <EmptyState message="لا توجد بيانات للعرض" />
           )}
         </MovementCard>
 
-        <MovementCard title="┘à┘ä╪«╪╡ ╪º┘ä╪Ñ╪¡╪╡╪º╪ª┘è╪º╪¬" className="lg:col-span-2">
+        <MovementCard title="ملخص الإحصائيات" className="lg:col-span-2">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <StatBox label="┘à╪│╪º╪▒╪º╪¬ ┘å╪º╪¼╪¡╪⌐" value={formatNumber(stats?.successPathCount)} color="text-emerald-600 dark:text-emerald-400" />
-            <StatBox label="┘à╪│╪º╪▒╪º╪¬ ┘ü╪º╪┤┘ä╪⌐" value={formatNumber(stats?.failedPathCount)} color="text-red-600 dark:text-red-400" />
-            <StatBox label="┘à╪│╪º╪▒╪º╪¬ ┘à╪╣┘ä┘é╪⌐" value={formatNumber(stats?.pendingPathCount)} color="text-amber-600 dark:text-amber-400" />
-            <StatBox label="┘à╪¬┘ê╪│╪╖ ╪▓┘à┘å ╪º┘ä┘à╪│╪º╪▒╪º╪¬" value={formatDuration(avgPathHours)} color="text-indigo-600 dark:text-indigo-400" />
+            <StatBox label="مسارات ناجحة" value={formatNumber(stats?.successPathCount)} color="text-emerald-600 dark:text-emerald-400" />
+            <StatBox label="مسارات فاشلة" value={formatNumber(stats?.failedPathCount)} color="text-red-600 dark:text-red-400" />
+            <StatBox label="مسارات معلقة" value={formatNumber(stats?.pendingPathCount)} color="text-amber-600 dark:text-amber-400" />
+            <StatBox label="متوسط زمن المسارات" value={formatDuration(avgPathHours)} color="text-indigo-600 dark:text-indigo-400" />
           </div>
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-            ╪º┘ä┘à╪│╪º╪▒ = ╪¬╪│┘ä╪│┘ä ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä╪¬┘è ┘à╪▒ ╪¿┘ç╪º ╪º┘ä╪╖┘ä╪¿. ╪¬┘Å╪¡╪¬╪│╪¿ ╪º┘ä┘à╪│╪º╪▒╪º╪¬ ╪º┘ä╪ú┘â╪½╪▒ ╪¬┘â╪▒╪º╪▒╪º┘ï ┘à╪╣ ┘à╪¬┘ê╪│╪╖ ╪▓┘à┘å┘ç╪º ┘ê┘é┘è┘à╪¬┘ç╪º.
+            المسار = تسلسل الحالات التي مر بها الطلب. تُحتسب المسارات الأكثر تكراراً مع متوسط زمنها وقيمتها.
           </p>
         </MovementCard>
       </div>
 
       <MovementCard
-        title="╪ú┘â╪½╪▒ ╪º┘ä┘à╪│╪º╪▒╪º╪¬ ╪¬┘â╪▒╪º╪▒╪º┘ï"
-        subtitle={`╪ú╪╣┘ä┘ë ${paths.length} ┘à╪│╪º╪▒ ╪¡╪│╪¿ ╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬`}
-        action={<span className="text-xs text-gray-400">┘à╪▒╪¬╪¿╪⌐ ╪¬┘å╪º╪▓┘ä┘è╪º┘ï ╪¡╪│╪¿ ╪╣╪»╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬</span>}
+        title="أكثر المسارات تكراراً"
+        subtitle={`أعلى ${paths.length} مسار حسب عدد الطلبات`}
+        action={<span className="text-xs text-gray-400">مرتبة تنازلياً حسب عدد الطلبات</span>}
       >
         {paths.length === 0 ? (
-          <EmptyState message="┘ä╪º ╪¬┘ê╪¼╪» ┘à╪│╪º╪▒╪º╪¬ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐" />
+          <EmptyState message="لا توجد مسارات في هذه الفترة" />
         ) : (
           <div className="space-y-4">
             {paths.map((p, idx) => (
@@ -153,7 +153,7 @@ export default function PathsTab({ startDate, endDate, mode }: MovementFilterPro
                     <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-[11px]">{idx + 1}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
-                    {p.path.split("ΓåÆ").map((status, i) => (
+                    {p.path.split("→").map((status, i) => (
                       <React.Fragment key={`${status}-${i}`}>
                         {i > 0 && <ArrowLeft className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 shrink-0" />}
                         <StatusPill code={status} />
@@ -161,16 +161,16 @@ export default function PathsTab({ startDate, endDate, mode }: MovementFilterPro
                     ))}
                   </div>
                   <div className="flex items-center gap-3 text-xs">
-                    <span className="font-bold text-gray-900 dark:text-white text-sm">{formatNumber(p.orderCount)} ╪╖┘ä╪¿</span>
+                    <span className="font-bold text-gray-900 dark:text-white text-sm">{formatNumber(p.orderCount)} طلب</span>
                     <span className="text-gray-400">{formatPercent(p.percent)}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs mt-2">
-                  <Meta label="┘à╪¬┘ê╪│╪╖ ╪º┘ä╪▓┘à┘å" value={formatDuration(p.avgHours)} />
-                  <Meta label="┘à╪¬┘ê╪│╪╖ ┘é┘è┘à╪⌐ ╪º┘ä╪╖┘ä╪¿" value={formatCurrency(p.avgOrderValue)} />
-                  <Meta label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪Ñ┘è╪▒╪º╪»╪º╪¬" value={formatCurrency(p.totalRevenue)} />
-                  <Meta label="┘è╪»┘ê┘è / ╪¬┘ä┘é╪º╪ª┘è" value={`${p.manualTransitions} / ${p.autoTransitions}`} />
+                  <Meta label="متوسط الزمن" value={formatDuration(p.avgHours)} />
+                  <Meta label="متوسط قيمة الطلب" value={formatCurrency(p.avgOrderValue)} />
+                  <Meta label="إجمالي الإيرادات" value={formatCurrency(p.totalRevenue)} />
+                  <Meta label="يدوي / تلقائي" value={`${p.manualTransitions} / ${p.autoTransitions}`} />
                 </div>
               </div>
             ))}

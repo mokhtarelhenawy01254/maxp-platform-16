@@ -1,4 +1,4 @@
-﻿const crypto = require('crypto');
+const crypto = require('crypto');
 const dicomParser = require('dicom-parser');
 const { getDateStringInTimezone } = require('./dateUtils');
 
@@ -9,7 +9,7 @@ const cleanString = (value) => {
 };
 
 /**
- * ╪¬┘ê┘ä┘è╪» ╪▒┘é┘à ╪»╪▒╪º╪│╪⌐ ╪¿╪╡┘è╪║╪⌐ RAD-YYYYMMDD-XXXX
+ * توليد رقم دراسة بصيغة RAD-YYYYMMDD-XXXX
  */
 function generateStudyNumber() {
   const datePart = getDateStringInTimezone(new Date()).replace(/-/g, '');
@@ -18,8 +18,8 @@ function generateStudyNumber() {
 }
 
 /**
- * ╪¬╪¡┘ä┘è┘ä ╪¿┘è╪º┘å╪º╪¬ DICOM ┘à┘å ┘à╪¡╪¬┘ê┘ë ╪½┘å╪º╪ª┘è.
- * ┘è╪╣┘è╪» {} ┘ü┘è ╪¡╪º┘ä ┘ü╪┤┘ä ╪º┘ä╪¬╪¡┘ä┘è┘ä (╪º┘ä┘à┘ä┘ü ┘ä╪º ┘è╪▓╪º┘ä ┘è┘Å╪▒┘ü╪╣).
+ * تحليل بيانات DICOM من محتوى ثنائي.
+ * يعيد {} في حال فشل التحليل (الملف لا يزال يُرفع).
  */
 function parseDicomFromBuffer(buffer) {
   try {
@@ -53,7 +53,7 @@ function parseDicomFromBuffer(buffer) {
       const slice = dataSet.intString('x00200013');
       if (Number.isFinite(slice)) meta.sliceIndex = slice;
     } catch {
-      // ╪¬╪¼╪º┘ç┘ä ╪║┘è╪º╪¿ ╪▒┘é┘à ╪º┘ä╪┤╪▒┘è╪¡╪⌐
+      // تجاهل غياب رقم الشريحة
     }
 
     return meta;

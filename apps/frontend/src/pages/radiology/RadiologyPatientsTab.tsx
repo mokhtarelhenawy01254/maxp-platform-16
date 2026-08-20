@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Search, FileText, GitMerge, Trash2, Pencil, Check, X as XMarkIcon } from "lucide-react";
@@ -255,11 +255,11 @@ export default function RadiologyPatientsTab() {
                     <span className="text-xs font-mono font-medium" dir="ltr">{formatSequentialId(idSettings.patientPrefix, p.patientNo, idSettings.digits, idSettings.enabled) || p.id.slice(0, 8)}</span>
                   </td>
                   <td className="py-3 px-4 font-medium">{p.firstName} {p.lastName || ""}</td>
-                  <td className="py-3 px-4" dir="ltr">{p.phone || "ΓÇö"}</td>
-                  <td className="py-3 px-4">{GENDER_LABEL[p.gender || ""] ? t(GENDER_LABEL[p.gender || ""] ?? "") : "ΓÇö"}</td>
-                  <td className="py-3 px-4" dir="ltr">{p.nationalId || "ΓÇö"}</td>
+                  <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>
+                  <td className="py-3 px-4">{GENDER_LABEL[p.gender || ""] ? t(GENDER_LABEL[p.gender || ""] ?? "") : "—"}</td>
+                  <td className="py-3 px-4" dir="ltr">{p.nationalId || "—"}</td>
                   <td className="py-3 px-4">
-                    {p.insuranceNumber ? <span dir="ltr">{p.insuranceNumber}</span> : "ΓÇö"}
+                    {p.insuranceNumber ? <span dir="ltr">{p.insuranceNumber}</span> : "—"}
                     {p.insuranceCompany?.name ? <div className="text-xs text-gray-400">{p.insuranceCompany.name}</div> : null}
                   </td>
                   <td className="py-3 px-4">{p.visitCount ?? 0}</td>
@@ -311,7 +311,7 @@ export default function RadiologyPatientsTab() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setRecordPatient(null)}>
           <div className={`${MODAL_CONTENT_CLS} max-h-[85vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">{t("radiology.patientTimeline.title")} ΓÇö {recordPatient.firstName} {recordPatient.lastName || ""}</h3>
+              <h3 className="text-lg font-bold">{t("radiology.patientTimeline.title")} — {recordPatient.firstName} {recordPatient.lastName || ""}</h3>
               <button onClick={() => setRecordPatient(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             {recordLoading ? (
@@ -337,7 +337,7 @@ export default function RadiologyPatientsTab() {
                           </span>
                         ) : null}
                       </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{v.date ? new Date(v.date).toLocaleDateString("ar-EG") : "ΓÇö"}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{v.date ? new Date(v.date).toLocaleDateString("ar-EG") : "—"}</span>
                     </div>
                     <table className="w-full text-sm">
                       <thead>
@@ -352,16 +352,16 @@ export default function RadiologyPatientsTab() {
                       <tbody>
                         {v.studies.map(s => (
                           <tr key={s.id} className="border-b dark:border-gray-700/50 last:border-0">
-                            <td className="py-2 px-3" dir="ltr">{s.studyNumber || "ΓÇö"}</td>
-                            <td className="py-2 px-3">{s.examTypeName || "ΓÇö"}</td>
-                            <td className="py-2 px-3">{s.status || "ΓÇö"}</td>
+                            <td className="py-2 px-3" dir="ltr">{s.studyNumber || "—"}</td>
+                            <td className="py-2 px-3">{s.examTypeName || "—"}</td>
+                            <td className="py-2 px-3">{s.status || "—"}</td>
                             <td className="py-2 px-3 max-w-[240px]">
                               {s.report?.reportStatus ? (
                                 <div className="truncate" title={s.report?.reportText || s.report?.reportStatus}>
                                   <span className="text-blue-600 dark:text-blue-400">{s.report?.reportStatus}</span>
-                                  {s.report?.reportText ? <span className="text-gray-500 dark:text-gray-400"> ΓÇö {s.report.reportText.slice(0, 60)}{s.report.reportText.length > 60 ? "ΓÇª" : ""}</span> : null}
+                                  {s.report?.reportText ? <span className="text-gray-500 dark:text-gray-400"> — {s.report.reportText.slice(0, 60)}{s.report.reportText.length > 60 ? "…" : ""}</span> : null}
                                 </div>
-                              ) : <span className="text-gray-400">ΓÇö</span>}
+                              ) : <span className="text-gray-400">—</span>}
                             </td>
                             <td className="py-2 px-3 whitespace-nowrap">
                               {Number(s.paidAmount || 0) > 0 ? (

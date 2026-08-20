@@ -1,15 +1,16 @@
-import { ChevronDown as ChevronDownIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/utils/formatters';
-import { Fragment, memo, useMemo, useState } from "react";
+import { Fragment, memo, useState } from "react";
 import { Link } from "react-router-dom";
-;
+import { useTranslation } from "react-i18next";
+import { ChevronDownIcon, ExclamationTriangleIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
+  PREPARATION_COLUMN_LABEL_KEYS,
   SHORTAGE_HOLD_STATUS,
-  SOURCE_LABELS,
+  SOURCE_LABEL_KEYS,
+  type PreparationTableColumn,
 } from "../constants";
 import {
+  buildProblemHoldDetails,
   buildShortageHoldDetails,
   getAgeLabel,
   getNextStatus,
@@ -22,12 +23,14 @@ import type {
   PreparationOrder,
   PreparationQueueSettings,
   PreparationStatusOption,
+  ProblemHoldDetails,
   QcCheckKey,
   ShortageHoldDetails,
 } from "../types";
 import PreparationOrderItemsList from "./PreparationOrderItemsList";
 import PreparationOrderNotices from "./PreparationOrderNotices";
 import PreparationOrderShortagePanel from "./PreparationOrderShortagePanel";
+import PreparationProblemHoldPanel from "./PreparationProblemHoldPanel";
 import PreparationOrderQcChecklist from "./PreparationOrderQcChecklist";
 import PreparationOrderActions from "./PreparationOrderActions";
 
@@ -39,13 +42,16 @@ interface PreparationOrdersTableProps {
   selectedSet: Set<string>;
   rowUpdatingId: string | null;
   shortageSavingOrderId: string | null;
+  problemHoldSavingOrderId: string | null;
   selectedWarehouseId: string;
   enabledQcChecks: QcCheckKey[];
   qcChecklistState: Record<string, Partial<Record<QcCheckKey, boolean>>>;
   shortageHoldDrafts: Record<string, ShortageHoldDetails>;
+  problemHoldDrafts: Record<string, ProblemHoldDetails>;
   transferingItemKey: string | null;
   printingOrderNumber: string | null;
   preparationSettings: PreparationQueueSettings;
+  visibleColumns: PreparationTableColumn[];
   formatPrice: (value: number) => string;
   formatDate: (value: string) => string;
   onToggleSelection: (orderNumber: string) => void;
@@ -69,6 +75,10 @@ interface PreparationOrdersTableProps {
   onSingleStatusUpdate: (orderNumber: string, nextStatus: string) => void;
   onMarkAsShortageHold: (orderNumber: string) => void;
   onReleaseShortageHold: (orderNumber: string) => void;
+  onMarkAsShortageFailed: (orderNumber: string) => void;
+  onHoldAsProblem: (orderNumber: string) => void;
+  onReleaseProblemHold: (orderNumber: string) => void;
+  onEditProblemReason: (orderNumber: string) => void;
   onPrintPreparationSlip: (orderNumber: string) => void;
 }
 
@@ -80,13 +90,16 @@ const PreparationOrdersTable = ({
   selectedSet,
   rowUpdatingId,
   shortageSavingOrderId,
+  problemHoldSavingOrderId,
   selectedWarehouseId,
   enabledQcChecks,
   qcChecklistState,
   shortageHoldDrafts,
+  problemHoldDrafts,
   transferingItemKey,
   printingOrderNumber,
   preparationSettings,
+  visibleColumns,
   formatPrice,
   formatDate,
   onToggleSelection,
@@ -98,6 +111,10 @@ const PreparationOrdersTable = ({
   onSingleStatusUpdate,
   onMarkAsShortageHold,
   onReleaseShortageHold,
+  onMarkAsShortageFailed,
+  onHoldAsProblem,
+  onReleaseProblemHold,
+  onEditProblemReason,
   onPrintPreparationSlip,
 }: PreparationOrdersTableProps) => {
   const { t } = useTranslation();
@@ -117,25 +134,46 @@ const PreparationOrdersTable = ({
 
   if (orders.length === 0) return null;
 
+  const totalCols = visibleColumns.length + 3;
+
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <table className="w-full table-auto text-right text-sm">
         <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <tr className="border-b border-gray-100 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-400">
             <th className="w-10 px-3 py-2.5">
-              <span className="sr-only">تحديد</span>
+              <span className="sr-only">{t("preparation.table.selectColumn")}</span>
             </th>
-            <th className="px-3 py-2.5">رقم الطلب</th>
-            <th className="px-3 py-2.5">العميل</th>
-            <th className="px-3 py-2.5">القطع</th>
-            <th className="px-3 py-2.5">القيمة</th>
-            <th className="px-3 py-2.5">الحالة</th>
-            <th className="px-3 py-2.5">المخزن</th>
-            <th className="px-3 py-2.5">التجهيز</th>
-            <th className="px-3 py-2.5">الطباعة</th>
-            <th className="px-3 py-2.5">كود الشحن</th>
+            <th className="px-3 py-2.5">{t("preparation.table.orderNumber")}</th>
+            {visibleColumns.includes("customer") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.customer)}</th>
+            )}
+            {visibleColumns.includes("units") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.units)}</th>
+            )}
+            {visibleColumns.includes("value") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.value)}</th>
+            )}
+            {visibleColumns.includes("status") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.status)}</th>
+            )}
+            {visibleColumns.includes("problem") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.problem)}</th>
+            )}
+            {visibleColumns.includes("warehouse") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.warehouse)}</th>
+            )}
+            {visibleColumns.includes("readiness") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.readiness)}</th>
+            )}
+            {visibleColumns.includes("printStatus") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.printStatus)}</th>
+            )}
+            {visibleColumns.includes("shippingCode") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.shippingCode)}</th>
+            )}
             <th className="w-20 px-3 py-2.5">
-              <span className="sr-only">التفاصيل</span>
+              <span className="sr-only">{t("preparation.table.detailsColumn")}</span>
             </th>
           </tr>
         </thead>
@@ -153,6 +191,11 @@ const PreparationOrdersTable = ({
                 order.stage,
               ),
             );
+            const problemHoldDetails =
+              problemHoldDrafts[order.orderNumber] ||
+              buildProblemHoldDetails(order.metadata);
+            const activeFollowUpVisual =
+              order.stage === "STOCK_SHORTAGE" ? shortageFollowUpVisual : null;
             const nextStatus = getNextStatus(
               order.stage,
               preparationSettings.handoffStatus,
@@ -169,6 +212,8 @@ const PreparationOrdersTable = ({
                       ? "PACKAGED"
                       : order.stage === "STOCK_SHORTAGE"
                         ? SHORTAGE_HOLD_STATUS
+                      : order.stage === "ON_HOLD_PREP"
+                        ? preparationSettings.startingStatus
                         : preparationSettings.handoffStatus;
             const defaultTargetStatus = nextStatus || currentStageStatus;
             const currentSelection =
@@ -176,24 +221,26 @@ const PreparationOrdersTable = ({
             const actionLabel =
               statusSelections[order.orderNumber] &&
               statusSelections[order.orderNumber] !== defaultTargetStatus
-                ? "تطبيق المرحلة المختارة"
+                ? t("preparation.table.applySelectedStage")
                 : getQuickActionLabel(order.stage);
             const qcCompleted = enabledQcChecks.every(
               (key) => qcChecklistState[order.orderNumber]?.[key] === true,
             );
             const rowBusy =
               rowUpdatingId === order.orderNumber ||
-              shortageSavingOrderId === order.orderNumber;
+              shortageSavingOrderId === order.orderNumber ||
+              problemHoldSavingOrderId === order.orderNumber;
             const hasShortageContext =
               order.missingItemsCount > 0 || order.stage === "STOCK_SHORTAGE";
+            const isProblemHeld = order.stage === "ON_HOLD_PREP";
             const isEvenRow = index % 2 === 0;
 
             return (
               <Fragment key={order.orderNumber}>
                 <tr
-                  className={`border-b border-gray-100 transition hover:bg-gray-100/60 ${
-                    isEvenRow ? "bg-white" : "bg-gray-50/40"
-                  } ${isExpanded ? "bg-amber-50/40 shadow-inner" : ""}`}
+                  className={`border-b border-gray-100 transition hover:bg-gray-100/60 dark:border-gray-700 dark:hover:bg-gray-700/30 ${
+                    isEvenRow ? "bg-white dark:bg-gray-800" : "bg-gray-50/40 dark:bg-gray-800/60"
+                  } ${isExpanded ? "bg-amber-50/40 shadow-inner dark:bg-amber-900/10" : ""}`}
                 >
                   {/* Checkbox */}
                   <td className="px-3 py-2.5">
@@ -202,33 +249,33 @@ const PreparationOrdersTable = ({
                       checked={selectedSet.has(order.orderNumber)}
                       onChange={() => onToggleSelection(order.orderNumber)}
                       disabled={!canPrepare}
-                      className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                      className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-500 dark:text-amber-400"
                     />
                   </td>
 
                   {/* Order number */}
                   <td className="px-3 py-2.5">
                     {order.merchantFulfillment ? (
-                      <span className="text-sm font-bold text-gray-900">
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
                         #{order.orderNumber}
                       </span>
                     ) : (
                       <Link
                         to={`/orders/${encodeURIComponent(order.orderNumber)}`}
-                        className="text-sm font-bold text-gray-900 hover:text-amber-700"
+                        className="text-sm font-bold text-gray-900 hover:text-amber-700 dark:text-gray-100 dark:hover:text-amber-400"
                       >
                         #{order.orderNumber}
                       </Link>
                     )}
 
                     <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                      <span className="rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
-                        {SOURCE_LABELS[
+                      <span className="rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                        {t(SOURCE_LABEL_KEYS[
                           (order.sourceType || "unknown").toLowerCase()
-                        ] || order.sourceType}
+                        ]) || order.sourceType}
                       </span>
                       {shortageFollowUpVisual ? (
-                        <span className="rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-800">
+                        <span className="rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-800 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-300">
                           {shortageFollowUpVisual.label}
                         </span>
                       ) : null}
@@ -236,106 +283,161 @@ const PreparationOrdersTable = ({
                   </td>
 
                   {/* Customer */}
-                  <td className="px-3 py-2.5">
-                    <p className="text-xs font-medium text-gray-800">
-                      {order.customerName}
-                    </p>
-<p className="text-[11px] text-gray-400">
-                      {order.customerPhone || ""}
-                    </p>
-                    <p className="text-[11px] text-gray-400">
-                      {getAgeLabel(order.createdAt)}
-                      {order.governorate || order.city
-                        ? ` • ${order.governorate || order.city}`
-                        : ""}
-                    </p>
-                  </td>
+                  {visibleColumns.includes("customer") && (
+                    <td className="px-3 py-2.5">
+                      <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
+                        {order.customerName}
+                      </p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                        {order.customerPhone || ""}
+                      </p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                        {getAgeLabel(order.createdAt)}
+                        {order.governorate || order.city
+                          ? ` • ${order.governorate || order.city}`
+                          : ""}
+                      </p>
+                    </td>
+                  )}
 
                   {/* Units */}
-                  <td className="px-3 py-2.5">
-                    <span className="text-sm font-bold text-gray-800">
-                      {order.totalUnits}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("units") && (
+                    <td className="px-3 py-2.5">
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                        {order.totalUnits}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Value */}
-                  <td className="px-3 py-2.5">
-                    <span className="text-sm font-bold text-gray-800">
-                      {formatPrice(order.totalValue)}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("value") && (
+                    <td className="px-3 py-2.5">
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                        {formatPrice(order.totalValue)}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Status */}
-                  <td className="px-3 py-2.5">
-                    {(() => {
-                      const statusInfo = getStatusDisplay(order.normalizedStatus);
-                      return (
-                        <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.colorClass}`} aria-label={statusInfo.labelKey}>
-                          {t(statusInfo.labelKey) || statusInfo.label}
-                        </span>
-                      );
-                    })()}
-                  </td>
+                  {visibleColumns.includes("status") && (
+                    <td className="px-3 py-2.5">
+                      {(() => {
+                        const statusInfo = getStatusDisplay(order.normalizedStatus);
+                        return (
+                          <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.colorClass}`} aria-label={statusInfo.labelKey}>
+                            {t(statusInfo.labelKey) || statusInfo.label}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                  )}
+
+                  {/* Problem */}
+                  {visibleColumns.includes("problem") && (
+                    <td className="px-3 py-2.5">
+                      {isProblemHeld ? (
+                        <div className="flex items-start gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onEditProblemReason(order.orderNumber)}
+                            disabled={rowBusy}
+                            title={String(t("preparation.problemPanel.edit"))}
+                            className="mt-0.5 shrink-0 rounded-md border border-amber-200 bg-white p-1 text-amber-700 transition hover:border-amber-400 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-gray-800 dark:text-amber-300 dark:hover:border-amber-600"
+                          >
+                            <PencilIcon className="h-3 w-3" />
+                          </button>
+                          {problemHoldDetails.reason ? (
+                            <span
+                              className="line-clamp-2 max-w-[180px] rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                              title={problemHoldDetails.reason}
+                            >
+                              {problemHoldDetails.reason}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onEditProblemReason(order.orderNumber)}
+                              disabled={rowBusy}
+                              className="inline-flex items-center gap-1 rounded-lg border border-dashed border-amber-400 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 transition hover:border-amber-500 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                            >
+                              <ExclamationTriangleIcon className="h-3 w-3" />
+                              {t("preparation.problemPanel.addReason")}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                      )}
+                    </td>
+                  )}
 
                   {/* Warehouse */}
-                  <td className="px-3 py-2.5">
-                    <span className="max-w-[100px] truncate text-xs font-semibold text-gray-700">
-                      {order.recommendedWarehouseName || "غير محدد"}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("warehouse") && (
+                    <td className="px-3 py-2.5">
+                      <span className="max-w-[100px] truncate text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {order.recommendedWarehouseName || t("preparation.table.notDefined")}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Ready / shortage indicator */}
-                  <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-block rounded-lg px-2 py-1 text-[11px] font-semibold ${
-                        order.isReady
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-rose-50 text-rose-700"
-                      }`}
-                    >
-                      {order.isReady
-                        ? "جاهز ✓"
-                        : `${order.missingItemsCount} نقص`}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("readiness") && (
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`inline-block rounded-lg px-2 py-1 text-[11px] font-semibold ${
+                          order.isReady
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                            : "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300"
+                        }`}
+                      >
+                        {order.isReady
+                          ? t("preparation.table.ready")
+                          : t("preparation.table.shortage", { count: order.missingItemsCount })}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Print status */}
-                  <td className="px-3 py-2.5">
-                    {(order.printCount ?? 0) > 0 ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700" title={order.printedAt ? formatDate(order.printedAt) : ''}>
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        {order.printCount}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-400">
-                        —
-                      </span>
-                    )}
-                  </td>
+                  {visibleColumns.includes("printStatus") && (
+                    <td className="px-3 py-2.5">
+                      {(order.printCount ?? 0) > 0 ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300" title={order.printedAt ? formatDate(order.printedAt) : ''}>
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          {order.printCount}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-400 dark:bg-gray-700 dark:text-gray-500">
+                          —
+                        </span>
+                      )}
+                    </td>
+                  )}
 
                   {/* Shipping code */}
-                  <td className="px-3 py-2.5">
-                    <span className="text-xs font-medium text-gray-700">
-                      {order.turboTrackingNumber ||
-                        (order.shipments?.length
-                          ? order.shipments
-                              .map((s) => s.trackingNumber)
-                              .filter(Boolean)
-                              .join(", ")
-                          : null) || "—"}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("shippingCode") && (
+                    <td className="px-3 py-2.5">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {order.turboTrackingNumber ||
+                          (order.shipments?.length
+                            ? order.shipments
+                                .map((s) => s.trackingNumber)
+                                .filter(Boolean)
+                                .join(", ")
+                            : null) || "—"}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Details button */}
                   <td className="px-3 py-2.5">
                     <button
                       type="button"
                       onClick={() => toggleExpanded(order.orderNumber)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-50"
+                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-700"
                     >
-                      التفاصيل
+                      {t("preparation.table.details")}
                       <ChevronDownIcon
                         className={`h-3.5 w-3.5 transition-transform ${
                           isExpanded ? "rotate-180" : ""
@@ -347,8 +449,8 @@ const PreparationOrdersTable = ({
 
                 {/* Expanded details row */}
                 {isExpanded && (
-                  <tr className="bg-gray-50/80">
-                    <td colSpan={11} className="border-b border-gray-100 px-4 py-4">
+                  <tr className="bg-gray-50/80 dark:bg-gray-800/60">
+                    <td colSpan={totalCols} className="border-b border-gray-100 px-4 py-4 dark:border-gray-700">
                       <div className="space-y-2.5">
                         <PreparationOrderItemsList
                           order={order}
@@ -360,7 +462,7 @@ const PreparationOrdersTable = ({
 
                         <PreparationOrderNotices
                           order={order}
-                          shortageFollowUpVisual={shortageFollowUpVisual}
+                          shortageFollowUpVisual={activeFollowUpVisual}
                         />
 
                         {canPrepare && hasShortageContext ? (
@@ -374,6 +476,16 @@ const PreparationOrdersTable = ({
                             onSaveShortageHoldDetails={
                               onSaveShortageHoldDetails
                             }
+                          />
+                        ) : null}
+
+                        {canPrepare && isProblemHeld ? (
+                          <PreparationProblemHoldPanel
+                            order={order}
+                            problemHoldDetails={problemHoldDetails}
+                            rowBusy={rowBusy}
+                            formatDate={formatDate}
+                            onEditProblemReason={onEditProblemReason}
                           />
                         ) : null}
 
@@ -405,6 +517,9 @@ const PreparationOrdersTable = ({
                           onSingleStatusUpdate={onSingleStatusUpdate}
                           onMarkAsShortageHold={onMarkAsShortageHold}
                           onReleaseShortageHold={onReleaseShortageHold}
+                          onMarkAsShortageFailed={onMarkAsShortageFailed}
+                          onHoldAsProblem={onHoldAsProblem}
+                          onReleaseProblemHold={onReleaseProblemHold}
                           onPrintPreparationSlip={onPrintPreparationSlip}
                         />
                       </div>

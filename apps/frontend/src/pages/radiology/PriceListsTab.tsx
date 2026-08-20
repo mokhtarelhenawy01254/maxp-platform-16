@@ -1,1 +1,1 @@
-﻿export { default } from "@/pages/admin/booking/PriceListsTab";
+export { default } from "@/pages/admin/booking/PriceListsTab";

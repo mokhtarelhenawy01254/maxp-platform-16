@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, DoorOpen, Monitor, Stethoscope, ChevronDown, ChevronUp } from "lucide-react";
 import { api, fetchJson, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyRoom, RadiologyDevice } from "./shared";

@@ -13,7 +13,8 @@ const {
   updateStatusMapping,
   reorderStatuses,
   initializeStatuses,
-  getStatusStats
+  getStatusStats,
+  getStatusesWithTemplates
 } = require('../controller/orderStatusController');
 
 // Apply order-core access check to all routes in this router
@@ -38,6 +39,13 @@ router.get('/', verifyToken.authenticateToken, getAllStatuses);
  * @access  Private
  */
 router.get('/stats', verifyToken.authenticateToken, getStatusStats);
+
+/**
+ * @route   GET /api/v1/order-status/with-templates
+ * @desc    جلب الحالات مع القوالب المرتبطة
+ * @access  Private
+ */
+router.get('/with-templates', verifyToken.authenticateToken, getStatusesWithTemplates);
 
 /**
  * @route   GET /api/v1/order-status/:id

@@ -1,7 +1,11 @@
-import { Truck as TruckIcon, DollarSign as CurrencyDollarIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, Star as SparklesIcon, Info as InformationCircleIcon, Plus as PlusCircleIcon, Trash2 as TrashIcon, Circle as ArrowTrendingUpIcon, Activity as ChartBarIcon, Circle as ScaleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo, useCallback } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  TruckIcon, CurrencyDollarIcon, ExclamationTriangleIcon,
+  CheckCircleIcon, SparklesIcon, InformationCircleIcon,
+  PlusCircleIcon, TrashIcon, ArrowTrendingUpIcon,
+  ChartBarIcon, ScaleIcon,
+} from "@heroicons/react/24/outline";
 import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;

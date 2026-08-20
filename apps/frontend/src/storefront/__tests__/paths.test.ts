@@ -75,17 +75,17 @@ describe("storefront path helpers", () => {
   });
 
   it("normalizes nullish path inputs instead of throwing", () => {
-    expect(buildStorefrontPath(null as string, null as string)).toBe(
+    expect(buildStorefrontPath(null as unknown as string, null as unknown as string)).toBe(
       "/",
     );
     expect(
       buildStorefrontPreviewAdminPath(
-        null as string,
-        null as string,
+        null as unknown as string,
+        null as unknown as string,
       ),
     ).toBe("/");
     expect(
-      getStorefrontProductRouteKey(null as string),
+      getStorefrontProductRouteKey(null as unknown as string),
     ).toBeNull();
   });
 

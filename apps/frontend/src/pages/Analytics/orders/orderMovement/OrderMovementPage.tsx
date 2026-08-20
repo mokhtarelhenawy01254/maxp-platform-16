@@ -1,4 +1,4 @@
-﻿import React, { Suspense, useState } from "react";
+import React, { Suspense, useState } from "react";
 import { Calendar, Grid3X3, GitBranch, Route, Clock, Flag, Users, Hourglass, ClipboardCheck } from "lucide-react";
 import { LoadingState, ModeToggle, type MovementFilterProps, type MovementMode } from "./orderMovementShared";
 
@@ -22,21 +22,21 @@ type TabId =
   | "approvals";
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "matrix", label: "┘à╪╡┘ü┘ê┘ü╪⌐ ╪º┘ä╪º┘å╪¬┘é╪º┘ä╪º╪¬", icon: Grid3X3 },
-  { id: "sankey", label: "╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪¬╪»┘ü┘é", icon: GitBranch },
-  { id: "paths", label: "╪¬╪¡┘ä┘è┘ä ╪º┘ä┘à╪│╪º╪▒╪º╪¬", icon: Route },
-  { id: "dwell", label: "╪▓┘à┘å ╪º┘ä┘à┘â┘ê╪½", icon: Clock },
-  { id: "outcomes", label: "╪º┘ä┘å╪¬╪º╪ª╪¼ ╪º┘ä┘å┘ç╪º╪ª┘è╪⌐", icon: Flag },
-  { id: "team", label: "╪ú╪»╪º╪í ╪º┘ä┘ü╪▒┘è┘é", icon: Users },
-  { id: "aging", label: "╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪╣┘ä┘æ┘é╪⌐", icon: Hourglass },
-  { id: "approvals", label: "╪º┘ä┘à┘ê╪º┘ü┘é╪º╪¬", icon: ClipboardCheck },
+  { id: "matrix", label: "مصفوفة الانتقالات", icon: Grid3X3 },
+  { id: "sankey", label: "خريطة التدفق", icon: GitBranch },
+  { id: "paths", label: "تحليل المسارات", icon: Route },
+  { id: "dwell", label: "زمن المكوث", icon: Clock },
+  { id: "outcomes", label: "النتائج النهائية", icon: Flag },
+  { id: "team", label: "أداء الفريق", icon: Users },
+  { id: "aging", label: "الطلبات المعلّقة", icon: Hourglass },
+  { id: "approvals", label: "الموافقات", icon: ClipboardCheck },
 ];
 
 const QUICK_PERIODS = [
-  { value: "7", label: "7 ╪ú┘è╪º┘à" },
-  { value: "30", label: "30 ┘è┘ê┘à" },
-  { value: "90", label: "90 ┘è┘ê┘à" },
-  { value: "180", label: "6 ╪┤┘ç┘ê╪▒" },
+  { value: "7", label: "7 أيام" },
+  { value: "30", label: "30 يوم" },
+  { value: "90", label: "90 يوم" },
+  { value: "180", label: "6 شهور" },
 ];
 
 const todayStr = () => {
@@ -96,13 +96,13 @@ export default function OrderMovementPage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-medium text-indigo-500 dark:text-indigo-400 mb-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              ╪¬╪¡┘ä┘è┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+              تحليلات الطلبات
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-l from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-              ╪¡╪▒┘â╪⌐ ╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬
+              حركة حالات الطلبات
             </h1>
             <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
-              ╪▒╪╡╪» ┘â╪º┘à┘ä ┘ä╪▒╪¡┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪¿┘è┘å ╪º┘ä╪¡╪º┘ä╪º╪¬ ΓÇö ┘è╪»┘ê┘è ┘ê╪¬┘ä┘é╪º╪ª┘è ΓÇö ┘ê╪¬╪¡╪»┘è╪» ╪º┘ä╪º╪«╪¬┘å╪º┘é╪º╪¬ ┘ê╪º┘ä┘ü╪º┘é╪» ┘ü┘è ┘â┘ä ╪│┘è┘å╪º╪▒┘è┘ê
+              رصد كامل لرحلات الطلبات بين الحالات — يدوي وتلقائي — وتحديد الاختناقات والفاقد في كل سيناريو
             </p>
           </div>
 
@@ -131,7 +131,7 @@ export default function OrderMovementPage() {
                 onChange={(e) => { setPeriod("custom"); setStartDate(e.target.value); }}
                 className="bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none [color-scheme:light] dark:[color-scheme:dark]"
               />
-              <span className="text-gray-400 text-sm">╪Ñ┘ä┘ë</span>
+              <span className="text-gray-400 text-sm">إلى</span>
               <input
                 type="date"
                 value={endDate}

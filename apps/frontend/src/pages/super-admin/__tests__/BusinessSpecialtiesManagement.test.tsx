@@ -1,4 +1,4 @@
-﻿import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import BusinessSpecialtiesManagement from "../BusinessSpecialtiesManagement";
 
@@ -43,9 +43,9 @@ jest.mock("../../../services/businessSpecialtyService", () => ({
 const sampleSpecialty = {
   id: "bizsp_ecommerce_retail",
   slug: "ecommerce-retail",
-  nameAr: "╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒",
+  nameAr: "التجارة والمتاجر",
   nameEn: "E-commerce & Retail",
-  descriptionAr: "┘à╪¬╪¼╪▒ ╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è ┘ê┘à┘å╪¬╪¼╪º╪¬ ┘ê╪╖┘ä╪¿╪º╪¬.",
+  descriptionAr: "متجر إلكتروني ومنتجات وطلبات.",
   descriptionEn: "Online store, products and orders.",
   icon: "ShoppingBag",
   appSlugs: ["store-basic", "crm-lite", "analytics-basic"],
@@ -59,7 +59,7 @@ const sampleOptions = [
   {
     id: "app-store",
     slug: "store-basic",
-    name: "╪º┘ä┘à╪¬╪¼╪▒ ╪º┘ä╪ú╪│╪º╪│┘è",
+    name: "المتجر الأساسي",
     nameEn: "Store Basic",
     category: "ECOMMERCE",
     icon: "Store",
@@ -67,7 +67,7 @@ const sampleOptions = [
   {
     id: "app-crm",
     slug: "crm-lite",
-    name: "╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í",
+    name: "إدارة العملاء",
     nameEn: "CRM Lite",
     category: "crm",
     icon: "Users",
@@ -75,7 +75,7 @@ const sampleOptions = [
   {
     id: "app-analytics",
     slug: "analytics-basic",
-    name: "╪º┘ä╪¬╪¡┘ä┘è┘ä╪º╪¬",
+    name: "التحليلات",
     nameEn: "Analytics",
     category: "general",
     icon: "BarChart",
@@ -102,58 +102,58 @@ describe("BusinessSpecialtiesManagement page", () => {
     });
 
     expect(
-      (await screen.findAllByText(/╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒/i)).length,
+      (await screen.findAllByText(/التجارة والمتاجر/i)).length,
     ).toBeGreaterThan(0);
     expect(
-      (await screen.findAllByText(/╪º┘ä┘à╪¬╪¼╪▒ ╪º┘ä╪ú╪│╪º╪│┘è/i)).length,
+      (await screen.findAllByText(/المتجر الأساسي/i)).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í ┘å╪┤╪º╪╖/i }),
+      screen.getByRole("button", { name: /إنشاء نشاط/i }),
     ).toBeInTheDocument();
   });
 
   test("opens create dialog from the hero action", async () => {
     render(<BusinessSpecialtiesManagement />);
 
-    expect((await screen.findAllByText(/╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/التجارة والمتاجر/i)).length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole("button", { name: /╪Ñ┘å╪┤╪º╪í ┘å╪┤╪º╪╖/i }));
+    fireEvent.click(screen.getByRole("button", { name: /إنشاء نشاط/i }));
 
     expect(
-      await screen.findByText(/╪Ñ┘å╪┤╪º╪í ┘å╪┤╪º╪╖ ╪¬╪¼╪º╪▒┘è ╪¼╪»┘è╪»/i),
+      await screen.findByText(/إنشاء نشاط تجاري جديد/i),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/╪º┘ä╪º╪│┘à ╪¿╪º┘ä╪╣╪▒╪¿┘è/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/╪º┘ä╪º╪│┘à ╪¿╪º┘ä╪Ñ┘å╪¼┘ä┘è╪▓┘è/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/الاسم بالعربي/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/الاسم بالإنجليزي/i)).toBeInTheDocument();
   });
 
   test("shows existing app selections inside the edit dialog", async () => {
     render(<BusinessSpecialtiesManagement />);
 
-    expect((await screen.findAllByText(/╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/التجارة والمتاجر/i)).length).toBeGreaterThan(0);
 
     fireEvent.click(
-      screen.getAllByRole("button", { name: /╪¬╪╣╪»┘è┘ä ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒/i })[0]!,
+      screen.getAllByRole("button", { name: /تعديل النشاط التجارة والمتاجر/i })[0]!,
     );
 
     expect(
-      await screen.findByText(/╪¬╪╣╪»┘è┘ä ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è/i),
+      await screen.findByText(/تعديل النشاط التجاري/i),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/╪º┘ä╪º╪│┘à ╪¿╪º┘ä╪╣╪▒╪¿┘è/i)).toHaveValue(
-      "╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒",
+    expect(screen.getByLabelText(/الاسم بالعربي/i)).toHaveValue(
+      "التجارة والمتاجر",
     );
   });
 
   test("opens delete confirmation for a specialty row", async () => {
     render(<BusinessSpecialtiesManagement />);
 
-    expect((await screen.findAllByText(/╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/التجارة والمتاجر/i)).length).toBeGreaterThan(0);
 
     fireEvent.click(
-      screen.getAllByRole("button", { name: /╪¡╪░┘ü ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒╪⌐ ┘ê╪º┘ä┘à╪¬╪º╪¼╪▒/i })[0]!,
+      screen.getAllByRole("button", { name: /حذف النشاط التجارة والمتاجر/i })[0]!,
     );
 
     expect(
-      await screen.findByText(/╪¡╪░┘ü ╪º┘ä┘å╪┤╪º╪╖ ╪º┘ä╪¬╪¼╪º╪▒┘è/i),
+      await screen.findByText(/حذف النشاط التجاري/i),
     ).toBeInTheDocument();
   });
 });

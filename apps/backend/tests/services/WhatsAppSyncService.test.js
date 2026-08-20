@@ -1,4 +1,4 @@
-﻿const mockPrisma = {
+const mockPrisma = {
   customer: {
     findFirst: jest.fn(),
     create: jest.fn(),
@@ -8,7 +8,7 @@
 
 jest.mock("../../services/sharedDatabase", () => ({
   getSharedPrismaClient: jest.fn(() => mockPrisma),
-  // ≡ƒÜ¿ fix: findOrCreateCustomer wraps its DB work in executeWithRetry ΓÇö without it
+  // 🚨 fix: findOrCreateCustomer wraps its DB work in executeWithRetry — without it
   // the call throws `executeWithRetry is not a function`.
   executeWithRetry: jest.fn((op) => op()),
   getNormalizedSettings: jest.fn(async () => ({})),

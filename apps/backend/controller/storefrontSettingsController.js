@@ -12,6 +12,7 @@ const {
 const FacebookConversionsService = require('../services/facebookConversionsService');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
 const redisCacheService = require('../services/redisCacheService');
+const { isPlaceholderPhone } = require('../utils/placeholderContact');
 
 const DEFAULT_THEME_ID = DEFAULT_STOREFRONT_THEME_ID || 'modern-minimal';
 const DEFAULT_SUPPORTED_LANGUAGES = 'ar,en';
@@ -137,24 +138,34 @@ const sanitizeStorefrontSettingsInput = async (payload = {}) => {
   const allowedFields = await getAllowedStorefrontSettingsFields();
   const sanitized = {};
 
-  Object.entries(payload || {}).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(payload || {})) {
+    if (
+      (key === 'whatsappNumber' || key === 'phone' || key === 'contactPhone') &&
+      isPlaceholderPhone(value)
+    ) {
+      return {
+        ok: false,
+        message: 'رقم الهاتف غير صالح — يرجى إدخال رقم حقيقي',
+      };
+    }
+
     if (!allowedFields.has(key)) {
-      return;
+      continue;
     }
 
     if (key === 'id' || key === 'companyId' || key === 'createdAt' || key === 'updatedAt') {
-      return;
+      continue;
     }
 
     if (key === 'designTokens') {
       sanitized.designTokens = sanitizeDesignTokens(value);
-      return;
+      continue;
     }
 
     sanitized[key] = value;
-  });
+  }
 
-  return sanitized;
+  return { ok: true, sanitized };
 };
 
 const resolveDefaultStorefrontThemeId = async () =>
@@ -277,6 +288,7 @@ const serializeStorefrontSettings = (settings, company) => {
     designTokens,
     paymentGatewayConfig: maskGatewayConfig(settings?.paymentGatewayConfig),
     enabledPaymentMethods: settings?.enabledPaymentMethods || '["cod"]',
+    walletPaymentSettings: settings?.walletPaymentSettings || null,
   };
 };
 
@@ -639,7 +651,16 @@ const updateSettings = async (req, res) => {
           ? defaultDesignTokens.themeId.trim()
           : DEFAULT_THEME_ID;
 
-    const sanitizedInput = await sanitizeStorefrontSettingsInput(req.body || {});
+    const sanitizeResult = await sanitizeStorefrontSettingsInput(req.body || {});
+
+    if (!sanitizeResult.ok) {
+      return res.status(400).json({
+        success: false,
+        message: sanitizeResult.message,
+      });
+    }
+
+    const sanitizedInput = sanitizeResult.sanitized;
 
     if (sanitizedInput.paymentGatewayConfig !== undefined) {
       sanitizedInput.paymentGatewayConfig = mergeGatewayConfig(

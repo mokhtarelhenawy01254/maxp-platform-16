@@ -1,6 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { Tag, Plus, Edit2, Trash2, Save, X, RefreshCw, Link2, Bell, Check, CheckCircle, CheckCircle2, XCircle, Clock, Package, Truck, RotateCcw, ShoppingCart, CreditCard, AlertCircle, Cog, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  Tag,
+  Plus,
+  Edit2,
+  Trash2,
+  Save,
+  X,
+  RefreshCw,
+  Link2,
+  Bell,
+  CheckCircle,
+  Clock,
+  Package,
+  Truck,
+  XCircle,
+  RotateCcw,
+  ShoppingCart,
+  CreditCard,
+  AlertCircle,
+  Loader2,
+  ChevronUp,
+  ChevronDown,
+  Cog,
+  Lock,
+  Unlock,
+  ShieldAlert,
+} from "lucide-react";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import tokenManager from "../../utils/tokenManager";
 
 // ═══════════════════════════════════════════════════════════════
@@ -24,6 +52,7 @@ interface OrderStatus {
   wooCommerceStatus?: string;
   notifyCustomer: boolean;
   notifyAdmin: boolean;
+  allowStatusEdit: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -33,7 +62,7 @@ interface OrderStatus {
 const ICON_MAP: Record<string, React.ReactNode> = {
   Clock: <Clock className="w-4 h-4" />,
   CheckCircle: <CheckCircle className="w-4 h-4" />,
-  CheckCircle2: <CheckCircle2 className="w-4 h-4" />,
+  CheckCircle2: <CheckCircle className="w-4 h-4" />,
   Package: <Package className="w-4 h-4" />,
   Truck: <Truck className="w-4 h-4" />,
   XCircle: <XCircle className="w-4 h-4" />,
@@ -96,7 +125,9 @@ const OrderStatusManager: React.FC = () => {
   const [statuses, setStatuses] = useState<OrderStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"order" | "payment" | "shipping">(
+  const [activeTab, setActiveTab] = useState<
+    "order" | "payment" | "shipping" | "preparation"
+  >(
     "order",
   );
   const [editingStatus, setEditingStatus] = useState<OrderStatus | null>(null);
@@ -114,7 +145,12 @@ const OrderStatusManager: React.FC = () => {
     wooCommerceStatus: "",
     notifyCustomer: false,
     notifyAdmin: false,
+    allowStatusEdit: true,
   });
+
+  const handleToggleAllowEdit = async (status: OrderStatus) => {
+    await updateStatus({ ...status, allowStatusEdit: !status.allowStatusEdit });
+  };
 
   // ═══════════════════════════════════════════════════════════════
   // 📡 API Calls
@@ -133,11 +169,11 @@ const OrderStatusManager: React.FC = () => {
         setStatuses(data.data);
       } else {
         console.error("❌ Error:", data.message);
-        toast.error(data.message || "خطأ في جلب الحالات");
+        toast.error(data.message || i18n.t("orderStatusManager.error_fetch_fe2a"));
       }
     } catch (error) {
       console.error("❌ Fetch error:", error);
-      toast.error("خطأ في جلب الحالات");
+      tToast.error("orderStatusManager.error_fetch_fe2a");
     } finally {
       setLoading(false);
     }
@@ -152,13 +188,13 @@ const OrderStatusManager: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success(data.message || "تم تهيئة الحالات الافتراضية بنجاح");
+        toast.success(data.message || i18n.t("orderStatusManager.msg_8149"));
         fetchStatuses();
       } else {
-        toast.error(data.message || "خطأ في تهيئة الحالات");
+        toast.error(data.message || i18n.t("orderStatusManager.msg_e0af"));
       }
     } catch (error) {
-      toast.error("خطأ في تهيئة الحالات الافتراضية");
+      tToast.error("orderStatusManager.msg_d864");
     } finally {
       setSyncing(false);
     }
@@ -166,7 +202,7 @@ const OrderStatusManager: React.FC = () => {
 
   const createStatus = async () => {
     if (!newStatus.code || !newStatus.name) {
-      toast.error("الكود والاسم مطلوبان");
+      tToast.error("orderStatusManager.msg_e1a9");
       return;
     }
 
@@ -178,7 +214,7 @@ const OrderStatusManager: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success("تم إنشاء الحالة بنجاح");
+        tToast.success("orderStatusManager.success_create_67d7");
         setShowAddModal(false);
         setNewStatus({
           code: "",
@@ -196,13 +232,14 @@ const OrderStatusManager: React.FC = () => {
           wooCommerceStatus: "",
           notifyCustomer: false,
           notifyAdmin: false,
+          allowStatusEdit: true,
         });
         fetchStatuses();
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error("خطأ في إنشاء الحالة");
+      tToast.error("orderStatusManager.error_create_9567");
     }
   };
 
@@ -215,14 +252,14 @@ const OrderStatusManager: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success("تم تحديث الحالة بنجاح");
+        tToast.success("orderStatusManager.success_update_dfad");
         setEditingStatus(null);
         fetchStatuses();
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error("خطأ في تحديث الحالة");
+      tToast.error("orderStatusManager.error_update_f3e8");
     }
   };
 
@@ -241,13 +278,13 @@ const OrderStatusManager: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success("تم حذف الحالة بنجاح");
+        tToast.success("orderStatusManager.success_delete_f86e");
         fetchStatuses();
       } else {
-        toast.error(data.message || "لا يمكن حذف هذه الحالة");
+        toast.error(data.message || i18n.t("orderStatusManager.msg_8f8d"));
       }
     } catch (error) {
-      toast.error("خطأ في حذف الحالة");
+      tToast.error("orderStatusManager.error_delete_e809");
     }
   };
 
@@ -257,7 +294,12 @@ const OrderStatusManager: React.FC = () => {
 
     if (newIndex < 0 || newIndex >= items.length) return;
 
-    [items[index], items[newIndex]] = [items[newIndex], items[index]];
+    const current = items[index];
+    const target = items[newIndex];
+    if (!current || !target) return;
+
+    items[index] = target;
+    items[newIndex] = current;
 
     // Update local state
     const newStatuses = statuses.map((s) => {
@@ -277,7 +319,7 @@ const OrderStatusManager: React.FC = () => {
         body: JSON.stringify({ statusIds: items.map((i) => i.id) }),
       });
     } catch (error) {
-      toast.error("خطأ في حفظ الترتيب");
+      tToast.error("orderStatusManager.error_save_9d9b");
       fetchStatuses();
     }
   };
@@ -298,7 +340,7 @@ const OrderStatusManager: React.FC = () => {
       // For backward compatibility:
       // - If statusType is null/undefined/empty and viewing 'order' tab, treat as 'order'
       // - This handles old records that might not have statusType set
-      if ((!s.statusType || s.statusType === "") && activeTab === "order")
+      if (String(s.statusType) === "" && activeTab === "order")
         return true;
 
       // Handle 'preparation' tab (was potentially missing in filter logic if not explicitly checked)
@@ -542,7 +584,8 @@ const OrderStatusManager: React.FC = () => {
                 </div>
               ) : (
                 // View Mode
-                <div className="flex items-center gap-4">
+                <div>
+                  <div className="flex items-center gap-4">
                   <div className="flex flex-col gap-1">
                     <button
                       onClick={() => moveStatus(index, "up")}
@@ -632,6 +675,34 @@ const OrderStatusManager: React.FC = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                  </div>
+                  </div>
+
+                  {/* 🔒 زر مسموح/غير مسموح للتعديل — تحت كل حالة */}
+                  <div className="mt-3 flex items-center gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+                    <button
+                      onClick={() => handleToggleAllowEdit(status)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        status.allowStatusEdit === false
+                          ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+                          : "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
+                      }`}
+                    >
+                      {status.allowStatusEdit === false ? (
+                        <Lock className="w-3.5 h-3.5" />
+                      ) : (
+                        <Unlock className="w-3.5 h-3.5" />
+                      )}
+                      {status.allowStatusEdit === false
+                        ? "غير مسموح بالتعديل"
+                        : "مسموح بالتعديل"}
+                    </button>
+                    {status.allowStatusEdit === false && (
+                      <span className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        الأوردرات في هذه الحالة لن يستطيع أحد تعديل بياناتها (سعر/منتجات)
+                      </span>
+                    )}
                   </div>
                 </div>
               )}

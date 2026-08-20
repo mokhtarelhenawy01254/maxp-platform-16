@@ -1,7 +1,7 @@
-﻿/**
- * ╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘à┘è╪»┘è╪º ╪╣╪¿╪▒ MetaCloudProvider:
- * - ╪º┘ä┘Ç URLs ╪º┘ä╪»╪º╪«┘ä┘è╪⌐ (localhost/╪«╪º╪╡╪⌐) ┘ä╪º╪▓┘à ╪¬╪¬╪▒┘ü╪╣ ╪¿┘Ç media id ┘ä╪ú┘å ┘à┘è╪¬╪º ┘à╪┤ ┘ç╪¬┘ê╪╡┘ä ┘ä┘ä┘Ç link.
- * - ╪º┘ä┘Ç URLs ╪º┘ä╪╣╪º┘à╪⌐ ╪¬╪¬╪¿╪╣╪¬ ╪¿┘Ç link.
+/**
+ * اختبارات إرسال الميديا عبر MetaCloudProvider:
+ * - الـ URLs الداخلية (localhost/خاصة) لازم تترفع بـ media id لأن ميتا مش هتوصل للـ link.
+ * - الـ URLs العامة تتبعت بـ link.
  */
 
 jest.mock('../../../services/sharedDatabase', () => ({
@@ -20,7 +20,7 @@ const axios = require('axios');
 const { getSharedPrismaClient } = require('../../../services/sharedDatabase');
 const MetaCloudProvider = require('../../../services/whatsapp/providers/MetaCloudProvider');
 
-describe('MetaCloudProvider.sendMedia ΓÇö internal URL ΓåÆ media id', () => {
+describe('MetaCloudProvider.sendMedia — internal URL → media id', () => {
   let prisma;
 
   beforeEach(() => {
@@ -54,10 +54,10 @@ describe('MetaCloudProvider.sendMedia ΓÇö internal URL ΓåÆ media id', () =
       'image'
     );
 
-    // 1) POST ┘ä┘ä┘Ç /media (upload) ΓåÆ ╪¡╪╡┘ä
+    // 1) POST للـ /media (upload) → حصل
     const uploadCall = axiosPost.mock.calls.find(([url]) => String(url).includes('/media'));
     expect(uploadCall).toBeTruthy();
-    // 2) POST ┘ä┘ä┘à┘Ç /messages ΓåÆ ╪¿┘Ç id ┘à╪┤ link
+    // 2) POST للمـ /messages → بـ id مش link
     const msgCall = axiosPost.mock.calls.find(([url]) => String(url).includes('/messages'));
     expect(msgCall).toBeTruthy();
     const body = msgCall[1];
@@ -82,7 +82,7 @@ describe('MetaCloudProvider.sendMedia ΓÇö internal URL ΓåÆ media id', () =
     );
 
     const uploadCall = axiosPost.mock.calls.find(([url]) => String(url).includes('/media'));
-    expect(uploadCall).toBeUndefined(); // ┘à┘ü┘è╪┤ upload ┘ä┘ä┘Ç public link
+    expect(uploadCall).toBeUndefined(); // مفيش upload للـ public link
 
     const msgCall = axiosPost.mock.calls.find(([url]) => String(url).includes('/messages'));
     const body = msgCall[1];
@@ -108,9 +108,9 @@ describe('MetaCloudProvider.sendMedia ΓÇö internal URL ΓåÆ media id', () =
       'image'
     );
 
-    // 1) ╪¬┘à ╪º┘ä╪¬╪¡┘à┘è┘ä ┘à┘å ╪º┘ä╪▒╪º╪¿╪╖
+    // 1) تم التحميل من الرابط
     expect(axiosGet).toHaveBeenCalled();
-    // 2) ╪¡╪╡┘ä upload ╪¿┘Ç media id (┘à╪┤ link)
+    // 2) حصل upload بـ media id (مش link)
     const uploadCall = axiosPost.mock.calls.find(([url]) => String(url).includes('/media'));
     expect(uploadCall).toBeTruthy();
     const msgCall = axiosPost.mock.calls.find(([url]) => String(url).includes('/messages'));

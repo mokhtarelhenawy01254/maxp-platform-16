@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -93,10 +93,10 @@ const STOCK_STATUS_META: Record<
   StockStatus,
   { label: string; className: string }
 > = {
-  "in-stock": { label: "┘à╪¬┘ê┘ü╪▒", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
-  "low-stock": { label: "┘à╪«╪▓┘ê┘å ┘à┘å╪«┘ü╪╢", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" },
-  "out-of-stock": { label: "┘å┘ü╪» ╪º┘ä┘à╪«╪▓┘ê┘å", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-  untracked: { label: "╪¿╪»┘ê┘å ╪¬╪¬╪¿╪╣", className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
+  "in-stock": { label: "متوفر", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
+  "low-stock": { label: "مخزون منخفض", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  "out-of-stock": { label: "نفد المخزون", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  untracked: { label: "بدون تتبع", className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
 };
 
 function Skeleton({ className }: { className?: string }) {
@@ -156,7 +156,7 @@ const ProductAvailabilityGrid: React.FC = () => {
       setTotalItems(total);
     } catch (err) {
       console.error("Error loading availability grid:", err);
-      toast.error(t("productAvailability.loadError", "┘ü╪┤┘ä ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬") as string);
+      toast.error(t("productAvailability.loadError", "فشل في جلب المنتجات") as string);
     } finally {
       setLoading(false);
     }
@@ -267,14 +267,14 @@ const ProductAvailabilityGrid: React.FC = () => {
       }
       toast.success(
         field === "trackInventory"
-          ? t("productAvailability.trackSaved", "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪¬╪¬╪¿╪╣ ╪º┘ä┘à╪«╪▓┘ê┘å") as string
-          : t("productAvailability.preOrderSaved", "╪¬┘à ╪¬╪¡╪»┘è╪½ ╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é") as string,
+          ? t("productAvailability.trackSaved", "تم تحديث تتبع المخزون") as string
+          : t("productAvailability.preOrderSaved", "تم تحديث الطلب المسبق") as string,
       );
     } catch (err) {
       setRows((prev) =>
         prev.map((r) => (r.id === row.id ? previous : r)),
       );
-      toast.error(t("productAvailability.saveError", "┘ü╪┤┘ä ╪º┘ä╪¡┘ü╪╕") as string);
+      toast.error(t("productAvailability.saveError", "فشل الحفظ") as string);
     } finally {
       setSavingKey(null);
     }
@@ -337,32 +337,32 @@ const ProductAvailabilityGrid: React.FC = () => {
     >
       {label}
       {sortBy === field ? (
-        <span className="text-[10px]">{sortDir === "asc" ? "Γû▓" : "Γû╝"}</span>
+        <span className="text-[10px]">{sortDir === "asc" ? "▲" : "▼"}</span>
       ) : null}
     </button>
   );
 
   const metricCards = [
     {
-      title: t("productAvailability.metricTotal", "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à┘å╪¬╪¼╪º╪¬"),
+      title: t("productAvailability.metricTotal", "إجمالي المنتجات"),
       value: totalItems,
       icon: TableCellsIcon,
       gradient: "from-indigo-500/20 to-indigo-500/5 text-indigo-600",
     },
     {
-      title: t("productAvailability.metricPreOrder", "╪╖┘ä╪¿ ┘à╪│╪¿┘é ┘à┘ü╪╣┘ä"),
+      title: t("productAvailability.metricPreOrder", "طلب مسبق مفعل"),
       value: stats.preOrderOn,
       icon: ShoppingBagIcon,
       gradient: "from-purple-500/20 to-purple-500/5 text-purple-600",
     },
     {
-      title: t("productAvailability.metricTracking", "╪¬╪¬╪¿╪╣ ┘à╪«╪▓┘ê┘å ┘à┘ü╪╣┘ä"),
+      title: t("productAvailability.metricTracking", "تتبع مخزون مفعل"),
       value: stats.trackOn,
       icon: ShieldCheckIcon,
       gradient: "from-emerald-500/20 to-emerald-500/5 text-emerald-600",
     },
     {
-      title: t("productAvailability.metricOut", "┘å┘ü╪» ╪º┘ä┘à╪«╪▓┘ê┘å"),
+      title: t("productAvailability.metricOut", "نفد المخزون"),
       value: stats.outOfStock,
       icon: XCircleIcon,
       gradient: "from-red-500/20 to-red-500/5 text-red-600",
@@ -376,23 +376,23 @@ const ProductAvailabilityGrid: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <TableCellsIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-              {t("productAvailability.title", "┘à╪╡┘ü┘ê┘ü╪⌐ ╪¬┘ê┘ü╪▒ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬")}
+              {t("productAvailability.title", "مصفوفة توفر المنتجات")}
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {t(
                 "productAvailability.subtitle",
-                "┘â┘ä ┘à┘å╪¬╪¼╪º╪¬ ╪º┘ä┘à╪¬╪¼╪▒ ┘ü┘è ╪¼╪»┘ê┘ä ┘ê╪º╪¡╪»: ╪¬╪¬╪¿╪╣ ╪º┘ä┘à╪«╪▓┘ê┘å╪î ╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é╪î ┘ê╪º┘ä┘â┘à┘è╪º╪¬ ╪º┘ä┘à╪¬╪º╪¡╪⌐",
+                "كل منتجات المتجر في جدول واحد: تتبع المخزون، الطلب المسبق، والكميات المتاحة",
               )}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" onClick={exportCsv} className="gap-2">
               <ArrowDownTrayIcon className="h-4 w-4" />
-              {t("productAvailability.export", "╪¬╪╡╪»┘è╪▒ Excel / CSV")}
+              {t("productAvailability.export", "تصدير Excel / CSV")}
             </Button>
             <Button variant="outline" onClick={loadAll} className="gap-2">
               <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              {t("productAvailability.refresh", "╪¬╪¡╪»┘è╪½")}
+              {t("productAvailability.refresh", "تحديث")}
             </Button>
           </div>
         </div>
@@ -432,7 +432,7 @@ const ProductAvailabilityGrid: React.FC = () => {
                     setSearch(event.target.value);
                     setPage(1);
                   }}
-                  placeholder={t("productAvailability.search", "╪¿╪¡╪½ ╪¿╪º┘ä╪º╪│┘à ╪ú┘ê SKU...") as string}
+                  placeholder={t("productAvailability.search", "بحث بالاسم أو SKU...") as string}
                   className="pl-9 w-full xl:w-60"
                 />
               </div>
@@ -441,10 +441,10 @@ const ProductAvailabilityGrid: React.FC = () => {
                   <FunnelIcon className="h-4 w-4 text-gray-400" />
                   <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v ?? "all"); setPage(1); }}>
                     <SelectTrigger className="w-40">
-                      <SelectValue placeholder={t("productAvailability.allCategories", "┘â┘ä ╪º┘ä╪ú┘é╪│╪º┘à")} />
+                      <SelectValue placeholder={t("productAvailability.allCategories", "كل الأقسام")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t("productAvailability.allCategories", "┘â┘ä ╪º┘ä╪ú┘é╪│╪º┘à")}</SelectItem>
+                      <SelectItem value="all">{t("productAvailability.allCategories", "كل الأقسام")}</SelectItem>
                       {categories.map((cat) => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
@@ -453,30 +453,30 @@ const ProductAvailabilityGrid: React.FC = () => {
                 </div>
                 <Select value={preOrderFilter} onValueChange={(v) => { setPreOrderFilter(v ?? "all"); setPage(1); }}>
                   <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t("productAvailability.allPreOrder", "╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é")} />
+                    <SelectValue placeholder={t("productAvailability.allPreOrder", "الطلب المسبق")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t("productAvailability.allPreOrder", "╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é")}</SelectItem>
-                    <SelectItem value="on">{t("productAvailability.preOrderOn", "┘à┘ü╪╣┘ä")}</SelectItem>
-                    <SelectItem value="off">{t("productAvailability.preOrderOff", "┘à╪╣╪╖┘ä")}</SelectItem>
+                    <SelectItem value="all">{t("productAvailability.allPreOrder", "الطلب المسبق")}</SelectItem>
+                    <SelectItem value="on">{t("productAvailability.preOrderOn", "مفعل")}</SelectItem>
+                    <SelectItem value="off">{t("productAvailability.preOrderOff", "معطل")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={trackFilter} onValueChange={(v) => { setTrackFilter(v ?? "all"); setPage(1); }}>
                   <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t("productAvailability.allTracking", "╪¬╪¬╪¿╪╣ ╪º┘ä┘à╪«╪▓┘ê┘å")} />
+                    <SelectValue placeholder={t("productAvailability.allTracking", "تتبع المخزون")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t("productAvailability.allTracking", "╪¬╪¬╪¿╪╣ ╪º┘ä┘à╪«╪▓┘ê┘å")}</SelectItem>
-                    <SelectItem value="on">{t("productAvailability.trackingOn", "┘à┘ü╪╣┘ä")}</SelectItem>
-                    <SelectItem value="off">{t("productAvailability.trackingOff", "┘à╪╣╪╖┘ä")}</SelectItem>
+                    <SelectItem value="all">{t("productAvailability.allTracking", "تتبع المخزون")}</SelectItem>
+                    <SelectItem value="on">{t("productAvailability.trackingOn", "مفعل")}</SelectItem>
+                    <SelectItem value="off">{t("productAvailability.trackingOff", "معطل")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={stockFilter} onValueChange={(v) => { setStockFilter(v ?? "all"); setPage(1); }}>
                   <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t("productAvailability.allStock", "╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å")} />
+                    <SelectValue placeholder={t("productAvailability.allStock", "حالة المخزون")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t("productAvailability.allStock", "╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪«╪▓┘ê┘å")}</SelectItem>
+                    <SelectItem value="all">{t("productAvailability.allStock", "حالة المخزون")}</SelectItem>
                     <SelectItem value="in-stock">{STOCK_STATUS_META["in-stock"].label}</SelectItem>
                     <SelectItem value="low-stock">{STOCK_STATUS_META["low-stock"].label}</SelectItem>
                     <SelectItem value="out-of-stock">{STOCK_STATUS_META["out-of-stock"].label}</SelectItem>
@@ -502,7 +502,7 @@ const ProductAvailabilityGrid: React.FC = () => {
               <div className="py-16 text-center">
                 <ArchiveBoxIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600" />
                 <p className="mt-4 text-gray-500 dark:text-gray-400">
-                  {t("productAvailability.empty", "┘ä╪º ╪¬┘ê╪¼╪» ┘à┘å╪¬╪¼╪º╪¬ ┘à╪╖╪º╪¿┘é╪⌐")}
+                  {t("productAvailability.empty", "لا توجد منتجات مطابقة")}
                 </p>
               </div>
             ) : (
@@ -513,14 +513,14 @@ const ProductAvailabilityGrid: React.FC = () => {
                       <TableHead className="w-12 text-center text-xs text-gray-500">
                         {t("productAvailability.rowNo", "#")}
                       </TableHead>
-                      <TableHead className="min-w-[240px]">{sortableHead("name", t("productAvailability.colProduct", "╪º┘ä┘à┘å╪¬╪¼"))}</TableHead>
-                      <TableHead className="min-w-[120px]">{t("productAvailability.colCategory", "╪º┘ä┘é╪│┘à")}</TableHead>
-                      <TableHead className="min-w-[100px] text-center">{sortableHead("price", t("productAvailability.colPrice", "╪º┘ä╪│╪╣╪▒"))}</TableHead>
-                      <TableHead className="min-w-[100px] text-center">{sortableHead("stock", t("productAvailability.colStock", "╪º┘ä┘â┘à┘è╪⌐"))}</TableHead>
-                      <TableHead className="min-w-[130px] text-center">{t("productAvailability.colStatus", "╪º┘ä╪¡╪º┘ä╪⌐")}</TableHead>
-                      <TableHead className="min-w-[140px] text-center">{sortableHead("track", t("productAvailability.colTracking", "╪¬╪¬╪¿╪╣ ╪º┘ä┘à╪«╪▓┘ê┘å"))}</TableHead>
-                      <TableHead className="min-w-[140px] text-center">{sortableHead("preOrder", t("productAvailability.colPreOrder", "╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é"))}</TableHead>
-                      <TableHead className="min-w-[130px] text-center">{t("productAvailability.colPreOrderDate", "╪¬╪º╪▒┘è╪« ╪º┘ä╪╖┘ä╪¿")}</TableHead>
+                      <TableHead className="min-w-[240px]">{sortableHead("name", t("productAvailability.colProduct", "المنتج"))}</TableHead>
+                      <TableHead className="min-w-[120px]">{t("productAvailability.colCategory", "القسم")}</TableHead>
+                      <TableHead className="min-w-[100px] text-center">{sortableHead("price", t("productAvailability.colPrice", "السعر"))}</TableHead>
+                      <TableHead className="min-w-[100px] text-center">{sortableHead("stock", t("productAvailability.colStock", "الكمية"))}</TableHead>
+                      <TableHead className="min-w-[130px] text-center">{t("productAvailability.colStatus", "الحالة")}</TableHead>
+                      <TableHead className="min-w-[140px] text-center">{sortableHead("track", t("productAvailability.colTracking", "تتبع المخزون"))}</TableHead>
+                      <TableHead className="min-w-[140px] text-center">{sortableHead("preOrder", t("productAvailability.colPreOrder", "الطلب المسبق"))}</TableHead>
+                      <TableHead className="min-w-[130px] text-center">{t("productAvailability.colPreOrderDate", "تاريخ الطلب")}</TableHead>
                       <TableHead className="w-16 text-center">{t("productAvailability.colActions", "")}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -556,9 +556,9 @@ const ProductAvailabilityGrid: React.FC = () => {
                                   {row.name}
                                 </Link>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {row.sku || "ΓÇö"}
+                                  {row.sku || "—"}
                                   {row.variantsCount > 0
-                                    ? ` ΓÇó ${row.variantsCount} ${t("productAvailability.variants", "╪«┘è╪º╪▒")}`
+                                    ? ` • ${row.variantsCount} ${t("productAvailability.variants", "خيار")}`
                                     : ""}
                                 </p>
                               </div>
@@ -566,7 +566,7 @@ const ProductAvailabilityGrid: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <span className="text-sm text-gray-600 dark:text-gray-300">
-                              {row.categoryName || "ΓÇö"}
+                              {row.categoryName || "—"}
                             </span>
                           </TableCell>
                           <TableCell className="text-center">
@@ -594,8 +594,8 @@ const ProductAvailabilityGrid: React.FC = () => {
                               />
                               <span className={`text-[11px] font-semibold ${row.trackInventory ? "text-emerald-600" : "text-gray-400"}`}>
                                 {row.trackInventory
-                                  ? t("productAvailability.trackingOn", "┘à┘ü╪╣┘ä")
-                                  : t("productAvailability.trackingOff", "┘à╪╣╪╖┘ä")}
+                                  ? t("productAvailability.trackingOn", "مفعل")
+                                  : t("productAvailability.trackingOff", "معطل")}
                               </span>
                             </div>
                           </TableCell>
@@ -609,8 +609,8 @@ const ProductAvailabilityGrid: React.FC = () => {
                               />
                               <span className={`text-[11px] font-semibold ${row.isPreOrder ? "text-purple-600" : "text-gray-400"}`}>
                                 {row.isPreOrder
-                                  ? t("productAvailability.preOrderOn", "┘à┘ü╪╣┘ä")
-                                  : t("productAvailability.preOrderOff", "┘à╪╣╪╖┘ä")}
+                                  ? t("productAvailability.preOrderOn", "مفعل")
+                                  : t("productAvailability.preOrderOff", "معطل")}
                               </span>
                             </div>
                           </TableCell>
@@ -620,14 +620,14 @@ const ProductAvailabilityGrid: React.FC = () => {
                                 {new Date(row.preOrderDate).toLocaleDateString("ar-EG")}
                               </span>
                             ) : (
-                              <span className="text-xs text-gray-400">ΓÇö</span>
+                              <span className="text-xs text-gray-400">—</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
                             <Link
                               to={`/products/${row.id}/edit`}
                               className="inline-flex p-2 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                              title={t("productAvailability.edit", "╪¬╪╣╪»┘è┘ä ╪º┘ä┘à┘å╪¬╪¼") as string}
+                              title={t("productAvailability.edit", "تعديل المنتج") as string}
                             >
                               <PencilSquareIcon className="h-4 w-4" />
                             </Link>
@@ -644,7 +644,7 @@ const ProductAvailabilityGrid: React.FC = () => {
               <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <span>
-                    {t("productAvailability.showing", "╪╣╪▒╪╢ {{start}}-{{end}} ┘à┘å {{total}}").replace("{{start}}", String(startIndex + 1)).replace("{{end}}", String(Math.min(startIndex + pageSize, filtered.length))).replace("{{total}}", String(filtered.length))}
+                    {t("productAvailability.showing", "عرض {{start}}-{{end}} من {{total}}").replace("{{start}}", String(startIndex + 1)).replace("{{end}}", String(Math.min(startIndex + pageSize, filtered.length))).replace("{{total}}", String(filtered.length))}
                   </span>
                   <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v) || 50); setPage(1); }}>
                     <SelectTrigger className="w-24 h-8">
@@ -657,7 +657,7 @@ const ProductAvailabilityGrid: React.FC = () => {
                       <SelectItem value="200">200</SelectItem>
                     </SelectContent>
                   </Select>
-                  <span>{t("productAvailability.perPage", "┘ä┘â┘ä ╪╡┘ü╪¡╪⌐")}</span>
+                  <span>{t("productAvailability.perPage", "لكل صفحة")}</span>
                 </div>
 
                 <Pagination>
@@ -671,7 +671,7 @@ const ProductAvailabilityGrid: React.FC = () => {
                         }}
                         className={safePage <= 1 ? "pointer-events-none opacity-40" : ""}
                       >
-                        {t("productAvailability.prev", "╪º┘ä╪│╪º╪¿┘é")}
+                        {t("productAvailability.prev", "السابق")}
                       </PaginationLink>
                     </PaginationItem>
                     {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -700,7 +700,7 @@ const ProductAvailabilityGrid: React.FC = () => {
                         }}
                         className={safePage >= totalPages ? "pointer-events-none opacity-40" : ""}
                       >
-                        {t("productAvailability.next", "╪º┘ä╪¬╪º┘ä┘è")}
+                        {t("productAvailability.next", "التالي")}
                       </PaginationLink>
                     </PaginationItem>
                   </PaginationContent>
@@ -714,7 +714,7 @@ const ProductAvailabilityGrid: React.FC = () => {
           <CheckCircleIcon className="inline h-3.5 w-3.5 ml-1" />
           {t(
             "productAvailability.hint",
-            "╪¼╪»┘ê┘ä ╪┤╪¿┘è┘ç ╪¿╪¿╪▒┘å╪º┘à╪¼ Excel: ╪╣╪»┘æ┘ä ┘à┘ü╪º╪¬┘è╪¡ ╪º┘ä╪¬╪¬╪¿╪╣ ┘ê╪º┘ä╪╖┘ä╪¿ ╪º┘ä┘à╪│╪¿┘é ┘à╪¿╪º╪┤╪▒╪⌐ ┘à┘å ╪º┘ä╪¼╪»┘ê┘ä ┘ê╪º╪¡┘ü╪╕ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï",
+            "جدول شبيه ببرنامج Excel: عدّل مفاتيح التتبع والطلب المسبق مباشرة من الجدول واحفظ تلقائياً",
           )}
         </p>
       </div>

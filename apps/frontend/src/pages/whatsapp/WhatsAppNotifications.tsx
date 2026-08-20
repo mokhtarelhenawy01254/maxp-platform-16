@@ -1,7 +1,27 @@
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertCircle, AlertTriangle, Bell, Briefcase, Check, CheckCircle, Clock, DollarSign, Edit, Eye, File, FileText, Folder, Gift, Megaphone, Navigation, Package, Phone, Plus, RefreshCw, Save, Search, Send, Settings, ShoppingBag, ShoppingCart, Smartphone, TestTube, TrendingUp, Users, Volume2, X, XCircle } from 'lucide-react';
+import { useTranslation } from "react-i18next";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Bell,
+  Briefcase,
+  CheckCircle,
+  Edit,
+  FileText,
+  Megaphone,
+  Plus,
+  RefreshCw,
+  Save,
+  Send,
+  Settings,
+  ShoppingCart,
+  Smartphone,
+  TestTube,
+  TrendingUp,
+  Users,
+  XCircle,
+} from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+// Separator removed (unused)
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -149,15 +169,13 @@ type TemplateFormState = {
 
 type TabId =
   | "general"
-  | "orders"
   | "products"
-  | "abandoned-cart"
   | "marketing"
   | "company"
   | "hr"
   | "tasks";
 
-const categoryBadgeClasses: Record<string, string> = {
+const _categoryBadgeClasses: Record<string, string> = {
   ORDERS:
     "border-blue-300/70 bg-blue-500/10 text-blue-800 dark:border-blue-500/40 dark:text-blue-200",
   PRODUCTS:
@@ -172,6 +190,7 @@ const categoryBadgeClasses: Record<string, string> = {
   SYSTEM:
     "border-slate-300/70 bg-slate-500/10 text-slate-700 dark:border-slate-500/40 dark:text-slate-200",
 };
+void _categoryBadgeClasses;
 
 const sessionStatusClasses: Record<string, string> = {
   CONNECTED:
@@ -207,7 +226,7 @@ const createEmptyTemplateForm = (
   superAdminMode = false,
 ): TemplateFormState => ({
   name: "",
-  category: superAdminMode ? "CUSTOMER" : "ORDERS",
+  category: superAdminMode ? "CUSTOMER" : "PRODUCTS",
   eventType: superAdminMode ? "NEW_SIGNUP_WELCOME" : "",
   content: "",
   isActive: true,
@@ -296,7 +315,7 @@ function SectionHeader({
   );
 }
 
-function TemplateMetric({
+function _TemplateMetric({
   icon: Icon,
   label,
   value,
@@ -319,6 +338,7 @@ function TemplateMetric({
     </div>
   );
 }
+void _TemplateMetric;
 
 interface WhatsAppNotificationsProps {
   companyId?: string;
@@ -332,6 +352,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
   superAdminMode = false,
 }) => {
   const { t, i18n } = useTranslation();
+  const ts = (key: string, opts?: Record<string, unknown>) => (t(key, opts as any) as unknown) as string;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const pageTitle = companyName
@@ -381,9 +402,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
       return [
         { id: "general", label: t("whatsappNotifications.tabs.general"), icon: Settings },
-        { id: "orders", label: t("whatsappNotifications.tabs.orders"), icon: Package },
         { id: "products", label: t("whatsappNotifications.tabs.products"), icon: ShoppingCart },
-        { id: "abandoned-cart", label: t("whatsappNotifications.tabs.abandonedCart"), icon: ShoppingCart },
         { id: "marketing", label: t("whatsappNotifications.tabs.marketing"), icon: Megaphone },
         {
           id: "company",
@@ -428,7 +447,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             : "System";
 
       return {
-        ORDERS: t("whatsappNotifications.tabs.orders"),
         PRODUCTS: t("whatsappNotifications.tabs.products"),
         CUSTOMER: i18n.language === "ar" ? "العملاء" : "Customers",
         MARKETING: t("whatsappNotifications.tabs.marketing"),
@@ -443,14 +461,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
   const EVENT_LABELS = useMemo(
     () => ({
-      ORDER_CREATED: t("whatsappNotifications.orders.orderCreated"),
-      ORDER_CONFIRMED: t("whatsappNotifications.orders.orderConfirmed"),
-      ORDER_PROCESSING: t("whatsappNotifications.orders.orderProcessing"),
-      ORDER_SHIPPED: t("whatsappNotifications.orders.orderShipped"),
-      ORDER_OUT_FOR_DELIVERY: t("whatsappNotifications.orders.orderShipped"),
-      ORDER_DELIVERED: t("whatsappNotifications.orders.orderDelivered"),
-      ORDER_CANCELLED: t("whatsappNotifications.orders.orderCancelled"),
-      PAYMENT_REMINDER: t("whatsappNotifications.orders.paymentReminder"),
       BACK_IN_STOCK: t("whatsappNotifications.products.backInStock"),
       PRICE_DROP: t("whatsappNotifications.products.priceDrop"),
       NEW_PRODUCT: t("whatsappNotifications.products.newProduct"),
@@ -461,6 +471,26 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       PROMOTIONAL: t("whatsappNotifications.marketing.promotional"),
       COUPON_SENT: t("whatsappNotifications.marketing.coupons"),
       BIRTHDAY_WISH: t("whatsappNotifications.marketing.birthday"),
+      LOYALTY_POINTS_AWARDED:
+        i18n.language === "ar" ? "إشعار كسب نقاط ولاء" : "Loyalty points awarded",
+      LOYALTY_TIER_UPGRADED:
+        i18n.language === "ar" ? "الترقية لمستوى أعلى" : "Loyalty tier upgrade",
+      LOYALTY_TIER_DOWNGRADED:
+        i18n.language === "ar" ? "انخفاض مستوى الولاء" : "Loyalty tier downgrade",
+      LOYALTY_POINTS_EXPIRY_WARNING:
+        i18n.language === "ar" ? "تنبيه قرب انتهاء النقاط" : "Points expiry warning",
+      LOYALTY_POINTS_EXPIRED:
+        i18n.language === "ar" ? "انتهاء صلاحية النقاط" : "Loyalty points expired",
+      LOYALTY_POINTS_REDEEMED:
+        i18n.language === "ar" ? "استبدال النقاط" : "Loyalty points redeemed",
+      CASHBACK_CREDITED:
+        i18n.language === "ar" ? "ايداع كاش باك" : "Cashback credited",
+      CASHBACK_REVERSED:
+        i18n.language === "ar" ? "خصم كاش باك" : "Cashback reversed",
+      CUSTOMER_QUALITY_UPGRADED:
+        i18n.language === "ar" ? "ارتفاع تصنيف الجودة" : "Customer quality upgrade",
+      CUSTOMER_QUALITY_DOWNGRADED:
+        i18n.language === "ar" ? "انخفاض تصنيف الجودة" : "Customer quality downgrade",
       REVIEW_REQUEST: t("whatsappNotifications.products.priceDrop"),
       NEW_SIGNUP_WELCOME:
         i18n.language === "ar" ? "رسالة ترحيب بعد التسجيل" : "Welcome after signup",
@@ -536,13 +566,13 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [testPhone, setTestPhone] = useState("");
   const [testEventType, setTestEventType] = useState(
-    superAdminMode ? "NEW_SIGNUP_WELCOME" : "ORDER_CREATED",
+    superAdminMode ? "NEW_SIGNUP_WELCOME" : "BACK_IN_STOCK",
   );
   const [sendingTest, setSendingTest] = useState(false);
 
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-  const [templateSearch, setTemplateSearch] = useState("");
+  const [templateSearch, _setTemplateSearch] = useState("");
   const [templateCategory, setTemplateCategory] = useState("ALL");
   const [templateForm, setTemplateForm] =
     useState<TemplateFormState>(() => createEmptyTemplateForm(superAdminMode));
@@ -567,8 +597,8 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       "/whatsapp-notifications/settings",
       withCompanyConfig(),
     );
-    setSettings(response.data.settings);
-    setSessions(response.data.sessions || []);
+    setSettings((response as any).data.settings);
+    setSessions((response as any).data.sessions || []);
   }, [withCompanyConfig]);
 
   const fetchTemplates = useCallback(async () => {
@@ -576,7 +606,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       "/whatsapp-notifications/templates",
       withCompanyConfig(),
     );
-    setTemplates(response.data.templates || []);
+    setTemplates((response as any).data.templates || []);
   }, [withCompanyConfig]);
 
   const refreshPageData = useCallback(async () => {
@@ -636,7 +666,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
     if (editingTemplate) {
       setTemplateForm({
         name: editingTemplate.name || "",
-        category: editingTemplate.category || (superAdminMode ? "CUSTOMER" : "ORDERS"),
+        category: editingTemplate.category || (superAdminMode ? "CUSTOMER" : "PRODUCTS"),
         eventType: editingTemplate.eventType || "",
         content: editingTemplate.content || "",
         isActive: editingTemplate.isActive ?? true,
@@ -648,7 +678,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
   }, [editingTemplate, superAdminMode, templateDialogOpen]);
 
   useEffect(() => {
-    const defaultEventType = superAdminMode ? "NEW_SIGNUP_WELCOME" : "ORDER_CREATED";
+    const defaultEventType = superAdminMode ? "NEW_SIGNUP_WELCOME" : "BACK_IN_STOCK";
     const allowedEvents = new Set(availableEventEntries.map(([key]) => key));
 
     if (!allowedEvents.has(testEventType)) {
@@ -774,7 +804,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       );
       showNotice(
         "success",
-        response.data?.message ||
+        (response as any).data?.message ||
           (i18n.language === "ar"
             ? "تم إرسال الإشعار الاختباري بنجاح."
             : "Test notification sent successfully."),
@@ -808,6 +838,8 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
     const allowedEvents = new Set(availableEventEntries.map(([key]) => key));
 
     return templates.filter((template) => {
+      if (template.category === "ORDERS") return false;
+
       if (superAdminMode && !allowedEvents.has(template.eventType)) {
         return false;
       }
@@ -849,36 +881,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
   ).length;
   const currentSession = sessions.find(
     (session) => session.id === settings?.defaultSessionId,
-  );
-
-  const orderOptions = useMemo(
-    () => [
-      {
-        key: "orderCreatedEnabled" as const,
-        label: t("whatsappNotifications.orders.orderCreated"),
-      },
-      {
-        key: "orderConfirmedEnabled" as const,
-        label: t("whatsappNotifications.orders.orderConfirmed"),
-      },
-      {
-        key: "orderProcessingEnabled" as const,
-        label: t("whatsappNotifications.orders.orderProcessing"),
-      },
-      {
-        key: "orderShippedEnabled" as const,
-        label: t("whatsappNotifications.orders.orderShipped"),
-      },
-      {
-        key: "orderDeliveredEnabled" as const,
-        label: t("whatsappNotifications.orders.orderDelivered"),
-      },
-      {
-        key: "orderCancelledEnabled" as const,
-        label: t("whatsappNotifications.orders.orderCancelled"),
-      },
-    ],
-    [t],
   );
 
   const productOptions = useMemo(
@@ -1108,11 +1110,12 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       .filter(Boolean).length;
   }, [settings?.companyLifecycleAdminPhones]);
 
-  const openCreateTemplateDialog = () => {
+  const _openCreateTemplateDialog = () => {
     setEditingTemplate(null);
     setTemplateForm(createEmptyTemplateForm(superAdminMode));
     setTemplateDialogOpen(true);
   };
+  void _openCreateTemplateDialog;
 
   if (loading) {
     return (
@@ -1121,7 +1124,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         description={pageDescription}
         icon={Bell}
         backHref={settingsHref}
-        backLabel={t("common.back")}
+        backLabel={ts("common.back") as string}
         eyebrow={eyebrow}
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -1145,7 +1148,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         description={pageDescription}
         icon={Bell}
         backHref={settingsHref}
-        backLabel={t("common.back")}
+        backLabel={ts("common.back") as string}
         eyebrow={eyebrow}
         actions={
           <Button
@@ -1177,7 +1180,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       description={pageDescription}
       icon={Bell}
       backHref={settingsHref}
-      backLabel={t("common.back")}
+      backLabel={ts("common.back") as string}
       eyebrow={eyebrow}
       actions={
         <>
@@ -1238,7 +1241,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               : t("whatsappNotifications.tabs.general")
           }
           value={settings.isEnabled ? (i18n.language === "ar" ? "مفعّل" : "Enabled") : (i18n.language === "ar" ? "متوقف" : "Paused")}
-          hint={currentSession?.name || t("whatsappNotifications.general.selectSession")}
+          hint={currentSession?.name || ts("whatsappNotifications.general.selectSession")}
           icon={Bell}
           tone={settings.isEnabled ? "success" : "danger"}
         />
@@ -1316,7 +1319,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
           <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <div className="space-y-4">
               <WhatsAppSurfaceCard
-                title={t("whatsappNotifications.general.enableNotifications")}
+                title={ts("whatsappNotifications.general.enableNotifications")}
                 description={pageDescription}
                 action={<Switch checked={settings.isEnabled} onCheckedChange={(checked) => updateSetting("isEnabled", checked)} />}
               >
@@ -1349,7 +1352,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           id="default-session"
                           className="h-11 bg-[color:var(--color-card)]"
                         >
-                          <SelectValue placeholder={t("whatsappNotifications.general.selectSession")} />
+                          <SelectValue placeholder={ts("whatsappNotifications.general.selectSession")} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">
@@ -1378,9 +1381,9 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           </p>
                           <Badge
                             variant="outline"
-                            className={sessionStatusClasses[currentSession.status || "DISCONNECTED"] || sessionStatusClasses.DISCONNECTED}
+                            className={sessionStatusClasses[currentSession.status || "DISCONNECTED"] || sessionStatusClasses['DISCONNECTED']}
                           >
-                            {STATUS_LABELS[currentSession.status || "DISCONNECTED"] || STATUS_LABELS.DISCONNECTED}
+                            {(STATUS_LABELS as Record<string, string>)[currentSession.status || "DISCONNECTED"] || (STATUS_LABELS as Record<string, string>)['DISCONNECTED']}
                           </Badge>
                         </div>
                       ) : (
@@ -1432,7 +1435,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 <div className="space-y-5">
                   <FeatureToggle
                     label={t("whatsappNotifications.general.quietHours")}
-                    description={t("whatsappNotifications.general.quietHoursDesc")}
+                    description={ts("whatsappNotifications.general.quietHoursDesc")}
                     checked={settings.quietHoursEnabled}
                     onCheckedChange={(checked) =>
                       updateSetting("quietHoursEnabled", checked)
@@ -1500,8 +1503,8 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
             <div className="space-y-4">
               <WhatsAppSurfaceCard
-                title={t("whatsappJourney.title")}
-                description={t("whatsappJourney.subtitle")}
+                title={ts("whatsappJourney.title")}
+                description={ts("whatsappJourney.subtitle")}
                 action={
                   <Button
                     variant="outline"
@@ -1556,9 +1559,9 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                         </div>
                         <Badge
                           variant="outline"
-                          className={sessionStatusClasses[session.status || "DISCONNECTED"] || sessionStatusClasses.DISCONNECTED}
+                          className={sessionStatusClasses[session.status || "DISCONNECTED"] || sessionStatusClasses['DISCONNECTED']}
                         >
-                          {STATUS_LABELS[session.status || "DISCONNECTED"] || STATUS_LABELS.DISCONNECTED}
+                          {(STATUS_LABELS as Record<string, string>)[session.status || "DISCONNECTED"] || (STATUS_LABELS as Record<string, string>)['DISCONNECTED']}
                         </Badge>
                       </div>
                     ))
@@ -1573,86 +1576,9 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
           </div>
         </TabsContent>
 
-        <TabsContent value="orders" className="space-y-4">
-          <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.orders.title")}
-            description={
-              i18n.language === "ar"
-                ? "شغّل أو أوقف رسائل الطلبات حسب كل مرحلة تشغيل."
-                : "Enable or pause order-related WhatsApp messages for each fulfillment milestone."
-            }
-          >
-            <div className="space-y-4">
-              <SectionHeader
-                icon={Package}
-                title={t("whatsappNotifications.orders.title")}
-                description={pageDescription}
-                checked={settings.orderNotificationsEnabled}
-                onCheckedChange={(checked) =>
-                  updateSetting("orderNotificationsEnabled", checked)
-                }
-                toneClass="bg-blue-500/10 text-blue-700"
-              />
-
-              {settings.orderNotificationsEnabled ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {orderOptions.map((item) => (
-                    <FeatureToggle
-                      key={item.key}
-                      label={item.label}
-                      checked={Boolean(settings[item.key])}
-                      onCheckedChange={(checked) =>
-                        updateSetting(item.key, checked)
-                      }
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </WhatsAppSurfaceCard>
-
-          <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.orders.paymentReminder")}
-            description={t("whatsappNotifications.orders.paymentReminderDesc")}
-          >
-            <div className="space-y-4">
-              <FeatureToggle
-                label={t("whatsappNotifications.orders.paymentReminder")}
-                description={t("whatsappNotifications.orders.paymentReminderDesc")}
-                checked={settings.paymentReminderEnabled}
-                onCheckedChange={(checked) =>
-                  updateSetting("paymentReminderEnabled", checked)
-                }
-              />
-
-              {settings.paymentReminderEnabled ? (
-                <div className="space-y-2">
-                  <Label htmlFor="payment-reminder-hours">
-                    {t("whatsappNotifications.orders.reminderAfterHours")}
-                  </Label>
-                  <Input
-                    id="payment-reminder-hours"
-                    type="number"
-                    min={1}
-                    max={168}
-                    value={settings.paymentReminderHours || 24}
-                    onChange={(event) =>
-                      updateSetting(
-                        "paymentReminderHours",
-                        parseInteger(event.target.value, 24),
-                      )
-                    }
-                    className="h-11 bg-[color:var(--color-card)]"
-                  />
-                </div>
-              ) : null}
-            </div>
-          </WhatsAppSurfaceCard>
-        </TabsContent>
-
         <TabsContent value="products" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.products.title")}
+            title={ts("whatsappNotifications.products.title")}
             description={
               i18n.language === "ar"
                 ? "فعّل التنبيهات المرتبطة بتوافر المنتجات، انخفاض السعر، ووصول الجديد."
@@ -1662,7 +1588,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             <div className="space-y-4">
               <SectionHeader
                 icon={ShoppingCart}
-                title={t("whatsappNotifications.products.title")}
+                title={ts("whatsappNotifications.products.title")}
                 description={pageDescription}
                 checked={settings.productNotificationsEnabled}
                 onCheckedChange={(checked) =>
@@ -1690,144 +1616,9 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
           </WhatsAppSurfaceCard>
         </TabsContent>
 
-        <TabsContent value="abandoned-cart" className="space-y-4">
-          <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.abandonedCart.title")}
-            description={t("whatsappNotifications.abandonedCart.desc")}
-          >
-            <div className="space-y-4">
-              <SectionHeader
-                icon={ShoppingCart}
-                title={t("whatsappNotifications.abandonedCart.title")}
-                description={t("whatsappNotifications.abandonedCart.desc")}
-                checked={settings.abandonedCartEnabled}
-                onCheckedChange={(checked) =>
-                  updateSetting("abandonedCartEnabled", checked)
-                }
-                toneClass="bg-orange-500/10 text-orange-700"
-              />
-
-              {settings.abandonedCartEnabled ? (
-                <>
-                  <Alert className="rounded-xl border-sky-300/70 bg-sky-500/10 text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/[0.08] dark:text-sky-200">
-                    <AlertCircle className="size-4" />
-                    <AlertTitle>{t("whatsappNotifications.abandonedCart.title")}</AlertTitle>
-                    <AlertDescription>
-                      {t("whatsappNotifications.abandonedCart.desc")}
-                    </AlertDescription>
-                  </Alert>
-
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="abandoned-first">
-                        {t("whatsappNotifications.abandonedCart.firstReminder")}
-                      </Label>
-                      <Input
-                        id="abandoned-first"
-                        type="number"
-                        min={1}
-                        max={24}
-                        value={settings.abandonedCartFirstReminder || 1}
-                        onChange={(event) =>
-                          updateSetting(
-                            "abandonedCartFirstReminder",
-                            parseInteger(event.target.value, 1),
-                          )
-                        }
-                        className="h-11 bg-[color:var(--color-card)]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="abandoned-second">
-                        {t("whatsappNotifications.abandonedCart.secondReminder")}
-                      </Label>
-                      <Input
-                        id="abandoned-second"
-                        type="number"
-                        min={1}
-                        max={72}
-                        value={settings.abandonedCartSecondReminder || 24}
-                        onChange={(event) =>
-                          updateSetting(
-                            "abandonedCartSecondReminder",
-                            parseInteger(event.target.value, 24),
-                          )
-                        }
-                        className="h-11 bg-[color:var(--color-card)]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="abandoned-third">
-                        {t("whatsappNotifications.abandonedCart.thirdReminder")}
-                      </Label>
-                      <Input
-                        id="abandoned-third"
-                        type="number"
-                        min={1}
-                        max={168}
-                        value={settings.abandonedCartThirdReminder || 72}
-                        onChange={(event) =>
-                          updateSetting(
-                            "abandonedCartThirdReminder",
-                            parseInteger(event.target.value, 72),
-                          )
-                        }
-                        className="h-11 bg-[color:var(--color-card)]"
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
-          </WhatsAppSurfaceCard>
-
-          {settings.abandonedCartEnabled ? (
-            <WhatsAppSurfaceCard
-              title={t("whatsappNotifications.abandonedCart.incentiveDiscount")}
-              description={t("whatsappNotifications.abandonedCart.incentiveDiscountDesc")}
-            >
-              <div className="space-y-4">
-                <FeatureToggle
-                  label={t("whatsappNotifications.abandonedCart.incentiveDiscount")}
-                  description={t("whatsappNotifications.abandonedCart.incentiveDiscountDesc")}
-                  checked={settings.abandonedCartDiscountEnabled}
-                  onCheckedChange={(checked) =>
-                    updateSetting("abandonedCartDiscountEnabled", checked)
-                  }
-                />
-
-                {settings.abandonedCartDiscountEnabled ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="discount-percent">
-                      {t("whatsappNotifications.abandonedCart.discountPercent")}
-                    </Label>
-                    <Input
-                      id="discount-percent"
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={settings.abandonedCartDiscountPercent || 10}
-                      onChange={(event) =>
-                        updateSetting(
-                          "abandonedCartDiscountPercent",
-                          parseInteger(event.target.value, 10),
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                      {t("whatsappNotifications.abandonedCart.discountHelp")}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            </WhatsAppSurfaceCard>
-          ) : null}
-        </TabsContent>
-
         <TabsContent value="marketing" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.marketing.title")}
+            title={ts("whatsappNotifications.marketing.title")}
             description={
               i18n.language === "ar"
                 ? "أدِر رسائل التسويق الموسمية والحملات المباشرة من نفس المساحة."
@@ -1837,8 +1628,8 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             <div className="space-y-4">
               <SectionHeader
                 icon={Megaphone}
-                title={t("whatsappNotifications.marketing.title")}
-                description={t("whatsappNotifications.marketing.complianceWarning")}
+                title={ts("whatsappNotifications.marketing.title")}
+                description={ts("whatsappNotifications.marketing.complianceWarning")}
                 checked={settings.marketingNotificationsEnabled}
                 onCheckedChange={(checked) =>
                   updateSetting("marketingNotificationsEnabled", checked)
@@ -1995,7 +1786,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           onValueChange={(value) =>
                             updateSetting(
                               "companyLifecycleAdminRoutingMode",
-                              value,
+                              value ?? "AUTO",
                             )
                           }
                         >
@@ -2057,7 +1848,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
         <TabsContent value="hr" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.hr.title")}
+            title={ts("whatsappNotifications.hr.title")}
             description={
               i18n.language === "ar"
                 ? "اضبط التنبيهات الموجهة للموظفين والعمليات البشرية اليومية."
@@ -2067,7 +1858,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             <div className="space-y-4">
               <SectionHeader
                 icon={Users}
-                title={t("whatsappNotifications.hr.title")}
+                title={ts("whatsappNotifications.hr.title")}
                 description={pageDescription}
                 checked={settings.hrNotificationsEnabled}
                 onCheckedChange={(checked) =>
@@ -2165,7 +1956,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               <Label htmlFor="test-event">
                 {t("whatsappNotifications.test.eventLabel")}
               </Label>
-              <Select value={testEventType} onValueChange={setTestEventType}>
+              <Select value={testEventType} onValueChange={(v) => setTestEventType(v ?? '')}>
                 <SelectTrigger id="test-event" className="h-11 bg-[color:var(--color-card)]">
                   <SelectValue />
                 </SelectTrigger>
@@ -2266,7 +2057,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                   onValueChange={(value) =>
                     setTemplateForm((current) => ({
                       ...current,
-                      category: value,
+                      category: value ?? '',
                     }))
                   }
                 >
@@ -2292,7 +2083,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                   onValueChange={(value) =>
                     setTemplateForm((current) => ({
                       ...current,
-                      eventType: value === "__none__" ? "" : value,
+                      eventType: value === "__none__" ? "" : (value ?? ''),
                     }))
                   }
                   disabled={Boolean(editingTemplate)}

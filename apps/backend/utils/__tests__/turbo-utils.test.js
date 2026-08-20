@@ -1,4 +1,4 @@
-﻿const {
+const {
   FALLBACK_GOVERNMENTS,
   GOVERNORATE_MAP,
   CITY_TO_GOVERNMENT_MAP,
@@ -46,20 +46,20 @@ describe('constants', () => {
     expect(FALLBACK_GOVERNMENTS).toHaveLength(27);
   });
 
-  test('FALLBACK_GOVERNMENTS contains ╪º┘ä┘é╪º┘ç╪▒╪⌐', () => {
-    expect(FALLBACK_GOVERNMENTS.find(g => g.name === '╪º┘ä┘é╪º┘ç╪▒╪⌐')).toBeTruthy();
+  test('FALLBACK_GOVERNMENTS contains القاهرة', () => {
+    expect(FALLBACK_GOVERNMENTS.find(g => g.name === 'القاهرة')).toBeTruthy();
   });
 
-  test('GOVERNORATE_MAP maps cairo to ╪º┘ä┘é╪º┘ç╪▒╪⌐', () => {
-    expect(GOVERNORATE_MAP['cairo']).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+  test('GOVERNORATE_MAP maps cairo to القاهرة', () => {
+    expect(GOVERNORATE_MAP['cairo']).toBe('القاهرة');
   });
 
-  test('GOVERNORATE_MAP maps 1 to ╪º┘ä┘é╪º┘ç╪▒╪⌐', () => {
-    expect(GOVERNORATE_MAP['1']).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+  test('GOVERNORATE_MAP maps 1 to القاهرة', () => {
+    expect(GOVERNORATE_MAP['1']).toBe('القاهرة');
   });
 
-  test('CITY_TO_GOVERNMENT_MAP maps ╪º┘ä┘à┘å╪╡┘ê╪▒╪⌐ to ╪º┘ä╪»┘é┘ç┘ä┘è╪⌐', () => {
-    expect(CITY_TO_GOVERNMENT_MAP['╪º┘ä┘à┘å╪╡┘ê╪▒╪⌐']).toBe('╪º┘ä╪»┘é┘ç┘ä┘è╪⌐');
+  test('CITY_TO_GOVERNMENT_MAP maps المنصورة to الدقهلية', () => {
+    expect(CITY_TO_GOVERNMENT_MAP['المنصورة']).toBe('الدقهلية');
   });
 
   test('TURBO_STATUS_CODE_MAP maps 7 to delivered', () => {
@@ -86,7 +86,7 @@ describe('constants', () => {
 describe('addressParser', () => {
   describe('cleanLocationName', () => {
     test('removes numeric prefix with colon', () => {
-      expect(cleanLocationName('4021:╪¡╪»╪º╪ª┘é ╪º┘ä╪º┘ç╪▒╪º┘à')).toBe('╪¡╪»╪º╪ª┘é ╪º┘ä╪º┘ç╪▒╪º┘à');
+      expect(cleanLocationName('4021:حدائق الاهرام')).toBe('حدائق الاهرام');
     });
 
     test('returns empty string for null/undefined', () => {
@@ -95,7 +95,7 @@ describe('addressParser', () => {
     });
 
     test('preserves clean name', () => {
-      expect(cleanLocationName('╪º┘ä┘é╪º┘ç╪▒╪⌐')).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+      expect(cleanLocationName('القاهرة')).toBe('القاهرة');
     });
   });
 
@@ -125,15 +125,15 @@ describe('addressParser', () => {
 
   describe('getShippingAddressFields', () => {
     test('extracts fields from structured address', () => {
-      const result = getShippingAddressFields({ street: '10 St', city: 'Giza', governorate: '╪º┘ä╪¼┘è╪▓╪⌐' });
+      const result = getShippingAddressFields({ street: '10 St', city: 'Giza', governorate: 'الجيزة' });
       expect(result.primaryAddress).toBe('10 St');
       expect(result.city).toBe('Giza');
-      expect(result.governorate).toBe('╪º┘ä╪¼┘è╪▓╪⌐');
+      expect(result.governorate).toBe('الجيزة');
     });
 
     test('handles plain string fallback', () => {
-      const result = getShippingAddressFields('╪╣┘å┘ê╪º┘å ╪¿╪│┘è╪╖');
-      expect(result.formattedAddress).toBe('╪╣┘å┘ê╪º┘å ╪¿╪│┘è╪╖');
+      const result = getShippingAddressFields('عنوان بسيط');
+      expect(result.formattedAddress).toBe('عنوان بسيط');
     });
   });
 
@@ -173,14 +173,14 @@ describe('addressParser', () => {
     });
 
     test('removes governorate names from street text', () => {
-      const fields = { formattedAddress: '10 St, ╪º┘ä┘é╪º┘ç╪▒╪⌐, Giza' };
+      const fields = { formattedAddress: '10 St, القاهرة, Giza' };
       const result = extractCleanStreetAddress(fields);
-      expect(result).not.toContain('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+      expect(result).not.toContain('القاهرة');
     });
 
     test('removes customer name from address', () => {
-      const fields = { formattedAddress: '╪ú╪¡┘à╪» ┘à╪¡┘à╪» 10 St' };
-      const result = extractCleanStreetAddress(fields, '', { customerName: '╪ú╪¡┘à╪» ┘à╪¡┘à╪»' });
+      const fields = { formattedAddress: 'أحمد محمد 10 St' };
+      const result = extractCleanStreetAddress(fields, '', { customerName: 'أحمد محمد' });
       expect(result).toBe('10 St');
     });
   });
@@ -206,44 +206,44 @@ describe('addressParser', () => {
 
 describe('governorateMapper', () => {
   describe('getTurboGovernorateName', () => {
-    test('maps cairo to ╪º┘ä┘é╪º┘ç╪▒╪⌐', () => {
-      expect(getTurboGovernorateName('cairo')).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+    test('maps cairo to القاهرة', () => {
+      expect(getTurboGovernorateName('cairo')).toBe('القاهرة');
     });
 
-    test('maps 1 to ╪º┘ä┘é╪º┘ç╪▒╪⌐', () => {
-      expect(getTurboGovernorateName('1')).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+    test('maps 1 to القاهرة', () => {
+      expect(getTurboGovernorateName('1')).toBe('القاهرة');
     });
 
-    test('maps ╪º┘ä┘é╪º┘ç╪▒╪⌐ to ╪º┘ä┘é╪º┘ç╪▒╪⌐', () => {
-      expect(getTurboGovernorateName('╪º┘ä┘é╪º┘ç╪▒╪⌐')).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+    test('maps القاهرة to القاهرة', () => {
+      expect(getTurboGovernorateName('القاهرة')).toBe('القاهرة');
     });
 
     test('returns null for empty input', () => {
       expect(getTurboGovernorateName('')).toBeNull();
     });
 
-    test('maps alex to ╪º┘ä╪Ñ╪│┘â┘å╪»╪▒┘è╪⌐', () => {
-      expect(getTurboGovernorateName('alex')).toBe('╪º┘ä╪Ñ╪│┘â┘å╪»╪▒┘è╪⌐');
+    test('maps alex to الإسكندرية', () => {
+      expect(getTurboGovernorateName('alex')).toBe('الإسكندرية');
     });
   });
 
   describe('findGovernmentByCity', () => {
     const governments = [
-      { id: '1', name: '╪º┘ä┘é╪º┘ç╪▒╪⌐' },
-      { id: '2', name: '╪º┘ä╪¼┘è╪▓╪⌐' },
-      { id: '7', name: '╪º┘ä╪»┘é┘ç┘ä┘è╪⌐' },
+      { id: '1', name: 'القاهرة' },
+      { id: '2', name: 'الجيزة' },
+      { id: '7', name: 'الدقهلية' },
     ];
 
     test('finds government for city via mapping', () => {
-      expect(findGovernmentByCity('╪º┘ä┘à┘å╪╡┘ê╪▒╪⌐', governments)).toBe('╪º┘ä╪»┘é┘ç┘ä┘è╪⌐');
+      expect(findGovernmentByCity('المنصورة', governments)).toBe('الدقهلية');
     });
 
     test('returns default for empty city', () => {
-      expect(findGovernmentByCity('', governments)).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+      expect(findGovernmentByCity('', governments)).toBe('القاهرة');
     });
 
     test('falls back to getTurboGovernorateName when no governments list', () => {
-      expect(findGovernmentByCity('cairo')).toBe('╪º┘ä┘é╪º┘ç╪▒╪⌐');
+      expect(findGovernmentByCity('cairo')).toBe('القاهرة');
     });
   });
 });
@@ -265,19 +265,19 @@ describe('errorHandler', () => {
 
   describe('translateTurboErrorToArabic', () => {
     test('translates Company ID error', () => {
-      expect(translateTurboErrorToArabic('Company ID is required')).toBe('┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(translateTurboErrorToArabic('Company ID is required')).toBe('معرف الشركة مطلوب');
     });
 
     test('translates auth key error', () => {
-      expect(translateTurboErrorToArabic('Invalid authentication_key')).toBe('┘à┘ü╪¬╪º╪¡ ╪º┘ä┘Ç API ╪º┘ä╪«╪º╪╡ ╪¿╪┤╪▒┘â╪⌐ ╪¬╪▒╪¿┘ê ╪║┘è╪▒ ╪╡╪¡┘è╪¡ ╪ú┘ê ┘à┘å╪¬┘ç┘è ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐');
+      expect(translateTurboErrorToArabic('Invalid authentication_key')).toBe('مفتاح الـ API الخاص بشركة تربو غير صحيح أو منتهي الصلاحية');
     });
 
     test('returns default for empty input', () => {
-      expect(translateTurboErrorToArabic('')).toBe('╪¡╪»╪½ ╪«╪╖╪ú ╪║┘è╪▒ ┘à╪¬┘ê┘é╪╣ ╪ú╪½┘å╪º╪í ╪º┘ä╪¬┘ê╪º╪╡┘ä ┘à╪╣ ╪¬╪▒╪¿┘ê');
+      expect(translateTurboErrorToArabic('')).toBe('حدث خطأ غير متوقع أثناء التواصل مع تربو');
     });
 
     test('wraps unknown error with prefix', () => {
-      expect(translateTurboErrorToArabic('Unknown error')).toBe('╪«╪╖╪ú ┘ü┘è ╪º┘ä╪┤╪¡┘å: Unknown error');
+      expect(translateTurboErrorToArabic('Unknown error')).toBe('خطأ في الشحن: Unknown error');
     });
   });
 
@@ -357,7 +357,7 @@ describe('orderFormatter', () => {
       const order = {
         id: 'order-1',
         orderNumber: 'ORD-001',
-        customerName: '╪ú╪¡┘à╪»',
+        customerName: 'أحمد',
         customerPhone: '01000000000',
         shippingAddress: '10 Main St',
         city: 'Giza',
@@ -365,12 +365,12 @@ describe('orderFormatter', () => {
         shipping: 50,
         paymentMethod: 'CASH'
       };
-      const customer = { firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '01000000000' };
+      const customer = { firstName: 'أحمد', lastName: 'علي', phone: '01000000000' };
       const items = [{ name: 'Product A', quantity: 2, price: 250 }];
 
       const result = formatOrderForTurbo(order, customer, items);
       expect(result.orderNumber).toBe('ORD-001');
-      expect(result.customerName).toBe('╪ú╪¡┘à╪»');
+      expect(result.customerName).toBe('أحمد');
       expect(result.customerPhone).toBe('01000000000');
       expect(result.paymentMethod).toBe('CASH');
       expect(result.items).toHaveLength(1);
@@ -381,7 +381,7 @@ describe('orderFormatter', () => {
       const order = {
         id: 'guest-1',
         orderNumber: 'GST-001',
-        guestName: '┘à╪¡┘à╪»',
+        guestName: 'محمد',
         guestPhone: '01111111111',
         shippingAddress: '20 Second St',
         city: 'Cairo',
@@ -390,7 +390,7 @@ describe('orderFormatter', () => {
       };
 
       const result = formatOrderForTurbo(order, null, []);
-      expect(result.customerName).toBe('┘à╪¡┘à╪»');
+      expect(result.customerName).toBe('محمد');
       expect(result.customerPhone).toBe('01111111111');
     });
 
@@ -412,47 +412,47 @@ describe('orderFormatter', () => {
 
 describe('shipmentValidator', () => {
   test('returns valid for complete order', () => {
-    const order = { customerName: '╪ú╪¡┘à╪»', shippingAddress: '10 St', city: 'Giza' };
+    const order = { customerName: 'أحمد', shippingAddress: '10 St', city: 'Giza' };
     const orderData = {
-      customerName: '╪ú╪¡┘à╪»',
+      customerName: 'أحمد',
       customerPhone: '01000000000',
       shippingAddress: '10 Main St',
-      governorate: '╪º┘ä╪¼┘è╪▓╪⌐',
+      governorate: 'الجيزة',
       items: [{ name: 'P1', quantity: 1, price: 100 }]
     };
     expect(validateOrderForTurbo(order, orderData)).toEqual({ isValid: true });
   });
 
   test('detects missing customer name', () => {
-    const result = validateOrderForTurbo({}, { shippingAddress: '10 St', governorate: '╪º┘ä╪¼┘è╪▓╪⌐', items: [{ name: 'P1' }] });
+    const result = validateOrderForTurbo({}, { shippingAddress: '10 St', governorate: 'الجيزة', items: [{ name: 'P1' }] });
     expect(result.isValid).toBe(false);
-    expect(result.missingFields.some(f => f.includes('╪º╪│┘à'))).toBe(true);
+    expect(result.missingFields.some(f => f.includes('اسم'))).toBe(true);
   });
 
   test('detects missing phone', () => {
     const result = validateOrderForTurbo(
-      { customerName: '╪ú╪¡┘à╪»', shippingAddress: '10 St', city: 'Giza' },
-      { customerName: '╪ú╪¡┘à╪»', shippingAddress: '10 St', governorate: '╪º┘ä╪¼┘è╪▓╪⌐', items: [{ name: 'P1' }] }
+      { customerName: 'أحمد', shippingAddress: '10 St', city: 'Giza' },
+      { customerName: 'أحمد', shippingAddress: '10 St', governorate: 'الجيزة', items: [{ name: 'P1' }] }
     );
     expect(result.isValid).toBe(false);
-    expect(result.missingFields.some(f => f.includes('╪¬┘ä┘è┘ü┘ê┘å'))).toBe(true);
+    expect(result.missingFields.some(f => f.includes('تليفون'))).toBe(true);
   });
 
   test('detects missing governorate', () => {
     const result = validateOrderForTurbo(
-      { customerName: '╪ú╪¡┘à╪»', shippingAddress: '10 St' },
-      { customerName: '╪ú╪¡┘à╪»', customerPhone: '01000000000', shippingAddress: '10 St', items: [{ name: 'P1' }] }
+      { customerName: 'أحمد', shippingAddress: '10 St' },
+      { customerName: 'أحمد', customerPhone: '01000000000', shippingAddress: '10 St', items: [{ name: 'P1' }] }
     );
     expect(result.isValid).toBe(false);
-    expect(result.missingFields.some(f => f.includes('┘à╪¡╪º┘ü╪╕╪⌐'))).toBe(true);
+    expect(result.missingFields.some(f => f.includes('محافظة'))).toBe(true);
   });
 
   test('detects empty items', () => {
     const result = validateOrderForTurbo(
-      { customerName: '╪ú╪¡┘à╪»', shippingAddress: '10 St', city: 'Giza' },
-      { customerName: '╪ú╪¡┘à╪»', customerPhone: '01000000000', shippingAddress: '10 St', governorate: '╪º┘ä╪¼┘è╪▓╪⌐', items: [] }
+      { customerName: 'أحمد', shippingAddress: '10 St', city: 'Giza' },
+      { customerName: 'أحمد', customerPhone: '01000000000', shippingAddress: '10 St', governorate: 'الجيزة', items: [] }
     );
     expect(result.isValid).toBe(false);
-    expect(result.missingFields.some(f => f.includes('╪ú╪╡┘å╪º┘ü'))).toBe(true);
+    expect(result.missingFields.some(f => f.includes('أصناف'))).toBe(true);
   });
 });

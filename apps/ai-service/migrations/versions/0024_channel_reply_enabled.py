@@ -1,4 +1,4 @@
-﻿"""Add channelReplyEnabled column to ai_settings
+"""Add channelReplyEnabled column to ai_settings
 
 Revision ID: 0024
 Revises: 0023

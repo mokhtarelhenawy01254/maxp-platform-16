@@ -1,5 +1,5 @@
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { InboxSettings } from '../types';
 

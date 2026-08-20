@@ -7,6 +7,8 @@ const {
   ensureWithinPlanLimit,
   createLimitExceededError,
 } = require('../utils/planLimitPayloads');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
 
 /**
  * 🔧 Helper: التحقق من صحة Webhook Signature
@@ -264,22 +266,25 @@ const handleOrderCreated = async (companyId, orderData, settings) => {
     }
 
     if (!customer && billing.phone) {
-      customer = await getSharedPrismaClient().customer.findFirst({
-        where: { phone: billing.phone, companyId }
-      });
+      customer = await findCustomerByPhone(getSharedPrismaClient(), billing.phone, companyId);
     }
 
     if (!customer) {
-      customer = await getSharedPrismaClient().customer.create({
-        data: {
-          firstName: billing.first_name || 'عميل',
-          lastName: billing.last_name || 'WooCommerce',
-          email: billing.email || null,
-          phone: billing.phone || null,
-          companyId,
-          status: 'ACTIVE'
-        }
-      });
+      customer = await safeCreateCustomer(
+        getSharedPrismaClient(),
+        {
+          data: {
+            firstName: billing.first_name || 'عميل',
+            lastName: billing.last_name || 'WooCommerce',
+            email: billing.email || null,
+            phone: billing.phone || null,
+            phoneNormalized: toCanonicalE164(billing.phone),
+            companyId,
+            status: 'ACTIVE'
+          }
+        },
+        billing.phone ? buildPhoneWhere(billing.phone, companyId) : (billing.email ? { companyId, email: billing.email } : null)
+      );
       console.log(`✅ [WEBHOOK] Created customer: ${customer.firstName}`);
     }
 

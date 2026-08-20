@@ -1,6 +1,6 @@
-import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,7 +18,14 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { DollarSign, Eye, Headphones, Inbox, Loader2, Mail, MousePointerClick } from 'lucide-react';
+import {
+  Loader2,
+  DollarSign,
+  Eye,
+  MousePointerClick,
+  Headphones,
+  Inbox,
+} from 'lucide-react';
 import axios from 'axios';
 import i18n from '../../../i18n';
 

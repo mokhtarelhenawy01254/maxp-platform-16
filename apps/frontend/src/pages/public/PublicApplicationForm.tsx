@@ -1,10 +1,20 @@
-import { File as DocumentTextIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationCircleIcon, Circle as PaperAirplaneIcon, Circle as BriefcaseIcon, Pin as MapPinIcon, Building as BuildingOfficeIcon, Upload as ArrowUpTrayIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-;
+import {
+  DocumentTextIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  PaperAirplaneIcon,
+  BriefcaseIcon,
+  MapPinIcon,
+  BuildingOfficeIcon,
+  ArrowUpTrayIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { apiClient } from "../../services/apiClient";
 import { toast, Toaster } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Question {
   id: string;
@@ -115,7 +125,7 @@ const PublicApplicationForm: React.FC = () => {
         setUploadedFiles((prev) => ({ ...prev, [questionId]: response.data.data }));
         toast.success(`تم رفع "${file.name}" بنجاح`);
       } else {
-        toast.error("فشل رفع الملف");
+        tToast.error("publicApp.msg_bffe");
       }
     } catch (err: any) {
       console.error("File upload error:", err);
@@ -143,10 +153,10 @@ const PublicApplicationForm: React.FC = () => {
     const email = respondentInfo.respondentEmail.trim();
     const phone = respondentInfo.respondentPhone.trim();
 
-    if (!name) { toast.error("يرجى إدخال الاسم الكامل"); return false; }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("يرجى إدخال بريد إلكتروني صحيح"); return false; }
-    if (!phone) { toast.error("يرجى إدخال رقم الهاتف"); return false; }
-    if (phone && !PHONE_REGEX.test(phone)) { toast.error("يرجى إدخال رقم هاتف صحيح"); return false; }
+    if (!name) { tToast.error("publicApp.msg_45d5"); return false; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { tToast.error("publicApp.msg_1dfc"); return false; }
+    if (!phone) { tToast.error("publicApp.msg_530b"); return false; }
+    if (phone && !PHONE_REGEX.test(phone)) { tToast.error("publicApp.msg_28dd"); return false; }
 
     for (const question of form?.questions || []) {
       if (question.isRequired) {
@@ -170,7 +180,7 @@ const PublicApplicationForm: React.FC = () => {
     }
 
     if (Object.values(uploadingFile).some(Boolean)) {
-      toast.error("انتظر حتى يتم رفع الملفات أولاً");
+      tToast.error("publicApp.msg_5424");
       return false;
     }
 
@@ -209,7 +219,7 @@ const PublicApplicationForm: React.FC = () => {
 
       if (response.data.success) {
         setSubmitted(true);
-        toast.success("تم إرسال النموذج بنجاح!");
+        tToast.success("publicApp.success_send_7721");
       }
     } catch (err: any) {
       console.error("Error submitting form:", err);

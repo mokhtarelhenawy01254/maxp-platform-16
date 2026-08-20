@@ -1,9 +1,9 @@
-﻿{
+{
   "slug": "order-confirmation-agent",
-  "name": "┘à┘å┘ë ΓÇö ┘à┘å╪│┘é╪⌐ ╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬",
+  "name": "منى — منسقة تأكيد الطلبات",
   "role": "ORDER_CONFIRMATION",
   "version": "1.0.0",
-  "icon": "≡ƒôª",
+  "icon": "📦",
   "modelPolicy": {
     "default": "deepseek-v4-flash",
     "fallback": "groq/llama-3.3-70b-versatile"

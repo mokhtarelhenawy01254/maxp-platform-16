@@ -6,6 +6,9 @@
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const { v4: uuidv4 } = require('uuid');
+const { mapVariablesByOrder, extractLocalVariableOrder } = require('../utils/metaTemplateVariables');
+const { buildMetaTemplatePayload } = require('../utils/metaTemplatePayload');
+const { isOrderCategory, VALID_WHATSAPP_EVENT_TYPES } = require('../services/whatsapp/notificationTypes');
 
 function buildQueuedSuccessMessage(result) {
   if (!result?.queueId) {
@@ -51,7 +54,7 @@ async function getNotificationSettings(req, res) {
 
     const sessions = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findMany({
       where: { companyId },
-      select: { id: true, name: true, phoneNumber: true, status: true }
+      select: { id: true, name: true, phoneNumber: true, status: true, provider: true }
     }));
 
     res.json({
@@ -102,33 +105,56 @@ async function getTemplates(req, res) {
     const { companyId } = req.user;
     const { category, eventType } = req.query;
 
+    const ORDER_TAB_EVENT_TYPES = [
+      'CART_ABANDONED_1H',
+      'CART_ABANDONED_24H',
+      'CART_ABANDONED_72H',
+      'CART_ABANDONED_WITH_DISCOUNT',
+      'INCOMPLETE_CART_FIRST_APPEARANCE',
+    ];
+
     const where = { companyId };
     if (category) where.category = category;
     if (eventType) where.eventType = eventType;
+    else where.eventType = { notIn: ORDER_TAB_EVENT_TYPES };
 
     const templates = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
-      where,
+      where: {
+        ...where,
+        ...(category ? {} : { category: { not: 'ORDERS' } })
+      },
       orderBy: [{ category: 'asc' }, { eventType: 'asc' }]
     }));
 
     const defaultTemplates = WhatsAppNotificationService.DEFAULT_TEMPLATES;
-    const existingEvents = templates.map(t => t.eventType);
+    // نتخطى القالب الافتراضي فقط لو فيه قالب "عادي" فعلي (BAILEYS/AUTO) للحدث.
+    // قالب ميتا فقط (META_CLOUD) لا يمنع ظهور القالب الافتراضي في الكارد العادي.
+    const hasRegularForEvent = (evtType) =>
+      templates.some(
+        (t) =>
+          t.eventType === evtType &&
+          (!t.channel || ['BAILEYS', 'AUTO'].includes(String(t.channel).toUpperCase())),
+      );
 
     const allTemplates = [...templates];
 
     for (const [evtType, template] of Object.entries(defaultTemplates)) {
-      if (!existingEvents.includes(evtType)) {
-        allTemplates.push({
-          id: null,
-          eventType: evtType,
-          name: template.name,
-          content: template.content,
-          variables: JSON.stringify(template.variables),
-          isDefault: true,
-          isActive: true,
-          category: getCategoryForEvent(evtType)
-        });
-      }
+      if (hasRegularForEvent(evtType)) continue;
+      if (eventType && evtType !== eventType) continue;
+      if (!eventType && ORDER_TAB_EVENT_TYPES.includes(evtType)) continue;
+      const templateCategory = getCategoryForEvent(evtType);
+      if (!category && templateCategory === 'ORDERS') continue;
+      if (category && templateCategory !== category) continue;
+      allTemplates.push({
+        id: null,
+        eventType: evtType,
+        name: template.name,
+        content: template.content,
+        variables: JSON.stringify(template.variables),
+        isDefault: true,
+        isActive: true,
+        category: getCategoryForEvent(evtType)
+      });
     }
 
     res.json({
@@ -176,12 +202,16 @@ async function createTemplate(req, res) {
       contentWithMedia,
       mediaUrl,
       mediaType,
+      headerFormat,
+      headerMediaHandle,
+      headerUsesOrderProduct,
       hasButtons,
       buttons,
       hasList,
       listData,
       variables,
-      isDefault
+      isDefault,
+      channel
     } = req.body;
 
     if (!name || !category || !eventType || !content) {
@@ -199,11 +229,15 @@ async function createTemplate(req, res) {
         contentWithMedia: contentWithMedia || false,
         mediaUrl,
         mediaType,
+        headerFormat,
+        headerMediaHandle,
+        headerUsesOrderProduct: headerUsesOrderProduct === true || headerUsesOrderProduct === 'true',
         hasButtons: hasButtons || false,
         buttons: buttons ? JSON.stringify(buttons) : null,
         hasList: hasList || false,
         listData: listData ? JSON.stringify(listData) : null,
         variables: variables ? JSON.stringify(variables) : null,
+        channel: channel || 'AUTO',
         isDefault: isDefault || false,
         updatedAt: new Date()
       }
@@ -250,13 +284,20 @@ async function updateTemplate(req, res) {
       contentWithMedia,
       mediaUrl,
       mediaType,
+      headerFormat,
+      headerMediaHandle,
+      headerUsesOrderProduct,
       hasButtons,
       buttons,
       hasList,
       listData,
       variables,
       isActive,
-      isDefault
+      isDefault,
+      channel,
+      metaTemplateName,
+      metaTemplateId,
+      metaTemplateStatus
     } = req.body;
 
     const template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.update({
@@ -267,13 +308,22 @@ async function updateTemplate(req, res) {
         contentWithMedia,
         mediaUrl,
         mediaType,
+        headerFormat,
+        headerMediaHandle,
+        headerUsesOrderProduct: headerUsesOrderProduct !== undefined
+          ? (headerUsesOrderProduct === true || headerUsesOrderProduct === 'true')
+          : existing.headerUsesOrderProduct,
         hasButtons,
         buttons: buttons ? JSON.stringify(buttons) : existing.buttons,
         hasList,
         listData: listData ? JSON.stringify(listData) : existing.listData,
         variables: variables ? JSON.stringify(variables) : existing.variables,
+        channel: channel !== undefined ? channel : existing.channel,
         isActive,
         isDefault,
+        metaTemplateName,
+        metaTemplateId,
+        metaTemplateStatus,
         updatedAt: new Date()
       }
     }));
@@ -363,19 +413,57 @@ async function getNotificationLogs(req, res) {
           skip: (parseInt(page) - 1) * parseInt(limit),
           take: parseInt(limit),
           include: {
-            whatsapp_notification_templates: { select: { name: true } },
-            order: { select: { orderNumber: true } },
+            whatsapp_notification_templates: {
+              select: { name: true, metaTemplateName: true, channel: true }
+            },
+            order: { select: { orderNumber: true, total: true } },
             customer: { select: { firstName: true, lastName: true } }
           }
         })),
         safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.count({ where }))
       ]);
 
+      // جلب أسماء الجلسات للـ sessionIds الموجودة في اللوج
+      const sessionIds = [...new Set((logs || []).map((l) => l.sessionId).filter(Boolean))];
+      let sessionsMap = {};
+      if (sessionIds.length > 0) {
+        try {
+          const sessions = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findMany({
+            where: { id: { in: sessionIds } },
+            select: { id: true, name: true, phoneNumber: true, provider: true }
+          }));
+          sessionsMap = Object.fromEntries((sessions || []).map((s) => [s.id, s]));
+        } catch (e) {
+          console.error('⚠️ [NOTIFICATION-LOGS] Failed to load session names:', e.message);
+        }
+      }
+
+      // إضافة اسم القالب من حقل الربط (القالب الذي يستخدمه الإشعار)
+      const enrichedLogs = (logs || []).map((log) => {
+        const session = sessionsMap[log.sessionId] || {};
+        return {
+          ...log,
+          templateName: log.whatsapp_notification_templates?.name || null,
+          metaTemplateName: log.whatsapp_notification_templates?.metaTemplateName || null,
+          templateChannel: log.whatsapp_notification_templates?.channel || null,
+          orderNumber: log.order?.orderNumber || null,
+          orderTotal: log.order?.total != null ? String(log.order.total) : null,
+          sessionName: session?.name || null,
+          sessionPhone: session?.phoneNumber || null,
+          sessionProvider: session?.provider || null,
+          customerFirstName: log.customer?.firstName || null,
+          customerLastName: log.customer?.lastName || null,
+          whatsapp_notification_templates: undefined,
+          order: undefined,
+          customer: undefined
+        };
+      });
+
       console.log('✅ [NOTIFICATION-LOGS] Found', total, 'logs');
 
       res.json({
         success: true,
-        logs: logs || [],
+        logs: enrichedLogs || [],
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -415,12 +503,184 @@ async function getNotificationLogs(req, res) {
   }
 }
 
+async function getStatusReport(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { startDate, endDate, eventType, eventTypes, status, type, category, page = 1, limit = 50 } = req.query;
+
+    const now = new Date();
+    const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const end = endDate ? new Date(endDate) : now;
+    const endOfDay = new Date(end);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // category بس مش startsWith — eventType حقل enum في Prisma و enum مابيدعمش startsWith
+    // (بيدي 500 "Unknown argument"). كل إشعارات حالات الطلبات بتتخزن بـ category
+    // ORDER / ORDERS / ABANDONED_CART فعلاً.
+    // لو اتبعت category في الـ query (مفصولة بفواصل — زي إشعارات العملاء MARKETING)
+    // نستخدمها بدل فئات الطلبات الافتراضية.
+    const categories = String(category || '')
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+
+    // لو اتبعت eventTypes (مفصولة بفواصل — زي أحداث إشعارات العملاء الـ 13)
+    // نضيّق على الأحداث دي بالظبط بدل فلترة الفئة.
+    // 🛡️ نفلتر أولاً على القيم الصالحة بس في enum السجل — الأحداث اللي مش enum
+    // (مثل AUTO_DISCOUNT_* اللي بتتخزن فعلاً كـ ANNOUNCEMENT) هتفشل الـ query لو وصلت لـ Prisma.
+    const validEventTypes = VALID_WHATSAPP_EVENT_TYPES;
+    const eventTypeList = String(eventTypes || '')
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean)
+      .filter((e) => validEventTypes.has(e));
+
+    const where = {
+      companyId,
+      createdAt: { gte: start, lte: endOfDay },
+    };
+
+    if (eventTypeList.length > 0) {
+      where.eventType = { in: eventTypeList };
+    } else if (categories.length > 0) {
+      where.category = { in: categories };
+    } else {
+      where.OR = [
+        { category: 'ORDERS' },
+        { category: 'ORDER' },
+        { category: 'ABANDONED_CART' },
+      ];
+    }
+
+    if (eventType) where.eventType = eventType;
+    if (status) where.status = status;
+
+    const prisma = getSharedPrismaClient();
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(500, Math.max(1, parseInt(limit) || 50));
+
+    try {
+      const [logs, total] = await Promise.all([
+        safeQuery(() => prisma.whatsAppNotificationLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
+          include: {
+            whatsapp_notification_templates: {
+              select: { name: true, metaTemplateName: true, channel: true, headerUsesOrderProduct: true },
+            },
+            order: { select: { orderNumber: true } },
+            customer: { select: { firstName: true, lastName: true } },
+          },
+        })),
+        safeQuery(() => prisma.whatsAppNotificationLog.count({ where })),
+      ]);
+
+      const items = (logs || []).map((log) => {
+        const customerName = log.recipientName
+          || [log.customer?.firstName, log.customer?.lastName].filter(Boolean).join(' ')
+          || null;
+        return {
+          id: log.id,
+          eventType: log.eventType,
+          orderId: log.orderId,
+          orderNumber: log.order?.orderNumber || null,
+          customerName,
+          recipientPhone: log.recipientPhone,
+          templateId: log.templateId,
+          templateName: log.whatsapp_notification_templates?.name || null,
+          metaTemplateName: log.whatsapp_notification_templates?.metaTemplateName || null,
+          templateChannel: log.whatsapp_notification_templates?.channel || null,
+          headerUsesOrderProduct: log.whatsapp_notification_templates?.headerUsesOrderProduct ?? null,
+          messageType: log.messageType || 'TEXT',
+          status: log.status,
+          sentAt: log.sentAt,
+          createdAt: log.createdAt,
+          failureReason: log.failureReason,
+          errorCode: log.errorCode,
+        };
+      });
+
+      const summary = { total: 0, meta: 0, regular: 0, delivered: 0, sent: 0, read: 0, failed: 0, pending: 0 };
+      const byEventMap = new Map();
+      for (const log of logs || []) {
+        const ev = log.eventType || 'OTHER';
+        if (!byEventMap.has(ev)) {
+          byEventMap.set(ev, { eventType: ev, total: 0, meta: 0, regular: 0, delivered: 0, sent: 0, read: 0, failed: 0, pending: 0 });
+        }
+        const agg = byEventMap.get(ev);
+        const isMeta = String(log.messageType || 'TEXT').toUpperCase() === 'TEMPLATE';
+        const st = String(log.status || '').toUpperCase();
+
+        agg.total += 1;
+        if (isMeta) agg.meta += 1; else agg.regular += 1;
+        if (st === 'DELIVERED') agg.delivered += 1;
+        if (st === 'SENT') agg.sent += 1;
+        if (st === 'READ') agg.read += 1;
+        if (st === 'FAILED') agg.failed += 1;
+        if (st === 'PENDING') agg.pending += 1;
+
+        summary.total += 1;
+        if (isMeta) summary.meta += 1; else summary.regular += 1;
+        if (st === 'DELIVERED') summary.delivered += 1;
+        if (st === 'SENT') summary.sent += 1;
+        if (st === 'READ') summary.read += 1;
+        if (st === 'FAILED') summary.failed += 1;
+        if (st === 'PENDING') summary.pending += 1;
+      }
+
+      // فلترة التجميع حسب نوع الإرسال (meta/regular) لو اترسلت في الـ query
+      const typeFilter = String(type || '').toUpperCase();
+      let byStatus = Array.from(byEventMap.values()).sort((a, b) => b.total - a.total);
+      if (typeFilter === 'META' || typeFilter === 'REGULAR') {
+        byStatus = byStatus.map((row) => ({
+          ...row,
+          total: typeFilter === 'META' ? row.meta : row.regular,
+          meta: typeFilter === 'META' ? row.meta : 0,
+          regular: typeFilter === 'REGULAR' ? row.regular : 0,
+        }));
+      }
+
+      res.json({
+        success: true,
+        range: { startDate: start, endDate: endOfDay },
+        summary,
+        byStatus,
+        items,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: total || 0,
+          pages: Math.ceil((total || 0) / limitNum),
+        },
+      });
+    } catch (dbError) {
+      if (dbError.message?.includes('does not exist') || dbError.code === 'P2021') {
+        return res.json({
+          success: true,
+          range: { startDate: start, endDate: endOfDay },
+          summary: { total: 0, meta: 0, regular: 0, delivered: 0, sent: 0, read: 0, failed: 0, pending: 0 },
+          byStatus: [],
+          items: [],
+          pagination: { page: pageNum, limit: limitNum, total: 0, pages: 0 },
+          warning: 'جدول السجلات غير موجود بعد',
+        });
+      }
+      throw dbError;
+    }
+  } catch (error) {
+    console.error('❌ [STATUS-REPORT] Error getting status report:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ أثناء جلب تقرير الحالات' });
+  }
+}
+
 async function getNotificationStats(req, res) {
   try {
     const { companyId } = req.user;
-    const { days = 30 } = req.query;
+    const { days = 30, startDate, endDate } = req.query;
 
-    const stats = await WhatsAppNotificationService.getNotificationStats(companyId, parseInt(days));
+    const stats = await WhatsAppNotificationService.getNotificationStats(companyId, parseInt(days), startDate, endDate);
 
     res.json({
       success: true,
@@ -429,6 +689,33 @@ async function getNotificationStats(req, res) {
   } catch (error) {
     console.error('❌ Error getting notification stats:', error);
     res.status(500).json({ error: 'حدث خطأ أثناء جلب الإحصائيات' });
+  }
+}
+
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §5.3):
+// إحصائيات طابور الإشعارات (WhatsAppNotificationQueue) — يعرض العالقين حسب الحالة
+// والعمر، ومؤشر healthy. لمراقبة الطابور بعد تفعيله (§1.1).
+async function getNotificationQueueStats(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    const [pending, processing, sent, failed, cancelled, overdue] = await Promise.all([
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'PENDING' } }),
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'PROCESSING' } }),
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'SENT' } }),
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'FAILED' } }),
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'CANCELLED' } }),
+      // overdue = PENDING مستحقة لم تُعالج منذ > 2 دقيقة (مؤشر صحة الطابور)
+      prisma.whatsAppNotificationQueue.count({
+        where: { companyId, status: 'PENDING', scheduledAt: { lte: new Date(Date.now() - 120000) } },
+      }),
+    ]);
+
+    res.json({ success: true, stats: { pending, processing, sent, failed, cancelled, overdue, healthy: overdue === 0 } });
+  } catch (error) {
+    console.error('❌ Error getting notification queue stats:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء جلب إحصائيات الطابور' });
   }
 }
 
@@ -581,7 +868,7 @@ async function sendTestNotification(req, res) {
       month: 'يناير',
       netSalary: '5000',
       startTime: '09:00',
-      trackingLink: 'https://store.mokhtarelhenawy.online/track/12345'
+      trackingLink: 'https://store.example.com/track/12345'
     };
 
     if (eventType === 'OTP') {
@@ -741,7 +1028,10 @@ async function updateCustomerPreferences(req, res) {
 
 function getCategoryForEvent(eventType) {
   if (eventType.startsWith('TASK_')) return 'TASKS';
-  if (eventType.startsWith('ORDER_') || eventType.startsWith('PAYMENT_')) return 'ORDER';
+  if (eventType.startsWith('ORDER_') || eventType.startsWith('PAYMENT_')) return 'ORDERS';
+  // الحالات الخام لحالات الطلبات (delivered/confirmed/returned...) مش بتبدأ بـ ORDER_
+  // وكانت بتقع في الـ default MARKETING — تصنيفها الصحيح ORDERS (رسالة حالة طلب).
+  if (isOrderCategory(null, eventType)) return 'ORDERS';
   if (eventType === 'NEW_SIGNUP_WELCOME') return 'CUSTOMER';
   if (
     eventType === 'NEW_SIGNUP_ADMIN_ALERT' ||
@@ -751,8 +1041,9 @@ function getCategoryForEvent(eventType) {
     return 'SYSTEM';
   }
   if (eventType === 'NEWSLETTER_SUBSCRIBED') return 'MARKETING';
-  if (eventType.startsWith('CART_')) return 'MARKETING';
-  if (eventType.startsWith('BACK_IN_STOCK') || eventType.startsWith('PRICE_') || eventType.startsWith('NEW_PRODUCT')) return 'MARKETING';
+  if (eventType.startsWith('CART_')) return 'ABANDONED_CART';
+  if (eventType === 'INCOMPLETE_CART_FIRST_APPEARANCE') return 'ABANDONED_CART';
+  if (eventType.startsWith('BACK_IN_STOCK') || eventType.startsWith('PRICE_') || eventType.startsWith('NEW_PRODUCT') || eventType === 'LOW_STOCK_ALERT') return 'PRODUCTS';
   if (eventType.startsWith('ATTENDANCE_') || eventType.startsWith('LEAVE_') || eventType.startsWith('PAYROLL') || eventType.startsWith('BIRTHDAY_EMPLOYEE') || eventType.startsWith('WARNING_') || eventType.startsWith('ANNOUNCEMENT')) return 'HR';
   if (eventType === 'OTP') return 'SYSTEM';
   return 'MARKETING';
@@ -770,6 +1061,643 @@ function getErrorMessage(reason, retryable = false) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ☁️ نشر قالب محلي على ميتا
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * إنشاء قالب جديد في ميتا بمحتوى القالب المحلي الحالي.
+ * ميتا تقفل محتوى القوالب المعتمدة — لا يمكن تعديل body/header/footer لقالب APPROVED
+ * بنفس اللغة (code 100 / subcode 2388024، أو 2500 عند محاولة التعديل عبر الـ ID).
+ * الحل الوحيد المعتمد من ميتا: إنشاء قالب جديد باسم فريد ثم ربط القالب المحلي به.
+ *
+ * Returns { result, metaName, built, metaCategory, metaPadding }
+ */
+async function createMetaTemplateFromLocal(sessionId, localTemplate) {
+  // الشركة مطلوبة لبناء رابط صفحة العميل (الساب دومين) في زرار URL
+  const company = await getSharedPrismaClient().company.findUnique({
+    where: { id: localTemplate.companyId },
+    select: { id: true, slug: true, customDomain: true }
+  }).catch(() => null);
+
+  const built = buildMetaTemplatePayload(localTemplate, company);
+  const metaCategory = built.metaCategory;
+  const bodyText = built.bodyText;
+  const buttonsComponent = built.buttonsComponent;
+  const headerComponent = built.headerComponent;
+  const variableCount = built.variableCount;
+  const variableOrder = built.variableOrder;
+
+  const baseName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
+    .toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 480);
+
+  const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+
+  const bodyWithExample = {
+    type: 'BODY',
+    text: bodyText,
+    example: { body_text: [Array.from({ length: variableCount }, (_, i) => `قيمة ${i + 1}`)] }
+  };
+  const bodyPlain = { type: 'BODY', text: bodyText };
+
+  // الـ HEADER (وسائط) يأتي أولاً في components — ميتا تتطلب أن يكون أول component
+  const withHeader = (comps) => headerComponent ? [headerComponent, ...comps] : comps;
+
+  const variants = [];
+  if (buttonsComponent) {
+    variants.push({ label: 'buttons+example', components: withHeader([bodyWithExample, buttonsComponent]) });
+    variants.push({ label: 'buttons', components: withHeader([bodyPlain, buttonsComponent]) });
+  }
+  variants.push({ label: 'body+example', components: withHeader([bodyWithExample]) });
+  variants.push({ label: 'body', components: withHeader([bodyPlain]) });
+
+  const withTimeout = (promise, ms) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`Meta API timeout after ${ms}ms`)), ms))
+  ]);
+
+  let result = null;
+  let lastError = null;
+  let createdName = null;
+
+  for (let i = 0; i < variants.length; i++) {
+    const variant = variants[i];
+    const suffix = i === 0 ? '' : `v${i + 1}`;
+    const candidateName = `${baseName}${suffix}${Date.now().toString(36)}`.replace(/__+/g, '_').slice(0, 512);
+    try {
+      result = await withTimeout(MetaCloudProvider.createTemplate(sessionId, {
+        name: candidateName,
+        language: 'ar',
+        category: metaCategory,
+        components: variant.components,
+        generateExample: false
+      }), 25000);
+      createdName = candidateName;
+      console.log(`☁️ [META-CREATE-FROM-LOCAL] Variant "${variant.label}" succeeded → "${candidateName}"`);
+      break;
+    } catch (err) {
+      lastError = err;
+      console.warn(`☁️ [META-CREATE-FROM-LOCAL] Variant "${variant.label}" failed: ${err?.message || err}`);
+    }
+  }
+
+  if (!result) {
+    throw lastError || new Error('فشل إنشاء القالب في ميتا');
+  }
+
+  return { result, metaName: createdName, metaCategory, built, variableOrder };
+}
+
+async function publishTemplateToMeta(req, res) {
+  // متغيرات مشتركة بين try و catch (ميتا ترفض المتغيرات في بداية/نهاية النص)
+  let metaName = null;
+  let metaCategory = null;
+  let bodyText = null;
+  let buttonsComponent = null;
+  let metaPadding = null;
+
+  try {
+    const { companyId } = req.user;
+    const templateId = req.params.id || req.body.templateId;
+    const { sessionId } = req.body;
+
+    if (!templateId || !sessionId) {
+      return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
+    }
+
+    // 1. جلب القالب المحلي
+    const localTemplate = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+      where: { id: templateId, companyId }
+    });
+    if (!localTemplate) {
+      return res.status(404).json({ error: 'القالب غير موجود' });
+    }
+
+    // 2. التحقق من الجلسة
+    const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+      where: { id: sessionId, companyId, provider: 'META_CLOUD' }
+    });
+    if (!session) {
+      return res.status(400).json({ error: 'جلسة ميتا غير موجودة' });
+    }
+
+    // 3. تحويل القالب المحلي لصيغة ميتا وإنشاؤه في ميتا مع محاولات بديلة
+    // الترتيب: الأغنى أولاً ثم تبسيط تدريجي، وكل محاولة باسم فريد لتفادي تعارض الأسماء
+    const { result, metaName: createdName, metaCategory: cat, built } =
+      await createMetaTemplateFromLocal(sessionId, localTemplate);
+
+    metaName = createdName;
+    metaCategory = cat;
+    bodyText = built.bodyText;
+    buttonsComponent = built.buttonsComponent;
+    metaPadding = built.metaPadding;
+    const variableOrder = built.variableOrder;
+
+    // 5. تحديث القالب المحلي ببيانات ميتا
+    await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+      where: { id: templateId },
+      data: {
+        metaTemplateName: metaName,
+        metaTemplateId: result?.id || localTemplate.metaTemplateId,
+        metaTemplateLanguage: 'ar',
+        metaTemplateStatus: 'PENDING',
+        variables: variableOrder || localTemplate.variables,
+        updatedAt: new Date()
+      }
+    });
+
+    console.log(`☁️ [PUBLISH-TO-META] Template "${localTemplate.name}" → "${metaName}" (${metaCategory}) — ${result?.id ? 'created' : 'submitted'}`);
+
+    res.json({
+      success: true,
+      metaTemplateName: metaName,
+      metaCategory,
+      metaResult: result,
+      metaPadding,
+      message: metaPadding
+        ? `تم إرسال القالب لميتا للمراجعة. ${metaPadding}`
+        : 'تم إرسال القالب لميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
+    });
+  } catch (error) {
+    const requestDebug = {
+      name: metaName,
+      language: 'ar',
+      category: metaCategory,
+      bodyText,
+      buttons: buttonsComponent?.buttons || null,
+      lastError: error?.message
+    };
+    const rawMeta = error?.originalError?.response?.data || error?.response?.data || null;
+    console.error('❌ Error publishing template to Meta:', JSON.stringify(rawMeta || { error: error.message, code: error.code }, null, 2));
+    const rawMetaError = rawMeta?.error;
+    if (rawMetaError) {
+      const details = [
+        rawMetaError.message,
+        rawMetaError.error_user_title,
+        rawMetaError.error_user_msg,
+        rawMetaError.code ? `(code: ${rawMetaError.code})` : '',
+        rawMetaError.error_subcode ? `(subcode: ${rawMetaError.error_subcode})` : '',
+        rawMetaError.fbtrace_id ? `(fbtrace: ${rawMetaError.fbtrace_id})` : ''
+      ].filter(Boolean).join(' — ');
+      return res.status(500).json({ error: details, request: requestDebug });
+    }
+    res.status(500).json({ error: `${error.message || 'Meta API error'}${error.code ? ` (code: ${error.code})` : ''}`, request: requestDebug });
+  }
+}
+
+/**
+ * إعادة إرسال قالب إلى ميتا للمراجعة بعد التعديل.
+ *
+ * حسب وثائق ميتا (2026): "Only templates with an APPROVED, REJECTED, or PAUSED
+ * status can be edited." — القوالب PENDING (قيد المراجعة) لا يمكن تعديلها
+ * (code 100 / subcode 2388003 "لا يمكن تعديل قوالب الرسائل إلا إذا تم رفضها").
+ *
+ * المنطق:
+ * - لو حالة القالب المربوط APPROVED/REJECTED/PAUSED → نعدّل components مباشرة عبر
+ *   POST /{apiVersion}/{message-template-id} (وميتا تعيد الموافقة تلقائياً).
+ * - لو حالة القالب PENDING (لا يقبل التعديل) → ننشئ قالباً جديداً باسم فريد بالمحتوى
+ *   المعدل ونربط القالب المحلي به.
+ * POST /templates/:id/resubmit-meta  { sessionId }
+ */
+async function resubmitMetaTemplate(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const { sessionId } = req.body;
+
+    if (!id || !sessionId) {
+      return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
+    }
+
+    const localTemplate = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+      where: { id, companyId }
+    });
+    if (!localTemplate) {
+      return res.status(404).json({ error: 'القالب غير موجود' });
+    }
+    if (!localTemplate.metaTemplateName) {
+      return res.status(400).json({ error: 'القالب غير مربوط بقالب ميتا بعد' });
+    }
+
+    const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+      where: { id: sessionId, companyId, provider: 'META_CLOUD' }
+    });
+    if (!session) {
+      return res.status(400).json({ error: 'جلسة ميتا غير موجودة' });
+    }
+
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+
+    // 1) حل القالب المربوط في ميتا (id + status)
+    const metaTemplates = await MetaCloudProvider.listTemplates(sessionId).catch(() => []);
+    let metaTemplateId = localTemplate.metaTemplateId || null;
+    let boundStatus = null;
+    const found = (metaTemplates || []).find(t => t.name === localTemplate.metaTemplateName);
+    if (found) {
+      metaTemplateId = found.id || metaTemplateId;
+      boundStatus = found.status;
+    }
+    if (!metaTemplateId) {
+      return res.status(400).json({ error: 'تعذر إيجاد قالب ميتا المقابل' });
+    }
+
+    const built = buildMetaTemplatePayload(localTemplate);
+    const bodyWithExample = built.variableCount > 0
+      ? { type: 'BODY', text: built.bodyText, example: { body_text: [Array.from({ length: built.variableCount }, (_, i) => `قيمة ${i + 1}`)] } }
+      : { type: 'BODY', text: built.bodyText };
+    // الـ HEADER يأتي أولاً في components
+    const components = [];
+    if (built.headerComponent) components.push(built.headerComponent);
+    components.push(bodyWithExample);
+    if (built.buttonsComponent) components.push(built.buttonsComponent);
+
+    // 2) الحالات التي تقبل التعديل المباشر: APPROVED / REJECTED / PAUSED
+    const EDITABLE_STATUSES = ['APPROVED', 'REJECTED', 'PAUSED'];
+    const canEditInPlace = EDITABLE_STATUSES.includes(String(boundStatus || '').toUpperCase());
+
+    let result = null;
+    let finalName = localTemplate.metaTemplateName;
+    let finalMetaTemplateId = metaTemplateId;
+    let action;
+
+    if (canEditInPlace) {
+      // 2a) تعديل القالب الموجود نفسه (ميتا تعيد الموافقة تلقائياً)
+      // لا نرسل category لقالب APPROVED (ميتا تمنع تعديل category القالب المعتمد)
+      result = await MetaCloudProvider.updateTemplate(sessionId, metaTemplateId, { components });
+      action = 'edited';
+      console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.name}" → Meta id=${metaTemplateId} edited (was ${boundStatus})`);
+    } else {
+      // 2b) القالب PENDING (أو حالة أخرى غير قابلة للتعديل) → ننشئ قالباً جديداً باسم فريد
+      const created = await createMetaTemplateFromLocal(sessionId, localTemplate);
+      result = created.result;
+      finalName = created.metaName;
+      finalMetaTemplateId = created.result?.id || metaTemplateId;
+      action = 'created';
+      console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.name}" → new Meta template "${finalName}" (was ${boundStatus || 'n/a'})`);
+    }
+
+    // 3) التحقق من الحالة الجديدة على ميتا
+    let verifiedStatus = null;
+    let verifiedBodyText = null;
+    try {
+      const metaTemplatesAfter = await MetaCloudProvider.listTemplates(sessionId);
+      const foundAfter = metaTemplatesAfter.find(t => String(t.id) === String(finalMetaTemplateId));
+      if (foundAfter) {
+        verifiedStatus = foundAfter.status;
+        const body = (foundAfter.components || []).find(c => c.type === 'BODY');
+        verifiedBodyText = body ? body.text : null;
+      }
+    } catch { /* لا يوقف الإجابة */ }
+
+    await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+      where: { id },
+      data: {
+        metaTemplateName: finalName,
+        metaTemplateId: finalMetaTemplateId || localTemplate.metaTemplateId,
+        metaTemplateLanguage: 'ar',
+        metaTemplateStatus: verifiedStatus || 'PENDING',
+        variables: built.variableOrder || localTemplate.variables,
+        updatedAt: new Date()
+      }
+    });
+
+    const message = verifiedStatus
+      ? `تم ${action === 'edited' ? 'تحديث' : 'إنشاء'} القالب على ميتا. الحالة الحالية: ${verifiedStatus}.`
+      : 'تم إرسال القالب إلى ميتا للمراجعة. سيتم تأكيده تلقائياً بعد المراجعة.';
+
+    res.json({
+      success: true,
+      applied: action === 'edited',
+      applyReason: action === 'created' ? 'تم إنشاء قالب ميتا جديد باسم فريد؛ سيصبح الأساسي في الإرسال بعد اعتماده من ميتا' : null,
+      action,
+      metaTemplateName: finalName,
+      metaTemplateId: finalMetaTemplateId || localTemplate.metaTemplateId,
+      metaResult: result,
+      verifiedStatus,
+      verifiedBodyText,
+      metaPadding: built.metaPadding,
+      message
+    });
+  } catch (error) {
+    console.error('❌ Error resubmitting Meta template:', error);
+    if (error.metaError) {
+      const e = error.metaError;
+      const details = [
+        e.message,
+        e.error_user_title,
+        e.error_user_msg,
+        e.code ? `(code: ${e.code})` : '',
+        e.error_subcode ? `(subcode: ${e.error_subcode})` : ''
+      ].filter(Boolean).join(' — ');
+      return res.status(500).json({ error: details });
+    }
+    const rawMeta = error?.originalError?.response?.data || error?.response?.data || null;
+    const rawMetaError = rawMeta?.error;
+    if (rawMetaError) {
+      const details = [
+        rawMetaError.message,
+        rawMetaError.error_user_title,
+        rawMetaError.error_user_msg,
+        rawMetaError.code ? `(code: ${rawMetaError.code})` : '',
+        rawMetaError.error_subcode ? `(subcode: ${rawMetaError.error_subcode})` : ''
+      ].filter(Boolean).join(' — ');
+      return res.status(500).json({ error: details });
+    }
+    res.status(500).json({ error: error.message || 'فشل تحديث القالب على ميتا' });
+  }
+}
+
+async function checkMetaTemplateStatus(sessionId, templateName) {
+  try {
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const templates = await MetaCloudProvider.listTemplates(sessionId);
+    const found = templates.find(t => t.name === templateName);
+    return found ? found.status : null;
+  } catch { return null; }
+}
+
+async function syncTemplateStatuses(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ error: 'sessionId مطلوب' });
+
+    const localTemplates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
+      where: { companyId, metaTemplateName: { not: null } }
+    });
+
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+
+    let updated = 0;
+    for (const local of localTemplates) {
+      const meta = metaTemplates.find(t => t.name === local.metaTemplateName);
+      if (meta && meta.status !== local.metaTemplateStatus) {
+        await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+          where: { id: local.id },
+          data: { metaTemplateStatus: meta.status, updatedAt: new Date() }
+        });
+        updated++;
+      }
+    }
+
+    res.json({ success: true, synced: updated });
+  } catch (error) {
+    console.error('❌ Error syncing template statuses:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * جلب قوالب ميتا المتاحة للربط (APPROVED) من رقم واتساب كلاود
+ * GET /templates/meta-available?sessionId=...
+ */
+async function listAvailableMetaTemplates(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { sessionId } = req.query;
+    if (!sessionId) return res.status(400).json({ error: 'sessionId مطلوب' });
+
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+
+    const localTemplates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
+      where: { companyId },
+      select: { id: true, eventType: true, metaTemplateName: true, metaTemplateStatus: true, content: true }
+    });
+
+    const available = (metaTemplates || [])
+      .filter(t => String(t.status).toUpperCase() === 'APPROVED')
+      .map(t => {
+        // قالب ميتا واحد ممكن يتربط باكتر من حالة/قالب محلي — نرجع كل الربطات
+        const bound = (localTemplates || []).filter(l => l.metaTemplateName === t.name);
+        // محتوى أول قالب محلي مربوط — لتمكين auto-fill في الفرونت عند اختيار قالب ميتا
+        // (بيخلي المستخدم يختار قالب ميتا بس والمحتوى يتبني تلقائياً بدل ما يكتب المتغيرات يدوياً)
+        const boundContent = bound[0]?.content || null;
+        return {
+          name: t.name,
+          status: t.status,
+          language: t.language || 'ar',
+          category: t.category || 'UTILITY',
+          components: t.components || null,
+          boundToLocalTemplateIds: bound.map(b => b.id),
+          boundToEventTypes: bound.map(b => b.eventType),
+          boundLocalContent: boundContent,
+          // للتوافق مع الفرونت القديم: أول ربط بس (كان الحقل السابق)
+          boundToLocalTemplateId: bound[0] ? bound[0].id : null,
+          boundToEventType: bound[0] ? bound[0].eventType : null
+        };
+      });
+
+    res.json({ success: true, templates: available });
+  } catch (error) {
+    console.error('❌ Error listing available Meta templates:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * ربط قالب محلي بقالب ميتا موجود (approved) - اللي هيتبعت فعلياً
+ * POST /templates/:id/bind-meta  { sessionId, metaTemplateName, metaTemplateLanguage }
+ */
+async function bindMetaTemplate(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const { sessionId, metaTemplateName, metaTemplateLanguage = 'ar' } = req.body;
+
+    if (!sessionId || !metaTemplateName) {
+      return res.status(400).json({ error: 'sessionId و metaTemplateName مطلوبان' });
+    }
+
+    const local = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+      where: { id, companyId }
+    });
+    if (!local) return res.status(404).json({ error: 'القالب غير موجود' });
+
+    // التحقق أن القالب موجود ومعتمد في ميتا
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+    const meta = (metaTemplates || []).find(t => t.name === metaTemplateName);
+    if (!meta) return res.status(400).json({ error: 'قالب ميتا غير موجود' });
+    if (String(meta.status).toUpperCase() !== 'APPROVED') {
+      return res.status(400).json({ error: 'قالب ميتا غير معتمد بعد (مطلوب APPROVED)' });
+    }
+
+    // بناء ترتيب المتغيرات من قالب ميتا ({{1}}, {{2}}, ...) بمطابقة ترتيب
+    // ظهور {{name}} في القالب المحلي (مش ترتيب هاردكود — يمنع رسايل بمتغيرات مغلوطة).
+    let metaVariableCount = 0;
+    let metaBodyText = '';
+    try {
+      const bodyComponent = (meta.components || []).find(c => c.type === 'BODY');
+      metaBodyText = bodyComponent?.text || '';
+      const placeholders = metaBodyText.match(/\{\{\s*\d+\s*\}\}/g) || [];
+      metaVariableCount = placeholders.length;
+    } catch { metaVariableCount = 0; }
+
+    const localContent = local.content || '';
+    let variables = null;
+    let validation = null;
+
+    if (metaVariableCount > 0) {
+      // 🆕 validation: التأكد إن عدد المتغيرات المحلية >= ميتا
+      const localUnique = extractLocalVariableOrder(localContent);
+
+      validation = {
+        metaVariableCount,
+        localVariableCount: localUnique.length,
+        matched: localUnique.length >= metaVariableCount,
+        missingInLocal: metaVariableCount > localUnique.length ? metaVariableCount - localUnique.length : 0,
+      };
+
+      if (!validation.matched) {
+        return res.status(400).json({
+          error: `عدد المتغيرات لا يطابق: قالب ميتا يحتاج ${metaVariableCount} متغيرات، لكن القالب المحلي يحتوي على ${localUnique.length} فقط. أضف ${validation.missingInLocal} متغيرات أخرى للقالب المحلي.`,
+          validation,
+        });
+      }
+
+      const mapped = mapVariablesByOrder(localContent, metaBodyText);
+      variables = mapped.length > 0 ? JSON.stringify(mapped) : null;
+    }
+
+    const updated = await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+      where: { id },
+      data: {
+        metaTemplateName,
+        metaTemplateId: meta.id || local.metaTemplateId,
+        metaTemplateLanguage,
+        metaTemplateStatus: 'APPROVED',
+        variables,
+        updatedAt: new Date()
+      }
+    });
+
+    res.json({ success: true, template: updated, validation });
+  } catch (error) {
+    console.error('❌ Error binding Meta template:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * يرجع مصير الإشعار المتوقع لكل قالب/حالة — شفافية البروفايدر للأدمن.
+ * GET /templates/delivery-preview
+ */
+async function getTemplatesDeliveryPreview(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    // 1. كل القوالب
+    const templates = await prisma.whatsAppNotificationTemplate.findMany({
+      where: { companyId, isActive: true },
+      select: {
+        id: true, eventType: true, category: true, channel: true,
+        metaTemplateName: true, metaTemplateStatus: true, metaTemplateLanguage: true,
+      },
+    });
+
+    // 2. كل sessions الشركة المتصلة
+    const sessions = await prisma.whatsAppSession.findMany({
+      where: { companyId, status: 'CONNECTED' },
+      select: { id: true, name: true, provider: true, phoneNumber: true, status: true },
+    });
+
+    // 3. default session (أو أول جلسة متصلة لو مش محدد)
+    const settings = await prisma.whatsAppNotificationSettings.findUnique({
+      where: { companyId },
+      select: { defaultSessionId: true },
+    });
+    const defaultSession = sessions.find(s => s.id === settings?.defaultSessionId) || sessions[0];
+
+    // 4. لكل قالب، احسب المصير
+    const preview = templates.map(t => {
+      let deliveryStatus = 'unknown';
+      let provider = null;
+      let riskLevel = 'none'; // none | warning | danger
+      let message = '';
+
+      if (!defaultSession) {
+        deliveryStatus = 'no_session';
+        riskLevel = 'danger';
+        message = 'لا توجد جلسة واتساب متصلة';
+      } else if (defaultSession.provider === 'BAILEYS') {
+        deliveryStatus = 'baileys_free_text';
+        provider = 'BAILEYS';
+        riskLevel = 'none';
+        message = 'سيُرسل كنص حر عبر Baileys — يصل في أي وقت';
+      } else if (defaultSession.provider === 'META_CLOUD') {
+        provider = 'META_CLOUD';
+        if (t.metaTemplateName && String(t.metaTemplateStatus).toUpperCase() === 'APPROVED') {
+          deliveryStatus = 'meta_approved';
+          riskLevel = 'none';
+          message = `سيُرسل عبر قالب ميتا معتمد: ${t.metaTemplateName}`;
+        } else if (t.metaTemplateName && t.metaTemplateStatus !== 'APPROVED') {
+          deliveryStatus = 'meta_not_approved';
+          riskLevel = 'danger';
+          message = `قالب ميتا "${t.metaTemplateName}" حالته: ${t.metaTemplateStatus} — لن يُرسل حتى يعتمد`;
+        } else {
+          deliveryStatus = 'meta_no_template';
+          riskLevel = 'warning';
+          message = '⚠️ ميتا بدون قالب معتمد — سيفشل خارج نافذة 24 ساعة';
+        }
+      }
+
+      return {
+        templateId: t.id,
+        eventType: t.eventType,
+        channel: t.channel || 'AUTO',
+        provider,
+        deliveryStatus,
+        riskLevel,
+        message,
+        metaTemplateName: t.metaTemplateName,
+        metaTemplateStatus: t.metaTemplateStatus,
+      };
+    });
+
+    // 5. لو الحدث الواحد ليه قالبان (عادي + ميتا)، نحتفظ بالقالب اللي مسار الإرسال
+    //    هيستخدمه فعلًا (نفس قاعدة findNotificationTemplateForEvent) عشان المؤشر
+    //    يعكس المصير الحقيقي مش آخر قالب اعتباطي.
+    const isMetaDefault = defaultSession?.provider === 'META_CLOUD';
+    const isMetaApproved = (item) =>
+      String(item.channel).toUpperCase() === 'META_CLOUD' &&
+      String(item.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
+
+    const perEvent = new Map();
+    for (const item of preview) {
+      const prev = perEvent.get(item.eventType);
+      if (!prev) {
+        perEvent.set(item.eventType, item);
+        continue;
+      }
+      if (isMetaDefault) {
+        if (isMetaApproved(item) && !isMetaApproved(prev)) perEvent.set(item.eventType, item);
+      } else {
+        const itemIsMeta = String(item.channel).toUpperCase() === 'META_CLOUD';
+        const prevIsMeta = String(prev.channel).toUpperCase() === 'META_CLOUD';
+        if (!itemIsMeta && prevIsMeta) perEvent.set(item.eventType, item);
+      }
+    }
+    const finalPreview = Array.from(perEvent.values());
+
+    res.json({
+      success: true,
+      defaultSession: defaultSession ? {
+        id: defaultSession.id, name: defaultSession.name,
+        provider: defaultSession.provider, phoneNumber: defaultSession.phoneNumber,
+      } : null,
+      connectedSessionsCount: sessions.length,
+      hasBaileysBackup: sessions.some(s => s.provider === 'BAILEYS'),
+      preview: finalPreview,
+    });
+  } catch (error) {
+    console.error('❌ Error in getTemplatesDeliveryPreview:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // 📤 التصدير
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -782,9 +1710,17 @@ module.exports = {
   updateTemplate,
   deleteTemplate,
   getNotificationLogs,
+  getStatusReport,
   getNotificationStats,
+  getNotificationQueueStats,
   sendManualNotification,
   sendTestNotification,
   getCustomerPreferences,
-  updateCustomerPreferences
+  updateCustomerPreferences,
+  publishTemplateToMeta,
+  resubmitMetaTemplate,
+  syncTemplateStatuses,
+  listAvailableMetaTemplates,
+  bindMetaTemplate,
+  getTemplatesDeliveryPreview
 };

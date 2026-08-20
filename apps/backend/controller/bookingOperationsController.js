@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getDateStringInTimezone, getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
 
 const LABEL_TYPES = ['EXAM', 'ENVELOPE'];
@@ -64,7 +64,7 @@ const formatAppointmentRef = (a) => ({
 const getUnprintedLabels = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { branchId } = req.query;
     const where = { companyId, labelPrinted: false, appointmentDate: buildDateRange(req) };
@@ -93,14 +93,14 @@ const getUnprintedLabels = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching unprinted labels:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ä╪º╪╡┘é╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à╪╖╪¿┘ê╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب اللاصقات غير المطبوعة' });
   }
 };
 
 const getPrintedLabels = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { date, dateFrom, dateTo, limit } = req.query;
     const where = { companyId };
@@ -147,19 +147,19 @@ const getPrintedLabels = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching printed labels:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ä╪º╪╡┘é╪º╪¬ ╪º┘ä┘à╪╖╪¿┘ê╪╣╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب اللاصقات المطبوعة' });
   }
 };
 
 const printLabel = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { appointmentId, labelType } = req.body || {};
-    if (!appointmentId) return res.status(400).json({ success: false, error: '┘à╪╣╪▒┘ü ╪º┘ä┘à┘ê╪╣╪» ┘à╪╖┘ä┘ê╪¿' });
+    if (!appointmentId) return res.status(400).json({ success: false, error: 'معرف الموعد مطلوب' });
     const type = labelType || 'EXAM';
-    if (!LABEL_TYPES.includes(type)) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä┘ä╪º╪╡┘é ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+    if (!LABEL_TYPES.includes(type)) return res.status(400).json({ success: false, error: 'نوع اللاصق غير صالح' });
 
     const prisma = getSharedPrismaClient();
     const appointment = await prisma.appointment.findUnique({
@@ -167,7 +167,7 @@ const printLabel = async (req, res) => {
       select: { id: true, companyId: true, patientId: true },
     });
     if (!appointment || appointment.companyId !== companyId) {
-      return res.status(404).json({ success: false, error: '╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
     }
 
     const label = await prisma.examLabel.create({
@@ -190,7 +190,7 @@ const printLabel = async (req, res) => {
       entityType: 'APPOINTMENT',
       entityId: appointmentId,
       action: 'UPDATE',
-      description: `╪╖╪¿╪º╪╣╪⌐ ┘ä╪º╪╡┘é ${type === 'ENVELOPE' ? '┘à╪║┘ä┘ü' : '┘ü╪¡╪╡'}`,
+      description: `طباعة لاصق ${type === 'ENVELOPE' ? 'مغلف' : 'فحص'}`,
     });
 
     res.json({
@@ -206,14 +206,14 @@ const printLabel = async (req, res) => {
     });
   } catch (error) {
     console.error('Error printing label:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪╖╪¿╪º╪╣╪⌐ ╪º┘ä┘ä╪º╪╡┘é' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في طباعة اللاصق' });
   }
 };
 
 const getDeliveries = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { branchId, paidStatus } = req.query;
     const where = { companyId, appointmentDate: buildDateRange(req) };
@@ -277,7 +277,7 @@ const getDeliveries = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching deliveries:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¬╪│┘ä┘è┘à ╪º┘ä╪¬┘é╪º╪▒┘è╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تسليم التقارير' });
   }
 };
 
@@ -316,11 +316,11 @@ const upsertDelivery = async (prisma, companyId, target, data) => {
 const markReady = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const prisma = getSharedPrismaClient();
     const target = await resolveDeliveryTarget(prisma, companyId, req.params.id);
-    if (!target) return res.status(404).json({ success: false, error: '╪º┘ä╪¬╪│┘ä┘è┘à ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!target) return res.status(404).json({ success: false, error: 'التسليم غير موجود' });
 
     const delivery = await upsertDelivery(prisma, companyId, target, { status: 'READY' });
 
@@ -328,24 +328,24 @@ const markReady = async (req, res) => {
       entityType: 'APPOINTMENT',
       entityId: target.appointmentId,
       action: 'UPDATE',
-      description: '╪¬╪¼┘ç┘è╪▓ ╪º┘ä╪¬┘é╪▒┘è╪▒ ┘ä┘ä╪¬╪│┘ä┘è┘à',
+      description: 'تجهيز التقرير للتسليم',
     });
 
     res.json({ success: true, data: { id: delivery.id, appointmentId: target.appointmentId, status: 'READY' } });
   } catch (error) {
     console.error('Error marking delivery ready:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¼┘ç┘è╪▓ ╪º┘ä╪¬┘é╪▒┘è╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تجهيز التقرير' });
   }
 };
 
 const markDelivered = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const prisma = getSharedPrismaClient();
     const target = await resolveDeliveryTarget(prisma, companyId, req.params.id);
-    if (!target) return res.status(404).json({ success: false, error: '╪º┘ä╪¬╪│┘ä┘è┘à ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!target) return res.status(404).json({ success: false, error: 'التسليم غير موجود' });
 
     const name = userName(req);
     const delivery = await upsertDelivery(prisma, companyId, target, {
@@ -363,7 +363,7 @@ const markDelivered = async (req, res) => {
       entityType: 'APPOINTMENT',
       entityId: target.appointmentId,
       action: 'UPDATE',
-      description: '╪¬╪│┘ä┘è┘à ╪º┘ä╪¬┘é╪▒┘è╪▒ ┘ä┘ä┘à╪▒┘è╪╢',
+      description: 'تسليم التقرير للمريض',
     });
 
     res.json({
@@ -378,14 +378,14 @@ const markDelivered = async (req, res) => {
     });
   } catch (error) {
     console.error('Error marking delivery delivered:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪│┘ä┘è┘à ╪º┘ä╪¬┘é╪▒┘è╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسليم التقرير' });
   }
 };
 
 const getTransactions = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { from, to, entityType, search, page, limit } = req.query;
     const where = { companyId };
@@ -433,25 +433,25 @@ const getTransactions = async (req, res) => {
     res.json({ success: true, data: { items: data, total, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('Error fetching transactions:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪│╪¼┘ä ╪º┘ä╪¡╪▒┘â╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب سجل الحركات' });
   }
 };
 
 const logTransaction = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { entityType, entityId, action, description, amount, payer } = req.body || {};
     if (!entityType || !ENTITY_TYPES.includes(entityType)) {
-      return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä┘â┘è╪º┘å ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'نوع الكيان غير صالح' });
     }
     if (!action || !ACTIONS.includes(action)) {
-      return res.status(400).json({ success: false, error: '╪º┘ä╪Ñ╪¼╪▒╪º╪í ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'الإجراء غير صالح' });
     }
-    if (!entityId) return res.status(400).json({ success: false, error: '┘à╪╣╪▒┘ü ╪º┘ä┘â┘è╪º┘å ┘à╪╖┘ä┘ê╪¿' });
+    if (!entityId) return res.status(400).json({ success: false, error: 'معرف الكيان مطلوب' });
     if (amount !== undefined && amount !== null && (Number.isNaN(Number(amount)) || !Number.isFinite(Number(amount)))) {
-      return res.status(400).json({ success: false, error: '╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'المبلغ غير صالح' });
     }
 
     const log = await getSharedPrismaClient().transactionLog.create({
@@ -485,7 +485,7 @@ const logTransaction = async (req, res) => {
     });
   } catch (error) {
     console.error('Error logging transaction:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ╪º┘ä╪¡╪▒┘â╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الحركة' });
   }
 };
 

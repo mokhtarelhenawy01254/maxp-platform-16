@@ -1,6 +1,9 @@
-import { ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, MessageSquare as ChatBubbleLeftRightIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ChatBubbleLeftRightIcon,
+} from "@heroicons/react/24/outline";
 
 // زر التمرير للأسفل
 interface ScrollToBottomButtonProps {

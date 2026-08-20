@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import LabPatientsTab from "../LabPatientsTab";
 
@@ -17,26 +17,26 @@ describe("LabPatientsTab", () => {
 
   test("renders patients list with status", async () => {
     mockFetchJson.mockResolvedValueOnce([
-      { id: "p1", firstName: "┘à╪¡┘à╪»", lastName: "╪╣┘ä┘è", phone: "010", gender: "╪░┘â╪▒", status: "ACTIVE", isActive: true },
-      { id: "p2", firstName: "╪│╪º╪▒╪⌐", phone: "011", gender: "╪ú┘å╪½┘ë", status: "REVIEW", isActive: true },
+      { id: "p1", firstName: "محمد", lastName: "علي", phone: "010", gender: "ذكر", status: "ACTIVE", isActive: true },
+      { id: "p2", firstName: "سارة", phone: "011", gender: "أنثى", status: "REVIEW", isActive: true },
     ]);
 
     render(<LabPatientsTab />);
-    await waitFor(() => expect(screen.getByText(/┘à╪¡┘à╪»/)).toBeInTheDocument());
-    expect(screen.getByText(/╪│╪º╪▒╪⌐/)).toBeInTheDocument();
-    expect(screen.getByText("┘å╪┤╪╖")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/محمد/)).toBeInTheDocument());
+    expect(screen.getByText(/سارة/)).toBeInTheDocument();
+    expect(screen.getByText("نشط")).toBeInTheDocument();
   });
 
   test("adds a new patient via modal", async () => {
     mockFetchJson.mockResolvedValueOnce([]);
     render(<LabPatientsTab />);
-    await waitFor(() => expect(screen.getByText(/┘ä╪º ┘è┘ê╪¼╪» ┘à╪▒╪╢┘ë/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/لا يوجد مرضى/)).toBeInTheDocument());
 
     mockFetchJson.mockResolvedValueOnce({ id: "p3" });
-    await userEvent.click(screen.getByText(/┘à╪▒┘è╪╢ ╪¼╪»┘è╪»/));
+    await userEvent.click(screen.getByText(/مريض جديد/));
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[1], "╪º╪«╪¬╪¿╪º╪▒");
-    await userEvent.click(screen.getByText(/╪¡┘ü╪╕/));
+    await userEvent.type(inputs[1], "اختبار");
+    await userEvent.click(screen.getByText(/حفظ/));
 
     await waitFor(() => expect(mockFetchJson).toHaveBeenCalledWith(
       expect.stringContaining("booking/patients"),

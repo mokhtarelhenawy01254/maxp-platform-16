@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(() => mockPrisma),
   safeQuery: jest.fn(),
 }));
@@ -101,7 +101,7 @@ describe('internalSyncService pushOrderToProvider variant preservation', () => {
           variantId: 'consumer-variant-39',
           quantity: 1,
           price: 300,
-          productColor: '╪ú╪¿┘è╪╢',
+          productColor: 'أبيض',
           productSize: '39',
           image: 'img-consumer.jpg',
         },
@@ -148,16 +148,16 @@ describe('internalSyncService pushOrderToProvider variant preservation', () => {
           productVariants: [
             {
               id: 'prov-v-black-39',
-              name: '╪ú╪│┘ê╪» - 39',
+              name: 'أسود - 39',
               metadata: JSON.stringify({
-                attributeValues: { '╪º┘ä┘ä┘ê┘å': '╪ú╪│┘ê╪»', '╪º┘ä┘à┘é╪º╪│': '39' },
+                attributeValues: { 'اللون': 'أسود', 'المقاس': '39' },
               }),
             },
             {
               id: 'prov-v-white-39',
-              name: '╪ú╪¿┘è╪╢ - 39',
+              name: 'أبيض - 39',
               metadata: JSON.stringify({
-                attributeValues: { '╪º┘ä┘ä┘ê┘å': '╪ú╪¿┘è╪╢', '╪º┘ä┘à┘é╪º╪│': '39' },
+                attributeValues: { 'اللون': 'أبيض', 'المقاس': '39' },
               }),
             },
           ],
@@ -178,7 +178,7 @@ describe('internalSyncService pushOrderToProvider variant preservation', () => {
     const pushedItems = createArgs.data.orderItems.create;
     expect(pushedItems).toHaveLength(1);
     expect(pushedItems[0]).toMatchObject({
-      productColor: '╪ú╪¿┘è╪╢',
+      productColor: 'أبيض',
       productSize: '39',
       variantId: 'prov-v-white-39',
       productImage: 'img-consumer.jpg',
@@ -208,7 +208,7 @@ describe('internalSyncService pushOrderToProvider variant preservation', () => {
           variantId: 'consumer-variant-99',
           quantity: 1,
           price: 300,
-          productColor: '╪ú╪¡┘à╪▒',
+          productColor: 'أحمر',
           productSize: '41',
         },
       ]),
@@ -250,9 +250,9 @@ describe('internalSyncService pushOrderToProvider variant preservation', () => {
           productVariants: [
             {
               id: 'prov-v-white-39',
-              name: '╪ú╪¿┘è╪╢ - 39',
+              name: 'أبيض - 39',
               metadata: JSON.stringify({
-                attributeValues: { '╪º┘ä┘ä┘ê┘å': '╪ú╪¿┘è╪╢', '╪º┘ä┘à┘é╪º╪│': '39' },
+                attributeValues: { 'اللون': 'أبيض', 'المقاس': '39' },
               }),
             },
           ],
@@ -267,7 +267,7 @@ describe('internalSyncService pushOrderToProvider variant preservation', () => {
 
     const pushedItems = mockPrisma.order.create.mock.calls[0][0].data.orderItems.create;
     expect(pushedItems[0]).toMatchObject({
-      productColor: '╪ú╪¡┘à╪▒',
+      productColor: 'أحمر',
       productSize: '41',
       variantId: null,
     });

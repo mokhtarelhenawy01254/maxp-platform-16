@@ -1,10 +1,10 @@
-﻿/**
- * ╪Ñ╪╢╪º┘ü╪⌐ ╪Ñ╪╣╪»╪º╪» "╪▒╪│╪º┘ä╪⌐ ╪ú┘ê┘ä ╪╕┘ç┘ê╪▒ ┘ä┘ä╪ú┘ê╪▒╪»╪▒ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä" + ┘é┘è┘à enum ╪¼╪»┘è╪»╪⌐ ┘ä┘ä╪¡╪»╪½
- * INCOMPLETE_CART_FIRST_APPEARANCE ╪╣┘ä┘ë 3 ╪ú┘å┘ê╪º╪╣ enum ┘ü┘è Postgres.
+/**
+ * إضافة إعداد "رسالة أول ظهور للأوردر غير المكتمل" + قيم enum جديدة للحدث
+ * INCOMPLETE_CART_FIRST_APPEARANCE على 3 أنواع enum في Postgres.
  *
- * ╪ó┘à┘å (idempotent): ADD VALUE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS.
+ * آمن (idempotent): ADD VALUE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS.
  *
- * ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à: node scripts/add_incomplete_cart_immediate_message.js [--dry-run]
+ * الاستخدام: node scripts/add_incomplete_cart_immediate_message.js [--dry-run]
  */
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
@@ -22,17 +22,17 @@ async function main() {
   const isMysql = url.toLowerCase().startsWith('mysql://');
 
   if (isMysql) {
-    console.log('Γä╣∩╕Å MySQL: enums ╪║┘è╪▒ ┘à╪»╪╣┘ê┘à╪⌐╪¢ ╪¬┘à ╪¬╪«╪╖┘è ALTER TYPE. ╪│┘è┘Å╪╢╪º┘ü ╪º┘ä╪╣┘à┘ê╪» ┘ü┘é╪╖.');
+    console.log('ℹ️ MySQL: enums غير مدعومة؛ تم تخطي ALTER TYPE. سيُضاف العمود فقط.');
   }
 
   for (const typeName of ENUM_TYPES) {
     const sql = `ALTER TYPE "${typeName}" ADD VALUE IF NOT EXISTS 'INCOMPLETE_CART_FIRST_APPEARANCE'`;
     if (DRY_RUN) {
-      console.log(`Γ£à (dry-run) ${sql}`);
+      console.log(`✅ (dry-run) ${sql}`);
       continue;
     }
     await prisma.$executeRawUnsafe(sql);
-    console.log(`Γ£à Enum value added to ${typeName}`);
+    console.log(`✅ Enum value added to ${typeName}`);
   }
 
   const columnSql = isMysql
@@ -40,17 +40,17 @@ async function main() {
     : 'ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "incompleteCartImmediateMessage" BOOLEAN NOT NULL DEFAULT false';
 
   if (DRY_RUN) {
-    console.log(`Γ£à (dry-run) ${columnSql}`);
+    console.log(`✅ (dry-run) ${columnSql}`);
   } else {
     await prisma.$executeRawUnsafe(columnSql);
-    console.log(`Γ£à Column added to whatsapp_notification_settings`);
+    console.log(`✅ Column added to whatsapp_notification_settings`);
   }
 
   await prisma.$disconnect();
-  console.log('≡ƒÄë Migration complete.');
+  console.log('🎉 Migration complete.');
 }
 
 main().catch((e) => {
-  console.error('Γ¥î Failed:', e.message);
+  console.error('❌ Failed:', e.message);
   process.exit(1);
 });

@@ -617,14 +617,28 @@ model StorefrontSettings {
   gtmDataLayerEnabled             Boolean               @default(true)
   gtmTrackPageView                Boolean               @default(true)
   gtmSuppressPixels               Boolean               @default(false)
+  // Google Analytics & Google Ads Settings
+  googleAnalyticsEnabled            Boolean               @default(false)
+  googleAnalyticsMeasurementId      String?
+  googleAnalyticsTrackPageView      Boolean               @default(true)
+  googleAnalyticsTrackViewContent   Boolean               @default(true)
+  googleAnalyticsTrackAddToCart     Boolean               @default(true)
+  googleAnalyticsTrackInitiateCheckout Boolean            @default(true)
+  googleAnalyticsTrackPurchase      Boolean               @default(true)
+  googleAnalyticsTrackSearch        Boolean               @default(true)
+  googleAdsEnabled                  Boolean               @default(false)
+  googleAdsConversionId             String?
   codDepositEnabled                Boolean               @default(false)
   codDepositType                   String                @default("PERCENTAGE")
   codDepositValue                  Decimal               @default(30.00) @db.Decimal(5, 2)
   codDepositMinAmount              Decimal?              @db.Decimal(10, 2)
   codDepositMaxAmount              Decimal?              @db.Decimal(10, 2)
+  easyWarehouseMode                Boolean               @default(false)
   designTokens                     Json?
   enabledPaymentMethods            String                @default("[\"cod\"]")
   paymentGatewayConfig             Json?
+  walletPaymentSettings            Json?
+  checkoutAddressSettings          Json?
   facebookPixelConfigs             FacebookPixelConfig[]
   company                          Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

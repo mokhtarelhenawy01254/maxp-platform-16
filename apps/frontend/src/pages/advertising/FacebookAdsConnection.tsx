@@ -1,7 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Loader2, LockKeyhole, MessageCircle, PlugZap, RefreshCw, ShieldCheck, Unplug, Users, WalletCards } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  LockKeyhole,
+  MessageCircle,
+  PlugZap,
+  RefreshCw,
+  ShieldCheck,
+  Unplug,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useAuth } from "../../hooks/useAuthSimple";
 import {
@@ -156,7 +170,7 @@ const FacebookAdsConnection: React.FC = () => {
 
   const handleConnectAds = async () => {
     if (!user?.companyId) {
-      toast.error("معرف الشركة غير متوفر");
+      tToast.error("FacebookAdsConnection.msg_261d");
       return;
     }
 
@@ -176,7 +190,7 @@ const FacebookAdsConnection: React.FC = () => {
     } catch (connectError: unknown) {
       console.error("Failed to start Facebook Ads OAuth:", connectError);
       setError("فشل بدء ربط الإعلانات");
-      toast.error("فشل بدء ربط الإعلانات");
+      tToast.error("FacebookAdsConnection.msg_375c");
     } finally {
       setConnecting(false);
     }
@@ -198,11 +212,11 @@ const FacebookAdsConnection: React.FC = () => {
     try {
       setDisconnectingSourceId(sourceId);
       await facebookAdsService.disconnectAdsConnectionSource(sourceId);
-      toast.success("تم فصل مصدر الإعلانات.");
+      tToast.success("FacebookAdsConnection.msg_19f6");
       await loadStatus();
     } catch (disconnectError: unknown) {
       console.error("Failed to disconnect Facebook Ads source:", disconnectError);
-      toast.error("فشل فصل مصدر الإعلانات");
+      tToast.error("FacebookAdsConnection.msg_e833");
     } finally {
       setDisconnectingSourceId(null);
     }
@@ -349,7 +363,7 @@ const FacebookAdsConnection: React.FC = () => {
                                 : remoteSource.error || "فشل الاختبار"
                               : "لم يتم الاختبار"}
                           </span>
-                          <span>{source.lastError || "بدون أخطاء"}</span>
+                          <span>{source.lastError || i18n.t("FacebookAdsConnection.msg_990c")}</span>
                         </div>
                         <div className="flex items-center gap-2 md:justify-end">
                           <StatusPill

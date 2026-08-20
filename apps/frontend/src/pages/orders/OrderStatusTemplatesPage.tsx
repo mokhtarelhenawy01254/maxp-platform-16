@@ -1,4 +1,4 @@
-﻿import TemplateCenter, { resolveVariablesForPreview, buildLocalContentFromMetaBody } from "../templates/TemplateCenter";
+import TemplateCenter, { resolveVariablesForPreview, buildLocalContentFromMetaBody } from "../templates/TemplateCenter";
 import { orderScopeConfig } from "../templates/scopes/orderScope";
 
 export { resolveVariablesForPreview, buildLocalContentFromMetaBody };

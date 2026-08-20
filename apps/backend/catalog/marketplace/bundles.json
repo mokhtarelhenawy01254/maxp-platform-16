@@ -37,6 +37,27 @@
     "updatedAt": "2026-06-17T00:00:00.000Z"
   },
   {
+    "id": "cat-bundle-facebook-complete",
+    "slug": "facebook-complete-bundle",
+    "name": "باقة فيسبوك الشاملة",
+    "nameEn": "Facebook Complete Bundle",
+    "description": "كل أدوات فيسبوك: ربط الصفحات + إعلانات + Pixel + كتالوج متجر + نشر المنشورات في باقة واحدة بتوفير.",
+    "monthlyPrice": 399,
+    "yearlyPrice": 3990,
+    "discount": 27,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "facebook-pages-connect",
+      "facebook-ads-pro",
+      "facebook-pixel-capi",
+      "facebook-catalog-shop",
+      "facebook-post"
+    ],
+    "createdAt": "2026-08-11T00:00:00.000Z",
+    "updatedAt": "2026-08-11T00:00:00.000Z"
+  },
+  {
     "id": "cat-bundle-medical",
     "slug": "medical-bundle",
     "name": "الباقة الطبية الشاملة",

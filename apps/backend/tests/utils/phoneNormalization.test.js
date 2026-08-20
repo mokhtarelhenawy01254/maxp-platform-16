@@ -1,4 +1,4 @@
-﻿const { getPhoneVariants, normalizePhone, toCanonicalE164 } = require('../../utils/phoneNormalization');
+const { getPhoneVariants, normalizePhone, toCanonicalE164 } = require('../../utils/phoneNormalization');
 
 describe('phoneNormalization', () => {
   test('variants cover local and international formats for the same number', () => {
@@ -43,14 +43,14 @@ describe('phoneNormalization', () => {
   });
 
   test('Arabic-Indic and Persian digits are transliterated to ASCII', () => {
-    // Arabic-Indic ┘á-┘⌐
-    expect(normalizePhone('┘á┘í┘á┘ª┘º┘⌐┘ó┘º┘¿┘ú┘í')).toBe('01067927831');
-    expect(toCanonicalE164('┘á┘í┘á┘á┘Ñ┘Ñ┘í┘ó┘ú┘ñ┘Ñ')).toBe('+201005512345');
-    // Persian / Extended Arabic █░-█╣
-    expect(normalizePhone('█░█▒█▓█│█┤█╡█╢█╖█╕█╣')).toBe('0123456789');
+    // Arabic-Indic ٠-٩
+    expect(normalizePhone('٠١٠٦٧٩٢٧٨٣١')).toBe('01067927831');
+    expect(toCanonicalE164('٠١٠٠٥٥١٢٣٤٥')).toBe('+201005512345');
+    // Persian / Extended Arabic ۰-۹
+    expect(normalizePhone('۰۱۲۳۴۵۶۷۸۹')).toBe('0123456789');
     // Arabic and English digits collapse to the same canonical
-    expect(toCanonicalE164('┘á┘í┘á┘í┘⌐┘á┘ñ┘ª┘Ñ┘Ñ┘í')).toBe(toCanonicalE164('01019046551'));
+    expect(toCanonicalE164('٠١٠١٩٠٤٦٥٥١')).toBe(toCanonicalE164('01019046551'));
     // spaces + Arabic digits
-    expect(toCanonicalE164('┘á┘í┘á ┘í┘⌐┘á ┘ñ┘ª┘Ñ┘Ñ┘í')).toBe('+201019046551');
+    expect(toCanonicalE164('٠١٠ ١٩٠ ٤٦٥٥١')).toBe('+201019046551');
   });
 });

@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 const { normalizeBotText } = require('./botRuleEngine');
 
 function parseRules(value) {

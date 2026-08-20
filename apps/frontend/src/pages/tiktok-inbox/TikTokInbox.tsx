@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   useState,
   useEffect,
   useCallback,
@@ -289,7 +289,7 @@ const TikTokInbox: React.FC = () => {
           </div>
         ) : conversations.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>≡ƒô¼</div>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📬</div>
             <div style={{ fontSize: 13 }}>{t("tiktokInbox.noMessages")}</div>
           </div>
         ) : (
@@ -477,7 +477,7 @@ const TikTokInbox: React.FC = () => {
                       padding: 4, borderRadius: 6,
                     }}
                   >
-                    <span style={{ fontSize: 18 }}>≡ƒñû</span>
+                    <span style={{ fontSize: 18 }}>🤖</span>
                   </button>
                   {!isMobile && (
                     <button

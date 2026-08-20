@@ -1,21 +1,21 @@
-﻿/**
- * ≡ƒÆí Cashback Preview Controller (┘ä┘ä╪º╪│╪¬╪«╪»╪º┘à ┘ü┘è ╪╡┘ü╪¡╪⌐ ┘à┘å╪¬╪¼ ╪º┘ä┘à╪¬╪¼╪▒ - ProductInfo)
- * ┘è┘Å╪▒╪¼╪╣ ╪¬┘é╪»┘è╪▒ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ╪º┘ä╪»┘è┘å╪º┘à┘è┘â┘è ┘ä┘à┘å╪¬╪¼/┘ü╪ª╪⌐ ┘é╪¿┘ä ╪º┘ä╪┤╪▒╪º╪í.
+/**
+ * 💡 Cashback Preview Controller (للاستخدام في صفحة منتج المتجر - ProductInfo)
+ * يُرجع تقدير الكاش باك الديناميكي لمنتج/فئة قبل الشراء.
  */
 
 const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
 
 /**
  * GET /api/v1/loyalty/cashback-preview?companyId=&productId=&categoryId=&amount=
- * ┘è╪▒╪¼╪╣ { cashback, rate, isDynamic, currency }
+ * يرجع { cashback, rate, isDynamic, currency }
  */
 async function previewCashback(req, res) {
   try {
     const { companyId, productId, categoryId, amount } = req.query;
 
-    // ╪º┘ä╪¬╪¡┘é┘é ╪º┘ä╪»┘ü╪º╪╣┘è ┘à┘å ╪º┘ä┘à╪»╪«┘ä╪º╪¬
+    // التحقق الدفاعي من المدخلات
     if (!companyId) {
-      return res.status(400).json({ success: false, error: 'companyId ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, error: 'companyId مطلوب' });
     }
 
     const baseAmount = amount != null && amount !== '' ? Number(amount) : 0;
@@ -37,8 +37,8 @@ async function previewCashback(req, res) {
       }
     });
   } catch (error) {
-    console.error('Γ¥î Error in cashback preview:', error);
-    return res.status(500).json({ success: false, error: '╪¬╪╣╪░┘æ╪▒ ╪¡╪│╪º╪¿ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â' });
+    console.error('❌ Error in cashback preview:', error);
+    return res.status(500).json({ success: false, error: 'تعذّر حساب الكاش باك' });
   }
 }
 

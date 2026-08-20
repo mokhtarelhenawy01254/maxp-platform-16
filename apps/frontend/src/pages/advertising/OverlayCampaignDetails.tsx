@@ -1,8 +1,8 @@
-import { ArrowLeft as ArrowLeftIcon, Plus as PlusIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-;
+import { ArrowLeftIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface Product {
@@ -42,7 +42,7 @@ const OverlayCampaignDetails: React.FC = () => {
       const { data } = await apiClient.get(`/overlay-campaigns/${id}`);
       setCampaign(data.data);
     } catch {
-      toast.error("فشل في تحميل الحملة");
+      tToast.error("OverlayCampaignDetails.failed_load_5709");
       navigate("/advertising/facebook-ads/overlay-campaigns");
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ const OverlayCampaignDetails: React.FC = () => {
   const handleAddProduct = async (productId: string) => {
     try {
       await apiClient.post(`/overlay-campaigns/${id}/products`, { productIds: [productId] });
-      toast.success("تمت الإضافة");
+      tToast.success("OverlayCampaignDetails.msg_2e2c");
       load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل");
@@ -78,7 +78,7 @@ const OverlayCampaignDetails: React.FC = () => {
   const handleRemoveProduct = async (productId: string) => {
     try {
       await apiClient.delete(`/overlay-campaigns/${id}/products/${productId}`);
-      toast.success("تمت الإزالة");
+      tToast.success("OverlayCampaignDetails.msg_7a62");
       load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل");

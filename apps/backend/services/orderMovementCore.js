@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('./sharedDatabase');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const MAX_ORDERS_DEFAULT = 200000;
 const BATCH_SIZE = 5000;

@@ -3,6 +3,8 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const orderService = require('../services/orderService');
 const KashierService = require('../services/kashierService');
 const { extractSubdomainMiddleware, requireCompany } = require('../middleware/subdomainMiddleware');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
 
 const router = express.Router();
 const getPrisma = () => getSharedPrismaClient();
@@ -27,22 +29,25 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
     const companyId = company.id;
 
     // Find or create customer
-    let customer = await prisma.customer.findFirst({
-      where: { phone: guestPhone, companyId },
-    });
+    let customer = await findCustomerByPhone(prisma, guestPhone, companyId);
 
     if (!customer) {
       const nameParts = (guestName || 'Customer').split(/\s+/).filter(Boolean);
-      customer = await prisma.customer.create({
-        data: {
-          firstName: nameParts[0] || 'Customer',
-          lastName: nameParts.slice(1).join(' ') || '',
-          email: guestEmail || '',
-          phone: guestPhone,
-          companyId,
-          status: 'ACTIVE',
+      customer = await safeCreateCustomer(
+        prisma,
+        {
+          data: {
+            firstName: nameParts[0] || 'Customer',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: guestEmail || '',
+            phone: guestPhone,
+            phoneNormalized: toCanonicalE164(guestPhone),
+            companyId,
+            status: 'ACTIVE',
+          },
         },
-      });
+        buildPhoneWhere(guestPhone, companyId)
+      );
     }
 
     // Generate order number
@@ -62,8 +67,8 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         quantity,
         total: price * quantity,
         productSku: item.sku || null,
-        productColor: item.color || item.attributes?.color || item.attributes?.Colour || null,
-        productSize: item.size || item.attributes?.size || null,
+        productColor: item.color ? String(item.color) : (item.attributes?.color ? String(item.attributes.color) : (item.attributes?.Colour ? String(item.attributes.Colour) : null)),
+        productSize: item.size != null ? String(item.size) : (item.attributes?.size != null ? String(item.attributes.size) : null),
         metadata: JSON.stringify({
           attributes: item.attributes || {},
           image,
@@ -204,6 +209,17 @@ router.post('/kashier/webhook', async (req, res) => {
             referenceId: sessionId,
           },
         });
+
+        // 🚀 تحصيل رسوم الاستخدام المؤجلة تلقائياً بعد شحن الرصيد
+        try {
+          const pendingBillingService = require('../services/pendingBillingService');
+          const pendingResult = await pendingBillingService.processPendingUsageCharges(walletCompanyId);
+          if (pendingResult.processed > 0) {
+            console.log(`✅ [KASHIER-WEBHOOK] Auto-collected ${pendingResult.processed} pending charge(s), released ${pendingResult.released.length} order(s) for company ${walletCompanyId}`);
+          }
+        } catch (pendingError) {
+          console.error('⚠️ [KASHIER-WEBHOOK] Error processing pending charges:', pendingError.message);
+        }
 
         console.log(`[KASHIER-WEBHOOK] Wallet recharge completed for company ${walletCompanyId}: ${rechargeAmount} EGP`);
       }

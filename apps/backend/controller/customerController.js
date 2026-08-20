@@ -4,6 +4,7 @@ const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
 const WalletService = require('../services/walletService');
 const customerBlocklistService = require('../services/customerBlocklistService');
+const autoDiscountService = require('../services/autoDiscountService');
 
 const getAllCustomer = async (req, res) => {
   try {
@@ -116,9 +117,30 @@ const getAllCustomer = async (req, res) => {
     // حساب معلومات الترقيم
     const totalPages = Math.ceil(total / limit);
 
+    // 🏷️ إضافة حالة الخصم التلقائي لكل عميل (خصم متاح / قبل تفعيل النظام)
+    let data = customers;
+    if (autoDiscountService) {
+      data = await autoDiscountService
+        .enrichCustomersWithAutoDiscountStatus(companyId, customers)
+        .catch((e) => {
+          console.error('❌ [AUTO-DISCOUNT] Enrich customer list failed:', e.message);
+          return customers;
+        });
+    }
+
+    // 🏷️ إضافة مستوى الولاء (badge المستويات) لكل عميل — بس لو نظام المستويات مفعّل
+    try {
+      const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+      if (await autoDiscountService.isTiersActive(companyId)) {
+        data = await customerLoyaltyService.enrichCustomersWithTier(companyId, data);
+      }
+    } catch (e) {
+      console.error('❌ [LOYALTY-TIER] Enrich customer list failed:', e.message);
+    }
+
     res.json({
       success: true,
-      data: customers,
+      data,
       pagination: {
         page,
         limit,
@@ -726,7 +748,7 @@ const getCustomerOrders = async (req, res) => {
     // التحقق من أن العميل ينتمي للشركة
     const customer = await getSharedPrismaClient().customer.findUnique({
       where: { id: customerId },
-      select: { id: true, companyId: true }
+      select: { id: true, companyId: true, phone: true, phoneNormalized: true }
     });
 
     if (!customer) {
@@ -743,11 +765,19 @@ const getCustomerOrders = async (req, res) => {
       });
     }
 
-    // جلب طلبات العميل
+    // جلب طلبات العميل (بالربط المباشر بالعميل + بأرقام هاتفه)
+    // لأن الطلبات ممكن تكون مسجلة على عميل تاني بنفس الرقم أو كطلب ضيف
+    const orderPhone = customer.phoneNormalized || (customer.phone ? require('../utils/phoneNormalization').toCanonicalE164(customer.phone) : null);
     const orders = await getSharedPrismaClient().order.findMany({
       where: {
-        customerId: customerId,
-        companyId: companyId
+        companyId: companyId,
+        OR: [
+          { customerId: customerId },
+          ...(orderPhone ? [
+            { customerPhone: orderPhone },
+            ...(customer.phone ? [{ customerPhone: customer.phone }] : [])
+          ] : [])
+        ]
       },
       include: {
         orderItems: {
@@ -1256,6 +1286,29 @@ const getCustomerDetails = async (req, res) => {
       }))
     ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
 
+    // جلب بيانات الولاء (النقاط)
+    const loyaltyRecords = await getSharedPrismaClient().customerLoyaltyRecord.findMany({
+      where: { customerId, companyId },
+      include: {
+        customerLoyaltyProgram: { select: { id: true, name: true, nameAr: true, type: true } },
+        customerLoyaltyTier: { select: { id: true, name: true, nameAr: true } }
+      }
+    });
+
+    // جلب المحفظة والكاش باك
+    const wallet = await getSharedPrismaClient().customerWallet.findFirst({
+      where: { customerId, isActive: true }
+    });
+
+    let cashbackTotal = 0;
+    if (wallet) {
+      const cbAgg = await getSharedPrismaClient().walletTransaction.aggregate({
+        where: { walletId: wallet.id, type: 'CASHBACK' },
+        _sum: { amount: true }
+      });
+      cashbackTotal = parseFloat(cbAgg._sum?.amount || 0);
+    }
+
     // الرد بكل البيانات
     res.json({
       success: true,
@@ -1276,7 +1329,23 @@ const getCustomerDetails = async (req, res) => {
         customerBlock: {
           isBlocked: Boolean(activeBlockRule),
           rule: activeBlockRule || null
-        }
+        },
+        loyalty: loyaltyRecords.map(r => ({
+          programId: r.programId,
+          programName: r.customerLoyaltyProgram?.nameAr || r.customerLoyaltyProgram?.name,
+          programType: r.customerLoyaltyProgram?.type,
+          points: parseFloat(r.currentPoints || 0),
+          totalEarned: parseFloat(r.totalEarned || 0),
+          tierName: r.customerLoyaltyTier?.nameAr || r.customerLoyaltyTier?.name,
+          status: r.status
+        })),
+        wallet: wallet ? {
+          balance: parseFloat(wallet.balance || 0),
+          totalEarned: parseFloat(wallet.totalEarned || 0),
+          totalSpent: parseFloat(wallet.totalSpent || 0),
+          currency: wallet.currency
+        } : null,
+        cashbackTotal
       }
     });
   } catch (error) {
@@ -1337,6 +1406,105 @@ const searchCustomers = async (req, res) => {
     });
   }
 };
+
+/**
+ * 🔍 بحث سريع بالرقم — لصفحات الطلب اليدوي والطلب السريع.
+ * بيرجّع بيانات العميل (الاسم/رقم الهاتف/الملاحظات) + أحدث عنوان/محافظة
+ * من آخر طلب للرقم ده (لأن بيانات العنوان محفوظة على الـ orders مش على الـ customer).
+ */
+const getCustomerLookupByPhone = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: 'غير مصرح بالوصول - معرف الشركة مطلوب'
+      });
+    }
+
+    const phone = String(req.params.phone || '').trim();
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'رقم الهاتف مطلوب'
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const { findCustomerByPhone } = require('../utils/customerIdentity');
+    const { stripPhone } = require('../utils/phoneNormalization');
+
+    const digits = stripPhone(phone);
+    if (!digits || digits.length < 9) {
+      return res.json({ success: true, data: { customer: null, latestOrder: null } });
+    }
+
+    // 1) العميل المسجل بنفس الرقم
+    const customer = await findCustomerByPhone(prisma, phone, companyId);
+
+    // 2) أحدث طلب بهذا الرقم (عشان العنوان والمحافظة) — بيشمل طلبات الضيوف
+    const latestOrder = await prisma.order.findFirst({
+      where: {
+        companyId,
+        OR: [
+          ...(customer ? [{ customerId: customer.id }] : []),
+          { customerPhone: { contains: digits } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        customerPhone: true,
+        governorate: true,
+        city: true,
+        customerAddress: true,
+        shippingAddress: true,
+        notes: true,
+        createdAt: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        customer: customer
+          ? {
+              id: customer.id,
+              firstName: customer.firstName,
+              lastName: customer.lastName,
+              phone: customer.phone,
+              phoneNormalized: customer.phoneNormalized,
+              notes: customer.notes,
+              tags: customer.tags,
+            }
+          : null,
+        latestOrder: latestOrder
+          ? {
+              id: latestOrder.id,
+              orderNumber: latestOrder.orderNumber,
+              customerName: latestOrder.customerName,
+              customerPhone: latestOrder.customerPhone,
+              governorate: latestOrder.governorate,
+              city: latestOrder.city,
+              address: latestOrder.customerAddress || latestOrder.shippingAddress || null,
+              notes: latestOrder.notes,
+              createdAt: latestOrder.createdAt,
+            }
+          : null,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error in customer lookup by phone:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب بيانات العميل',
+      error: error.message
+    });
+  }
+};
+
 // 📥 استيراد عملاء من CSV (JSON array)
 const importCustomersFromCSV = async (req, res) => {
   try {
@@ -1380,6 +1548,7 @@ const importCustomersFromCSV = async (req, res) => {
         lastName: c.lastName || c.last_name || c.name?.split(' ').slice(1).join(' ') || '',
         email: c.email || null,
         phone: c.phone || c.mobile || null,
+        phoneNormalized: (c.phone || c.mobile) ? require('../utils/phoneNormalization').toCanonicalE164(c.phone || c.mobile) : null,
         status: c.status || 'LEAD',
         tags: c.tags ? JSON.stringify(c.tags) : '[]',
         notes: c.notes || null,
@@ -1388,13 +1557,34 @@ const importCustomersFromCSV = async (req, res) => {
       };
     });
 
+    // منع التكرار: نفلتر الأرقام الموجودة بالفعل (phoneNormalized أو الرقم الخام)
+    const { buildPhoneWhere } = require('../utils/customerIdentity');
+    const existingCustomers = await getSharedPrismaClient().customer.findMany({
+      where: { companyId },
+      select: { phoneNormalized: true, phone: true }
+    });
+    const existingNorm = new Set(existingCustomers.map(r => r.phoneNormalized).filter(Boolean));
+    const existingRaw = new Set(existingCustomers.map(r => r.phone).filter(Boolean));
+    const before = customersToCreate.length;
+    const uniqueCustomers = customersToCreate.filter(c => {
+      if (c.phoneNormalized && existingNorm.has(c.phoneNormalized)) return false;
+      if (c.phone && existingRaw.has(c.phone)) return false;
+      return true;
+    });
+    // نضيف الجدد للـ existing عشان دفعات الاستيراد المتتالية في نفس الطلب ميتكررش الرقم جواهم
+    for (const c of uniqueCustomers) {
+      if (c.phoneNormalized) existingNorm.add(c.phoneNormalized);
+      if (c.phone) existingRaw.add(c.phone);
+    }
+    const skippedDuplicates = before - uniqueCustomers.length;
+
     // إنشاء العملاء بالجملة
     const result = await getSharedPrismaClient().customer.createMany({
-      data: customersToCreate,
+      data: uniqueCustomers,
       skipDuplicates: true
     });
 
-    console.log(`📥 Imported ${result.count} customers for company ${companyId}`);
+    console.log(`📥 Imported ${result.count} customers for company ${companyId} (skipped ${skippedDuplicates} existing phones)`);
 
     // إنشاء محافظ للعملاء الجدد
     try {
@@ -1416,7 +1606,10 @@ const importCustomersFromCSV = async (req, res) => {
     res.json({
       success: true,
       importedCount: result.count,
-      message: `تم استيراد ${result.count} عميل بنجاح`
+      skippedDuplicates,
+      message: skippedDuplicates > 0
+        ? `تم استيراد ${result.count} عميل بنجاح وتخطي ${skippedDuplicates} برقم مسجل بالفعل`
+        : `تم استيراد ${result.count} عميل بنجاح`
     });
   } catch (error) {
     console.error('❌ Error importing customers:', error);
@@ -1598,7 +1791,7 @@ const updateCustomer = async (req, res) => {
     }
 
     const { customerId } = req.params;
-    const { firstName, lastName, email, phone, password, address, city, country, status, notes, birthday } = req.body;
+    const { firstName, lastName, email, phone, phone2, password, address, city, country, status, notes, birthday } = req.body;
 
     // التحقق من وجود العميل وانتمائه للشركة
     const customer = await getSharedPrismaClient().customer.findUnique({
@@ -1649,6 +1842,10 @@ const updateCustomer = async (req, res) => {
       if (country) parsedMeta.country = country;
       else delete parsedMeta.country;
     }
+    if (phone2 !== undefined) {
+      if (phone2) parsedMeta.phone2 = phone2;
+      else delete parsedMeta.phone2;
+    }
 
     const newMetadata = Object.keys(parsedMeta).length > 0 ? JSON.stringify(parsedMeta) : null;
 
@@ -1660,13 +1857,20 @@ const updateCustomer = async (req, res) => {
     }
 
     // تحديث بيانات العميل
+    const phoneFields = {};
+    if (phone !== undefined) {
+      const { toCanonicalE164 } = require('../utils/phoneNormalization');
+      phoneFields.phone = phone || null;
+      phoneFields.phoneNormalized = toCanonicalE164(phone) || null;
+    }
+
     const updatedCustomer = await getSharedPrismaClient().customer.update({
       where: { id: customerId },
       data: {
         firstName,
         lastName,
         email: email || null,
-        phone: phone || null,
+        ...phoneFields,
         password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,
@@ -1674,6 +1878,15 @@ const updateCustomer = async (req, res) => {
         updatedAt: new Date()
       }
     });
+
+    // مزامنة رقم الهاتف مع جهات اتصال الواتساب المرتبطة بالعميل
+    // حتى يبقى الرقم المدخل يدوياً ثابتاً ولا يرجع للرقم القديم في أي مكان
+    if (phone !== undefined && phone) {
+      await getSharedPrismaClient().whatsAppContact.updateMany({
+        where: { customerId },
+        data: { phoneNumber: String(phone).substring(0, 20) }
+      }).catch(err => console.error('❌ Failed to sync phone to WhatsAppContacts:', err));
+    }
 
     console.log(`✏️ Customer ${firstName} ${lastName} updated by user from company ${companyId}`);
 
@@ -1730,12 +1943,25 @@ const createCustomer = async (req, res) => {
 
     const hashedPassword = password ? await require('bcryptjs').hash(password, 10) : undefined;
 
+    // منع التكرار: كل رقم موبايل = عميل واحد بس في نفس الشركة
+    if (phone) {
+      const { findCustomerByPhone } = require('../utils/customerIdentity');
+      const existing = await findCustomerByPhone(getSharedPrismaClient(), phone, companyId);
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: `رقم الموبايل ده مسجل بالفعل لعميل: ${existing.firstName || ''} ${existing.lastName || ''}${existing.email ? ` (${existing.email})` : ''}`
+        });
+      }
+    }
+
     const newCustomer = await getSharedPrismaClient().customer.create({
       data: {
         firstName,
         lastName: lastName || '',
         email: email || null,
         phone: phone || null,
+        phoneNormalized: phone ? require('../utils/phoneNormalization').toCanonicalE164(phone) : null,
         password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,
@@ -2022,6 +2248,7 @@ module.exports = {
   deleteCustomerNote,
   getCustomerDetails,
   searchCustomers,
+  getCustomerLookupByPhone,
   importCustomersFromCSV,
   deleteCustomer,
   updateCustomerTags,

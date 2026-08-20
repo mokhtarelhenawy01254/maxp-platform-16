@@ -114,18 +114,18 @@ const requireSuperAdmin = async (req, res, next) => {
       });
     }
 
-    // 🔧 FIX: Dynamic roles from database + hardcoded fallback
-    let systemRoles = ['SUPER_ADMIN', 'Project Manager', 'Team Lead', 'Developer', 'Tester', 'Agent'];
+    // 🔧 FIX: Platform admins come from an explicit allowlist. Company roles
+    // (even legacy names like "Team Lead"/"Developer") must never be treated
+    // as platform admins.
+    let systemRoles = ['SUPER_ADMIN'];
 
     try {
       const settings = await devSettingsService.getSettings();
-      if (settings.permissions) {
-        // Get all roles defined in permissions settings
-        const dynamicRoles = Object.keys(settings.permissions);
-        systemRoles = ['SUPER_ADMIN', ...dynamicRoles];
+      if (Array.isArray(settings.platformAdminRoles)) {
+        systemRoles = ['SUPER_ADMIN', ...settings.platformAdminRoles];
       }
     } catch (settingsError) {
-      console.warn('⚠️ [SUPER-ADMIN-MIDDLEWARE] Could not load dynamic roles, using defaults:', settingsError.message);
+      console.warn('⚠️ [SUPER-ADMIN-MIDDLEWARE] Could not load platform admin roles, using defaults:', settingsError.message);
     }
 
     // Check if the user has a system role

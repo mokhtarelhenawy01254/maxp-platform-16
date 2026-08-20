@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -31,7 +31,7 @@ describe('radiologyLabelsController', () => {
   test('generates a PDF label for a study', async () => {
     const prisma = createPrisma();
     prisma.radiologyStudy.findFirst.mockResolvedValue({
-      id: 'study-1', studyNumber: 'RAD-20260810-2466', patientName: '┘à╪▒┘è╪╢', examTypeName: '╪ú╪┤╪╣╪⌐ CT', createdAt: new Date().toISOString(),
+      id: 'study-1', studyNumber: 'RAD-20260810-2466', patientName: 'مريض', examTypeName: 'أشعة CT', createdAt: new Date().toISOString(),
     });
     getSharedPrismaClient.mockReturnValue(prisma);
 

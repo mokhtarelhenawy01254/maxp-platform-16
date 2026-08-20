@@ -1,5 +1,5 @@
-﻿/**
- * ≡ƒÜÇ Unified Turbo Status Sync Service
+/**
+ * 🚀 Unified Turbo Status Sync Service
  * Single Source of Truth for updating Order and GuestOrder statuses from Turbo Express
  */
 
@@ -25,7 +25,7 @@ async function getCompanyTurboMapping(companyId) {
     const parsed = typeof company.settings === 'string' ? JSON.parse(company.settings) : company.settings;
     return parsed.turboStatusMapping || null;
   } catch (e) {
-    console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Failed to fetch company turbo mapping for ${companyId}:`, e.message);
+    console.warn(`⚠️ [TURBO-SYNC] Failed to fetch company turbo mapping for ${companyId}:`, e.message);
     return null;
   }
 }
@@ -57,7 +57,7 @@ async function syncTurboStatusToOrder({
   const isPartialReturn = /R$/i.test(turboCode) && !isReturnOrderSync;
 
   const locationText = payload?.currentLocation || payload?.statusText || payload?.status_name || payload?.statusName || '';
-  const rawStatusInput = (locationText && (locationText.includes('╪º┘å╪¬╪╕╪º╪▒') || locationText.includes('╪¿╪º┘å╪¬╪╕╪º╪▒') || locationText.includes('╪º┘ä╪¬╪│┘ä┘è┘à ┘ä╪¬╪▒╪¿┘ê') || locationText.includes('╪¬╪ú╪¼┘è┘ä') || locationText.includes('┘à╪ñ╪¼┘ä') || locationText.includes('┘à╪▒╪¬╪¼╪╣')))
+  const rawStatusInput = (locationText && (locationText.includes('انتظار') || locationText.includes('بانتظار') || locationText.includes('التسليم لتربو') || locationText.includes('تأجيل') || locationText.includes('مؤجل') || locationText.includes('مرتجع')))
     ? locationText
     : rawStatus;
 
@@ -68,7 +68,7 @@ async function syncTurboStatusToOrder({
     ? getSystemStatusFromTurboWithCustomMapping(rawStatusInput, customMapping)
     : getSystemStatusFromTurbo(rawStatusInput);
 
-  // ≡ƒÜ¿ CRITICAL GUARD: "returned" text alone (without status_code 5/14/20) is AMBIGUOUS in Turbo API.
+  // 🚨 CRITICAL GUARD: "returned" text alone (without status_code 5/14/20) is AMBIGUOUS in Turbo API.
   // Turbo returns "returned" text for is_order=1 shipments even when they are actually DELIVERED.
   // Only trust "returned_to_company" when:
   //   - status_code is explicitly 5, 14, or 20 (official Turbo return codes), OR
@@ -78,25 +78,25 @@ async function syncTurboStatusToOrder({
   const rawStatusStr = String(rawStatus || '').toLowerCase().trim();
   const TURBO_RETURN_CODES = new Set(['5', '14', '20', 5, 14, 20]);
   const hasReturnCode = statusCode && TURBO_RETURN_CODES.has(String(statusCode));
-  const hasArabicReturnPhrase = locationText && (locationText.includes('┘à╪▒╪¬╪¼╪╣') || locationText.includes('┘à╪▒╪¬╪¼╪╣╪º╪¬') || locationText.includes('┘à╪│╪¬╪▒╪¼╪╣'));
+  const hasArabicReturnPhrase = locationText && (locationText.includes('مرتجع') || locationText.includes('مرتجعات') || locationText.includes('مسترجع'));
 
   if (
     canonicalTurboStatus === 'returned_to_company' &&
-    rawStatusStr === 'returned' &&        // ambiguous English text (not Arabic '┘à╪▒╪¬╪¼╪╣')
+    rawStatusStr === 'returned' &&        // ambiguous English text (not Arabic 'مرتجع')
     !hasReturnCode &&                      // no explicit return status_code
     !hasArabicReturnPhrase                 // no Arabic confirmation
   ) {
-    // Cannot confirm this is a genuine return ΓÇö keep it as a non-final status
+    // Cannot confirm this is a genuine return — keep it as a non-final status
     // so it can be corrected later when more info arrives (webhook/manual)
-    console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Ambiguous "returned" status for order (no status_code 5/14/20 and no Arabic phrase). Skipping RETURNED update to avoid is_order=1 misclassification.`);
+    console.warn(`⚠️ [TURBO-SYNC] Ambiguous "returned" status for order (no status_code 5/14/20 and no Arabic phrase). Skipping RETURNED update to avoid is_order=1 misclassification.`);
     canonicalTurboStatus = 'processing'; // treat as still in progress
     orderStatus = null;
     paymentStatus = null;
   }
 
-  // ≡ƒÄ» ╪º┘ä╪¬┘à┘è┘è╪▓ ╪º┘ä╪¼┘ê┘ç╪▒┘è ╪¿┘è┘å (┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒) ┘ê (┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░ ╪¿╪º┘ä┘ü╪▒╪╣):
-  // ΓÜá∩╕Å ONLY downgrade processingΓåÆturbo_sent when we have CONFIRMED branch info from Webhook.
-  // During API sync (fetchAllStatuses), branch=null does NOT mean "not in branch" ΓÇö
+  // 🎯 التمييز الجوهري بين (قيد الانتظار) و (قيد التنفيذ بالفرع):
+  // ⚠️ ONLY downgrade processing→turbo_sent when we have CONFIRMED branch info from Webhook.
+  // During API sync (fetchAllStatuses), branch=null does NOT mean "not in branch" —
   // Turbo's get-status API often omits branch even for status_code=3 orders.
   // Guard: only fire if payload has explicit 'isWebhook' marker OR branch has a non-null VALUE.
   const hasBranchFieldInPayload = payload && ('branch' in payload || 'expected_branch' in payload);
@@ -109,13 +109,13 @@ async function syncTurboStatusToOrder({
     !hasExplicitBranch &&      // branch is null/empty
     !isWebhookPayload          // AND not from a trusted Webhook source
   ) {
-    // API sync with null branch ΓÇö do NOT downgrade processing to turbo_sent.
+    // API sync with null branch — do NOT downgrade processing to turbo_sent.
     // The absence of branch in get-status API doesn't mean the order left the branch.
-    console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Skipping processingΓåÆturbo_sent downgrade (null branch from API sync, not webhook).`);
+    console.warn(`⚠️ [TURBO-SYNC] Skipping processing→turbo_sent downgrade (null branch from API sync, not webhook).`);
     // Keep canonicalTurboStatus as 'processing'
   }
 
-  console.log(`≡ƒôª [TURBO-SYNC] Syncing order ${orderNumber || orderId}: rawStatus="${rawStatus}" -> canonical="${canonicalTurboStatus}", systemOrderStatus="${orderStatus}", systemPaymentStatus="${paymentStatus}", companyId=${companyId || 'global'}`);
+  console.log(`📦 [TURBO-SYNC] Syncing order ${orderNumber || orderId}: rawStatus="${rawStatus}" -> canonical="${canonicalTurboStatus}", systemOrderStatus="${orderStatus}", systemPaymentStatus="${paymentStatus}", companyId=${companyId || 'global'}`);
 
   // Helper to build flexible lookup filters
   const buildLookupWhere = () => {
@@ -161,7 +161,7 @@ async function syncTurboStatusToOrder({
     }), 3);
 
     if (!existingGuestOrder) {
-      console.warn(`ΓÜá∩╕Å [TURBO-SYNC] GuestOrder not found for orderNumber/ID: ${orderNumber || orderId}`);
+      console.warn(`⚠️ [TURBO-SYNC] GuestOrder not found for orderNumber/ID: ${orderNumber || orderId}`);
       return { success: false, reason: 'GuestOrder not found' };
     }
 
@@ -217,12 +217,12 @@ async function syncTurboStatusToOrder({
       updateData.turboShipmentId = String(payload.order_number);
     }
 
-    // ≡ƒÜ¿ PRODUCTION-FIX (turbo-notification-gap): ┘é╪¿┘ä ╪º┘ä╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪¿╪º╪┤╪▒ ┘ä╪¡┘é┘ê┘ä ╪¬╪▒╪¿┘ê╪î
-    // ┘à╪▒┘æ╪▒ ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪╣╪¿╪▒ orderService.updateGuestOrderStatus ΓÇö ┘ä╪ú┘å┘ç ╪º┘ä┘à╪│╪º╪▒ ╪º┘ä┘ê╪¡┘è╪»
-    // ╪º┘ä┘ä┘è ╪¿┘è┘â╪¬╪¿ statusHistory ┘ê╪¿┘è╪¿╪╣╪½ ╪Ñ╪┤╪╣╪º╪▒ WhatsApp (sendOrderStatusNotification) ┘ê╪¿┘è╪┤╪║┘æ┘ä
-    // side-effects (┘â╪º╪┤ ╪¿╪º┘â/┘ê┘ä╪º╪í ╪╣┘å╪» DELIVERED). ┘â╪º┘å ╪º┘ä╪│┘è┘å┘â ╪º┘ä┘é╪»┘è┘à ╪¿┘è╪╣╪»┘æ┘ä guestOrder.status
-    // ┘à╪¿╪º╪┤╪▒╪⌐ ┘ü┘è ╪º┘ä┘Ç DB ┘à┘å ╪║┘è╪▒ ╪ú┘è ╪Ñ╪┤╪╣╪º╪▒ ΓÇö ┘ü╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘ä┘è ╪¿╪¬╪¬╪¡╪▒┘â ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘à┘å ╪¬╪▒╪¿┘ê
-    // (webhook / sync-status / refresh) ┘â╪º┘å╪¬ ╪¿╪¬┘ü╪╢┘ä ┘à┘å ╪║┘è╪▒ ╪▒╪│╪º┘ä╪⌐ ┘ä┘ä╪╣┘à┘è┘ä.
+    // 🚨 PRODUCTION-FIX (turbo-notification-gap): قبل التحديث المباشر لحقول تربو،
+    // مرّر تغيير حالة الطلب عبر orderService.updateGuestOrderStatus — لأنه المسار الوحيد
+    // اللي بيكتب statusHistory وبيبعث إشعار WhatsApp (sendOrderStatusNotification) وبيشغّل
+    // side-effects (كاش باك/ولاء عند DELIVERED). كان السينك القديم بيعدّل guestOrder.status
+    // مباشرة في الـ DB من غير أي إشعار — فالأوردرات اللي بتتحرك تلقائياً من تربو
+    // (webhook / sync-status / refresh) كانت بتفضل من غير رسالة للعميل.
     const guestTargetStatus = orderStatus && GUEST_ORDER_STATUS_MAP[orderStatus] ? GUEST_ORDER_STATUS_MAP[orderStatus] : null;
     const guestStatusChanged = Boolean(guestTargetStatus) && guestTargetStatus !== existingGuestOrder.status;
     if (guestStatusChanged) {
@@ -232,15 +232,15 @@ async function syncTurboStatusToOrder({
           existingGuestOrder.orderNumber,
           companyId,
           guestTargetStatus,
-          `╪¬╪¡╪»┘è╪½ ╪¬┘ä┘é╪º╪ª┘è ┘à┘å ╪¬╪▒╪¿┘ê (${canonicalTurboStatus})`,
+          `تحديث تلقائي من تربو (${canonicalTurboStatus})`,
           'SYSTEM',
           'Turbo Sync',
           null,
           { skipCallAttemptGuard: true, skipTransitionValidation: true }
         );
-        console.log(`Γ£à [TURBO-SYNC] GuestOrder ${existingGuestOrder.orderNumber} status -> ${guestTargetStatus} via orderService (notification + history).`);
+        console.log(`✅ [TURBO-SYNC] GuestOrder ${existingGuestOrder.orderNumber} status -> ${guestTargetStatus} via orderService (notification + history).`);
       } catch (guestStatusErr) {
-        console.warn(`ΓÜá∩╕Å [TURBO-SYNC] GuestOrder status update via orderService failed for ${existingGuestOrder.orderNumber}:`, guestStatusErr.message);
+        console.warn(`⚠️ [TURBO-SYNC] GuestOrder status update via orderService failed for ${existingGuestOrder.orderNumber}:`, guestStatusErr.message);
       }
     }
 
@@ -316,9 +316,9 @@ async function syncTurboStatusToOrder({
     }
   }
 
-  // ≡ƒöü Check if this is a partial return (R suffix shipment) ΓÇö always create return order
+  // 🔁 Check if this is a partial return (R suffix shipment) — always create return order
   if (isPartialReturn && existingOrder.status === 'DELIVERED') {
-    console.log(`≡ƒöü [TURBO-SYNC] Partial return detected for ${existingOrder.orderNumber} via ${turboCode} ΓÇö creating return order`);
+    console.log(`🔁 [TURBO-SYNC] Partial return detected for ${existingOrder.orderNumber} via ${turboCode} — creating return order`);
     try {
       const returnOrder = await ensureReturnOrder(existingOrder, turboCode, canonicalTurboStatus);
       if (returnOrder && returnOrder.orderNumber !== existingOrder.orderNumber) {
@@ -335,17 +335,17 @@ async function syncTurboStatusToOrder({
           isGuestOrder: false,
           isReturnOrderSync: true
         });
-        console.log(`Γ£à [TURBO-SYNC] Return order ${returnOrder.orderNumber} synced: ${returnSyncResult.turboStatus}`);
+        console.log(`✅ [TURBO-SYNC] Return order ${returnOrder.orderNumber} synced: ${returnSyncResult.turboStatus}`);
       }
     } catch (e) {
-      console.error(`Γ¥î [TURBO-SYNC] Failed to create return order for ${turboCode}:`, e.message);
+      console.error(`❌ [TURBO-SYNC] Failed to create return order for ${turboCode}:`, e.message);
     }
   }
 
-  // ≡ƒöÆ FINAL STATUS PROTECTION: Never downgrade an already-DELIVERED order
+  // 🔒 FINAL STATUS PROTECTION: Never downgrade an already-DELIVERED order
   const DOWNGRADE_STATUSES = new Set(['returned', 'returned_to_company', 'turbo_sent', 'turbo_saved', 'created', 'delayed']);
   if (existingOrder.status === 'DELIVERED' && DOWNGRADE_STATUSES.has(canonicalTurboStatus)) {
-    console.warn(`≡ƒöÆ [TURBO-SYNC] PROTECTED: Order ${existingOrder.orderNumber} is DELIVERED ΓÇö refusing to set turboShipmentStatus to "${canonicalTurboStatus}". Keeping as "delivered".`);
+    console.warn(`🔒 [TURBO-SYNC] PROTECTED: Order ${existingOrder.orderNumber} is DELIVERED — refusing to set turboShipmentStatus to "${canonicalTurboStatus}". Keeping as "delivered".`);
     canonicalTurboStatus = 'delivered';
     orderStatus = 'DELIVERED';
     paymentStatus = 'COMPLETED';
@@ -369,9 +369,9 @@ async function syncTurboStatusToOrder({
     updateData.turboShipmentId = String(payload.order_number);
   }
 
-  // ≡ƒ¢í∩╕Å PRODUCTION-FIX (custom-status-enum): ╪¡╪º┘ä╪⌐ ╪º┘ä╪¬╪╣┘è┘è┘å ┘à┘à┘â┘å ╪¬┘â┘ê┘å ╪¡╪º┘ä╪⌐ ┘à╪«╪╡╪╡╪⌐ ┘à╪┤ ┘ü┘è ╪º┘ä┘Ç enum
-  // (┘à╪½╪º┘ä ╪¡┘é┘è┘é┘è: ╪¬╪╣┘è┘è┘å swan `delayed ΓåÆ DELAYED-WITH-CAPTAIN`). ╪¿┘å╪¡┘ä┘æ┘ç╪º ╪╣╪¿╪▒ mapsToSystem:
-  // ┘å╪«╪▓┘æ┘å ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪╡╪º┘ä╪¡╪⌐ ┘ü┘è order.status╪î ┘ê┘å╪¡╪¬┘ü╪╕ ╪¿╪º┘ä┘â┘ê╪» ╪º┘ä┘à╪«╪╡╪╡ (orderStatus) ┘ä┘ä╪Ñ╪┤╪╣╪º╪▒.
+  // 🛡️ PRODUCTION-FIX (custom-status-enum): حالة التعيين ممكن تكون حالة مخصصة مش في الـ enum
+  // (مثال حقيقي: تعيين swan `delayed → DELAYED-WITH-CAPTAIN`). بنحلّها عبر mapsToSystem:
+  // نخزّن القيمة الصالحة في order.status، ونحتفظ بالكود المخصص (orderStatus) للإشعار.
   let storedOrderStatus = null;
   let statusChanged = false;
   if (orderStatus) {
@@ -380,7 +380,7 @@ async function syncTurboStatusToOrder({
     if (storedOrderStatus) {
       updateData.status = storedOrderStatus;
     } else {
-      console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Skipping un-storable OrderStatus "${orderStatus}" for ${existingOrder.orderNumber} (not in enum and no valid mapsToSystem) ΓÇö turbo fields updated, order status unchanged.`);
+      console.warn(`⚠️ [TURBO-SYNC] Skipping un-storable OrderStatus "${orderStatus}" for ${existingOrder.orderNumber} (not in enum and no valid mapsToSystem) — turbo fields updated, order status unchanged.`);
     }
     statusChanged = Boolean(storedOrderStatus) && storedOrderStatus !== existingOrder.status;
   }
@@ -389,15 +389,15 @@ async function syncTurboStatusToOrder({
     updateData.paymentStatus = paymentStatus;
   }
 
-  // ≡ƒÜ¿ PRODUCTION-FIX (turbo-notification-gap): ┘é╪¿┘ä ╪º┘ä╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪¿╪º╪┤╪▒ ┘ä╪¡┘é┘ê┘ä ╪¬╪▒╪¿┘ê╪î
-  // ┘à╪▒┘æ╪▒ ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪╣╪¿╪▒ orderService.updateOrderStatus ΓÇö ┘ä╪ú┘å┘ç ╪º┘ä┘à╪│╪º╪▒ ╪º┘ä┘ê╪¡┘è╪»
-  // ╪º┘ä┘ä┘è ╪¿┘è┘â╪¬╪¿ statusHistory ┘ê╪¿┘è╪¿╪╣╪½ ╪Ñ╪┤╪╣╪º╪▒ WhatsApp (sendOrderStatusNotification) ┘ê╪¿┘è╪┤╪║┘æ┘ä
-  // side-effects (┘â╪º╪┤ ╪¿╪º┘â/┘ê┘ä╪º╪í ╪╣┘å╪» DELIVERED╪î ╪Ñ╪▒╪¼╪º╪╣ ╪╣┘å╪» RETURNED...). ┘â╪º┘å ╪º┘ä╪│┘è┘å┘â ╪º┘ä┘é╪»┘è┘à
-  // ╪¿┘è╪╣╪»┘æ┘ä order.status ┘à╪¿╪º╪┤╪▒╪⌐ ┘ü┘è ╪º┘ä┘Ç DB ┘à┘å ╪║┘è╪▒ ╪ú┘è ╪Ñ╪┤╪╣╪º╪▒ ΓÇö ┘ü╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘ä┘è ╪¿╪¬╪¬╪¡╪▒┘â ╪¬┘ä┘é╪º╪ª┘è╪º┘ï
-  // ┘à┘å ╪¬╪▒╪¿┘ê (webhook / sync-status / refresh) ┘â╪º┘å╪¬ ╪¿╪¬┘ü╪╢┘ä ┘à┘å ╪║┘è╪▒ ╪▒╪│╪º┘ä╪⌐ ┘ä┘ä╪╣┘à┘è┘ä.
-  // ┘à┘ä╪º╪¡╪╕╪⌐: updateOrderStatus ╪¿┘è╪¼┘è╪¿ ╪º┘ä╪╖┘ä╪¿ ╪¬╪º┘å┘è ╪¿┘â┘ä ╪º┘ä╪╣┘ä╪º┘é╪º╪¬ (customer/orderItems) ┘ê╪¿┘è╪┤╪║┘æ┘ä
-  // ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘ü┘è ╪º┘ä╪«┘ä┘ü┘è╪⌐ (fire-and-forget) + ╪¿┘è╪«╪╡┘à ╪º┘ä┘Ç dedup ΓÇö ┘ü┘è╪¬┘à╪º╪┤┘ë ┘à╪╣ ┘à╪│╪º╪▒ ╪º┘ä╪▓╪▒╪º╪▒ ╪º┘ä┘è╪»┘ê┘è.
-  // ┘å┘à╪▒┘æ╪▒ ┘ä┘ç ╪º┘ä┘â┘ê╪» ╪º┘ä╪ú╪╡┘ä┘è (orderStatus) ΓÇö ┘ê┘ç┘ê ┘ç┘è╪¡┘ä┘æ mapsToSystem ┘ê┘è╪¬╪ú┘â╪» ╪Ñ┘å storage ╪╡╪º┘ä╪¡.
+  // 🚨 PRODUCTION-FIX (turbo-notification-gap): قبل التحديث المباشر لحقول تربو،
+  // مرّر تغيير حالة الطلب عبر orderService.updateOrderStatus — لأنه المسار الوحيد
+  // اللي بيكتب statusHistory وبيبعث إشعار WhatsApp (sendOrderStatusNotification) وبيشغّل
+  // side-effects (كاش باك/ولاء عند DELIVERED، إرجاع عند RETURNED...). كان السينك القديم
+  // بيعدّل order.status مباشرة في الـ DB من غير أي إشعار — فالأوردرات اللي بتتحرك تلقائياً
+  // من تربو (webhook / sync-status / refresh) كانت بتفضل من غير رسالة للعميل.
+  // ملاحظة: updateOrderStatus بيجيب الطلب تاني بكل العلاقات (customer/orderItems) وبيشغّل
+  // الإشعار في الخلفية (fire-and-forget) + بيخصم الـ dedup — فيتماشى مع مسار الزرار اليدوي.
+  // نمرّر له الكود الأصلي (orderStatus) — وهو هيحلّ mapsToSystem ويتأكد إن storage صالح.
   if (statusChanged) {
     try {
       const orderService = require('./orderService');
@@ -405,16 +405,16 @@ async function syncTurboStatusToOrder({
         existingOrder.orderNumber,
         companyId,
         orderStatus,
-        `╪¬╪¡╪»┘è╪½ ╪¬┘ä┘é╪º╪ª┘è ┘à┘å ╪¬╪▒╪¿┘ê (${canonicalTurboStatus})`,
+        `تحديث تلقائي من تربو (${canonicalTurboStatus})`,
         'SYSTEM',
         'Turbo Sync',
         null,
         true,
         { skipCallAttemptGuard: true, skipTransitionValidation: true }
       );
-      console.log(`Γ£à [TURBO-SYNC] Order ${existingOrder.orderNumber} status -> ${storedOrderStatus} (custom "${orderStatus}") via orderService (notification + history).`);
+      console.log(`✅ [TURBO-SYNC] Order ${existingOrder.orderNumber} status -> ${storedOrderStatus} (custom "${orderStatus}") via orderService (notification + history).`);
     } catch (statusErr) {
-      console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Status update via orderService failed for ${existingOrder.orderNumber}:`, statusErr.message);
+      console.warn(`⚠️ [TURBO-SYNC] Status update via orderService failed for ${existingOrder.orderNumber}:`, statusErr.message);
     }
   }
 
@@ -423,7 +423,7 @@ async function syncTurboStatusToOrder({
     data: updateData
   }), 3);
 
-  console.log(`Γ£à [TURBO-SYNC] Updated Order ${existingOrder.orderNumber}: turboStatus="${canonicalTurboStatus}", status="${updateData.status || existingOrder.status}", paymentStatus="${updateData.paymentStatus || existingOrder.paymentStatus}"`);
+  console.log(`✅ [TURBO-SYNC] Updated Order ${existingOrder.orderNumber}: turboStatus="${canonicalTurboStatus}", status="${updateData.status || existingOrder.status}", paymentStatus="${updateData.paymentStatus || existingOrder.paymentStatus}"`);
 
   // Emit Socket.IO
   emitSocketEvent(existingOrder.companyId, {
@@ -454,10 +454,10 @@ function emitSocketEvent(companyId, eventData) {
     if (io && companyId) {
       const roomName = `company_${companyId}`;
       io.to(roomName).emit('turbo_shipment_update', eventData);
-      console.log(`≡ƒôí [TURBO-SYNC] Socket event emitted to room ${roomName}`);
+      console.log(`📡 [TURBO-SYNC] Socket event emitted to room ${roomName}`);
     }
   } catch (err) {
-    console.warn('ΓÜá∩╕Å [TURBO-SYNC] Failed emitting socket event:', err.message);
+    console.warn('⚠️ [TURBO-SYNC] Failed emitting socket event:', err.message);
   }
 }
 

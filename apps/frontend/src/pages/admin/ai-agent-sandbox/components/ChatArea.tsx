@@ -1,9 +1,24 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, AlertTriangle, Book, BookOpen, Bot, Check, CheckCircle2, Clipboard, Clock, Copy, Cpu, Image as ImageIcon, Loader2, Navigation, Send, Server, Upload, User, X } from 'lucide-react';
+import { useTranslation } from "react-i18next";
+import {
+  Send,
+  Bot,
+  User,
+  Copy,
+  Check,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Cpu,
+  BookOpen,
+  Image as ImageIcon,
+  X,
+  Loader2,
+  Upload
+} from "lucide-react";
 import type { ChatMessage, AgentConfig, ModelConfig, ToolCall } from "../types/sandbox.types";
 import type { AgentSkillDetail } from "../services/sandboxApi";
 

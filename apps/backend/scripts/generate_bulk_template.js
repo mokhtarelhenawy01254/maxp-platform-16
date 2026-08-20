@@ -1,4 +1,4 @@
-﻿const XLSX = require('xlsx');
+const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 
@@ -11,9 +11,9 @@ const headerRowEn = ['Order Code', 'Customer Name', 'Phone', 'City', 'Area', 'Go
 const NCOLS = headerRowEn.length;
 
 const sampleData = [
-  ['38124947', 'Ahmed Mohamed', '01001234567', 'Nasr City', '╪º┘ä╪¡┘è ╪º┘ä╪│╪º╪¿╪╣', 'Cairo', '╪º┘ä╪╣╪¿┘ê╪▒ ┘ü┘è┘ä╪º 38', 'Nike Air Max 270', 'NIKE-AM270-BLK', '42', 'Black', 2, 150.00, 300.00, '╪¬┘ê╪╡┘è┘ä ╪│╪▒┘è╪╣'],
-  ['38124946', 'Sara Ali', '01112223333', 'Mohandessin', '', 'Giza', '┘ú╪┤╪º╪▒╪╣ ╪╣╪¿╪» ╪º┘ä╪¡┘à┘è╪»', 'Adidas Ultraboost', 'AD-UBS-WHT', '38', 'White', 1, 200.00, 200.00, ''],
-  ['38124943', 'Mohamed Khaled', '01009998877', 'Maadi', '╪¿╪ª╪▒ ╪º┘à ╪│┘ä╪╖╪º┘å', 'Cairo', '46 ╪┤ ┘â╪º┘à┘ä ┘ç┘à╪º┘à', 'Puma T-Shirt', 'PU-TS-RED', 'L', 'Red', 3, 75.50, 226.50, '┘à┘é╪º╪│ ┘â╪¿┘è╪▒'],
+  ['38124947', 'Ahmed Mohamed', '01001234567', 'Nasr City', 'الحي السابع', 'Cairo', 'العبور فيلا 38', 'Nike Air Max 270', 'NIKE-AM270-BLK', '42', 'Black', 2, 150.00, 300.00, 'توصيل سريع'],
+  ['38124946', 'Sara Ali', '01112223333', 'Mohandessin', '', 'Giza', '٣شارع عبد الحميد', 'Adidas Ultraboost', 'AD-UBS-WHT', '38', 'White', 1, 200.00, 200.00, ''],
+  ['38124943', 'Mohamed Khaled', '01009998877', 'Maadi', 'بئر ام سلطان', 'Cairo', '46 ش كامل همام', 'Puma T-Shirt', 'PU-TS-RED', 'L', 'Red', 3, 75.50, 226.50, 'مقاس كبير'],
 ];
 
 const COL_WIDTHS = [
@@ -84,7 +84,7 @@ function createOrdersSheet() {
 
 function createInstructionsSheet() {
   const instructions = [
-    ['BULK ORDERS TEMPLATE - INSTRUCTIONS / ╪¬╪╣┘ä┘è┘à╪º╪¬ ┘é╪º┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¼┘à╪╣╪⌐'],
+    ['BULK ORDERS TEMPLATE - INSTRUCTIONS / تعليمات قالب الطلبات المجمعة'],
     [''],
     ['ENGLISH:'],
     ['1. Fill in your order data in the "Orders" sheet, starting from row 2 (below the header).'],
@@ -96,32 +96,32 @@ function createInstructionsSheet() {
     ['7. Save the file and upload it from the Bulk Orders page.'],
     ['8. Supports both English and Arabic column headers (.xlsx, .xls, .csv).'],
     [''],
-    ['╪╣╪▒╪¿┘è:'],
-    ['-┘í .╪º┘à┘ä╪ú ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ┘ü┘è ┘ê╪▒┘é╪⌐ "Orders" ╪¿╪»╪í╪º┘ï ┘à┘å ╪º┘ä╪╡┘ü ┘ó (╪ú╪│┘ü┘ä ╪º┘ä╪╣┘å┘ê╪º┘å)'],
-    ['-┘ó .╪º╪¡╪░┘ü ╪╡┘ü┘ê┘ü ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╣┘è┘å╪⌐ (╪º┘ä╪╡┘ü┘ê┘ü ┘ó-┘ñ) ┘é╪¿┘ä ╪Ñ╪╢╪º┘ü╪⌐ ╪¿┘è╪º┘å╪º╪¬┘â'],
-    ['-┘ú .┘ä╪º ╪¬┘é┘à ╪¿╪¬╪╣╪»┘è┘ä ╪ú┘ê ╪¡╪░┘ü ╪╡┘ü ╪º┘ä╪╣┘å┘ê╪º┘å (╪º┘ä╪╡┘ü ┘í)'],
-    ['-┘ñ .╪º┘ä╪ú╪╣┘à╪»╪⌐: ╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä╪î ╪º┘ä┘ç╪º╪¬┘ü╪î ╪º┘ä┘à╪»┘è┘å╪⌐╪î ╪º┘ä┘à┘å╪╖┘é╪⌐╪î ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐╪î ╪º┘ä╪╣┘å┘ê╪º┘å╪î ╪º╪│┘à ╪º┘ä┘à┘å╪¬╪¼╪î SKU╪î ╪º┘ä┘à┘é╪º╪│╪î ╪º┘ä┘ä┘ê┘å╪î ╪º┘ä┘â┘à┘è╪⌐╪î ╪º┘ä╪│╪╣╪▒╪î ╪º┘ä┘à╪¿┘ä╪║╪î ┘à┘ä╪º╪¡╪╕╪º╪¬'],
-    ['-┘Ñ .╪º┘ä┘â┘à┘è╪⌐ ┘ê╪º┘ä╪│╪╣╪▒ ┘ê╪º┘ä┘à╪¿┘ä╪║ ┘è╪¼╪¿ ╪ú┘å ┘è┘â┘ê┘å╪º ╪ú╪▒┘é╪º┘à╪º┘ï ┘ü┘é╪╖. ┘ä╪º ╪¬╪╢┘ü ╪▒┘à┘ê╪▓ ╪º┘ä╪╣┘à┘ä╪⌐'],
-    ['-┘ª .╪¡┘é┘ê┘ä ╪º┘ä┘à┘å╪╖┘é╪⌐ ┘ê╪º┘ä╪╣┘å┘ê╪º┘å ┘ê╪º┘ä┘à┘ä╪º╪¡╪╕╪º╪¬ ╪º╪«╪¬┘è╪º╪▒┘è╪⌐'],
-    ['-┘º .╪º╪¡┘ü╪╕ ╪º┘ä┘à┘ä┘ü ┘ê╪º╪▒┘ü╪╣┘ç ┘à┘å ╪╡┘ü╪¡╪⌐ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪¼┘à╪╣╪⌐'],
-    ['-┘¿ .┘è╪»╪╣┘à ╪º┘ä╪╣┘å╪º┘ê┘è┘å ╪¿╪º┘ä╪Ñ┘å╪¼┘ä┘è╪▓┘è╪⌐ ┘ê╪º┘ä╪╣╪▒╪¿┘è╪⌐ (xlsx. , xls. , csv.)'],
+    ['عربي:'],
+    ['-١ .املأ بيانات الطلبات في ورقة "Orders" بدءاً من الصف ٢ (أسفل العنوان)'],
+    ['-٢ .احذف صفوف بيانات العينة (الصفوف ٢-٤) قبل إضافة بياناتك'],
+    ['-٣ .لا تقم بتعديل أو حذف صف العنوان (الصف ١)'],
+    ['-٤ .الأعمدة: اسم العميل، الهاتف، المدينة، المنطقة، المحافظة، العنوان، اسم المنتج، SKU، المقاس، اللون، الكمية، السعر، المبلغ، ملاحظات'],
+    ['-٥ .الكمية والسعر والمبلغ يجب أن يكونا أرقاماً فقط. لا تضف رموز العملة'],
+    ['-٦ .حقول المنطقة والعنوان والملاحظات اختيارية'],
+    ['-٧ .احفظ الملف وارفعه من صفحة الطلبات المجمعة'],
+    ['-٨ .يدعم العناوين بالإنجليزية والعربية (xlsx. , xls. , csv.)'],
     [''],
-    ['COLUMN MAPPING / ╪«╪▒┘è╪╖╪⌐ ╪º┘ä╪ú╪╣┘à╪»╪⌐ (╪º┘ä┘å╪╕╪º┘à ┘è╪¬╪╣╪▒┘ü ╪╣┘ä┘ë ┘â┘ä╪º ╪º┘ä╪Ñ╪│┘à┘è┘å):'],
+    ['COLUMN MAPPING / خريطة الأعمدة (النظام يتعرف على كلا الإسمين):'],
     [''],
-    ['Customer Name  =  ╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä  /  ╪º╪│┘à ╪º┘ä┘à╪│╪¬┘ä┘à'],
-    ['Phone          =  ╪º┘ä┘ç╪º╪¬┘ü  /  ╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü'],
-    ['City           =  ╪º┘ä┘à╪»┘è┘å╪⌐'],
-    ['Area           =  ╪º┘ä┘à┘å╪╖┘é╪⌐'],
-    ['Governorate    =  ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐'],
-    ['Address        =  ╪º┘ä╪╣┘å┘ê╪º┘å'],
-    ['Product Name   =  ╪º╪│┘à ╪º┘ä┘à┘å╪¬╪¼  /  ╪º┘ä┘à┘å╪¬╪¼  /  ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪╖┘ä╪¿'],
+    ['Customer Name  =  اسم العميل  /  اسم المستلم'],
+    ['Phone          =  الهاتف  /  رقم الهاتف'],
+    ['City           =  المدينة'],
+    ['Area           =  المنطقة'],
+    ['Governorate    =  المحافظة'],
+    ['Address        =  العنوان'],
+    ['Product Name   =  اسم المنتج  /  المنتج  /  محتوى الطلب'],
     ['SKU            =  SKU'],
-    ['Size           =  ╪º┘ä┘à┘é╪º╪│'],
-    ['Color          =  ╪º┘ä┘ä┘ê┘å'],
-    ['Quantity       =  ╪º┘ä┘â┘à┘è╪⌐'],
-    ['Price          =  ╪º┘ä╪│╪╣╪▒'],
-    ['COD            =  ╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪╖┘ä┘ê╪¿ ╪¬╪¡╪╡┘è┘ä┘ç'],
-    ['Notes          =  ┘à┘ä╪º╪¡╪╕╪º╪¬'],
+    ['Size           =  المقاس'],
+    ['Color          =  اللون'],
+    ['Quantity       =  الكمية'],
+    ['Price          =  السعر'],
+    ['COD            =  المبلغ المطلوب تحصيله'],
+    ['Notes          =  ملاحظات'],
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(instructions);
@@ -136,7 +136,7 @@ function createInstructionsSheet() {
 
     const val = String(ws[addr].v || '');
     const isTitle = R === 0;
-    const isSection = ['ENGLISH:', '╪╣╪▒╪¿┘è:', 'COLUMN NAMES (English / Arabic) / ╪ú╪│┘à╪º╪í ╪º┘ä╪ú╪╣┘à╪»╪⌐ (╪Ñ┘å╪¼┘ä┘è╪▓┘è / ╪╣╪▒╪¿┘è):', 'NOTE: You can use EITHER English OR Arabic column headers in your own files.'].includes(val) || val.startsWith('NOTE:');
+    const isSection = ['ENGLISH:', 'عربي:', 'COLUMN NAMES (English / Arabic) / أسماء الأعمدة (إنجليزي / عربي):', 'NOTE: You can use EITHER English OR Arabic column headers in your own files.'].includes(val) || val.startsWith('NOTE:');
 
     ws[addr].s = {
       font: {

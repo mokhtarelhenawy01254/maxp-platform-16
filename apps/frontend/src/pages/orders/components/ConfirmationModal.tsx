@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import OrderModal from "../../../components/common/OrderModal";
@@ -40,11 +40,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       tone={isDangerous ? "danger" : "info"}
       size="md"
       busy={isLoading}
-      cancelLabel={cancelText ?? t("orders.cancel", { defaultValue: "╪Ñ┘ä╪║╪º╪í" })}
+      cancelLabel={cancelText ?? t("orders.cancel", { defaultValue: "إلغاء" })}
       primaryAction={{
         label: isLoading
-          ? t("orders.processing2", { defaultValue: "╪¼╪º╪▒┘è ╪º┘ä╪¬┘å┘ü┘è╪░..." })
-          : (confirmText ?? t("orders.confirm", { defaultValue: "╪¬╪ú┘â┘è╪»" })),
+          ? t("orders.processing2", { defaultValue: "جاري التنفيذ..." })
+          : (confirmText ?? t("orders.confirm", { defaultValue: "تأكيد" })),
         onClick: onConfirm,
         variant: isDangerous ? "destructive" : "default",
         loading: isLoading,

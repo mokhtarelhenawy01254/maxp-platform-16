@@ -1,4 +1,4 @@
-﻿import { buildApiUrl } from "../../utils/urlHelper";
+import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useEffect, useState } from "react";
@@ -60,7 +60,7 @@ export const api = (path: string) => {
   return url.toString();
 };
 
-/** Reuse the shared booking endpoints (patients/invoices/price-lists/branches/reports) ΓÇö
+/** Reuse the shared booking endpoints (patients/invoices/price-lists/branches/reports) —
  *  they are NOT gated by booking-app at the backend, so a radiology-only company can use them. */
 export const bookingApi = (path: string) => {
   const base = buildApiUrl(`booking/${path}`);
@@ -225,13 +225,13 @@ export interface RadiologyPatientFlag {
 }
 
 export const DEFAULT_RADIOLOGY_PATIENT_FLAGS: RadiologyPatientFlag[] = [
-  { value: "pregnancy", label: "╪¡┘à┘ä", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
-  { value: "contrast_allergy", label: "╪¡╪│╪º╪│┘è╪⌐ ╪¬╪¿╪º┘è┘å", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-  { value: "renal", label: "┘é╪╡┘ê╪▒ ┘â┘ä┘ê┘è", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
-  { value: "bleeding", label: "╪│┘è┘ê┘ä╪⌐", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-  { value: "diabetic", label: "╪│┘â╪▒", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  { value: "claustrophobia", label: "╪«┘ê┘ü ┘à┘å ╪º┘ä╪ú┘à╪º┘â┘å ╪º┘ä┘à╪║┘ä┘é╪⌐", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
-  { value: "pacemaker", label: "┘à┘å╪╕┘à ╪╢╪▒╪¿╪º╪¬ ╪º┘ä┘é┘ä╪¿", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "pregnancy", label: "حمل", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
+  { value: "contrast_allergy", label: "حساسية تباين", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "renal", label: "قصور كلوي", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
+  { value: "bleeding", label: "سيولة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "diabetic", label: "سكر", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  { value: "claustrophobia", label: "خوف من الأماكن المغلقة", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
+  { value: "pacemaker", label: "منظم ضربات القلب", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
 ];
 
 let riskFlagsCache: RadiologyPatientFlag[] | null = null;

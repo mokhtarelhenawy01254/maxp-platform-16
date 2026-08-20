@@ -1,4 +1,4 @@
-﻿ALTER TABLE "whatsapp_messages" ADD COLUMN IF NOT EXISTS "isHidden" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "whatsapp_messages" ADD COLUMN IF NOT EXISTS "isHidden" BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS "whatsapp_lid_mappings" (
     "id" TEXT NOT NULL,

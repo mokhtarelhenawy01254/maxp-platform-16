@@ -6,6 +6,84 @@ const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 const customerBlocklistService = require('./customerBlocklistService');
 const { resolveVariantAttributes } = require('../utils/productNormalizationUtils');
 const { normalizeOrderPaymentMethod } = require('../utils/paymentMethodNormalization');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
+const { splitCustomerName } = require('../utils/customerName');
+const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
+
+const buildSourceCondition = (source) => {
+  switch (String(source).toLowerCase()) {
+    case 'manual':
+      return {
+        OR: [
+          { extractionMethod: { startsWith: 'manual' } },
+          { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
+          { sourceType: 'manual' },
+          { createdBy: { not: null } },
+          { createdByName: { not: null } },
+          { conversationId: 'manual' }
+        ]
+      };
+    case 'ai_conversation':
+      return {
+        AND: [
+          { sourceType: 'ai_conversation' },
+          { NOT: { extractionMethod: { startsWith: 'manual' } } },
+          { NOT: { extractionMethod: 'manual_admin' } },
+          { NOT: { extractionMethod: 'manual_order_modal' } },
+          { NOT: { conversationId: 'manual' } }
+        ]
+      };
+    case 'storefront':
+      return {
+        OR: [
+          { sourceType: 'storefront' },
+          { metadata: { contains: '"source":"storefront"' } },
+          { metadata: { contains: 'storefront', mode: 'insensitive' } }
+        ]
+      };
+    case 'woocommerce':
+      return {
+        OR: [
+          { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
+          { wooCommerceId: { not: null } },
+          { syncedFromWoo: true }
+        ]
+      };
+    case 'pos':
+      return {
+        OR: [
+          { sourceType: 'pos' },
+          { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
+        ]
+      };
+    case 'api':
+      return {
+        OR: [
+          { sourceType: { in: ['api', 'public_api'] } },
+          { metadata: { contains: '"source":"api"' } },
+          { metadata: { contains: 'api', mode: 'insensitive' } }
+        ]
+      };
+    case 'import':
+      return {
+        OR: [
+          { extractionMethod: 'import' },
+          { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
+          { orderSource: 'INTERNAL_IMPORT' }
+        ]
+      };
+    case 'unknown':
+      return {
+        OR: [
+          { sourceType: null },
+          { sourceType: 'unknown' }
+        ]
+      };
+    default:
+      return { sourceType: String(source).toLowerCase() };
+  }
+};
 
 class EnhancedOrderService {
   constructor() {
@@ -128,9 +206,41 @@ class EnhancedOrderService {
       const orderNumber = await this.generateOrderNumber(data.companyId);
 
       // توحيد الحالات
-      data.status = (data.status || 'PENDING').toUpperCase();
+      data.status = (data.status || 'CONFIRMED').toUpperCase();
       data.paymentMethod = normalizeOrderPaymentMethod(data.paymentMethod, 'CASH');
       data.paymentStatus = (data.paymentStatus || 'PENDING').toUpperCase();
+
+      // 🎁 الخصم التلقائي: لو نظام الخصم التلقائي مفعّل والعميل عنده كوبون خصم فعّال،
+      // نطبقه على أي طلب (يدوي/محادثة/متجر) — مش بس طلبات المتجر.
+      try {
+        const autoDiscountService = require('./autoDiscountService');
+        const autoActive = await autoDiscountService.isAutoDiscountActive(data.companyId);
+        if (autoActive && customer?.id) {
+          const cartTotalForDiscount =
+            parseFloat(data.subtotal) > 0
+              ? parseFloat(data.subtotal)
+              : (Array.isArray(data.products) && data.products.length > 0
+                  ? data.products.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)), 0)
+                  : (parseFloat(data.productPrice) || 0) * (parseInt(data.quantity) || 1));
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId: data.companyId,
+            customerId: customer.id,
+            cartTotal: cartTotalForDiscount
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            data.autoDiscountVoucherId = voucherRes.voucher.id;
+            data.autoDiscountApplied = voucherRes.discount;
+            // نجمع خصم الكوبون التلقائي مع أي خصم موجود (يدوي/كوبون)
+            const existingDiscount =
+              (parseFloat(data.manualDiscount) || 0) + (parseFloat(data.couponDiscount) || 0) + (parseFloat(data.discount) || 0);
+            data.autoDiscountTotal = existingDiscount + voucherRes.discount;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+            console.log(`✅ [AUTO-DISCOUNT] Applied ${voucherRes.discount} EGP discount to order for customer ${customer.id}`);
+          }
+        }
+      } catch (autoDiscountError) {
+        console.error('❌ [AUTO-DISCOUNT] Failed to apply auto discount:', autoDiscountError.message);
+      }
 
       // حساب التكاليف (أو استخدام التكاليف المرسلة يدوياً)
       const costs = await this.calculateOrderCosts(data);
@@ -285,7 +395,7 @@ class EnhancedOrderService {
                     turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
                     turboShipmentStatus: shipmentResult.status,
                     turboLabelUrl: shipmentResult.labelUrl,
-                    turboMetadata: JSON.stringify(shipmentResult.data)
+                    turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
                   }
                 });
               }, 3);
@@ -309,6 +419,21 @@ class EnhancedOrderService {
 
       console.log('✅ [ENHANCED-ORDER] تم إنشاء الطلب بنجاح:', order.orderNumber);
 
+      // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط + تحديث المستوى لأي طلب جديد
+      // (مش بس عند التسليم) — أي أوردر بيتطلب يدخل الولاء ويحسب تلقائياً.
+      try {
+        const customerLoyaltyService = require('./hr/customerLoyaltyService');
+        await customerLoyaltyService.applyLoyaltyPointsForOrder({
+          orderId: order.id,
+          companyId: data.companyId,
+          changedBy: data.createdBy
+        }).catch((loyaltyError) => {
+          console.error(`❌ [LOYALTY-AUTO] Failed to award points for ${order.orderNumber}:`, loyaltyError.message);
+        });
+      } catch (loyaltyError) {
+        console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+      }
+
       // 🛒 تصدير تلقائي لـ WooCommerce (في الخلفية) - تجاهل للطلبات المكررة
       if (!isDuplicate) {
         try {
@@ -328,6 +453,7 @@ class EnhancedOrderService {
             id: order.id,
             orderNumber: order.orderNumber,
             companyId: order.companyId,
+            status: order.status,
             customerPhone: order.customerPhone,
             customerName: order.customerName,
             customer: order.customer,
@@ -339,7 +465,7 @@ class EnhancedOrderService {
             items: order.orderItems || order.items || []
           };
 
-          await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+          await WhatsAppNotificationService.sendOrderCreationNotification(orderForNotification);
           console.log('✅ [WHATSAPP] Order notification sent for:', order.orderNumber);
         } catch (whatsappError) {
           // لا نوقف العملية إذا فشل WhatsApp
@@ -407,27 +533,22 @@ class EnhancedOrderService {
       // البحث برقم الهاتف
       if (!customer && data.customerPhone) {
         customer = await this.safeQuery(() =>
-          this.getPrisma().customer.findFirst({
-            where: {
-              phone: data.customerPhone,
-              companyId: data.companyId
-            }
-          })
+          findCustomerByPhone(this.getPrisma(), data.customerPhone, data.companyId)
         );
       }
 
       // إنشاء عميل جديد إذا لم نجده
       if (!customer) {
-        //console.log('👤 [ENHANCED-ORDER] إنشاء عميل جديد...');
-
         const customerName = this.parseCustomerName(data.customerName);
 
-        customer = await this.safeQuery(() =>
-          this.getPrisma().customer.create({
+        customer = await safeCreateCustomer(
+          this.getPrisma(),
+          {
             data: {
               firstName: customerName.firstName,
               lastName: customerName.lastName,
               phone: data.customerPhone || null,
+              phoneNormalized: data.customerPhone ? toCanonicalE164(data.customerPhone) : null,
               email: data.customerEmail || null,
               facebookId: data.customerId && data.customerId.match(/^\d+$/) ? data.customerId : null,
               status: 'LEAD',
@@ -440,12 +561,30 @@ class EnhancedOrderService {
                 createdFromOrder: true
               })
             }
-          })
+          },
+          data.customerPhone ? buildPhoneWhere(data.customerPhone, data.companyId) : (data.customerEmail ? { companyId: data.companyId, email: data.customerEmail } : null)
         );
-
-        //console.log('✅ [ENHANCED-ORDER] تم إنشاء عميل جديد:', customer.id);
       } else {
-        //console.log('👤 [ENHANCED-ORDER] تم العثور على العميل:', customer.id);
+        const updateData = {};
+        if (customer.status === 'LEAD') updateData.status = 'ACTIVE';
+        if (!customer.phone && data.customerPhone) {
+          updateData.phone = data.customerPhone;
+          updateData.phoneNormalized = toCanonicalE164(data.customerPhone);
+        } else if (!customer.phoneNormalized && customer.phone) {
+          updateData.phoneNormalized = toCanonicalE164(customer.phone);
+        }
+        if (Object.keys(updateData).length > 0) {
+          try {
+            customer = await this.safeQuery(() =>
+              this.getPrisma().customer.update({
+                where: { id: customer.id },
+                data: updateData
+              })
+            );
+          } catch (updateErr) {
+            console.error('⚠️ [ENHANCED-ORDER] فشل تحديث حالة العميل:', updateErr.message);
+          }
+        }
       }
 
       return customer;
@@ -460,19 +599,7 @@ class EnhancedOrderService {
    * تحليل اسم العميل
    */
   parseCustomerName(fullName) {
-    if (!fullName || typeof fullName !== 'string') {
-      return {
-        firstName: 'عميل',
-        lastName: 'جديد'
-      };
-    }
-
-    const nameParts = fullName.trim().split(' ');
-
-    return {
-      firstName: nameParts[0] || 'عميل',
-      lastName: nameParts.slice(1).join(' ') || 'جديد'
-    };
+    return splitCustomerName(fullName);
   }
 
   /**
@@ -582,10 +709,11 @@ class EnhancedOrderService {
     // حساب الضرائب (0% حالياً)
     const tax = parseFloat(data.tax) || 0;
 
-    // حساب الخصم (يدوي + كوبون)
+    // حساب الخصم (يدوي + كوبون + الخصم التلقائي)
     const manualDiscount = parseFloat(data.manualDiscount) || 0;
     const couponDiscount = parseFloat(data.couponDiscount) || 0;
-    const discount = manualDiscount + couponDiscount || parseFloat(data.discount) || 0;
+    const autoDiscount = parseFloat(data.autoDiscountApplied) || 0;
+    const discount = manualDiscount + couponDiscount + autoDiscount || parseFloat(data.discount) || 0;
 
     const total = subtotal + shipping + tax - discount;
 
@@ -683,7 +811,7 @@ class EnhancedOrderService {
 
     const addrGov = parsedAddress?.governorate || data.governorate || data.city || 'غير محدد';
     const addrCity = parsedAddress?.city || data.city || data.area || 'غير محدد';
-    const addrArea = parsedAddress?.area || data.area || '';
+    const addrArea = parsedAddress?.area || parsedAddress?.district || parsedAddress?.neighborhood || data.area || data.district || '';
     const addrText = parsedAddress?.address || (typeof data.customerAddress === 'string' && !data.customerAddress.trim().startsWith('{') ? data.customerAddress : '') || '';
     const addrPhone = parsedAddress?.phone || data.customerPhone || customer.phone;
 
@@ -694,7 +822,7 @@ class EnhancedOrderService {
       companyId: data.companyId,
 
       // حالة الطلب
-      status: data.status || 'PENDING',
+      status: data.status || 'CONFIRMED',
       paymentStatus: data.paymentStatus || 'PENDING',
       paymentMethod: data.paymentMethod || 'CASH',
 
@@ -770,6 +898,9 @@ class EnhancedOrderService {
         conversationId: data.conversationId,
         source: data.source,
         requestType: data.requestType || 'delivery',
+        returnAmount: data.returnAmount || null,
+        ...(data.autoDiscountVoucherId && { autoDiscountVoucherId: data.autoDiscountVoucherId }),
+        ...(data.autoDiscountApplied && { autoDiscountApplied: data.autoDiscountApplied }),
         originalData: {
           productName: data.productName,
           productColor: data.productColor,
@@ -946,6 +1077,22 @@ class EnhancedOrderService {
       // ✅ إزالة حقول المنتج من orderData لأنها مش جزء من Order schema
       const { products, productName, productColor, productSize, productPrice, quantity, ...cleanOrderData } = orderData;
 
+      // 🎁 تسجيل كوبون الخصم التلقائي في الـ metadata (لو الطلب استخدم كوبون)
+      if (orderData.autoDiscountVoucherId || orderData.autoDiscountApplied) {
+        let existingMetadata = {};
+        if (typeof cleanOrderData.metadata === 'string') {
+          try { existingMetadata = JSON.parse(cleanOrderData.metadata) || {}; } catch (e) { existingMetadata = {}; }
+        } else if (cleanOrderData.metadata && typeof cleanOrderData.metadata === 'object') {
+          existingMetadata = cleanOrderData.metadata;
+        }
+        existingMetadata = {
+          ...existingMetadata,
+          ...(orderData.autoDiscountVoucherId && { autoDiscountVoucherId: orderData.autoDiscountVoucherId }),
+          ...(orderData.autoDiscountApplied && { autoDiscountApplied: orderData.autoDiscountApplied })
+        };
+        cleanOrderData.metadata = JSON.stringify(existingMetadata);
+      }
+
       console.log('💸 [DB-SAVE] التكاليف قبل الحفظ:', {
         subtotal: cleanOrderData.subtotal,
         shipping: cleanOrderData.shipping,
@@ -974,7 +1121,7 @@ class EnhancedOrderService {
       });
 
       // إنشاء عناصر الطلب باستخدام البيانات المحفوظة
-      await this.createOrderItems(order.id, { ...productData, companyId: orderData.companyId });
+      await this.createOrderItems(order.id, { ...productData, companyId: orderData.companyId, easyWarehouseMode: orderData.easyWarehouseMode });
 
       // إعادة جلب الطلب مع العناصر
       const completeOrder = await this.safeQuery(() =>
@@ -1040,6 +1187,17 @@ class EnhancedOrderService {
             );
           } else if (productItem.productName) {
             product = await this.findProductByName(productItem.productName, orderData.companyId);
+          }
+
+          // ✨ الوضع السهل: استيراد المنتج تلقائيًا إذا لم يكن موجودًا في الكتالوج
+          if (!product && orderData.easyWarehouseMode && productItem.productName) {
+            const easyWarehouseService = require('./easyWarehouseService');
+            product = await easyWarehouseService.ensureProductsForItems(orderData.companyId, [productItem])
+              .then((result) => {
+                const created = result.created[0];
+                return created ? this.getPrisma().product.findUnique({ where: { id: created.productId }, include: { productVariants: true } }) : null;
+              })
+              .catch(() => null);
           }
 
           // ✨ جلب بيانات الـ variant إذا كان موجود
@@ -1193,7 +1351,7 @@ class EnhancedOrderService {
 
             productName: productItem.productName || product?.name || null,
             productColor: extractedColor || null, // ✨ استخدام البيانات المستخرجة
-            productSize: extractedSize || null, // ✨ استخدام البيانات المستخرجة
+            productSize: extractedSize != null ? String(extractedSize) : null, // ✨ استخدام البيانات المستخرجة
             productImage: productItem.productImage || null,
             productSku: variant?.sku || product?.sku || `MANUAL-${Date.now()}`,
             basePrice: Number.isFinite(basePrice) ? basePrice : null,
@@ -1270,7 +1428,7 @@ class EnhancedOrderService {
         // ✅ معلومات المنتج من الاستخراج التلقائي - بدون قيم افتراضية
         productName: orderData.productName || product?.name || null,
         productColor: orderData.productColor || selectedAttributes.Color || null,
-        productSize: orderData.productSize || selectedAttributes.Size || null,
+        productSize: orderData.productSize != null ? String(orderData.productSize) : (selectedAttributes.Size != null ? String(selectedAttributes.Size) : null),
         productImage: orderData.productImage || null,
         productSku: product?.sku || `AUTO-${Date.now()}`,
         basePrice: product?.basePrice || product?.price || null,
@@ -1633,6 +1791,7 @@ class EnhancedOrderService {
         page = 1,
         limit = 20,
         status,
+        paymentStatus,
         customerId,
         conversationId,
         dateFrom,
@@ -1648,9 +1807,18 @@ class EnhancedOrderService {
         companyId: companyId
       };
 
+      // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية افتراضياً
+      if (options.includeHeld !== true) {
+        where.billingHoldAt = null;
+      }
+
       // فلاتر إضافية
       if (status && status !== 'all') {
-        where.status = status;
+        const statuses = String(status)
+          .split(',')
+          .map((s) => String(s).trim().toUpperCase())
+          .filter(Boolean);
+        where.status = statuses.length === 1 ? statuses[0] : { in: statuses };
       } else {
         const hiddenStatuses = ['TRASH'];
         where.status = { notIn: hiddenStatuses };
@@ -1758,92 +1926,24 @@ class EnhancedOrderService {
       }
 
       if (sourceType) {
-        const normalizedSource = String(sourceType).toLowerCase();
-        let sourceCondition = null;
-
-        switch (normalizedSource) {
-          case 'manual':
-            sourceCondition = {
-              OR: [
-                { extractionMethod: { startsWith: 'manual' } },
-                { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
-                { sourceType: 'manual' },
-                { createdBy: { not: null } },
-                { createdByName: { not: null } },
-                { conversationId: 'manual' }
-              ]
-            };
-            break;
-          case 'ai_conversation':
-            sourceCondition = {
-              AND: [
-                { sourceType: 'ai_conversation' },
-                { NOT: { extractionMethod: { startsWith: 'manual' } } },
-                { NOT: { extractionMethod: 'manual_admin' } },
-                { NOT: { extractionMethod: 'manual_order_modal' } },
-                { NOT: { conversationId: 'manual' } }
-              ]
-            };
-            break;
-          case 'storefront':
-            sourceCondition = {
-              OR: [
-                { sourceType: 'storefront' },
-                { metadata: { contains: '"source":"storefront"' } },
-                { metadata: { contains: 'storefront', mode: 'insensitive' } }
-              ]
-            };
-            break;
-          case 'woocommerce':
-            sourceCondition = {
-              OR: [
-                { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
-                { wooCommerceId: { not: null } },
-                { syncedFromWoo: true }
-              ]
-            };
-            break;
-          case 'pos':
-            sourceCondition = {
-              OR: [
-                { sourceType: 'pos' },
-                { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
-              ]
-            };
-            break;
-          case 'api':
-            sourceCondition = {
-              OR: [
-                { sourceType: { in: ['api', 'public_api'] } },
-                { metadata: { contains: '"source":"api"' } },
-                { metadata: { contains: 'api', mode: 'insensitive' } }
-              ]
-            };
-            break;
-          case 'import':
-            sourceCondition = {
-              OR: [
-                { extractionMethod: 'import' },
-                { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
-                { orderSource: 'INTERNAL_IMPORT' }
-              ]
-            };
-            break;
-          case 'unknown':
-            sourceCondition = {
-              OR: [
-                { sourceType: null },
-                { sourceType: 'unknown' }
-              ]
-            };
-            break;
-          default:
-            sourceCondition = { sourceType: normalizedSource };
-        }
-
-        if (sourceCondition) {
+        const sourceTypes = String(sourceType)
+          .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+        const sourceConditions = sourceTypes.map(buildSourceCondition).filter(Boolean);
+        if (sourceConditions.length > 0) {
           if (!where.AND) where.AND = [];
-          where.AND.push(sourceCondition);
+          where.AND.push(
+            sourceConditions.length === 1 ? sourceConditions[0] : { OR: sourceConditions }
+          );
+        }
+      }
+
+      if (paymentStatus && paymentStatus !== 'all') {
+        const paymentStatuses = String(paymentStatus)
+          .split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+        if (paymentStatuses.length > 0) {
+          where.paymentStatus = paymentStatuses.length === 1
+            ? paymentStatuses[0]
+            : { in: paymentStatuses };
         }
       }
 
@@ -1866,25 +1966,28 @@ class EnhancedOrderService {
 
       console.log('✅ [ENHANCED-ORDER] Orders fetched:', orders.length);
 
-      // ✅ FIX: Use findMany with select id only instead of count() (more reliable)
-      // count() fails intermittently with "Response from the Engine was empty"
+      // Count total for pagination metadata — use count() first (efficient),
+      // fall back to an id scan only if the engine connection is flaky.
       let total = 0;
       try {
-        // Use findMany with select id only - more reliable than count()
-        const allOrderIds = await this.safeQuery(async () => {
-          await this.getPrisma().$connect().catch(() => { }); // Ensure connection
-          return await this.getPrisma().order.findMany({
-            where,
-            select: { id: true }, // Only select id for performance
-            take: 10000 // Reasonable limit to prevent memory issues
-          });
+        total = await this.safeQuery(async () => {
+          return await this.getPrisma().order.count({ where });
         }, 3);
-
-        total = allOrderIds.length;
       } catch (error) {
-        // Fallback: use orders.length (at least we have the current page)
-        console.error('❌ [ENHANCED-ORDER] Count query failed, using orders.length as fallback:', error.message);
-        total = orders.length;
+        // Fallback: use an id scan (lower bound) rather than failing the whole request
+        console.error('❌ [ENHANCED-ORDER] Count query failed, using id-scan fallback:', error.message);
+        try {
+          await this.getPrisma().$connect().catch(() => { }); // Ensure connection
+          const allOrderIds = await this.getPrisma().order.findMany({
+            where,
+            select: { id: true },
+            take: 100000 // large enough for realistic volumes; avoids OOM on extreme datasets
+          });
+          total = allOrderIds.length;
+        } catch (fallbackError) {
+          console.error('❌ [ENHANCED-ORDER] Fallback count failed, using current page length:', fallbackError.message);
+          total = orders.length;
+        }
       }
 
       console.log('✅ [ENHANCED-ORDER] Total count:', total);
@@ -2227,6 +2330,22 @@ class EnhancedOrderService {
             include
           });
         }
+
+        // Fallback: try by turbo shipment code
+        if (!order) {
+          whereClause = {
+            OR: [
+              { turboShipmentId: orderId },
+              { turboTrackingNumber: orderId }
+            ],
+            companyId: companyId
+          };
+          console.log('🔍 [ENHANCED-ORDER] Fallback to turbo code:', whereClause);
+          order = await this.getPrisma().order.findFirst({
+            where: whereClause,
+            include
+          });
+        }
       }
 
       // Log if found in Order table
@@ -2245,7 +2364,15 @@ class EnhancedOrderService {
       if (!order) {
         console.log('🔍 [ENHANCED-ORDER] Not found in Order table, trying GuestOrder...');
         const guestOrder = await this.getPrisma().guestOrder.findFirst({
-          where: whereClause,
+          where: {
+            OR: [
+              { id: orderId },
+              { orderNumber: orderId },
+              { turboShipmentId: orderId },
+              { turboTrackingNumber: orderId }
+            ],
+            companyId: companyId
+          },
           select: {
             id: true,
             orderNumber: true,
@@ -2258,9 +2385,7 @@ class EnhancedOrderService {
             shippingCost: true,
             discountAmount: true,
             status: true,
-            paymentStatus: true,
             paymentMethod: true,
-            currency: true,
             notes: true,
             createdAt: true,
             updatedAt: true,
@@ -2318,6 +2443,7 @@ class EnhancedOrderService {
               productName: item.name || item.productName || '',
               productColor: item.color || '',
               productSize: item.size || '',
+              productSku: item.sku || item.productSku || '',
               price: parseFloat(item.price || 0),
               quantity: parseInt(item.quantity || 1),
               total: parseFloat(item.total || (item.price * item.quantity) || 0),
@@ -2349,6 +2475,118 @@ class EnhancedOrderService {
         }
       }
 
+      // If still not found, try by turboTrackingNumber (كود الشحن)
+      if (!order && orderId) {
+        console.log('🔍 [ENHANCED-ORDER] Not found by ID/orderNumber, trying turboTrackingNumber:', orderId);
+        order = await this.getPrisma().order.findFirst({
+          where: {
+            turboTrackingNumber: orderId,
+            companyId: companyId
+          },
+          include
+        });
+
+        if (order) {
+          console.log('✅ [ENHANCED-ORDER] Found in Order table by turboTrackingNumber');
+        } else {
+          console.log('🔍 [ENHANCED-ORDER] Trying GuestOrder by turboTrackingNumber...');
+          const guestOrder = await this.getPrisma().guestOrder.findFirst({
+            where: {
+              turboTrackingNumber: orderId,
+              companyId: companyId
+            },
+            select: {
+              id: true,
+              orderNumber: true,
+              guestName: true,
+              guestEmail: true,
+              guestPhone: true,
+              shippingAddress: true,
+              items: true,
+              total: true,
+              shippingCost: true,
+              discountAmount: true,
+              status: true,
+              paymentMethod: true,
+              notes: true,
+              createdAt: true,
+              updatedAt: true,
+              isViewed: true,
+              turboShipmentId: true,
+              turboTrackingNumber: true,
+              turboShipmentStatus: true,
+              turboLabelUrl: true,
+              turboMetadata: true,
+              companyId: true
+            }
+          });
+
+          if (guestOrder) {
+            console.log('✅ [ENHANCED-ORDER] Found in GuestOrder table by turboTrackingNumber');
+            let items = guestOrder.items || [];
+            if (typeof items === 'string') {
+              try { items = JSON.parse(items); } catch (e) { items = []; }
+            }
+
+            let shippingAddress = guestOrder.shippingAddress || {};
+            if (typeof shippingAddress === 'string') {
+              try { shippingAddress = JSON.parse(shippingAddress); } catch (e) { shippingAddress = {}; }
+            }
+
+            const totalAmount = parseFloat(guestOrder.total || 0);
+            const shippingAmount = parseFloat(guestOrder.shippingCost || 0);
+            const discountAmount = parseFloat(guestOrder.discountAmount || 0);
+            const calculatedSubtotal = totalAmount - shippingAmount + discountAmount;
+
+            order = {
+              id: guestOrder.id,
+              orderNumber: guestOrder.orderNumber,
+              customerName: guestOrder.guestName || '',
+              customerEmail: guestOrder.guestEmail || '',
+              customerPhone: guestOrder.guestPhone || '',
+              customerAddress: typeof shippingAddress === 'object' ? (shippingAddress.address || shippingAddress.street || '') : '',
+              city: typeof shippingAddress === 'object' ? (shippingAddress.city || '') : '',
+              status: guestOrder.status || 'PENDING',
+              paymentStatus: 'UNAVAILABLE',
+              paymentMethod: guestOrder.paymentMethod || 'غير محدد',
+              orderItems: items.map((item, index) => ({
+                id: `guest-item-${index}`,
+                productId: item.productId || null,
+                productName: item.name || item.productName || '',
+                productColor: item.color || '',
+                productSize: item.size || '',
+                productSku: item.sku || item.productSku || '',
+                price: parseFloat(item.price || 0),
+                quantity: parseInt(item.quantity || 1),
+                total: parseFloat(item.total || (item.price * item.quantity) || 0),
+                product: null
+              })),
+              subtotal: calculatedSubtotal,
+              tax: 0,
+              shipping: shippingAmount,
+              total: totalAmount,
+              currency: guestOrder.currency || 'EGP',
+              confidence: null,
+              extractionMethod: null,
+              conversationId: null,
+              notes: guestOrder.notes || '',
+              createdAt: guestOrder.createdAt,
+              updatedAt: guestOrder.updatedAt,
+              isViewed: guestOrder.isViewed ?? false,
+              turboShipmentId: guestOrder.turboShipmentId,
+              turboTrackingNumber: guestOrder.turboTrackingNumber,
+              turboShipmentStatus: guestOrder.turboShipmentStatus,
+              turboLabelUrl: guestOrder.turboLabelUrl,
+              turboMetadata: guestOrder.turboMetadata,
+              statusHistory: [],
+              orderNotes: [],
+              customer: null,
+              conversation: null
+            };
+          }
+        }
+      }
+
       if (!order) {
         return {
           success: false,
@@ -2374,6 +2612,7 @@ class EnhancedOrderService {
           productName: item.productName,
           productColor: item.productColor,
           productSize: item.productSize,
+          productSku: item.productSku || '',
           productImage: (() => {
             if (item.product?.images) {
               try {
@@ -2448,6 +2687,20 @@ class EnhancedOrderService {
       total: order.total
     });
 
+    const orderMeta = order.metadata
+      ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })()
+      : {};
+    const walletProof = orderMeta.walletPaymentProof;
+    const isWalletPayment = String(order.paymentMethod || '').toLowerCase() === 'wallet';
+    const hasScreenshot = Boolean(walletProof && walletProof.imageUrl);
+    const isRejected = String((walletProof && walletProof.status) || '').toUpperCase() === 'REJECTED';
+    const storedPaymentStatus = String(order.paymentStatus || '').toLowerCase();
+    const displayPaymentStatus =
+      isWalletPayment && hasScreenshot && !isRejected &&
+      !['failed', 'refunded', 'partially_refunded'].includes(storedPaymentStatus)
+        ? 'completed'
+        : (storedPaymentStatus || 'pending');
+
     const transformed = {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -2459,7 +2712,7 @@ class EnhancedOrderService {
       tax: parseFloat(order.tax) || 0,
       shipping: parseFloat(order.shipping) || 0,
       status: order.status?.toLowerCase() || 'pending',
-      paymentStatus: order.paymentStatus?.toLowerCase() || 'pending',
+      paymentStatus: displayPaymentStatus,
       paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
       shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : {},
       items: (order.orderItems || []).map(item => ({
@@ -2469,6 +2722,7 @@ class EnhancedOrderService {
         price: parseFloat(item.price) || 0,
         quantity: item.quantity || 1,
         total: parseFloat(item.total) || 0,
+        productSku: item.productSku || '',
         metadata: {
           color: item.productColor,
           size: item.productSize,
@@ -2482,7 +2736,7 @@ class EnhancedOrderService {
       notes: order.notes,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
-      metadata: order.metadata ? JSON.parse(order.metadata) : {},
+      metadata: orderMeta,
       isViewed: order.isViewed ?? false
     };
 

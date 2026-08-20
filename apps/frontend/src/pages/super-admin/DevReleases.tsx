@@ -1,11 +1,25 @@
-import { Plus as PlusIcon, Tag as TagIcon, Circle as CalendarDaysIcon, Folder as FolderIcon, Circle as ArrowTrendingUpIcon, Check as CheckCircleIcon, Clock as ClockIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Star as SparklesIcon, Circle as BugAntIcon, Circle as WrenchScrewdriverIcon, X as XMarkIcon, Filter as FunnelIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  PlusIcon,
+  TagIcon,
+  CalendarDaysIcon,
+  FolderIcon,
+  ArrowTrendingUpIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  PencilIcon,
+  TrashIcon,
+  SparklesIcon,
+  BugAntIcon,
+  WrenchScrewdriverIcon,
+  XMarkIcon,
+  FunnelIcon,
+} from "@heroicons/react/24/outline";
 
 interface Release {
   id: string;
@@ -393,7 +407,7 @@ const ReleaseFormModal: React.FC<{
     e.preventDefault();
 
     if (!formData.version.trim() || !formData.name.trim()) {
-      alert("رقم الإصدار والاسم مطلوبان");
+      alert(i18n.t("DevReleases.msg_43a1"));
       return;
     }
 
@@ -416,10 +430,10 @@ const ReleaseFormModal: React.FC<{
       if (data.success) {
         onSuccess();
       } else {
-        alert(data.error || "فشل في إنشاء الإصدار");
+        alert(data.error || i18n.t("DevReleases.failed_create_38bf"));
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("DevReleases.msg_f389"));
     } finally {
       setSaving(false);
     }

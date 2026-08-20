@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import { Link } from "react-router-dom";
@@ -418,8 +418,8 @@ const IncompleteReports: React.FC = () => {
                           {c.orderNumber || c.cartId.slice(0, 12)}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {c.employeeName || "-"} ┬╖ {formatDate(c.convertedAt)}
-                          {c.governorate ? ` ┬╖ ${c.governorate}` : ""}
+                          {c.employeeName || "-"} · {formatDate(c.convertedAt)}
+                          {c.governorate ? ` · ${c.governorate}` : ""}
                         </div>
                       </div>
                       <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">

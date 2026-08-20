@@ -1,13 +1,13 @@
-﻿/**
- * ≡ƒ¢í∩╕Å Order Status Enum Helpers
- * `order.status` ┘ü┘è ╪º┘ä╪»╪º╪¬╪º╪¿┘è╪▓ enum ┘à┘é┘ü┘ê┘ä (┘é┘è┘à ╪½╪º╪¿╪¬╪⌐). ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘à╪«╪╡╪╡╪⌐ ╪º┘ä┘ä┘è ╪¿┘è╪╣┘à┘ä┘ç╪º ╪º┘ä╪¬╪º╪¼╪▒
- * ┘ü┘è `orderStatusConfig` (┘à╪½┘ä DELAYED-WITH-CAPTAIN) ┘à╪┤ ╪¼╪▓╪í ┘à┘å ╪º┘ä┘Ç enum ΓÇö ┘ü┘ä┘ê ╪¡╪» ╪¡╪º┘ê┘ä
- * ┘è┘â╪¬╪¿┘ç╪º ┘à╪¿╪º╪┤╪▒╪⌐ ╪╣┘ä┘ë `order.status` ╪¿┘è┘ü╪┤┘ä ╪º┘ä┘Ç prisma ╪¿┘Ç "Invalid value for argument `status`.
+/**
+ * 🛡️ Order Status Enum Helpers
+ * `order.status` في الداتابيز enum مقفول (قيم ثابتة). الحالات المخصصة اللي بيعملها التاجر
+ * في `orderStatusConfig` (مثل DELAYED-WITH-CAPTAIN) مش جزء من الـ enum — فلو حد حاول
+ * يكتبها مباشرة على `order.status` بيفشل الـ prisma بـ "Invalid value for argument `status`.
  * Expected OrderStatus."
  *
- * ╪º┘ä╪¡┘ä: ╪ú┘è ╪¡╪º┘ä╪⌐ ┘à╪┤ ┘ü┘è ╪º┘ä┘Ç enum ┘ä╪º╪▓┘à ┘è╪¿┘é┘ë ┘ä┘è┘ç╪º `mapsToSystem` (╪¡┘é┘ä ┘à┘ê╪¼┘ê╪» ┘ü┘è orderStatusConfig)
- * ┘è╪┤╪º┘ê╪▒ ╪╣┘ä┘ë ╪¡╪º┘ä╪⌐ ┘å╪╕╪º┘à ╪╡╪º┘ä╪¡╪⌐. ╪¿┘å╪«╪▓┘æ┘å ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪╡╪º┘ä╪¡╪⌐ ┘ü┘è `order.status`╪î ┘ê┘å╪¡╪¬┘ü╪╕ ╪¿╪º┘ä┘â┘ê╪» ╪º┘ä┘à╪«╪╡╪╡
- * ┘ä┘ä╪╣╪▒╪╢ ┘ê╪º┘ä┘é╪º┘ä╪¿ ┘ê╪º┘ä╪Ñ╪┤╪╣╪º╪▒. ┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ ┘à╪┤ enum ┘ê┘à╪º┘ä┘ç╪º╪┤ mapsToSystem ╪╡╪º┘ä╪¡ ΓåÆ ┘à╪│╪¬╪¡┘è┘ä ╪¬╪«╪▓┘æ┘å.
+ * الحل: أي حالة مش في الـ enum لازم يبقى ليها `mapsToSystem` (حقل موجود في orderStatusConfig)
+ * يشاور على حالة نظام صالحة. بنخزّن القيمة الصالحة في `order.status`، ونحتفظ بالكود المخصص
+ * للعرض والقالب والإشعار. لو الحالة مش enum ومالهاش mapsToSystem صالح → مستحيل تخزّن.
  */
 
 const VALID_ORDER_STATUS_ENUM = new Set([
@@ -25,10 +25,10 @@ function isValidOrderStatusEnum(status) {
 }
 
 /**
- * ┘è┘é╪▒┘æ╪▒ ╪Ñ┘è┘ç ╪º┘ä┘ä┘è ┘è╪¬╪¡╪╖ ┘ü╪╣┘ä╪º┘ï ╪╣┘ä┘ë `order.status` ┘ê╪Ñ┘è┘ç ╪º┘ä┘ä┘è ┘è╪¬╪¿╪╣╪¬ ┘ä┘ä╪╣╪▒╪╢/╪º┘ä╪Ñ╪┤╪╣╪º╪▒.
+ * يقرّر إيه اللي يتحط فعلاً على `order.status` وإيه اللي يتبعت للعرض/الإشعار.
  * @returns {{ stored: string|null, notify: string }}
- *  - stored: ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪╡╪º┘ä╪¡╪⌐ ┘ä┘ä┘Ç enum ╪º┘ä┘ä┘è ╪¬╪¬╪«╪▓┘æ┘å (╪ú┘ê null ┘ä┘ê ╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪¬╪«╪▓┘è┘å)
- *  - notify: ╪º┘ä┘â┘ê╪» ╪º┘ä┘ä┘è ┘å╪│╪¬╪«╪»┘à┘ç ┘ä┘ä┘é╪º┘ä╪¿ ┘ê╪º┘ä╪Ñ╪┤╪╣╪º╪▒ (╪º┘ä┘â┘ê╪» ╪º┘ä╪ú╪╡┘ä┘è ΓÇö ╪º┘ä┘à╪«╪╡╪╡ ╪ú┘ê ╪º┘ä┘å╪╕╪º┘à┘è)
+ *  - stored: القيمة الصالحة للـ enum اللي تتخزّن (أو null لو الحالة غير قابلة للتخزين)
+ *  - notify: الكود اللي نستخدمه للقالب والإشعار (الكود الأصلي — المخصص أو النظامي)
  */
 async function resolveOrderStatusForStorage(prisma, companyId, requestedStatus) {
   const requested = String(requestedStatus || '').trim().toUpperCase();
@@ -37,7 +37,7 @@ async function resolveOrderStatusForStorage(prisma, companyId, requestedStatus) 
     return { stored: requested, notify: requested };
   }
 
-  // ╪¡╪º┘ä╪⌐ ┘à╪«╪╡╪╡╪⌐ ΓåÆ ╪¼╪▒┘æ╪¿ mapsToSystem ┘à┘å ╪Ñ╪╣╪»╪º╪» ╪º┘ä╪┤╪▒┘â╪⌐
+  // حالة مخصصة → جرّب mapsToSystem من إعداد الشركة
   let mapped = null;
   try {
     const config = await prisma.orderStatusConfig.findFirst({
@@ -46,7 +46,7 @@ async function resolveOrderStatusForStorage(prisma, companyId, requestedStatus) 
     });
     mapped = String(config?.mapsToSystem || '').trim().toUpperCase();
   } catch (e) {
-    console.warn(`ΓÜá∩╕Å [ORDER-STATUS-ENUM] Failed to look up custom status "${requested}":`, e.message);
+    console.warn(`⚠️ [ORDER-STATUS-ENUM] Failed to look up custom status "${requested}":`, e.message);
     mapped = null;
   }
 

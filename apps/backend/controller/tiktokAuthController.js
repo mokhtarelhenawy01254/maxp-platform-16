@@ -1,4 +1,4 @@
-﻿const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const tiktokOAuthService = require('../services/tiktok/tiktokOAuthService');
@@ -31,7 +31,7 @@ exports.login = async (req, res) => {
   try {
     const companyId = String(req.query.companyId || '').trim();
     if (!companyId) {
-      return res.status(400).json({ success: false, message: 'companyId ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, message: 'companyId مطلوب' });
     }
 
     const redirect = safeRedirectPath(req.query.redirect, '/account');
@@ -47,7 +47,7 @@ exports.login = async (req, res) => {
     const authUrl = tiktokOAuthService.buildAuthUrl(clientKey, redirectUri, TIKTOK_LOGIN_SCOPE, state);
     return res.redirect(authUrl);
   } catch (error) {
-    console.error('Γ¥î [TIKTOK-AUTH] login error:', error);
+    console.error('❌ [TIKTOK-AUTH] login error:', error);
     const companyId = String(req.query.companyId || '').trim();
     const redirect = safeRedirectPath(req.query.redirect, companyId ? `/${companyId}` : '/');
     return res.redirect(`${redirect}?tiktokAuth=error`);
@@ -127,7 +127,7 @@ exports.callback = async (req, res) => {
     const separator = redirect.includes('?') ? '&' : '?';
     return res.redirect(`${redirect}${separator}tiktokAuth=success&token=${encodeURIComponent(token)}`);
   } catch (err) {
-    console.error('Γ¥î [TIKTOK-AUTH] callback error:', err);
+    console.error('❌ [TIKTOK-AUTH] callback error:', err);
     const decoded = decodeState(req.query.state);
     const companyId = decoded?.companyId;
     const redirect = safeRedirectPath(decoded?.redirect, companyId ? `/${companyId}` : '/');
@@ -141,7 +141,7 @@ exports.me = async (req, res) => {
     const companyId = req.user?.companyId;
 
     if (!customerId || !companyId) {
-      return res.status(401).json({ success: false, message: '╪▒┘à╪▓ ╪º┘ä┘à╪╡╪º╪»┘é╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+      return res.status(401).json({ success: false, message: 'رمز المصادقة غير صحيح' });
     }
 
     const prisma = getPrisma();
@@ -150,7 +150,7 @@ exports.me = async (req, res) => {
     });
 
     if (!customer) {
-      return res.status(401).json({ success: false, message: '╪º┘ä╪╣┘à┘è┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      return res.status(401).json({ success: false, message: 'العميل غير موجود' });
     }
 
     return res.json({
@@ -166,7 +166,7 @@ exports.me = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Γ¥î [TIKTOK-AUTH] me error:', error);
-    return res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪¡┘à┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╣┘à┘è┘ä' });
+    console.error('❌ [TIKTOK-AUTH] me error:', error);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحميل بيانات العميل' });
   }
 };

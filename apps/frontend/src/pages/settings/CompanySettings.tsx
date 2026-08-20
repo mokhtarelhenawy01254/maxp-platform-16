@@ -1,9 +1,18 @@
-import { Building as BuildingOfficeIcon, CreditCard as CreditCardIcon, Activity as ChartBarIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, ArrowUp as ArrowUpIcon, DollarSign as CurrencyDollarIcon, ShieldCheck as ShieldCheckIcon, Globe as GlobeAltIcon, Star as SparklesIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
-import { formatCurrency } from '@/utils/formatters';
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
-;
+import {
+  BuildingOfficeIcon,
+  CreditCardIcon,
+  ChartBarIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ArrowUpIcon,
+  CurrencyDollarIcon,
+  ShieldCheckIcon,
+  GlobeAltIcon,
+  SparklesIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import {
   SUPPORTED_CURRENCIES,
   DEFAULT_CURRENCY,
@@ -12,6 +21,7 @@ import {
 } from "../../utils/currency";
 import { tokenManager } from "../../utils/tokenManager";
 import { getApiUrl, envConfig } from "../../config/environment";
+import { getBaseDomain, isLocalLikeDomain } from "../../utils/storeUrl";
 import i18n from "../../i18n";
 import { useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 
@@ -206,9 +216,28 @@ const CompanySettings: React.FC = () => {
   // Tabs state
   const [activeTab, setActiveTab] = useState<CompanyTab>("general");
 
-  const customerRegisterUrl = user?.companyId
-    ? `${window.location.origin}/auth/customer-register?companyId=${encodeURIComponent(user.companyId)}`
-    : null;
+  // رابط تسجيل العملاء — على دومين متجر الشركة (subdomain أو دومين مخصص) مش على المنصة
+  const customerRegisterUrl = (() => {
+    const companyId = user?.companyId;
+    if (!companyId) return null;
+    let origin: string;
+    if (customDomain) {
+      origin = `https://${customDomain}`;
+    } else if (slug) {
+      try {
+        const baseDomain = getBaseDomain();
+        const protocol = isLocalLikeDomain(baseDomain)
+          ? "http:"
+          : window.location.protocol;
+        origin = `${protocol}//${slug}.${baseDomain}`;
+      } catch {
+        origin = window.location.origin;
+      }
+    } else {
+      origin = window.location.origin;
+    }
+    return `${origin}/auth/customer-register?companyId=${encodeURIComponent(companyId)}`;
+  })();
 
   // Ownership Transfer State
   const [users, setUsers] = useState<CompanyUser[]>([]);
@@ -361,7 +390,7 @@ const CompanySettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error transferring ownership:", error);
-      alert("حدث خطأ أثناء نقل الملكية");
+      alert(i18n.t("companySettings.error_error_8fc3"));
     } finally {
       setTransferring(false);
       setShowTransferConfirm(false);
@@ -372,7 +401,7 @@ const CompanySettings: React.FC = () => {
 
   const handleCompanyNameSave = async () => {
     if (!companyName.trim()) {
-      alert("اسم الشركة مطلوب");
+      alert(i18n.t("companySettings.name_company_0ea7"));
       return;
     }
 
@@ -398,13 +427,13 @@ const CompanySettings: React.FC = () => {
           name: companyName.trim(),
         }));
         setEditingName(false);
-        alert("تم تحديث اسم الشركة بنجاح!");
+        alert(i18n.t("companySettings.success_update_name_f3af"));
       } else {
         alert(data.error || "فشل في تحديث اسم الشركة");
       }
     } catch (error) {
       console.error("Error updating company name:", error);
-      alert("حدث خطأ أثناء تحديث اسم الشركة");
+      alert(i18n.t("companySettings.error_error_83b4"));
     } finally {
       setSavingName(false);
     }
@@ -439,13 +468,13 @@ const CompanySettings: React.FC = () => {
         }));
         setCompanyDescription(normalizedDescription);
         setEditingDescription(false);
-        alert("تم تحديث وصف الشركة بنجاح!");
+        alert(i18n.t("companySettings.success_update_description_5c21"));
       } else {
         alert(data.error || data.message || "فشل في تحديث وصف الشركة");
       }
     } catch (error) {
       console.error("Error updating company description:", error);
-      alert("حدث خطأ أثناء تحديث وصف الشركة");
+      alert(i18n.t("companySettings.error_error_9650"));
     } finally {
       setSavingDescription(false);
     }
@@ -455,13 +484,13 @@ const CompanySettings: React.FC = () => {
 
   const handleSlugSave = async () => {
     if (!slug.trim()) {
-      alert("الرابط مطلوب");
+      alert(i18n.t("companySettings.msg_fd5b"));
       return;
     }
 
     // Basic validation
     if (!/^[a-z0-9-]+$/.test(slug)) {
-      alert("الرابط يجب أن يحتوي فقط على حروف إنجليزية صغيرة وأرقام وشرطة (-)");
+      alert(i18n.t("companySettings.msg_6c7a"));
       return;
     }
 
@@ -487,7 +516,7 @@ const CompanySettings: React.FC = () => {
           slug: slug.trim(),
         }));
         setEditingSlug(false);
-        alert("تم تحديث رابط الشركة بنجاح!");
+        alert(i18n.t("companySettings.success_update_link_a69d"));
         // Update user in local storage/context might be needed if slug is critical
         window.location.reload(); // Reload to ensure all links update
       } else {
@@ -499,7 +528,7 @@ const CompanySettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error updating company slug:", error);
-      alert("حدث خطأ أثناء تحديث رابط الشركة");
+      alert(i18n.t("companySettings.error_error_932c"));
     } finally {
       setSavingSlug(false);
     }
@@ -528,13 +557,13 @@ const CompanySettings: React.FC = () => {
           ...currentCompany,
           currency: currencyCode,
         }));
-        alert("تم تحديث العملة بنجاح!");
+        alert(i18n.t("companySettings.success_update_3e76"));
       } else {
         alert(data.error || "فشل في تحديث العملة");
       }
     } catch (error) {
       console.error("Error updating currency:", error);
-      alert("حدث خطأ أثناء تحديث العملة");
+      alert(i18n.t("companySettings.error_error_a004"));
     } finally {
       setSavingCurrency(false);
     }
@@ -584,7 +613,7 @@ const CompanySettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error updating layout:", error);
-      alert("حدث خطأ أثناء تحديث نظام القائمة");
+      alert(i18n.t("companySettings.error_error_d9e4"));
     } finally {
       setSavingLayout(false);
     }
@@ -597,7 +626,7 @@ const CompanySettings: React.FC = () => {
         customDomain,
       )
     ) {
-      alert("صيغة الدومين غير صحيحة. يجب أن يكون مثل: example.com (بدون www)");
+      alert(i18n.t("companySettings.msg_3708"));
       return;
     }
 
@@ -623,13 +652,13 @@ const CompanySettings: React.FC = () => {
           customDomain: customDomain || null,
         }));
         setEditingDomain(false);
-        alert("تم تحديث الدومين المخصص بنجاح!");
+        alert(i18n.t("companySettings.success_update_9101"));
       } else {
         alert(data.message || data.error || "فشل في تحديث الدومين");
       }
     } catch (error) {
       console.error("Error updating custom domain:", error);
-      alert("حدث خطأ أثناء تحديث الدومين");
+      alert(i18n.t("companySettings.error_error_83ad"));
     } finally {
       setSavingDomain(false);
     }
@@ -656,13 +685,13 @@ const CompanySettings: React.FC = () => {
           ...currentCompany,
           timezone: newTimezone,
         }));
-        alert("تم تحديث المنطقة الزمنية بنجاح!");
+        alert(i18n.t("companySettings.success_update_ad9b"));
       } else {
         alert(data.error || "فشل في تحديث المنطقة الزمنية");
       }
     } catch (error) {
       console.error("Error updating timezone:", error);
-      alert("حدث خطأ أثناء تحديث المنطقة الزمنية");
+      alert(i18n.t("companySettings.error_error_0376"));
     }
   };
 
@@ -706,13 +735,13 @@ const CompanySettings: React.FC = () => {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("يُسمح فقط بملفات الصور");
+      alert(i18n.t("companySettings.msg_ce27"));
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("حجم الملف يجب أن يكون أقل من 5 ميجابايت");
+      alert(i18n.t("companySettings.msg_9311"));
       return;
     }
 
@@ -749,13 +778,13 @@ const CompanySettings: React.FC = () => {
           ...currentCompany,
           logo: data.data.logo,
         }));
-        alert("تم رفع اللوجو بنجاح!");
+        alert(i18n.t("companySettings.msg_d9fc"));
       } else {
         alert(data.error || "فشل في رفع اللوجو");
       }
     } catch (error) {
       console.error("Error uploading logo:", error);
-      alert("حدث خطأ أثناء رفع اللوجو");
+      alert(i18n.t("companySettings.error_error_bf55"));
     } finally {
       setUploadingLogo(false);
     }
@@ -1177,9 +1206,9 @@ const CompanySettings: React.FC = () => {
                           await navigator.clipboard.writeText(
                             customerRegisterUrl,
                           );
-                          alert("تم نسخ الرابط");
+                          alert(i18n.t("companySettings.msg_005a"));
                         } catch (e) {
-                          alert("تعذر نسخ الرابط");
+                          alert(i18n.t("companySettings.msg_bcf1"));
                         }
                       }}
                       className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"

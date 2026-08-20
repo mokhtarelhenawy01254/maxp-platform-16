@@ -1,10 +1,18 @@
-import { Circle as PaperAirplaneIcon, Circle as CpuChipIcon, Check as CheckCircleIcon, X as XCircleIcon, User as UserIcon, Key as KeyIcon, Eye as EyeIcon, EyeOff as EyeSlashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { telegramService } from "../../services/telegramService";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
-;
+import {
+  PaperAirplaneIcon,
+  CpuChipIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  UserIcon,
+  KeyIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
 import { useTheme } from "../../hooks/useTheme";
 
 const TelegramSettings = () => {

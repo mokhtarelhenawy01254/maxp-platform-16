@@ -1,6 +1,13 @@
-import { Circle as ArrowsPointingOutIcon, Circle as MagnifyingGlassPlusIcon, Phone as DevicePhoneMobileIcon, Star as SparklesIcon, Grid as Squares2X2Icon, Image as PhotoIcon, Video as VideoCameraIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+    ArrowsPointingOutIcon,
+    MagnifyingGlassPlusIcon,
+    DevicePhoneMobileIcon,
+    SparklesIcon,
+    Squares2X2Icon,
+    PhotoIcon,
+    VideoCameraIcon,
+} from "@heroicons/react/24/outline";
 import { SettingsSection } from "../SettingsSection";
 import {
     ToggleSetting,

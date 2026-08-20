@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Backfill: copy wallet payment proof + wallet fields from GuestOrders
  * onto their mirrored regular Orders, and fix paymentMethod to WALLET.
  *

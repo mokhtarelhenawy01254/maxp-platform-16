@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -21,7 +21,7 @@ const createPrisma = () => ({
 });
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   params: {},
   body: {},
   ...overrides,
@@ -36,11 +36,11 @@ describe('radiologyReportRolesController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.recordRole(req({ params: { id: 'study-1' }, body: { role: 'typed', by: '╪│┘â╪▒╪¬┘è╪▒ ╪º┘ä╪¬┘é╪▒┘è╪▒' } }), res);
+    await controller.recordRole(req({ params: { id: 'study-1' }, body: { role: 'typed', by: 'سكرتير التقرير' } }), res);
 
     expect(res.statusCode).toBe(200);
     const call = prisma.radiologyReport.update.mock.calls[0][0];
-    expect(call.data.typedBy).toBe('╪│┘â╪▒╪¬┘è╪▒ ╪º┘ä╪¬┘é╪▒┘è╪▒');
+    expect(call.data.typedBy).toBe('سكرتير التقرير');
     expect(call.data.typedAt).toBeInstanceOf(Date);
   });
 
@@ -52,10 +52,10 @@ describe('radiologyReportRolesController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.recordRole(req({ params: { id: 'study-1' }, body: { role: 'reviewed', by: '╪». ┘à╪▒╪º╪¼╪╣╪⌐' } }), res);
+    await controller.recordRole(req({ params: { id: 'study-1' }, body: { role: 'reviewed', by: 'د. مراجعة' } }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyReport.update.mock.calls[0][0].data.reviewedBy).toBe('╪». ┘à╪▒╪º╪¼╪╣╪⌐');
+    expect(prisma.radiologyReport.update.mock.calls[0][0].data.reviewedBy).toBe('د. مراجعة');
   });
 
   test('rejects an unknown role', async () => {
@@ -63,7 +63,7 @@ describe('radiologyReportRolesController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.recordRole(req({ params: { id: 'study-1' }, body: { role: 'x', by: '╪ú' } }), res);
+    await controller.recordRole(req({ params: { id: 'study-1' }, body: { role: 'x', by: 'أ' } }), res);
 
     expect(res.statusCode).toBe(400);
     expect(prisma.radiologyReport.update).not.toHaveBeenCalled();
@@ -76,7 +76,7 @@ describe('radiologyReportRolesController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.recordRole(req({ params: { id: 'study-1' }, body: { role: 'typed', by: '╪ú' } }), res);
+    await controller.recordRole(req({ params: { id: 'study-1' }, body: { role: 'typed', by: 'أ' } }), res);
 
     expect(res.statusCode).toBe(400);
   });
@@ -86,7 +86,7 @@ describe('radiologyReportRolesController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.recordRole(req({ user: {}, params: { id: 'study-1' }, body: { role: 'typed', by: '╪ú' } }), res);
+    await controller.recordRole(req({ user: {}, params: { id: 'study-1' }, body: { role: 'typed', by: 'أ' } }), res);
 
     expect(res.statusCode).toBe(403);
   });

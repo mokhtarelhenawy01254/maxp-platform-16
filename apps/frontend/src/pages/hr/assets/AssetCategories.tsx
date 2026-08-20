@@ -1,9 +1,9 @@
-import { Plus as PlusIcon, Trash2 as TrashIcon, Tag as TagIcon, Circle as ChatBubbleBottomCenterTextIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import { PlusIcon, TrashIcon, TagIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { toast } from "sonner";
+import i18n from "../../../i18n";
 
 const AssetCategories: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -45,7 +45,7 @@ const AssetCategories: React.FC = () => {
       }
     } catch (error) {
       console.error("Error creating category:", error);
-      alert("فشل في إضافة التصنيف");
+      alert(i18n.t("AssetCategories.failed_add_92d0"));
     } finally {
       setAdding(false);
     }
@@ -60,7 +60,7 @@ const AssetCategories: React.FC = () => {
         fetchCategories();
       }
     } catch (error) {
-      alert("فشل في حذف التصنيف. قد يكون مرتبطاً بأصول.");
+      alert(i18n.t("AssetCategories.failed_delete_6b1d"));
     }
   };
 

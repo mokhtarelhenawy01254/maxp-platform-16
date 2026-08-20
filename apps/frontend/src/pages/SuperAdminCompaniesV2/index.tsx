@@ -1,7 +1,12 @@
 import { useEffect, useId, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeftRight, ArrowRight, BadgeCheck, Building, Building2, Check, CheckCircle2, Clock, Download, Eye, Facebook, Filter, Loader2, LogIn, Pencil, Plus, RefreshCw, Sparkles, Star, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Building2, Sparkles, Download, RefreshCw, Plus, Loader2,
+  AlertTriangle, CheckCircle2, UserPlus, ArrowLeftRight,
+  Pencil, Eye, LogIn, Trash2, Facebook, Users, X, Filter, Clock, BadgeCheck,
+} from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -544,7 +549,7 @@ export default function SuperAdminCompaniesV2() {
       if (followUpForm.assignedOwnerId) payload.assignedOwnerId = followUpForm.assignedOwnerId;
       if (followUpForm.assignedOwnerId && followUpForm.nextActionAt) payload.nextActionAt = fromDateTimeLocalValue(followUpForm.nextActionAt);
       const res = await apiClient.put(`/admin/companies/${followUpCompany.id}/follow-up`, payload);
-      if (res.data?.success) { toast.success("تم تحديث المتابعة"); setFollowUpOpen(false); refetch(); }
+      if (res.data?.success) { tToast.success("index.success_update_f06b"); setFollowUpOpen(false); refetch(); }
       else toast.error(res.data?.message || "فشل في التحديث");
     } catch (err) { toast.error(extractErrorMessage(err, "فشل في التحديث")); }
     finally { setSavingFollowUp(false); }
@@ -574,7 +579,7 @@ export default function SuperAdminCompaniesV2() {
 
   const handleOpenWhatsApp = useCallback((company: Company) => {
     const phone = company.phone?.replace(/\s+/g, "").replace(/^0+/, "");
-    if (!phone) { toast.error("لا يوجد رقم هاتف لهذه الشركة"); return; }
+    if (!phone) { tToast.error("index.msg_5363"); return; }
     const full = phone.startsWith("+") ? phone.slice(1) : phone.startsWith("20") ? phone : `20${phone}`;
     window.open(`https://wa.me/${full}`, "_blank", "noopener,noreferrer");
   }, []);
@@ -625,7 +630,7 @@ export default function SuperAdminCompaniesV2() {
     setTransferring(true);
     try {
       const res = await apiClient.post(`/admin/companies/${ownerTransferCompany.id}/transfer-ownership`, { targetUserId: ownerTransferTarget });
-      if (res.data?.success) { toast.success("تم نقل الملكية"); setOwnerTransferOpen(false); refetch(); }
+      if (res.data?.success) { tToast.success("index.msg_3f26"); setOwnerTransferOpen(false); refetch(); }
       else toast.error(res.data?.message || "فشل");
     } catch (err) { toast.error(extractErrorMessage(err, "فشل")); }
     finally { setTransferring(false); }
@@ -656,7 +661,7 @@ export default function SuperAdminCompaniesV2() {
         firstName: employeeForm.firstName.trim(), lastName: employeeForm.lastName.trim(),
         email: employeeForm.email.trim(), password: employeeForm.password, role: employeeForm.role,
       });
-      if (res.data?.success) { toast.success("تمت إضافة الموظف"); setOwnersOpen(false); refetch(); }
+      if (res.data?.success) { tToast.success("index.msg_8006"); setOwnersOpen(false); refetch(); }
       else toast.error(res.data?.message || "فشل");
     } catch (err) { toast.error(extractErrorMessage(err, "فشل")); }
     finally { setSavingEmployee(false); }

@@ -1,23 +1,23 @@
-﻿# Loyalty Points Auto-Award Guards (dedup, cap, reversal)
+# Loyalty Points Auto-Award Guards (dedup, cap, reversal)
 
 **Date**: 2026-08-02
-**Domain**: HR ΓÇö Customer Loyalty / Wallet
+**Domain**: HR — Customer Loyalty / Wallet
 **Type**: Bugfix / Hardening
 
-## Problem ΓÇö missed scenarios
+## Problem — missed scenarios
 
 Three gaps existed in the loyalty points flow:
 
-1. **No dedup (double award)** ΓÇö `applyLoyaltyPointsForOrder` awarded points on
+1. **No dedup (double award)** — `applyLoyaltyPointsForOrder` awarded points on
    every `DELIVERED` status change with no per-order guard. Toggling an order
-   `DELIVERED ΓåÆ PENDING ΓåÆ DELIVERED` (or re-saving) credited points twice.
+   `DELIVERED → PENDING → DELIVERED` (or re-saving) credited points twice.
    Cashback already had dedup via `walletTransaction`; points did not.
 
-2. **`maxPointsPerTransaction` ignored** ΓÇö the program field exists but the
+2. **`maxPointsPerTransaction` ignored** — the program field exists but the
    award calculation never capped points by it, so large orders could exceed
    the configured per-order limit.
 
-3. **Points not reversed on return/refund** ΓÇö cashback had
+3. **Points not reversed on return/refund** — cashback had
    `reverseCashbackForReturn` wired into the return-review flow, but points had
    no reversal, so a returned order left the customer with the points.
 
@@ -31,10 +31,10 @@ Three gaps existed in the loyalty points flow:
   - Caps each program award by `program.maxPointsPerTransaction`.
   - Records `metadata.loyaltyPoints` (applied, appliedAt, per-program points)
     so dedup and proportional reversal are possible.
-- New `subtractPoints(companyId, customerId, programId, points, reason)` ΓÇö
+- New `subtractPoints(companyId, customerId, programId, points, reason)` —
   decrements `currentPoints` and `totalEarned` (not `totalRedeemed`).
 - New `reverseLoyaltyPointsForReturn({ returnRequestId, companyId, changedBy })`
-  ΓÇö reverses points proportional to the refund ratio, guards against double
+  — reverses points proportional to the refund ratio, guards against double
   reversal, and records the reversal in `order.metadata.loyaltyPoints.reversals`.
 
 `apps/backend/controller/returnController.js`:
@@ -51,7 +51,7 @@ Three gaps existed in the loyalty points flow:
 
 `apps/backend/services/cashbackService.js`:
 
-- New `reverseCashbackForOrder({ orderId, companyId, changedBy })` ΓÇö deducts the
+- New `reverseCashbackForOrder({ orderId, companyId, changedBy })` — deducts the
   awarded cashback from the customer wallet on order cancel and guards against
   double reversal via `metadata.cashback.cancelledReversed`.
 
@@ -65,7 +65,7 @@ fewer points.
 
 Fixed by converting `points`/`minPoints`/`maxPoints` to `Number` before
 comparing. Regression tests added in `customerLoyaltyService.autoAward.test.js`
-(30ΓåÆGold, 100ΓåÆPlatinum, 10ΓåÆSilver, 5ΓåÆBronze).
+(30→Gold, 100→Platinum, 10→Silver, 5→Bronze).
 
 ## Tests
 
@@ -76,5 +76,5 @@ comparing. Regression tests added in `customerLoyaltyService.autoAward.test.js`
   awards exactly `500`.
 - reversal: full refund reverses all points and a second call is blocked with
   `already_reversed`.
-- determineTier boundaries: 30ΓåÆGold (not Platinum), 100ΓåÆPlatinum, 10ΓåÆSilver,
-  5ΓåÆBronze.
+- determineTier boundaries: 30→Gold (not Platinum), 100→Platinum, 10→Silver,
+  5→Bronze.

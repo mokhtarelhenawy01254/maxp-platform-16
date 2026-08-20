@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Turbo Webhook Queue
- * ┘è╪╢┘à┘å retry ┘ä┘ä┘Ç webhooks ┘ä┘ê sync ┘ü╪┤┘ä
+ * يضمن retry للـ webhooks لو sync فشل
  */
 const { Queue } = require('bullmq');
 const redisConfig = require('../config/redis');
@@ -25,7 +25,7 @@ function getQueue() {
 async function addTurboWebhook(jobData) {
   const q = getQueue();
   if (!q) {
-    console.warn('ΓÜá∩╕Å [TURBO-WEBHOOK-QUEUE] Redis not configured, processing synchronously');
+    console.warn('⚠️ [TURBO-WEBHOOK-QUEUE] Redis not configured, processing synchronously');
     return null;
   }
   return q.add('turbo-status-update', jobData, {

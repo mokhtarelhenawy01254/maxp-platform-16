@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PatientsTab from "../PatientsTab";
@@ -21,9 +21,9 @@ const basePatient: BookingPatient = {
 };
 
 const mockPatients: BookingPatient[] = [
-  { ...basePatient, id: "1", firstName: "╪ú╪¡┘à╪»", phone: "01000000001", source: "whatsapp", status: "ACTIVE" },
-  { ...basePatient, id: "2", firstName: "┘à╪¡┘à╪»", phone: "01000000002", source: "facebook", status: "REVIEW" },
-  { ...basePatient, id: "3", firstName: "╪│╪º╪▒╪⌐", phone: "01000000003", source: "whatsapp", status: "INACTIVE", isActive: false },
+  { ...basePatient, id: "1", firstName: "أحمد", phone: "01000000001", source: "whatsapp", status: "ACTIVE" },
+  { ...basePatient, id: "2", firstName: "محمد", phone: "01000000002", source: "facebook", status: "REVIEW" },
+  { ...basePatient, id: "3", firstName: "سارة", phone: "01000000003", source: "whatsapp", status: "INACTIVE", isActive: false },
 ];
 
 type Props = Parameters<typeof PatientsTab>[0];
@@ -49,9 +49,9 @@ afterEach(() => { jest.clearAllMocks(); cleanup(); });
 describe("PatientsTab", () => {
   test("renders status badge using PATIENT_STATUS_MAP", () => {
     render(<PatientsTab {...makeProps()} />);
-    expect(screen.getAllByText("┘é┘è╪» ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("┘å╪┤╪╖").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("╪║┘è╪▒ ┘å╪┤╪╖").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("قيد المراجعة").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("نشط").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("غير نشط").length).toBeGreaterThan(0);
   });
 
   test("source filter narrows the list", async () => {
@@ -60,8 +60,8 @@ describe("PatientsTab", () => {
     const selects = container.querySelectorAll<HTMLSelectElement>("select");
     expect(selects.length).toBeGreaterThan(0);
     await user.selectOptions(selects[0], "whatsapp");
-    expect(screen.queryByText("┘à╪¡┘à╪»")).not.toBeInTheDocument();
-    expect(screen.getAllByText("╪ú╪¡┘à╪»").length).toBeGreaterThan(0);
+    expect(screen.queryByText("محمد")).not.toBeInTheDocument();
+    expect(screen.getAllByText("أحمد").length).toBeGreaterThan(0);
   });
 
   test("merge flow calls POST merge with targetPatientId", async () => {
@@ -70,12 +70,12 @@ describe("PatientsTab", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const { container } = render(<PatientsTab {...makeProps()} />);
-    await user.click(screen.getAllByTitle("╪»┘à╪¼")[0]);
+    await user.click(screen.getAllByTitle("دمج")[0]);
 
     const selects = container.querySelectorAll<HTMLSelectElement>("select");
     const targetSelect = selects[selects.length - 1];
     await user.selectOptions(targetSelect, "2");
-    await user.click(screen.getByText("╪¬╪ú┘â┘è╪» ╪º┘ä╪»┘à╪¼"));
+    await user.click(screen.getByText("تأكيد الدمج"));
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/booking/patients/1/merge"),
@@ -84,7 +84,7 @@ describe("PatientsTab", () => {
         body: JSON.stringify({ targetPatientId: "2" }),
       })
     );
-    expect(toast.success).toHaveBeenCalledWith("╪¬┘à ╪»┘à╪¼ ╪º┘ä┘à╪▒┘è╪╢ ╪¿┘å╪¼╪º╪¡");
+    expect(toast.success).toHaveBeenCalledWith("تم دمج المريض بنجاح");
   });
 
   test("merge flow refreshes the patient list after success", async () => {
@@ -93,12 +93,12 @@ describe("PatientsTab", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const { container } = render(<PatientsTab {...makeProps()} />);
-    await user.click(screen.getAllByTitle("╪»┘à╪¼")[0]);
+    await user.click(screen.getAllByTitle("دمج")[0]);
 
     const selects = container.querySelectorAll<HTMLSelectElement>("select");
     const targetSelect = selects[selects.length - 1];
     await user.selectOptions(targetSelect, "2");
-    await user.click(screen.getByText("╪¬╪ú┘â┘è╪» ╪º┘ä╪»┘à╪¼"));
+    await user.click(screen.getByText("تأكيد الدمج"));
 
     const refreshed = fetchMock.mock.calls.some(([url]) => String(url).includes("patients?includeInactive=true"));
     expect(refreshed).toBe(true);
@@ -113,12 +113,12 @@ describe("PatientsTab", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const { container } = render(<PatientsTab {...makeProps()} />);
-    await user.click(screen.getAllByTitle("╪»┘à╪¼")[0]);
+    await user.click(screen.getAllByTitle("دمج")[0]);
 
     const selects = container.querySelectorAll<HTMLSelectElement>("select");
     const targetSelect = selects[selects.length - 1];
     await user.selectOptions(targetSelect, "2");
-    const confirmBtn = screen.getByText("╪¬╪ú┘â┘è╪» ╪º┘ä╪»┘à╪¼");
+    const confirmBtn = screen.getByText("تأكيد الدمج");
     await user.click(confirmBtn);
     await user.click(confirmBtn);
 

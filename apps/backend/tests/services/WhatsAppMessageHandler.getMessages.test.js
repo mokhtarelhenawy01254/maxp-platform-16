@@ -45,6 +45,7 @@ describe('WhatsAppMessageHandler.getMessages', () => {
 
         const expectedWhere = {
             sessionId: 'session-1',
+            isHidden: false,
             remoteJid: {
                 in: [
                     '201001234567:12@s.whatsapp.net',
@@ -60,7 +61,8 @@ describe('WhatsAppMessageHandler.getMessages', () => {
             take: 50
         });
         expect(prisma.whatsAppMessage.count).toHaveBeenCalledWith({ where: expectedWhere });
-        expect(result.messages).toEqual([message]);
+        // getMessages يعزّز كل رسالة بحقول senderName / participantName (اسم مرسل الرسالة).
+        expect(result.messages).toEqual([{ ...message, senderName: null, participantName: null }]);
         expect(result.pagination.total).toBe(1);
     });
 
@@ -74,6 +76,7 @@ describe('WhatsAppMessageHandler.getMessages', () => {
             expect.objectContaining({
                 where: {
                     sessionId: 'session-1',
+                    isHidden: false,
                     remoteJid: '14805138174180@lid'
                 }
             })

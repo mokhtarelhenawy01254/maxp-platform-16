@@ -1,5 +1,3 @@
-import { Check as CheckCircleIcon, X as XCircleIcon, Eye as EyeIcon, Pencil as PencilIcon, Circle as DocumentDuplicateIcon, Trash2 as TrashIcon, Image as PhotoIcon, EyeOff as EyeSlashIcon, Circle as PaperAirplaneIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
 import React, { useState } from "react";
 import {
   Product,
@@ -7,7 +5,17 @@ import {
   getStockStatusColor,
   getStockStatusText,
 } from "./ProductsTypes";
-;
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  EyeIcon,
+  PencilIcon,
+  DocumentDuplicateIcon,
+  TrashIcon,
+  PhotoIcon,
+  EyeSlashIcon,
+  PaperAirplaneIcon,
+} from "@heroicons/react/24/outline";
 import {
   canApprove,
   canPublish,

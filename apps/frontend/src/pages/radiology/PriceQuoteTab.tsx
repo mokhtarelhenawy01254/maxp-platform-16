@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Search, Trash2, MessageCircle, ClipboardList } from "lucide-react";
 import { api, fetchJson, MODAL_INPUT_CLS } from "./shared";
@@ -72,7 +72,7 @@ export default function PriceQuoteTab() {
   const total = useMemo(() => items.reduce((sum, it) => sum + Number(it.price || 0), 0), [items]);
 
   const buildWhatsAppText = () => {
-    const lines = items.map((it) => `ΓÇó ${it.name}: ${formatPrice(it.price, t("radiology.currency"))}`);
+    const lines = items.map((it) => `• ${it.name}: ${formatPrice(it.price, t("radiology.currency"))}`);
     return [`${t("radiology.priceQuote.whatsappHeader")}`, ...lines, `${t("radiology.priceQuote.total")} ${formatPrice(total, t("radiology.currency"))}`].join("\n");
   };
 
@@ -91,7 +91,7 @@ export default function PriceQuoteTab() {
       {error && (
         <div className="flex items-center justify-between bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2 text-sm">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/50 rounded">├ù</button>
+          <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/50 rounded">×</button>
         </div>
       )}
 

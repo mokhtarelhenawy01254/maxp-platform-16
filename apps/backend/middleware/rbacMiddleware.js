@@ -63,6 +63,16 @@ const PERMISSIONS = {
   'teams.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'teams.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 
+  // WhatsApp
+  'whatsapp.reply': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'whatsapp.broadcast': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'whatsapp.groups.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'whatsapp.chats.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'whatsapp.contacts.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'whatsapp.labels.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'whatsapp.analytics.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'whatsapp.quick-replies.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
   // Number Assignments
   'numbers.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'numbers.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
@@ -84,6 +94,8 @@ const PERMISSIONS = {
   'bulkOrders.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'bulkOrders.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'bulkOrders.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'bulkOrders.import': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'bulkOrders.execute': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 
   // Orders — main
   'orders.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
@@ -93,7 +105,11 @@ const PERMISSIONS = {
   'orders.status.change': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'orders.assign': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'orders.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.bulk.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'orders.bulk.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.bulk.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.bulk.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'orders.bulk.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'orders.invoice.print': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
 
   // Orders — Incomplete Orders section
@@ -242,7 +258,7 @@ const hasPermission = (role, permission) => {
 
 /**
  * Middleware factory — requires a specific permission
- * Checks DB-based permissions first, falls back to hardcoded PERMISSIONS
+ * DB permissions are the source of truth (no hardcoded role fallback)
  */
 const requirePermission = (permission) => {
   return (req, res, next) => {
@@ -255,21 +271,12 @@ const requirePermission = (permission) => {
     // SUPER_ADMIN always passes
     if (userRole === 'SUPER_ADMIN') return next();
 
-    // Check if user has DB-based permissions attached (from auth middleware)
-    if (req.user.userPermissions && Array.isArray(req.user.userPermissions) && req.user.userPermissions.length > 0) {
-      if (req.user.userPermissions.includes(permission)) {
-        return next();
-      }
-      return res.status(403).json({
-        error: 'Insufficient permissions',
-        code: 'INSUFFICIENT_PERMISSIONS',
-        requiredPermission: permission,
-        currentRole: userRole
-      });
-    }
+    // AI_SERVICE: shared service-token identity (no DB user record).
+    if (userRole === 'AI_SERVICE') return next();
 
-    // Fallback to hardcoded PERMISSIONS
-    if (!hasPermission(userRole, permission)) {
+    // DB-based permissions only (loaded by authenticateToken / requireCompanyAccess)
+    const permissions = req.user.userPermissions;
+    if (!permissions || !Array.isArray(permissions) || !permissions.includes(permission)) {
       return res.status(403).json({
         error: 'Insufficient permissions',
         code: 'INSUFFICIENT_PERMISSIONS',
@@ -294,6 +301,10 @@ const requireDbPermission = (permissionKey) => {
 
     if (req.user.role === 'SUPER_ADMIN') return next();
 
+    // AI_SERVICE: shared service-token identity (no DB user record).
+    // Trust the service token; the secret itself is the gate.
+    if (req.user.role === 'AI_SERVICE' || req.user.service === true) return next();
+
     const companyId = req.user.effectiveCompanyId || req.user.companyId;
     if (!companyId) {
       return res.status(403).json({ error: 'No company context' });
@@ -302,8 +313,6 @@ const requireDbPermission = (permissionKey) => {
     try {
       const permissions = await permissionService.getUserPermissions(req.user.id, companyId);
       if (!permissions.includes(permissionKey)) {
-        // ponytail: fallback to hardcoded map when DB permissions are empty (no roleRef linked)
-        if (hasPermission(req.user.role, permissionKey)) return next();
         return res.status(403).json({
           error: 'Insufficient permissions',
           code: 'INSUFFICIENT_PERMISSIONS',

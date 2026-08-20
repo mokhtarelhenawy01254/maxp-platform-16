@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   ArrowDownCircle,
@@ -88,7 +88,7 @@ export default function CustomerWalletPage() {
         };
         console.error("Error loading customer wallet:", loadError);
         setError(
-          error?.response?.data?.message || "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪¡┘ü╪╕╪⌐",
+          error?.response?.data?.message || "تعذر تحميل بيانات المحفظة",
         );
       } finally {
         setLoading(false);
@@ -105,7 +105,7 @@ export default function CustomerWalletPage() {
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center text-gray-600 dark:text-gray-300">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-indigo-600" />
-          <p className="mt-4">╪¼╪º╪▒┘è ╪¬╪¡┘à┘è┘ä ┘à╪¡┘ü╪╕╪¬┘â...</p>
+          <p className="mt-4">جاري تحميل محفظتك...</p>
         </div>
       </div>
     );
@@ -118,17 +118,17 @@ export default function CustomerWalletPage() {
           <div className="text-right">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
               <WalletIcon size={14} />
-              ┘à╪¡┘ü╪╕╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í
+              محفظة العملاء
             </div>
-            <h1 className="mt-4 text-3xl font-black">┘à╪¡┘ü╪╕╪¬┘è ┘ê╪º┘ä┘â╪º╪┤ ╪¿╪º┘â</h1>
+            <h1 className="mt-4 text-3xl font-black">محفظتي والكاش باك</h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-white/85">
-              ╪▒╪╡┘è╪»┘â ╪º┘ä┘à╪¬╪º╪¡╪î ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â ╪º┘ä┘à╪╢╪º┘ü ┘à┘å ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘à╪ñ┘ç┘ä╪⌐╪î ┘ê╪ó╪«╪▒ ╪º┘ä╪¡╪▒┘â╪º╪¬
-              ╪╣┘ä┘ë ┘à╪¡┘ü╪╕╪¬┘â.
+              رصيدك المتاح، الكاش باك المضاف من الطلبات المؤهلة، وآخر الحركات
+              على محفظتك.
             </p>
           </div>
 
           <div className="rounded-3xl bg-white/15 px-6 py-5 text-right backdrop-blur-sm">
-            <div className="text-sm text-white/80">╪º┘ä╪▒╪╡┘è╪» ╪º┘ä╪¡╪º┘ä┘è</div>
+            <div className="text-sm text-white/80">الرصيد الحالي</div>
             <div className="mt-2 text-4xl font-black">
               {formatMoney(toNumber(wallet?.balance), currency)}
             </div>
@@ -146,7 +146,7 @@ export default function CustomerWalletPage() {
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border border-gray-200 bg-white p-5 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="flex items-center justify-end gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
-            ╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â
+            إجمالي الكاش باك
             <Sparkles size={16} className="text-pink-500" />
           </div>
           <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
@@ -156,7 +156,7 @@ export default function CustomerWalletPage() {
 
         <div className="rounded-3xl border border-gray-200 bg-white p-5 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="flex items-center justify-end gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
-            ╪Ñ╪¼┘à╪º┘ä┘è ┘à╪º ┘â╪│╪¿╪¬┘ç
+            إجمالي ما كسبته
             <Gift size={16} className="text-amber-500" />
           </div>
           <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
@@ -166,7 +166,7 @@ export default function CustomerWalletPage() {
 
         <div className="rounded-3xl border border-gray-200 bg-white p-5 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="flex items-center justify-end gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
-            ╪Ñ╪¼┘à╪º┘ä┘è ┘à╪º ╪ú┘å┘ü┘é╪¬┘ç
+            إجمالي ما أنفقته
             <CreditCard size={16} className="text-red-500" />
           </div>
           <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
@@ -178,21 +178,21 @@ export default function CustomerWalletPage() {
       <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center justify-between gap-4">
           <div className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-900 dark:text-gray-300">
-            {transactions.length} ╪¡╪▒┘â╪⌐
+            {transactions.length} حركة
           </div>
           <div className="text-right">
             <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-              ╪ó╪«╪▒ ╪º┘ä╪¡╪▒┘â╪º╪¬
+              آخر الحركات
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              ╪▒╪º╪¼╪╣ ╪╣┘à┘ä┘è╪º╪¬ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â╪î ╪º┘ä╪º╪│╪¬╪▒╪¼╪º╪╣╪î ┘ê╪º╪│╪¬╪«╪»╪º┘à ╪º┘ä╪▒╪╡┘è╪» ╪»╪º╪«┘ä ╪º┘ä╪╖┘ä╪¿╪º╪¬.
+              راجع عمليات الكاش باك، الاسترجاع، واستخدام الرصيد داخل الطلبات.
             </p>
           </div>
         </div>
 
         {transactions.length === 0 ? (
           <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-12 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-400">
-            ┘ä╪º ╪¬┘ê╪¼╪» ╪¡╪▒┘â╪º╪¬ ╪╣┘ä┘ë ╪º┘ä┘à╪¡┘ü╪╕╪⌐ ╪¿╪╣╪».
+            لا توجد حركات على المحفظة بعد.
           </div>
         ) : (
           <div className="mt-6 space-y-3">
@@ -212,7 +212,7 @@ export default function CustomerWalletPage() {
                     <div className="flex items-start justify-end gap-3 text-right">
                       <div>
                         <div className="font-bold text-gray-900 dark:text-white">
-                          {transaction.description || "╪¡╪▒┘â╪⌐ ╪╣┘ä┘ë ╪º┘ä┘à╪¡┘ü╪╕╪⌐"}
+                          {transaction.description || "حركة على المحفظة"}
                         </div>
                         <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                           {new Intl.DateTimeFormat("ar-EG", {
@@ -225,7 +225,7 @@ export default function CustomerWalletPage() {
                         </div>
                         {transaction.orderId ? (
                           <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                            ┘à╪▒╪¼╪╣ ╪º┘ä╪╖┘ä╪¿: {transaction.orderId}
+                            مرجع الطلب: {transaction.orderId}
                           </div>
                         ) : null}
                       </div>
@@ -246,7 +246,7 @@ export default function CustomerWalletPage() {
                         {formatMoney(toNumber(transaction.amount), currency)}
                       </div>
                       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        ╪º┘ä╪▒╪╡┘è╪» ╪¿╪╣╪» ╪º┘ä╪¡╪▒┘â╪⌐:{" "}
+                        الرصيد بعد الحركة:{" "}
                         {formatMoney(
                           toNumber(transaction.balanceAfter),
                           currency,

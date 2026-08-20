@@ -1,6 +1,17 @@
-import { Calendar as CalendarIcon, Clock as ClockIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Eye as EyeIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, AlertTriangle as ExclamationTriangleIcon, X as XMarkIcon, Circle as PlayIcon, Circle as PauseIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  CalendarIcon,
+  ClockIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
+  PlayIcon,
+  PauseIcon,
+} from "@heroicons/react/24/outline";
 import { broadcastService } from "../../services/broadcastService";
 
 interface ScheduledCampaign {

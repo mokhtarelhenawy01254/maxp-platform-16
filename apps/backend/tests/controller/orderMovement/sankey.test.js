@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/orderMovementCore', () => ({
+jest.mock('../../../services/orderMovementCore', () => ({
   normalizeDateRange: jest.fn(({ startDate, endDate } = {}) => ({
     start: startDate ? new Date(startDate) : null,
     end: endDate ? new Date(endDate) : null
@@ -72,7 +72,7 @@ describe('orderMovement sankeyController', () => {
     expect(data.modes).toEqual({ manual: 2, auto: 3 });
 
     expect(data.nodes).toEqual([
-      { id: 'START', name: '╪¿╪»╪º┘è╪⌐' },
+      { id: 'START', name: 'بداية' },
       { id: 'PENDING', name: 'PENDING' },
       { id: 'CONFIRMED', name: 'CONFIRMED' },
       { id: 'CANCELLED', name: 'CANCELLED' },
@@ -118,7 +118,7 @@ describe('orderMovement sankeyController', () => {
     await sankeyController({ user: { id: 'user-1' }, query: {} }, res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
     expect(sql.fetchTransitionAggregates).not.toHaveBeenCalled();
   });
 
@@ -140,7 +140,7 @@ describe('orderMovement sankeyController', () => {
     expect(data.totalOrders).toBe(2);
     expect(data.modes).toEqual({ manual: 2, auto: 0 });
     expect(data.nodes).toEqual([
-      { id: 'START', name: '╪¿╪»╪º┘è╪⌐' },
+      { id: 'START', name: 'بداية' },
       { id: 'PENDING', name: 'PENDING' },
       { id: 'CANCELLED', name: 'CANCELLED' },
       { id: 'CONFIRMED', name: 'CONFIRMED' }
@@ -169,7 +169,7 @@ describe('orderMovement sankeyController', () => {
     expect(data.totalOrders).toBe(2);
     expect(data.modes).toEqual({ manual: 0, auto: 3 });
     expect(data.nodes).toEqual([
-      { id: 'START', name: '╪¿╪»╪º┘è╪⌐' },
+      { id: 'START', name: 'بداية' },
       { id: 'CONFIRMED', name: 'CONFIRMED' },
       { id: 'DELIVERED', name: 'DELIVERED' },
       { id: 'PENDING', name: 'PENDING' }

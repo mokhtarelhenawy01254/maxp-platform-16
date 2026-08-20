@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -46,7 +46,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -56,7 +56,7 @@ const req = (overrides = {}) => ({
 const makeRadiologist = (overrides = {}) => ({
   id: 'rad-1',
   companyId: 'company-1',
-  name: '╪». ╪│╪º╪▒╪⌐ ╪ú╪¡┘à╪»',
+  name: 'د. سارة أحمد',
   location: 'ON_SITE',
   isActive: true,
   createdAt: new Date('2026-08-10T10:00:00.000Z'),
@@ -68,7 +68,7 @@ const makeStudy = (overrides = {}) => ({
   id: 'study-1',
   companyId: 'company-1',
   studyNumber: 'RAD-20260810-1234',
-  patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+  patientName: 'محمد علي',
   status: 'PENDING_REPORT',
   ...overrides,
 });
@@ -85,13 +85,13 @@ describe('radiologyRadiologistsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.listRadiologists(req({ query: { search: '╪│╪º╪▒╪⌐' } }), res);
+      await controller.listRadiologists(req({ query: { search: 'سارة' } }), res);
 
       const args = prisma.radiologyRadiologist.findMany.mock.calls[0][0];
       expect(args.where).toEqual({
         companyId: 'company-1',
         isActive: true,
-        OR: [{ name: { contains: '╪│╪º╪▒╪⌐', mode: 'insensitive' } }],
+        OR: [{ name: { contains: 'سارة', mode: 'insensitive' } }],
       });
       expect(res.statusCode).toBe(200);
       expect(res.payload.data).toHaveLength(1);
@@ -117,7 +117,7 @@ describe('radiologyRadiologistsController', () => {
       await controller.listRadiologists(req({ user: {} }), res);
 
       expect(res.statusCode).toBe(403);
-      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+      expect(res.payload.error).toBe('غير مصرح');
       expect(prisma.radiologyRadiologist.findMany).not.toHaveBeenCalled();
     });
   });
@@ -129,12 +129,12 @@ describe('radiologyRadiologistsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createRadiologist(req({ body: { name: '╪». ╪│╪º╪▒╪⌐ ╪ú╪¡┘à╪»' } }), res);
+      await controller.createRadiologist(req({ body: { name: 'د. سارة أحمد' } }), res);
 
       expect(res.statusCode).toBe(200);
       const data = prisma.radiologyRadiologist.create.mock.calls[0][0].data;
       expect(data.companyId).toBe('company-1');
-      expect(data.name).toBe('╪». ╪│╪º╪▒╪⌐ ╪ú╪¡┘à╪»');
+      expect(data.name).toBe('د. سارة أحمد');
       expect(data.location).toBe('ON_SITE');
     });
 
@@ -144,7 +144,7 @@ describe('radiologyRadiologistsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createRadiologist(req({ body: { name: '╪». ┘à╪¡┘à╪»', location: 'OFF_SITE' } }), res);
+      await controller.createRadiologist(req({ body: { name: 'د. محمد', location: 'OFF_SITE' } }), res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyRadiologist.create.mock.calls[0][0].data.location).toBe('OFF_SITE');
@@ -155,10 +155,10 @@ describe('radiologyRadiologistsController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createRadiologist(req({ body: { name: '╪». ╪│╪º╪▒╪⌐', location: 'REMOTE_X' } }), res);
+      await controller.createRadiologist(req({ body: { name: 'د. سارة', location: 'REMOTE_X' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('┘à┘ê┘é╪╣ ╪ú╪«╪╡╪º╪ª┘è ╪º┘ä╪ú╪┤╪╣╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡');
+      expect(res.payload.error).toBe('موقع أخصائي الأشعة غير صحيح');
       expect(prisma.radiologyRadiologist.create).not.toHaveBeenCalled();
     });
 
@@ -170,7 +170,7 @@ describe('radiologyRadiologistsController', () => {
       await controller.createRadiologist(req({ body: {} }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪ú╪«╪╡╪º╪ª┘è ╪º┘ä╪ú╪┤╪╣╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم أخصائي الأشعة مطلوب');
       expect(prisma.radiologyRadiologist.create).not.toHaveBeenCalled();
     });
   });
@@ -184,14 +184,14 @@ describe('radiologyRadiologistsController', () => {
 
       const res = createResponse();
       await controller.updateRadiologist(
-        req({ params: { id: 'rad-1' }, body: { name: '╪». ╪│╪º╪▒╪⌐ ┘à╪¡┘à╪»', location: 'off_site' } }),
+        req({ params: { id: 'rad-1' }, body: { name: 'د. سارة محمد', location: 'off_site' } }),
         res
       );
 
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyRadiologist.update).toHaveBeenCalledWith({
         where: { id: 'rad-1' },
-        data: { name: '╪». ╪│╪º╪▒╪⌐ ┘à╪¡┘à╪»', location: 'OFF_SITE' },
+        data: { name: 'د. سارة محمد', location: 'OFF_SITE' },
       });
     });
 
@@ -216,7 +216,7 @@ describe('radiologyRadiologistsController', () => {
       await controller.updateRadiologist(req({ params: { id: 'foreign' }, body: { name: 'x' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪ú╪«╪╡╪º╪ª┘è ╪º┘ä╪ú╪┤╪╣╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+      expect(res.payload.error).toBe('أخصائي الأشعة غير موجود');
       expect(prisma.radiologyRadiologist.update).not.toHaveBeenCalled();
     });
   });
@@ -237,7 +237,7 @@ describe('radiologyRadiologistsController', () => {
         where: { id: 'rad-1' },
         data: { isActive: false },
       });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪ú╪«╪╡╪º╪ª┘è ╪º┘ä╪ú╪┤╪╣╪⌐');
+      expect(res.payload.message).toBe('تم حذف أخصائي الأشعة');
     });
 
     test('returns 404 for a foreign radiologist', async () => {
@@ -268,7 +268,7 @@ describe('radiologyRadiologistsController', () => {
       const args = prisma.radiologyStudy.update.mock.calls[0][0];
       expect(args.where).toEqual({ id: 'study-1' });
       expect(args.data.assignedRadiologistId).toBe('rad-1');
-      expect(args.data.assignedRadiologistName).toBe('╪». ╪│╪º╪▒╪⌐ ╪ú╪¡┘à╪»');
+      expect(args.data.assignedRadiologistName).toBe('د. سارة أحمد');
       expect(args.data.radiologistLocation).toBe('ON_SITE');
       expect(args.data.reportAssignedAt).toBeInstanceOf(Date);
       expect(prisma.radiologyRadiologist.findFirst).toHaveBeenCalledWith({
@@ -286,7 +286,7 @@ describe('radiologyRadiologistsController', () => {
       await controller.assignRadiologist(req({ params: { id: 'study-1' }, body: { radiologistId: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪ú╪«╪╡╪º╪ª┘è ╪º┘ä╪ú╪┤╪╣╪⌐ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐');
+      expect(res.payload.error).toBe('أخصائي الأشعة لا ينتمي لهذه الشركة');
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
     });
 
@@ -299,7 +299,7 @@ describe('radiologyRadiologistsController', () => {
       await controller.assignRadiologist(req({ params: { id: 'foreign' }, body: { radiologistId: 'rad-1' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الحالة غير موجودة');
       expect(prisma.radiologyStudy.update).not.toHaveBeenCalled();
     });
 
@@ -329,7 +329,7 @@ describe('radiologyRadiologistsController', () => {
       await controller.assignRadiologist(req({ user: {}, params: { id: 'study-1' }, body: { radiologistId: 'rad-1' } }), res);
 
       expect(res.statusCode).toBe(403);
-      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+      expect(res.payload.error).toBe('غير مصرح');
       expect(prisma.radiologyStudy.findFirst).not.toHaveBeenCalled();
     });
   });

@@ -1,7 +1,14 @@
-import { Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, Circle as ChatBubbleBottomCenterTextIcon, User as UserIcon, ShoppingBag as ShoppingBagIcon, ChevronDown as ChevronDownIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from 'react';
-;
+import {
+    CheckCircleIcon,
+    XCircleIcon,
+    ClockIcon,
+    ChatBubbleBottomCenterTextIcon,
+    UserIcon,
+    ShoppingBagIcon,
+    ChevronDownIcon
+} from '@heroicons/react/24/outline';
 import orderWorkflowService from '../../../services/orderWorkflowService';
 
 const PAGE_SIZE = 10;

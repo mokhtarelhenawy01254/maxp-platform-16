@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LayoutGrid, Tags, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";

@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import {
   ClipboardCheck,
@@ -73,9 +73,9 @@ interface ApprovalsData {
 
 const requestStatusLabel = (status: string): string => {
   const s = String(status || "").toLowerCase();
-  if (s === "approved") return "┘à┘ê╪º┘ü┘é ╪╣┘ä┘è┘ç╪º";
-  if (s === "rejected") return "┘à╪▒┘ü┘ê╪╢╪⌐";
-  return "╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐";
+  if (s === "approved") return "موافق عليها";
+  if (s === "rejected") return "مرفوضة";
+  return "بانتظار الموافقة";
 };
 
 const requestStatusClass = (status: string): string => {
@@ -99,7 +99,7 @@ export default function ApprovalsTab({ startDate, endDate, mode }: MovementFilte
       const result = await fetchMovement<ApprovalsData>("approvals", { startDate, endDate, mode });
       setData(result);
     } catch {
-      setError("╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à┘ê╪º┘ü┘é╪º╪¬");
+      setError("تعذر تحميل بيانات الموافقات");
     } finally {
       setLoading(false);
     }
@@ -116,26 +116,26 @@ export default function ApprovalsTab({ startDate, endDate, mode }: MovementFilte
   const { summary } = data;
 
   const pieData = [
-    { name: "╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐", value: summary.pending, color: "#F59E0B" },
-    { name: "┘à┘ê╪º┘ü┘é ╪╣┘ä┘è┘ç╪º", value: summary.approved, color: "#10B981" },
-    { name: "┘à╪▒┘ü┘ê╪╢╪⌐", value: summary.rejected, color: "#EF4444" },
+    { name: "بانتظار الموافقة", value: summary.pending, color: "#F59E0B" },
+    { name: "موافق عليها", value: summary.approved, color: "#10B981" },
+    { name: "مرفوضة", value: summary.rejected, color: "#EF4444" },
   ].filter((d) => d.value > 0);
 
   return (
     <div className="space-y-6">
       <TruncatedNotice truncated={data?.truncated} />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-7">
-        <KpiCard label="╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬" value={formatNumber(summary.totalRequests)} icon={ClipboardCheck} />
-        <KpiCard label="╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐" value={formatNumber(summary.pending)} icon={Clock3} gradient="from-amber-500 to-orange-600" />
-        <KpiCard label="┘à┘ê╪º┘ü┘é ╪╣┘ä┘è┘ç╪º" value={formatNumber(summary.approved)} icon={CheckCircle2} gradient="from-emerald-500 to-teal-600" />
-        <KpiCard label="┘à╪▒┘ü┘ê╪╢╪⌐" value={formatNumber(summary.rejected)} icon={XCircle} gradient="from-rose-500 to-red-600" />
-        <KpiCard label="┘à╪╣╪»┘ä ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐" value={formatPercent(summary.approvalRate)} icon={Percent} gradient="from-sky-500 to-blue-600" />
-        <KpiCard label="┘à╪¬┘ê╪│╪╖ ╪▓┘à┘å ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐" value={formatDuration(summary.avgReviewHours)} icon={Timer} gradient="from-fuchsia-500 to-pink-600" />
-        <KpiCard label="╪¬╪¼╪º┘ê╪▓╪º╪¬" value={formatNumber(summary.totalOverrides)} icon={ShieldAlert} gradient="from-slate-600 to-gray-800" />
+        <KpiCard label="إجمالي الطلبات" value={formatNumber(summary.totalRequests)} icon={ClipboardCheck} />
+        <KpiCard label="بانتظار الموافقة" value={formatNumber(summary.pending)} icon={Clock3} gradient="from-amber-500 to-orange-600" />
+        <KpiCard label="موافق عليها" value={formatNumber(summary.approved)} icon={CheckCircle2} gradient="from-emerald-500 to-teal-600" />
+        <KpiCard label="مرفوضة" value={formatNumber(summary.rejected)} icon={XCircle} gradient="from-rose-500 to-red-600" />
+        <KpiCard label="معدل الموافقة" value={formatPercent(summary.approvalRate)} icon={Percent} gradient="from-sky-500 to-blue-600" />
+        <KpiCard label="متوسط زمن المراجعة" value={formatDuration(summary.avgReviewHours)} icon={Timer} gradient="from-fuchsia-500 to-pink-600" />
+        <KpiCard label="تجاوزات" value={formatNumber(summary.totalOverrides)} icon={ShieldAlert} gradient="from-slate-600 to-gray-800" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <MovementCard title="╪¡╪º┘ä╪⌐ ╪º┘ä┘à┘ê╪º┘ü┘é╪º╪¬" subtitle="╪¬┘ê╪▓┘è╪╣ ╪╖┘ä╪¿╪º╪¬ ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐" className="lg:col-span-2">
+        <MovementCard title="حالة الموافقات" subtitle="توزيع طلبات تغيير الحالة" className="lg:col-span-2">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-around">
             <div className="h-56 w-56 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -169,9 +169,9 @@ export default function ApprovalsTab({ startDate, endDate, mode }: MovementFilte
           </div>
         </MovementCard>
 
-        <MovementCard title="╪ú╪»╪º╪í ╪º┘ä┘à╪▒╪º╪¼╪╣┘è┘å" subtitle="╪¡╪│╪¿ ╪╣╪»╪» ╪º┘ä┘à╪▒╪º╪¼╪╣╪º╪¬">
+        <MovementCard title="أداء المراجعين" subtitle="حسب عدد المراجعات">
           {data.reviewers.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">┘ä╪º ╪¬┘ê╪¼╪» ┘à╪▒╪º╪¼╪╣╪º╪¬ ╪¿╪╣╪»</p>
+            <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">لا توجد مراجعات بعد</p>
           ) : (
             <div className="space-y-3">
               {data.reviewers.map((rv) => (
@@ -182,15 +182,15 @@ export default function ApprovalsTab({ startDate, endDate, mode }: MovementFilte
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{rv.name}</p>
                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      ┘à┘ê╪º┘ü┘é ╪╣┘ä┘è┘ç╪º: {formatNumber(rv.approved)} ┬╖ ┘à╪▒┘ü┘ê╪╢╪⌐: {formatNumber(rv.rejected)}
+                      موافق عليها: {formatNumber(rv.approved)} · مرفوضة: {formatNumber(rv.rejected)}
                     </p>
                   </div>
                   <div className="shrink-0 text-left">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {formatNumber(rv.reviewedCount)} ┘à╪▒╪º╪¼╪╣╪⌐
+                      {formatNumber(rv.reviewedCount)} مراجعة
                     </p>
                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      ┘à╪¬┘ê╪│╪╖ {formatDuration(rv.avgReviewHours)}
+                      متوسط {formatDuration(rv.avgReviewHours)}
                     </p>
                   </div>
                 </div>
@@ -200,19 +200,19 @@ export default function ApprovalsTab({ startDate, endDate, mode }: MovementFilte
         </MovementCard>
       </div>
 
-      <MovementCard title="╪╖┘ä╪¿╪º╪¬ ╪¬╪║┘è┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐" subtitle={`╪ó╪«╪▒ ${formatNumber(summary.totalRequests)} ╪╖┘ä╪¿ ┘ü┘è ╪º┘ä┘ü╪¬╪▒╪⌐ ╪º┘ä┘à╪¡╪»╪»╪⌐`}>
+      <MovementCard title="طلبات تغيير الحالة" subtitle={`آخر ${formatNumber(summary.totalRequests)} طلب في الفترة المحددة`}>
         <div className="-mx-5 -mb-5 overflow-x-auto rounded-b-2xl">
           <table className="w-full min-w-[980px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 text-xs text-gray-500 dark:border-gray-700/60 dark:text-gray-400">
-                <th className="px-5 py-3 text-right font-medium">╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿</th>
-                <th className="px-5 py-3 text-right font-medium">┘à┘é╪»┘Ä┘æ┘à ┘à┘å</th>
-                <th className="px-5 py-3 text-right font-medium">┘å┘é┘ä ╪º┘ä╪¡╪º┘ä╪⌐</th>
-                <th className="px-5 py-3 text-right font-medium">╪º┘ä╪│╪¿╪¿</th>
-                <th className="px-5 py-3 text-right font-medium">╪¡╪º┘ä╪⌐ ╪º┘ä┘à┘ê╪º┘ü┘é╪⌐</th>
-                <th className="px-5 py-3 text-right font-medium">╪º┘ä┘à╪▒╪º╪¼╪╣</th>
-                <th className="px-5 py-3 text-right font-medium">╪¬╪º╪▒┘è╪« ╪º┘ä╪╖┘ä╪¿</th>
-                <th className="px-5 py-3 text-right font-medium">╪¬╪º╪▒┘è╪« ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐</th>
+                <th className="px-5 py-3 text-right font-medium">رقم الطلب</th>
+                <th className="px-5 py-3 text-right font-medium">مقدَّم من</th>
+                <th className="px-5 py-3 text-right font-medium">نقل الحالة</th>
+                <th className="px-5 py-3 text-right font-medium">السبب</th>
+                <th className="px-5 py-3 text-right font-medium">حالة الموافقة</th>
+                <th className="px-5 py-3 text-right font-medium">المراجع</th>
+                <th className="px-5 py-3 text-right font-medium">تاريخ الطلب</th>
+                <th className="px-5 py-3 text-right font-medium">تاريخ المراجعة</th>
               </tr>
             </thead>
             <tbody>

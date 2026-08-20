@@ -1,5 +1,5 @@
-﻿{
-  "failed_load_f24b": "┘ü╪┤┘ä ╪¬╪¡┘à┘è┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ Bosta",
-  "msg_d142": "┘è╪▒╪¼┘ë ╪Ñ╪»╪«╪º┘ä Bosta API Key",
-  "success_save_6d9e": "╪¬┘à ╪¡┘ü╪╕ ╪Ñ╪╣╪»╪º╪»╪º╪¬ Bosta ╪¿┘å╪¼╪º╪¡"
+{
+  "failed_load_f24b": "فشل تحميل إعدادات Bosta",
+  "msg_d142": "يرجى إدخال Bosta API Key",
+  "success_save_6d9e": "تم حفظ إعدادات Bosta بنجاح"
 }

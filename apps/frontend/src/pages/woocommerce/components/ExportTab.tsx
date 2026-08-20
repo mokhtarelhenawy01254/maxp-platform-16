@@ -1,6 +1,10 @@
-import { RefreshCw as ArrowPathIcon, Circle as CloudArrowUpIcon, ShoppingBag as ShoppingCartIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useEffect } from "react";
-;
+import {
+  ArrowPathIcon,
+  CloudArrowUpIcon,
+  ShoppingCartIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 import { StatusBadge } from "./shared/StatusBadge";
 import { useWooCommerceExport } from "../hooks/useWooCommerceExport";
 import { Settings } from "../types";

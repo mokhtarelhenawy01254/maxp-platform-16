@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { getTiktokLoginUrl } from "../../services/tiktokAuthService";
 import { getCompanyId } from "../../utils/storefrontApi";
 
@@ -45,12 +45,12 @@ const TikTokLoginButton: React.FC<TikTokLoginButtonProps> = ({
   companyId,
   redirectPath,
   className = "",
-  label = "╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä ╪¿╪¡╪│╪º╪¿ TikTok",
+  label = "تسجيل الدخول بحساب TikTok",
 }) => {
   const handleClick = () => {
     const resolvedCompanyId = resolveCompanyId(companyId);
     if (!resolvedCompanyId) {
-      alert("┘ä╪º ┘è┘à┘â┘å ╪¬╪¡╪»┘è╪» ╪º┘ä┘à╪¬╪¼╪▒");
+      alert("لا يمكن تحديد المتجر");
       return;
     }
     window.location.href = getTiktokLoginUrl(resolvedCompanyId, redirectPath);

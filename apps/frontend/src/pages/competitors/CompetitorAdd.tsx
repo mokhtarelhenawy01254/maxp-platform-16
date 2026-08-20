@@ -1,7 +1,13 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Activity, AlertTriangle, ArrowLeft, ArrowRight, BarChart, BarChart3, ChevronDown, ChevronUp, DollarSign, Edit3, Facebook, Ghost, Globe, ImagePlus, Info, Instagram as InstagramIcon, Lightbulb, Linkedin, MapPin, MessageCircle, Music2, Phone, Pin, Plus, RefreshCw, Save, Scale, Smartphone, Star, Trash2, Upload, X, Youtube, Zap } from 'lucide-react';
+import {
+  ArrowLeft, ArrowRight, Save, X, Plus, Trash2,
+  Upload, Globe, MapPin, Info, BarChart3, Zap, DollarSign,
+  ImagePlus, ChevronDown, ChevronUp,
+  Facebook, Instagram as InstagramIcon, Music2, Ghost, MessageCircle, Youtube, Linkedin,
+  Smartphone, AlertTriangle, RefreshCw, Scale, Lightbulb, Edit3
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../../services/apiClient';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';

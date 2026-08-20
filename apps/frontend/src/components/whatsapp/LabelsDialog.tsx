@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Check, Plus, Tag, Trash2 } from 'lucide-react';
+import { Check, Plus, RefreshCw, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +59,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
 }) => {
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [newLabelName, setNewLabelName] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [assignedLabels, setAssignedLabels] = useState<string[]>(initialLabels);
@@ -69,7 +71,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       setLabels(response.data.labels || []);
     } catch (error) {
       console.error("Error loading labels:", error);
-      toast.error("فشل تحميل التصنيفات");
+      tToast.error("LabelsDialog.failed_load_d47f");
     } finally {
       setLoading(false);
     }
@@ -93,11 +95,25 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
         name: newLabelName,
         color: selectedColor,
       });
-      toast.success("تم إنشاء التصنيف");
+      tToast.success("LabelsDialog.success_create_d4d4");
       setNewLabelName("");
       await loadLabels();
     } catch {
-      toast.error("فشل إنشاء التصنيف");
+      tToast.error("LabelsDialog.failed_create_739e");
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await api.post("/whatsapp/labels/sync", { sessionId });
+      setLabels(response.data.labels || []);
+      toast.success(response.data.message || "تمت المزامنة");
+      onLabelsUpdated?.();
+    } catch {
+      toast.error("فشلت المزامنة");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -108,10 +124,10 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
 
     try {
       await api.delete(`/whatsapp/labels/${labelId}`, { data: { sessionId } });
-      toast.success("تم حذف التصنيف");
+      tToast.success("LabelsDialog.success_delete_eff8");
       await loadLabels();
     } catch {
-      toast.error("فشل حذف التصنيف");
+      tToast.error("LabelsDialog.failed_delete_2c9b");
     }
   };
 
@@ -139,7 +155,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       }
       onLabelsUpdated?.();
     } catch {
-      toast.error("فشل تحديث التصنيف للمحادثة");
+      tToast.error("LabelsDialog.failed_update_2bc4");
       setAssignedLabels(
         isAssigned
           ? [...assignedLabels, labelId]
@@ -265,6 +281,10 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
         <DialogFooter className="border-t border-[color:var(--shell-control-border)] bg-white/55">
           <Button variant="outline" onClick={onClose}>
             إغلاق
+          </Button>
+          <Button variant="secondary" onClick={handleSync} disabled={syncing}>
+            <RefreshCw className={cn("size-4", syncing && "animate-spin")} />
+            {syncing ? "جاري المزامنة..." : "مزامنة"}
           </Button>
         </DialogFooter>
       </DialogContent>

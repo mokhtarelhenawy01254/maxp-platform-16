@@ -1,4 +1,4 @@
-﻿{
+{
   "notFound": "Bundle not found",
   "subscribeError": "An error occurred during subscription",
   "exclusiveOffer": "Exclusive limited-time offer",
@@ -10,10 +10,10 @@
   "bundlePrice": "Bundle Price",
   "trialTitle": "Try free for {{days}} days",
   "trialDescription": "Full bundle with no payment. After the trial, subscribe to continue at 999 EGP/month.",
-  "activated": "Bundle is active ΓÇö enjoy the service",
+  "activated": "Bundle is active — enjoy the service",
   "activating": "Activating...",
   "startTrial": "Start Free Trial",
-  "subscribeNow": "Subscribe & Pay Now ΓÇö 999 EGP/month",
+  "subscribeNow": "Subscribe & Pay Now — 999 EGP/month",
   "requestDemo": "Request a Demo",
   "trialTerms": "Free trial with no payment required. Cancel anytime.",
   "feature1Title": "Auto Replies",

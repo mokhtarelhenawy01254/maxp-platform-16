@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import { FetchedStatus, Settings } from "../types";
 import tokenManager from "../../../utils/tokenManager";
 
@@ -117,7 +118,7 @@ export const useWooCommerceStatus = (
 
   const fetchWooStatuses = async () => {
     if (!settings?.hasCredentials) {
-      toast.error("يرجى إعداد بيانات الاتصال أولاً");
+      tToast.error("useWooCommerceStatus.msg_8a1a");
       return;
     }
 
@@ -134,10 +135,10 @@ export const useWooCommerceStatus = (
         setWooStatuses(data.data);
         toast.success(`تم جلب ${data.data.length} حالة من المتجر`);
       } else {
-        toast.error("فشل جلب الحالات");
+        tToast.error("useWooCommerceStatus.failed_fetch_eccf");
       }
     } catch (error) {
-      toast.error("خطأ في الاتصال");
+      tToast.error("useWooCommerceStatus.msg_33d0");
     } finally {
       setFetchingStatuses(false);
     }
@@ -201,7 +202,7 @@ export const useWooCommerceStatus = (
     });
 
     setSettingsForm((prev: any) => ({ ...prev, statusMapping: newMapping }));
-    toast.success("🤖 تمت محاولة الربط التلقائي بنجاح");
+    tToast.success("useWooCommerceStatus.msg_0288");
   };
 
   return {

@@ -1,16 +1,19 @@
-import { File as DocumentTextIcon, ShoppingBag as ShoppingCartIcon, ShoppingBag as ShoppingBagIcon, Link as LinkIcon, Table as TableCellsIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-;
+import {
+  DocumentTextIcon,
+  ShoppingCartIcon,
+  ShoppingBagIcon,
+} from "@heroicons/react/24/outline";
 
 // Import existing components
 import EasyOrdersImport from "../products/EasyOrdersImport";
 import WooCommerceSync from "../woocommerce/WooCommerceSync";
 import InternalIntegrations from "./InternalIntegrations";
 import GoogleSheetsIntegration from "./GoogleSheetsIntegration";
-;
-;
+import { LinkIcon } from "@heroicons/react/24/outline";
+import { TableCellsIcon } from "@heroicons/react/24/outline";
 
 const PlatformIntegrations: React.FC = () => {
   const { t } = useTranslation();

@@ -1,6 +1,5 @@
-import { Search as MagnifyingGlassIcon, Check as CheckIcon, Circle as ChevronUpDownIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useRef, useEffect, useMemo } from "react";
-;
+import { MagnifyingGlassIcon, CheckIcon, ChevronUpDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 interface SearchableSelectOption {
   value: string;

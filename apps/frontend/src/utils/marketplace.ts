@@ -1,4 +1,4 @@
-﻿import {
+import {
   Store, Users, MessageSquare, BarChart3, TrendingUp,
   DollarSign, Package, Sparkles, Heart, Zap, Bot,
   Camera, Megaphone, ShoppingCart, PackageOpen,

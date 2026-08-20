@@ -1,11 +1,16 @@
-import { Plus as PlusIcon, Eye as EyeIcon, ShoppingBag as ShoppingBagIcon, Filter as FunnelIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  PlusIcon,
+  EyeIcon,
+  ShoppingBagIcon,
+  FunnelIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Order {
   id: string;
@@ -50,7 +55,7 @@ const AffiliateOrders: React.FC = () => {
         setOrders(response.data.data);
       }
     } catch {
-      toast.error("حدث خطأ أثناء جلب الطلبات");
+      tToast.error("AffiliateOrders.error_error_9817");
     } finally {
       setLoading(false);
     }

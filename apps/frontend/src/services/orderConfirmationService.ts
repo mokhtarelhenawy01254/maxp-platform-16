@@ -15,6 +15,8 @@ export interface OrderConfirmationSettings {
   orderValueRules: OrderConfirmationValueRule[];
   workloadMaxOpen?: number | null;
   workloadStatuses: string[];
+  maxCallsNoAnswer: number;
+  intervalMinutes: number;
   notifyOnNew: boolean;
   autoAssignOnConfirm: boolean;
 }
@@ -44,6 +46,17 @@ export interface OrderConfirmationApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+}
+
+export interface OrderConfirmationCallLogData {
+  orderType: 'regular' | 'guest';
+  callAttempts: number;
+  nextCallAllowedAt: string | null;
+  order: {
+    lastCallAttemptAt?: string | null;
+    lastCallAt?: string | null;
+    orderNumber?: string;
+  } | null;
 }
 
 export interface OrderConfirmationCancelPayload {
@@ -88,7 +101,11 @@ const orderConfirmationService = {
   assignOrder: (orderId: string, userId: string, notes?: string, strategy?: string) =>
     api.post('/order-confirmation/assign', { orderId, userId, notes, strategy }).then((res) => res.data),
   assignOrders: (orderIds: string[], userId: string, notes?: string, strategy?: string) =>
-    api.post('/order-confirmation/assign/bulk', { orderIds, userId, notes, strategy }).then((res) => res.data)
+    api.post('/order-confirmation/assign/bulk', { orderIds, userId, notes, strategy }).then((res) => res.data),
+  logCall: (orderId: string, result?: string, notes?: string): Promise<OrderConfirmationApiResponse<OrderConfirmationCallLogData>> =>
+    api
+      .post<OrderConfirmationApiResponse<OrderConfirmationCallLogData>>('/order-confirmation/log-call', { orderId, result, notes })
+      .then((res) => res.data)
 };
 
 export default orderConfirmationService;

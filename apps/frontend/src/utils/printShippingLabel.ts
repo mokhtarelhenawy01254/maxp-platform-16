@@ -1,4 +1,4 @@
-﻿import { formatCurrency } from "./currency";
+import { formatCurrency } from "./currency";
 import { OrderDetailsType, OrderItem } from "../pages/orders/types";
 import { groupOrderDocumentQuantityOffers } from "./orderDocumentQuantityOffers";
 import JsBarcode from "jsbarcode";
@@ -48,7 +48,7 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
   return {
     id: String(order.id),
     orderNumber: String(order.orderNumber),
-    customerName: String(order.customerName || "╪╣┘à┘è┘ä ╪║┘è╪▒ ┘à╪¡╪»╪»"),
+    customerName: String(order.customerName || "عميل غير محدد"),
     customerPhone: order.customerPhone || "",
     customerEmail: order.customerEmail || "",
     customerAddress: order.customerAddress || "",
@@ -60,7 +60,7 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
     items: (order.items || []).map((item) => ({
       id: String(item.id),
       productId: item.productId || "",
-      productName: String(item.productName || item.name || "┘à┘å╪¬╪¼"),
+      productName: String(item.productName || item.name || "منتج"),
       productColor: item.color || "",
       productSize: item.size || "",
       productSku: item.sku || item.productSku || null,
@@ -162,8 +162,8 @@ const getItemTotal = (item: OrderItem) => {
 
 const buildItemDetailsText = (item: OrderItem) =>
   [
-    item.productColor ? `╪º┘ä┘ä┘ê┘å: ${item.productColor}` : "",
-    item.productSize ? `╪º┘ä┘à┘é╪º╪│: ${item.productSize}` : "",
+    item.productColor ? `اللون: ${item.productColor}` : "",
+    item.productSize ? `المقاس: ${item.productSize}` : "",
     item.productDetails ? item.productDetails : "",
   ]
     .filter(Boolean)
@@ -193,12 +193,12 @@ const generateBarcodeSvg = (value: string, height = 45, width = 1.5): string => 
 
 const getStatusLabel = (status?: string) => {
   const labels: Record<string, string> = {
-    PENDING: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒", DRAFT: "┘à╪│┘ê╪»╪⌐", CONFIRMED: "┘à╪ñ┘â╪»",
-    ON_HOLD: "┘à╪╣┘ä┘é", ON_HOLD_PREP: "┘à╪╣┘ä┘é ┘ä┘ä╪¬╪¼┘ç┘è╪▓", PROCESSING: "┘é┘è╪» ╪º┘ä╪¬╪¼┘ç┘è╪▓",
-    SHIPPED: "╪¬┘à ╪º┘ä╪┤╪¡┘å", DELIVERED: "╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à", CANCELLED: "┘à┘ä╪║┘è",
-    DUPLICATE_ORDER: "╪╖┘ä╪¿ ┘à┘â╪▒╪▒", REFUNDED: "┘à╪│╪¬╪▒╪»", PARTIALLY_REFUNDED: "┘à╪│╪¬╪▒╪» ╪¼╪▓╪ª┘è╪º┘ï",
-    RETURNED: "┘à╪▒╪¬╪¼╪╣", PARTIALLY_RETURNED: "┘à╪▒╪¬╪¼╪╣ ╪¼╪▓╪ª┘è",
-    PARTIALLY_DELIVERED: "╪¬╪│┘ä┘è┘à ╪¼╪▓╪ª┘è", EXCHANGED: "╪º╪│╪¬╪¿╪»╪º┘ä", FAILED: "┘ü╪┤┘ä",
+    PENDING: "قيد الانتظار", DRAFT: "مسودة", CONFIRMED: "مؤكد",
+    ON_HOLD: "معلق", ON_HOLD_PREP: "معلق للتجهيز", PROCESSING: "قيد التجهيز",
+    SHIPPED: "تم الشحن", DELIVERED: "تم التسليم", CANCELLED: "ملغي",
+    DUPLICATE_ORDER: "طلب مكرر", REFUNDED: "مسترد", PARTIALLY_REFUNDED: "مسترد جزئياً",
+    RETURNED: "مرتجع", PARTIALLY_RETURNED: "مرتجع جزئي",
+    PARTIALLY_DELIVERED: "تسليم جزئي", EXCHANGED: "استبدال", FAILED: "فشل",
   };
   return labels[String(status || "").toUpperCase()] || normalizeText(status);
 };
@@ -217,7 +217,7 @@ function resolveLabelContext(order: OrderDetailsType) {
   const addressText = buildAddressText(order);
   const { governorate, city } = parseAddressFields(order);
 
-  const curLabel = currency === "EGP" ? "╪¼.┘à" : currency;
+  const curLabel = currency === "EGP" ? "ج.م" : currency;
   const fm = (a: number) => `${new Intl.NumberFormat("ar-EG").format(a)} ${curLabel}`;
 
   const groupedOrderItems = groupOrderDocumentQuantityOffers(
@@ -229,20 +229,20 @@ function resolveLabelContext(order: OrderDetailsType) {
       const summaryRow = `
         <tr>
           <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:right">
-            <div style="font-size:13px;font-weight:700;line-height:1.2">╪╣╪▒╪╢ ┘â┘à┘è╪º╪¬: ${escapeHtml(group.offerLabel)}</div>
+            <div style="font-size:13px;font-weight:700;line-height:1.2">عرض كميات: ${escapeHtml(group.offerLabel)}</div>
             <div style="font-size:12px;font-weight:700;color:#000;margin-top:2px">
-              ${escapeHtml(`${group.selectedPieces}/${group.offerQuantity || group.selectedPieces} ┘é╪╖╪╣${group.freeShipping ? " | ╪┤╪¡┘å ┘à╪¼╪º┘å┘è" : ""}`)}
+              ${escapeHtml(`${group.selectedPieces}/${group.offerQuantity || group.selectedPieces} قطع${group.freeShipping ? " | شحن مجاني" : ""}`)}
             </div>
           </td>
-          <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-family:monospace;font-size:12px;font-weight:900">ΓÇö</td>
+          <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-family:monospace;font-size:12px;font-weight:900">—</td>
           <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-size:14px;font-weight:800">${escapeHtml(String(group.offerQuantity || group.selectedPieces))}</td>
           <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-size:12px;font-weight:700">-</td>
           <td style="padding:4px 6px;text-align:center;font-size:14px;font-weight:900">${escapeHtml(fm(group.total))}</td>
         </tr>
       `;
       const itemRows = group.items.map(({ item, slotIndex }, itemIndex) => {
-        const slotLabel = `╪º┘ä┘é╪╖╪╣╪⌐ ${slotIndex || itemIndex + 1}`;
-        const resolvedName = `${slotLabel} - ${normalizeText(item.productName) || "┘à┘å╪¬╪¼"}`;
+        const slotLabel = `القطعة ${slotIndex || itemIndex + 1}`;
+        const resolvedName = `${slotLabel} - ${normalizeText(item.productName) || "منتج"}`;
         const extraDetails = buildItemDetailsText(item);
         return `
           <tr>
@@ -250,7 +250,7 @@ function resolveLabelContext(order: OrderDetailsType) {
               <div style="font-size:13px;font-weight:700;line-height:1.2">${escapeHtml(resolvedName)}</div>
               ${extraDetails ? `<div style="font-size:12px;font-weight:700;color:#000;margin-top:2px">${escapeHtml(extraDetails)}</div>` : ""}
             </td>
-            <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-family:monospace;font-size:12px;font-weight:900">${item.productSku ? escapeHtml(item.productSku) : "ΓÇö"}</td>
+            <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-family:monospace;font-size:12px;font-weight:900">${item.productSku ? escapeHtml(item.productSku) : "—"}</td>
             <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-size:14px;font-weight:800">${escapeHtml(String(item.quantity))}</td>
             <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-size:12px;font-weight:700">${escapeHtml(fm(Number(item.price) || 0))}</td>
             <td style="padding:4px 6px;text-align:center;font-size:14px;font-weight:900">${escapeHtml(fm(getItemTotal(item)))}</td>
@@ -264,10 +264,10 @@ function resolveLabelContext(order: OrderDetailsType) {
       return `
         <tr>
           <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:right">
-            <div style="font-size:13px;font-weight:700;line-height:1.2">${escapeHtml(normalizeText(item.productName) || "┘à┘å╪¬╪¼")}</div>
+            <div style="font-size:13px;font-weight:700;line-height:1.2">${escapeHtml(normalizeText(item.productName) || "منتج")}</div>
             ${extraDetails ? `<div style="font-size:12px;font-weight:700;color:#000;margin-top:2px">${escapeHtml(extraDetails)}</div>` : ""}
           </td>
-          <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-family:monospace;font-size:12px;font-weight:900">${item.productSku ? escapeHtml(item.productSku) : "ΓÇö"}</td>
+          <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-family:monospace;font-size:12px;font-weight:900">${item.productSku ? escapeHtml(item.productSku) : "—"}</td>
           <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-size:14px;font-weight:800">${escapeHtml(String(item.quantity))}</td>
           <td style="padding:4px 6px;border-left:1.5px solid #000;text-align:center;font-size:12px;font-weight:700">${escapeHtml(fm(Number(item.price) || 0))}</td>
           <td style="padding:4px 6px;text-align:center;font-size:14px;font-weight:900">${escapeHtml(fm(getItemTotal(item)))}</td>
@@ -518,10 +518,10 @@ function buildShippingLabelStyle(): string {
 function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: string, companyLogoUrl?: string | null): string {
   const ctx = resolveLabelContext(order);
   const orderBarcode = order.orderNumber
-    ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(order.orderNumber)}<div style="font-size:10px;font-weight:600;color:#000">┘â┘ê╪» ╪º┘ä╪╖┘ä╪¿</div></div>`
+    ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(order.orderNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الطلب</div></div>`
     : "";
   const shippingBarcode = order.turboTrackingNumber
-    ? `<div style="text-align:center">${generateBarcodeSvg(order.turboTrackingNumber)}<div style="font-size:10px;font-weight:600;color:#000">┘â┘ê╪» ╪º┘ä╪┤╪¡┘å</div></div>`
+    ? `<div style="text-align:center">${generateBarcodeSvg(order.turboTrackingNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الشحن</div></div>`
     : "";
 
   return `
@@ -531,7 +531,7 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
         <div class="label-header">
           <div class="sender">
             ${companyLogoUrl ? `<img class="company-logo" src="${escapeHtml(companyLogoUrl)}" alt="" />` : ""}
-            <div class="company-name">┘à╪▒╪│┘ä: ${escapeHtml(companyName || "┘à┘å╪╡╪⌐ MaxP")}</div>
+            <div class="company-name">مرسل: ${escapeHtml(companyName || "منصة MaxP")}</div>
           </div>
           <div class="barcodes">
             ${orderBarcode}
@@ -541,27 +541,27 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
         <!-- Row 2: Customer Data (4 columns) -->
         <div class="label-row-4col">
           <div class="label-cell">
-            <div class="cell-title">╪º╪│┘à ╪º┘ä┘à╪│╪¬┘ä┘à</div>
-            <div class="cell-value">${escapeHtml(order.customerName || "╪╣┘à┘è┘ä ╪║┘è╪▒ ┘à╪¡╪»╪»")}</div>
+            <div class="cell-title">اسم المستلم</div>
+            <div class="cell-value">${escapeHtml(order.customerName || "عميل غير محدد")}</div>
           </div>
           <div class="label-cell">
-            <div class="cell-title">╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü</div>
-            <div class="cell-value ltr">${order.customerPhone ? escapeHtml(order.customerPhone) : "ΓÇö"}</div>
+            <div class="cell-title">رقم الهاتف</div>
+            <div class="cell-value ltr">${order.customerPhone ? escapeHtml(order.customerPhone) : "—"}</div>
           </div>
           <div class="label-cell">
-            <div class="cell-title">╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐</div>
-            <div class="cell-value">${ctx.governorate ? escapeHtml(ctx.governorate) : "ΓÇö"}</div>
+            <div class="cell-title">المحافظة</div>
+            <div class="cell-value">${ctx.governorate ? escapeHtml(ctx.governorate) : "—"}</div>
           </div>
           <div class="label-cell">
-            <div class="cell-title">╪º┘ä┘à╪»┘è┘å╪⌐</div>
-            <div class="cell-value">${ctx.city ? escapeHtml(ctx.city) : "ΓÇö"}</div>
+            <div class="cell-title">المدينة</div>
+            <div class="cell-value">${ctx.city ? escapeHtml(ctx.city) : "—"}</div>
           </div>
         </div>
 
         <!-- Row 3: Address -->
         <div class="label-address">
-          <div class="cell-title">╪º┘ä╪╣┘å┘ê╪º┘å</div>
-          <div class="cell-value">${ctx.addressText ? escapeHtml(ctx.addressText) : "ΓÇö"}</div>
+          <div class="cell-title">العنوان</div>
+          <div class="cell-value">${ctx.addressText ? escapeHtml(ctx.addressText) : "—"}</div>
         </div>
 
         <!-- Row 4: Products Table -->
@@ -569,36 +569,36 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
           <table>
             <thead>
               <tr>
-                <th>╪º┘ä┘à┘å╪¬╪¼</th>
+                <th>المنتج</th>
                 <th>SKU</th>
-                <th>╪º┘ä┘â┘à┘è╪⌐</th>
-                <th>╪º┘ä╪│╪╣╪▒</th>
-                <th>╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è</th>
+                <th>الكمية</th>
+                <th>السعر</th>
+                <th>الإجمالي</th>
               </tr>
             </thead>
             <tbody>
-              ${ctx.itemsRows || '<tr><td colspan="5" style="padding:8px;text-align:center;color:#94a3b8">┘ä╪º ╪¬┘ê╪¼╪» ┘à┘å╪¬╪¼╪º╪¬</td></tr>'}
+              ${ctx.itemsRows || '<tr><td colspan="5" style="padding:8px;text-align:center;color:#94a3b8">لا توجد منتجات</td></tr>'}
             </tbody>
           </table>
         </div>
 
         <!-- Row 5: Notes -->
         <div class="label-notes">
-          <div class="cell-title">┘à┘ä╪º╪¡╪╕╪º╪¬</div>
+          <div class="cell-title">ملاحظات</div>
           <div style="flex:1"></div>
         </div>
 
         <!-- Row 6: Footer -->
         <div class="label-footer">
           <div class="footer-cell">
-            ${shippingBarcode || '<span class="placeholder">ΓÇö</span>'}
+            ${shippingBarcode || '<span class="placeholder">—</span>'}
           </div>
           <div class="footer-cell">
-            <div class="cell-title">╪¬┘â┘ä┘ü╪⌐ ╪º┘ä╪┤╪¡┘å</div>
+            <div class="cell-title">تكلفة الشحن</div>
             <div class="cell-value">${escapeHtml(ctx.fm(ctx.shipping))}</div>
           </div>
           <div class="footer-cell">
-            <div class="cell-title">╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪╖┘ä┘ê╪¿ ╪¬╪¡╪╡┘è┘ä┘ç</div>
+            <div class="cell-title">المبلغ المطلوب تحصيله</div>
             <div class="cell-value total">${escapeHtml(ctx.fm(ctx.total))}</div>
           </div>
         </div>
@@ -614,7 +614,7 @@ function buildSingleLabelDocument(order: OrderDetailsType, companyName?: string,
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>╪¿┘ê┘ä┘è╪╡╪⌐ ╪º┘ä╪┤╪¡┘å - ${escapeHtml(order.orderNumber || "")}</title>
+        <title>بوليصة الشحن - ${escapeHtml(order.orderNumber || "")}</title>
         ${buildShippingLabelStyle()}
       </head>
       <body>
@@ -639,7 +639,7 @@ function buildMultiLabelDocument(
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>╪¿┘ê┘ä┘è╪╡╪º╪¬ ╪º┘ä╪┤╪¡┘å</title>
+        <title>بوليصات الشحن</title>
         ${buildShippingLabelStyle()}
       </head>
       <body>
@@ -667,7 +667,7 @@ export const printSingleShippingLabel = async ({
   printWindow,
 }: PrintShippingLabelOptions) => {
   const targetWindow = printWindow || window.open("", "_blank");
-  if (!targetWindow) throw new Error("┘ü╪┤┘ä ┘ü┘è ┘ü╪¬╪¡ ┘å╪º┘ü╪░╪⌐ ╪¼╪»┘è╪»╪⌐ ┘ä┘ä╪╖╪¿╪º╪╣╪⌐");
+  if (!targetWindow) throw new Error("فشل في فتح نافذة جديدة للطباعة");
 
   writeAndPrint(targetWindow, buildSingleLabelDocument(order, companyName, companyLogoUrl));
   return true;
@@ -687,7 +687,7 @@ export const printMultipleShippingLabels = async ({
   printWindow,
 }: PrintMultipleShippingLabelsOptions) => {
   const targetWindow = printWindow || window.open("", "_blank");
-  if (!targetWindow) throw new Error("┘ü╪┤┘ä ┘ü┘è ┘ü╪¬╪¡ ┘å╪º┘ü╪░╪⌐ ╪¼╪»┘è╪»╪⌐ ┘ä┘ä╪╖╪¿╪º╪╣╪⌐");
+  if (!targetWindow) throw new Error("فشل في فتح نافذة جديدة للطباعة");
 
   writeAndPrint(targetWindow, buildMultiLabelDocument(orders, companyName, companyLogoUrl));
   return true;

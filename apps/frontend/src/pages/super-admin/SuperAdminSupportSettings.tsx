@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { Save, Loader2, Phone } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import { Save, Loader2, Phone } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 
@@ -29,7 +30,7 @@ export default function SuperAdminSupportSettings() {
         setPhone(res.data.data.phone || "");
       }
     } catch {
-      toast.error("خطأ في جلب إعدادات الدعم الفني");
+      tToast.error("SuperAdminSupportSettings.error_fetch_386a");
     } finally {
       setLoading(false);
     }
@@ -44,10 +45,10 @@ export default function SuperAdminSupportSettings() {
         { headers: getAuthHeaders() },
       );
       if (res.data.success) {
-        toast.success("تم حفظ رقم الدعم الفني");
+        tToast.success("SuperAdminSupportSettings.success_save_bcfb");
       }
     } catch {
-      toast.error("فشل حفظ الرقم");
+      tToast.error("SuperAdminSupportSettings.failed_save_f02c");
     } finally {
       setSaving(false);
     }

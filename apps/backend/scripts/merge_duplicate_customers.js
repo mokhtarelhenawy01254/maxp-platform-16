@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { toCanonicalE164 } = require('../utils/phoneNormalization');
 
 const args = process.argv.slice(2);
@@ -27,9 +27,9 @@ function canonicalScore(customer) {
 (async () => {
   const prisma = getSharedPrismaClient();
   try {
-    // ΓòÉΓòÉΓòÉ Step 0: Backfill phoneNormalized (idempotent) ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-    // ┘à┘å ╪║┘è╪▒┘ç ╪º┘ä┘Ç dedupe ┘à╪┤ ╪¿┘è╪┤╪¬╪║┘ä ╪╣┘ä┘ë ╪º┘ä┘é╪»┘è┘à╪î ┘ê╪º┘ä┘é┘è╪» ╪º┘ä╪¼╪»┘è╪» (companyId, phoneNormalized)
-    // ┘à╪┤ ┘ç┘è┘à╪│┘â ╪º┘ä┘ä┘è phoneNormalized ╪¿╪¬╪º╪╣┘ç┘à NULL.
+    // ═══ Step 0: Backfill phoneNormalized (idempotent) ═══════════════════
+    // من غيره الـ dedupe مش بيشتغل على القديم، والقيد الجديد (companyId, phoneNormalized)
+    // مش هيمسك اللي phoneNormalized بتاعهم NULL.
     const needsBackfill = await prisma.customer.findMany({
       where: { phone: { not: null }, OR: [{ phoneNormalized: null }, { phoneNormalized: '' }] },
       select: { id: true, phone: true },
@@ -51,8 +51,8 @@ function canonicalScore(customer) {
               await prisma.customer.updateMany({ where: { id: row.id }, data: { phoneNormalized: canonical } });
               backfilled++;
             } catch (err) {
-              // ┘å┘ü╪│ ╪º┘ä╪▒┘é┘à ┘à┘ê╪¼┘ê╪» ┘ä╪╣┘à┘è┘ä ╪¬╪º┘å┘è ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪┤╪▒┘â╪⌐ ΓåÆ ╪º┘ä┘é┘è╪» (companyId, phoneNormalized)
-              // ┘à╪┤ ┘ç┘è┘é╪»╪▒ ┘è╪¬╪╢╪¿╪╖ ┘ç┘å╪º╪¢ ╪º┘ä┘Ç merge step ╪¼╪º┘è ┘ç┘è╪¼┘à╪╣┘ç┘à ┘ê┘è┘à╪│╪¡ ╪º┘ä┘ü┘ê┘å ┘à┘å ╪º┘ä┘Ç duplicate.
+              // نفس الرقم موجود لعميل تاني في نفس الشركة → القيد (companyId, phoneNormalized)
+              // مش هيقدر يتضبط هنا؛ الـ merge step جاي هيجمعهم ويمسح الفون من الـ duplicate.
               if (err?.code === 'P2002') {
                 conflicts++;
                 return;
@@ -67,9 +67,9 @@ function canonicalScore(customer) {
           console.log(`  ...backfilled ${backfilled}/${needsBackfill.length} (${Date.now() - start}ms)`);
         }
       }
-      console.log(`Γ£à Backfilled ${backfilled} phoneNormalized${conflicts ? `, skipped ${conflicts} conflicting rows (handled by merge step)` : ''}${DRY_RUN ? ' (DRY RUN ΓÇö not written)' : ''} in ${Date.now() - start}ms`);
+      console.log(`✅ Backfilled ${backfilled} phoneNormalized${conflicts ? `, skipped ${conflicts} conflicting rows (handled by merge step)` : ''}${DRY_RUN ? ' (DRY RUN — not written)' : ''} in ${Date.now() - start}ms`);
     } else {
-      console.log('Γ£à No phoneNormalized backfill needed.');
+      console.log('✅ No phoneNormalized backfill needed.');
     }
 
     const where = {};
@@ -113,7 +113,7 @@ function canonicalScore(customer) {
       return;
     }
 
-    console.log(`Found ${mergedGroups.length} duplicate customer group(s)${DRY_RUN ? ' (DRY RUN ΓÇö nothing will be written)' : ''}:\n`);
+    console.log(`Found ${mergedGroups.length} duplicate customer group(s)${DRY_RUN ? ' (DRY RUN — nothing will be written)' : ''}:\n`);
 
     let totalGroups = 0;
     let totalOrders = 0;
@@ -123,9 +123,9 @@ function canonicalScore(customer) {
       const canonical = [...group].sort((a, b) => canonicalScore(b) - canonicalScore(a))[0];
       const duplicates = group.filter(g => g.id !== canonical.id);
 
-      console.log(`ΓÇó Group (company ${canonical.companyId}, canonical ${canonical.id}):`);
+      console.log(`• Group (company ${canonical.companyId}, canonical ${canonical.id}):`);
       for (const m of group) {
-        const role = m.id === canonical.id ? 'KEEP  ' : 'MERGEΓåÆ';
+        const role = m.id === canonical.id ? 'KEEP  ' : 'MERGE→';
         console.log(`   ${role} ${m.id} | ${m.firstName || ''} ${m.lastName || ''} | ${m.phone || ''} | ${m.status} | wa:${m.whatsappId || '-'}`);
       }
 
@@ -141,12 +141,12 @@ function canonicalScore(customer) {
           moved.whatsappNotificationLogs = (await prisma.whatsappNotificationLog.updateMany({ where: { customerId: dup.id }, data: { customerId: canonical.id } })).count;
         }
         totalOrders += moved.orders;
-        console.log(`      ΓåÆ moved from ${dup.id}: ${JSON.stringify(moved)}`);
+        console.log(`      → moved from ${dup.id}: ${JSON.stringify(moved)}`);
       }
 
-      // ┘à╪│╪¡ ╪º┘ä┘ü┘ê┘å ┘à┘å ╪º┘ä┘Ç duplicates ┘é╪¿┘ä ╪¬╪¡╪»┘è╪½ ╪º┘ä┘Ç canonical ╪╣╪┤╪º┘å ╪º┘ä┘é┘è╪» ╪º┘ä╪¼╪»┘è╪»
-      // (companyId, phoneNormalized) ┘è╪¬╪╖╪¿┘é ┘à┘å ╪║┘è╪▒ ╪¬╪╣╪º╪▒╪╢ ΓÇö ┘ä┘ê ╪º┘ä┘Ç duplicate ┘ä╪│┘ç
-      // ┘à╪¡╪¬┘ü╪╕ ╪¿┘å┘ü╪│ ╪º┘ä╪▒┘é┘à╪î ╪¬╪¡╪»┘è╪½ ╪º┘ä┘Ç canonical ┘â╪º┘å ┘ç┘è╪¿┘ê┘æ╪╕ ╪¿┘Ç P2002.
+      // مسح الفون من الـ duplicates قبل تحديث الـ canonical عشان القيد الجديد
+      // (companyId, phoneNormalized) يتطبق من غير تعارض — لو الـ duplicate لسه
+      // محتفظ بنفس الرقم، تحديث الـ canonical كان هيبوّظ بـ P2002.
       if (!DRY_RUN) {
         for (const dup of duplicates) {
           await prisma.customer.update({
@@ -158,8 +158,8 @@ function canonicalScore(customer) {
               whatsappId: null,
               notes: (dup.notes ? dup.notes + '\n' : '') + `[merged into ${canonical.id} ${new Date().toISOString()}]`,
             },
-          }).catch(err => console.error(`      Γ£ù cannot mark ${dup.id} inactive: ${err.message}`));
-          console.log(`      ΓåÆ marked duplicate ${dup.id} INACTIVE + phone cleared (soft merge)`);
+          }).catch(err => console.error(`      ✗ cannot mark ${dup.id} inactive: ${err.message}`));
+          console.log(`      → marked duplicate ${dup.id} INACTIVE + phone cleared (soft merge)`);
         }
       }
 
@@ -179,7 +179,7 @@ function canonicalScore(customer) {
       if (Object.keys(updateData).length > 0 && !DRY_RUN) {
         await prisma.customer.update({ where: { id: canonical.id }, data: updateData });
       }
-      console.log(`      ΓåÆ canonical update: ${JSON.stringify(updateData)}`);
+      console.log(`      → canonical update: ${JSON.stringify(updateData)}`);
 
       const canonicalWallet = await prisma.customerWallet.findUnique({ where: { customerId: canonical.id } });
       for (const dup of duplicates) {
@@ -191,7 +191,7 @@ function canonicalScore(customer) {
             await prisma.customerWallet.update({ where: { id: dupWallet.id }, data: { customerId: canonical.id } });
           }
           totalWalletsMerged++;
-          console.log(`      ΓåÆ wallet ${dupWallet.id} (balance ${dupWallet.balance}) moved to canonical ${canonical.id}`);
+          console.log(`      → wallet ${dupWallet.id} (balance ${dupWallet.balance}) moved to canonical ${canonical.id}`);
         } else {
           if (!DRY_RUN) {
             await prisma.customerWallet.update({
@@ -204,14 +204,14 @@ function canonicalScore(customer) {
             });
           }
           totalWalletsMerged++;
-          console.log(`      ΓåÆ wallet ${dupWallet.id} (balance ${dupWallet.balance}) merged into canonical wallet (${canonicalWallet.balance} ΓåÆ ${canonicalWallet.balance + dupWallet.balance})`);
+          console.log(`      → wallet ${dupWallet.id} (balance ${dupWallet.balance}) merged into canonical wallet (${canonicalWallet.balance} → ${canonicalWallet.balance + dupWallet.balance})`);
         }
       }
 
       totalGroups++;
     }
 
-    console.log(`\nDone. groups: ${totalGroups}, orders moved: ${totalOrders}, wallets merged/moved: ${totalWalletsMerged}${DRY_RUN ? ' (DRY RUN ΓÇö no changes written)' : ''}.`);
+    console.log(`\nDone. groups: ${totalGroups}, orders moved: ${totalOrders}, wallets merged/moved: ${totalWalletsMerged}${DRY_RUN ? ' (DRY RUN — no changes written)' : ''}.`);
   } catch (e) {
     console.error('Merge failed:', e.message);
     process.exit(1);

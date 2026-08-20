@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const bcrypt = require('bcryptjs');
 
 const normalizeGender = (g) => {
@@ -11,10 +11,10 @@ const normalizeMedicalHistory = (v) => {
   if (v === undefined || v === null || v === '') return { value: undefined, error: null };
   let parsed = v;
   if (typeof v === 'string') {
-    try { parsed = JSON.parse(v); } catch { return { value: null, error: '╪╡┘è╪║╪⌐ ╪º┘ä╪¬╪º╪▒┘è╪« ╪º┘ä╪╖╪¿┘è ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐ (┘è╪¼╪¿ ╪ú┘å ╪¬┘â┘ê┘å JSON ╪╡╪º┘ä╪¡╪⌐)' }; }
+    try { parsed = JSON.parse(v); } catch { return { value: null, error: 'صيغة التاريخ الطبي غير صحيحة (يجب أن تكون JSON صالحة)' }; }
   }
   if (Array.isArray(parsed) || parsed === null || typeof parsed !== 'object') {
-    return { value: null, error: '╪º┘ä╪¬╪º╪▒┘è╪« ╪º┘ä╪╖╪¿┘è ┘è╪¼╪¿ ╪ú┘å ┘è┘â┘ê┘å ┘â╪º╪ª┘å┘ï╪º ┘è╪¡╪¬┘ê┘è ╪╣┘ä┘ë ╪º┘ä╪¡╪º┘ä╪º╪¬ ┘ê╪º┘ä╪¡╪│╪º╪│┘è╪⌐' };
+    return { value: null, error: 'التاريخ الطبي يجب أن يكون كائنًا يحتوي على الحالات والحساسية' };
   }
   return { value: parsed, error: null };
 };
@@ -31,7 +31,7 @@ const formatPatient = (p) => {
 const getAllPatients = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, page, limit, includeInactive, insuranceCompanyId } = req.query;
     const where = { companyId };
@@ -72,14 +72,14 @@ const getAllPatients = async (req, res) => {
     res.json({ success: true, data: formatted, total, page: pageNum, limit: limitNum });
   } catch (error) {
     console.error('Error fetching patients:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à╪▒╪╢┘ë' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب المرضى' });
   }
 };
 
 const getPatientById = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const patient = await getSharedPrismaClient().patient.findFirst({
@@ -106,7 +106,7 @@ const getPatientById = async (req, res) => {
         },
       },
     });
-    if (!patient) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!patient) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
     const data = formatPatient(patient);
     // Compute financial summary
@@ -123,17 +123,17 @@ const getPatientById = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching patient:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à╪▒┘è╪╢' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب المريض' });
   }
 };
 
 const createPatient = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password, nationalId, nationalIdImage, address, status, source, maritalStatus, occupation, city, medicalHistory, referringPhysicianId, priceListId, title, insuranceNumber, insuranceCompanyId, memberTypeId, homePhone, workPhone, fax, postalCode } = req.body;
-    if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢ ┘à╪╖┘ä┘ê╪¿' });
+    if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
 
     let medicalHistoryData;
     if (medicalHistory !== undefined) {
@@ -154,23 +154,23 @@ const createPatient = async (req, res) => {
 
     if (resolvedCustomerId) {
       const customer = await getSharedPrismaClient().customer.findFirst({ where: { id: resolvedCustomerId, companyId }, select: { id: true } });
-      if (!customer) return res.status(400).json({ success: false, error: '╪º┘ä╪╣┘à┘è┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!customer) return res.status(400).json({ success: false, error: 'العميل غير موجود' });
     }
     if (referringPhysicianId) {
       const physician = await getSharedPrismaClient().referringPhysician.findFirst({ where: { id: referringPhysicianId, companyId }, select: { id: true } });
-      if (!physician) return res.status(400).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!physician) return res.status(400).json({ success: false, error: 'الطبيب المحوّل غير موجود' });
     }
     if (priceListId) {
       const list = await getSharedPrismaClient().priceList.findFirst({ where: { id: priceListId, companyId }, select: { id: true } });
-      if (!list) return res.status(400).json({ success: false, error: '┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
     }
     if (insuranceCompanyId) {
       const company = await getSharedPrismaClient().insuranceCompany.findFirst({ where: { id: insuranceCompanyId, companyId }, select: { id: true } });
-      if (!company) return res.status(400).json({ success: false, error: '╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      if (!company) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
     }
     if (memberTypeId) {
       const memberType = await getSharedPrismaClient().insuranceMemberType.findFirst({ where: { id: memberTypeId, companyId }, select: { id: true } });
-      if (!memberType) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä╪╣╪╢┘ê┘è╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!memberType) return res.status(400).json({ success: false, error: 'نوع العضوية غير موجود' });
     }
 
     // Sequential per-company patient number (starts at 1) for human-friendly IDs
@@ -227,18 +227,18 @@ const createPatient = async (req, res) => {
     res.json({ success: true, data: formatPatient(patient) });
   } catch (error) {
     console.error('Error creating patient:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘à╪▒┘è╪╢' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء المريض' });
   }
 };
 
 const updatePatient = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const existing = await getSharedPrismaClient().patient.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
     const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password', 'nationalId', 'nationalIdImage', 'address', 'status', 'source', 'maritalStatus', 'occupation', 'city', 'referringPhysicianId', 'priceListId', 'title', 'insuranceNumber', 'insuranceCompanyId', 'memberTypeId', 'homePhone', 'workPhone', 'fax', 'postalCode'];
     const data = {};
@@ -257,51 +257,51 @@ const updatePatient = async (req, res) => {
 
     if (data.customerId) {
       const customer = await getSharedPrismaClient().customer.findFirst({ where: { id: data.customerId, companyId }, select: { id: true } });
-      if (!customer) return res.status(400).json({ success: false, error: '╪º┘ä╪╣┘à┘è┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!customer) return res.status(400).json({ success: false, error: 'العميل غير موجود' });
     }
     if (data.referringPhysicianId) {
       const physician = await getSharedPrismaClient().referringPhysician.findFirst({ where: { id: data.referringPhysicianId, companyId }, select: { id: true } });
-      if (!physician) return res.status(400).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!physician) return res.status(400).json({ success: false, error: 'الطبيب المحوّل غير موجود' });
     }
     if (data.priceListId) {
       const list = await getSharedPrismaClient().priceList.findFirst({ where: { id: data.priceListId, companyId }, select: { id: true } });
-      if (!list) return res.status(400).json({ success: false, error: '┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
     }
     if (data.insuranceCompanyId) {
       const company = await getSharedPrismaClient().insuranceCompany.findFirst({ where: { id: data.insuranceCompanyId, companyId }, select: { id: true } });
-      if (!company) return res.status(400).json({ success: false, error: '╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      if (!company) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
     }
     if (data.memberTypeId) {
       const memberType = await getSharedPrismaClient().insuranceMemberType.findFirst({ where: { id: data.memberTypeId, companyId }, select: { id: true } });
-      if (!memberType) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä╪╣╪╢┘ê┘è╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!memberType) return res.status(400).json({ success: false, error: 'نوع العضوية غير موجود' });
     }
 
     const patient = await getSharedPrismaClient().patient.update({ where: { id }, data });
     res.json({ success: true, data: formatPatient(patient) });
   } catch (error) {
     console.error('Error updating patient:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪▒┘è╪╢' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث المريض' });
   }
 };
 
 const mergePatients = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { targetPatientId } = req.body;
-    if (!targetPatientId) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪º┘ä┘ç╪»┘ü ┘à╪╖┘ä┘ê╪¿' });
-    if (id === targetPatientId) return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪»┘à╪¼ ╪º┘ä┘à╪▒┘è╪╢ ┘à╪╣ ┘å┘ü╪│┘ç' });
+    if (!targetPatientId) return res.status(400).json({ success: false, error: 'المريض الهدف مطلوب' });
+    if (id === targetPatientId) return res.status(400).json({ success: false, error: 'لا يمكن دمج المريض مع نفسه' });
 
     const prisma = getSharedPrismaClient();
     const source = await prisma.patient.findFirst({ where: { id, companyId } });
-    if (!source) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
-    if (source.mergedIntoId) return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪»┘à╪¼ ┘à╪▒┘è╪╢ ┘à╪»┘à╪¼ ╪¿╪º┘ä┘ü╪╣┘ä' });
+    if (!source) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
+    if (source.mergedIntoId) return res.status(400).json({ success: false, error: 'لا يمكن دمج مريض مدمج بالفعل' });
     const target = await prisma.patient.findFirst({ where: { id: targetPatientId, companyId } });
-    if (!target) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪º┘ä┘ç╪»┘ü ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!target) return res.status(404).json({ success: false, error: 'المريض الهدف غير موجود' });
     if (target.isActive === false || target.status === 'INACTIVE') {
-      return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪»┘à╪¼ ╪Ñ┘ä┘ë ┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘å╪┤╪╖' });
+      return res.status(400).json({ success: false, error: 'لا يمكن الدمج إلى مريض غير نشط' });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -321,7 +321,7 @@ const mergePatients = async (req, res) => {
           entityType: 'PATIENT',
           entityId: id,
           action: 'MERGE',
-          description: `╪¬┘à ╪»┘à╪¼ ╪º┘ä┘à╪▒┘è╪╢ ┘ü┘è ${target.firstName} ${target.lastName || ''}`,
+          description: `تم دمج المريض في ${target.firstName} ${target.lastName || ''}`,
           userId: req.user?.id || null,
           userName: req.user?.name || null,
         },
@@ -338,17 +338,17 @@ const mergePatients = async (req, res) => {
     res.json({ success: true, data: formatPatient(updatedTarget) });
   } catch (error) {
     if (error && error.message === 'PATIENT_ALREADY_MERGED') {
-      return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪»┘à╪¼ ┘à╪▒┘è╪╢ ┘à╪»┘à╪¼ ╪¿╪º┘ä┘ü╪╣┘ä' });
+      return res.status(400).json({ success: false, error: 'لا يمكن دمج مريض مدمج بالفعل' });
     }
     console.error('Error merging patients:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪»┘à╪¼ ╪º┘ä┘à╪▒╪╢┘ë' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في دمج المرضى' });
   }
 };
 
 const getPatientFull = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
@@ -371,7 +371,7 @@ const getPatientFull = async (req, res) => {
         _count: { select: { appointments: true } },
       },
     });
-    if (!patient) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!patient) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
     const invoices = await prisma.medicalInvoice.findMany({
       where: { patientId: id, companyId },
@@ -401,19 +401,19 @@ const getPatientFull = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching patient full record:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à╪▒┘è╪╢' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب بيانات المريض' });
   }
 };
 
 const deletePatient = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.patient.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
     const [studyCount, radiologyAppointmentCount, appointmentCount] = await Promise.all([
       prisma.radiologyStudy.count({ where: { companyId, patientId: id } }),
@@ -421,15 +421,15 @@ const deletePatient = async (req, res) => {
       prisma.appointment.count({ where: { companyId, patientId: id } }),
     ]);
     if (studyCount + radiologyAppointmentCount + appointmentCount > 0) {
-      return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪¡╪░┘ü ┘à╪▒┘è╪╢ ┘ä╪»┘è┘ç ╪│╪¼┘ä╪º╪¬ ┘à╪▒╪¬╪¿╪╖╪⌐ (╪»╪▒╪º╪│╪º╪¬/╪¡╪¼┘ê╪▓╪º╪¬)' });
+      return res.status(400).json({ success: false, error: 'لا يمكن حذف مريض لديه سجلات مرتبطة (دراسات/حجوزات)' });
     }
 
     // Soft delete to preserve medical history linkage
     await prisma.patient.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¬╪╣╪╖┘è┘ä ╪º┘ä┘à╪▒┘è╪╢' });
+    res.json({ success: true, message: 'تم تعطيل المريض' });
   } catch (error) {
     console.error('Error deleting patient:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘à╪▒┘è╪╢' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف المريض' });
   }
 };
 

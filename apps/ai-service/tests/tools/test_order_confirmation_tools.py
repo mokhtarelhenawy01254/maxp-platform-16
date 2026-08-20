@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pytest
 
@@ -70,7 +70,7 @@ async def test_order_update_details_calls_backend(monkeypatch):
     async def fake_update(self, company_id, order_number, data):
         assert company_id == "comp1"
         assert order_number == "ORD-1"
-        assert data["shippingAddress"]["governorate"] == "╪º┘ä┘é╪º┘ç╪▒╪⌐"
+        assert data["shippingAddress"]["governorate"] == "القاهرة"
         return {"updatedFields": ["shippingAddress"]}
 
     monkeypatch.setattr(
@@ -81,7 +81,7 @@ async def test_order_update_details_calls_backend(monkeypatch):
     result = await order_update_details(OrderUpdateDetailsInput(
         order_number="ORD-1",
         company_id="comp1",
-        shipping_address={"governorate": "╪º┘ä┘é╪º┘ç╪▒╪⌐", "city": "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒", "address": "╪┤╪º╪▒╪╣ 1"},
+        shipping_address={"governorate": "القاهرة", "city": "مدينة نصر", "address": "شارع 1"},
     ))
     assert result["success"] is True
     assert "shippingAddress" in result["updatedFields"]
@@ -111,8 +111,8 @@ async def test_shipping_company_governorates_calls_backend(monkeypatch):
         return {
             "success": True,
             "governments": [
-                {"id": "1", "name": "╪º┘ä┘é╪º┘ç╪▒╪⌐"},
-                {"id": "2", "name": "╪º┘ä╪¼┘è╪▓╪⌐"},
+                {"id": "1", "name": "القاهرة"},
+                {"id": "2", "name": "الجيزة"},
             ],
         }
 
@@ -124,8 +124,8 @@ async def test_shipping_company_governorates_calls_backend(monkeypatch):
     result = await shipping_company_governorates(ShippingCompanyGovernoratesInput(company_id="comp1"))
     assert result["found"] is True
     assert result["governorates"] == [
-        {"id": "1", "name": "╪º┘ä┘é╪º┘ç╪▒╪⌐"},
-        {"id": "2", "name": "╪º┘ä╪¼┘è╪▓╪⌐"},
+        {"id": "1", "name": "القاهرة"},
+        {"id": "2", "name": "الجيزة"},
     ]
 
 
@@ -137,8 +137,8 @@ async def test_shipping_company_areas_calls_backend(monkeypatch):
         return {
             "success": True,
             "areas": [
-                {"id": "10", "name": "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒"},
-                {"id": "11", "name": "┘ê╪│╪╖ ╪º┘ä╪¿┘ä╪»"},
+                {"id": "10", "name": "مدينة نصر"},
+                {"id": "11", "name": "وسط البلد"},
             ],
         }
 
@@ -152,7 +152,7 @@ async def test_shipping_company_areas_calls_backend(monkeypatch):
         company_id="comp1",
     ))
     assert result["found"] is True
-    assert result["areas"][0]["name"] == "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒"
+    assert result["areas"][0]["name"] == "مدينة نصر"
 
 
 @pytest.mark.asyncio
@@ -167,15 +167,15 @@ async def test_search_area_by_text_missing_params():
 async def test_search_area_by_text_calls_backend(monkeypatch):
     async def fake_search(self, company_id, query, limit=10):
         assert company_id == "comp1"
-        assert query == "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒"
+        assert query == "مدينة نصر"
         return {
             "success": True,
             "matches": [
                 {
                     "governorateId": "1",
-                    "governorate": "╪º┘ä┘é╪º┘ç╪▒╪⌐",
+                    "governorate": "القاهرة",
                     "areaId": "10",
-                    "area": "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒",
+                    "area": "مدينة نصر",
                     "confidence": 1.0,
                 },
             ],
@@ -187,11 +187,11 @@ async def test_search_area_by_text_calls_backend(monkeypatch):
         fake_search,
     )
 
-    result = await search_area_by_text(SearchAreaByTextInput(query="┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒", company_id="comp1"))
+    result = await search_area_by_text(SearchAreaByTextInput(query="مدينة نصر", company_id="comp1"))
     assert result["found"] is True
     assert result["count"] == 1
-    assert result["matches"][0]["governorate"] == "╪º┘ä┘é╪º┘ç╪▒╪⌐"
-    assert result["matches"][0]["area"] == "┘à╪»┘è┘å╪⌐ ┘å╪╡╪▒"
+    assert result["matches"][0]["governorate"] == "القاهرة"
+    assert result["matches"][0]["area"] == "مدينة نصر"
 
 
 @pytest.mark.asyncio
@@ -204,7 +204,7 @@ async def test_search_area_by_text_backend_failure(monkeypatch):
         fake_search,
     )
 
-    result = await search_area_by_text(SearchAreaByTextInput(query="╪º┘ä┘à╪╣╪º╪»┘è", company_id="comp1"))
+    result = await search_area_by_text(SearchAreaByTextInput(query="المعادي", company_id="comp1"))
     assert result["found"] is False
     assert "boom" in result["error"]
     assert result["matches"] == []

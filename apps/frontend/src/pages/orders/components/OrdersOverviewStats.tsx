@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ShoppingCartIcon,
@@ -47,7 +47,7 @@ const daysAgo = (n: number) => {
  * period with inline sparklines. Lives at the top of `/orders` to give the
  * operator an at-a-glance trend before they dive into the table.
  *
- * Renders nothing on error ΓÇö the orders table below stays the source of truth.
+ * Renders nothing on error — the orders table below stays the source of truth.
  */
 export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
   onLoaded,
@@ -284,7 +284,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
                       : "text-rose-600 dark:text-rose-400"
                   }`}
                 >
-                  {ordersDelta > 0 ? "Γû▓" : "Γû╝"} {Math.abs(ordersDelta)}%
+                  {ordersDelta > 0 ? "▲" : "▼"} {Math.abs(ordersDelta)}%
                 </span>
               ) : null}
             </div>
@@ -326,7 +326,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
                       : "text-rose-600 dark:text-rose-400"
                   }`}
                 >
-                  {revenueDelta > 0 ? "Γû▓" : "Γû╝"} {Math.abs(revenueDelta)}%
+                  {revenueDelta > 0 ? "▲" : "▼"} {Math.abs(revenueDelta)}%
                 </span>
               ) : null}
             </div>

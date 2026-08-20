@@ -1,4 +1,4 @@
-﻿# Scheduled Customer Messaging Automation (╪▒╪│╪º╪ª┘ä ╪¿┘à┘ê╪º╪╣┘è╪» ╪½╪º╪¿╪¬╪⌐)
+# Scheduled Customer Messaging Automation (رسائل بمواعيد ثابتة)
 
 **Date**: 2026-08-08
 **Domain**: WhatsApp / Customer Engagement
@@ -8,7 +8,7 @@
 
 Three "send at a fixed time" (non-action) messaging systems:
 
-1. **Post-delivery follow-up sequences** (╪│┘ä╪º╪│┘ä ┘à╪º ╪¿╪╣╪» ╪º┘ä╪º╪│╪¬┘ä╪º┘à): after an order is
+1. **Post-delivery follow-up sequences** (سلاسل ما بعد الاستلام): after an order is
    DELIVERED, the customer is enrolled in a WhatsApp follow-up flow whose steps send
    at fixed delays (e.g. +1 week, +2 weeks, +3 weeks).
 2. **Customer birthday automation**: every day at 10:00, customers whose birthday
@@ -16,7 +16,7 @@ Three "send at a fixed time" (non-action) messaging systems:
 3. **Scheduled occasion campaigns**: admins schedule a WhatsApp campaign for a
    future date; an hourly cron sends it automatically.
 
-## 1. Post-delivery journeys ΓÇö wired to the actual delivery
+## 1. Post-delivery journeys — wired to the actual delivery
 
 `WhatsAppJourneyService` (flows = `whatsAppFollowUpFlow` with ordered `steps`
 that have `content` + `delayDays`/`delayHours`) is processed every 30 minutes by
@@ -42,7 +42,7 @@ quiet hours, dedup, session).
 
 - `cron/occasionCampaignCron.js` (hourly): processes `BroadcastCampaign` rows where
   `channel='whatsapp'`, `status='scheduled'`, `scheduledAt <= now`. Resolves the
-  audience (`targetAudience === 'all'` ΓåÆ all ACTIVE customers with phone, otherwise
+  audience (`targetAudience === 'all'` → all ACTIVE customers with phone, otherwise
   a JSON array of phone numbers), sends `contentOverride: campaign.message` with
   `eventType: OCCASION_CAMPAIGN`, then marks the campaign `completed`.
 - API:
@@ -61,7 +61,7 @@ connected session; quiet hours apply.
 ## Live verification (2026-08-08, AMA test company)
 
 - Created a general follow-up flow `cmskdk2ak001pjutk5ef3vsw5` with one step
-  (delayDays: 1, content "┘à╪¬╪º╪¿╪╣╪⌐ ╪¿╪╣╪» ╪º┘ä╪º╪│╪¬┘ä╪º┘à").
+  (delayDays: 1, content "متابعة بعد الاستلام").
 - Delivered 5 orders for test customer `cmshk7nim00jzjuvqcqe7kygv`
   (ORD-629952-811, ORD-855660-492, ORD-212047-085, ORD-639843-633, ORD-686423-696).
 - `GET /api/v1/whatsapp/automation/journeys?customerId=...` now returns 5 ACTIVE
@@ -69,11 +69,11 @@ connected session; quiet hours apply.
   `flowId = cmskdk2ak001pjutk5ef3vsw5`. Enrollment on DELIVERED works end-to-end.
 - **Bug fixed while verifying**: `WhatsAppContact` has no `companyId` column, but
   `whatsappAutomationController.getJourneys` and `WhatsAppJourneyService._resolvePhoneForJourney`
-  filtered on `companyId` ΓÇö that made the journeys monitoring API 500 as soon as any
+  filtered on `companyId` — that made the journeys monitoring API 500 as soon as any
   journey existed (the empty array we saw earlier was misleading). Removed the invalid
   filter (resolve by `customerId` only).
 - **Diagnostics added**: `enrollCustomer` now logs `[JOURNEY]` lines (flow found,
-  steps count, journey created id) and `[JOURNEY-ERROR]` with a short stack ΓÇö useful
+  steps count, journey created id) and `[JOURNEY-ERROR]` with a short stack — useful
   in `pm2 logs maxp-backend` when debugging on the live server.
 - Occasion campaign scheduled on AMA (`cmskdnz75008sjutkbc4k03vv`, scheduledAt
   2026-08-10) is picked up by the hourly `occasionCampaignCron`; it remains

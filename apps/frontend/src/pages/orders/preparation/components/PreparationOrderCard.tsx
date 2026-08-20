@@ -1,15 +1,16 @@
-import { formatDate } from '@/utils/formatters';
 import PreparationOrderActions from "./PreparationOrderActions";
 import PreparationOrderCardHeader from "./PreparationOrderCardHeader";
 import PreparationOrderItemsList from "./PreparationOrderItemsList";
 import PreparationOrderNotices from "./PreparationOrderNotices";
 import PreparationOrderQcChecklist from "./PreparationOrderQcChecklist";
 import PreparationOrderShortagePanel from "./PreparationOrderShortagePanel";
+import PreparationProblemHoldPanel from "./PreparationProblemHoldPanel";
 import type {
   ItemInsight,
   PreparationOrder,
   PreparationQueueSettings,
   PreparationStatusOption,
+  ProblemHoldDetails,
   QcCheckKey,
   ShortageFollowUpVisual,
   ShortageHoldDetails,
@@ -30,6 +31,7 @@ interface PreparationOrderCardProps {
   qcChecklist: Partial<Record<QcCheckKey, boolean>> | undefined;
   shortageHoldDetails: ShortageHoldDetails;
   shortageFollowUpVisual: ShortageFollowUpVisual | null;
+  problemHoldDetails: ProblemHoldDetails;
   transferingItemKey: string | null;
   printingOrderNumber: string | null;
   preparationSettings: PreparationQueueSettings;
@@ -56,6 +58,10 @@ interface PreparationOrderCardProps {
   onSingleStatusUpdate: (orderNumber: string, nextStatus: string) => void;
   onMarkAsShortageHold: (orderNumber: string) => void;
   onReleaseShortageHold: (orderNumber: string) => void;
+  onMarkAsShortageFailed: (orderNumber: string) => void;
+  onHoldAsProblem: (orderNumber: string) => void;
+  onReleaseProblemHold: (orderNumber: string) => void;
+  onEditProblemReason: (orderNumber: string) => void;
   onPrintPreparationSlip: (orderNumber: string) => void;
 }
 
@@ -74,6 +80,7 @@ const PreparationOrderCard = ({
   qcChecklist,
   shortageHoldDetails,
   shortageFollowUpVisual,
+  problemHoldDetails,
   transferingItemKey,
   printingOrderNumber,
   preparationSettings,
@@ -88,21 +95,32 @@ const PreparationOrderCard = ({
   onSingleStatusUpdate,
   onMarkAsShortageHold,
   onReleaseShortageHold,
+  onMarkAsShortageFailed,
+  onHoldAsProblem,
+  onReleaseProblemHold,
+  onEditProblemReason,
   onPrintPreparationSlip,
 }: PreparationOrderCardProps) => {
   const canPrepare = order.merchantFulfillment?.canPrepare !== false;
+  const isProblemHeld = order.stage === "ON_HOLD_PREP";
+  const activeFollowUpVisual =
+    isProblemHeld ? null : shortageFollowUpVisual;
 
   return (
     <article
-      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md hover:border-gray-300 ${
-        shortageFollowUpVisual?.cardClass || "border-gray-200"
-      }`}
+      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 active:scale-[0.99] hover:shadow-md hover:border-gray-300 dark:bg-gray-800 dark:shadow-gray-900/30 ${
+        activeFollowUpVisual?.cardClass || "border-gray-200 dark:border-gray-700"
+      } ${isProblemHeld ? "border-amber-300 dark:border-amber-700" : ""}`}
     >
       <PreparationOrderCardHeader
         order={order}
         selected={selected}
         statusLabelMap={statusLabelMap}
-        shortageFollowUpVisual={shortageFollowUpVisual}
+        shortageFollowUpVisual={activeFollowUpVisual}
+        problemHoldReason={isProblemHeld ? problemHoldDetails.reason : ""}
+        onEditProblemReason={
+          isProblemHeld ? onEditProblemReason : undefined
+        }
           formatPrice={formatPrice}
           formatDate={formatDate}
           onToggleSelection={onToggleSelection}
@@ -119,7 +137,7 @@ const PreparationOrderCard = ({
 
         <PreparationOrderNotices
           order={order}
-          shortageFollowUpVisual={shortageFollowUpVisual}
+          shortageFollowUpVisual={activeFollowUpVisual}
         />
 
         {canPrepare && hasShortageContext ? (
@@ -131,6 +149,16 @@ const PreparationOrderCard = ({
             formatDate={formatDate}
             onShortageFieldChange={onShortageFieldChange}
             onSaveShortageHoldDetails={onSaveShortageHoldDetails}
+          />
+        ) : null}
+
+        {canPrepare && isProblemHeld ? (
+          <PreparationProblemHoldPanel
+            order={order}
+            problemHoldDetails={problemHoldDetails}
+            rowBusy={rowBusy}
+            formatDate={formatDate}
+            onEditProblemReason={onEditProblemReason}
           />
         ) : null}
 
@@ -160,6 +188,9 @@ const PreparationOrderCard = ({
           onSingleStatusUpdate={onSingleStatusUpdate}
           onMarkAsShortageHold={onMarkAsShortageHold}
           onReleaseShortageHold={onReleaseShortageHold}
+          onMarkAsShortageFailed={onMarkAsShortageFailed}
+          onHoldAsProblem={onHoldAsProblem}
+          onReleaseProblemHold={onReleaseProblemHold}
           onPrintPreparationSlip={onPrintPreparationSlip}
         />
       </div>

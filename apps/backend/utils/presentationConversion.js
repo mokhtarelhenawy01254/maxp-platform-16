@@ -1,4 +1,4 @@
-﻿const { safeJsonParse } = require('./jsonUtils');
+const { safeJsonParse } = require('./jsonUtils');
 
 function slugify(text) {
   if (!text) return '';

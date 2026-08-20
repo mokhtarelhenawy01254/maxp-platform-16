@@ -1,6 +1,8 @@
 import { useMemo, useReducer } from "react";
 import type { PageSize } from "./constants";
 import type {
+  NoShippingCodeFilter,
+  NotPrintedFilter,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
   SortBy,
@@ -18,7 +20,13 @@ export interface PreparationQueueUiState {
   shortageFollowUpFilter: ShortageFollowUpFilter;
   shortageOwnerFilter: string;
   productFilter: string;
+  productColorFilter: string;
+  productSizeFilter: string;
+  productIdFilter: string;
+  variantIdFilter: string;
   itemCountFilter: ItemCountFilter;
+  notPrintedFilter: NotPrintedFilter;
+  noShippingCodeFilter: NoShippingCodeFilter;
   search: string;
   sortBy: SortBy;
   sortOrder: SortOrder;
@@ -38,7 +46,13 @@ type PreparationQueueUiAction =
   | { type: "set_shortage_follow_up_filter"; value: ShortageFollowUpFilter }
   | { type: "set_shortage_owner_filter"; value: string }
   | { type: "set_product_filter"; value: string }
+  | { type: "set_product_color_filter"; value: string }
+  | { type: "set_product_size_filter"; value: string }
+  | { type: "set_product_id_filter"; value: string }
+  | { type: "set_variant_id_filter"; value: string }
   | { type: "set_item_count_filter"; value: ItemCountFilter }
+  | { type: "set_not_printed_filter"; value: NotPrintedFilter }
+  | { type: "set_no_shipping_code_filter"; value: NoShippingCodeFilter }
   | { type: "set_search"; value: string }
   | { type: "set_sort"; value: { sortBy: SortBy; sortOrder: SortOrder } }
   | { type: "set_page_size"; value: PageSize }
@@ -62,7 +76,13 @@ const initialState: PreparationQueueUiState = {
   shortageFollowUpFilter: "all",
   shortageOwnerFilter: "",
   productFilter: "",
+  productColorFilter: "",
+  productSizeFilter: "",
+  productIdFilter: "",
+  variantIdFilter: "",
   itemCountFilter: "all",
+  notPrintedFilter: "all",
+  noShippingCodeFilter: "all",
   search: "",
   sortBy: "createdAt",
   sortOrder: "desc",
@@ -107,8 +127,20 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { shortageOwnerFilter: action.value });
     case "set_product_filter":
       return withPageReset(state, { productFilter: action.value });
+    case "set_product_color_filter":
+      return withPageReset(state, { productColorFilter: action.value });
+    case "set_product_size_filter":
+      return withPageReset(state, { productSizeFilter: action.value });
+    case "set_product_id_filter":
+      return withPageReset(state, { productIdFilter: action.value, variantIdFilter: "" });
+    case "set_variant_id_filter":
+      return withPageReset(state, { variantIdFilter: action.value });
     case "set_item_count_filter":
       return withPageReset(state, { itemCountFilter: action.value });
+    case "set_not_printed_filter":
+      return withPageReset(state, { notPrintedFilter: action.value });
+    case "set_no_shipping_code_filter":
+      return withPageReset(state, { noShippingCodeFilter: action.value });
     case "set_search":
       return withPageReset(state, { search: action.value });
     case "set_sort":
@@ -221,8 +253,20 @@ export const usePreparationQueueUiState = (
         dispatch({ type: "set_shortage_owner_filter", value }),
       setProductFilter: (value: string) =>
         dispatch({ type: "set_product_filter", value }),
+      setProductColorFilter: (value: string) =>
+        dispatch({ type: "set_product_color_filter", value }),
+      setProductSizeFilter: (value: string) =>
+        dispatch({ type: "set_product_size_filter", value }),
+      setProductIdFilter: (value: string) =>
+        dispatch({ type: "set_product_id_filter", value }),
+      setVariantIdFilter: (value: string) =>
+        dispatch({ type: "set_variant_id_filter", value }),
       setItemCountFilter: (value: ItemCountFilter) =>
         dispatch({ type: "set_item_count_filter", value }),
+      setNotPrintedFilter: (value: NotPrintedFilter) =>
+        dispatch({ type: "set_not_printed_filter", value }),
+      setNoShippingCodeFilter: (value: NoShippingCodeFilter) =>
+        dispatch({ type: "set_no_shipping_code_filter", value }),
       setSearch: (value: string) => dispatch({ type: "set_search", value }),
       setSort: (value: { sortBy: SortBy; sortOrder: SortOrder }) =>
         dispatch({ type: "set_sort", value }),

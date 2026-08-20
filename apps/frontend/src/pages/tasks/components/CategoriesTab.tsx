@@ -1,6 +1,10 @@
-import { Folder as FolderIcon, Pencil as PencilIcon, Plus as PlusIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  FolderIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 
 import { Button } from "../../../components/ui/button";
 import type { TaskCategory } from "../types";

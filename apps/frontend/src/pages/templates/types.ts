@@ -1,8 +1,8 @@
-﻿import type { AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
 
 /**
- * ┘ê╪º╪¼┘ç╪⌐ ╪»┘å┘è╪º ┘ä┘ä╪╣┘à┘è┘ä API ΓÇö ┘à╪╖╪º╪¿┘é╪⌐ ┘ä┘Ç ApiClient ╪º┘ä╪¡┘é┘è┘é┘è ┘ü┘è services/apiClient.
- * ╪º╪│╪¬┘Å╪«╪»┘à╪¬ ╪¿╪»┘ä ApiLike ╪╣╪┤╪º┘å ╪º┘ä┘Ç config ┘è╪¿┘é┘ë ┘à╪│╪¬┘é┘ä ╪╣┘å ╪º┘ä╪¬┘å┘ü┘è╪░ ╪º┘ä┘ü╪╣┘ä┘è.
+ * واجهة دنيا للعميل API — مطابقة لـ ApiClient الحقيقي في services/apiClient.
+ * استُخدمت بدل ApiLike عشان الـ config يبقى مستقل عن التنفيذ الفعلي.
  */
 export interface ApiLike {
   get<T = unknown>(url: string, config?: unknown): Promise<AxiosResponse<T>>;
@@ -13,8 +13,8 @@ export interface ApiLike {
 }
 
 /**
- * ┘é╪º┘ä╪¿ ┘ê╪º╪¬╪│╪º╪¿ ΓÇö ╪º┘ä╪¡┘é┘ê┘ä ╪º┘ä┘à╪┤╪¬╪▒┘â╪⌐ ╪¿┘è┘å ┘â┘ä ╪º┘ä┘å╪╖╪º┘é╪º╪¬.
- * ╪º┘ä╪¡┘é┘ê┘ä ╪º┘ä╪▓╪º╪ª╪»╪⌐ (buttons/headerUsesOrderProduct/variables) ╪¬╪╕┘ç╪▒ ╪¡╪│╪¿ ╪º┘ä┘å╪╖╪º┘é.
+ * قالب واتساب — الحقول المشتركة بين كل النطاقات.
+ * الحقول الزائدة (buttons/headerUsesOrderProduct/variables) تظهر حسب النطاق.
  */
 export interface Template {
   id: string;
@@ -37,9 +37,9 @@ export interface Template {
 }
 
 /**
- * ╪╡┘ü ╪¡╪»╪½ ┘à╪╣╪▒┘æ┘ü ┘ä┘â┘ä ╪º┘ä┘å╪╖╪º┘é╪º╪¬ ΓÇö ╪¿┘è┘Å┘å╪┤╪ú ┘à┘å ╪º┘ä┘Ç adapter ╪¿╪¬╪º╪╣ ┘â┘ä scope
- * (╪º┘ä╪ú┘ê╪▒╪»╪▒╪▓: /order-status/with-templates╪î ╪º┘ä╪╣┘à┘ä╪º╪í: schedule + templates).
- * ╪ú╪│┘à╪º╪í ╪º┘ä╪¡┘é┘ê┘ä ┘à╪╖╪º╪¿┘é╪⌐ ┘ä╪┤┘â┘ä StatusWithTemplate ╪º┘ä┘é╪»┘è┘à ╪╣╪┤╪º┘å ┘à┘â┘ê┘å╪º╪¬ ╪º┘ä╪╣╪▒╪╢ ╪¬╪┤╪¬╪║┘ä ┘â┘à╪º ┘ç┘è.
+ * صف حدث معرّف لكل النطاقات — بيُنشأ من الـ adapter بتاع كل scope
+ * (الأوردرز: /order-status/with-templates، العملاء: schedule + templates).
+ * أسماء الحقول مطابقة لشكل StatusWithTemplate القديم عشان مكونات العرض تشتغل كما هي.
  */
 export interface EventRow {
   id: string;
@@ -56,14 +56,14 @@ export interface EventRow {
   hasMetaTemplate?: boolean;
   isNonNotifiable?: boolean;
   updatedAt?: string;
-  /** ┘ü╪ª╪⌐ ┘é╪º┘ä╪¿ ╪º┘ä┘à┘å╪º╪│╪¿╪⌐ (OCCASION) ΓÇö ┘ä┘ä╪¬┘à┘è┘è╪▓ ┘ü┘è ╪¬╪¿┘ê┘è╪¿ ┘à┘å╪º╪│╪¿╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í */
+  /** فئة قالب المناسبة (OCCASION) — للتمييز في تبويب مناسبات العملاء */
   category?: string;
-  /** ╪«╪º╪╡ ╪¿╪º┘ä╪╣┘à┘ä╪º╪í ΓÇö ┘é┘å╪º╪⌐ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪º┘ä┘å╪┤╪╖╪⌐ */
+  /** خاص بالعملاء — قناة الإرسال النشطة */
   channel?: string;
-  /** ╪«╪º╪╡ ╪¿╪º┘ä╪╣┘à┘ä╪º╪í ΓÇö ╪¬╪ú╪«┘è╪▒ ╪º┘ä╪¼╪»┘ê┘ä╪⌐ */
+  /** خاص بالعملاء — تأخير الجدولة */
   delayValue?: number;
   delayUnit?: "HOURS" | "DAYS";
-  /** ╪«╪º╪╡ ╪¿╪º┘ä╪╣┘à┘ä╪º╪í ΓÇö ┘ê╪╡┘ü ╪º┘ä╪¬┘ü╪╣┘è┘ä (┘à╪¬┘ë ┘è┘Å╪▒╪│┘ä) */
+  /** خاص بالعملاء — وصف التفعيل (متى يُرسل) */
   trigger?: string;
 }
 
@@ -115,7 +115,7 @@ export interface SettingsForm {
   stickySessionEnabled: boolean;
 }
 
-/** ╪¬╪¿┘ê┘è╪¿ ┘ü┘è ╪º┘ä╪╡┘ü╪¡╪⌐ ╪º┘ä┘à┘ê╪¡╪»╪⌐ */
+/** تبويب في الصفحة الموحدة */
 export interface TabDef {
   key: string;
   label: string;
@@ -144,8 +144,8 @@ export type TemplateFormState = {
 };
 
 /**
- * ╪º┘ä┘Ç config ╪º┘ä╪«╪º╪╡ ╪¿┘â┘ä ┘å╪╖╪º┘é ΓÇö ╪¿┘è╪¡╪»╪» ┘â┘ä ┘à╪º ┘è╪«╪╡ ╪º┘ä┘å╪╖╪º┘é:
- * ╪º┘ä╪¿┘è╪º┘å╪º╪¬╪î ╪º┘ä╪¬╪¿┘ê┘è╪¿╪º╪¬╪î ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬╪î ╪º┘ä┘à┘è╪▓╪º╪¬╪î ┘ê┘å┘é╪º╪╖ ╪º┘ä┘å┘ç╪º┘è╪⌐.
+ * الـ config الخاص بكل نطاق — بيحدد كل ما يخص النطاق:
+ * البيانات، التبويبات، المتغيرات، الميزات، ونقاط النهاية.
  */
 export interface TemplateScopeConfig {
   scope: string;
@@ -153,25 +153,25 @@ export interface TemplateScopeConfig {
   title: string;
   description: string;
 
-  /** ╪¼┘ä╪¿ ╪╡┘ü┘ê┘ü ╪º┘ä╪ú╪¡╪»╪º╪½ ΓÇö ╪º┘ä┘Ç adapter ╪¿┘è╪▒╪¼┘æ╪╣ EventRow[] ┘à┘ê╪¡┘æ╪» */
+  /** جلب صفوف الأحداث — الـ adapter بيرجّع EventRow[] موحّد */
   loadEvents: (api: ApiLike) => Promise<EventRow[]>;
 
-  /** ╪¬┘ü╪╣┘è┘ä/╪Ñ┘è┘é╪º┘ü ╪Ñ╪┤╪╣╪º╪▒ ╪¡╪»╪½ */
+  /** تفعيل/إيقاف إشعار حدث */
   toggleNotify: (api: ApiLike, row: EventRow) => Promise<void>;
 
-  /** ╪¡┘ü╪╕ ╪¬╪╣╪»┘è┘ä╪º╪¬ ╪º┘ä╪¼╪»┘ê┘ä╪⌐ (╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪¼╪»┘ê┘ä ΓÇö ╪«╪º╪╡ ╪¿╪º┘ä╪╣┘à┘ä╪º╪í) */
+  /** حفظ تعديلات الجدولة (تبويب الجدول — خاص بالعملاء) */
   saveSchedule?: (api: ApiLike, row: EventRow, patch: { enabled: boolean; activeChannel: string; delayValue: number; delayUnit: "HOURS" | "DAYS" }) => Promise<void>;
 
-  /** ╪Ñ╪▒╪│╪º┘ä ╪¬╪¼╪▒┘è╪¿┘è (╪┤╪▒┘è╪╖ ╪ú╪╣┘ä┘ë ╪º┘ä╪╡┘ü╪¡╪⌐ ΓÇö ╪«╪º╪╡ ╪¿╪º┘ä╪╣┘à┘ä╪º╪í) */
+  /** إرسال تجريبي (شريط أعلى الصفحة — خاص بالعملاء) */
   testSend?: (api: ApiLike, phone: string, eventType: string) => Promise<{ success?: boolean; message?: string; error?: string }>;
 
-  /** ┘å┘é╪╖╪⌐ CRUD ╪º┘ä┘é┘ê╪º┘ä╪¿ ΓÇö ╪¬╪«╪¬┘ä┘ü ╪¿┘è┘å ╪º┘ä┘å╪╖╪º┘é┘è┘å (┘å┘ü╪│ ╪º┘ä┘â┘ê┘å╪¬╪▒┘ê┘ä╪▒) */
+  /** نقطة CRUD القوالب — تختلف بين النطاقين (نفس الكونترولر) */
   templateCrudBase: string;
 
-  /** ┘å┘é╪╖╪⌐ ╪╣┘à┘ä┘è╪º╪¬ ┘à┘è╪¬╪º (publish/bind/resubmit/sync/meta-available) ΓÇö ┘à┘ê╪¡┘æ╪»╪⌐ */
+  /** نقطة عمليات ميتا (publish/bind/resubmit/sync/meta-available) — موحّدة */
   metaOpsBase: string;
 
-  /** ╪╡┘è╪║╪⌐ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪«╪▓┘å╪⌐ ΓÇö ┘ä┘ê single ╪¿┘å╪¡┘ê┘æ┘ä double ╪»╪º╪«┘ä ╪º┘ä┘ê╪º╪¼┘ç╪⌐ ┘ê╪º┘ä╪╣┘â╪│ ╪╣┘å╪» ╪º┘ä╪¡┘ü╪╕ */
+  /** صيغة المتغيرات المخزنة — لو single بنحوّل double داخل الواجهة والعكس عند الحفظ */
   variableSyntax: "double" | "single";
 
   variables: { var: string; desc: string }[];
@@ -180,7 +180,7 @@ export interface TemplateScopeConfig {
   defaultContent: string;
   eventLabelResolver: (eventType: string) => string;
 
-  /** ╪¬╪¿┘ê┘è╪¿╪º╪¬ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ */
+  /** تبويبات الصفحة بالترتيب */
   tabs: TabDef[];
 
   features: {
@@ -199,19 +199,19 @@ export interface TemplateScopeConfig {
     categoryMode: "auto" | "manual";
   };
 
-  /** ┘ä╪¬╪¡╪»┘è╪» ┘ü╪ª╪⌐ ╪º┘ä┘é╪º┘ä╪¿ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï (┘ê╪╢╪╣ auto) */
+  /** لتحديد فئة القالب تلقائياً (وضع auto) */
   resolveCategory?: (row: EventRow) => string;
 
-  /** ┘ü╪ª╪º╪¬ ╪º┘ä╪│╪¼┘ä ╪º┘ä┘ä┘è ┘è╪╣╪▒╪╢┘ç╪º ╪¬┘é╪▒┘è╪▒ ╪º┘ä╪▒╪│╪º╪ª┘ä ΓÇö ┘ä┘ê ┘ü╪º╪╢┘è╪⌐ ┘å╪│╪¬╪«╪»┘à ┘ü╪ª╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ */
+  /** فئات السجل اللي يعرضها تقرير الرسائل — لو فاضية نستخدم فئات الطلبات الافتراضية */
   reportCategories?: string[];
 
-  /** ╪ú╪¡╪»╪º╪½ ╪º┘ä╪│╪¼┘ä ╪º┘ä┘ä┘è ┘è╪╣╪▒╪╢┘ç╪º ╪º┘ä╪¬┘é╪▒┘è╪▒ (┘ä┘ê ┘à╪¡╪»╪» ΓÇö ╪ú┘ê┘ä┘ê┘è╪⌐ ╪╣┘ä┘ë reportCategories) */
+  /** أحداث السجل اللي يعرضها التقرير (لو محدد — أولوية على reportCategories) */
   reportEventTypes?: string[];
 
-  /** ╪¬╪╣╪╖┘è┘ä/╪¬┘ü╪╣┘è┘ä ╪▓╪▒ ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º╪»┘è ╪Ñ╪░╪º ┘â╪º┘å ╪º┘ä╪¡╪»╪½ ╪║┘è╪▒ ┘à┘ü╪╣┘æ┘ä */
+  /** تعطيل/تفعيل زر إنشاء القالب العادي إذا كان الحدث غير مفعّل */
   gateCreateOnNotify?: boolean;
 
-  /** ╪╣┘å╪º┘ê┘è┘å ╪º┘ä┘Ç endpoints ╪º┘ä╪Ñ╪╢╪º┘ü┘è╪⌐ (╪º╪«╪¬┘è╪º╪▒┘è ΓÇö ┘ä┘ê ╪º┘ä┘å╪╖╪º┘é ╪┤╪║┘æ┘ä ╪º┘ä┘à┘è╪▓╪⌐) */
+  /** عناوين الـ endpoints الإضافية (اختياري — لو النطاق شغّل الميزة) */
   endpoints?: {
     sessions?: string;
     settings?: string;
@@ -222,7 +222,7 @@ export interface TemplateScopeConfig {
     testSend?: string;
   };
 
-  /** ╪¼┘ä╪¿ ╪¼┘ä╪│╪º╪¬ ┘à┘è╪¬╪º (╪º╪«╪¬┘è╪º╪▒┘è ΓÇö ┘ä┘ê ┘à╪«╪¬┘ä┘ü ╪╣┘å sessions ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è) */
+  /** جلب جلسات ميتا (اختياري — لو مختلف عن sessions الافتراضي) */
   metaSessionsUrl?: string;
 }
 

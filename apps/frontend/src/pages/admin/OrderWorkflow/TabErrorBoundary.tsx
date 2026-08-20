@@ -1,6 +1,5 @@
-import { AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React from 'react';
-;
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface Props {
     children: React.ReactNode;

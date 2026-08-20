@@ -1,4 +1,4 @@
-﻿// Quick verification that the delete-all route is loaded
+// Quick verification that the delete-all route is loaded
 try {
   const routes = require('../../routes/whatsappRoutes');
   const stack = routes.stack || [];

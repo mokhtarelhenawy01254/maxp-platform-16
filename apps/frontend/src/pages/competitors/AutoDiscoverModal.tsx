@@ -1,12 +1,12 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Inbox, Lightbulb, Loader2, Mail, Plus, Star, Wifi } from 'lucide-react';
+import { Loader2, Lightbulb, Plus, Wifi, Inbox } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 
 interface DiscoveredItem {

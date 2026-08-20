@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { normalizeModality } = require('../utils/radiologyModality');
 
 const normalizeText = (value) => {
@@ -19,7 +19,7 @@ const CATEGORY_INCLUDE = {
 const listCategories = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, parentId, includeInactive, mode } = req.query;
     const prisma = getSharedPrismaClient();
@@ -63,27 +63,27 @@ const listCategories = async (req, res) => {
     res.json({ success: true, data: rows, total: rows.length });
   } catch (error) {
     console.error('Error listing radiology exam categories:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘ü╪ª╪º╪¬ ╪º┘ä┘ü╪¡┘ê╪╡╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب فئات الفحوصات' });
   }
 };
 
 const createCategory = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const body = req.body || {};
     const name = normalizeText(body.name);
-    if (!name) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘ü╪ª╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+    if (!name) return res.status(400).json({ success: false, error: 'اسم الفئة مطلوب' });
 
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyExamCategory.findFirst({ where: { companyId, name } });
-    if (existing) return res.status(400).json({ success: false, error: `╪¬┘ê╪¼╪» ┘ü╪ª╪⌐ ╪¿┘å┘ü╪│ ╪º┘ä╪º╪│┘à "${name}"` });
+    if (existing) return res.status(400).json({ success: false, error: `توجد فئة بنفس الاسم "${name}"` });
 
     const parentId = normalizeText(body.parentId);
     if (parentId) {
       const parent = await prisma.radiologyExamCategory.findFirst({ where: { id: parentId, companyId } });
-      if (!parent) return res.status(400).json({ success: false, error: '╪º┘ä┘ü╪ª╪⌐ ╪º┘ä╪ú╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      if (!parent) return res.status(400).json({ success: false, error: 'الفئة الأب غير موجودة' });
     }
 
     const category = await prisma.radiologyExamCategory.create({
@@ -102,7 +102,7 @@ const createCategory = async (req, res) => {
     res.json({ success: true, data: category });
   } catch (error) {
     console.error('Error creating radiology exam category:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ┘ü╪ª╪⌐ ╪º┘ä┘ü╪¡╪╡' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء فئة الفحص' });
   }
 };
 
@@ -120,20 +120,20 @@ const assertNoCycle = (categories, id, parentId) => {
 const updateCategory = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyExamCategory.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘ü╪ª╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الفئة غير موجودة' });
 
     const data = {};
     if (body.name !== undefined) {
       const name = normalizeText(body.name);
-      if (!name) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘ü╪ª╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      if (!name) return res.status(400).json({ success: false, error: 'اسم الفئة مطلوب' });
       const dup = await prisma.radiologyExamCategory.findFirst({ where: { companyId, name, NOT: { id } } });
-      if (dup) return res.status(400).json({ success: false, error: `╪¬┘ê╪¼╪» ┘ü╪ª╪⌐ ╪¿┘å┘ü╪│ ╪º┘ä╪º╪│┘à "${name}"` });
+      if (dup) return res.status(400).json({ success: false, error: `توجد فئة بنفس الاسم "${name}"` });
       data.name = name;
     }
     if (body.nameEn !== undefined) data.nameEn = normalizeText(body.nameEn);
@@ -145,11 +145,11 @@ const updateCategory = async (req, res) => {
       const parentId = normalizeText(body.parentId);
       if (parentId) {
         const parent = await prisma.radiologyExamCategory.findFirst({ where: { id: parentId, companyId } });
-        if (!parent) return res.status(400).json({ success: false, error: '╪º┘ä┘ü╪ª╪⌐ ╪º┘ä╪ú╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+        if (!parent) return res.status(400).json({ success: false, error: 'الفئة الأب غير موجودة' });
       }
       const all = await prisma.radiologyExamCategory.findMany({ where: { companyId }, select: { id: true, parentId: true } });
       if (!assertNoCycle(all, id, parentId)) {
-        return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪¼╪╣┘ä ╪º┘ä┘ü╪ª╪⌐ ┘ü╪▒╪╣┘è╪⌐ ┘à┘å ┘å┘ü╪│┘ç╪º ╪ú┘ê ┘à┘å ┘ü╪▒╪╣ ┘à┘å┘ç╪º' });
+        return res.status(400).json({ success: false, error: 'لا يمكن جعل الفئة فرعية من نفسها أو من فرع منها' });
       }
       data.parentId = parentId || null;
     }
@@ -162,25 +162,25 @@ const updateCategory = async (req, res) => {
     res.json({ success: true, data: category });
   } catch (error) {
     console.error('Error updating radiology exam category:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ┘ü╪ª╪⌐ ╪º┘ä┘ü╪¡╪╡' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث فئة الفحص' });
   }
 };
 
 const deleteCategory = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyExamCategory.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘ü╪ª╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الفئة غير موجودة' });
 
     const category = await prisma.radiologyExamCategory.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä┘ü╪ª╪⌐', data: category });
+    res.json({ success: true, message: 'تم حذف الفئة', data: category });
   } catch (error) {
     console.error('Error deleting radiology exam category:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ┘ü╪ª╪⌐ ╪º┘ä┘ü╪¡╪╡' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف فئة الفحص' });
   }
 };
 

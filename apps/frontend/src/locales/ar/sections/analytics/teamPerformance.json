@@ -1,0 +1,22 @@
+{
+  "title": "تحليلات أداء الفريق",
+  "subtitle": "تقييم الموظفين والإنتاجية",
+  "fetchError": "حدث خطأ في جلب البيانات",
+  "retry": "إعادة المحاولة",
+  "last7Days": "آخر 7 أيام",
+  "last30Days": "آخر 30 يوم",
+  "last90Days": "آخر 90 يوم",
+  "lastYear": "آخر سنة",
+  "totalMembers": "عدد أعضاء الفريق",
+  "totalOrders": "إجمالي الطلبات",
+  "totalRevenue": "إجمالي الإيرادات",
+  "ordersProcessed": "الطلبات المعالجة",
+  "ordersCreated": "الطلبات المنشأة",
+  "performanceDetails": "تفاصيل الأداء",
+  "employee": "الموظف",
+  "role": "الدور",
+  "ordersConfirmed": "طلبات مؤكدة",
+  "successRate": "معدل النجاح",
+  "avgOrderValue": "متوسط قيمة الطلب",
+  "currency": "جنيه"
+}

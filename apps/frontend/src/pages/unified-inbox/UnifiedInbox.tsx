@@ -1,10 +1,35 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef, useCallback } from "react";
-;
-;
-import { Activity, ShoppingBag as ShoppingBagLucide, User as UserLucide, Search as MagnifyingGlassIcon, Circle as PaperAirplaneIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as UserCircleIcon, X as XMarkIcon, RefreshCw as ArrowPathIcon, Circle as EllipsisVerticalIcon, Circle as PaperClipIcon, Smile as FaceSmileIcon, Clock as ClockIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Check as CheckIcon, Link as LinkIcon, Circle as BellSnoozeIcon, Edit as PencilSquareIcon, ShoppingBag as ShoppingCartIcon, Circle as ArrowUturnLeftIcon, Heart as HeartIcon, ExternalLink as ArrowTopRightOnSquareIcon, Trash2 as TrashIcon, Circle as StarOutlineIcon, Archive as ArchiveBoxIcon, Ban as NoSymbolIcon, Circle as StarSolidIcon } from 'lucide-react';
+import {
+  MagnifyingGlassIcon,
+  PaperAirplaneIcon,
+  ChatBubbleLeftRightIcon,
+  UserCircleIcon,
+  XMarkIcon,
+  ArrowPathIcon,
+  EllipsisVerticalIcon,
+  PaperClipIcon,
+  FaceSmileIcon,
+  ClockIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  CheckIcon,
+  LinkIcon,
+  BellSnoozeIcon,
+  PencilSquareIcon,
+  ShoppingCartIcon,
+  ArrowUturnLeftIcon,
+  HeartIcon,
+  ArrowTopRightOnSquareIcon,
+  TrashIcon,
+  StarIcon as StarOutlineIcon,
+  ArchiveBoxIcon,
+  NoSymbolIcon,
+} from "@heroicons/react/24/outline";
+import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
+import { Activity, ShoppingBag as ShoppingBagLucide, User as UserLucide } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
+import { useTranslation } from "react-i18next";
 import EmojiPicker from "emoji-picker-react";
 
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
@@ -561,7 +586,7 @@ const UnifiedInbox: React.FC = () => {
 
         const formattedTexts = sortedTexts.map((t: any) => ({
           id: `saved-text-${t.id}`,
-          title: t.title || "بدون عنوان",
+          title: t.title || t("unifiedInbox.untitled"),
           content: t.content,
           imageUrls: t.imageUrls,
         }));
@@ -573,6 +598,24 @@ const UnifiedInbox: React.FC = () => {
       console.error("Error loading quick replies and saved texts:", error);
     }
   }, []);
+
+  // — Hash-based navigation: browser back returns to conversation list (works in PWA) —
+  useEffect(() => {
+    if (!selectedConversation) {
+      if (window.location.hash === '#chat') {
+        window.history.back();
+      }
+      return;
+    }
+    window.location.hash = 'chat';
+    const onHashChange = () => {
+      if (window.location.hash !== '#chat' && selectedConversation) {
+        setSelectedConversation(null);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [selectedConversation]);
 
   // ──────────────────────────────────────────────────────────
   // 🎯 Actions
@@ -1394,7 +1437,7 @@ const UnifiedInbox: React.FC = () => {
                                     color: "var(--color-primary)",
                                     border: "1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)",
                                   }}
-                                  title={`آخر أوردر: #${conv.lastOrderNumber}`}
+                                  title={t("unifiedInbox.lastOrder", { id: conv.lastOrderNumber })}
                                 >
                                   #{conv.lastOrderNumber}
                                 </span>
@@ -1552,7 +1595,7 @@ const UnifiedInbox: React.FC = () => {
                         background: selectedConversation.aiEnabled !== false ? "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))" : "none",
                         color: selectedConversation.aiEnabled !== false ? "var(--color-primary)" : "var(--color-muted-foreground)",
                       }}
-                      title={selectedConversation.aiEnabled !== false ? "إيقاف الرد الآلي" : "تشغيل الرد الآلي"}
+                      title={selectedConversation.aiEnabled !== false ? t("unifiedInbox.aiToggleOn") : t("unifiedInbox.aiToggleOff")}
                     >
                       <span className="text-base font-bold">🤖</span>
                     </button>
@@ -2010,7 +2053,7 @@ const UnifiedInbox: React.FC = () => {
                               {/* AI message badge + correction button */}
                               {!msg.isFromCustomer && (msg.isAIResponse || !msg.sender || msg.sender === 'ai') && (
                                 <div className="mt-2 pt-1.5 flex justify-between items-center text-[10px]" style={{ borderTop: '1px solid rgba(225, 238, 250, 0.2)' }}>
-                                  <span style={{ color: 'rgba(225, 238, 250, 0.7)' }}>🤖 رد تلقائي من الوكيل</span>
+                                  <span style={{ color: 'rgba(225, 238, 250, 0.7)' }}>{t("unifiedInbox.correctionBadge")}</span>
                                   {editingMessageId !== msg.id && (
                                     <button
                                       type="button"
@@ -2021,7 +2064,7 @@ const UnifiedInbox: React.FC = () => {
                                       className="hover:underline font-medium cursor-pointer"
                                       style={{ color: 'white' }}
                                     >
-                                      ✏️ تصحيح الرد
+                                      {t("unifiedInbox.correctionButton")}
                                     </button>
                                   )}
                                 </div>
@@ -2032,13 +2075,13 @@ const UnifiedInbox: React.FC = () => {
                             {editingMessageId === msg.id && (
                               <div className={`flex ${msg.isFromCustomer ? 'justify-start' : 'justify-end'}`}>
                                 <div className="max-w-[75%] rounded-xl p-3 space-y-2" style={{ background: 'var(--color-muted)', border: '1px solid var(--business-card-border)' }}>
-                                  <div className="text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>تصحيح رد الوكيل:</div>
+                                  <div className="text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>{t("unifiedInbox.correctionTitle")}</div>
                                   <textarea
                                     value={correctionText}
                                     onChange={(e) => setCorrectionText(e.target.value)}
                                     className="w-full min-h-[60px] p-2 text-sm rounded border outline-none resize-none"
                                     style={{ background: 'var(--color-background)', color: 'var(--color-foreground)', borderColor: 'var(--business-card-border)' }}
-                                    placeholder="اكتب الرد الصحيح للعميل هنا لتعليم الوكيل وتصحيح الخطأ..."
+                                    placeholder={String(t("unifiedInbox.correctionPlaceholder"))}
                                   />
                                   <div className="flex justify-end gap-2 text-xs">
                                     <button
@@ -2047,7 +2090,7 @@ const UnifiedInbox: React.FC = () => {
                                       className="px-3 py-1.5 rounded font-medium"
                                       style={{ background: 'var(--color-secondary)', color: 'var(--color-secondary-foreground)' }}
                                     >
-                                      إلغاء
+                                      {t("unifiedInbox.correctionCancel")}
                                     </button>
                                     <button
                                       type="button"
@@ -2056,7 +2099,7 @@ const UnifiedInbox: React.FC = () => {
                                       className="px-3 py-1.5 rounded font-medium disabled:opacity-50"
                                       style={{ background: 'var(--color-primary)', color: 'white' }}
                                     >
-                                      {savingCorrection ? 'جاري الحفظ...' : 'حفظ وتصحيح'}
+                                      {savingCorrection ? t("unifiedInbox.correctionSaving") : t("unifiedInbox.correctionSave")}
                                     </button>
                                   </div>
                                 </div>
@@ -2846,8 +2889,7 @@ const UnifiedInbox: React.FC = () => {
                                     className="text-xs font-semibold"
                                     style={{ color: "var(--business-success)" }}
                                   >
-                                    {order.total}{" "}
-                                    {i18n.language === "ar" ? "ج.م" : "EGP"}
+                                    {new Intl.NumberFormat(i18n.language, { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(Number(order.total))}
                                   </div>
                                   <div
                                     className="text-[10px]"

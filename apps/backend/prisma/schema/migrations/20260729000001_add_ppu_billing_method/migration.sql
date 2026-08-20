@@ -1,4 +1,4 @@
-﻿-- Add PPU billing method field to marketplace apps
+-- Add PPU billing method field to marketplace apps
 -- Values: PER_ORDER, PER_ITEM, PERCENTAGE
 
 ALTER TABLE "marketplace_apps"

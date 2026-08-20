@@ -76,7 +76,7 @@ describe('TurboService shipping address formatting', () => {
     expect(axios.post).toHaveBeenCalledTimes(1);
     const payload = axios.post.mock.calls[0][1];
     expect(payload.address).toBe('9 Street, District 5');
-    expect(payload.area).toBe('Giza');
+    expect(payload.area).toBe('District 5');
     expect(payload.address).not.toBe('Giza');
   });
 
@@ -224,6 +224,6 @@ describe('TurboService shipping address formatting', () => {
 
     const payload = axios.post.mock.calls[0][1];
     expect(payload.address).toBe('14 Gabr Tamam Street, Imbaba');
-    expect(payload.invoice_number).toBe(839842557);
+    expect(payload.invoice_number).toBe('ORD-839842-557');
   });
 });

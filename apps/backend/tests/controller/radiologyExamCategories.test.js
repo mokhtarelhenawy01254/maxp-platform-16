@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -36,7 +36,7 @@ const req = (overrides = {}) => ({
 const makeCategory = (overrides = {}) => ({
   id: 'cat-1',
   companyId: 'company-1',
-  name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐',
+  name: 'أشعة مقطعية',
   nameEn: null,
   abbreviation: null,
   modality: 'CT',
@@ -54,8 +54,8 @@ describe('radiologyExamCategoriesController', () => {
     test('returns flat categories with parent names and counts', async () => {
       const prisma = createPrisma();
       prisma.radiologyExamCategory.findMany.mockResolvedValue([
-        makeCategory({ id: 'cat-1', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐' }),
-        makeCategory({ id: 'cat-2', name: '╪▒┘å┘è┘å ┘à╪║┘å╪º╪╖┘è╪│┘è', parentId: 'cat-1', modality: 'MR', _count: { examTypes: 3, children: 2 } }),
+        makeCategory({ id: 'cat-1', name: 'أشعة مقطعية' }),
+        makeCategory({ id: 'cat-2', name: 'رنين مغناطيسي', parentId: 'cat-1', modality: 'MR', _count: { examTypes: 3, children: 2 } }),
       ]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -64,7 +64,7 @@ describe('radiologyExamCategoriesController', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.payload.data).toHaveLength(2);
-      expect(res.payload.data[1].parentName).toBe('╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐');
+      expect(res.payload.data[1].parentName).toBe('أشعة مقطعية');
       expect(prisma.radiologyExamCategory.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: { companyId: 'company-1', isActive: true },
         include: { _count: { select: { examTypes: true, children: true } } },
@@ -75,9 +75,9 @@ describe('radiologyExamCategoriesController', () => {
     test('builds a nested tree when mode=tree', async () => {
       const prisma = createPrisma();
       prisma.radiologyExamCategory.findMany.mockResolvedValue([
-        makeCategory({ id: 'cat-1', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐' }),
-        makeCategory({ id: 'cat-2', name: '╪º┘ä┘à╪«', parentId: 'cat-1' }),
-        makeCategory({ id: 'cat-3', name: '╪º┘ä╪¿╪╖┘å', parentId: 'cat-1' }),
+        makeCategory({ id: 'cat-1', name: 'أشعة مقطعية' }),
+        makeCategory({ id: 'cat-2', name: 'المخ', parentId: 'cat-1' }),
+        makeCategory({ id: 'cat-3', name: 'البطن', parentId: 'cat-1' }),
       ]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -120,11 +120,11 @@ describe('radiologyExamCategoriesController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createCategory(req({ body: { name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', modality: 'ct' } }), res);
+      await controller.createCategory(req({ body: { name: 'أشعة مقطعية', modality: 'ct' } }), res);
 
       expect(res.statusCode).toBe(200);
       const data = prisma.radiologyExamCategory.create.mock.calls[0][0].data;
-      expect(data.name).toBe('╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐');
+      expect(data.name).toBe('أشعة مقطعية');
       expect(data.modality).toBe('CT');
       expect(data.parentId).toBeNull();
       expect(data.isActive).toBe(true);
@@ -149,10 +149,10 @@ describe('radiologyExamCategoriesController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createCategory(req({ body: { name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐' } }), res);
+      await controller.createCategory(req({ body: { name: 'أشعة مقطعية' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toContain('┘å┘ü╪│ ╪º┘ä╪º╪│┘à');
+      expect(res.payload.error).toContain('نفس الاسم');
       expect(prisma.radiologyExamCategory.create).not.toHaveBeenCalled();
     });
 
@@ -160,7 +160,7 @@ describe('radiologyExamCategoriesController', () => {
       const res = createResponse();
       await controller.createCategory(req({ body: {} }), res);
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º╪│┘à ╪º┘ä┘ü╪ª╪⌐ ┘à╪╖┘ä┘ê╪¿');
+      expect(res.payload.error).toBe('اسم الفئة مطلوب');
     });
 
     test('rejects a parent outside the company', async () => {
@@ -169,10 +169,10 @@ describe('radiologyExamCategoriesController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.createCategory(req({ body: { name: '┘ü╪▒╪╣┘è╪⌐', parentId: 'foreign' } }), res);
+      await controller.createCategory(req({ body: { name: 'فرعية', parentId: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toBe('╪º┘ä┘ü╪ª╪⌐ ╪º┘ä╪ú╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الفئة الأب غير موجودة');
     });
   });
 
@@ -187,12 +187,12 @@ describe('radiologyExamCategoriesController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.updateCategory(req({ params: { id: 'cat-1' }, body: { name: '╪ú╪┤╪╣╪⌐ CT' } }), res);
+      await controller.updateCategory(req({ params: { id: 'cat-1' }, body: { name: 'أشعة CT' } }), res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyExamType.updateMany).toHaveBeenCalledWith({
         where: { companyId: 'company-1', categoryId: 'cat-1' },
-        data: { category: '╪ú╪┤╪╣╪⌐ CT' },
+        data: { category: 'أشعة CT' },
       });
     });
 
@@ -206,7 +206,7 @@ describe('radiologyExamCategoriesController', () => {
       await controller.updateCategory(req({ params: { id: 'cat-1' }, body: { parentId: 'cat-1' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toContain('┘å┘ü╪│┘ç╪º');
+      expect(res.payload.error).toContain('نفسها');
       expect(prisma.radiologyExamCategory.update).not.toHaveBeenCalled();
     });
 
@@ -214,7 +214,7 @@ describe('radiologyExamCategoriesController', () => {
       const prisma = createPrisma();
       prisma.radiologyExamCategory.findFirst
         .mockResolvedValueOnce(makeCategory())
-        .mockResolvedValueOnce(makeCategory({ id: 'cat-2', name: '╪º┘ä┘à╪«', parentId: 'cat-1' }));
+        .mockResolvedValueOnce(makeCategory({ id: 'cat-2', name: 'المخ', parentId: 'cat-1' }));
       prisma.radiologyExamCategory.findMany.mockResolvedValue([
         makeCategory({ id: 'cat-1' }),
         makeCategory({ id: 'cat-2', parentId: 'cat-1' }),
@@ -225,7 +225,7 @@ describe('radiologyExamCategoriesController', () => {
       await controller.updateCategory(req({ params: { id: 'cat-1' }, body: { parentId: 'cat-2' } }), res);
 
       expect(res.statusCode).toBe(400);
-      expect(res.payload.error).toContain('┘ü╪▒╪╣ ┘à┘å┘ç╪º');
+      expect(res.payload.error).toContain('فرع منها');
     });
 
     test('returns 404 for a foreign category', async () => {
@@ -237,7 +237,7 @@ describe('radiologyExamCategoriesController', () => {
       await controller.updateCategory(req({ params: { id: 'foreign' }, body: { name: 'X' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä┘ü╪ª╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الفئة غير موجودة');
     });
   });
 
@@ -256,7 +256,7 @@ describe('radiologyExamCategoriesController', () => {
         where: { id: 'cat-1' },
         data: { isActive: false },
       });
-      expect(res.payload.message).toBe('╪¬┘à ╪¡╪░┘ü ╪º┘ä┘ü╪ª╪⌐');
+      expect(res.payload.message).toBe('تم حذف الفئة');
     });
 
     test('returns 404 for a foreign category', async () => {
@@ -268,7 +268,7 @@ describe('radiologyExamCategoriesController', () => {
       await controller.deleteCategory(req({ params: { id: 'foreign' } }), res);
 
       expect(res.statusCode).toBe(404);
-      expect(res.payload.error).toBe('╪º┘ä┘ü╪ª╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+      expect(res.payload.error).toBe('الفئة غير موجودة');
       expect(prisma.radiologyExamCategory.update).not.toHaveBeenCalled();
     });
   });

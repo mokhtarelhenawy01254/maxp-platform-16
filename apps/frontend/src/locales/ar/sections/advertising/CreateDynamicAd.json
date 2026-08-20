@@ -1,8 +1,8 @@
-﻿{
-  "failed_load_54a9": "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡┘à┘è┘ä Catalogs",
-  "failed_load_fa45": "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡┘à┘è┘ä Product Sets",
-  "please_name_e56c": "┘è╪▒╪¼┘ë ╪Ñ╪»╪«╪º┘ä ╪º╪│┘à ╪º┘ä╪Ñ╪╣┘ä╪º┘å",
-  "msg_8fe0": "┘è╪▒╪¼┘ë ╪º╪«╪¬┘è╪º╪▒ Catalog",
-  "msg_b753": "┘è╪▒╪¼┘ë ╪º╪«╪¬┘è╪º╪▒ Product Set",
-  "success_create_6286": "╪¬┘à ╪Ñ┘å╪┤╪º╪í Dynamic Ad ╪¿┘å╪¼╪º╪¡"
+{
+  "failed_load_54a9": "فشل في تحميل Catalogs",
+  "failed_load_fa45": "فشل في تحميل Product Sets",
+  "please_name_e56c": "يرجى إدخال اسم الإعلان",
+  "msg_8fe0": "يرجى اختيار Catalog",
+  "msg_b753": "يرجى اختيار Product Set",
+  "success_create_6286": "تم إنشاء Dynamic Ad بنجاح"
 }

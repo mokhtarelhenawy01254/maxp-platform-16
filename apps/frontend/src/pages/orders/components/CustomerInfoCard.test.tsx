@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CustomerInfoCard from "./CustomerInfoCard";
@@ -90,7 +90,7 @@ describe("CustomerInfoCard customer blocking", () => {
     renderCard();
 
     expect(
-      await screen.findByRole("button", { name: /╪¡╪╕╪▒ ╪º┘ä╪╣┘à┘è┘ä/ }),
+      await screen.findByRole("button", { name: /حظر العميل/ }),
     ).toBeInTheDocument();
     expect(customerBlocklistService.check).toHaveBeenCalledWith({
       customerId: "customer-1",
@@ -105,8 +105,8 @@ describe("CustomerInfoCard customer blocking", () => {
     const user = userEvent.setup();
     renderCard();
 
-    await user.click(await screen.findByRole("button", { name: /╪¡╪╕╪▒ ╪º┘ä╪╣┘à┘è┘ä/ }));
-    await user.click(screen.getByRole("button", { name: /╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╕╪▒/ }));
+    await user.click(await screen.findByRole("button", { name: /حظر العميل/ }));
+    await user.click(screen.getByRole("button", { name: /تأكيد الحظر/ }));
 
     await waitFor(() => {
       expect(customerBlocklistService.createRule).toHaveBeenCalledWith(

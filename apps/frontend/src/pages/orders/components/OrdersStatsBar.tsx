@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -243,7 +243,7 @@ export const OrdersStatsBar: React.FC<OrdersStatsBarProps> = ({
               {t("orders.pendingWithdrawalRequests", { count: formatMerchantPieces(pendingPayouts.length) })}
             </span>
             <span className="text-[11px] opacity-80">
-              {t("orders.lastPayout")}: {payoutStatusLabels[pendingPayouts[0]?.status] || pendingPayouts[0]?.status} ΓÇó{" "}
+              {t("orders.lastPayout")}: {payoutStatusLabels[pendingPayouts[0]?.status] || pendingPayouts[0]?.status} •{" "}
               {formatPrice(Number(pendingPayouts[0]?.amount || 0))}
             </span>
           </div>

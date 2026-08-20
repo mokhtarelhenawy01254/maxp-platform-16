@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AlertTriangle, ArrowRight, Calendar, Eye, File, FileText, Gavel, Save, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Save, Eye, ShieldAlert, FileText, Calendar, Gavel } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -22,6 +22,7 @@ import {
 } from "../../components/ui/dialog";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Warning {
   id: string;
@@ -93,14 +94,14 @@ const EditWarning: React.FC = () => {
     e.preventDefault();
 
     if (!formData.title.trim() || !formData.description.trim()) {
-      toast.error("الرجاء ملء جميع الحقول المطلوبة");
+      tToast.error("EditWarning.msg_1d83");
       return;
     }
 
     try {
       setSaving(true);
       await api.put(`/hr/warnings/${id}`, formData);
-      toast.success("تم تحديث الإنذار بنجاح");
+      tToast.success("EditWarning.success_update_3427");
       navigate(`/hr/warnings/${id}`);
     } catch (error: any) {
       console.error("Error updating warning:", error);

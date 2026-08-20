@@ -1,4 +1,4 @@
-﻿// Minimal Arabic text shaper for pdfkit (presentation forms + bidi reverse).
+// Minimal Arabic text shaper for pdfkit (presentation forms + bidi reverse).
 // Maps Arabic letters to their contextual (initial/medial/final/isolated) forms.
 
 const ARABIC_LETTERS = {

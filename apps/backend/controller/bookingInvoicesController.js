@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getDateStringInTimezone } = require('../utils/dateUtils');
 
 const INVOICE_STATUSES = ['UNPAID', 'PARTIAL', 'PAID', 'REFUNDED'];
@@ -57,7 +57,7 @@ const cashierNameOf = (req, bodyName) => {
   if (name) return name;
   const u = req.user || {};
   if (u.firstName || u.lastName) return `${u.firstName || ''} ${u.lastName || ''}`.trim();
-  return '╪º┘ä┘à╪¡╪º╪│╪¿';
+  return 'المحاسب';
 };
 
 const payerNameOf = (firstName, lastName) => `${firstName || ''} ${lastName || ''}`.trim() || null;
@@ -119,7 +119,7 @@ const formatInvoice = (inv) => ({
 const getAllInvoices = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { status, patientId, search, page, limit } = req.query;
     const where = { companyId };
@@ -155,14 +155,14 @@ const getAllInvoices = async (req, res) => {
     res.json({ success: true, data: invoices.map(formatInvoice), total, page: pageNum, limit: limitNum });
   } catch (error) {
     console.error('Error fetching invoices:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ü┘ê╪º╪¬┘è╪▒' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الفواتير' });
   }
 };
 
 const getInvoiceById = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const invoice = await getSharedPrismaClient().medicalInvoice.findFirst({
@@ -173,51 +173,51 @@ const getInvoiceById = async (req, res) => {
         payments: { orderBy: { paidAt: 'desc' } },
       },
     });
-    if (!invoice) return res.status(404).json({ success: false, error: '╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!invoice) return res.status(404).json({ success: false, error: 'الفاتورة غير موجودة' });
 
     res.json({ success: true, data: formatInvoice(invoice) });
   } catch (error) {
     console.error('Error fetching invoice:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الفاتورة' });
   }
 };
 
 const createInvoice = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { patientId, appointmentId, total, discount, discountReason, additionAmount, additionReason, dueDate, notes, method, initialPayment, insuranceAmount, expenseSplit, insuranceCompanyId, ticketNumber, cashierId, cashierName } = req.body;
-    if (!patientId) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ┘à╪╖┘ä┘ê╪¿' });
+    if (!patientId) return res.status(400).json({ success: false, error: 'المريض مطلوب' });
     const amount = Number(total);
-    if (isNaN(amount) || !Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+    if (isNaN(amount) || !Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: 'المبلغ غير صالح' });
 
     const rawDisc = discount === undefined || discount === null ? 0 : Number(discount);
     const rawAdd = additionAmount === undefined || additionAmount === null ? 0 : Number(additionAmount);
-    if (Number.isNaN(rawDisc) || !Number.isFinite(rawDisc) || rawDisc < 0) return res.status(400).json({ success: false, error: '┘é┘è┘à╪⌐ ╪º┘ä╪«╪╡┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
-    if (Number.isNaN(rawAdd) || !Number.isFinite(rawAdd) || rawAdd < 0) return res.status(400).json({ success: false, error: '┘é┘è┘à╪⌐ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+    if (Number.isNaN(rawDisc) || !Number.isFinite(rawDisc) || rawDisc < 0) return res.status(400).json({ success: false, error: 'قيمة الخصم غير صالحة' });
+    if (Number.isNaN(rawAdd) || !Number.isFinite(rawAdd) || rawAdd < 0) return res.status(400).json({ success: false, error: 'قيمة الإضافة غير صالحة' });
     const rawInsurance = insuranceAmount === undefined || insuranceAmount === null ? 0 : Number(insuranceAmount);
-    if (Number.isNaN(rawInsurance) || !Number.isFinite(rawInsurance) || rawInsurance < 0) return res.status(400).json({ success: false, error: '┘à╪¿┘ä╪║ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+    if (Number.isNaN(rawInsurance) || !Number.isFinite(rawInsurance) || rawInsurance < 0) return res.status(400).json({ success: false, error: 'مبلغ التأمين غير صالح' });
     const disc = rawDisc;
     const add = rawAdd;
     if (disc > 0 && !String(discountReason || '').trim()) {
-      return res.status(400).json({ success: false, error: '╪│╪¿╪¿ ╪º┘ä╪«╪╡┘à ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, error: 'سبب الخصم مطلوب' });
     }
     if (add > 0 && !String(additionReason || '').trim()) {
-      return res.status(400).json({ success: false, error: '╪│╪¿╪¿ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, error: 'سبب الإضافة مطلوب' });
     }
     if (expenseSplit && !EXPENSE_SPLITS.includes(expenseSplit)) {
-      return res.status(400).json({ success: false, error: '╪¬┘é╪│┘è┘à ╪º┘ä┘à╪╡╪º╪▒┘è┘ü ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'تقسيم المصاريف غير صالح' });
     }
 
     const initialPaid = Number(initialPayment) || 0;
     const net = netOf(amount, disc, add);
     if (initialPaid > net + 0.001) {
-      return res.status(400).json({ success: false, error: '╪º┘ä╪»┘ü╪╣╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä╪╡╪º┘ü┘è' });
+      return res.status(400).json({ success: false, error: 'الدفعة الأولى أكبر من الصافي' });
     }
     const payMethod = normalizeMethod(method);
     if (initialPaid > 0 && !payMethod) {
-      return res.status(400).json({ success: false, error: '╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'طريقة الدفع غير صالحة' });
     }
 
     const prisma = getSharedPrismaClient();
@@ -225,12 +225,12 @@ const createInvoice = async (req, res) => {
       where: { id: patientId, companyId },
       include: { memberType: true },
     });
-    if (!patient) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!patient) return res.status(400).json({ success: false, error: 'المريض غير موجود' });
 
     const resolvedAppointmentId = appointmentId || null;
     if (resolvedAppointmentId) {
       const appointmentExists = await prisma.appointment.findFirst({ where: { id: resolvedAppointmentId, companyId }, select: { id: true } });
-      if (!appointmentExists) return res.status(400).json({ success: false, error: '╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!appointmentExists) return res.status(400).json({ success: false, error: 'الموعد غير موجود' });
     }
 
     const resolvedInsurance = resolveAutoInsurance(req, net, patient);
@@ -274,7 +274,7 @@ const createInvoice = async (req, res) => {
             entityType: 'PAYMENT',
             entityId: created.id,
             action: 'PAYMENT',
-            description: `╪»┘ü╪╣╪⌐ ╪ú┘ê┘ä┘ë (${payMethod})`,
+            description: `دفعة أولى (${payMethod})`,
             amount: initialPaid,
             payer: payerNameOf(patient.firstName, patient.lastName),
           });
@@ -284,7 +284,7 @@ const createInvoice = async (req, res) => {
           entityType: 'INVOICE',
           entityId: created.id,
           action: 'CREATE',
-          description: `╪Ñ┘å╪┤╪º╪í ┘ü╪º╪¬┘ê╪▒╪⌐ ${created.invoiceNumber}`,
+          description: `إنشاء فاتورة ${created.invoiceNumber}`,
           amount: net,
           payer: payerNameOf(patient.firstName, patient.lastName),
         });
@@ -303,32 +303,32 @@ const createInvoice = async (req, res) => {
     res.json({ success: true, data: formatInvoice(invoice) });
   } catch (error) {
     console.error('Error creating invoice:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الفاتورة' });
   }
 };
 
 const updateInvoice = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.medicalInvoice.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الفاتورة غير موجودة' });
 
     const { total, discount, discountReason, additionAmount, additionReason, dueDate, notes, status, patientId, insuranceAmount, expenseSplit, insuranceCompanyId, ticketNumber, cashierId, cashierName } = req.body;
     if (total !== undefined && (isNaN(Number(total)) || !Number.isFinite(Number(total)) || Number(total) <= 0)) {
-      return res.status(400).json({ success: false, error: '╪º┘ä┘à╪¿┘ä╪║ ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'المبلغ غير صالح' });
     }
     if (discount !== undefined && (isNaN(Number(discount)) || !Number.isFinite(Number(discount)) || Number(discount) < 0)) {
-      return res.status(400).json({ success: false, error: '┘é┘è┘à╪⌐ ╪º┘ä╪«╪╡┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'قيمة الخصم غير صالحة' });
     }
     if (additionAmount !== undefined && (isNaN(Number(additionAmount)) || !Number.isFinite(Number(additionAmount)) || Number(additionAmount) < 0)) {
-      return res.status(400).json({ success: false, error: '┘é┘è┘à╪⌐ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'قيمة الإضافة غير صالحة' });
     }
     if (insuranceAmount !== undefined && (isNaN(Number(insuranceAmount)) || !Number.isFinite(Number(insuranceAmount)) || Number(insuranceAmount) < 0)) {
-      return res.status(400).json({ success: false, error: '┘à╪¿┘ä╪║ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'مبلغ التأمين غير صالح' });
     }
     const data = {};
     if (total !== undefined) data.total = Number(total);
@@ -348,12 +348,12 @@ const updateInvoice = async (req, res) => {
     if (status !== undefined && INVOICE_STATUSES.includes(status)) data.status = status;
 
     if (expenseSplit !== undefined && !EXPENSE_SPLITS.includes(expenseSplit)) {
-      return res.status(400).json({ success: false, error: '╪¬┘é╪│┘è┘à ╪º┘ä┘à╪╡╪º╪▒┘è┘ü ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'تقسيم المصاريف غير صالح' });
     }
 
     if (data.patientId) {
       const patientExists = await prisma.patient.findFirst({ where: { id: data.patientId, companyId }, select: { id: true } });
-      if (!patientExists) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!patientExists) return res.status(400).json({ success: false, error: 'المريض غير موجود' });
     }
 
     const nextDiscount = data.discount !== undefined ? data.discount : existing.discount;
@@ -361,30 +361,30 @@ const updateInvoice = async (req, res) => {
     const nextDiscountReason = data.discountReason !== undefined ? data.discountReason : existing.discountReason;
     const nextAdditionReason = data.additionReason !== undefined ? data.additionReason : existing.additionReason;
     if (nextDiscount > 0 && !String(nextDiscountReason || '').trim()) {
-      return res.status(400).json({ success: false, error: '╪│╪¿╪¿ ╪º┘ä╪«╪╡┘à ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, error: 'سبب الخصم مطلوب' });
     }
     if (nextAddition > 0 && !String(nextAdditionReason || '').trim()) {
-      return res.status(400).json({ success: false, error: '╪│╪¿╪¿ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, error: 'سبب الإضافة مطلوب' });
     }
 
     const next = { ...existing, ...data };
     const nextNet = netOf(next.total, next.discount, next.additionAmount || 0);
     if (next.amountPaid > nextNet + 0.001) {
-      return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪«┘ü╪╢ ╪º┘ä╪╡╪º┘ü┘è ╪Ñ┘ä┘ë ╪ú┘é┘ä ┘à┘å ╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪»╪»' });
+      return res.status(400).json({ success: false, error: 'لا يمكن خفض الصافي إلى أقل من المبلغ المسدد' });
     }
     data.status = computeStatus(next.total, next.discount, next.additionAmount || 0, next.amountPaid);
 
     const invoice = await prisma.medicalInvoice.update({ where: { id }, data });
 
     const changeParts = [];
-    if (data.discount !== undefined && data.discount !== (existing.discount || 0)) changeParts.push('╪«╪╡┘à');
-    if (data.additionAmount !== undefined && data.additionAmount !== (existing.additionAmount || 0)) changeParts.push('╪Ñ╪╢╪º┘ü╪⌐');
-    if (data.total !== undefined && data.total !== (existing.total || 0)) changeParts.push('╪Ñ╪¼┘à╪º┘ä┘è');
+    if (data.discount !== undefined && data.discount !== (existing.discount || 0)) changeParts.push('خصم');
+    if (data.additionAmount !== undefined && data.additionAmount !== (existing.additionAmount || 0)) changeParts.push('إضافة');
+    if (data.total !== undefined && data.total !== (existing.total || 0)) changeParts.push('إجمالي');
     await writeTransactionLog(prisma, req, {
       entityType: 'INVOICE',
       entityId: id,
       action: 'UPDATE',
-      description: changeParts.length ? `╪¬╪╣╪»┘è┘ä ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ (${changeParts.join('╪î ')})` : '╪¬╪╣╪»┘è┘ä ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐',
+      description: changeParts.length ? `تعديل الفاتورة (${changeParts.join('، ')})` : 'تعديل الفاتورة',
       amount: netOf(next.total, next.discount, next.additionAmount || 0),
     });
 
@@ -398,36 +398,36 @@ const updateInvoice = async (req, res) => {
     res.json({ success: true, data: formatInvoice(invoice) });
   } catch (error) {
     console.error('Error updating invoice:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الفاتورة' });
   }
 };
 
 const addPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { amount, method, notes, reason, cashierName } = req.body;
     const paymentAmount = Number(amount);
     if (!amount || isNaN(paymentAmount) || !Number.isFinite(paymentAmount) || paymentAmount <= 0) {
-      return res.status(400).json({ success: false, error: '┘à╪¿┘ä╪║ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'مبلغ الدفع غير صالح' });
     }
     const payMethod = normalizeMethod(method);
     if (!payMethod) {
-      return res.status(400).json({ success: false, error: '╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'طريقة الدفع غير صالحة' });
     }
 
     const prisma = getSharedPrismaClient();
     const invoice = await prisma.medicalInvoice.findFirst({ where: { id, companyId } });
-    if (!invoice) return res.status(404).json({ success: false, error: '╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
-    if (invoice.status === 'PAID') return res.status(400).json({ success: false, error: '╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ┘à╪│╪»╪»╪⌐ ╪¿╪º┘ä┘â╪º┘à┘ä' });
-    if (invoice.status === 'REFUNDED') return res.status(400).json({ success: false, error: '╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ┘à┘ä╪║╪º╪⌐' });
+    if (!invoice) return res.status(404).json({ success: false, error: 'الفاتورة غير موجودة' });
+    if (invoice.status === 'PAID') return res.status(400).json({ success: false, error: 'الفاتورة مسددة بالكامل' });
+    if (invoice.status === 'REFUNDED') return res.status(400).json({ success: false, error: 'الفاتورة ملغاة' });
 
     const newPaid = invoice.amountPaid + paymentAmount;
     const net = netOf(invoice.total, invoice.discount, invoice.additionAmount);
     if (newPaid > net + 0.001) {
-      return res.status(400).json({ success: false, error: `╪º┘ä╪»┘ü╪╣ ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä┘à╪¬╪¿┘é┘è (${(net - invoice.amountPaid).toFixed(2)})` });
+      return res.status(400).json({ success: false, error: `الدفع أكبر من المتبقي (${(net - invoice.amountPaid).toFixed(2)})` });
     }
     const newStatus = computeStatus(invoice.total, invoice.discount, invoice.additionAmount || 0, newPaid);
     const cashierNameFinal = cashierNameOf(req, cashierName);
@@ -446,7 +446,7 @@ const addPayment = async (req, res) => {
         entityType: 'PAYMENT',
         entityId: id,
         action: 'PAYMENT',
-        description: `╪»┘ü╪╣╪⌐ (${payMethod})`,
+        description: `دفعة (${payMethod})`,
         amount: paymentAmount,
       });
       const applied = await tx.medicalInvoice.updateMany({
@@ -473,40 +473,40 @@ const addPayment = async (req, res) => {
     res.json({ success: true, data: formatInvoice(result) });
   } catch (error) {
     if (error instanceof AmountPaidMismatchError) {
-      return res.status(409).json({ success: false, error: '╪¬╪║┘è┘æ╪▒ ╪▒╪╡┘è╪» ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐╪î ╪ú╪╣╪» ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐' });
+      return res.status(409).json({ success: false, error: 'تغيّر رصيد الفاتورة، أعد المحاولة' });
     }
     console.error('Error adding payment:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»┘ü╪╣' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفع' });
   }
 };
 
 const paybackPayment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { amount, method, reason, paymentId, notes, cashierName } = req.body;
     const paybackAmount = Number(amount);
     if (isNaN(paybackAmount) || !Number.isFinite(paybackAmount) || paybackAmount <= 0) {
-      return res.status(400).json({ success: false, error: '┘à╪¿┘ä╪║ ╪º┘ä╪º╪│╪¬╪▒╪»╪º╪» ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'مبلغ الاسترداد غير صالح' });
     }
     const payMethod = normalizeMethod(method);
     if (!payMethod) {
-      return res.status(400).json({ success: false, error: '╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'طريقة الدفع غير صالحة' });
     }
     if (!String(reason || '').trim()) {
-      return res.status(400).json({ success: false, error: '╪│╪¿╪¿ ╪º┘ä╪º╪│╪¬╪▒╪»╪º╪» ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, error: 'سبب الاسترداد مطلوب' });
     }
 
     const prisma = getSharedPrismaClient();
     const invoice = await prisma.medicalInvoice.findFirst({ where: { id, companyId } });
-    if (!invoice) return res.status(404).json({ success: false, error: '╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!invoice) return res.status(404).json({ success: false, error: 'الفاتورة غير موجودة' });
     if (invoice.amountPaid <= 0) {
-      return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘ê╪¼╪» ┘à╪¿┘ä╪║ ┘à╪│╪»╪» ┘ä┘ä╪º╪│╪¬╪▒╪»╪º╪»' });
+      return res.status(400).json({ success: false, error: 'لا يوجد مبلغ مسدد للاسترداد' });
     }
     if (paybackAmount > invoice.amountPaid + 0.001) {
-      return res.status(400).json({ success: false, error: '╪º┘ä╪º╪│╪¬╪▒╪»╪º╪» ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä┘à╪¿┘ä╪║ ╪º┘ä┘à╪│╪»╪»' });
+      return res.status(400).json({ success: false, error: 'الاسترداد أكبر من المبلغ المسدد' });
     }
 
     const reference = await prisma.medicalPayment.findFirst({
@@ -535,7 +535,7 @@ const paybackPayment = async (req, res) => {
         entityType: 'PAYBACK',
         entityId: id,
         action: 'PAYBACK',
-        description: `╪º╪│╪¬╪▒╪»╪º╪» (${payMethod}): ${String(reason).trim()}`,
+        description: `استرداد (${payMethod}): ${String(reason).trim()}`,
         amount: paybackAmount,
       });
       const applied = await tx.medicalInvoice.updateMany({
@@ -556,24 +556,24 @@ const paybackPayment = async (req, res) => {
     res.json({ success: true, data: formatInvoice(result) });
   } catch (error) {
     if (error instanceof AmountPaidMismatchError) {
-      return res.status(409).json({ success: false, error: '╪¬╪║┘è┘æ╪▒ ╪▒╪╡┘è╪» ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐╪î ╪ú╪╣╪» ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐' });
+      return res.status(409).json({ success: false, error: 'تغيّر رصيد الفاتورة، أعد المحاولة' });
     }
     console.error('Error processing payback:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ┘à╪╣╪º┘ä╪¼╪⌐ ╪º┘ä╪º╪│╪¬╪▒╪»╪º╪»' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في معالجة الاسترداد' });
   }
 };
 
 const deleteInvoice = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const invoice = await prisma.medicalInvoice.findFirst({ where: { id, companyId } });
-    if (!invoice) return res.status(404).json({ success: false, error: '╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+    if (!invoice) return res.status(404).json({ success: false, error: 'الفاتورة غير موجودة' });
     if (invoice.amountPaid > 0) {
-      return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪¡╪░┘ü ┘ü╪º╪¬┘ê╪▒╪⌐ ╪╣┘ä┘è┘ç╪º ╪»┘ü╪╣╪º╪¬ ┘à╪│╪¼┘ä╪⌐' });
+      return res.status(400).json({ success: false, error: 'لا يمكن حذف فاتورة عليها دفعات مسجلة' });
     }
 
     await prisma.medicalInvoice.delete({ where: { id } });
@@ -594,10 +594,10 @@ const deleteInvoice = async (req, res) => {
       });
     }
 
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐' });
+    res.json({ success: true, message: 'تم حذف الفاتورة' });
   } catch (error) {
     console.error('Error deleting invoice:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف الفاتورة' });
   }
 };
 
@@ -626,7 +626,7 @@ const resolveAppointmentPrice = (appointment, service) => {
 const createInvoiceFromAppointment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { appointmentId } = req.params;
     const { discount, discountReason, additionAmount, additionReason, method, initialPayment, dueDate, notes, insuranceAmount, expenseSplit, insuranceCompanyId, ticketNumber, cashierId, cashierName } = req.body;
@@ -645,7 +645,7 @@ const createInvoiceFromAppointment = async (req, res) => {
         }
       }
     });
-    if (!appointment) return res.status(404).json({ success: false, error: '╪º┘ä┘à┘ê╪╣╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
     const patient = await prisma.patient.findFirst({
       where: { id: appointment.patientId, companyId },
@@ -654,38 +654,38 @@ const createInvoiceFromAppointment = async (req, res) => {
 
     // Reject if an invoice already exists for this appointment
     const existing = await prisma.medicalInvoice.findFirst({ where: { appointmentId, companyId } });
-    if (existing) return res.status(400).json({ success: false, error: '┘è┘ê╪¼╪» ┘ü╪º╪¬┘ê╪▒╪⌐ ┘ä┘ç╪░╪º ╪º┘ä┘à┘ê╪╣╪» ╪¿╪º┘ä┘ü╪╣┘ä' });
+    if (existing) return res.status(400).json({ success: false, error: 'يوجد فاتورة لهذا الموعد بالفعل' });
 
     const price = resolveAppointmentPrice(appointment, appointment.service);
-    if (!price) return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘ê╪¼╪» ╪│╪╣╪▒ ┘à╪¡╪»╪» ┘ä┘ç╪░┘ç ╪º┘ä╪«╪»┘à╪⌐╪î ╪ú╪╢┘ü ╪│╪╣╪▒╪º┘ï ╪ú╪│╪º╪│┘è╪º┘ï ╪ú┘ê ╪¿╪º┘é╪⌐' });
+    if (!price) return res.status(400).json({ success: false, error: 'لا يوجد سعر محدد لهذه الخدمة، أضف سعراً أساسياً أو باقة' });
 
     const rawDisc = discount === undefined || discount === null ? 0 : Number(discount);
     const rawAdd = additionAmount === undefined || additionAmount === null ? 0 : Number(additionAmount);
-    if (Number.isNaN(rawDisc) || !Number.isFinite(rawDisc) || rawDisc < 0) return res.status(400).json({ success: false, error: '┘é┘è┘à╪⌐ ╪º┘ä╪«╪╡┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
-    if (Number.isNaN(rawAdd) || !Number.isFinite(rawAdd) || rawAdd < 0) return res.status(400).json({ success: false, error: '┘é┘è┘à╪⌐ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+    if (Number.isNaN(rawDisc) || !Number.isFinite(rawDisc) || rawDisc < 0) return res.status(400).json({ success: false, error: 'قيمة الخصم غير صالحة' });
+    if (Number.isNaN(rawAdd) || !Number.isFinite(rawAdd) || rawAdd < 0) return res.status(400).json({ success: false, error: 'قيمة الإضافة غير صالحة' });
     const rawInsurance = insuranceAmount === undefined || insuranceAmount === null ? 0 : Number(insuranceAmount);
-    if (Number.isNaN(rawInsurance) || !Number.isFinite(rawInsurance) || rawInsurance < 0) return res.status(400).json({ success: false, error: '┘à╪¿┘ä╪║ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+    if (Number.isNaN(rawInsurance) || !Number.isFinite(rawInsurance) || rawInsurance < 0) return res.status(400).json({ success: false, error: 'مبلغ التأمين غير صالح' });
     const disc = rawDisc;
     const add = rawAdd;
     if (disc > 0 && !String(discountReason || '').trim()) {
-      return res.status(400).json({ success: false, error: '╪│╪¿╪¿ ╪º┘ä╪«╪╡┘à ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, error: 'سبب الخصم مطلوب' });
     }
     if (add > 0 && !String(additionReason || '').trim()) {
-      return res.status(400).json({ success: false, error: '╪│╪¿╪¿ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘à╪╖┘ä┘ê╪¿' });
+      return res.status(400).json({ success: false, error: 'سبب الإضافة مطلوب' });
     }
     if (expenseSplit && !EXPENSE_SPLITS.includes(expenseSplit)) {
-      return res.status(400).json({ success: false, error: '╪¬┘é╪│┘è┘à ╪º┘ä┘à╪╡╪º╪▒┘è┘ü ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'تقسيم المصاريف غير صالح' });
     }
     const rawInitialPaid = initialPayment === undefined || initialPayment === null ? 0 : Number(initialPayment);
-    if (Number.isNaN(rawInitialPaid) || !Number.isFinite(rawInitialPaid) || rawInitialPaid < 0) return res.status(400).json({ success: false, error: '╪º┘ä╪»┘ü╪╣╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+    if (Number.isNaN(rawInitialPaid) || !Number.isFinite(rawInitialPaid) || rawInitialPaid < 0) return res.status(400).json({ success: false, error: 'الدفعة الأولى غير صالحة' });
     const initialPaid = rawInitialPaid;
     const net = netOf(price, disc, add);
     if (initialPaid > net + 0.001) {
-      return res.status(400).json({ success: false, error: '╪º┘ä╪»┘ü╪╣╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ╪ú┘â╪¿╪▒ ┘à┘å ╪º┘ä╪╡╪º┘ü┘è' });
+      return res.status(400).json({ success: false, error: 'الدفعة الأولى أكبر من الصافي' });
     }
     const payMethod = normalizeMethod(method);
     if (initialPaid > 0 && !payMethod) {
-      return res.status(400).json({ success: false, error: '╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪»┘ü╪╣ ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐' });
+      return res.status(400).json({ success: false, error: 'طريقة الدفع غير صالحة' });
     }
 
     const cashierNameFinal = cashierNameOf(req, cashierName);
@@ -710,7 +710,7 @@ const createInvoiceFromAppointment = async (req, res) => {
             amountPaid: initialPaid,
             status: computeStatus(price, disc, add, initialPaid),
             dueDate: dueDate ? new Date(dueDate) : null,
-            notes: notes || `┘ü╪º╪¬┘ê╪▒╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐: ${appointment.serviceName || ''}`.trim(),
+            notes: notes || `فاتورة تلقائية: ${appointment.serviceName || ''}`.trim(),
           },
         });
         if (initialPaid > 0) {
@@ -726,7 +726,7 @@ const createInvoiceFromAppointment = async (req, res) => {
             entityType: 'PAYMENT',
             entityId: created.id,
             action: 'PAYMENT',
-            description: `╪»┘ü╪╣╪⌐ ╪ú┘ê┘ä┘ë (${payMethod})`,
+            description: `دفعة أولى (${payMethod})`,
             amount: initialPaid,
             payer: appointment.customerName || null,
           });
@@ -735,7 +735,7 @@ const createInvoiceFromAppointment = async (req, res) => {
           entityType: 'INVOICE',
           entityId: created.id,
           action: 'CREATE',
-          description: `┘ü╪º╪¬┘ê╪▒╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐ ${created.invoiceNumber}`,
+          description: `فاتورة تلقائية ${created.invoiceNumber}`,
           amount: net,
           payer: appointment.customerName || null,
         });
@@ -752,14 +752,14 @@ const createInvoiceFromAppointment = async (req, res) => {
     res.json({ success: true, data: formatInvoice(invoice) });
   } catch (error) {
     console.error('Error creating invoice from appointment:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الفاتورة' });
   }
 };
 
 const openCashierShift = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { openingBalance, cashierId, cashierName } = req.body;
     const prisma = getSharedPrismaClient();
@@ -767,7 +767,7 @@ const openCashierShift = async (req, res) => {
     const cashierNameFinal = cashierNameOf(req, cashierName);
     const openingBalanceNum = openingBalance === undefined || openingBalance === null ? 0 : Number(openingBalance);
     if (Number.isNaN(openingBalanceNum) || !Number.isFinite(openingBalanceNum) || openingBalanceNum < 0) {
-      return res.status(400).json({ success: false, error: '╪▒╪╡┘è╪» ╪º┘ä╪º┘ü╪¬╪¬╪º╪¡ ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'رصيد الافتتاح غير صالح' });
     }
 
     const existingOpen = await prisma.cashierShift.findFirst({
@@ -775,7 +775,7 @@ const openCashierShift = async (req, res) => {
       orderBy: { openedAt: 'desc' },
     });
     if (existingOpen) {
-      return res.status(400).json({ success: false, error: '┘è┘ê╪¼╪» ╪┤┘è┘ü╪¬ ┘à┘ü╪¬┘ê╪¡ ╪¿╪º┘ä┘ü╪╣┘ä ┘ä┘ç╪░╪º ╪º┘ä┘â╪º╪┤┘è╪▒' });
+      return res.status(400).json({ success: false, error: 'يوجد شيفت مفتوح بالفعل لهذا الكاشير' });
     }
 
     const shift = await prisma.cashierShift.create({
@@ -791,25 +791,25 @@ const openCashierShift = async (req, res) => {
     res.json({ success: true, data: shift });
   } catch (error) {
     console.error('Error opening cashier shift:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ┘ü╪¬╪¡ ╪º┘ä╪┤┘è┘ü╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في فتح الشيفت' });
   }
 };
 
 const closeCashierShift = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { closingBalance } = req.body;
     const prisma = getSharedPrismaClient();
     const shift = await prisma.cashierShift.findFirst({ where: { id, companyId } });
-    if (!shift) return res.status(404).json({ success: false, error: '╪º┘ä╪┤┘è┘ü╪¬ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
-    if (shift.status === 'CLOSED') return res.status(400).json({ success: false, error: '╪º┘ä╪┤┘è┘ü╪¬ ┘à╪║┘ä┘é ╪¿╪º┘ä┘ü╪╣┘ä' });
+    if (!shift) return res.status(404).json({ success: false, error: 'الشيفت غير موجود' });
+    if (shift.status === 'CLOSED') return res.status(400).json({ success: false, error: 'الشيفت مغلق بالفعل' });
 
     const closingBalanceNum = closingBalance === undefined || closingBalance === null ? 0 : Number(closingBalance);
     if (Number.isNaN(closingBalanceNum) || !Number.isFinite(closingBalanceNum) || closingBalanceNum < 0) {
-      return res.status(400).json({ success: false, error: '╪▒╪╡┘è╪» ╪º┘ä╪Ñ╪║┘ä╪º┘é ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      return res.status(400).json({ success: false, error: 'رصيد الإغلاق غير صالح' });
     }
 
     const updated = await prisma.cashierShift.update({
@@ -820,14 +820,14 @@ const closeCashierShift = async (req, res) => {
     res.json({ success: true, data: updated });
   } catch (error) {
     console.error('Error closing cashier shift:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ╪║┘ä╪º┘é ╪º┘ä╪┤┘è┘ü╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إغلاق الشيفت' });
   }
 };
 
 const getCurrentCashierShift = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { cashierId } = req.query;
     const shift = await getSharedPrismaClient().cashierShift.findFirst({
@@ -838,14 +838,14 @@ const getCurrentCashierShift = async (req, res) => {
     res.json({ success: true, data: shift || null });
   } catch (error) {
     console.error('Error fetching current cashier shift:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪┤┘è┘ü╪¬ ╪º┘ä╪¡╪º┘ä┘è' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الشيفت الحالي' });
   }
 };
 
 const getCashierShiftBalance = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { from, to, cashierId, cashierName } = req.query;
     const now = new Date();
@@ -911,7 +911,7 @@ const getCashierShiftBalance = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching cashier balance:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪▒╪╡┘è╪»' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الرصيد' });
   }
 };
 

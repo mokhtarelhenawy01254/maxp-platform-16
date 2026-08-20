@@ -1,37 +1,37 @@
-﻿/**
- * ≡ƒÜ¿ PRODUCTION-FIX: Quick-reply buttons from Meta template (type="button").
+/**
+ * 🚨 PRODUCTION-FIX: Quick-reply buttons from Meta template (type="button").
  * Regression tests for _isQuickReplyText + _mapQuickReplyAction.
- * Guarantees: "╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒" maps to CONFIRMED, "╪Ñ┘ä╪║╪º╪í ╪º┘ä╪ú┘ê╪▒╪»╪▒" to CANCELLED,
- * "╪¬╪ú╪¼┘è┘ä" to PROCESSING, and unknown text returns null.
+ * Guarantees: "تأكيد الأوردر" maps to CONFIRMED, "إلغاء الأوردر" to CANCELLED,
+ * "تأجيل" to PROCESSING, and unknown text returns null.
  */
 const WhatsAppInteractionService = require('../../services/whatsapp/WhatsAppInteractionService');
 
 describe('WhatsAppInteractionService quick-reply mapping', () => {
-  test('┘è╪╣╪▒┘æ┘ü ┘å╪╡┘ê╪╡ ╪ú╪▓╪▒╪º╪▒ ╪º┘ä┘Ç quick reply', () => {
-    expect(WhatsAppInteractionService._isQuickReplyText('╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒')).toBe(true);
-    expect(WhatsAppInteractionService._isQuickReplyText('╪Ñ┘ä╪║╪º╪í ╪º┘ä╪ú┘ê╪▒╪»╪▒')).toBe(true);
-    expect(WhatsAppInteractionService._isQuickReplyText('╪¬╪ú╪¼┘è┘ä ╪º┘ä╪¬╪│┘ä┘è┘à')).toBe(true);
+  test('يعرّف نصوص أزرار الـ quick reply', () => {
+    expect(WhatsAppInteractionService._isQuickReplyText('تأكيد الأوردر')).toBe(true);
+    expect(WhatsAppInteractionService._isQuickReplyText('إلغاء الأوردر')).toBe(true);
+    expect(WhatsAppInteractionService._isQuickReplyText('تأجيل التسليم')).toBe(true);
     expect(WhatsAppInteractionService._isQuickReplyText('confirm')).toBe(true);
     expect(WhatsAppInteractionService._isQuickReplyText('cancel')).toBe(true);
-    expect(WhatsAppInteractionService._isQuickReplyText('╪Ñ┘ä╪║╪º╪í')).toBe(true);
+    expect(WhatsAppInteractionService._isQuickReplyText('إلغاء')).toBe(true);
   });
 
-  test('┘ä╪º ┘è╪╣╪▒┘æ┘ü ┘å╪╡┘ê╪╡ ╪║┘è╪▒ ╪º┘ä╪ú╪▓╪▒╪º╪▒', () => {
-    expect(WhatsAppInteractionService._isQuickReplyText('╪ú┘ç┘ä┘ï╪º')).toBe(false);
-    expect(WhatsAppInteractionService._isQuickReplyText('╪¬┘à╪º┘à')).toBe(false);
+  test('لا يعرّف نصوص غير الأزرار', () => {
+    expect(WhatsAppInteractionService._isQuickReplyText('أهلًا')).toBe(false);
+    expect(WhatsAppInteractionService._isQuickReplyText('تمام')).toBe(false);
     expect(WhatsAppInteractionService._isQuickReplyText('')).toBe(false);
   });
 
-  test('┘è╪▒╪│┘à ┘å╪╡ ╪º┘ä╪▓╪▒ ╪Ñ┘ä┘ë ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿', () => {
-    expect(WhatsAppInteractionService._mapQuickReplyAction('╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒')).toEqual({
+  test('يرسم نص الزر إلى حالة الطلب', () => {
+    expect(WhatsAppInteractionService._mapQuickReplyAction('تأكيد الأوردر')).toEqual({
       status: 'CONFIRMED',
       note: expect.any(String)
     });
-    expect(WhatsAppInteractionService._mapQuickReplyAction('╪Ñ┘ä╪║╪º╪í ╪º┘ä╪ú┘ê╪▒╪»╪▒')).toEqual({
+    expect(WhatsAppInteractionService._mapQuickReplyAction('إلغاء الأوردر')).toEqual({
       status: 'CANCELLED',
       note: expect.any(String)
     });
-    expect(WhatsAppInteractionService._mapQuickReplyAction('╪¬╪ú╪¼┘è┘ä ╪º┘ä╪¬╪│┘ä┘è┘à')).toEqual({
+    expect(WhatsAppInteractionService._mapQuickReplyAction('تأجيل التسليم')).toEqual({
       status: 'PROCESSING',
       note: expect.any(String)
     });
@@ -41,8 +41,8 @@ describe('WhatsAppInteractionService quick-reply mapping', () => {
     });
   });
 
-  test('┘è╪▒╪¼╪╣ null ┘ä┘å╪╡ ╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü', () => {
-    expect(WhatsAppInteractionService._mapQuickReplyAction('┘â┘ä╪º┘à ╪╣╪º╪»┘è')).toBeNull();
+  test('يرجع null لنص غير معروف', () => {
+    expect(WhatsAppInteractionService._mapQuickReplyAction('كلام عادي')).toBeNull();
     expect(WhatsAppInteractionService._mapQuickReplyAction('')).toBeNull();
   });
 });

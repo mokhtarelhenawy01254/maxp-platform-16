@@ -10,8 +10,11 @@ export type StageCounts = Record<string, number>;
 export interface SimpleOrderItem {
   id: string;
   productId: string;
+  variantId?: string | null;
   name?: string;
   productName?: string;
+  color?: string;
+  size?: string;
   price?: number | string | null;
   quantity?: number | string | null;
   total?: number | string | null;
@@ -139,8 +142,12 @@ export type ShortageReason =
   | "waiting_restock"
   | "other";
 
+export type ProblemReason = string;
+
 export type ShortageReasonFilter = "all" | ShortageReason;
 export type ShortageFollowUpFilter = "all" | "today" | "overdue" | "without_date";
+export type NotPrintedFilter = "all" | "not_printed";
+export type NoShippingCodeFilter = "all" | "no_shipping_code";
 export type SortBy = "createdAt" | "totalUnits" | "totalValue";
 export type SortOrder = "asc" | "desc";
 
@@ -159,6 +166,15 @@ export interface ShortageHoldDetails {
   note: string;
   heldAt?: string;
   releasedAt?: string;
+  state: "held" | "released";
+}
+
+export interface ProblemHoldDetails {
+  reason: string;
+  heldAt?: string;
+  releasedAt?: string;
+  heldBy?: string;
+  releasedBy?: string;
   state: "held" | "released";
 }
 
@@ -181,6 +197,8 @@ export interface PreparationOrder extends SimpleOrder {
   warehouseMatch: boolean;
   recommendedWarehouseName: string | null;
   shortageHoldDetails: ShortageHoldDetails;
+  problemHoldDetails?: ProblemHoldDetails;
+  hasProblem?: boolean;
 }
 
 export interface PreparationQueueSettings {
@@ -205,11 +223,15 @@ export interface PreparationQueueSettings {
 
 export type QcCheckKey = keyof PreparationQueueSettings["qcChecks"];
 
+
+
 export interface ApiOrderItemResponse {
   id?: string | number | null;
   productId?: string | number | null;
   name?: string | null;
   productName?: string | null;
+  color?: string | null;
+  size?: string | null;
   price?: number | string | null;
   quantity?: number | string | null;
   total?: number | string | null;
@@ -293,9 +315,12 @@ export interface PreparationQueueSummary {
   readyCount: number;
   shortageCount: number;
   shortageHoldCount: number;
+  onHoldPrepCount: number;
   overdueShortageFollowUpCount: number;
+  overdueProblemFollowUpCount: number;
   readyToShipCount: number;
   allOverdueShortageFollowUpCount: number;
+  allOverdueProblemFollowUpCount: number;
 }
 
 export interface ApiPreparationOrdersResponse {

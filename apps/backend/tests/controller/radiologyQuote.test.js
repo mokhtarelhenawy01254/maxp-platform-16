@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -43,7 +43,7 @@ const req = (overrides = {}) => ({
 const makeExamType = (overrides = {}) => ({
   id: 'et-1',
   companyId: 'company-1',
-  name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐',
+  name: 'أشعة مقطعية',
   category: 'CT',
   abbreviation: 'CT',
   price: 300,
@@ -60,7 +60,7 @@ describe('radiologyQuoteController', () => {
     const prisma = createPrisma();
     prisma.radiologyExamType.findMany.mockResolvedValue([
       makeExamType(),
-      makeExamType({ id: 'et-2', name: '╪▒┘å┘è┘å ┘à╪║┘å╪º╪╖┘è╪│┘è', category: 'MRI', price: 800 }),
+      makeExamType({ id: 'et-2', name: 'رنين مغناطيسي', category: 'MRI', price: 800 }),
     ]);
     getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -73,8 +73,8 @@ describe('radiologyQuoteController', () => {
     });
     expect(res.payload.success).toBe(true);
     expect(res.payload.data.items).toEqual([
-      { examTypeId: 'et-1', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', category: 'CT', price: 300 },
-      { examTypeId: 'et-2', name: '╪▒┘å┘è┘å ┘à╪║┘å╪º╪╖┘è╪│┘è', category: 'MRI', price: 800 },
+      { examTypeId: 'et-1', name: 'أشعة مقطعية', category: 'CT', price: 300 },
+      { examTypeId: 'et-2', name: 'رنين مغناطيسي', category: 'MRI', price: 800 },
     ]);
     expect(res.payload.data.total).toBe(1100);
   });
@@ -115,7 +115,7 @@ describe('radiologyQuoteController', () => {
     await controller.previewQuote(req({ user: {}, body: { examTypeIds: ['et-1'] } }), res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+    expect(res.payload.error).toBe('غير مصرح');
     expect(prisma.radiologyExamType.findMany).not.toHaveBeenCalled();
   });
 

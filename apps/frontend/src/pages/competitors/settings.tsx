@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, ArrowRight, Bell, Check, CheckCircle, Mail } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, Mail, CheckCircle, AlertTriangle } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import i18n from '../../i18n';
 

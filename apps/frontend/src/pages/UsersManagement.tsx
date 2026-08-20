@@ -1,8 +1,26 @@
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import i18n from "../i18n";
 import { toast } from "sonner";
+import { tToast } from "../utils/i18n-toast";
+import { useTranslation } from "react-i18next";
 import { getImageUrl } from "../utils/imageUrl";
-import { AlertTriangle, ArrowDownToLine, Eye, KeyRound, Loader2, Mail, MailPlus, MoreHorizontal, Pencil, Plus, RefreshCw, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowDownToLine,
+  Eye,
+  KeyRound,
+  Loader2,
+  Mail,
+  MailPlus,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
 
 import {
   AlertDialog,
@@ -76,11 +94,13 @@ import {
   BusinessFilterSheet,
   BusinessMobileSearchPanel,
 } from "../components/business/BusinessFilters";
+import { motion } from "framer-motion";
 import { useAuth } from "../hooks/useAuthSimple";
 import { cn } from "../lib/utils";
 import { getProtectedUserActionMessage } from "../utils/usersManagementGuards";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
+import { DefaultPageSelector } from "../components/settings/DefaultPageSelector";
 
 type RoleRecord = Record<string, { name: string }>;
 
@@ -141,6 +161,7 @@ type UserFormState = {
   hireDate: string;
   contractType: string;
   baseSalary: string;
+  defaultPage: string;
 };
 
 type InviteFormState = {
@@ -202,6 +223,7 @@ const createInitialUserForm = (): UserFormState => ({
   hireDate: new Date().toISOString().split("T")[0] ?? "",
   contractType: "FULL_TIME",
   baseSalary: "",
+  defaultPage: "/apps",
 });
 
 const createInitialInviteForm = (): InviteFormState => ({
@@ -600,21 +622,21 @@ const UsersManagement: React.FC = () => {
         title: "إجمالي المستخدمين",
         value: totalCount,
         subtitle: "عدد الحسابات في الصفحة الحالية بعد الفلاتر",
-        tone: "primary" as const,
+        tone: "primary",
         icon: Users,
       },
       {
         title: "المستخدمون النشطون",
         value: activeUsersCount,
         subtitle: "الحسابات المفعلة حاليًا",
-        tone: "success" as const,
+        tone: "success",
         icon: ShieldCheck,
       },
       {
         title: "الدعوات المعلقة",
         value: invitations.length,
         subtitle: "دعوات بانتظار القبول أو الإلغاء",
-        tone: "warning" as const,
+        tone: "warning",
         icon: MailPlus,
       },
     ],
@@ -681,13 +703,15 @@ const UsersManagement: React.FC = () => {
 
   const openEditUser = async (targetUser: UserRecord) => {
     setEditingUser(targetUser);
+    let defaultPage = "/apps";
     try {
-      const freshPayload = await requestApi<UserRecord>(
+      const freshPayload = await requestApi<any>(
         `companies/${user?.companyId}/users/${targetUser.id}`
       );
       if (freshPayload.success && freshPayload.data) {
         targetUser = freshPayload.data;
         setEditingUser(targetUser);
+        defaultPage = freshPayload.data.defaultPage || "/apps";
       }
     } catch {
       // Fall back to the passed-in user data if fetch fails
@@ -715,6 +739,7 @@ const UsersManagement: React.FC = () => {
         targetUser.employee?.baseSalary !== null
           ? String(targetUser.employee.baseSalary)
           : "",
+      defaultPage,
     });
     setFormErrors({});
     setShowPassword(false);
@@ -848,6 +873,7 @@ const UsersManagement: React.FC = () => {
         hireDate: userForm.hireDate || undefined,
         contractType: userForm.contractType,
         baseSalary: userForm.baseSalary || undefined,
+        ...(isEditMode && { settings: { defaultPage: userForm.defaultPage } }),
       };
 
       if (userForm.password.trim()) {
@@ -947,7 +973,7 @@ const UsersManagement: React.FC = () => {
       await navigator.clipboard.writeText(inviteUrl);
       toast.success(t("users.linkCopied") || "تم نسخ رابط الدعوة");
     } catch {
-      toast.error("فشل نسخ الرابط");
+      tToast.error("UsersManagement.msg_8387");
     }
   };
 
@@ -983,7 +1009,7 @@ const UsersManagement: React.FC = () => {
     link.download = `users_${new Date().toISOString().split("T")[0] || "export"}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("تم تصدير البيانات بنجاح");
+    tToast.success("UsersManagement.msg_fc1e");
   };
 
   const handleBulkToggle = async (nextValue: boolean) => {
@@ -1027,7 +1053,7 @@ const UsersManagement: React.FC = () => {
       await fetchUsers();
       setError(null);
     } catch (toggleError: unknown) {
-      toast.error(getErrorMessage(toggleError, "حدث خطأ أثناء التحديث الجماعي"));
+      toast.error(getErrorMessage(toggleError, i18n.t("UsersManagement.error_error_6424")));
     }
   };
 
@@ -1059,7 +1085,7 @@ const UsersManagement: React.FC = () => {
           if (!response.success) {
             throw new Error(response.message || String(t("users.deleteError")));
           }
-          toast.success("تم حذف المستخدم بنجاح");
+          tToast.success("UsersManagement.success_delete_ae63");
           await fetchUsers();
           break;
         }
@@ -1090,7 +1116,7 @@ const UsersManagement: React.FC = () => {
           if (!response.success) {
             throw new Error(response.message || "فشل إلغاء الدعوة");
           }
-          toast.success("تم إلغاء الدعوة بنجاح");
+          tToast.success("UsersManagement.msg_6812");
           await fetchInvitations();
           break;
         }
@@ -1104,7 +1130,7 @@ const UsersManagement: React.FC = () => {
           if (!response.success) {
             throw new Error(response.message || "فشل إرسال رابط إعادة التعيين");
           }
-          toast.success("تم إرسال رابط إعادة تعيين كلمة المرور");
+          tToast.success("UsersManagement.success_send_62b7");
           break;
         }
       }
@@ -1114,7 +1140,7 @@ const UsersManagement: React.FC = () => {
     } catch (actionError: unknown) {
       const nextError = getErrorMessage(
         actionError,
-        "حدث خطأ أثناء تنفيذ العملية",
+        i18n.t("UsersManagement.error_error_a658"),
       );
       setError(nextError);
       toast.error(nextError);
@@ -1138,10 +1164,10 @@ const UsersManagement: React.FC = () => {
       if (!response.success) {
         throw new Error(response.message || "فشل إعادة إرسال الدعوة");
       }
-      toast.success("تم إعادة إرسال الدعوة بنجاح");
+      tToast.success("UsersManagement.success_send_59c9");
       await fetchInvitations();
     } catch (resendError: unknown) {
-      toast.error(getErrorMessage(resendError, "حدث خطأ أثناء إعادة الإرسال"));
+      toast.error(getErrorMessage(resendError, i18n.t("UsersManagement.error_error_c008")));
     }
   };
 
@@ -1250,21 +1276,34 @@ const UsersManagement: React.FC = () => {
         ) : null}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {metrics.map((m) => {
+          {metrics.map((m, idx) => {
             const Icon = m.icon;
+            const tones: Record<string, { bar: string; icon: string }> = {
+              primary: { bar: "from-violet-500 to-indigo-500", icon: "text-violet-600 dark:text-violet-300 bg-violet-500/10 dark:bg-violet-500/20" },
+              success: { bar: "from-emerald-500 to-teal-500", icon: "text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20" },
+              warning: { bar: "from-amber-500 to-orange-500", icon: "text-amber-600 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-500/20" },
+            };
+            const t = tones[m.tone] || tones.primary;
             return (
-              <div key={m.title} className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm">
+              <motion.div
+                key={m.title}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.06 }}
+                className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-4 shadow-sm"
+              >
+                <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${t.bar}`} />
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm text-muted-foreground">{m.title}</p>
                     <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{m.value}</p>
                   </div>
-                  <div className="rounded-xl bg-muted/50 p-2.5">
+                  <div className={`rounded-xl ${t.icon} p-2.5`}>
                     <Icon className="size-5" />
                   </div>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{m.subtitle}</p>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -1777,6 +1816,22 @@ const UsersManagement: React.FC = () => {
                   </FormField>
                 </div>
 
+                {editorMode === "edit" && (
+                  <div className="rounded-[1.5rem] border border-border/70 bg-muted/20 p-4">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-foreground">إعدادات الحساب</p>
+                        <p className="text-sm text-muted-foreground">تحكم في سلوك الحساب وتجربة المستخدم.</p>
+                      </div>
+                      <Badge variant="outline" className="rounded-full">الإعدادات</Badge>
+                    </div>
+                    <DefaultPageSelector
+                      value={userForm.defaultPage}
+                      onChange={(value) => updateUserForm("defaultPage", value)}
+                    />
+                  </div>
+                )}
+
                 <div className="rounded-[1.5rem] border border-border/70 bg-muted/20 p-4">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
@@ -1929,8 +1984,14 @@ const UsersManagement: React.FC = () => {
 
             <ScrollArea className="max-h-[70vh]">
               <div className="grid gap-4 px-5 py-5 md:grid-cols-2">
-                <div className="rounded-[1.5rem] border border-border/70 bg-card/80 p-4">
-                  <p className="mb-3 font-medium text-foreground">المعلومات الأساسية</p>
+                <div className="relative overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 p-4">
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-500/20 to-transparent" />
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="rounded-lg bg-violet-500/10 p-1.5">
+                      <Eye className="size-3.5 text-violet-600" />
+                    </div>
+                    <p className="font-medium text-foreground">المعلومات الأساسية</p>
+                  </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">البريد الإلكتروني</span><span>{detailsUser?.email}</span></div>
                     <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">الهاتف</span><span>{detailsUser?.phone || "-"}</span></div>
@@ -1941,8 +2002,14 @@ const UsersManagement: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-border/70 bg-card/80 p-4">
-                  <p className="mb-3 font-medium text-foreground">ملف الموظف</p>
+                <div className="relative overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 p-4">
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500/20 to-transparent" />
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="rounded-lg bg-emerald-500/10 p-1.5">
+                      <Users className="size-3.5 text-emerald-600" />
+                    </div>
+                    <p className="font-medium text-foreground">ملف الموظف</p>
+                  </div>
                   {detailsUser?.employee ? (
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">رقم الموظف</span><span>{detailsUser.employee.employeeNumber || "-"}</span></div>
@@ -1965,7 +2032,8 @@ const UsersManagement: React.FC = () => {
                   )}
                 </div>
 
-                <div className="rounded-[1.5rem] border border-border/70 bg-card/80 p-4 md:col-span-2">
+                <div className="relative overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 p-4 md:col-span-2">
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500/20 to-transparent" />
                   <p className="mb-3 font-medium text-foreground">معلومات إضافية</p>
                   <div className="grid gap-3 text-sm md:grid-cols-3">
                     <div className="rounded-[1rem] bg-muted/40 p-3"><p className="text-xs text-muted-foreground">تاريخ الإنشاء</p><p className="mt-1">{formatDateTime(detailsUser?.createdAt)}</p></div>

@@ -1,4 +1,4 @@
-﻿const path = require('path');
+const path = require('path');
 const PDFDocument = require('pdfkit');
 const { shapeArabic } = require('../utils/arabicShaping');
 
@@ -7,9 +7,9 @@ const FONT = path.join(__dirname, '..', 'fonts', 'NotoSansArabic-Regular.ttf');
 const AR = (s) => shapeArabic(String(s ?? ''));
 
 const fmtDate = (d) => {
-  if (!d) return 'ΓÇö';
+  if (!d) return '—';
   const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return 'ΓÇö';
+  if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
@@ -25,24 +25,24 @@ function generateStudyReportPdf(study, company) {
     doc.font('Noto');
     const pageWidth = doc.page.width - 80;
 
-    doc.fontSize(20).fillColor('#2563eb').text(AR(company?.name || '┘à╪▒┘â╪▓ ╪º┘ä╪ú╪┤╪╣╪⌐'), 40, 40, { align: 'right', width: pageWidth });
+    doc.fontSize(20).fillColor('#2563eb').text(AR(company?.name || 'مركز الأشعة'), 40, 40, { align: 'right', width: pageWidth });
     doc.fontSize(10).fillColor('#4b5563').text(
-      `${AR('╪▒┘é┘à ╪º┘ä╪¡╪º┘ä╪⌐:')} ${AR(study.studyNumber || '')}   ${AR('╪º┘ä╪¬╪º╪▒┘è╪«:')} ${AR(fmtDate(study.createdAt))}`,
+      `${AR('رقم الحالة:')} ${AR(study.studyNumber || '')}   ${AR('التاريخ:')} ${AR(fmtDate(study.createdAt))}`,
       40, 70, { align: 'right', width: pageWidth }
     );
     doc.moveTo(40, 92).lineTo(555, 92).strokeColor('#2563eb').lineWidth(2).stroke();
 
-    doc.fontSize(15).fillColor('#1f2937').text(AR('╪¬┘é╪▒┘è╪▒ ╪ú╪┤╪╣╪⌐ ╪╖╪¿┘è╪⌐'), 40, 102, { align: 'center', width: pageWidth });
+    doc.fontSize(15).fillColor('#1f2937').text(AR('تقرير أشعة طبية'), 40, 102, { align: 'center', width: pageWidth });
 
     const info = [
-      [AR('╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢'), AR(study.patientName)],
-      [AR('╪º┘ä┘ç╪º╪¬┘ü'), AR(study.patientPhone || 'ΓÇö')],
-      [AR('╪º┘ä╪¼┘å╪│'), AR(study.patientGender || 'ΓÇö')],
-      [AR('╪º┘ä╪╣┘à╪▒'), AR(study.patientAge || 'ΓÇö')],
-      [AR('┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡'), AR(study.examTypeName || study.modality || 'ΓÇö')],
-      [AR('╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘è┘ä'), AR(study.referralDoctor || 'ΓÇö')],
-      [AR('╪▒┘é┘à ╪º┘ä╪Ñ╪░┘å'), AR(study.accessionNumber || 'ΓÇö')],
-      [AR('╪¡╪º┘ä╪⌐ ╪╖╪º╪▒╪ª╪⌐'), AR(study.emergency ? '┘å╪╣┘à' : '┘ä╪º')],
+      [AR('اسم المريض'), AR(study.patientName)],
+      [AR('الهاتف'), AR(study.patientPhone || '—')],
+      [AR('الجنس'), AR(study.patientGender || '—')],
+      [AR('العمر'), AR(study.patientAge || '—')],
+      [AR('نوع الفحص'), AR(study.examTypeName || study.modality || '—')],
+      [AR('الطبيب المحيل'), AR(study.referralDoctor || '—')],
+      [AR('رقم الإذن'), AR(study.accessionNumber || '—')],
+      [AR('حالة طارئة'), AR(study.emergency ? 'نعم' : 'لا')],
     ];
 
     let y = 130;
@@ -63,9 +63,9 @@ function generateStudyReportPdf(study, company) {
     const criticalCategory = study.report?.criticalCategory;
     if (criticalCategory && criticalCategory !== 'NONE') {
       const LABELS = {
-        CAT1: '╪╣╪½┘ê╪▒ ╪¡╪▒╪¼ ΓÇö ┘ü╪ª╪⌐ 1 (╪¬┘ê╪º╪╡┘ä ┘ü┘ê╪▒┘è)',
-        CAT2: '╪╣╪½┘ê╪▒ ╪¡╪▒╪¼ ΓÇö ┘ü╪ª╪⌐ 2 (╪¬┘ê╪º╪╡┘ä ╪«┘ä╪º┘ä ╪│╪º╪╣╪º╪¬)',
-        CAT3: '╪╣╪½┘ê╪▒ ╪¡╪▒╪¼ ΓÇö ┘ü╪ª╪⌐ 3 (╪╣╪▒╪╢╪⌐ ΓÇö ┘à╪¬╪º╪¿╪╣╪⌐)',
+        CAT1: 'عثور حرج — فئة 1 (تواصل فوري)',
+        CAT2: 'عثور حرج — فئة 2 (تواصل خلال ساعات)',
+        CAT3: 'عثور حرج — فئة 3 (عرضة — متابعة)',
       };
       const isCat1 = criticalCategory === 'CAT1';
       const labelColor = isCat1 ? '#dc2626' : '#ea580c';
@@ -76,7 +76,7 @@ function generateStudyReportPdf(study, company) {
       const findingText = AR(study.report.criticalFindingText || '');
       let ackText = '';
       if (study.report.criticalAcknowledgedAt) {
-        ackText = AR(`╪¬┘à ╪º┘ä╪Ñ╪¿┘ä╪º╪║ ╪╣┘å┘ç ╪¿┘ê╪º╪│╪╖╪⌐ ${study.report.criticalAcknowledgedBy || 'ΓÇö'} ┘ü┘è ${fmtDate(study.report.criticalAcknowledgedAt)}`);
+        ackText = AR(`تم الإبلاغ عنه بواسطة ${study.report.criticalAcknowledgedBy || '—'} في ${fmtDate(study.report.criticalAcknowledgedAt)}`);
       }
       const startY = y;
       let totalH = doc.heightOfString(labelText, { width: textW });
@@ -95,18 +95,18 @@ function generateStudyReportPdf(study, company) {
       }
       y = startY + totalH + 20;
     }
-    doc.fontSize(11).fillColor('#374151').text(AR('╪º┘ä╪¬┘é╪▒┘è╪▒ ╪º┘ä╪╖╪¿┘è'), 40, y, { align: 'right', width: pageWidth });
+    doc.fontSize(11).fillColor('#374151').text(AR('التقرير الطبي'), 40, y, { align: 'right', width: pageWidth });
     y += 22;
-    const body = study.report?.reportText || '┘ä╪º ┘è┘ê╪¼╪» ╪¬┘é╪▒┘è╪▒ ╪¿╪╣╪»';
+    const body = study.report?.reportText || 'لا يوجد تقرير بعد';
     doc.fontSize(10.5).fillColor('#111827').text(AR(body), 40, y, { align: 'right', width: pageWidth });
 
     y += doc.y - y + 40;
     const report = study.report;
     if (report) {
       const meta = [];
-      meta.push([AR('╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒'), AR(report.reportStatus || 'ΓÇö')]);
-      meta.push([AR('╪¬╪º╪▒┘è╪« ╪º┘ä╪¬┘é╪▒┘è╪▒'), AR(fmtDate(report.signedAt || report.updatedAt))]);
-      meta.push([AR('╪ú╪«╪╡╪º╪ª┘è ╪º┘ä╪ú╪┤╪╣╪⌐'), AR(report.signedBy || 'ΓÇö')]);
+      meta.push([AR('حالة التقرير'), AR(report.reportStatus || '—')]);
+      meta.push([AR('تاريخ التقرير'), AR(fmtDate(report.signedAt || report.updatedAt))]);
+      meta.push([AR('أخصائي الأشعة'), AR(report.signedBy || '—')]);
       doc.rect(40, y, pageWidth, 60).fill('#f9fafb').stroke('#e5e7eb');
       let yy = y + 10;
       for (const [k, v] of meta) {

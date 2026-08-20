@@ -23,7 +23,7 @@ import { useStorefrontTheme } from "../engine/ThemeProvider";
 import { STOREFRONT_PDP_CHECKOUT_VISIBILITY_EVENT } from "../utils/pdpCheckout";
 import { isMarketplaceThemePreview } from "../preview/previewContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from "lucide-react";
 // ponytail: promotion bar extracted to StorePromotionBar.tsx (eager import)
 
 // formatCountdownParts and formatCountdownText imported from ../utils/countdown

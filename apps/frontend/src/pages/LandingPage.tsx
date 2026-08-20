@@ -54,7 +54,7 @@ const LandingPage: React.FC = () => {
         </div>
         <div className="nav-actions">
           <Link to="/auth/login" className="nav-link ml-6">دخول</Link>
-          <Link to="/auth/register" className="btn-primary">ابدأ مجاناً</Link>
+          <Link to="/auth/register" className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white hover:bg-primary-700">ابدأ مجاناً</Link>
         </div>
       </nav>
 
@@ -81,8 +81,8 @@ const LandingPage: React.FC = () => {
             </motion.p>
 
             <motion.div variants={itemVariants} className="hero-actions">
-              <Link to="/auth/register" className="btn-primary px-10">ابدأ التشغيل الآن</Link>
-              <a href="#tools" className="btn-secondary">استعرض الأدوات</a>
+              <Link to="/auth/register" className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-10 py-3 text-sm font-semibold text-white hover:bg-primary-700">ابدأ التشغيل الآن</Link>
+              <a href="#tools" className="inline-flex items-center justify-center rounded-xl bg-secondary-600 px-6 py-3 text-sm font-semibold text-white hover:bg-secondary-700">استعرض الأدوات</a>
             </motion.div>
           </div>
 
@@ -805,8 +805,8 @@ const LandingPage: React.FC = () => {
               ابدأ مجاناً وجرّب بنفسك. كلم مستشارنا عشان يساعدك تربط أنظمتك الحالية وتشوف الفرق من أول يوم. باقات تبدأ من <span style={{color:'var(--lp-accent)'}}>299 جنيه/شهر</span>.
             </p>
             <div className="flex justify-center gap-6">
-              <Link to="/auth/register" className="btn-primary px-12 py-5 text-lg">ابدأ مجاناً</Link>
-              <Link to="/contact" className="btn-secondary px-12 py-5 text-lg">كلم مستشار</Link>
+              <Link to="/auth/register" className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-12 py-5 text-lg font-semibold text-white hover:bg-primary-700">ابدأ مجاناً</Link>
+              <Link to="/contact" className="inline-flex items-center justify-center rounded-xl bg-secondary-600 px-12 py-5 text-lg font-semibold text-white hover:bg-secondary-700">كلم مستشار</Link>
             </div>
           </div>
         </div>

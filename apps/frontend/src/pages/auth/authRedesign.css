@@ -177,6 +177,14 @@
   font-size: 1.25rem;
 }
 
+.logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 12px;
+  display: inline-block;
+}
+
 .logo-text {
   font-size: 1.25rem;
   font-weight: 700;

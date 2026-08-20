@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ArchiveBoxIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";

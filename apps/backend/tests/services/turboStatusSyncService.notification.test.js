@@ -1,7 +1,7 @@
-﻿/**
+/**
  * Regression test: turbo auto-sync (webhook / sync-status / refresh) must route
  * order.status changes through orderService.updateOrderStatus / updateGuestOrderStatus
- * so WhatsApp notifications + statusHistory fire ΓÇö exactly like the manual button.
+ * so WhatsApp notifications + statusHistory fire — exactly like the manual button.
  * See PRODUCTION-FIX (turbo-notification-gap) in turboStatusSyncService.js.
  */
 
@@ -40,7 +40,7 @@ jest.mock('../../services/socketService', () => ({
 const { syncTurboStatusToOrder } = require('../../services/turboStatusSyncService');
 const orderService = require('../../services/orderService');
 
-// Swan-like custom mapping: turbo `processing` (code 3) ΓåÆ SHIPPED
+// Swan-like custom mapping: turbo `processing` (code 3) → SHIPPED
 const swanLikeSettings = JSON.stringify({
   turboStatusMapping: {
     processing: { orderStatus: 'SHIPPED' },
@@ -65,7 +65,7 @@ const baseOrder = {
   turboExpectedBranch: null,
 };
 
-describe('turboStatusSyncService auto status change ΓåÆ notification routing', () => {
+describe('turboStatusSyncService auto status change → notification routing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPrisma.company.findUnique.mockResolvedValue({ settings: swanLikeSettings });
@@ -78,7 +78,7 @@ describe('turboStatusSyncService auto status change ΓåÆ notification routing'
       orderId: 'order-1',
       orderNumber: 'ORD-100',
       companyId: 'company-1',
-      rawStatus: '3', // turbo processing ΓåÆ custom mapping SHIPPED
+      rawStatus: '3', // turbo processing → custom mapping SHIPPED
       payload: { code: 'ORD-100', isWebhook: true, source: 'webhook' },
       isGuestOrder: false,
     });
@@ -92,7 +92,7 @@ describe('turboStatusSyncService auto status change ΓåÆ notification routing'
     expect(userId).toBe('SYSTEM');
     expect(isOverride).toBe(true);
     expect(options).toEqual({ skipCallAttemptGuard: true, skipTransitionValidation: true });
-    expect(String(notes)).toContain('╪¬╪▒╪¿┘ê');
+    expect(String(notes)).toContain('تربو');
 
     // Direct turbo-metadata update must still happen
     expect(mockPrisma.order.update).toHaveBeenCalledTimes(1);
@@ -147,7 +147,7 @@ describe('turboStatusSyncService auto status change ΓåÆ notification routing'
     expect(mockPrisma.guestOrder.update).toHaveBeenCalledTimes(1);
   });
 
-  test('keeps working (does not throw) when orderService update fails ΓÇö falls back to direct status write', async () => {
+  test('keeps working (does not throw) when orderService update fails — falls back to direct status write', async () => {
     orderService.updateOrderStatus.mockRejectedValue(new Error('transition blocked'));
 
     const result = await syncTurboStatusToOrder({

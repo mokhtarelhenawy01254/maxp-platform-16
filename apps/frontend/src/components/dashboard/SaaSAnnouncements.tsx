@@ -1,6 +1,10 @@
-import { X as XMarkIcon, Star as SparklesIcon, Circle as MegaphoneIcon, Circle as RocketLaunchIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  XMarkIcon,
+  SparklesIcon,
+  MegaphoneIcon,
+  RocketLaunchIcon,
+} from "@heroicons/react/24/outline";
 
 // Types
 export type AnnouncementType = "feature" | "alert" | "promotion" | "update";

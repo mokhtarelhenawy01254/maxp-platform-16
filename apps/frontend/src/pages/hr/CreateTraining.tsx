@@ -2,7 +2,23 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, ArrowRight, Award, Book, BookOpen, Calendar, CheckCircle2, Clock, DollarSign, File, FileText, Layout as LayoutIcon, Lightbulb, Save, Star, Trash2, User } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Save,
+  ArrowRight,
+  AlertCircle,
+  BookOpen,
+  User,
+  Calendar,
+  Lightbulb,
+  DollarSign,
+  Clock,
+  Award,
+  FileText,
+  CheckCircle2,
+  Layout as LayoutIcon,
+  Trash2,
+} from "lucide-react";
 import api from "../../services/api";
 
 import { Button } from "../../components/ui/button";
@@ -97,7 +113,7 @@ const CreateTraining = () => {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("فشل في تحميل البيانات");
+        tToast.error("CreateTraining.failed_load_7dfb");
       } finally {
         setFetching(false);
       }
@@ -110,7 +126,7 @@ const CreateTraining = () => {
       setLoading(true);
 
       if (!data.employeeId || data.employeeId.trim() === "") {
-        toast.error("يجب اختيار الموظف");
+        tToast.error("CreateTraining.msg_e5a0");
         return;
       }
 
@@ -124,10 +140,10 @@ const CreateTraining = () => {
 
       if (isEdit) {
         await api.put(`/hr/trainings/${id}`, payload);
-        toast.success("تم تحديث البرنامج التدريبي بنجاح");
+        tToast.success("CreateTraining.success_update_d670");
       } else {
         await api.post("/hr/trainings", payload);
-        toast.success("تم إضافة البرنامج التدريبي بنجاح");
+        tToast.success("CreateTraining.success_add_818b");
       }
 
       navigate("/hr/training");
@@ -145,7 +161,7 @@ const CreateTraining = () => {
     try {
       setLoading(true);
       await api.delete(`/hr/trainings/${id}`);
-      toast.success("تم حذف السجل التدريبي بنجاح");
+      tToast.success("CreateTraining.success_delete_b773");
       navigate("/hr/training");
     } catch (error: any) {
       console.error("Error deleting training:", error);

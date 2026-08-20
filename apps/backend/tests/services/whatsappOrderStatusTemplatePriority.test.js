@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Regression test: order-status WhatsApp notifications must prefer the
  * raw status-code template (e.g. CONFIRMED) over the legacy ORDER_* event
  * template (e.g. ORDER_CONFIRMED).
@@ -227,7 +227,7 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
     currency: 'EGP',
   };
 
-  // mockImplementation ┘è╪¡╪º┘â┘è Prisma: ┘è╪▒╪» ╪¿┘é┘ê╪º┘ä╪¿ ╪¡╪│╪¿ (eventType + channel)
+  // mockImplementation يحاكي Prisma: يرد بقوالب حسب (eventType + channel)
   function mockFindFirst(rows) {
     mockSettings.whatsAppNotificationTemplate.findFirst.mockImplementation(({ where }) => {
       const evt = where.eventType;
@@ -242,12 +242,12 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
     });
   }
 
-  it('Meta session + approved META_CLOUD template ΓåÆ ┘è┘ü╪╢┘æ┘ä ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º', async () => {
+  it('Meta session + approved META_CLOUD template → يفضّل قالب ميتا', async () => {
     mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
     mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
     mockFindFirst([
-      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: '┘å╪╡ ╪╣╪º╪»┘è', isActive: true },
-      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: '┘à╪▒╪¼╪╣', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([]) },
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: 'نص عادي', isActive: true },
+      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([]) },
     ]);
 
     const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
@@ -259,12 +259,12 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
     expect(res).toBeDefined();
   });
 
-  it('Meta session + META_CLOUD ╪║┘è╪▒ ┘à╪╣╪¬┘à╪» ΓåÆ ╪¿┘è┘å╪▓┘ä ┘ä┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º╪»┘è', async () => {
+  it('Meta session + META_CLOUD غير معتمد → بينزل للقالب العادي', async () => {
     mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
     mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
     mockFindFirst([
-      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: '┘å╪╡ ╪╣╪º╪»┘è', isActive: true },
-      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: '┘à╪▒╪¼╪╣', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'PENDING' },
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: 'نص عادي', isActive: true },
+      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'PENDING' },
     ]);
 
     const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
@@ -276,12 +276,12 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
     expect(res).toBeDefined();
   });
 
-  it('Baileys session + ╪º┘ä┘é╪º┘ä╪¿┘è┘å ┘à┘ê╪¼┘ê╪»┘è┘å ΓåÆ ┘è┘ü╪╢┘æ┘ä ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º╪»┘è', async () => {
+  it('Baileys session + القالبين موجودين → يفضّل القالب العادي', async () => {
     mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-b', status: 'CONNECTED', provider: 'BAILEYS' });
     mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-b', status: 'CONNECTED', provider: 'BAILEYS' });
     mockFindFirst([
-      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: '┘å╪╡ ╪╣╪º╪»┘è', isActive: true },
-      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: '┘à╪▒╪¼╪╣', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED' },
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: 'نص عادي', isActive: true },
+      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED' },
     ]);
 
     const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
@@ -293,38 +293,38 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
     expect(res).toBeDefined();
   });
 
-  it('Meta session + ╪│╪¼┘ä ╪╣╪º╪»┘è ┘é╪»┘è┘à ╪╣┘ä┘è┘ç ╪▒╪¿╪╖ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪» (legacy) ΓåÆ ╪¿┘è╪¿╪╣╪¬ ╪╣╪¿╪▒ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à╪┤ ┘å╪╡ ╪¡╪▒', async () => {
+  it('Meta session + سجل عادي قديم عليه ربط ميتا معتمد (legacy) → بيبعت عبر قالب ميتا مش نص حر', async () => {
     mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
     mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
-    // ╪│╪¼┘ä legacy ┘ê╪º╪¡╪» ╪¿╪│: channel AUTO + metaTemplateName ┘à╪╣╪¬┘à╪» (╪º┘ä┘å┘à┘ê╪░╪¼ ╪º┘ä┘é╪»┘è┘à)
+    // سجل legacy واحد بس: channel AUTO + metaTemplateName معتمد (النموذج القديم)
     mockFindFirst([
-      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'legacy-1', content: '┘à╪▒╪¼╪╣ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([{ position: 1, name: 'customerName' }]) },
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'legacy-1', content: 'مرجع المتغيرات', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([{ position: 1, name: 'customerName' }]) },
     ]);
 
     const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
     const res = await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
 
-    // ┘ä╪º╪▓┘à ┘è┘â┘ê┘å ╪º╪│╪¬┘Å╪╣┘ä┘à ╪╣┘å ╪º┘ä╪│╪¼┘ä ╪º┘ä┘Ç legacy ╪º┘ä┘à╪▒╪¬╪¿╪╖ ╪¿┘à┘è╪¬╪º (metaTemplateName not null)
+    // لازم يكون استُعلم عن السجل الـ legacy المرتبط بميتا (metaTemplateName not null)
     const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
     const queriedLegacyMeta = calls.some((c) => c[0].where.metaTemplateName && c[0].where.metaTemplateName.not === null);
     expect(queriedLegacyMeta).toBeTruthy();
     expect(res).toBeDefined();
   });
 
-  it('Meta session + ╪│╪¼┘ä┘è┘å ╪╣╪º╪»┘è┘è┘å: ┘ê╪º╪¡╪» ╪╣┘ä┘è┘ç ╪▒╪¿╪╖ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪» ┘ê┘ê╪º╪¡╪» ╪╣╪º╪»┘è ╪╡╪▒┘è╪¡ ΓåÆ ╪¿┘è╪¿╪╣╪¬ ╪╣╪¿╪▒ ╪º┘ä┘ä┘è ╪╣┘ä┘è┘ç ╪º┘ä╪▒╪¿╪╖', async () => {
+  it('Meta session + سجلين عاديين: واحد عليه ربط ميتا معتمد وواحد عادي صريح → بيبعت عبر اللي عليه الربط', async () => {
     mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
     mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
-    // ╪│╪¼┘ä ╪╣╪º╪»┘è ╪╡╪▒┘è╪¡ (╪¿╪»┘ê┘å ╪▒╪¿╪╖) + ╪│╪¼┘ä legacy ╪╣┘ä┘è┘ç ╪▒╪¿╪╖ ┘à┘è╪¬╪º ┘à╪╣╪¬┘à╪»
+    // سجل عادي صريح (بدون ربط) + سجل legacy عليه ربط ميتا معتمد
     mockFindFirst([
-      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'plain-1', content: '┘å╪╡ ╪╣╪º╪»┘è', isActive: true },
-      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'legacy-meta', content: '┘à╪▒╪¼╪╣', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([{ position: 1, name: 'customerName' }]) },
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'plain-1', content: 'نص عادي', isActive: true },
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'legacy-meta', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([{ position: 1, name: 'customerName' }]) },
     ]);
 
     const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
     const res = await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
 
     const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
-    // ╪º┘ä┘Ç legacy (metaTemplateName not null) ┘ä╪º╪▓┘à ┘è┘â┘ê┘å ╪º╪¬╪│╪ú┘ä ╪╣┘å┘ç ┘ê╪¿┘è╪▒╪¼╪╣ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪▒╪¿┘ê╪╖
+    // الـ legacy (metaTemplateName not null) لازم يكون اتسأل عنه وبيرجع القالب المربوط
     const legacyIdx = calls.findIndex((c) => c[0].where.metaTemplateName && c[0].where.metaTemplateName.not === null);
     expect(legacyIdx).toBeGreaterThanOrEqual(0);
     expect(res).toBeDefined();
@@ -418,7 +418,7 @@ describe('whatsapp order-creation dispatch (sendOrderCreationNotification)', () 
   });
 
   it('blocks a duplicate status notification within the dedup window (service + route double call)', async () => {
-    // recent notification log ΓåÆ ╪º┘ä╪»┘ü╪╣╪⌐ ╪º┘ä╪¬╪º┘å┘è╪⌐ (┘à┘å ╪º┘ä┘Ç route) ╪¬╪¬╪¿┘ä┘ê┘â
+    // recent notification log → الدفعة التانية (من الـ route) تتبلوك
     mockSettings.whatsAppNotificationLog.findFirst.mockResolvedValue({ id: 'recent-log' });
 
     const { sendOrderCreationNotification } = require('../../services/whatsapp/WhatsAppNotificationService');

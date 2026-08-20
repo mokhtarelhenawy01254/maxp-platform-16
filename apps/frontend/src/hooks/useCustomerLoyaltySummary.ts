@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "../services/apiClient";
 
 export interface CustomerLoyaltyTierInfo {
@@ -117,7 +117,7 @@ export function useCustomerLoyaltySummary(customerId?: string) {
       const error = err as {
         response?: { data?: { message?: string } };
       };
-      setError(error?.response?.data?.message || "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪¿┘è╪º┘å╪º╪¬┘â╪î ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë");
+      setError(error?.response?.data?.message || "تعذر تحميل بياناتك، حاول مرة أخرى");
     } finally {
       setLoading(false);
     }

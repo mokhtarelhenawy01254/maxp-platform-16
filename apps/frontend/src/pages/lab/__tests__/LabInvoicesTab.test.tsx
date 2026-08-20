@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import LabInvoicesTab from "../LabInvoicesTab";
 
 jest.mock("../shared", () => ({
@@ -14,17 +14,17 @@ describe("LabInvoicesTab", () => {
 
   test("renders invoices with net/remaining", async () => {
     mockFetchJson.mockResolvedValueOnce([
-      { id: "i1", invoiceNumber: "INV-1", total: 100, discount: 10, additionAmount: 5, amountPaid: 60, status: "PARTIAL", patient: { firstName: "┘à╪¡┘à╪»" } },
+      { id: "i1", invoiceNumber: "INV-1", total: 100, discount: 10, additionAmount: 5, amountPaid: 60, status: "PARTIAL", patient: { firstName: "محمد" } },
     ]);
 
     render(<LabInvoicesTab />);
     await waitFor(() => expect(screen.getByText("INV-1")).toBeInTheDocument());
-    expect(screen.getByText("┘à╪│╪»╪» ╪¼╪▓╪ª┘è╪º┘ï")).toBeInTheDocument();
+    expect(screen.getByText("مسدد جزئياً")).toBeInTheDocument();
   });
 
   test("shows empty state", async () => {
     mockFetchJson.mockResolvedValueOnce([]);
     render(<LabInvoicesTab />);
-    await waitFor(() => expect(screen.getByText("┘ä╪º ╪¬┘ê╪¼╪» ┘ü┘ê╪º╪¬┘è╪▒")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("لا توجد فواتير")).toBeInTheDocument());
   });
 });

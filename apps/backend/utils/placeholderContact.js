@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared placeholder / fake contact detection.
  * Used by footer settings, store settings and WhatsApp session validation
  * so placeholder data ("+20 100 000 0000", "hello@example.com" ...) is
@@ -17,7 +17,7 @@ function isPlaceholderPhone(value) {
 
   // any run of 6+ identical consecutive digits (real Egyptian numbers
   // rarely contain such runs; this catches 01000000000, 01111111111,
-  // +20 100 000 0000 ΓåÆ digits 201000000000 ΓåÆ run of 9 zeros)
+  // +20 100 000 0000 → digits 201000000000 → run of 9 zeros)
   if (/(\d)\1{5,}/.test(digits)) return true;
 
   return false;

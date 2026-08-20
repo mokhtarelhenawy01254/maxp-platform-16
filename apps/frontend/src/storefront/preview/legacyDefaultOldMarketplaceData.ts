@@ -574,7 +574,7 @@ export const LEGACY_DEFAULT_OLD_PRODUCTS: Product[] = [
     slug: "echo-court-runner",
     name: "Echo Court Runner",
     description:
-      "<p>Clean sneaker styling with multiple photos for every colorway, so the product page changes as the shopper picks a finish.</p><h2>Materials</h2><p>Mixed upper with a cushioned sole and soft inner collar.</p><h2>Dimensions</h2><p>Standard women's fit across sizes 37 to 40.</p><h2>Care Instructions</h2><p>Spot clean with a damp cloth and air dry away from direct heat.</p>",
+      "<p>Clean sneaker styling with multiple photos for every colorway, so the product page changes as soon as the shopper picks a finish.</p><h2>Materials</h2><p>Mixed upper with a cushioned sole and soft inner collar.</p><h2>Dimensions</h2><p>Standard women's fit across sizes 37 to 40.</p><h2>Care Instructions</h2><p>Spot clean with a damp cloth and air dry away from direct heat.</p>",
     categoryKey: "sneakers",
     price: 1990,
     comparePrice: 2290,

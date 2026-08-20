@@ -1,5 +1,5 @@
-import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
   bulkSearchService,
@@ -8,7 +8,17 @@ import {
 } from "../../services/bulkSearchService";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, Check, CheckCircle, Clipboard, Copy, Download, File, FileText, Loader2, Package, Phone, Search } from 'lucide-react';
+import {
+  Search,
+  FileText,
+  Download,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Phone,
+  Package,
+  Copy,
+} from "lucide-react";
 
 const ORDER_STATUSES = [
   { code: "PENDING", name: "قيد الانتظار", nameEn: "Pending" },

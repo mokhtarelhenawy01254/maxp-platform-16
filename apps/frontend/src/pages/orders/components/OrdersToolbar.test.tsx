@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { OrdersToolbar } from "./OrdersToolbar";
@@ -109,8 +109,8 @@ describe("OrdersToolbar", () => {
             showAdvancedFilters: true,
             onFilterChange,
             filterableOrderStatuses: [
-              { code: "PENDING", name: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒" },
-              { code: "SHIPPED", name: "╪¬┘à ╪º┘ä╪┤╪¡┘å" },
+              { code: "PENDING", name: "قيد الانتظار" },
+              { code: "SHIPPED", name: "تم الشحن" },
             ],
           })}
         />
@@ -132,8 +132,8 @@ describe("OrdersToolbar", () => {
             onFilterChange,
             filters: { ...makeProps().filters, status: ["pending"] },
             filterableOrderStatuses: [
-              { code: "PENDING", name: "┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒" },
-              { code: "SHIPPED", name: "╪¬┘à ╪º┘ä╪┤╪¡┘å" },
+              { code: "PENDING", name: "قيد الانتظار" },
+              { code: "SHIPPED", name: "تم الشحن" },
             ],
           })}
         />

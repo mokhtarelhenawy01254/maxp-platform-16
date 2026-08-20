@@ -1,4 +1,3 @@
-import { ArrowLeft as ArrowLeftIcon } from 'lucide-react';
 /**
  * Create Lookalike Audience Page
  *
@@ -7,8 +6,9 @@ import { ArrowLeft as ArrowLeftIcon } from 'lucide-react';
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   CreateLookalikeAudienceData,
@@ -54,7 +54,7 @@ const CreateLookalikeAudience: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error loading data:", error);
-      toast.error("فشل في تحميل البيانات");
+      tToast.error("CreateLookalikeAudience.failed_load_9cfe");
     } finally {
       setLoadingData(false);
     }
@@ -71,14 +71,14 @@ const CreateLookalikeAudience: React.FC = () => {
     e.preventDefault();
 
     if (!formData.name || !formData.sourceAudienceId || !formData.country) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      tToast.error("CreateLookalikeAudience.msg_30e5");
       return;
     }
 
     try {
       setLoading(true);
       await facebookAdsService.createLookalikeAudience(formData);
-      toast.success("تم إنشاء الجمهور المشابه بنجاح");
+      tToast.success("CreateLookalikeAudience.success_create_ddc4");
       navigate("/advertising/facebook-ads/audiences");
     } catch (error: any) {
       console.error("Error creating lookalike audience:", error);

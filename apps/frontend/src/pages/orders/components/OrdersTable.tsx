@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,8 +12,8 @@ import { OrdersEmptyState } from "./OrdersEmptyState";
 import { OrdersPagination } from "./OrdersPagination";
 import type { Order } from "../Orders";
 
-// ╪┤╪¿┘â╪⌐ ╪ú┘à╪º┘å ╪Ñ╪╢╪º┘ü┘è╪⌐ ╪╢╪» ╪º┘ä╪¬┘â╪▒╪º╪▒ ┘ü┘è ╪º┘ä┘ê╪º╪¼┘ç╪⌐: ┘ä┘ê ╪º┘ä╪¿╪º┘â ╪ú╪▒╪│┘ä ┘å┘ü╪│ ╪º┘ä╪╖┘ä╪¿ ┘à╪▒╪¬┘è┘å
-// (╪¿┘å┘ü╪│ ╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿) ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪╡┘ü╪¡╪⌐╪î ┘å╪╣╪▒╪╢ ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪ú┘ê┘ä┘ë ╪¿╪│.
+// شبكة أمان إضافية ضد التكرار في الواجهة: لو الباك أرسل نفس الطلب مرتين
+// (بنفس رقم الطلب) في نفس الصفحة، نعرض النسخة الأولى بس.
 const dedupOrders = (list: Order[]): Order[] => {
   const seen = new Set<string>();
   const out: Order[] = [];
@@ -351,7 +351,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                                 className="text-xs text-slate-600 dark:text-slate-400"
                                 dir="ltr"
                               >
-                                ≡ƒôà{" "}
+                                📅{" "}
                                 {new Date(
                                   order.scheduledDeliveryDate,
                                 ).toLocaleDateString("ar-EG", {

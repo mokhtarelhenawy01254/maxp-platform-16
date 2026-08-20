@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, ArrowRight, Calendar, CheckCircle2, Clock, FileX, HelpCircle, History, Info, Loader2, Save, X, XCircle } from 'lucide-react';
+import {
+    FileX,
+    ArrowRight,
+    Save,
+    Calendar,
+    History,
+    AlertCircle,
+    Info,
+    Clock,
+    CheckCircle2,
+    XCircle,
+    HelpCircle,
+    Loader2
+} from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { Button } from "../../components/ui/button";
@@ -26,6 +40,7 @@ type ResignationFormData = {
 };
 
 const MyResignation = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -69,7 +84,7 @@ const MyResignation = () => {
                     } catch (err: any) {
                         if (err?.response?.status !== 403) {
                             console.error("Error fetching HR settings:", err);
-                            toast.error("تعذر تحميل إعدادات الموارد البشرية");
+                            toast.error(t("employee.resignation.fetchSettingsError"));
                         }
                     }
                 }
@@ -84,7 +99,7 @@ const MyResignation = () => {
 
             } catch (error) {
                 console.error("Error fetching data:", error);
-                toast.error("فشل في تحميل البيانات");
+                toast.error(t("employee.resignation.fetchError"));
             } finally {
                 setFetching(false);
             }
@@ -114,7 +129,7 @@ const MyResignation = () => {
             };
 
             await api.post("/hr/resignations", submissionData);
-            toast.success("تم تقديم طلب الاستقالة بنجاح");
+            toast.success(t("employee.resignation.submitSuccess"));
             setShowForm(false);
             reset();
 
@@ -123,22 +138,22 @@ const MyResignation = () => {
             setHistory(historyRes.data.resignations || []);
         } catch (error: any) {
             console.error("Error submitting resignation:", error);
-            toast.error(error.response?.data?.error || "فشل في تقديم الطلب");
+            toast.error(error.response?.data?.error || t("employee.resignation.submitError"));
         } finally {
             setLoading(false);
         }
     };
 
-    const getStatusBadge = (status: string) => {
+        const getStatusBadge = (status: string) => {
         switch (status) {
             case "PENDING":
-                return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none px-3 py-1 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> قيد المراجعة</Badge>;
+                return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none px-3 py-1 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {t("employee.resignation.pendingStatus")}</Badge>;
             case "APPROVED":
-                return <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none px-3 py-1 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> تمت الموافقة</Badge>;
+                return <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none px-3 py-1 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> {t("employee.resignation.approvedStatus")}</Badge>;
             case "REJECTED":
-                return <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none px-3 py-1 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" /> مرفوض</Badge>;
+                return <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none px-3 py-1 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" /> {t("employee.resignation.rejectedStatus")}</Badge>;
             case "SETTLED":
-                return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none px-3 py-1 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> تمت التسوية</Badge>;
+                return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none px-3 py-1 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> {t("employee.resignation.settledStatus")}</Badge>;
             default:
                 return <Badge variant="outline">{status}</Badge>;
         }
@@ -148,7 +163,7 @@ const MyResignation = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                <p className="text-gray-500 animate-pulse font-medium">جاري تحميل البيانات...</p>
+                <p className="text-gray-500 animate-pulse font-medium">{t("employee.resignation.loading")}</p>
             </div>
         );
     }
@@ -162,10 +177,10 @@ const MyResignation = () => {
                 <div className="space-y-1">
                     <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                         <FileX className="h-10 w-10 text-red-500" />
-                        طلب استقالة
+                        {t("employee.resignation.title")}
                     </h1>
                     <p className="text-muted-foreground text-lg">
-                        إجراءات إنهاء الخدمة وتسجيل تاريخ آخر يوم عمل
+                        {t("employee.resignation.subtitle")}
                     </p>
                 </div>
 
@@ -176,7 +191,7 @@ const MyResignation = () => {
                         variant="destructive"
                         className="rounded-full px-8 shadow-lg hover:shadow-red-500/20 transition-all active:scale-95"
                     >
-                        تقديم طلب استقالة جديد
+                        {t("employee.resignation.newRequest")}
                     </Button>
                 )}
             </div>
@@ -194,10 +209,10 @@ const MyResignation = () => {
                             <CardHeader>
                                 <CardTitle className="text-xl flex items-center gap-2 text-red-700">
                                     <AlertCircle className="w-5 h-5" />
-                                    تفاصيل الطلب
+                                    {t("employee.resignation.detailsTitle")}
                                 </CardTitle>
                                 <CardDescription>
-                                    يرجى ملء البيانات التالية بعناية. طلبك سيصل إلى قسم الموارد البشرية للمراجعة.
+                                    {t("employee.resignation.detailsDesc")}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="p-6">
@@ -207,14 +222,14 @@ const MyResignation = () => {
                                         <div className="space-y-3">
                                             <Label className="text-base font-semibold text-gray-700 flex items-center gap-2">
                                                 <Calendar className="w-4 h-4 text-red-500" />
-                                                تاريخ تقديم الاستقالة
+                                                {t("employee.resignation.resignationDate")}
                                                 <TooltipProvider shadow={true}>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            هو التاريخ الفعلي الذي قمت فيه باتخاذ قرار الاستقالة
+                                                            {t("employee.resignation.resignationDateTooltip")}
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
@@ -222,7 +237,7 @@ const MyResignation = () => {
                                             <Input
                                                 type="date"
                                                 className="h-12 text-lg border-gray-200 focus:border-red-500 focus:ring-red-200 transition-all bg-white"
-                                                {...register("resignationDate", { required: "التاريخ مطلوب" })}
+                                                {...register("resignationDate", { required: t("employee.resignation.dateRequired") })}
                                                 onChange={(e) => {
                                                     register("resignationDate").onChange(e);
                                                     handleDateChange(e);
@@ -235,12 +250,12 @@ const MyResignation = () => {
                                         <div className="space-y-3">
                                             <Label className="text-base font-semibold text-gray-700 flex items-center gap-2">
                                                 <Calendar className="w-4 h-4 text-blue-500" />
-                                                آخر يوم عمل متوقع
+                                                {t("employee.resignation.lastWorkingDay")}
                                             </Label>
                                             <Input
                                                 type="date"
                                                 className="h-12 text-lg border-gray-200 focus:border-blue-500 focus:ring-blue-200 transition-all bg-white"
-                                                {...register("lastWorkingDay", { required: "تاريخ آخر يوم عمل مطلوب" })}
+                                                {...register("lastWorkingDay", { required: t("employee.resignation.lastWorkingDayRequired") })}
                                             />
                                             {errors.lastWorkingDay && <p className="text-sm text-red-500 font-medium">{errors.lastWorkingDay.message}</p>}
                                         </div>
@@ -253,20 +268,19 @@ const MyResignation = () => {
                                         </div>
                                         <div>
                                             <h4 className="text-lg font-bold text-blue-900 mb-1">
-                                                سياسة فترة الإشعار
+                                                {t("employee.resignation.noticePolicy")}
                                             </h4>
                                             <p className="text-blue-800/80 leading-relaxed font-medium">
-                                                بناءً على سياسة الشركة، فترة الإشعار هي <span className="bg-blue-600 text-white px-2 py-0.5 rounded-lg mx-1">{noticePeriod} يوماً</span>.
-                                                تم حساب تاريخ آخر يوم عمل تلقائياً ليكون <span className="font-bold underline decoration-blue-400 underline-offset-4">{expectedDate}</span>. يمكنك تغييره إذا رغبت في ذلك ولكن قد يتطلب الأمر موافقة خاصة.
+                                                {t("employee.resignation.noticePolicyText", { days: noticePeriod, date: expectedDate })}
                                             </p>
                                         </div>
                                     </div>
 
                                     {/* Reason */}
                                     <div className="space-y-3">
-                                        <Label className="text-base font-semibold text-gray-700">سبب الاستقالة (اختياري)</Label>
+                                        <Label className="text-base font-semibold text-gray-700">{t("employee.resignation.reasonOptional")}</Label>
                                         <Textarea
-                                            placeholder="يمكنك ذكر سبب قرارك لمساعدتنا في تحسين بيئة العمل..."
+                                            placeholder={String(t("employee.resignation.reasonPlaceholder"))}
                                             className="min-h-[150px] text-lg border-gray-200 focus:border-red-500 focus:ring-red-200 transition-all bg-white p-4 resize-none"
                                             {...register("reason")}
                                         />
@@ -280,7 +294,7 @@ const MyResignation = () => {
                                             onClick={() => setShowForm(false)}
                                             className="text-gray-500 hover:bg-gray-100 px-8"
                                         >
-                                            إلغاء التعديل
+                                            {t("employee.resignation.cancelEdit")}
                                         </Button>
                                         <Button
                                             type="submit"
@@ -291,12 +305,12 @@ const MyResignation = () => {
                                             {loading ? (
                                                 <div className="flex items-center gap-2">
                                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                                    جاري الإرسال...
+                                                    {t("employee.resignation.sending")}
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2">
                                                     <Save className="h-5 w-5" />
-                                                    تأكيد تقديم الاستقالة
+                                                    {t("employee.resignation.confirmSubmit")}
                                                 </div>
                                             )}
                                         </Button>
@@ -318,8 +332,8 @@ const MyResignation = () => {
                                     <Clock className="w-8 h-8 text-amber-500 animate-[pulse_2s_infinite]" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-xl font-bold text-amber-900 mb-1">طلبك قيد المراجعة</h3>
-                                    <p className="text-amber-800/80 font-medium">سيتم الرد عليك من قبل قسم الموارد البشرية في أقرب وقت ممكن بمجرد مراجعة طلبك.</p>
+                                    <h3 className="text-xl font-bold text-amber-900 mb-1">{t("employee.resignation.underReview")}</h3>
+                                    <p className="text-amber-800/80 font-medium">{t("employee.resignation.underReviewDesc")}</p>
                                 </div>
                             </div>
                         )}
@@ -328,7 +342,7 @@ const MyResignation = () => {
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-gray-500 font-semibold mb-4 text-lg">
                                 <History className="w-5 h-5" />
-                                سجل الطلبات السابقة
+                                {t("employee.resignation.previousRequests")}
                             </div>
 
                             {history.length === 0 ? (
@@ -336,15 +350,15 @@ const MyResignation = () => {
                                     <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-2 border border-gray-100 shadow-inner">
                                         <FileX className="w-10 h-10 text-gray-300" />
                                     </div>
-                                    <h3 className="text-2xl font-bold text-gray-800">لا يوجد طلبات سابقة</h3>
-                                    <p className="text-gray-500 text-lg max-w-md mx-auto">لم تتقدم بأي طلبات استقالة حتى الآن. سجلك الوظيفي يبدو في حالة ممتازة!</p>
+                                    <h3 className="text-2xl font-bold text-gray-800">{t("employee.resignation.noPreviousRequests")}</h3>
+                                    <p className="text-gray-500 text-lg max-w-md mx-auto">{t("employee.resignation.noPreviousRequestsDesc")}</p>
                                     {!showForm && (
                                         <Button
                                             onClick={() => setShowForm(true)}
                                             variant="outline"
                                             className="mt-4 rounded-full px-8 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
                                         >
-                                            ابدأ طلباً جديداً
+                                            {t("employee.resignation.startNewRequest")}
                                         </Button>
                                     )}
                                 </div>
@@ -367,24 +381,24 @@ const MyResignation = () => {
                                                     </div>
                                                     <CardTitle className="text-lg mt-4 flex items-center gap-2">
                                                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                                                        تقديم الاستقالة: {new Date(req.resignationDate).toLocaleDateString('ar-EG')}
+                                                        {t("employee.resignation.submittedOn", { date: new Date(req.resignationDate).toLocaleDateString('ar-EG') })}
                                                     </CardTitle>
                                                 </CardHeader>
                                                 <CardContent className="space-y-4 text-sm text-gray-600 pb-6 pt-0">
                                                     <div className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                                                         <Clock className="w-4 h-4 text-blue-500" />
-                                                        <span className="font-semibold">آخر يوم عمل:</span>
+                                                        <span className="font-semibold">{t("employee.resignation.lastDay")}</span>
                                                         <span className="text-blue-700">{new Date(req.lastWorkingDay).toLocaleDateString('ar-EG')}</span>
                                                     </div>
                                                     {req.reason && (
                                                         <div className="space-y-1.5">
-                                                            <span className="font-semibold text-gray-700 block">السبب:</span>
+                                                            <span className="font-semibold text-gray-700 block">{t("employee.resignation.reason")}</span>
                                                             <p className="line-clamp-2 text-gray-500 bg-gray-50/50 p-2 rounded-lg italic font-medium leading-relaxed">"{req.reason}"</p>
                                                         </div>
                                                     )}
                                                     {req.exitInterview && (
                                                         <div className="mt-4 p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl">
-                                                            <span className="font-bold text-indigo-700 block mb-1 underline decoration-indigo-200">ملاحظات مقابلة الخروج:</span>
+                                                            <span className="font-bold text-indigo-700 block mb-1 underline decoration-indigo-200">{t("employee.resignation.exitInterviewNotes")}</span>
                                                             <p className="text-indigo-900/80 leading-relaxed font-medium">{req.exitInterview}</p>
                                                         </div>
                                                     )}

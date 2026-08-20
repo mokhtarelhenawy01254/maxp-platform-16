@@ -1,4 +1,4 @@
-﻿jest.mock('../../../services/orderMovementCore', () => ({
+jest.mock('../../../services/orderMovementCore', () => ({
   normalizeDateRange: jest.fn(() => ({ start: null, end: null })),
   normalizeStatus: jest.fn((s) => String(s || '').trim().toUpperCase()),
   TERMINAL_STATUSES: new Set([
@@ -53,10 +53,10 @@ const buildRow = (status, total, changedBy, reason) => ({
 });
 
 const happyRows = [
-  buildRow('DELIVERED', 500, 'user-1', '╪¬┘à ╪º┘ä╪¬╪│┘ä┘è┘à'),
-  buildRow('CANCELLED', 300, 'user-2', '╪º┘ä╪╣┘à┘è┘ä ╪▒┘ü╪╢ ╪º┘ä╪º╪│╪¬┘ä╪º┘à'),
-  buildRow('RETURNED', 200, 'SYSTEM_AUTO', '╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪╖╪º╪¿┘é'),
-  buildRow('CANCELLED', 150, 'user-3', '  ╪º┘ä╪╣┘à┘è┘ä    ╪▒┘ü╪╢  ╪º┘ä╪º╪│╪¬┘ä╪º┘à  '),
+  buildRow('DELIVERED', 500, 'user-1', 'تم التسليم'),
+  buildRow('CANCELLED', 300, 'user-2', 'العميل رفض الاستلام'),
+  buildRow('RETURNED', 200, 'SYSTEM_AUTO', 'طلب غير مطابق'),
+  buildRow('CANCELLED', 150, 'user-3', '  العميل    رفض  الاستلام  '),
   buildRow('DELIVERED', 400, 'SYSTEM_AUTO', null),
   buildRow('PENDING', 100, 'user-4', null)
 ];
@@ -135,14 +135,14 @@ describe('orderMovement outcomesController', () => {
 
     const reasons = res.payload.data.reasons;
     expect(reasons).toHaveLength(2);
-    expect(reasons.find((row) => row.reason === '╪º┘ä╪╣┘à┘è┘ä ╪▒┘ü╪╢ ╪º┘ä╪º╪│╪¬┘ä╪º┘à')).toEqual({
-      reason: '╪º┘ä╪╣┘à┘è┘ä ╪▒┘ü╪╢ ╪º┘ä╪º╪│╪¬┘ä╪º┘à',
+    expect(reasons.find((row) => row.reason === 'العميل رفض الاستلام')).toEqual({
+      reason: 'العميل رفض الاستلام',
       count: 2,
       revenue: 450,
       status: 'CANCELLED'
     });
-    expect(reasons.find((row) => row.reason === '╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪╖╪º╪¿┘é')).toEqual({
-      reason: '╪╖┘ä╪¿ ╪║┘è╪▒ ┘à╪╖╪º╪¿┘é',
+    expect(reasons.find((row) => row.reason === 'طلب غير مطابق')).toEqual({
+      reason: 'طلب غير مطابق',
       count: 1,
       revenue: 200,
       status: 'RETURNED'
@@ -179,7 +179,7 @@ describe('orderMovement outcomesController', () => {
     await callRouter({ user: { id: 'user-1' }, query: {} }, res);
 
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, message: 'غير مصرح' });
     expect(sql.fetchOutcomeRows).not.toHaveBeenCalled();
   });
 
@@ -232,7 +232,7 @@ describe('orderMovement outcomesController', () => {
   test('skips failure orders with empty reasons', async () => {
     sql.fetchOutcomeRows.mockResolvedValue([
       buildRow('CANCELLED', 100, 'user-5', '   '),
-      buildRow('CANCELLED', 250, 'user-6', '╪╖┘ä╪¿ ┘à┘â╪▒╪▒')
+      buildRow('CANCELLED', 250, 'user-6', 'طلب مكرر')
     ]);
 
     const res = createResponse();
@@ -240,7 +240,7 @@ describe('orderMovement outcomesController', () => {
 
     expect(res.payload.data.reasons).toHaveLength(1);
     expect(res.payload.data.reasons[0]).toEqual({
-      reason: '╪╖┘ä╪¿ ┘à┘â╪▒╪▒',
+      reason: 'طلب مكرر',
       count: 1,
       revenue: 250,
       status: 'CANCELLED'

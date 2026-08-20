@@ -1,4 +1,4 @@
-﻿const mockEnsureWithinPlanLimit = jest.fn();
+const mockEnsureWithinPlanLimit = jest.fn();
 const mockCreateLimitExceededError = jest.fn();
 
 jest.mock('../../services/sharedDatabase', () => ({

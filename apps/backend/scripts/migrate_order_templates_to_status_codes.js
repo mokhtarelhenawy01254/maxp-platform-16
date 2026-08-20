@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Migrate legacy ORDER_* WhatsApp templates to raw status-code templates.
  *
  * Context: order status templates are now managed on /orders/status-templates,
@@ -92,11 +92,11 @@ async function main() {
             where: { id: tpl.id },
             data: { isActive: false, updatedAt: new Date() }
           });
-          console.log(`  Γ£à Deactivated ${tpl.companyId} ${tpl.eventType} (raw exists: ${existingRaw.id})`);
+          console.log(`  ✅ Deactivated ${tpl.companyId} ${tpl.eventType} (raw exists: ${existingRaw.id})`);
         }
         deactivated++;
       } else {
-        console.log(`  Γ£ô Skip (already inactive) ${tpl.companyId} ${tpl.eventType}`);
+        console.log(`  ✓ Skip (already inactive) ${tpl.companyId} ${tpl.eventType}`);
       }
       continue;
     }
@@ -108,7 +108,7 @@ async function main() {
         where: { id: tpl.id },
         data: { eventType: rawCode, updatedAt: new Date() }
       });
-      console.log(`  Γ£à Renamed ${tpl.companyId} ${tpl.eventType} -> ${rawCode}`);
+      console.log(`  ✅ Renamed ${tpl.companyId} ${tpl.eventType} -> ${rawCode}`);
     }
     renamed++;
   }
@@ -119,6 +119,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error('Γ¥î', e);
+  console.error('❌', e);
   process.exit(1);
 });

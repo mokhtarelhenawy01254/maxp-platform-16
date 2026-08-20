@@ -1,7 +1,13 @@
-import { RefreshCw as ArrowPathIcon, DollarSign as BanknotesIcon, Clipboard as ClipboardDocumentCheckIcon, AlertTriangle as ExclamationTriangleIcon, Eye as EyeIcon, X as XCircleIcon } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-;
+import {
+  ArrowPathIcon,
+  BanknotesIcon,
+  ClipboardDocumentCheckIcon,
+  ExclamationTriangleIcon,
+  EyeIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
 import {
   Bar,
   BarChart,
@@ -15,9 +21,9 @@ import {
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import { useCurrency } from "../../../hooks/useCurrency";
 import analyticsService from "../../../services/analyticsService";
-import cancellationReasonService from "../../../services/cancellationReasonService";
-import { normalizeCancellationReasonOptions } from "../../../services/cancellationReasonUtils";
-import { toast } from "sonner";
+import PeriodSelector, {
+  PeriodRange,
+} from "../../../components/common/PeriodSelector";
 
 type HeroIcon = React.ForwardRefExoticComponent<
   React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> &
@@ -106,15 +112,6 @@ const emptyData: CancellationAnalyticsData = {
   orders: [],
 };
 
-const periodOptions = [
-  { value: "7", label: "آخر 7 أيام" },
-  { value: "30", label: "آخر 30 يوم" },
-  { value: "90", label: "آخر 90 يوم" },
-  { value: "365", label: "آخر سنة" },
-];
-
-const reasonSettingsSectionId = "cancellation-reason-settings";
-
 const categoryColors: Record<string, string> = {
   "تعذر التواصل":
     "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:ring-amber-700",
@@ -189,16 +186,10 @@ const SummaryCard: React.FC<{
 
 const CancellationAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
-  const [period, setPeriod] = useState("30");
+  const [range, setRange] = useState<PeriodRange | null>(null);
   const [data, setData] = useState<CancellationAnalyticsData>(emptyData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savedReasonOptions, setSavedReasonOptions] = useState<string[]>([]);
-  const [reasonOptionsDraft, setReasonOptionsDraft] = useState("");
-  const [settingsLoading, setSettingsLoading] = useState(true);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  const [settingsError, setSettingsError] = useState<string | null>(null);
-  const reasonOptionsTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const reasonChartData = useMemo(
     () =>
@@ -209,24 +200,16 @@ const CancellationAnalytics: React.FC = () => {
     [data.reasonBreakdown],
   );
 
-  const normalizedDraftReasonOptions = useMemo(
-    () => normalizeCancellationReasonOptions(reasonOptionsDraft),
-    [reasonOptionsDraft],
-  );
-
-  const hasReasonSettingsChanges = useMemo(
-    () =>
-      JSON.stringify(normalizedDraftReasonOptions) !==
-      JSON.stringify(savedReasonOptions),
-    [normalizedDraftReasonOptions, savedReasonOptions],
-  );
-
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await analyticsService.getCancellationAnalytics(period);
+      const response = await analyticsService.getCancellationAnalytics(
+        range?.period,
+        range?.startDate,
+        range?.endDate,
+      );
       setData(response?.success && response?.data ? response.data : emptyData);
     } catch (err) {
       console.error("CancellationAnalytics error:", err);
@@ -235,85 +218,58 @@ const CancellationAnalytics: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [period]);
-
-  const fetchReasonSettings = useCallback(
-    async (forceRefresh = false) => {
-      try {
-        setSettingsLoading(true);
-        setSettingsError(null);
-
-        const reasonOptions =
-          await cancellationReasonService.getReasonOptions(forceRefresh);
-
-        setSavedReasonOptions(reasonOptions);
-        setReasonOptionsDraft(reasonOptions.join("\n"));
-      } catch (err) {
-        console.error("Cancellation reason settings error:", err);
-        setSettingsError("تعذر تحميل الأسباب الجاهزة");
-      } finally {
-        setSettingsLoading(false);
-      }
-    },
-    [],
-  );
+  }, [range]);
 
   useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    void fetchReasonSettings();
-  }, [fetchReasonSettings]);
-
-  const handleSaveReasonSettings = async () => {
-    try {
-      setSettingsSaving(true);
-      setSettingsError(null);
-
-      const savedOptions = await cancellationReasonService.saveReasonOptions(
-        normalizedDraftReasonOptions,
-      );
-
-      setSavedReasonOptions(savedOptions);
-      setReasonOptionsDraft(savedOptions.join("\n"));
-      toast.success("تم حفظ أسباب الإلغاء الجاهزة");
-    } catch (err) {
-      console.error("Failed to save cancellation reason settings:", err);
-      setSettingsError("فشل في حفظ أسباب الإلغاء");
-      toast.error("فشل في حفظ أسباب الإلغاء");
-    } finally {
-      setSettingsSaving(false);
+    if (range) {
+      void fetchData();
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range]);
 
-  const focusReasonSettings = () => {
-    const settingsSection = document.getElementById(reasonSettingsSectionId);
-    settingsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-    window.setTimeout(() => reasonOptionsTextareaRef.current?.focus(), 300);
-  };
+  const header = (
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          تحليل الإلغاءات
+        </h1>
+        <p className="mt-1 text-gray-500 dark:text-gray-400">
+          أسباب الإلغاء وأحدث الطلبات الملغاة للمراجعة من مساحة الطلبات
+        </p>
+      </div>
+      <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto md:items-center">
+        <PeriodSelector onRangeChange={setRange} />
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-red-600" />
+      <div className="space-y-6" dir="rtl">
+        {header}
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-red-600" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl bg-red-50 p-6 text-center dark:bg-red-900/20">
-        <XCircleIcon className="mx-auto mb-4 h-12 w-12 text-red-500" />
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button
-          type="button"
-          onClick={fetchData}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-        >
-          <ArrowPathIcon className="h-5 w-5" />
-          إعادة المحاولة
-        </button>
+      <div className="space-y-6" dir="rtl">
+        {header}
+        <div className="rounded-xl bg-red-50 p-6 text-center dark:bg-red-900/20">
+          <XCircleIcon className="mx-auto mb-4 h-12 w-12 text-red-500" />
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <button
+            type="button"
+            onClick={fetchData}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+          >
+            <ArrowPathIcon className="h-5 w-5" />
+            إعادة المحاولة
+          </button>
+        </div>
       </div>
     );
   }
@@ -322,146 +278,7 @@ const CancellationAnalytics: React.FC = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            تحليل الإلغاءات
-          </h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">
-            أسباب الإلغاء وأحدث الطلبات الملغاة للمراجعة من مساحة الطلبات
-          </p>
-        </div>
-        <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto md:items-center">
-          <button
-            type="button"
-            onClick={focusReasonSettings}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/30"
-          >
-            <ClipboardDocumentCheckIcon className="h-5 w-5" />
-            إضافة أسباب الإلغاء
-          </button>
-          <select
-            value={period}
-            onChange={(event) => setPeriod(event.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-600 dark:bg-gray-800 sm:w-48"
-          >
-            {periodOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div
-        id={reasonSettingsSectionId}
-        className="scroll-mt-6 rounded-xl border border-red-100 bg-white p-6 shadow-sm ring-1 ring-red-50 dark:border-red-900/40 dark:bg-gray-800 dark:ring-red-900/20"
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              إضافة أسباب الإلغاء
-            </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              كل سطر يمثل سببًا واحدًا، وهذه الأسباب ستظهر داخل نافذة إلغاء
-              الطلب في صفحات الطلبات.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void fetchReasonSettings(true)}
-            disabled={settingsLoading || settingsSaving}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
-          >
-            <ArrowPathIcon
-              className={`h-4 w-4 ${settingsLoading ? "animate-spin" : ""}`}
-            />
-            إعادة تحميل
-          </button>
-        </div>
-
-        <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,1fr)]">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              قائمة الأسباب
-            </label>
-            <textarea
-              ref={reasonOptionsTextareaRef}
-              value={reasonOptionsDraft}
-              onChange={(event) => setReasonOptionsDraft(event.target.value)}
-              rows={8}
-              disabled={settingsLoading || settingsSaving}
-              placeholder={
-                "العميل طلب الإلغاء\nالرقم غير صحيح\nنفاد المخزون\nالشحن غير متاح"
-              }
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:disabled:bg-gray-800"
-            />
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              يتم حذف التكرار والمسافات الزائدة تلقائيًا عند الحفظ.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                المعاينة
-              </h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {formatNumber(normalizedDraftReasonOptions.length)} سبب
-              </span>
-            </div>
-            {normalizedDraftReasonOptions.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {normalizedDraftReasonOptions.map((reason) => (
-                  <span
-                    key={reason}
-                    className="inline-flex max-w-full items-center rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-200 dark:ring-red-800"
-                  >
-                    {reason}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg bg-white px-4 py-5 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                لا توجد أسباب محفوظة حاليًا.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {settingsError ? (
-          <p className="mt-4 text-sm text-red-600 dark:text-red-300">
-            {settingsError}
-          </p>
-        ) : null}
-
-        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            يتم السماح دائمًا بكتابة سبب يدوي إضافي حتى مع وجود أسباب جاهزة.
-          </p>
-          <button
-            type="button"
-            onClick={() => void handleSaveReasonSettings()}
-            disabled={
-              settingsLoading || settingsSaving || !hasReasonSettingsChanges
-            }
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {settingsSaving ? (
-              <>
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                جاري الحفظ...
-              </>
-            ) : (
-              <>
-                <ClipboardDocumentCheckIcon className="h-4 w-4" />
-                حفظ أسباب الإلغاء
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+      {header}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard

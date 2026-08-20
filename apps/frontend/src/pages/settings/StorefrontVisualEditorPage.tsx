@@ -1,8 +1,16 @@
-import { ArrowLeft as ArrowLeftIcon, RefreshCw as ArrowPathIcon, ExternalLink as ArrowTopRightOnSquareIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Circle as PaintBrushIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  PaintBrushIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 import {
   StorefrontSettings,
@@ -111,7 +119,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
       setSavedPageSignature(getStorefrontPageSignature(nextSettings));
       console.debug('✅ [VisualEditorPage] Settings loaded successfully');
     } catch (error) {
-      toast.error(getErrorMessage(error, "تعذر تحميل إعدادات المتجر"));
+      toast.error(getErrorMessage(error, i18n.t("StorefrontVisualEditorPage.unable_load_eddf")));
       console.error("❌ [VisualEditorPage] Error loading storefront editor settings:", error);
     } finally {
       setLoading(false);
@@ -266,9 +274,9 @@ const StorefrontVisualEditorPage: React.FC = () => {
       setSavedThemeId(resolveStorefrontThemeId(nextSettings));
       setSavedContentSignature(getStorefrontContentSignature(nextSettings));
       setSavedPageSignature(getStorefrontPageSignature(nextSettings));
-      toast.success("تم حفظ تعديلات الصفحة الرئيسية");
+      tToast.success("StorefrontVisualEditorPage.success_save_ddb7");
     } catch (error) {
-      toast.error(getErrorMessage(error, "فشل حفظ تعديلات الصفحة الرئيسية"));
+      toast.error(getErrorMessage(error, i18n.t("StorefrontVisualEditorPage.failed_save_8619")));
       console.error("Error saving storefront editor settings:", error);
     } finally {
       setSaving(false);
@@ -281,7 +289,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
     }
 
     await loadSettings({ silent: true });
-    toast.success("تمت إعادة تحميل آخر نسخة محفوظة");
+    tToast.success("StorefrontVisualEditorPage.msg_b399");
   };
 
   const handleReset = async () => {
@@ -298,9 +306,9 @@ const StorefrontVisualEditorPage: React.FC = () => {
       setSavedThemeId(resolveStorefrontThemeId(nextSettings));
       setSavedContentSignature(getStorefrontContentSignature(nextSettings));
       setSavedPageSignature(getStorefrontPageSignature(nextSettings));
-      toast.success("تمت إعادة تعيين إعدادات المتجر");
+      tToast.success("StorefrontVisualEditorPage.msg_7f54");
     } catch (error) {
-      toast.error(getErrorMessage(error, "فشل إعادة تعيين إعدادات المتجر"));
+      toast.error(getErrorMessage(error, i18n.t("StorefrontVisualEditorPage.msg_e1b9")));
       console.error("Error resetting storefront settings:", error);
     } finally {
       setResetting(false);

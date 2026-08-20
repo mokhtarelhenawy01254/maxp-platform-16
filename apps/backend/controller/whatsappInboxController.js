@@ -92,6 +92,36 @@ exports.sendMessage = async (req, res) => {
 };
 
 /**
+ * @route POST /api/v1/whatsapp-inbox/conversations/:conversationId/send-existing-image
+ * @desc Send an existing product image as a WhatsApp message
+ */
+exports.sendExistingImage = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { imageUrl, filename, caption } = req.body;
+
+    if (!imageUrl || !filename) {
+      return res.status(400).json({ error: 'Image URL and filename are required' });
+    }
+
+    const result = await whatsappInboxService.sendExistingImage(
+      conversationId,
+      req.user.companyId,
+      req.user.id,
+      req.user.role,
+      imageUrl,
+      filename,
+      caption || ''
+    );
+    res.status(201).json({ success: true, ...result });
+  } catch (error) {
+    console.error('[InboxController] sendExistingImage error:', error.message);
+    const statusCode = error.message?.includes('locked') ? 403 : 500;
+    res.status(statusCode).json({ error: error.message || 'Failed to send image' });
+  }
+};
+
+/**
  * @route POST /api/v1/whatsapp-inbox/conversations/:conversationId/messages/:messageId/correct
  * @desc Correct an AI message, sending the correction to WhatsApp and creating a guardrail rule
  */

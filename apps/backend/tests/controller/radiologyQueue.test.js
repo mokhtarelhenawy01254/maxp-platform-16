@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -42,7 +42,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -54,13 +54,13 @@ const makeStudy = (overrides = {}) => ({
   companyId: 'company-1',
   studyNumber: 'RAD-20260813-1001',
   patientId: null,
-  patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+  patientName: 'محمد علي',
   patientPhone: '01001234567',
   examTypeId: 'et-1',
-  examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐',
+  examTypeName: 'أشعة مقطعية',
   modality: 'CT',
   deviceId: 'dev-1',
-  deviceName: '╪¼┘ç╪º╪▓ CT 1',
+  deviceName: 'جهاز CT 1',
   status: 'PENDING_IMAGING',
   orderStatus: 'IN_PROGRESS',
   emergency: false,
@@ -76,12 +76,12 @@ const makeAppointment = (overrides = {}) => ({
   companyId: 'company-1',
   bookingNo: 12,
   patientId: null,
-  patientName: '╪│╪º╪▒╪⌐ ╪ú╪¡┘à╪»',
+  patientName: 'سارة أحمد',
   patientPhone: '01005551234',
   examTypeId: 'et-2',
-  examTypeName: '╪ú╪┤╪╣╪⌐ ╪│┘è┘å┘è╪⌐',
+  examTypeName: 'أشعة سينية',
   deviceId: 'dev-2',
-  deviceName: '╪¼┘ç╪º╪▓ X-Ray 2',
+  deviceName: 'جهاز X-Ray 2',
   status: 'SCHEDULED',
   emergency: false,
   appointmentDate: new Date(),
@@ -105,7 +105,7 @@ describe('radiologyQueueController', () => {
       await controller.getDailyQueue(req({ user: {} }), res);
 
       expect(res.statusCode).toBe(403);
-      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+      expect(res.payload.error).toBe('غير مصرح');
     });
 
     test('groups the queue and scopes every query to the company', async () => {
@@ -135,7 +135,7 @@ describe('radiologyQueueController', () => {
       expect(data.counts.pendingCheckIn).toBe(3);
       expect(data.counts.totalActive).toBe(1);
 
-      // ┘â┘ä ╪º┘ä╪º╪│╪¬╪╣┘ä╪º┘à╪º╪¬ ┘à┘é┘è╪»╪⌐ ╪¿╪º┘ä╪┤╪▒┘â╪⌐
+      // كل الاستعلامات مقيدة بالشركة
       prisma.radiologyStudy.findMany.mock.calls.forEach(call => {
         expect(call[0].where.companyId).toBe('company-1');
       });
@@ -166,7 +166,7 @@ describe('radiologyQueueController', () => {
       expect(args.where.appointmentDate.gte).toBeInstanceOf(Date);
       expect(args.where.appointmentDate.lte).toBeInstanceOf(Date);
 
-      // ┘à╪▒╪¬╪¿╪⌐ ╪¡╪│╪¿ ╪º┘ä┘ê┘é╪¬ ╪¬╪╡╪º╪╣╪»┘è┘ï╪º
+      // مرتبة حسب الوقت تصاعديًا
       expect(res.payload.data.pendingCheckIn.map(a => a.id)).toEqual(['appt-1', 'appt-2']);
     });
 
@@ -187,7 +187,7 @@ describe('radiologyQueueController', () => {
       const imagingArgs = prisma.radiologyStudy.findMany.mock.calls.find(c => c[0].where.status === 'PENDING_IMAGING');
       expect(imagingArgs[0].where.status).toBe('PENDING_IMAGING');
       expect(imagingArgs[0].orderBy).toEqual({ createdAt: 'asc' });
-      // ┘é╪º╪ª┘à╪⌐ ┘à┘å┘ü╪╡┘ä╪⌐ (╪║┘è╪▒ ┘à┘ü╪▒┘ê╪▓╪⌐ ┘ü┘è JS) ΓÇö ╪º┘ä╪¬╪▒╪¬┘è╪¿ ┘à╪¡┘ü┘ê╪╕ ┘â┘à╪º ╪ú╪╣╪º╪»┘ç ╪º┘ä┘à┘ê┘â
+      // قائمة منفصلة (غير مفروزة في JS) — الترتيب محفوظ كما أعاده الموك
       expect(res.payload.data.imagingQueue.map(s => s.id)).toEqual(['study-new', 'study-old']);
     });
 

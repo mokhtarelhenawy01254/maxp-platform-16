@@ -6,7 +6,24 @@
 
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Activity, AlertTriangle, Check, CheckCircle, CreditCard, Eye, History, Loader2, Mail, Navigation, Phone, Send, Settings, ShoppingBag, ShoppingCart, TrendingUp, UserPlus, Users } from 'lucide-react';
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Activity,
+  Send,
+  ShoppingCart,
+  UserPlus,
+  Eye,
+  CreditCard,
+  Phone,
+  Mail,
+  CheckCircle,
+  Loader2,
+  History,
+  TrendingUp,
+  AlertTriangle,
+  Settings,
+} from "lucide-react";
 import {
   facebookAdsService,
   type ConversionApiSendResponse,
@@ -254,7 +271,7 @@ const ConversionApiDashboard: React.FC = () => {
 
   const handleSendEvent = async () => {
     if (!eventData.pixelId.trim()) {
-      toast.error("يرجى إدخال معرف Facebook Pixel");
+      tToast.error("ConversionApiDashboard.msg_c0d9");
       return;
     }
 
@@ -326,7 +343,7 @@ const ConversionApiDashboard: React.FC = () => {
         return [failedEvent, ...prev.slice(0, 9)];
       });
 
-      toast.error(failedEvent.errorMessage || "فشل في إرسال الحدث");
+      toast.error(failedEvent.errorMessage || i18n.t("ConversionApiDashboard.failed_send_a09d"));
     } finally {
       setLoading(false);
     }

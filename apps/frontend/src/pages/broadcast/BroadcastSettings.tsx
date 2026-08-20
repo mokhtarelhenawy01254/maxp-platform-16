@@ -1,6 +1,14 @@
-import { Settings as Cog6ToothIcon, Clock as ClockIcon, Bell as BellIcon, ShieldCheck as ShieldCheckIcon, Mail as EnvelopeIcon, Activity as ChartBarIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  Cog6ToothIcon,
+  ClockIcon,
+  BellIcon,
+  ShieldCheckIcon,
+  EnvelopeIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 import { broadcastService } from "../../services/broadcastService";
 
 interface BroadcastSettings {

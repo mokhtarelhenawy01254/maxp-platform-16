@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Regression: updateOrderStatus must resolve custom statuses (not in OrderStatus enum)
- * through their mapsToSystem ΓÇö store the valid enum value on order.status, keep the custom
+ * through their mapsToSystem — store the valid enum value on order.status, keep the custom
  * code for statusHistory + WhatsApp notification. See PRODUCTION-FIX (custom-status-enum).
  */
 

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CalendarDays,
   Download,
@@ -57,18 +57,18 @@ interface AttendanceSheetData {
 }
 
 const months = [
-  "┘è┘å╪º┘è╪▒",
-  "┘ü╪¿╪▒╪º┘è╪▒",
-  "┘à╪º╪▒╪│",
-  "╪ú╪¿╪▒┘è┘ä",
-  "┘à╪º┘è┘ê",
-  "┘è┘ê┘å┘è┘ê",
-  "┘è┘ê┘ä┘è┘ê",
-  "╪ú╪║╪│╪╖╪│",
-  "╪│╪¿╪¬┘à╪¿╪▒",
-  "╪ú┘â╪¬┘ê╪¿╪▒",
-  "┘å┘ê┘ü┘à╪¿╪▒",
-  "╪»┘è╪│┘à╪¿╪▒",
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
 ];
 
 interface CellStyle {
@@ -79,7 +79,7 @@ interface CellStyle {
 }
 
 const FALLBACK_CELL: CellStyle = {
-  label: "╪¡╪º╪╢╪▒",
+  label: "حاضر",
   cell: "bg-emerald-50 border-emerald-200",
   dot: "bg-emerald-500",
   timeColor: "text-emerald-700",
@@ -87,49 +87,49 @@ const FALLBACK_CELL: CellStyle = {
 
 const statusConfig: Record<string, CellStyle> = {
   PRESENT: {
-    label: "╪¡╪º╪╢╪▒",
+    label: "حاضر",
     cell: "bg-emerald-50 border-emerald-200",
     dot: "bg-emerald-500",
     timeColor: "text-emerald-700",
   },
   LATE: {
-    label: "┘à╪¬╪ú╪«╪▒",
+    label: "متأخر",
     cell: "bg-amber-50 border-amber-300",
     dot: "bg-amber-500",
     timeColor: "text-amber-700",
   },
   REMOTE: {
-    label: "╪╣┘å ╪¿╪╣╪»",
+    label: "عن بعد",
     cell: "bg-sky-50 border-sky-200",
     dot: "bg-sky-500",
     timeColor: "text-sky-700",
   },
   ABSENT: {
-    label: "╪║╪º╪ª╪¿",
+    label: "غائب",
     cell: "bg-rose-50 border-rose-200",
     dot: "bg-rose-500",
     timeColor: "text-rose-700",
   },
   LEAVE: {
-    label: "╪Ñ╪¼╪º╪▓╪⌐",
+    label: "إجازة",
     cell: "bg-blue-50 border-blue-200",
     dot: "bg-blue-500",
     timeColor: "text-blue-700",
   },
   WEEKEND: {
-    label: "╪╣╪╖┘ä╪⌐",
+    label: "عطلة",
     cell: "bg-gray-100/70 border-gray-200",
     dot: "bg-gray-300",
     timeColor: "text-gray-400",
   },
   HOLIDAY: {
-    label: "╪╣╪╖┘ä╪⌐ ╪▒╪│┘à┘è╪⌐",
+    label: "عطلة رسمية",
     cell: "bg-purple-50 border-purple-200",
     dot: "bg-purple-500",
     timeColor: "text-purple-700",
   },
   BEFORE_HIRE: {
-    label: "ΓÇö",
+    label: "—",
     cell: "bg-gray-50 border-gray-100",
     dot: "bg-gray-200",
     timeColor: "text-gray-300",
@@ -164,7 +164,7 @@ const AttendanceSheetReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching attendance sheet:", error);
-      toast.error("╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¼┘ä╪¿ ┘â╪┤┘ü ╪º┘ä╪¡╪╢┘ê╪▒ ╪º┘ä╪┤┘ç╪▒┘è");
+      toast.error("حدث خطأ أثناء جلب كشف الحضور الشهري");
       setReport(null);
     } finally {
       setLoading(false);
@@ -173,18 +173,18 @@ const AttendanceSheetReport: React.FC = () => {
 
   const handleExport = () => {
     if (!report || report.employees.length === 0) {
-      toast.error("┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘ä┘ä╪¬╪╡╪»┘è╪▒");
+      toast.error("لا توجد بيانات للتصدير");
       return;
     }
 
     const headers = [
-      "╪º┘ä┘à┘ê╪╕┘ü",
-      "╪▒┘é┘à ╪º┘ä┘à┘ê╪╕┘ü",
-      "╪º┘ä┘é╪│┘à",
-      "╪¡╪º╪╢╪▒",
-      "┘à╪¬╪ú╪«╪▒",
-      "╪║╪º╪ª╪¿",
-      "╪Ñ╪¼╪º╪▓╪⌐",
+      "الموظف",
+      "رقم الموظف",
+      "القسم",
+      "حاضر",
+      "متأخر",
+      "غائب",
+      "إجازة",
       ...report.days.map((d) => `${d.day}/${report.month}`),
     ];
 
@@ -242,7 +242,7 @@ const AttendanceSheetReport: React.FC = () => {
       <td
         key={day.day}
         className={`border-b border-l border-gray-100 dark:border-gray-700 p-0.5 align-top ${cfg.cell}`}
-        title={`${day.date} ΓÇö ${cfg.label}${cell.checkIn ? `\n╪¡╪╢┘ê╪▒: ${cell.checkIn}` : ""}${cell.checkOut ? `\n╪º┘å╪╡╪▒╪º┘ü: ${cell.checkOut}` : ""}${cell.lateMinutes > 0 ? `\n╪¬╪ú╪«┘è╪▒: ${cell.lateMinutes} ╪»┘é┘è┘é╪⌐` : ""}`}
+        title={`${day.date} — ${cfg.label}${cell.checkIn ? `\nحضور: ${cell.checkIn}` : ""}${cell.checkOut ? `\nانصراف: ${cell.checkOut}` : ""}${cell.lateMinutes > 0 ? `\nتأخير: ${cell.lateMinutes} دقيقة` : ""}`}
       >
         {cell.checkIn ? (
           <div className="flex flex-col items-center leading-tight py-0.5">
@@ -256,7 +256,7 @@ const AttendanceSheetReport: React.FC = () => {
             )}
             {cell.lateMinutes > 0 && (
               <span className="text-[9px] font-bold text-amber-600">
-                +{cell.lateMinutes}╪»
+                +{cell.lateMinutes}د
               </span>
             )}
           </div>
@@ -288,7 +288,7 @@ const AttendanceSheetReport: React.FC = () => {
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2">
-              <Label className="dark:text-gray-300">╪º┘ä╪┤┘ç╪▒</Label>
+              <Label className="dark:text-gray-300">الشهر</Label>
               <Select
                 value={selectedMonth.toString()}
                 onValueChange={(v) => setSelectedMonth(parseInt(v ?? "1"))}
@@ -311,7 +311,7 @@ const AttendanceSheetReport: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="dark:text-gray-300">╪º┘ä╪│┘å╪⌐</Label>
+              <Label className="dark:text-gray-300">السنة</Label>
               <Select
                 value={selectedYear.toString()}
                 onValueChange={(v) =>
@@ -342,7 +342,7 @@ const AttendanceSheetReport: React.FC = () => {
                 className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 <RefreshCw className="h-4 w-4 ml-2" />
-                ╪¬╪¡╪»┘è╪½
+                تحديث
               </Button>
               <Button
                 variant="outline"
@@ -350,7 +350,7 @@ const AttendanceSheetReport: React.FC = () => {
                 className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 <Download className="h-4 w-4 ml-2" />
-                ╪¬╪╡╪»┘è╪▒
+                تصدير
               </Button>
             </div>
           </div>
@@ -368,7 +368,7 @@ const AttendanceSheetReport: React.FC = () => {
               <Card className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white border-none shadow-lg">
                 <CardContent className="p-5">
                   <p className="text-emerald-100 text-sm font-medium">
-                    ┘å╪│╪¿╪⌐ ╪º┘ä╪¡╪╢┘ê╪▒
+                    نسبة الحضور
                   </p>
                   <h3 className="text-2xl font-bold mt-1">{attendanceRate}%</h3>
                 </CardContent>
@@ -378,7 +378,7 @@ const AttendanceSheetReport: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                        ╪¡╪º╪╢╪▒
+                        حاضر
                       </p>
                       <h3 className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
                         {totals.present}
@@ -393,7 +393,7 @@ const AttendanceSheetReport: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                        ┘à╪¬╪ú╪«╪▒
+                        متأخر
                       </p>
                       <h3 className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400">
                         {totals.late}
@@ -408,7 +408,7 @@ const AttendanceSheetReport: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                        ╪║╪º╪ª╪¿
+                        غائب
                       </p>
                       <h3 className="text-2xl font-bold mt-1 text-rose-600 dark:text-rose-400">
                         {totals.absent}
@@ -423,7 +423,7 @@ const AttendanceSheetReport: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                        ╪Ñ╪¼╪º╪▓╪º╪¬
+                        إجازات
                       </p>
                       <h3 className="text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">
                         {totals.leave}
@@ -439,7 +439,7 @@ const AttendanceSheetReport: React.FC = () => {
               <CardHeader className="border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 p-4">
                 <CardTitle className="text-lg font-semibold dark:text-white flex items-center gap-2">
                   <CalendarDays className="h-5 w-5 text-primary" />
-                  ┘â╪┤┘ü ╪º┘ä╪¡╪╢┘ê╪▒ ╪º┘ä╪┤┘ç╪▒┘è ΓÇö {months[report.month - 1]} {report.year}
+                  كشف الحضور الشهري — {months[report.month - 1]} {report.year}
                 </CardTitle>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {Object.entries(statusConfig).map(([key, cfg]) => (
@@ -461,7 +461,7 @@ const AttendanceSheetReport: React.FC = () => {
                     name="attendance-sheet-search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="╪¿╪¡╪½ ╪¿╪º┘ä╪º╪│┘à ╪ú┘ê ╪▒┘é┘à ╪º┘ä┘à┘ê╪╕┘ü ╪ú┘ê ╪º┘ä┘é╪│┘à..."
+                    placeholder="بحث بالاسم أو رقم الموظف أو القسم..."
                     className="w-full max-w-sm rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
                   />
                 </div>
@@ -475,10 +475,10 @@ const AttendanceSheetReport: React.FC = () => {
                         >
                           <div className="flex flex-col">
                             <span className="font-semibold text-sm dark:text-white">
-                              ╪º┘ä┘à┘ê╪╕┘ü
+                              الموظف
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              ╪¡╪º╪╢╪▒ / ┘à╪¬╪ú╪«╪▒ / ╪║╪º╪ª╪¿ / ╪Ñ╪¼╪º╪▓╪⌐
+                              حاضر / متأخر / غائب / إجازة
                             </span>
                           </div>
                         </th>
@@ -529,7 +529,7 @@ const AttendanceSheetReport: React.FC = () => {
                                   {emp.name}
                                 </span>
                                 <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                                  #{emp.employeeNumber} ΓÇó {emp.department}
+                                  #{emp.employeeNumber} • {emp.department}
                                 </span>
                               </div>
                               <div className="flex flex-col items-end gap-0.5 shrink-0">
@@ -537,26 +537,26 @@ const AttendanceSheetReport: React.FC = () => {
                                   variant="outline"
                                   className="text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 text-[10px] px-1.5 py-0"
                                 >
-                                  ╪¡ {emp.totals.present}
+                                  ح {emp.totals.present}
                                 </Badge>
                                 <div className="flex gap-1">
                                   <Badge
                                     variant="outline"
                                     className={`text-[9px] px-1 py-0 ${emp.totals.late > 0 ? "text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800" : "text-gray-300 border-gray-100"}`}
                                   >
-                                    ╪¬ {emp.totals.late}
+                                    ت {emp.totals.late}
                                   </Badge>
                                   <Badge
                                     variant="outline"
                                     className={`text-[9px] px-1 py-0 ${emp.totals.absent > 0 ? "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-800" : "text-gray-300 border-gray-100"}`}
                                   >
-                                    ╪║ {emp.totals.absent}
+                                    غ {emp.totals.absent}
                                   </Badge>
                                   <Badge
                                     variant="outline"
                                     className={`text-[9px] px-1 py-0 ${emp.totals.leave > 0 ? "text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800" : "text-gray-300 border-gray-100"}`}
                                   >
-                                    ╪Ñ {emp.totals.leave}
+                                    إ {emp.totals.leave}
                                   </Badge>
                                 </div>
                               </div>
@@ -570,7 +570,7 @@ const AttendanceSheetReport: React.FC = () => {
                 </div>
                 {filteredEmployees.length === 0 && (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    ┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘ä┘ä┘à┘ê╪╕┘ü┘è┘å
+                    لا توجد بيانات للموظفين
                   </div>
                 )}
               </CardContent>

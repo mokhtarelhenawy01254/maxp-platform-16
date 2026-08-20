@@ -1,11 +1,11 @@
-import { formatDate } from '@/utils/formatters';
-import { formatCurrency } from '@/utils/formatters';
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
 import { toast } from "sonner";
-import { BarChart, BarChart3, Boxes, Building, Building2, CalendarClock, CreditCard, Facebook, File, Receipt, Users, Wallet } from 'lucide-react';
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
+import { BarChart3, Boxes, Building2, CalendarClock, Facebook, Receipt, Users, Wallet } from "lucide-react";
 import type { ElementType } from "react";
 import type { CompanyData, CompanyReview, CompanyUser, FacebookPage, TicketListItem, ActivityEntry } from "./companyDetailsTypes";
 import { apiClient } from "../../../services/apiClient";
@@ -210,12 +210,12 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       const nextReview: CompanyReview | null = detailData.data?.review || null;
       if (usersData?.success) {
         setCompanyUsers(usersData.data?.users || []);
-      } else { setCompanyUsers([]); toast.error("تعذر تحميل أعضاء الشركة"); }
+      } else { setCompanyUsers([]); tToast.error("companyDetails.unable_load_1117"); }
       if (pagesData?.success) {
         const nextPages: FacebookPage[] = pagesData.data || [];
         setFacebookPages(nextPages);
         nextCompany = normalizeCompanyData(nextCompany, { _count: { facebookPages: nextPages.length } }) as CompanyData | null;
-      } else { setFacebookPages([]); toast.error("تعذر تحميل صفحات فيسبوك"); }
+      } else { setFacebookPages([]); tToast.error("companyDetails.unable_load_156e"); }
       if (ticketsData?.tickets) setCompanyTickets(ticketsData.tickets);
       else setCompanyTickets([]);
       if (activitiesData?.success) setCompanyActivities(activitiesData.data?.activities || []);
@@ -273,7 +273,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
         website: editForm["website"].trim(), currency: editForm["currency"], isActive: editForm["isActive"],
         notes: editForm["notes"].trim(),
       });
-      if (response.data?.success) { toast.success("تم تحديث بيانات الشركة"); setEditOpen(false); await refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.success_update_a26a"); setEditOpen(false); await refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تحديث الشركة");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تحديث الشركة")); }
     finally { setEditSaving(false); }
@@ -297,7 +297,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
         firstName: addEmployeeForm["firstName"].trim(), lastName: addEmployeeForm["lastName"].trim(),
         email: addEmployeeForm["email"].trim(), password: addEmployeeForm["password"], role: addEmployeeForm["role"],
       });
-      if (response.data?.success) { toast.success("تمت إضافة العضو بنجاح"); setAddEmployeeOpen(false); setAddEmployeeForm(INITIAL_EMPLOYEE_FORM); void refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.msg_ba2c"); setAddEmployeeOpen(false); setAddEmployeeForm(INITIAL_EMPLOYEE_FORM); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في إضافة العضو");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في إضافة العضو")); }
     finally { setEmployeeLoading(false); }
@@ -306,7 +306,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const handleUpdateUserRole = async (userId: string, role: string): Promise<void> => {
     try {
       const response: any = await apiClient.patch(`/admin/rbac/users/${userId}/role`, { role });
-      if (response.data?.success) { toast.success("تم تحديث صلاحية العضو"); void refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.success_update_813a"); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تحديث الصلاحية");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تحديث الصلاحية")); }
   };
@@ -314,7 +314,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const handleToggleUserStatus = async (userId: string): Promise<void> => {
     try {
       const response: any = await apiClient.patch(`/admin/rbac/users/${userId}/status`);
-      if (response.data?.success) { toast.success("تم تغيير حالة العضو"); void refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.success_status_c11c"); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تغيير الحالة");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تغيير الحالة")); }
   };
@@ -324,7 +324,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     try {
       setDeleteUserLoading(true);
       const response: any = await apiClient.delete(`/admin/companies/${companyId}/users/${userId}`);
-      if (response.data?.success) { toast.success("تم حذف العضو من الشركة"); setDeleteConfirmUserId(null); void refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.success_delete_c4fc"); setDeleteConfirmUserId(null); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في حذف العضو");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في حذف العضو")); }
     finally { setDeleteUserLoading(false); }
@@ -332,20 +332,20 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
 
   const handleCancelSubscription = async (): Promise<void> => {
     const subscriptionId = review?.subscription?.id;
-    if (!subscriptionId) { toast.error("لا يوجد اشتراك نشط للإلغاء"); return; }
+    if (!subscriptionId) { tToast.error("companyDetails.msg_8a85"); return; }
     try {
       const response: any = await apiClient.put(`/super-admin/platform/subscription/${subscriptionId}`, { status: "CANCELLED" });
-      if (response.data?.success) { toast.success("تم إلغاء الاشتراك بنجاح"); void refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.msg_624b"); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في إلغاء الاشتراك");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في إلغاء الاشتراك")); }
   };
 
   const handleRetryPayment = async (): Promise<void> => {
     const subscriptionId = review?.subscription?.id;
-    if (!subscriptionId) { toast.error("لا يوجد اشتراك لإعادة المحاولة"); return; }
+    if (!subscriptionId) { tToast.error("companyDetails.msg_2bcf"); return; }
     try {
       const response: any = await apiClient.post(`/super-admin/platform/retry-failed-payment/${subscriptionId}`);
-      if (response.data?.success) { toast.success("تمت إعادة محاولة الدفع"); void refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.msg_06f8"); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشلت إعادة محاولة الدفع");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشلت إعادة محاولة الدفع")); }
   };
@@ -355,7 +355,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     try {
       setTransferLoading(true);
       const response: any = await apiClient.post(`/admin/companies/${companyId}/transfer-ownership`, { targetUserId: changeOwnerTargetUserId });
-      if (response.data?.success) { toast.success("تم نقل ملكية الشركة بنجاح"); setTransferOpen(false); setChangeOwnerTargetUserId(""); void refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.msg_c925"); setTransferOpen(false); setChangeOwnerTargetUserId(""); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في نقل الملكية");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في نقل الملكية")); }
     finally { setTransferLoading(false); }
@@ -402,7 +402,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     try {
       setTopUpLoading(true);
       const response: any = await apiClient.post("/admin/wallet/add-funds", { companyId, amount: Number(topUpForm["amount"]), bonus: topUpForm["bonus"] === "" ? 0 : Number(topUpForm["bonus"]), notes: topUpForm["notes"].trim() });
-      if (response.data?.success) { toast.success("تم شحن محفظة الشركة بنجاح"); setTopUpOpen(false); void refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) { tToast.success("companyDetails.msg_0fdd"); setTopUpOpen(false); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في شحن محفظة الشركة");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في شحن محفظة الشركة")); }
     finally { setTopUpLoading(false); }
@@ -476,7 +476,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     try {
       setBundleAction(bundleSlug);
       const response: any = await apiClient.post(`/marketplace/bundles/${bundleSlug}/subscribe`, {}, getCompanyScopedRequestConfig());
-      if (response.data?.success) { toast.success(response.data.message || "تم الاشتراك في الباقة بنجاح"); await refreshReviewAndCatalog(); }
+      if (response.data?.success) { toast.success(response.data.message || i18n.t("companyDetails.msg_378c")); await refreshReviewAndCatalog(); }
       else toast.error(response.data?.message || "فشل في الاشتراك في الباقة");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في الاشتراك في الباقة")); }
     finally { setBundleAction(""); }
@@ -485,10 +485,10 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const handleActivateAllTools = async (): Promise<void> => {
     if (!companyId) return;
     const uninstalledApps = orderedCatalogApps.filter((app) => !app.isInstalled);
-    if (!uninstalledApps.length) { toast.success("كل الأدوات المتاحة مفعلة بالفعل على هذه الشركة"); return; }
+    if (!uninstalledApps.length) { tToast.success("companyDetails.msg_1f2a"); return; }
     setInstallAllLoading(true);
     let successCount = 0, failCount = 0;
-    const toastId = toast.loading("جاري تفعيل أدوات الشركة...");
+    const toastId = tToast.loading("companyDetails.loading_activate_8824");
     try {
       for (let index = 0; index < uninstalledApps.length; index += 1) {
         const app = uninstalledApps[index];

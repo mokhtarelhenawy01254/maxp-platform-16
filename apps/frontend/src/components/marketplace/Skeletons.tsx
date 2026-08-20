@@ -1,4 +1,4 @@
-﻿import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function AppCardSkeleton({ variant = "default" }: { variant?: "default" | "compact" | "featured" }) {

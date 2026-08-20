@@ -55,7 +55,7 @@ describe("buildCompanyCoverage - edge cases", () => {
 
   test("handles null activeAppSlugs", () => {
     const summary = buildCompanyCoverage(
-      { id: "c3", name: "Null Co", activeAppSlugs: null as undefined },
+      { id: "c3", name: "Null Co", activeAppSlugs: null as unknown as undefined },
       twoItemFeatureMap,
       ["order-core"],
     );

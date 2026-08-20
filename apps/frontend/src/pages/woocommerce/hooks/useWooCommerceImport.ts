@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import io, { Socket } from "socket.io-client";
 import { WooOrder, ImportJob, Settings } from "../types";
 import tokenManager from "../../../utils/tokenManager";
@@ -71,7 +72,7 @@ export const useWooCommerceImport = (settings: Settings | null) => {
         status: "completed",
         progress: { ...prev!.progress, ...data.result, percentage: 100 },
       }));
-      toast.success("تم اكتمال الاستيراد بنجاح!");
+      tToast.success("wooImport.msg_1451");
       setTimeout(() => setActiveJob(null), 5000);
     });
 
@@ -114,7 +115,7 @@ export const useWooCommerceImport = (settings: Settings | null) => {
 
   const fetchOrdersCount = async () => {
     if (!settings?.hasCredentials) {
-      toast.error("يرجى إعداد بيانات الاتصال أولاً");
+      tToast.error("wooImport.msg_48e6");
       return;
     }
 
@@ -141,7 +142,7 @@ export const useWooCommerceImport = (settings: Settings | null) => {
       }
     } catch (error) {
       console.error("Error counting orders:", error);
-      toast.error("فشل في جلب عدد الطلبات");
+      tToast.error("wooImport.failed_fetch_454e");
     } finally {
       setCountingOrders(false);
     }
@@ -177,7 +178,7 @@ export const useWooCommerceImport = (settings: Settings | null) => {
         toast.error(data.message);
       }
     } catch (error: any) {
-      toast.error("خطأ في جلب الطلبات");
+      tToast.error("wooImport.error_fetch_5a91");
     } finally {
       setLoading(false);
     }
@@ -206,12 +207,12 @@ export const useWooCommerceImport = (settings: Settings | null) => {
       const data = await response.json();
       if (data.success) {
         setActiveJob(data.data);
-        toast.success("🚀 تم بدء الاستيراد في الخلفية");
+        tToast.success("wooImport.msg_f1d1");
       } else {
         toast.error(data.message);
       }
     } catch (error: any) {
-      toast.error("فشل بدء الاستيراد");
+      tToast.error("wooImport.msg_dc3a");
     } finally {
       setImporting(false);
     }
@@ -224,9 +225,9 @@ export const useWooCommerceImport = (settings: Settings | null) => {
         method: "POST",
         headers: getAuthHeaders(),
       });
-      toast.success("تم إرسال طلب الإيقاف المؤقت");
+      tToast.success("wooImport.success_send_ff9e");
     } catch (e) {
-      toast.error("فشل الإيقاف");
+      tToast.error("wooImport.msg_41af");
     }
   };
 
@@ -237,9 +238,9 @@ export const useWooCommerceImport = (settings: Settings | null) => {
         method: "POST",
         headers: getAuthHeaders(),
       });
-      toast.success("تم استئناف الاستيراد");
+      tToast.success("wooImport.msg_b87b");
     } catch (e) {
-      toast.error("فشل الاستئناف");
+      tToast.error("wooImport.msg_e256");
     }
   };
 
@@ -250,10 +251,10 @@ export const useWooCommerceImport = (settings: Settings | null) => {
         method: "POST",
         headers: getAuthHeaders(),
       });
-      toast.success("تم إلغاء المهمة");
+      tToast.success("wooImport.msg_26c8");
       setActiveJob(null);
     } catch (e) {
-      toast.error("فشل الإلغاء");
+      tToast.error("wooImport.msg_8c96");
     }
   };
 
@@ -290,7 +291,7 @@ export const useWooCommerceImport = (settings: Settings | null) => {
         toast.error(data.message);
       }
     } catch (error: any) {
-      toast.error("خطأ في استيراد الطلبات");
+      tToast.error("wooImport.msg_4145");
     } finally {
       setImporting(false);
     }

@@ -1,4 +1,4 @@
-﻿const { safeJsonParse } = require('../utils/jsonUtils');
+const { safeJsonParse } = require('../utils/jsonUtils');
 
 function normalizeAttributionText(value, maxLength = 320) {
   if (value === undefined || value === null) return null;
@@ -168,7 +168,7 @@ function sanitizeOrderAttribution(rawAttribution, fallbacks = {}) {
     }
   }
 
-  // ╪¬┘à┘è┘è╪▓ ╪┤╪¿┘â╪⌐ ╪º┘ä╪¼┘à┘ç┘ê╪▒ (Meta Audience Network) ┘â┘à╪╡╪»╪▒ ┘à╪│╪¬┘é┘ä ╪╢┘à┘å ┘à┘å╪╡╪⌐ ╪º┘ä┘ü┘è╪│╪¿┘ê┘â
+  // تمييز شبكة الجمهور (Meta Audience Network) كمصدر مستقل ضمن منصة الفيسبوك
   if (source !== 'direct' && isAudienceNetworkSignal({ source, medium, referrer })) {
     source = 'audience_network';
   }
@@ -232,7 +232,7 @@ function sanitizeOrderAttribution(rawAttribution, fallbacks = {}) {
   }, {});
 }
 
-// ╪º╪│╪¬╪«╪▒╪º╪¼ attribution ┘à┘å checkoutData ╪º┘ä╪«╪º╪╡ ╪¿╪│┘ä╪⌐ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐ (┘å╪╡ ╪ú┘ê ┘â╪º╪ª┘å)
+// استخراج attribution من checkoutData الخاص بسلة غير مكتملة (نص أو كائن)
 function extractAttributionFromCheckoutData(checkoutData) {
   if (!checkoutData) return null;
 

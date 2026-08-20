@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 const SUCCESS_STATUSES = new Set([
@@ -40,8 +40,8 @@ const SubscriptionSuccess: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-[#0b1215] text-white" dir="rtl">
         <div className="text-center max-w-md p-8">
           <div className="w-12 h-12 rounded-full border-4 border-teal-500 border-t-transparent animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">╪¼╪º╪▒┘è ╪¬╪ú┘â┘è╪» ╪¬┘ü╪╣┘è┘ä ╪¿╪º┘é╪¬┘â...</h2>
-          <p className="text-sm opacity-60">┘è╪▒╪¼┘ë ╪º┘ä╪º┘å╪¬╪╕╪º╪▒</p>
+          <h2 className="text-xl font-bold mb-2">جاري تأكيد تفعيل باقتك...</h2>
+          <p className="text-sm opacity-60">يرجى الانتظار</p>
         </div>
       </div>
     );
@@ -58,24 +58,24 @@ const SubscriptionSuccess: React.FC = () => {
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold mb-3">╪¿╪º┘é╪⌐ AI + Inbox ┘à┘ü╪╣┘æ┘ä╪⌐!</h1>
+            <h1 className="text-2xl font-bold mb-3">باقة AI + Inbox مفعّلة!</h1>
             <p className="text-sm opacity-80 mb-6 leading-relaxed">
-              ╪¬┘à ╪Ñ╪¬┘à╪º┘à ╪º┘ä╪º╪┤╪¬╪▒╪º┘â ┘ê╪¬┘ü╪╣┘è┘ä ╪º┘ä╪¿╪º┘é╪⌐ ╪¿┘å╪¼╪º╪¡ ≡ƒÄë
+              تم إتمام الاشتراك وتفعيل الباقة بنجاح 🎉
               <br />
-              ╪¼┘à┘è╪╣ ╪ú╪»┘ê╪º╪¬ ╪º┘ä╪¬┘ê╪º╪╡┘ä ╪¼╪º┘ç╪▓╪⌐ ╪º┘ä╪ó┘å ┘ä┘ä╪º╪│╪¬╪«╪»╪º┘à.
+              جميع أدوات التواصل جاهزة الآن للاستخدام.
             </p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => { window.location.href = "/unified-inbox"; }}
                 className="px-8 py-3 rounded-full bg-teal-600 text-white font-bold text-sm hover:bg-teal-500 transition-colors"
               >
-                ╪º╪¿╪»╪ú ╪º┘ä╪ó┘å ΓÇö ╪╡┘å╪»┘ê┘é ╪º┘ä┘ê╪º╪▒╪»
+                ابدأ الآن — صندوق الوارد
               </button>
               <button
                 onClick={() => navigate("/marketplace/bundles")}
                 className="px-8 py-2 rounded-full bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/20"
               >
-                ╪¬╪╡┘ü╪¡ ╪º┘ä╪¿╪º┘é╪º╪¬
+                تصفح الباقات
               </button>
             </div>
           </>
@@ -88,22 +88,22 @@ const SubscriptionSuccess: React.FC = () => {
                 <line x1="9" y1="9" x2="15" y2="15" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold mb-3">┘ä┘à ┘è┘â╪¬┘à┘ä ╪º┘ä╪»┘ü╪╣</h1>
+            <h1 className="text-2xl font-bold mb-3">لم يكتمل الدفع</h1>
             <p className="text-sm opacity-80 mb-6 leading-relaxed">
-              ┘ä┘à ┘è╪¬┘à ╪¬╪ú┘â┘è╪» ╪╣┘à┘ä┘è╪⌐ ╪º┘ä╪»┘ü╪╣. ┘è┘à┘â┘å┘â ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐ ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë ╪ú┘ê ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪»┘ü╪╣.
+              لم يتم تأكيد عملية الدفع. يمكنك المحاولة مرة أخرى أو التحقق من بيانات الدفع.
             </p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => navigate("/checkout/messaging")}
                 className="px-8 py-3 rounded-full bg-teal-600 text-white font-bold text-sm hover:bg-teal-500 transition-colors"
               >
-                ╪Ñ╪╣╪º╪»╪⌐ ┘à╪¡╪º┘ê┘ä╪⌐ ╪º┘ä╪»┘ü╪╣
+                إعادة محاولة الدفع
               </button>
               <button
                 onClick={() => navigate("/marketplace/bundles")}
                 className="px-8 py-2 rounded-full bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/20"
               >
-                ╪º┘ä╪▒╪¼┘ê╪╣ ┘ä┘ä┘à╪¬╪¼╪▒
+                الرجوع للمتجر
               </button>
             </div>
           </>
@@ -116,22 +116,22 @@ const SubscriptionSuccess: React.FC = () => {
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold mb-3">╪¼╪º╪▒┘ì ┘à╪¬╪º╪¿╪╣╪⌐ ╪╣┘à┘ä┘è╪⌐ ╪º┘ä╪»┘ü╪╣</h1>
+            <h1 className="text-2xl font-bold mb-3">جارٍ متابعة عملية الدفع</h1>
             <p className="text-sm opacity-80 mb-6 leading-relaxed">
-              ╪│┘å┘é┘ê┘à ╪¿╪¬╪ú┘â┘è╪» ╪º┘ä╪╣┘à┘ä┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪«┘ä╪º┘ä ┘ä╪¡╪╕╪º╪¬.{billingId ? " ╪¿╪▒╪¼╪º╪í ╪º┘ä╪º╪¡╪¬┘ü╪º╪╕ ╪¿╪▒┘é┘à ╪º┘ä╪╣┘à┘ä┘è╪⌐ ┘ä┘ä╪▒╪¼┘ê╪╣ ╪Ñ┘ä┘è┘ç╪º ╪╣┘å╪» ╪º┘ä╪¡╪º╪¼╪⌐." : ""}
+              سنقوم بتأكيد العملية تلقائياً خلال لحظات.{billingId ? " برجاء الاحتفاظ برقم العملية للرجوع إليها عند الحاجة." : ""}
             </p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => { window.location.href = "/unified-inbox"; }}
                 className="px-8 py-3 rounded-full bg-teal-600 text-white font-bold text-sm hover:bg-teal-500 transition-colors"
               >
-                ┘à╪¬╪º╪¿╪╣╪⌐ ┘ä╪╡┘å╪»┘ê┘é ╪º┘ä┘ê╪º╪▒╪»
+                متابعة لصندوق الوارد
               </button>
               <button
                 onClick={() => navigate("/marketplace/bundles")}
                 className="px-8 py-2 rounded-full bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/20"
               >
-                ╪¬╪╡┘ü╪¡ ╪º┘ä╪¿╪º┘é╪º╪¬
+                تصفح الباقات
               </button>
             </div>
           </>

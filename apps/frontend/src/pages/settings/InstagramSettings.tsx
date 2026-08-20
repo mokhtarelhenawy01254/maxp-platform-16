@@ -1,7 +1,10 @@
-import { Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Link as LinkIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-;
+import { useTranslation } from "react-i18next";
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  LinkIcon,
+} from "@heroicons/react/24/outline";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { companyAwareApi } from "../../services/companyAwareApi";
 

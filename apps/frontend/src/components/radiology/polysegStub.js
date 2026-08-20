@@ -1,3 +1,3 @@
-﻿export default class ICRPolySeg {
+export default class ICRPolySeg {
   async initialize() {}
 }

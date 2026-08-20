@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
+const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
 
 const getCaptainStats = async (req, res) => {
   try {
@@ -135,7 +135,7 @@ const getCaptainStats = async (req, res) => {
 
     res.json({ success: true, data: captains, totalStats });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CAPTAINS] Error:', error);
+    console.error('❌ [TURBO-CAPTAINS] Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -214,7 +214,7 @@ const getCaptainOrders = async (req, res) => {
       pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) }
     });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CAPTAIN-ORDERS] Error:', error);
+    console.error('❌ [TURBO-CAPTAIN-ORDERS] Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -1,7 +1,15 @@
-import { Plus as PlusIcon, Trash2 as TrashIcon, Circle as ArrowsRightLeftIcon, Circle as UserGroupIcon, ShieldCheck as ShieldCheckIcon, AlertTriangle as ExclamationCircleIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import React, { useState, useEffect } from 'react';
-;
+import { useTranslation } from "react-i18next";
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    PlusIcon,
+    TrashIcon,
+    PencilIcon,
+    ArrowsRightLeftIcon,
+    ShieldCheckIcon,
+    ShieldExclamationIcon,
+    ExclamationCircleIcon,
+    MagnifyingGlassIcon
+} from '@heroicons/react/24/outline';
 import orderWorkflowService, {
     OrderStatusDefinition,
     OrderWorkflowTransition
@@ -19,13 +27,19 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
     const { user } = useAuth();
     const [transitions, setTransitions] = useState<OrderWorkflowTransition[]>([]);
     const [employees, setEmployees] = useState<{id: string, firstName: string, lastName: string}[]>([]);
+    const [employeePage, setEmployeePage] = useState(1);
+    const [hasMoreEmployees, setHasMoreEmployees] = useState(true);
+    const [loadingMoreEmployees, setLoadingMoreEmployees] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [employeeSearch, setEmployeeSearch] = useState('');
     const [newRule, setNewRule] = useState<Partial<OrderWorkflowTransition>>({
         fromStatusId: '',
         toStatusId: '',
         allowedRoles: '["OWNER", "SUPER_ADMIN"]',
         requiresApproval: false,
+        allowOverride: false,
         restrictBackward: false
     });
 
@@ -37,22 +51,45 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
         { value: 'AGENT', label: t('orderSettings.k_74') },
     ];
 
+    const filteredEmployees = useMemo(() => {
+        if (!employeeSearch) return employees;
+        const q = employeeSearch.toLowerCase();
+        return employees.filter(emp =>
+            `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(q)
+        );
+    }, [employees, employeeSearch]);
+
     useEffect(() => {
         fetchTransitions();
         if (user?.companyId) {
-            fetchEmployees();
+            fetchEmployees(1, false);
         }
     }, [user?.companyId]);
 
-    const fetchEmployees = async () => {
+    const fetchEmployees = async (page = 1, append = false) => {
         try {
-            const res = await api.get(`/companies/${user.companyId}/users?limit=100`);
+            const res = await api.get(`/companies/${user.companyId}/users?limit=100&page=${page}`);
             if (res.data?.success && res.data?.data?.users) {
-                setEmployees(res.data.data.users);
+                const newUsers = res.data.data.users;
+                if (append) {
+                    setEmployees(prev => [...prev, ...newUsers]);
+                } else {
+                    setEmployees(newUsers);
+                }
+                setHasMoreEmployees(newUsers.length >= 100);
+                setEmployeePage(page);
+            } else {
+                setHasMoreEmployees(false);
             }
         } catch (error) {
             console.error('Failed to fetch employees', error);
         }
+    };
+
+    const loadMoreEmployees = async () => {
+        setLoadingMoreEmployees(true);
+        await fetchEmployees(employeePage + 1, true);
+        setLoadingMoreEmployees(false);
     };
 
     const fetchTransitions = async () => {
@@ -62,6 +99,37 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
         } catch (error) {
             console.error('Failed to fetch transitions', error);
         }
+    };
+
+    const resetForm = () => {
+        setNewRule({
+            fromStatusId: '',
+            toStatusId: '',
+            allowedRoles: '["OWNER", "SUPER_ADMIN"]',
+            requiresApproval: false,
+            allowOverride: false,
+            restrictBackward: false
+        });
+        setIsAdding(false);
+        setEditingId(null);
+        setSaveError(null);
+        setEmployeeSearch('');
+    };
+
+    const handleEdit = (transition: OrderWorkflowTransition) => {
+        setNewRule({
+            id: transition.id,
+            fromStatusId: transition.fromStatusId || '',
+            toStatusId: transition.toStatusId,
+            allowedRoles: transition.allowedRoles,
+            requiresApproval: transition.requiresApproval,
+            allowOverride: transition.allowOverride || false,
+            restrictBackward: transition.restrictBackward
+        });
+        setEditingId(transition.id);
+        setIsAdding(true);
+        setSaveError(null);
+        setEmployeeSearch('');
     };
 
     const handleSave = async () => {
@@ -77,7 +145,7 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
         try {
             setSaveError(null);
             await orderWorkflowService.upsertTransition(newRule);
-            setIsAdding(false);
+            resetForm();
             fetchTransitions();
             onUpdate();
         } catch (error) {
@@ -101,6 +169,15 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
         return statuses.find(s => s.id === id)?.name || t('orderSettings.k_80');
     };
 
+    const renderSaveCancelButtons = () => (
+        <div className="flex gap-4">
+            <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold">
+                {editingId ? t('orderSettings.k_149') : t('orderSettings.k_94')}
+            </button>
+            <button onClick={resetForm} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold">{t('orderSettings.k_95')}</button>
+        </div>
+    );
+
     return (
         <div className="animate-in fade-in duration-500">
             <div className="flex items-center justify-between mb-8">
@@ -109,8 +186,9 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                     <p className="text-slate-500 text-sm">{t('orderSettings.k_82')}</p>
                 </div>
                 <button
-                    onClick={() => setIsAdding(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
+                    onClick={() => { resetForm(); setIsAdding(true); }}
+                    disabled={isAdding && !editingId}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
                 >
                     <PlusIcon className="w-5 h-5" />
                     {t('orderSettings.k_153')}
@@ -127,6 +205,9 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
 
                 {isAdding && (
                     <div className="p-6 rounded-3xl border-2 border-indigo-200 dark:border-indigo-900 bg-indigo-50/30 dark:bg-indigo-900/10 animate-in slide-in-from-top-4 duration-300">
+                        <h3 className="font-bold text-base mb-4 text-indigo-700 dark:text-indigo-400">
+                            {editingId ? t('orderSettings.k_166') : t('orderSettings.k_153')}
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <label className="block text-sm font-medium mb-1">{t('orderSettings.k_84')}</label>
@@ -174,8 +255,18 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                     ))}
                                 </div>
                                 <label className="block text-sm font-medium mb-1 mt-4">{t('orderSettings.k_88')}</label>
+                                <div className="relative mb-2">
+                                    <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        value={employeeSearch}
+                                        onChange={(e) => setEmployeeSearch(e.target.value)}
+                                        placeholder={t('orderSettings.k_167')}
+                                        className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                    />
+                                </div>
                                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-slate-100 dark:border-slate-700 rounded-lg">
-                                    {employees.map(emp => (
+                                    {filteredEmployees.map(emp => (
                                         <label key={emp.id} className="flex items-center gap-2 text-xs p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 cursor-pointer">
                                             <input
                                                 type="checkbox"
@@ -192,7 +283,17 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         </label>
                                     ))}
                                     {employees.length === 0 && <p className="text-xs text-slate-400 col-span-2">{t('orderSettings.k_89')}</p>}
+                                    {employees.length > 0 && filteredEmployees.length === 0 && <p className="text-xs text-slate-400 col-span-2">{t('orderSettings.k_169')}</p>}
                                 </div>
+                                {hasMoreEmployees && (
+                                    <button
+                                        onClick={loadMoreEmployees}
+                                        disabled={loadingMoreEmployees}
+                                        className="mt-2 w-full py-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        {loadingMoreEmployees ? t('orderSettings.k_101') : t('orderSettings.k_138')}
+                                    </button>
+                                )}
                             </div>
                             <div className="space-y-4">
                                 <label className="flex items-center gap-3 cursor-pointer">
@@ -205,6 +306,18 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                     <div className="text-sm">
                                         <p className="font-bold">{t('orderSettings.k_90')}</p>
                                         <p className="text-slate-500 text-xs">{t('orderSettings.k_91')}</p>
+                                    </div>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={newRule.allowOverride}
+                                        onChange={(e) => setNewRule({ ...newRule, allowOverride: e.target.checked })}
+                                        className="w-5 h-5 rounded border-slate-300"
+                                    />
+                                    <div className="text-sm">
+                                        <p className="font-bold">{t('orderSettings.k_170')}</p>
+                                        <p className="text-slate-500 text-xs">{t('orderSettings.k_171')}</p>
                                     </div>
                                 </label>
                                 <label className="flex items-center gap-3 cursor-pointer">
@@ -228,27 +341,24 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                             </div>
                         )}
 
-                        <div className="flex gap-4">
-                            <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold">{t('orderSettings.k_94')}</button>
-                            <button onClick={() => { setIsAdding(false); setSaveError(null); }} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold">{t('orderSettings.k_95')}</button>
-                        </div>
+                        {renderSaveCancelButtons()}
                     </div>
                 )}
 
-                {transitions.map((t) => (
+                {transitions.map((tr) => (
                     <div
-                        key={t.id}
+                        key={tr.id}
                         className="flex flex-col md:flex-row items-center justify-between p-5 rounded-3xl bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow gap-4"
                     >
                         <div className="flex items-center gap-4 flex-1">
                             <div className="flex items-center gap-3">
-                                <span className="font-bold text-slate-700 dark:text-slate-300">{getStatusName(t.fromStatusId)}</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-300">{getStatusName(tr.fromStatusId)}</span>
                                 <ArrowsRightLeftIcon className="w-5 h-5 text-indigo-400" />
-                                <span className="font-bold text-indigo-600">{getStatusName(t.toStatusId)}</span>
+                                <span className="font-bold text-indigo-600">{getStatusName(tr.toStatusId)}</span>
                             </div>
 
                             <div className="hidden md:flex flex-wrap items-center gap-2 px-6 border-x border-slate-100 dark:border-slate-700">
-                                {JSON.parse(t.allowedRoles || '[]').map((role: string) => {
+                                {JSON.parse(tr.allowedRoles || '[]').map((role: string) => {
                                     const roleObj = availableRoles.find(r => r.value === role);
                                     const empObj = employees.find(e => e.id === role);
                                     const label = roleObj ? roleObj.label : (empObj ? `${empObj.firstName} ${empObj.lastName}` : role);
@@ -258,17 +368,27 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         </span>
                                     );
                                 })}
-                                {t.requiresApproval && <ShieldCheckIcon className="w-5 h-5 text-amber-500" title={t('orderSettings.k_96')} />}
-                                {t.restrictBackward && <ExclamationCircleIcon className="w-5 h-5 text-red-400" title={t('orderSettings.k_97')} />}
+                                {tr.requiresApproval && <ShieldCheckIcon className="w-5 h-5 text-amber-500" title={t('orderSettings.k_96')} />}
+                                {tr.allowOverride && <ShieldExclamationIcon className="w-5 h-5 text-orange-500" title={t('orderSettings.k_170')} />}
+                                {tr.restrictBackward && <ExclamationCircleIcon className="w-5 h-5 text-red-400" title={t('orderSettings.k_97')} />}
                             </div>
                         </div>
 
-                        <button
-                            onClick={() => handleDelete(t.id)}
-                            className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                        >
-                            <TrashIcon className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handleEdit(tr)}
+                                className="p-2 text-slate-400 hover:text-indigo-500 transition-colors"
+                                title={t('orderSettings.k_168')}
+                            >
+                                <PencilIcon className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => handleDelete(tr.id)}
+                                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                            >
+                                <TrashIcon className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>

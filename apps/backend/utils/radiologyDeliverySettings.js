@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Configurable delivery-notification flags for the radiology module, stored as
  * RadiologySetting key/value rows per company.
  *

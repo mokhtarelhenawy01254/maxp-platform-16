@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const COMMISSION_TYPES = ['NONE', 'PERCENTAGE', 'FIXED'];
 
@@ -17,7 +17,7 @@ const clampValue = (value) => {
 const listPhysicians = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, includeInactive, limit } = req.query;
     const where = { companyId };
@@ -33,7 +33,7 @@ const listPhysicians = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const items = await prisma.radiologyReferringPhysician.findMany({ where, orderBy: { name: 'asc' }, take: limitNum });
 
-    // Attach marketing rep name (loose scalar ΓÇö resolved in a second query)
+    // Attach marketing rep name (loose scalar — resolved in a second query)
     const repIds = [...new Set(items.map((i) => i.marketingRepId).filter(Boolean))];
     let reps = [];
     if (repIds.length) {
@@ -47,19 +47,19 @@ const listPhysicians = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error listing radiology referring physicians:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪ú╪╖╪¿╪º╪í ╪º┘ä┘à╪¡┘ê┘æ┘ä┘è┘å' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الأطباء المحوّلين' });
   }
 };
 
 const createPhysician = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { name, phone, specialty, marketingRepId, commissionType, commissionValue } = req.body || {};
-    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪╖╪¿┘è╪¿ ┘à╪╖┘ä┘ê╪¿' });
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم الطبيب مطلوب' });
     const type = String(commissionType || 'NONE').toUpperCase();
-    if (!COMMISSION_TYPES.includes(type)) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä╪╣┘à┘ê┘ä╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+    if (!COMMISSION_TYPES.includes(type)) return res.status(400).json({ success: false, error: 'نوع العمولة غير صالح' });
 
     const prisma = getSharedPrismaClient();
     let resolvedRepId = null;
@@ -68,7 +68,7 @@ const createPhysician = async (req, res) => {
         where: { id: String(marketingRepId), companyId, isActive: true },
         select: { id: true },
       });
-      if (!rep) return res.status(400).json({ success: false, error: '╪º┘ä┘à┘å╪»┘ê╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+      if (!rep) return res.status(400).json({ success: false, error: 'المندوب غير موجود' });
       resolvedRepId = rep.id;
     }
 
@@ -86,24 +86,24 @@ const createPhysician = async (req, res) => {
     res.json({ success: true, data: item });
   } catch (error) {
     console.error('Error creating radiology referring physician:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الطبيب المحوّل' });
   }
 };
 
 const updatePhysician = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyReferringPhysician.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
 
     const data = {};
     if (body.name !== undefined) {
-      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪╖╪¿┘è╪¿ ┘à╪╖┘ä┘ê╪¿' });
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم الطبيب مطلوب' });
       data.name = String(body.name).trim();
     }
     if (body.phone !== undefined) data.phone = normalizeText(body.phone);
@@ -114,7 +114,7 @@ const updatePhysician = async (req, res) => {
           where: { id: String(body.marketingRepId), companyId, isActive: true },
           select: { id: true },
         });
-        if (!rep) return res.status(400).json({ success: false, error: '╪º┘ä┘à┘å╪»┘ê╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+        if (!rep) return res.status(400).json({ success: false, error: 'المندوب غير موجود' });
         data.marketingRepId = rep.id;
       } else {
         data.marketingRepId = null;
@@ -122,7 +122,7 @@ const updatePhysician = async (req, res) => {
     }
     if (body.commissionType !== undefined) {
       const type = String(body.commissionType).toUpperCase();
-      if (!COMMISSION_TYPES.includes(type)) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä╪╣┘à┘ê┘ä╪⌐ ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      if (!COMMISSION_TYPES.includes(type)) return res.status(400).json({ success: false, error: 'نوع العمولة غير صالح' });
       data.commissionType = type;
     }
     if (body.commissionValue !== undefined) data.commissionValue = clampValue(body.commissionValue);
@@ -132,43 +132,43 @@ const updatePhysician = async (req, res) => {
     res.json({ success: true, data: item });
   } catch (error) {
     console.error('Error updating radiology referring physician:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الطبيب المحوّل' });
   }
 };
 
 const deletePhysician = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyReferringPhysician.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
 
     const item = await prisma.radiologyReferringPhysician.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä╪╖╪¿┘è╪¿', data: item });
+    res.json({ success: true, message: 'تم حذف الطبيب', data: item });
   } catch (error) {
     console.error('Error deleting radiology referring physician:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف الطبيب المحوّل' });
   }
 };
 
 /**
- * ┘å╪¬╪º╪ª╪¼ ╪╖╪¿┘è╪¿ ┘à┘Å╪¡┘è┘ä: ╪»╪▒╪º╪│╪º╪¬ ┘à┘â╪¬┘à┘ä╪⌐/┘à╪│┘ä┘æ┘à╪⌐ ┘ä┘à╪▒╪╢┘ë ╪ú╪¡╪º┘ä┘ç┘à.
- * ┘è╪╣╪¬┘à╪» "┘à┘é╪▒┘ê╪í/╪║┘è╪▒ ┘à┘é╪▒┘ê╪í" ┘à╪¡┘ä┘è╪º┘ï ┘ü┘è ╪º┘ä┘ê╪º╪¼┘ç╪⌐ (localStorage) ΓÇö ┘ä╪º ┘è┘Å╪«╪▓┘Ä┘æ┘å ┘ç┘å╪º.
+ * نتائج طبيب مُحيل: دراسات مكتملة/مسلّمة لمرضى أحالهم.
+ * يعتمد "مقروء/غير مقروء" محلياً في الواجهة (localStorage) — لا يُخزَّن هنا.
  */
 const getPhysicianResults = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const { limit } = req.query;
     const prisma = getSharedPrismaClient();
 
     const physician = await prisma.radiologyReferringPhysician.findFirst({ where: { id, companyId } });
-    if (!physician) return res.status(404).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!physician) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
 
     const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
 
@@ -195,7 +195,7 @@ const getPhysicianResults = async (req, res) => {
       take: limitNum,
     });
 
-    // deliveredAt ┘à┘å ╪ú┘ê┘ä ╪¡╪▒┘â╪⌐ DELIVERED ┘ü┘è ╪º┘ä┘Ç statusHistory (╪ú┘è dimension)
+    // deliveredAt من أول حركة DELIVERED في الـ statusHistory (أي dimension)
     const ids = studies.map((s) => s.id);
     let deliveredByStudy = {};
     if (ids.length > 0) {
@@ -225,14 +225,14 @@ const getPhysicianResults = async (req, res) => {
     res.json({ success: true, data: { physician: { id: physician.id, name: physician.name }, items } });
   } catch (error) {
     console.error('Error fetching radiology physician results:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘å╪¬╪º╪ª╪¼ ╪º┘ä╪╖╪¿┘è╪¿' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب نتائج الطبيب' });
   }
 };
 
 const physicianCommissions = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { dateFrom, dateTo, physicianId } = req.query;
     const prisma = getSharedPrismaClient();
@@ -282,7 +282,7 @@ const physicianCommissions = async (req, res) => {
     res.json({ success: true, data: { rows, totalCommission } });
   } catch (error) {
     console.error('Error computing radiology physician commissions:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪│╪º╪¿ ╪º┘ä╪╣┘à┘ê┘ä╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حساب العمولات' });
   }
 };
 

@@ -14,8 +14,9 @@ import {
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
-import { Eye, Navigation, Plus, RefreshCw, Send, X } from 'lucide-react';
+import { Plus, Send, XCircle, Eye, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Userbot { id: string; label: string; clientPhone?: string; }
 interface DialogEntry { id: string; name: string; }
@@ -40,7 +41,7 @@ const TelegramBulkMessages = () => {
   const fetchMessages = async () => { setLoading(true); try { const r = await apiClient.get("/api/v1/telegram-advanced/bulk-messages"); setMessages(r.data.data || []); } catch { setError("فشل تحميل الرسائل"); } finally { setLoading(false); } };
   const fetchDialogs = async (id: string) => { if (!id) return; try { const r = await apiClient.get(`/api/v1/userbot/dialogs?userbotConfigId=${id}`); setDialogList(r.data.data || []); } catch {} };
 
-  const handleSend = async () => { setSending(true); setProgress(0); setError(""); setSendResults([]); try { const r = await apiClient.post("/api/v1/telegram-advanced/bulk-messages", { userbotConfigId: selectedUserbot, chatIds: selectedDialogs, message: messageText }); setMessages(r.data.data || []); toast.success("تم إرسال الرسائل"); setOpenDialog(false); } catch { setError("فشل إرسال الرسائل"); } finally { setSending(false); } };
+  const handleSend = async () => { setSending(true); setProgress(0); setError(""); setSendResults([]); try { const r = await apiClient.post("/api/v1/telegram-advanced/bulk-messages", { userbotConfigId: selectedUserbot, chatIds: selectedDialogs, message: messageText }); setMessages(r.data.data || []); tToast.success("TelegramBulkMessages.success_send_242e"); setOpenDialog(false); } catch { setError("فشل إرسال الرسائل"); } finally { setSending(false); } };
 
   return (
     <div className="p-3 rtl">

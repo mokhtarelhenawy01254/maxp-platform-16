@@ -18,6 +18,7 @@ jest.mock("react-router-dom", () => {
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
+    t: (key: string) => key,
     i18n: {
       language: "ar",
       changeLanguage: (...args: unknown[]) => mockChangeLanguage(...args),
@@ -36,7 +37,22 @@ jest.mock("../../../utils/platformSiteMetaPixel", () => ({
     mockTrackCompleteRegistration(...args),
 }));
 
+// config/environment uses import.meta.env, which jest/ts-jest cannot parse.
+jest.mock("../../../config/environment", () => ({
+  getApiUrl: () => "http://localhost:4000/api/v1",
+  getBackendUrl: () => "http://localhost:4000",
+  envConfig: {},
+}));
+
 describe("Register", () => {
+  beforeAll(() => {
+    // jsdom does not implement fetch.
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: { items: [] } }),
+    }) as unknown as typeof fetch;
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockRegister.mockResolvedValue({
@@ -59,22 +75,27 @@ describe("Register", () => {
     fireEvent.change(container.querySelector('input[name="fullName"]')!, {
       target: { value: "أحمد محمد" },
     });
+    fireEvent.change(container.querySelector('input[name="companyName"]')!, {
+      target: { value: "شركة الاختبار" },
+    });
     fireEvent.change(container.querySelector('input[name="email"]')!, {
       target: { value: "new@example.com" },
     });
     fireEvent.change(container.querySelector('input[name="password"]')!, {
       target: { value: "StrongPass#123" },
     });
+    fireEvent.change(container.querySelector('input[name="phone"]')!, {
+      target: { value: "01012345678" },
+    });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /ابدأ تجربتك المجانية/ }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /إنشاء حساب/ }));
 
     await waitFor(() => {
       expect(mockRegister).toHaveBeenCalledWith(
         expect.objectContaining({
           firstName: "أحمد",
           lastName: "محمد",
+          companyName: "شركة الاختبار",
           email: "new@example.com",
           password: "StrongPass#123",
         }),
@@ -88,6 +109,10 @@ describe("Register", () => {
         role: "COMPANY_OWNER",
       }),
     );
-    expect(mockNavigate).toHaveBeenCalledWith("/marketplace");
+
+    // Navigation is deferred via setTimeout(…, 100) in the submit handler.
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/marketplace", { replace: true });
+    });
   });
 });

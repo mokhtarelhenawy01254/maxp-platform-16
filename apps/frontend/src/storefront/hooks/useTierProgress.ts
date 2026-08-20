@@ -1,9 +1,9 @@
-﻿import { useCallback } from "react";
+import { useCallback } from "react";
 import { useCheckoutStore } from "../store/useCheckoutStore";
 import { storefrontApi } from "../../utils/storefrontApi";
 
 /**
- * ╪¼┘ä╪¿ ┘à╪│╪¬┘ê┘ë ╪º┘ä╪╣┘à┘è┘ä + ╪º┘ä┘à╪▓╪º┘è╪º + ╪º┘ä╪¬┘é╪»┘à (╪¿┘å╪º╪í┘ï ╪╣┘ä┘ë ╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ┘ü┘è ┘å┘à┘ê╪░╪¼ ╪º┘ä╪»┘ü╪╣)
+ * جلب مستوى العميل + المزايا + التقدم (بناءً على رقم الهاتف في نموذج الدفع)
  */
 export function useTierProgress() {
   const tierProgress = useCheckoutStore((s) => s.tierProgress);

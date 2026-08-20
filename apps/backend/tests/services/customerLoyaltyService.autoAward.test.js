@@ -1,4 +1,4 @@
-﻿const loyaltyService = require('../../services/hr/customerLoyaltyService');
+const loyaltyService = require('../../services/hr/customerLoyaltyService');
 const sharedDatabase = require('../../services/sharedDatabase');
 
 jest.mock('../../services/sharedDatabase', () => ({
@@ -183,7 +183,7 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
       }));
       prisma.order.update.mockResolvedValue({});
 
-      const first = await loyaltyService.reverseLoyaltyPointsForOrder({ orderId, companyId, reason: '╪Ñ┘ä╪║╪º╪í' });
+      const first = await loyaltyService.reverseLoyaltyPointsForOrder({ orderId, companyId, reason: 'إلغاء' });
       expect(first.reversed).toBe(true);
       expect(first.points).toBe(10);
       expect(prisma.customerLoyaltyRecord.update).toHaveBeenCalledWith(
@@ -205,7 +205,7 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
         orderNumber: 'ORD-4',
         metadata: JSON.stringify(metaUpdate),
       });
-      const second = await loyaltyService.reverseLoyaltyPointsForOrder({ orderId, companyId, reason: '╪Ñ┘ä╪║╪º╪í' });
+      const second = await loyaltyService.reverseLoyaltyPointsForOrder({ orderId, companyId, reason: 'إلغاء' });
       expect(second.reversed).toBe(false);
       expect(second.reason).toBe('already_reversed');
     });
@@ -213,20 +213,20 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
 
   describe('determineTier calculation methods', () => {
     const pointsTiers = [
-      { id: 'plat', name: 'Platinum', nameAr: '╪¿┘ä╪º╪¬┘è┘å┘è', calculationType: 'POINTS', minPoints: '100', maxPoints: null, priority: 4 },
-      { id: 'gold', name: 'Gold', nameAr: '╪░┘ç╪¿┘è', calculationType: 'POINTS', minPoints: '30', maxPoints: '99', priority: 3 },
-      { id: 'silver', name: 'Silver', nameAr: '┘ü╪╢┘è', calculationType: 'POINTS', minPoints: '10', maxPoints: '29', priority: 2 },
-      { id: 'bronze', name: 'Bronze', nameAr: '╪¿╪▒┘ê┘å╪▓┘è', calculationType: 'POINTS', minPoints: '0', maxPoints: '9', priority: 1 },
+      { id: 'plat', name: 'Platinum', nameAr: 'بلاتيني', calculationType: 'POINTS', minPoints: '100', maxPoints: null, priority: 4 },
+      { id: 'gold', name: 'Gold', nameAr: 'ذهبي', calculationType: 'POINTS', minPoints: '30', maxPoints: '99', priority: 3 },
+      { id: 'silver', name: 'Silver', nameAr: 'فضي', calculationType: 'POINTS', minPoints: '10', maxPoints: '29', priority: 2 },
+      { id: 'bronze', name: 'Bronze', nameAr: 'برونزي', calculationType: 'POINTS', minPoints: '0', maxPoints: '9', priority: 1 },
     ];
 
     const spentTiers = [
-      { id: 'gold-spent', name: 'Gold', nameAr: '╪░┘ç╪¿┘è', calculationType: 'SPENT', minSpent: '5000', maxSpent: null, priority: 2 },
-      { id: 'silver-spent', name: 'Silver', nameAr: '┘ü╪╢┘è', calculationType: 'SPENT', minSpent: '2000', maxSpent: '4999', priority: 1 },
+      { id: 'gold-spent', name: 'Gold', nameAr: 'ذهبي', calculationType: 'SPENT', minSpent: '5000', maxSpent: null, priority: 2 },
+      { id: 'silver-spent', name: 'Silver', nameAr: 'فضي', calculationType: 'SPENT', minSpent: '2000', maxSpent: '4999', priority: 1 },
     ];
 
     const itemsTiers = [
-      { id: 'gold-items', name: 'Gold', nameAr: '╪░┘ç╪¿┘è', calculationType: 'ITEMS', minItems: 10, maxItems: null, priority: 2 },
-      { id: 'silver-items', name: 'Silver', nameAr: '┘ü╪╢┘è', calculationType: 'ITEMS', minItems: 3, maxItems: 9, priority: 1 },
+      { id: 'gold-items', name: 'Gold', nameAr: 'ذهبي', calculationType: 'ITEMS', minItems: 10, maxItems: null, priority: 2 },
+      { id: 'silver-items', name: 'Silver', nameAr: 'فضي', calculationType: 'ITEMS', minItems: 3, maxItems: 9, priority: 1 },
     ];
 
     it('returns Gold (not Platinum) for 30 points', async () => {

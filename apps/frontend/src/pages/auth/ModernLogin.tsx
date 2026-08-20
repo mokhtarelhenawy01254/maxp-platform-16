@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteLogin } from "../../utils/platformSiteMetaPixel";
 import { getPostAuthDestination } from "../../utils/authRouting";
-import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { resolvePostAuthDestination } from "../../utils/postAuthRouting";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 interface LoginFormData {
@@ -29,14 +30,19 @@ const ModernLogin: React.FC = () => {
   const { login, isAuthenticated, isLoading: isAuthLoading, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/company-dashboard";
+  const fromPath = location.state?.from?.pathname || null;
+  const hasNavigatedRef = useRef(false);
 
+  // Single navigation target after login. Guarded by hasNavigatedRef so the
+  // effect and handleSubmit can never compete for the redirect.
   useEffect(() => {
+    if (hasNavigatedRef.current) return;
     if (!isAuthLoading && isAuthenticated && user) {
-      const dest = getPostAuthDestination(user);
-      if (dest) navigate(dest, { replace: true });
+      hasNavigatedRef.current = true;
+      const dest = resolvePostAuthDestination(user, fromPath);
+      navigate(dest, { replace: true });
     }
-  }, [isAuthenticated, isAuthLoading, navigate, user]);
+  }, [isAuthenticated, isAuthLoading, navigate, user, fromPath]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = event.target;
@@ -63,15 +69,8 @@ const ModernLogin: React.FC = () => {
       setSuccess("جاري تأكيد بيانات الدخول…");
 
       const userData = await login(formData);
-      const postAuthDestination = getPostAuthDestination(userData);
-      const redirectPath =
-        postAuthDestination === "/marketplace" &&
-        from &&
-        from !== "/marketplace" &&
-        !from.startsWith("/lp/") &&
-        from !== "/"
-          ? from
-          : postAuthDestination;
+      hasNavigatedRef.current = true;
+      const redirectPath = resolvePostAuthDestination(userData, fromPath);
 
       setSuccess("تم تسجيل الدخول بنجاح، يتم تحويلك الآن…");
       trackPlatformSiteLogin({

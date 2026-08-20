@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const normalizeBool = (value, fallback) => {
   if (value === undefined || value === null || value === '') return fallback;
@@ -10,7 +10,7 @@ const normalizeBool = (value, fallback) => {
 const listTags = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { search, includeInactive } = req.query;
     const where = { companyId };
@@ -23,17 +23,17 @@ const listTags = async (req, res) => {
     res.json({ success: true, data: tags });
   } catch (error) {
     console.error('Error fetching radiology exam tags:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¬╪º╪¼╪º╪¬ ╪º┘ä╪Ñ┘â╪▓╪º┘à' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تاجات الإكزام' });
   }
 };
 
 const createTag = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { name } = req.body || {};
-    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪¬╪º╪¼ ┘à╪╖┘ä┘ê╪¿' });
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم التاج مطلوب' });
 
     const tag = await getSharedPrismaClient().radiologyExamTag.create({
       data: { companyId, name: String(name).trim() },
@@ -41,24 +41,24 @@ const createTag = async (req, res) => {
     res.json({ success: true, data: tag });
   } catch (error) {
     console.error('Error creating radiology exam tag:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪¬╪º╪¼' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء التاج' });
   }
 };
 
 const updateTag = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyExamTag.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪¬╪º╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'التاج غير موجود' });
 
     const data = {};
     if (body.name !== undefined) {
-      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪¬╪º╪¼ ┘à╪╖┘ä┘ê╪¿' });
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم التاج مطلوب' });
       data.name = String(body.name).trim();
     }
     if (body.isActive !== undefined) data.isActive = normalizeBool(body.isActive, true);
@@ -67,25 +67,25 @@ const updateTag = async (req, res) => {
     res.json({ success: true, data: tag });
   } catch (error) {
     console.error('Error updating radiology exam tag:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¬╪º╪¼' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث التاج' });
   }
 };
 
 const deleteTag = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     const existing = await prisma.radiologyExamTag.findFirst({ where: { id, companyId } });
-    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪¬╪º╪¼ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!existing) return res.status(404).json({ success: false, error: 'التاج غير موجود' });
 
     const tag = await prisma.radiologyExamTag.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä╪¬╪º╪¼', data: tag });
+    res.json({ success: true, message: 'تم حذف التاج', data: tag });
   } catch (error) {
     console.error('Error deleting radiology exam tag:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä╪¬╪º╪¼' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف التاج' });
   }
 };
 
@@ -94,7 +94,7 @@ const deleteTag = async (req, res) => {
 const listModalities = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const prisma = getSharedPrismaClient();
     const rows = await prisma.radiologyExamType.findMany({
@@ -115,7 +115,7 @@ const listModalities = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching radiology modalities:', error);
-    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä┘à┘ê╪»┘è┘ê┘ä╪º╪¬' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الموديولات' });
   }
 };
 

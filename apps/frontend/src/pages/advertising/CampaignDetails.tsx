@@ -1,4 +1,3 @@
-import { ArrowLeft as ArrowLeftIcon, Circle as PauseIcon, Circle as PlayIcon, Trash2 as TrashIcon, RefreshCw as ArrowPathIcon, Plus as PlusIcon, ShoppingBag as ShoppingBagIcon, Activity as ChartBarIcon } from 'lucide-react';
 /**
  * Campaign Details Page
  *
@@ -7,8 +6,18 @@ import { ArrowLeft as ArrowLeftIcon, Circle as PauseIcon, Circle as PlayIcon, Tr
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-;
+import {
+  ArrowLeftIcon,
+  PauseIcon,
+  PlayIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  PlusIcon,
+  ShoppingBagIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookCampaign,
@@ -93,14 +102,14 @@ const CampaignDetails: React.FC = () => {
     setRefreshing(true);
     await loadCampaign();
     setRefreshing(false);
-    toast.success("تم تحديث البيانات");
+    tToast.success("CampaignDetails.success_update_c9e9");
   };
 
   const handlePause = async () => {
     if (!id) return;
     try {
       await facebookAdsService.pauseCampaign(id);
-      toast.success("تم إيقاف الحملة");
+      tToast.success("CampaignDetails.msg_c0fb");
       await loadCampaign();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في إيقاف الحملة"));
@@ -111,7 +120,7 @@ const CampaignDetails: React.FC = () => {
     if (!id) return;
     try {
       await facebookAdsService.resumeCampaign(id);
-      toast.success("تم استئناف الحملة");
+      tToast.success("CampaignDetails.msg_00e5");
       await loadCampaign();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في استئناف الحملة"));
@@ -126,7 +135,7 @@ const CampaignDetails: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCampaign(id);
-      toast.success("تم حذف الحملة");
+      tToast.success("CampaignDetails.success_delete_b4c9");
       navigate(dashboardUrl);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في حذف الحملة"));

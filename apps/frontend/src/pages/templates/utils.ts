@@ -1,30 +1,30 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { TemplateButton } from "./types";
 
 /**
- * ╪ú╪»┘ê╪º╪¬ ┘à╪│╪º╪╣╪»╪⌐ ┘à╪┤╪¬╪▒┘â╪⌐ ╪¿┘è┘å ┘å╪╖╪º┘é╪º╪¬ ╪╡┘ü╪¡╪⌐ TemplateCenter.
- * ┘â┘ä ╪º┘ä╪»┘ê╪º┘ä ┘ç┘å╪º pure (╪¿╪»┘ê┘å ╪¡╪º┘ä╪⌐) ΓÇö ╪│┘ç┘ä╪⌐ ╪º┘ä╪º╪«╪¬╪¿╪º╪▒ ┘ê╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à.
+ * أدوات مساعدة مشتركة بين نطاقات صفحة TemplateCenter.
+ * كل الدوال هنا pure (بدون حالة) — سهلة الاختبار وإعادة الاستخدام.
  */
 
 export const META_BODY_CHAR_LIMIT = 1024;
 
 const SAMPLE_VARIABLES: Record<string, string> = {
-  customerName: "╪ú╪¡┘à╪» ┘à╪¡┘à╪»",
+  customerName: "أحمد محمد",
   orderNumber: "ORD-12345",
   customerPhone: "01001234567",
   total: "500",
   currency: "EGP",
   itemCount: "3",
-  orderItems: "1. ╪¬┘è╪┤┘è╪▒╪¬ ╪ú╪¡┘à╪▒ | ╪º┘ä┘à┘é╪º╪│: L | ╪º┘ä┘â┘à┘è╪⌐: 2",
-  status: "┘é┘è╪» ╪º┘ä╪¬╪¼┘ç┘è╪▓",
+  orderItems: "1. تيشيرت أحمر | المقاس: L | الكمية: 2",
+  status: "قيد التجهيز",
   trackingNumber: "TRK-98765",
   trackingLink: "https://maxp.online/track/TRK-98765",
   estimatedDays: "2-3",
 };
 
 /**
- * ┘è╪¡┘ä ┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘é╪º┘ä╪¿ ╪¿┘é┘è┘à ┘å┘à┘ê╪░╪¼┘è╪⌐ ╪╣╪┤╪º┘å ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪¬╪¿┘é┘ë ┘ê╪º┘é╪╣┘è╪⌐.
- * ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à╪╣╪▒┘ê┘ü╪⌐ ╪¬╪╕┘ç╪▒ ╪¿┘è┘å ╪ú┘é┘ê╪º╪│ [name].
+ * يحل متغيرات القالب بقيم نموذجية عشان المعاينة تبقى واقعية.
+ * المتغيرات غير المعروفة تظهر بين أقواس [name].
  */
 export function resolveVariablesForPreview(content: string): string {
   if (!content) return "";
@@ -33,7 +33,7 @@ export function resolveVariablesForPreview(content: string): string {
   });
 }
 
-/** ╪¬╪▒╪¬┘è╪¿ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è ┘ä╪¿┘å╪º╪í ┘à╪¡╪¬┘ê┘ë ┘à╪¡┘ä┘è ┘à┘å ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º */
+/** ترتيب المتغيرات الافتراضي لبناء محتوى محلي من نص قالب ميتا */
 export const META_TO_LOCAL_DEFAULT_ORDER: string[] = [
   "customerName",
   "orderNumber",
@@ -51,8 +51,8 @@ export const META_TO_LOCAL_DEFAULT_ORDER: string[] = [
 ];
 
 /**
- * ╪¿┘å╪º╪í ┘à╪¡╪¬┘ê┘ë ┘à╪¡┘ä┘è ╪¬┘ä┘é╪º╪ª┘è ┘à┘å ┘å╪╡ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º:
- * ╪¿┘è╪¡┘ê┘æ┘ä ┘â┘ä {{N}} ╪Ñ┘ä┘ë {{variable}} ┘à╪¡┘ä┘è ╪¡╪│╪¿ ╪¬╪▒╪¬┘è╪¿ ╪º┘ü╪¬╪▒╪º╪╢┘è.
+ * بناء محتوى محلي تلقائي من نص قالب ميتا:
+ * بيحوّل كل {{N}} إلى {{variable}} محلي حسب ترتيب افتراضي.
  */
 export function buildLocalContentFromMetaBody(metaBody: string): string {
   if (!metaBody) return "";
@@ -64,8 +64,8 @@ export function buildLocalContentFromMetaBody(metaBody: string): string {
 }
 
 /**
- * ╪º╪│╪¬╪«╪▒╪º╪¼ ╪ú╪│┘à╪º╪í ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘à╪¡┘ä┘è╪⌐ ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ ╪º┘ä┘ä┘è ╪¿╪¬╪╕┘ç╪▒ ╪¿┘è┘ç ┘ü┘è ╪º┘ä┘à╪¡╪¬┘ê┘ë.
- * ╪¿┘è╪¬┘à ╪º╪│╪¬╪«╪»╪º┘à┘ç ┘ä╪▒╪¿╪╖ ┘â┘ä ┘à╪¬╪║┘è╪▒ ┘à╪¡┘ä┘è {{customerName}} ╪¿╪▒┘é┘à ┘à┘è╪¬╪º {{1}}╪î {{2}}... ╪¿╪╡╪▒┘è╪º┘ï.
+ * استخراج أسماء المتغيرات المحلية بالترتيب اللي بتظهر بيه في المحتوى.
+ * بيتم استخدامه لربط كل متغير محلي {{customerName}} برقم ميتا {{1}}، {{2}}... بصرياً.
  */
 export function extractLocalVariableOrder(content: string): string[] {
   const seen = new Set<string>();
@@ -83,15 +83,15 @@ export function extractLocalVariableOrder(content: string): string[] {
   return order;
 }
 
-/** ╪º╪│╪¬╪«╪▒╪º╪¼ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪¿╪╡┘è╪║╪⌐ ╪º┘ä┘é┘ê╪│ ╪º┘ä┘ê╪º╪¡╪» (┘å╪╖╪º┘é ╪º┘ä╪╣┘à┘ä╪º╪í) */
+/** استخراج المتغيرات بصيغة القوس الواحد (نطاق العملاء) */
 export function extractSingleBraceVariables(content: string): string[] {
   const matches = content.match(/\{(\w+)\}/g) || [];
   return Array.from(new Set(matches.map((m) => m.slice(1, -1))));
 }
 
 /**
- * ╪¬╪¡┘ê┘è┘ä ╪╡┘è╪║╪⌐ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬: ┘è┘ê╪¡┘æ╪» ╪º┘ä┘à╪¡╪¬┘ê┘ë ╪Ñ┘ä┘ë ╪º┘ä╪╡┘è╪║╪⌐ ╪º┘ä┘à╪╣╪¬┘à╪»╪⌐ ┘ä┘ä┘å╪╖╪º┘é.
- * ╪º┘ä╪ú┘ê╪▒╪»╪▒╪▓: {{var}} | ╪º┘ä╪╣┘à┘ä╪º╪í: {var}
+ * تحويل صيغة المتغيرات: يوحّد المحتوى إلى الصيغة المعتمدة للنطاق.
+ * الأوردرز: {{var}} | العملاء: {var}
  */
 export function normalizeVariableSyntax(content: string, target: "double" | "single"): string {
   if (!content) return "";
@@ -102,7 +102,7 @@ export function normalizeVariableSyntax(content: string, target: "double" | "sin
 }
 
 /**
- * ╪¡┘ä ┘à╪¬╪║┘è╪▒╪º╪¬ ╪¿┘à╪╣╪º┘è┘å╪⌐ ╪¬╪╣╪¬┘à╪» ╪╣┘ä┘ë ╪º┘ä┘å╪╖╪º┘é (╪ú╪▓┘ê╪º╪¼ ┘é┘è┘à ┘à╪▒┘å╪⌐).
+ * حل متغيرات بمعاينة تعتمد على النطاق (أزواج قيم مرنة).
  */
 export function resolveVariablesCustom(content: string, sample: Record<string, string>): string {
   if (!content) return "";
@@ -166,23 +166,23 @@ export function useMediaQuery(query: string): boolean {
 }
 
 export const ORDER_VARIABLES = [
-  { var: "{{customerName}}", desc: "╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä" },
-  { var: "{{customerPhone}}", desc: "╪▒┘é┘à ┘ç╪º╪¬┘ü ╪º┘ä╪╣┘à┘è┘ä" },
-  { var: "{{orderNumber}}", desc: "╪▒┘é┘à ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{orderDate}}", desc: "╪¬╪º╪▒┘è╪« ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{orderItems}}", desc: "╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ (╪º┘ä╪º╪│┘à╪î ╪º┘ä┘ä┘ê┘å╪î ╪º┘ä┘à┘é╪º╪│╪î ╪º┘ä┘â┘à┘è╪⌐)" },
-  { var: "{{status}}", desc: "╪º╪│┘à ╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘å╪╡┘è (┘à╪½╪º┘ä: ┘é┘è╪» ╪º┘ä┘à╪╣╪º┘ä╪¼╪⌐)" },
-  { var: "{{total}}", desc: "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{subtotal}}", desc: "╪º┘ä┘à╪¼┘à┘ê╪╣ ╪º┘ä┘ü╪▒╪╣┘è" },
-  { var: "{{shipping}}", desc: "┘é┘è┘à╪⌐ ╪º┘ä╪┤╪¡┘å" },
-  { var: "{{currency}}", desc: "╪º┘ä╪╣┘à┘ä╪⌐ (┘à╪½╪º┘ä: EGP)" },
-  { var: "{{trackingNumber}}", desc: "╪▒┘é┘à ╪º┘ä╪¬╪¬╪¿╪╣" },
-  { var: "{{trackingLink}}", desc: "╪▒╪º╪¿╪╖ ╪¬╪¬╪¿╪╣ ╪º┘ä╪╖┘ä╪¿" },
-  { var: "{{estimatedDays}}", desc: "╪º┘ä╪ú┘è╪º┘à ╪º┘ä╪¬┘é╪»┘è╪▒┘è╪⌐ ┘ä┘ä╪┤╪¡┘å" },
-  { var: "{{reason}}", desc: "╪│╪¿╪¿ ╪º┘ä╪Ñ┘ä╪║╪º╪í ╪ú┘ê ╪º┘ä╪▒┘ü╪╢" },
+  { var: "{{customerName}}", desc: "اسم العميل" },
+  { var: "{{customerPhone}}", desc: "رقم هاتف العميل" },
+  { var: "{{orderNumber}}", desc: "رقم الطلب" },
+  { var: "{{orderDate}}", desc: "تاريخ الطلب" },
+  { var: "{{orderItems}}", desc: "تفاصيل المنتجات (الاسم، اللون، المقاس، الكمية)" },
+  { var: "{{status}}", desc: "اسم الحالة النصي (مثال: قيد المعالجة)" },
+  { var: "{{total}}", desc: "إجمالي الطلب" },
+  { var: "{{subtotal}}", desc: "المجموع الفرعي" },
+  { var: "{{shipping}}", desc: "قيمة الشحن" },
+  { var: "{{currency}}", desc: "العملة (مثال: EGP)" },
+  { var: "{{trackingNumber}}", desc: "رقم التتبع" },
+  { var: "{{trackingLink}}", desc: "رابط تتبع الطلب" },
+  { var: "{{estimatedDays}}", desc: "الأيام التقديرية للشحن" },
+  { var: "{{reason}}", desc: "سبب الإلغاء أو الرفض" },
 ];
 
-/** ┘ê╪╡┘ü ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ┘â┘Ç Record ┘ä╪¼╪»┘ê┘ä ╪¬╪╖╪º╪¿┘é ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ */
+/** وصف المتغيرات كـ Record لجدول تطابق المتغيرات */
 export function buildVariableDescriptions(variables: { var: string; desc: string }[]): Record<string, string> {
   return variables.reduce((acc, v) => {
     const key = v.var.replace(/^\{\{|\}\}$/g, "").replace(/^\{|\}$/g, "").trim();
@@ -191,12 +191,12 @@ export function buildVariableDescriptions(variables: { var: string; desc: string
   }, {} as Record<string, string>);
 }
 
-export const DEFAULT_TEMPLATE_CONTENT = `┘à╪▒╪¡╪¿╪º┘ï {{customerName}} ≡ƒæï
+export const DEFAULT_TEMPLATE_CONTENT = `مرحباً {{customerName}} 👋
 
-┘å┘ê╪» ╪Ñ╪╣┘ä╪º┘à┘â ╪ú┘å ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿┘â ╪▒┘é┘à {{orderNumber}} ┘é╪» ╪¬╪║┘è╪▒╪¬ ╪Ñ┘ä┘ë: *{{status}}*
+نود إعلامك أن حالة طلبك رقم {{orderNumber}} قد تغيرت إلى: *{{status}}*
 
 {{orderItems}}
-╪┤┘â╪▒╪º┘ï ┘ä╪¬╪╣╪º┘à┘ä┘â ┘à╪╣┘å╪º! Γ£¿`;
+شكراً لتعاملك معنا! ✨`;
 
 export const INCOMPLETE_CART_EVENT_TYPE = "INCOMPLETE_CART_FIRST_APPEARANCE";
 

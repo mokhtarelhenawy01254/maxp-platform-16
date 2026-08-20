@@ -7,7 +7,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, BarChart, BarChart3, Check, CheckCircle, Clock, Eye, Info, Loader2, MousePointer, Settings } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Settings,
+  ArrowLeft,
+  Clock,
+  MousePointer,
+  Eye,
+  Loader2,
+  CheckCircle,
+  Info,
+  BarChart3,
+} from "lucide-react";
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 const AttributionSettings: React.FC = () => {
@@ -50,7 +61,7 @@ const AttributionSettings: React.FC = () => {
 
   const handleSave = async () => {
     if (!settings.adSetId.trim()) {
-      toast.error("يرجى إدخال معرف مجموعة الإعلانات");
+      tToast.error("AttributionSettings.msg_c7b7");
       return;
     }
 
@@ -65,7 +76,7 @@ const AttributionSettings: React.FC = () => {
         settings.adSetId,
         attributionPayload,
       );
-      toast.success("تم حفظ إعدادات الإحالة بنجاح! ✅");
+      tToast.success("AttributionSettings.success_save_97ba");
     } catch (error: any) {
       console.error("Error saving settings:", error);
       toast.error(error?.response?.data?.error || "فشل في حفظ الإعدادات");

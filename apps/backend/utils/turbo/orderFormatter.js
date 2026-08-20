@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Turbo Order Formatter Utilities
- * ╪»┘ê╪º┘ä ╪¬┘å╪│┘è┘é ╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪╖┘ä╪¿ ┘ä╪┤╪¡┘å Turbo
+ * دوال تنسيق بيانات الطلب لشحن Turbo
  */
 
 const { getBestShippingAddressFields } = require('./addressParser');
@@ -72,7 +72,7 @@ function formatOrderForTurbo(order, customer, items) {
 
   const rawItems = items || order.orderItems || order.items || [];
   const formattedItems = Array.isArray(rawItems) ? rawItems.map(item => ({
-    productName: item.productName || item.name || item.product?.name || '┘à┘å╪¬╪¼',
+    productName: item.productName || item.name || item.product?.name || 'منتج',
     quantity: item.quantity || 1,
     price: parseFloat(item.price || item.unitPrice || 0),
     total: parseFloat(item.total || ((item.price || 0) * (item.quantity || 1))),

@@ -1,7 +1,23 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AlertCircle, AlertTriangle, ArrowLeft, BadgePercent, BarChart, BarChart3, CheckCircle2, Clock3, ExternalLink, Mail, MessageSquare, Package, Save, Settings2, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Star } from 'lucide-react';
-import { toast } from "sonner";
+import {
+  AlertCircle,
+  ArrowLeft,
+  BarChart3,
+  BadgePercent,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  Mail,
+  MessageSquare,
+  Package,
+  Save,
+  Settings2,
+  ShieldCheck,
+  ShoppingCart,
+  Sparkles,
+} from "lucide-react";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import {
   applyMarketplaceAppPreset,
@@ -32,6 +48,7 @@ interface InstalledCompanyApp {
     description?: string;
     icon?: string;
     category?: string;
+    pricingModel?: string;
   };
 }
 
@@ -410,13 +427,6 @@ const toSafeNumber = (value: number | string | null | undefined) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-interface ReviewListResponseData {
-  pagination?: {
-    total?: number | string | null;
-  };
-  reviews?: ReviewModerationItem[];
-}
-
 const buildUsageFeatureMap = (
   entries: AppUsageByFeatureEntry[] | undefined,
 ): Record<string, UsageFeatureTotals> => {
@@ -432,11 +442,18 @@ const buildUsageFeatureMap = (
       actions: Number(entry?._count?.id || 0),
       quantity: Number(entry?._sum?.quantity || 0),
       totalCost: toSafeNumber(entry?._sum?.totalCost),
-    };
-  }
+  };
+}
 
   return featureMap;
 };
+
+interface ReviewListResponseData {
+  pagination?: {
+    total?: number | string | null;
+  };
+  reviews?: ReviewModerationItem[];
+}
 
 const getFeatureActionCount = (
   featureMap: Record<string, UsageFeatureTotals>,
@@ -466,6 +483,12 @@ export default function AppSettings() {
   const [usageInsights, setUsageInsights] = useState<AppUsageResponseData | null>(null);
   const [reviewInsights, setReviewInsights] = useState<ReviewModerationInsights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [billingSummary, setBillingSummary] = useState<{
+    costs?: { subscriptions: number; usage: number; total: number };
+    wallet?: { balance: number; currency: string };
+    heldOrders?: { count: number; amount: number };
+  } | null>(null);
+  const [billingSummaryLoading, setBillingSummaryLoading] = useState(false);
 
   const normalizedSettings = useMemo(
     () => normalizeMarketplaceAppSettings(slug, draftSettings),
@@ -700,7 +723,7 @@ export default function AppSettings() {
       );
     } catch (error: unknown) {
       console.error("Error loading app settings:", error);
-      toast.error("تعذر تحميل إعدادات التطبيق");
+      tToast.error("AppSettings.unable_load_9624");
     } finally {
       setLoading(false);
     }
@@ -709,12 +732,18 @@ export default function AppSettings() {
   const fetchInsights = useCallback(async (installedApp: InstalledCompanyApp) => {
     try {
       setInsightsLoading(true);
+      setBillingSummaryLoading(true);
 
       const requests: Promise<unknown>[] = [
         apiClient.get(`/my-apps/${installedApp.id}/usage`, {
           params: slug === "quantity-offers-pro" ? { limit: 300 } : undefined,
         }),
       ];
+
+      const isPayPerUse = installedApp?.app?.pricingModel === "PAY_PER_USE";
+      if (isPayPerUse) {
+        requests.push(apiClient.get("/wallet/billing/summary"));
+      }
 
       if (slug === "ugc-reviews-pro") {
         requests.push(
@@ -723,9 +752,10 @@ export default function AppSettings() {
         );
       }
 
-      const [usageResponse, allReviewsResponse, pendingReviewsResponse] =
+      const [usageResponse, billingResponse, allReviewsResponse, pendingReviewsResponse] =
         (await Promise.all(requests)) as [
           { data?: ApiDataEnvelope<AppUsageResponseData> },
+          { data?: ApiDataEnvelope<{ costs?: object; wallet?: object; heldOrders?: object }> }?,
           { data?: ApiDataEnvelope<ReviewListResponseData> }?,
           { data?: ApiDataEnvelope<ReviewListResponseData> }?,
         ];
@@ -742,13 +772,28 @@ export default function AppSettings() {
         },
       );
 
+      if (isPayPerUse && billingResponse?.data?.data) {
+        const billingData = billingResponse.data.data as {
+          costs?: { subscriptions: number; usage: number; total: number };
+          wallet?: { balance: number; currency: string };
+          heldOrders?: { count: number; amount: number };
+        };
+        setBillingSummary({
+          costs: billingData.costs,
+          wallet: billingData.wallet,
+          heldOrders: billingData.heldOrders,
+        });
+      } else {
+        setBillingSummary(null);
+      }
+
       if (slug === "ugc-reviews-pro") {
         const total =
           Number(allReviewsResponse?.data?.data?.pagination?.total) || 0;
         const pending =
           Number(pendingReviewsResponse?.data?.data?.pagination?.total) || 0;
         const latestPending = Array.isArray(pendingReviewsResponse?.data?.data?.reviews)
-          ? (pendingReviewsResponse.data.data.reviews as ReviewModerationItem[])
+          ? (pendingReviewsResponse?.data?.data?.reviews as ReviewModerationItem[])
           : [];
 
         setReviewInsights({
@@ -763,11 +808,13 @@ export default function AppSettings() {
     } catch (error) {
       console.error("Error loading app insights:", error);
       setUsageInsights(null);
+      setBillingSummary(null);
       if (slug === "ugc-reviews-pro") {
         setReviewInsights(null);
       }
     } finally {
       setInsightsLoading(false);
+      setBillingSummaryLoading(false);
     }
   }, [slug]);
 
@@ -798,7 +845,7 @@ export default function AppSettings() {
 
   const handleSave = async () => {
     if (!companyApp) {
-      toast.error("فعّل التطبيق أولًا من Marketplace");
+      tToast.error("AppSettings.msg_565c");
       return;
     }
 
@@ -807,13 +854,13 @@ export default function AppSettings() {
       await apiClient.put(`/my-apps/${companyApp.id}/settings`, {
         settings: normalizedSettings,
       });
-      toast.success("تم حفظ الإعدادات بنجاح");
+      tToast.success("AppSettings.success_save_0151");
       setCompanyApp((current) =>
         current ? { ...current, settings: normalizedSettings } : current,
       );
     } catch (error) {
       console.error("Error saving app settings:", error);
-      toast.error("حدث خطأ أثناء حفظ الإعدادات");
+      tToast.error("AppSettings.error_error_8032");
     } finally {
       setSaving(false);
     }
@@ -2553,6 +2600,68 @@ export default function AppSettings() {
             />
           </div>
         )}
+
+        {companyApp?.app?.pricingModel === "PAY_PER_USE" && !billingSummaryLoading ? (
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            <div className="mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+              <Package size={18} />
+              <span className="font-semibold">المحاسبة المالية — دفع حسب الاستخدام</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-900/50">
+                <div className="text-sm text-gray-500 dark:text-gray-400">رصيد المحفظة</div>
+                <div className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                  {formatMoney(billingSummary?.wallet?.balance ?? 0)}
+                  <span className="ml-1 text-sm font-normal text-gray-500">
+                    {billingSummary?.wallet?.currency || "EGP"}
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-900/50">
+                <div className="text-sm text-gray-500 dark:text-gray-400">استخدام الشهر الحالي</div>
+                <div className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                  {formatMoney(billingSummary?.costs?.usage ?? 0)}
+                </div>
+              </div>
+              <div
+                className={`rounded-xl p-4 ${
+                  Number(billingSummary?.heldOrders?.count || 0) > 0
+                    ? "bg-amber-50 dark:bg-amber-900/20"
+                    : "bg-gray-50 dark:bg-gray-900/50"
+                }`}
+              >
+                <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                  {Number(billingSummary?.heldOrders?.count || 0) > 0 && (
+                    <AlertCircle size={14} className="text-amber-600 dark:text-amber-400" />
+                  )}
+                  الطلبات المعلّقة بانتظار الشحن
+                </div>
+                <div className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                  {billingSummary?.heldOrders?.count ?? 0}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {Number(billingSummary?.heldOrders?.amount || 0) > 0
+                    ? `مستحق: ${formatMoney(billingSummary?.heldOrders?.amount ?? 0)}`
+                    : "لا توجد طلبات معلّقة"}
+                </div>
+              </div>
+              <div className="flex flex-col justify-center">
+                <button
+                  onClick={() => navigate("/payments")}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                >
+                  شحن الرصيد
+                  <ExternalLink size={16} />
+                </button>
+                {Number(billingSummary?.heldOrders?.count || 0) > 0 ? (
+                  <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                    عند شحن الرصيد يُخصم المبلغ المستحق وتظهر الطلبات تلقائياً.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {slug === "conversion-suite" && !insightsLoading ? (
           <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">

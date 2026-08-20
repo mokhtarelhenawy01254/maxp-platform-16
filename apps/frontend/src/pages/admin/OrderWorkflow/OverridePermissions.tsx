@@ -1,7 +1,12 @@
-import { ShieldAlert as ShieldExclamationIcon, Circle as UserGroupIcon, Circle as FingerPrintIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from 'react';
-;
+import {
+    ShieldExclamationIcon,
+    UserGroupIcon,
+    FingerPrintIcon,
+    ExclamationTriangleIcon,
+    CheckIcon
+} from '@heroicons/react/24/outline';
 import orderWorkflowService, { OrderWorkflowConfig } from '../../../services/orderWorkflowService';
 import api from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuthSimple';

@@ -1,4 +1,4 @@
-﻿import {
+import {
   getPostAuthDestination,
   resolvePostAuthDestination,
   saveLastPath,

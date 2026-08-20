@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Building, Building2, Phone, RefreshCw, Search, Settings2, Smartphone } from 'lucide-react';
+import { useTranslation } from "react-i18next";
+import { AlertTriangle, Building2, RefreshCw, Search, Settings2, Smartphone } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

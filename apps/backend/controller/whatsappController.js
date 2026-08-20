@@ -14,6 +14,13 @@ const {
     WhatsAppMediaHandler
 } = require('../services/whatsapp');
 const { computeWindowStatus } = require('../services/whatsapp/WhatsAppWindowService');
+const { encryptField, decryptField } = require('../utils/fieldEncryption');
+
+const encryptTokenIfNeeded = (token) => {
+    if (token === undefined || token === null) return token;
+    if (typeof token === 'string' && token.startsWith('enc:v1:')) return token;
+    return encryptField(token);
+};
 
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
 const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql://');
@@ -36,9 +43,40 @@ const normalizePhoneNumber = (value) => {
     return cleaned.length >= 10 ? cleaned : '';
 };
 
+// Cache لنتيجة فحص الـ authState: فك تشفير الـ authState (blob كبير) عملية sync ثقيلة
+// بتبلوك الـ event loop لو اتكررت على كل getSessions/getSession. TTL قصير (30s) —
+// الأسوأ لو جلسة اتربطت لسه مفيش نتيجة (لكام ثانية) والـ reconnect بيتعامل معاه لاحقاً.
+const authStateCheckCache = new Map(); // sessionId -> { hasAuth, expiresAt }
+const AUTH_STATE_CHECK_TTL_MS = 30 * 1000;
+
+const pruneAuthStateCheckCache = () => {
+    const now = Date.now();
+    for (const [key, entry] of authStateCheckCache) {
+        if (entry.expiresAt <= now) authStateCheckCache.delete(key);
+    }
+};
+
 const hasRegisteredAuthState = (session) => {
-    const authState = parseJsonSafely(session?.authState, null);
-    return Boolean(authState?.creds?.registered || authState?.creds?.me);
+    if (!session?.id) return false;
+    const cached = authStateCheckCache.get(session.id);
+    if (cached && cached.expiresAt > Date.now()) {
+        return cached.hasAuth;
+    }
+    // authState غير متجاب (مستبعد من getSessions) → fallback حسب الـ status:
+    // جلسة DB CONNECTED/CONNECTING من غير session في الذاكرة = عندها auth صالح (هتظهر reconnecting)
+    if (session?.authState === undefined) {
+        return session.status === 'CONNECTED' || session.status === 'CONNECTING';
+    }
+    const authState = parseJsonSafely(decryptField(session?.authState), null);
+    const hasAuth = Boolean(authState?.creds?.registered || authState?.creds?.me);
+    authStateCheckCache.set(session.id, { hasAuth, expiresAt: Date.now() + AUTH_STATE_CHECK_TTL_MS });
+    if (authStateCheckCache.size > 500) {
+        pruneAuthStateCheckCache();
+    }
+    return hasAuth;
+};
+const clearAuthStateCheckCache = (sessionId) => {
+    if (sessionId) authStateCheckCache.delete(sessionId);
 };
 const toBooleanOption = (value) =>
     value === true || value === 'true' || value === 1 || value === '1' || value === 'on';
@@ -91,14 +129,17 @@ const mapSessionForResponse = (session, includeQrData = false) => {
             }
         }
     } else {
-        // No in-memory session - check if there's valid auth state
-        const hasAuth = hasRegisteredAuthState(session);
-        if (hasAuth && (session.status === 'CONNECTED' || session.status === 'CONNECTING')) {
-            // Has valid auth but no in-memory session - session manager will create it
-            // Show as 'reconnecting' to indicate it should reconnect automatically
-            liveStatus = 'reconnecting';
-        } else {
+        // META_CLOUD sessions are API-only (no in-memory socket needed).
+        // Absence of activeSession is normal — trust DB status directly.
+        if (provider === 'META_CLOUD') {
             liveStatus = getLiveStatusFromDbStatus(session.status, provider);
+        } else {
+            const hasAuth = hasRegisteredAuthState(session);
+            if (hasAuth && (session.status === 'CONNECTED' || session.status === 'CONNECTING')) {
+                liveStatus = 'reconnecting';
+            } else {
+                liveStatus = getLiveStatusFromDbStatus(session.status, provider);
+            }
         }
     }
 
@@ -159,18 +200,52 @@ const waitForSessionLinkState = async (sessionId, maxAttempts = 240, pollInterva
     return finalSession;
 };
 
-const resolveActiveSessionId = async (companyId, sessionId) => {
+const resolveActiveSessionId = async (companyId, sessionId, options = {}) => {
+    const { contactId } = options;
+
     if (sessionId && sessionId !== 'all') {
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
             where: { id: sessionId, companyId }
         });
         if (!session) throw new Error('الجلسة غير موجودة أو لا تنتمي لهذه الشركة');
 
-        if (session.provider !== 'META_CLOUD') {
-            const inMemory = WhatsAppManager.getSession(sessionId);
-            if (!inMemory || inMemory.status !== 'connected') {
-                throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
+        const isMetaCloud = session.provider === 'META_CLOUD';
+        const memSession = WhatsAppManager.getSession(sessionId);
+        const isAvailable = isMetaCloud
+            ? session.status === 'CONNECTED' && !!session.metaAccessToken
+            : !!(memSession && memSession.status === 'connected');
+
+        if (!isAvailable) {
+            // Try safe auto-migration: old session is dead, try to find a connected one
+            const connectedSessions = await getSharedPrismaClient().whatsAppSession.findMany({
+                where: { companyId, status: 'CONNECTED' },
+                select: { id: true, provider: true, name: true, metaDisplayPhoneNumber: true, phoneNumber: true, metaAccessToken: true }
+            });
+
+            const viableSessions = connectedSessions.filter(s => {
+                if (s.provider === 'META_CLOUD') return !!s.metaAccessToken;
+                const mem = WhatsAppManager.getSession(s.id);
+                return mem?.status === 'connected';
+            });
+
+            if (viableSessions.length === 1 && contactId) {
+                // Safe: exactly one working session, auto-migrate contact
+                await getSharedPrismaClient().whatsAppContact.update({
+                    where: { id: contactId },
+                    data: { sessionId: viableSessions[0].id, updatedAt: new Date() }
+                }).catch(() => {});
+                console.log(`↪️ [SESSION-FAILOVER] Auto-migrated contact ${contactId} from session ${sessionId} to ${viableSessions[0].id}`);
+                return viableSessions[0].id;
             }
+
+            const availableList = viableSessions.map(s =>
+                s.provider === 'META_CLOUD' ? `${s.name || s.metaDisplayPhoneNumber || s.id} (Cloud)` : `${s.name || s.phoneNumber || s.id}`
+            ).join('، ') || 'لا توجد';
+
+            const error = new Error(`الجلسة غير متصلة حالياً. الجلسات المتاحة: ${availableList}. يمكنك تغيير الجلسة من قائمة جهات الاتصال.`);
+            error.code = 'WA_SESSION_NOT_READY';
+            error.availableSessions = viableSessions.map(s => ({ id: s.id, name: s.name, provider: s.provider }));
+            throw error;
         }
 
         return sessionId;
@@ -200,11 +275,48 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
         const sessions = await prisma.whatsAppSession.findMany({
             where: { companyId },
             orderBy: { createdAt: 'desc' },
-            include: {
+            // لا نجيب authState (blob كبير) ولا الـ Meta tokens/secrets (حساسة) —
+            // بيقلل الحمولة ويمنع تسريبهم للـ frontend (mapSessionForResponse بيعمل spread)
+            select: {
+                id: true,
+                companyId: true,
+                name: true,
+                phoneNumber: true,
+                provider: true,
+                status: true,
+                lastConnectedAt: true,
+                lastDisconnectedAt: true,
+                isDefault: true,
+                aiEnabled: true,
+                autoReply: true,
+                aiMode: true,
+                welcomeMessage: true,
+                awayMessage: true,
+                workingHoursEnabled: true,
+                workingHours: true,
+                loadBalanceWeight: true,
+                metadata: true,
+                metaPhoneNumberId: true,
+                metaWabaId: true,
+                metaBusinessId: true,
+                metaTokenExpiresAt: true,
+                metaDisplayPhoneNumber: true,
+                metaQualityRating: true,
+                metaMessagingLimit: true,
+                metaApiVersion: true,
+                createdAt: true,
+                updatedAt: true,
+                profileName: true,
+                profilePictureUrl: true,
                 _count: {
                     select: {
-                        whatsAppMessages: true,
-                        whatsAppContacts: true
+                        whatsAppMessages: { where: { isHidden: false } },
+                        whatsAppContacts: {
+                            where: {
+                                totalMessages: { gt: 0 },
+                                NOT: { jid: { contains: '@lid' } }
+                            }
+                        }
                     }
                 }
             }
@@ -332,7 +444,7 @@ async function createSession(req, res) {
                 metaPhoneNumberId,
                 metaWabaId,
                 metaBusinessId,
-                metaAccessToken,
+                metaAccessToken: metaAccessToken ? encryptTokenIfNeeded(metaAccessToken) : undefined,
                 metaApiVersion,
                 metaWebhookVerifyToken,
                 metaWebhookSecret,
@@ -492,7 +604,26 @@ async function getSessions(req, res) {
 
         const sessionsWithStatus = filteredSessions.map(mapSessionForResponse);
 
-        res.json({ sessions: sessionsWithStatus });
+        // إضافة حالة استيراد history لكل جلسة
+        const sessionIds = filteredSessions.map(s => s.id);
+        let historyImports = [];
+        try {
+            historyImports = await getSharedPrismaClient().whatsAppSessionHistoryImport.findMany({
+                where: { sessionId: { in: sessionIds } },
+                select: { sessionId: true, status: true, lastProgress: true, importedMessages: true, failedAt: true, lastError: true, completedAt: true }
+            });
+        } catch (e) {
+            // model قد لا يكون موجوداً بعد الـ migration
+        }
+        const historyImportMap = {};
+        for (const hi of historyImports) historyImportMap[hi.sessionId] = hi;
+
+        const result = sessionsWithStatus.map(s => ({
+            ...s,
+            historyImport: historyImportMap[s.id] || null
+        }));
+
+        res.json({ sessions: result });
     } catch (error) {
         console.error('❌ Error getting sessions:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء جلب الجلسات' });
@@ -510,11 +641,46 @@ async function getSession(req, res) {
 
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
             where: { id, companyId },
-            include: {
+            select: {
+                id: true,
+                companyId: true,
+                name: true,
+                phoneNumber: true,
+                provider: true,
+                status: true,
+                lastConnectedAt: true,
+                lastDisconnectedAt: true,
+                isDefault: true,
+                aiEnabled: true,
+                autoReply: true,
+                aiMode: true,
+                welcomeMessage: true,
+                awayMessage: true,
+                workingHoursEnabled: true,
+                workingHours: true,
+                loadBalanceWeight: true,
+                metadata: true,
+                metaPhoneNumberId: true,
+                metaWabaId: true,
+                metaBusinessId: true,
+                metaTokenExpiresAt: true,
+                metaDisplayPhoneNumber: true,
+                metaQualityRating: true,
+                metaMessagingLimit: true,
+                metaApiVersion: true,
+                createdAt: true,
+                updatedAt: true,
+                profileName: true,
+                profilePictureUrl: true,
                 _count: {
                     select: {
-                        whatsAppMessages: true,
-                        whatsAppContacts: true
+                        whatsAppMessages: { where: { isHidden: false } },
+                        whatsAppContacts: {
+                            where: {
+                                totalMessages: { gt: 0 },
+                                NOT: { jid: { contains: '@lid' } }
+                            }
+                        }
                     }
                 }
             }
@@ -526,6 +692,15 @@ async function getSession(req, res) {
 
         const activeSession = WhatsAppManager.getSession(id);
 
+        // إضافة حالة استيراد history
+        let historyImport = null;
+        try {
+            historyImport = await getSharedPrismaClient().whatsAppSessionHistoryImport.findUnique({
+                where: { sessionId: id },
+                select: { status: true, lastProgress: true, importedMessages: true, chatsCount: true, unsupportedMessages: true, lastError: true, requestedAt: true, startedAt: true, completedAt: true, failedAt: true }
+            });
+        } catch (e) { /* model may not exist yet */ }
+
         res.json({
             session: {
                 ...session,
@@ -536,7 +711,8 @@ async function getSession(req, res) {
                 } : session._count,
                 liveStatus: activeSession?.status || getLiveStatusFromDbStatus(session.status, session.provider),
                 qrCode: session.provider === 'META_CLOUD' ? null : (activeSession?.qrCode || null),
-                pairingCode: session.provider === 'META_CLOUD' ? null : (activeSession?.pairingCode || null)
+                pairingCode: session.provider === 'META_CLOUD' ? null : (activeSession?.pairingCode || null),
+                historyImport
             }
         });
     } catch (error) {
@@ -609,7 +785,7 @@ async function updateSession(req, res) {
                 metaPhoneNumberId,
                 metaWabaId,
                 metaBusinessId,
-                metaAccessToken,
+                metaAccessToken: encryptTokenIfNeeded(metaAccessToken),
                 metaApiVersion,
                 metaWebhookVerifyToken,
                 metaWebhookSecret,
@@ -710,6 +886,18 @@ async function connectSession(req, res) {
             !hasRegisteredAuthState(session);
         const shouldImportHistory = toBooleanOption(importHistory) || toBooleanOption(syncFullHistory);
 
+        // حفظ إعداد المزامنة في metadata ليبقى ثابتاً عبر إعادة الاتصال
+        if (shouldImportHistory && session.provider === 'BAILEYS') {
+            const currentMetadata = parseJsonSafely(session.metadata, {});
+            if (!currentMetadata.importHistoryOnLink) {
+                currentMetadata.importHistoryOnLink = true;
+                await getSharedPrismaClient().whatsAppSession.update({
+                    where: { id },
+                    data: { metadata: JSON.stringify(currentMetadata), updatedAt: new Date() }
+                });
+            }
+        }
+
         // بدء الاتصال مع إجبار socket جديد حتى لا يرجع نفس الجلسة الميتة من الذاكرة
         let sessionData = await WhatsAppManager.reconnectSession(id, companyId, 0, {
             resetAuth: needsFreshLink,
@@ -738,6 +926,30 @@ async function connectSession(req, res) {
     } catch (error) {
         console.error('❌ Error connecting session:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء الاتصال' });
+    }
+}
+
+async function requestHistorySync(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+        const result = await WhatsAppManager.requestHistorySync(id, companyId);
+
+        res.status(result.alreadyRunning ? 200 : 202).json({
+            success: true,
+            alreadyRunning: result.alreadyRunning,
+            historyImport: { status: result.status },
+            message: result.alreadyRunning
+                ? 'المزامنة تعمل بالفعل لهذه الجلسة'
+                : 'تم طلب مزامنة الرسائل. ستبدأ إعادة الاتصال الآمنة الآن.'
+        });
+    } catch (error) {
+        console.error('❌ Error requesting WhatsApp history sync:', error);
+        res.status(error.message === 'Session not found' ? 404 : 400).json({
+            error: error.message === 'History sync is only available for Baileys sessions'
+                ? 'المزامنة اليدوية للسجل متاحة لجلسات Baileys فقط'
+                : 'تعذر بدء مزامنة الرسائل'
+        });
     }
 }
 
@@ -788,7 +1000,7 @@ async function disconnectSession(req, res) {
 async function getConversations(req, res) {
     try {
         const { companyId, id: userId, role } = req.user;
-        const { sessionId, page = 1, limit = 50, search, category, archived } = req.query;
+        const { sessionId, page = 1, limit = 50, search, category, archived, filter } = req.query;
         const { normalizeRole } = require('../middleware/rbacMiddleware');
         const userRole = normalizeRole(role);
 
@@ -821,7 +1033,9 @@ async function getConversations(req, res) {
 
         const where = {
             sessionId: { in: sessionIds },
-            isArchived: archived === 'true'
+            isArchived: archived === 'true',
+            totalMessages: { gt: 0 },
+            NOT: { jid: { contains: '@lid' } }
         };
 
         if (search) {
@@ -830,14 +1044,54 @@ async function getConversations(req, res) {
                 { pushName: { contains: search } },
                 { phoneNumber: { contains: search } }
             ];
+
+            // 🔍 البحث في محتوى الرسائل نفسها (كلمة / أوردر / أي نص) — مش بس رقم أو اسم
+            // مهم: بنرجع (sessionId + remoteJid) مع بعض، عشان نفس الرقم موجود في أكثر من جلسة
+            // والنتيجة المفروض تبقى للمحادثة اللي جوه رسايلها الكلمة فعلًا مش جلسة تانية.
+            const contentMatchedMessages = await getSharedPrismaClient().whatsAppMessage.findMany({
+                where: {
+                    sessionId: { in: sessionIds },
+                    content: { contains: search, mode: 'insensitive' },
+                    isHidden: false
+                },
+                distinct: ['sessionId', 'remoteJid'],
+                select: { sessionId: true, remoteJid: true },
+                take: 1000
+            });
+
+            if (contentMatchedMessages.length > 0) {
+                where.OR.push({
+                    OR: contentMatchedMessages.map(m => ({
+                        sessionId: m.sessionId,
+                        jid: m.remoteJid
+                    }))
+                });
+            }
         }
 
         if (category) {
             where.category = category;
         }
 
-        // تحسين: تشغيل استعلام المحادثات والعدد الكلي بشكل متزامن
-        const [contacts, total] = await Promise.all([
+        // فلترة خادم على كل المحادثات (مش بس اللي ظاهرة في الصفحة)
+        if (filter === 'unread') {
+            where.unreadCount = { gt: 0 };
+        } else if (filter === 'groups') {
+            where.isGroup = true;
+        } else if (filter === 'unreplied') {
+            // "بانتظار الرد" = آخر رسالة من العميل (مش من رقم البيزنس)
+            where.lastMessageIsFromMe = false;
+        }
+
+        // عدّادات دقيقة لكل الفلاتر على مستوى الجلسة (مش بتتأثر بالـ search/filter الحالي)
+        const activeCountWhere = {
+            sessionId: { in: sessionIds },
+            totalMessages: { gt: 0 },
+            NOT: { jid: { contains: '@lid' } }
+        };
+
+        // تحسين: تشغيل استعلام المحادثات والعدد الكلي والعدادات بشكل متزامن
+        const [contacts, total, countAll, countUnread, countGroups, countUnreplied, countArchived] = await Promise.all([
             getSharedPrismaClient().whatsAppContact.findMany({
                 where,
                 orderBy: [
@@ -870,6 +1124,7 @@ async function getConversations(req, res) {
                     isArchived: true,
                     isPinned: true,
                     isMuted: true,
+                    labels: true,
                     whatsAppSession: {
                         select: { name: true, phoneNumber: true }
                     },
@@ -894,7 +1149,12 @@ async function getConversations(req, res) {
                     }
                 }
             }),
-            getSharedPrismaClient().whatsAppContact.count({ where })
+            getSharedPrismaClient().whatsAppContact.count({ where }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: false } }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: false, unreadCount: { gt: 0 } } }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: false, isGroup: true } }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: false, lastMessageIsFromMe: false } }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: true } })
         ]);
 
         // جلب آخر رسالة لكل محادثة (Optimized Batch Query)
@@ -935,6 +1195,7 @@ async function getConversations(req, res) {
                         content: true,
                         messageType: true,
                         fromMe: true,
+                        senderId: true,
                         timestamp: true,
                         status: true
                     }
@@ -944,15 +1205,109 @@ async function getConversations(req, res) {
 
         const lastMessagesMap = new Map(lastMessages.map(m => [`${m.sessionId}:${m.remoteJid}`, m]));
 
+        // حل اسم الموظف المرسل لآخر رسالة (المحادثات اللي آخر رسالة فيها من الموظف)
+        const lastSenderIds = [...new Set(
+            lastMessages.filter(m => m.fromMe && m.senderId).map(m => m.senderId)
+        )];
+        let lastSenderMap = {};
+        if (lastSenderIds.length > 0) {
+            const lastSenders = await getSharedPrismaClient().user.findMany({
+                where: { id: { in: lastSenderIds } },
+                select: { id: true, firstName: true, lastName: true }
+            });
+            lastSenderMap = Object.fromEntries(
+                lastSenders.map(u => [u.id, [u.firstName, u.lastName].filter(Boolean).join(' ')])
+            );
+        }
+        for (const m of lastMessages) {
+            if (m.fromMe && m.senderId) {
+                m.senderName = lastSenderMap[m.senderId] || null;
+            } else {
+                m.senderName = null;
+            }
+        }
+
+        // 🔍 لما يكون في بحث عن المحتوى: نرجّع آخر رسالة فيها كلمة البحث (matchedMessage)
+        // عشان البريفيو يظهر الكلمة المطابقة مش آخر رسالة غلط
+        let matchedMessagesMap = new Map();
+        if (search) {
+            const pageJids = contacts.map(c => c.jid);
+            const matchedStats = await getSharedPrismaClient().whatsAppMessage.groupBy({
+                by: ['sessionId', 'remoteJid'],
+                where: {
+                    sessionId: { in: sessionIds },
+                    remoteJid: { in: pageJids },
+                    content: { contains: search, mode: 'insensitive' },
+                    isHidden: false
+                },
+                _max: { timestamp: true }
+            });
+
+            const matchedConditions = matchedStats.map(stat => ({
+                sessionId: stat.sessionId,
+                remoteJid: stat.remoteJid,
+                timestamp: stat._max.timestamp
+            })).filter(c => c.timestamp);
+
+            if (matchedConditions.length > 0) {
+                const matchedMessages = await getSharedPrismaClient().whatsAppMessage.findMany({
+                    where: { OR: matchedConditions },
+                    select: {
+                        sessionId: true,
+                        remoteJid: true,
+                        content: true,
+                        messageType: true,
+                        fromMe: true,
+                        timestamp: true
+                    }
+                });
+                matchedMessagesMap = new Map(matchedMessages.map(m => [`${m.sessionId}:${m.remoteJid}`, m]));
+            }
+        }
+
         const conversationsWithLastMessage = contacts.map(contact => ({
             ...contact,
             session: contact.whatsAppSession,
             lastMessage: lastMessagesMap.get(`${contact.sessionId}:${contact.jid}`) || null,
+            matchedMessage: matchedMessagesMap.get(`${contact.sessionId}:${contact.jid}`) || null,
             window: computeWindowStatus(contact)
         }));
 
+        // 🏷️ Resolve labels: DB (persistent) + in-memory (Baileys) fallback
+        const uniqueSessionIds = [...new Set(contacts.map(c => c.sessionId))];
+        const chatLabelIds = new Map();
+        for (const sid of uniqueSessionIds) {
+            const session = WhatsAppManager.getSession(sid);
+            if (!session?.labelAssociations) continue;
+            for (const [labelId, chatJids] of session.labelAssociations) {
+                for (const jid of chatJids) {
+                    if (!chatLabelIds.has(jid)) chatLabelIds.set(jid, []);
+                    chatLabelIds.get(jid).push(labelId);
+                }
+            }
+        }
+        const conversationsWithLabels = conversationsWithLastMessage.map(contact => {
+            let labelIds = [];
+            // 1. Try DB-stored labels first (persistent)
+            if (contact.labels) {
+                try { labelIds = JSON.parse(contact.labels); } catch {}
+            }
+            // 2. Fallback to in-memory Baileys labels
+            if (labelIds.length === 0 && chatLabelIds.has(contact.jid)) {
+                labelIds = chatLabelIds.get(contact.jid);
+            }
+            return { ...contact, labels: labelIds };
+        });
+
         res.json({
-            conversations: conversationsWithLastMessage,
+            conversations: conversationsWithLabels,
+            counts: {
+                all: countAll,
+                unread: countUnread,
+                groups: countGroups,
+                unreplied: countUnreplied,
+                archived: countArchived
+            },
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -1045,24 +1400,56 @@ async function getMessages(req, res) {
 async function sendMessage(req, res) {
     try {
         const { companyId } = req.user;
-        const { sessionId, to, text, quotedMessageId } = req.body;
+        const { sessionId, to, text, quotedMessageId, contactId } = req.body;
 
         if (!sessionId || !to || !text) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        // Resolve virtual session ID and verify ownership
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        // Resolve virtual session ID with optional auto-failover for contacts
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId, { contactId });
+
+        // 🚨 PRODUCTION-FIX (C5): نافذة الـ 24 ساعة على الإرسال اليدوي لـ META_CLOUD فقط.
+        // خارج النافذة Meta ترفض الإرسال الحر — نمنعه مبكراً بدل "SENT" الوهمي.
+        try {
+            const sessionRecord = await getSharedPrismaClient().whatsAppSession.findUnique({
+                where: { id: targetSessionId },
+                select: { provider: true }
+            });
+            if (sessionRecord?.provider === 'META_CLOUD') {
+                const jid = WhatsAppMessageHandler.formatJid(to);
+                const contact = await getSharedPrismaClient().whatsAppContact.findUnique({
+                    where: { sessionId_jid: { sessionId: targetSessionId, jid } },
+                    select: { lastCustomerMessageAt: true }
+                });
+                const window = computeWindowStatus(contact);
+                if (!window.isOpen) {
+                    return res.status(409).json({
+                        error: 'نافذة الـ 24 ساعة مع هذا العميل مغلقة. استخدم قالباً معتمداً من Meta لإرسال رسالة.',
+                        code: 'WA_24H_WINDOW_CLOSED',
+                        window
+                    });
+                }
+            }
+        } catch (windowErr) {
+            console.error('❌ Error checking 24h window:', windowErr.message);
+        }
 
         const message = await WhatsAppMessageHandler.sendText(targetSessionId, to, text, {
             quotedMessageId,
-            senderId: req.body.userId || req.user?.userId
+            senderId: req.body.userId || req.user?.userId,
+            typingSimulation: true
         });
 
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error sending message:', error);
-        res.status(500).json({ error: error.message || 'حدث خطأ أثناء إرسال الرسالة' });
+        const statusCode = error.code === 'WA_SESSION_NOT_READY' ? 409 : 500;
+        res.status(statusCode).json({
+            error: error.message || 'حدث خطأ أثناء إرسال الرسالة',
+            code: error.code,
+            availableSessions: error.availableSessions
+        });
     }
 }
 
@@ -1436,6 +1823,56 @@ async function linkCustomer(req, res) {
     } catch (error) {
         console.error('❌ Error linking customer:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء ربط العميل' });
+    }
+}
+
+/**
+ * تغيير الجلسة المرتبطة بجهة اتصال
+ * PUT /api/whatsapp/contacts/:id/reassign-session
+ */
+async function reassignContactSession(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'sessionId مطلوب' });
+        }
+
+        // التحقق من ملكية جهة الاتصال
+        const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
+            where: { id },
+            include: {
+                whatsAppSession: { select: { companyId: true } }
+            }
+        });
+
+        if (!contact || contact.whatsAppSession.companyId !== companyId) {
+            return res.status(404).json({ error: 'جهة الاتصال غير موجودة' });
+        }
+
+        // التحقق من أن الجلسة الجديدة تتبع نفس الشركة
+        const newSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: sessionId, companyId }
+        });
+
+        if (!newSession) {
+            return res.status(400).json({ error: 'الجلسة الجديدة غير موجودة أو لا تنتمي لهذه الشركة' });
+        }
+
+        const updatedContact = await getSharedPrismaClient().whatsAppContact.update({
+            where: { id },
+            data: { sessionId, updatedAt: new Date() },
+            select: { id: true, phoneNumber: true, name: true, pushName: true, sessionId: true }
+        });
+
+        console.log(`↪️ [REASSIGN] Contact ${id} (${updatedContact.phoneNumber || updatedContact.name || ''}) reassigned from session ${contact.sessionId} to ${sessionId}`);
+
+        res.json({ success: true, contact: updatedContact });
+    } catch (error) {
+        console.error('❌ Error reassigning contact session:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء تغيير الجلسة' });
     }
 }
 
@@ -1853,7 +2290,18 @@ async function deleteMessage(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.deleteMessage(targetSessionId, to, key);
+        try {
+          await WhatsAppManager.deleteMessage(targetSessionId, to, key);
+        } catch (sockError) {
+          console.warn('⚠️ WhatsApp protocol delete failed, continuing to local DB removal:', sockError.message);
+        }
+
+        // Remove the message from our local store so it disappears from the UI.
+        // The WhatsApp protocol delete above only revokes it on WhatsApp's side;
+        // the app reads its own whatsAppMessage table, so the row must be deleted too.
+        await getSharedPrismaClient().whatsAppMessage.deleteMany({
+          where: { messageId: key.id },
+        });
 
         res.json({ success: true });
     } catch (error) {
@@ -1916,7 +2364,11 @@ async function archiveChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.archiveChat(targetSessionId, jid, archive);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.archiveChat(targetSessionId, jid, archive);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -1953,7 +2405,11 @@ async function pinChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.pinChat(targetSessionId, jid, pin);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.pinChat(targetSessionId, jid, pin);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -1990,7 +2446,11 @@ async function muteChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.muteChat(targetSessionId, jid, mute);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.muteChat(targetSessionId, jid, mute);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -2027,7 +2487,11 @@ async function markChatUnread(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.markChatUnread(targetSessionId, jid, unread);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only (the unread badge reads unreadCount)
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.markChatUnread(targetSessionId, jid, unread);
+        }
 
         // Update local DB if needed (optional, as unread count comes from messages usually)
         if (unread) {
@@ -2301,7 +2765,7 @@ async function migrateAuthToDatabase(req, res) {
             await getSharedPrismaClient().whatsAppSession.update({
                 where: { id: sessionId },
                 data: {
-                    authState: JSON.stringify(authState),
+                    authState: encryptField(JSON.stringify(authState)),
                     updatedAt: new Date()
                 }
             });
@@ -3108,6 +3572,32 @@ async function labelChat(req, res) {
     }
 }
 
+async function syncLabels(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'معرف الجلسة مطلوب' });
+        }
+
+        // نتحقق من وجود الجلسة مباشرة
+        const targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: sessionId, companyId },
+            select: { id: true }
+        });
+        if (!targetSessionId) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const labels = await WhatsAppManager.syncLabels(targetSessionId.id);
+        res.json({ success: true, labels, message: 'تمت المزامنة بنجاح' });
+    } catch (error) {
+        console.error('❌ Error syncing labels:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء مزامنة التصنيفات', detail: error?.message });
+    }
+}
+
 async function getLabels(req, res) {
     try {
         const { companyId } = req.user;
@@ -3117,20 +3607,21 @@ async function getLabels(req, res) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: targetSessionId, companyId }
+        // نتحقق من وجود الجلسة مباشرة (من غير ما نطلب أن تكون متصلة)
+        // لأن الـ labels متخزنة في الداتابيز وتظهر حتى لو الجلسة فصلت
+        const targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: sessionId, companyId },
+            select: { id: true }
         });
-
-        if (!session) {
+        if (!targetSessionId) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const labels = await WhatsAppManager.getLabels(targetSessionId);
+        const labels = await WhatsAppManager.getLabels(targetSessionId.id);
         res.json({ success: true, labels });
     } catch (error) {
         console.error('❌ Error getting labels:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء جلب العلامات' });
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب العلامات', detail: error?.message });
     }
 }
 
@@ -3160,10 +3651,37 @@ async function createLabel(req, res) {
     }
 }
 
+async function restoreDefaultLabels(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'معرف الجلسة مطلوب' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.restoreDefaultLabels(targetSessionId);
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('❌ Error restoring default labels:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء استعادة التصنيفات' });
+    }
+}
+
 async function deleteLabel(req, res) {
     try {
         const { companyId } = req.user;
-        const { sessionId, labelId } = req.body;
+        const { sessionId } = req.body;
+        const labelId = req.params.id || req.params.labelId || req.body.labelId;
 
         if (!sessionId || !labelId) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
@@ -3183,6 +3701,118 @@ async function deleteLabel(req, res) {
     } catch (error) {
         console.error('❌ Error deleting label:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء حذف علامة' });
+    }
+}
+
+async function addLabelToChat(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { labelId, jid } = req.params;
+        const { sessionId } = req.body;
+
+        if (!sessionId || !jid || !labelId) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.labelChat(targetSessionId, jid, labelId);
+        // 💾 Persist to DB
+        try {
+            const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
+                where: { sessionId: targetSessionId, jid }
+            });
+            if (contact) {
+                const current = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
+                if (!current.includes(labelId)) current.push(labelId);
+                await getSharedPrismaClient().whatsAppContact.update({
+                    where: { id: contact.id },
+                    data: { labels: JSON.stringify(current) }
+                });
+            }
+        } catch (dbErr) { console.error('❌ Error persisting label to DB:', dbErr.message); }
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('❌ Error adding label to chat:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء إضافة علامة للمحادثة' });
+    }
+}
+
+async function removeLabelFromChat(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { labelId, jid } = req.params;
+        const { sessionId } = req.body;
+
+        if (!sessionId || !jid || !labelId) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.removeChatLabel(targetSessionId, jid, labelId);
+        // 💾 Persist to DB
+        try {
+            const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
+                where: { sessionId: targetSessionId, jid }
+            });
+            if (contact) {
+                const current = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
+                const updated = current.filter(id => id !== labelId);
+                await getSharedPrismaClient().whatsAppContact.update({
+                    where: { id: contact.id },
+                    data: { labels: JSON.stringify(updated) }
+                });
+            }
+        } catch (dbErr) { console.error('❌ Error removing label from DB:', dbErr.message); }
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('❌ Error removing label from chat:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء إزالة العلامة من المحادثة' });
+    }
+}
+
+async function getLabelContacts(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { labelId } = req.params;
+        const { sessionId } = req.query;
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 50), 500);
+        const search = (req.query.search || '').trim();
+
+        if (!sessionId || !labelId) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        // نتحقق من وجود الجلسة مباشرة (الـ labels موجودة حتى لو الجلسة مش متصلة)
+        const targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: sessionId, companyId },
+            select: { id: true }
+        });
+        if (!targetSessionId) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.getLabelContacts(targetSessionId.id, labelId, { page, limit, search });
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('❌ Error getting label contacts:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب عملاء التصنيف' });
     }
 }
 
@@ -3941,6 +4571,135 @@ async function correctAIMessage(req, res) {
     }
 }
 
+/**
+ * حذف كل المحادثات
+ * POST /api/whatsapp/chats/delete-all
+ */
+async function deleteAllChats(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.body;
+
+        // Get all sessions for this company (or a specific one if provided)
+        let sessions;
+        if (sessionId && sessionId !== 'all') {
+            const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: sessionId, companyId }
+            });
+            if (!session) {
+                return res.status(404).json({ error: 'الجلسة غير موجودة' });
+            }
+            sessions = [session];
+        } else {
+            sessions = await getSharedPrismaClient().whatsAppSession.findMany({
+                where: { companyId }
+            });
+        }
+
+        if (!sessions || sessions.length === 0) {
+            return res.status(404).json({ error: 'لا توجد جلسات واتساب لهذه الشركة' });
+        }
+
+        let totalContacts = 0;
+        let totalMessages = 0;
+
+        for (const session of sessions) {
+            // Get all contacts for Baileys cleanup (best-effort)
+            const contacts = await getSharedPrismaClient().whatsAppContact.findMany({
+                where: { sessionId: session.id },
+                select: { jid: true }
+            });
+
+            const jids = contacts.map(c => c.jid);
+
+            // Delete from Baileys for each JID (best-effort)
+            const activeSession = WhatsAppManager.getSession(session.id);
+            if (activeSession?.status === 'connected' && jids.length > 0) {
+                const batchSize = 50;
+                for (let i = 0; i < jids.length; i += batchSize) {
+                    const batch = jids.slice(i, i + batchSize);
+                    await Promise.allSettled(batch.map(async (jid) => {
+                        try {
+                            await activeSession.sock.chatModify({
+                                delete: true,
+                                lastMessages: [{
+                                    key: { remoteJid: jid, fromMe: true, id: 'AAA' },
+                                    messageTimestamp: Math.floor(Date.now() / 1000)
+                                }]
+                            }, jid);
+                        } catch (e) {
+                            // best-effort
+                        }
+                    }));
+                }
+            }
+
+            // Delete messages from DB
+            const msgResult = await getSharedPrismaClient().whatsAppMessage.deleteMany({
+                where: { sessionId: session.id }
+            });
+
+            // Delete contacts from DB
+            const contactResult = await getSharedPrismaClient().whatsAppContact.deleteMany({
+                where: { sessionId: session.id }
+            });
+
+            totalMessages += msgResult.count;
+            totalContacts += contactResult.count;
+        }
+
+        res.json({
+            success: true,
+            deletedContacts: totalContacts,
+            deletedMessages: totalMessages,
+            sessionsCount: sessions.length
+        });
+    } catch (error) {
+        console.error('❌ Error deleting all chats:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء حذف كل المحادثات' });
+    }
+}
+
+/**
+ * تشغيل جلب صور البروفايل المفقودة لجهات الاتصال في الخلفية.
+ * POST /api/whatsapp/profile-pics/refresh
+ * اختياري: ?sessionId=... لتحديد جلسة واحدة، غير كده كل جلسات الشركة.
+ */
+async function refreshProfilePics(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.query;
+
+        const sessionFilter = {
+            companyId,
+            ...(sessionId ? { id: sessionId } : {})
+        };
+        const sessions = await getSharedPrismaClient().whatsAppSession.findMany({
+            where: sessionFilter,
+            select: { id: true }
+        });
+
+        if (sessions.length === 0) {
+            return res.json({ success: true, started: 0, message: 'لا توجد جلسات' });
+        }
+
+        // fire-and-forget في الخلفية — الفرونت بيـ refetch المحادثات كل 30 ثانية
+        for (const s of sessions) {
+            WhatsAppManager.fetchMissingProfilePics(s.id)
+                .catch(err => console.error(`❌ Background profile pics refresh failed for ${s.id}:`, err?.message || err));
+        }
+
+        res.json({
+            success: true,
+            started: sessions.length,
+            message: 'جاري تحديث صور البروفايل في الخلفية'
+        });
+    } catch (error) {
+        console.error('❌ Error refreshing profile pics:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء تحديث صور البروفايل' });
+    }
+}
+
 module.exports = {
     // Sessions
     createSession,
@@ -3950,11 +4709,13 @@ module.exports = {
     updateSession,
     deleteSession,
     connectSession,
+    requestHistorySync,
     disconnectSession,
 
     // Conversations & Messages
     getConversations,
     getMessages,
+    refreshProfilePics,
     sendMessage,
     sendMedia,
     markAsRead,
@@ -3977,6 +4738,7 @@ module.exports = {
     // Contacts
     updateContact,
     linkCustomer,
+    reassignContactSession,
 
     // Quick Replies
     getQuickReplies,
@@ -4006,6 +4768,7 @@ module.exports = {
     clearChat,
     deleteChat,
     deleteChatsBulk,
+    deleteAllChats,
 
     // Migration
     migrateAuthToDatabase,
@@ -4033,8 +4796,13 @@ module.exports = {
     // Labels
     labelChat,
     getLabels,
+    syncLabels,
     createLabel,
     deleteLabel,
+    addLabelToChat,
+    removeLabelFromChat,
+    getLabelContacts,
+    restoreDefaultLabels,
 
     // Starred Messages
     starMessage,
@@ -4406,6 +5174,18 @@ async function facebookConnect(req, res) {
             }
         }
 
+        // Step 5.75: Disconnect any existing CONNECTED session with the same phone number ID (SaaS safeguard)
+        if (metaPhoneNumberId) {
+            try {
+                await getSharedPrismaClient().whatsAppSession.updateMany({
+                    where: { metaPhoneNumberId: metaPhoneNumberId, status: 'CONNECTED' },
+                    data: { status: 'DISCONNECTED', updatedAt: new Date() }
+                });
+            } catch (discErr) {
+                console.warn('⚠️ Could not disconnect old session with same phoneNumberId:', discErr.message);
+            }
+        }
+
         // Step 6: Create WhatsAppSession in DB
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
@@ -4413,7 +5193,7 @@ async function facebookConnect(req, res) {
                 name: sessionName || `WhatsApp Cloud (${metaDisplayPhone || 'Connecting...'})`,
                 provider: 'META_CLOUD',
                 status: 'CONNECTED',
-                metaAccessToken: longLivedToken,
+                metaAccessToken: encryptField(longLivedToken),
                 metaTokenExpiresAt: tokenExpiresAt,
                 metaWabaId: wabaId,
                 metaPhoneNumberId: metaPhoneNumberId,
@@ -4651,13 +5431,27 @@ async function facebookEmbeddedConnect(req, res) {
             console.warn('⚠️ Could not fetch phone number details:', phoneErr.message);
         }
 
+        // Disconnect any existing CONNECTED session with the same phone number ID (SaaS safeguard)
+        try {
+            await getSharedPrismaClient().whatsAppSession.updateMany({
+                where: {
+                    metaPhoneNumberId: phoneNumberId,
+                    status: 'CONNECTED',
+                    id: { not: undefined } // will match all
+                },
+                data: { status: 'DISCONNECTED', updatedAt: new Date() }
+            });
+        } catch (discErr) {
+            console.warn('⚠️ Could not disconnect old session with same phoneNumberId:', discErr.message);
+        }
+
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
                 companyId,
                 name: sessionName || `WhatsApp Cloud (${displayPhoneNumber || phoneNumberId})`,
                 provider: 'META_CLOUD',
                 status: 'CONNECTED',
-                metaAccessToken: longLivedToken,
+                metaAccessToken: encryptField(longLivedToken),
                 metaTokenExpiresAt: tokenExpiresAt,
                 metaWabaId: wabaId,
                 metaPhoneNumberId: phoneNumberId,
@@ -4696,6 +5490,3 @@ async function facebookEmbeddedConnect(req, res) {
         res.status(500).json({ error: errorMsg });
     }
 }
-
-
-

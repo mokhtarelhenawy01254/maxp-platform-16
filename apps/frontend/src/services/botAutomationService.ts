@@ -1,4 +1,4 @@
-﻿import type { AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
 import { apiClient } from "./apiClient";
 
 export type BotChannel = "WHATSAPP" | "FACEBOOK";

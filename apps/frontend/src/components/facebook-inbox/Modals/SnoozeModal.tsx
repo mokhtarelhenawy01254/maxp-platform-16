@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Clock, Calendar } from 'lucide-react';
+import { X, Clock, Calendar } from "lucide-react";
 
 interface SnoozeModalProps {
   isOpen: boolean;

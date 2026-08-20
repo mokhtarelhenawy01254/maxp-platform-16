@@ -120,7 +120,7 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
         { _skipErrorToast: true } as Record<string, unknown>,
       );
       if (res.data?.success && res.data?.data?.settings) {
-        setSettings(res.data.data.settings as SidebarManagementData);
+        setSettings(res.data.data.settings as unknown as SidebarManagementData);
       }
     } catch (err: unknown) {
       const status =

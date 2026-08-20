@@ -1,6 +1,11 @@
-import { ShieldCheck as ShieldCheckIcon, File as DocumentTextIcon, AlertTriangle as ExclamationTriangleIcon, Circle as ScaleIcon, Circle as CheckBadgeIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  ShieldCheckIcon,
+  DocumentTextIcon,
+  ExclamationTriangleIcon,
+  ScaleIcon,
+  CheckBadgeIcon,
+} from "@heroicons/react/24/outline";
 
 const ComplianceSection: React.FC = () => {
   const complianceItems = [

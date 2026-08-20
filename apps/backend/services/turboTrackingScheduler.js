@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Turbo Tracking Scheduler Service
- * ╪«╪»┘à╪⌐ ┘ä╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪┤╪¡┘å╪º╪¬ ╪¿╪┤┘â┘ä ╪»┘ê╪▒┘è ┘à┘å Turbo API
+ * خدمة لتحديث حالة الشحنات بشكل دوري من Turbo API
  */
 
 const cron = require('node-cron');
@@ -23,50 +23,50 @@ class TurboTrackingScheduler {
   }
 
   /**
-   * ╪¿╪»╪í ╪«╪»┘à╪⌐ ╪º┘ä╪¬╪¬╪¿╪╣
+   * بدء خدمة التتبع
    */
   start() {
     if (this.cronJob) {
-      console.log('ΓÜá∩╕Å [TURBO-TRACKING] Service already running');
+      console.log('⚠️ [TURBO-TRACKING] Service already running');
       return;
     }
 
-    console.log('≡ƒÜÇ [TURBO-TRACKING] Starting tracking scheduler...');
+    console.log('🚀 [TURBO-TRACKING] Starting tracking scheduler...');
 
-    // ┘ü╪¡╪╡ ┘â┘ä 30 ╪»┘é┘è┘é╪⌐
+    // فحص كل 30 دقيقة
     this.cronJob = cron.schedule('*/30 * * * *', async () => {
       await this.updateAllShipments();
     });
 
-    console.log('Γ£à [TURBO-TRACKING] Scheduler started - checking every 30 minutes');
+    console.log('✅ [TURBO-TRACKING] Scheduler started - checking every 30 minutes');
     
-    // ╪¬╪┤╪║┘è┘ä ┘ü╪¡╪╡ ╪ú┘ê┘ä┘è ╪¿╪╣╪» 5 ╪»┘é╪º╪ª┘é ┘à┘å ╪¿╪»╪í ╪º┘ä╪│┘è╪▒┘ü╪▒
+    // تشغيل فحص أولي بعد 5 دقائق من بدء السيرفر
     setTimeout(() => {
-      console.log('≡ƒöä [TURBO-TRACKING] Running initial check...');
+      console.log('🔄 [TURBO-TRACKING] Running initial check...');
       this.updateAllShipments();
     }, 5 * 60 * 1000);
   }
 
   /**
-   * ╪Ñ┘è┘é╪º┘ü ╪«╪»┘à╪⌐ ╪º┘ä╪¬╪¬╪¿╪╣
+   * إيقاف خدمة التتبع
    */
   stop() {
     if (this.cronJob) {
       this.cronJob.stop();
       this.cronJob = null;
       this.isRunning = false;
-      console.log('≡ƒ¢æ [TURBO-TRACKING] Scheduler stopped');
+      console.log('🛑 [TURBO-TRACKING] Scheduler stopped');
     }
   }
 
   /**
-   * ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪¼┘à┘è╪╣ ╪º┘ä╪┤╪¡┘å╪º╪¬
+   * تحديث حالة جميع الشحنات
    */
   async updateAllShipments() {
     if (this.isRunning) return;
     this.isRunning = true;
     const startTime = Date.now();
-    console.log('≡ƒöä [TURBO-TRACKING] Starting batch update...');
+    console.log('🔄 [TURBO-TRACKING] Starting batch update...');
     try {
       const prisma = getSharedPrismaClient();
       const companies = await safeQuery(() => prisma.company.findMany({
@@ -74,7 +74,7 @@ class TurboTrackingScheduler {
         select: { id: true, turboApiKey: true }
       }), 3);
       if (!companies?.length) {
-        console.log('Γä╣∩╕Å [TURBO-TRACKING] No Turbo-enabled companies');
+        console.log('ℹ️ [TURBO-TRACKING] No Turbo-enabled companies');
         this.isRunning = false; this.lastRun = new Date(); return;
       }
       let totalChecked = 0, totalUpdated = 0, totalErrors = 0;
@@ -118,7 +118,7 @@ class TurboTrackingScheduler {
                 isGuestOrder: false
               });
               totalUpdated++;
-              console.log(`Γ£à [TURBO-TRACKING] Order ${order.orderNumber}: ${order.turboShipmentStatus} ΓåÆ ${newTurboStatus}`);
+              console.log(`✅ [TURBO-TRACKING] Order ${order.orderNumber}: ${order.turboShipmentStatus} → ${newTurboStatus}`);
             }
           }
 
@@ -149,19 +149,19 @@ class TurboTrackingScheduler {
                 isGuestOrder: true
               });
               totalUpdated++;
-              console.log(`Γ£à [TURBO-TRACKING] GuestOrder ${guestOrder.orderNumber}: ${guestOrder.turboShipmentStatus} ΓåÆ ${newTurboStatus}`);
+              console.log(`✅ [TURBO-TRACKING] GuestOrder ${guestOrder.orderNumber}: ${guestOrder.turboShipmentStatus} → ${newTurboStatus}`);
             }
           }
 
-        } catch (e) { totalErrors++; console.error(`Γ¥î [TURBO-TRACKING] Company ${company.id}:`, e.message); }
+        } catch (e) { totalErrors++; console.error(`❌ [TURBO-TRACKING] Company ${company.id}:`, e.message); }
       }
       this.stats.totalChecked += totalChecked;
       this.stats.totalUpdated += totalUpdated;
       this.stats.totalErrors += totalErrors;
       const dur = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log(`Γ£à [TURBO-TRACKING] Done in ${dur}s | Checked: ${totalChecked} Updated: ${totalUpdated} Errors: ${totalErrors}`);
+      console.log(`✅ [TURBO-TRACKING] Done in ${dur}s | Checked: ${totalChecked} Updated: ${totalUpdated} Errors: ${totalErrors}`);
       this.lastRun = new Date();
-    } catch (e) { console.error('Γ¥î [TURBO-TRACKING]', e); this.stats.totalErrors++; }
+    } catch (e) { console.error('❌ [TURBO-TRACKING]', e); this.stats.totalErrors++; }
     finally { this.isRunning = false; }
   }
 
@@ -208,7 +208,7 @@ class TurboTrackingScheduler {
         }
       }
       return { success: false, error: 'Failed to track shipment' };
-    } catch (e) { console.error('Γ¥î [TURBO-TRACKING]', e); throw e; }
+    } catch (e) { console.error('❌ [TURBO-TRACKING]', e); throw e; }
   }
 
   getStats() {

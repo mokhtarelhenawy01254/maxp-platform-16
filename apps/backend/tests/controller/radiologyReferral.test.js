@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -61,7 +61,7 @@ const createPrisma = (overrides = {}) => {
 };
 
 const req = (overrides = {}) => ({
-  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  user: { companyId: 'company-1', id: 'user-1', firstName: 'أحمد', lastName: 'محمود' },
   query: {},
   params: {},
   body: {},
@@ -69,35 +69,35 @@ const req = (overrides = {}) => ({
 });
 
 const makeRep = (overrides = {}) => ({
-  id: 'rep-1', companyId: 'company-1', name: '╪╣┘ä┘è ╪Ñ╪│┘à╪º╪╣┘è┘ä', phone: '0100', userId: null, isActive: true,
+  id: 'rep-1', companyId: 'company-1', name: 'علي إسماعيل', phone: '0100', userId: null, isActive: true,
   createdAt: new Date(), updatedAt: new Date(), ...overrides,
 });
 
 const makeSource = (overrides = {}) => ({
-  id: 'src-1', companyId: 'company-1', name: '╪╣┘è╪º╪»╪º╪¬ ╪º┘ä┘å╪«╪¿╪⌐', type: 'CLINIC', phone: null,
+  id: 'src-1', companyId: 'company-1', name: 'عيادات النخبة', type: 'CLINIC', phone: null,
   contactName: null, marketingRepId: null, insuranceCompanyId: null, isActive: true,
   createdAt: new Date(), updatedAt: new Date(), ...overrides,
 });
 
 const makePartner = (overrides = {}) => ({
-  id: 'part-1', companyId: 'company-1', name: '┘à╪│╪¬╪┤┘ü┘ë ╪º┘ä┘å┘è┘ä', phone: null, contactName: null, isActive: true,
+  id: 'part-1', companyId: 'company-1', name: 'مستشفى النيل', phone: null, contactName: null, isActive: true,
   createdAt: new Date(), updatedAt: new Date(), ...overrides,
 });
 
 describe('radiologyMarketingRepsController', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  test('list ΓÇö scoped to company, filters search, 403 without company', async () => {
+  test('list — scoped to company, filters search, 403 without company', async () => {
     const prisma = createPrisma();
     prisma.radiologyMarketingRep.findMany.mockResolvedValue([makeRep()]);
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await repsController.listMarketingReps(req({ query: { search: '╪╣┘ä┘è' } }), res);
+    await repsController.listMarketingReps(req({ query: { search: 'علي' } }), res);
     expect(res.statusCode).toBe(200);
     expect(prisma.radiologyMarketingRep.findMany.mock.calls[0][0].where).toEqual({
       companyId: 'company-1', isActive: true,
-      OR: [{ name: { contains: '╪╣┘ä┘è', mode: 'insensitive' } }, { phone: { contains: '╪╣┘ä┘è', mode: 'insensitive' } }],
+      OR: [{ name: { contains: 'علي', mode: 'insensitive' } }, { phone: { contains: 'علي', mode: 'insensitive' } }],
     });
 
     const res2 = createResponse();
@@ -105,18 +105,18 @@ describe('radiologyMarketingRepsController', () => {
     expect(res2.statusCode).toBe(403);
   });
 
-  test('create ΓÇö stores company + name', async () => {
+  test('create — stores company + name', async () => {
     const prisma = createPrisma();
     prisma.radiologyMarketingRep.create.mockImplementation(({ data }) => Promise.resolve({ id: 'rep-1', ...data }));
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await repsController.createMarketingRep(req({ body: { name: '╪╣┘ä┘è ╪Ñ╪│┘à╪º╪╣┘è┘ä', phone: '0100' } }), res);
+    await repsController.createMarketingRep(req({ body: { name: 'علي إسماعيل', phone: '0100' } }), res);
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyMarketingRep.create.mock.calls[0][0].data).toMatchObject({ companyId: 'company-1', name: '╪╣┘ä┘è ╪Ñ╪│┘à╪º╪╣┘è┘ä' });
+    expect(prisma.radiologyMarketingRep.create.mock.calls[0][0].data).toMatchObject({ companyId: 'company-1', name: 'علي إسماعيل' });
   });
 
-  test('create ΓÇö rejects missing name', async () => {
+  test('create — rejects missing name', async () => {
     const prisma = createPrisma();
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
@@ -124,7 +124,7 @@ describe('radiologyMarketingRepsController', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  test('update ΓÇö 404 for foreign rep', async () => {
+  test('update — 404 for foreign rep', async () => {
     const prisma = createPrisma();
     prisma.radiologyMarketingRep.findFirst.mockResolvedValue(null);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -133,20 +133,20 @@ describe('radiologyMarketingRepsController', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  test('update ΓÇö sets marketingRepId via company-scoped lookup', async () => {
+  test('update — sets marketingRepId via company-scoped lookup', async () => {
     const prisma = createPrisma();
     prisma.radiologyMarketingRep.findFirst.mockResolvedValue(makeRep());
     prisma.radiologyMarketingRep.update.mockImplementation(({ data }) => Promise.resolve({ ...makeRep(), ...data }));
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
-    await repsController.updateMarketingRep(req({ params: { id: 'rep-1' }, body: { name: '╪╣┘ä┘è ╪º┘ä╪¼╪»┘è╪»' } }), res);
+    await repsController.updateMarketingRep(req({ params: { id: 'rep-1' }, body: { name: 'علي الجديد' } }), res);
     expect(res.statusCode).toBe(200);
     expect(prisma.radiologyMarketingRep.update.mock.calls[0][0]).toEqual({
-      where: { id: 'rep-1' }, data: { name: '╪╣┘ä┘è ╪º┘ä╪¼╪»┘è╪»' },
+      where: { id: 'rep-1' }, data: { name: 'علي الجديد' },
     });
   });
 
-  test('delete ΓÇö soft delete (isActive=false), 404 for foreign', async () => {
+  test('delete — soft delete (isActive=false), 404 for foreign', async () => {
     const prisma = createPrisma();
     prisma.radiologyMarketingRep.findFirst.mockResolvedValue(makeRep());
     prisma.radiologyMarketingRep.update.mockImplementation(({ data }) => Promise.resolve({ ...makeRep(), ...data }));
@@ -164,14 +164,14 @@ describe('radiologyMarketingRepsController', () => {
     expect(res2.statusCode).toBe(404);
   });
 
-  test('portfolio ΓÇö aggregates studies per rep (count/revenue/delivered/cash/insurance)', async () => {
+  test('portfolio — aggregates studies per rep (count/revenue/delivered/cash/insurance)', async () => {
     const prisma = createPrisma();
     prisma.radiologyStudy.findMany.mockResolvedValue([
       { marketingRepId: 'rep-1', priceSnapshot: 500, additionAmount: 0, billingType: 'CASH', status: 'DELIVERED', referralSourceId: 'src-1', referringPhysicianId: 'doc-1' },
       { marketingRepId: 'rep-1', priceSnapshot: 300, additionAmount: 0, billingType: 'INSURANCE', status: 'PENDING_REPORT', referralSourceId: null, referringPhysicianId: null },
       { marketingRepId: null, priceSnapshot: 999, additionAmount: 0, billingType: 'CASH', status: 'DELIVERED', referralSourceId: null, referringPhysicianId: null },
     ]);
-    prisma.radiologyMarketingRep.findMany.mockResolvedValue([{ id: 'rep-1', name: '╪╣┘ä┘è ╪Ñ╪│┘à╪º╪╣┘è┘ä' }]);
+    prisma.radiologyMarketingRep.findMany.mockResolvedValue([{ id: 'rep-1', name: 'علي إسماعيل' }]);
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
@@ -194,34 +194,34 @@ describe('radiologyMarketingRepsController', () => {
 describe('radiologyReferralSourcesController', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  test('list ΓÇö resolves marketingRepName and physician links', async () => {
+  test('list — resolves marketingRepName and physician links', async () => {
     const prisma = createPrisma();
     prisma.radiologyReferralSource.findMany.mockResolvedValue([makeSource({ marketingRepId: 'rep-1' })]);
-    prisma.radiologyMarketingRep.findMany.mockResolvedValue([{ id: 'rep-1', name: '╪╣┘ä┘è ╪Ñ╪│┘à╪º╪╣┘è┘ä' }]);
+    prisma.radiologyMarketingRep.findMany.mockResolvedValue([{ id: 'rep-1', name: 'علي إسماعيل' }]);
     prisma.radiologyPhysicianSourceLink.findMany.mockResolvedValue([{ sourceId: 'src-1', physicianId: 'doc-1' }]);
-    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'doc-1', name: '╪». ┘à╪¡┘à╪» ╪ú╪¡┘à╪»' }]);
+    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'doc-1', name: 'د. محمد أحمد' }]);
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
     await sourcesController.listSources(req(), res);
     expect(res.statusCode).toBe(200);
     const row = res.payload.data[0];
-    expect(row.marketingRepName).toBe('╪╣┘ä┘è ╪Ñ╪│┘à╪º╪╣┘è┘ä');
+    expect(row.marketingRepName).toBe('علي إسماعيل');
     expect(row.physicianIds).toEqual(['doc-1']);
-    expect(row.physicians).toEqual([{ id: 'doc-1', name: '╪». ┘à╪¡┘à╪» ╪ú╪¡┘à╪»' }]);
+    expect(row.physicians).toEqual([{ id: 'doc-1', name: 'د. محمد أحمد' }]);
   });
 
-  test('create ΓÇö rejects duplicate name (P2002 ΓåÆ 400)', async () => {
+  test('create — rejects duplicate name (P2002 → 400)', async () => {
     const prisma = createPrisma();
     prisma.radiologyReferralSource.create.mockRejectedValue({ code: 'P2002' });
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
-    await sourcesController.createSource(req({ body: { name: '╪╣┘è╪º╪»╪º╪¬ ╪º┘ä┘å╪«╪¿╪⌐' } }), res);
+    await sourcesController.createSource(req({ body: { name: 'عيادات النخبة' } }), res);
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪¼┘ç╪⌐ ╪Ñ╪¡╪º┘ä╪⌐ ╪¿┘ç╪░╪º ╪º┘ä╪º╪│┘à ┘à┘ê╪¼┘ê╪»╪⌐ ╪¿╪º┘ä┘ü╪╣┘ä');
+    expect(res.payload.error).toBe('جهة إحالة بهذا الاسم موجودة بالفعل');
   });
 
-  test('create ΓÇö rejects invalid type and missing name', async () => {
+  test('create — rejects invalid type and missing name', async () => {
     const prisma = createPrisma();
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
@@ -232,18 +232,18 @@ describe('radiologyReferralSourcesController', () => {
     expect(res2.statusCode).toBe(400);
   });
 
-  test('create ΓÇö validates optional marketingRepId (company-scoped)', async () => {
+  test('create — validates optional marketingRepId (company-scoped)', async () => {
     const prisma = createPrisma();
     prisma.radiologyMarketingRep.findFirst.mockResolvedValue(null); // invalid rep
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
-    await sourcesController.createSource(req({ body: { name: '╪╣┘è╪º╪»╪º╪¬', marketingRepId: 'foreign' } }), res);
+    await sourcesController.createSource(req({ body: { name: 'عيادات', marketingRepId: 'foreign' } }), res);
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪º┘ä┘à┘å╪»┘ê╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(res.payload.error).toBe('المندوب غير موجود');
     expect(prisma.radiologyReferralSource.create).not.toHaveBeenCalled();
   });
 
-  test('update ΓÇö 404 for foreign source', async () => {
+  test('update — 404 for foreign source', async () => {
     const prisma = createPrisma();
     prisma.radiologyReferralSource.findFirst.mockResolvedValue(null);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -252,19 +252,19 @@ describe('radiologyReferralSourcesController', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  test('setSourcePhysicians ΓÇö replaces links transactionally and validates physicians', async () => {
+  test('setSourcePhysicians — replaces links transactionally and validates physicians', async () => {
     const prisma = createPrisma();
     prisma.radiologyReferralSource.findFirst.mockResolvedValue(makeSource());
-    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'doc-1' }]); // only 1 of 2 found ΓåÆ 400
+    prisma.radiologyReferringPhysician.findMany.mockResolvedValue([{ id: 'doc-1' }]); // only 1 of 2 found → 400
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
     await sourcesController.setSourcePhysicians(req({ params: { id: 'src-1' }, body: { physicianIds: ['doc-1', 'doc-2'] } }), res);
     expect(res.statusCode).toBe(400);
-    expect(res.payload.error).toBe('╪ú╪¡╪» ╪º┘ä╪ú╪╖╪¿╪º╪í ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»');
+    expect(res.payload.error).toBe('أحد الأطباء غير موجود');
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  test('setSourcePhysicians ΓÇö 404 for foreign source', async () => {
+  test('setSourcePhysicians — 404 for foreign source', async () => {
     const prisma = createPrisma();
     prisma.radiologyReferralSource.findFirst.mockResolvedValue(null);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -273,7 +273,7 @@ describe('radiologyReferralSourcesController', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  test('getPhysicianSources ΓÇö 404 for foreign physician', async () => {
+  test('getPhysicianSources — 404 for foreign physician', async () => {
     const prisma = createPrisma();
     prisma.radiologyReferringPhysician.findFirst.mockResolvedValue(null);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -286,31 +286,31 @@ describe('radiologyReferralSourcesController', () => {
 describe('radiologyExternalPartnersController', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  test('list ΓÇö scoped, search filter', async () => {
+  test('list — scoped, search filter', async () => {
     const prisma = createPrisma();
     prisma.radiologyExternalPartner.findMany.mockResolvedValue([makePartner()]);
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
-    await partnersController.listExternalPartners(req({ query: { search: '┘å┘è┘ä' } }), res);
+    await partnersController.listExternalPartners(req({ query: { search: 'نيل' } }), res);
     expect(res.statusCode).toBe(200);
     expect(prisma.radiologyExternalPartner.findMany.mock.calls[0][0].where.OR).toBeTruthy();
   });
 
-  test('create ΓÇö stores partner, rejects missing name', async () => {
+  test('create — stores partner, rejects missing name', async () => {
     const prisma = createPrisma();
     prisma.radiologyExternalPartner.create.mockImplementation(({ data }) => Promise.resolve({ id: 'part-1', ...data }));
     getSharedPrismaClient.mockReturnValue(prisma);
     const res = createResponse();
-    await partnersController.createExternalPartner(req({ body: { name: '┘à╪│╪¬╪┤┘ü┘ë ╪º┘ä┘å┘è┘ä' } }), res);
+    await partnersController.createExternalPartner(req({ body: { name: 'مستشفى النيل' } }), res);
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyExternalPartner.create.mock.calls[0][0].data.name).toBe('┘à╪│╪¬╪┤┘ü┘ë ╪º┘ä┘å┘è┘ä');
+    expect(prisma.radiologyExternalPartner.create.mock.calls[0][0].data.name).toBe('مستشفى النيل');
 
     const res2 = createResponse();
     await partnersController.createExternalPartner(req({ body: {} }), res2);
     expect(res2.statusCode).toBe(400);
   });
 
-  test('update ΓÇö 404 for foreign partner', async () => {
+  test('update — 404 for foreign partner', async () => {
     const prisma = createPrisma();
     prisma.radiologyExternalPartner.findFirst.mockResolvedValue(null);
     getSharedPrismaClient.mockReturnValue(prisma);
@@ -319,7 +319,7 @@ describe('radiologyExternalPartnersController', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  test('delete ΓÇö soft delete', async () => {
+  test('delete — soft delete', async () => {
     const prisma = createPrisma();
     prisma.radiologyExternalPartner.findFirst.mockResolvedValue(makePartner());
     prisma.radiologyExternalPartner.update.mockImplementation(({ data }) => Promise.resolve({ ...makePartner(), ...data }));

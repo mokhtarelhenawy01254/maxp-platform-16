@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Sequential per-company numbering helpers for radiology human-friendly IDs.
  *
  * Every company gets its own sequence starting at 1. The raw sequence number is

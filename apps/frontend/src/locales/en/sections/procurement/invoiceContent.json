@@ -1,0 +1,18 @@
+{
+  "sender": "Sender: {{companyName}}",
+  "recipientName": "Recipient Name",
+  "phone": "Phone",
+  "governorate": "Governorate",
+  "city": "City",
+  "address": "Address",
+  "product": "Product",
+  "sku": "SKU",
+  "qty": "Qty",
+  "price": "Price",
+  "total": "Total",
+  "notes": "Notes",
+  "orderCode": "Order Code",
+  "shippingCode": "Shipping Code",
+  "shippingCost": "Shipping Cost",
+  "amountToCollect": "Amount to Collect"
+}

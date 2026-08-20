@@ -6,7 +6,7 @@ import { apiClient } from "../../services/apiClient";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../lib/utils";
-import { BarChart, BarChart3, Cloud, File, FileText, Gauge, HardDrive, Image, Info, MoreHorizontal, Music, PieChart as PieChartIcon, RefreshCw, Server, Settings, Video, Volume2 } from 'lucide-react';
+import { HardDrive, RefreshCw, PieChart as PieChartIcon, Info, Server, Cloud, Cpu, Gauge, Settings, BarChart3, Image, Video, Music, FileText, MoreHorizontal } from "lucide-react";
 
 const formatSize = (bytes: number) => {
   if (bytes === 0 || !bytes) return "0 Bytes";

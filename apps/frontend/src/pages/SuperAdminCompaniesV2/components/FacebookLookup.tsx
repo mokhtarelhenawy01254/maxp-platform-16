@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { AlertTriangle, BadgeCheck, Building, Building2, Check, Facebook, Loader2, Search } from 'lucide-react';
+import { Facebook, Search, Loader2, BadgeCheck, AlertTriangle, Building2 } from "lucide-react";
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "../../../components/ui/alert";
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import type { FacebookPageResult } from "../types";
 

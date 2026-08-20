@@ -1,4 +1,3 @@
-import { ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon, Check as CheckCircleIcon, Info as InformationCircleIcon } from 'lucide-react';
 /**
  * Create Campaign Page
  *
@@ -7,8 +6,14 @@ import { ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon, Check
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-;
+import {
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  CheckCircleIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import {
@@ -115,7 +120,7 @@ const CreateCampaign: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error("Error loading Ad Accounts:", error);
-      toast.error("فشل في تحميل حسابات Facebook Ads");
+      tToast.error("CreateCampaign.failed_load_7ed0");
     } finally {
       setLoadingAccounts(false);
     }
@@ -173,28 +178,28 @@ const CreateCampaign: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          toast.error("يرجى إدخال اسم الحملة");
+          tToast.error("CreateCampaign.please_name_c07b");
           return false;
         }
         if (!formData.objective) {
-          toast.error("يرجى اختيار هدف الحملة");
+          tToast.error("CreateCampaign.msg_0457");
           return false;
         }
         return true;
       case 2:
         if (!formData.budgetAmount || formData.budgetAmount <= 0) {
-          toast.error("يرجى إدخال ميزانية صحيحة");
+          tToast.error("CreateCampaign.msg_61ce");
           return false;
         }
         return true;
       case 3:
         // Targeting validation
         if (!formData.conversionLocation) {
-          toast.error("يرجى اختيار مكان التحويل");
+          tToast.error("CreateCampaign.msg_136c");
           return false;
         }
         if (formData.targetingLocations.length === 0) {
-          toast.error("يرجى اختيار موقع جغرافي واحد على الأقل");
+          tToast.error("CreateCampaign.msg_4753");
           return false;
         }
         return true;
@@ -284,7 +289,7 @@ const CreateCampaign: React.FC = () => {
       };
 
       const campaign = await facebookAdsService.createCampaign(campaignData);
-      toast.success("تم إنشاء الحملة بنجاح!");
+      tToast.success("CreateCampaign.success_create_76a9");
       navigate(`/advertising/facebook-ads/campaigns/${campaign.id}`);
     } catch (error: unknown) {
       console.error("Error creating campaign:", error);

@@ -1,6 +1,10 @@
-import { ShoppingBag as ShoppingCartIcon, X as XCircleIcon, DollarSign as BanknotesIcon, CreditCard as CreditCardIcon } from 'lucide-react';
 import React, { useState, useEffect, useMemo } from "react";
-;
+import {
+  ShoppingCartIcon,
+  XCircleIcon,
+  BanknotesIcon,
+  CreditCardIcon,
+} from "@heroicons/react/24/outline";
 import {
   BarChart,
   Bar,

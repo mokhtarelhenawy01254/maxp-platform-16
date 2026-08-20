@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { apiClient } from "../../../../services/apiClient";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import { AlertTriangle, Inbox, RefreshCw, ArrowUpRight, ArrowDownRight } from "lucide-react";
@@ -96,19 +96,19 @@ export const formatNumber = (value: number | null | undefined): string =>
   (Number(value || 0)).toLocaleString("ar-EG");
 
 export const formatCurrency = (value: number | null | undefined): string =>
-  `${formatNumber(value)} ╪¼.┘à`;
+  `${formatNumber(value)} ج.م`;
 
 export const formatPercent = (value: number | null | undefined, digits = 1): string =>
   `${Number(value || 0).toFixed(digits)}%`;
 
 export const formatDuration = (hours: number | null | undefined): string => {
   const h = Number(hours || 0);
-  if (h <= 0) return "0╪│";
-  if (h < 24) return `${Math.round(h)}╪│`;
+  if (h <= 0) return "0س";
+  if (h < 24) return `${Math.round(h)}س`;
   const days = Math.floor(h / 24);
   const rem = Math.round(h % 24);
-  if (rem === 0) return `${days}┘è┘ê┘à`;
-  return `${days}┘è┘ê┘à ${rem}╪│`;
+  if (rem === 0) return `${days}يوم`;
+  return `${days}يوم ${rem}س`;
 };
 
 export const formatDate = (value: string | null | undefined): string => {
@@ -133,7 +133,7 @@ export const CHART_TOOLTIP_STYLE = {
   backdropFilter: "blur(8px)",
 } as const;
 
-/* ΓöÇΓöÇΓöÇ Shared UI Components ΓöÇΓöÇΓöÇ */
+/* ─── Shared UI Components ─── */
 
 export function MovementCard({
   title,
@@ -222,7 +222,7 @@ export function AutoBadge({ auto }: { auto: boolean }) {
           : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
       }`}
     >
-      {auto ? "╪¬┘ä┘é╪º╪ª┘è" : "┘è╪»┘ê┘è"}
+      {auto ? "تلقائي" : "يدوي"}
     </span>
   );
 }
@@ -234,7 +234,7 @@ export function LoadingState() {
         <div className="absolute inset-0 rounded-full border-4 border-indigo-200 dark:border-indigo-900/40" />
         <div className="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin" />
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">╪¼╪º╪▒┘ì ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¬╪¡┘ä┘è┘ä...</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400">جارٍ تحميل التحليل...</p>
     </div>
   );
 }
@@ -251,14 +251,14 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
           onClick={onRetry}
           className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-red-700"
         >
-          <RefreshCw className="h-3.5 w-3.5" /> ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘à╪¡╪º┘ê┘ä╪⌐
+          <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
         </button>
       )}
     </div>
   );
 }
 
-export function EmptyState({ message = "┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ┘ü┘è ┘ç╪░┘ç ╪º┘ä┘ü╪¬╪▒╪⌐" }: { message?: string }) {
+export function EmptyState({ message = "لا توجد بيانات في هذه الفترة" }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 min-h-[240px] rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/40 p-8 text-center">
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200/70 dark:bg-gray-700/50">
@@ -271,9 +271,9 @@ export function EmptyState({ message = "┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘
 
 export function ModeToggle({ mode, onChange }: { mode: MovementMode; onChange: (m: MovementMode) => void }) {
   const options: { value: MovementMode; label: string }[] = [
-    { value: "all", label: "╪º┘ä┘â┘ä" },
-    { value: "manual", label: "┘è╪»┘ê┘è" },
-    { value: "auto", label: "╪¬┘ä┘é╪º╪ª┘è" },
+    { value: "all", label: "الكل" },
+    { value: "manual", label: "يدوي" },
+    { value: "auto", label: "تلقائي" },
   ];
   return (
     <div className="inline-flex items-center gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
@@ -300,7 +300,7 @@ export function TruncatedNotice({ truncated }: { truncated?: boolean }) {
     <div className="flex items-start gap-2 rounded-xl border border-amber-200/70 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/20 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
       <span>
-        ╪º┘ä┘ü╪¬╪▒╪⌐ ┘â╪¿┘è╪▒╪⌐ ╪¼╪»╪º┘ï ┘ê╪º┘ä┘å╪¬┘è╪¼╪⌐ ┘à╪¿┘å┘è╪⌐ ╪╣┘ä┘ë ╪ú┘ê┘ä 50,000 ╪╖┘ä╪¿ ┘ü┘é╪╖ ΓÇö ╪╡╪║┘æ╪▒ ┘ü╪¬╪▒╪⌐ ╪º┘ä╪¬╪º╪▒┘è╪« ┘ä┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ┘å╪¬╪º╪ª╪¼ ┘â╪º┘à┘ä╪⌐.
+        الفترة كبيرة جداً والنتيجة مبنية على أول 50,000 طلب فقط — صغّر فترة التاريخ للحصول على نتائج كاملة.
       </span>
     </div>
   );

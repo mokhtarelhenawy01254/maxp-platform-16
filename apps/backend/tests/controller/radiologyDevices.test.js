@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -30,7 +30,7 @@ const createPrisma = () => ({
 describe('radiologyDevicesController', () => {
   test('lists company-scoped devices (active only by default)', async () => {
     const prisma = createPrisma();
-    prisma.radiologyDevice.findMany.mockResolvedValue([{ id: 'd1', name: '╪¼┘ç╪º╪▓ CT' }]);
+    prisma.radiologyDevice.findMany.mockResolvedValue([{ id: 'd1', name: 'جهاز CT' }]);
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
@@ -47,10 +47,10 @@ describe('radiologyDevicesController', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
 
     const res = createResponse();
-    await controller.createDevice(req({ body: { name: '╪¼┘ç╪º╪▓ MRI', room: '╪º┘ä╪║╪▒┘ü╪⌐ 2', modality: 'MRI' } }), res);
+    await controller.createDevice(req({ body: { name: 'جهاز MRI', room: 'الغرفة 2', modality: 'MRI' } }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(prisma.radiologyDevice.create).toHaveBeenCalledWith({ data: expect.objectContaining({ name: '╪¼┘ç╪º╪▓ MRI', room: '╪º┘ä╪║╪▒┘ü╪⌐ 2', modality: 'MRI', companyId: 'company-1' }) });
+    expect(prisma.radiologyDevice.create).toHaveBeenCalledWith({ data: expect.objectContaining({ name: 'جهاز MRI', room: 'الغرفة 2', modality: 'MRI', companyId: 'company-1' }) });
   });
 
   test('rejects a missing device name', async () => {
@@ -66,7 +66,7 @@ describe('radiologyDevicesController', () => {
 
   test('updates and soft-deletes a device', async () => {
     const prisma = createPrisma();
-    prisma.radiologyDevice.findFirst.mockResolvedValue({ id: 'd1', companyId: 'company-1', name: '╪¼┘ç╪º╪▓' });
+    prisma.radiologyDevice.findFirst.mockResolvedValue({ id: 'd1', companyId: 'company-1', name: 'جهاز' });
     prisma.radiologyDevice.update.mockImplementation(({ data }) => Promise.resolve({ id: 'd1', ...data }));
     getSharedPrismaClient.mockReturnValue(prisma);
 

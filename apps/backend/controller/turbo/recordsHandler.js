@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
+const { getSharedPrismaClient, safeQuery } = require('../../services/sharedDatabase');
 const { STATUS_FILTER_ALIASES, TURBO_SPECIFIC_FILTERS, VALID_ORDER_STATUSES, STATUS_ALIAS_MAP } = require('../../utils/turbo/constants');
 
 const getRecords = async (req, res) => {
@@ -64,9 +64,9 @@ const getRecords = async (req, res) => {
               if (live) { const rawStat = live.internalStatus || live.status || live.statusCode; await turboStatusSyncService.syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: rawStat, payload: live }).catch(() => {}); }
             }
 
-            // ≡ƒöä FALLBACK: For turbo_sent orders NOT found in get-status, search ALL individually in BACKGROUND
-            // Turbo's get-status API doesn't return status_code=2 (┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒) orders,
-            // so we use search-order to check if any have moved to status_code=3 (┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░).
+            // 🔄 FALLBACK: For turbo_sent orders NOT found in get-status, search ALL individually in BACKGROUND
+            // Turbo's get-status API doesn't return status_code=2 (قيد الانتظار) orders,
+            // so we use search-order to check if any have moved to status_code=3 (قيد التنفيذ).
             // Runs asynchronously so the API response isn't blocked.
             const missingOrders = allCompanyOrders.filter(o => {
               if (!o.turboShipmentId || o.turboShipmentStatus !== 'turbo_sent') return false;
@@ -74,7 +74,7 @@ const getRecords = async (req, res) => {
               return !keys.some(k => turboStatuses[k]);
             });
             if (missingOrders.length > 0) {
-              console.log(`≡ƒöä [TURBO-REFRESH] ${missingOrders.length} turbo_sent orders not in get-status ΓÇö launching background search-order for ALL...`);
+              console.log(`🔄 [TURBO-REFRESH] ${missingOrders.length} turbo_sent orders not in get-status — launching background search-order for ALL...`);
               // Fire-and-forget: update in background so API responds immediately
               setImmediate(async () => {
                 let fixed = 0, checked = 0;
@@ -85,23 +85,23 @@ const getRecords = async (req, res) => {
                     checked++;
                     if (searchResult?.success && searchResult.data) {
                       const rawStat = searchResult.data.internalStatus || searchResult.data.status || 'turbo_sent';
-                      console.log(`≡ƒöì [TURBO-BG] ${shipmentCode}: success=true, status="${rawStat}"`);
+                      console.log(`🔍 [TURBO-BG] ${shipmentCode}: success=true, status="${rawStat}"`);
                       if (rawStat !== 'turbo_sent') {
                         await turboStatusSyncService.syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: rawStat, payload: searchResult.data.raw || searchResult.data }).catch(() => {});
                         fixed++;
                       }
                     } else {
                       // Log first 5 failures for diagnostics
-                      if (checked <= 5) console.log(`≡ƒöì [TURBO-BG] ${shipmentCode}: success=false, error="${searchResult?.error || 'unknown'}"`);
+                      if (checked <= 5) console.log(`🔍 [TURBO-BG] ${shipmentCode}: success=false, error="${searchResult?.error || 'unknown'}"`);
                     }
                   } catch (e) { /* individual search-order failed, skip */ }
                   await new Promise(r => setTimeout(r, 150)); // 150ms delay between calls
                 }
-                console.log(`Γ£à [TURBO-BG] Background search-order complete: ${fixed}/${checked} orders updated from turbo_sent`);
+                console.log(`✅ [TURBO-BG] Background search-order complete: ${fixed}/${checked} orders updated from turbo_sent`);
               });
             }
           }
-        } catch (e) { console.warn('ΓÜá∩╕Å [TURBO] Failed to refresh statuses:', e.message); }
+        } catch (e) { console.warn('⚠️ [TURBO] Failed to refresh statuses:', e.message); }
       }
     }
 
@@ -123,7 +123,7 @@ const getRecords = async (req, res) => {
     statusCountsObj['returned'] = statusCountsObj['returned_to_company'] || 0;
     statusCountsObj['merchant_preparing'] = (statusCountsObj['turbo_saved'] || 0) + (statusCountsObj['turbo_sent'] || 0);
     statusCountsObj['preparing'] = statusCountsObj['merchant_preparing'] + (statusCountsObj['processing'] || 0);
-    // Combined "in Turbo pipeline" = what Turbo dashboard calls "┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░" (status_code 2+3+4)
+    // Combined "in Turbo pipeline" = what Turbo dashboard calls "قيد التنفيذ" (status_code 2+3+4)
     statusCountsObj['in_turbo_pipeline'] = (statusCountsObj['turbo_sent'] || 0) + (statusCountsObj['processing'] || 0) + (statusCountsObj['out_for_delivery'] || 0);
 
 
@@ -143,7 +143,7 @@ const getRecords = async (req, res) => {
       pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) }
     });
   } catch (error) {
-    console.error('Γ¥î [TURBO-CONTROLLER] Error fetching records:', error);
+    console.error('❌ [TURBO-CONTROLLER] Error fetching records:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -1,6 +1,11 @@
-import { RefreshCw as ArrowPathIcon, DollarSign as BanknotesIcon, Building as BuildingOfficeIcon, CreditCard as CreditCardIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
-;
+import {
+  ArrowPathIcon,
+  BanknotesIcon,
+  BuildingOfficeIcon,
+  CreditCardIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 import {
   FacebookAdsAccountContext,
 } from "../../hooks/useFacebookAdsAccountContext";

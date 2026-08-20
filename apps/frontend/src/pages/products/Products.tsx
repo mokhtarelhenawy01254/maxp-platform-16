@@ -1,10 +1,13 @@
-import { Image as PhotoIcon, X as XMarkIcon } from 'lucide-react';
-import { formatDate } from '@/utils/formatters';
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
-;
+import {
+  PhotoIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { getImageUrl } from "../../utils/imageUrl";
 
 // Sub-components
@@ -15,6 +18,7 @@ import ProductsFilters from "./components/ProductsFilters";
 import ProductsPagination from "./components/ProductsPagination";
 import ProductsTable from "./components/ProductsTable";
 import ProductsEmptyState from "./components/ProductsEmptyState";
+import { BulkConvertModal } from "./components/BulkConvertModal";
 
 // Hooks & Types
 import { useProducts } from "./hooks/useProducts";
@@ -110,7 +114,43 @@ const Products: React.FC = () => {
       const count = await handleBulkDelete();
       if (count) toast.success(`تم حذف ${count} منتج بنجاح`);
     } catch (err) {
-      toast.error("حدث خطأ أثناء الحذف");
+      tToast.error("products.error_error_1879");
+    }
+  };
+
+  // تحويل جماعي: المنتجات المحددة → عروض تقديمية لمنتج أصلي واحد
+  const [showBulkConvertModal, setShowBulkConvertModal] = useState(false);
+
+  const bulkConvertSourceIds = useMemo(
+    () => Array.from(selectedProducts),
+    [selectedProducts],
+  );
+
+  const bulkConvertSourceProducts = useMemo(() => {
+    const byId = new Map(products.map((p: any) => [p.id, p]));
+    return bulkConvertSourceIds
+      .map((id) => {
+        const p = byId.get(id);
+        return { id, name: p?.name || id };
+      })
+      .filter(Boolean);
+  }, [bulkConvertSourceIds, products]);
+
+  const handleBulkConvertSuccess = async (result: {
+    convertedCount: number;
+    skippedCount: number;
+  }) => {
+    setShowBulkConvertModal(false);
+    clearSelection();
+    await loadProducts();
+    if (result.convertedCount > 0) {
+      toast.success(
+        `تم تحويل ${result.convertedCount} منتج إلى عروض تقديمية${
+          result.skippedCount > 0 ? `، وتم تخطي ${result.skippedCount}` : ""
+        }`,
+      );
+    } else {
+      toast.error("لم يتم تحويل أي منتج — راجع المنتجات المحددة");
     }
   };
 
@@ -143,10 +183,10 @@ const Products: React.FC = () => {
   const onSaveQuickEdit = async (id: string) => {
     try {
       const success = await saveQuickEdit(id);
-      if (success) toast.success("تم تحديث المنتج بنجاح");
-      else toast.error("فشل في تحديث المنتج");
+      if (success) tToast.success("products.success_update_fdb7");
+      else tToast.error("products.failed_update_9e0f");
     } catch (err) {
-      toast.error("حدث خطأ أثناء التحديث");
+      tToast.error("products.error_error_ea72");
     }
   };
 
@@ -154,7 +194,7 @@ const Products: React.FC = () => {
     try {
       const success = await handleDuplicate(product);
       if (success) toast.success(`✅ تم نسخ المنتج "${product.name}" بنجاح`);
-      else toast.error("فشل في نسخ المنتج");
+      else tToast.error("products.msg_70a7");
     } catch (err: any) {
       toast.error(`❌ ${err?.response?.data?.error || err?.response?.data?.message || "حدث خطأ غير متوقع"}`);
     }
@@ -167,7 +207,7 @@ const Products: React.FC = () => {
         toast.success(`تم حذف ${result.deletedProductsCount || 0} منتج و ${result.deletedVariantsCount || 0} متغير بنجاح`);
       }
     } catch (err: any) {
-      toast.error(err.message || "حدث خطأ أثناء حذف المنتجات");
+      toast.error(err.message || i18n.t("products.error_error_e01c"));
     }
   };
 
@@ -186,10 +226,10 @@ const Products: React.FC = () => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        toast.success("تم تصدير المنتجات بنجاح!");
+        tToast.success("products.msg_bd2e");
       }
     } catch {
-      toast.error("فشل التصدير");
+      tToast.error("products.msg_0437");
     }
   };
 
@@ -222,7 +262,7 @@ const Products: React.FC = () => {
       setShowImportModal(false);
       toast.success(`تم استيراد ${count} منتج بنجاح`);
     } catch (err) {
-      toast.error("حدث خطأ أثناء استيراد الملف");
+      tToast.error("products.error_error_7d31");
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -256,6 +296,7 @@ const Products: React.FC = () => {
           onClear={clearSelection}
           onHide={() => onBulkVisibility(true)}
           onUnhide={() => onBulkVisibility(false)}
+          onConvertToPresentations={() => setShowBulkConvertModal(true)}
         />
       )}
 
@@ -434,6 +475,16 @@ const Products: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showBulkConvertModal && bulkConvertSourceIds.length > 0 && (
+        <BulkConvertModal
+          open={showBulkConvertModal}
+          sourceProductIds={bulkConvertSourceIds}
+          sourceProducts={bulkConvertSourceProducts}
+          onClose={() => setShowBulkConvertModal(false)}
+          onSuccess={handleBulkConvertSuccess}
+        />
       )}
     </div>
   );

@@ -1,5 +1,35 @@
 import React, { useState, useEffect, useRef } from "react";
-import { AlertCircle, AlertTriangle, Baby, Bell, Briefcase, Calculator, Calendar, CheckCircle2, Clock, DollarSign, ExternalLink, File, FileText, Folder, Gift, Heart, Home, Info, Loader2, Lock, MapPin, MessageSquare, Navigation, Pin, Plane, RefreshCw, Save, Search, Trash2, TrendingUp, Users, X } from 'lucide-react';
+import {
+  Clock,
+  Calendar,
+  DollarSign,
+  Save,
+  RefreshCw,
+  Users,
+  Bell,
+  FileText,
+  AlertTriangle,
+  Briefcase,
+  Home,
+  Gift,
+  Lock,
+  Baby,
+  Heart,
+  Plane,
+  Trash2,
+  Search,
+  AlertCircle,
+  CheckCircle2,
+  Info,
+  X,
+  MapPin,
+  Navigation,
+  ExternalLink,
+  Loader2,
+  TrendingUp,
+  Calculator,
+  MessageSquare,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -22,6 +52,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import { Separator } from "../../components/ui/separator";
 import api from "../../services/api";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 interface NotificationRecipient {
   employeeId?: string;
@@ -392,7 +424,7 @@ const HRSettings: React.FC = () => {
       user &&
       !["SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER", "OWNER"].includes(user.role)
     ) {
-      toast.error("غير مصرح لك بالوصول لهذه الصفحة");
+      tToast.error("hrSettings.msg_9d30");
       navigate("/");
       return;
     }
@@ -436,7 +468,7 @@ const HRSettings: React.FC = () => {
       setAvailableRecipientEmployees(normalizedEmployees);
     } catch (error) {
       console.error("❌ [HR-SETTINGS] Error fetching recipient employees:", error);
-      toast.error("تعذر تحميل قائمة الموظفين لمستلمي الإشعارات");
+      tToast.error("hrSettings.unable_load_6108");
     } finally {
       setLoadingRecipientEmployees(false);
     }
@@ -444,7 +476,7 @@ const HRSettings: React.FC = () => {
 
   const addSelectedRecipientEmployee = () => {
     if (!selectedRecipientEmployeeId) {
-      toast.error("اختاري موظفًا أولًا");
+      tToast.error("hrSettings.msg_ea7d");
       return;
     }
 
@@ -453,12 +485,12 @@ const HRSettings: React.FC = () => {
     );
 
     if (!selectedEmployee) {
-      toast.error("الموظف المحدد غير موجود");
+      tToast.error("hrSettings.msg_0101");
       return;
     }
 
     if (!selectedEmployee.phone) {
-      toast.error("هذا الموظف لا يملك رقم واتساب مسجل");
+      tToast.error("hrSettings.msg_fca0");
       return;
     }
 
@@ -469,7 +501,7 @@ const HRSettings: React.FC = () => {
     );
 
     if (isAlreadyAdded) {
-      toast.error("هذا الموظف مضاف بالفعل ضمن المستلمين");
+      tToast.error("hrSettings.msg_092a");
       return;
     }
 
@@ -638,7 +670,7 @@ const HRSettings: React.FC = () => {
 
     if (!validateSettings()) {
       console.log("❌ [HR-SETTINGS] Validation failed");
-      toast.error("يرجى تصحيح الأخطاء قبل الحفظ");
+      tToast.error("hrSettings.msg_ff3c");
       return;
     }
 
@@ -808,7 +840,7 @@ const HRSettings: React.FC = () => {
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      toast.error("المتصفح لا يدعم تحديد الموقع الجغرافي");
+      tToast.error("hrSettings.msg_0d63");
       return;
     }
 
@@ -850,7 +882,7 @@ const HRSettings: React.FC = () => {
 
   const testCurrentLocation = () => {
     if (!navigator.geolocation) {
-      toast.error("المتصفح لا يدعم تحديد الموقع الجغرافي");
+      tToast.error("hrSettings.msg_0d63");
       return;
     }
 
@@ -858,7 +890,7 @@ const HRSettings: React.FC = () => {
     const officeLng = parseFloat(settings.officeLongitude);
 
     if (isNaN(officeLat) || isNaN(officeLng)) {
-      toast.error("يرجى إدخال إحداثيات صحيحة للمكتب أولاً");
+      tToast.error("hrSettings.msg_7cfc");
       return;
     }
 
@@ -919,7 +951,7 @@ const HRSettings: React.FC = () => {
     const lng = parseFloat(settings.officeLongitude);
 
     if (isNaN(lat) || isNaN(lng)) {
-      toast.error("يرجى إدخال إحداثيات صحيحة أولاً");
+      tToast.error("hrSettings.msg_4dae");
       return;
     }
 

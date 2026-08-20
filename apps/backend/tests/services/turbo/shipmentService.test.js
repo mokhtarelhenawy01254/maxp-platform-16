@@ -1,4 +1,4 @@
-﻿jest.mock('axios', () => ({
+jest.mock('axios', () => ({
   post: jest.fn(),
   get: jest.fn(),
 }));
@@ -34,17 +34,17 @@ function validOrderData(overrides = {}) {
   return {
     orderId: 'ord-1',
     orderNumber: 'ORD-839842',
-    customerName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+    customerName: 'محمد علي',
     customerPhone: '01012345678',
-    shippingAddress: JSON.stringify({ address: '5 ╪┤╪º╪▒╪╣ ╪º┘ä╪¬╪¡╪▒┘è╪▒', city: '╪º┘ä┘é╪º┘ç╪▒╪⌐', governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐' }),
-    city: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
-    governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
-    items: [{ productName: '┘é┘à┘è╪╡', quantity: 2, weight: 0.5 }],
+    shippingAddress: JSON.stringify({ address: '5 شارع التحرير', city: 'القاهرة', governorate: 'القاهرة' }),
+    city: 'القاهرة',
+    governorate: 'القاهرة',
+    items: [{ productName: 'قميص', quantity: 2, weight: 0.5 }],
     totalWeight: 1,
     totalValue: 350,
     shipping: 30,
     paymentMethod: 'CASH',
-    notes: '┘è╪▒╪¼┘ë ╪º┘ä╪¬╪ú┘â┘è╪» ┘é╪¿┘ä ╪º┘ä╪¬╪│┘ä┘è┘à',
+    notes: 'يرجى التأكيد قبل التسليم',
     ...overrides,
   };
 }
@@ -87,16 +87,16 @@ describe('ShipmentService', () => {
         expect.objectContaining({
           authentication_key: 'test-api-key',
           main_client_code: '37321',
-          receiver: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+          receiver: 'محمد علي',
           phone1: '01012345678',
-          government: '╪º┘ä┘é╪º┘ç╪▒╪⌐',
+          government: 'القاهرة',
         }),
         expect.any(Object)
       );
     });
 
     test('normalizes 10-digit phone missing leading zero', async () => {
-      // '1012345678' (10 digits starting with 1) ΓåÆ '01012345678'
+      // '1012345678' (10 digits starting with 1) → '01012345678'
       axios.post.mockResolvedValue({
         data: { success: 1, result: { code: 'T1', bar_code: 'B1' } },
       });
@@ -107,8 +107,8 @@ describe('ShipmentService', () => {
       expect(callPayload.phone1).toBe('01012345678');
     });
 
-    test('normalizes phone with country code 20 prefix (bug fix: else if ΓåÆ if)', async () => {
-      // '201012345678' ΓåÆ slice '20' ΓåÆ '1012345678' ΓåÆ add '0' ΓåÆ '01012345678'
+    test('normalizes phone with country code 20 prefix (bug fix: else if → if)', async () => {
+      // '201012345678' → slice '20' → '1012345678' → add '0' → '01012345678'
       axios.post.mockResolvedValue({
         data: { success: 1, result: { code: 'T1', bar_code: 'B1' } },
       });
@@ -133,13 +133,13 @@ describe('ShipmentService', () => {
     test('throws for invalid phone number', async () => {
       await expect(
         service.createShipment(validOrderData({ customerPhone: '12345' }))
-      ).rejects.toThrow(/┘ç╪º╪¬┘ü/);
+      ).rejects.toThrow(/هاتف/);
     });
 
     test('throws when governorate cannot be resolved', async () => {
       await expect(
         service.createShipment(validOrderData({ governorate: '', city: '' }))
-      ).rejects.toThrow(/┘à╪¡╪º┘ü╪╕╪⌐/);
+      ).rejects.toThrow(/محافظة/);
     });
 
     test('sets amount_to_be_collected to 0 for PAID payment', async () => {
@@ -167,10 +167,10 @@ describe('ShipmentService', () => {
 
     test('throws on Turbo API error response', async () => {
       axios.post.mockResolvedValue({
-        data: { success: 0, error_msg: '╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ┘à┘â╪▒╪▒' },
+        data: { success: 0, error_msg: 'رقم الهاتف مكرر' },
       });
 
-      await expect(service.createShipment(validOrderData())).rejects.toThrow('╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ┘à┘â╪▒╪▒');
+      await expect(service.createShipment(validOrderData())).rejects.toThrow('رقم الهاتف مكرر');
     });
 
     test('throws when response missing result field', async () => {
@@ -185,7 +185,7 @@ describe('ShipmentService', () => {
   describe('cancelShipment', () => {
     test('succeeds on first search key', async () => {
       axios.post.mockResolvedValue({
-        data: { success: 1, message: '╪¬┘à ╪º┘ä╪Ñ┘ä╪║╪º╪í ╪¿┘å╪¼╪º╪¡' },
+        data: { success: 1, message: 'تم الإلغاء بنجاح' },
       });
 
       const result = await service.cancelShipment('TURBO-001');
@@ -285,7 +285,7 @@ describe('ShipmentService', () => {
       });
 
       const result = await service.calculateShippingCost(
-        { city: '╪º┘ä┘é╪º┘ç╪▒╪⌐', governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐', address: '5 ╪┤╪º╪▒╪╣ ╪º┘ä╪¬╪¡╪▒┘è╪▒' },
+        { city: 'القاهرة', governorate: 'القاهرة', address: '5 شارع التحرير' },
         1.5
       );
 
@@ -302,7 +302,7 @@ describe('ShipmentService', () => {
       axios.get.mockResolvedValueOnce({ data: { cost: 50, currency: 'EGP' } });
 
       const result = await service.calculateShippingCost(
-        { city: '╪º┘ä╪¼┘è╪▓╪⌐', governorate: '╪º┘ä╪¼┘è╪▓╪⌐', address: '╪┤╪º╪▒╪╣ ╪º┘ä┘ç╪▒┘à' },
+        { city: 'الجيزة', governorate: 'الجيزة', address: 'شارع الهرم' },
         2
       );
 
@@ -316,7 +316,7 @@ describe('ShipmentService', () => {
       axios.post.mockRejectedValue(err404);
 
       const result = await service.calculateShippingCost(
-        { city: '╪º┘ä┘é╪º┘ç╪▒╪⌐', governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐', address: '╪┤╪º╪▒╪╣' },
+        { city: 'القاهرة', governorate: 'القاهرة', address: 'شارع' },
         1
       );
 
@@ -332,7 +332,7 @@ describe('ShipmentService', () => {
       axios.get.mockResolvedValueOnce({ data: { cost: 60, currency: 'EGP' } });
 
       await service.calculateShippingCost(
-        { city: '╪º┘ä┘é╪º┘ç╪▒╪⌐', governorate: '╪º┘ä┘é╪º┘ç╪▒╪⌐', address: '5 ╪┤╪º╪▒╪╣' },
+        { city: 'القاهرة', governorate: 'القاهرة', address: '5 شارع' },
         2,
         { length: 30, width: 20, height: 10 }
       );

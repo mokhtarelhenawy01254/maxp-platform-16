@@ -1,8 +1,15 @@
-import { X as XMarkIcon, Plus as PlusIcon, Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, ShoppingBag as ShoppingCartIcon, Truck as TruckIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
-;
+import {
+  XMarkIcon,
+  PlusIcon,
+  CheckCircleIcon,
+  ArrowPathIcon,
+  ShoppingCartIcon,
+  TruckIcon,
+} from "@heroicons/react/24/outline";
 
 interface ProductVariant {
   id: string;
@@ -209,11 +216,11 @@ const OrderModalEnhanced: React.FC<OrderModalEnhancedProps> = ({
 
     // التحقق من اختيار الـ variants إذا كانت موجودة
     if (colorVariants.length > 0 && !variants?.color) {
-      alert("الرجاء اختيار اللون أولاً");
+      alert(i18n.t("OrderModalEnhanced.msg_2012"));
       return;
     }
     if (sizeVariants.length > 0 && !variants?.size) {
-      alert("الرجاء اختيار المقاس أولاً");
+      alert(i18n.t("OrderModalEnhanced.msg_b619"));
       return;
     }
 
@@ -306,12 +313,12 @@ const OrderModalEnhanced: React.FC<OrderModalEnhancedProps> = ({
     if (selectedProducts.length === 0 || creatingOrder) return;
 
     if (!selectedCity) {
-      alert("الرجاء اختيار المدينة");
+      alert(i18n.t("OrderModalEnhanced.msg_d722"));
       return;
     }
 
     if (!customerPhone) {
-      alert("الرجاء إدخال رقم الهاتف");
+      alert(i18n.t("OrderModalEnhanced.msg_09ce"));
       return;
     }
 
@@ -377,11 +384,11 @@ const OrderModalEnhanced: React.FC<OrderModalEnhancedProps> = ({
           handleClose();
         }, 2000);
       } else {
-        alert("فشل في إنشاء الطلب: " + (data.error || "خطأ غير معروف"));
+        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("OrderModalEnhanced.msg_1ca3")));
       }
     } catch (error) {
       console.error("❌ Error creating order:", error);
-      alert("حدث خطأ أثناء إنشاء الطلب");
+      alert(i18n.t("OrderModalEnhanced.error_error_ad3b"));
     } finally {
       setCreatingOrder(false);
     }

@@ -1,4 +1,4 @@
-﻿const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const p = new PrismaClient();
 async function main() {
     const ss = await p.whatsAppSession.findMany({

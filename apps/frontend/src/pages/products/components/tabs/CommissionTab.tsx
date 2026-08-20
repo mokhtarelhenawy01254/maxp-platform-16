@@ -1,8 +1,12 @@
-import { DollarSign as CurrencyDollarIcon, Settings as Cog6ToothIcon, Eye as EyeIcon, Circle as UserGroupIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import { AffiliateProductVisibility, ProductFormData } from "../../types";
 import { apiClient } from "../../../../services/apiClient";
-;
+import {
+  CurrencyDollarIcon,
+  Cog6ToothIcon,
+  EyeIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/outline";
 
 type AffiliateOption = {
   id: string;

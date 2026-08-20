@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -388,7 +388,7 @@ const OrderDetails: React.FC = () => {
     try {
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
-        throw new Error("┘ü╪┤┘ä ┘ü┘è ┘ü╪¬╪¡ ┘å╪º┘ü╪░╪⌐ ╪¼╪»┘è╪»╪⌐ ┘ä┘ä╪╖╪¿╪º╪╣╪⌐");
+        throw new Error("فشل في فتح نافذة جديدة للطباعة");
       }
       await printSingleShippingLabel({
         order,
@@ -575,7 +575,7 @@ const OrderDetails: React.FC = () => {
   };
 
   const handleProductSelect = (product: any, variant?: any) => {
-    // Γ£à Extract variant data properly
+    // ✅ Extract variant data properly
     let productColor = "";
     let productSize = "";
     let actualPrice = product.price;
@@ -615,11 +615,11 @@ const OrderDetails: React.FC = () => {
 
           // Extract from attributeValues
           if (variantMeta.attributeValues) {
-            if (variantMeta.attributeValues["╪º┘ä┘ä┘ê┘å"] != null && !productColor) {
-              productColor = String(variantMeta.attributeValues["╪º┘ä┘ä┘ê┘å"]);
+            if (variantMeta.attributeValues["اللون"] != null && !productColor) {
+              productColor = String(variantMeta.attributeValues["اللون"]);
             }
-            if (variantMeta.attributeValues["╪º┘ä┘à┘é╪º╪│"] != null && !productSize) {
-              productSize = String(variantMeta.attributeValues["╪º┘ä┘à┘é╪º╪│"]);
+            if (variantMeta.attributeValues["المقاس"] != null && !productSize) {
+              productSize = String(variantMeta.attributeValues["المقاس"]);
             }
           }
         } catch (e) {
@@ -640,7 +640,7 @@ const OrderDetails: React.FC = () => {
           if (!productColor) productColor = name.trim();
         } else {
           // Handle both hyphen and pipe separators
-          const parts = name.split(/\s*[-ΓÇô|]\s*/).filter((p: any) => p.trim());
+          const parts = name.split(/\s*[-–|]\s*/).filter((p: any) => p.trim());
 
           if (parts.length >= 2) {
             // Assumption: Color is often first, Size is often last
@@ -660,13 +660,13 @@ const OrderDetails: React.FC = () => {
       }
     }
 
-    // Γ£à Validate price
+    // ✅ Validate price
     if (actualPrice <= 0) {
       alert(t("orderDetails.priceMustBeGreaterThanZero"));
       return;
     }
 
-    // Γ£à Check for duplicates
+    // ✅ Check for duplicates
     const isDuplicate = editForm.items.some(
       (item: any) =>
         item.productId === product.id &&
@@ -679,7 +679,7 @@ const OrderDetails: React.FC = () => {
       return;
     }
 
-    // Γ£à Extract Image
+    // ✅ Extract Image
     let productImage = "";
 
     // Helper to get first image from string or array
@@ -717,7 +717,7 @@ const OrderDetails: React.FC = () => {
       total: actualPrice,
       productColor,
       productSize: productSize != null ? String(productSize) : "",
-      productImage, // Γ£à ADDED: Image field
+      productImage, // ✅ ADDED: Image field
       productSku: itemSku,
       metadata: {
         ...metadata,
@@ -733,7 +733,7 @@ const OrderDetails: React.FC = () => {
       items: [...prev.items, newItem],
     }));
     setShowAddProductModal(false);
-    // ╪¬┘à ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡
+    // تم إضافة المنتج بنجاح
   };
 
   const handleItemChange = (index: number, field: string, value: any) => {
@@ -848,26 +848,26 @@ const OrderDetails: React.FC = () => {
     : orderStatuses;
 
   const formatOptionalDate = (value?: string | null) =>
-    value ? formatDate(value) : "ΓÇö";
+    value ? formatDate(value) : "—";
 
   const confirmedByName = order.confirmedByUser
     ? `${order.confirmedByUser.firstName || ""} ${order.confirmedByUser.lastName || ""}`.trim()
-    : order.confirmedBy || "ΓÇö";
+    : order.confirmedBy || "—";
 
   const assignedToName = order.assignedToUser
     ? `${order.assignedToUser.firstName || ""} ${order.assignedToUser.lastName || ""}`.trim()
-    : order.assignedTo || "ΓÇö";
+    : order.assignedTo || "—";
 
   const assignedByName = order.assignedByUser
     ? `${order.assignedByUser.firstName || ""} ${order.assignedByUser.lastName || ""}`.trim()
-    : order.assignedBy || "ΓÇö";
+    : order.assignedBy || "—";
 
   const isCurrentlyPending = ["PENDING", "PENDING_STOCK", "ON_HOLD_STOCK", "CANCELLED", "TRASH", "WOO_TAGHEZ"].includes(order.status?.toUpperCase() || "");
   const confirmationStatusLabel =
     (!isCurrentlyPending && order.confirmedAt) || order.status === "CONFIRMED" ? t("orderDetails.confirmedStatus") : t("orderDetails.notConfirmedStatus");
   const assignmentStatusLabel = order.assignedTo ? t("orderDetails.distributed") : t("orderDetails.notDistributed");
 
-  console.log("≡ƒöì Order Status Debug:", {
+  console.log("🔍 Order Status Debug:", {
     orderStatus: order.status,
     orderStatuses: orderStatuses,
     currentStatusConfig: currentStatusConfig,
@@ -1044,7 +1044,7 @@ const OrderDetails: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
-                  {returnAmt ? t("orderDetails.returnCustomValue") : t("orderDetails.returnDefaultValue")} ΓÇö {t("orderDetails.returnDescription")}
+                  {returnAmt ? t("orderDetails.returnCustomValue") : t("orderDetails.returnDefaultValue")} — {t("orderDetails.returnDescription")}
                 </p>
               </div>
             ) : null;
@@ -1092,7 +1092,7 @@ const OrderDetails: React.FC = () => {
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.confirmedBy")}
                 </span>
-                <span>{confirmedByName || "ΓÇö"}</span>
+                <span>{confirmedByName || "—"}</span>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3" />
               <div className="flex items-center justify-between">
@@ -1105,13 +1105,13 @@ const OrderDetails: React.FC = () => {
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.distributedToLabel")}
                 </span>
-                <span>{assignedToName || "ΓÇö"}</span>
+                <span>{assignedToName || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.distributionMethod")}
                 </span>
-                <span>{order.assignmentStrategy || "ΓÇö"}</span>
+                <span>{order.assignmentStrategy || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
@@ -1123,7 +1123,7 @@ const OrderDetails: React.FC = () => {
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.distributedByLabel")}
                 </span>
-                <span>{assignedByName || "ΓÇö"}</span>
+                <span>{assignedByName || "—"}</span>
               </div>
               {order.confirmationNotes && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-3 text-sm">
@@ -1599,10 +1599,10 @@ const WalletPaymentProofCard: React.FC<{
   const status = String(proof.status || "PENDING").toUpperCase();
   const statusLabel =
     status === "VERIFIED"
-      ? "Γ£à ╪¬┘à ╪º┘ä╪¬╪¡┘é┘é"
+      ? "✅ تم التحقق"
       : status === "REJECTED"
-        ? "Γ¥î ┘à╪▒┘ü┘ê╪╢"
-        : "ΓÅ│ ╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐";
+        ? "❌ مرفوض"
+        : "⏳ بانتظار المراجعة";
   const statusCls =
     status === "VERIFIED"
       ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
@@ -1614,7 +1614,7 @@ const WalletPaymentProofCard: React.FC<{
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm space-y-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-          ╪Ñ╪½╪¿╪º╪¬ ╪º┘ä╪»┘ü╪╣ ╪¿╪º┘ä┘à╪¡┘ü╪╕╪⌐
+          إثبات الدفع بالمحفظة
         </span>
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${statusCls}`}>
           {statusLabel}
@@ -1623,32 +1623,32 @@ const WalletPaymentProofCard: React.FC<{
 
       {proof.imageUrl ? (
         <a href={proof.imageUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-          <img src={proof.imageUrl} alt="╪Ñ┘è╪╡╪º┘ä ╪º┘ä╪¬╪¡┘ê┘è┘ä" className="max-h-48 w-full object-cover" />
+          <img src={proof.imageUrl} alt="إيصال التحويل" className="max-h-48 w-full object-cover" />
         </a>
       ) : null}
 
       <div className="space-y-1.5 text-sm text-gray-700 dark:text-gray-200">
         {proof.walletNumber ? (
           <div className="flex justify-between gap-2">
-            <span className="text-gray-500 dark:text-gray-400">╪▒┘é┘à ╪º┘ä┘à╪¡┘ü╪╕╪⌐</span>
+            <span className="text-gray-500 dark:text-gray-400">رقم المحفظة</span>
             <span dir="ltr" className="font-semibold">{proof.walletNumber}</span>
           </div>
         ) : null}
         {proof.transferRef ? (
           <div className="flex justify-between gap-2">
-            <span className="text-gray-500 dark:text-gray-400">╪▒┘é┘à ╪º┘ä╪╣┘à┘ä┘è╪⌐</span>
+            <span className="text-gray-500 dark:text-gray-400">رقم العملية</span>
             <span className="font-semibold">{proof.transferRef}</span>
           </div>
         ) : null}
         {proof.submittedAt ? (
           <div className="flex justify-between gap-2">
-            <span className="text-gray-500 dark:text-gray-400">╪¬╪º╪▒┘è╪« ╪º┘ä╪▒┘ü╪╣</span>
+            <span className="text-gray-500 dark:text-gray-400">تاريخ الرفع</span>
             <span className="font-semibold">{new Date(proof.submittedAt).toLocaleString("ar-EG")}</span>
           </div>
         ) : null}
         {proof.rejectReason ? (
           <div className="mt-1 rounded-md bg-red-50 dark:bg-red-950/20 px-2.5 py-1.5 text-xs text-red-700 dark:text-red-300">
-            ╪│╪¿╪¿ ╪º┘ä╪▒┘ü╪╢: {proof.rejectReason}
+            سبب الرفض: {proof.rejectReason}
           </div>
         ) : null}
       </div>
@@ -1659,16 +1659,16 @@ const WalletPaymentProofCard: React.FC<{
             onClick={() => void onVerify("VERIFY")}
             className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
           >
-            ╪¬╪ú┘â┘è╪» ╪º┘ä╪»┘ü╪╣
+            تأكيد الدفع
           </button>
           <button
             onClick={() => {
-              const reason = window.prompt("╪º┘â╪¬╪¿ ╪│╪¿╪¿ ╪º┘ä╪▒┘ü╪╢ (╪º╪«╪¬┘è╪º╪▒┘è)");
+              const reason = window.prompt("اكتب سبب الرفض (اختياري)");
               if (reason !== null) void onVerify("REJECT", reason || undefined);
             }}
             className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
           >
-            ╪▒┘ü╪╢
+            رفض
           </button>
         </div>
       ) : null}

@@ -1,4 +1,4 @@
-﻿const cron = require('node-cron');
+const cron = require('node-cron');
 const bookingNotificationService = require('../services/bookingNotificationService');
 
 let isRunning = false;

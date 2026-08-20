@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import TeamTab from "../tabs/TeamTab";
 
 jest.mock("../orderMovementShared", () => require("../testSupport").buildSharedMock());
@@ -13,7 +13,7 @@ const teamData = {
   summary: { totalTransitions: 10, manualTransitions: 8, autoTransitions: 2, activeMembers: 1 },
   members: [
     {
-      name: "╪ú╪¡┘à╪»",
+      name: "أحمد",
       changedBy: "u1",
       transitions: 8,
       manualTransitions: 8,
@@ -28,7 +28,7 @@ const teamData = {
       isSystem: false,
     },
     {
-      name: "╪º┘ä┘å╪╕╪º┘à (╪¬┘ä┘é╪º╪ª┘è)",
+      name: "النظام (تلقائي)",
       changedBy: "SYSTEM_AUTO",
       transitions: 2,
       manualTransitions: 0,
@@ -53,12 +53,12 @@ describe("TeamTab", () => {
 
     render(<TeamTab {...props} />);
 
-    await waitFor(() => expect(screen.getByText("╪¡╪▒┘â╪º╪¬ ┘è╪»┘ê┘è╪⌐")).toBeInTheDocument());
-    expect(screen.getByText("╪¡╪▒┘â╪º╪¬ ╪¬┘ä┘é╪º╪ª┘è╪⌐")).toBeInTheDocument();
-    expect(screen.getByText("╪ú╪╣╪╢╪º╪í ┘å╪┤╪╖┘ê┘å")).toBeInTheDocument();
-    expect(screen.getByText("╪º┘ä╪¡╪▒┘â╪º╪¬ ╪¡╪│╪¿ ╪º┘ä╪╣╪╢┘ê")).toBeInTheDocument();
-    expect(screen.getByText("╪¬╪▒╪¬┘è╪¿ ╪º┘ä┘ü╪▒┘è┘é")).toBeInTheDocument();
-    expect(screen.getByText("╪ú╪¡┘à╪»")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("حركات يدوية")).toBeInTheDocument());
+    expect(screen.getByText("حركات تلقائية")).toBeInTheDocument();
+    expect(screen.getByText("أعضاء نشطون")).toBeInTheDocument();
+    expect(screen.getByText("الحركات حسب العضو")).toBeInTheDocument();
+    expect(screen.getByText("ترتيب الفريق")).toBeInTheDocument();
+    expect(screen.getByText("أحمد")).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith("team", { startDate: "2026-05-01", endDate: "2026-08-11", mode: "all" });
   });
 
@@ -71,7 +71,7 @@ describe("TeamTab", () => {
   });
 
   test("renders error state on failure", async () => {
-    mockFetch.mockRejectedValue(new Error("┘ü╪┤┘ä"));
+    mockFetch.mockRejectedValue(new Error("فشل"));
 
     render(<TeamTab {...props} />);
 

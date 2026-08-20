@@ -1,3 +1,4 @@
+import i18n from "../../../i18n";
 import { DEFAULT_PREPARATION_QUEUE_SETTINGS } from "./constants";
 import { parseMaybeJsonObject, toNumber, toUpper } from "./helpers";
 import type {
@@ -16,16 +17,22 @@ import type {
   MerchantFulfillmentView,
 } from "./types";
 
-const normalizeOrderItem = (item: ApiOrderItemResponse): SimpleOrderItem => ({
-  id: String(item.id || item.productId || Math.random()),
-  productId: String(item.productId || ""),
-  name: item.name || item.productName || "",
-  productName: item.productName || item.name || "",
-  price: toNumber(item.price),
-  quantity: toNumber(item.quantity),
-  total: toNumber(item.total),
-  metadata: parseMaybeJsonObject(item.metadata),
-});
+const normalizeOrderItem = (item: ApiOrderItemResponse): SimpleOrderItem => {
+  const metadata = parseMaybeJsonObject(item.metadata);
+  return {
+    id: String(item.id || item.productId || Math.random()),
+    productId: String(item.productId || ""),
+    variantId: item.variantId ? String(item.variantId) : null,
+    name: item.name || item.productName || "",
+    productName: item.productName || item.name || "",
+    color: item.color || (metadata?.color as string) || (metadata?.productColor as string) || "",
+    size: item.size || (metadata?.size as string) || (metadata?.productSize as string) || "",
+    price: toNumber(item.price),
+    quantity: toNumber(item.quantity),
+    total: toNumber(item.total),
+    metadata,
+  };
+};
 
 const normalizeMerchantFulfillment = (
   metadata: Record<string, unknown>,
@@ -75,7 +82,7 @@ export const normalizeSimpleOrder = (order: ApiOrderResponse): SimpleOrder => {
   return {
     id: String(order.id || order.orderNumber || ""),
     orderNumber: String(order.orderNumber || order.id || ""),
-    customerName: order.customerName || "بدون اسم",
+    customerName: order.customerName || i18n.t("preparation.fallbackCustomerName"),
     customerPhone: order.customerPhone || "",
     customerEmail: order.customerEmail || "",
     city: order.city || order.shippingAddress?.city || "",
@@ -116,7 +123,7 @@ export const normalizeWarehouseOption = (
   warehouse: ApiWarehouseResponse,
 ): WarehouseOption => ({
   id: String(warehouse.id || ""),
-  name: warehouse.name || "مخزن غير مسمى",
+  name: warehouse.name || i18n.t("preparation.fallbackWarehouseName"),
 });
 
 export const normalizeStatusConfig = (

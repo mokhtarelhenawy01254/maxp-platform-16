@@ -1,15 +1,15 @@
-﻿/**
- * ≡ƒöº Fix order-status WhatsApp templates that were wrongly classified as MARKETING.
+/**
+ * 🔧 Fix order-status WhatsApp templates that were wrongly classified as MARKETING.
  *
- * ╪«┘ä┘ü┘è╪⌐: ╪¬╪╡┘å┘è┘ü ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¿┘è╪¬╪¡╪│╪¿ ┘ä╪¡╪╕╪⌐ ╪º┘ä┘å╪┤╪▒ ┘à┘å category ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è (buildMetaTemplatePayload).
- * ┘é┘ê╪º┘ä╪¿ ╪¡╪º┘ä╪º╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘ä┘è eventType ╪¿╪¬╪º╪╣┘ç╪º ┘â┘ê╪» ╪¡╪º┘ä╪⌐ ╪«╪º┘à (╪▓┘è "delivered") ┘â╪º┘å╪¬ ╪¿╪¬╪¬╪«╪▓┘æ┘å
- * category = MARKETING (default ┘é╪»┘è┘à ┘ü┘è getCategoryForEvent) ΓåÆ ┘à┘è╪¬╪º ╪¬┘å╪┤╪ª ╪º┘ä┘é╪º┘ä╪¿ MARKETING
- * ╪¿╪»┘ä UTILITY (┘à╪½╪º┘ä ╪¡┘é┘è┘é┘è: deliveredmsj72rwc).
+ * خلفية: تصنيف قالب ميتا بيتحسب لحظة النشر من category القالب المحلي (buildMetaTemplatePayload).
+ * قوالب حالات الطلبات اللي eventType بتاعها كود حالة خام (زي "delivered") كانت بتتخزّن
+ * category = MARKETING (default قديم في getCategoryForEvent) → ميتا تنشئ القالب MARKETING
+ * بدل UTILITY (مثال حقيقي: deliveredmsj72rwc).
  *
- * ╪¿╪╣╪» ┘ç╪░╪º ╪º┘ä┘Ç fix ╪º┘ä┘â┘ê╪» ╪¿┘è╪¬╪¼╪º┘ç┘ä category ┘ê┘è╪╡╪▒┘æ┘ü┘ç╪º UTILITY ┘ü┘è ┘à┘è╪¬╪º╪î ┘ä┘â┘å ┘ä╪º╪▓┘à ┘å╪╣╪»┘æ┘ä ╪º┘ä┘é┘ê╪º┘ä╪¿
- * ╪º┘ä┘à┘ê╪¼┘ê╪»╪⌐ ┘ü╪╣┘ä╪º┘ï ╪╣╪┤╪º┘å ╪º┘ä┘Ç UI ┘ê╪º┘ä╪╣╪▒╪╢ ┘ê╪º┘ä┘ü┘ä╪º╪¬╪▒ ╪¬╪▒╪¼╪╣ ╪¬╪╡┘å┘è┘ü┘ç╪º ╪º┘ä╪╡╪¡┘è╪¡ ORDERS.
+ * بعد هذا الـ fix الكود بيتجاهل category ويصرّفها UTILITY في ميتا، لكن لازم نعدّل القوالب
+ * الموجودة فعلاً عشان الـ UI والعرض والفلاتر ترجع تصنيفها الصحيح ORDERS.
  *
- * ╪º┘ä╪º╪│╪¬╪«╪»╪º┘à: node scripts/fix_order_status_template_categories.js [--dry-run] [--company=COMPANY_ID]
+ * الاستخدام: node scripts/fix_order_status_template_categories.js [--dry-run] [--company=COMPANY_ID]
  */
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { isOrderCategory } = require('../services/whatsapp/notificationTypes');
@@ -33,21 +33,21 @@ async function main() {
 
   const orderTemplates = templates.filter((t) => isOrderCategory(t.category, t.eventType));
 
-  console.log(`≡ƒôè Local templates with category=MARKETING: ${templates.length}`);
-  console.log(`≡ƒöü Of those, order-status templates (should be ORDERS): ${orderTemplates.length}`);
+  console.log(`📊 Local templates with category=MARKETING: ${templates.length}`);
+  console.log(`🔁 Of those, order-status templates (should be ORDERS): ${orderTemplates.length}`);
 
   if (orderTemplates.length === 0) {
-    console.log('Γ£à ┘ä╪º ╪¬┘ê╪¼╪» ┘é┘ê╪º┘ä╪¿ ╪¬╪¡╪¬╪º╪¼ ╪¬╪╣╪»┘è┘ä.');
+    console.log('✅ لا توجد قوالب تحتاج تعديل.');
     await prisma.$disconnect();
     return;
   }
 
   for (const t of orderTemplates) {
-    console.log(`  ΓÇó ${t.name} | eventType=${t.eventType} | meta=${t.metaTemplateName || '-'}`);
+    console.log(`  • ${t.name} | eventType=${t.eventType} | meta=${t.metaTemplateName || '-'}`);
   }
 
   if (DRY_RUN) {
-    console.log('Γ£à Dry-run: nothing applied. Remove --dry-run to update.');
+    console.log('✅ Dry-run: nothing applied. Remove --dry-run to update.');
     await prisma.$disconnect();
     return;
   }
@@ -59,12 +59,12 @@ async function main() {
     });
   }
 
-  console.log(`Γ£à Updated ${orderTemplates.length} template(s) to category=ORDERS.`);
-  console.log('Γä╣∩╕Å ╪ú┘è ╪Ñ╪╣╪º╪»╪⌐ ┘å╪┤╪▒ (publish/resubmit) ┘ç╪¬╪«┘ä┘é ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º UTILITY ╪¬┘ä┘é╪º╪ª┘è╪º┘ï. ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘é╪»┘è┘à MARKETING ╪╣┘ä┘ë ┘à┘è╪¬╪º ╪¿┘è╪¡╪¬╪º╪¼ ┘è┘Å╪¡╪░┘ü ┘è╪»┘ê┘è╪º┘ï ╪ú┘ê ┘è┘Å╪¬╪▒┘â.');
+  console.log(`✅ Updated ${orderTemplates.length} template(s) to category=ORDERS.`);
+  console.log('ℹ️ أي إعادة نشر (publish/resubmit) هتخلق قالب ميتا UTILITY تلقائياً. القالب القديم MARKETING على ميتا بيحتاج يُحذف يدوياً أو يُترك.');
   await prisma.$disconnect();
 }
 
 main().catch((err) => {
-  console.error('Γ¥î Error:', err?.message || err);
+  console.error('❌ Error:', err?.message || err);
   process.exit(1);
 });

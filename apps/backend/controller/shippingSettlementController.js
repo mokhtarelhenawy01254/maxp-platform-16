@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { normalizeTurboStatus } = require('../utils/statusNormalizer');
 
 const TURBO_COMPANY_KEY = 'TURBO';
@@ -118,7 +118,7 @@ const buildDateRange = (startDate, endDate) => {
 const getSummary = async (req, res) => {
   try {
     const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à┘ü┘é┘ê╪»' });
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
     const prisma = getSharedPrismaClient();
 
     const companies = await prisma.shippingCompany.findMany({
@@ -168,7 +168,7 @@ const getSummary = async (req, res) => {
       };
     });
 
-    // ≡ƒÆá Turbo virtual company: Turbo shipments live on the Order table
+    // 💠 Turbo virtual company: Turbo shipments live on the Order table
     // (turboShipmentId / turboShipmentStatus / turboMetadata), not on Shipment rows,
     // so they never reach the Shipment-based settlement above. Merge them here.
     const turboOrders = await prisma.order.findMany({
@@ -206,15 +206,15 @@ const getSummary = async (req, res) => {
 
     res.json({ success: true, data: summaryByCompany });
   } catch (error) {
-    console.error('Γ¥î [SHIPPING-SETTLEMENT] Error in getSummary:', error);
-    res.status(500).json({ success: false, message: error.message || '╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ┘à┘ä╪«╪╡ ╪º┘ä╪¬╪│┘ê┘è╪º╪¬' });
+    console.error('❌ [SHIPPING-SETTLEMENT] Error in getSummary:', error);
+    res.status(500).json({ success: false, message: error.message || 'تعذر تحميل ملخص التسويات' });
   }
 };
 
 const listOrders = async (req, res) => {
   try {
     const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à┘ü┘é┘ê╪»' });
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
     const prisma = getSharedPrismaClient();
 
     const page = parseInt(req.query.page, 10) || 1;
@@ -319,15 +319,15 @@ const listOrders = async (req, res) => {
       pagination: { total, page, limit, pages }
     });
   } catch (error) {
-    console.error('Γ¥î [SHIPPING-SETTLEMENT] Error in listOrders:', error);
-    res.status(500).json({ success: false, message: error.message || '╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪┤╪¡┘å╪º╪¬ ╪º┘ä╪¬╪│┘ê┘è╪⌐' });
+    console.error('❌ [SHIPPING-SETTLEMENT] Error in listOrders:', error);
+    res.status(500).json({ success: false, message: error.message || 'تعذر تحميل شحنات التسوية' });
   }
 };
 
 const settle = async (req, res) => {
   try {
     const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à┘ü┘é┘ê╪»' });
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
     const prisma = getSharedPrismaClient();
     const userId = req.user?.id;
 
@@ -367,7 +367,7 @@ const settle = async (req, res) => {
     } else {
       const hasShipmentTarget = Array.isArray(shipmentIds) && shipmentIds.length > 0;
       if (!shippingCompanyId && !hasShipmentTarget) {
-        return res.status(400).json({ success: false, message: '╪¡╪»╪» ╪┤╪▒┘â╪⌐ ╪º┘ä╪┤╪¡┘å ╪ú┘ê ┘é╪º╪ª┘à╪⌐ ╪º┘ä╪┤╪¡┘å╪º╪¬' });
+        return res.status(400).json({ success: false, message: 'حدد شركة الشحن أو قائمة الشحنات' });
       }
 
       const where = { companyId };
@@ -395,15 +395,15 @@ const settle = async (req, res) => {
 
     res.json({ success: true, data: { updated } });
   } catch (error) {
-    console.error('Γ¥î [SHIPPING-SETTLEMENT] Error in settle:', error);
-    res.status(500).json({ success: false, message: error.message || '╪¬╪╣╪░╪▒ ╪¬┘å┘ü┘è╪░ ╪º┘ä╪¬╪│┘ê┘è╪⌐' });
+    console.error('❌ [SHIPPING-SETTLEMENT] Error in settle:', error);
+    res.status(500).json({ success: false, message: error.message || 'تعذر تنفيذ التسوية' });
   }
 };
 
 const unsettle = async (req, res) => {
   try {
     const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ success: false, message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à┘ü┘é┘ê╪»' });
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
     const prisma = getSharedPrismaClient();
 
     const { shipmentIds, turboOrderIds } = req.body || {};
@@ -438,13 +438,13 @@ const unsettle = async (req, res) => {
     }
 
     if (updated === 0 && !Array.isArray(turboOrderIds) && !Array.isArray(shipmentIds)) {
-      return res.status(400).json({ success: false, message: '┘é╪º╪ª┘à╪⌐ ╪º┘ä╪┤╪¡┘å╪º╪¬ ┘à╪╖┘ä┘ê╪¿╪⌐' });
+      return res.status(400).json({ success: false, message: 'قائمة الشحنات مطلوبة' });
     }
 
     res.json({ success: true, data: { updated } });
   } catch (error) {
-    console.error('Γ¥î [SHIPPING-SETTLEMENT] Error in unsettle:', error);
-    res.status(500).json({ success: false, message: error.message || '╪¬╪╣╪░╪▒ ╪º┘ä╪¬╪▒╪º╪¼╪╣ ╪╣┘å ╪º┘ä╪¬╪│┘ê┘è╪⌐' });
+    console.error('❌ [SHIPPING-SETTLEMENT] Error in unsettle:', error);
+    res.status(500).json({ success: false, message: error.message || 'تعذر التراجع عن التسوية' });
   }
 };
 

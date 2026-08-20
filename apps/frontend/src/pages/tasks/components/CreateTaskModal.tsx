@@ -1,6 +1,8 @@
-import { RefreshCw as ArrowPathIcon, Circle as DocumentDuplicateIcon } from 'lucide-react';
 import React from "react";
-;
+import {
+  ArrowPathIcon,
+  DocumentDuplicateIcon,
+} from "@heroicons/react/24/outline";
 
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";

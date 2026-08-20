@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
@@ -13,7 +13,7 @@ export function DefaultPageRedirect() {
 
     // Warm the local default-page cache from the server so the user's saved
     // preference keeps working, then let the unified resolver decide the
-    // landing (last page ΓåÆ saved default ΓåÆ role fallback).
+    // landing (last page → saved default → role fallback).
     apiClient
       .get("/user/settings", { _skipErrorToast: true } as Record<string, unknown>)
       .then((res: any) => {
@@ -40,7 +40,7 @@ export function DefaultPageRedirect() {
             <div className="absolute inset-0 rounded-full border-2 border-violet-500/20" />
             <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-violet-500 animate-spin" />
           </div>
-          <p className="text-sm text-slate-500 font-medium">╪¼╪º╪▒┘è ╪º┘ä╪¬┘ê╪¼┘è┘ç...</p>
+          <p className="text-sm text-slate-500 font-medium">جاري التوجيه...</p>
         </div>
       </div>
     );

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import { BookingPatient, BookingAppointment, PatientDocument, STATUS_MAP, INVOICE_STATUS_MAP, PAYMENT_METHOD_LABEL, DOCUMENT_TYPES, MODAL_INPUT_CLS, api, getAuthHeaders, tryParseJSON, fetchJson } from "./shared";
@@ -25,16 +25,16 @@ interface PatientDetail extends BookingPatient {
   };
 }
 
-const GENDER_LABEL: Record<string, string> = { male: "╪░┘â╪▒", female: "╪ú┘å╪½┘ë" };
-const fmtMoney = (n?: number) => (n != null ? `${Number(n).toFixed(2)} ╪¼.┘à` : "ΓÇö");
+const GENDER_LABEL: Record<string, string> = { male: "ذكر", female: "أنثى" };
+const fmtMoney = (n?: number) => (n != null ? `${Number(n).toFixed(2)} ج.م` : "—");
 
 const renderVitals = (v: unknown): string => {
   const parsed = tryParseJSON<Record<string, unknown>>(v);
   if (!parsed || Object.keys(parsed).length === 0) return "";
   return Object.entries(parsed).map(([k, val]) => {
-    const labels: Record<string, string> = { pressure: "╪º┘ä╪╢╪║╪╖", weight: "╪º┘ä┘ê╪▓┘å", temp: "╪º┘ä╪¡╪▒╪º╪▒╪⌐", pulse: "╪º┘ä┘å╪¿╪╢", sugar: "╪º┘ä╪│┘â╪▒" };
+    const labels: Record<string, string> = { pressure: "الضغط", weight: "الوزن", temp: "الحرارة", pulse: "النبض", sugar: "السكر" };
     return `${labels[k] || k}: ${String(val)}`;
-  }).join(" ┬╖ ");
+  }).join(" · ");
 };
 
 const renderList = (v: unknown): string[] | null => {
@@ -49,10 +49,10 @@ const parseMedicalHistory = (v: unknown): MedicalHistoryValue | null => {
 };
 
 const PAGE_TABS = [
-  { id: "data", label: "╪¿┘è╪º┘å╪º╪¬" },
-  { id: "medical", label: "╪º┘ä╪¬╪º╪▒┘è╪« ╪º┘ä╪╖╪¿┘è" },
-  { id: "appointments", label: "╪º┘ä┘à┘ê╪º╪╣┘è╪»" },
-  { id: "documents", label: "╪º┘ä┘à╪│╪¬┘å╪»╪º╪¬" },
+  { id: "data", label: "بيانات" },
+  { id: "medical", label: "التاريخ الطبي" },
+  { id: "appointments", label: "المواعيد" },
+  { id: "documents", label: "المستندات" },
 ] as const;
 
 type PageTab = typeof PAGE_TABS[number]["id"];
@@ -82,10 +82,10 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
       try {
         const res = await fetch(api(`patients/${id}`), { headers: getAuthHeaders() });
         const json = await res.json();
-        if (!json.success) throw new Error(json.error || "┘ü╪┤┘ä ╪º┘ä╪¬╪¡┘à┘è┘ä");
+        if (!json.success) throw new Error(json.error || "فشل التحميل");
         if (!cancelled) setPatient(json.data);
       } catch (e: unknown) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "╪«╪╖╪ú");
+        if (!cancelled) setError(e instanceof Error ? e.message : "خطأ");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -107,7 +107,7 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
         const data = await fetchJson<PatientDocument[]>(api(`patient-documents/patient/${id}`));
         if (!cancelled) setDocuments(data);
       } catch (e: unknown) {
-        if (!cancelled) setDocError(e instanceof Error ? e.message : "╪«╪╖╪ú");
+        if (!cancelled) setDocError(e instanceof Error ? e.message : "خطأ");
       } finally {
         if (!cancelled) setDocumentsLoading(false);
       }
@@ -123,14 +123,14 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
     reader.onload = () => {
       const dataUrl = String(reader.result || "");
       if (dataUrl.length > 5 * 1024 * 1024) {
-        setDocError("╪¡╪¼┘à ╪º┘ä┘à┘ä┘ü ┘â╪¿┘è╪▒ ╪¼╪»╪º┘ï (╪º┘ä╪¡╪» ╪º┘ä╪ú┘é╪╡┘ë 5 ┘à┘è╪¼╪º╪¿╪º┘è╪¬)");
+        setDocError("حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)");
         setDocFile(null);
         setFileInputKey(k => k + 1);
         return;
       }
       setDocFile({ name: file.name, dataUrl, mimeType: file.type || "" });
     };
-    reader.onerror = () => { setDocError("╪¬╪╣╪░╪▒ ┘é╪▒╪º╪í╪⌐ ╪º┘ä┘à┘ä┘ü"); setDocFile(null); };
+    reader.onerror = () => { setDocError("تعذر قراءة الملف"); setDocFile(null); };
     reader.readAsDataURL(file);
   };
 
@@ -157,20 +157,20 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
       const data = await fetchJson<PatientDocument[]>(api(`patient-documents/patient/${id}`));
       setDocuments(data);
     } catch (e: unknown) {
-      setDocError(e instanceof Error ? e.message : "╪«╪╖╪ú");
+      setDocError(e instanceof Error ? e.message : "خطأ");
     } finally {
       setUploading(false);
     }
   };
 
   const handleDeleteDocument = async (docId: string) => {
-    if (!window.confirm("┘ç┘ä ╪¬╪▒┘è╪» ╪¡╪░┘ü ┘ç╪░╪º ╪º┘ä┘à╪│╪¬┘å╪»╪ƒ")) return;
+    if (!window.confirm("هل تريد حذف هذا المستند؟")) return;
     setDocError(null);
     try {
       await fetchJson(api(`patient-documents/${docId}`), { method: "DELETE" });
       setDocuments(prev => prev.filter(d => d.id !== docId));
     } catch (e: unknown) {
-      setDocError(e instanceof Error ? e.message : "╪«╪╖╪ú");
+      setDocError(e instanceof Error ? e.message : "خطأ");
     }
   };
 
@@ -178,25 +178,25 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
     <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/admin/booking/patients")} className="p-2 border dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" title="╪▒╪¼┘ê╪╣"><ArrowRightIcon className="w-4 h-4" /></button>
+          <button onClick={() => navigate("/admin/booking/patients")} className="p-2 border dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" title="رجوع"><ArrowRightIcon className="w-4 h-4" /></button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">┘à┘ä┘ü ╪º┘ä┘à╪▒┘è╪╢</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ملف المريض</h1>
             {patient && <p className="text-sm text-gray-500 dark:text-gray-400">{patient.firstName} {patient.lastName || ""}</p>}
           </div>
         </div>
         {patient && (
           <div className="flex gap-2">
-            <button onClick={() => setEditing(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">╪¬╪╣╪»┘è┘ä</button>
+            <button onClick={() => setEditing(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">تعديل</button>
           </div>
         )}
       </div>
 
       {loading ? (
-        <p className="text-center py-16 text-gray-400 dark:text-gray-500">╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...</p>
+        <p className="text-center py-16 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
       ) : error ? (
         <div className="text-center py-16">
           <p className="text-red-500 mb-4">{error}</p>
-          <button onClick={() => navigate("/admin/booking/patients")} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">╪º┘ä╪╣┘ê╪»╪⌐ ┘ä┘ä┘à╪▒╪╢┘ë</button>
+          <button onClick={() => navigate("/admin/booking/patients")} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">العودة للمرضى</button>
         </div>
       ) : patient ? (
         <div className="space-y-6 max-w-5xl">
@@ -210,72 +210,72 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
               <div>
                 <p className="text-lg font-bold">{patient.firstName} {patient.lastName || ""}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{GENDER_LABEL[patient.gender || ""] || ""} {patient.bloodType ? `┬╖ ┘ü╪╡┘è┘ä╪⌐ ${patient.bloodType}` : ""}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{GENDER_LABEL[patient.gender || ""] || ""} {patient.bloodType ? `· فصيلة ${patient.bloodType}` : ""}</p>
               </div>
               <div className="text-sm space-y-1.5">
-                {patient.phone && <p dir="ltr">≡ƒô₧ {patient.phone}</p>}
-                {patient.email && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">Γ£ë∩╕Å {patient.email}</p>}
-                {patient.nationalId && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">≡ƒ¬¬ ╪º┘ä╪▒┘é┘à ╪º┘ä┘é┘ê┘à┘è: {patient.nationalId}</p>}
-                {patient.address && <p>≡ƒôì {patient.address}</p>}
+                {patient.phone && <p dir="ltr">📞 {patient.phone}</p>}
+                {patient.email && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">✉️ {patient.email}</p>}
+                {patient.nationalId && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">🪪 الرقم القومي: {patient.nationalId}</p>}
+                {patient.address && <p>📍 {patient.address}</p>}
                 {patient.birthDate && (
-                  <p>≡ƒÄé {String(patient.birthDate).split("T")[0]}{computeAge(String(patient.birthDate)) && <span className="text-xs text-gray-500 dark:text-gray-400"> ┬╖ ╪º┘ä╪╣┘à╪▒: {computeAge(String(patient.birthDate))}</span>}</p>
+                  <p>🎂 {String(patient.birthDate).split("T")[0]}{computeAge(String(patient.birthDate)) && <span className="text-xs text-gray-500 dark:text-gray-400"> · العمر: {computeAge(String(patient.birthDate))}</span>}</p>
                 )}
                 {patient.nationalIdImage && (
                   <div className="pt-1">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">╪╡┘ê╪▒╪⌐ ╪º┘ä╪¿╪╖╪º┘é╪⌐</p>
-                    <img src={patient.nationalIdImage} alt="╪¿╪╖╪º┘é╪⌐ ╪º┘ä╪▒┘é┘à ╪º┘ä┘é┘ê┘à┘è" className="w-40 h-28 object-cover rounded-lg border dark:border-gray-600" />
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">صورة البطاقة</p>
+                    <img src={patient.nationalIdImage} alt="بطاقة الرقم القومي" className="w-40 h-28 object-cover rounded-lg border dark:border-gray-600" />
                   </div>
                 )}
               </div>
               <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                {patient.status && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">╪º┘ä╪¡╪º┘ä╪⌐</p><p className="font-medium">{statusLabel(patient.status)}</p></div>}
-                {patient.source && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">╪º┘ä┘à╪╡╪»╪▒</p><p className="font-medium">{patient.source}</p></div>}
-                {patient.maritalStatus && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä╪º╪¼╪¬┘à╪º╪╣┘è╪⌐</p><p className="font-medium">{maritalLabel(patient.maritalStatus)}</p></div>}
-                {patient.city && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">╪º┘ä┘à╪»┘è┘å╪⌐</p><p className="font-medium">{patient.city}</p></div>}
-                {patient.occupation && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">╪º┘ä┘à┘ç┘å╪⌐</p><p className="font-medium">{patient.occupation}</p></div>}
-                {patient.referringPhysician && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä</p><p className="font-medium">{patient.referringPhysician.name}</p></div>}
-                {patient.priceList && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">┘é╪º╪ª┘à╪⌐ ╪º┘ä╪ú╪│╪╣╪º╪▒</p><p className="font-medium">{patient.priceList.name}</p></div>}
+                {patient.status && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">الحالة</p><p className="font-medium">{statusLabel(patient.status)}</p></div>}
+                {patient.source && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">المصدر</p><p className="font-medium">{patient.source}</p></div>}
+                {patient.maritalStatus && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">الحالة الاجتماعية</p><p className="font-medium">{maritalLabel(patient.maritalStatus)}</p></div>}
+                {patient.city && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">المدينة</p><p className="font-medium">{patient.city}</p></div>}
+                {patient.occupation && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">المهنة</p><p className="font-medium">{patient.occupation}</p></div>}
+                {patient.referringPhysician && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">الطبيب المحوّل</p><p className="font-medium">{patient.referringPhysician.name}</p></div>}
+                {patient.priceList && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">قائمة الأسعار</p><p className="font-medium">{patient.priceList.name}</p></div>}
               </div>
-              {allergies && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">╪º┘ä╪¡╪│╪º╪│┘è╪⌐</p><div className="flex flex-wrap gap-1">{allergies.map((a, i) => <span key={i} className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">{a}</span>)}</div></div>}
-              {diseases && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">╪ú┘à╪▒╪º╪╢ ┘à╪▓┘à┘å╪⌐</p><div className="flex flex-wrap gap-1">{diseases.map((d, i) => <span key={i} className="text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full">{d}</span>)}</div></div>}
-              {medications && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">╪ú╪»┘ê┘è╪⌐ ╪¡╪º┘ä┘è╪⌐</p><div className="flex flex-wrap gap-1">{medications.map((m, i) => <span key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">{m}</span>)}</div></div>}
-              {patient.notes && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">┘à┘ä╪º╪¡╪╕╪º╪¬</p><p className="text-sm">{patient.notes}</p></div>}
-              {patient.customer && <div className="md:col-span-2 text-xs text-gray-500 dark:text-gray-400">╪╣┘à┘è┘ä ┘à╪▒╪¬╪¿╪╖: {patient.customer.firstName} {patient.customer.lastName || ""}</div>}
+              {allergies && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الحساسية</p><div className="flex flex-wrap gap-1">{allergies.map((a, i) => <span key={i} className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">{a}</span>)}</div></div>}
+              {diseases && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">أمراض مزمنة</p><div className="flex flex-wrap gap-1">{diseases.map((d, i) => <span key={i} className="text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full">{d}</span>)}</div></div>}
+              {medications && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">أدوية حالية</p><div className="flex flex-wrap gap-1">{medications.map((m, i) => <span key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">{m}</span>)}</div></div>}
+              {patient.notes && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ملاحظات</p><p className="text-sm">{patient.notes}</p></div>}
+              {patient.customer && <div className="md:col-span-2 text-xs text-gray-500 dark:text-gray-400">عميل مرتبط: {patient.customer.firstName} {patient.customer.lastName || ""}</div>}
             </div>
 
             {/* Summary cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">╪º┘ä╪▓┘è╪º╪▒╪º╪¬</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">الزيارات</p>
                 <p className="text-xl font-bold">{patient.appointments?.length || 0}</p>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">╪º┘ä┘ü┘ê╪º╪¬┘è╪▒</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">الفواتير</p>
                 <p className="text-xl font-bold">{patient.financialSummary?.invoiceCount ?? patient.invoices?.length ?? 0}</p>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘à╪╖╪º┘ä╪¿</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">إجمالي المطالب</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-white">{fmtMoney(patient.financialSummary?.totalBilled)}</p>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">╪º┘ä┘à╪│╪»╪»</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">المسدد</p>
                 <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmtMoney(patient.financialSummary?.totalPaid)}</p>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">╪º┘ä┘à╪¬╪¿┘é┘è</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">المتبقي</p>
                 <p className="text-xl font-bold text-red-600 dark:text-red-400">{fmtMoney(patient.financialSummary?.outstanding)}</p>
               </div>
             </div>
 
             {/* Invoices */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-              <h4 className="font-bold mb-3">╪º┘ä┘ü┘ê╪º╪¬┘è╪▒ ({patient.invoices?.length || 0})</h4>
+              <h4 className="font-bold mb-3">الفواتير ({patient.invoices?.length || 0})</h4>
               {(!patient.invoices || patient.invoices.length === 0) ? (
-                <p className="text-center py-8 text-gray-400 dark:text-gray-500">┘ä╪º ╪¬┘ê╪¼╪» ┘ü┘ê╪º╪¬┘è╪▒</p>
+                <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد فواتير</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐", "╪º┘ä╪¬╪º╪▒┘è╪«", "╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", "╪º┘ä╪«╪╡┘à", "╪º┘ä┘à╪│╪»╪»", "╪º┘ä┘à╪¬╪¿┘é┘è", "╪º┘ä╪¡╪º┘ä╪⌐", "╪º┘ä╪»┘ü╪╣╪º╪¬"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
+                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["رقم الفاتورة", "التاريخ", "الإجمالي", "الخصم", "المسدد", "المتبقي", "الحالة", "الدفعات"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
                     <tbody>{patient.invoices.map(inv => (
                       <tr key={inv.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="py-2.5 px-3 font-medium">{inv.invoiceNumber}</td>
@@ -286,7 +286,7 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
                         <td className="py-2.5 px-3 text-red-600 dark:text-red-400">{fmtMoney(inv.remaining)}</td>
                         <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${INVOICE_STATUS_MAP[inv.status]?.color || ""}`}>{INVOICE_STATUS_MAP[inv.status]?.label || inv.status}</span></td>
                         <td className="py-2.5 px-3 text-xs text-gray-500 dark:text-gray-400">
-                          {inv.payments?.length ? inv.payments.map((p, i) => <div key={i} dir="ltr">{fmtMoney(p.amount)} ┬╖ {PAYMENT_METHOD_LABEL[p.method] || p.method}</div>) : "ΓÇö"}
+                          {inv.payments?.length ? inv.payments.map((p, i) => <div key={i} dir="ltr">{fmtMoney(p.amount)} · {PAYMENT_METHOD_LABEL[p.method] || p.method}</div>) : "—"}
                         </td>
                       </tr>
                     ))}</tbody>
@@ -300,49 +300,49 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5 space-y-4">
               <MedicalHistoryChecklist value={medicalHistory} onChange={() => { /* read-only */ }} readOnly />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {diseases && <div><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">╪ú┘à╪▒╪º╪╢ ┘à╪▓┘à┘å╪⌐</p><div className="flex flex-wrap gap-1">{diseases.map((d, i) => <span key={i} className="text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full">{d}</span>)}</div></div>}
-                {allergies && <div><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">╪º┘ä╪¡╪│╪º╪│┘è╪⌐</p><div className="flex flex-wrap gap-1">{allergies.map((a, i) => <span key={i} className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">{a}</span>)}</div></div>}
+                {diseases && <div><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">أمراض مزمنة</p><div className="flex flex-wrap gap-1">{diseases.map((d, i) => <span key={i} className="text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full">{d}</span>)}</div></div>}
+                {allergies && <div><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الحساسية</p><div className="flex flex-wrap gap-1">{allergies.map((a, i) => <span key={i} className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">{a}</span>)}</div></div>}
               </div>
-              {!medicalHistory && !diseases && !allergies && <p className="text-center py-8 text-gray-400 dark:text-gray-500">┘ä╪º ╪¬┘ê╪¼╪» ╪¿┘è╪º┘å╪º╪¬ ╪╖╪¿┘è╪⌐ ┘à╪│╪¼┘ä╪⌐</p>}
+              {!medicalHistory && !diseases && !allergies && <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد بيانات طبية مسجلة</p>}
             </div>
           )}
 
           {tab === "appointments" && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-              <h4 className="font-bold mb-3">╪¬╪º╪▒┘è╪« ╪º┘ä╪▓┘è╪º╪▒╪º╪¬ ({patient.appointments?.length || 0})</h4>
+              <h4 className="font-bold mb-3">تاريخ الزيارات ({patient.appointments?.length || 0})</h4>
               {(!patient.appointments || patient.appointments.length === 0) ? (
-                <p className="text-center py-8 text-gray-400 dark:text-gray-500">┘ä╪º ╪¬┘ê╪¼╪» ╪▓┘è╪º╪▒╪º╪¬ ┘à╪│╪¼┘ä╪⌐ ╪¿╪╣╪»</p>
+                <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد زيارات مسجلة بعد</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["╪º┘ä╪¬╪º╪▒┘è╪«", "╪º┘ä┘ê┘é╪¬", "╪º┘ä┘ü╪▒╪╣", "╪º┘ä╪╖╪¿┘è╪¿", "╪º┘ä╪«╪»┘à╪⌐", "╪º┘ä╪¡┘è┘ê┘è╪⌐", "╪º┘ä╪¬╪┤╪«┘è╪╡", "╪º┘ä╪¡╪º┘ä╪⌐", "╪º┘ä╪»┘ü╪╣"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
+                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["التاريخ", "الوقت", "الفرع", "الطبيب", "الخدمة", "الحيوية", "التشخيص", "الحالة", "الدفع"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
                     <tbody>{patient.appointments.map(a => (
                       <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="py-2.5 px-3 whitespace-nowrap">{String(a.appointmentDate).split("T")[0]}</td>
                         <td className="py-2.5 px-3 whitespace-nowrap">{a.startTime}</td>
-                        <td className="py-2.5 px-3">{a.branch?.name || "ΓÇö"}</td>
-                        <td className="py-2.5 px-3">{(a.doctor ? `${a.doctor.title || ""} ${a.doctor.name || ""}` : a.doctorName || "ΓÇö").trim()}</td>
-                        <td className="py-2.5 px-3">{a.serviceName || "ΓÇö"}</td>
-                        <td className="py-2.5 px-3 text-xs text-gray-500 dark:text-gray-400">{renderVitals(a.vitals) || "ΓÇö"}</td>
+                        <td className="py-2.5 px-3">{a.branch?.name || "—"}</td>
+                        <td className="py-2.5 px-3">{(a.doctor ? `${a.doctor.title || ""} ${a.doctor.name || ""}` : a.doctorName || "—").trim()}</td>
+                        <td className="py-2.5 px-3">{a.serviceName || "—"}</td>
+                        <td className="py-2.5 px-3 text-xs text-gray-500 dark:text-gray-400">{renderVitals(a.vitals) || "—"}</td>
                         <td className="py-2.5 px-3 max-w-[220px]">
                           {a.diagnosis ? (
                             <div>
                               <p className="truncate" title={a.diagnosis}>{a.diagnosis}</p>
                               {(a.treatmentPlan || a.prescription) && (
                                 <p className="text-xs text-gray-400 dark:text-gray-500 truncate" title={`${a.treatmentPlan || ""} ${a.prescription || ""}`}>
-                                  {a.treatmentPlan ? `╪«╪╖╪⌐: ${a.treatmentPlan}` : ""}{a.treatmentPlan && a.prescription ? " ┬╖ " : ""}{a.prescription ? `┘ê╪╡┘ü╪⌐: ${a.prescription}` : ""}
+                                  {a.treatmentPlan ? `خطة: ${a.treatmentPlan}` : ""}{a.treatmentPlan && a.prescription ? " · " : ""}{a.prescription ? `وصفة: ${a.prescription}` : ""}
                                 </p>
                               )}
                             </div>
-                          ) : "ΓÇö"}
+                          ) : "—"}
                         </td>
                         <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
                         <td className="py-2.5 px-3 text-xs">
                           {a.paymentRequired || a.paymentStatus ? (
                             <span className={`px-2 py-0.5 rounded-full ${a.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : a.paymentStatus === "partial" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>
-                              {a.paymentStatus === "paid" ? "┘à╪»┘ü┘ê╪╣" : a.paymentStatus === "partial" ? "╪¼╪▓╪ª┘è" : "╪║┘è╪▒ ┘à╪»┘ü┘ê╪╣"}
+                              {a.paymentStatus === "paid" ? "مدفوع" : a.paymentStatus === "partial" ? "جزئي" : "غير مدفوع"}
                             </span>
-                          ) : "ΓÇö"}
+                          ) : "—"}
                         </td>
                       </tr>
                     ))}</tbody>
@@ -354,39 +354,39 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
           {tab === "documents" && (
             <div className="space-y-5">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-                <h4 className="font-bold mb-3">╪Ñ╪╢╪º┘ü╪⌐ ┘à╪│╪¬┘å╪»</h4>
+                <h4 className="font-bold mb-3">إضافة مستند</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">┘å┘ê╪╣ ╪º┘ä┘à╪│╪¬┘å╪»</label>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">نوع المستند</label>
                     <select value={docType} onChange={e => setDocType(e.target.value)} className={MODAL_INPUT_CLS}>
                       {DOCUMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">╪º╪│┘à ╪º┘ä┘à╪│╪¬┘å╪»</label>
-                    <input value={docName} onChange={e => setDocName(e.target.value)} placeholder="╪º╪«╪¬┘è╪º╪▒┘è" className={MODAL_INPUT_CLS} />
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">اسم المستند</label>
+                    <input value={docName} onChange={e => setDocName(e.target.value)} placeholder="اختياري" className={MODAL_INPUT_CLS} />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">┘à┘ä╪º╪¡╪╕╪º╪¬</label>
-                    <input value={docNotes} onChange={e => setDocNotes(e.target.value)} placeholder="╪º╪«╪¬┘è╪º╪▒┘è" className={MODAL_INPUT_CLS} />
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">ملاحظات</label>
+                    <input value={docNotes} onChange={e => setDocNotes(e.target.value)} placeholder="اختياري" className={MODAL_INPUT_CLS} />
                   </div>
                 </div>
                 <div className="mt-3">
                   <input key={fileInputKey} type="file" onChange={onDocFileChange} className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-300 file:font-semibold" />
-                  {docFile && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">╪¬┘à ╪º╪«╪¬┘è╪º╪▒: {docFile.name}</p>}
+                  {docFile && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">تم اختيار: {docFile.name}</p>}
                 </div>
                 <div className="mt-4 flex justify-end">
-                  <button onClick={handleUpload} disabled={!docFile || uploading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">{uploading ? "╪¼╪º╪▒┘ì ╪º┘ä╪▒┘ü╪╣..." : "╪▒┘ü╪╣ ╪º┘ä┘à╪│╪¬┘å╪»"}</button>
+                  <button onClick={handleUpload} disabled={!docFile || uploading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">{uploading ? "جارٍ الرفع..." : "رفع المستند"}</button>
                 </div>
                 {docError && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{docError}</p>}
               </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-                <h4 className="font-bold mb-3">╪º┘ä┘à╪│╪¬┘å╪»╪º╪¬ ({documents.length})</h4>
+                <h4 className="font-bold mb-3">المستندات ({documents.length})</h4>
                 {documentsLoading ? (
-                  <p className="text-center py-8 text-gray-400 dark:text-gray-500">╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...</p>
+                  <p className="text-center py-8 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
                 ) : documents.length === 0 ? (
-                  <p className="text-center py-8 text-gray-400 dark:text-gray-500">┘ä╪º ╪¬┘ê╪¼╪» ┘à╪│╪¬┘å╪»╪º╪¬ ┘à╪▒┘ü┘ê╪╣╪⌐</p>
+                  <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد مستندات مرفوعة</p>
                 ) : (
                   <div className="space-y-2">
                     {documents.map(doc => (
@@ -394,13 +394,13 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
                         <div className="flex items-center gap-3 min-w-0">
                           <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${documentTypeColor(doc.documentType)}`}>{documentTypeLabel(doc.documentType)}</span>
                           <div className="min-w-0">
-                            <p className="font-medium truncate">{doc.name || "╪¿╪»┘ê┘å ╪º╪│┘à"}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{String(doc.uploadedAt).split("T")[0]}{doc.uploadedBy ? ` ┬╖ ${doc.uploadedBy}` : ""}</p>
+                            <p className="font-medium truncate">{doc.name || "بدون اسم"}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{String(doc.uploadedAt).split("T")[0]}{doc.uploadedBy ? ` · ${doc.uploadedBy}` : ""}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          {doc.fileData && <a href={doc.fileData} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">┘ü╪¬╪¡</a>}
-                          <button onClick={() => handleDeleteDocument(doc.id)} className="text-sm text-red-600 dark:text-red-400 hover:underline">╪¡╪░┘ü</button>
+                          {doc.fileData && <a href={doc.fileData} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">فتح</a>}
+                          <button onClick={() => handleDeleteDocument(doc.id)} className="text-sm text-red-600 dark:text-red-400 hover:underline">حذف</button>
                         </div>
                       </div>
                     ))}
@@ -419,7 +419,7 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
             await fetchJson(api(`patients/${id}`), { method: "PUT", body: JSON.stringify(d) });
             const res = await fetch(api(`patients/${id}`), { headers: getAuthHeaders() });
             const json = await res.json();
-            if (!json.success) throw new Error(json.error || "┘ü╪┤┘ä ╪º┘ä╪¬╪¡┘à┘è┘ä");
+            if (!json.success) throw new Error(json.error || "فشل التحميل");
             setPatient(json.data);
             setEditing(false);
           }}
@@ -430,12 +430,12 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
 }
 
 const statusLabel = (s: string): string => {
-  const labels: Record<string, string> = { ACTIVE: "┘å╪┤╪╖", INACTIVE: "╪║┘è╪▒ ┘å╪┤╪╖", REVIEW: "┘é┘è╪» ╪º┘ä┘à╪▒╪º╪¼╪╣╪⌐" };
+  const labels: Record<string, string> = { ACTIVE: "نشط", INACTIVE: "غير نشط", REVIEW: "قيد المراجعة" };
   return labels[s] || s;
 };
 
 const maritalLabel = (s: string): string => {
-  const labels: Record<string, string> = { SINGLE: "╪ú╪╣╪▓╪¿/╪╣╪▓╪¿╪º╪í", MARRIED: "┘à╪¬╪▓┘ê╪¼/┘à╪¬╪▓┘ê╪¼╪⌐", DIVORCED: "┘à╪╖┘ä┘é/┘à╪╖┘ä┘é╪⌐", WIDOW: "╪ú╪▒┘à┘ä/╪ú╪▒┘à┘ä╪⌐" };
+  const labels: Record<string, string> = { SINGLE: "أعزب/عزباء", MARRIED: "متزوج/متزوجة", DIVORCED: "مطلق/مطلقة", WIDOW: "أرمل/أرملة" };
   return labels[s] || s;
 };
 

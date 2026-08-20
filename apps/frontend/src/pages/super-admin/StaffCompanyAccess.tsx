@@ -1,9 +1,15 @@
-import { Circle as UserGroupIcon, Plus as PlusIcon, Trash2 as TrashIcon, Building as BuildingOfficeIcon, AlertTriangle as ExclamationCircleIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-;
+import {
+  UserGroupIcon,
+  PlusIcon,
+  TrashIcon,
+  BuildingOfficeIcon,
+  ExclamationCircleIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 
 interface Company {
   id: string;
@@ -93,12 +99,12 @@ const StaffCompanyAccess = () => {
       if (data.success) {
         fetchStaff();
         setShowAddModal(false);
-        alert("تمت إضافة الصلاحية بنجاح");
+        alert(i18n.t("StaffCompanyAccess.msg_7dc0"));
       } else {
         alert("فشل: " + data.message);
       }
     } catch (error) {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("StaffCompanyAccess.msg_968c"));
     }
   };
 
@@ -115,12 +121,12 @@ const StaffCompanyAccess = () => {
       const data = await res.json();
       if (data.success) {
         fetchStaff();
-        alert("تم الحذف بنجاح");
+        alert(i18n.t("StaffCompanyAccess.msg_abf3"));
       } else {
         alert("فشل: " + data.message);
       }
     } catch (error) {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("StaffCompanyAccess.msg_968c"));
     }
   };
 
@@ -136,12 +142,12 @@ const StaffCompanyAccess = () => {
       const data = await res.json();
       if (data.success) {
         fetchStaff();
-        alert("تم تعيين شركة النظام كشركة أساسية بنجاح");
+        alert(i18n.t("StaffCompanyAccess.msg_bd23"));
       } else {
         alert("فشل: " + data.message);
       }
     } catch (error) {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("StaffCompanyAccess.msg_968c"));
     }
   };
 

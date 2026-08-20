@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import StatusMatrixTab from "../tabs/StatusMatrixTab";
 
 jest.mock("../orderMovementShared", () => require("../testSupport").buildSharedMock());
@@ -34,11 +34,11 @@ describe("StatusMatrixTab", () => {
 
     render(<StatusMatrixTab {...props} />);
 
-    await waitFor(() => expect(screen.getByText("╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪¡╪▒┘â╪º╪¬")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("إجمالي الحركات")).toBeInTheDocument());
     expect(screen.getByText("10")).toBeInTheDocument();
-    expect(screen.getAllByText("╪¬┘é╪»┘à").length).toBeGreaterThan(0);
-    expect(screen.getByText("┘à╪╡┘ü┘ê┘ü╪⌐ ╪º┘ä╪º┘å╪¬┘é╪º┘ä╪º╪¬")).toBeInTheDocument();
-    expect(screen.getByText("┘à┘å \\ ╪Ñ┘ä┘ë")).toBeInTheDocument();
+    expect(screen.getAllByText("تقدم").length).toBeGreaterThan(0);
+    expect(screen.getByText("مصفوفة الانتقالات")).toBeInTheDocument();
+    expect(screen.getByText("من \\ إلى")).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith("matrix", { startDate: "2026-05-01", endDate: "2026-08-11", mode: "all" });
   });
 
@@ -51,7 +51,7 @@ describe("StatusMatrixTab", () => {
   });
 
   test("renders error state on failure", async () => {
-    mockFetch.mockRejectedValue(new Error("┘ü╪┤┘ä"));
+    mockFetch.mockRejectedValue(new Error("فشل"));
 
     render(<StatusMatrixTab {...props} />);
 

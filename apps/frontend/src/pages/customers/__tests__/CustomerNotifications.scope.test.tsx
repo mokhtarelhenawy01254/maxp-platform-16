@@ -1,6 +1,6 @@
-﻿/**
- * customerScope ΓÇö ╪º┘ä╪¬╪¡┘é┘é ┘à┘å ╪»┘à╪¼ schedule + templates ┘ü┘è EventRow[] ┘à┘ê╪¡┘æ╪»
- * ┘ê┘à┘å ╪ú┘å ╪º┘ä╪╡┘ü╪¡╪⌐ ╪¬╪╣╪▒╪╢ ╪¬╪¿┘ê┘è╪¿ ╪º┘ä╪¼╪»┘ê┘ä╪⌐ ╪¿╪»┘ê┘å ┘â╪│╪▒ ╪º┘ä┘å╪╖╪º┘é.
+/**
+ * customerScope — التحقق من دمج schedule + templates في EventRow[] موحّد
+ * ومن أن الصفحة تعرض تبويب الجدولة بدون كسر النطاق.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { customerScopeConfig } from "../../templates/scopes/customerScope";
@@ -17,9 +17,9 @@ describe("customerScope", () => {
           activeChannel: "BAILEYS",
           delayValue: 24,
           delayUnit: "HOURS",
-          label: "┘â╪│╪¿ ┘å┘é╪º╪╖",
+          label: "كسب نقاط",
           category: "loyalty",
-          trigger: "╪╣┘å╪» ┘â╪│╪¿ ┘å┘é╪º╪╖",
+          trigger: "عند كسب نقاط",
           templates: [],
         },
         {
@@ -29,9 +29,9 @@ describe("customerScope", () => {
           activeChannel: "META_CLOUD",
           delayValue: 0,
           delayUnit: "HOURS",
-          label: "┘â╪º╪┤ ╪¿╪º┘â",
+          label: "كاش باك",
           category: "cashback",
-          trigger: "╪╣┘å╪» ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â",
+          trigger: "عند إضافة الكاش باك",
           templates: [],
         },
       ],
@@ -45,24 +45,24 @@ describe("customerScope", () => {
         {
           id: "t1",
           eventType: "LOYALTY_POINTS_AWARDED",
-          name: "╪╣╪º╪»┘è",
-          content: "┘à╪▒╪¡╪¿╪º┘ï {customerName} ┘â╪│╪¿╪¬ {points} ┘å┘é╪╖╪⌐",
+          name: "عادي",
+          content: "مرحباً {customerName} كسبت {points} نقطة",
           channel: "BAILEYS",
           isActive: true,
         },
         {
           id: "t2",
           eventType: "LOYALTY_POINTS_AWARDED",
-          name: "┘à┘è╪¬╪º",
-          content: "┘à╪▒╪¡╪¿╪º┘ï {customerName}",
+          name: "ميتا",
+          content: "مرحباً {customerName}",
           channel: "META_CLOUD",
           isActive: true,
         },
         {
           id: "t3",
           eventType: "OTHER_EVENT",
-          name: "╪«╪º╪▒╪¼ ╪º┘ä┘å╪╖╪º┘é",
-          content: "┘à╪┤ ╪º┘ä┘à┘ü╪▒┘ê╪╢ ┘è╪╕┘ç╪▒",
+          name: "خارج النطاق",
+          content: "مش المفروض يظهر",
           channel: "BAILEYS",
           isActive: true,
         },
@@ -82,24 +82,24 @@ describe("customerScope", () => {
     delete: jest.fn(),
   };
 
-  test("loadEvents ╪¿┘è╪»┘à╪¼ schedule + templates ┘ü┘è EventRow[] ┘à╪╣ ╪¬╪╖╪¿┘è╪╣ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬", async () => {
+  test("loadEvents بيدمج schedule + templates في EventRow[] مع تطبيع المتغيرات", async () => {
     const rows = await customerScopeConfig.loadEvents(api as any);
 
     expect(rows).toHaveLength(3);
     const loyalty = rows.find((r) => r.code === "LOYALTY_POINTS_AWARDED")!;
-    expect(loyalty.name).toBe("┘â╪│╪¿ ┘å┘é╪º╪╖");
+    expect(loyalty.name).toBe("كسب نقاط");
     expect(loyalty.notifyCustomer).toBe(true);
     expect(loyalty.channel).toBe("BAILEYS");
     expect(loyalty.delayValue).toBe(24);
-    expect(loyalty.trigger).toBe("╪╣┘å╪» ┘â╪│╪¿ ┘å┘é╪º╪╖");
-    // ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╣╪º╪»┘è + ╪º┘ä┘à┘è╪¬╪º ┘à╪▒╪¿┘ê╪╖┘è┘å ╪¿╪º┘ä╪¡╪»╪½ ╪º┘ä╪╡╪¡┘è╪¡
-    expect(loyalty.template?.content).toBe("┘à╪▒╪¡╪¿╪º┘ï {{customerName}} ┘â╪│╪¿╪¬ {{points}} ┘å┘é╪╖╪⌐");
-    expect(loyalty.metaTemplate?.content).toBe("┘à╪▒╪¡╪¿╪º┘ï {{customerName}}");
-    // ╪º┘ä┘é╪º┘ä╪¿ ╪«╪º╪▒╪¼ ╪º┘ä┘å╪╖╪º┘é ┘à╪│╪¬╪¿╪╣╪»
-    expect(loyalty.template?.name).toBe("╪╣╪º╪»┘è");
+    expect(loyalty.trigger).toBe("عند كسب نقاط");
+    // القالب العادي + الميتا مربوطين بالحدث الصحيح
+    expect(loyalty.template?.content).toBe("مرحباً {{customerName}} كسبت {{points}} نقطة");
+    expect(loyalty.metaTemplate?.content).toBe("مرحباً {{customerName}}");
+    // القالب خارج النطاق مستبعد
+    expect(loyalty.template?.name).toBe("عادي");
   });
 
-  test("loadEvents ╪¿┘è╪╢┘è┘ü ╪╡┘ü ╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ┘à┘å╪º╪│╪¿╪⌐ ╪¼╪»┘è╪» (occasions)", async () => {
+  test("loadEvents بيضيف صف إنشاء قالب مناسبة جديد (occasions)", async () => {
     const rows = await customerScopeConfig.loadEvents(api as any);
     const newOccasion = rows.find((r) => r.id === "__new_occasion__")!;
     expect(newOccasion).toBeDefined();
@@ -108,7 +108,7 @@ describe("customerScope", () => {
     expect(newOccasion.notifyCustomer).toBe(true);
   });
 
-  test("loadEvents ╪¿┘è╪¼┘à╪╣ ┘é┘ê╪º┘ä╪¿ OCCASION ╪¡╪│╪¿ eventType: ╪╣╪º╪»┘è + ┘ê╪º╪¬╪│╪º╪¿ ╪¿┘è╪▓┘å╪│ (┘à┘è╪¬╪º)", async () => {
+  test("loadEvents بيجمع قوالب OCCASION حسب eventType: عادي + واتساب بيزنس (ميتا)", async () => {
     const apiOcc = {
       get: jest.fn((url: string) => {
         if (url === "/hr/customer-loyalty/notifications/schedule") return Promise.resolve({ data: { data: [] } });
@@ -117,8 +117,8 @@ describe("customerScope", () => {
             data: {
               success: true,
               templates: [
-                { id: "occ-regular", eventType: "CUSTOMER_OCCASION_abc", name: "┘é╪º┘ä╪¿ ╪╣┘è╪» ╪º┘ä╪ú┘à", content: "┘â┘ä ╪│┘å╪⌐ ┘ê╪º┘å╪¬┘è ╪╖┘è╪¿╪⌐ {customerName}", channel: "BAILEYS", isActive: true, category: "OCCASION" },
-                { id: "occ-meta", eventType: "CUSTOMER_OCCASION_abc", name: "╪╣┘è╪» ╪º┘ä╪ú┘à - ╪¿┘è╪▓┘å╪│", content: "┘â┘ä ╪│┘å╪⌐ ┘ê╪º┘å╪¬┘è ╪╖┘è╪¿╪⌐ {customerName}", channel: "META_CLOUD", isActive: true, category: "OCCASION" },
+                { id: "occ-regular", eventType: "CUSTOMER_OCCASION_abc", name: "قالب عيد الأم", content: "كل سنة وانتي طيبة {customerName}", channel: "BAILEYS", isActive: true, category: "OCCASION" },
+                { id: "occ-meta", eventType: "CUSTOMER_OCCASION_abc", name: "عيد الأم - بيزنس", content: "كل سنة وانتي طيبة {customerName}", channel: "META_CLOUD", isActive: true, category: "OCCASION" },
               ],
             },
           });
@@ -135,24 +135,24 @@ describe("customerScope", () => {
     const occasion = rows.find((r) => r.code === "CUSTOMER_OCCASION_abc")!;
     expect(occasion).toBeDefined();
     expect(occasion.category).toBe("OCCASION");
-    // ╪º┘ä╪│┘ä┘ê╪⌐ ╪º┘ä╪╣╪º╪»┘è╪⌐ (┘ê╪º╪¬╪│╪º╪¿)
-    expect(occasion.template?.name).toBe("┘é╪º┘ä╪¿ ╪╣┘è╪» ╪º┘ä╪ú┘à");
-    expect(occasion.template?.content).toBe("┘â┘ä ╪│┘å╪⌐ ┘ê╪º┘å╪¬┘è ╪╖┘è╪¿╪⌐ {{customerName}}");
-    // ╪º┘ä╪│┘ä┘ê╪⌐ ╪º┘ä╪¿┘è╪▓┘å╪│ (┘à┘è╪¬╪º)
-    expect(occasion.metaTemplate?.name).toBe("╪╣┘è╪» ╪º┘ä╪ú┘à - ╪¿┘è╪▓┘å╪│");
+    // السلوة العادية (واتساب)
+    expect(occasion.template?.name).toBe("قالب عيد الأم");
+    expect(occasion.template?.content).toBe("كل سنة وانتي طيبة {{customerName}}");
+    // السلوة البيزنس (ميتا)
+    expect(occasion.metaTemplate?.name).toBe("عيد الأم - بيزنس");
     expect(occasion.hasTemplate).toBe(true);
     expect(occasion.hasMetaTemplate).toBe(true);
-    // ┘â┘ä ┘à┘å╪º╪│╪¿╪⌐ = ╪╡┘ü ┘ê╪º╪¡╪» ╪¿╪│ (+ ╪╡┘ü "┘à┘å╪º╪│╪¿╪⌐ ╪¼╪»┘è╪»╪⌐" ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è)
+    // كل مناسبة = صف واحد بس (+ صف "مناسبة جديدة" الافتراضي)
     expect(rows.filter((r) => r.category === "OCCASION").length).toBe(2);
     expect(rows.filter((r) => r.category === "OCCASION" && r.id !== "__new_occasion__").length).toBe(1);
   });
 
-  test("toggleNotify ┘ü┘è ╪╡┘ü OCCASION ╪¿┘è┘ü╪╣┘æ┘ä/┘è┘ê┘é┘ü ╪º┘ä┘é╪º┘ä╪¿ ┘å┘ü╪│┘ç ╪¿╪»┘ä ╪º┘ä┘Ç schedule", async () => {
+  test("toggleNotify في صف OCCASION بيفعّل/يوقف القالب نفسه بدل الـ schedule", async () => {
     await customerScopeConfig.toggleNotify(api as any, { code: "CUSTOMER_OCCASION", category: "OCCASION", template: { id: "occ-1" }, notifyCustomer: false } as any);
     expect(api.put).toHaveBeenCalledWith("/whatsapp-notifications/templates/occ-1", { isActive: true });
   });
 
-  test("toggleNotify ╪¿┘è┘â╪¬╪¿ ┘ä┘ä┘Ç schedule ╪¿┘å┘ü╪│ ╪º┘ä╪¡╪»╪½", async () => {
+  test("toggleNotify بيكتب للـ schedule بنفس الحدث", async () => {
     await customerScopeConfig.toggleNotify(api as any, { code: "CASHBACK_CREDITED", notifyCustomer: false } as any);
     expect(api.put).toHaveBeenCalledWith("/hr/customer-loyalty/notifications/schedule", {
       eventType: "CASHBACK_CREDITED",
@@ -163,7 +163,7 @@ describe("customerScope", () => {
     });
   });
 
-  test("saveSchedule ╪¿┘è┘â╪¬╪¿ ┘â┘ä ╪¡┘é┘ê┘ä ╪º┘ä╪¼╪»┘ê┘ä╪⌐", async () => {
+  test("saveSchedule بيكتب كل حقول الجدولة", async () => {
     await customerScopeConfig.saveSchedule!(api as any, { code: "LOYALTY_POINTS_AWARDED" } as any, {
       enabled: true,
       activeChannel: "META_CLOUD",
@@ -179,7 +179,7 @@ describe("customerScope", () => {
     });
   });
 
-  test("testSend ╪¿┘è╪¿╪╣╪¬ ┘ä┘ä┘Ç test endpoint", async () => {
+  test("testSend بيبعت للـ test endpoint", async () => {
     await customerScopeConfig.testSend!(api as any, "01000000000", "LOYALTY_POINTS_AWARDED");
     expect(api.post).toHaveBeenCalledWith("/whatsapp-notifications/test", {
       phone: "01000000000",
@@ -187,7 +187,7 @@ describe("customerScope", () => {
     });
   });
 
-  test("┘à┘è╪▓╪º╪¬ ┘å╪╖╪º┘é ╪º┘ä╪╣┘à┘ä╪º╪í ┘à┘ü╪╣┘æ┘ä╪⌐ ╪¿╪┤┘â┘ä ╪╡╪¡┘è╪¡", () => {
+  test("ميزات نطاق العملاء مفعّلة بشكل صحيح", () => {
     const f = customerScopeConfig.features;
     expect(f.enableSchedule).toBe(true);
     expect(f.enableTestSender).toBe(true);
@@ -198,7 +198,7 @@ describe("customerScope", () => {
     expect(customerScopeConfig.tabs.map((t) => t.key)).toEqual(["schedule", "occasions", "loyalty", "cashback", "quality", "autoDiscount", "reports"]);
   });
 
-  test("┘å╪╖╪º┘é ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è ┘è╪┤┘à┘ä ╪º┘ä╪ú╪¡╪»╪º╪½ ╪º┘ä╪½┘ä╪º╪½╪⌐ ┘ê┘à╪¬╪║┘è╪▒╪º╪¬┘ç", () => {
+  test("نطاق الخصم التلقائي يشمل الأحداث الثلاثة ومتغيراته", () => {
     const adEvents = (customerScopeConfig as any).tabs.find((t: any) => t.key === "autoDiscount");
     expect(adEvents).toBeDefined();
     const vars = customerScopeConfig.variables.map((v) => v.var);

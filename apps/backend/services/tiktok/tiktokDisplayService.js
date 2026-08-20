@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tiktokDisplayService.js
  * TikTok Embed + Display API helpers:
  * - List account videos (video.list scope)
@@ -37,11 +37,11 @@ const normalizeVideo = (video) => {
 async function getAccessTokenForAccount(companyId) {
   const account = await getAccount(companyId);
   if (!account) {
-    throw { code: 'NO_ACCOUNT', message: '╪º╪▒╪¿╪╖ ╪¡╪│╪º╪¿ TikTok ╪ú┘ê┘ä╪º┘ï' };
+    throw { code: 'NO_ACCOUNT', message: 'اربط حساب TikTok أولاً' };
   }
   const accessToken = await getValidAccessToken(account, companyId);
   if (!accessToken) {
-    throw { code: 'NO_VALID_TOKEN', message: '╪▒┘à╪▓ ╪º┘ä┘ê╪╡┘ê┘ä ┘ä╪¡╪│╪º╪¿ TikTok ╪║┘è╪▒ ╪╡╪º┘ä╪¡' };
+    throw { code: 'NO_VALID_TOKEN', message: 'رمز الوصول لحساب TikTok غير صالح' };
   }
   return accessToken;
 }
@@ -63,7 +63,7 @@ async function getAccountVideos({ companyId, cursor }) {
 
   const payload = res?.data || res;
   if (payload?.error) {
-    const apiError = extractApiError(payload, '┘ü╪┤┘ä ╪¼┘ä╪¿ ┘ü┘è╪»┘è┘ê┘ç╪º╪¬ TikTok');
+    const apiError = extractApiError(payload, 'فشل جلب فيديوهات TikTok');
     throw { code: apiError.code, message: apiError.message };
   }
 
@@ -91,7 +91,7 @@ async function getAccountInfo({ companyId }) {
 
   const payload = res?.data || res;
   if (payload?.error) {
-    const apiError = extractApiError(payload, '┘ü╪┤┘ä ╪¼┘ä╪¿ ╪¿┘è╪º┘å╪º╪¬ ╪¡╪│╪º╪¿ TikTok');
+    const apiError = extractApiError(payload, 'فشل جلب بيانات حساب TikTok');
     throw { code: apiError.code, message: apiError.message };
   }
 
@@ -119,7 +119,7 @@ async function getSettings(companyId) {
 
 async function saveSettings(companyId, { storefrontUsername, storefrontEnabled }) {
   if (!companyId) {
-    throw { code: 'COMPANY_REQUIRED', message: '┘à╪╣╪▒┘ü ╪º┘ä╪┤╪▒┘â╪⌐ ┘à╪╖┘ä┘ê╪¿' };
+    throw { code: 'COMPANY_REQUIRED', message: 'معرف الشركة مطلوب' };
   }
 
   const data = {};

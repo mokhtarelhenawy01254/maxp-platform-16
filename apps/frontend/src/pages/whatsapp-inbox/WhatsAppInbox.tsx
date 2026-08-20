@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
 import { formatQueueLabel, formatWorkflowStatus } from './queuePresentation';
@@ -197,9 +197,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
-    void loadConversations();
-  }, [debouncedSearch, loadConversations]);
+
 
   const loadConversations = useCallback(async () => {
     if (!activeSession) {
@@ -254,20 +252,33 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
   }, [loadConversations]);
 
   useEffect(() => {
-    const refresh = () => {
-      void loadConversations();
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Coalesce socket events: رسايل كتير بتوصل في نفس اللحظة → نداء واحد فقط
+    const scheduleRefresh = () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        void loadConversations();
+      }, 800);
     };
 
-    socketService.on('conversation:updated', refresh);
-    socketService.on('conversation:assignment', refresh);
-    socketService.on('whatsapp:message:new', refresh);
-    socketService.on('whatsapp:message:sent', refresh);
+    socketService.on('conversation:updated', scheduleRefresh);
+    socketService.on('conversation:assignment', scheduleRefresh);
+    socketService.on('whatsapp:message:new', scheduleRefresh);
+    socketService.on('whatsapp:message:sent', scheduleRefresh);
 
     return () => {
-      socketService.off('conversation:updated', refresh);
-      socketService.off('conversation:assignment', refresh);
-      socketService.off('whatsapp:message:new', refresh);
-      socketService.off('whatsapp:message:sent', refresh);
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+        refreshTimer = null;
+      }
+      socketService.off('conversation:updated', scheduleRefresh);
+      socketService.off('conversation:assignment', scheduleRefresh);
+      socketService.off('whatsapp:message:new', scheduleRefresh);
+      socketService.off('whatsapp:message:sent', scheduleRefresh);
     };
   }, [loadConversations]);
 

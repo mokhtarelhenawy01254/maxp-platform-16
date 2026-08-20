@@ -1,8 +1,16 @@
-import { Circle as TicketIcon, Plus as PlusCircleIcon, ChevronRight as ChevronRightIcon, RefreshCw as ArrowPathIcon, Circle as PaperAirplaneIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-;
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
+import {
+    TicketIcon,
+    PlusCircleIcon,
+    ChevronRightIcon,
+    ArrowPathIcon,
+    PaperAirplaneIcon,
+    XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 
 const TurboTickets: React.FC = () => {
@@ -40,7 +48,7 @@ const TurboTickets: React.FC = () => {
             }
         } catch (error) {
             console.error("Error loading tickets:", error);
-            toast.error("فشل تحميل التذاكر");
+            tToast.error("TurboTickets.failed_load_c772");
             setTickets([]);
         } finally {
             setLoadingTickets(false);
@@ -82,11 +90,11 @@ const TurboTickets: React.FC = () => {
 
     const handleSendTicket = async () => {
         if (!ticketDescription.trim()) {
-            toast.error("يرجى كتابة وصف للتذكرة");
+            tToast.error("TurboTickets.msg_1e25");
             return;
         }
         if (!inquiryTypeId) {
-            toast.error("يرجى اختيار نوع الاستفسار");
+            tToast.error("TurboTickets.msg_4493");
             return;
         }
         try {
@@ -99,13 +107,13 @@ const TurboTickets: React.FC = () => {
                 categoryId: Number(inquiryTypeId),
             });
             if (response.data.success) {
-                toast.success("✅ تم إرسال التذكرة بنجاح");
+                tToast.success("TurboTickets.success_send_9cde");
                 setTicketDescription("");
                 setInquiryTypeId("");
                 setShowForm(false);
                 loadTickets(); // refresh the list
             } else {
-                toast.error(response.data.message || "فشل إرسال التذكرة");
+                toast.error(response.data.message || i18n.t("TurboTickets.failed_send_e199"));
             }
         } catch (error: any) {
             toast.error(error.response?.data?.error || "حدث خطأ أثناء إرسال التذكرة");

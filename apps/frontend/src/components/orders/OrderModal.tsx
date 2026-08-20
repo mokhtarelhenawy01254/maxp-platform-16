@@ -1,6 +1,15 @@
-import { X as XMarkIcon, ShoppingBag as ShoppingCartIcon, Plus as PlusIcon, Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, Truck as TruckIcon, Phone as PhoneIcon, Calendar as CalendarIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import i18n from "../../i18n";
+import {
+  XMarkIcon,
+  ShoppingCartIcon,
+  PlusIcon,
+  CheckCircleIcon,
+  ArrowPathIcon,
+  TruckIcon,
+  PhoneIcon,
+  CalendarIcon,
+} from "@heroicons/react/24/outline";
 import { config } from "../../config";
 import tokenManager from "../../utils/tokenManager";
 
@@ -187,12 +196,12 @@ const OrderModal: React.FC<OrderModalProps> = ({
     if (selectedProducts.length === 0) return;
 
     if (!selectedCity) {
-      alert("الرجاء اختيار المدينة");
+      alert(i18n.t("OrderModal.msg_a03a"));
       return;
     }
 
     if (!customerPhone) {
-      alert("الرجاء إدخال رقم الهاتف");
+      alert(i18n.t("OrderModal.msg_f4e5"));
       return;
     }
 
@@ -200,7 +209,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
       setCreatingOrder(true);
 
       if (!getAccessToken()) {
-        alert("يرجى تسجيل الدخول أولاً");
+        alert(i18n.t("OrderModal.msg_f9fe"));
         return;
       }
 
@@ -209,8 +218,8 @@ const OrderModal: React.FC<OrderModalProps> = ({
         "🔍 [FRONTEND-DEBUG] Selected products before sending:",
         selectedProducts.map((item) => ({
           productName: item.productName,
-          productColor: item.productColor,
-          productSize: item.productSize,
+            productColor: item.productColor ? String(item.productColor) : null,
+            productSize: item.productSize != null ? String(item.productSize) : null,
           variantId: item.variantId,
         })),
       );
@@ -243,8 +252,8 @@ const OrderModal: React.FC<OrderModalProps> = ({
             price: item.price,
             total: item.total,
             productName: item.productName,
-            productColor: item.productColor,
-            productSize: item.productSize,
+            productColor: item.productColor ? String(item.productColor) : null,
+            productSize: item.productSize != null ? String(item.productSize) : null,
           };
         }),
         subtotal: calculateSubtotal(),
@@ -286,12 +295,12 @@ const OrderModal: React.FC<OrderModalProps> = ({
           handleClose();
         }, 2000);
       } else {
-        alert("فشل في إنشاء الطلب: " + (data.error || "خطأ غير معروف"));
+        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("OrderModal.msg_fe97")));
         console.log(data.error);
       }
     } catch (error) {
       console.error("Error creating order:", error);
-      alert("فشل في إنشاء الطلب");
+      alert(i18n.t("OrderModal.failed_create_ff97"));
     } finally {
       setCreatingOrder(false);
     }

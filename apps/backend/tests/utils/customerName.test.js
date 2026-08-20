@@ -1,14 +1,14 @@
-﻿const { splitCustomerName, cleanNameToken } = require('../../utils/customerName');
+const { splitCustomerName, cleanNameToken } = require('../../utils/customerName');
 
 describe('customerName', () => {
   test('splits a full name into first and last', () => {
     expect(splitCustomerName('Heba Mohamed')).toEqual({ firstName: 'Heba', lastName: 'Mohamed' });
-    expect(splitCustomerName('╪ú╪¡┘à╪» ╪╣┘ä┘è ┘à╪¡┘à┘ê╪»')).toEqual({ firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è ┘à╪¡┘à┘ê╪»' });
+    expect(splitCustomerName('أحمد علي محمود')).toEqual({ firstName: 'أحمد', lastName: 'علي محمود' });
   });
 
   test('single-token name leaves lastName empty', () => {
     expect(splitCustomerName('Heba')).toEqual({ firstName: 'Heba', lastName: '' });
-    expect(splitCustomerName('╪ú╪¡┘à╪»')).toEqual({ firstName: '╪ú╪¡┘à╪»', lastName: '' });
+    expect(splitCustomerName('أحمد')).toEqual({ firstName: 'أحمد', lastName: '' });
   });
 
   test('strips decorative characters from WhatsApp-style names', () => {
@@ -26,6 +26,6 @@ describe('customerName', () => {
   test('cleanNameToken trims surrounding symbols', () => {
     expect(cleanNameToken('~Heba~')).toBe('Heba');
     expect(cleanNameToken('*Sara*')).toBe('Sara');
-    expect(cleanNameToken('   ┘à╪¡┘à╪»  ')).toBe('┘à╪¡┘à╪»');
+    expect(cleanNameToken('   محمد  ')).toBe('محمد');
   });
 });

@@ -1,4 +1,4 @@
-﻿# Baileys history sync runtime hardening
+# Baileys history sync runtime hardening
 
 ## Shipped behavior
 
@@ -12,7 +12,7 @@
 ## UI behavior
 
 - WhatsApp settings display visible conversations, excluding hidden history artifacts and unresolved `@lid` records, instead of raw contact rows.
-- The conversations menu includes **┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä╪▒╪│╪º╪ª┘ä** for a selected Baileys session.
+- The conversations menu includes **مزامنة الرسائل** for a selected Baileys session.
 - The settings session card displays history-import progress while the request is pending or in progress.
 
 ## Operational notes

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Loader2, RefreshCw, AlertTriangle } from "lucide-react";
@@ -54,7 +54,7 @@ function TatSection() {
   useEffect(() => { load(); }, []);
 
   const fmtHours = (v?: number | null) =>
-    v === undefined || v === null ? "ΓÇö" : `${Math.round(v * 10) / 10} ${t("radiology.tat.hours")}`;
+    v === undefined || v === null ? "—" : `${Math.round(v * 10) / 10} ${t("radiology.tat.hours")}`;
 
   const stageLabel = (dimension: string, status: string) => {
     const key = dimension === "REPORT" ? RadiologyReportStatusMap[status]?.label : RadiologyStatusMap[status]?.label;
@@ -116,7 +116,7 @@ function TatSection() {
                       <tr key={`${r.dimension}|${r.fromStatus}|${r.toStatus}`} className="border-b dark:border-gray-700/50">
                         <td className="py-2 px-2 whitespace-nowrap">
                           <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">{r.dimension}</span>
-                          {stageLabel(r.dimension, r.fromStatus)} <span className="text-gray-400">ΓåÆ</span> {stageLabel(r.dimension, r.toStatus)}
+                          {stageLabel(r.dimension, r.fromStatus)} <span className="text-gray-400">→</span> {stageLabel(r.dimension, r.toStatus)}
                         </td>
                         <td className="py-2 px-2">{r.count}</td>
                         <td className="py-2 px-2">{fmtHours(r.avgHours)}</td>
@@ -161,7 +161,7 @@ function TatSection() {
                     <div key={s.id} className="flex justify-between items-center text-sm border dark:border-gray-700/50 rounded-lg px-3 py-2">
                       <div>
                         <p className="font-medium">{s.patientName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{s.examTypeName || s.modality || "ΓÇö"}{s.studyNumber ? ` ΓÇó ${s.studyNumber}` : ""}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{s.examTypeName || s.modality || "—"}{s.studyNumber ? ` • ${s.studyNumber}` : ""}</p>
                       </div>
                       <span className="text-xs text-amber-600 dark:text-amber-400">{RadiologyStatusMap[s.status] ? t(RadiologyStatusMap[s.status].label) : s.status}</span>
                     </div>

@@ -1,19 +1,19 @@
-﻿import { useCheckoutStore, StorefrontTierProgress } from "../store/useCheckoutStore";
+import { useCheckoutStore, StorefrontTierProgress } from "../store/useCheckoutStore";
 
 const METHOD_LABELS: Record<string, string> = {
-  POINTS: "┘å┘é╪╖╪⌐",
-  SPENT: "╪¼.┘à",
-  ITEMS: "┘é╪╖╪╣╪⌐",
-  ORDER_COUNT: "╪ú┘ê╪▒╪»╪▒",
+  POINTS: "نقطة",
+  SPENT: "ج.م",
+  ITEMS: "قطعة",
+  ORDER_COUNT: "أوردر",
 };
 
 function benefitsSummary(tier: any): string[] {
   const out: string[] = [];
   const b = tier?.benefits;
   if (!b) return out;
-  if (b.freeShipping) out.push("╪┤╪¡┘å ┘à╪¼╪º┘å┘è");
+  if (b.freeShipping) out.push("شحن مجاني");
   const pct = Number(b.discountPercent || 0);
-  if (pct > 0) out.push(`╪«╪╡┘à ${pct}%`);
+  if (pct > 0) out.push(`خصم ${pct}%`);
   return out;
 }
 
@@ -22,7 +22,7 @@ function TierProgressCard({ progress }: { progress: StorefrontTierProgress }) {
   const next = progress.nextTier;
   const tierBenefits = benefitsSummary(tier);
   const nextBenefits = benefitsSummary(next);
-  const unit = METHOD_LABELS[progress.method] || progress.metricLabel || "┘ê╪¡╪»╪⌐";
+  const unit = METHOD_LABELS[progress.method] || progress.metricLabel || "وحدة";
 
   return (
     <div
@@ -35,11 +35,11 @@ function TierProgressCard({ progress }: { progress: StorefrontTierProgress }) {
             className="h-2 w-2 rounded-full"
             style={{ backgroundColor: tier?.color || '#10b981' }}
           />
-          {tier?.nameAr || tier?.name || "╪╣┘à┘è┘ä ┘à┘à┘è╪▓"}
+          {tier?.nameAr || tier?.name || "عميل مميز"}
         </span>
         {tierBenefits.length > 0 && (
           <span className="text-xs font-semibold text-emerald-700">
-            {tierBenefits.join(" ┬╖ ")}
+            {tierBenefits.join(" · ")}
           </span>
         )}
       </div>
@@ -47,14 +47,14 @@ function TierProgressCard({ progress }: { progress: StorefrontTierProgress }) {
       {next && (
         <p className="mt-2 text-sm text-gray-700">
           <span className="font-bold text-emerald-700">
-            ┘ü╪º╪╢┘ä {next.remainingMetric} {unit}
+            فاضل {next.remainingMetric} {unit}
           </span>{" "}
-          ┘ê╪¬╪¬╪▒┘é┘ë ┘ä┘à╪│╪¬┘ê┘ë{" "}
+          وتترقى لمستوى{" "}
           <span className="font-bold">{next.nameAr || next.name}</span>
           {nextBenefits.length > 0 && (
             <>
               {" "}
-              ┘ê╪¬╪¡╪╡┘ä ╪╣┘ä┘ë <span className="font-semibold">{nextBenefits.join(" ┘ê")}</span>
+              وتحصل على <span className="font-semibold">{nextBenefits.join(" و")}</span>
             </>
           )}
         </p>
@@ -64,12 +64,12 @@ function TierProgressCard({ progress }: { progress: StorefrontTierProgress }) {
 }
 
 /**
- * ╪¿╪º┘å╪▒ ┘à╪│╪¬┘ê┘ë ╪º┘ä╪╣┘à┘è┘ä ΓÇö ╪¿┘è╪╕┘ç╪▒ ┘ä┘à╪º ╪º┘ä╪╣┘à┘è┘ä ┘è╪»╪«┘ä ╪▒┘é┘à┘ç ┘ü┘è ╪╡┘ü╪¡╪⌐ ╪º┘ä╪»┘ü╪╣
+ * بانر مستوى العميل — بيظهر لما العميل يدخل رقمه في صفحة الدفع
  */
 export default function TierProgressBanner() {
   const tierProgress = useCheckoutStore((s) => s.tierProgress);
   if (!tierProgress) return null;
-  // ╪¿╪º┘å╪▒ ╪º┘ä┘à╪│╪¬┘ê┘ë ┘è╪╕┘ç╪▒ ┘ä┘ê ┘å╪╕╪º┘à ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬ ┘à┘ü╪╣┘æ┘ä (┘à╪│╪¬┘é┘ä ╪╣┘å ╪º┘ä╪«╪╡┘à ╪º┘ä╪¬┘ä┘é╪º╪ª┘è)
+  // بانر المستوى يظهر لو نظام المستويات مفعّل (مستقل عن الخصم التلقائي)
   if (tierProgress.tiersEnabled !== true) return null;
   return <TierProgressCard progress={tierProgress} />;
 }

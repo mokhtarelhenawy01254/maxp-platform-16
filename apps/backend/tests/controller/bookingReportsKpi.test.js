@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
@@ -66,22 +66,22 @@ describe('bookingReports KPI controllers', () => {
         },
         appointment: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'appt-1', doctorId: 'doc-1', serviceId: 'svc-1', serviceName: '┘â╪┤┘ü', reportStatus: 'APPROVED' },
-            { id: 'appt-2', doctorId: 'doc-1', serviceId: 'svc-2', serviceName: '╪ú╪┤╪╣╪⌐', reportStatus: 'APPROVED' },
-            { id: 'appt-3', doctorId: 'doc-2', serviceId: 'svc-1', serviceName: '┘â╪┤┘ü', reportStatus: 'PENDING' },
-            { id: 'appt-4', doctorId: 'doc-3', serviceId: 'svc-3', serviceName: '┘à┘à┘å┘ê╪╣', reportStatus: 'PENDING' },
+            { id: 'appt-1', doctorId: 'doc-1', serviceId: 'svc-1', serviceName: 'كشف', reportStatus: 'APPROVED' },
+            { id: 'appt-2', doctorId: 'doc-1', serviceId: 'svc-2', serviceName: 'أشعة', reportStatus: 'APPROVED' },
+            { id: 'appt-3', doctorId: 'doc-2', serviceId: 'svc-1', serviceName: 'كشف', reportStatus: 'PENDING' },
+            { id: 'appt-4', doctorId: 'doc-3', serviceId: 'svc-3', serviceName: 'ممنوع', reportStatus: 'PENDING' },
           ])
         },
         bookingDoctor: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'doc-1', name: '╪»/ ╪ú╪¡┘à╪»', specialty: '╪╣╪╕╪º┘à' },
-            { id: 'doc-2', name: '╪»/ ┘à╪¡┘à╪»', specialty: '╪¼┘ä╪»┘è╪⌐' },
+            { id: 'doc-1', name: 'د/ أحمد', specialty: 'عظام' },
+            { id: 'doc-2', name: 'د/ محمد', specialty: 'جلدية' },
           ])
         },
         bookingService: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'svc-1', name: '┘â╪┤┘ü' },
-            { id: 'svc-2', name: '╪ú╪┤╪╣╪⌐' },
+            { id: 'svc-1', name: 'كشف' },
+            { id: 'svc-2', name: 'أشعة' },
           ])
         },
         medicalPayment: {
@@ -108,7 +108,7 @@ describe('bookingReports KPI controllers', () => {
 
       const doc1 = res.payload.data.byDoctor.find((r) => r.id === 'doc-1');
       expect(doc1).toEqual(expect.objectContaining({
-        name: '╪»/ ╪ú╪¡┘à╪»',
+        name: 'د/ أحمد',
         billed: 1500,
         discounts: 100,
         collected: 1100,
@@ -118,7 +118,7 @@ describe('bookingReports KPI controllers', () => {
 
       const svc1 = res.payload.data.byService.find((r) => r.id === 'svc-1');
       expect(svc1).toEqual(expect.objectContaining({
-        name: '┘â╪┤┘ü',
+        name: 'كشف',
         billed: 1800,
         discounts: 150,
         collected: 900,
@@ -140,17 +140,17 @@ describe('bookingReports KPI controllers', () => {
             {
               id: 'inv-a', invoiceNumber: 'INV-A', patientId: 'pat-1', total: 1000, discount: 0,
               amountPaid: 400, status: 'PARTIAL', dueDate: null, createdAt: new Date('2026-08-01T10:00:00.000Z'),
-              patient: { id: 'pat-1', firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '01000000000' },
+              patient: { id: 'pat-1', firstName: 'أحمد', lastName: 'علي', phone: '01000000000' },
             },
             {
               id: 'inv-b', invoiceNumber: 'INV-B', patientId: 'pat-1', total: 500, discount: 100,
               amountPaid: 400, status: 'UNPAID', dueDate: null, createdAt: new Date('2026-08-02T10:00:00.000Z'),
-              patient: { id: 'pat-1', firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '01000000000' },
+              patient: { id: 'pat-1', firstName: 'أحمد', lastName: 'علي', phone: '01000000000' },
             },
             {
               id: 'inv-c', invoiceNumber: 'INV-C', patientId: 'pat-2', total: 300, discount: 0,
               amountPaid: 0, status: 'UNPAID', dueDate: null, createdAt: new Date('2026-08-03T10:00:00.000Z'),
-              patient: { id: 'pat-2', firstName: '┘à╪▒┘è┘à', lastName: '', phone: '01100000000' },
+              patient: { id: 'pat-2', firstName: 'مريم', lastName: '', phone: '01100000000' },
             },
           ])
         }
@@ -170,7 +170,7 @@ describe('bookingReports KPI controllers', () => {
 
       const patient1 = res.payload.data.patients.find((p) => p.patientId === 'pat-1');
       expect(patient1).toEqual(expect.objectContaining({
-        patientName: '╪ú╪¡┘à╪» ╪╣┘ä┘è',
+        patientName: 'أحمد علي',
         patientPhone: '01000000000',
         totalOutstanding: 600,
         paidBackTotal: 400,
@@ -192,19 +192,19 @@ describe('bookingReports KPI controllers', () => {
         },
         appointment: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'appt-x', doctorId: 'doc-1', serviceId: 'svc-1', serviceName: '┘â╪┤┘ü', reportStatus: 'APPROVED' },
-            { id: 'appt-y', doctorId: 'doc-2', serviceId: 'svc-1', serviceName: '┘â╪┤┘ü', reportStatus: 'PENDING' },
+            { id: 'appt-x', doctorId: 'doc-1', serviceId: 'svc-1', serviceName: 'كشف', reportStatus: 'APPROVED' },
+            { id: 'appt-y', doctorId: 'doc-2', serviceId: 'svc-1', serviceName: 'كشف', reportStatus: 'PENDING' },
           ])
         },
         bookingDoctor: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'doc-1', name: '╪»/ ╪ú╪¡┘à╪»', specialty: '╪╣╪╕╪º┘à', commissionRate: 10, branchId: 'branch-1' },
-            { id: 'doc-2', name: '╪»/ ┘à╪¡┘à╪»', specialty: '╪¼┘ä╪»┘è╪⌐', commissionRate: null, branchId: null },
+            { id: 'doc-1', name: 'د/ أحمد', specialty: 'عظام', commissionRate: 10, branchId: 'branch-1' },
+            { id: 'doc-2', name: 'د/ محمد', specialty: 'جلدية', commissionRate: null, branchId: null },
           ])
         },
         bookingBranch: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'branch-1', name: '╪º┘ä┘ü╪▒╪╣ ╪º┘ä╪▒╪ª┘è╪│┘è' },
+            { id: 'branch-1', name: 'الفرع الرئيسي' },
           ])
         }
       };
@@ -216,8 +216,8 @@ describe('bookingReports KPI controllers', () => {
       expect(res.statusCode).toBe(200);
       const doc1 = res.payload.data.rows.find((r) => r.doctorId === 'doc-1');
       expect(doc1).toEqual(expect.objectContaining({
-        doctorName: '╪»/ ╪ú╪¡┘à╪»',
-        branchName: '╪º┘ä┘ü╪▒╪╣ ╪º┘ä╪▒╪ª┘è╪│┘è',
+        doctorName: 'د/ أحمد',
+        branchName: 'الفرع الرئيسي',
         gross: 900,
         commissionRate: 10,
         commission: 90,
@@ -227,7 +227,7 @@ describe('bookingReports KPI controllers', () => {
 
       const doc2 = res.payload.data.rows.find((r) => r.doctorId === 'doc-2');
       expect(doc2).toEqual(expect.objectContaining({
-        doctorName: '╪»/ ┘à╪¡┘à╪»',
+        doctorName: 'د/ محمد',
         gross: 2000,
         commissionRate: 0,
         commission: 0,
@@ -250,21 +250,21 @@ describe('bookingReports KPI controllers', () => {
       const prisma = {
         medicalPayment: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { amount: 1000, method: 'CASH', paidAt: new Date('2026-08-01T10:00:00.000Z'), cashierName: '╪ú╪¡┘à╪»', reason: null, paybackOfPaymentId: null },
-            { amount: 500, method: 'CARD', paidAt: new Date('2026-08-01T11:00:00.000Z'), cashierName: '╪ú╪¡┘à╪»', reason: null, paybackOfPaymentId: null },
-            { amount: -200, method: 'CASH', paidAt: new Date('2026-08-01T12:00:00.000Z'), cashierName: '╪ú╪¡┘à╪»', reason: '╪º╪│╪¬╪▒╪»╪º╪»', paybackOfPaymentId: null },
-            { amount: 300, method: 'CASH', paidAt: new Date('2026-08-01T13:00:00.000Z'), cashierName: '┘à╪¡┘à╪»', reason: null, paybackOfPaymentId: null },
-            { amount: 50, method: 'CASH', paidAt: new Date('2026-08-02T10:00:00.000Z'), cashierName: '┘à╪¡┘à╪»', reason: 'payback refund', paybackOfPaymentId: null },
+            { amount: 1000, method: 'CASH', paidAt: new Date('2026-08-01T10:00:00.000Z'), cashierName: 'أحمد', reason: null, paybackOfPaymentId: null },
+            { amount: 500, method: 'CARD', paidAt: new Date('2026-08-01T11:00:00.000Z'), cashierName: 'أحمد', reason: null, paybackOfPaymentId: null },
+            { amount: -200, method: 'CASH', paidAt: new Date('2026-08-01T12:00:00.000Z'), cashierName: 'أحمد', reason: 'استرداد', paybackOfPaymentId: null },
+            { amount: 300, method: 'CASH', paidAt: new Date('2026-08-01T13:00:00.000Z'), cashierName: 'محمد', reason: null, paybackOfPaymentId: null },
+            { amount: 50, method: 'CASH', paidAt: new Date('2026-08-02T10:00:00.000Z'), cashierName: 'محمد', reason: 'payback refund', paybackOfPaymentId: null },
           ])
         },
         medicalInvoice: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { discount: 100, cashierName: '╪ú╪¡┘à╪»', createdAt: new Date('2026-08-01T09:00:00.000Z'), status: 'PAID' },
+            { discount: 100, cashierName: 'أحمد', createdAt: new Date('2026-08-01T09:00:00.000Z'), status: 'PAID' },
           ])
         },
         cashierShift: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { cashierName: '╪ú╪¡┘à╪»', openedAt: new Date('2026-08-01T08:00:00.000Z'), openingBalance: 500, closingBalance: 1800, status: 'CLOSED' },
+            { cashierName: 'أحمد', openedAt: new Date('2026-08-01T08:00:00.000Z'), openingBalance: 500, closingBalance: 1800, status: 'CLOSED' },
           ])
         }
       };
@@ -274,7 +274,7 @@ describe('bookingReports KPI controllers', () => {
       await getCashierDaily(buildReq({ from: '2026-08-01', to: '2026-08-02' }), res);
 
       expect(res.statusCode).toBe(200);
-      const ahmed = res.payload.data.rows.find((r) => r.date === '2026-08-01' && r.cashierName === '╪ú╪¡┘à╪»');
+      const ahmed = res.payload.data.rows.find((r) => r.date === '2026-08-01' && r.cashierName === 'أحمد');
       expect(ahmed).toEqual(expect.objectContaining({
         totalCollected: 1500,
         totalCount: 2,
@@ -290,10 +290,10 @@ describe('bookingReports KPI controllers', () => {
         { method: 'CARD', amount: 500, count: 1 },
       ]));
 
-      const mohamedDay1 = res.payload.data.rows.find((r) => r.date === '2026-08-01' && r.cashierName === '┘à╪¡┘à╪»');
+      const mohamedDay1 = res.payload.data.rows.find((r) => r.date === '2026-08-01' && r.cashierName === 'محمد');
       expect(mohamedDay1).toEqual(expect.objectContaining({ totalCollected: 300, paybacks: 0, shiftStatus: 'NO_SHIFT' }));
 
-      const mohamedDay2 = res.payload.data.rows.find((r) => r.date === '2026-08-02' && r.cashierName === '┘à╪¡┘à╪»');
+      const mohamedDay2 = res.payload.data.rows.find((r) => r.date === '2026-08-02' && r.cashierName === 'محمد');
       expect(mohamedDay2).toEqual(expect.objectContaining({ totalCollected: 50, paybacks: 0 }));
 
       expect(res.payload.data.totals).toEqual(expect.objectContaining({
@@ -311,8 +311,8 @@ describe('bookingReports KPI controllers', () => {
       const prisma = {
         medicalPayment: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { amount: 500, method: 'CASH', paidAt: new Date('2026-08-01T10:00:00.000Z'), cashierName: '╪ú╪¡┘à╪»', reason: '╪¬╪¡╪╡┘è┘ä ╪º╪│╪¬╪▒╪»╪º╪» ╪│╪º╪¿┘é', paybackOfPaymentId: null },
-            { amount: -200, method: 'CASH', paidAt: new Date('2026-08-01T11:00:00.000Z'), cashierName: '╪ú╪¡┘à╪»', reason: '╪º╪│╪¬╪▒╪»╪º╪»', paybackOfPaymentId: 'orig-1' },
+            { amount: 500, method: 'CASH', paidAt: new Date('2026-08-01T10:00:00.000Z'), cashierName: 'أحمد', reason: 'تحصيل استرداد سابق', paybackOfPaymentId: null },
+            { amount: -200, method: 'CASH', paidAt: new Date('2026-08-01T11:00:00.000Z'), cashierName: 'أحمد', reason: 'استرداد', paybackOfPaymentId: 'orig-1' },
           ])
         },
         medicalInvoice: {
@@ -328,7 +328,7 @@ describe('bookingReports KPI controllers', () => {
       await getCashierDaily(buildReq({ from: '2026-08-01', to: '2026-08-01' }), res);
 
       expect(res.statusCode).toBe(200);
-      const ahmed = res.payload.data.rows.find((r) => r.cashierName === '╪ú╪¡┘à╪»');
+      const ahmed = res.payload.data.rows.find((r) => r.cashierName === 'أحمد');
       expect(ahmed.totalCollected).toBe(500);
       expect(ahmed.totalCount).toBe(1);
       expect(ahmed.paybacks).toBe(200);
@@ -434,13 +434,13 @@ describe('bookingReports KPI controllers', () => {
           findMany: jest.fn().mockResolvedValueOnce([
             {
               id: 'p-1', invoiceId: 'inv-1', amount: -200, method: 'CASH', paidAt: new Date('2026-08-01T10:00:00.000Z'),
-              cashierName: '╪ú╪¡┘à╪»', reason: '╪º╪│╪¬╪▒╪»╪º╪»', paybackOfPaymentId: 'orig-1',
-              invoice: { invoiceNumber: 'INV-1', patient: { firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '01000000000' } },
+              cashierName: 'أحمد', reason: 'استرداد', paybackOfPaymentId: 'orig-1',
+              invoice: { invoiceNumber: 'INV-1', patient: { firstName: 'أحمد', lastName: 'علي', phone: '01000000000' } },
             },
             {
               id: 'p-2', invoiceId: 'inv-2', amount: -50, method: 'CARD', paidAt: new Date('2026-08-02T10:00:00.000Z'),
-              cashierName: '┘à╪¡┘à╪»', reason: 'payback refund', paybackOfPaymentId: 'orig-2',
-              invoice: { invoiceNumber: 'INV-2', patient: { firstName: '┘à╪▒┘è┘à', lastName: '', phone: '01100000000' } },
+              cashierName: 'محمد', reason: 'payback refund', paybackOfPaymentId: 'orig-2',
+              invoice: { invoiceNumber: 'INV-2', patient: { firstName: 'مريم', lastName: '', phone: '01100000000' } },
             },
           ])
         }
@@ -459,15 +459,15 @@ describe('bookingReports KPI controllers', () => {
           { method: 'CARD', total: 50 },
         ]),
         cashiers: expect.arrayContaining([
-          { cashierName: '╪ú╪¡┘à╪»', total: 200, count: 1 },
-          { cashierName: '┘à╪¡┘à╪»', total: 50, count: 1 },
+          { cashierName: 'أحمد', total: 200, count: 1 },
+          { cashierName: 'محمد', total: 50, count: 1 },
         ]),
       }));
 
       const amounts = res.payload.data.rows.map((r) => r.amount);
       expect(amounts).toEqual([200, 50]);
       expect(res.payload.data.rows[0]).toEqual(expect.objectContaining({
-        patientName: '╪ú╪¡┘à╪» ╪╣┘ä┘è',
+        patientName: 'أحمد علي',
         patientPhone: '01000000000',
         invoiceNumber: 'INV-1',
       }));
@@ -491,13 +491,13 @@ describe('bookingReports KPI controllers', () => {
           findMany: jest.fn().mockResolvedValueOnce([
             {
               id: 'p-1', invoiceId: 'inv-1', amount: -200, method: 'CASH', paidAt: new Date('2026-08-01T10:00:00.000Z'),
-              cashierName: '╪ú╪¡┘à╪»', reason: '╪º╪│╪¬╪▒╪»╪º╪»', paybackOfPaymentId: 'orig-1',
-              invoice: { invoiceNumber: 'INV-1', patient: { firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '01000000000' } },
+              cashierName: 'أحمد', reason: 'استرداد', paybackOfPaymentId: 'orig-1',
+              invoice: { invoiceNumber: 'INV-1', patient: { firstName: 'أحمد', lastName: 'علي', phone: '01000000000' } },
             },
             {
               id: 'p-2', invoiceId: 'inv-2', amount: 50, method: 'CARD', paidAt: new Date('2026-08-02T10:00:00.000Z'),
-              cashierName: '┘à╪¡┘à╪»', reason: 'payback refund', paybackOfPaymentId: null,
-              invoice: { invoiceNumber: 'INV-2', patient: { firstName: '┘à╪▒┘è┘à', lastName: '', phone: '01100000000' } },
+              cashierName: 'محمد', reason: 'payback refund', paybackOfPaymentId: null,
+              invoice: { invoiceNumber: 'INV-2', patient: { firstName: 'مريم', lastName: '', phone: '01100000000' } },
             },
           ])
         }
@@ -526,17 +526,17 @@ describe('bookingReports KPI controllers', () => {
         },
         appointment: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'appt-5', doctorId: 'doc-1', serviceId: 'svc-1', serviceName: '┘â╪┤┘ü', reportStatus: 'APPROVED' },
+            { id: 'appt-5', doctorId: 'doc-1', serviceId: 'svc-1', serviceName: 'كشف', reportStatus: 'APPROVED' },
           ])
         },
         bookingDoctor: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'doc-1', name: '╪»/ ╪ú╪¡┘à╪»', specialty: '╪╣╪╕╪º┘à' },
+            { id: 'doc-1', name: 'د/ أحمد', specialty: 'عظام' },
           ])
         },
         bookingService: {
           findMany: jest.fn().mockResolvedValueOnce([
-            { id: 'svc-1', name: '┘â╪┤┘ü' },
+            { id: 'svc-1', name: 'كشف' },
           ])
         },
         medicalPayment: {
@@ -567,7 +567,7 @@ describe('bookingReports KPI controllers', () => {
     const res = createResponse();
     await getRevenueReport({ user: { id: 'user-1' }, query: {} }, res);
     expect(res.statusCode).toBe(403);
-    expect(res.payload).toEqual({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    expect(res.payload).toEqual({ success: false, error: 'غير مصرح' });
     expect(getSharedPrismaClient).not.toHaveBeenCalled();
   });
 });
@@ -581,7 +581,7 @@ describe('exportCsv invoices', () => {
             id: 'inv-csv', invoiceNumber: 'INV-CSV', total: 1000, discount: 100, additionAmount: 150,
             amountPaid: 400, status: 'PARTIAL', dueDate: null,
             createdAt: new Date('2026-08-01T10:00:00.000Z'),
-            patient: { firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', phone: '01000000000' },
+            patient: { firstName: 'أحمد', lastName: 'علي', phone: '01000000000' },
           },
         ]),
       },

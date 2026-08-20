@@ -1,8 +1,32 @@
-import { useTranslation } from 'react-i18next';
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { AlertTriangle, Archive, ArchiveRestore, Ban, Box, Camera, Check, CheckCheck, Filter, Loader2, Megaphone, MessageSquarePlus, MoreVertical, Pin, RefreshCw, Search, Shield, Store, Tags, Trash2, User, Users, Volume2, VolumeX, Wifi, WifiOff, X } from 'lucide-react';
+import { useTranslation } from "react-i18next";
+import {
+  AlertTriangle,
+  Archive,
+  ArchiveRestore,
+  Ban,
+  Camera,
+  Check,
+  CheckCheck,
+  Filter,
+  Loader2,
+  Megaphone,
+  MessageSquarePlus,
+  MoreVertical,
+  Pin,
+  RefreshCw,
+  Search,
+  Shield,
+  Store,
+  Tags,
+  Trash2,
+  User,
+  Users,
+  VolumeX,
+  X,
+} from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +45,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -29,13 +52,15 @@ import { cn } from "@/lib/utils";
 import type {
   Contact,
   Session as WhatsAppSession,
+  WhatsAppSidebarFilter,
+  WhatsAppConversationCounts,
 } from "../../../hooks/useWhatsAppQueries";
 import {
   getBestContactDisplayName,
   getContactDisplayPhone,
   getContactInitials,
-  getContactPhoneNumber,
 } from "../whatsappContactDisplay";
+import { getInboxExternalImageUrl } from "@/utils/imageUrl";
 
 interface WhatsAppStatus {
   id: string;
@@ -69,6 +94,8 @@ interface ChatSidebarProps {
   onOpenNewGroup: () => void;
   onOpenPrivacySettings: () => void;
   onOpenBusinessProfile: () => void;
+  onSyncHistory: () => void;
+  isSyncingHistory?: boolean;
   onPinChat: (contact: Contact) => void;
   onArchiveChat: (contact: Contact) => void;
   onDeleteChat: (contact: Contact) => void;
@@ -84,9 +111,18 @@ interface ChatSidebarProps {
   onRetryConversations?: () => void;
   // Bulk actions
   onBulkDelete?: (jids: string[], sessionId: string) => void;
+  onDeleteAll?: (sessionId?: string) => void;
+  // تصنيفات واتساب
+  labels?: { id: string; name: string; color: string }[];
+  // فلاتر server-side (بيتطبّقوا على كل المحادثات)
+  filterType: WhatsAppSidebarFilter;
+  onFilterTypeChange: (filter: WhatsAppSidebarFilter) => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  showArchived: boolean;
+  onToggleArchived: (archived: boolean) => void;
+  counts?: WhatsAppConversationCounts;
 }
-
-type SidebarFilter = "all" | "unread" | "groups" | "statuses";
 
 function getContactName(contact: Contact) {
   return getBestContactDisplayName(contact);
@@ -111,6 +147,51 @@ function getLastMessagePreview(contact: Contact) {
     default:
       return "....";
   }
+}
+
+/**
+ * استخراج كود الأوردر من محتوى آخر رسالة.
+ * الأنماط المدعومة: ORD-491639-964, ORD-995377-853-AFF-ez36, ...
+ */
+function extractOrderCode(content: string | null | undefined): string | null {
+  if (!content) return null;
+  const match = content.match(/ORD-\d{6}-\d{3}(?:-[A-Za-z0-9]+)*/i);
+  return match ? match[0] : null;
+}
+
+function getPreviewWithoutOrderCode(
+  content: string | null | undefined,
+  orderCode: string,
+): string {
+  if (!content) return "";
+  return content.replace(new RegExp(orderCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "").replace(/\s{2,}/g, " ").trim();
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// 🔍 عرض رسالة البحث مع تظليل كلمة البحث (زي واتساب)
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery || !text) return <>{text}</>;
+  const parts = text.split(new RegExp(`(${escapeRegex(normalizedQuery)})`, "gi"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === normalizedQuery ? (
+          <mark
+            key={i}
+            className="rounded-sm bg-[color:var(--color-primary)]/20 px-0.5 text-[color:var(--color-primary)]"
+          >
+            {part}
+          </mark>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        ),
+      )}
+    </>
+  );
 }
 
 function FilterPill({
@@ -195,6 +276,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onOpenNewGroup,
   onOpenPrivacySettings,
   onOpenBusinessProfile,
+  onSyncHistory,
+  isSyncingHistory = false,
   onPinChat,
   onArchiveChat,
   onDeleteChat,
@@ -209,11 +292,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   conversationsError,
   onRetryConversations,
   onBulkDelete,
+  onDeleteAll,
+  labels,
+  filterType,
+  onFilterTypeChange,
+  searchTerm,
+  onSearchChange,
+  showArchived,
+  onToggleArchived,
+  counts,
 }) => {
   const { t, i18n } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
-  const [filterType, setFilterType] = useState<SidebarFilter>("all");
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
     mouseY: number;
@@ -229,16 +318,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const swipeTouchStartYRef = useRef<number>(0);
   const isSwipingRef = useRef<boolean>(false);
 
-  const handleSwipeTouchStart = (e: React.TouchEvent, contactId: string) => {
-    swipeTouchStartRef.current = e.touches[0].clientX;
-    swipeTouchStartYRef.current = e.touches[0].clientY;
+  const handleSwipeTouchStart = (e: React.TouchEvent, _contactId: string) => {
+    swipeTouchStartRef.current = e.touches[0]!.clientX;
+    swipeTouchStartYRef.current = e.touches[0]!.clientY;
     isSwipingRef.current = true;
   };
 
   const handleSwipeTouchMove = (e: React.TouchEvent, contactId: string) => {
     if (!isSwipingRef.current) return;
-    const diffX = e.touches[0].clientX - swipeTouchStartRef.current;
-    const diffY = Math.abs(e.touches[0].clientY - swipeTouchStartYRef.current);
+    const diffX = e.touches[0]!.clientX - swipeTouchStartRef.current;
+    const diffY = Math.abs(e.touches[0]!.clientY - swipeTouchStartYRef.current);
     
     // If scrolling vertically, do not swipe
     if (diffY > 30 && Math.abs(diffX) < 10) {
@@ -264,7 +353,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   };
 
-  const handleSwipeTouchEnd = (e: React.TouchEvent, contact: Contact) => {
+  const handleSwipeTouchEnd = (_e: React.TouchEvent, _contact: Contact) => {
     isSwipingRef.current = false;
     const isRtl = document.documentElement.dir === 'rtl';
     const threshold = 40;
@@ -302,7 +391,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       }
     };
 
-    const handleResize = () => setContextMenu(null);
+    const handleResize = () => {
+      setContextMenu(null);
+    };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("resize", handleResize);
@@ -328,49 +419,21 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return format(date, "dd/MM/yyyy");
   };
 
-  const filteredConversations = useMemo(() => {
-    let filtered = conversations;
-
-    if (searchTerm) {
-      const lowerTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (contact) =>
-          contact.name?.toLowerCase().includes(lowerTerm) ||
-          contact.pushName?.toLowerCase().includes(lowerTerm) ||
-          getContactPhoneNumber(contact).toLowerCase().includes(lowerTerm),
-      );
+  // خريطة للتصنيفات: labelId -> { name, color }
+  const labelsMap = useMemo(() => {
+    const map = new Map<string, { name: string; color: string }>();
+    if (labels) {
+      labels.forEach(l => map.set(l.id, { name: l.name, color: l.color }));
     }
+    return map;
+  }, [labels]);
 
-    filtered = filtered.filter(
-      (contact) => Boolean(contact.isArchived) === showArchived,
-    );
-
-    if (filterType === "unread") {
-      filtered = filtered.filter((contact) => contact.unreadCount > 0);
-    } else if (filterType === "groups") {
-      filtered = filtered.filter((contact) => contact.isGroup);
-    }
-
-    return [...filtered].sort((first, second) => {
-      if (first.isPinned !== second.isPinned) {
-        return first.isPinned ? -1 : 1;
-      }
-
-      const firstDate = new Date(first.lastMessageAt || 0).getTime();
-      const secondDate = new Date(second.lastMessageAt || 0).getTime();
-      return secondDate - firstDate;
-    });
-  }, [conversations, filterType, searchTerm, showArchived]);
-
-  const unreadCount = useMemo(
-    () => conversations.filter((contact) => contact.unreadCount > 0).length,
-    [conversations],
-  );
-
-  const groupCount = useMemo(
-    () => conversations.filter((contact) => contact.isGroup).length,
-    [conversations],
-  );
+  // القائمة مبنيّة من الـ server (فلاتر بيتطبّقوا على كل المحادثات) — الترتيب من الـ server برضه
+  const allCount = counts?.all ?? conversations.length;
+  const unreadCount = counts?.unread ?? 0;
+  const unrepliedCount = counts?.unreplied ?? 0;
+  const groupCount = counts?.groups ?? 0;
+  const archivedCount = counts?.archived ?? conversations.filter((c) => c.isArchived).length;
 
   const connectedSessionCount = useMemo(
     () =>
@@ -427,7 +490,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     <aside
       dir={i18n.dir()}
       className={cn(
-        "whatsapp-theme-transition relative flex h-full max-h-none max-lg:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] lg:min-h-0 lg:w-[390px] lg:min-w-[360px] lg:border-b-0 lg:border-r",
+        "whatsapp-theme-transition relative flex h-full max-lg:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] lg:min-h-0 lg:w-[390px] lg:min-w-[360px] lg:border-b-0 lg:border-r",
         className,
       )}
     >
@@ -458,7 +521,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  const allJids = filteredConversations.map(c => c.jid);
+                  const allJids = conversations.map(c => c.jid);
                   if (selectedJids.size === allJids.length) {
                     setSelectedJids(new Set());
                   } else {
@@ -467,7 +530,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 }}
                 className="h-7 rounded-lg px-2 text-[11px] text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
               >
-                {selectedJids.size === filteredConversations.length ? 'إلغاء الكل' : 'تحديد الكل'}
+                {selectedJids.size === conversations.length ? 'إلغاء الكل' : 'تحديد الكل'}
               </Button>
               {selectedJids.size > 0 && onBulkDelete ? (
                 <Button
@@ -500,7 +563,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             className="relative rounded-full transition-transform hover:scale-[1.02]"
           >
             <Avatar className="size-8">
-              <AvatarImage src={currentUserProfile?.profilePicUrl || undefined} />
+              <AvatarImage src={getInboxExternalImageUrl(currentUserProfile?.profilePicUrl) || undefined} />
               <AvatarFallback className="bg-gradient-to-br from-[color:color-mix(in_srgb,var(--color-primary)_16%,transparent)] to-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)] text-[10px] font-semibold text-[color:var(--color-primary)]">
                 {getContactInitials(currentUserProfile?.name || "WA")}
               </AvatarFallback>
@@ -524,7 +587,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           ) : null}
           {/* Inline session selector — compact */}
           {sessionOptions.length > 1 ? (
-            <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
+            <Select value={resolvedSessionValue} onValueChange={(v) => v && onSelectSession(v)}>
               <SelectTrigger className="h-7 min-w-0 max-w-[9rem] rounded-lg bg-[var(--whatsapp-surface)] text-[10px] px-2 gap-1">
                 <span className="truncate font-medium text-[color:var(--color-foreground)]">
                   {resolvedSessionValue === "all"
@@ -578,6 +641,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 <span>{t("whatsapp.sidebar.newGroup")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
+                onClick={onSyncHistory}
+                disabled={!selectedSession || selectedSession === 'all' || isSyncingHistory}
+              >
+                <RefreshCw className={cn("size-4", isSyncingHistory && "animate-spin")} />
+                <span>{isSyncingHistory ? 'جاري طلب المزامنة' : 'مزامنة الرسائل'}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={onOpenBroadcast}
               >
                 <Megaphone className="size-4" />
@@ -598,6 +668,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               >
                 <Trash2 className="size-4" />
                 <span>حذف متعدد</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onDeleteAll?.()}
+              >
+                <Trash2 className="size-4 text-rose-600" />
+                <span className="text-rose-600">حذف كل المحادثات</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -627,7 +703,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={showArchived}
-                onCheckedChange={(checked) => setShowArchived(Boolean(checked))}
+                onCheckedChange={(checked) => onToggleArchived(Boolean(checked))}
               >
                 {showArchived
                   ? t("whatsapp.sidebar.all")
@@ -640,79 +716,92 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       )}
       </div>
 
-      <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-1.5 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
-            <Input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t("whatsapp.sidebar.searchPlaceholder")}
-              aria-label={t("whatsapp.sidebar.searchPlaceholder")}
-              className="whatsapp-search-input h-7 rounded-lg bg-[var(--whatsapp-surface)] ps-8 pe-8 text-[11px]"
-            />
+      <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-2 space-y-2 shrink-0">
+        <div className="relative w-full">
+          <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+          <Input
+            value={searchTerm}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder={t("whatsapp.sidebar.searchPlaceholder") as string}
+            aria-label={t("whatsapp.sidebar.searchPlaceholder") as string}
+            className="whatsapp-search-input h-8 w-full rounded-lg bg-[var(--whatsapp-surface)] ps-8 pe-8 text-[11px]"
+          />
+          {searchTerm ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => onSearchChange("")}
+              className="absolute end-1 top-1/2 -translate-y-1/2 size-6 rounded-md text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+            >
+              <X className="size-3" />
+            </Button>
+          ) : (
             <Button
               variant="ghost"
               size="icon-sm"
               onClick={() =>
-                setFilterType((current) =>
-                  current === "unread" ? "all" : "unread",
-                )
+                onFilterTypeChange(filterType === "unread" ? "all" : "unread")
               }
               className={cn(
-                "absolute end-0.5 top-0.5 size-6 rounded-lg",
+                "absolute end-1 top-1/2 -translate-y-1/2 size-6 rounded-md",
                 filterType === "unread"
                   ? "bg-primary/10 text-[color:var(--color-primary)] hover:bg-primary/12"
                   : "text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
               )}
-              title={t("whatsapp.sidebar.unread")}
+              title={t("whatsapp.sidebar.unread") as string}
             >
               <Filter className="size-3.5" />
             </Button>
-          </div>
-          {/* Filter pills inline with search on desktop */}
-          <div className="wa-filter-strip shrink-0">
-            <FilterPill
-              active={filterType === "all" && !showArchived}
-              label={t("whatsapp.sidebar.all")}
-              count={conversations.length}
-              onClick={() => { setFilterType("all"); setShowArchived(false); }}
-            />
-            <FilterPill
-              active={filterType === "unread"}
-              label={t("whatsapp.sidebar.unread")}
-              count={unreadCount}
-              onClick={() => { setFilterType("unread"); setShowArchived(false); }}
-            />
-            <FilterPill
-              active={filterType === "groups"}
-              label={t("whatsapp.sidebar.groups")}
-              count={groupCount}
-              onClick={() => { setFilterType("groups"); setShowArchived(false); }}
-            />
-            <FilterPill
-              active={showArchived}
-              label={t("whatsapp.sidebar.archive") || "الأرشيف"}
-              count={conversations.filter(c => c.isArchived).length}
-              onClick={() => { setShowArchived(true); if (filterType === "statuses") setFilterType("all"); }}
-            />
-            <FilterPill
-              active={filterType === "statuses"}
-              label={t("whatsapp.sidebar.statuses")}
-              count={statuses.length}
-              onClick={() => { setFilterType("statuses"); setShowArchived(false); }}
-            />
-          </div>
+          )}
+        </div>
+        {/* Filter pills full width horizontal strip */}
+        <div className="wa-filter-strip flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+          <FilterPill
+            active={filterType === "all" && !showArchived}
+            label={t("whatsapp.sidebar.all")}
+            count={allCount}
+            onClick={() => { onFilterTypeChange("all"); onToggleArchived(false); }}
+          />
+          <FilterPill
+            active={filterType === "unreplied"}
+            label={t("whatsapp.sidebar.unreplied")}
+            count={unrepliedCount}
+            onClick={() => { onFilterTypeChange("unreplied"); onToggleArchived(false); }}
+          />
+          <FilterPill
+            active={filterType === "unread"}
+            label={t("whatsapp.sidebar.unread")}
+            count={unreadCount}
+            onClick={() => { onFilterTypeChange("unread"); onToggleArchived(false); }}
+          />
+          <FilterPill
+            active={filterType === "groups"}
+            label={t("whatsapp.sidebar.groups")}
+            count={groupCount}
+            onClick={() => { onFilterTypeChange("groups"); onToggleArchived(false); }}
+          />
+          <FilterPill
+            active={showArchived}
+            label={t("whatsapp.sidebar.archive") || "الأرشيف"}
+            count={archivedCount}
+            onClick={() => { onToggleArchived(true); if (filterType === "statuses") onFilterTypeChange("all"); }}
+          />
+          <FilterPill
+            active={filterType === "statuses"}
+            label={t("whatsapp.sidebar.statuses")}
+            count={statuses.length}
+            onClick={() => { onFilterTypeChange("statuses"); onToggleArchived(false); }}
+          />
         </div>
       </div>
 
-      <div className="wa-slim-scroll wa-safe-bottom min-h-0 flex-1 overflow-y-auto px-2 py-1.5 sm:py-2" onScroll={handleScroll}>
+      <div className="wa-slim-scroll wa-safe-bottom min-h-0 flex-1 overflow-y-auto px-space-2 py-space-1 sm:py-space-2" onScroll={handleScroll}>
         {filterType === "statuses" ? (
-          <div className="space-y-3">
+          <div className="space-y-space-3">
             <button
               type="button"
               onClick={onAddStatus}
-              className="flex w-full items-center justify-between rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-elevated)] px-4 py-3 text-start shadow-sm transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
+              className="flex w-full items-center justify-between rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-elevated)] px-space-4 py-space-3 text-start shadow-soft transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
             >
               <div>
                 <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
@@ -739,9 +828,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               statuses.map((status) => (
                 <article
                   key={status.id}
-                  className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-4 py-4 shadow-sm"
+                  className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-space-4 py-space-4 shadow-soft"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-space-3">
                     <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-[color:var(--color-primary)]">
                       <Camera className="size-5" />
                     </div>
@@ -793,9 +882,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               </Button>
             ) : null}
           </div>
-        ) : isLoadingConversations && filteredConversations.length === 0 ? (
+        ) : isLoadingConversations && conversations.length === 0 ? (
           renderLoadingRows()
-        ) : filteredConversations.length === 0 ? (
+        ) : conversations.length === 0 ? (
           <EmptyState
             icon={Users}
             title={t("conversations.noConversations")}
@@ -803,12 +892,30 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           />
         ) : (
           <div className="space-y-2">
-            {filteredConversations.map((contact) => {
+            {conversations.map((contact) => {
               const contactName = getContactName(contact);
               const isSelected = selectedContact?.id === contact.id;
               const isSwiped = swipedContactId === contact.id;
 
               const isSelectedInMulti = selectedJids.has(contact.jid);
+
+              const lastMessageContent = contact.lastMessage?.content;
+              const orderCode = extractOrderCode(lastMessageContent);
+              // 🔍 أثناء البحث: نعرض رسالة البحث المطابقة (متظلّلة) بدل آخر رسالة غير متعلقة
+              const isContentSearchResult = Boolean(searchTerm.trim() && contact.matchedMessage?.content);
+              const searchPreviewContent = isContentSearchResult
+                ? contact.matchedMessage?.content
+                : orderCode
+                  ? getPreviewWithoutOrderCode(lastMessageContent, orderCode)
+                  : getLastMessagePreview(contact);
+
+              // مرسل آخر رسالة زي واتساب الأصلي:
+              // - لو الرسالة صادرة من رقم البيزنس → "أنت: النص"
+              // - لو واردة من العميل → النص عادي (اسم العميل هو عنوان الصف)
+              const previewFromMe = isContentSearchResult
+                ? Boolean(contact.matchedMessage?.fromMe)
+                : Boolean(contact.lastMessage?.fromMe);
+              const senderPrefix = previewFromMe ? t("whatsapp.window.you") : null;
 
               return (
                 <div key={contact.id} className="relative overflow-hidden rounded-2xl">
@@ -873,7 +980,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       });
                     }}
                     className={cn(
-                      "wa-conversation-item min-h-[3.25rem] w-full border-b border-t-0 border-x-0 border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] px-3 py-1.5 text-start transition-all duration-150 sm:min-h-[3.5rem] sm:py-2 rounded-none",
+                      "wa-conversation-item min-h-[3.25rem] w-full border-b border-t-0 border-x-0 border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] px-space-3 py-space-1 text-start transition-all duration-150 sm:min-h-[3.5rem] sm:py-space-2 rounded-none",
                       multiSelectMode && isSelectedInMulti
                         ? "bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-background))]"
                         : !multiSelectMode && isSelected
@@ -884,7 +991,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       transform: !multiSelectMode && isSwiped ? `translateX(${swipeOffset}px)` : 'translateX(0px)',
                     }}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-space-3">
                       {multiSelectMode ? (
                         <div className={cn(
                           "flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors",
@@ -896,7 +1003,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         </div>
                       ) : null}
                       <Avatar className="size-10 sm:size-10">
-                        <AvatarImage src={contact.profilePicUrl || undefined} />
+                        <AvatarImage src={getInboxExternalImageUrl(contact.profilePicUrl) || undefined} />
                         <AvatarFallback className="bg-gradient-to-br from-[color:color-mix(in_srgb,var(--color-primary)_16%,transparent)] to-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)] text-xs font-semibold text-[color:var(--color-primary)]">
                           {getContactInitials(contactName)}
                         </AvatarFallback>
@@ -930,6 +1037,26 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                   {t("whatsapp.window.channel")}
                                 </Badge>
                               ) : null}
+                              {contact.labels && contact.labels.length > 0 ? (
+                                <div className="flex -space-x-1 rtl:space-x-reverse">
+                                  {contact.labels.slice(0, 3).map(labelId => {
+                                    const labelDef = labelsMap.get(labelId);
+                                    return labelDef ? (
+                                      <span
+                                        key={labelId}
+                                        className="inline-block size-2 rounded-full border border-white ring-1 ring-white/50"
+                                        style={{ backgroundColor: labelDef.color }}
+                                        title={labelDef.name}
+                                      />
+                                    ) : null;
+                                  })}
+                                  {contact.labels.length > 3 ? (
+                                    <span className="text-[9px] leading-none text-[color:var(--color-muted-foreground)]">
+                                      +{contact.labels.length - 3}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                           <p
@@ -945,9 +1072,18 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         </div>
 
                         <div className="mt-1 flex items-center justify-between gap-2">
-                          <p className="line-clamp-1 text-sm leading-5 text-[color:var(--color-muted-foreground)]">
-                            {getLastMessagePreview(contact)}
-                          </p>
+                          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                            <p className="line-clamp-1 min-w-0 flex-1 text-sm leading-5 text-[color:var(--color-muted-foreground)]">
+                              {senderPrefix ? (
+                                <span className="font-semibold text-[color:var(--color-foreground)]">{senderPrefix}: </span>
+                              ) : null}
+                              {isContentSearchResult ? (
+                                <HighlightedText text={searchPreviewContent || ""} query={searchTerm} />
+                              ) : (
+                                searchPreviewContent
+                              )}
+                            </p>
+                          </div>
                           <div className="flex shrink-0 items-center gap-1.5">
                             {contact.isPinned ? (
                               <Pin className="size-3 text-[color:var(--color-muted-foreground)]" />

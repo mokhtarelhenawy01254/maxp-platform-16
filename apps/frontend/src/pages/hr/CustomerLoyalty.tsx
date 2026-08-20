@@ -1,7 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { Award, Crown, DollarSign, Edit, Eye, Filter, Gem, Gift, Heart, Medal, Plus, RefreshCw, Search, Star, Target, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
+import {
+  Users,
+  Star,
+  Gift,
+  Trophy,
+  Target,
+  TrendingUp,
+  Award,
+  Plus,
+  Search,
+  Filter,
+  RefreshCw,
+  Eye,
+  Edit,
+  Crown,
+  Medal,
+  Gem,
+  Heart,
+  Zap,
+  DollarSign,
+} from "lucide-react";
 
 interface CustomerLoyaltyProgram {
   id: string;

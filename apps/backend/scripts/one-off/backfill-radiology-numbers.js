@@ -1,11 +1,11 @@
-﻿/**
+/**
  * @file backfill-radiology-numbers.js
  * @description One-off backfill for the unified order numbering:
  *
  *  1. Assign a sequential per-company bookingNo to appointments that are missing it
  *     (old bookings created before the numbering feature). Oldest first, per company.
  *  2. Backfill the unified order number (accessionNumber) on studies that came from a
- *     booking and have no accession yet ΓÇö ORD-YYYYMMDD-<bookingNo padded>.
+ *     booking and have no accession yet — ORD-YYYYMMDD-<bookingNo padded>.
  *
  * SAFETY: read-only pass + targeted updates only (no deletes, no schema changes).
  * Re-runnable. Use DRY_RUN=true to preview counts without writing.

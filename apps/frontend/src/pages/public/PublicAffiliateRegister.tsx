@@ -8,6 +8,8 @@ import {
   isLocalLikeDomain,
 } from "../../utils/storeUrl";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 interface AffiliateProgram {
   commissionType?: string;
@@ -158,12 +160,12 @@ const PublicAffiliateRegister: React.FC = () => {
     }
 
     if (isProgramInactive) {
-      toast.error("برنامج المسوقين غير متاح حالياً لهذه الشركة");
+      tToast.error("PublicAffiliateRegister.msg_95a1");
       return;
     }
 
     if (slug && !company) {
-      toast.error(companyError || "تعذر تحديد الشركة المرتبط بها الرابط");
+      toast.error(companyError || i18n.t("PublicAffiliateRegister.msg_1eeb"));
       return;
     }
 

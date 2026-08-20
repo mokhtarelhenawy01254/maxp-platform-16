@@ -1,4 +1,4 @@
-﻿const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getJwtSecret } = require('../utils/jwtSecret');
@@ -8,7 +8,7 @@ const login = async (req, res) => {
     const { phone, email, password } = req.body;
     const identifier = phone || email;
     if (!identifier || !password) {
-      return res.status(400).json({ success: false, message: '╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ╪ú┘ê ╪º┘ä╪¿╪▒┘è╪» ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è ┘ê┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒ ┘à╪╖┘ä┘ê╪¿╪º┘å' });
+      return res.status(400).json({ success: false, message: 'رقم الهاتف أو البريد الإلكتروني وكلمة المرور مطلوبان' });
     }
 
     const prisma = getSharedPrismaClient();
@@ -27,12 +27,12 @@ const login = async (req, res) => {
     });
 
     if (!patient || !patient.password) {
-      return res.status(401).json({ success: false, message: '╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ╪ú┘ê ┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      return res.status(401).json({ success: false, message: 'رقم الهاتف أو كلمة المرور غير صحيحة' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, patient.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ success: false, message: '╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü ╪ú┘ê ┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      return res.status(401).json({ success: false, message: 'رقم الهاتف أو كلمة المرور غير صحيحة' });
     }
 
     const token = jwt.sign(
@@ -42,17 +42,17 @@ const login = async (req, res) => {
     );
 
     const { password: _, ...patientData } = patient;
-    res.json({ success: true, message: '╪¬┘à ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä ╪¿┘å╪¼╪º╪¡', data: { patient: patientData, token, expiresIn: '24h' } });
+    res.json({ success: true, message: 'تم تسجيل الدخول بنجاح', data: { patient: patientData, token, expiresIn: '24h' } });
   } catch (error) {
     console.error('[PatientAuth] Login error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في تسجيل الدخول' });
   }
 };
 
 const me = async (req, res) => {
   try {
     const patientId = req.patient?.id;
-    if (!patientId) return res.status(401).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!patientId) return res.status(401).json({ success: false, message: 'غير مصرح' });
 
     const prisma = getSharedPrismaClient();
     const patient = await prisma.patient.findUnique({
@@ -64,41 +64,41 @@ const me = async (req, res) => {
       },
     });
 
-    if (!patient) return res.status(404).json({ success: false, message: '╪º┘ä┘à╪▒┘è╪╢ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+    if (!patient) return res.status(404).json({ success: false, message: 'المريض غير موجود' });
     res.json({ success: true, data: patient });
   } catch (error) {
     console.error('[PatientAuth] Me error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú' });
+    res.status(500).json({ success: false, message: 'حدث خطأ' });
   }
 };
 
 const changePassword = async (req, res) => {
   try {
     const patientId = req.patient?.id;
-    if (!patientId) return res.status(401).json({ success: false, message: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+    if (!patientId) return res.status(401).json({ success: false, message: 'غير مصرح' });
 
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: '┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒ ╪º┘ä╪¡╪º┘ä┘è╪⌐ ┘ê╪º┘ä╪¼╪»┘è╪»╪⌐ ┘à╪╖┘ä┘ê╪¿╪¬╪º┘å' });
+      return res.status(400).json({ success: false, message: 'كلمة المرور الحالية والجديدة مطلوبتان' });
     }
 
     const prisma = getSharedPrismaClient();
     const patient = await prisma.patient.findUnique({ where: { id: patientId }, select: { password: true } });
 
     if (!patient || !patient.password) {
-      return res.status(400).json({ success: false, message: '┘ä╪º ┘è┘à┘â┘å ╪¬╪║┘è┘è╪▒ ┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒' });
+      return res.status(400).json({ success: false, message: 'لا يمكن تغيير كلمة المرور' });
     }
 
     const isValid = await bcrypt.compare(currentPassword, patient.password);
     if (!isValid) {
-      return res.status(400).json({ success: false, message: '┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒ ╪º┘ä╪¡╪º┘ä┘è╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      return res.status(400).json({ success: false, message: 'كلمة المرور الحالية غير صحيحة' });
     }
 
     await prisma.patient.update({ where: { id: patientId }, data: { password: await bcrypt.hash(newPassword, 10) } });
-    res.json({ success: true, message: '╪¬┘à ╪¬╪║┘è┘è╪▒ ┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒ ╪¿┘å╪¼╪º╪¡' });
+    res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
   } catch (error) {
     console.error('[PatientAuth] Change password error:', error);
-    res.status(500).json({ success: false, message: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪║┘è┘è╪▒ ┘â┘ä┘à╪⌐ ╪º┘ä┘à╪▒┘ê╪▒' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في تغيير كلمة المرور' });
   }
 };
 

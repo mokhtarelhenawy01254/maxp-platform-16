@@ -1,4 +1,4 @@
-﻿import { config } from "../config";
+import { config } from "../config";
 import { apiClient } from "./apiClient";
 
 export interface TikTokCustomerProfile {

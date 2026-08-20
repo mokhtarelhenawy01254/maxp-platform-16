@@ -2,7 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
-import { ArrowRight, Bot, CreditCard, Gift, Mail, MessageSquare, Package, Sparkles, Star, TrendingUp, Users } from 'lucide-react';
+import { tToast } from "../../utils/i18n-toast";
+import {
+  Package,
+  TrendingUp,
+  Gift,
+  ArrowRight,
+  MessageSquare,
+  Bot,
+  Mail,
+  Users,
+  Sparkles,
+  CreditCard,
+} from "lucide-react";
 
 interface Bundle {
   id: string;
@@ -55,7 +67,7 @@ export default function BundleDetails() {
       }
     } catch (error) {
       console.error("Error fetching bundle:", error);
-      toast.error("لم يتم العثور على الباقة");
+      tToast.error("BundleDetails.msg_3844");
       navigate("/marketplace/bundles");
     } finally {
       setLoading(false);
@@ -92,7 +104,7 @@ export default function BundleDetails() {
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error("حدث خطأ أثناء الاشتراك");
+        tToast.error("BundleDetails.error_error_02ae");
       }
     } finally {
       setActivating(false);

@@ -1,6 +1,11 @@
-import { Plus as PlusIcon, Trash2 as TrashIcon, Phone as PhoneIcon, Pin as MapPinIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import i18n from "../../../i18n";
+import {
+  PlusIcon,
+  TrashIcon,
+  PhoneIcon,
+  MapPinIcon,
+} from "@heroicons/react/24/outline";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 
 const AssetSuppliers: React.FC = () => {
@@ -47,7 +52,7 @@ const AssetSuppliers: React.FC = () => {
       }
     } catch (error) {
       console.error("Error creating supplier:", error);
-      alert("فشل في إضافة المورد");
+      alert(i18n.t("AssetSuppliers.failed_add_606a"));
     } finally {
       setAdding(false);
     }
@@ -65,7 +70,7 @@ const AssetSuppliers: React.FC = () => {
       }
     } catch (error) {
       console.error("Error deleting supplier:", error);
-      alert("فشل في حذف المورد. قد يكون مرتبطاً بطلبات شراء أو أصول.");
+      alert(i18n.t("AssetSuppliers.failed_delete_4959"));
     }
   };
 

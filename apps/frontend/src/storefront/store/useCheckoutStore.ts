@@ -20,16 +20,53 @@ export interface AppliedCheckoutCoupon {
   orderAmount?: number;
 }
 
+export interface StorefrontTierProgress {
+  method: string;
+  metricLabel: string;
+  currentMetric: number;
+  tier: {
+    id: string;
+    name?: string;
+    nameAr?: string;
+    color?: string;
+    icon?: string;
+    benefits?: any;
+  } | null;
+  nextTier: {
+    id: string;
+    name?: string;
+    nameAr?: string;
+    color?: string;
+    targetMetric: number;
+    remainingMetric: number;
+    benefits?: any;
+  } | null;
+  rewards: {
+    freeShipping: boolean;
+    discountPercent: number;
+  };
+  activeVoucher: {
+    id: string;
+    percent: number;
+    amount: number;
+    expiresAt: string;
+  } | null;
+  walletBalance: number;
+  loyaltySystem: string;
+}
+
 interface CheckoutStore {
   formData: CheckoutFormData;
   paymentMethod: 'cod' | 'card' | 'wallet';
   appliedCoupon: AppliedCheckoutCoupon | null;
-  
+  tierProgress: StorefrontTierProgress | null;
+
   // Actions
   updateFormData: (data: Partial<CheckoutFormData>) => void;
   setPaymentMethod: (method: 'cod' | 'card' | 'wallet') => void;
   setAppliedCoupon: (coupon: AppliedCheckoutCoupon | null) => void;
   clearAppliedCoupon: () => void;
+  setTierProgress: (progress: StorefrontTierProgress | null) => void;
   resetCheckout: () => void;
 }
 
@@ -49,6 +86,7 @@ export const useCheckoutStore = create<CheckoutStore>()(
       formData: initialFormData,
       paymentMethod: 'cod',
       appliedCoupon: null,
+      tierProgress: null,
 
       updateFormData: (data) => {
         set((state) => ({
@@ -68,8 +106,12 @@ export const useCheckoutStore = create<CheckoutStore>()(
         set({ appliedCoupon: null });
       },
 
+      setTierProgress: (progress) => {
+        set({ tierProgress: progress });
+      },
+
       resetCheckout: () => {
-        set({ formData: initialFormData, paymentMethod: 'cod', appliedCoupon: null });
+        set({ formData: initialFormData, paymentMethod: 'cod', appliedCoupon: null, tierProgress: null });
       },
     }),
     {

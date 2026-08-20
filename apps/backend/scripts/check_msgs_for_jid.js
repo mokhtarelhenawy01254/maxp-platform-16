@@ -1,4 +1,4 @@
-﻿const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 async function main() {
     const sessionId = 'cmp5bpemv126ujuxkvsowr7ol';

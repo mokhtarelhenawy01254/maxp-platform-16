@@ -1,7 +1,12 @@
-import { AlignLeft as Bars3Icon, X as XMarkIcon, ChevronRight as ChevronRightIcon, Search as MagnifyingGlassIcon, Circle as ArrowRightOnRectangleIcon } from 'lucide-react';
 import React, { useEffect, useId } from "react";
 import { Link, useNavigate } from "react-router-dom";
-;
+import {
+  Bars3Icon,
+  XMarkIcon,
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 import { SidebarSection } from "../../../types/layout";
 import { buildStoreUrl } from "../../../utils/storeUrl";
 import { useAuth } from "../../../hooks/useAuthSimple";
@@ -9,6 +14,7 @@ import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
+import SidebarOrderSearch from "./SidebarOrderSearch";
 
 interface ClassicSidebarProps {
   isCollapsed: boolean;
@@ -216,10 +222,16 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                     </button>
                     {isExpanded ? (
                       <div className="business-sidebar-mobile-group-items">
-                        {section.items
+                          {section.items
                           .filter((i) => !i.hidden)
                           .map((item) => (
                             <div key={item.to}>
+                              {item.kind === "order-search" ? (
+                                <SidebarOrderSearch
+                                  mobileMode={mobileMode}
+                                  onNavigate={toggleSidebar}
+                                />
+                              ) : (
                               <NavLink
                                 to={item.to}
                                 icon={item.icon}
@@ -232,6 +244,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                               >
                                 {item.label}
                               </NavLink>
+                              )}
                               {item.children ? (
                                 <div className="business-sidebar-children">
                                   {item.children
@@ -324,7 +337,11 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                 className="h-12 w-12 rounded-xl object-cover mr-3 shadow-lg border-2 border-gray-200 dark:border-gray-600"
                 companyName={user?.company?.name}
               >
-                <img src="/logo.png" alt="MAX-P" className="h-12 w-12 object-contain rounded-xl shadow-lg mr-3" />
+                <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl mr-3 shadow-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">
+                    {user?.company?.name?.charAt(0) || "M"}
+                  </span>
+                </div>
               </CompanyLogo>
               <div>
                 <h1 className="text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
@@ -356,7 +373,14 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
               className="h-10 w-10 rounded-xl object-cover shadow-lg border-2 border-gray-200 dark:border-gray-600"
               companyName={user?.company?.name}
             >
-              <img src="/logo.png" alt="MAX-P" className="h-10 w-10 object-contain rounded-xl shadow-lg" />
+              <div
+                className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg flex items-center justify-center"
+                title={user?.company?.name}
+              >
+                <span className="text-white font-bold text-lg">
+                  {user?.company?.name?.charAt(0) || "M"}
+                </span>
+              </div>
             </CompanyLogo>
           </Link>
         )}
@@ -428,6 +452,13 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                       .filter((i) => !i.hidden)
                       .map((item) => (
                         <div key={item.to} className="space-y-1">
+                          {item.kind === "order-search" ? (
+                            <SidebarOrderSearch
+                              collapsed={isCollapsed}
+                              mobileMode={mobileMode}
+                              onNavigate={toggleSidebar}
+                            />
+                          ) : (
                           <NavLink
                             to={item.to}
                             icon={item.icon}
@@ -439,6 +470,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                           >
                             {item.label}
                           </NavLink>
+                          )}
                           {!isCollapsed && item.children ? (
                             <div className="mr-9 mt-1 space-y-1 border-r-2 border-gray-100 dark:border-gray-700/50 pr-2">
                               {item.children

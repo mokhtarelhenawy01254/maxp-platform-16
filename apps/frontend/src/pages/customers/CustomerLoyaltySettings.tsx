@@ -1,4 +1,4 @@
-﻿import React, { lazy, Suspense, useState } from "react";
+import React, { lazy, Suspense, useState } from "react";
 import { DollarSign, Coins, BadgePercent, Star, Settings2 } from "lucide-react";
 
 const CashbackSettings = lazy(() => import("./CashbackSettings"));
@@ -9,15 +9,15 @@ const LoyaltyTiers = lazy(() => import("./LoyaltyTiers"));
 type TabKey = "cashback" | "points" | "discount" | "tiers";
 
 const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { key: "cashback", label: "╪º┘ä┘â╪º╪┤ ╪¿╪º┘â", icon: DollarSign },
-  { key: "points", label: "╪º┘ä┘å┘é╪º╪╖", icon: Coins },
-  { key: "discount", label: "╪º┘ä╪«╪╡┘à ╪¿╪╣╪» ╪º┘ä╪¿┘è╪╣", icon: BadgePercent },
-  { key: "tiers", label: "╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬", icon: Star },
+  { key: "cashback", label: "الكاش باك", icon: DollarSign },
+  { key: "points", label: "النقاط", icon: Coins },
+  { key: "discount", label: "الخصم بعد البيع", icon: BadgePercent },
+  { key: "tiers", label: "المستويات", icon: Star },
 ];
 
 /**
- * ╪╡┘ü╪¡╪⌐ "╪Ñ╪╣╪»╪º╪»╪º╪¬" ╪º┘ä┘à┘ê╪¡╪»╪⌐ ┘ä┘é╪│┘à ╪º┘ä╪╣┘à┘ä╪º╪í:
- * ┘â┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ ┘å╪╕╪º┘à ╪º┘ä┘ê┘ä╪º╪í ┘ü┘è ┘à┘â╪º┘å ┘ê╪º╪¡╪» (╪º┘ä┘â╪º╪┤ ╪¿╪º┘â / ╪º┘ä┘å┘é╪º╪╖ / ╪º┘ä╪«╪╡┘à ╪¿╪╣╪» ╪º┘ä╪¿┘è╪╣ / ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬).
+ * صفحة "إعدادات" الموحدة لقسم العملاء:
+ * كل إعدادات نظام الولاء في مكان واحد (الكاش باك / النقاط / الخصم بعد البيع / المستويات).
  */
 const CustomerLoyaltySettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("cashback");
@@ -30,8 +30,8 @@ const CustomerLoyaltySettings: React.FC = () => {
             <Settings2 className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">╪Ñ╪╣╪»╪º╪»╪º╪¬</h1>
-            <p className="text-gray-600 dark:text-gray-400">╪Ñ╪»╪º╪▒╪⌐ ╪ú┘å╪╕┘à╪⌐ ╪º┘ä┘ê┘ä╪º╪í: ╪º┘ä┘å┘é╪º╪╖╪î ╪º┘ä┘à╪│╪¬┘ê┘è╪º╪¬╪î ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â╪î ┘ê╪º┘ä╪«╪╡┘à ╪¿╪╣╪» ╪º┘ä╪¿┘è╪╣</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">إعدادات</h1>
+            <p className="text-gray-600 dark:text-gray-400">إدارة أنظمة الولاء: النقاط، المستويات، الكاش باك، والخصم بعد البيع</p>
           </div>
         </div>
       </div>

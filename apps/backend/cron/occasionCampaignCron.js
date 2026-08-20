@@ -1,11 +1,11 @@
-﻿const cron = require('node-cron');
+const cron = require('node-cron');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const { buildEffectiveCustomerListWhere } = require('../utils/customerListCriteria');
 
 /**
- * ≡ƒÄë ╪ú╪¬┘à╪¬╪⌐ ╪¡┘à┘ä╪º╪¬ ╪º┘ä┘à┘å╪º╪│╪¿╪º╪¬ ╪º┘ä┘à╪¼╪»┘ê┘ä╪⌐ (Ramadan / ╪╣┘è╪» ╪º┘ä╪ú┘à / ╪º┘ü╪¬╪¬╪º╪¡╪º╪¬...)
- * ┘â┘ä ╪│╪º╪╣╪⌐: ╪¿╪¬╪¿╪╣╪¬ ╪ú┘è ╪¡┘à┘ä╪⌐ ┘ê╪º╪¬╪│╪º╪¿ ┘à╪¼╪»┘ê┘ä╪⌐ (scheduledAt ╪¼╪º┘ç╪▓) ┘ä╪¼┘à┘ç┘ê╪▒┘ç╪º.
+ * 🎉 أتمتة حملات المناسبات المجدولة (Ramadan / عيد الأم / افتتاحات...)
+ * كل ساعة: بتبعت أي حملة واتساب مجدولة (scheduledAt جاهز) لجمهورها.
  */
 async function processDueOccasionCampaigns() {
   const prisma = getSharedPrismaClient();
@@ -19,7 +19,7 @@ async function processDueOccasionCampaigns() {
   let totalSent = 0;
   for (const campaign of campaigns) {
     try {
-      // ╪¡┘ä ╪º┘ä╪¼┘à┘ç┘ê╪▒
+      // حل الجمهور
       let audience = [];
       if (campaign.targetAudience === 'all' || !campaign.targetAudience) {
         const customers = await prisma.customer.findMany({
@@ -52,7 +52,7 @@ async function processDueOccasionCampaigns() {
       for (const customer of audience) {
         const phone = customer.phone;
         if (!phone) continue;
-        const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || '╪╣╪▓┘è╪▓┘è ╪º┘ä╪╣┘à┘è┘ä';
+        const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
         try {
           const result = await WhatsAppNotificationService.sendNotification({
             companyId: campaign.companyId,
@@ -68,7 +68,7 @@ async function processDueOccasionCampaigns() {
           if (result.success) sent++; else failed++;
         } catch (sendErr) {
           failed++;
-          console.error(`Γ¥î [OCCASION-CRON] Send failed for ${phone}:`, sendErr.message);
+          console.error(`❌ [OCCASION-CRON] Send failed for ${phone}:`, sendErr.message);
         }
       }
 
@@ -77,14 +77,14 @@ async function processDueOccasionCampaigns() {
         data: { status: 'completed', sentAt: new Date(), sentCount: sent, failedCount: failed }
       });
       totalSent += sent;
-      console.log(`Γ£à [OCCASION-CRON] Campaign "${campaign.name}" sent to ${sent} (failed ${failed})`);
+      console.log(`✅ [OCCASION-CRON] Campaign "${campaign.name}" sent to ${sent} (failed ${failed})`);
     } catch (error) {
-      console.error(`Γ¥î [OCCASION-CRON] Failed processing campaign ${campaign.id}:`, error.message);
+      console.error(`❌ [OCCASION-CRON] Failed processing campaign ${campaign.id}:`, error.message);
     }
   }
 
   if (campaigns.length > 0) {
-    console.log(`Γ£à [OCCASION-CRON] Done. Total sent: ${totalSent}`);
+    console.log(`✅ [OCCASION-CRON] Done. Total sent: ${totalSent}`);
   }
 }
 
@@ -101,7 +101,7 @@ function parseListIds(raw) {
   return [];
 }
 
-// ┘è╪¡┘ä ╪¼┘à┘ç┘ê╪▒ ╪º┘ä┘à┘å╪º╪│╪¿╪⌐ ┘à┘å ┘é┘ê╪º╪ª┘à ╪º┘ä╪╣┘à┘ä╪º╪í ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐ (┘è╪»┘à╪¼ ╪º┘ä╪ú╪╣╪╢╪º╪í ┘ê┘è┘à┘å╪╣ ╪º┘ä╪¬┘â╪▒╪º╪▒)
+// يحل جمهور المناسبة من قوائم العملاء المختارة (يدمج الأعضاء ويمنع التكرار)
 const DEFAULT_LIST_CRITERIA = {
   all: { type: 'all' },
   'active-24h': { type: 'active', lastActivity: '24' },
@@ -127,13 +127,13 @@ async function resolveOccasionAudience(prisma, companyId, listIds) {
         if (c.phone && !customerMap.has(c.id)) customerMap.set(c.id, c);
       }
     } catch (e) {
-      console.error(`Γ¥î [OCCASION-CRON] list ${listId} resolve error:`, e.message);
+      console.error(`❌ [OCCASION-CRON] list ${listId} resolve error:`, e.message);
     }
   }
   return Array.from(customerMap.values());
 }
 
-// ┘è╪╣╪º┘ä╪¼ ╪º┘ä┘à┘å╪º╪│╪¿╪º╪¬ ╪º┘ä┘à╪¼╪»┘ê┘ä╪⌐ ┘ê┘è╪¿╪╣╪¬ ┘ê╪º╪¬╪│╪º╪¿ ┘ä╪¼┘à┘ç┘ê╪▒┘ç╪º╪î ┘à╪╣ ╪»╪╣┘à ╪º┘ä╪¬┘â╪▒╪º╪▒ (╪┤┘ç╪▒┘è/╪│┘å┘ê┘è)
+// يعالج المناسبات المجدولة ويبعت واتساب لجمهورها، مع دعم التكرار (شهري/سنوي)
 async function processDueOccasions() {
   const prisma = getSharedPrismaClient();
   const now = new Date();
@@ -142,7 +142,7 @@ async function processDueOccasions() {
     take: 50,
   });
 
-  // ╪▒╪¿╪╖ ╪¡┘è: ┘ä┘ê ╪º┘ä┘à┘å╪º╪│╪¿╪⌐ ┘à╪¬╪▒╪¿╪╖╪⌐ ╪¿┘é╪º┘ä╪¿╪î ╪º╪│╪¬╪«╪»┘à ┘à╪¡╪¬┘ê┘ë ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪¡╪º┘ä┘è ┘â╪▒╪│╪º┘ä╪⌐
+  // ربط حي: لو المناسبة متربطة بقالب، استخدم محتوى القالب الحالي كرسالة
   const templateIds = occasions.map(o => o.templateId).filter(Boolean);
   const templateMap = new Map();
   if (templateIds.length > 0) {
@@ -159,13 +159,13 @@ async function processDueOccasions() {
       const listIds = parseListIds(occ.customerListIds);
       const audience = await resolveOccasionAudience(prisma, occ.companyId, listIds);
 
-      // ╪¬╪╖╪¿┘è┘é ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪Ñ╪▒╪│╪º┘ä: ╪¡╪» ╪ú┘é╪╡┘ë ┘ä┘ä╪╣┘à┘ä╪º╪í + ┘à╪╣╪»┘ä ╪ú┘é╪╡┘ë ┘ä┘â┘ä ╪¼┘ê┘ä╪⌐ (┘â┘ä ╪│╪º╪╣╪⌐)
+      // تطبيق إعدادات الإرسال: حد أقصى للعملاء + معدل أقصى لكل جولة (كل ساعة)
       const limit = occ.sendLimit > 0 ? occ.sendLimit : audience.length;
       const recipients = audience.slice(0, limit);
       const already = Math.min(occ.totalSent || 0, recipients.length);
 
       if (already >= recipients.length) {
-        // ╪«┘ä╪╡┘å╪º ┘â┘ä ╪º┘ä┘à╪╖┘ä┘ê╪¿ ΓÇö ╪«╪º┘ä╪╡ ┘ä┘à╪▒╪¡┘ä╪⌐ ╪º┘ä╪¬┘â╪▒╪º╪▒/╪º┘ä╪Ñ╪¬┘à╪º┘à
+        // خلصنا كل المطلوب — خالص لمرحلة التكرار/الإتمام
         let doneNextRunAt = null;
         let doneStatus = 'sent';
         if (occ.recurrence === 'yearly') {
@@ -183,7 +183,7 @@ async function processDueOccasions() {
           where: { id: occ.id },
           data: { status: doneStatus, nextRunAt: doneNextRunAt, lastSentAt: new Date(), lastSentCount: 0 },
         });
-        console.log(`Γ£à [OCCASION-CRON] "${occ.name}" reached limit (${already}/${limit}) - ${doneStatus}`);
+        console.log(`✅ [OCCASION-CRON] "${occ.name}" reached limit (${already}/${limit}) - ${doneStatus}`);
         continue;
       }
 
@@ -196,7 +196,7 @@ async function processDueOccasions() {
         for (const customer of batch) {
           const phone = customer.phone;
           if (!phone) continue;
-          const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || '╪╣╪▓┘è╪▓┘è ╪º┘ä╪╣┘à┘è┘ä';
+          const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
           try {
             const result = await WhatsAppNotificationService.sendNotification({
               companyId: occ.companyId,
@@ -223,7 +223,7 @@ async function processDueOccasions() {
 
       const totalSent = already + sent;
 
-      // ┘ç┘ä ┘ä╪│┘ç ╪¿╪º┘é┘è ┘à╪│╪¬┘ä┘à┘è┘å ┘ü┘è ╪º┘ä╪¼┘ê┘ä╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐╪ƒ (╪¿╪│╪¿╪¿ ┘à╪╣╪»┘ä ╪º┘ä╪Ñ╪▒╪│╪º┘ä ┘ä┘â┘ä ╪│╪º╪╣╪⌐)
+      // هل لسه باقي مستلمين في الجولة الحالية؟ (بسبب معدل الإرسال لكل ساعة)
       const stillRemaining = already + batch.length < recipients.length;
 
       let nextRunAt = null;
@@ -247,28 +247,28 @@ async function processDueOccasions() {
         where: { id: occ.id },
         data: { status, nextRunAt, lastSentAt: new Date(), lastSentCount: sent, totalSent },
       });
-      console.log(`Γ£à [OCCASION-CRON] "${occ.name}" sent ${sent} this run (total ${totalSent}/${limit}, failed ${failed}) recurrence=${occ.recurrence}${stillRemaining ? ' -> continuing next hour' : ''}`);
+      console.log(`✅ [OCCASION-CRON] "${occ.name}" sent ${sent} this run (total ${totalSent}/${limit}, failed ${failed}) recurrence=${occ.recurrence}${stillRemaining ? ' -> continuing next hour' : ''}`);
     } catch (error) {
-      console.error(`Γ¥î [OCCASION-CRON] Failed processing occasion ${occ.id}:`, error.message);
+      console.error(`❌ [OCCASION-CRON] Failed processing occasion ${occ.id}:`, error.message);
     }
   }
 }
 
 function startOccasionCampaignScheduler() {
-  console.log('≡ƒÄë [OCCASION-CRON] Initializing occasion campaign scheduler...');
+  console.log('🎉 [OCCASION-CRON] Initializing occasion campaign scheduler...');
   cron.schedule('0 * * * *', async () => {
     try {
       await processDueOccasionCampaigns();
     } catch (error) {
-      console.error('Γ¥î [OCCASION-CRON] Error:', error.message);
+      console.error('❌ [OCCASION-CRON] Error:', error.message);
     }
     try {
       await processDueOccasions();
     } catch (error) {
-      console.error('Γ¥î [OCCASION-CRON] processDueOccasions Error:', error.message);
+      console.error('❌ [OCCASION-CRON] processDueOccasions Error:', error.message);
     }
   });
-  console.log('Γ£à [OCCASION-CRON] Started (runs every hour)');
+  console.log('✅ [OCCASION-CRON] Started (runs every hour)');
 }
 
 module.exports = { startOccasionCampaignScheduler, processDueOccasionCampaigns, processDueOccasions };

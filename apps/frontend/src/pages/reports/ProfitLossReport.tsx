@@ -1,6 +1,11 @@
-import { Circle as PresentationChartLineIcon, RefreshCw as ArrowPathIcon, Circle as ArrowTrendingUpIcon, DollarSign as BanknotesIcon, Circle as ScaleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-;
+import {
+  PresentationChartLineIcon,
+  ArrowPathIcon,
+  ArrowTrendingUpIcon,
+  BanknotesIcon,
+  ScaleIcon,
+} from "@heroicons/react/24/outline";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import { useCurrency } from "../../hooks/useCurrency";
 import {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clipboard, Copy, Edit, MoreVertical, Trash2, Users } from 'lucide-react';
+import { Edit, Trash2, Copy, Users, MoreVertical } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';

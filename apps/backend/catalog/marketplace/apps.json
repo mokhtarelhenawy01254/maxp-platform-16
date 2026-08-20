@@ -1,18 +1,191 @@
 [
   {
-    "id": "cat-app-facebook-ads-pro",
-    "slug": "facebook-ads-pro",
-    "name": "Facebook Ads Pro",
-    "nameEn": "Facebook Ads Pro",
-    "description": "Manage, optimize, and track paid campaigns from a single workspace.",
-    "category": "MARKETING",
+    "id": "cat-app-orders-analytics",
+    "slug": "orders-analytics",
+    "name": "تحليلات الطلبات",
+    "nameEn": "Order Analytics",
+    "description": "تحليلات تفصيلية للطلبات: إجمالي الطلبات، الطلبات النقدية والمدفوعة مسبقاً، الملغاة، توزيع الحالات، والمقارنات الزمنية — مع رسوم بيانية تفاعلية.",
+    "descriptionEn": "Detailed order analytics: total orders, COD/prepaid/cancelled breakdown, status distribution, and period-over-period comparisons with interactive charts.",
+    "category": "ANALYTICS",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 299,
-    "yearlyPrice": 2999,
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر الذين يريدون فهم أداء طلباتهم وتتبع الحالات في أي لحظة.",
+      "surface": "داخل قسم تحليلات الطلبات — لوحة الإحصائيات الكاملة.",
+      "outcome": "قرارات أسرع وأدق بناءً على بيانات طلباتك بشكل مباشر."
+    },
+    "features": {
+      "overview": {
+        "enabled": true,
+        "name": "نظرة عامة على الطلبات",
+        "description": "إجمالي الطلبات والطلبات النقدية والمدفوعة مسبقاً والملغاة.",
+        "access": "PAID"
+      },
+      "statusDistribution": {
+        "enabled": true,
+        "name": "توزيع حالات الطلبات",
+        "description": "عدد الطلبات في كل حالة ونسب التوزيع بيانياً.",
+        "access": "PAID"
+      },
+      "trends": {
+        "enabled": true,
+        "name": "اتجاهات الطلبات",
+        "description": "رسوم بيانية لحركة الطلبات يومياً وأسبوعياً وشهرياً.",
+        "access": "PAID"
+      },
+      "comparisons": {
+        "enabled": true,
+        "name": "المقارنات الزمنية",
+        "description": "مقارنة الأداء بالفترة السابقة أو بنفس الفترة العام الماضي.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "chart-bar",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-13T00:00:00Z",
+    "updatedAt": "2026-08-13T00:00:00Z"
+  },
+  {
+    "id": "cat-app-instagram-business",
+    "slug": "instagram-business",
+    "name": "انستجرام بزنس",
+    "nameEn": "Instagram for Business",
+    "description": "إدارة الرسائل والتعليقات والـ DMs على انستجرام، الرد الآلي، وتحليلات التفاعل — ربط حساب انستجرام مع صفحات فيسبوك بسهولة.",
+    "descriptionEn": "Manage Instagram DMs, comments, auto-reply, and engagement analytics — link your Instagram account with Facebook pages easily.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "facebook-pages-connect"
+    ],
+    "positioning": {
+      "audience": "المتاجر والعلامات التجارية التي تدير حساب انستجرام للتواصل مع العملاء والبيع.",
+      "surface": "داخل قسم انستجرام — المحادثات والتعليقات والإعدادات والتحليلات.",
+      "outcome": "إدارة كاملة لتفاعلات انستجرام من لوحة واحدة مع ردود تلقائية ذكية."
+    },
+    "features": {
+      "dmInbox": { "enabled": true, "name": "صندوق الرسائل", "description": "متابعة الـ DMs والرد عليها من لوحة موحدة.", "access": "PAID" },
+      "autoReply": { "enabled": true, "name": "الرد الآلي", "description": "ردود تلقائية ذكية على رسائل وتعليقات انستجرام.", "access": "PAID" },
+      "comments": { "enabled": true, "name": "إدارة التعليقات", "description": "متابعة والرد على تعليقات المنشورات.", "access": "PAID" },
+      "analytics": { "enabled": true, "name": "تحليلات التفاعل", "description": "تقارير عن التفاعل والمحادثات والأداء.", "access": "PAID" }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "instagram",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-11T00:00:00Z",
+    "updatedAt": "2026-08-11T00:00:00Z"
+  },
+  {
+    "id": "cat-app-telegram-business",
+    "slug": "telegram-business",
+    "name": "تكامل Telegram",
+    "nameEn": "Telegram for Business",
+    "description": "إدارة مجموعات وقنوات تليجرام، الرد الآلي، الجدولة، الحملات، والبوتات المتقدمة — كل قنوات التواصل في مكان واحد.",
+    "descriptionEn": "Manage Telegram channels and groups, auto-reply, scheduling, campaigns, and advanced bots - all communication channels in one place.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق المبيعات والدعم التي تدير قنوات وجروبات تليجرام للتواصل مع العملاء.",
+      "surface": "داخل قسم تيليجرام - المحادثات والجروبات والحملات والإعدادات.",
+      "outcome": "رد أسرع وأتمتة كاملة للتواصل عبر تليجرام مع تتبع التفاعل."
+    },
+    "features": {
+      "channels": { "enabled": true, "name": "إدارة القنوات والمجموعات", "description": "إدارة قنوات وجروبات تليجرام بسهولة.", "access": "PAID" },
+      "autoReply": { "enabled": true, "name": "الرد الآلي", "description": "ردود تلقائية ذكية على رسائل العملاء.", "access": "PAID" },
+      "scheduling": { "enabled": true, "name": "جدولة الرسائل", "description": "جدولة إرسال الرسائل في الأوقات المناسبة.", "access": "PAID" },
+      "campaigns": { "enabled": true, "name": "الحملات والرسائل الجماعية", "description": "إرسال رسائل جماعية للجروبات والعملاء.", "access": "PAID" }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "telegram",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-11T00:00:00Z",
+    "updatedAt": "2026-08-11T00:00:00Z"
+  },
+  {
+    "id": "cat-app-tiktok-integrations",
+    "slug": "tiktok-integrations",
+    "name": "تكامل TikTok",
+    "nameEn": "TikTok for Business",
+    "description": "نشر المحتوى على TikTok مباشرة، ربط متجر TikTok Shop، تسجيل دخول العملاء بحساب TikTok، عرض الفيديوهات في المتجر، وتتبع أحداث الإعلانات — كل التكاملات الرسمية في مكان واحد.",
+    "descriptionEn": "Publish videos to TikTok directly, connect TikTok Shop, customer login with TikTok, embed videos in your store, and track ad events — all official integrations in one place.",
+    "category": "COMMUNICATION",
+    "pricingModel": "FREE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [],
+    "positioning": {
+      "audience": "المتاجر التي تبيع أو تسوّق على TikTok وتريد إدارة النشر والتتبع والتجارة من لوحة واحدة.",
+      "surface": "داخل قسم TikTok — نشر المحتوى، متجر TikTok Shop، الإعدادات والتتبع.",
+      "outcome": "نشر أسرع، بيع عبر TikTok Shop، وتتبع دقيق للتحويلات دون مغادرة المنصة."
+    },
+    "features": {
+      "publish": { "enabled": true, "name": "نشر المحتوى", "description": "نشر فيديوهات مباشرة على حساب TikTok من لوحة التحكم.", "access": "FREE" },
+      "shop": { "enabled": true, "name": "متجر TikTok Shop", "description": "ربط متجر TikTok Shop ومزامنة الطلبات والمنتجات.", "access": "FREE" },
+      "loginKit": { "enabled": true, "name": "تسجيل دخول العملاء", "description": "تسجيل دخول عملاء المتجر بحساب TikTok.", "access": "FREE" },
+      "embed": { "enabled": true, "name": "عرض الفيديوهات في المتجر", "description": "عرض مقاطع TikTok داخل صفحات المتجر.", "access": "FREE" },
+      "events": { "enabled": true, "name": "تتبع أحداث الإعلانات", "description": "إرسال أحداث التحويل إلى TikTok Events API.", "access": "FREE" }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "zap",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-13T00:00:00Z",
+    "updatedAt": "2026-08-13T00:00:00Z"
+  },
+  {
+    "id": "cat-app-facebook-ads-pro",
+    "slug": "facebook-ads-pro",
+    "name": "إعلانات فيسبوك وانستجرام",
+    "nameEn": "Facebook Ads Pro",
+    "description": "إدارة حملات فيسبوك وانستجرام مع AI Optimization وتقارير متقدمة.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "facebook-pages-connect"
+    ],
     "positioning": {
       "audience": "فرق التسويق والمتاجر التي تدير حملات مدفوعة باستمرار.",
       "surface": "داخل لوحة الإعلانات والحملات ومتابعة الحسابات.",
@@ -42,6 +215,269 @@
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
     "updatedAt": "2026-03-06T00:00:00Z"
+  },
+  {
+    "id": "cat-app-facebook-pages-connect",
+    "slug": "facebook-pages-connect",
+    "name": "ربط صفحات فيسبوك",
+    "nameEn": "Facebook Pages Connect",
+    "description": "ربط صفحات فيسبوك وإدارة الصفحات الأساسية والمحتوى.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الشركات التي تدير صفحات فيسبوك وتريد ربطها بالمنصة.",
+      "surface": "داخل إعدادات ربط الصفحات وصندوق الرسائل والرد على التعليقات.",
+      "outcome": "ربط الصفحات مرة واحدة والتحكم في الرسائل والمحتوى من مكان واحد."
+    },
+    "features": {
+      "oauth": {
+        "enabled": true,
+        "name": "ربط الصفحات (OAuth)",
+        "description": "ربط حساب فيسبوك وصفحاته بأمان خلال دقائق.",
+        "access": "PAID"
+      },
+      "pages": {
+        "enabled": true,
+        "name": "إدارة الصفحات",
+        "description": "إدارة أكثر من صفحة فيسبوك من لوحة واحدة.",
+        "access": "PAID"
+      },
+      "publish": {
+        "enabled": true,
+        "name": "نشر المحتوى",
+        "description": "إنشاء ونشر المنشورات مباشرة على صفحاتك.",
+        "access": "PAID"
+      },
+      "comments": {
+        "enabled": true,
+        "name": "الرد على التعليقات",
+        "description": "متابعة والرد على التعليقات الواردة على منشوراتك.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "facebook",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-03-06T00:00:00Z",
+    "updatedAt": "2026-08-11T00:00:00Z"
+  },
+  {
+    "id": "cat-app-facebook-pixel-capi",
+    "slug": "facebook-pixel-capi",
+    "name": "Pixel وتحليلات التحويل",
+    "nameEn": "Facebook Pixel & CAPI",
+    "description": "تتبع الزوار والتحويلات عبر Pixel و CAPI مع تقارير دقيقة.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "facebook-pages-connect"
+    ],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق التسويق الذين يريدون قياس التحويلات بدقة.",
+      "surface": "داخل إعدادات Pixel وأحداث التحويل وتقارير الحملات.",
+      "outcome": "تتبع دقيق للزوار والتحويلات لتحسين قرارات الإنفاق الإعلاني."
+    },
+    "features": {
+      "pixel": {
+        "enabled": true,
+        "name": "Pixel Tracking",
+        "description": "تركيب Pixel وتتبع أحداث الزوار على المتجر.",
+        "access": "PAID"
+      },
+      "capi": {
+        "enabled": true,
+        "name": "Conversions API (CAPI)",
+        "description": "إرسال أحداث التحويل من الخادم لضمان دقة التتبع.",
+        "access": "PAID"
+      },
+      "reports": {
+        "enabled": true,
+        "name": "تقارير التحويل",
+        "description": "تقارير واضحة عن أداء الأحداث والتحويلات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "activity",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-03-06T00:00:00Z",
+    "updatedAt": "2026-08-11T00:00:00Z"
+  },
+  {
+    "id": "cat-app-facebook-catalog-shop",
+    "slug": "facebook-catalog-shop",
+    "name": "كتالوج ومتجر فيسبوك",
+    "nameEn": "Facebook Catalog & Shop",
+    "description": "مزامنة كتالوج المنتجات مع فيسبوك وانستجرام Shop، إدارة المخزون، وإعلانات Dynamic Ads.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "facebook-pages-connect"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تبيع عبر فيسبوك وانستجرام وتحتاج مزامنة المنتجات والمخزون.",
+      "surface": "داخل إعدادات الكتالوجات ومتجر فيسبوك ومتابعة المخزون.",
+      "outcome": "عرض منتجاتك للبيع داخل فيسبوك وانستجرام مع تحديث آلي للمخزون."
+    },
+    "features": {
+      "sync": {
+        "enabled": true,
+        "name": "مزامنة الكتالوج",
+        "description": "مزامنة المنتجات والمخزون مع كتالوج فيسبوك تلقائياً.",
+        "access": "PAID"
+      },
+      "dynamicAds": {
+        "enabled": true,
+        "name": "Dynamic Ads",
+        "description": "إعلانات ديناميكية تعرض منتجاتك للعملاء المناسبين.",
+        "access": "PAID"
+      },
+      "shops": {
+        "enabled": true,
+        "name": "Facebook & Instagram Shops",
+        "description": "تفعيل متجرك داخل فيسبوك وانستجرام.",
+        "access": "PAID"
+      },
+      "inventory": {
+        "enabled": true,
+        "name": "إدارة المخزون",
+        "description": "تحديث آلي للمخزون والأسعار بين المتجر والمنصات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "shopping-bag",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-03-06T00:00:00Z",
+    "updatedAt": "2026-08-11T00:00:00Z"
+  },
+  {
+    "id": "cat-app-whatsapp-business",
+    "slug": "whatsapp-business",
+    "name": "WhatsApp Business API",
+    "nameEn": "WhatsApp Business API",
+    "description": "تكامل كامل مع WhatsApp Business API. إرسال واستقبال الرسائل والردود التلقائية.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الشركات التي تتواصل مع عملائها عبر واتساب يومياً.",
+      "surface": "داخل صندوق الوارد وإعدادات واتساب والردود التلقائية.",
+      "outcome": "إدارة محادثات واتساب ورسائل العملاء من منصة واحدة."
+    },
+    "features": {
+      "api": {
+        "enabled": true,
+        "name": "WhatsApp Business API",
+        "description": "تكامل رسمي مع WhatsApp Business API.",
+        "access": "PAID"
+      },
+      "quickReplies": {
+        "enabled": true,
+        "name": "ردود سريعة",
+        "description": "ردود جاهزة للرد السريع على العملاء.",
+        "access": "PAID"
+      },
+      "templates": {
+        "enabled": true,
+        "name": "قوالب الرسائل",
+        "description": "قوالب رسائل معتمدة للتواصل مع العملاء.",
+        "access": "PAID"
+      },
+      "autoReplies": {
+        "enabled": true,
+        "name": "ردود تلقائية",
+        "description": "رد تلقائي على الرسائل خارج أوقات العمل.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "whatsapp",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-03-06T00:00:00Z",
+    "updatedAt": "2026-08-11T00:00:00Z"
+  },
+  {
+    "id": "cat-app-bot-automation",
+    "slug": "bot-automation",
+    "name": "أتمتة المحادثات",
+    "nameEn": "Chat Automation",
+    "description": "بوت محادثات آلي بدون ذكاء اصطناعي على واتساب وفيسبوك: ردود بالكلمات المفتاحية، رسالة ترحيب، رد افتراضي، روابط بدء المحادثة، قائمة المسنجر، ودجت محادثة، QR، فلوهات تفاعلية تتفرع على رد العميل، أزرار سريعة، وإلغاء اشتراك (Opt-out).",
+    "descriptionEn": "No-AI chat bot for WhatsApp & Facebook: keyword replies, welcome message, default reply, conversation starters, persistent menu, chat widget, QR codes, interactive flows that branch on the customer's reply, quick replies, and opt-out.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المتاجر التي تريد رداً تلقائياً فورياً على رسائل واتساب ومسنجر بدون تكلفة ذكاء اصطناعي.",
+      "surface": "داخل قسم أتمتة المحادثات — الردود الآلية، بدء المحادثة، القائمة، الودجت، الفلوهات، والجمهور.",
+      "outcome": "رد آلي فوري على كل الرسائل، توفير وقت الفريق، وزيادة نسبة تحويل المتابعين لعملاء."
+    },
+    "features": {
+      "keywordRules": { "enabled": true, "name": "الردود الآلية", "description": "ردود بالكلمات المفتاحية مع أولوية واختيار القناة.", "access": "PAID" },
+      "welcomeDefault": { "enabled": true, "name": "الترحيب والرد الافتراضي", "description": "رسالة ترحيب أول رسالة + رد افتراضي.", "access": "PAID" },
+      "conversationStarters": { "enabled": true, "name": "بدء المحادثة", "description": "روابط wa.me و m.me برسالة جاهزة + QR.", "access": "PAID" },
+      "persistentMenu": { "enabled": true, "name": "قائمة المسنجر", "description": "قائمة ثابتة أسفل محادثة المسنجر.", "access": "PAID" },
+      "chatWidget": { "enabled": true, "name": "ودجت المحادثة", "description": "زر عائم يفتح محادثة واتساب أو مسنجر.", "access": "PAID" },
+      "interactiveFlows": { "enabled": true, "name": "الفلوهات التفاعلية", "description": "سلاسل تتفرع على رد العميل بالكلمات أو الأزرار.", "access": "PAID" },
+      "quickReplies": { "enabled": true, "name": "أزرار سريعة", "description": "أزرار Quick Replies على واتساب ومسنجر.", "access": "PAID" },
+      "optOut": { "enabled": true, "name": "إلغاء الاشتراك", "description": "إدارة STOP/Opt-out وشرائح الجمهور.", "access": "PAID" }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "bot",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-14T00:00:00Z",
+    "updatedAt": "2026-08-14T00:00:00Z"
   },
   {
     "id": "cat-app-analytics-basic",
@@ -101,7 +537,7 @@
     "unitName": "message",
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق المبيعات والدعم التي تستقبل محادثات كثيرة.",
@@ -134,18 +570,18 @@
     "updatedAt": "2026-03-06T00:00:00Z"
   },
   {
-    "id": "cat-app-store",
-    "slug": "store",
+    "id": "cat-app-store-basic",
+    "slug": "store-basic",
     "name": "المتجر",
     "nameEn": "Store",
-    "description": "إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد.",
+    "description": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 299,
-    "yearlyPrice": 2990,
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "trialDays": 14,
     "requiredApps": [],
     "positioning": {
       "audience": "أي متجر عايز يدير منتجاته وطلباته وواجهة بيعه من مكان واحد.",
@@ -170,6 +606,24 @@
         "name": "المتجر الإلكتروني",
         "description": "تشغيل صفحات العرض والشراء أمام العميل.",
         "access": "PAID"
+      },
+      "smartCart": {
+        "enabled": true,
+        "name": "سلة تسوق ذكية",
+        "description": "سلة تسوق سريعة وتجربة شراء مريحة.",
+        "access": "PAID"
+      },
+      "coupons": {
+        "enabled": true,
+        "name": "كوبونات وعروض",
+        "description": "كوبونات خصم وعروض ترويجية داخل المتجر.",
+        "access": "PAID"
+      },
+      "shipping": {
+        "enabled": true,
+        "name": "إدارة الشحن",
+        "description": "إدارة الشحن والتوصيل وأسعاره.",
+        "access": "PAID"
       }
     },
     "isActive": true,
@@ -181,7 +635,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "updatedAt": "2026-08-12T00:00:00.000Z"
   },
   {
     "id": "cat-app-crm-lite",
@@ -230,10 +684,10 @@
   {
     "id": "cat-app-conversion-suite",
     "slug": "conversion-suite",
-    "name": "Conversion Suite",
+    "name": "أدوات رفع التحويل",
     "nameEn": "Conversion Suite",
     "description": "Urgency bars, PDP conversion components, popups, and theme-ready growth modules for storefronts.",
-    "category": "MARKETING",
+    "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 349,
     "yearlyPrice": 3499,
@@ -241,7 +695,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي عندها زيارات وتريد رفع التحويل.",
@@ -282,9 +736,9 @@
   {
     "id": "cat-app-quantity-offers-pro",
     "slug": "quantity-offers-pro",
-    "name": "Quantity Offers Pro",
+    "name": "عروض الكميات",
     "nameEn": "Quantity Offers Pro",
-    "description": "Create multi-pack quantity offers with mix-and-match variant selection directly on product pages.",
+    "description": "أنشئ عروض كميات متعددة القطع مع اختيار مقاس أو لون مختلف لكل قطعة مباشرة على صفحة المنتج.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
@@ -293,7 +747,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تبيع باقات أو ترغب في تكبير السلة.",
@@ -334,10 +788,10 @@
   {
     "id": "cat-app-ugc-reviews-pro",
     "slug": "ugc-reviews-pro",
-    "name": "UGC Reviews Pro",
+    "name": "تقييمات العملاء",
     "nameEn": "UGC Reviews Pro",
     "description": "Photo and video review blocks designed for product pages and trust-building templates.",
-    "category": "MARKETING",
+    "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1999,
@@ -345,7 +799,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تحتاج ثقة اجتماعية أقوى قبل الشراء.",
@@ -386,9 +840,9 @@
   {
     "id": "cat-app-commerce-advanced",
     "slug": "commerce-advanced",
-    "name": "Commerce Advanced",
+    "name": "المبيعات المتقدمة",
     "nameEn": "Commerce Advanced",
-    "description": "Advanced commerce controls for pre-orders, extended inventory signals, and special selling flows.",
+    "description": "تحكم متقدم في المبيعات: الطلب المسبق، إشارات المخزون، ومسارات التنفيذ الخاصة.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 179,
@@ -397,7 +851,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تحتاج سيناريوهات بيع أكثر مرونة.",
@@ -441,7 +895,7 @@
     "name": "Procurement Pro",
     "nameEn": "Procurement Pro",
     "description": "Supplier, purchase order, purchase invoice, and supplier payment workflows.",
-    "category": "ECOMMERCE",
+    "category": "PROCUREMENT",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1990,
@@ -449,7 +903,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق التشغيل التي تدير موردين ومشتريات بشكل يومي.",
@@ -491,7 +945,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-01T00:00:00Z",
-    "updatedAt": "2026-05-01T00:00:00Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-affiliate-pro",
@@ -507,7 +961,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر التي تريد تشغيل أفليت أو دروب شيبنج من داخل المنصة.",
@@ -557,7 +1011,7 @@
     "name": "Order Source Tracking",
     "nameEn": "Order Source Tracking",
     "description": "Track the operational source of each order, including manual, storefront, import, API, and conversation sources.",
-    "category": "ECOMMERCE",
+    "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
@@ -565,7 +1019,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "الشركات التي تحتاج معرفة مصدر كل طلب داخل التشغيل اليومي.",
@@ -595,7 +1049,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-04T00:00:00Z",
-    "updatedAt": "2026-05-04T00:00:00Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-campaign-attribution",
@@ -611,7 +1065,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق التسويق التي تحتاج ربط الطلبات بالحملات الإعلانية.",
@@ -649,7 +1103,7 @@
     "name": "Order Confirmation & Distribution",
     "nameEn": "Order Confirmation & Distribution",
     "description": "Confirmation and internal assignment details for order operations teams.",
-    "category": "ECOMMERCE",
+    "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
@@ -657,7 +1111,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "فرق التأكيد والتوزيع التي تدير الطلبات داخلياً.",
@@ -687,7 +1141,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-04T00:00:00Z",
-    "updatedAt": "2026-05-04T00:00:00Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-unified-inbox",
@@ -695,7 +1149,7 @@
     "name": "Unified Inbox",
     "nameEn": "Unified Inbox",
     "description": "صندوق وارد موحد يجمع محادثاتك من كل المنصات في مكان واحد مع إمكانية الرد المباشر.",
-    "category": "PRODUCTIVITY",
+    "category": "COMMUNICATION",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 299,
     "yearlyPrice": 2999,
@@ -751,7 +1205,7 @@
     "name": "Notification Automation",
     "nameEn": "Notification Automation",
     "description": "Notification center, reminders, alert rules, and operational notification settings.",
-    "category": "PRODUCTIVITY",
+    "category": "AUTOMATION",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
@@ -920,12 +1374,124 @@
     "updatedAt": "2026-06-26T00:00:00Z"
   },
   {
+    "id": "cat-app-lab-app",
+    "slug": "lab-app",
+    "name": "نظام المعمل",
+    "nameEn": "Lab System",
+    "description": "نظام متكامل لإدارة المعامل — كتالوج الاختبارات، الاستقبال، النتائج، والتقارير.",
+    "category": "MEDICAL",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المعامل والمراكز الطبية ومقدمي خدمات التحاليل.",
+      "surface": "لوحة تحكم شاملة داخل نظام المعمل — كتالوج الاختبارات، الاستقبال، النتائج والتقارير.",
+      "outcome": "تنظيم كامل للعمليات المعملية مع نتائج وتقارير موثقة."
+    },
+    "features": {
+      "tests": {
+        "enabled": true,
+        "name": "كتالوج الاختبارات",
+        "description": "إدارة كتالوج الاختبارات والمعايير والقيم المرجعية.",
+        "access": "PAID"
+      },
+      "reception": {
+        "enabled": true,
+        "name": "الاستقبال",
+        "description": "تسجيل المرضى وأخذ العينات مع علم بأوقات الصيام وخصائص المريض.",
+        "access": "PAID"
+      },
+      "results": {
+        "enabled": true,
+        "name": "النتائج والتقارير",
+        "description": "إدخال النتائج ومراجعتها وتوقيعها وتسليمها للمرضى.",
+        "access": "PAID"
+      },
+      "orders": {
+        "enabled": true,
+        "name": "طلبات التحاليل",
+        "description": "متابعة الطلبات من الاستلام حتى التسليم مع الفوترة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "flask-conical",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-08T00:00:00Z",
+    "updatedAt": "2026-08-08T00:00:00Z"
+  },
+  {
+    "id": "cat-app-radiology-app",
+    "slug": "radiology-app",
+    "name": "نظام الأشعة",
+    "nameEn": "Radiology System",
+    "description": "نظام متكامل لإدارة مراكز الأشعة — الدراسات، قارئ صور DICOM، التقارير، والفوترة.",
+    "category": "MEDICAL",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "مراكز الأشعة والمستشفيات ومقدمي خدمات التصوير الطبي.",
+      "surface": "لوحة تحكم شاملة داخل نظام الأشعة — الدراسات، قارئ صور DICOM، التقارير، والفوترة.",
+      "outcome": "تنظيم كامل لدورة العمل الشعاعي من الاستقبال حتى تسليم التقرير."
+    },
+    "features": {
+      "studies": {
+        "enabled": true,
+        "name": "دراسات الأشعة",
+        "description": "إدارة الدراسات والأشعات ومتابعة حالاتها.",
+        "access": "PAID"
+      },
+      "viewer": {
+        "enabled": true,
+        "name": "قارئ الصور DICOM",
+        "description": "عرض وتحليل صور DICOM داخل النظام.",
+        "access": "PAID"
+      },
+      "reports": {
+        "enabled": true,
+        "name": "التقارير",
+        "description": "كتابة ومراجعة وتوقيع تقارير الأشعة.",
+        "access": "PAID"
+      },
+      "reception": {
+        "enabled": true,
+        "name": "الاستقبال",
+        "description": "تسجيل المرضى وجدولة المواعيد والدراسات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "radiation",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00Z",
+    "updatedAt": "2026-08-10T00:00:00Z"
+  },
+  {
     "id": "cat-app-inventory-pro",
     "slug": "inventory-pro",
     "name": "المخزون والمستودعات",
     "nameEn": "Inventory Pro",
     "description": "نظام إدارة مخزون متقدم مع باركود، تتبع Serial Numbers، وتنبيهات ذكية.",
-    "category": "ECOMMERCE",
+    "category": "WAREHOUSE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1990,
@@ -933,7 +1499,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر اللي عندها مخزون كبير وتحتاج تتبعه بدقة.",
@@ -975,7 +1541,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-order-shipping-turbo",
@@ -983,7 +1549,7 @@
     "name": "الشحن الذكي",
     "nameEn": "Smart Shipping",
     "description": "تكامل كامل مع نظام شحن Turbo: إنشاء بوالص الشحن، تتبع لحظي، وإدارة المسارات.",
-    "category": "ECOMMERCE",
+    "category": "SHIPPING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
@@ -991,7 +1557,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر اللي بتشحن طلبات بشكل يومي.",
@@ -1027,7 +1593,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-order-invoicing",
@@ -1035,7 +1601,7 @@
     "name": "الفواتير",
     "nameEn": "Invoicing",
     "description": "تصميم وإصدار فواتير احترافية للطلبات، تقارير الضرائب، وإحصائيات المبيعات المالية.",
-    "category": "ECOMMERCE",
+    "category": "ACCOUNTING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 129,
     "yearlyPrice": 1290,
@@ -1043,7 +1609,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "المتاجر اللي تحتاج فواتير ضريبية محترفة.",
@@ -1079,7 +1645,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-wholesale-pro",
@@ -1087,7 +1653,7 @@
     "name": "البيع بالجملة",
     "nameEn": "Wholesale Pro",
     "description": "نظام متكامل للبيع بالجملة — قوائم أسعار، شريحة عملاء، كشوف حساب، تتبع المديونية، وإدارة الموزعين.",
-    "category": "ECOMMERCE",
+    "category": "WHOLESALE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 299,
     "yearlyPrice": 2990,
@@ -1095,7 +1661,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store"
+      "store-basic"
     ],
     "positioning": {
       "audience": "شركات الجملة والتوزيع التي تبيع لتجار جملة وموزعين بأسعار خاصة وحدود ائتمانية.",
@@ -1143,12 +1709,12 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-30T00:00:00.000Z",
-    "updatedAt": "2026-06-30T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-product-presentations",
     "slug": "product-presentations",
-    "name": "MultiView - عروض متعددة للمنتج",
+    "name": "عرض المنتج المتعدد",
     "nameEn": "MultiView - Product Gallery",
     "description": "أنشئ نسخ متعددة لنفس المنتج بصور وعناوين مختلفة — كل نسخة لها رابط تتبع مستقل لاختبار أي صورة تحقق أعلى مبيعات.",
     "descriptionEn": "Create multiple versions of the same product with different images and titles — each with its own trackable URL to test which images drive the most sales.",
@@ -1208,14 +1774,16 @@
     "name": "COD Deposit",
     "nameEn": "COD Deposit",
     "description": "طلب دفعة مقدمة على طلبات COD لتقليل المرتجعات — مع دعم الدفع أونلاين (Kashier) والتحويلات اليدوية.",
-    "category": "ECOMMERCE",
+    "category": "PAYMENTS",
     "pricingModel": "FREE",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
-    "requiredApps": ["store"],
+    "requiredApps": [
+      "store-basic"
+    ],
     "positioning": {
       "audience": "المتاجر اللي بتعاني من المرتجعات العالية في طلبات COD.",
       "surface": "داخل إعدادات الدفع، ولوحة تحكم الطلبات، وواتساب.",
@@ -1256,50 +1824,150 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-07-21T00:00:00.000Z",
-    "updatedAt": "2026-07-21T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
-    "id": "cat-app-product-consolidator",
-    "slug": "product-consolidator",
-    "name": "Product Consolidator",
-    "nameEn": "Product Consolidator",
-    "description": "دمج المنتجات المكررة في منتج واحد جديد مع الاحتفاظ بـ SKU لكل منتج كمتغير مستقل — مع نقل الطلبات والمخزون والعروض التقديمية بأمان.",
+    "id": "cat-app-agent-workspace",
+    "slug": "agent-workspace",
+    "name": "مركز التأكيد والمتابعة",
+    "nameEn": "Confirmation & Follow-up Center",
+    "description": "مساحة عمل موحدة لفريق التأكيد — إدارة اتصالات العملاء، تأكيد الطلبات، جدولة المتابعات، وتحديث الحالات.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "فرق التأكيد والمتابعة الداخلية التي تدير الطلبات الواردة.",
+      "surface": "داخل صفحة مركز التأكيد والمتابعة بشكل مباشر.",
+      "outcome": "تسريع وتيرة تأكيد الطلبات وتقليل الفاقد من الطلبات المعلقة."
+    },
+    "features": {
+      "orderConfirmation": {
+        "enabled": true,
+        "name": "تأكيد الطلبات",
+        "description": "عرض الطلبات المعلقة وتأكيدها أو إلغاؤها بنقرة واحدة.",
+        "access": "FREE"
+      },
+      "callManagement": {
+        "enabled": true,
+        "name": "إدارة المكالمات",
+        "description": "تسجيل محاولات الاتصال بالعملاء ومتابعة حالتهم.",
+        "access": "FREE"
+      },
+      "followUpScheduling": {
+        "enabled": true,
+        "name": "جدولة المتابعات",
+        "description": "إضافة متابعات زمنية للطلبات مع إشعارات للأجنت المسؤول.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "user-circle",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-29T00:00:00.000Z",
+    "updatedAt": "2026-08-04T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-pos-pro",
+    "slug": "pos-pro",
+    "name": "نظام POS",
+    "nameEn": "POS System",
+    "description": "نقطة بيع متكاملة: كاشير، فواتير بيع مباشر، سلة بيع سريعة، وطباعة فواتير بيع فورية.",
     "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تبيع من نقطة البيع أو المعرض مباشرة.",
+      "surface": "داخل صفحة نقطة البيع (POS) لإتمام البيع الفوري.",
+      "outcome": "بيع أسرع مع فواتير فورية وتقليل الأخطاء اليدوية."
+    },
+    "features": {
+      "posCashier": {
+        "enabled": true,
+        "name": "كاشير POS",
+        "description": "واجهة كاشير سريعة لإتمام عمليات البيع بضغطة واحدة.",
+        "access": "PAID"
+      },
+      "quickSale": {
+        "enabled": true,
+        "name": "بيع سريع",
+        "description": "سلة بيع سريعة مع إضافة المنتجات بالباركود أو البحث.",
+        "access": "PAID"
+      },
+      "instantInvoice": {
+        "enabled": true,
+        "name": "فاتورة بيع فورية",
+        "description": "إصدار وطباعة فاتورة بيع مباشرة بعد كل عملية.",
+        "access": "PAID"
+      }
+    },
+    "isActive": false,
+    "isPublic": false,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "monitor",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-coupons-pro",
+    "slug": "coupons-pro",
+    "name": "الكوبونات والعروض",
+    "nameEn": "Coupons & Promotions",
+    "description": "إنشاء كوبونات خصم وعروض ترويجية — نسب/مبالغ خصم، حد أدنى للطلب، وتتبع أداء الكوبونات.",
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": ["store"],
+    "requiredApps": [
+      "store-basic"
+    ],
     "positioning": {
-      "audience": "المتاجر التي تعاني من تكرار المنتجات أو تريد تنظيم الكتالوج في منتجات موحدة بمتغيرات.",
-      "surface": "داخل إدارة المنتجات، مع أداة دمج مخصصة وأزرار سريعة على المجموعات المكررة.",
-      "outcome": "كتالوج أنظف وتجربة تسوق أوضح مع الحفاظ على كل البيانات القديمة بدون فقدان."
+      "audience": "المتاجر التي تعتمد على الكوبونات والعروض لزيادة المبيعات.",
+      "surface": "داخل صفحة الكوبونات والعروض الترويجية.",
+      "outcome": "زيادة الطلبات عبر عروض مستهدفة وتتبع أداء كل كوبون."
     },
     "features": {
-      "duplicateDetection": {
+      "discountCoupons": {
         "enabled": true,
-        "name": "كشف المجموعات المكررة",
-        "description": "عرض تلقائي للمنتجات المكررة مجمعة حسب الاسم مع عدد النسخ لكل مجموعة.",
+        "name": "كوبونات الخصم",
+        "description": "إنشاء كوبونات بنسبة أو مبلغ خصم مع حد أدنى للطلب.",
         "access": "PAID"
       },
-      "mergeWizard": {
+      "promoOffers": {
         "enabled": true,
-        "name": "معالج الدمج",
-        "description": "اختيار المنتجات وتحديد الاسم والتفاصيل الجديدة واختيار المتغيرات قبل التنفيذ.",
+        "name": "العروض الترويجية",
+        "description": "عروض شراء 1+1، خصومات موسمية، وعروض على منتجات محددة.",
         "access": "PAID"
       },
-      "variantSkus": {
+      "couponAnalytics": {
         "enabled": true,
-        "name": "الاحتفاظ بالـ SKU لكل متغير",
-        "description": "كل منتج مدمج يصبح متغيراً مستقلاً ببياناته وسعره ومخزونه وصوره و SKU الخاص به.",
-        "access": "PAID"
-      },
-      "safeMigration": {
-        "enabled": true,
-        "name": "نقل آمن للبيانات",
-        "description": "نقل الطلبات والمخزون والعروض التقديمية والإحصائيات قبل أي حذف أو إخفاء للأصل.",
+        "name": "تتبع أداء الكوبونات",
+        "description": "تقارير عن استخدام الكوبونات والطلبات الناتجة عنها.",
         "access": "PAID"
       }
     },
@@ -1307,11 +1975,1301 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "git-merge",
+    "icon": "percent",
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-08-20T00:00:00.000Z",
-    "updatedAt": "2026-08-20T00:00:00.000Z"
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-woocommerce-pro",
+    "slug": "woocommerce-pro",
+    "name": "تكامل WooCommerce",
+    "nameEn": "WooCommerce Integration",
+    "description": "مزامنة المنتجات والطلبات والمخزون بين منصة MaxP ومتجر WooCommerce — استيراد وتصدير تلقائي.",
+    "category": "INTEGRATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 79,
+    "yearlyPrice": 790,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تستخدم WooCommerce وتريد مزامنة بياناتها مع MaxP.",
+      "surface": "داخل صفحة مزامنة WooCommerce والمنتجات.",
+      "outcome": "مزامنة تلقائية بدون عمل يدوي وتقليل أخطاء الإدخال."
+    },
+    "features": {
+      "productSync": {
+        "enabled": true,
+        "name": "مزامنة المنتجات",
+        "description": "استيراد وتصدير المنتجات بين MaxP و WooCommerce تلقائياً.",
+        "access": "PAID"
+      },
+      "orderSync": {
+        "enabled": true,
+        "name": "مزامنة الطلبات",
+        "description": "جلب طلبات WooCommerce إلى MaxP ومزامنة حالاتها.",
+        "access": "PAID"
+      },
+      "inventorySync": {
+        "enabled": true,
+        "name": "مزامنة المخزون",
+        "description": "تحديث الكميات في المتجرين بشكل متزامن.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "globe",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-multi-warehouse-pro",
+    "slug": "multi-warehouse-pro",
+    "name": "المخزون المتعدد",
+    "nameEn": "Multi-Warehouse Inventory",
+    "description": "إدارة مخزون عبر مستودعات متعددة — تحويلات المخزون بين المستودعات، وتوزيع الكميات لكل فرع.",
+    "category": "WAREHOUSE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "inventory-pro"
+    ],
+    "positioning": {
+      "audience": "الشركات التي تدير أكثر من مستودع أو فرع وتحتاج توزيع المخزون.",
+      "surface": "داخل صفحة إدارة المستودعات وتحويلات المخزون.",
+      "outcome": "توزيع المخزون بدقة بين الفروع وتقليل نفاد المنتجات."
+    },
+    "features": {
+      "multiWarehouse": {
+        "enabled": true,
+        "name": "مستودعات متعددة",
+        "description": "إنشاء وإدارة أكثر من مستودع لكل شركة.",
+        "access": "PAID"
+      },
+      "transfers": {
+        "enabled": true,
+        "name": "تحويلات المخزون",
+        "description": "نقل الكميات بين المستودعات مع سجل كامل.",
+        "access": "PAID"
+      },
+      "branchAllocation": {
+        "enabled": true,
+        "name": "توزيع الكميات",
+        "description": "توزيع الكميات المتاحة على الفروع والمستودعات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "warehouse",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-order-accounting-sources",
+    "slug": "order-accounting-sources",
+    "name": "مصادر الطلبات والمحاسبة",
+    "nameEn": "Order Sources & Accounting",
+    "description": "تتبع مصدر كل طلب (متجر، يدوي، فيسبوك، واتساب، تليجرام، استيراد) مع محاسبة وإيرادات منفصلة لكل مصدر.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "الشركات التي تتلقى طلبات من عدة قنوات وتريد معرفة أداء كل قناة مالياً.",
+      "surface": "داخل صفحة الطلبات وتقارير المصادر.",
+      "outcome": "معرفة أي قناة تحقق أعلى إيراد وأي قناة تحتاج تحسين."
+    },
+    "features": {
+      "sourceTracking": {
+        "enabled": true,
+        "name": "تتبع مصدر الطلب",
+        "description": "تسجيل مصدر كل طلب عند الإنشاء (متجر، يدوي، محادثة، استيراد).",
+        "access": "PAID"
+      },
+      "perSourceAccounting": {
+        "enabled": true,
+        "name": "محاسبة كل مصدر",
+        "description": "إيرادات ومصاريف وربحية منفصلة لكل قناة طلبات.",
+        "access": "PAID"
+      },
+      "sourceAnalytics": {
+        "enabled": true,
+        "name": "تقارير المصادر",
+        "description": "لوحات تحليل لمقارنة أداء القنوات المختلفة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "git-branch",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-manual-orders-pro",
+    "slug": "manual-orders-pro",
+    "name": "الطلب اليدوي",
+    "nameEn": "Manual Orders",
+    "description": "إنشاء طلبات يدوية من صفحة مخصصة: اختيار المنتج والمتغيرات، إضافة العميل، وتحديد طريقة الدفع والشحن.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "الفرق التي تنشئ الطلبات يدوياً للعملاء عبر الهاتف أو واتساب أو في المعرض.",
+      "surface": "داخل صفحة الطلب اليدوي الجديدة.",
+      "outcome": "إنشاء طلبات دقيقة بسرعة مع تتبع المصدر اليدوي."
+    },
+    "features": {
+      "manualOrderForm": {
+        "enabled": true,
+        "name": "نموذج الطلب اليدوي",
+        "description": "اختيار المنتجات والمتغيرات والكميات مباشرة.",
+        "access": "PAID"
+      },
+      "customerInfo": {
+        "enabled": true,
+        "name": "بيانات العميل",
+        "description": "إدخال أو اختيار العميل وبيانات الشحن والدفع.",
+        "access": "PAID"
+      },
+      "paymentShipping": {
+        "enabled": true,
+        "name": "الدفع والشحن",
+        "description": "تحديد طريقة الدفع وشركة الشحن والتكلفة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "square-pen",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-order-automation",
+    "slug": "order-automation",
+    "name": "أتمتة الحالات",
+    "nameEn": "Order Status Automation",
+    "description": "غيّر حالة الطلبات تلقائياً بعد مرور وقت محدد أو عند حدوث حدث معين — أتمتة كاملة لمعالجة الطلبات بدون تدخل يدوي.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تعالج أعداد كبيرة من الطلبات وتريد تقليل العمل اليدوي.",
+      "surface": "داخل صفحة أتمتة الحالات في إدارة الطلبات.",
+      "outcome": "تغيير حالات الطلبات تلقائياً وتوفير وقت الفريق."
+    },
+    "features": {
+      "timeRules": {
+        "enabled": true,
+        "name": "قواعد التوقيت",
+        "description": "تغيير حالة الطلب تلقائياً بعد مرور مدة زمنية محددة (Cron Job يعمل في الخلفية).",
+        "access": "PAID"
+      },
+      "eventRules": {
+        "enabled": true,
+        "name": "قواعد الأحداث",
+        "description": "تغيير الحالة عند طباعة الطلب أو عند الإرسال لتربو وإصدار بوليصة شحن.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "zap",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-bulk-search",
+    "slug": "bulk-search",
+    "name": "البحث المجمع",
+    "nameEn": "Bulk Search",
+    "description": "بحث مجمع عن الطلبات بالرقم أو رقم التليفون دفعة واحدة — استرجاع عدة طلبات ومراجعتها بسرعة.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "فرق خدمة العملاء والمتابعة التي تحتاج فحص عدة طلبات في نفس الوقت.",
+      "surface": "داخل صفحة البحث المجمع في إدارة الطلبات.",
+      "outcome": "استرجاع ومراجعة الطلبات بسرعة بدلاً من البحث عن كل طلب على حدة."
+    },
+    "features": {
+      "bulkLookup": {
+        "enabled": true,
+        "name": "بحث متعدد",
+        "description": "إدخال أكثر من رقم طلب أو رقم تليفون واسترجاع نتائجها في نفس الوقت.",
+        "access": "PAID"
+      },
+      "quickExport": {
+        "enabled": true,
+        "name": "تصدير سريع",
+        "description": "تصدير نتائج البحث المجمع لمراجعتها ومشاركتها.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "search",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-customer-blocks",
+    "slug": "customer-blocks",
+    "name": "حظر العملاء",
+    "nameEn": "Customer Blocks",
+    "description": "إدارة قائمة حظر العملاء — منع العملاء غير المرغوب فيهم من إتمام الطلبات مع توثيق سبب الحظر.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تواجه عملاء مرتجعين أو مزعجين وتريد منعهم من الطلب.",
+      "surface": "داخل إعدادات حظر العملاء في إدارة الطلبات.",
+      "outcome": "تقليل المرتجعات وحماية المتجر من العملاء غير المرغوب فيهم."
+    },
+    "features": {
+      "blockList": {
+        "enabled": true,
+        "name": "قائمة الحظر",
+        "description": "عرض وإدارة العملاء المحظورين مع سبب الحظر.",
+        "access": "PAID"
+      },
+      "blockDuringOrder": {
+        "enabled": true,
+        "name": "منع أثناء الطلب",
+        "description": "تنبيه تلقائي عند محاولة إنشاء طلب لعميل محظور.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "shield-alert",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-bulk-orders",
+    "slug": "bulk-orders",
+    "name": "الطلبات الجماعية",
+    "nameEn": "Bulk Orders",
+    "description": "تنفيذ عمليات جماعية على الطلبات — تغيير الحالة، الحذف، والطباعة لعدد كبير من الطلبات دفعة واحدة.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "فرق المعالجة التي تتعامل مع مئات الطلبات يومياً وترغب في تسريع العمليات.",
+      "surface": "داخل صفحة الطلبات الجماعية في إدارة الطلبات.",
+      "outcome": "تنفيذ الإجراءات على دفعات كبيرة بدلاً من التعديل الفردي."
+    },
+    "features": {
+      "bulkActions": {
+        "enabled": true,
+        "name": "إجراءات جماعية",
+        "description": "اختيار عدة طلبات وتنفيذ إجراء واحد عليها جميعاً.",
+        "access": "PAID"
+      },
+      "batchPrint": {
+        "enabled": true,
+        "name": "طباعة دفعات",
+        "description": "طباعة فواتير أو ملصقات لعدد كبير من الطلبات في وقت واحد.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "list-ordered",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-quick-status",
+    "slug": "quick-status",
+    "name": "التغيير السريع للحالة",
+    "nameEn": "Quick Status Change",
+    "description": "تغيير حالة الطلبات بسرعة بدون فتح كل طلب — تحديث مباشر من قائمة الطلبات.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "فرق الشحن والمعالجة التي تريد تسريع تغيير الحالات اليومي.",
+      "surface": "داخل صفحة التغيير السريع للحالة في إدارة الطلبات.",
+      "outcome": "تحديث حالات الطلبات بنقرة واحدة وبدون فتح كل طلب."
+    },
+    "features": {
+      "quickUpdate": {
+        "enabled": true,
+        "name": "تحديث سريع",
+        "description": "تغيير حالة طلب واحد أو أكثر بنقرة واحدة من قائمة الطلبات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "refresh-ccw",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-status-summary",
+    "slug": "status-summary",
+    "name": "ملخص حالات الطلبات",
+    "nameEn": "Order Status Summary",
+    "description": "ملخص فوري لتوزيع حالات الطلبات — معرفة عدد الطلبات في كل حالة ونسب التوزيع في أي لحظة.",
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "المدراء وفرق المتابعة التي تحتاج رؤية فورية لأحجام الطلبات حسب الحالة.",
+      "surface": "داخل صفحة ملخص حالات الطلبات في إدارة الطلبات.",
+      "outcome": "فهم أسرع لتوزيع الطلبات واتخاذ قرارات أفضل."
+    },
+    "features": {
+      "summaryView": {
+        "enabled": true,
+        "name": "نظرة شاملة",
+        "description": "جدول ملخص بعدد الطلبات في كل حالة مع نسب التوزيع.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "file-bar-chart",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-returns-settings",
+    "slug": "returns-settings",
+    "name": "إعدادات المرتجعات",
+    "nameEn": "Returns Settings",
+    "description": "إعدادات نظام المرتجعات — أسباب الإرجاع، الشروط، والسياسات الخاصة بمراجعة المرتجعات.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "فرق المرتجعات التي تريد توحيد أسباب الإرجاع وسياسات القبول.",
+      "surface": "داخل إعدادات المرتجعات في إدارة الطلبات.",
+      "outcome": "معالجة المرتجعات بشكل منظم ووفق سياسات واضحة."
+    },
+    "features": {
+      "returnSettings": {
+        "enabled": true,
+        "name": "إعدادات الإرجاع",
+        "description": "تخصيص أسباب الإرجاع وشروط قبول المرتجعات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "cog",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-order-workflow",
+    "slug": "order-workflow",
+    "name": "مسار الطلبات",
+    "nameEn": "Order Workflow",
+    "description": "تخصيص مسار الطلبات — ترتيب الحالات وتسلسل معالجة الطلب من الاستلام حتى التسليم.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تريد تخصيص تسلسل معالجة طلباتها ليتناسب مع عمليتها.",
+      "surface": "داخل إعدادات مسار الطلبات في إدارة الطلبات.",
+      "outcome": "مسار معالجة واضح ومخصص لكل متجر."
+    },
+    "features": {
+      "workflowBuilder": {
+        "enabled": true,
+        "name": "مصمم المسار",
+        "description": "ترتيب وتسلسل حالات الطلب وتحديد الانتقالات المتاحة بينها.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "arrow-left-right",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-facebook-post",
+    "slug": "facebook-post",
+    "name": "إنشاء منشور فيسبوك",
+    "nameEn": "Facebook Create Post",
+    "description": "إنشاء ونشر منشورات فيسبوك مباشرة من المنصة — نصوص، صور، وجدولة النشر على صفحاتك.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "facebook-pages-connect"
+    ],
+    "positioning": {
+      "audience": "فرق التسويق التي تدير صفحات فيسبوك وتنشر المحتوى يومياً.",
+      "surface": "داخل صفحة إنشاء منشور فيسبوك في التسويق.",
+      "outcome": "نشر المحتوى وجدولته مباشرة من المنصة بدون أدوات خارجية."
+    },
+    "features": {
+      "composer": {
+        "enabled": true,
+        "name": "منشئ المنشورات",
+        "description": "كتابة منشور وإضافة صور ونشر مباشرة على صفحة فيسبوك.",
+        "access": "PAID"
+      },
+      "scheduling": {
+        "enabled": true,
+        "name": "جدولة النشر",
+        "description": "تحديد موعد لاحق لنشر المنشور تلقائياً.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "square-pen",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-google-tag-manager",
+    "slug": "google-tag-manager",
+    "name": "Google Tag Manager",
+    "nameEn": "Google Tag Manager",
+    "description": "إعداد Google Tag Manager — ربط حاوية GTM وأكواد التتبع مع متجرك وإعلاناتك.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تستخدم GTM لإدارة أكواد التتبع والتحويلات.",
+      "surface": "داخل إعدادات Google Tag Manager في التسويق.",
+      "outcome": "ربط حاوية GTM بسهولة وتتبع التحويلات بدقة."
+    },
+    "features": {
+      "gtmSetup": {
+        "enabled": true,
+        "name": "إعداد الحاوية",
+        "description": "إدخال معرّف حاوية GTM وربطها بالمتجر.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "chart-bar",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-broadcast-pro",
+    "slug": "broadcast-pro",
+    "name": "نظام البث المتقدم",
+    "nameEn": "Broadcast Pro",
+    "description": "نظام إرسال رسائل جماعية متقدم مع تصنيف العملاء وجدولة الإرسال.",
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التسويق والتواصل التي تريد إرسال حملات للعملاء بشكل جماعي.",
+      "surface": "داخل صفحة البث والحملات ومركز الرسائل.",
+      "outcome": "إرسال رسائل جماعية منظمة مع تتبع الأداء وبدون أدوات خارجية."
+    },
+    "features": {
+      "broadcastCampaigns": {
+        "enabled": true,
+        "name": "الحملات",
+        "description": "إنشاء حملات رسائل جماعية للعملاء عبر القنوات المتاحة.",
+        "access": "PAID"
+      },
+      "customerLists": {
+        "enabled": true,
+        "name": "قوائم العملاء",
+        "description": "إنشاء وتنظيم قوائم العملاء المستهدفين بالحملات.",
+        "access": "PAID"
+      },
+      "campaignAnalytics": {
+        "enabled": true,
+        "name": "تقارير الأداء",
+        "description": "متابعة نسبة الوصول والتفاعل ونتائج كل حملة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "volume-2",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-break-even",
+    "slug": "break-even",
+    "name": "حاسبة المشاريع — نقطة التعادل",
+    "nameEn": "Project Break-Even Calculator",
+    "description": "احسب عدد الطلبات والإيرادات المطلوبة لتحقيق نقطة التعادل لمتجرك.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق التشغيل التي تحتاج معرفة نقطة التعادل بوضوح.",
+      "surface": "داخل قسم حاسبة المشاريع — نقطة التعادل في أدوات التسويق.",
+      "outcome": "معرفة عدد الطلبات والإيرادات المطلوبة لتغطية التكاليف الثابتة والمتغيرة."
+    },
+    "features": {
+      "breakEven": {
+        "enabled": true,
+        "name": "حساب نقطة التعادل",
+        "description": "حساب عدد الطلبات والإيرادات والوقت اللازم لتحقيق نقطة التعادل.",
+        "access": "PAID"
+      },
+      "costAnalysis": {
+        "enabled": true,
+        "name": "تحليل التكاليف",
+        "description": "تحليل التكاليف الثابتة والمتغيرة وتكلفة الطلب الواصل وأثر المرتجعات.",
+        "access": "PAID"
+      },
+      "scenarios": {
+        "enabled": true,
+        "name": "سيناريوهات الحفظ",
+        "description": "حفظ ومقارنة السيناريوهات المحافظ والمتوسط والطموح.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "calculator",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-product-break-even",
+    "slug": "product-break-even",
+    "name": "B-EV المنتج — CAC و ROAS",
+    "nameEn": "Product B-EV - CAC & ROAS",
+    "description": "حساب نقطة التعادل على مستوى المنتج مع CAC الفعّال والهامش المطلوب.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التسويق والمتاجر التي تريد معرفة ربحية كل منتج قبل الإعلان عنه.",
+      "surface": "داخل أداة B-EV المنتج — CAC و ROAS في أدوات التسويق.",
+      "outcome": "معرفة تكلفة اكتساب العميل القصوى والهامش المطلوب لكل منتج."
+    },
+    "features": {
+      "productBreakEven": {
+        "enabled": true,
+        "name": "نقطة تعادل المنتج",
+        "description": "حساب نقطة التعادل لكل منتج بناءً على التكلفة والسعر والهوامش.",
+        "access": "PAID"
+      },
+      "cacRoas": {
+        "enabled": true,
+        "name": "CAC و ROAS",
+        "description": "حساب CAC الفعّال والحد الأقصى للـ ROAS المطلوب للربحية.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "dollar-sign",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-pricing-strategy",
+    "slug": "pricing-strategy",
+    "name": "استراتيجية التسعير",
+    "nameEn": "Pricing Strategy",
+    "description": "حدد السعر الأمثل لمنتجاتك مع محاكاة ما-لو وما تحقيقه من هامش ربح.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر الذين يريدون تسعير منتجاتهم بشكل مربح ومدروس.",
+      "surface": "داخل أداة استراتيجية التسعير في أدوات التسويق.",
+      "outcome": "سعر مثالي يحقق هامش ربح واضح مع فهم أثر الخصومات والعمولات."
+    },
+    "features": {
+      "pricing": {
+        "enabled": true,
+        "name": "حساب السعر الأمثل",
+        "description": "حساب سعر البيع الموصى به بناءً على التكلفة والهامش المستهدف.",
+        "access": "PAID"
+      },
+      "whatIf": {
+        "enabled": true,
+        "name": "محاكاة ما-لو",
+        "description": "تجربة سيناريوهات خصم وعمولة مختلفة لمعرفة أثرها على الربح.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "tag",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-profitability-engine",
+    "slug": "profitability-engine",
+    "name": "محرك الربحية",
+    "nameEn": "Profitability Engine",
+    "description": "محرك متكامل لحساب صافي الربح وهامش المساهمة ونقطة التعادل التشغيلية.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الفرق التي تريد رؤية كاملة لربحية المتجر من الإعلان وحتى التسليم.",
+      "surface": "داخل أداة محرك الربحية في أدوات التسويق.",
+      "outcome": "فهم شامل للربح الصافي بعد كل التكاليف التشغيلية والإعلانية."
+    },
+    "features": {
+      "profitability": {
+        "enabled": true,
+        "name": "حساب الربحية",
+        "description": "حساب صافي الربح وهامش المساهمة والربح لكل طلب.",
+        "access": "PAID"
+      },
+      "whatIf": {
+        "enabled": true,
+        "name": "سيناريوهات التحسين",
+        "description": "تجربة تحسينات على التكلفة والتحويل وأثرها على الربحية.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "trending-up",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-campaign-calculator",
+    "slug": "campaign-calculator",
+    "name": "حاسبة الحملات",
+    "nameEn": "Campaign Calculator",
+    "description": "توقع نتائج حملاتك الإعلانية من الوصول حتى الإيراد ونقطة التعادل.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المسوّقون وأصحاب المتاجر الذين يخططون لحملات إعلانية مربحة.",
+      "surface": "داخل أداة حاسبة الحملات في أدوات التسويق.",
+      "outcome": "توقعات واضحة لنتائج الحملة وميزانية مخططة قبل إطلاق الإعلانات."
+    },
+    "features": {
+      "campaignPrediction": {
+        "enabled": true,
+        "name": "توقع نتائج الحملة",
+        "description": "توقع الإيراد والطلبات ونقطة التعادل من مدخلات ميزانية الحملة.",
+        "access": "PAID"
+      },
+      "budgetPlanning": {
+        "enabled": true,
+        "name": "تخطيط الميزانية",
+        "description": "توزيع ميزانية الحملة وتحديد التكلفة المطلوبة لكل طلب.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "megaphone",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-ad-budget-planner",
+    "slug": "ad-budget-planner",
+    "name": "مخطط الميزانية الإعلانية",
+    "nameEn": "Ad Budget Planner",
+    "description": "خطط ميزانية إعلاناتك الشهرية مع التوزيع الأمثل على القنوات والحملات.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التسويق التي تريد توزيع ميزانيتها الإعلانية بشكل مدروس.",
+      "surface": "داخل أداة مخطط الميزانية الإعلانية في أدوات التسويق.",
+      "outcome": "ميزانية إعلانية موزعة بعناية لتحقيق أفضل عائد ممكن."
+    },
+    "features": {
+      "budgetAllocation": {
+        "enabled": true,
+        "name": "توزيع الميزانية",
+        "description": "توزيع الميزانية الإعلانية على القنوات والحملات المختلفة.",
+        "access": "PAID"
+      },
+      "forecast": {
+        "enabled": true,
+        "name": "توقع العائد",
+        "description": "توقع الطلبات والإيراد المتوقع من الميزانية المخططة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "wallet",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-discount-impact",
+    "slug": "discount-impact",
+    "name": "حاسبة أثر الخصم",
+    "nameEn": "Discount Impact Calculator",
+    "description": "اعرف أثر أي خصم على أرباحك وعدد الطلبات الإضافية المطلوبة لتعويضه.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر الذين يخططون لعروض وخصومات دون خسارة الأرباح.",
+      "surface": "داخل أداة حاسبة أثر الخصم في أدوات التسويق.",
+      "outcome": "فهم واضح لأثر الخصم على الربح ونسبة الزيادة المطلوبة في الطلبات."
+    },
+    "features": {
+      "discountImpact": {
+        "enabled": true,
+        "name": "قياس أثر الخصم",
+        "description": "حساب أثر نسبة الخصم على هامش الربح لكل طلب.",
+        "access": "PAID"
+      },
+      "requiredLift": {
+        "enabled": true,
+        "name": "الطلبات المطلوبة للتعويض",
+        "description": "حساب عدد الطلبات الإضافية المطلوبة لتعويض أثر الخصم.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "percent",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-shipping-optimizer",
+    "slug": "shipping-optimizer",
+    "name": "محسن الشحن",
+    "nameEn": "Shipping Optimizer",
+    "description": "حسّن تكاليف الشحن والمدد واختر أفضل شركات الشحن لمتجرك.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التشغيل والمتاجر التي تريد خفض تكاليف الشحن.",
+      "surface": "داخل أداة محسن الشحن في أدوات التسويق.",
+      "outcome": "خفض تكاليف الشحن وتحسين اختيار شركات التوصيل."
+    },
+    "features": {
+      "shippingOptimization": {
+        "enabled": true,
+        "name": "تحسين تكاليف الشحن",
+        "description": "مقارنة وتقييم تكاليف الشحن واختيار الأنسب لمتجرك.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "truck",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-monthly-pnl",
+    "slug": "monthly-pnl",
+    "name": "القوائم المالية الشهرية",
+    "nameEn": "Monthly P&L Dashboard",
+    "description": "تابع أرباح وخسائر متجرك الشهرية مع تفصيل المصروفات والهوامش.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الإدارة وأصحاب المتاجر الذين يريدون رؤية مالية شهرية واضحة.",
+      "surface": "داخل أداة القوائم المالية الشهرية في أدوات التسويق.",
+      "outcome": "قائمة أرباح وخسائر شهرية واضحة تساعد على اتخاذ قرارات مالية أفضل."
+    },
+    "features": {
+      "pnl": {
+        "enabled": true,
+        "name": "القائمة الشهرية",
+        "description": "عرض الإيراد والمصروفات وصافي الربح على أساس شهري.",
+        "access": "PAID"
+      },
+      "marginAnalysis": {
+        "enabled": true,
+        "name": "تحليل الهوامش",
+        "description": "تحليل هامش الربح الإجمالي والصافي ونقطة تعادل الإيرادات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "bar-chart",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-clv-calculator",
+    "slug": "clv-calculator",
+    "name": "حاسبة القيمة الدائمة للعميل (CLV)",
+    "nameEn": "CLV Calculator",
+    "description": "احسب القيمة الدائمة للعميل واعرف كم تستطيع أن تنفق على اكتسابه.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التسويق التي تريد تحديد سقف تكلفة اكتساب العميل.",
+      "surface": "داخل أداة حاسبة القيمة الدائمة للعميل في أدوات التسويق.",
+      "outcome": "معرفة القيمة الحقيقية لكل عميل وتحديد ميزانية اكتساب مناسبة."
+    },
+    "features": {
+      "clv": {
+        "enabled": true,
+        "name": "حساب القيمة الدائمة",
+        "description": "حساب القيمة الدائمة للعميل بناءً على متوسط الشراء والتكرار.",
+        "access": "PAID"
+      },
+      "cacLimit": {
+        "enabled": true,
+        "name": "سقف تكلفة الاكتساب",
+        "description": "تحديد الحد الأقصى لتكلفة اكتساب عميل جديد للحفاظ على الربحية.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "users",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-upsell-planner",
+    "slug": "upsell-planner",
+    "name": "مخطِّط البيع الإضافي والتكميلي",
+    "nameEn": "Upsell & Cross-sell Planner",
+    "description": "خطط لعروض البيع الإضافي والتكميلي وارفع متوسط قيمة الطلب.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المتاجر التي تريد رفع متوسط قيمة الطلب بعروض ذكية.",
+      "surface": "داخل أداة مخطِّط البيع الإضافي والتكميلي في أدوات التسويق.",
+      "outcome": "خطة بيع إضافي ترفع متوسط قيمة الطلب والإيراد."
+    },
+    "features": {
+      "upsellPlanning": {
+        "enabled": true,
+        "name": "تخطيط البيع الإضافي",
+        "description": "بناء عروض بيع إضافي وتكميلي مرتبطة بالمنتجات.",
+        "access": "PAID"
+      },
+      "aovImpact": {
+        "enabled": true,
+        "name": "أثر متوسط قيمة الطلب",
+        "description": "قياس أثر عروض البيع الإضافي على متوسط قيمة الطلب والإيراد.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "shopping-cart",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-refund-rate",
+    "slug": "refund-rate",
+    "name": "حاسبة معدل المرتجعات",
+    "nameEn": "Refund & Return Rate",
+    "description": "احسب معدل المرتجعات وتأثيره على أرباحك وتكاليف التشغيل.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المتاجر التي تريد فهم أثر المرتجعات على ربحيتها.",
+      "surface": "داخل أداة حاسبة معدل المرتجعات في أدوات التسويق.",
+      "outcome": "قياس دقيق لمعدل المرتجعات وأثرها المالي على التشغيل."
+    },
+    "features": {
+      "refundRate": {
+        "enabled": true,
+        "name": "حساب معدل المرتجعات",
+        "description": "حساب نسبة المرتجعات وتكلفتها على المتجر.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "refresh-ccw",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-store-pro",
+    "slug": "store-pro",
+    "name": "متجر ماكس",
+    "nameEn": "Store Max",
+    "description": "متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 499,
+    "yearlyPrice": 4990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "store",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-03-06T00:00:00.000Z",
+    "updatedAt": "2026-08-12T00:00:00.000Z",
+    "positioning": {
+      "audience": "الشركات المتوسطة والكبيرة التي تحتاج مخازن متعددة وتقارير متقدمة.",
+      "surface": "داخل إدارة المخزون والتقارير وتكاملات المتجر.",
+      "outcome": "إدارة أوسع للمخزون والتقارير مع ميزات احترافية."
+    },
+    "features": {
+      "unlimitedProducts": {
+        "enabled": true,
+        "name": "منتجات غير محدودة",
+        "description": "منتجات غير محدودة بدون أي سقف.",
+        "access": "PAID"
+      },
+      "multiWarehouse": {
+        "enabled": true,
+        "name": "مخازن متعددة",
+        "description": "إدارة مخزون عبر مستودعات متعددة.",
+        "access": "PAID"
+      },
+      "realtimeInventory": {
+        "enabled": true,
+        "name": "تتبع المخزون Real-time",
+        "description": "تتبع لحظي لحالة المخزون.",
+        "access": "PAID"
+      },
+      "advancedReports": {
+        "enabled": true,
+        "name": "تقارير متقدمة",
+        "description": "تقارير تحليلية متقدمة للمبيعات والمخزون.",
+        "access": "PAID"
+      },
+      "woocommerce": {
+        "enabled": true,
+        "name": "تكامل مع WooCommerce",
+        "description": "مزامنة المنتجات والطلبات مع WooCommerce.",
+        "access": "PAID"
+      },
+      "suppliers": {
+        "enabled": true,
+        "name": "إدارة الموردين",
+        "description": "إدارة الموردين وعلاقات التوريد.",
+        "access": "PAID"
+      },
+      "purchaseOrders": {
+        "enabled": true,
+        "name": "طلبات الشراء",
+        "description": "إنشاء ومتابعة طلبات الشراء.",
+        "access": "PAID"
+      },
+      "lowStockAlerts": {
+        "enabled": true,
+        "name": "إشعارات نفاد المخزون",
+        "description": "تنبيهات عند نفاد أو اقتراب نفاد المخزون.",
+        "access": "PAID"
+      }
+    }
   }
 ]

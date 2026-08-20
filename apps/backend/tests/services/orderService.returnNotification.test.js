@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Regression: RETURNED auto-notifications were silently skipped because
  * autoCreateReturnRequest threw a Prisma FK error (return_activity_logs_userId_fkey)
  * when the turbo sync passed userId='SYSTEM', crashing the background block before

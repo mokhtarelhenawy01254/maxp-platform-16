@@ -100,9 +100,12 @@ const finalizeDraft = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
 
-    const branch = draft.branchId ? await prisma.bookingBranch.findUnique({ where: { id: draft.branchId } }) : null;
-    const service = draft.serviceId ? await prisma.bookingService.findUnique({ where: { id: draft.serviceId } }) : null;
-    const doctor = draft.doctorId ? await prisma.bookingDoctor.findUnique({ where: { id: draft.doctorId } }) : null;
+    const branch = draft.branchId ? await prisma.bookingBranch.findFirst({ where: { id: draft.branchId, companyId } }) : null;
+    if (draft.branchId && !branch) return res.status(400).json({ success: false, error: 'الفرع غير موجود' });
+    const service = draft.serviceId ? await prisma.bookingService.findFirst({ where: { id: draft.serviceId, companyId } }) : null;
+    if (draft.serviceId && !service) return res.status(400).json({ success: false, error: 'الخدمة غير موجودة' });
+    const doctor = draft.doctorId ? await prisma.bookingDoctor.findFirst({ where: { id: draft.doctorId, companyId } }) : null;
+    if (draft.doctorId && !doctor) return res.status(400).json({ success: false, error: 'الطبيب غير موجود' });
 
     const appointment = await prisma.appointment.create({
       data: {

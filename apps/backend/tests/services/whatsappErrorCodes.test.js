@@ -1,4 +1,4 @@
-﻿const { mapError, HTTP_STATUS_TO_ERROR, NETWORK_ERROR_CODES } = require('../../services/whatsapp/whatsappErrorCodes');
+const { mapError, HTTP_STATUS_TO_ERROR, NETWORK_ERROR_CODES } = require('../../services/whatsapp/whatsappErrorCodes');
 
 describe('whatsappErrorCodes.mapError', () => {
   it('marks network/system errors as retryable network_error', () => {

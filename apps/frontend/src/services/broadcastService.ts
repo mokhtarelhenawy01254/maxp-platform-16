@@ -1,7 +1,14 @@
 import { authService } from "./authService";
 import { buildApiUrl } from "../utils/urlHelper";
 
-const API_BASE_URL = buildApiUrl("");
+// 🔒 Lazy: don't call buildApiUrl at module scope. The bundled chunk hosting
+// buildApiUrl can end up in a circular chunk graph; a module-scope call there
+// throws "Cannot access 'X' before initialization" (TDZ) depending on load order.
+let _apiBaseUrl: string | null = null;
+const getApiBaseUrl = (): string => {
+  if (_apiBaseUrl === null) _apiBaseUrl = buildApiUrl("");
+  return _apiBaseUrl;
+};
 
 interface CampaignData {
   name: string;
@@ -122,7 +129,7 @@ class BroadcastService {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const token = authService.getAccessToken();
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -150,7 +157,7 @@ class BroadcastService {
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds
 
     try {
-      const response = await fetch(`${API_BASE_URL}/broadcast/campaigns`, {
+      const response = await fetch(`${getApiBaseUrl()}/broadcast/campaigns`, {
         method: "POST",
         body: campaignData,
         headers: {
@@ -264,7 +271,7 @@ class BroadcastService {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/broadcast/campaigns/${campaignId}/send`,
+        `${getApiBaseUrl()}/broadcast/campaigns/${campaignId}/send`,
         {
           method: "POST",
           headers: {
@@ -330,6 +337,52 @@ class BroadcastService {
     return this.makeRequest(`/broadcast/customer-lists/${listId}`, { method: "DELETE" });
   }
 
+  async updateCustomerList(
+    listId: string,
+    listData: {
+      name: string;
+      description: string;
+      criteria: any;
+    },
+  ): Promise<CustomerList> {
+    return this.makeRequest(`/broadcast/customer-lists/${listId}`, {
+      method: "PUT",
+      body: JSON.stringify(listData),
+    });
+  }
+
+  async refreshCustomerListCount(listId: string): Promise<any> {
+    return this.makeRequest(`/broadcast/customer-lists/${listId}/refresh-count`, {
+      method: "POST",
+    });
+  }
+
+  async previewCustomerListCount(criteria: any): Promise<{ success: boolean; data: { count: number } }> {
+    return this.makeRequest("/broadcast/customer-lists/preview-count", {
+      method: "POST",
+      body: JSON.stringify({ criteria }),
+    });
+  }
+
+  async getCustomersInListPaginated(
+    listId: string,
+    page = 1,
+    limit = 25,
+    search = "",
+  ): Promise<{
+    success: boolean;
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  }> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+    return this.makeRequest(
+      `/broadcast/customer-lists/${listId}/customers?page=${page}&limit=${limit}${searchParam}`,
+    );
+  }
+
   // Settings methods
   async getSettings(): Promise<BroadcastSettings> {
     return this.makeRequest("/broadcast/settings");
@@ -351,7 +404,7 @@ class BroadcastService {
 
     const token = authService.getAccessToken();
 
-    const response = await fetch(`${API_BASE_URL}/upload/image`, {
+    const response = await fetch(`${getApiBaseUrl()}/upload/image`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

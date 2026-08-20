@@ -1,27 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import {
-  UsersIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+  RefreshCw,
+  CalendarDays,
+  BarChart3,
+  User,
+} from "lucide-react";
 
-interface EmployeeStat {
+interface EmployeeStats {
   id: string;
   name: string;
   totalAssigned: number;
@@ -30,39 +18,25 @@ interface EmployeeStat {
   actions: Record<string, number>;
 }
 
-interface PerformanceData {
-  summary: {
-    totalReturns: number;
-    totalReviewed: number;
-    totalUnreviewed: number;
-    reviewRate: number | string;
-  };
-  employees: EmployeeStat[];
-}
-
-const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
-
 const ReturnEmployeePerformance: React.FC = () => {
   const { t } = useTranslation();
+  const [stats, setStats] = useState<EmployeeStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<PerformanceData | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const params: Record<string, string> = {};
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo) params.dateTo = dateTo;
-
-      const response = await apiClient.get("/returns/employee-performance", { params });
-      if (response.data.success) {
-        setData(response.data.data);
-      }
-    } catch (error: unknown) {
-      console.error("Error fetching employee performance:", error);
-      toast.error("فشل تحميل تقرير أداء الموظفين");
+      const params = new URLSearchParams();
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
+      const qs = params.toString();
+      const res = await apiClient.get(`/returns/employee-performance${qs ? `?${qs}` : ""}`);
+      setStats(res.data?.data || res.data || []);
+    } catch (err) {
+      console.error("Failed to load employee performance:", err);
+      toast.error("فشل تحميل أداء الموظفين");
     } finally {
       setLoading(false);
     }
@@ -70,270 +44,231 @@ const ReturnEmployeePerformance: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [dateFrom, dateTo]);
+  }, []);
 
-  const getActionLabel = (action: string): string => {
-    const labels: Record<string, string> = {
-      CREATED: "إنشاء",
-      REVIEWED: "مراجعة",
-      NOTE_ADDED: "إضافة ملاحظة",
-      STATUS_CHANGED: "تغيير حالة",
-      CONTACT_ATTEMPT: "محاولة اتصال",
-      UPDATED: "تحديث",
-    };
-    return labels[action] || action;
-  };
+  const sortedStats = useMemo(
+    () => [...stats].sort((a, b) => b.totalActions - a.totalActions),
+    [stats]
+  );
 
-  // Prepare chart data
-  const chartData = (data?.employees || []).map((emp) => ({
-    name: emp.name || "غير معروف",
-    assigned: emp.totalAssigned,
-    reviewed: emp.totalReviewed,
-    actions: emp.totalActions,
-  }));
-
-  const pieData = [
-    { name: "تمت المراجعة", value: data?.summary?.totalReviewed || 0 },
-    { name: "لم تتم المراجعة", value: data?.summary?.totalUnreviewed || 0 },
-  ];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const totals = useMemo(
+    () =>
+      stats.reduce(
+        (acc, s) => ({
+          assigned: acc.assigned + s.totalAssigned,
+          reviewed: acc.reviewed + s.totalReviewed,
+          actions: acc.actions + s.totalActions,
+        }),
+        { assigned: 0, reviewed: 0, actions: 0 }
+      ),
+    [stats]
+  );
 
   return (
-    <div className="space-y-6 p-6" dir="rtl">
+    <div style={{ padding: 24, maxWidth: 1000, margin: "0 auto" }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            تقرير أداء الموظفين - المرتجعات
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 24,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <BarChart3 size={24} color="#6366f1" />
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#111827", margin: 0 }}>
+            أداء الموظفين - المرتجعات
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            إحصائيات تحديث ومراجعة الطلبات المرتجعة لكل موظف
-          </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              من تاريخ
-            </label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              إلى تاريخ
-            </label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <button
-            onClick={fetchData}
-            className="mt-6 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
-          >
-            <ArrowPathIcon className="h-5 w-5 text-gray-600" />
-          </button>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 14px",
+            background: "#f3f4f6",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            cursor: loading ? "not-allowed" : "pointer",
+            fontSize: 13,
+            color: "#374151",
+          }}
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          تحديث
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginBottom: 20,
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <CalendarDays size={16} color="#9ca3af" />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            style={{
+              padding: "6px 10px",
+              border: "1px solid #e5e7eb",
+              borderRadius: 6,
+              fontSize: 13,
+            }}
+          />
         </div>
+        <span style={{ color: "#9ca3af" }}>إلى</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            style={{
+              padding: "6px 10px",
+              border: "1px solid #e5e7eb",
+              borderRadius: 6,
+              fontSize: 13,
+            }}
+          />
+        </div>
+        <button
+          onClick={fetchData}
+          style={{
+            padding: "6px 14px",
+            background: "#6366f1",
+            color: "white",
+            border: "none",
+            borderRadius: 6,
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          تصفية
+        </button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500">
-              <UsersIcon className="h-6 w-6 text-white" />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: 12,
+          marginBottom: 24,
+        }}
+      >
+        {[
+          { label: "إجمالي الموظفين", value: stats.length, color: "#6366f1" },
+          { label: "إجمالي المرتجعات المعينة", value: totals.assigned, color: "#f59e0b" },
+          { label: "إجمالي المرتجعات المراجعة", value: totals.reviewed, color: "#10b981" },
+          { label: "إجمالي الإجراءات", value: totals.actions, color: "#3b82f6" },
+        ].map((card) => (
+          <div
+            key={card.label}
+            style={{
+              background: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              padding: "16px 18px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
+              {card.label}
             </div>
-            <div>
-              <p className="text-sm text-gray-500">إجمالي المرتجعات</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {data?.summary?.totalReturns || 0}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-green-500">
-              <CheckCircleIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">تمت المراجعة</p>
-              <p className="text-2xl font-bold text-green-600">
-                {data?.summary?.totalReviewed || 0}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-orange-500">
-              <ClockIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">لم تتم المراجعة</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {data?.summary?.totalUnreviewed || 0}
-              </p>
+            <div style={{ fontSize: 24, fontWeight: 700, color: card.color }}>
+              {card.value}
             </div>
           </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500">
-              <CheckCircleIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">نسبة المراجعة</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {data?.summary?.reviewRate || 0}%
-              </p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bar Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            أداء الموظفين
-          </h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} />
-                <YAxis stroke="#9CA3AF" fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="assigned" fill="#3B82F6" name="المسندة" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="reviewed" fill="#10B981" name="المراجعة" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="actions" fill="#F59E0B" name="الإجراءات" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Table */}
+      <div
+        style={{
+          background: "white",
+          border: "1px solid #e5e7eb",
+          borderRadius: 10,
+          overflow: "hidden",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        }}
+      >
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
+            جاري التحميل...
           </div>
-        </div>
-
-        {/* Pie Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            حالة المراجعة
-          </h3>
-          <div className="h-[300px] flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+        ) : sortedStats.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
+            لا توجد بيانات
           </div>
-        </div>
-      </div>
-
-      {/* Employee Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            تفاصيل أداء الموظفين
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                <th style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: "#374151" }}>
                   الموظف
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  الطلبات المسندة
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 600, color: "#374151" }}>
+                  المرتجعات المعينة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  تمت المراجعة
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 600, color: "#374151" }}>
+                  المراجعة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  إجمالي الإجراءات
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  تفاصيل الإجراءات
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 600, color: "#374151" }}>
+                  الإجراءات
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {(data?.employees || []).map((employee) => (
-                <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {employee.name || "غير معروف"}
+            <tbody>
+              {sortedStats.map((emp) => (
+                <tr
+                  key={emp.id}
+                  style={{ borderBottom: "1px solid #f3f4f6" }}
+                >
+                  <td style={{ padding: "12px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          background: "#e0e7ff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <User size={16} color="#6366f1" />
+                      </div>
+                      <span style={{ fontWeight: 500, color: "#111827" }}>
+                        {emp.name || "غير محدد"}
+                      </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {employee.totalAssigned}
-                    </div>
+                  <td style={{ padding: "12px 16px", textAlign: "center", color: "#f59e0b", fontWeight: 600 }}>
+                    {emp.totalAssigned}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-green-600 font-medium">
-                      {employee.totalReviewed}
-                    </div>
+                  <td style={{ padding: "12px 16px", textAlign: "center", color: "#10b981", fontWeight: 600 }}>
+                    {emp.totalReviewed}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-blue-600 font-medium">
-                      {employee.totalActions}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(employee.actions || {}).map(([action, count]) => (
-                        <span
-                          key={action}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200"
-                        >
-                          {getActionLabel(action)}: {count}
-                        </span>
-                      ))}
-                    </div>
+                  <td style={{ padding: "12px 16px", textAlign: "center", color: "#3b82f6", fontWeight: 600 }}>
+                    {emp.totalActions}
                   </td>
                 </tr>
               ))}
-              {(!data?.employees || data.employees.length === 0) && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    لا توجد بيانات
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
-        </div>
+        )}
       </div>
     </div>
   );

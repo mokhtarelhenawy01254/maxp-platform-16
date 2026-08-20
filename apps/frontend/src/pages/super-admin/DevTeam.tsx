@@ -1,10 +1,22 @@
-import { Circle as UserGroupIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, User as UserIcon, Circle as BriefcaseIcon, Check as CheckCircleIcon, Clock as ClockIcon, X as XCircleIcon, Filter as FunnelIcon, Circle as ClipboardDocumentListIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-;
+import {
+  UserGroupIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  XMarkIcon,
+  UserIcon,
+  BriefcaseIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  XCircleIcon,
+  FunnelIcon,
+  ClipboardDocumentListIcon,
+} from "@heroicons/react/24/outline";
 
 interface TeamMember {
   id: string;
@@ -152,10 +164,10 @@ const DevTeam = () => {
       if (data.success) {
         fetchTeamMembers();
       } else {
-        alert(data.error || "فشل في حذف العضو");
+        alert(data.error || i18n.t("DevTeam.failed_delete_b4ec"));
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("DevTeam.msg_e835"));
     }
   };
 
@@ -439,7 +451,7 @@ const TeamMemberFormModal: React.FC<{
     e.preventDefault();
 
     if (!member && !formData.userId) {
-      alert("يرجى اختيار مستخدم");
+      alert(i18n.t("DevTeam.msg_9a18"));
       return;
     }
 
@@ -479,7 +491,7 @@ const TeamMemberFormModal: React.FC<{
         alert(data.error || `فشل في ${member ? "تحديث" : "إنشاء"} العضو`);
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("DevTeam.msg_e835"));
     } finally {
       setSaving(false);
     }

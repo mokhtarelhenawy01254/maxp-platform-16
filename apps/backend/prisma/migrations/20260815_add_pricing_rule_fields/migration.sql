@@ -1,4 +1,4 @@
-﻿-- AlterTable
+-- AlterTable
 ALTER TABLE `app_pricing_rules` ADD COLUMN `feature` VARCHAR(200) NULL,
 ADD COLUMN `unit` VARCHAR(100) NULL,
 ADD COLUMN `description` VARCHAR(1000) NULL,

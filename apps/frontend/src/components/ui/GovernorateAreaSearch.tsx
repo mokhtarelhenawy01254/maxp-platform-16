@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   useState,
   useRef,
   useEffect,
@@ -37,17 +37,17 @@ interface GovernorateAreaSearchProps {
 }
 
 /**
- * ╪¿╪¡╪½ ╪░┘â┘è ╪╣┘å ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ + ╪º┘ä┘à┘å╪╖┘é╪⌐ ╪╣┘ä┘ë ╪«╪▒┘è╪╖╪⌐ ╪┤╪▒┘â╪⌐ ╪º┘ä╪┤╪¡┘å.
- * ┘è╪¿╪¡╪½ ╪╣╪¿╪▒ /api/v1/turbo/search-area ┘ê┘è╪╣╪▒╪╢ ╪º┘ä┘å╪¬╪º╪ª╪¼ ┘à╪¼┘à┘æ╪╣╪⌐ ╪¡╪│╪¿ ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐
- * (┘à╪½┘ä ╪«╪▒┘è╪╖╪⌐ ╪¬┘ê╪▒╪¿┘ê ╪º┘ä╪»╪º╪«┘ä┘è╪⌐). ╪º╪«╪¬┘è╪º╪▒ ┘å╪¬┘è╪¼╪⌐ ┘è┘à┘ä╪ú ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐ ┘ê╪º┘ä┘à┘å╪╖┘é╪⌐ ┘à╪╣╪º┘ï.
+ * بحث ذكي عن المحافظة + المنطقة على خريطة شركة الشحن.
+ * يبحث عبر /api/v1/turbo/search-area ويعرض النتائج مجمّعة حسب المحافظة
+ * (مثل خريطة توربو الداخلية). اختيار نتيجة يملأ المحافظة والمنطقة معاً.
  */
 const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
   value,
   onChange,
-  placeholder = "╪º╪¿╪¡╪½ ╪╣┘å ╪º┘ä┘à┘å╪╖┘é╪⌐...",
-  searchPlaceholder = "╪º┘â╪¬╪¿ ╪º╪│┘à ╪º┘ä┘à┘å╪╖┘é╪⌐ ╪ú┘ê ╪º┘ä┘à╪¡╪º┘ü╪╕╪⌐...",
-  emptyText = "┘ä╪º ╪¬┘ê╪¼╪» ┘å╪¬╪º╪ª╪¼ ┘à╪╖╪º╪¿┘é╪⌐",
-  loadingText = "╪¼╪º╪▒┘è ╪º┘ä╪¿╪¡╪½...",
+  placeholder = "ابحث عن المنطقة...",
+  searchPlaceholder = "اكتب اسم المنطقة أو المحافظة...",
+  emptyText = "لا توجد نتائج مطابقة",
+  loadingText = "جاري البحث...",
   disabled = false,
   autoSearchText = "",
   publicMode = false,
@@ -66,7 +66,7 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
   const grouped = useMemo(() => {
     const groups = new Map<string, AreaSearchResult[]>();
     for (const r of results) {
-      const key = r.governorate || "╪║┘è╪▒ ┘à╪¡╪»╪»";
+      const key = r.governorate || "غير محدد";
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(r);
     }
@@ -179,7 +179,7 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
             <MapPinIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
             <span className="truncate text-sm">
               <span className="font-semibold">{selectedGov}</span>
-              <span className="mx-1 text-gray-400 dark:text-gray-500">ΓåÆ</span>
+              <span className="mx-1 text-gray-400 dark:text-gray-500">→</span>
               <span>{selectedArea}</span>
             </span>
           </div>
@@ -190,7 +190,7 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
               setOpen(false);
             }}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
-            aria-label="╪Ñ┘ä╪║╪º╪í ╪º┘ä╪¬╪¡╪»┘è╪»"
+            aria-label="إلغاء التحديد"
           >
             <XMarkIcon className="w-4 h-4" />
           </button>
@@ -281,7 +281,7 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
                       <span className="truncate">{result.area}</span>
                       {result.confidence < 0.7 && (
                         <span className="ml-auto text-[10px] text-amber-500 shrink-0">
-                          ╪¬╪ú┘â┘è╪»
+                          تأكيد
                         </span>
                       )}
                     </button>

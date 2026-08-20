@@ -1,1 +1,91 @@
-﻿/** * ≡ƒåò PRODUCTION-FIX (notifications-fix-plan ┬º5.2 ΓÇö variable binding): * ┘å┘ê╪º╪⌐ ╪▒╪¿╪╖ ┘à╪¬╪║┘è╪▒╪º╪¬ ┘é┘ê╪º┘ä╪¿ ┘à┘è╪¬╪º ΓÇö ╪»┘ê╪º┘ä ┘å┘é┘è╪⌐ ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪º╪«╪¬╪¿╪º╪▒. * - mapVariablesByOrder: ┘è╪¿┘å┘è ╪¬╪▒╪¬┘è╪¿ ┘à╪¬╪║┘è╪▒╪º╪¬ ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ┘à┘å ╪¬╪▒╪¬┘è╪¿ ╪╕┘ç┘ê╪▒ {{name}} *   ┘ü┘è ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è (╪¿╪»┘ä ╪¬╪▒╪¬┘è╪¿ ┘ç╪º╪▒╪»┘â┘ê╪» META_VARIABLE_ORDER). * - buildMetaBodyParams: ┘è╪¿┘å┘è bodyParams ┘ä╪Ñ╪▒╪│╪º┘ä ┘à┘è╪¬╪º ┘à┘å variables ╪ú┘ê ┘à┘å ┘å╪╡ ╪º┘ä┘é╪º┘ä╪¿. *//** * ┘è╪¿┘å┘è ╪¬╪▒╪¬┘è╪¿ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ┘ä┘é╪º┘ä╪¿ ┘à┘è╪¬╪º ╪¿┘à╪╖╪º╪¿┘é╪⌐ ╪¬╪▒╪¬┘è╪¿ ╪╕┘ç┘ê╪▒ {{name}} ┘ü┘è ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è * ┘à╪╣ {{1}}, {{2}} ┘ü┘è ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º. * * @param {string} localContent - ┘å╪╡ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è (┘ü┘è┘ç {{customerName}} ╪Ñ┘ä╪«) * @param {string} metaBodyText - ┘å╪╡ body ┘é╪º┘ä╪¿ ┘à┘è╪¬╪º (┘ü┘è┘ç {{1}} {{2}}) * @returns {{position, name}[]} */function mapVariablesByOrder(localContent, metaBodyText) {  if (!localContent) return [];  // ╪º╪│╪¬╪«╪▒╪º╪¼ {{name}} ┘à┘å ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ (┘à╪╣ ╪Ñ╪▓╪º┘ä╪⌐ ╪º┘ä╪¬┘â╪▒╪º╪▒)  const localMatches = (localContent.match(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g) || []);  const seen = new Set();  const localOrder = [];  for (const m of localMatches) {    const name = m.replace(/\{\{|\}\}/g, '').trim();    if (!seen.has(name)) { seen.add(name); localOrder.push(name); }  }  // ╪╣╪»╪» placeholders ┘ü┘è ┘à┘è╪¬╪º  const metaCount = ((metaBodyText || '').match(/\{\{\s*\d+\s*\}\}/g) || []).length;  // ┘å╪ú╪«╪░ min(localOrder.length, metaCount) ┘ê┘å╪▒┘é┘à┘ç╪º ┘à┘å 1  const count = Math.min(localOrder.length, metaCount);  const result = [];  for (let i = 0; i < count; i++) {    result.push({ position: i + 1, name: localOrder[i] });  }  return result;}/** * ┘è╪│╪¬╪«╪▒╪¼ ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ {{name}} ┘à┘å ┘å╪╡ ┘é╪º┘ä╪¿ ┘à╪¡┘ä┘è ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ (┘à╪╣ ╪Ñ╪▓╪º┘ä╪⌐ ╪º┘ä╪¬┘â╪▒╪º╪▒). * * @param {string} content - ┘å╪╡ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è * @returns {string[]} ╪ú╪│┘à╪º╪í ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ ╪¿╪º┘ä╪¬╪▒╪¬┘è╪¿ */function extractLocalVariableOrder(content) {  if (!content) return [];  const seen = new Set();  const order = [];  const matches = (content.match(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g) || []);  for (const m of matches) {    const name = m.replace(/\{\{|\}\}/g, '').trim();    if (!seen.has(name)) { seen.add(name); order.push(name); }  }  return order;}/** * ┘è╪¿┘å┘è bodyParams ┘ä╪Ñ╪▒╪│╪º┘ä ┘à┘è╪¬╪º ┘à┘å ╪¬╪▒╪¬┘è╪¿ variables ({position, name}) ╪ú┘ê ΓÇö * ┘ä┘ê ╪║┘è╪▒ ┘à╪¬┘ê┘ü╪▒ ΓÇö ┘à┘å ┘å╪╡ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è ╪¿┘å┘ü╪│ ┘à┘å╪╖┘é mapVariablesByOrder. * ╪º┘ä┘à╪¬╪║┘è╪▒ ╪º┘ä┘å╪º┘é╪╡ ┘ü┘è values ┘è┘Å╪│╪º╪¿ ┘å╪╡ ┘ü╪º╪╢┘è (┘à╪┤ undefined). * * ΓÜá∩╕Å ┘é┘è┘ê╪» Meta Cloud API ╪╣┘ä┘ë ┘à╪╣╪º┘à┘ä╪º╪¬ ╪º┘ä┘Ç template body: *  - ┘à┘à┘å┘ê╪╣ ╪º┘ä╪ú╪│╪╖╪▒ ╪º┘ä╪¼╪»┘è╪»╪⌐ (\n) ╪»╪º╪«┘ä ┘é┘è┘à╪⌐ ╪º┘ä┘à╪╣╪º┘à┘ä. *  - ╪º┘ä╪╖┘ê┘ä ┘è╪«╪¬┘ä┘ü ╪¡╪│╪¿ ╪º┘ä┘ä╪║╪⌐/╪º┘ä┘é╪º┘ä╪¿ (╪║╪º┘ä╪¿╪º┘ï ╪¿╪¡╪»┘ê╪» ╪╡╪º╪▒┘à╪⌐ ╪╣┘ä┘ë ╪º┘ä┘Ç BODY params). *  ┘å╪│╪¬╪¿╪»┘ä ╪º┘ä╪ú╪│╪╖╪▒ ╪º┘ä╪¼╪»┘è╪»╪⌐ ╪¿┘à╪│╪º┘ü╪⌐/┘ü╪º╪╡┘ä╪⌐ ╪¡╪¬┘ë ┘ä╪º ┘è╪▒┘ü╪╢ ┘à┘è╪¬╪º ╪º┘ä┘à╪╣╪º┘à┘ä╪º╪¬ *  ╪¿┘Ç (#132018) / (#131008). * * @param {{position: number, name: string}[]|null} variablesOrder - ╪¬╪▒╪¬┘è╪¿ ┘à╪¬╪║┘è╪▒╪º╪¬ ╪º┘ä┘é╪º┘ä╪¿ (JSON ┘à┘å DB) * @param {string|null} localContent - ┘å╪╡ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¡┘ä┘è (fallback) * @param {Object} values - ┘é┘è┘à ╪º┘ä┘à╪¬╪║┘è╪▒╪º╪¬ * @returns {{type: string, text: string}[]} */function buildMetaBodyParams(variablesOrder, localContent, values = {}) {  let orderedVars = variablesOrder;  if (!orderedVars || orderedVars.length === 0) {    const localNames = extractLocalVariableOrder(localContent);    orderedVars = localNames.map((name, idx) => ({ position: idx + 1, name }));  }  return orderedVars.map(v => {    let text = values[v.name] !== undefined && values[v.name] !== null ? String(values[v.name]) : '';    // ┘à┘è╪¬╪º ╪¬╪▒┘ü╪╢ ╪º┘ä┘Ç newlines ╪»╪º╪«┘ä ┘à╪╣╪º┘à┘ä╪º╪¬ body ╪º┘ä┘é╪º┘ä╪¿ ΓÇö ┘å╪│╪¬╪¿╪»┘ä┘ç╪º ╪¿┘à╪│╪º┘ü╪⌐.    text = text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();    return { type: 'text', text };  });}module.exports = {  mapVariablesByOrder,  extractLocalVariableOrder,  buildMetaBodyParams,};
+/**
+ * 🆕 PRODUCTION-FIX (notifications-fix-plan §5.2 — variable binding):
+ * نواة ربط متغيرات قوالب ميتا — دوال نقية قابلة للاختبار.
+ * - mapVariablesByOrder: يبني ترتيب متغيرات قالب ميتا من ترتيب ظهور {{name}}
+ *   في القالب المحلي (بدل ترتيب هاردكود META_VARIABLE_ORDER).
+ * - buildMetaBodyParams: يبني bodyParams لإرسال ميتا من variables أو من نص القالب.
+ */
+
+/**
+ * يبني ترتيب المتغيرات لقالب ميتا بمطابقة ترتيب ظهور {{name}} في القالب المحلي
+ * مع {{1}}, {{2}} في قالب ميتا.
+ *
+ * @param {string} localContent - نص القالب المحلي (فيه {{customerName}} إلخ)
+ * @param {string} metaBodyText - نص body قالب ميتا (فيه {{1}} {{2}})
+ * @returns {{position, name}[]}
+ */
+function mapVariablesByOrder(localContent, metaBodyText) {
+  if (!localContent) return [];
+  // استخراج {{name}} من القالب المحلي بالترتيب (مع إزالة التكرار)
+  const localMatches = (localContent.match(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g) || []);
+  const seen = new Set();
+  const localOrder = [];
+  for (const m of localMatches) {
+    const name = m.replace(/\{\{|\}\}/g, '').trim();
+    if (!seen.has(name)) { seen.add(name); localOrder.push(name); }
+  }
+  // عدد placeholders في ميتا
+  const metaCount = ((metaBodyText || '').match(/\{\{\s*\d+\s*\}\}/g) || []).length;
+  // نأخذ min(localOrder.length, metaCount) ونرقمها من 1
+  const count = Math.min(localOrder.length, metaCount);
+  const result = [];
+  for (let i = 0; i < count; i++) {
+    result.push({ position: i + 1, name: localOrder[i] });
+  }
+  return result;
+}
+
+/**
+ * يستخرج المتغيرات {{name}} من نص قالب محلي بالترتيب (مع إزالة التكرار).
+ *
+ * @param {string} content - نص القالب المحلي
+ * @returns {string[]} أسماء المتغيرات بالترتيب
+ */
+function extractLocalVariableOrder(content) {
+  if (!content) return [];
+  const seen = new Set();
+  const order = [];
+  const matches = (content.match(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g) || []);
+  for (const m of matches) {
+    const name = m.replace(/\{\{|\}\}/g, '').trim();
+    if (!seen.has(name)) { seen.add(name); order.push(name); }
+  }
+  return order;
+}
+
+/**
+ * يبني bodyParams لإرسال ميتا من ترتيب variables ({position, name}) أو —
+ * لو غير متوفر — من نص القالب المحلي بنفس منطق mapVariablesByOrder.
+ * المتغير الناقص في values يُساب نص فاضي (مش undefined).
+ *
+ * ⚠️ قيود Meta Cloud API على معاملات الـ template body:
+ *  - ممنوع الأسطر الجديدة (\n) داخل قيمة المعامل.
+ *  - الطول يختلف حسب اللغة/القالب (غالباً بحدود صارمة على الـ BODY params).
+ *  نستبدل الأسطر الجديدة بمسافة/فاصلة حتى لا يرفض ميتا المعاملات
+ *  بـ (#132018) / (#131008).
+ *
+ * @param {{position: number, name: string}[]|null} variablesOrder - ترتيب متغيرات القالب (JSON من DB)
+ * @param {string|null} localContent - نص القالب المحلي (fallback)
+ * @param {Object} values - قيم المتغيرات
+ * @returns {{type: string, text: string}[]}
+ */
+function buildMetaBodyParams(variablesOrder, localContent, values = {}) {
+  let orderedVars = variablesOrder;
+  if (!orderedVars || orderedVars.length === 0) {
+    const localNames = extractLocalVariableOrder(localContent);
+    orderedVars = localNames.map((name, idx) => ({ position: idx + 1, name }));
+  }
+
+  return orderedVars.map(v => {
+    let text = values[v.name] !== undefined && values[v.name] !== null ? String(values[v.name]) : '';
+    // ميتا ترفض الـ newlines داخل معاملات body القالب — نستبدلها بمسافة.
+    text = text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+    return { type: 'text', text };
+  });
+}
+
+module.exports = {
+  mapVariablesByOrder,
+  extractLocalVariableOrder,
+  buildMetaBodyParams,
+};

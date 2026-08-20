@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiClient } from "../services/apiClient";
 
 export interface CompanyBranding {
@@ -11,8 +11,8 @@ export interface CompanyBranding {
 const EMPTY: CompanyBranding = { logo: null, name: "", accent: "", loading: true };
 
 /**
- * ┘è╪¼┘ä╪¿ ┘ç┘ê┘è╪⌐ ╪º┘ä╪┤╪▒┘â╪⌐ (┘ä┘ê╪¼┘ê + ╪º╪│┘à + ┘ä┘ê┘å ╪▒╪ª┘è╪│┘è) ╪╣╪┤╪º┘å ╪¿┘ê╪º╪¿╪⌐ ╪º┘ä╪╣┘à┘è┘ä ╪¬╪╕┘ç╪▒ ╪¿┘ç┘ê┘è╪⌐ ╪º┘ä┘à╪¬╪¼╪▒
- * ┘à╪┤ ╪¿┘ç┘ê┘è╪⌐ ╪º┘ä┘à┘å╪╡╪⌐. ╪¿┘è╪│╪¬╪«╪»┘à /public/storefront/settings (╪╣╪º┘à ┘ê╪¿┘è╪¡┘ä ╪º┘ä╪┤╪▒┘â╪⌐ ┘à┘å ╪º┘ä┘Ç subdomain).
+ * يجلب هوية الشركة (لوجو + اسم + لون رئيسي) عشان بوابة العميل تظهر بهوية المتجر
+ * مش بهوية المنصة. بيستخدم /public/storefront/settings (عام وبيحل الشركة من الـ subdomain).
  */
 export const useCompanyBranding = (companyId?: string | null): CompanyBranding => {
   const [branding, setBranding] = useState<CompanyBranding>(EMPTY);

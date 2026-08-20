@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import {
   cancellationService,
@@ -6,7 +6,16 @@ import {
   CancellationReasonCategory,
 } from "../../services/cancellationService";
 import { toast } from "sonner";
-import { Check, CheckCircle, Edit2, Folder, FolderPlus, Plus, Sparkles, Star, Tag, Trash2, X, XCircle } from 'lucide-react';
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  FolderPlus,
+  Tag,
+  CheckCircle,
+  XCircle,
+  Sparkles,
+} from "lucide-react";
 
 const getDefaultData = (t: any) => [
   {
@@ -33,7 +42,7 @@ const getDefaultData = (t: any) => [
   },
 ];
 
-const CancellationSettingsPage: React.FC = () => {
+const CancellationSettingsPage: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
   const DEFAULT_DATA = React.useMemo(() => getDefaultData(t), [t]);
   const [categories, setCategories] = useState<CancellationReasonCategory[]>([]);
@@ -155,19 +164,21 @@ const CancellationSettingsPage: React.FC = () => {
 
   return (
     <div
-      className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white"
+      className={isEmbedded ? "" : "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white"}
       dir="rtl"
     >
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            {t('cancellations.k_43')}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            {t('cancellations.k_44')}
-          </p>
+      {!isEmbedded && (
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+              {t('cancellations.k_43')}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              {t('cancellations.k_44')}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
@@ -6,11 +6,11 @@ import { useDateFormat } from "../../hooks/useDateFormat";
 import stockMovementsService, { StockMovementRecord } from "../../services/stockMovementsService";
 
 const TYPE_LABELS: Record<string, { ar: string; en: string }> = {
-  IN: { ar: "┘ê╪º╪▒╪»", en: "IN" },
-  OUT: { ar: "╪╡╪º╪»╪▒", en: "OUT" },
-  ADJUSTMENT: { ar: "╪¬╪╣╪»┘è┘ä", en: "ADJUSTMENT" },
-  TRANSFER: { ar: "╪¬╪¡┘ê┘è┘ä", en: "TRANSFER" },
-  RETURN: { ar: "┘à╪▒╪¬╪¼╪╣", en: "RETURN" }
+  IN: { ar: "وارد", en: "IN" },
+  OUT: { ar: "صادر", en: "OUT" },
+  ADJUSTMENT: { ar: "تعديل", en: "ADJUSTMENT" },
+  TRANSFER: { ar: "تحويل", en: "TRANSFER" },
+  RETURN: { ar: "مرتجع", en: "RETURN" }
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -42,7 +42,7 @@ const StockMovementsPage: React.FC = () => {
       const res = await stockMovementsService.getMovements(params);
       setMovements(Array.isArray(res.data) ? res.data : []);
     } catch (error: any) {
-      toast.error(error?.message || t("stockMovements.loadFailed", "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪º┘ä╪¡╪▒┘â╪º╪¬"));
+      toast.error(error?.message || t("stockMovements.loadFailed", "تعذر تحميل الحركات"));
     } finally {
       setLoading(false);
     }
@@ -65,10 +65,10 @@ const StockMovementsPage: React.FC = () => {
     <div className="space-y-6" dir="rtl">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("stockMovements.title", "╪¡╪▒┘â╪º╪¬ ╪º┘ä┘à╪«╪▓┘ê┘å")}
+          {t("stockMovements.title", "حركات المخزون")}
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {t("stockMovements.description", "╪│╪¼┘ä ┘â┘ä ╪¡╪▒┘â╪º╪¬ ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪»╪º╪«┘ä ┘ê╪«╪º╪▒╪¼ ╪º┘ä┘à╪«╪▓┘ê┘å")}
+          {t("stockMovements.description", "سجل كل حركات المنتجات داخل وخارج المخزون")}
         </p>
       </div>
 
@@ -79,7 +79,7 @@ const StockMovementsPage: React.FC = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={String(t("stockMovements.search", "╪º╪¿╪¡╪½ ╪¿╪º┘ä┘à┘å╪¬╪¼ ╪ú┘ê SKU ╪ú┘ê ╪º┘ä┘à╪▒╪¼╪╣..."))}
+              placeholder={String(t("stockMovements.search", "ابحث بالمنتج أو SKU أو المرجع..."))}
               className="min-h-[42px] w-full rounded-xl border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm dark:border-gray-600 dark:bg-gray-900"
             />
           </div>
@@ -89,7 +89,7 @@ const StockMovementsPage: React.FC = () => {
               onChange={(e) => setTypeFilter(e.target.value)}
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-900"
             >
-              <option value="">{t("stockMovements.allTypes", "┘â┘ä ╪ú┘å┘ê╪º╪╣ ╪º┘ä╪¡╪▒┘â╪º╪¬")}</option>
+              <option value="">{t("stockMovements.allTypes", "كل أنواع الحركات")}</option>
               {Object.entries(TYPE_LABELS).map(([value, labels]) => (
                 <option key={value} value={value}>
                   {isArabic ? labels.ar : labels.en}
@@ -114,21 +114,21 @@ const StockMovementsPage: React.FC = () => {
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
         {loading ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("stockMovements.loading", "╪¼╪º╪▒┘è ╪º┘ä╪¬╪¡┘à┘è┘ä...")}</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("stockMovements.loading", "جاري التحميل...")}</div>
         ) : movements.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("stockMovements.empty", "┘ä╪º ╪¬┘ê╪¼╪» ╪¡╪▒┘â╪º╪¬ ┘à╪«╪▓┘ê┘å")}</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("stockMovements.empty", "لا توجد حركات مخزون")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                  <th className="py-3 pl-4">{t("stockMovements.date", "╪º┘ä╪¬╪º╪▒┘è╪«")}</th>
-                  <th className="py-3">{t("stockMovements.product", "╪º┘ä┘à┘å╪¬╪¼")}</th>
-                  <th className="py-3">{t("stockMovements.type", "┘å┘ê╪╣ ╪º┘ä╪¡╪▒┘â╪⌐")}</th>
-                  <th className="py-3">{t("stockMovements.reason", "╪º┘ä╪│╪¿╪¿")}</th>
-                  <th className="py-3">{t("stockMovements.quantity", "╪º┘ä┘â┘à┘è╪⌐")}</th>
-                  <th className="py-3">{t("stockMovements.reference", "╪º┘ä┘à╪▒╪¼╪╣")}</th>
-                  <th className="py-3 pr-4">{t("stockMovements.notes", "┘à┘ä╪º╪¡╪╕╪º╪¬")}</th>
+                  <th className="py-3 pl-4">{t("stockMovements.date", "التاريخ")}</th>
+                  <th className="py-3">{t("stockMovements.product", "المنتج")}</th>
+                  <th className="py-3">{t("stockMovements.type", "نوع الحركة")}</th>
+                  <th className="py-3">{t("stockMovements.reason", "السبب")}</th>
+                  <th className="py-3">{t("stockMovements.quantity", "الكمية")}</th>
+                  <th className="py-3">{t("stockMovements.reference", "المرجع")}</th>
+                  <th className="py-3 pr-4">{t("stockMovements.notes", "ملاحظات")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -139,7 +139,7 @@ const StockMovementsPage: React.FC = () => {
                     <tr key={movement.id} className="border-b border-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-200">
                       <td className="py-3 pl-4 whitespace-nowrap text-xs text-gray-500">{formatDate(movement.createdAt)}</td>
                       <td className="py-3">
-                        <div className="font-bold">{movement.product?.name || "ΓÇö"}</div>
+                        <div className="font-bold">{movement.product?.name || "—"}</div>
                         {movement.product?.sku && (
                           <div className="text-xs text-gray-500">{movement.product.sku}</div>
                         )}
@@ -149,12 +149,12 @@ const StockMovementsPage: React.FC = () => {
                           {isArabic ? labels.ar : labels.en}
                         </span>
                       </td>
-                      <td className="py-3 text-xs text-gray-500">{movement.reason || "ΓÇö"}</td>
+                      <td className="py-3 text-xs text-gray-500">{movement.reason || "—"}</td>
                       <td className={`py-3 font-bold ${qty < 0 ? "text-red-600" : "text-green-600"}`}>
                         {qty > 0 ? `+${qty}` : qty}
                       </td>
-                      <td className="py-3 text-xs text-gray-500">{movement.reference || "ΓÇö"}</td>
-                      <td className="py-3 pr-4 text-xs text-gray-500">{movement.notes || "ΓÇö"}</td>
+                      <td className="py-3 text-xs text-gray-500">{movement.reference || "—"}</td>
+                      <td className="py-3 pr-4 text-xs text-gray-500">{movement.notes || "—"}</td>
                     </tr>
                   );
                 })}
