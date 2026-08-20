@@ -1,0 +1,58 @@
+﻿name: Seed Demo Company (h@gmail.com)
+
+on: workflow_dispatch
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup SSH
+        shell: bash
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
+          chmod 600 "$HOME/.ssh/maxp_deploy_key"
+          ssh-keyscan -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+
+      - name: Copy script to server
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          scp -i "$HOME/.ssh/maxp_deploy_key" \
+            -P "$SERVER_SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            apps/backend/scripts/seed_demo_company_h.js \
+            "$SERVER_USER@$SERVER_HOST:/var/www/backend2/scripts/seed_demo_company_h.js"
+          scp -i "$HOME/.ssh/maxp_deploy_key" \
+            -P "$SERVER_SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            apps/backend/scripts/verify_demo_company_h.js \
+            "$SERVER_USER@$SERVER_HOST:/var/www/backend2/scripts/verify_demo_company_h.js"
+
+      - name: Run seed on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          timeout: 120s
+          command_timeout: 10m
+          script: |
+            set -e
+            export NODE_ENV=production
+            cd /var/www/backend2
+            node scripts/seed_demo_company_h.js
+            echo "=== VERIFY ==="
+            node scripts/verify_demo_company_h.js

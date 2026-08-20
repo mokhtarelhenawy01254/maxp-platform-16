@@ -1,0 +1,725 @@
+﻿jest.mock('../../services/sharedDatabase', () => ({
+  getSharedPrismaClient: jest.fn(),
+}));
+
+jest.mock('../../services/bookingPatientService', () => ({
+  findOrCreatePatient: jest.fn(),
+}));
+
+jest.mock('../../utils/dicomUtil', () => {
+  const actual = jest.requireActual('../../utils/dicomUtil');
+  return { ...actual, parseDicomFromBuffer: jest.fn(() => ({})) };
+});
+
+const { getSharedPrismaClient } = require('../../services/sharedDatabase');
+const { findOrCreatePatient } = require('../../services/bookingPatientService');
+const bulkController = require('../../controller/radiologyBulkController');
+
+const createResponse = () => {
+  const response = {
+    statusCode: 200,
+    payload: null,
+    status: jest.fn((code) => {
+      response.statusCode = code;
+      return response;
+    }),
+    json: jest.fn((payload) => {
+      response.payload = payload;
+      return response;
+    }),
+  };
+  return response;
+};
+
+const createPrisma = (overrides = {}) => {
+  const prisma = {
+    radiologyAppointment: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
+    },
+    radiologyStudy: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    radiologyStudyImage: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    },
+    radiologyReport: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    radiologyStudyStatusHistory: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+    },
+    radiologyExamType: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    radiologyEntityPrice: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    radiologySetting: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    patient: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    insuranceCompany: {
+      findFirst: jest.fn(),
+    },
+    ...overrides,
+  };
+  return prisma;
+};
+
+const req = (overrides = {}) => ({
+  user: { companyId: 'company-1', id: 'user-1', firstName: '╪ú╪¡┘à╪»', lastName: '┘à╪¡┘à┘ê╪»' },
+  query: {},
+  params: {},
+  body: {},
+  ...overrides,
+});
+
+const makeAppointment = (overrides = {}) => ({
+  id: 'ap-1',
+  companyId: 'company-1',
+  status: 'SCHEDULED',
+  patientId: 'patient-1',
+  patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+  patientPhone: null,
+  patientGender: null,
+  patientAge: null,
+  nationalId: null,
+  insuranceNumber: null,
+  patientFlags: null,
+  examTypeId: 'et-1',
+  examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐',
+  examTypeIds: JSON.stringify(['et-1']),
+  deviceId: null,
+  deviceName: null,
+  insuranceCompanyId: null,
+  additionIds: null,
+  additionAmount: 0,
+  referringPhysicianId: null,
+  referralDoctor: null,
+  emergency: false,
+  studyId: null,
+  ...overrides,
+});
+
+const makeStudy = (overrides = {}) => ({
+  id: 's1',
+  companyId: 'company-1',
+  studyNumber: 'RAD-20260814-1001',
+  patientId: 'patient-1',
+  patientName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+  patientPhone: null,
+  patientGender: null,
+  patientAge: null,
+  nationalId: null,
+  insuranceNumber: null,
+  patientFlags: null,
+  examTypeId: 'et-1',
+  examTypeName: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐',
+  modality: 'CT',
+  status: 'PENDING_IMAGING',
+  emergency: false,
+  withContrast: false,
+  referralDoctor: null,
+  notes: null,
+  accessionNumber: null,
+  submissionStatus: 'NOT_SUBMITTED',
+  rologyStudyLink: null,
+  rologyReportLink: null,
+  rologyRadiologist: null,
+  reportReceivedAt: null,
+  billingType: 'PATIENT',
+  priceSnapshot: 500,
+  additionAmount: 0,
+  paidAmount: 500,
+  createdBy: 'user-1',
+  ...overrides,
+});
+
+const makeReport = (overrides = {}) => ({
+  id: 'rep-1',
+  studyId: 's1',
+  reportText: '╪¬┘é╪▒┘è╪▒',
+  reportStatus: 'SIGNED',
+  signedBy: '╪ú╪¡┘à╪»',
+  typedBy: '╪ú╪¡┘à╪»',
+  ...overrides,
+});
+
+const mockFindFirstById = (mock, byId) => {
+  mock.mockImplementation(({ where }) => Promise.resolve((byId[where.id] || null) ?? null));
+};
+
+describe('radiologyBulkController', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    findOrCreatePatient.mockResolvedValue({ id: 'patient-resolved-1' });
+  });
+
+  describe('bulkConvertAppointments', () => {
+    test('converts multiple scheduled appointments into studies', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockImplementation(({ where }) => {
+        if (where.id === 'ap-1') return Promise.resolve(makeAppointment({ id: 'ap-1' }));
+        if (where.id === 'ap-2') return Promise.resolve(makeAppointment({ id: 'ap-2' }));
+        return Promise.resolve(null);
+      });
+      prisma.radiologyExamType.findMany.mockResolvedValue([
+        { id: 'et-1', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', price: 500, category: 'CT', examCategory: null },
+      ]);
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: `study-${data.examTypeId}`, ...data }));
+      prisma.radiologyAppointment.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkConvertAppointments(req({ body: { ids: ['ap-1', 'ap-2'] } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([]);
+      expect(prisma.radiologyStudy.create).toHaveBeenCalledTimes(2);
+    });
+
+    test('keeps processing the rest when one appointment is cancelled', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockImplementation(({ where }) => {
+        if (where.id === 'ap-1') return Promise.resolve(makeAppointment({ id: 'ap-1' }));
+        if (where.id === 'ap-2') return Promise.resolve(makeAppointment({ id: 'ap-2', status: 'CANCELLED' }));
+        if (where.id === 'ap-3') return Promise.resolve(makeAppointment({ id: 'ap-3' }));
+        return Promise.resolve(null);
+      });
+      prisma.radiologyExamType.findMany.mockResolvedValue([
+        { id: 'et-1', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', price: 500, category: 'CT', examCategory: null },
+      ]);
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: `study-${data.examTypeId}`, ...data }));
+      prisma.radiologyAppointment.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkConvertAppointments(req({ body: { ids: ['ap-1', 'ap-2', 'ap-3'] } }), res);
+
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([{ id: 'ap-2', error: '┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä ╪¡╪¼╪▓ ┘à┘ä╪║┘è' }]);
+    });
+
+    test('rejects an appointment that belongs to another company', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkConvertAppointments(req({ body: { ids: ['ap-other'] } }), res);
+
+      expect(res.payload.data.successCount).toBe(0);
+      expect(res.payload.data.failed).toEqual([{ id: 'ap-other', error: '╪º┘ä╪¡╪¼╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' }]);
+    });
+  });
+
+  describe('bulkCheckinAppointments', () => {
+    test('checks in multiple scheduled appointments', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockImplementation(({ where }) => {
+        if (where.id === 'ap-1') return Promise.resolve(makeAppointment({ id: 'ap-1' }));
+        if (where.id === 'ap-2') return Promise.resolve(makeAppointment({ id: 'ap-2' }));
+        return Promise.resolve(null);
+      });
+      prisma.radiologyAppointment.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkCheckinAppointments(req({ body: { ids: ['ap-1', 'ap-2'] } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([]);
+      expect(prisma.radiologyAppointment.update).toHaveBeenCalledTimes(2);
+      expect(prisma.radiologyAppointment.update).toHaveBeenCalledWith({ where: { id: 'ap-1' }, data: { status: 'CHECKED_IN' } });
+    });
+
+    test('keeps processing when one appointment is not scheduled', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockImplementation(({ where }) => {
+        if (where.id === 'ap-1') return Promise.resolve(makeAppointment({ id: 'ap-1' }));
+        if (where.id === 'ap-2') return Promise.resolve(makeAppointment({ id: 'ap-2', status: 'DONE' }));
+        if (where.id === 'ap-3') return Promise.resolve(makeAppointment({ id: 'ap-3' }));
+        return Promise.resolve(null);
+      });
+      prisma.radiologyAppointment.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkCheckinAppointments(req({ body: { ids: ['ap-1', 'ap-2', 'ap-3'] } }), res);
+
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([{ id: 'ap-2', error: '┘è┘à┘â┘å ╪¬╪│╪¼┘è┘ä ╪º┘ä╪¡╪╢┘ê╪▒ ┘ä┘ä╪¡╪¼┘ê╪▓╪º╪¬ ╪º┘ä┘à╪¼╪»┘ê┘ä╪⌐ ┘ü┘é╪╖' }]);
+    });
+
+    test('rejects an appointment that belongs to another company', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyAppointment.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkCheckinAppointments(req({ body: { ids: ['ap-other'] } }), res);
+
+      expect(res.payload.data.successCount).toBe(0);
+      expect(res.payload.data.failed).toEqual([{ id: 'ap-other', error: '╪º┘ä╪¡╪¼╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' }]);
+    });
+  });
+
+  describe('bulkAdvanceStudies', () => {
+    test('advances each study to the next stage in the chain', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockImplementation(({ where }) => {
+        if (where.id === 's1') return Promise.resolve(makeStudy({ id: 's1', status: 'PENDING_IMAGING' }));
+        if (where.id === 's2') return Promise.resolve(makeStudy({ id: 's2', status: 'IMAGED' }));
+        return Promise.resolve(null);
+      });
+      prisma.radiologyStudy.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      prisma.radiologyReport.findUnique.mockResolvedValue(null);
+      prisma.radiologyReport.create.mockImplementation(({ data }) => Promise.resolve({ id: 'rep-new', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkAdvanceStudies(req({ body: { ids: ['s1', 's2'] } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([]);
+      expect(prisma.radiologyStudy.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 's1' }, data: expect.objectContaining({ status: 'IMAGED' }) }),
+      );
+      expect(prisma.radiologyStudy.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 's2' }, data: expect.objectContaining({ status: 'PENDING_REPORT' }) }),
+      );
+    });
+
+    test('keeps processing when one study is already delivered', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockImplementation(({ where }) => {
+        if (where.id === 's1') return Promise.resolve(makeStudy({ id: 's1', status: 'PENDING_IMAGING' }));
+        if (where.id === 's2') return Promise.resolve(makeStudy({ id: 's2', status: 'DELIVERED' }));
+        if (where.id === 's3') return Promise.resolve(makeStudy({ id: 's3', status: 'IMAGED' }));
+        return Promise.resolve(null);
+      });
+      prisma.radiologyStudy.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      prisma.radiologyReport.findUnique.mockResolvedValue(null);
+      prisma.radiologyReport.create.mockImplementation(({ data }) => Promise.resolve({ id: 'rep-new', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkAdvanceStudies(req({ body: { ids: ['s1', 's2', 's3'] } }), res);
+
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([{ id: 's2', error: '╪º┘ä╪¡╪º┘ä╪⌐ ┘ü┘è ╪º┘ä┘à╪▒╪¡┘ä╪⌐ ╪º┘ä╪ú╪«┘è╪▒╪⌐ ┘ê┘ä╪º ┘è┘à┘â┘å ╪¬┘é╪»┘è┘à┘ç╪º' }]);
+    });
+
+    test('rejects a study that belongs to another company', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkAdvanceStudies(req({ body: { ids: ['s-other'] } }), res);
+
+      expect(res.payload.data.successCount).toBe(0);
+      expect(res.payload.data.failed).toEqual([{ id: 's-other', error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' }]);
+    });
+  });
+
+  describe('bulkDeliverStudies', () => {
+    const deliverSetup = ({ reportByStudy, studies }) => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockImplementation(({ where }) => Promise.resolve(studies[where.id] || null));
+      prisma.radiologyReport.findUnique.mockImplementation(({ where }) => Promise.resolve(reportByStudy[where.studyId] || null));
+      prisma.radiologyStudyImage.count.mockResolvedValue(1);
+      prisma.radiologyReport.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      prisma.radiologyStudy.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+      return prisma;
+    };
+
+    test('delivers multiple signed studies', async () => {
+      const studies = {
+        s1: makeStudy({ id: 's1', status: 'REPORTED' }),
+        s2: makeStudy({ id: 's2', status: 'REPORTED' }),
+      };
+      const reportByStudy = {
+        s1: makeReport({ id: 'rep-1', studyId: 's1', reportStatus: 'SIGNED' }),
+        s2: makeReport({ id: 'rep-2', studyId: 's2', reportStatus: 'SIGNED' }),
+      };
+      const prisma = deliverSetup({ studies, reportByStudy });
+
+      const res = createResponse();
+      await bulkController.bulkDeliverStudies(req({ body: { ids: ['s1', 's2'] } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([]);
+      expect(prisma.radiologyReport.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ reportStatus: 'DELIVERED' }) }),
+      );
+      expect(prisma.radiologyStudy.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'DELIVERED' }) }),
+      );
+    });
+
+    test('keeps processing when one study report is not signed', async () => {
+      const studies = {
+        s1: makeStudy({ id: 's1', status: 'REPORTED' }),
+        s2: makeStudy({ id: 's2', status: 'REPORTED' }),
+        s3: makeStudy({ id: 's3', status: 'REPORTED' }),
+      };
+      const reportByStudy = {
+        s1: makeReport({ id: 'rep-1', studyId: 's1', reportStatus: 'SIGNED' }),
+        s2: makeReport({ id: 'rep-2', studyId: 's2', reportStatus: 'DRAFT' }),
+        s3: makeReport({ id: 'rep-3', studyId: 's3', reportStatus: 'SIGNED' }),
+      };
+      deliverSetup({ studies, reportByStudy });
+
+      const res = createResponse();
+      await bulkController.bulkDeliverStudies(req({ body: { ids: ['s1', 's2', 's3'] } }), res);
+
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([{ id: 's2', error: '┘è╪¼╪¿ ╪¬┘ê┘é┘è╪╣ ╪º┘ä╪¬┘é╪▒┘è╪▒ ┘é╪¿┘ä ╪º┘ä╪¬╪│┘ä┘è┘à' }]);
+    });
+
+    test('rejects a study that belongs to another company', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkDeliverStudies(req({ body: { ids: ['s-other'] } }), res);
+
+      expect(res.payload.data.successCount).toBe(0);
+      expect(res.payload.data.failed).toEqual([{ id: 's-other', error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' }]);
+    });
+  });
+
+  describe('bulkStudiesLabels', () => {
+    test('returns id + studyNumber for every valid study', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockImplementation(({ where }) => {
+        if (where.id === 's1') return Promise.resolve({ id: 's1', studyNumber: 'RAD-1' });
+        if (where.id === 's2') return Promise.resolve({ id: 's2', studyNumber: 'RAD-2' });
+        return Promise.resolve(null);
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkStudiesLabels(req({ body: { ids: ['s1', 's2', 's-missing'] } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.items).toEqual([
+        { id: 's1', studyNumber: 'RAD-1' },
+        { id: 's2', studyNumber: 'RAD-2' },
+      ]);
+      expect(res.payload.data.failed).toEqual([{ id: 's-missing', error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' }]);
+    });
+  });
+
+  describe('bulkAdvanceReports', () => {
+    test('reviews multiple reports', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockImplementation(({ where }) => Promise.resolve({ id: where.id, companyId: 'company-1' }));
+      prisma.radiologyReport.findUnique.mockImplementation(({ where }) =>
+        Promise.resolve(makeReport({ id: `rep-${where.studyId}`, studyId: where.studyId, reportStatus: 'DRAFT' })),
+      );
+      prisma.radiologyReport.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkAdvanceReports(req({ body: { ids: ['s1', 's2'], action: 'review' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toEqual([]);
+      expect(prisma.radiologyReport.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ reportStatus: 'REVIEWED' }) }),
+      );
+    });
+
+    test('keeps processing when one report cannot advance to the target status', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockImplementation(({ where }) => Promise.resolve({ id: where.id, companyId: 'company-1' }));
+      prisma.radiologyReport.findUnique.mockImplementation(({ where }) => {
+        const status = where.studyId === 's2' ? 'SIGNED' : 'DRAFT';
+        return Promise.resolve(makeReport({ id: `rep-${where.studyId}`, studyId: where.studyId, reportStatus: status }));
+      });
+      prisma.radiologyReport.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkAdvanceReports(req({ body: { ids: ['s1', 's2', 's3'], action: 'review' } }), res);
+
+      expect(res.payload.data.successCount).toBe(2);
+      expect(res.payload.data.failed).toHaveLength(1);
+      expect(res.payload.data.failed[0].id).toBe('s2');
+      expect(res.payload.data.failed[0].error).toContain('┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘ü┘è ╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒');
+    });
+
+    test('signs reports when action is sign', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockImplementation(({ where }) => Promise.resolve({ id: where.id, companyId: 'company-1' }));
+      prisma.radiologyReport.findUnique.mockImplementation(({ where }) =>
+        Promise.resolve(makeReport({ id: `rep-${where.studyId}`, studyId: where.studyId, reportStatus: 'REVIEWED' })),
+      );
+      prisma.radiologyReport.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkAdvanceReports(req({ body: { ids: ['s1'], action: 'sign' } }), res);
+
+      expect(res.payload.data.successCount).toBe(1);
+      expect(res.payload.data.failed).toEqual([]);
+      expect(prisma.radiologyReport.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ reportStatus: 'SIGNED' }) }),
+      );
+    });
+
+    test('delivers studies when action is deliver', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockImplementation(({ where }) =>
+        Promise.resolve(makeStudy({ id: where.id, status: 'REPORTED' })),
+      );
+      prisma.radiologyReport.findUnique.mockImplementation(({ where }) =>
+        Promise.resolve(makeReport({ id: `rep-${where.studyId}`, studyId: where.studyId, reportStatus: 'SIGNED' })),
+      );
+      prisma.radiologyStudyImage.count.mockResolvedValue(1);
+      prisma.radiologyReport.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      prisma.radiologyStudy.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkAdvanceReports(req({ body: { ids: ['s1'], action: 'deliver' } }), res);
+
+      expect(res.payload.data.successCount).toBe(1);
+      expect(res.payload.data.failed).toEqual([]);
+      expect(prisma.radiologyReport.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ reportStatus: 'DELIVERED' }) }),
+      );
+    });
+
+    test('rejects an invalid action', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkAdvanceReports(req({ body: { ids: ['s1'], action: 'bogus' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toBe('╪Ñ╪¼╪▒╪º╪í ╪║┘è╪▒ ╪╡╪¡┘è╪¡');
+    });
+  });
+
+  describe('authorization', () => {
+    test('returns 403 when the user has no company', async () => {
+      const res = createResponse();
+      await bulkController.bulkDeliverStudies(req({ user: {} }), res);
+
+      expect(res.statusCode).toBe(403);
+      expect(res.payload.error).toBe('╪║┘è╪▒ ┘à╪╡╪▒╪¡');
+    });
+  });
+
+  describe('bulkConvertAppointments concurrency', () => {
+    test('handles a mix of valid and invalid ids and processes in parallel', async () => {
+      const prisma = createPrisma();
+      let active = 0;
+      let maxActive = 0;
+      prisma.radiologyAppointment.findFirst.mockImplementation(({ where }) => {
+        active++;
+        maxActive = Math.max(maxActive, active);
+        const appointment = where.id === 'ap-bad' ? null : makeAppointment({ id: where.id });
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            active--;
+            resolve(appointment);
+          }, 15);
+        });
+      });
+      prisma.radiologyExamType.findMany.mockResolvedValue([
+        { id: 'et-1', name: '╪ú╪┤╪╣╪⌐ ┘à┘é╪╖╪╣┘è╪⌐', price: 500, category: 'CT', examCategory: null },
+      ]);
+      prisma.radiologyStudy.create.mockImplementation(({ data }) => Promise.resolve({ id: `study-${data.examTypeId}`, ...data }));
+      prisma.radiologyAppointment.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const ids = Array.from({ length: 9 }, (_, i) => `ap-${i + 1}`).concat('ap-bad');
+      const res = createResponse();
+      await bulkController.bulkConvertAppointments(req({ body: { ids } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(9);
+      expect(res.payload.data.failed).toEqual([{ id: 'ap-bad', error: '╪º┘ä╪¡╪¼╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' }]);
+      expect(prisma.radiologyStudy.create).toHaveBeenCalledTimes(9);
+      expect(maxActive).toBeGreaterThan(1);
+    });
+
+    test('rejects more than 500 ids with 400', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bulkController.bulkConvertAppointments(
+        req({ body: { ids: Array.from({ length: 501 }, (_, i) => `ap-${i}`) } }),
+        res,
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toBe('╪╣╪»╪» ╪º┘ä╪╣┘å╪º╪╡╪▒ ┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä╪¡╪» ╪º┘ä╪ú┘é╪╡┘ë ╪º┘ä┘à╪│┘à┘ê╪¡ (500)');
+    });
+  });
+
+  describe('bulkCheckinAppointments concurrency', () => {
+    test('handles a mix of valid and invalid ids and processes in parallel', async () => {
+      const prisma = createPrisma();
+      let active = 0;
+      let maxActive = 0;
+      prisma.radiologyAppointment.findFirst.mockImplementation(({ where }) => {
+        active++;
+        maxActive = Math.max(maxActive, active);
+        const appointment = where.id === 'ap-bad' ? null : makeAppointment({ id: where.id });
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            active--;
+            resolve(appointment);
+          }, 15);
+        });
+      });
+      prisma.radiologyAppointment.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const ids = Array.from({ length: 9 }, (_, i) => `ap-${i + 1}`).concat('ap-bad');
+      const res = createResponse();
+      await bulkController.bulkCheckinAppointments(req({ body: { ids } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.successCount).toBe(9);
+      expect(res.payload.data.failed).toEqual([{ id: 'ap-bad', error: '╪º┘ä╪¡╪¼╪▓ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' }]);
+      expect(prisma.radiologyAppointment.update).toHaveBeenCalledTimes(9);
+      expect(maxActive).toBeGreaterThan(1);
+    });
+  });
+
+  describe('bookingPatientsController nationalId + delete protection', () => {
+    const bookingPatientsController = require('../../controller/bookingPatientsController');
+
+    test('getAllPatients searches by nationalId', async () => {
+      const prisma = {
+        patient: {
+          findMany: jest.fn().mockResolvedValue([
+            { id: 'p1', firstName: '╪ú╪¡┘à╪»', lastName: '╪╣┘ä┘è', _count: { appointments: 0 } },
+          ]),
+          count: jest.fn().mockResolvedValue(1),
+        },
+      };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bookingPatientsController.getAllPatients(req({ query: { search: '30101234567890' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.patient.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: expect.arrayContaining([
+              { nationalId: { contains: '30101234567890', mode: 'insensitive' } },
+            ]),
+          }),
+        }),
+      );
+      expect(res.payload.data).toHaveLength(1);
+    });
+
+    test('deletePatient returns 400 when radiology references exist', async () => {
+      const prisma = createPrisma();
+      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1', companyId: 'company-1' });
+      prisma.radiologyStudy.count = jest.fn().mockResolvedValue(2);
+      prisma.radiologyAppointment.count = jest.fn().mockResolvedValue(0);
+      prisma.appointment = { count: jest.fn().mockResolvedValue(1) };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bookingPatientsController.deletePatient(req({ params: { id: 'patient-1' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toBe('┘ä╪º ┘è┘à┘â┘å ╪¡╪░┘ü ┘à╪▒┘è╪╢ ┘ä╪»┘è┘ç ╪│╪¼┘ä╪º╪¬ ┘à╪▒╪¬╪¿╪╖╪⌐ (╪»╪▒╪º╪│╪º╪¬/╪¡╪¼┘ê╪▓╪º╪¬)');
+      expect(prisma.patient.update).not.toHaveBeenCalled();
+    });
+
+    test('deletePatient soft-deletes when no references exist', async () => {
+      const prisma = createPrisma();
+      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1', companyId: 'company-1' });
+      prisma.radiologyStudy.count = jest.fn().mockResolvedValue(0);
+      prisma.radiologyAppointment.count = jest.fn().mockResolvedValue(0);
+      prisma.appointment = { count: jest.fn().mockResolvedValue(0) };
+      prisma.patient.update.mockResolvedValue({ id: 'patient-1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await bookingPatientsController.deletePatient(req({ params: { id: 'patient-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(prisma.patient.update).toHaveBeenCalledWith(
+        { where: { id: 'patient-1' }, data: { isActive: false } },
+      );
+    });
+
+    test('findOrCreatePatient matches an existing patient by nationalId', async () => {
+      const service = jest.requireActual('../../services/bookingPatientService');
+      const prisma = createPrisma();
+      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-nid' });
+      prisma.patient.update.mockResolvedValue({ id: 'patient-nid' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const result = await service.findOrCreatePatient({
+        companyId: 'company-1',
+        customerName: '┘à╪¡┘à╪» ╪╣┘ä┘è',
+        nationalId: '30101234567890',
+        nationalIdImage: 'img-base64',
+      });
+
+      expect(result).toEqual({ id: 'patient-nid', created: false });
+      expect(prisma.patient.findFirst).toHaveBeenCalledWith({
+        where: { companyId: 'company-1', OR: [{ nationalId: '30101234567890', isActive: true }] },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(prisma.patient.update).toHaveBeenCalledWith({
+        where: { id: 'patient-nid' },
+        data: { nationalId: '30101234567890', nationalIdImage: 'img-base64' },
+      });
+    });
+  });
+});

@@ -1,0 +1,10 @@
+﻿const fs = require("fs");
+const path = require("path");
+const FILE = path.join(__dirname, "..", "apps", "frontend", "src", "pages", "tasks", "Tasks.tsx");
+const c = fs.readFileSync(FILE, "utf-8");
+const doubleParen = (c.match(/tToast\.\w+\("[^"]+"\)\)/g) || []).length;
+const hasImport = c.includes("i18n-toast");
+const remaining = (c.match(/toast\.\w+\([^)]*[\u0600-\u06FF]/g) || []).length;
+console.log("Double parens: " + doubleParen);
+console.log("tToast import: " + hasImport);
+console.log("Remaining Arabic in toast: " + remaining);

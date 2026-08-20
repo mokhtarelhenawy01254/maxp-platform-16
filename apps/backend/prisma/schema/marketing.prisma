@@ -1046,6 +1046,7 @@ model WhatsAppNotificationSettings {
   attendanceReminderEnabled     Boolean  @default(false)
   attendanceConfirmedEnabled    Boolean  @default(false)
   checkoutConfirmedEnabled     Boolean  @default(false)
+  incompleteCartImmediateMessage Boolean @default(false)
   leaveApprovalEnabled          Boolean  @default(false)
   permissionApprovalEnabled     Boolean  @default(false)
   manualDeductionEnabled        Boolean  @default(false)

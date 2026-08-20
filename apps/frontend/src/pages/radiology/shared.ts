@@ -1,0 +1,380 @@
+﻿import { buildApiUrl } from "../../utils/urlHelper";
+import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
+import { useEffect, useState } from "react";
+import { LayoutDashboard, Users, FolderOpen, FileText, ScanLine, Tag, Building2, CreditCard, BarChart3, Settings, CalendarDays, Banknote, Landmark, FolderTree, ListChecks, BadgeCheck, DoorOpen } from "lucide-react";
+
+export type TabId =
+  | "dashboard" | "patients" | "studies" | "reports"
+  | "exam-types" | "exam-categories" | "price-lists" | "contracts" | "branches" | "invoices"
+  | "reports-overview" | "insurance-invoices" | "insurance-ledger" | "insurance-companies" | "price-quote" | "radiologists"
+  | "schedule" | "queue" | "referring-physicians" | "statistics" | "cashier-shifts" | "settings" | "rooms"
+  | "referral-sources" | "marketing-reps" | "external-partners";
+
+export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: "dashboard", label: "radiology.tabs.dashboard", icon: LayoutDashboard },
+  { id: "patients", label: "radiology.tabs.patients", icon: Users },
+  { id: "schedule", label: "radiology.tabs.schedule", icon: CalendarDays },
+  { id: "queue", label: "radiology.tabs.queue", icon: ListChecks },
+  { id: "studies", label: "radiology.tabs.studies", icon: FolderOpen },
+  { id: "reports", label: "radiology.tabs.reports", icon: FileText },
+  { id: "exam-types", label: "radiology.tabs.exam-types", icon: ScanLine },
+  { id: "exam-categories", label: "radiology.tabs.exam-categories", icon: FolderTree },
+  { id: "price-lists", label: "radiology.tabs.price-lists", icon: Tag },
+  { id: "contracts", label: "radiology.tabs.contracts", icon: FileText },
+  { id: "branches", label: "radiology.tabs.branches", icon: Building2 },
+  { id: "invoices", label: "radiology.tabs.invoices", icon: CreditCard },
+  { id: "reports-overview", label: "radiology.tabs.reports-overview", icon: BarChart3 },
+  { id: "referring-physicians", label: "radiology.tabs.referring-physicians", icon: Users },
+  { id: "referral-sources", label: "radiology.tabs.referral-sources", icon: Landmark },
+  { id: "marketing-reps", label: "radiology.tabs.marketing-reps", icon: BadgeCheck },
+  { id: "insurance-invoices", label: "radiology.tabs.insurance-invoices", icon: FileText },
+  { id: "insurance-ledger", label: "radiology.tabs.insurance-ledger", icon: CreditCard },
+  { id: "insurance-companies", label: "radiology.tabs.insurance-companies", icon: Landmark },
+  { id: "price-quote", label: "radiology.tabs.price-quote", icon: Tag },
+  { id: "radiologists", label: "radiology.tabs.radiologists", icon: Users },
+  { id: "statistics", label: "radiology.tabs.statistics", icon: BarChart3 },
+  { id: "cashier-shifts", label: "radiology.tabs.cashier-shifts", icon: Banknote },
+  { id: "rooms", label: "radiology.tabs.rooms", icon: DoorOpen },
+  { id: "external-partners", label: "radiology.tabs.external-partners", icon: Building2 },
+  { id: "settings", label: "radiology.tabs.settings", icon: Settings },
+];
+
+export const getCompanyId = (): string | null => {
+  try { return (JSON.parse(localStorage.getItem("user") || "{}") as { companyId?: string }).companyId || null; } catch { return null; }
+};
+
+export const getAuthHeaders = () => {
+  const headers = tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
+  const cid = getCompanyId();
+  if (cid) headers["X-Company-Id"] = cid;
+  return headers;
+};
+
+export const api = (path: string) => {
+  const base = buildApiUrl(`radiology/${path}`);
+  let url: URL;
+  try { url = new URL(base); } catch { url = new URL(base, window.location.origin); }
+  const cid = getCompanyId();
+  if (cid) url.searchParams.set("companyId", cid);
+  return url.toString();
+};
+
+/** Reuse the shared booking endpoints (patients/invoices/price-lists/branches/reports) ΓÇö
+ *  they are NOT gated by booking-app at the backend, so a radiology-only company can use them. */
+export const bookingApi = (path: string) => {
+  const base = buildApiUrl(`booking/${path}`);
+  let url: URL;
+  try { url = new URL(base); } catch { url = new URL(base, window.location.origin); }
+  const cid = getCompanyId();
+  if (cid) url.searchParams.set("companyId", cid);
+  return url.toString();
+};
+
+export interface RadiologyExamType {
+  id: string; name: string; category?: string; categoryId?: string;
+  examCategory?: RadiologyExamCategory;
+  abbreviation?: string;
+  price: number; isActive: boolean; isAddition?: boolean; createdAt: string;
+}
+
+export interface RadiologyExamCategory {
+  id: string; companyId?: string; name: string; nameEn?: string; abbreviation?: string;
+  modality?: string; parentId?: string; parentName?: string;
+  isActive: boolean; sortOrder?: number; createdAt?: string; updatedAt?: string;
+  examTypeCount?: number; childrenCount?: number;
+  _count?: { examTypes: number; children: number };
+  children?: RadiologyExamCategory[];
+}
+
+export interface RadiologyDevice {
+  id: string; name: string; room?: string; modality?: string;
+  isActive: boolean; createdAt: string;
+}
+
+export interface RadiologyRoomDevice {
+  id: string; name: string; room?: string; modality?: string; isActive: boolean;
+}
+
+export interface RadiologyRoomDoctor {
+  id: string; name: string; location?: string; isActive: boolean;
+}
+
+export interface RadiologyRoom {
+  id: string; companyId?: string; name: string; capacityPerHour: number;
+  isActive: boolean; createdAt: string; updatedAt?: string;
+  devices?: RadiologyRoomDevice[];
+  doctors?: RadiologyRoomDoctor[];
+}
+
+export interface RadiologyStudyImage {
+  id: string; fileName: string; fileSize?: number; seriesDescription?: string; url: string;
+}
+
+export interface RadiologyReport {
+  id: string; studyId: string; reportText: string;
+  reportStatus: string; signedBy?: string; signedAt?: string;
+  typedBy?: string; typedAt?: string;
+  reviewedBy?: string; reviewedAt?: string;
+  finalizedBy?: string; finalizedAt?: string;
+  criticalCategory?: string; criticalFindingText?: string;
+  criticalFlaggedBy?: string; criticalFlaggedAt?: string;
+  criticalAcknowledgedBy?: string; criticalAcknowledgedAt?: string;
+  createdAt: string; updatedAt: string;
+}
+
+export interface RadiologyReportTemplate {
+  id: string; name: string; body: string;
+  isActive: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface RadiologyStudyPayment {
+  id: string; studyId: string; amount: number; method?: string;
+  note?: string; paidBy?: string; createdAt: string;
+}
+
+export interface RadiologyExamAddition {
+  id: string; name: string; price: number; isActive: boolean; createdAt: string;
+}
+
+export interface RadiologyContract {
+  id: string; name: string; region?: string; governorate?: string;
+  discountType: string; discountPercent: number; externalSample: boolean;
+  isActive: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface RadiologyStudy {
+  id: string; studyNumber?: string;
+  patientName: string; patientPhone?: string; patientGender?: string;   patientAge?: string;
+  nationalId?: string;
+  insuranceNumber?: string;
+  patientFlags?: string[] | string;
+  additionIds?: string[] | string;
+  additionAmount?: number;
+  paidAmount?: number;
+  paymentStatus?: string;
+  examTypeId?: string; examTypeName?: string; examType?: RadiologyExamType;
+  deviceId?: string; deviceName?: string;
+  referralDoctor?: string; notes?: string;
+  referralSourceId?: string; referralSourceName?: string;
+  marketingRepId?: string; marketingRepName?: string;
+  isExternalReferral?: boolean; externalPartnerId?: string; externalPartnerName?: string;
+  emergency: boolean; withContrast: boolean;
+  status: string; submissionStatus?: string;
+  orderStatus?: string; appointmentId?: string;
+  rologyStudyLink?: string; rologyReportLink?: string; rologyRadiologist?: string;
+  reportStatus?: string;
+  createdAt: string;
+  images?: RadiologyStudyImage[];
+  report?: RadiologyReport;
+}
+
+export const RadiologyStatusMap: Record<string, { label: string; color: string }> = {
+  PENDING_IMAGING: { label: "radiology.studyStatus.PENDING_IMAGING", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  IMAGED: { label: "radiology.studyStatus.IMAGED", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  PENDING_REPORT: { label: "radiology.studyStatus.PENDING_REPORT", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  REPORTED: { label: "radiology.studyStatus.REPORTED", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  DELIVERED: { label: "radiology.studyStatus.DELIVERED", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+};
+
+export const RadiologyReportStatusMap: Record<string, { label: string; color: string }> = {
+  DRAFT: { label: "radiology.reportStatus.DRAFT", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  REVIEWED: { label: "radiology.reportStatus.REVIEWED", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  SIGNED: { label: "radiology.reportStatus.SIGNED", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  DELIVERED: { label: "radiology.reportStatus.DELIVERED", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+};
+
+export const RadiologySubmissionStatusMap: Record<string, { label: string; color: string }> = {
+  NOT_SUBMITTED: { label: "radiology.submissionStatus.NOT_SUBMITTED", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  SUBMITTED: { label: "radiology.submissionStatus.SUBMITTED", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  REPORT_READY: { label: "radiology.submissionStatus.REPORT_READY", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+};
+
+export const RadiologyOrderStatusMap: Record<string, { label: string; color: string }> = {
+  PENDING:    { label: "radiology.orderStatus.PENDING",    color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  CHECKED_IN: { label: "radiology.orderStatus.CHECKED_IN", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  IN_PROGRESS:{ label: "radiology.orderStatus.IN_PROGRESS",color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  COMPLETED:  { label: "radiology.orderStatus.COMPLETED",  color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+  CANCELLED:  { label: "radiology.orderStatus.CANCELLED",  color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+};
+
+export const RadiologyPaymentStatusMap: Record<string, { label: string; color: string }> = {
+  UNPAID:   { label: "radiology.paymentStatus.UNPAID",   color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  PARTIAL:  { label: "radiology.paymentStatus.PARTIAL",  color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  PAID:     { label: "radiology.paymentStatus.PAID",     color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  REFUNDED: { label: "radiology.paymentStatus.REFUNDED", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
+};
+
+export const RADIOLOGY_CRITICAL_META: Record<string, { label: string; color: string; level: number }> = {
+  CAT1: { label: "radiology.critical.CAT1", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300", level: 1 },
+  CAT2: { label: "radiology.critical.CAT2", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300", level: 2 },
+  CAT3: { label: "radiology.critical.CAT3", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", level: 3 },
+  NONE: { label: "radiology.critical.NONE", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300", level: 0 },
+};
+
+export const criticalCategoryText = (report?: { criticalCategory?: string } | null): string | null => {
+  const c = report?.criticalCategory;
+  if (!c || c === "NONE") return null;
+  return RADIOLOGY_CRITICAL_META[c] ? c : null;
+};
+
+export interface RadiologyPatientFlag {
+  value: string;
+  label: string;
+  color: string;
+}
+
+export const DEFAULT_RADIOLOGY_PATIENT_FLAGS: RadiologyPatientFlag[] = [
+  { value: "pregnancy", label: "╪¡┘à┘ä", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
+  { value: "contrast_allergy", label: "╪¡╪│╪º╪│┘è╪⌐ ╪¬╪¿╪º┘è┘å", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "renal", label: "┘é╪╡┘ê╪▒ ┘â┘ä┘ê┘è", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
+  { value: "bleeding", label: "╪│┘è┘ê┘ä╪⌐", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { value: "diabetic", label: "╪│┘â╪▒", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  { value: "claustrophobia", label: "╪«┘ê┘ü ┘à┘å ╪º┘ä╪ú┘à╪º┘â┘å ╪º┘ä┘à╪║┘ä┘é╪⌐", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
+  { value: "pacemaker", label: "┘à┘å╪╕┘à ╪╢╪▒╪¿╪º╪¬ ╪º┘ä┘é┘ä╪¿", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+];
+
+let riskFlagsCache: RadiologyPatientFlag[] | null = null;
+let riskFlagsPromise: Promise<RadiologyPatientFlag[]> | null = null;
+const riskFlagsSubscribers = new Set<(flags: RadiologyPatientFlag[]) => void>();
+
+const getEffectiveRiskFlags = (): RadiologyPatientFlag[] => riskFlagsCache || DEFAULT_RADIOLOGY_PATIENT_FLAGS;
+
+const notifyRiskFlags = () => {
+  const flags = getEffectiveRiskFlags();
+  riskFlagsSubscribers.forEach(cb => cb(flags));
+};
+
+const loadRiskFlags = (): Promise<RadiologyPatientFlag[]> => {
+  if (!riskFlagsPromise) {
+    riskFlagsPromise = fetchJson<RadiologyPatientFlag[]>(api("risk-flags"))
+      .then(data => {
+        riskFlagsCache = Array.isArray(data) && data.length ? data : DEFAULT_RADIOLOGY_PATIENT_FLAGS;
+        notifyRiskFlags();
+        return riskFlagsCache;
+      })
+      .catch(() => {
+        riskFlagsCache = DEFAULT_RADIOLOGY_PATIENT_FLAGS;
+        notifyRiskFlags();
+        return riskFlagsCache;
+      });
+  }
+  return riskFlagsPromise;
+};
+
+export const useRadiologyRiskFlags = (): RadiologyPatientFlag[] => {
+  const [flags, setFlags] = useState<RadiologyPatientFlag[]>(getEffectiveRiskFlags());
+  useEffect(() => {
+    riskFlagsSubscribers.add(setFlags);
+    if (!riskFlagsCache) loadRiskFlags();
+    return () => { riskFlagsSubscribers.delete(setFlags); };
+  }, []);
+  return flags;
+};
+
+export const setRadiologyRiskFlags = (flags: RadiologyPatientFlag[]) => {
+  riskFlagsCache = Array.isArray(flags) && flags.length ? flags : DEFAULT_RADIOLOGY_PATIENT_FLAGS;
+  notifyRiskFlags();
+};
+
+export const parsePatientFlags = (v?: string[] | string | null): string[] => {
+  if (!v) return [];
+  if (Array.isArray(v)) return v.filter(Boolean);
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const flagMeta = (key: string): RadiologyPatientFlag | undefined => getEffectiveRiskFlags().find(f => f.value === key);
+
+export const STUDY_STATUS: Record<string, string> = {
+  PENDING_IMAGING: "IMAGED",
+  IMAGED: "PENDING_REPORT",
+  PENDING_REPORT: "REPORTED",
+  REPORTED: "DELIVERED",
+  DELIVERED: "",
+};
+
+export const fetchJson = async <T>(url: string, options?: RequestInit, retries = 2): Promise<T> => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { headers: getAuthHeaders(), ...options });
+      if (res.status === 502 || res.status === 503) {
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); continue; }
+        throw new Error(String(i18n.t("radiology.serverUnavailable")));
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || data.message || String(i18n.t("radiology.operationFailed")));
+      return data.data;
+    } catch (e: unknown) {
+      if (attempt < retries) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg.includes("502") || msg.includes("503") || msg.includes("fetch")) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+      }
+      throw e;
+    }
+  }
+  throw new Error(String(i18n.t("radiology.operationFailed")));
+};
+
+export const tryParseJSON = <T = unknown>(v: unknown): T | null => {
+  if (!v) return null;
+  if (typeof v === 'object') return v as T;
+  try { return JSON.parse(v as string) as T; } catch { return null; }
+};
+
+export const MODAL_CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4";
+export const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
+
+export interface RadiologyIdSettings {
+  bookingPrefix: string;
+  patientPrefix: string;
+  digits: number;
+  enabled: boolean;
+}
+
+export const DEFAULT_ID_SETTINGS: RadiologyIdSettings = { bookingPrefix: "B", patientPrefix: "P", digits: 4, enabled: true };
+
+/** Format a sequential number as a human-friendly ID, e.g. B-0001 (falls back to the raw number). */
+export const formatSequentialId = (prefix: string, number?: number | null, digits = 4, enabled = true): string => {
+  if (number === undefined || number === null) return "";
+  const padded = enabled ? String(number).padStart(digits, "0") : String(number);
+  return enabled ? `${prefix}${prefix ? "-" : ""}${padded}` : padded;
+};
+
+export const fetchIdSettings = async (): Promise<RadiologyIdSettings> => {
+  try {
+    const data = await fetchJson<Partial<RadiologyIdSettings>>(api("id-settings"));
+    return { ...DEFAULT_ID_SETTINGS, ...data };
+  } catch {
+    return { ...DEFAULT_ID_SETTINGS };
+  }
+};
+
+// ==================== STAGE STEPPER ====================
+
+export type RadiologyStage = "RECEPTION" | "IMAGING" | "REPORT" | "DELIVERED";
+
+/** Map a study's radiology status to its primary pipeline stage (single-stage stepper). */
+export const derivePrimaryStage = (study: { status?: string }): RadiologyStage => {
+  const status = study?.status || "";
+  if (status === "PENDING_IMAGING" || status === "IMAGED") return "IMAGING";
+  if (status === "PENDING_REPORT" || status === "REPORTED") return "REPORT";
+  if (status === "DELIVERED") return "DELIVERED";
+  return "RECEPTION";
+};
+
+export const RADIOLOGY_STAGE_META: Record<RadiologyStage, { label: string; color: string }> = {
+  RECEPTION: { label: "radiology.stage.RECEPTION", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  IMAGING: { label: "radiology.stage.IMAGING", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  REPORT: { label: "radiology.stage.REPORT", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  DELIVERED: { label: "radiology.stage.DELIVERED", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+};
+
+export const STAGE_ORDER: RadiologyStage[] = ["RECEPTION", "IMAGING", "REPORT", "DELIVERED"];

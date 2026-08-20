@@ -1,0 +1,427 @@
+﻿import React, { useEffect, useState } from "react";
+import { BellRing, Check, Play, Save, Volume2 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuthSimple";
+import api from "../../services/api";
+import { socketService } from "../../services/socketService";
+import {
+  ORDER_SOUND_PATTERNS,
+  type OrderSoundPattern,
+} from "../../services/orderSoundPatterns";
+import {
+  cacheNotificationSettings,
+  type NotificationSettingsData,
+} from "../../utils/notificationSettings";
+
+type FeedbackState = {
+  type: "success" | "error";
+  message: string;
+} | null;
+
+const createLocalSettings = (
+  raw?: Partial<NotificationSettingsData> | null,
+): NotificationSettingsData => ({
+  userId: String(raw?.userId || ""),
+  companyId: String(raw?.companyId || ""),
+  globalEnabled: raw?.globalEnabled ?? true,
+  quietHours: raw?.quietHours || {
+    enabled: false,
+    startTime: "22:00",
+    endTime: "08:00",
+    timezone: "Africa/Cairo",
+  },
+  channels: {
+    push: raw?.channels?.push || {
+      enabled: true,
+      sound: true,
+      vibration: true,
+      badge: true,
+    },
+    email: raw?.channels?.email || {
+      enabled: true,
+      address: "",
+      frequency: "immediate",
+      format: "html",
+    },
+    sms: raw?.channels?.sms || {
+      enabled: false,
+      phoneNumber: "",
+      frequency: "immediate",
+    },
+    inApp: raw?.channels?.inApp || {
+      enabled: true,
+      showBadge: true,
+      autoMarkRead: false,
+    },
+    browser: raw?.channels?.browser || {
+      enabled: false,
+      showPreview: true,
+      requireInteraction: false,
+    },
+    sound: raw?.channels?.sound || {
+      enabled: true,
+      volume: 100,
+      pattern: "cash",
+    },
+    incompleteSound: raw?.channels?.incompleteSound || {
+      enabled: true,
+      volume: 100,
+      pattern: "coins",
+    },
+  },
+  typeSettings: raw?.typeSettings || {},
+});
+
+const OrderSoundSettings: React.FC = () => {
+  const { user } = useAuth();
+  const userId = user?.id ? String(user.id) : "";
+  const [settings, setSettings] = useState<NotificationSettingsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackState>(null);
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    api
+      .get(`/notifications/settings/${userId}`)
+      .then((response) => {
+        if (!cancelled) {
+          setSettings(createLocalSettings(response.data?.data));
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading order sound settings:", error);
+        if (!cancelled) {
+          setFeedback({
+            type: "error",
+            message: "╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪╡┘ê╪¬ ╪º┘ä╪ó┘å.",
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const updateSound = (path: "enabled" | "volume" | "pattern", value: unknown) => {
+    setSettings((previous) => {
+      if (!previous) {
+        return previous;
+      }
+      const next = JSON.parse(JSON.stringify(previous)) as NotificationSettingsData;
+      next.channels.sound = {
+        ...next.channels.sound,
+        [path]: value,
+      };
+      return next;
+    });
+    setFeedback(null);
+  };
+
+  const updateIncompleteSound = (
+    path: "enabled" | "volume" | "pattern",
+    value: unknown,
+  ) => {
+    setSettings((previous) => {
+      if (!previous) {
+        return previous;
+      }
+      const next = JSON.parse(JSON.stringify(previous)) as NotificationSettingsData;
+      next.channels.incompleteSound = {
+        ...next.channels.incompleteSound,
+        [path]: value,
+      };
+      return next;
+    });
+    setFeedback(null);
+  };
+
+  const handleSave = async () => {
+    if (!settings || !userId) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setFeedback(null);
+
+      const response = await api.put(
+        `/notifications/settings/${userId}`,
+        settings,
+      );
+      const savedSettings = createLocalSettings(response.data?.data);
+      setSettings(savedSettings);
+      cacheNotificationSettings(savedSettings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error("Error saving order sound settings:", error);
+      setFeedback({
+        type: "error",
+        message: "┘ü╪┤┘ä ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬. ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          ╪¼╪º╪▒┘è ╪¬╪¡┘à┘è┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪╡┘ê╪¬...
+        </p>
+      </div>
+    );
+  }
+
+  const sound = settings?.channels.sound || {
+    enabled: true,
+    volume: 100,
+    pattern: "cash",
+  };
+
+  const incompleteSound = settings?.channels.incompleteSound || {
+    enabled: true,
+    volume: 100,
+    pattern: "coins",
+  };
+
+  const renderSaveBar = () => (
+    <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4 dark:border-gray-700">
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving}
+        className="inline-flex items-center rounded-lg bg-amber-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {saved ? (
+          <Check className="ml-2 h-4 w-4" />
+        ) : (
+          <Save className="ml-2 h-4 w-4" />
+        )}
+        {saved ? "╪¬┘à ╪º┘ä╪¡┘ü╪╕" : saving ? "╪¼╪º╪▒┘è ╪º┘ä╪¡┘ü╪╕..." : "╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬"}
+      </button>
+
+      {feedback ? (
+        <span
+          className={`text-sm ${
+            feedback.type === "error"
+              ? "text-red-600 dark:text-red-400"
+              : "text-green-600 dark:text-green-400"
+          }`}
+        >
+          {feedback.message}
+        </span>
+      ) : null}
+    </div>
+  );
+
+  const renderSoundBody = (
+    current: { enabled: boolean; volume: number; pattern: string },
+    onUpdate: (path: "enabled" | "volume" | "pattern", value: unknown) => void,
+    accent: "amber" | "teal",
+  ) => {
+    const accentClass = {
+      amber: {
+        icon: "text-amber-600 dark:text-amber-400",
+        range: "accent-amber-600",
+        selected:
+          "border-amber-500 bg-amber-50 text-amber-900 dark:border-amber-400 dark:bg-amber-950/40 dark:text-amber-100",
+        hover:
+          "hover:border-amber-300 hover:bg-amber-50/50 dark:hover:border-amber-800",
+        borderTop: "border-amber-100 dark:border-amber-900/20",
+        button:
+          "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-900/40",
+      },
+      teal: {
+        icon: "text-teal-600 dark:text-teal-400",
+        range: "accent-teal-600",
+        selected:
+          "border-teal-500 bg-teal-50 text-teal-900 dark:border-teal-400 dark:bg-teal-950/40 dark:text-teal-100",
+        hover: "hover:border-teal-300 hover:bg-teal-50/50 dark:hover:border-teal-800",
+        borderTop: "border-teal-100 dark:border-teal-900/20",
+        button:
+          "border-teal-300 bg-teal-50 text-teal-800 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-100 dark:hover:bg-teal-900/40",
+      },
+    }[accent];
+
+    return (
+      <div className={`mt-5 space-y-4 border-t pt-4 ${accentClass.borderTop}`}>
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              ┘à╪│╪¬┘ê┘ë ╪º┘ä╪╡┘ê╪¬
+            </span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">
+              {current.volume}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={current.volume}
+            onChange={(event) =>
+              onUpdate("volume", Number(event.target.value))
+            }
+            className={`w-full ${accentClass.range}`}
+            aria-label="┘à╪│╪¬┘ê┘ë ╪º┘ä╪╡┘ê╪¬"
+          />
+        </div>
+
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <BellRing className={`h-4 w-4 ${accentClass.icon}`} />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              ╪º┘ä┘å╪║┘à╪⌐
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {ORDER_SOUND_PATTERNS.map((pattern) => {
+              const isSelected = current.pattern === pattern.id;
+              return (
+                <button
+                  key={pattern.id}
+                  type="button"
+                  onClick={() =>
+                    onUpdate("pattern", pattern.id as OrderSoundPattern)
+                  }
+                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm transition ${
+                    isSelected
+                      ? accentClass.selected
+                      : `border-gray-200 bg-white text-gray-700 ${accentClass.hover} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300`
+                  }`}
+                >
+                  <span className="flex flex-col items-start">
+                    <span className="font-medium">{pattern.label}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {pattern.description}
+                    </span>
+                  </span>
+                  {isSelected ? (
+                    <Check
+                      className={`h-5 w-5 shrink-0 ${accentClass.icon}`}
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              socketService.testOrderSound(
+                (current.volume ?? 100) / 100,
+                (current.pattern || "cash") as OrderSoundPattern,
+              );
+            }}
+            className={`inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition ${accentClass.button}`}
+          >
+            <Play className="ml-2 h-4 w-4" />
+            ╪¬╪¼╪▒╪¿╪⌐ ╪º┘ä╪╡┘ê╪¬
+          </button>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            ╪º╪╢╪║╪╖ ┘ä┘ä╪º╪│╪¬┘à╪º╪╣ ╪Ñ┘ä┘ë ╪º┘ä┘å╪║┘à╪⌐ ╪º┘ä┘à╪«╪¬╪º╪▒╪⌐ ┘é╪¿┘ä ╪º┘ä╪¡┘ü╪╕.
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-amber-200 bg-white p-6 dark:border-amber-900/40 dark:bg-gray-800">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start">
+            <Volume2 className="ml-3 h-6 w-6 text-amber-600 dark:text-amber-400" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ (╪Ñ┘å╪░╪º╪▒ ╪╣╪º┘ä┘è)
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                ╪╡┘ü┘æ╪º╪▒╪⌐ ╪╣╪º┘ä┘è╪⌐ ╪¬┘Å╪╖┘ä┘é ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ╪¿┘à╪¼╪▒╪» ┘ê╪╡┘ê┘ä ╪ú┘è ╪╖┘ä╪¿ ╪¼╪»┘è╪» ┘à┘å ╪º┘ä┘à╪¬╪¼╪▒
+                ┘ä╪¬┘å╪¿┘è┘ç ╪º┘ä┘à┘ê╪╕┘ü┘è┘å ┘ü┘è ╪º┘ä┘à┘â╪º┘å ΓÇö ┘ê┘ä┘è╪│ ┘à╪¼╪▒╪» ╪Ñ╪┤╪╣╪º╪▒ ╪╡╪º┘à╪¬.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => updateSound("enabled", !sound.enabled)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+              sound.enabled ? "bg-amber-600" : "bg-gray-300 dark:bg-gray-600"
+            }`}
+            aria-pressed={sound.enabled}
+            aria-label="╪¬┘ü╪╣┘è┘ä ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬"
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                sound.enabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0.5 rtl:-translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
+
+        {sound.enabled ? renderSoundBody(sound, updateSound, "amber") : null}
+
+        {renderSaveBar()}
+      </div>
+
+      <div className="rounded-2xl border border-teal-200 bg-white p-6 dark:border-teal-900/40 dark:bg-gray-800">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start">
+            <BellRing className="ml-3 h-6 w-6 text-teal-600 dark:text-teal-400" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                ╪╡┘ê╪¬ ┘ç╪º╪»╪ª ┘è╪┤╪║┘æ┘ä ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘ä┘à╪º ╪╣┘à┘è┘ä ┘è╪¿╪»╪ú ╪╖┘ä╪¿ ┘ü┘è ╪º┘ä┘à╪¬╪¼╪▒ ┘ê┘è╪│┘è╪¿ ╪¿┘è╪º┘å╪º╪¬┘ç
+                ┘à┘å ╪║┘è╪▒ ┘à╪º ┘è┘â┘à┘æ┘ä (╪│┘ä╪⌐ ┘å╪º┘é╪╡╪⌐) ΓÇö ┘ä╪¬┘å╪¿┘è┘ç ┘ü╪▒┘è┘é ╪º┘ä┘à╪¬╪º╪¿╪╣╪⌐ ╪¿╪│╪▒╪╣╪⌐.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => updateIncompleteSound("enabled", !incompleteSound.enabled)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+              incompleteSound.enabled ? "bg-teal-600" : "bg-gray-300 dark:bg-gray-600"
+            }`}
+            aria-pressed={incompleteSound.enabled}
+            aria-label="╪¬┘ü╪╣┘è┘ä ╪╡┘ê╪¬ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪║┘è╪▒ ╪º┘ä┘à┘â╪¬┘à┘ä╪⌐"
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                incompleteSound.enabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0.5 rtl:-translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
+
+        {incompleteSound.enabled
+          ? renderSoundBody(incompleteSound, updateIncompleteSound, "teal")
+          : null}
+
+        {renderSaveBar()}
+      </div>
+    </div>
+  );
+};
+
+export default OrderSoundSettings;

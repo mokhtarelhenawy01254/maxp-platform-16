@@ -1,0 +1,10 @@
+﻿{
+  "network": "Network error",
+  "authentication": "Authentication error",
+  "rate_limit": "Rate limit exceeded",
+  "timeout": "Request timed out",
+  "validation": "Validation error",
+  "fetch_failed": "Failed to fetch data",
+  "timeout_error": "Request timeout",
+  "generic": "Something went wrong"
+}

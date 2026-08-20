@@ -1,0 +1,59 @@
+﻿name: Run Meta Resubmit Fix Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      password:
+        description: 'Swan Admin Password'
+        required: true
+        default: '0165676135'
+        type: string
+
+jobs:
+  run-test:
+    name: Test resubmit-meta fix on production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Upload scripts to server
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          set -euo pipefail
+          scp -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            apps/backend/scripts/test-meta-resubmit-fix.js \
+            "$SERVER_USER@$SERVER_HOST:/tmp/test-meta-resubmit-fix.js"
+          scp -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            apps/backend/scripts/diag-meta-update.js \
+            "$SERVER_USER@$SERVER_HOST:/tmp/diag-meta-update.js"
+          echo "Γ£à Scripts uploaded to /tmp"
+
+      - name: Execute test on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            echo "≡ƒôì Running test-meta-resubmit-fix.js (calls real resubmit-meta endpoint)..."
+            export PASSWORD="${{ github.event.inputs.password }}"
+            node /tmp/test-meta-resubmit-fix.js
+            echo "Γ£à Finished!"

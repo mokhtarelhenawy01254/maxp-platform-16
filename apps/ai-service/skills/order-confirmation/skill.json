@@ -1,0 +1,30 @@
+﻿{
+  "id": "order-confirmation",
+  "displayName": "╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿╪º╪¬",
+  "version": "1.0.0",
+  "description": "╪¬╪ú┘â┘è╪» ╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿: ┘à╪▒╪º╪¼╪╣╪⌐ ╪º┘ä╪╖┘ä╪¿╪î ┘à╪╖╪º╪¿┘é╪⌐ ╪º┘ä╪╣┘å┘ê╪º┘å ┘à╪╣ ╪«╪▒┘è╪╖╪⌐ ╪┤╪▒┘â╪⌐ ╪º┘ä╪┤╪¡┘å╪î ╪¬╪╣╪»┘è┘ä ╪º┘ä╪╣┘å┘ê╪º┘å╪î ╪¬┘à╪▒┘è╪▒ ╪º┘ä╪╖┘ä╪¿ ┘ä╪┤╪▒┘â╪⌐ ╪º┘ä╪┤╪¡┘å.",
+  "triggerPhrases": [
+    "╪¬╪ú┘â┘è╪» ╪º┘ä╪╖┘ä╪¿",
+    "╪¬╪º┘â┘è╪» ╪º┘ä╪º┘ê╪▒╪»╪▒",
+    "╪¬╪ú┘â┘è╪» ╪º┘ä╪ú┘ê╪▒╪»╪▒",
+    "╪¬╪º┘â┘è╪» ╪º┘ä╪╖┘ä╪¿",
+    "╪╣┘å┘ê╪º┘å ╪º┘ä╪╖┘ä╪¿",
+    "╪¬╪╣╪»┘è┘ä ╪º┘ä╪╣┘å┘ê╪º┘å",
+    "┘à╪▒╪º╪¼╪╣╪⌐ ╪º┘ä╪╖┘ä╪¿"
+  ],
+  "allowedTools": [
+    "order_lookup",
+    "order_lookup_by_phone",
+    "order_confirm",
+    "order_update_details",
+    "order_cancel",
+    "shipping_rates",
+    "shipping_company_governorates",
+    "shipping_company_areas",
+    "customer_info",
+    "whatsapp_send",
+    "agent_handoff_to"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 8
+}

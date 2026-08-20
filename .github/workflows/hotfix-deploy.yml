@@ -1,0 +1,57 @@
+﻿name: Fix Frontend index.html
+
+on:
+  workflow_dispatch:
+
+env:
+  SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+
+jobs:
+  fix-index-html:
+    name: Fix index.html to reference new bundles
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Replace old index.html with new one
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          timeout: 5m
+          script: |
+            set -e
+            echo "=== Current index.html hash refs ==="
+            grep -o 'index-[^"]*' /var/www/frontend2/dist/index.html || echo "not found"
+
+            echo "=== Looking for new index.html in recent deploy staging dirs ==="
+            for d in $(ls -d $HOME/deploy_staging_* 2>/dev/null | sort -t_ -k3 -rn); do
+              if [ -f "$d/frontend_extract/index.html" ]; then
+                echo "Found in $d"
+                NEW_HASH=$(grep -o 'index-[^"]*' "$d/frontend_extract/index.html" | head -1)
+                echo "New index hash: $NEW_HASH"
+                echo "Copying..."
+                sudo cp -fv "$d/frontend_extract/index.html" /var/www/frontend2/dist/index.html
+                echo "=== New hash refs ==="
+                grep -o 'index-[^"]*' /var/www/frontend2/dist/index.html
+                break
+              fi
+            done
+
+            echo "=== Verifying index.html is serving new version ==="
+            grep -o 'index-[^"]*' /var/www/frontend2/dist/index.html
+
+            echo "=== Reloading nginx ==="
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "Done!"

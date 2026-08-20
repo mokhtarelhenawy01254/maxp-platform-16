@@ -1,0 +1,99 @@
+﻿import { useParams, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { TabId, TABS } from "./shared";
+import RadiologyDashboardTab from "./RadiologyDashboardTab";
+import RadiologyPatientsTab from "./RadiologyPatientsTab";
+import StudiesTab from "./StudiesTab";
+import RadiologyReportsTab from "./RadiologyReportsTab";
+import ExamTypesTab from "./ExamTypesTab";
+import ExamCategoriesTab from "./ExamCategoriesTab";
+import PriceListsTab from "./PriceListsTab";
+import RadiologyContractsTab from "./RadiologyContractsTab";
+import RadiologyBranchesTab from "./RadiologyBranchesTab";
+import RadiologyInvoicesTab from "./RadiologyInvoicesTab";
+import RadiologyReportsOverviewTab from "./RadiologyReportsOverviewTab";
+import InsuranceInvoicesTab from "./InsuranceInvoicesTab";
+import InsuranceLedgerTab from "./InsuranceLedgerTab";
+import InsuranceCompaniesTab from "./InsuranceCompaniesTab";
+import PriceQuoteTab from "./PriceQuoteTab";
+import RadiologistsTab from "./RadiologistsTab";
+import ScheduleTab from "./ScheduleTab";
+import DailyQueueTab from "./DailyQueueTab";
+import ReferringPhysiciansTab from "./ReferringPhysiciansTab";
+import ReferralSourcesTab from "./ReferralSourcesTab";
+import MarketingRepsTab from "./MarketingRepsTab";
+import ExternalPartnersTab from "./ExternalPartnersTab";
+import StatisticsTab from "./StatisticsTab";
+import CashierShiftsTab from "./CashierShiftsTab";
+import RoomsTab from "./RoomsTab";
+import SettingsTab from "./SettingsTab";
+import StudyDetails from "./StudyDetails";
+import AppointmentDetails from "./AppointmentDetails";
+import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
+
+export default function RadiologyManagementPage() {
+  const { t } = useTranslation();
+  const { "*": path } = useParams();
+  const urlTab = (path || "").split("/")[0] || "";
+  // Legacy route redirect: reception was merged into schedule (appointment-based daily workflow)
+  if (urlTab === "reception") return <Navigate to="/radiology/schedule" replace />;
+
+  const segments = (path || "").split("/");
+  const studyId = urlTab === "study" ? segments[1] : undefined;
+  if (studyId) {
+    return (
+      <div dir="rtl">
+        <StudyDetails studyId={studyId} />
+      </div>
+    );
+  }
+
+  const appointmentId = urlTab === "appointment" ? segments[1] : undefined;
+  if (appointmentId) {
+    return (
+      <div dir="rtl">
+        <AppointmentDetails appointmentId={appointmentId} />
+      </div>
+    );
+  }
+
+  const activeTab = (TABS.some(t => t.id === urlTab) ? urlTab : "dashboard") as TabId;
+
+  return (
+    <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("radiology.title")}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.subtitle")}</p>
+        </div>
+      </div>
+
+      {activeTab === "dashboard" && <TabErrorBoundary tabLabel={t("radiology.tabs.dashboard")}><RadiologyDashboardTab /></TabErrorBoundary>}
+      {activeTab === "patients" && <TabErrorBoundary tabLabel={t("radiology.tabs.patients")}><RadiologyPatientsTab /></TabErrorBoundary>}
+      {activeTab === "studies" && <TabErrorBoundary tabLabel={t("radiology.tabs.studies")}><StudiesTab /></TabErrorBoundary>}
+      {activeTab === "reports" && <TabErrorBoundary tabLabel={t("radiology.tabs.reports")}><RadiologyReportsTab /></TabErrorBoundary>}
+      {activeTab === "exam-types" && <TabErrorBoundary tabLabel={t("radiology.tabs.exam-types")}><ExamTypesTab /></TabErrorBoundary>}
+      {activeTab === "exam-categories" && <TabErrorBoundary tabLabel={t("radiology.tabs.exam-categories")}><ExamCategoriesTab /></TabErrorBoundary>}
+      {activeTab === "price-lists" && <TabErrorBoundary tabLabel={t("radiology.tabs.price-lists")}><PriceListsTab /></TabErrorBoundary>}
+      {activeTab === "contracts" && <TabErrorBoundary tabLabel={t("radiology.tabs.contracts")}><RadiologyContractsTab /></TabErrorBoundary>}
+      {activeTab === "branches" && <TabErrorBoundary tabLabel={t("radiology.tabs.branches")}><RadiologyBranchesTab /></TabErrorBoundary>}
+      {activeTab === "invoices" && <TabErrorBoundary tabLabel={t("radiology.tabs.invoices")}><RadiologyInvoicesTab /></TabErrorBoundary>}
+      {activeTab === "reports-overview" && <TabErrorBoundary tabLabel={t("radiology.tabs.reports-overview")}><RadiologyReportsOverviewTab /></TabErrorBoundary>}
+      {activeTab === "insurance-invoices" && <TabErrorBoundary tabLabel={t("radiology.tabs.insurance-invoices")}><InsuranceInvoicesTab /></TabErrorBoundary>}
+      {activeTab === "insurance-ledger" && <TabErrorBoundary tabLabel={t("radiology.tabs.insurance-ledger")}><InsuranceLedgerTab /></TabErrorBoundary>}
+      {activeTab === "insurance-companies" && <TabErrorBoundary tabLabel={t("radiology.tabs.insurance-companies")}><InsuranceCompaniesTab /></TabErrorBoundary>}
+      {activeTab === "price-quote" && <TabErrorBoundary tabLabel={t("radiology.tabs.price-quote")}><PriceQuoteTab /></TabErrorBoundary>}
+      {activeTab === "radiologists" && <TabErrorBoundary tabLabel={t("radiology.tabs.radiologists")}><RadiologistsTab /></TabErrorBoundary>}
+      {activeTab === "schedule" && <TabErrorBoundary tabLabel={t("radiology.tabs.schedule")}><ScheduleTab /></TabErrorBoundary>}
+      {activeTab === "queue" && <TabErrorBoundary tabLabel={t("radiology.tabs.queue")}><DailyQueueTab /></TabErrorBoundary>}
+      {activeTab === "referring-physicians" && <TabErrorBoundary tabLabel={t("radiology.tabs.referring-physicians")}><ReferringPhysiciansTab /></TabErrorBoundary>}
+      {activeTab === "referral-sources" && <TabErrorBoundary tabLabel={t("radiology.tabs.referral-sources")}><ReferralSourcesTab /></TabErrorBoundary>}
+      {activeTab === "marketing-reps" && <TabErrorBoundary tabLabel={t("radiology.tabs.marketing-reps")}><MarketingRepsTab /></TabErrorBoundary>}
+      {activeTab === "external-partners" && <TabErrorBoundary tabLabel={t("radiology.tabs.external-partners")}><ExternalPartnersTab /></TabErrorBoundary>}
+      {activeTab === "statistics" && <TabErrorBoundary tabLabel={t("radiology.tabs.statistics")}><StatisticsTab /></TabErrorBoundary>}
+      {activeTab === "cashier-shifts" && <TabErrorBoundary tabLabel={t("radiology.tabs.cashier-shifts")}><CashierShiftsTab /></TabErrorBoundary>}
+      {activeTab === "rooms" && <TabErrorBoundary tabLabel={t("radiology.tabs.rooms")}><RoomsTab /></TabErrorBoundary>}
+      {activeTab === "settings" && <TabErrorBoundary tabLabel={t("radiology.tabs.settings")}><SettingsTab /></TabErrorBoundary>}
+    </div>
+  );
+}

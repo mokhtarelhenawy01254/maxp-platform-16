@@ -1,0 +1,17 @@
+﻿{
+  "title": "Instagram Inbox",
+  "conversationCount": "{{count}} conversations",
+  "noMessages": "No Instagram messages",
+  "searchPlaceholder": "Search conversations...",
+  "loading": "Loading...",
+  "loadMore": "Load more",
+  "aiOff": "Disable auto-reply",
+  "aiOn": "Enable auto-reply",
+  "hideProfile": "Hide profile",
+  "showProfile": "Show profile",
+  "loadingMessages": "Loading messages...",
+  "loadOlder": "Load older messages",
+  "selectConversation": "Select a conversation",
+  "selectConversationHint": "Select a conversation from the list to view Instagram messages",
+  "directMessages": "Instagram Direct Messages"
+}

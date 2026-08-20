@@ -1,0 +1,1676 @@
+﻿const crypto = require('crypto');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
+const { parseDicomFromBuffer, generateStudyNumber } = require('../utils/dicomUtil');
+const { findOrCreatePatient } = require('../services/bookingPatientService');
+const { getRadiologyGuards } = require('../utils/radiologyGuards');
+const { deriveRadiologyOrderStatus, recordRadiologyStatusHistory, syncStudyOrderStatus } = require('../utils/radiologyStatusHistory');
+const { MODALITY_BY_CATEGORY, resolveModality } = require('../utils/radiologyModality');
+const { notifyStudyDelivery } = require('../utils/radiologyDeliveryNotify');
+const { resolveMarketingRepForStudy } = require('../utils/radiologyReferral');
+
+const RADIOLOGY_STUDY_CHAIN = ['PENDING_IMAGING', 'IMAGED', 'PENDING_REPORT', 'REPORTED', 'DELIVERED'];
+const RADIOLOGY_REPORT_CHAIN = ['DRAFT', 'REVIEWED', 'SIGNED', 'DELIVERED'];
+const SUBMISSION_STATUSES = ['NOT_SUBMITTED', 'SUBMITTED', 'REPORT_READY'];
+
+const STUDY_STATUSES = new Set(RADIOLOGY_STUDY_CHAIN);
+const REPORT_STATUSES = new Set(RADIOLOGY_REPORT_CHAIN);
+const CRITICAL_CATEGORIES = new Set(['NONE', 'CAT1', 'CAT2', 'CAT3', 'CRITICAL']);
+
+const normalizePrice = (value) => {
+  if (value === undefined || value === null || value === '') return { value: undefined, error: null };
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return { value: null, error: '╪º┘ä╪│╪╣╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡' };
+  return { value: n, error: null };
+};
+
+const normalizeBool = (value, fallback) => {
+  if (value === undefined || value === null || value === '') return fallback;
+  return value === true || value === 'true' || value === 1 || value === '1';
+};
+
+const normalizeText = (value) => {
+  if (value === undefined || value === null) return undefined;
+  const s = String(value).trim();
+  return s === '' ? null : s;
+};
+
+const PAYER_TYPES = ['CUSTOMER', 'INSURANCE', 'REFERRAL', 'PARTNER'];
+const PAYMENT_DESTINATIONS = ['ME', 'PARTNER'];
+
+const normalizePayerType = (value, fallback = 'CUSTOMER') => {
+  const v = String(value || '').toUpperCase();
+  return PAYER_TYPES.includes(v) ? v : fallback;
+};
+
+const normalizePaymentDestination = (value, fallback = 'ME') => {
+  const v = String(value || '').toUpperCase();
+  return PAYMENT_DESTINATIONS.includes(v) ? v : fallback;
+};
+
+const resolveExamCategory = async (prisma, companyId, body) => {
+  const categoryId = normalizeText(body.categoryId);
+  if (categoryId) {
+    const category = await prisma.radiologyExamCategory.findFirst({
+      where: { id: categoryId, companyId, isActive: true },
+    });
+    if (!category) return { error: '╪º┘ä┘ü╪ª╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐ ╪ú┘ê ╪║┘è╪▒ ┘à┘ü╪╣┘ä╪⌐' };
+    return { categoryId: category.id, categoryName: category.name, modality: resolveModality(category) };
+  }
+  const categoryText = normalizeText(body.category);
+  if (!categoryText) return { categoryId: null, categoryName: null, modality: null };
+  const existing = await prisma.radiologyExamCategory.findFirst({ where: { companyId, name: categoryText } });
+  if (existing) return { categoryId: existing.id, categoryName: existing.name, modality: resolveModality(existing) };
+  const created = await prisma.radiologyExamCategory.create({
+    data: { companyId, name: categoryText, modality: resolveModality(categoryText) },
+  });
+  return { categoryId: created.id, categoryName: created.name, modality: created.modality };
+};
+
+const normalizePatientFlags = (value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  let arr = value;
+  if (typeof value === 'string') {
+    try { arr = JSON.parse(value); } catch { return undefined; }
+  }
+  if (!Array.isArray(arr)) return undefined;
+  const flags = arr
+    .map(f => (typeof f === 'string' ? f.trim() : ''))
+    .filter(Boolean);
+  return flags.length ? JSON.stringify([...new Set(flags)]) : null;
+};
+
+const parseDate = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const parseSliceIndex = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : null;
+};
+
+const nextStatus = (chain, from) => {
+  const index = chain.indexOf(from);
+  if (index === -1 || index === chain.length - 1) return null;
+  return chain[index + 1];
+};
+
+const validateTransition = (chain, from, to, message) => {
+  if (!chain.includes(from) || !chain.includes(to)) {
+    return { valid: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' };
+  }
+  if (from === to) return { valid: false, error: `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ╪Ñ┘ä┘ë ┘å┘ü╪│ ╪º┘ä╪¡╪º┘ä╪⌐ "${from}"` };
+  if (nextStatus(chain, from) !== to) return { valid: false, error: message(from, to) };
+  return { valid: true };
+};
+
+const validateRadiologyStudyTransition = (from, to) =>
+  validateTransition(RADIOLOGY_STUDY_CHAIN, from, to, (f, t) =>
+    `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘ü┘è ╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪┤╪╣╪⌐ ┘à┘å "${f}" ╪Ñ┘ä┘ë "${t}"`);
+
+const validateRadiologyReportTransition = (from, to) =>
+  validateTransition(RADIOLOGY_REPORT_CHAIN, from, to, (f, t) =>
+    `┘ä╪º ┘è┘à┘â┘å ╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘ü┘è ╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒ ┘à┘å "${f}" ╪Ñ┘ä┘ë "${t}"`);
+
+const signerName = (req) => {
+  const name = [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ');
+  return name || req.user?.email || null;
+};
+
+const ensureReportForStudy = async (prisma, studyId, signer) => {
+  const existing = await prisma.radiologyReport.findUnique({ where: { studyId } });
+  if (existing) return existing;
+  return prisma.radiologyReport.create({
+    data: {
+      studyId,
+      reportText: '',
+      reportStatus: 'DRAFT',
+      typedBy: signer || null,
+      typedAt: new Date(),
+    },
+  });
+};
+
+const formatImage = (image) => {
+  if (!image) return image;
+  const { data, ...rest } = image;
+  return rest;
+};
+
+// ==================== EXAM TYPES ====================
+
+const listExamTypes = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { search, category, categoryId, page, limit, includeInactive, isAddition } = req.query;
+    const where = { companyId };
+    if (includeInactive !== 'true') where.isActive = true;
+    if (isAddition !== undefined && isAddition !== '') {
+      where.isAddition = isAddition === 'true' || isAddition === '1';
+    }
+    if (category) where.category = String(category);
+    if (categoryId) where.categoryId = String(categoryId);
+    if (search && String(search).trim()) {
+      const term = String(search).trim();
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { category: { contains: term, mode: 'insensitive' } },
+        { abbreviation: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(1000, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const prisma = getSharedPrismaClient();
+    const [examTypes, total] = await Promise.all([
+      prisma.radiologyExamType.findMany({
+        where,
+        include: { examCategory: { select: { id: true, name: true, nameEn: true, modality: true, parentId: true } } },
+        orderBy: { name: 'asc' },
+        skip,
+        take: limitNum,
+      }),
+      prisma.radiologyExamType.count({ where }),
+    ]);
+
+    res.json({ success: true, data: examTypes, total, page: pageNum, limit: limitNum });
+  } catch (error) {
+    console.error('Error fetching radiology exam types:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪ú┘å┘ê╪º╪╣ ╪º┘ä┘ü╪¡┘ê╪╡╪º╪¬' });
+  }
+};
+
+const createExamType = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { name, category, categoryId, abbreviation, price, isAddition } = req.body || {};
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡ ┘à╪╖┘ä┘ê╪¿' });
+
+    const priceCheck = normalizePrice(price);
+    if (priceCheck.error) return res.status(400).json({ success: false, error: priceCheck.error });
+
+    const prisma = getSharedPrismaClient();
+    const resolvedCategory = await resolveExamCategory(prisma, companyId, { categoryId, category });
+    if (resolvedCategory.error) return res.status(400).json({ success: false, error: resolvedCategory.error });
+
+    const examType = await prisma.radiologyExamType.create({
+      data: {
+        companyId,
+        name: String(name).trim(),
+        categoryId: resolvedCategory.categoryId,
+        category: resolvedCategory.categoryName,
+        abbreviation: normalizeText(abbreviation),
+        price: priceCheck.value ?? 0,
+        isAddition: normalizeBool(isAddition, false),
+      },
+    });
+
+    res.json({ success: true, data: examType });
+  } catch (error) {
+    console.error('Error creating radiology exam type:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡' });
+  }
+};
+
+const updateExamType = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyExamType.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+
+    const data = {};
+    if (body.name !== undefined) {
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡ ┘à╪╖┘ä┘ê╪¿' });
+      data.name = String(body.name).trim();
+    }
+    if (body.categoryId !== undefined || body.category !== undefined) {
+      const resolvedCategory = await resolveExamCategory(prisma, companyId, {
+        categoryId: body.categoryId !== undefined ? body.categoryId : undefined,
+        category: body.category !== undefined ? body.category : undefined,
+      });
+      if (resolvedCategory.error) return res.status(400).json({ success: false, error: resolvedCategory.error });
+      data.categoryId = resolvedCategory.categoryId;
+      data.category = resolvedCategory.categoryName;
+    }
+    if (body.abbreviation !== undefined) data.abbreviation = normalizeText(body.abbreviation);
+    if (body.price !== undefined) {
+      const priceCheck = normalizePrice(body.price);
+      if (priceCheck.error) return res.status(400).json({ success: false, error: priceCheck.error });
+      data.price = priceCheck.value;
+    }
+    if (body.isAddition !== undefined) data.isAddition = normalizeBool(body.isAddition, false);
+    if (body.isActive !== undefined) data.isActive = normalizeBool(body.isActive, true);
+
+    const examType = await prisma.radiologyExamType.update({ where: { id }, data });
+    res.json({ success: true, data: examType });
+  } catch (error) {
+    console.error('Error updating radiology exam type:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡' });
+  }
+};
+
+const deleteExamType = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyExamType.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+
+    const examType = await prisma.radiologyExamType.update({ where: { id }, data: { isActive: false } });
+    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡', data: examType });
+  } catch (error) {
+    console.error('Error deleting radiology exam type:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡' });
+  }
+};
+
+// ==================== STUDIES ====================
+
+const listStudies = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { patientName, patientId, nationalId, insuranceNumber, studyNumber, status, reportStatus, criticalCategory, hasReport, appointmentId, dateFrom, dateTo, page, limit } = req.query;
+    const where = { companyId };
+
+    if (appointmentId && String(appointmentId).trim()) {
+      where.appointmentId = String(appointmentId).trim();
+    }
+    if (patientId && String(patientId).trim()) {
+      where.patientId = String(patientId).trim();
+    }
+    if (patientName && String(patientName).trim()) {
+      where.patientName = { contains: String(patientName).trim(), mode: 'insensitive' };
+    }
+    if (nationalId && String(nationalId).trim()) {
+      where.nationalId = { contains: String(nationalId).trim(), mode: 'insensitive' };
+    }
+    if (insuranceNumber && String(insuranceNumber).trim()) {
+      where.insuranceNumber = { contains: String(insuranceNumber).trim(), mode: 'insensitive' };
+    }
+    if (studyNumber && String(studyNumber).trim()) {
+      where.studyNumber = { contains: String(studyNumber).trim(), mode: 'insensitive' };
+    }
+    if (status) {
+      const s = String(status).toUpperCase();
+      if (!STUDY_STATUSES.has(s)) return res.status(400).json({ success: false, error: '╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪┤╪╣╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      where.status = s;
+    }
+    if (hasReport === 'true' || hasReport === '1') {
+      where.report = { isNot: null };
+    }
+    if (reportStatus) {
+      const rs = String(reportStatus).toUpperCase();
+      if (!REPORT_STATUSES.has(rs)) return res.status(400).json({ success: false, error: '╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      where.report = { is: { reportStatus: rs } };
+    }
+    if (criticalCategory) {
+      const cc = String(criticalCategory).toUpperCase();
+      if (!CRITICAL_CATEGORIES.has(cc)) return res.status(400).json({ success: false, error: '┘ü╪ª╪⌐ ╪º┘ä╪╣╪½┘ê╪▒ ╪º┘ä╪¡╪▒╪¼ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      const criticalWhere = cc === 'CRITICAL'
+        ? { criticalCategory: { in: ['CAT1', 'CAT2', 'CAT3'] } }
+        : { criticalCategory: cc === 'NONE' ? null : cc };
+      where.report = { is: { ...(where.report?.is || {}), ...criticalWhere } };
+    }
+    if (dateFrom || dateTo) {
+      const createdAtFilter = {};
+      if (dateFrom) createdAtFilter.gte = getStartOfDayInTimezone(new Date(dateFrom));
+      if (dateTo) createdAtFilter.lte = getEndOfDayInTimezone(new Date(dateTo));
+      where.createdAt = createdAtFilter;
+    }
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const prisma = getSharedPrismaClient();
+    const [studies, total] = await Promise.all([
+      prisma.radiologyStudy.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+        include: { report: true },
+      }),
+      prisma.radiologyStudy.count({ where }),
+    ]);
+
+    // bookingNo resolves via the loose appointmentId scalar (no Prisma relation exists on RadiologyStudy)
+    const apptIds = [...new Set(studies.map((s) => s.appointmentId).filter(Boolean))];
+    let bookingNoById = {};
+    if (apptIds.length) {
+      try {
+        const appts = await prisma.radiologyAppointment.findMany({
+          where: { id: { in: apptIds } },
+          select: { id: true, bookingNo: true },
+        });
+        if (Array.isArray(appts)) {
+          bookingNoById = Object.fromEntries(appts.map((a) => [a.id, a.bookingNo]));
+        }
+      } catch { /* bookingNo is optional */ }
+    }
+
+    const items = studies.map((s) => ({
+      ...s,
+      bookingNo: s.appointmentId ? (bookingNoById[s.appointmentId] ?? null) : null,
+    }));
+    res.json({ success: true, data: { items, total, page: pageNum, limit: limitNum } });
+  } catch (error) {
+    console.error('Error fetching radiology studies:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¡╪º┘ä╪º╪¬ ╪º┘ä╪ú╪┤╪╣╪⌐' });
+  }
+};
+
+const getStudy = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const [images, report] = await Promise.all([
+      prisma.radiologyStudyImage.findMany({ where: { studyId: id }, orderBy: { createdAt: 'asc' } }),
+      prisma.radiologyReport.findUnique({ where: { studyId: id } }),
+    ]);
+
+    const orderStatus = deriveRadiologyOrderStatus({ study });
+    res.json({ success: true, data: { ...study, orderStatus, images: images.map(formatImage), report } });
+  } catch (error) {
+    console.error('Error fetching radiology study:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪┤╪╣╪⌐' });
+  }
+};
+
+const getStudyDetails = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const [
+      appointment,
+      images,
+      report,
+      payments,
+      shiftPayments,
+      statusHistory,
+      invoiceItem,
+    ] = await Promise.all([
+      study.appointmentId
+        ? prisma.radiologyAppointment.findUnique({ where: { id: study.appointmentId } }).catch(() => null)
+        : null,
+      prisma.radiologyStudyImage.findMany({ where: { studyId: id }, orderBy: { createdAt: 'asc' } }),
+      prisma.radiologyReport.findUnique({ where: { studyId: id } }),
+      prisma.radiologyStudyPayment.findMany({ where: { studyId: id }, orderBy: { createdAt: 'desc' } }),
+      prisma.radiologyShiftPayment.findMany({ where: { studyId: id }, orderBy: { createdAt: 'desc' } }),
+      prisma.radiologyStudyStatusHistory.findMany({ where: { studyId: id }, orderBy: { createdAt: 'asc' } }),
+      prisma.radiologyInsuranceInvoiceItem.findFirst({ where: { studyId: id }, select: { invoiceId: true } }).catch(() => null),
+    ]);
+
+    let insuranceInvoice = null;
+    if (invoiceItem?.invoiceId) {
+      insuranceInvoice = await prisma.radiologyInsuranceInvoice.findUnique({ where: { id: invoiceItem.invoiceId } }).catch(() => null);
+    }
+
+    const total = (study.priceSnapshot || 0) + (study.additionAmount || 0);
+    const orderStatus = deriveRadiologyOrderStatus({ appointment, study });
+
+    res.json({
+      success: true,
+      data: {
+        study: { ...study, orderStatus, bookingNo: appointment?.bookingNo ?? null },
+        appointment,
+        images: images.map(formatImage),
+        report,
+        payments,
+        shiftPayments,
+        statusHistory,
+        insuranceInvoice,
+        totals: {
+          total,
+          paidAmount: study.paidAmount || 0,
+          remaining: Math.max(0, total - (study.paidAmount || 0)),
+          paymentStatus: study.paymentStatus || 'UNPAID',
+          billingType: study.billingType || 'PATIENT',
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching radiology study details:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¬┘ü╪º╪╡┘è┘ä ╪º┘ä╪¡╪º┘ä╪⌐' });
+  }
+};
+
+const createStudy = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const body = req.body || {};
+    const patientName = typeof body.patientName === 'string' ? body.patientName.trim() : '';
+    if (!patientName) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢ ┘à╪╖┘ä┘ê╪¿' });
+
+    const prisma = getSharedPrismaClient();
+
+    // Resolve the patient record: use the provided patientId (validated), or find-or-create
+    // a patient from the study fields so every study links to a Patient row.
+    let patientId = body.patientId ? String(body.patientId) : null;
+    if (patientId) {
+      const linked = await prisma.patient.findFirst({
+        where: { id: patientId, companyId },
+        select: { id: true },
+      }).catch(() => null);
+      if (!linked) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐' });
+    } else {
+      const resolved = await findOrCreatePatient({
+        companyId,
+        customerName: patientName,
+        customerPhone: body.patientPhone ? String(body.patientPhone) : undefined,
+        customerGender: body.patientGender || undefined,
+        customerEmail: body.patientEmail || undefined,
+        nationalId: body.nationalId ? String(body.nationalId) : undefined,
+      });
+      patientId = resolved.id;
+    }
+
+    let examType = null;
+    if (body.examTypeId) {
+      examType = await prisma.radiologyExamType.findFirst({
+        where: { id: body.examTypeId, companyId, isActive: true },
+        include: { examCategory: true },
+      });
+      if (!examType) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐' });
+    }
+
+    let physicianName = null;
+    if (body.referringPhysicianId) {
+      const physician = await prisma.radiologyReferringPhysician.findFirst({
+        where: { id: body.referringPhysicianId, companyId, isActive: true },
+      });
+      if (physician) physicianName = physician.name;
+    }
+
+    // ╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐: ╪¬╪¡┘é┘é ╪º╪«╪¬┘è╪º╪▒┘è (company-scoped) ΓÇö ┘ê╪º╪│┘à┘ç╪º snapshot
+    let referralSourceName = body.referralSourceName ? String(body.referralSourceName) : null;
+    if (body.referralSourceId) {
+      const source = await prisma.radiologyReferralSource.findFirst({
+        where: { id: String(body.referralSourceId), companyId },
+        select: { id: true, name: true },
+      }).catch(() => null);
+      if (source) referralSourceName = source.name;
+    }
+
+    // ╪º┘ä╪┤╪▒┘è┘â ╪º┘ä╪«╪º╪▒╪¼┘è: ╪¬╪¡┘é┘é ╪º╪«╪¬┘è╪º╪▒┘è (company-scoped)
+    let externalPartnerName = body.externalPartnerName ? String(body.externalPartnerName) : null;
+    if (body.externalPartnerId) {
+      const partner = await prisma.radiologyExternalPartner.findFirst({
+        where: { id: String(body.externalPartnerId), companyId, isActive: true },
+        select: { id: true, name: true },
+      }).catch(() => null);
+      if (partner) externalPartnerName = partner.name;
+    }
+
+    // ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¬╪│┘ê┘è┘é: ╪º┘é╪¬╪▒╪º╪¡ ╪¬┘ä┘é╪º╪ª┘è ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪¬╪¼╪º┘ê╪▓ (┘à┘å╪»┘ê╪¿ ╪º┘ä╪╖╪¿┘è╪¿ ΓåÉ ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¼┘ç╪⌐)
+    const resolvedRep = await resolveMarketingRepForStudy(prisma, {
+      companyId,
+      referringPhysicianId: body.referringPhysicianId || null,
+      referralSourceId: body.referralSourceId || null,
+      marketingRepId: body.marketingRepId || null,
+    });
+
+    let insuranceCompanyName = null;
+    if (body.insuranceCompanyId) {
+      const entity = await prisma.insuranceCompany.findFirst({
+        where: { id: body.insuranceCompanyId, companyId },
+        select: { id: true, name: true },
+      });
+      if (!entity) return res.status(400).json({ success: false, error: '╪┤╪▒┘â╪⌐ ╪º┘ä╪¬╪ú┘à┘è┘å ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+      insuranceCompanyName = entity.name;
+    }
+
+    let deviceName = null;
+    if (body.deviceId) {
+      const device = await prisma.radiologyDevice.findFirst({
+        where: { id: String(body.deviceId), companyId, isActive: true },
+        select: { id: true, name: true },
+      });
+      if (device) deviceName = device.name;
+    }
+
+    let additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;
+    let additionIds = null;
+    if (Array.isArray(body.additionIds) && body.additionIds.length) {
+      const additions = await prisma.radiologyExamType.findMany({
+        where: { id: { in: body.additionIds }, companyId, isActive: true, isAddition: true },
+      });
+      if (additions.length) {
+        additionIds = additions.map(a => a.id);
+        additionAmount = additions.reduce((s, a) => s + a.price, 0);
+      }
+    }
+
+    // Resolve price: entity price > exam price
+    let priceSnapshot = examType ? examType.price : 0;
+    if (body.insuranceCompanyId && examType && insuranceCompanyName) {
+      const entityPrice = await prisma.radiologyEntityPrice.findFirst({
+        where: { insuranceCompanyId: body.insuranceCompanyId, examTypeId: examType.id, isActive: true },
+        select: { price: true },
+      }).catch(() => null);
+      if (entityPrice && Number.isFinite(entityPrice.price)) priceSnapshot = entityPrice.price;
+    }
+
+    // Guard: never allow creating an unpriced (free) study by accident
+    if (examType) {
+      const resolvedTotal = (Number.isFinite(priceSnapshot) ? priceSnapshot : 0) + additionAmount;
+      if (resolvedTotal <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: `┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡ "${examType.name}" ╪║┘è╪▒ ┘à╪│╪╣┘æ╪▒ ΓÇö ╪¡╪»╪» ╪│╪╣╪▒╪º┘ï ┘ä┘ä┘ü╪¡╪╡ ╪ú┘ê┘ä╪º┘ï ╪ú┘ê ╪º╪«╪¬╪▒ ┘ü╪¡╪╡╪º┘ï ╪ó╪«╪▒`,
+        });
+      }
+    }
+
+    const clientProvidedNumber =
+      typeof body.studyNumber === 'string' && body.studyNumber.trim() ? body.studyNumber.trim() : null;
+    let studyNumber = clientProvidedNumber || generateStudyNumber();
+
+    let study;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        study = await prisma.radiologyStudy.create({
+          data: {
+            companyId,
+            studyNumber,
+            patientId,
+            patientName,
+            patientPhone: body.patientPhone ? String(body.patientPhone) : null,
+            patientGender: body.patientGender || null,
+            patientAge: body.patientAge ? String(body.patientAge) : null,
+            nationalId: body.nationalId ? String(body.nationalId) : null,
+            insuranceNumber: body.insuranceNumber ? String(body.insuranceNumber) : null,
+            patientFlags: normalizePatientFlags(body.patientFlags),
+            examTypeId: examType ? examType.id : null,
+            examTypeName: examType ? examType.name : null,
+            modality: examType ? resolveModality(examType.examCategory || examType.category) : null,
+            priceSnapshot: examType ? examType.price : 0,
+            billingType: body.insuranceCompanyId ? 'INSURANCE' : 'PATIENT',
+            status: 'PENDING_IMAGING',
+            orderStatus: 'IN_PROGRESS',
+            emergency: body.emergency === true || body.emergency === 'true',
+            withContrast: body.withContrast === true || body.withContrast === 'true',
+            referralDoctor: physicianName || (body.referralDoctor ? String(body.referralDoctor) : null),
+            referringPhysicianId: body.referringPhysicianId || null,
+            referralSourceId: body.referralSourceId || null,
+            referralSourceName: referralSourceName || (body.referralSourceName ? String(body.referralSourceName) : null),
+            marketingRepId: resolvedRep.marketingRepId,
+            marketingRepName: resolvedRep.marketingRepName,
+            isExternalReferral: body.isExternalReferral === true || body.isExternalReferral === 'true',
+            externalPartnerId: body.externalPartnerId || null,
+            externalPartnerName,
+            payerType: normalizePayerType(body.payerType, body.insuranceCompanyId ? 'INSURANCE' : 'CUSTOMER'),
+            paymentDestination: normalizePaymentDestination(body.paymentDestination),
+            insuranceCompanyId: body.insuranceCompanyId || null,
+            insuranceCompanyName,
+            additionIds: additionIds ? JSON.stringify(additionIds) : null,
+            additionAmount,
+            priceSnapshot,
+            accessionNumber: body.accessionNumber ? String(body.accessionNumber) : null,
+            deviceId: body.deviceId || null,
+            deviceName,
+            submissionStatus: 'NOT_SUBMITTED',
+            createdBy: req.user?.id || req.user?.email || null,
+          },
+        });
+        break;
+      } catch (error) {
+        if (error?.code === 'P2002' && !clientProvidedNumber && attempt < 3) {
+          studyNumber = generateStudyNumber();
+          continue;
+        }
+        if (error?.code === 'P2002' && clientProvidedNumber) {
+          return res.status(409).json({ success: false, error: '╪▒┘é┘à ╪º┘ä╪¡╪º┘ä╪⌐ ┘à╪│╪¬╪«╪»┘à ┘à┘å ┘é╪¿┘ä' });
+        }
+        throw error;
+      }
+    }
+
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: study.id,
+      dimension: 'PREP',
+      status: 'PENDING_IMAGING',
+      oldStatus: null,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+
+    res.json({ success: true, data: study });
+  } catch (error) {
+    console.error('Error creating radiology study:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪┤╪╣╪⌐' });
+  }
+};
+
+const duplicateStudy = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    let study;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        study = await prisma.radiologyStudy.create({
+          data: {
+            companyId,
+            studyNumber: generateStudyNumber(),
+            patientId: existing.patientId,
+            patientName: existing.patientName,
+            patientPhone: existing.patientPhone,
+            patientGender: existing.patientGender,
+            patientAge: existing.patientAge,
+            nationalId: existing.nationalId,
+            insuranceNumber: existing.insuranceNumber,
+            patientFlags: existing.patientFlags,
+            examTypeId: existing.examTypeId,
+            examTypeName: existing.examTypeName,
+            modality: existing.modality,
+            priceSnapshot: existing.priceSnapshot,
+            billingType: existing.billingType || 'PATIENT',
+            status: 'PENDING_IMAGING',
+            orderStatus: 'IN_PROGRESS',
+            emergency: existing.emergency,
+            withContrast: existing.withContrast,
+            referralDoctor: existing.referralDoctor,
+            referringPhysicianId: existing.referringPhysicianId,
+            referralSourceId: existing.referralSourceId,
+            referralSourceName: existing.referralSourceName,
+            marketingRepId: existing.marketingRepId,
+            marketingRepName: existing.marketingRepName,
+            isExternalReferral: existing.isExternalReferral,
+            externalPartnerId: existing.externalPartnerId,
+            externalPartnerName: existing.externalPartnerName,
+            insuranceCompanyId: existing.insuranceCompanyId,
+            insuranceCompanyName: existing.insuranceCompanyName,
+            additionIds: existing.additionIds,
+            additionAmount: existing.additionAmount,
+            deviceId: existing.deviceId,
+            deviceName: existing.deviceName,
+            notes: existing.notes ? `╪¬┘â╪▒╪º╪▒ ╪¡╪º┘ä╪⌐ ${existing.studyNumber || ''}: ${existing.notes}` : null,
+            submissionStatus: 'NOT_SUBMITTED',
+            createdBy: req.user?.id || req.user?.email || null,
+          },
+        });
+        break;
+      } catch (error) {
+        if (error?.code === 'P2002' && attempt < 3) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: study.id,
+      dimension: 'PREP',
+      status: 'PENDING_IMAGING',
+      oldStatus: null,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+
+    res.json({ success: true, data: study });
+  } catch (error) {
+    console.error('Error duplicating radiology study:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬┘â╪▒╪º╪▒ ╪º┘ä╪¡╪º┘ä╪⌐' });
+  }
+};
+
+const updateStudy = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const data = {};
+
+    let oldStatus = null;
+    let newStatus = null;
+
+    if (body.patientName !== undefined) {
+      const name = typeof body.patientName === 'string' ? body.patientName.trim() : '';
+      if (!name) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘à╪▒┘è╪╢ ┘à╪╖┘ä┘ê╪¿' });
+      data.patientName = name;
+    }
+    if (body.patientPhone !== undefined) data.patientPhone = body.patientPhone ? String(body.patientPhone) : null;
+    if (body.patientGender !== undefined) data.patientGender = body.patientGender ? String(body.patientGender) : null;
+    if (body.patientAge !== undefined) data.patientAge = body.patientAge ? String(body.patientAge) : null;
+    if (body.nationalId !== undefined) data.nationalId = body.nationalId ? String(body.nationalId) : null;
+    if (body.insuranceNumber !== undefined) data.insuranceNumber = body.insuranceNumber ? String(body.insuranceNumber) : null;
+    if (body.patientFlags !== undefined) {
+      const flags = normalizePatientFlags(body.patientFlags);
+      if (flags !== undefined) data.patientFlags = flags;
+    }
+    if (body.patientId !== undefined) {
+      if (body.patientId) {
+        const linked = await prisma.patient.findFirst({
+          where: { id: String(body.patientId), companyId },
+          select: { id: true },
+        }).catch(() => null);
+        if (!linked) return res.status(400).json({ success: false, error: '╪º┘ä┘à╪▒┘è╪╢ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐' });
+        data.patientId = String(body.patientId);
+      } else {
+        // Preserve the existing link instead of silently nulling it out
+        data.patientId = existing.patientId || null;
+      }
+    } else if (!existing.patientId) {
+      // Backfill link for studies that predate the patient linkage rule
+      const resolved = await findOrCreatePatient({
+        companyId,
+        customerName: existing.patientName,
+        customerPhone: existing.patientPhone || (body.patientPhone ? String(body.patientPhone) : undefined),
+        customerGender: body.patientGender || existing.patientGender,
+        customerEmail: undefined,
+        nationalId: existing.nationalId || (body.nationalId ? String(body.nationalId) : undefined),
+      });
+      data.patientId = resolved.id;
+    }
+    if (body.emergency !== undefined) data.emergency = normalizeBool(body.emergency, existing.emergency);
+    if (body.withContrast !== undefined) data.withContrast = normalizeBool(body.withContrast, existing.withContrast);
+    if (body.referralDoctor !== undefined) data.referralDoctor = body.referralDoctor ? String(body.referralDoctor) : null;
+    if (body.referringPhysicianId !== undefined) {
+      const pid = body.referringPhysicianId || null;
+      if (pid) {
+        const physician = await prisma.radiologyReferringPhysician.findFirst({ where: { id: pid, companyId } });
+        if (!physician) return res.status(400).json({ success: false, error: '╪º┘ä╪╖╪¿┘è╪¿ ╪º┘ä┘à╪¡┘ê┘æ┘ä ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+        data.referringPhysicianId = physician.id;
+        if (!body.referralDoctor) data.referralDoctor = physician.name;
+      } else {
+        data.referringPhysicianId = null;
+      }
+    }
+    if (body.referralSourceId !== undefined) {
+      data.referralSourceId = body.referralSourceId || null;
+      if (body.referralSourceId) {
+        const source = await prisma.radiologyReferralSource.findFirst({
+          where: { id: String(body.referralSourceId), companyId },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        if (!source) return res.status(400).json({ success: false, error: '╪¼┘ç╪⌐ ╪º┘ä╪Ñ╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+        data.referralSourceName = source.name;
+      } else {
+        data.referralSourceName = null;
+      }
+    }
+    if (body.referralSourceName !== undefined && data.referralSourceName === undefined) {
+      data.referralSourceName = body.referralSourceName ? String(body.referralSourceName) : null;
+    }
+    if (body.externalPartnerId !== undefined) {
+      data.externalPartnerId = body.externalPartnerId || null;
+      if (body.externalPartnerId) {
+        const partner = await prisma.radiologyExternalPartner.findFirst({
+          where: { id: String(body.externalPartnerId), companyId, isActive: true },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        if (!partner) return res.status(400).json({ success: false, error: '╪º┘ä╪┤╪▒┘è┘â ╪º┘ä╪«╪º╪▒╪¼┘è ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+        data.externalPartnerName = partner.name;
+      } else {
+        data.externalPartnerName = null;
+      }
+    }
+    if (body.externalPartnerName !== undefined && data.externalPartnerName === undefined) {
+      data.externalPartnerName = body.externalPartnerName ? String(body.externalPartnerName) : null;
+    }
+    if (body.isExternalReferral !== undefined) data.isExternalReferral = normalizeBool(body.isExternalReferral, existing.isExternalReferral);
+    if (body.payerType !== undefined) data.payerType = normalizePayerType(body.payerType);
+    if (body.paymentDestination !== undefined) data.paymentDestination = normalizePaymentDestination(body.paymentDestination);
+    if (body.payerType !== undefined && !['INSURANCE'].includes(data.payerType)) data.insuranceCompanyId = null;
+    if (body.payerType !== undefined && !['REFERRAL'].includes(data.payerType)) {
+      data.referralSourceId = null;
+      data.referralSourceName = null;
+    }
+    if (body.payerType !== undefined && !['PARTNER'].includes(data.payerType)) {
+      data.isExternalReferral = false;
+      data.externalPartnerId = null;
+      data.externalPartnerName = null;
+    }
+    if (body.marketingRepId !== undefined) {
+      // ╪º┘é╪¬╪▒╪º╪¡ ╪¬┘ä┘é╪º╪ª┘è ╪Ñ╪░╪º ╪ú┘Å╪▒╪│┘ä "auto"╪î ╪ú┘ê null ┘ä┘à╪│╪¡╪î ╪ú┘ê id ╪╡╪▒┘è╪¡
+      if (body.marketingRepId === 'auto') {
+        const resolved = await resolveMarketingRepForStudy(prisma, {
+          companyId,
+          referringPhysicianId: data.referringPhysicianId ?? existing.referringPhysicianId,
+          referralSourceId: data.referralSourceId ?? existing.referralSourceId,
+          marketingRepId: null,
+        });
+        data.marketingRepId = resolved.marketingRepId;
+        data.marketingRepName = resolved.marketingRepName;
+      } else if (body.marketingRepId) {
+        const rep = await prisma.radiologyMarketingRep.findFirst({
+          where: { id: String(body.marketingRepId), companyId, isActive: true },
+          select: { id: true, name: true },
+        }).catch(() => null);
+        if (rep) {
+          data.marketingRepId = rep.id;
+          data.marketingRepName = rep.name;
+        }
+      } else {
+        data.marketingRepId = null;
+        data.marketingRepName = null;
+      }
+    } else if (body.referringPhysicianId !== undefined || body.referralSourceId !== undefined) {
+      // ╪║┘è┘æ╪▒ ╪º┘ä╪╖╪¿┘è╪¿/╪º┘ä╪¼┘ç╪⌐ ╪¿╪»┘ê┘å ┘à┘å╪»┘ê╪¿ ╪╡╪▒┘è╪¡ ΓåÆ ╪Ñ╪╣╪º╪»╪⌐ ╪º┘é╪¬╪▒╪º╪¡ ╪¬┘ä┘é╪º╪ª┘è
+      const resolved = await resolveMarketingRepForStudy(prisma, {
+        companyId,
+        referringPhysicianId: data.referringPhysicianId ?? existing.referringPhysicianId,
+        referralSourceId: data.referralSourceId ?? existing.referralSourceId,
+        marketingRepId: null,
+      });
+      data.marketingRepId = resolved.marketingRepId;
+      data.marketingRepName = resolved.marketingRepName;
+    }
+    if (body.additionAmount !== undefined) {
+      data.additionAmount = Number.isFinite(Number(body.additionAmount)) ? Math.max(0, Number(body.additionAmount)) : 0;
+    }
+    if (body.additionIds !== undefined) {
+      if (Array.isArray(body.additionIds) && body.additionIds.length) {
+        const additions = await prisma.radiologyExamType.findMany({
+          where: { id: { in: body.additionIds }, companyId, isActive: true, isAddition: true },
+        });
+        data.additionIds = JSON.stringify(additions.map(a => a.id));
+        data.additionAmount = additions.reduce((s, a) => s + a.price, 0);
+      } else {
+        data.additionIds = null;
+      }
+    }
+    if (body.notes !== undefined) data.notes = body.notes ? String(body.notes) : null;
+    if (body.accessionNumber !== undefined) data.accessionNumber = body.accessionNumber ? String(body.accessionNumber) : null;
+    if (body.deviceId !== undefined) {
+      data.deviceId = body.deviceId ? String(body.deviceId) : null;
+      if (body.deviceId) {
+        const device = await prisma.radiologyDevice.findFirst({
+          where: { id: String(body.deviceId), companyId, isActive: true },
+          select: { id: true, name: true },
+        });
+        data.deviceName = device ? device.name : null;
+      } else {
+        data.deviceName = null;
+      }
+    }
+
+    if (body.examTypeId !== undefined) {
+      const examTypeId = body.examTypeId || null;
+      if (examTypeId) {
+        const examType = await prisma.radiologyExamType.findFirst({
+          where: { id: examTypeId, companyId },
+          include: { examCategory: true },
+        });
+        if (!examType) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä┘ü╪¡╪╡ ┘ä╪º ┘è┘å╪¬┘à┘è ┘ä┘ç╪░┘ç ╪º┘ä╪┤╪▒┘â╪⌐' });
+        data.examTypeId = examType.id;
+        data.examTypeName = examType.name;
+        data.modality = resolveModality(examType.examCategory || examType.category);
+        // Re-resolve the price snapshot for the new exam (entity price if the study is insured)
+        let newPrice = examType.price;
+        if (existing.insuranceCompanyId) {
+          const entityPrice = await prisma.radiologyEntityPrice.findFirst({
+            where: { insuranceCompanyId: existing.insuranceCompanyId, examTypeId: examType.id, isActive: true },
+            select: { price: true },
+          }).catch(() => null);
+          if (entityPrice && Number.isFinite(entityPrice.price)) newPrice = entityPrice.price;
+        }
+        data.priceSnapshot = newPrice;
+      } else {
+        data.examTypeId = null;
+        data.examTypeName = null;
+        data.modality = null;
+        data.priceSnapshot = 0;
+      }
+    }
+
+    if (body.status !== undefined) {
+      const status = String(body.status).toUpperCase();
+      if (!STUDY_STATUSES.has(status)) return res.status(400).json({ success: false, error: '╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪┤╪╣╪⌐ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      if (status !== existing.status) {
+        const transition = validateRadiologyStudyTransition(existing.status, status);
+        if (!transition.valid) return res.status(400).json({ success: false, error: transition.error });
+      }
+      data.status = status;
+      oldStatus = existing.status;
+      newStatus = status;
+    }
+
+    if (body.submissionStatus !== undefined) {
+      const submissionStatus = String(body.submissionStatus).toUpperCase();
+      if (!SUBMISSION_STATUSES.includes(submissionStatus)) {
+        return res.status(400).json({ success: false, error: '╪¡╪º┘ä╪⌐ ╪º┘ä╪Ñ╪▒╪│╪º┘ä ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+      }
+      data.submissionStatus = submissionStatus;
+    }
+    if (body.rologyStudyLink !== undefined) data.rologyStudyLink = body.rologyStudyLink ? String(body.rologyStudyLink) : null;
+    if (body.rologyReportLink !== undefined) data.rologyReportLink = body.rologyReportLink ? String(body.rologyReportLink) : null;
+    if (body.rologyRadiologist !== undefined) data.rologyRadiologist = body.rologyRadiologist ? String(body.rologyRadiologist) : null;
+    if (body.reportReceivedAt !== undefined) data.reportReceivedAt = parseDate(body.reportReceivedAt);
+
+    const study = await prisma.radiologyStudy.update({ where: { id }, data });
+    if (data.status === 'PENDING_REPORT' || data.status === 'REPORTED') {
+      await ensureReportForStudy(prisma, id, signerName(req)).catch(() => null);
+    }
+    if (data.status !== undefined && data.status !== existing.status) {
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: id,
+        dimension: 'PREP',
+        oldStatus: existing.status,
+        status: data.status,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+      await syncStudyOrderStatus(prisma, { ...study, status: data.status ?? study.status, orderStatus: study.orderStatus }, {
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+    }
+    res.json({ success: true, data: study });
+  } catch (error) {
+    console.error('Error updating radiology study:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪┤╪╣╪⌐' });
+  }
+};
+
+// ==================== IMAGES ====================
+
+const uploadStudyImages = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const files = req.files;
+    if (!Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({ success: false, error: '┘è╪¼╪¿ ╪▒┘ü╪╣ ┘à┘ä┘ü DICOM ┘ê╪º╪¡╪» ╪╣┘ä┘ë ╪º┘ä╪ú┘é┘ä' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const sliceIndexBase = parseSliceIndex(req.body?.sliceIndex);
+    const seriesDescription =
+      typeof req.body?.seriesDescription === 'string' && req.body.seriesDescription.trim()
+        ? req.body.seriesDescription.trim()
+        : null;
+
+    const created = [];
+    let merged = {};
+
+    for (const file of files) {
+      const buffer = file.buffer || Buffer.alloc(0);
+      const meta = parseDicomFromBuffer(buffer);
+      if (Object.keys(meta).length && !Object.keys(merged).length) merged = meta;
+
+      const storedName = `${crypto.randomUUID()}.dcm`;
+      const row = await prisma.radiologyStudyImage.create({
+        data: {
+          studyId: id,
+          fileName: file.originalname || 'image.dcm',
+          storedName,
+          fileSize: Number.isFinite(file.size) ? file.size : buffer.length,
+          mimeType: file.mimetype || 'application/dicom',
+          seriesDescription: meta.seriesDescription || seriesDescription,
+          sliceIndex: meta.sliceIndex !== undefined ? meta.sliceIndex : (files.length === 1 ? sliceIndexBase : null),
+          metadataJson: Object.keys(meta).length ? JSON.stringify(meta) : null,
+          data: buffer,
+        },
+      });
+      created.push(row);
+    }
+
+    const studyUpdate = {};
+    if (merged.patientName && !study.patientName) studyUpdate.patientName = merged.patientName;
+    if (merged.patientGender && !study.patientGender) studyUpdate.patientGender = merged.patientGender;
+    if (merged.patientAge && !study.patientAge) studyUpdate.patientAge = merged.patientAge;
+    if (merged.modality && !study.modality) studyUpdate.modality = merged.modality;
+    if (study.status === 'PENDING_IMAGING') studyUpdate.status = 'IMAGED';
+
+    let updatedStudy = study;
+    if (Object.keys(studyUpdate).length) {
+      updatedStudy = await prisma.radiologyStudy.update({ where: { id }, data: studyUpdate });
+    }
+
+    if (study.status === 'PENDING_IMAGING') {
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: id,
+        dimension: 'PREP',
+        oldStatus: study.status,
+        status: updatedStudy.status,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+      await syncStudyOrderStatus(prisma, { ...updatedStudy, status: updatedStudy.status }, {
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+    }
+
+    res.json({ success: true, data: { images: created.map(formatImage), study: updatedStudy } });
+  } catch (error) {
+    console.error('Error uploading radiology study images:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪▒┘ü╪╣ ╪╡┘ê╪▒ ╪º┘ä╪¡╪º┘ä╪⌐' });
+  }
+};
+
+const getStudyImageFile = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id, imageId } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const image = await prisma.radiologyStudyImage.findFirst({ where: { id: imageId, studyId: id } });
+    if (!image || !image.data) return res.status(404).json({ success: false, error: '╪º┘ä╪╡┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const raw = image.data;
+    const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw.buffer ?? raw, raw.byteOffset ?? 0, raw.byteLength ?? raw.length);
+
+    res.setHeader('Content-Type', 'application/dicom');
+    res.setHeader('Content-Length', buf.length);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${(image.fileName || image.storedName || 'image.dcm').replace(/"/g, '')}"`
+    );
+    res.send(buf);
+  } catch (error) {
+    console.error('Error fetching radiology study image file:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪╡┘ê╪▒╪⌐ ╪º┘ä╪¡╪º┘ä╪⌐' });
+  }
+};
+
+const deleteStudyImage = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id, imageId } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const image = await prisma.radiologyStudyImage.findFirst({ where: { id: imageId, studyId: id } });
+    if (!image) return res.status(404).json({ success: false, error: '╪º┘ä╪╡┘ê╪▒╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    await prisma.radiologyStudyImage.delete({ where: { id: imageId } });
+    res.json({ success: true, data: { id: imageId } });
+  } catch (error) {
+    console.error('Error deleting radiology study image:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪╡┘ê╪▒╪⌐ ╪º┘ä╪¡╪º┘ä╪⌐' });
+  }
+};
+
+// ==================== REPORT ====================
+
+const getStudyReport = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
+    res.json({ success: true, data: report || null });
+  } catch (error) {
+    console.error('Error fetching radiology study report:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪¬┘é╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐' });
+  }
+};
+
+const upsertStudyReport = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const requestedStatus = body.reportStatus === undefined || body.reportStatus === null || body.reportStatus === ''
+      ? null
+      : String(body.reportStatus).toUpperCase();
+    if (requestedStatus && !REPORT_STATUSES.has(requestedStatus)) {
+      return res.status(400).json({ success: false, error: '╪¡╪º┘ä╪⌐ ╪º┘ä╪¬┘é╪▒┘è╪▒ ╪║┘è╪▒ ╪╡╪¡┘è╪¡╪⌐' });
+    }
+
+    const existing = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
+
+    if (existing) {
+      const data = {};
+      if (body.reportText !== undefined && body.reportText !== null) {
+        data.reportText = String(body.reportText);
+      }
+      if (requestedStatus && requestedStatus !== existing.reportStatus) {
+        const transition = validateRadiologyReportTransition(existing.reportStatus, requestedStatus);
+        if (!transition.valid) return res.status(400).json({ success: false, error: transition.error });
+        data.reportStatus = requestedStatus;
+        if (requestedStatus === 'SIGNED' && !existing.signedBy) {
+          data.signedBy = signerName(req);
+          data.signedAt = new Date();
+        }
+      }
+      const report = await prisma.radiologyReport.update({ where: { id: existing.id }, data });
+      if (requestedStatus && requestedStatus !== existing.reportStatus) {
+        await recordRadiologyStatusHistory(prisma, {
+          companyId,
+          studyId: id,
+          dimension: 'REPORT',
+          oldStatus: existing.reportStatus,
+          status: requestedStatus,
+          changedBy: req.user?.id || req.user?.email || null,
+          userName: signerName(req),
+        });
+      }
+      return res.json({ success: true, data: report });
+    }
+
+    const reportText = typeof body.reportText === 'string' ? body.reportText.trim() : '';
+    if (!reportText) return res.status(400).json({ success: false, error: '┘å╪╡ ╪º┘ä╪¬┘é╪▒┘è╪▒ ┘à╪╖┘ä┘ê╪¿' });
+
+    const reportStatus = requestedStatus || 'DRAFT';
+    const createData = {
+      studyId: id,
+      reportText,
+      reportStatus,
+      typedBy: signerName(req),
+      typedAt: new Date(),
+    };
+    if (reportStatus === 'SIGNED') {
+      createData.signedBy = signerName(req);
+      createData.signedAt = new Date();
+    }
+
+    const report = await prisma.radiologyReport.create({ data: createData });
+
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: id,
+      dimension: 'REPORT',
+      oldStatus: null,
+      status: reportStatus,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+
+    if (study.status !== 'REPORTED' && study.status !== 'DELIVERED') {
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: id,
+        dimension: 'PREP',
+        oldStatus: study.status,
+        status: 'REPORTED',
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+      const reportedStudy = await prisma.radiologyStudy.update({ where: { id }, data: { status: 'REPORTED' } });
+      await syncStudyOrderStatus(prisma, { ...reportedStudy, status: reportedStudy.status }, {
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+    }
+
+    res.json({ success: true, data: report });
+  } catch (error) {
+    console.error('Error upserting radiology study report:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡┘ü╪╕ ╪¬┘é╪▒┘è╪▒ ╪º┘ä╪¡╪º┘ä╪⌐' });
+  }
+};
+
+const REPORT_KIND_STATUS = {
+  review: 'REVIEWED',
+  sign: 'SIGNED',
+};
+
+const advanceReportStatus = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id, kind } = req.params;
+    const target = REPORT_KIND_STATUS[String(kind || '').toLowerCase()];
+    if (!target) return res.status(400).json({ success: false, error: '╪Ñ╪¼╪▒╪º╪í ╪║┘è╪▒ ╪╡╪¡┘è╪¡' });
+
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
+    if (!report) return res.status(400).json({ success: false, error: '╪º┘ä╪¬┘é╪▒┘è╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+
+    if (report.reportStatus !== target) {
+      const transition = validateRadiologyReportTransition(report.reportStatus, target);
+      if (!transition.valid) return res.status(400).json({ success: false, error: transition.error });
+    }
+
+    const data = { reportStatus: target };
+    if (target === 'SIGNED' && !report.signedBy) {
+      data.signedBy = signerName(req);
+      data.signedAt = new Date();
+    }
+    if (target === 'REVIEWED' && !report.reviewedBy) {
+      data.reviewedBy = signerName(req);
+      data.reviewedAt = new Date();
+    }
+
+    const updated = await prisma.radiologyReport.update({ where: { id: report.id }, data });
+    if (report.reportStatus !== target) {
+      await recordRadiologyStatusHistory(prisma, {
+        companyId,
+        studyId: id,
+        dimension: 'REPORT',
+        oldStatus: report.reportStatus,
+        status: target,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: signerName(req),
+      });
+    }
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error advancing radiology report status:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¬┘é╪▒┘è╪▒' });
+  }
+};
+
+const advanceReport = async (req, res) => {
+  const kind = String(req.params.kind || '').toLowerCase();
+  if (kind === 'deliver') return markDelivered(req, res);
+  return advanceReportStatus(req, res);
+};
+
+const markDelivered = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
+    if (!report) return res.status(400).json({ success: false, error: '╪º┘ä╪¬┘é╪▒┘è╪▒ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+
+    if (report.reportStatus === 'DELIVERED' && study.status === 'DELIVERED') {
+      return res.json({ success: true, data: { study, report } });
+    }
+    if (report.reportStatus !== 'SIGNED') {
+      return res.status(400).json({ success: false, error: '┘è╪¼╪¿ ╪¬┘ê┘é┘è╪╣ ╪º┘ä╪¬┘é╪▒┘è╪▒ ┘é╪¿┘ä ╪º┘ä╪¬╪│┘ä┘è┘à' });
+    }
+
+    // Chain integrity: a study must have images (or an external Rology report) before delivery
+    const [imageCount] = await Promise.all([
+      prisma.radiologyStudyImage.count({ where: { studyId: id } }),
+    ]);
+    const hasLocalImages = imageCount > 0;
+    const hasExternalReport = !!(study.rologyReportLink || study.submissionStatus === 'SUBMITTED');
+    if (!hasLocalImages && !hasExternalReport) {
+      return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪¬╪│┘ä┘è┘à ╪º┘ä╪¡╪º┘ä╪⌐ ┘é╪¿┘ä ╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒ ╪ú┘ê ╪º╪│╪¬┘ä╪º┘à ╪¬┘é╪▒┘è╪▒ ╪«╪º╪▒╪¼┘è' });
+    }
+
+    const guards = await getRadiologyGuards(prisma, companyId);
+    if (guards.requirePaymentBeforeDelivery && study.billingType === 'PATIENT') {
+      const total = (study.priceSnapshot || 0) + (study.additionAmount || 0);
+      if (total > 0 && (study.paidAmount || 0) <= 0) {
+        return res.status(400).json({ success: false, error: '┘ä╪º ┘è┘à┘â┘å ╪¬╪│┘ä┘è┘à ╪º┘ä╪¡╪º┘ä╪⌐ ┘é╪¿┘ä ╪│╪»╪º╪» ╪º┘ä┘à╪¿┘ä╪║' });
+      }
+    }
+
+    const [deliveredReport, deliveredStudy] = await Promise.all([
+      prisma.radiologyReport.update({ where: { id: report.id }, data: { reportStatus: 'DELIVERED' } }),
+      prisma.radiologyStudy.update({ where: { id }, data: { status: 'DELIVERED' } }),
+    ]);
+
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: id,
+      dimension: 'PREP',
+      oldStatus: study.status,
+      status: 'DELIVERED',
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+    await recordRadiologyStatusHistory(prisma, {
+      companyId,
+      studyId: id,
+      dimension: 'REPORT',
+      oldStatus: report.reportStatus,
+      status: 'DELIVERED',
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+    await syncStudyOrderStatus(prisma, { ...deliveredStudy, status: deliveredStudy.status }, {
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: signerName(req),
+    });
+
+    // Best-effort WhatsApp delivery notification ΓÇö never blocks/breaks the response.
+    try {
+      await notifyStudyDelivery(prisma, { ...deliveredStudy, report: deliveredReport }, { companyId });
+    } catch (notifyError) {
+      console.warn('notifyStudyDelivery failed (non-blocking):', notifyError?.message || notifyError);
+    }
+
+    res.json({ success: true, data: { study: deliveredStudy, report: deliveredReport } });
+  } catch (error) {
+    console.error('Error delivering radiology study:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪│┘ä┘è┘à ╪¡╪º┘ä╪⌐ ╪º┘ä╪ú╪┤╪╣╪⌐' });
+  }
+};
+
+// ==================== REPORT PDF ====================
+
+const getStudyReportPdf = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, include: { report: true } });
+    if (!study) return res.status(404).json({ success: false, error: '╪º┘ä╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐' });
+
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+    const { generateStudyReportPdf } = require('../services/radiologyPdfService');
+    const pdfBuffer = await generateStudyReportPdf(study, company);
+
+    const filename = `report-${(study.studyNumber || study.id).replace(/[^a-zA-Z0-9-]/g, '')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating radiology report PDF:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í PDF ╪º┘ä╪¬┘é╪▒┘è╪▒' });
+  }
+};
+
+// ==================== CONTRACTS ====================
+const CONTRACT_DISCOUNT_TYPES = ['PERCENTAGE', 'CUSTOM', 'NONE'];
+
+const clampPercent = (value) => {
+  if (value === undefined || value === null || value === '') return 0;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, n));
+};
+
+const listContracts = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { search, includeInactive } = req.query;
+    const where = { companyId };
+    if (includeInactive !== 'true') where.isActive = true;
+    if (search && String(search).trim()) {
+      const term = String(search).trim();
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { region: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    const contracts = await getSharedPrismaClient().radiologyContract.findMany({ where, orderBy: { name: 'asc' } });
+    res.json({ success: true, data: contracts });
+  } catch (error) {
+    console.error('Error fetching radiology contracts:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪¬╪╣╪º┘é╪»╪º╪¬' });
+  }
+};
+
+const createContract = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { name, region, governorate, discountType, discountPercent, externalSample } = req.body || {};
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪¬╪╣╪º┘é╪» ┘à╪╖┘ä┘ê╪¿' });
+
+    const type = String(discountType || 'PERCENTAGE').trim().toUpperCase();
+    if (!CONTRACT_DISCOUNT_TYPES.includes(type)) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä╪«╪╡┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+
+    const contract = await getSharedPrismaClient().radiologyContract.create({
+      data: {
+        companyId,
+        name: String(name).trim(),
+        region: normalizeText(region),
+        governorate: normalizeText(governorate),
+        discountType: type,
+        discountPercent: clampPercent(discountPercent),
+        externalSample: normalizeBool(externalSample, false),
+      },
+    });
+
+    res.json({ success: true, data: contract });
+  } catch (error) {
+    console.error('Error creating radiology contract:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪¬╪╣╪º┘é╪»' });
+  }
+};
+
+const updateContract = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyContract.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪¬╪╣╪º┘é╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+
+    const data = {};
+    if (body.name !== undefined) {
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä╪¬╪╣╪º┘é╪» ┘à╪╖┘ä┘ê╪¿' });
+      data.name = String(body.name).trim();
+    }
+    if (body.region !== undefined) data.region = normalizeText(body.region);
+    if (body.governorate !== undefined) data.governorate = normalizeText(body.governorate);
+    if (body.discountType !== undefined) {
+      const type = String(body.discountType).trim().toUpperCase();
+      if (!CONTRACT_DISCOUNT_TYPES.includes(type)) return res.status(400).json({ success: false, error: '┘å┘ê╪╣ ╪º┘ä╪«╪╡┘à ╪║┘è╪▒ ╪╡╪º┘ä╪¡' });
+      data.discountType = type;
+    }
+    if (body.discountPercent !== undefined) data.discountPercent = clampPercent(body.discountPercent);
+    if (body.externalSample !== undefined) data.externalSample = normalizeBool(body.externalSample, false);
+    if (body.isActive !== undefined) data.isActive = normalizeBool(body.isActive, true);
+
+    const contract = await prisma.radiologyContract.update({ where: { id }, data });
+    res.json({ success: true, data: contract });
+  } catch (error) {
+    console.error('Error updating radiology contract:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¬╪╣╪º┘é╪»' });
+  }
+};
+
+const deleteContract = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyContract.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä╪¬╪╣╪º┘é╪» ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+
+    const contract = await prisma.radiologyContract.update({ where: { id }, data: { isActive: false } });
+    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä╪¬╪╣╪º┘é╪»', data: contract });
+  } catch (error) {
+    console.error('Error deleting radiology contract:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä╪¬╪╣╪º┘é╪»' });
+  }
+};
+
+// ==================== REPORT TEMPLATES ====================
+
+const listReportTemplates = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { includeInactive } = req.query;
+    const where = { companyId };
+    if (includeInactive !== 'true') where.isActive = true;
+
+    const templates = await getSharedPrismaClient().radiologyReportTemplate.findMany({
+      where,
+      orderBy: { name: 'asc' },
+    });
+    res.json({ success: true, data: templates });
+  } catch (error) {
+    console.error('Error fetching radiology report templates:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪¬┘é╪º╪▒┘è╪▒' });
+  }
+};
+
+const createReportTemplate = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { name, body } = req.body || {};
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘é╪º┘ä╪¿ ┘à╪╖┘ä┘ê╪¿' });
+    if (!body || !String(body).trim()) return res.status(400).json({ success: false, error: '┘å╪╡ ╪º┘ä┘é╪º┘ä╪¿ ┘à╪╖┘ä┘ê╪¿' });
+
+    const template = await getSharedPrismaClient().radiologyReportTemplate.create({
+      data: { companyId, name: String(name).trim(), body: String(body).trim() },
+    });
+    res.json({ success: true, data: template });
+  } catch (error) {
+    console.error('Error creating radiology report template:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪Ñ┘å╪┤╪º╪í ┘é╪º┘ä╪¿ ╪º┘ä╪¬┘é╪▒┘è╪▒' });
+  }
+};
+
+const updateReportTemplate = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyReportTemplate.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘é╪º┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+
+    const data = {};
+    if (body.name !== undefined) {
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: '╪º╪│┘à ╪º┘ä┘é╪º┘ä╪¿ ┘à╪╖┘ä┘ê╪¿' });
+      data.name = String(body.name).trim();
+    }
+    if (body.body !== undefined) {
+      if (!String(body.body).trim()) return res.status(400).json({ success: false, error: '┘å╪╡ ╪º┘ä┘é╪º┘ä╪¿ ┘à╪╖┘ä┘ê╪¿' });
+      data.body = String(body.body).trim();
+    }
+    if (body.isActive !== undefined) data.isActive = normalizeBool(body.isActive, true);
+
+    const template = await prisma.radiologyReportTemplate.update({ where: { id }, data });
+    res.json({ success: true, data: template });
+  } catch (error) {
+    console.error('Error updating radiology report template:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä┘é╪º┘ä╪¿' });
+  }
+};
+
+const deleteReportTemplate = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: '╪║┘è╪▒ ┘à╪╡╪▒╪¡' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyReportTemplate.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: '╪º┘ä┘é╪º┘ä╪¿ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»' });
+
+    const template = await prisma.radiologyReportTemplate.update({ where: { id }, data: { isActive: false } });
+    res.json({ success: true, message: '╪¬┘à ╪¡╪░┘ü ╪º┘ä┘é╪º┘ä╪¿', data: template });
+  } catch (error) {
+    console.error('Error deleting radiology report template:', error);
+    res.status(500).json({ success: false, error: '╪¡╪»╪½ ╪«╪╖╪ú ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘é╪º┘ä╪¿' });
+  }
+};
+
+module.exports = {
+  RADIOLOGY_STUDY_CHAIN,
+  RADIOLOGY_REPORT_CHAIN,
+  SUBMISSION_STATUSES,
+  MODALITY_BY_CATEGORY,
+  validateRadiologyStudyTransition,
+  validateRadiologyReportTransition,
+  listExamTypes,
+  createExamType,
+  updateExamType,
+  deleteExamType,
+  listStudies,
+  getStudy,
+  getStudyDetails,
+  createStudy,
+  duplicateStudy,
+  updateStudy,
+  uploadStudyImages,
+  getStudyImageFile,
+  deleteStudyImage,
+  getStudyReport,
+  upsertStudyReport,
+  advanceReport,
+  markDelivered,
+  getStudyReportPdf,
+  listContracts,
+  createContract,
+  updateContract,
+  deleteContract,
+  listReportTemplates,
+  createReportTemplate,
+  updateReportTemplate,
+  deleteReportTemplate,
+};

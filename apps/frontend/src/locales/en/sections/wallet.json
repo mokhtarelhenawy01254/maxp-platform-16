@@ -1,0 +1,7 @@
+﻿{
+  "availablePoints": "Available Points",
+  "pendingPoints": "Pending Points (held during return window)",
+  "availableCashback": "Available Cashback",
+  "pendingCashback": "Pending Cashback",
+  "pendingHint": "These points are reserved until the return window ends"
+}

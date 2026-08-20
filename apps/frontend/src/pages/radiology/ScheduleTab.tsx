@@ -1,0 +1,1315 @@
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Plus, RefreshCw, Loader2, X as XMarkIcon, Pencil, Trash2, Search, ArrowRightLeft, Zap, List, CalendarDays, CalendarRange, CalendarCheck, UserPlus, UserCheck, ChevronDown, ScanLine, Info, Banknote } from "lucide-react";
+import { api, bookingApi, fetchJson, tryParseJSON, RadiologyExamType, RadiologyExamAddition, RadiologyDevice, useRadiologyRiskFlags, parsePatientFlags, flagMeta, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, RadiologyIdSettings, DEFAULT_ID_SETTINGS, formatSequentialId, fetchIdSettings } from "./shared";
+import ScheduleCalendar, { ViewMode, dayKey, addDays, egyptWeekStart } from "./ScheduleCalendar";
+
+interface Appointment {
+  id: string; bookingNo?: number; patientName: string; patientPhone?: string;
+  patientGender?: string; patientAge?: string;
+  nationalId?: string; insuranceNumber?: string;
+  patientFlags?: string[] | string;
+  examTypeId?: string; examTypeName?: string;
+  examTypeIds?: string[] | string;
+  deviceId?: string; deviceName?: string;
+  insuranceCompanyId?: string; insuranceCompanyName?: string;
+  payerType?: string; referralSourceId?: string; referralSourceName?: string;
+  externalPartnerId?: string; externalPartnerName?: string; paymentDestination?: string;
+  isExternalReferral?: boolean;
+  additionIds?: string[] | string;
+  additionAmount?: number;
+  referralDoctor?: string;
+  emergency?: boolean;
+  appointmentDate?: string; appointmentTime?: string;
+  branchId?: string; status: string; notes?: string; createdAt: string;
+  studyId?: string;
+}
+
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  SCHEDULED: { label: "radiology.appointmentStatus.SCHEDULED", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  CHECKED_IN: { label: "radiology.appointmentStatus.CHECKED_IN", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  DONE: { label: "radiology.appointmentStatus.DONE", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  CANCELLED: { label: "radiology.appointmentStatus.CANCELLED", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+};
+
+const STATUS_CHAIN: Record<string, string> = { SCHEDULED: "CHECKED_IN", CHECKED_IN: "DONE", DONE: "", CANCELLED: "" };
+
+const PAY_METHODS = ["CASH", "CARD", "BANK", "VODAFONE_CASH"] as const;
+
+interface Form {
+  id?: string; patientId: string; patientName: string; patientPhone: string;
+  patientGender: string; patientAge: string;
+  nationalId: string; nationalIdImage?: string; insuranceNumber: string; patientFlags: string[];
+  examTypeIds: string[]; insuranceCompanyId: string; additionIds: string[];
+  deviceId: string;
+  payerType: string; referralSourceId: string; externalPartnerId: string; paymentDestination: string;
+  referringPhysicianId: string; referralDoctor: string; emergency: boolean;
+  marketingRepId: string; marketingRepName: string;
+  appointmentDate: string; appointmentTime: string; status: string; notes: string;
+}
+
+const emptyForm = (): Form => ({
+  patientId: "", patientName: "", patientPhone: "", patientGender: "", patientAge: "", nationalId: "", nationalIdImage: "", insuranceNumber: "", patientFlags: [],
+  examTypeIds: [], insuranceCompanyId: "", additionIds: [], deviceId: "",
+  payerType: "CUSTOMER", referralSourceId: "", externalPartnerId: "", paymentDestination: "ME",
+  referringPhysicianId: "", referralDoctor: "", emergency: false, marketingRepId: "", marketingRepName: "",
+  appointmentDate: todayKey(), appointmentTime: "", status: "SCHEDULED", notes: "",
+});
+
+const todayKey = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const MANAGER_ROLES: string[] = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"];
+
+export default function ScheduleTab() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [items, setItems] = useState<Appointment[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const [isManagerUser] = useState(() => {
+    try {
+      const role = (JSON.parse(localStorage.getItem("user") || "{}") as { role?: string }).role || "";
+      return MANAGER_ROLES.includes(role);
+    } catch { return false; }
+  });
+  const [examTypes, setExamTypes] = useState<RadiologyExamType[]>([]);
+  const [additions, setAdditions] = useState<RadiologyExamAddition[]>([]);
+  const [insuranceCompanies, setInsuranceCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [referralSources, setReferralSources] = useState<{ id: string; name: string }[]>([]);
+  const [externalPartners, setExternalPartners] = useState<{ id: string; name: string }[]>([]);
+  const [marketingReps, setMarketingReps] = useState<{ id: string; name: string }[]>([]);
+  const [status, setStatus] = useState(searchParams.get("status") || "");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [dateFrom, setDateFrom] = useState(searchParams.get("dateFrom") || todayKey());
+  const [dateTo, setDateTo] = useState(searchParams.get("dateTo") || todayKey());
+  const [view, setView] = useState<ViewMode>((searchParams.get("view") as ViewMode) || "list");
+  const [anchorDate, setAnchorDate] = useState(todayKey());
+  const [modal, setModal] = useState<Form | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [converting, setConverting] = useState<string | null>(null);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [patientResults, setPatientResults] = useState<{ id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string; insuranceNumber?: string; gender?: string; birthDate?: string }[]>([]);
+  const [physicianSearch, setPhysicianSearch] = useState("");
+  const [physicianResults, setPhysicianResults] = useState<{ id: string; name: string; specialty?: string }[]>([]);
+  const [examSearch, setExamSearch] = useState("");
+  const [examOpen, setExamOpen] = useState(false);
+  const [examFiltered, setExamFiltered] = useState<RadiologyExamType[]>([]);
+  const [newPatientOpen, setNewPatientOpen] = useState(false);
+  const [newPatient, setNewPatient] = useState({ firstName: "", phone: "", gender: "", nationalId: "", birthDate: "", nationalIdImage: "" });
+  const [savingNewPatient, setSavingNewPatient] = useState(false);
+  const [entityPrice, setEntityPrice] = useState<number | null>(null);
+  const [devices, setDevices] = useState<RadiologyDevice[]>([]);
+  const [coverage, setCoverage] = useState<Record<string, { covered: boolean; entityPrice?: number | null; basePrice?: number }>>({});
+  const [cardScan, setCardScan] = useState<string | null>(null);
+  const [cardScanTarget, setCardScanTarget] = useState<"newPatient" | null>(null);
+  const [cardOcrBusy, setCardOcrBusy] = useState(false);
+  const cardInputRef = useRef<HTMLInputElement | null>(null);
+  const [idSettings, setIdSettings] = useState<RadiologyIdSettings>(DEFAULT_ID_SETTINGS);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<"checkin" | "convert" | null>(null);
+  const [initialPayment, setInitialPayment] = useState<{ amount: string; method: string }>({ amount: "", method: "CASH" });
+  const abortRef = useRef<AbortController | null>(null);
+  const appendNextRef = useRef(false);
+  const patientFlags = useRadiologyRiskFlags();
+
+  const loadCatalog = useCallback(async () => {
+    try {
+      const [ets, adds, ins, devs, sources, partners, reps] = await Promise.all([
+        fetchJson<RadiologyExamType[]>(`${api("exam-types")}&limit=500`),
+        fetchJson<RadiologyExamType[]>(`${api("exam-types")}&isAddition=true&limit=100`).catch(() => []),
+        fetchJson<{ id: string; name: string }[]>(bookingApi("insurance-companies")).catch(() => []),
+        fetchJson<RadiologyDevice[]>(`${api("devices")}&includeInactive=true`).catch(() => []),
+        fetchJson<{ id: string; name: string }[]>(api("referral-sources")).catch(() => []),
+        fetchJson<{ id: string; name: string }[]>(api("external-partners")).catch(() => []),
+        fetchJson<{ id: string; name: string }[]>(api("marketing-reps")).catch(() => []),
+      ]);
+      setExamTypes(Array.isArray(ets) ? ets : []);
+      setAdditions(Array.isArray(adds) ? adds : []);
+      setInsuranceCompanies(Array.isArray(ins) ? ins : []);
+      setDevices(Array.isArray(devs) ? devs : []);
+      setReferralSources(Array.isArray(sources) ? sources : []);
+      setExternalPartners(Array.isArray(partners) ? partners : []);
+      setMarketingReps(Array.isArray(reps) ? reps : []);
+    } catch { /* catalog optional */ }
+  }, []);
+
+  const mergeById = (prev: Appointment[], rows: Appointment[]) => {
+    const seen = new Map<string, Appointment>();
+    [...prev, ...rows].forEach(a => { if (!seen.has(a.id)) seen.set(a.id, a); });
+    return [...seen.values()];
+  };
+
+  const refresh = useCallback(async (opts?: { silent?: boolean }) => {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setLoading(true);
+    const append = appendNextRef.current;
+    appendNextRef.current = false;
+    try {
+      const url = new URL(api("appointments"));
+      url.searchParams.set("limit", "200");
+      url.searchParams.set("page", String(page));
+      if (status) url.searchParams.set("status", status);
+      if (debouncedSearch.trim()) url.searchParams.set("patientName", debouncedSearch.trim());
+      if (view === "list") {
+        if (dateFrom) url.searchParams.set("dateFrom", dateFrom);
+        if (dateTo) url.searchParams.set("dateTo", dateTo);
+      } else {
+        const a = new Date(anchorDate + "T12:00:00");
+        let from = dayKey(a), to = dayKey(a);
+        if (view === "week") { const s = egyptWeekStart(a); from = dayKey(s); to = dayKey(addDays(s, 6)); }
+        if (view === "month") { from = dayKey(new Date(a.getFullYear(), a.getMonth(), 1)); to = dayKey(new Date(a.getFullYear(), a.getMonth() + 1, 0)); }
+        url.searchParams.set("dateFrom", from);
+        url.searchParams.set("dateTo", to);
+      }
+      const res = await fetchJson<{ items?: Appointment[]; total?: number; page?: number }>(url.toString(), { signal: ctrl.signal });
+      if (ctrl.signal.aborted) return;
+      const rows = res.items || [];
+      setTotal(res.total ?? 0);
+      setItems(append ? prev => mergeById(prev, rows) : rows);
+      setLoadError(null);
+      if (!append) {
+        setSelected(prev => {
+          if (!prev.size) return prev;
+          const valid = new Set(rows.map(a => a.id));
+          const next = new Set([...prev].filter(id => valid.has(id)));
+          return next.size === prev.size ? prev : next;
+        });
+      }
+    } catch (e) {
+      if (ctrl.signal.aborted) return;
+      setLoadError(e instanceof Error ? e.message : t("radiology.schedule.loadFailed"));
+      if (!opts?.silent) toast.error(e instanceof Error ? e.message : t("radiology.schedule.loadFailed"));
+    } finally {
+      if (!ctrl.signal.aborted) setLoading(false);
+    }
+  }, [status, debouncedSearch, dateFrom, dateTo, view, anchorDate, page]);
+
+  useEffect(() => {
+    loadCatalog();
+    refresh();
+    fetchIdSettings().then(setIdSettings);
+  }, [loadCatalog, refresh]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (status) params["status"] = status;
+    if (search) params["search"] = search;
+    if (dateFrom) params["dateFrom"] = dateFrom;
+    if (dateTo) params["dateTo"] = dateTo;
+    if (view !== "list") params["view"] = view;
+    setSearchParams(params, { replace: true });
+  }, [status, search, dateFrom, dateTo, view]);
+
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
+
+  useEffect(() => {
+    if (!patientSearch.trim()) { setPatientResults([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const url = new URL(bookingApi("patients"));
+        url.searchParams.set("search", patientSearch.trim());
+        url.searchParams.set("limit", "8");
+        const rows = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string; insuranceNumber?: string }[]>(url.toString());
+        setPatientResults(Array.isArray(rows) ? rows : []);
+      } catch { setPatientResults([]); }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [patientSearch]);
+
+  useEffect(() => {
+    if (!physicianSearch.trim()) { setPhysicianResults([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const url = new URL(api("referring-physicians"));
+        url.searchParams.set("search", physicianSearch.trim());
+        url.searchParams.set("limit", "20");
+        const rows = await fetchJson<{ id: string; name: string; specialty?: string }[]>(url.toString());
+        setPhysicianResults(Array.isArray(rows) ? rows : []);
+      } catch { setPhysicianResults([]); }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [physicianSearch]);
+
+  useEffect(() => {
+    if (!examSearch.trim()) { setExamFiltered(examTypes.filter(t => t.isActive !== false)); return; }
+    const term = examSearch.trim().toLowerCase();
+    setExamFiltered(examTypes.filter(t =>
+      t.isActive !== false &&
+      (t.name?.toLowerCase().includes(term) || (t.category || "").toLowerCase().includes(term) || (t.abbreviation || "").toLowerCase().includes(term))
+    ));
+  }, [examSearch, examTypes]);
+
+  useEffect(() => {
+    if (!modal?.examTypeIds.length || !modal.insuranceCompanyId) { setEntityPrice(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = new URL(api("entity-prices"));
+        url.searchParams.set("insuranceCompanyId", modal.insuranceCompanyId);
+        url.searchParams.set("examTypeId", modal.examTypeIds[0] || "");
+        const rows = await fetchJson<{ price: number }[]>(url.toString());
+        if (!cancelled) setEntityPrice(rows && rows.length ? Number(rows[0]?.price) : null);
+      } catch {
+        if (!cancelled) setEntityPrice(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [modal?.examTypeIds, modal?.insuranceCompanyId]);
+
+  useEffect(() => {
+    if (!modal?.examTypeIds.length || !modal.insuranceCompanyId) { setCoverage({}); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = new URL(api("coverage"));
+        url.searchParams.set("insuranceCompanyId", modal.insuranceCompanyId);
+        url.searchParams.set("examTypeIds", modal.examTypeIds.join(","));
+        const rows = await fetchJson<{ examTypeId: string; covered: boolean; entityPrice?: number | null; basePrice?: number }[]>(url.toString());
+        if (!cancelled) {
+          const map: Record<string, { covered: boolean; entityPrice?: number | null; basePrice?: number }> = {};
+          (Array.isArray(rows) ? rows : []).forEach(r => { map[r.examTypeId] = { covered: r.covered, entityPrice: r.entityPrice, basePrice: r.basePrice }; });
+          setCoverage(map);
+        }
+      } catch {
+        if (!cancelled) setCoverage({});
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [modal?.examTypeIds, modal?.insuranceCompanyId]);
+
+  const parseEgyptianNationalId = (raw: string) => {
+    const id = raw.replace(/\D/g, "");
+    if (id.length !== 14) return null;
+    const century = Number(id[0]);
+    if (century !== 2 && century !== 3) return null;
+    const year = century === 2 ? 1900 + Number(id.slice(1, 3)) : 2000 + Number(id.slice(1, 3));
+    const month = Number(id.slice(3, 5));
+    const day = Number(id.slice(5, 7));
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const gender = Number(id[12]) % 2 === 1 ? "male" : "female";
+    const dob = new Date(Date.UTC(year, month - 1, day));
+    const age = Math.max(0, Math.floor((Date.now() - dob.getTime()) / (31557600000)));
+    return { gender, age: String(age), year, month, day };
+  };
+
+  const birthFromNationalId = (raw: string): string => {
+    const parsed = parseEgyptianNationalId(raw);
+    if (!parsed) return "";
+    const mm = String(parsed.month).padStart(2, "0");
+    const dd = String(parsed.day).padStart(2, "0");
+    return `${parsed.year}-${mm}-${dd}`;
+  };
+
+  const openCardScanner = () => {
+    setCardScanTarget("newPatient");
+    setCardScan(null);
+    if (cardInputRef.current) cardInputRef.current.click();
+  };
+
+  const handleCardScanFile = async (file: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      setCardScan(dataUrl);
+      setNewPatient(p => ({ ...p, nationalIdImage: dataUrl }));
+    };
+    reader.readAsDataURL(file);
+
+    setCardOcrBusy(true);
+    try {
+      const { extractNationalIdFromImage } = await import("./cardOcr");
+      const result = await extractNationalIdFromImage(file);
+      if (result.nationalId) {
+        setNewPatient(p => ({ ...p, nationalId: result.nationalId || "" }));
+        toast.success(t("radiology.schedule.cardOcrFound"));
+      } else {
+        toast.warning(t("radiology.schedule.cardOcrNotFound"));
+      }
+    } catch {
+      toast.warning(t("radiology.schedule.cardOcrFailed"));
+    } finally {
+      setCardOcrBusy(false);
+    }
+  };
+
+  const applyScannedCard = () => {
+    setCardScan(null);
+    setCardScanTarget(null);
+    if (newPatient.nationalId.replace(/\D/g, "").length === 14) {
+      const parsed = parseEgyptianNationalId(newPatient.nationalId);
+      if (parsed) {
+        setNewPatient(p => ({ ...p, gender: parsed.gender, birthDate: birthFromNationalId(newPatient.nationalId) }));
+        toast.success(t("radiology.schedule.cardDataExtracted"));
+      }
+    }
+  };
+
+  const toggleExam = (id: string) => {
+    setModal(m => m ? {
+      ...m,
+      examTypeIds: m.examTypeIds.includes(id)
+        ? m.examTypeIds.filter(x => x !== id)
+        : [...m.examTypeIds, id],
+    } : m);
+    setExamSearch("");
+    setExamOpen(false);
+  };
+
+  const openNewPatient = () => { setNewPatient({ firstName: "", phone: "", gender: "", nationalId: "", birthDate: "", nationalIdImage: "" }); setNewPatientOpen(true); };
+
+  const saveNewPatient = async () => {
+    if (savingNewPatient) return;
+    if (!newPatient.firstName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
+    setSavingNewPatient(true);
+    try {
+      const nationalId = newPatient.nationalId.replace(/\D/g, "");
+      const existing = await findExistingPatient(
+        { nationalId, patientPhone: newPatient.phone.trim(), patientName: newPatient.firstName.trim(), patientId: "" } as Form,
+        newPatient.firstName.trim(),
+      );
+      if (existing) {
+        setModal(m => m ? { ...m, patientId: existing.id, patientName: existing.name, patientPhone: newPatient.phone.trim(), nationalId } : m);
+        toast.info(t("radiology.schedule.duplicatePatientLinked", { name: existing.name }));
+        setNewPatientOpen(false);
+        setPatientSearch("");
+        setPatientResults([]);
+        return;
+      }
+      const body: Record<string, string | undefined> = {
+        firstName: newPatient.firstName.trim(),
+        phone: newPatient.phone.trim() || undefined,
+        nationalId: nationalId || undefined,
+        nationalIdImage: newPatient.nationalIdImage || undefined,
+        gender: newPatient.gender || undefined,
+        birthDate: newPatient.birthDate || undefined,
+      };
+      const created = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string; gender?: string; birthDate?: string; nationalId?: string }>(bookingApi("patients"), { method: "POST", body: JSON.stringify(body) });
+      const parsed = newPatient.nationalId.replace(/\D/g, "").length === 14 ? parseEgyptianNationalId(newPatient.nationalId.replace(/\D/g, "")) : null;
+      setModal(m => m ? {
+        ...m,
+        patientId: created.id,
+        patientName: `${created.firstName}${created.lastName ? " " + created.lastName : ""}`,
+        patientPhone: created.phone || newPatient.phone.trim(),
+        nationalId: created.nationalId || newPatient.nationalId.replace(/\D/g, ""),
+        patientGender: created.gender || parsed?.gender || newPatient.gender || m.patientGender,
+        patientAge: parsed ? parsed.age : m.patientAge,
+      } : m);
+      toast.success(t("radiology.schedule.patientAdded"));
+      setNewPatientOpen(false);
+      setPatientSearch("");
+      setPatientResults([]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.addPatientFailed"));
+    } finally {
+      setSavingNewPatient(false);
+    }
+  };
+
+  const pickPatient = (p: { id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string; insuranceNumber?: string; gender?: string; birthDate?: string }) => {
+    let gender = p.gender ? (p.gender === "male" || p.gender === "M" ? "male" : "female") : "";
+    let age = "";
+    if (p.birthDate) {
+      const dob = new Date(p.birthDate);
+      if (!Number.isNaN(dob.getTime())) {
+        const a = Math.max(0, Math.floor((Date.now() - dob.getTime()) / 31557600000));
+        if (a > 0) age = String(a);
+      }
+    }
+    setModal(m => m ? { ...m, patientId: p.id, patientName: `${p.firstName}${p.lastName ? " " + p.lastName : ""}`, patientPhone: p.phone || "", nationalId: p.nationalId || m.nationalId, insuranceNumber: p.insuranceNumber || m.insuranceNumber, patientGender: gender || m.patientGender, patientAge: age || m.patientAge } : m);
+    setPatientSearch("");
+    setPatientResults([]);
+  };
+
+  const pickPhysician = (p: { id: string; name: string; marketingRepId?: string | null }) => {
+    setModal(m => {
+      if (!m) return m;
+      // ┘à┘å╪»┘ê╪¿ ╪º┘ä╪╖╪¿┘è╪¿ ┘è╪│╪¿┘é ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¼┘ç╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐ (╪Ñ┘å ┘ê┘Å╪¼╪») ΓÇö ╪º┘é╪¬╪▒╪º╪¡ ┘é╪º╪¿┘ä ┘ä┘ä╪¬╪¼╪º┘ê╪▓
+      const suggestedRep = p.marketingRepId || m.marketingRepId || "";
+      const repName = p.marketingRepId
+        ? (marketingReps.find(r => r.id === p.marketingRepId)?.name || m.marketingRepName || "")
+        : m.marketingRepName;
+      return { ...m, referringPhysicianId: p.id, referralDoctor: p.name, marketingRepId: suggestedRep, marketingRepName: repName };
+    });
+    setPhysicianSearch("");
+    setPhysicianResults([]);
+  };
+
+  const syncPatientRecord = async (f: Form): Promise<string | null> => {
+    const fields: Record<string, string> = {};
+    if (f.patientPhone.trim()) fields["phone"] = f.patientPhone.trim();
+    if (f.nationalId.trim()) fields["nationalId"] = f.nationalId.trim();
+    if (f.nationalIdImage) fields["nationalIdImage"] = f.nationalIdImage;
+    if (f.insuranceNumber.trim()) fields["insuranceNumber"] = f.insuranceNumber.trim();
+    if (f.patientId) {
+      if (Object.keys(fields).length) {
+        await fetchJson(bookingApi(`patients/${f.patientId}`), { method: "PUT", body: JSON.stringify(fields) });
+      }
+      return f.patientId;
+    }
+    const name = f.patientName.trim() || patientSearch.trim();
+    if (!name) return null;
+    const existing = await findExistingPatient(f, name);
+    if (existing) {
+      if (Object.keys(fields).length) {
+        await fetchJson(bookingApi(`patients/${existing.id}`), { method: "PUT", body: JSON.stringify(fields) });
+      }
+      toast.info(t("radiology.schedule.duplicatePatientLinked", { name: existing.name }));
+      return existing.id;
+    }
+    const parts = name.split(/\s+/);
+    const created = await fetchJson<{ id: string }>(bookingApi("patients"), {
+      method: "POST",
+      body: JSON.stringify({ firstName: parts[0], lastName: parts.length > 1 ? parts.slice(1).join(" ") : undefined, ...fields }),
+    });
+    return created.id;
+  };
+
+  const findExistingPatient = async (f: Form, _name: string): Promise<{ id: string; name: string } | null> => {
+    const queries: string[] = [];
+    if (f.nationalId.trim()) queries.push(f.nationalId.trim());
+    if (f.patientPhone.trim()) queries.push(f.patientPhone.trim());
+    if (!queries.length) return null;
+    try {
+      const url = new URL(bookingApi("patients"));
+      url.searchParams.set("search", queries[0] || "");
+      url.searchParams.set("limit", "10");
+      const rows = await fetchJson<{ id: string; firstName: string; lastName?: string; phone?: string; nationalId?: string }[]>(url.toString());
+      const list = Array.isArray(rows) ? rows : [];
+      const nationalId = f.nationalId.trim();
+      const phone = f.patientPhone.trim();
+      const match = list.find(p =>
+        (nationalId && p.nationalId === nationalId) ||
+        (phone && p.phone === phone)
+      );
+      if (!match) return null;
+      return { id: match.id, name: `${match.firstName}${match.lastName ? " " + match.lastName : ""}` };
+    } catch {
+      return null;
+    }
+  };
+
+  const buildPayload = (f: Form) => {
+    const payerType = ["CUSTOMER", "INSURANCE", "REFERRAL", "PARTNER"].includes(f.payerType) ? f.payerType : "CUSTOMER";
+    const isInsurance = payerType === "INSURANCE";
+    const isReferral = payerType === "REFERRAL";
+    const isPartner = payerType === "PARTNER";
+    return {
+      patientId: f.patientId || undefined,
+      patientName: f.patientName.trim(),
+      patientPhone: f.patientPhone.trim() || undefined,
+      patientGender: f.patientGender || undefined,
+      patientAge: f.patientAge.trim() || undefined,
+      nationalId: f.nationalId.trim() || undefined,
+      insuranceNumber: f.insuranceNumber.trim() || undefined,
+      patientFlags: f.patientFlags.length ? f.patientFlags : undefined,
+      examTypeIds: f.examTypeIds.length ? f.examTypeIds : undefined,
+      examTypeId: f.examTypeIds[0] || undefined,
+      insuranceCompanyId: isInsurance ? f.insuranceCompanyId || undefined : undefined,
+      deviceId: f.deviceId || undefined,
+      additionIds: f.additionIds,
+      payerType,
+      referralSourceId: isReferral ? f.referralSourceId || undefined : undefined,
+      isExternalReferral: isPartner,
+      externalPartnerId: isPartner ? f.externalPartnerId || undefined : undefined,
+      paymentDestination: isPartner ? f.paymentDestination || "ME" : undefined,
+      referringPhysicianId: f.referringPhysicianId || undefined,
+      referralDoctor: f.referralDoctor.trim() || undefined,
+      marketingRepId: f.marketingRepId || undefined,
+      emergency: f.emergency,
+      appointmentDate: f.appointmentDate || undefined,
+      appointmentTime: f.appointmentTime || undefined,
+      status: f.status || "SCHEDULED",
+      notes: f.notes.trim() || undefined,
+    };
+  };
+
+  const distributeInitialPayment = async (studies: { id: string; priceSnapshot?: number }[], amount: number, method: string) => {
+    let remaining = amount;
+    let paid = 0;
+    for (const s of studies) {
+      if (remaining <= 0) break;
+      const total = Number(s.priceSnapshot);
+      const pay = total > 0 ? Math.min(remaining, total) : remaining;
+      if (pay <= 0) continue;
+      try {
+        await fetchJson(api(`studies/${s.id}/payment`), { method: "POST", body: JSON.stringify({ amount: pay, method }) });
+        remaining -= pay;
+        paid += pay;
+      } catch { /* best-effort */ }
+    }
+    return paid > 0;
+  };
+
+  const persistAndConvert = async (payload: ReturnType<typeof buildPayload>, initialPaymentValue?: { amount: string; method: string }, successKey = "radiology.schedule.studyCreatedWalkIn") => {
+    const currentId = modal?.id;
+    let id = currentId;
+    if (currentId) {
+      await fetchJson(api(`appointments/${currentId}`), { method: "PUT", body: JSON.stringify(payload) });
+    } else {
+      const created = await fetchJson<{ id: string }>(api("appointments"), { method: "POST", body: JSON.stringify(payload) });
+      id = created.id;
+    }
+    if (!id) throw new Error(t("radiology.schedule.saveFailed") as string);
+    const r = await fetchJson<{ studies?: { id: string; priceSnapshot?: number }[]; study?: { id: string; priceSnapshot?: number } }>(api(`appointments/${id}/convert`), { method: "POST" });
+    const studies = r?.studies?.length ? r.studies : (r?.study ? [r.study] : []);
+    const amount = Number(initialPaymentValue?.amount);
+    if (studies.length && Number.isFinite(amount) && amount > 0) {
+      const ok = await distributeInitialPayment(studies, amount, initialPaymentValue?.method || "CASH");
+      toast.success(ok ? t("radiology.receptionFlow.created") : t("radiology.receptionFlow.paymentWarning"));
+    } else {
+      toast.success(t(successKey));
+    }
+    setModal(null);
+    navigate("/radiology/studies");
+  };
+
+  const save = async (convertAfter = false) => {
+    if (!modal || saving) return;
+    if (!modal.patientName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
+    if (!modal.examTypeIds.length) { toast.error(t("radiology.schedule.selectExam")); return; }
+    setSaving(true);
+    try {
+      const patientId = await syncPatientRecord(modal);
+      const payload = buildPayload({ ...modal, patientId: patientId || "", status: convertAfter ? "CHECKED_IN" : modal.status });
+      if (convertAfter) {
+        await persistAndConvert(payload);
+        return;
+      }
+      toast.success(modal.id ? t("radiology.schedule.bookingUpdated") : t("radiology.schedule.bookingCreated"));
+      setModal(null);
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.saveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const advance = async (a: Appointment) => {
+    const next = STATUS_CHAIN[a.status];
+    if (!next) return;
+    try {
+      await fetchJson(api(`appointments/${a.id}`), { method: "PUT", body: JSON.stringify({ status: next }) });
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.updateFailed"));
+    }
+  };
+
+  const remove = async (a: Appointment) => {
+    if (!window.confirm(t("radiology.schedule.deleteConfirm", { name: a.patientName }) as string)) return;
+    try {
+      await fetchJson(api(`appointments/${a.id}`), { method: "DELETE" });
+      toast.success(t("radiology.schedule.bookingDeleted"));
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.deleteFailed"));
+    }
+  };
+
+  const convert = async (a: Appointment) => {
+    if (converting === a.id) return;
+    if (!window.confirm(t("radiology.schedule.convertConfirm", { name: a.patientName }) as string)) return;
+    setConverting(a.id);
+    try {
+      const r = await fetchJson<{ studies?: { id: string }[]; study?: { id: string } }>(api(`appointments/${a.id}/convert`), { method: "POST" });
+      toast.success(t("radiology.schedule.studyCreated"));
+      await refresh({ silent: true });
+      if (r?.study?.id || r?.studies?.length) navigate("/radiology/studies");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.convertFailed"));
+    } finally {
+      setConverting(null);
+    }
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (items.length && items.every(a => selected.has(a.id))) setSelected(new Set());
+    else setSelected(new Set(items.map(a => a.id)));
+  };
+
+  const runBulk = async (action: "checkin" | "convert") => {
+    if (!selected.size || bulkBusy) return;
+    setBulkBusy(action);
+    try {
+      const res = await fetchJson<{ successCount: number; failed: { id: string; error: string }[] }>(
+        api(`bulk/appointments/${action}`),
+        { method: "POST", body: JSON.stringify({ ids: [...selected] }) },
+      );
+      const ok = res?.successCount ?? 0;
+      const fail = res?.failed?.length ?? 0;
+      if (fail > 0) toast.warning(t("radiology.schedule.bulkPartial", { ok, fail }));
+      else toast.success(t("radiology.schedule.bulkDone", { count: ok }));
+      setSelected(new Set());
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.bulkFailed"));
+    } finally {
+      setBulkBusy(null);
+    }
+  };
+
+  const receiveAndCreate = async () => {
+    if (!modal || saving) return;
+    if (!modal.patientName.trim()) { toast.error(t("radiology.schedule.patientNameRequired")); return; }
+    if (!modal.examTypeIds.length) { toast.error(t("radiology.schedule.selectExam")); return; }
+    setSaving(true);
+    try {
+      const patientId = await syncPatientRecord(modal);
+      const payload = buildPayload({ ...modal, patientId: patientId || "", status: "CHECKED_IN" });
+      await persistAndConvert(payload, initialPayment, "radiology.receptionFlow.created");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("radiology.schedule.saveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openNew = (asWalkIn = false) => {
+    setModal({ ...emptyForm(), status: asWalkIn ? "CHECKED_IN" : "SCHEDULED" });
+    setPatientSearch("");
+    setPhysicianSearch("");
+    setExamSearch("");
+    setExamOpen(false);
+    setNewPatientOpen(false);
+    setEntityPrice(null);
+    setCoverage({});
+    setCardScan(null);
+    setCardScanTarget(null);
+    setCardOcrBusy(false);
+    setInitialPayment({ amount: "", method: "CASH" });
+  };
+
+  const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString("ar-EG") : "ΓÇö");
+  const labelCls = "block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1";
+
+  const shiftAnchor = (dir: number) => {
+    const a = new Date(anchorDate + "T12:00:00");
+    if (view === "day") setAnchorDate(dayKey(addDays(a, dir)));
+    else if (view === "week") setAnchorDate(dayKey(addDays(a, dir * 7)));
+    else { const x = new Date(a.getFullYear(), a.getMonth() + dir, 1); setAnchorDate(dayKey(x)); }
+  };
+  const gotoToday = () => setAnchorDate(todayKey());
+  const selectDay = (key: string) => { setAnchorDate(key); setView("day"); };
+
+  const toggleSort = (key: string) => {
+    setSort(s => (s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+  };
+
+  const loadMore = () => {
+    appendNextRef.current = true;
+    setPage(p => p + 1);
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sort) return items;
+    const dir = sort.dir === "asc" ? 1 : -1;
+    const val = (a: Appointment): string | number => {
+      switch (sort.key) {
+        case "patient": return a.patientName || "";
+        case "exam": return a.examTypeName || "";
+        case "date": return a.appointmentDate || "";
+        case "time": return a.appointmentTime || "";
+        case "status": return a.status || "";
+        case "amount": return Number(a.additionAmount) || 0;
+        default: return "";
+      }
+    };
+    return [...items].sort((x, y) => {
+      const vx = val(x), vy = val(y);
+      if (typeof vx === "number" && typeof vy === "number") return (vx - vy) * dir;
+      return String(vx).localeCompare(String(vy), "ar") * dir;
+    });
+  }, [items, sort]);
+
+  const VIEW_TABS: { id: ViewMode; label: string; icon: typeof List }[] = [
+    { id: "list", label: t("radiology.scheduleCalendar.viewList"), icon: List },
+    { id: "day", label: t("radiology.scheduleCalendar.viewDay"), icon: CalendarDays },
+    { id: "week", label: t("radiology.scheduleCalendar.viewWeek"), icon: CalendarRange },
+    { id: "month", label: t("radiology.scheduleCalendar.viewMonth"), icon: CalendarCheck },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold">{t("radiology.schedule.title")}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("radiology.schedule.subtitle")}</p>
+        </div>
+        <div className="flex items-center gap-1.5 border dark:border-gray-600 rounded-lg p-1">
+          {VIEW_TABS.map(v => (
+            <button key={v.id} onClick={() => { setPage(1); setView(v.id); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === v.id ? "bg-blue-600 text-white" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
+              <v.icon className="w-4 h-4" />{v.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => { setPage(1); setDateFrom(todayKey()); setDateTo(todayKey()); }} className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.today")}</button>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
+            <input className={`${MODAL_INPUT_CLS} pr-9 w-44`} placeholder={t("radiology.schedule.searchByPatient")} value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <select className={MODAL_INPUT_CLS} value={status} onChange={e => { setPage(1); setStatus(e.target.value); }}>
+            <option value="">{t("radiology.allStatuses")}</option>
+            {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
+          </select>
+          <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700"><RefreshCw className="w-4 h-4" />{t("radiology.refresh")}</button>
+          <button onClick={() => openNew(true)} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"><Zap className="w-4 h-4" />{t("radiology.schedule.walkIn")}</button>
+          <button onClick={() => openNew(false)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"><Plus className="w-4 h-4" />{t("radiology.schedule.newBooking")}</button>
+        </div>
+      </div>
+
+      {view === "list" && (
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.from")}</label>
+          <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateFrom} onChange={e => { setPage(1); setDateFrom(e.target.value); }} />
+          <label className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.to")}</label>
+          <input type="date" className={MODAL_INPUT_CLS} style={{ width: 160 }} value={dateTo} onChange={e => { setPage(1); setDateTo(e.target.value); }} />
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => { setPage(1); setDateFrom(dayKey(addDays(new Date(), -1))); setDateTo(dayKey(addDays(new Date(), -1))); }} className="px-2.5 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.quickYesterday")}</button>
+            <button onClick={() => { setPage(1); setDateFrom(dayKey(addDays(new Date(), -6))); setDateTo(todayKey()); }} className="px-2.5 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.quick7Days")}</button>
+            <button onClick={() => { setPage(1); setDateFrom(dayKey(addDays(new Date(), -29))); setDateTo(todayKey()); }} className="px-2.5 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">{t("radiology.schedule.quick30Days")}</button>
+          </div>
+        </div>
+      )}
+
+      {view === "list" && loadError && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-900/20 text-sm text-red-700 dark:text-red-300">
+          <span>{loadError}</span>
+          <button onClick={() => refresh()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs hover:bg-red-700"><RefreshCw className="w-3.5 h-3.5" />{t("radiology.schedule.retry")}</button>
+        </div>
+      )}
+
+      {view !== "list" ? (
+        <ScheduleCalendar
+          view={view as "day" | "week" | "month"}
+          anchorDate={anchorDate}
+          items={items}
+          onShift={shiftAnchor}
+          onToday={gotoToday}
+          onSelectDay={selectDay}
+        />
+      ) : loading && items.length === 0 ? (
+        <div className="flex items-center justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-gray-400 dark:text-gray-500" /></div>
+      ) : items.length === 0 ? (
+        <p className="text-center py-16 text-gray-400 dark:text-gray-500">{t("radiology.schedule.noBookings")}</p>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px]">
+              <thead>
+                <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
+                  <th className="py-3 px-4">
+                    <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600" checked={items.length > 0 && items.every(a => selected.has(a.id))} onChange={toggleSelectAll} title={t("radiology.schedule.selectAll") as string} />
+                  </th>
+                  {[
+                    { key: "bookingId", label: t("radiology.schedule.bookingId"), sortable: false },
+                    { key: "patient", label: t("radiology.schedule.patient"), sortable: true },
+                    { key: "exam", label: t("radiology.schedule.exam"), sortable: true },
+                    { key: "amount", label: t("radiology.schedule.amount"), sortable: true },
+                    { key: "date", label: t("radiology.schedule.date"), sortable: true },
+                    { key: "time", label: t("radiology.schedule.time"), sortable: true },
+                    { key: "status", label: t("radiology.schedule.status"), sortable: true },
+                    { key: "notes", label: t("radiology.schedule.notes"), sortable: false },
+                    { key: "actions", label: t("radiology.actions"), sortable: false },
+                  ].map(h => (
+                    <th key={h.key} className="text-right py-3 px-4 whitespace-nowrap">
+                      {h.sortable ? (
+                        <button onClick={() => toggleSort(h.key)} className="flex items-center gap-1 font-medium">
+                          {h.label}
+                          {sort?.key === h.key ? (sort.dir === "asc" ? "Γû▓" : "Γû╝") : null}
+                        </button>
+                      ) : h.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sortedItems.map(a => {
+                  const meta = STATUS_META[a.status] || STATUS_META["SCHEDULED"];
+                  return (
+                    <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+                      <td className="py-3 px-4">
+                        <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600" checked={selected.has(a.id)} onChange={() => toggleSelected(a.id)} />
+                      </td>
+                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300" dir="ltr">
+                        <span className="text-xs font-mono font-medium">{formatSequentialId(idSettings.bookingPrefix, a.bookingNo, idSettings.digits, idSettings.enabled) || a.id.slice(0, 8)}</span>
+                      </td>
+                      <td className="py-3 px-4 font-medium">
+                        {a.patientName}{a.emergency ? <span className="mr-2 text-xs text-red-500">{t("radiology.schedule.emergency")}</span> : null}
+                        {parsePatientFlags(a.patientFlags).map(f => {
+                          const meta = flagMeta(f);
+                          return meta ? <span key={f} className={`mr-1.5 px-2 py-0.5 rounded-full text-[11px] ${meta.color}`}>{meta.label}</span> : null;
+                        })}
+                      </td>
+                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                        {a.examTypeName || "ΓÇö"}
+                        {(a.examTypeIds && (Array.isArray(a.examTypeIds) ? a.examTypeIds.length : 1) > 1) ? <span className="mr-1.5 text-xs text-blue-600 dark:text-blue-400">+{Array.isArray(a.examTypeIds) ? a.examTypeIds.length - 1 : 0}</span> : null}
+                        {a.deviceName ? <span className="mr-1.5 text-xs text-gray-400">({a.deviceName})</span> : null}
+                        {(() => { const pt = a.payerType || (a.insuranceCompanyId ? "INSURANCE" : a.referralSourceId ? "REFERRAL" : a.isExternalReferral ? "PARTNER" : "CUSTOMER"); let pl: string | null = null; if (pt === "INSURANCE") pl = a.insuranceCompanyName || insuranceCompanies.find(c => c.id === a.insuranceCompanyId)?.name || null; else if (pt === "REFERRAL") pl = a.referralSourceName || null; else if (pt === "PARTNER") pl = a.externalPartnerName || null; if (!pl) return null; return <span className="mr-1.5 inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300" title={t("radiology.schedule.payer") as string}><Banknote className="w-3 h-3" />{pl}</span>; })()}
+                      </td>
+                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.additionAmount ? `${Number(a.additionAmount).toFixed(0)} ${t("radiology.currency")}` : "ΓÇö"}</td>
+                      <td className="py-3 px-4">{fmtDate(a.appointmentDate)}</td>
+                      <td className="py-3 px-4" dir="ltr">{a.appointmentTime || "ΓÇö"}</td>
+                      <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${meta?.color}`}>{t(meta?.label as never)}</span></td>
+                      <td className="py-3 px-4 text-gray-400 dark:text-gray-500 max-w-[160px] truncate">{a.notes || "ΓÇö"}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => navigate(a.studyId ? `/radiology/study/${a.studyId}` : `/radiology/appointment/${a.id}`)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.details.viewDetails") as string} aria-label={t("radiology.details.viewDetails") as string}><Info className="w-4 h-4" /></button>
+                          <button onClick={() => setModal({ ...emptyForm(), id: a.id, patientId: (a as { patientId?: string }).patientId || "", patientName: a.patientName, patientPhone: a.patientPhone || "", patientGender: a.patientGender || "", patientAge: a.patientAge || "", nationalId: (a as { nationalId?: string }).nationalId || "", insuranceNumber: (a as { insuranceNumber?: string }).insuranceNumber || "", patientFlags: parsePatientFlags((a as { patientFlags?: string[] | string }).patientFlags), examTypeIds: Array.isArray((a as { examTypeIds?: string[] | string }).examTypeIds) ? (a as { examTypeIds?: string[] }).examTypeIds || [] : tryParseJSON<string[]>((a as { examTypeIds?: string }).examTypeIds || "[]") || [], deviceId: (a as { deviceId?: string }).deviceId || "", insuranceCompanyId: a.insuranceCompanyId || "", payerType: a.payerType || (a.insuranceCompanyId ? "INSURANCE" : "CUSTOMER"), referralSourceId: a.referralSourceId || "", externalPartnerId: a.externalPartnerId || "", paymentDestination: a.paymentDestination || "ME", additionIds: Array.isArray(a.additionIds) ? a.additionIds as string[] : tryParseJSON<string[]>(a.additionIds || "[]") || [], referringPhysicianId: (a as { referringPhysicianId?: string }).referringPhysicianId || "", referralDoctor: a.referralDoctor || "", emergency: !!a.emergency, appointmentDate: a.appointmentDate ? a.appointmentDate.slice(0, 10) : "", appointmentTime: a.appointmentTime || "", status: a.status, notes: a.notes || "" })} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("radiology.schedule.edit") as string} aria-label={t("radiology.schedule.edit") as string}><Pencil className="w-4 h-4" /></button>
+                          {a.status !== "CANCELLED" && a.status !== "DONE" ? (
+                            <button onClick={() => convert(a)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("radiology.schedule.convertToStudy") as string} aria-label={t("radiology.schedule.convertToStudy") as string}><ArrowRightLeft className="w-4 h-4" /></button>
+                          ) : null}
+                          {STATUS_CHAIN[a.status] ? (
+                            <button onClick={() => advance(a)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title={t("radiology.schedule.advanceStatus") as string} aria-label={t("radiology.schedule.advanceStatus") as string}><RefreshCw className="w-4 h-4" /></button>
+                          ) : null}
+                          {isManagerUser ? (
+                            <button onClick={() => remove(a)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title={t("radiology.schedule.delete") as string} aria-label={t("radiology.schedule.delete") as string}><Trash2 className="w-4 h-4" /></button>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {selected.size > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70">
+              <span className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.selectedCount", { count: selected.size })}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button onClick={() => runBulk("checkin")} disabled={!!bulkBusy} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">
+                  {bulkBusy === "checkin" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}{t("radiology.schedule.bulkCheckin")}
+                </button>
+                {isManagerUser ? (
+                  <button onClick={() => runBulk("convert")} disabled={!!bulkBusy} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 disabled:opacity-50">
+                    {bulkBusy === "convert" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRightLeft className="w-3.5 h-3.5" />}{t("radiology.schedule.bulkConvert")}
+                  </button>
+                ) : null}
+                {isManagerUser ? (
+                  <button onClick={() => setSelected(new Set())} className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title={t("radiology.cancel") as string} aria-label={t("radiology.cancel") as string}><XMarkIcon className="w-4 h-4" /></button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t dark:border-gray-700">
+            <span className="text-sm text-gray-600 dark:text-gray-300">{t("radiology.schedule.showingCount", { shown: items.length, total })}</span>
+            {items.length < total ? (
+              <button onClick={loadMore} className="flex items-center gap-1.5 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                <Loader2 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />{t("radiology.schedule.loadMore")}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {modal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" role="dialog" aria-modal="true" onClick={() => !saving && setModal(null)}>
+          <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">{modal.id ? t("radiology.schedule.editBooking") : (modal.status === "CHECKED_IN" ? t("radiology.schedule.walkInModal") : t("radiology.schedule.newBookingModal"))}</h3>
+              <button onClick={() => !saving && setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300" aria-label={t("radiology.cancel") as string}><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2 relative">
+                <div className="flex items-center justify-between">
+                  <label className={labelCls}>{t("radiology.schedule.patientRequired")}</label>
+                  <button type="button" onClick={openNewPatient} className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mb-1"><UserPlus className="w-3.5 h-3.5" />{t("radiology.schedule.addNewPatient")}</button>
+                </div>
+                <input className={MODAL_INPUT_CLS} value={patientSearch || modal.patientName} onChange={e => { const v = e.target.value; setPatientSearch(v); setModal(m => m ? { ...m, patientId: "", patientName: v, patientPhone: v ? m.patientPhone : "" } : m); }} placeholder={t("radiology.schedule.searchPatient")} />
+                {patientSearch.trim() && (
+                  <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
+                    {patientResults.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noResults")}</div>
+                    ) : patientResults.map(p => (
+                      <button key={p.id} type="button" onClick={() => pickPatient(p)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <span className="font-medium">{p.firstName} {p.lastName || ""}</span>
+                        {p.phone ? <span className="text-xs text-gray-500 dark:text-gray-400"> ΓÇö {p.phone}</span> : null}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {newPatientOpen ? (
+                  <div className="mt-3 rounded-lg border dark:border-gray-600 p-3 space-y-3 bg-gray-50 dark:bg-gray-800/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.patientName")}</label>
+                        <input className={MODAL_INPUT_CLS} value={newPatient.firstName} onChange={e => setNewPatient({ ...newPatient, firstName: e.target.value })} placeholder={t("radiology.schedule.fullNamePlaceholder")} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.phone")}</label>
+                        <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.phone} onChange={e => setNewPatient({ ...newPatient, phone: e.target.value })} placeholder="01xxxxxxxxx" />
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.gender")}</label>
+                        <select className={MODAL_INPUT_CLS} value={newPatient.gender} onChange={e => setNewPatient({ ...newPatient, gender: e.target.value })}>
+                          <option value="">{t("radiology.gender.unspecified")}</option>
+                          <option value="male">{t("radiology.gender.male")}</option>
+                          <option value="female">{t("radiology.gender.female")}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.nationalIdHint")}</label>
+                        <div className="flex gap-2">
+                          <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.nationalId} onChange={e => setNewPatient({ ...newPatient, nationalId: e.target.value.replace(/\D/g, "").slice(0, 14) })} placeholder={t("radiology.schedule.nationalId14")} />
+                          <button type="button" onClick={openCardScanner} className="shrink-0 flex items-center gap-1 px-3 py-2 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <ScanLine className="w-3.5 h-3.5" />{t("radiology.schedule.scanCard")}
+                          </button>
+                        </div>
+                        {newPatient.nationalIdImage ? (
+                          <img src={newPatient.nationalIdImage} alt="╪¿╪╖╪º┘é╪⌐ ╪º┘ä╪▒┘é┘à ╪º┘ä┘é┘ê┘à┘è" className="mt-2 w-24 h-16 object-cover rounded-lg border dark:border-gray-600" />
+                        ) : null}
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t("radiology.schedule.birthDate")}</label>
+                        <input type="date" className={MODAL_INPUT_CLS} value={newPatient.birthDate} onChange={e => setNewPatient({ ...newPatient, birthDate: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => setNewPatientOpen(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border rounded-lg">{t("radiology.cancel")}</button>
+                      <button type="button" onClick={saveNewPatient} disabled={savingNewPatient} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                        {savingNewPatient ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}{t("radiology.schedule.saveAndSelectPatient")}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.phone")}</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.patientPhone} onChange={e => setModal({ ...modal, patientPhone: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.age")}</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.patientAge} onChange={e => setModal({ ...modal, patientAge: e.target.value })} placeholder={t("radiology.schedule.agePlaceholder")} />
+              </div>
+              <div className="sm:col-span-2 relative">
+                <label className={labelCls}>{t("radiology.schedule.examTypes")} ({modal.examTypeIds.length})</label>
+                <div className="relative">
+                  <input
+                    className={`${MODAL_INPUT_CLS} pl-8`}
+                    value={examSearch}
+                    onChange={e => { setExamSearch(e.target.value); setExamOpen(true); }}
+                    onFocus={() => setExamOpen(true)}
+                    onBlur={() => setExamOpen(false)}
+                    placeholder={t("radiology.schedule.searchExam")}
+                  />
+                  <ChevronDown className="w-4 h-4 absolute left-3 top-2.5 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                  {examOpen ? (
+                    <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl" onMouseDown={e => e.preventDefault()}>
+                      {examFiltered.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noExams")}</div>
+                      ) : examFiltered.slice(0, 60).map(et => {
+                        const selected = modal.examTypeIds.includes(et.id);
+                        return (
+                          <button key={et.id} type="button" onClick={() => toggleExam(et.id)} className={`block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between gap-2 ${selected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`}>
+                            <span className="min-w-0">
+                              <span className="font-medium">{et.name}</span>
+                              {et.category ? <span className="text-xs text-gray-500 dark:text-gray-400"> ({et.category})</span> : null}
+                            </span>
+                            {selected ? <span className="text-xs text-blue-600 dark:text-blue-400 shrink-0">Γ£ô</span> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+                {modal.examTypeIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {modal.examTypeIds.map(id => {
+                      const et = examTypes.find(t => t.id === id);
+                      const cov = coverage[id];
+                      return (
+                        <span key={id} className={`flex items-center gap-1.5 text-xs border dark:border-gray-600 rounded-full px-2.5 py-1 ${cov && !cov.covered ? "border-amber-500 text-amber-600 dark:text-amber-400" : "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"}`}>
+                          <span className="font-medium">{et?.name || "ΓÇö"}</span>
+                          {cov && !cov.covered ? <span className="text-[10px] font-semibold">{t("radiology.schedule.notCovered")}</span> : null}
+                          <button type="button" onClick={() => toggleExam(id)} className="text-gray-400 hover:text-red-500"><XMarkIcon className="w-3 h-3" /></button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>{t("radiology.schedule.priceLabel")}</label>
+                <div className="rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    {(() => {
+                      const exams = modal.examTypeIds.map(id => examTypes.find(t => t.id === id)).filter(Boolean);
+                      const base = exams.reduce((s, et) => {
+                        const cov = coverage[et?.id || ""];
+                        const price = entityPrice !== null && modal.examTypeIds[0] === et?.id ? entityPrice : (cov && cov.entityPrice != null ? cov.entityPrice : (et ? Number(et.price) || 0 : 0));
+                        return s + price;
+                      }, 0);
+                      const add = additions.filter(a => modal.additionIds.includes(a.id)).reduce((s, a) => s + a.price, 0);
+                      return `${Number(base + add).toFixed(0)} ${t("radiology.currency")}${entityPrice !== null ? ` (${t("radiology.schedule.tariffSuffix", { name: insuranceCompanies.find(c => c.id === modal.insuranceCompanyId)?.name || t("radiology.schedule.insuranceOptional") })})` : ""}`;
+                    })()}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.payer")}</label>
+                <select className={MODAL_INPUT_CLS} value={modal.payerType} onChange={e => { const pt = e.target.value; setModal(m => m ? { ...m, payerType: pt, insuranceCompanyId: pt === "INSURANCE" ? m.insuranceCompanyId : "", referralSourceId: pt === "REFERRAL" ? m.referralSourceId : "", externalPartnerId: pt === "PARTNER" ? m.externalPartnerId : "" } : m); }}>
+                  <option value="CUSTOMER">{t("radiology.schedule.payerCustomer")}</option>
+                  <option value="INSURANCE">{t("radiology.schedule.payerInsurance")}</option>
+                  <option value="REFERRAL">{t("radiology.schedule.payerReferral")}</option>
+                  <option value="PARTNER">{t("radiology.schedule.payerPartner")}</option>
+                </select>
+              </div>
+              {modal.payerType === "INSURANCE" ? (
+                <div>
+                  <label className={labelCls}>{t("radiology.schedule.insuranceCompany")}</label>
+                  <select className={MODAL_INPUT_CLS} value={modal.insuranceCompanyId} onChange={e => setModal({ ...modal, insuranceCompanyId: e.target.value })}>
+                    <option value="">{t("radiology.schedule.insuranceCompanyPlaceholder")}</option>
+                    {insuranceCompanies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              ) : modal.payerType === "REFERRAL" ? (
+                <div>
+                  <label className={labelCls}>{t("radiology.schedule.referralSource")}</label>
+                  <select className={MODAL_INPUT_CLS} value={modal.referralSourceId} onChange={e => {
+                    const sid = e.target.value;
+                    const src = referralSources.find(s => s.id === sid) as ({ id: string; name: string; marketingRepId?: string | null } | undefined);
+                    setModal(m => {
+                      if (!m) return m;
+                      // ╪º┘é╪¬╪▒╪º╪¡ ┘à┘å╪»┘ê╪¿ ╪º┘ä╪¼┘ç╪⌐ ┘ü┘é╪╖ ╪Ñ╪░╪º ┘ä┘à ┘è┘â┘å ┘ç┘å╪º┘â ┘à┘å╪»┘ê╪¿ ╪╖╪¿┘è╪¿ ┘à╪¡╪»╪» ┘è╪»┘ê┘è╪º┘ï
+                      const hasPhysicianRep = m.referringPhysicianId && m.marketingRepId;
+                      const suggestedRep = hasPhysicianRep ? m.marketingRepId : (src?.marketingRepId || "");
+                      const repName = hasPhysicianRep ? m.marketingRepName : (src?.marketingRepId ? (marketingReps.find(r => r.id === src.marketingRepId)?.name || "") : "");
+                      return { ...m, referralSourceId: sid, marketingRepId: suggestedRep, marketingRepName: repName };
+                    });
+                  }}>
+                    <option value="">{t("radiology.schedule.referralSourcePlaceholder")}</option>
+                    {referralSources.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              ) : modal.payerType === "PARTNER" ? (
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>{t("radiology.schedule.externalPartner")}</label>
+                  <select className={MODAL_INPUT_CLS} value={modal.externalPartnerId} onChange={e => setModal({ ...modal, externalPartnerId: e.target.value })}>
+                    <option value="">{t("radiology.schedule.externalPartnerPlaceholder")}</option>
+                    {externalPartners.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <div className="mt-2">
+                    <label className={labelCls}>{t("radiology.schedule.paymentDestination")}</label>
+                    <div className="flex flex-wrap gap-4">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <input type="radio" name="paymentDestination" checked={modal.paymentDestination !== "PARTNER"} onChange={() => setModal({ ...modal, paymentDestination: "ME" })} className="accent-blue-600" />{t("radiology.schedule.destMe")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <input type="radio" name="paymentDestination" checked={modal.paymentDestination === "PARTNER"} onChange={() => setModal({ ...modal, paymentDestination: "PARTNER" })} className="accent-blue-600" />{t("radiology.schedule.destPartner")}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.device")}</label>
+                <select className={MODAL_INPUT_CLS} value={modal.deviceId} onChange={e => setModal({ ...modal, deviceId: e.target.value })}>
+                  <option value="">{t("radiology.schedule.noDevice")}</option>
+                  {devices.filter(d => d.isActive !== false).map(d => (
+                    <option key={d.id} value={d.id}>{d.name}{d.room ? ` ΓÇö ${d.room}` : ""}</option>
+                  ))}
+                </select>
+                {(() => {
+                  const did = modal.deviceId, d = modal.appointmentDate;
+                  if (!did || !d) return null;
+                  const clash = items.find(a => {
+                    if (a.id === modal.id || a.status === "CANCELLED" || a.deviceId !== did) return false;
+                    if (a.appointmentDate?.slice(0, 10) !== d) return false;
+                    const t1 = modal.appointmentTime, t2 = a.appointmentTime;
+                    if (t1 && t2) return t1 === t2;
+                    return true;
+                  });
+                  return clash ? (
+                    <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> {t("radiology.schedule.deviceConflict", { name: clash.patientName, time: clash.appointmentTime || "ΓÇö" })}
+                    </p>
+                  ) : null;
+                })()}
+              </div>
+              {!modal.id && modal.status === "CHECKED_IN" ? (
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>{t("radiology.receptionFlow.initialPayment")}</label>
+                  <div className="flex gap-3">
+                    <input type="number" min={0} className={MODAL_INPUT_CLS} dir="ltr" placeholder={t("radiology.receptionFlow.amountPlaceholder") as string} value={initialPayment.amount} onChange={e => setInitialPayment(p => ({ ...p, amount: e.target.value }))} />
+                    <select className={MODAL_INPUT_CLS} style={{ maxWidth: 200 }} value={initialPayment.method} onChange={e => setInitialPayment(p => ({ ...p, method: e.target.value }))}>
+                      {PAY_METHODS.map(m => <option key={m} value={m}>{t(`radiology.paymentMethod.${m}`)}</option>)}
+                    </select>
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t("radiology.receptionFlow.initialPaymentHint")}</p>
+                </div>
+              ) : null}
+              {modal.insuranceCompanyId && Object.keys(coverage).some(k => !coverage[k]?.covered) ? (
+                <div className="sm:col-span-2">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> {t("radiology.schedule.coverageWarning")}
+                  </p>
+                </div>
+              ) : null}
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.insuranceNumberLabel")}</label>
+                <input className={MODAL_INPUT_CLS} dir="ltr" value={modal.insuranceNumber} onChange={e => setModal({ ...modal, insuranceNumber: e.target.value })} />
+              </div>
+              <div className="relative">
+                <label className={labelCls}>{t("radiology.schedule.referringDoctor")}</label>
+                <input className={MODAL_INPUT_CLS} value={physicianSearch || modal.referralDoctor} onChange={e => { setPhysicianSearch(e.target.value); if (!e.target.value) setModal({ ...modal, referringPhysicianId: "", referralDoctor: "" }); }} placeholder={t("radiology.schedule.searchDoctor")} />
+                {physicianSearch.trim() && (
+                  <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl">
+                    {physicianResults.length === 0 ? <div className="px-3 py-2 text-sm text-gray-500">{t("radiology.schedule.noResults")}</div> : physicianResults.map(p => (
+                      <button key={p.id} type="button" onClick={() => pickPhysician(p)} className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"><span className="font-medium">{p.name}</span></button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.marketingRep")}</label>
+                <select className={MODAL_INPUT_CLS} value={modal.marketingRepId} onChange={e => {
+                  const rid = e.target.value;
+                  const rep = marketingReps.find(r => r.id === rid);
+                  setModal(m => m ? { ...m, marketingRepId: rid, marketingRepName: rep?.name || "" } : m);
+                }}>
+                  <option value="">{t("radiology.schedule.noMarketingRep")}</option>
+                  {marketingReps.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+                {modal.marketingRepName && !modal.marketingRepId ? <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{modal.marketingRepName}</p> : null}
+              </div>
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.date")}</label>
+                <input type="date" className={MODAL_INPUT_CLS} value={modal.appointmentDate} onChange={e => setModal({ ...modal, appointmentDate: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>{t("radiology.schedule.time")}</label>
+                <input type="time" className={MODAL_INPUT_CLS} value={modal.appointmentTime} onChange={e => setModal({ ...modal, appointmentTime: e.target.value })} />
+                {(() => {
+                  const d = modal.appointmentDate, tm = modal.appointmentTime;
+                  if (!d || !tm) return null;
+                  const clash = items.find(a => a.id !== modal.id && a.status !== "CANCELLED" && a.appointmentDate?.slice(0, 10) === d && a.appointmentTime === tm);
+                  return clash ? (
+                    <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> {t("radiology.schedule.timeSlotTaken", { name: clash.patientName })}
+                    </p>
+                  ) : null;
+                })()}
+              </div>
+              {additions.length > 0 ? (
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>{t("radiology.schedule.examAdditions")}</label>
+                  <div className="flex flex-wrap gap-2">
+                    {additions.map(a => (
+                      <label key={a.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg px-3 py-1.5 cursor-pointer">
+                        <input type="checkbox" checked={modal.additionIds.includes(a.id)} onChange={() => setModal({ ...modal, additionIds: modal.additionIds.includes(a.id) ? modal.additionIds.filter(x => x !== a.id) : [...modal.additionIds, a.id] })} className="rounded border-gray-300 dark:border-gray-600" />
+                        {a.name} ({Number(a.price).toFixed(0)} {t("radiology.currency")})
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <div className="sm:col-span-2 flex items-center gap-6">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={modal.emergency} onChange={e => setModal({ ...modal, emergency: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />{t("radiology.schedule.emergencyCase")}
+                </label>
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>{t("radiology.schedule.medicalRiskFlags")}</label>
+                <div className="flex flex-wrap gap-2">
+                  {patientFlags.map(f => (
+                    <label key={f.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg px-3 py-1.5 cursor-pointer">
+                      <input type="checkbox" checked={modal.patientFlags.includes(f.value)} onChange={() => setModal({ ...modal, patientFlags: modal.patientFlags.includes(f.value) ? modal.patientFlags.filter(x => x !== f.value) : [...modal.patientFlags, f.value] })} className="rounded border-gray-300 dark:border-gray-600" />
+                      {f.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>{t("radiology.schedule.notes")}</label>
+                <input className={MODAL_INPUT_CLS} value={modal.notes} onChange={e => setModal({ ...modal, notes: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-end gap-3 mt-6">
+              <button onClick={() => setModal(null)} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg disabled:opacity-50">{t("radiology.cancel")}</button>
+              {!modal.id && modal.status === "CHECKED_IN" ? (
+                <>
+                  <button onClick={receiveAndCreate} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}{t("radiology.receptionFlow.receiveAndCreate")}
+                  </button>
+                  <button onClick={() => save(true)} disabled={saving} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 flex items-center gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}{t("radiology.schedule.saveAndConvert")}
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => save(false)} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("radiology.save")}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <input
+        ref={cardInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={e => { handleCardScanFile(e.target.files?.[0] || null); e.target.value = ""; }}
+      />
+
+      {cardScan && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" role="dialog" aria-modal="true" onClick={() => { setCardScan(null); setCardScanTarget(null); }}>
+          <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">{t("radiology.schedule.cardScanTitle")}</h3>
+              <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label={t("radiology.cancel") as string}><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            <img src={cardScan} alt="╪º┘ä╪¿╪╖╪º┘é╪⌐" className="w-full max-h-64 object-contain rounded-lg border dark:border-gray-600 mb-4" />
+            {cardOcrBusy ? (
+              <p className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mb-3">
+                <Loader2 className="w-4 h-4 animate-spin" />{t("radiology.schedule.cardOcrReading")}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{t("radiology.schedule.cardScanHint")}</p>
+            )}
+            {cardScanTarget === "newPatient" ? (
+              <input className={MODAL_INPUT_CLS} dir="ltr" value={newPatient.nationalId} onChange={e => setNewPatient({ ...newPatient, nationalId: e.target.value.replace(/\D/g, "").slice(0, 14) })} placeholder={t("radiology.schedule.nationalId14")} />
+            ) : null}
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => { setCardScan(null); setCardScanTarget(null); }} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg">{t("radiology.cancel")}</button>
+              <button onClick={applyScannedCard} disabled={cardOcrBusy} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{t("radiology.schedule.cardScanConfirm")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

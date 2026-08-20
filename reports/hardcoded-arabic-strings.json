@@ -1,0 +1,665 @@
+﻿{
+  "total": 109,
+  "byCategory": {
+    "alert": [
+      {
+        "file": "components\\conversations\\OrderModal.tsx",
+        "line": 170,
+        "category": "alert",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿: \" + (data.error || i18n.t(\"OrderModal.msg_fe97"
+      },
+      {
+        "file": "components\\conversations\\OrderModalEnhanced.tsx",
+        "line": 387,
+        "category": "alert",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿: \" + (data.error || i18n.t(\"OrderModalEnhanced.msg_1ca3"
+      },
+      {
+        "file": "components\\facebook-inbox\\ImageGallery\\ImageGalleryModal.tsx",
+        "line": 119,
+        "category": "alert",
+        "string": "Γ£à ╪¬┘à ╪¡┘ü╪╕ ${successCount} ╪╡┘ê╪▒╪⌐ ┘ü┘è ╪º┘ä╪¡╪º┘ü╪╕╪⌐!"
+      },
+      {
+        "file": "components\\facebook-inbox\\TextGallery\\TextGalleryModal.tsx",
+        "line": 282,
+        "category": "alert",
+        "string": "╪¡╪¼┘à ╪º┘ä┘à┘ä┘ü ${file.name} ┘â╪¿┘è╪▒ ╪¼╪»╪º┘ï. ╪º┘ä╪¡╪» ╪º┘ä╪ú┘é╪╡┘ë 10 ┘à┘è╪¼╪º╪¿╪º┘è╪¬."
+      },
+      {
+        "file": "components\\facebook-inbox\\TextGallery\\TextGalleryModal.tsx",
+        "line": 286,
+        "category": "alert",
+        "string": "╪º┘ä┘à┘ä┘ü ${file.name} ┘ä┘è╪│ ╪╡┘ê╪▒╪⌐."
+      },
+      {
+        "file": "components\\orders\\OrderModal.tsx",
+        "line": 298,
+        "category": "alert",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪╖┘ä╪¿: \" + (data.error || i18n.t(\"OrderModal.msg_fe97"
+      },
+      {
+        "file": "pages\\FacebookStatusPage.tsx",
+        "line": 84,
+        "category": "alert",
+        "string": "Γ¥î ┘ü╪┤┘ä ┘ü┘è ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪º┘ä╪¬╪¼╪▒┘è╪¿┘è╪⌐: ${data.error}"
+      },
+      {
+        "file": "pages\\hr\\Deductions.tsx",
+        "line": 160,
+        "category": "alert",
+        "string": "${errorMsg}\\n${details ? `╪º┘ä╪¬┘ü╪º╪╡┘è┘ä: ${details}` : \"\"}"
+      },
+      {
+        "file": "pages\\inventory\\Inventory.tsx",
+        "line": 327,
+        "category": "alert",
+        "string": "╪¬┘à ╪Ñ╪╢╪º┘ü╪⌐ \"${product.name || \"╪º┘ä┘à┘å╪¬╪¼\"}\" ┘ê╪Ñ╪▒╪│╪º┘ä┘ç ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐"
+      },
+      {
+        "file": "pages\\super-admin\\DevTaskSettings.tsx",
+        "line": 221,
+        "category": "alert",
+        "string": "┘ü╪┤┘ä ╪º┘ä╪¡┘ü╪╕: \" + (data.message || i18n.t(\"DevTaskSettings.msg_74b2"
+      }
+    ],
+    "console": [
+      {
+        "file": "components\\orders\\OrderModal.tsx",
+        "line": 127,
+        "category": "console",
+        "string": "Γ£à ╪¬┘à ╪¬╪¡┘à┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬ ╪¿┘å╪¼╪º╪¡:"
+      },
+      {
+        "file": "components\\orders\\OrderModal.tsx",
+        "line": 130,
+        "category": "console",
+        "string": "Γ¥î ┘ü╪┤┘ä ┘ü┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬:"
+      },
+      {
+        "file": "components\\orders\\OrderModal.tsx",
+        "line": 133,
+        "category": "console",
+        "string": "Γ¥î ╪«╪╖╪ú ┘ü┘è ╪¬╪¡┘à┘è┘ä ╪º┘ä┘à┘å╪¬╪¼╪º╪¬:"
+      },
+      {
+        "file": "pages\\conversations\\MessengerChat-final.tsx",
+        "line": 359,
+        "category": "console",
+        "string": "╪«╪╖╪ú ┘ü┘è ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪│╪º┘ä╪⌐:"
+      },
+      {
+        "file": "pages\\CustomerPayments.jsx",
+        "line": 36,
+        "category": "console",
+        "string": "╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪º┘ä╪¿┘è╪º┘å╪º╪¬:"
+      },
+      {
+        "file": "pages\\facebook-inbox\\FacebookInbox.tsx",
+        "line": 903,
+        "category": "console",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪│╪º┘ä╪⌐:"
+      },
+      {
+        "file": "pages\\facebook-inbox\\FacebookInbox.tsx",
+        "line": 1215,
+        "category": "console",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¡╪º┘ä╪⌐:"
+      },
+      {
+        "file": "pages\\facebook-inbox\\FacebookInbox.tsx",
+        "line": 1234,
+        "category": "console",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪¬╪╣┘è┘è┘å ╪º┘ä┘à╪¡╪º╪»╪½╪⌐:"
+      },
+      {
+        "file": "pages\\facebook-inbox\\FacebookInbox.tsx",
+        "line": 1252,
+        "category": "console",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪¡╪º╪»╪½╪⌐:"
+      },
+      {
+        "file": "pages\\facebook-inbox\\FacebookInbox.tsx",
+        "line": 1272,
+        "category": "console",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐:"
+      },
+      {
+        "file": "pages\\facebook-inbox\\FacebookInbox.tsx",
+        "line": 1290,
+        "category": "console",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¬╪╡┘å┘è┘ü╪º╪¬:"
+      },
+      {
+        "file": "pages\\facebook-inbox\\FacebookInbox.tsx",
+        "line": 1325,
+        "category": "console",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪¡╪░┘ü ╪º┘ä┘à╪¡╪º╪»╪½╪⌐:"
+      },
+      {
+        "file": "pages\\PaymentPage.jsx",
+        "line": 36,
+        "category": "console",
+        "string": "╪«╪╖╪ú ┘ü┘è ╪¼┘ä╪¿ ╪ú╪▒┘é╪º┘à ╪º┘ä┘à╪¡╪º┘ü╪╕:"
+      },
+      {
+        "file": "pages\\products\\hooks\\useProductMedia.ts",
+        "line": 48,
+        "category": "console",
+        "string": "╪¬╪╣╪░╪▒ ╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒:"
+      },
+      {
+        "file": "services\\apiClient.ts",
+        "line": 602,
+        "category": "console",
+        "string": "[╪«╪╖╪ú ${status}] ${detailedMessage}"
+      }
+    ],
+    "toast": [
+      {
+        "file": "pages\\admin\\booking\\AppointmentsTab.tsx",
+        "line": 74,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä┘à┘ê╪╣╪» ╪Ñ┘ä┘ë \"${label}\""
+      },
+      {
+        "file": "pages\\admin\\ServiceManagementPage.tsx",
+        "line": 42,
+        "category": "toast",
+        "string": "┘ü╪┤┘ä ╪▒┘ü╪╣: ${file.name}"
+      },
+      {
+        "file": "pages\\advertising\\CatalogDetails.tsx",
+        "line": 88,
+        "category": "toast",
+        "string": "╪¬┘à ┘à╪▓╪º┘à┘å╪⌐ ${result.successful} ┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\advertising\\CatalogDetails.tsx",
+        "line": 95,
+        "category": "toast",
+        "string": "┘ü╪┤┘ä ┘ü┘è ┘à╪▓╪º┘à┘å╪⌐ ${result.failed} ┘à┘å╪¬╪¼"
+      },
+      {
+        "file": "pages\\advertising\\CreateAd.tsx",
+        "line": 191,
+        "category": "toast",
+        "string": "╪¼╪º╪▒┘è ╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒╪⌐..."
+      },
+      {
+        "file": "pages\\advertising\\CreateAd.tsx",
+        "line": 210,
+        "category": "toast",
+        "string": "╪¬┘à ╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒╪⌐ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\advertising\\CreateAd.tsx",
+        "line": 231,
+        "category": "toast",
+        "string": "╪¼╪º╪▒┘è ╪▒┘ü╪╣ ╪º┘ä┘ü┘è╪»┘è┘ê..."
+      },
+      {
+        "file": "pages\\advertising\\CreateAd.tsx",
+        "line": 252,
+        "category": "toast",
+        "string": "╪¬┘à ╪▒┘ü╪╣ ╪º┘ä┘ü┘è╪»┘è┘ê ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
+        "line": 464,
+        "category": "toast",
+        "string": "Γ¥î ╪«╪╖╪ú: ${getErrorMessage(error, i18n.t(\"facebookPixel.msg_134e\"))}"
+      },
+      {
+        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
+        "line": 484,
+        "category": "toast",
+        "string": "Γ¥î ╪«╪╖╪ú: ${getErrorMessage(error, i18n.t(\"facebookPixel.msg_dbf2\"))}"
+      },
+      {
+        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
+        "line": 542,
+        "category": "toast",
+        "string": "ΓÜá∩╕Å ╪º┘ä╪╡┘ä╪º╪¡┘è╪º╪¬ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐ ╪║┘è╪▒ ┘à╪¬┘ê┘ü╪▒╪⌐: ${missingPerms}"
+      },
+      {
+        "file": "pages\\advertising\\OverlayCampaigns.tsx",
+        "line": 97,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪╖╪¿┘è┘é ╪º┘ä╪Ñ╪╖╪º╪▒ ╪╣┘ä┘ë ${data.data?.results?.length || 0} ┘à┘å╪¬╪¼"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateCommission.tsx",
+        "line": 164,
+        "category": "toast",
+        "string": "╪º┘ä╪¡╪» ╪º┘ä╪ú╪»┘å┘ë ┘ä┘ä╪│╪¡╪¿ ┘ç┘ê ${formatPrice(minimumPayout)}"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateProductsVisibility.tsx",
+        "line": 235,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪¡╪»┘è╪½ ${res.data.data.count} ┘à┘å╪¬╪¼"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 125,
+        "category": "toast",
+        "string": "┘é┘è┘à╪⌐ ${product.name} ╪║┘è╪▒ ╪╡╪º┘ä╪¡╪⌐"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 141,
+        "category": "toast",
+        "string": "╪ú╪│╪╣╪º╪▒ ${product.name} ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 146,
+        "category": "toast",
+        "string": "╪¬┘â┘ä┘ü╪⌐ ╪º┘ä┘à╪│┘ê┘é ┘ü┘è ${product.name} ┘ä╪º ┘è╪¼╪¿ ╪ú┘å ╪¬┘é┘ä ╪╣┘å ╪│╪╣╪▒ ╪º┘ä╪¬╪º╪¼╪▒"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 151,
+        "category": "toast",
+        "string": "╪º┘ä╪│╪╣╪▒ ╪º┘ä┘å┘ç╪º╪ª┘è ┘ü┘è ${product.name} ┘ä╪º ┘è╪¼╪¿ ╪ú┘å ┘è┘é┘ä ╪╣┘å ╪¬┘â┘ä┘ü╪⌐ ╪º┘ä┘à╪│┘ê┘é"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 169,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪¡╪»┘è╪½ ${changesCount} ┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡!"
+      },
+      {
+        "file": "pages\\comments\\PostComments.jsx",
+        "line": 388,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡╪░┘ü ${selectedComments.length} ╪¬╪╣┘ä┘è┘é"
+      },
+      {
+        "file": "pages\\comments\\PostSettings.jsx",
+        "line": 156,
+        "category": "toast",
+        "string": "╪¬┘à╪¬ ┘à╪╣╪º┘ä╪¼╪⌐ ${response.data.processedComments} ╪¬╪╣┘ä┘è┘é"
+      },
+      {
+        "file": "pages\\comments\\PostSettings.jsx",
+        "line": 159,
+        "category": "toast",
+        "string": "╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪¬╪╖╪¿┘è┘é ╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪▒╪»: "
+      },
+      {
+        "file": "pages\\hr\\assets\\AssetList.tsx",
+        "line": 538,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ${selectedIds.length} ╪ú╪╡┘ê┘ä ╪Ñ┘ä┘ë ${status.label}"
+      },
+      {
+        "file": "pages\\hr\\assets\\AssetList.tsx",
+        "line": 542,
+        "category": "toast",
+        "string": "┘ü╪┤┘ä ┘ü┘è ╪¬╪¡╪»┘è╪½ ╪º┘ä╪¡╪º┘ä╪⌐"
+      },
+      {
+        "file": "pages\\hr\\AssignShift.tsx",
+        "line": 194,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪╣┘è┘è┘å ${selectedEmployeeIds.length} ┘à┘ê╪╕┘ü ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\hr\\components\\PayrollSimulator.tsx",
+        "line": 294,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪╖╪¿┘è┘é ╪│┘è┘å╪º╪▒┘è┘ê: ${scenario.name}"
+      },
+      {
+        "file": "pages\\hr\\Departments.tsx",
+        "line": 502,
+        "category": "toast",
+        "string": "╪¬┘à ╪Ñ╪╢╪º┘ü╪⌐ ${assignEmployeesSelection.length} ┘à┘ê╪╕┘ü ┘ä┘ä┘é╪│┘à"
+      },
+      {
+        "file": "pages\\hr\\HRSettings.tsx",
+        "line": 732,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡┘ü╪╕ ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\hr\\HRSettings.tsx",
+        "line": 859,
+        "category": "toast",
+        "string": "╪¬┘à ╪º┘ä╪¡╪╡┘ê┘ä ╪╣┘ä┘ë ╪º┘ä┘à┘ê┘é╪╣ ╪º┘ä╪¡╪º┘ä┘è ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\hr\\ManualAttendanceEdit.tsx",
+        "line": 496,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪╣┘è┘è┘å ┘ê┘é╪¬ ╪º┘ä╪¡╪╢┘ê╪▒: ${currentTime}"
+      },
+      {
+        "file": "pages\\hr\\ManualAttendanceEdit.tsx",
+        "line": 505,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪╣┘è┘è┘å ┘ê┘é╪¬ ╪º┘ä╪º┘å╪╡╪▒╪º┘ü: ${currentTime}"
+      },
+      {
+        "file": "pages\\hr\\MyCompaniesDashboard.tsx",
+        "line": 195,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪╣┘è┘è┘å ${companyName} ┘â╪┤╪▒┘â╪⌐ ╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 265,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬┘ê┘ä┘è╪» ${result.success.length} ┘â╪┤┘ü ╪▒╪º╪¬╪¿ ╪¼╪»┘è╪»"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 270,
+        "category": "toast",
+        "string": "╪¬┘à ╪Ñ╪╣╪º╪»╪⌐ ╪¬┘ê┘ä┘è╪» ${result.regenerated.length} ┘â╪┤┘ü ╪▒╪º╪¬╪¿"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 275,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪«╪╖┘è ${result.skipped.length} ┘à┘ê╪╕┘ü (┘ä╪»┘è┘ç┘à ┘â╪┤┘ê┘ü ╪▒┘ê╪º╪¬╪¿ ┘à╪│╪¿┘é╪º┘ï)"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 280,
+        "category": "toast",
+        "string": "┘ü╪┤┘ä ╪¬┘ê┘ä┘è╪» ${result.failed.length} ┘â╪┤┘ü"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 338,
+        "category": "toast",
+        "string": "╪¬┘à ╪╡╪▒┘ü ${selectedIds.length} ╪▒╪º╪¬╪¿ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 363,
+        "category": "toast",
+        "string": "╪¬┘à ╪º╪╣╪¬┘à╪º╪» ${response.data.result.updated} ┘â╪┤┘ü ╪▒╪º╪¬╪¿"
+      },
+      {
+        "file": "pages\\hr\\SalaryUpdates.tsx",
+        "line": 200,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪¡╪»┘è╪½ ${res.data.updatedCount} ┘à┘ê╪╕┘ü ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\hr\\Shifts.tsx",
+        "line": 210,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡╪░┘ü ${selectedShifts.length} ┘à┘å╪º┘ê╪¿╪⌐"
+      },
+      {
+        "file": "pages\\orders\\hooks\\useOrderDetails.ts",
+        "line": 781,
+        "category": "toast",
+        "string": "╪º┘ä╪▒┘é┘à ╪º┘ä╪¿╪»┘è┘ä: ${altPhoneValidation.error}"
+      },
+      {
+        "file": "pages\\orders\\hooks\\useTurboShipping.ts",
+        "line": 375,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡╪│╪º╪¿ ╪º┘ä╪│╪╣╪▒ ╪º┘ä┘ü╪╣┘ä┘è ┘ä┘ä╪┤╪¡┘å: ${cost} ╪¼.┘à"
+      },
+      {
+        "file": "pages\\orders\\hooks\\useTurboShipping.ts",
+        "line": 386,
+        "category": "toast",
+        "string": "╪¬┘à ╪╣╪▒╪╢ ╪│╪╣╪▒ ╪º┘ä╪┤╪¡┘å: ${fallbackCost} ╪¼.┘à"
+      },
+      {
+        "file": "pages\\PaymentPage.jsx",
+        "line": 40,
+        "category": "toast",
+        "string": "╪¬┘à ┘å╪│╪« ╪▒┘é┘à ${walletName}"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 105,
+        "category": "toast",
+        "string": "╪¬┘à ${isHidden ? '╪Ñ╪«┘ü╪º╪í' : '╪Ñ╪╕┘ç╪º╪▒'} ${count} ┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 107,
+        "category": "toast",
+        "string": "╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ${isHidden ? '╪º┘ä╪Ñ╪«┘ü╪º╪í' : '╪º┘ä╪Ñ╪╕┘ç╪º╪▒'}"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 114,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡╪░┘ü ${count} ┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 159,
+        "category": "toast",
+        "string": "Γ£à ╪¬┘à ┘å╪│╪« ╪º┘ä┘à┘å╪¬╪¼ \"${product.name}\" ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 162,
+        "category": "toast",
+        "string": "Γ¥î ${err?.response?.data?.error || err?.response?.data?.message || \"╪¡╪»╪½ ╪«╪╖╪ú ╪║┘è╪▒ ┘à╪¬┘ê┘é╪╣\"}"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 170,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡╪░┘ü ${result.deletedProductsCount || 0} ┘à┘å╪¬╪¼ ┘ê ${result.deletedVariantsCount || 0} ┘à╪¬╪║┘è╪▒ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 226,
+        "category": "toast",
+        "string": "╪¬┘à ╪º╪│╪¬┘è╪▒╪º╪» ${count} ┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\products\\ProductsTrash.tsx",
+        "line": 139,
+        "category": "toast",
+        "string": "╪¬┘à ╪º╪│╪¬╪╣╪º╪»╪⌐ ${successCount} ┘à┘å╪¬╪¼ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\products\\ProductsTrash.tsx",
+        "line": 178,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡╪░┘ü ${successCount} ┘à┘å╪¬╪¼ ┘å┘ç╪º╪ª┘è╪º┘ï"
+      },
+      {
+        "file": "pages\\public\\PublicApplicationForm.tsx",
+        "line": 126,
+        "category": "toast",
+        "string": "╪¬┘à ╪▒┘ü╪╣ \"${file.name}\" ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\public\\PublicApplicationForm.tsx",
+        "line": 165,
+        "category": "toast",
+        "string": "┘è╪▒╪¼┘ë ╪▒┘ü╪╣ ┘à┘ä┘ü ┘ä┘ä╪│╪ñ╪º┘ä: \"${question.questionText}\""
+      },
+      {
+        "file": "pages\\public\\PublicApplicationForm.tsx",
+        "line": 175,
+        "category": "toast",
+        "string": "╪º┘ä╪│╪ñ╪º┘ä \"${question.questionText}\" ┘à╪╖┘ä┘ê╪¿"
+      },
+      {
+        "file": "pages\\reports\\ShippingReport.tsx",
+        "line": 132,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪¡╪»┘è╪½ ${orderIds.length} ╪╖┘ä╪¿"
+      },
+      {
+        "file": "pages\\ServiceRequestForm.tsx",
+        "line": 53,
+        "category": "toast",
+        "string": "┘ü╪┤┘ä ╪▒┘ü╪╣: ${file.name}"
+      },
+      {
+        "file": "pages\\settings\\IncompleteOrdersSettings.tsx",
+        "line": 41,
+        "category": "toast",
+        "string": "╪º┘ä┘à╪»╪⌐ ┘è╪¼╪¿ ╪ú┘å ╪¬┘â┘ê┘å ╪¿┘è┘å ${MIN_HOURS} ┘ê ${MAX_HOURS} ╪│╪º╪╣╪⌐"
+      },
+      {
+        "file": "pages\\settings\\StoreSettings.tsx",
+        "line": 1582,
+        "category": "toast",
+        "string": "╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪º┘ä╪¡╪░┘ü: "
+      },
+      {
+        "file": "pages\\settings\\StoreSettings.tsx",
+        "line": 1617,
+        "category": "toast",
+        "string": "╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪º┘ä╪¡┘ü╪╕: "
+      },
+      {
+        "file": "pages\\super-admin\\company-details\\useCompanyDetails.ts",
+        "line": 421,
+        "category": "toast",
+        "string": "╪¬┘à ${enabled ? \"╪¬┘ü╪╣┘è┘ä\" : \"╪Ñ┘è┘é╪º┘ü\"} ╪º┘ä╪«╪º╪╡┘è╪⌐ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\super-admin\\company-details\\useCompanyDetails.ts",
+        "line": 495,
+        "category": "toast",
+        "string": "╪¼╪º╪▒┘è ╪¬┘ü╪╣┘è┘ä ${app.name}... ${Math.round(((index + 1) / uninstalledApps.length) * 100)}%"
+      },
+      {
+        "file": "pages\\super-admin\\SubscriptionCenter.tsx",
+        "line": 1627,
+        "category": "toast",
+        "string": "╪¬┘à ${value ? \"╪¬┘ü╪╣┘è┘ä\" : \"╪¬╪╣╪╖┘è┘ä\"} ╪º┘ä╪¿╪º┘é╪⌐ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\UsersManagement.tsx",
+        "line": 1095,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡╪░┘ü ${pendingAction.count} ┘à╪│╪¬╪«╪»┘à"
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppChat.tsx",
+        "line": 1319,
+        "category": "toast",
+        "string": "╪¬┘à ╪¡╪░┘ü ${jids.length} ┘à╪¡╪º╪»╪½╪⌐ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
+        "line": 201,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪¡┘à┘è┘ä ${phones.length} ╪╣┘à┘è┘ä ┘è╪¡┘à┘ä ╪º┘ä┘ê╪│┘à: ${tagName}"
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
+        "line": 214,
+        "category": "toast",
+        "string": "┘ä╪º ┘è┘ê╪¼╪» ╪¼┘ç╪º╪¬ ╪º╪¬╪╡╪º┘ä ┘ü┘è ╪¬╪╡┘å┘è┘ü \"${categoryName}\""
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
+        "line": 218,
+        "category": "toast",
+        "string": "╪¬┘à ╪º╪│╪¬┘è╪▒╪º╪» ${phones.length} ╪¼┘ç╪⌐ ╪º╪¬╪╡╪º┘ä ┘à┘å \"${categoryName}\""
+      },
+      {
+        "file": "pages\\woocommerce\\components\\StatusMappingTab.tsx",
+        "line": 82,
+        "category": "toast",
+        "string": "╪¬┘à ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä╪¡╪º┘ä╪⌐ \"${val}\""
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceExport.ts",
+        "line": 71,
+        "category": "toast",
+        "string": "╪¬┘à ╪¬╪╡╪»┘è╪▒ ${exported} ╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceExport.ts",
+        "line": 88,
+        "category": "toast",
+        "string": "╪«╪╖╪ú ┘ü┘è ╪¬╪╡╪»┘è╪▒ ╪º┘ä╪╖┘ä╪¿╪º╪¬: ${error.message || \"╪«╪╖╪ú ╪║┘è╪▒ ┘à╪╣╪▒┘ê┘ü\"}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
+        "line": 85,
+        "category": "toast",
+        "string": "┘ü╪┤┘ä ╪º┘ä╪º╪│╪¬┘è╪▒╪º╪»: ${data.error}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
+        "line": 141,
+        "category": "toast",
+        "string": "╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪╖┘ä╪¿╪º╪¬: ${data.data.count}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
+        "line": 176,
+        "category": "toast",
+        "string": "╪¬┘à ╪¼┘ä╪¿ ${data.data.orders.length} ╪╖┘ä╪¿ ┘ä┘ä┘à╪▒╪º╪¼╪╣╪⌐"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
+        "line": 284,
+        "category": "toast",
+        "string": "╪¬┘à ╪º╪│╪¬┘è╪▒╪º╪» ${data.data.imported} ╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImportEnhanced.ts",
+        "line": 379,
+        "category": "toast",
+        "string": "Γ£à ╪¬┘à ╪º╪│╪¬┘è╪▒╪º╪» ${data.imported} ╪╖┘ä╪¿ ╪¿┘å╪¼╪º╪¡"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImportEnhanced.ts",
+        "line": 423,
+        "category": "toast",
+        "string": "Γ¥î ┘ü╪┤┘ä ╪º┘ä╪º╪│╪¬┘è╪▒╪º╪»: ${data.error}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceProducts.ts",
+        "line": 50,
+        "category": "toast",
+        "string": "╪¬┘à ╪¼┘ä╪¿ ${data.data.products.length} ┘à┘å╪¬╪¼"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceSettings.ts",
+        "line": 196,
+        "category": "toast",
+        "string": "Γ£à ╪º┘ä╪º╪¬╪╡╪º┘ä ┘å╪º╪¼╪¡! ╪¬┘à ╪º┘ä╪╣╪½┘ê╪▒ ╪╣┘ä┘ë ${data.data.count} ┘à┘å╪¬╪¼"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceSettings.ts",
+        "line": 198,
+        "category": "toast",
+        "string": "Γ¥î ┘ü╪┤┘ä ╪º┘ä╪º╪¬╪╡╪º┘ä: ${data.message}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceStatus.ts",
+        "line": 136,
+        "category": "toast",
+        "string": "╪¬┘à ╪¼┘ä╪¿ ${data.data.length} ╪¡╪º┘ä╪⌐ ┘à┘å ╪º┘ä┘à╪¬╪¼╪▒"
+      },
+      {
+        "file": "services\\apiClient.ts",
+        "line": 615,
+        "category": "toast",
+        "string": "ΓÜá∩╕Å ╪¡╪»╪½ ╪«╪╖╪ú ╪║┘è╪▒ ┘à╪¬┘ê┘é╪╣"
+      },
+      {
+        "file": "storefront\\components\\QuantityOffersPanel.tsx",
+        "line": 521,
+        "category": "toast",
+        "string": "╪¬┘à╪¬ ╪Ñ╪╢╪º┘ü╪⌐ ╪╣╪▒╪╢ ${activeOffer.quantity} ┘é╪╖╪╣ ╪Ñ┘ä┘ë ╪º┘ä╪│┘ä╪⌐"
+      }
+    ]
+  }
+}

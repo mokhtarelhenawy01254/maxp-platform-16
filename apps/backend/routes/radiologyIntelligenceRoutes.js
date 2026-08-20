@@ -1,0 +1,18 @@
+﻿const express = require('express');
+const router = express.Router();
+const tat = require('../controller/radiologyTatController');
+const physicians = require('../controller/radiologyReferringPhysiciansController');
+const verifyToken = require('../utils/verifyToken');
+
+const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
+
+// Note: this router is expected to be mounted at /api/v1/radiology/intelligence (in server.js).
+router.use(verifyToken.authenticateToken);
+
+// ╪¬╪¡┘ä┘è┘ä╪º╪¬ ┘ê┘é╪¬ ╪º┘ä╪»┘ê╪▒╪º┘å (TAT)
+router.get('/tat', verifyToken.requireRole(MANAGER_ROLES), tat.getTatStatistics);
+
+// ┘å╪¬╪º╪ª╪¼ ╪º┘ä╪ú╪╖╪¿╪º╪í ╪º┘ä┘à╪¡┘ê┘æ┘ä┘è┘å
+router.get('/referring-physicians/:id/results', verifyToken.requireRole(MANAGER_ROLES), physicians.getPhysicianResults);
+
+module.exports = router;

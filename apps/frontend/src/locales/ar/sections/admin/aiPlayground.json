@@ -1,0 +1,10 @@
+﻿{
+  "promptPlaceholder": "Ask anything...",
+  "send": "Send",
+  "sending": "Sending...",
+  "stop": "Stop",
+  "reply": "Reply",
+  "copied": "Copied!",
+  "emptyReply": "No reply received",
+  "receivingReply": "Receiving reply..."
+}

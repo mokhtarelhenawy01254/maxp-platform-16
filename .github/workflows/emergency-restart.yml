@@ -1,0 +1,53 @@
+﻿name: Emergency Server Restart
+
+on:
+  workflow_dispatch:
+
+env:
+  SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+
+jobs:
+  restart:
+    name: Emergency PM2 Restart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Restart PM2 Backend
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          timeout: 5m
+          script: |
+            echo "=== PM2 Status ==="
+            pm2 list
+
+            echo "=== Syntax Check ==="
+            node --check /var/www/backend2/services/turboService.js 2>&1 || echo "SyntaxError still present"
+
+            echo "=== Restarting maxp-backend ==="
+            pm2 restart maxp-backend || pm2 start /var/www/backend2/server.js --name maxp-backend
+            sleep 8
+
+            echo "=== PM2 After Restart ==="
+            pm2 list
+
+            echo "=== Health Check ==="
+            curl -fsS http://127.0.0.1:3007/api/v1/health && echo "UP on 3007" || \
+            curl -fsS http://127.0.0.1:3008/api/v1/health && echo "UP on 3008" || \
+            echo "STILL DOWN"
+
+            echo "=== Last Error Logs ==="
+            tail -n 20 /var/www/backend2/logs/err-0.log 2>/dev/null || true

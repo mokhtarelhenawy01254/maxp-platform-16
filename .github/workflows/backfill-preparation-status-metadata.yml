@@ -1,0 +1,59 @@
+﻿name: Run backend one-off script (backfill preparation status metadata)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run only (no DB changes)'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      company_slug:
+        description: 'Company slug to target (leave empty for all companies)'
+        required: false
+        default: 'swan'
+        type: string
+
+jobs:
+  run-script:
+    name: Backfill metadata.preparationStatus on server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Upload script to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          source: apps/backend/scripts/one-off/backfill-preparation-status-metadata.js
+          target: /var/www/backend2/scripts/one-off/
+          strip_components: 4
+          overwrite: true
+
+      - name: Execute migration script on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /var/www/backend2
+            echo "Current backend dir: $(pwd)"
+            ls -la scripts/one-off/backfill-preparation-status-metadata.js
+
+            export COMPANY_SLUG="${{ github.event.inputs.company_slug }}"
+            export DRY_RUN="${{ github.event.inputs.dry_run }}"
+
+            echo "Running with DRY_RUN=$DRY_RUN, COMPANY=$COMPANY_SLUG"
+            node scripts/one-off/backfill-preparation-status-metadata.js

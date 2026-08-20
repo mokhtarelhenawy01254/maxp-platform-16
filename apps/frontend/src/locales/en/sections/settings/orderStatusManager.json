@@ -1,0 +1,15 @@
+﻿{
+  "error_fetch_fe2a": "Error fetching statuses",
+  "msg_d864": "Error initializing default statuses",
+  "msg_e1a9": "Code and name are required",
+  "success_create_67d7": "Status created successfully",
+  "error_create_9567": "Error creating status",
+  "success_update_dfad": "Status updated successfully",
+  "error_update_f3e8": "Error updating status",
+  "success_delete_f86e": "Status deleted successfully",
+  "error_delete_e809": "Error deleting status",
+  "error_save_9d9b": "Error saving order",
+  "msg_8149": "Default statuses initialized successfully",
+  "msg_e0af": "Error initializing statuses",
+  "msg_8f8d": "Cannot delete this status"
+}
