@@ -103,4 +103,9 @@ router.get('/:id/presentations/:presentationId', verifyToken.authenticateToken, 
 router.put('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.updatePresentation);
 router.delete('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.deletePresentation);
 
+// Convert a duplicate product into a presentation of a target original product
+router.post('/:id/convert-to-presentation', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.convertToPresentation);
+// Bulk convert: multiple products -> presentations of one target original
+router.post('/convert-bulk-to-presentations', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.convertBulkToPresentations);
+
 module.exports = router;

@@ -274,10 +274,155 @@ const deletePresentation = async (req, res) => {
   }
 };
 
+// Convert a single duplicate product into a presentation of a target original product.
+// Shares inventory with the original, hides the standalone page, and redirects old links.
+const convertToPresentation = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول - معرف الشركة مطلوب' });
+    }
+
+    const { id } = req.params; // the duplicate product to convert
+    const { targetProductId, name, title, description, mainImage, images, slug, sortOrder, isActive } = req.body;
+    if (!targetProductId) {
+      return res.status(400).json({ success: false, message: 'معرف المنتج الأصلي مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const [source, target] = await Promise.all([
+      prisma.product.findFirst({ where: { id, companyId, deletedAt: null } }),
+      prisma.product.findFirst({ where: { id: targetProductId, companyId, deletedAt: null } }),
+    ]);
+    if (!source) {
+      return res.status(404).json({ success: false, message: 'المنتج المصدر غير موجود' });
+    }
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'المنتج الأصلي غير موجود' });
+    }
+    if (source.id === target.id) {
+      return res.status(400).json({ success: false, message: 'لا يمكن تحويل المنتج لنفسه' });
+    }
+
+    const baseSlug = slug || source.slug || source.id;
+    const presentationSlug = await generateUniquePresentationSlug(prisma, target.id, baseSlug);
+
+    const presentation = await prisma.productPresentation.create({
+      data: {
+        productId: target.id,
+        name: (name || source.name || target.name).toString().trim(),
+        slug: presentationSlug,
+        images: images && Array.isArray(images) ? JSON.stringify(sanitizeImageCollection(images)) : (source.images ? JSON.stringify(sanitizeImageCollection(source.images)) : '[]'),
+        mainImage: mainImage || source.mainImage || null,
+        title: title || source.name || null,
+        description: description || source.description || null,
+        isActive: isActive !== undefined ? isActive : true,
+        sortOrder: sortOrder !== undefined ? parseInt(sortOrder) : 0,
+        metadata: JSON.stringify({ convertedFromProductId: source.id, originalSku: source.sku || null }),
+      },
+    });
+
+    // Hide the standalone source product from the catalog (soft-delete via deletedAt).
+    await prisma.product.update({
+      where: { id: source.id },
+      data: { deletedAt: new Date() },
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: buildPresentationResponse(presentation),
+      message: 'تم تحويل المنتج إلى عرض تقديمي بنجاح',
+    });
+  } catch (error) {
+    console.error('❌ [convertToPresentation] Error:', error);
+    if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
+      return res.status(400).json({ success: false, message: 'يوجد عرض تقديمي بنفس الرابط لهذا المنتج' });
+    }
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء تحويل المنتج إلى عرض تقديمي' });
+  }
+};
+
+// Bulk convert: array of duplicate product ids -> presentations of one target original.
+const convertBulkToPresentations = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول - معرف الشركة مطلوب' });
+    }
+
+    const { targetProductId, productIds } = req.body;
+    if (!targetProductId) {
+      return res.status(400).json({ success: false, message: 'معرف المنتج الأصلي مطلوب' });
+    }
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة المنتجات المطلوب تحويلها مطلوبة' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const target = await prisma.product.findFirst({ where: { id: targetProductId, companyId, deletedAt: null } });
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'المنتج الأصلي غير موجود' });
+    }
+
+    const results = [];
+    for (const sourceId of productIds) {
+      if (sourceId === targetProductId) continue;
+      const source = await prisma.product.findFirst({ where: { id: sourceId, companyId, deletedAt: null } });
+      if (!source) continue;
+
+      const presentationSlug = await generateUniquePresentationSlug(prisma, target.id, source.slug || source.id);
+      const presentation = await prisma.productPresentation.create({
+        data: {
+          productId: target.id,
+          name: (source.name || target.name).toString().trim(),
+          slug: presentationSlug,
+          images: source.images ? JSON.stringify(sanitizeImageCollection(source.images)) : '[]',
+          mainImage: source.mainImage || null,
+          title: source.name || null,
+          description: source.description || null,
+          isActive: true,
+          sortOrder: 0,
+          metadata: JSON.stringify({ convertedFromProductId: source.id, originalSku: source.sku || null }),
+        },
+      });
+
+      await prisma.product.update({
+        where: { id: source.id },
+        data: { deletedAt: new Date() },
+      });
+
+      results.push({ sourceId, presentationId: presentation.id });
+    }
+
+    return res.json({
+      success: true,
+      data: { converted: results.length, results },
+      message: `تم تحويل ${results.length} منتج إلى عروض تقديمية`,
+    });
+  } catch (error) {
+    console.error('❌ [convertBulkToPresentations] Error:', error);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء التحويل الجماعي للعروض التقديمية' });
+  }
+};
+
+// Helper: ensure a presentation slug is unique per target product.
+const generateUniquePresentationSlug = async (prisma, productId, baseSlug) => {
+  let slug = baseSlug;
+  let n = 1;
+  while (await prisma.productPresentation.findFirst({ where: { productId, slug } })) {
+    slug = `${baseSlug}-${n}`;
+    n += 1;
+  }
+  return slug;
+};
+
 module.exports = {
   createPresentation,
   getPresentations,
   getSinglePresentation,
   updatePresentation,
   deletePresentation,
+  convertToPresentation,
+  convertBulkToPresentations,
 };
