@@ -313,9 +313,11 @@ model Company {
    wholesaleStatements              WholesaleStatement[]
     wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
    overlayCampaigns                  OverlayCampaign[]
-    orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
+     orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
+  cartConversionLogs            CartConversionLog[]
+  cartContactLogs               CartContactLog[]
 
-   @@index([businessSpecialtyId])
+    @@index([businessSpecialtyId])
   @@map("companies")
 }
 
