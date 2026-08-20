@@ -10,21 +10,6 @@ import {
 } from "../utils/facebookPixel";
 import type { StorefrontSettings as PublicStorefrontSettings } from "../services/storefrontSettingsService";
 
-const scheduleIdleTask = (callback: () => void): (() => void) => {
-  const idleWindow = window as Window & {
-    requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
-    cancelIdleCallback?: (id: number) => void;
-  };
-
-  if (typeof idleWindow.requestIdleCallback === "function") {
-    const idleId = idleWindow.requestIdleCallback(callback, { timeout: 2500 });
-    return () => idleWindow.cancelIdleCallback?.(idleId);
-  }
-
-  const timeoutId = window.setTimeout(callback, 1200);
-  return () => window.clearTimeout(timeoutId);
-};
-
 export const useFacebookPixel = (
   storefrontSettings?: PublicStorefrontSettings | null,
 ) => {
@@ -57,14 +42,14 @@ export const useFacebookPixel = (
       return;
     }
 
-    const cleanupIdleTask = scheduleIdleTask(() => {
-      loadFacebookPixel(storefrontSettings.facebookPixelId!);
-      setPixelId(storefrontSettings.facebookPixelId!);
-      setIsLoaded(true);
-      setPageViewEnabled(storefrontSettings.pixelTrackPageView !== false);
-    });
-
-    return cleanupIdleTask;
+    // Load the Facebook Pixel immediately (Meta's recommended async-in-head
+    // behavior) so conversion events never miss a fast or non-interacting
+    // visitor. The script is small and async, so this has negligible impact
+    // on Core Web Vitals.
+    loadFacebookPixel(storefrontSettings.facebookPixelId!);
+    setPixelId(storefrontSettings.facebookPixelId!);
+    setIsLoaded(true);
+    setPageViewEnabled(storefrontSettings.pixelTrackPageView !== false);
   }, [
     storefrontSettings?.facebookPixelEnabled,
     storefrontSettings?.facebookPixelId,

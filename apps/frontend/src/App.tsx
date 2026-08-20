@@ -550,6 +550,9 @@ const IncompleteOrders = React.lazy(
 const IncompleteOrderDetails = React.lazy(
   () => import("./pages/orders/IncompleteOrderDetails"),
 );
+const IncompleteReports = React.lazy(
+  () => import("./pages/orders/IncompleteReports"),
+);
 const PreparationQueue = React.lazy(
   () => import("./pages/orders/PreparationQueue"),
 );
@@ -3945,6 +3948,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <IncompleteOrders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/incomplete/reports"
+                  element={
+                    <Layout>
+                      <IncompleteReports />
                     </Layout>
                   }
                 />

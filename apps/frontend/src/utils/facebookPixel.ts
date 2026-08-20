@@ -290,32 +290,12 @@ export const loadFacebookPixel = (pixelIdParam: string) => {
       }
     };
 
-    // Strategy: Delay injection by 7s OR until user interacts (whichever comes first)
-    const interactionEvents = ["pointermove", "scroll", "keydown", "click"];
-    let injected = false;
-
-    const handleInteraction = () => {
-      if (injected) return;
-      injected = true;
-      injectPixel();
-      
-      // Cleanup listeners
-      interactionEvents.forEach(event => {
-        window.removeEventListener(event, handleInteraction);
-      });
-    };
-
-    // Setup listeners for early interaction
-    interactionEvents.forEach(event => {
-      window.addEventListener(event, handleInteraction, { once: true, passive: true });
-    });
-
-    // Fallback timer (7 seconds)
-    window.setTimeout(() => {
-      if (!injected) {
-        handleInteraction();
-      }
-    }, 7000);
+    // Inject the pixel script immediately (Meta's recommended async-in-head
+    // behavior) so conversion events are never gated on user interaction or a
+    // delay. The script is small and async, so this keeps impact on Core Web
+    // Vitals negligible while guaranteeing no fast/non-interacting visitor is
+    // left untracked.
+    injectPixel();
 
     invokeFbq("init", pixelId);
 

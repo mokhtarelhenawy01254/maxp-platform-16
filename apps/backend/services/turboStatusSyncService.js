@@ -1,22 +1,34 @@
-/**
- * 🚀 Unified Turbo Status Sync Service
+﻿/**
+ * ≡ƒÜÇ Unified Turbo Status Sync Service
  * Single Source of Truth for updating Order and GuestOrder statuses from Turbo Express
  */
 
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
-const { getSystemStatusFromTurbo } = require('../utils/statusNormalizer');
+const { getSystemStatusFromTurbo, getSystemStatusFromTurboWithCustomMapping } = require('../utils/statusNormalizer');
+const { GUEST_ORDER_STATUS_MAP } = require('../utils/turbo/constants');
+const { ensureReturnOrder } = require('./partialReturnService');
+const { isValidOrderStatusEnum, resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
 
 /**
- * Mappings for GuestOrder string statuses
+ * Fetch per-company turboStatusMapping from company settings.
+ * Returns null if no custom mapping is configured.
  */
-const GUEST_ORDER_STATUS_MAP = {
-  'DELIVERED': 'DELIVERED',
-  'SHIPPED': 'SHIPPED',
-  'PROCESSING': 'PROCESSING',
-  'CANCELLED': 'CANCELLED',
-  'RETURNED': 'RETURNED',
-  'ON_HOLD': 'ON_HOLD'
-};
+async function getCompanyTurboMapping(companyId) {
+  if (!companyId) return null;
+  try {
+    const prisma = getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+    if (!company?.settings) return null;
+    const parsed = typeof company.settings === 'string' ? JSON.parse(company.settings) : company.settings;
+    return parsed.turboStatusMapping || null;
+  } catch (e) {
+    console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Failed to fetch company turbo mapping for ${companyId}:`, e.message);
+    return null;
+  }
+}
 
 /**
  * Synchronize Turbo shipment status update across Order / GuestOrder tables
@@ -36,36 +48,99 @@ async function syncTurboStatusToOrder({
   companyId = null,
   rawStatus,
   payload = {},
-  isGuestOrder = false
+  isGuestOrder = false,
+  isReturnOrderSync = false
 }) {
   const prisma = getSharedPrismaClient();
 
-  const locationText = payload?.currentLocation || payload?.statusText || payload?.status_name || payload?.statusName || '';
-  let { canonicalTurboStatus, orderStatus, paymentStatus } = getSystemStatusFromTurbo(
-    (locationText && (locationText.includes('انتظار') || locationText.includes('بانتظار') || locationText.includes('التسليم لتربو') || locationText.includes('تأجيل') || locationText.includes('مؤجل') || locationText.includes('مرتجع')))
-      ? locationText
-      : rawStatus
-  );
+  const turboCode = payload?.code || payload?.order_number || '';
+  const isPartialReturn = /R$/i.test(turboCode) && !isReturnOrderSync;
 
-  // 🎯 التمييز الجوهري بين (قيد الانتظار) و (قيد التنفيذ بالفرع):
-  // إذا كانت الشحنة لم تدخل فرع تربو بعد (branch null/empty)، فإن حالتها في تربو هي "قيد الانتظار" (turbo_sent)
-  if (canonicalTurboStatus === 'processing' && (!payload?.branch || !String(payload.branch).trim())) {
-    canonicalTurboStatus = 'turbo_sent';
+  const locationText = payload?.currentLocation || payload?.statusText || payload?.status_name || payload?.statusName || '';
+  const rawStatusInput = (locationText && (locationText.includes('╪º┘å╪¬╪╕╪º╪▒') || locationText.includes('╪¿╪º┘å╪¬╪╕╪º╪▒') || locationText.includes('╪º┘ä╪¬╪│┘ä┘è┘à ┘ä╪¬╪▒╪¿┘ê') || locationText.includes('╪¬╪ú╪¼┘è┘ä') || locationText.includes('┘à╪ñ╪¼┘ä') || locationText.includes('┘à╪▒╪¬╪¼╪╣')))
+    ? locationText
+    : rawStatus;
+
+  // Fetch per-company custom mapping if companyId is available
+  const customMapping = companyId ? await getCompanyTurboMapping(companyId) : null;
+
+  let { canonicalTurboStatus, orderStatus, paymentStatus } = customMapping
+    ? getSystemStatusFromTurboWithCustomMapping(rawStatusInput, customMapping)
+    : getSystemStatusFromTurbo(rawStatusInput);
+
+  // ≡ƒÜ¿ CRITICAL GUARD: "returned" text alone (without status_code 5/14/20) is AMBIGUOUS in Turbo API.
+  // Turbo returns "returned" text for is_order=1 shipments even when they are actually DELIVERED.
+  // Only trust "returned_to_company" when:
+  //   - status_code is explicitly 5, 14, or 20 (official Turbo return codes), OR
+  //   - Arabic return phrase is confirmed in locationText/statusText
+  // Without this, delivered orders with is_order=1 get wrongly marked as RETURNED.
+  const statusCode = payload?.status_code || payload?.statusCode || payload?.internal_status;
+  const rawStatusStr = String(rawStatus || '').toLowerCase().trim();
+  const TURBO_RETURN_CODES = new Set(['5', '14', '20', 5, 14, 20]);
+  const hasReturnCode = statusCode && TURBO_RETURN_CODES.has(String(statusCode));
+  const hasArabicReturnPhrase = locationText && (locationText.includes('┘à╪▒╪¬╪¼╪╣') || locationText.includes('┘à╪▒╪¬╪¼╪╣╪º╪¬') || locationText.includes('┘à╪│╪¬╪▒╪¼╪╣'));
+
+  if (
+    canonicalTurboStatus === 'returned_to_company' &&
+    rawStatusStr === 'returned' &&        // ambiguous English text (not Arabic '┘à╪▒╪¬╪¼╪╣')
+    !hasReturnCode &&                      // no explicit return status_code
+    !hasArabicReturnPhrase                 // no Arabic confirmation
+  ) {
+    // Cannot confirm this is a genuine return ΓÇö keep it as a non-final status
+    // so it can be corrected later when more info arrives (webhook/manual)
+    console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Ambiguous "returned" status for order (no status_code 5/14/20 and no Arabic phrase). Skipping RETURNED update to avoid is_order=1 misclassification.`);
+    canonicalTurboStatus = 'processing'; // treat as still in progress
     orderStatus = null;
+    paymentStatus = null;
   }
 
-  console.log(`📦 [TURBO-SYNC] Syncing order ${orderNumber || orderId}: rawStatus="${rawStatus}" -> canonical="${canonicalTurboStatus}", systemOrderStatus="${orderStatus}", systemPaymentStatus="${paymentStatus}", companyId=${companyId || 'global'}`);
+  // ≡ƒÄ» ╪º┘ä╪¬┘à┘è┘è╪▓ ╪º┘ä╪¼┘ê┘ç╪▒┘è ╪¿┘è┘å (┘é┘è╪» ╪º┘ä╪º┘å╪¬╪╕╪º╪▒) ┘ê (┘é┘è╪» ╪º┘ä╪¬┘å┘ü┘è╪░ ╪¿╪º┘ä┘ü╪▒╪╣):
+  // ΓÜá∩╕Å ONLY downgrade processingΓåÆturbo_sent when we have CONFIRMED branch info from Webhook.
+  // During API sync (fetchAllStatuses), branch=null does NOT mean "not in branch" ΓÇö
+  // Turbo's get-status API often omits branch even for status_code=3 orders.
+  // Guard: only fire if payload has explicit 'isWebhook' marker OR branch has a non-null VALUE.
+  const hasBranchFieldInPayload = payload && ('branch' in payload || 'expected_branch' in payload);
+  const isWebhookPayload = payload?.isWebhook === true || payload?.source === 'webhook';
+  const branchValue = payload?.branch || payload?.expected_branch;
+  const hasExplicitBranch = branchValue && String(branchValue).trim().length > 0;
+  if (
+    canonicalTurboStatus === 'processing' &&
+    hasBranchFieldInPayload &&
+    !hasExplicitBranch &&      // branch is null/empty
+    !isWebhookPayload          // AND not from a trusted Webhook source
+  ) {
+    // API sync with null branch ΓÇö do NOT downgrade processing to turbo_sent.
+    // The absence of branch in get-status API doesn't mean the order left the branch.
+    console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Skipping processingΓåÆturbo_sent downgrade (null branch from API sync, not webhook).`);
+    // Keep canonicalTurboStatus as 'processing'
+  }
+
+  console.log(`≡ƒôª [TURBO-SYNC] Syncing order ${orderNumber || orderId}: rawStatus="${rawStatus}" -> canonical="${canonicalTurboStatus}", systemOrderStatus="${orderStatus}", systemPaymentStatus="${paymentStatus}", companyId=${companyId || 'global'}`);
 
   // Helper to build flexible lookup filters
   const buildLookupWhere = () => {
-    const searchValues = Array.from(new Set([
+    const rawValues = [
       orderId,
       orderNumber,
       payload.remote_order_id,
       payload.order_number
-    ].filter(Boolean).map(v => String(v).trim())));
+    ];
 
-    const orConditions = searchValues.flatMap(val => [
+    const searchValues = Array.from(new Set(
+      rawValues
+        .filter(v => v !== null && v !== undefined && v !== '' && v !== '0' && v !== 0 && v !== 'undefined' && v !== 'null')
+        .map(v => String(v).trim())
+    ));
+
+    // Also try without 'R' suffix for each value
+    const rSuffixValues = searchValues.flatMap(val => [
+      val,
+      val.replace(/R$/i, ''),
+      val + 'R'
+    ]);
+    const allValues = Array.from(new Set(rSuffixValues));
+
+    const orConditions = allValues.flatMap(val => [
       { id: val },
       { orderNumber: val },
       { turboTrackingNumber: val },
@@ -86,7 +161,7 @@ async function syncTurboStatusToOrder({
     }), 3);
 
     if (!existingGuestOrder) {
-      console.warn(`⚠️ [TURBO-SYNC] GuestOrder not found for orderNumber/ID: ${orderNumber || orderId}`);
+      console.warn(`ΓÜá∩╕Å [TURBO-SYNC] GuestOrder not found for orderNumber/ID: ${orderNumber || orderId}`);
       return { success: false, reason: 'GuestOrder not found' };
     }
 
@@ -119,10 +194,17 @@ async function syncTurboStatusToOrder({
       }
     }
 
-    const updateData = {
+  const updateData = {
       turboShipmentStatus: canonicalTurboStatus,
       turboMetadata: JSON.stringify(updatedMetadata),
       metadata: JSON.stringify(updatedMetadata),
+      turboCaptainName: payload.captain_name || payload.captain || null,
+      turboCaptainPhone: payload.captain_number1 || null,
+      turboBranchName: payload.branch_name || payload.branch || null,
+      turboBranchPhone: payload.branch_number1 || null,
+      turboDelayReason: payload.delay_reason || null,
+      turboReturnReason: payload.return_reason || payload.return_status_text || null,
+      turboExpectedBranch: payload.expected_branch || null,
       updatedAt: new Date()
     };
 
@@ -133,6 +215,33 @@ async function syncTurboStatusToOrder({
     if (payload.order_number) {
       updateData.turboTrackingNumber = String(payload.order_number);
       updateData.turboShipmentId = String(payload.order_number);
+    }
+
+    // ≡ƒÜ¿ PRODUCTION-FIX (turbo-notification-gap): ┘é╪¿┘ä ╪º┘ä╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪¿╪º╪┤╪▒ ┘ä╪¡┘é┘ê┘ä ╪¬╪▒╪¿┘ê╪î
+    // ┘à╪▒┘æ╪▒ ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪╣╪¿╪▒ orderService.updateGuestOrderStatus ΓÇö ┘ä╪ú┘å┘ç ╪º┘ä┘à╪│╪º╪▒ ╪º┘ä┘ê╪¡┘è╪»
+    // ╪º┘ä┘ä┘è ╪¿┘è┘â╪¬╪¿ statusHistory ┘ê╪¿┘è╪¿╪╣╪½ ╪Ñ╪┤╪╣╪º╪▒ WhatsApp (sendOrderStatusNotification) ┘ê╪¿┘è╪┤╪║┘æ┘ä
+    // side-effects (┘â╪º╪┤ ╪¿╪º┘â/┘ê┘ä╪º╪í ╪╣┘å╪» DELIVERED). ┘â╪º┘å ╪º┘ä╪│┘è┘å┘â ╪º┘ä┘é╪»┘è┘à ╪¿┘è╪╣╪»┘æ┘ä guestOrder.status
+    // ┘à╪¿╪º╪┤╪▒╪⌐ ┘ü┘è ╪º┘ä┘Ç DB ┘à┘å ╪║┘è╪▒ ╪ú┘è ╪Ñ╪┤╪╣╪º╪▒ ΓÇö ┘ü╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘ä┘è ╪¿╪¬╪¬╪¡╪▒┘â ╪¬┘ä┘é╪º╪ª┘è╪º┘ï ┘à┘å ╪¬╪▒╪¿┘ê
+    // (webhook / sync-status / refresh) ┘â╪º┘å╪¬ ╪¿╪¬┘ü╪╢┘ä ┘à┘å ╪║┘è╪▒ ╪▒╪│╪º┘ä╪⌐ ┘ä┘ä╪╣┘à┘è┘ä.
+    const guestTargetStatus = orderStatus && GUEST_ORDER_STATUS_MAP[orderStatus] ? GUEST_ORDER_STATUS_MAP[orderStatus] : null;
+    const guestStatusChanged = Boolean(guestTargetStatus) && guestTargetStatus !== existingGuestOrder.status;
+    if (guestStatusChanged) {
+      try {
+        const orderService = require('./orderService');
+        await orderService.updateGuestOrderStatus(
+          existingGuestOrder.orderNumber,
+          companyId,
+          guestTargetStatus,
+          `╪¬╪¡╪»┘è╪½ ╪¬┘ä┘é╪º╪ª┘è ┘à┘å ╪¬╪▒╪¿┘ê (${canonicalTurboStatus})`,
+          'SYSTEM',
+          'Turbo Sync',
+          null,
+          { skipCallAttemptGuard: true, skipTransitionValidation: true }
+        );
+        console.log(`Γ£à [TURBO-SYNC] GuestOrder ${existingGuestOrder.orderNumber} status -> ${guestTargetStatus} via orderService (notification + history).`);
+      } catch (guestStatusErr) {
+        console.warn(`ΓÜá∩╕Å [TURBO-SYNC] GuestOrder status update via orderService failed for ${existingGuestOrder.orderNumber}:`, guestStatusErr.message);
+      }
     }
 
     await safeQuery(() => prisma.guestOrder.update({
@@ -207,9 +316,51 @@ async function syncTurboStatusToOrder({
     }
   }
 
+  // ≡ƒöü Check if this is a partial return (R suffix shipment) ΓÇö always create return order
+  if (isPartialReturn && existingOrder.status === 'DELIVERED') {
+    console.log(`≡ƒöü [TURBO-SYNC] Partial return detected for ${existingOrder.orderNumber} via ${turboCode} ΓÇö creating return order`);
+    try {
+      const returnOrder = await ensureReturnOrder(existingOrder, turboCode, canonicalTurboStatus);
+      if (returnOrder && returnOrder.orderNumber !== existingOrder.orderNumber) {
+        // IMPORTANT: sync the return order with a CLEAN payload so the recursive
+        // lookup can't re-match the original DELIVERED order via remote_order_id /
+        // order_number (this previously caused an infinite recursion loop).
+        const { remote_order_id, order_number, ...cleanPayload } = payload;
+        const returnSyncResult = await syncTurboStatusToOrder({
+          orderId: returnOrder.id,
+          orderNumber: returnOrder.orderNumber,
+          companyId,
+          rawStatus,
+          payload: cleanPayload,
+          isGuestOrder: false,
+          isReturnOrderSync: true
+        });
+        console.log(`Γ£à [TURBO-SYNC] Return order ${returnOrder.orderNumber} synced: ${returnSyncResult.turboStatus}`);
+      }
+    } catch (e) {
+      console.error(`Γ¥î [TURBO-SYNC] Failed to create return order for ${turboCode}:`, e.message);
+    }
+  }
+
+  // ≡ƒöÆ FINAL STATUS PROTECTION: Never downgrade an already-DELIVERED order
+  const DOWNGRADE_STATUSES = new Set(['returned', 'returned_to_company', 'turbo_sent', 'turbo_saved', 'created', 'delayed']);
+  if (existingOrder.status === 'DELIVERED' && DOWNGRADE_STATUSES.has(canonicalTurboStatus)) {
+    console.warn(`≡ƒöÆ [TURBO-SYNC] PROTECTED: Order ${existingOrder.orderNumber} is DELIVERED ΓÇö refusing to set turboShipmentStatus to "${canonicalTurboStatus}". Keeping as "delivered".`);
+    canonicalTurboStatus = 'delivered';
+    orderStatus = 'DELIVERED';
+    paymentStatus = 'COMPLETED';
+  }
+
   const updateData = {
     turboShipmentStatus: canonicalTurboStatus,
     turboMetadata: JSON.stringify(turboMetaObj),
+    turboCaptainName: payload.captain_name || payload.captain || null,
+    turboCaptainPhone: payload.captain_number1 || null,
+    turboBranchName: payload.branch_name || payload.branch || null,
+    turboBranchPhone: payload.branch_number1 || null,
+    turboDelayReason: payload.delay_reason || null,
+    turboReturnReason: payload.return_reason || payload.return_status_text || null,
+    turboExpectedBranch: payload.expected_branch || null,
     updatedAt: new Date()
   };
 
@@ -218,12 +369,53 @@ async function syncTurboStatusToOrder({
     updateData.turboShipmentId = String(payload.order_number);
   }
 
+  // ≡ƒ¢í∩╕Å PRODUCTION-FIX (custom-status-enum): ╪¡╪º┘ä╪⌐ ╪º┘ä╪¬╪╣┘è┘è┘å ┘à┘à┘â┘å ╪¬┘â┘ê┘å ╪¡╪º┘ä╪⌐ ┘à╪«╪╡╪╡╪⌐ ┘à╪┤ ┘ü┘è ╪º┘ä┘Ç enum
+  // (┘à╪½╪º┘ä ╪¡┘é┘è┘é┘è: ╪¬╪╣┘è┘è┘å swan `delayed ΓåÆ DELAYED-WITH-CAPTAIN`). ╪¿┘å╪¡┘ä┘æ┘ç╪º ╪╣╪¿╪▒ mapsToSystem:
+  // ┘å╪«╪▓┘æ┘å ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪╡╪º┘ä╪¡╪⌐ ┘ü┘è order.status╪î ┘ê┘å╪¡╪¬┘ü╪╕ ╪¿╪º┘ä┘â┘ê╪» ╪º┘ä┘à╪«╪╡╪╡ (orderStatus) ┘ä┘ä╪Ñ╪┤╪╣╪º╪▒.
+  let storedOrderStatus = null;
+  let statusChanged = false;
   if (orderStatus) {
-    updateData.status = orderStatus;
+    const resolved = await resolveOrderStatusForStorage(prisma, companyId, orderStatus);
+    storedOrderStatus = resolved.stored;
+    if (storedOrderStatus) {
+      updateData.status = storedOrderStatus;
+    } else {
+      console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Skipping un-storable OrderStatus "${orderStatus}" for ${existingOrder.orderNumber} (not in enum and no valid mapsToSystem) ΓÇö turbo fields updated, order status unchanged.`);
+    }
+    statusChanged = Boolean(storedOrderStatus) && storedOrderStatus !== existingOrder.status;
   }
 
   if (paymentStatus) {
     updateData.paymentStatus = paymentStatus;
+  }
+
+  // ≡ƒÜ¿ PRODUCTION-FIX (turbo-notification-gap): ┘é╪¿┘ä ╪º┘ä╪¬╪¡╪»┘è╪½ ╪º┘ä┘à╪¿╪º╪┤╪▒ ┘ä╪¡┘é┘ê┘ä ╪¬╪▒╪¿┘ê╪î
+  // ┘à╪▒┘æ╪▒ ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪º┘ä╪╖┘ä╪¿ ╪╣╪¿╪▒ orderService.updateOrderStatus ΓÇö ┘ä╪ú┘å┘ç ╪º┘ä┘à╪│╪º╪▒ ╪º┘ä┘ê╪¡┘è╪»
+  // ╪º┘ä┘ä┘è ╪¿┘è┘â╪¬╪¿ statusHistory ┘ê╪¿┘è╪¿╪╣╪½ ╪Ñ╪┤╪╣╪º╪▒ WhatsApp (sendOrderStatusNotification) ┘ê╪¿┘è╪┤╪║┘æ┘ä
+  // side-effects (┘â╪º╪┤ ╪¿╪º┘â/┘ê┘ä╪º╪í ╪╣┘å╪» DELIVERED╪î ╪Ñ╪▒╪¼╪º╪╣ ╪╣┘å╪» RETURNED...). ┘â╪º┘å ╪º┘ä╪│┘è┘å┘â ╪º┘ä┘é╪»┘è┘à
+  // ╪¿┘è╪╣╪»┘æ┘ä order.status ┘à╪¿╪º╪┤╪▒╪⌐ ┘ü┘è ╪º┘ä┘Ç DB ┘à┘å ╪║┘è╪▒ ╪ú┘è ╪Ñ╪┤╪╣╪º╪▒ ΓÇö ┘ü╪º┘ä╪ú┘ê╪▒╪»╪▒╪º╪¬ ╪º┘ä┘ä┘è ╪¿╪¬╪¬╪¡╪▒┘â ╪¬┘ä┘é╪º╪ª┘è╪º┘ï
+  // ┘à┘å ╪¬╪▒╪¿┘ê (webhook / sync-status / refresh) ┘â╪º┘å╪¬ ╪¿╪¬┘ü╪╢┘ä ┘à┘å ╪║┘è╪▒ ╪▒╪│╪º┘ä╪⌐ ┘ä┘ä╪╣┘à┘è┘ä.
+  // ┘à┘ä╪º╪¡╪╕╪⌐: updateOrderStatus ╪¿┘è╪¼┘è╪¿ ╪º┘ä╪╖┘ä╪¿ ╪¬╪º┘å┘è ╪¿┘â┘ä ╪º┘ä╪╣┘ä╪º┘é╪º╪¬ (customer/orderItems) ┘ê╪¿┘è╪┤╪║┘æ┘ä
+  // ╪º┘ä╪Ñ╪┤╪╣╪º╪▒ ┘ü┘è ╪º┘ä╪«┘ä┘ü┘è╪⌐ (fire-and-forget) + ╪¿┘è╪«╪╡┘à ╪º┘ä┘Ç dedup ΓÇö ┘ü┘è╪¬┘à╪º╪┤┘ë ┘à╪╣ ┘à╪│╪º╪▒ ╪º┘ä╪▓╪▒╪º╪▒ ╪º┘ä┘è╪»┘ê┘è.
+  // ┘å┘à╪▒┘æ╪▒ ┘ä┘ç ╪º┘ä┘â┘ê╪» ╪º┘ä╪ú╪╡┘ä┘è (orderStatus) ΓÇö ┘ê┘ç┘ê ┘ç┘è╪¡┘ä┘æ mapsToSystem ┘ê┘è╪¬╪ú┘â╪» ╪Ñ┘å storage ╪╡╪º┘ä╪¡.
+  if (statusChanged) {
+    try {
+      const orderService = require('./orderService');
+      await orderService.updateOrderStatus(
+        existingOrder.orderNumber,
+        companyId,
+        orderStatus,
+        `╪¬╪¡╪»┘è╪½ ╪¬┘ä┘é╪º╪ª┘è ┘à┘å ╪¬╪▒╪¿┘ê (${canonicalTurboStatus})`,
+        'SYSTEM',
+        'Turbo Sync',
+        null,
+        true,
+        { skipCallAttemptGuard: true, skipTransitionValidation: true }
+      );
+      console.log(`Γ£à [TURBO-SYNC] Order ${existingOrder.orderNumber} status -> ${storedOrderStatus} (custom "${orderStatus}") via orderService (notification + history).`);
+    } catch (statusErr) {
+      console.warn(`ΓÜá∩╕Å [TURBO-SYNC] Status update via orderService failed for ${existingOrder.orderNumber}:`, statusErr.message);
+    }
   }
 
   await safeQuery(() => prisma.order.update({
@@ -231,7 +423,7 @@ async function syncTurboStatusToOrder({
     data: updateData
   }), 3);
 
-  console.log(`✅ [TURBO-SYNC] Updated Order ${existingOrder.orderNumber}: turboStatus="${canonicalTurboStatus}", status="${updateData.status || existingOrder.status}", paymentStatus="${updateData.paymentStatus || existingOrder.paymentStatus}"`);
+  console.log(`Γ£à [TURBO-SYNC] Updated Order ${existingOrder.orderNumber}: turboStatus="${canonicalTurboStatus}", status="${updateData.status || existingOrder.status}", paymentStatus="${updateData.paymentStatus || existingOrder.paymentStatus}"`);
 
   // Emit Socket.IO
   emitSocketEvent(existingOrder.companyId, {
@@ -262,10 +454,10 @@ function emitSocketEvent(companyId, eventData) {
     if (io && companyId) {
       const roomName = `company_${companyId}`;
       io.to(roomName).emit('turbo_shipment_update', eventData);
-      console.log(`📡 [TURBO-SYNC] Socket event emitted to room ${roomName}`);
+      console.log(`≡ƒôí [TURBO-SYNC] Socket event emitted to room ${roomName}`);
     }
   } catch (err) {
-    console.warn('⚠️ [TURBO-SYNC] Failed emitting socket event:', err.message);
+    console.warn('ΓÜá∩╕Å [TURBO-SYNC] Failed emitting socket event:', err.message);
   }
 }
 
