@@ -35,7 +35,9 @@ router.get('/whatsapp-notify/birthday-automation/today', verifyToken.authenticat
 router.get('/whatsapp-notify/birthday-automation/upcoming', verifyToken.authenticateToken, customerWhatsAppController.getUpcomingBirthdaysTrack);
 router.get('/whatsapp-notify/birthday-automation/missing', verifyToken.authenticateToken, customerWhatsAppController.getMissingBirthdaysTrack);
 router.get('/whatsapp-notify/birthday-analytics', verifyToken.authenticateToken, customerWhatsAppController.getBirthdayAnalyticsReports);
+router.get('/whatsapp-notify/occasions', verifyToken.authenticateToken, (req, res) => res.json({ success: true, occasions: [] }));
 router.post('/whatsapp-notify/birthday-automation/send-test', verifyToken.authenticateToken, customerWhatsAppController.sendTestBirthdayMessage);
+
 
 
 
