@@ -2,6 +2,7 @@ import React, { Suspense, useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuthSimple";
 import tokenManager from "./utils/tokenManager";
+import { recoverFromChunkLoadError } from "./utils/chunkLoadRecovery";
 import { shouldBootstrapStorefront } from "./bootstrap/requestTarget";
 import {
   shouldRedirectAffiliateToDashboard,
@@ -1448,11 +1449,23 @@ const AppContent = () => {
   const [activeLpSlugs, setActiveLpSlugs] = useState<Set<string> | null>(null);
 
   // Catch Vite dynamic-import failures when a redeploy deleted old chunks
-  // that a cached browser still references. Reload to get fresh index.html.
+  // that a cached browser still references. Recover to get fresh index.html,
+  // but gate it with the shared throttle guard so a persistent chunk/CDN
+  // failure cannot trigger an endless reload loop.
   useEffect(() => {
     const handler = (e: Event) => {
-      e.preventDefault();
-      window.location.reload();
+      const ev = e as Event & {
+        payload?: unknown;
+        reason?: unknown;
+        error?: unknown;
+        detail?: unknown;
+        message?: string;
+      };
+      const chunkError =
+        ev.payload ?? ev.reason ?? ev.error ?? ev.detail ?? ev.message;
+      if (recoverFromChunkLoadError(chunkError ?? e, "vite-preload")) {
+        e.preventDefault();
+      }
     };
     window.addEventListener('vite:preloadError', handler);
     return () => window.removeEventListener('vite:preloadError', handler);
