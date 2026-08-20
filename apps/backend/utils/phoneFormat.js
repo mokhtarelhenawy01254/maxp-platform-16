@@ -1,1 +1,17 @@
-﻿/** * formatPhoneNumber ΓÇö ╪¬┘å╪│┘è┘é ╪▒┘é┘à ╪º┘ä┘ç╪º╪¬┘ü (┘à╪│╪¬╪«╪▒╪¼ ┘ü┘è ┬º5.1). */function formatPhoneNumber(phone) {  if (!phone) return null;  // ╪Ñ╪▓╪º┘ä╪⌐ ┘â┘ä ╪┤┘è╪í ┘à╪º ╪╣╪»╪º ╪º┘ä╪ú╪▒┘é╪º┘à  let cleaned = phone.replace(/\D/g, '');  // ╪Ñ╪░╪º ┘â╪º┘å ╪º┘ä╪▒┘é┘à ┘è╪¿╪»╪ú ╪¿┘Ç 0 ┘ê┘ä┘è╪│ 00╪î ┘å┘ü╪¬╪▒╪╢ ╪ú┘å┘ç ╪▒┘é┘à ┘à╪¡┘ä┘è ┘à╪╡╪▒┘è ┘ê┘å╪╢┘è┘ü 20  if (cleaned.startsWith('0') && !cleaned.startsWith('00')) {    cleaned = '20' + cleaned.substring(1);  } else if (cleaned.length === 11 && cleaned.startsWith('1')) {    // ╪¡╪º┘ä╪⌐ ╪ú╪▒┘é╪º┘à ┘à╪╡╪▒ (010...) ╪¿╪»┘ê┘å ╪º┘ä╪╡┘ü╪▒    cleaned = '20' + cleaned;  } else if (cleaned.length === 10 && !cleaned.startsWith('2')) {    // ╪º┘ü╪¬╪▒╪º╪╢ ╪▒┘é┘à ┘à╪¡┘ä┘è ╪¿╪»┘ê┘å ┘â┘ê╪» ╪º┘ä╪»┘ê┘ä╪⌐ (┘à╪╡╪▒)    cleaned = '20' + cleaned;  }  return cleaned;}module.exports = { formatPhoneNumber };
+﻿/**
+ * formatPhoneNumber - normalize phone number (extracted in 5.1).
+ */
+function formatPhoneNumber(phone) {
+  if (!phone) return null;
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('0') && !cleaned.startsWith('00')) {
+    cleaned = '20' + cleaned.substring(1);
+  } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+    cleaned = '20' + cleaned;
+  } else if (cleaned.length === 10 && !cleaned.startsWith('2')) {
+    cleaned = '20' + cleaned;
+  }
+  return cleaned;
+}
+
+module.exports = { formatPhoneNumber };
