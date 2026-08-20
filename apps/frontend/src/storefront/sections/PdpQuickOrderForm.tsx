@@ -1537,6 +1537,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                         value={formData.customerName || ""}
                         onChange={handleFieldChange}
                         className={resolvedInputClassName}
+                        autoComplete="name"
                         placeholder={
                           isMenShoesQuickOrder || isKhemetLuxeQuickOrder
                             ? prefersArabicCopy
@@ -1559,6 +1560,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                         value={formData.phone || ""}
                         onChange={handleFieldChange}
                         className={resolvedInputClassName}
+                        autoComplete="tel"
                         placeholder="01xxxxxxxxx"
                         dir="ltr"
                       />
@@ -1576,6 +1578,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       value={formData.governorate || ""}
                       onChange={handleFieldChange}
                       className={`${resolvedInputClassName} appearance-none pe-10`}
+                      autoComplete="address-level1"
                     >
                       <option value="">
                         {prefersArabicCopy ? "اختر المحافظة" : "Select governorate"}
@@ -1608,6 +1611,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                           ? "min-h-[96px]"
                           : "min-h-[140px]"
                     } resize-y`}
+                    autoComplete="street-address"
                     placeholder={
                       prefersArabicCopy
                         ? "الحي، الشارع، رقم العمارة، أقرب علامة مميزة"
@@ -1625,6 +1629,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     value={alternatePhone}
                     onChange={(event) => setAlternatePhone(event.target.value)}
                     className={resolvedInputClassName}
+                    autoComplete="tel"
                     placeholder="01xxxxxxxxx"
                     dir="ltr"
                   />

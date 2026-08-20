@@ -410,7 +410,8 @@ export default defineConfig(({ mode }) => {
           // fails with a 401 on subdomains (the backend only treats extensionless
           // paths as public storefront shells), which aborts the SW install.
           // Navigations are already handled by the NetworkFirst route in sw-v4.js.
-          globIgnores: ['**/tesseract/**', '**/index.html'],
+          // manifest.webmanifest also returns 401 on tenant subdomains.
+          globIgnores: ['**/tesseract/**', '**/index.html', '**/manifest.webmanifest'],
         },
       }),
       !disableCompression &&
