@@ -281,7 +281,7 @@ export default defineConfig(({ mode }) => {
     normalizedDisableCompression === 'true';
   const proxyTarget = env['VITE_PROXY_TARGET'] || resolveDefaultProxyTarget();
   const requestedMinifier = env['VITE_BUILD_MINIFY'];
-  const normalizedRequestedMinifier = String(requestedMinifier ?? (mode === 'production' ? 'terser' : 'esbuild'))
+  const normalizedRequestedMinifier = String(requestedMinifier ?? 'esbuild')
     .trim()
     .toLowerCase();
   const buildMinifier =
@@ -571,14 +571,21 @@ export default defineConfig(({ mode }) => {
         },
       },
       minify: buildMinifier,
-      ...(buildMinifier === 'terser'
+      ...(buildMinifier === 'esbuild'
+        ? {
+            esbuild: {
+              keepNames: true,
+              drop: mode === 'production' ? ['console', 'debugger'] : [],
+              pure: mode === 'production' ? ['console.log', 'console.debug'] : [],
+            },
+          }
+        : buildMinifier === 'terser'
         ? {
             terserOptions: {
               compress: {
                 drop_console: mode === 'production',
                 drop_debugger: mode === 'production',
                 pure_funcs: mode === 'production' ? ['console.log', 'console.debug'] : [],
-                // Preserve displayName and other React-important properties
                 unused: false,
                 dead_code: false,
               },

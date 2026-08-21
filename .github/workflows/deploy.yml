@@ -240,7 +240,7 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=8192'
           VITE_DISABLE_COMPRESSION: 'true'
-          VITE_BUILD_MINIFY: 'terser'
+          VITE_BUILD_MINIFY: 'esbuild'
         continue-on-error: false
 
       - name: Validate i18n Sections
