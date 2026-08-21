@@ -31,7 +31,7 @@ export interface BulkAddResult {
   entries: WhatsAppAIIgnoreEntry[];
 }
 
-const BASE = "/whatsapp-ai-ignore-list";
+const BASE = "/admin/whatsapp-ai-ignore-list";
 
 export const whatsappAIService = {
   list: async (companyId: string): Promise<WhatsAppAIIgnoreEntry[]> => {
