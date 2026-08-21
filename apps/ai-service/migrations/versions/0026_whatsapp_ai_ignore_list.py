@@ -23,11 +23,11 @@ def upgrade() -> None:
         """
         CREATE TABLE IF NOT EXISTS ai.whatsapp_ai_ignore_list (
             id UUID PRIMARY KEY,
-            company_id UUID NOT NULL,
+            company_id TEXT NOT NULL,
             phone_number TEXT NOT NULL,
             label TEXT,
             notes TEXT,
-            added_by_user_id UUID,
+            added_by_user_id TEXT,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             CONSTRAINT uq_wai_company_phone UNIQUE (company_id, phone_number)
