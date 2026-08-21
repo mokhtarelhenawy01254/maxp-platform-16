@@ -67,6 +67,31 @@ main domain served it fine only because its `location /` does `try_files $uri` f
 `nginx_configs/maxp.online.conf`. The deploy pipeline syncs + reloads nginx configs
 automatically (deploy-remote.sh "Syncing Nginx configs" step).
 
+## Fix 4 — bad-precaching-response on index.html (follow-up, same day)
+
+**Symptom**: console shows `sw-v4.js Uncaught (in promise) bad-precaching-response ::
+[{"url":"https://swan.maxp.online/index.html","status":401}]` after the fixes above.
+
+**Root cause (two layers)**:
+1. An OLD sw-v4.js (built 2026-08-19, BEFORE the `globIgnores` that removes index.html
+   from the precache manifest) was still being served — by **Cloudflare's edge cache**
+   (`Age: ~25h`, `Cache-Control: max-age=2592000` from nginx's static-assets block).
+   The origin file was already correct (159 entries, no index.html). `/index.html` on
+   tenant subdomains 401s at the backend (extension paths are never "public storefront
+   shells"), so the stale SW's install aborted with bad-precaching-response.
+2. nginx served sw-v4.js with the same 30-day immutable-ish cache as hashed assets —
+   but the SW file is NOT content-hashed; it must always be revalidated.
+
+**Fix**: `location = /sw-v4.js` (exact match beats the extension regex) with
+`Cache-Control: public, max-age=0, must-revalidate` in both server blocks of
+`nginx_configs/maxp.online.conf`. After ONE manual Cloudflare purge the edge stops
+caching the SW entirely; SW updates then work on every deploy.
+
+**Manual step still required (no CF API token configured anywhere)**: purge the
+Cloudflare cache once (dashboard → Caching → Purge Everything, or at least
+`https://swan.maxp.online/sw-v4.js` + `https://maxp.online/sw-v4.js`). This also
+clears the older stale-HTML issue (index-DRFVyxfT).
+
 ## Not fixed (known, out of scope)
 
 - `ws://localhost:8081` WebSocket failure — from a local dev hot-reload browser
