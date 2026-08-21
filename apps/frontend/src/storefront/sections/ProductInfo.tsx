@@ -7263,19 +7263,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
             </div>
 
             <div className="space-y-4 border-b border-[#ead8ca] pb-5">
-              {elessiVariantSelector ? <div>{elessiVariantSelector}</div> : null}
+              <div>{elessiVariantSelector}</div>
               {elessiPersonalizationPanel ? (
-                <div className={elessiVariantSelector ? 'border-t border-[#efe0d4] pt-3 sm:pt-4' : undefined}>
+                <div className='border-t border-[#efe0d4] pt-3 sm:pt-4'>
                   {elessiPersonalizationPanel}
                 </div>
               ) : null}
-              <div
-                className={
-                  elessiVariantSelector || elessiPersonalizationPanel
-                    ? 'border-t border-[#efe0d4] pt-3 sm:pt-4'
-                    : undefined
-                }
-              >
+              <div className='border-t border-[#efe0d4] pt-3 sm:pt-4'>
                 {elessiPrimaryActionsWithRef}
                 {mergedInlinePdpQuickOrder ? (
                   <div className={shouldUseInlineOrderFormOnly ? "" : "pt-3 sm:pt-4"}>
