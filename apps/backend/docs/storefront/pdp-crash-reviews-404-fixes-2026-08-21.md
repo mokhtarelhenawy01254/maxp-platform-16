@@ -50,9 +50,25 @@ only matches literal `products/<x>/reviews`, `products/<x>/back-in-stock`, and
 **Verification**: live curl after deploy — reviews endpoint returns
 `{"success":true,...}` for both slug (`Şık Sole`) and numeric id.
 
+## Fix 3 — manifest.webmanifest 401 on tenant subdomains (follow-up, same day)
+
+**Symptom**: browser console shows `manifest.webmanifest 401` +
+`Manifest fetch ... failed, code 401` twice on every tenant storefront page load.
+
+**Root cause**: the tenant wildcard nginx block (`*.maxp.online`) serves known static
+extensions (`css|js|json|svg|...`) directly from `/var/www/frontend2/dist`, but
+`webmanifest` was not in that list — so `/manifest.webmanifest` fell into
+`location /` which proxies to the backend (needed for per-company SEO shells), and the
+backend's `globalAuthentication` middleware rejects it (`isPublicStorefrontShellRequest`
+returns false for any path with an extension → 401 `AUTHENTICATION_REQUIRED`). The
+main domain served it fine only because its `location /` does `try_files $uri` from dist.
+
+**Fix**: added `webmanifest` to the static-extension regex in BOTH server blocks of
+`nginx_configs/maxp.online.conf`. The deploy pipeline syncs + reloads nginx configs
+automatically (deploy-remote.sh "Syncing Nginx configs" step).
+
 ## Not fixed (known, out of scope)
 
-- `manifest.webmanifest` 401 on tenant subdomains — documented known issue (see
-  `vite.config.ts` `globIgnores` comment); cosmetic, does not affect rendering.
 - `ws://localhost:8081` WebSocket failure — from a local dev hot-reload browser
-  extension, not from the storefront bundle.
+  extension (`refresh.js` + `index.iife.js` content script), not from the storefront
+  bundle; invisible to real customers.
