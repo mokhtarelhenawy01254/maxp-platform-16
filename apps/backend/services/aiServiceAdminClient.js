@@ -329,6 +329,40 @@ async function updateAgentPause(companyId, paused, reason) {
   return request('PUT', `/admin/settings/pause?company_id=${encodeURIComponent(companyId)}`, { paused, reason });
 }
 
+async function listWhatsappAIIgnoreList(companyId) {
+  return request('GET', `/admin/whatsapp-ai-ignore-list?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function getWhatsappAIIgnoreStats(companyId) {
+  return request('GET', `/admin/whatsapp-ai-ignore-list/stats?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function addWhatsappAIIgnoreEntry(companyId, phoneNumber, label, notes, addedByUserId) {
+  return request('POST', '/admin/whatsapp-ai-ignore-list', {
+    companyId,
+    phoneNumber,
+    label: label || null,
+    notes: notes || null,
+    addedByUserId: addedByUserId || null,
+  });
+}
+
+async function bulkAddWhatsappAIIgnoreEntries(companyId, items, addedByUserId) {
+  return request('POST', '/admin/whatsapp-ai-ignore-list/bulk', {
+    companyId,
+    items,
+    addedByUserId: addedByUserId || null,
+  });
+}
+
+async function updateWhatsappAIIgnoreEntry(companyId, entryId, patch) {
+  return request('PATCH', `/admin/whatsapp-ai-ignore-list/${encodeURIComponent(entryId)}?company_id=${encodeURIComponent(companyId)}`, patch);
+}
+
+async function deleteWhatsappAIIgnoreEntry(companyId, entryId) {
+  return request('DELETE', `/admin/whatsapp-ai-ignore-list/${encodeURIComponent(entryId)}?company_id=${encodeURIComponent(companyId)}`);
+}
+
 async function getGlobalFilterSettings(companyId) {
   return request('GET', `/admin/settings/filters?company_id=${encodeURIComponent(companyId)}`);
 }
@@ -445,6 +479,12 @@ module.exports = {
   getChannelReply,
   updateChannelReply,
   getAgentPause,
+  listWhatsappAIIgnoreList,
+  getWhatsappAIIgnoreStats,
+  addWhatsappAIIgnoreEntry,
+  bulkAddWhatsappAIIgnoreEntries,
+  updateWhatsappAIIgnoreEntry,
+  deleteWhatsappAIIgnoreEntry,
   updateAgentPause,
   visualSearch,
   getGlobalFilterSettings,

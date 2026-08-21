@@ -946,6 +946,7 @@ app.use("/api/v1/admin/invoices", invoiceRoutes);
 app.use("/api/v1/admin/order-invoices", require("./routes/adminOrderInvoiceRoutes"));
 app.use("/api/v1/admin/schedulers", schedulerRoutes);
 app.use("/api/v1/admin/self-review", require("./routes/adminSelfReviewRoutes"));
+app.use("/api/v1/admin/whatsapp-ai-ignore-list", require("./routes/adminWhatsappAIgnoreListRoutes"));
 // Backward-compatible alias for legacy admin tools that still call /api/v1/admin/*
 app.use("/api/v1/admin", systemManagementRoutes);
 app.use("/api/v1/system", systemManagementRoutes);
