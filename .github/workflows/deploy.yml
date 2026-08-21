@@ -229,10 +229,8 @@ jobs:
         if: steps.fe-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: |
-          # Purge Vite's persistent transform cache before building so a stale
-          # node_modules cache restored by actions/cache@v4 can never serve an
-          # outdated bundle (this previously shipped an old index-*.js hash).
-          rm -rf node_modules/.vite
+          # Force a clean build: drop any cached dist so stale chunks can never ship.
+          rm -rf dist node_modules/.vite
           npm run build
           test -f dist/placeholders/luxury-shoes/hero.png
           echo "📂 Listing build files:"
@@ -240,7 +238,7 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=8192'
           VITE_DISABLE_COMPRESSION: 'true'
-          VITE_BUILD_MINIFY: 'terser'
+          VITE_BUILD_MINIFY: 'esbuild'
         continue-on-error: false
 
       - name: Validate i18n Sections
