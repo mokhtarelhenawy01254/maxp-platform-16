@@ -633,6 +633,31 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
                     sender_id=sender_id,
                     company_id=company_id,
                 )
+                # Best-effort skip log for the stats endpoint. Failures here
+                # must not block the actual skip behavior — the inbox still
+                # gets the message either way.
+                try:
+                    await session.execute(
+                        "INSERT INTO ai.whatsapp_ai_ignore_log "
+                        "(id, company_id, phone_number, thread_id, message_mid) "
+                        "VALUES (:id, :cid, :pn, :tid, :mid)",
+                        {
+                            "id": _generate_id(),
+                            "cid": company_id,
+                            "pn": sender_id,
+                            "tid": payload.get("thread_id"),
+                            "mid": mid,
+                        },
+                    )
+                    await session.commit()
+                except Exception:
+                    logger.warning(
+                        "wa_ai_ignore_log_insert_failed",
+                        company_id=company_id,
+                        exc_info=True,
+                    )
+                    with suppress(Exception):
+                        await session.rollback()
                 return
         except Exception:
             logger.warning(
