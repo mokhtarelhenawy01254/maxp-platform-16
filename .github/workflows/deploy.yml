@@ -108,21 +108,9 @@ jobs:
         id: fe-check
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "fe-needed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          CHANGED=$(git diff --name-only HEAD~1 HEAD)
-          if [ -z "$CHANGED" ]; then
-            echo "fe-needed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Non-frontend path prefixes that never affect the frontend build.
-          if echo "$CHANGED" | grep -vqE "^(apps/backend/|apps/ai-service/|scripts/|\.github/|\.agents/|nginx_configs/|\.env\.example|docs/|.*\.md)"; then
-            echo "fe-needed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "fe-needed=false" >> "$GITHUB_OUTPUT"
-          fi
+          # Always rebuild the frontend. Stale chunk detection proved unreliable
+          # (partner custom-commission UI silently never shipped), so we force it.
+          echo "fe-needed=true" >> "$GITHUB_OUTPUT"
 
       # Marketplace catalog files feed the DB via catalog:sync-target; only run it
       # when they change (it still runs on every workflow_dispatch).
