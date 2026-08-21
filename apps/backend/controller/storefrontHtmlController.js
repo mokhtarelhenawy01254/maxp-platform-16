@@ -22,6 +22,15 @@ const INDEX_HTML_CANDIDATES = [
 let cachedIndexHtml = null;
 let cachedIndexHtmlPath = null;
 let cachedIndexHtmlMtimeMs = null;
+let cachedIndexHtmlSize = null;
+
+// Called by deploy-remote.sh touch or /api/v1/internal/purge-storefront-cache
+function clearStorefrontHtmlCache() {
+  cachedIndexHtml = null;
+  cachedIndexHtmlPath = null;
+  cachedIndexHtmlMtimeMs = null;
+  cachedIndexHtmlSize = null;
+}
 
 const buildCompatibleSelect = (prisma, modelName, desiredFields) => {
   const modelFields = prisma?._runtimeDataModel?.models?.[modelName]?.fields;
@@ -50,7 +59,8 @@ const loadIndexHtml = async () => {
       if (
         cachedIndexHtml &&
         cachedIndexHtmlPath === candidate &&
-        cachedIndexHtmlMtimeMs === stats.mtimeMs
+        cachedIndexHtmlMtimeMs === stats.mtimeMs &&
+        cachedIndexHtmlSize === stats.size
       ) {
         return cachedIndexHtml;
       }
@@ -59,6 +69,7 @@ const loadIndexHtml = async () => {
       cachedIndexHtml = fileContents;
       cachedIndexHtmlPath = candidate;
       cachedIndexHtmlMtimeMs = stats.mtimeMs;
+      cachedIndexHtmlSize = stats.size;
       return fileContents;
     } catch {
       // Try the next known location.
@@ -166,3 +177,6 @@ exports.handleStorefrontShell = async (req, res, next) => {
     return next(error);
   }
 };
+
+module.exports.clearStorefrontHtmlCache = clearStorefrontHtmlCache;
+module.exports.loadIndexHtml = loadIndexHtml;

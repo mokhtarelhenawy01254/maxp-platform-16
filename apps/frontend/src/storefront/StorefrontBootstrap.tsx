@@ -255,7 +255,7 @@ export const prefetchStorefrontBootstrapData = async (): Promise<void> => {
   await queryClient.prefetchQuery({
     queryKey: initialSettingsQueryKey,
     queryFn: () => fetchStorefrontSettings(previewThemeId, previewSource),
-    staleTime: Infinity,
+    staleTime: 5 * 60 * 1000,
   });
 
   const resolvedStorefrontScope = getStorefrontScope();

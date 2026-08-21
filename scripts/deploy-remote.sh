@@ -73,6 +73,9 @@ sync_frontend_dist() {
     "$source_dir/" /var/www/frontend2/dist/
   sudo rm -rf /var/www/frontend2/dist/products
   sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
+  # Force mtime to now so backend's cachedIndexHtml (mtimeMs check) always
+  # invalidates after deploy even if rsync preserved old mtime from build
+  sudo touch /var/www/frontend2/dist/index.html
   # Keep old hashed chunks so cached browsers don't 404 on previous-build
   # lazy chunks. Old index.html references are gone; old chunks are inert
   # but harmless on disk and essential for cache-in-flight compatibility.
@@ -81,6 +84,13 @@ sync_frontend_dist() {
   sudo rsync -a --exclude 'index.html' \
     "$source_dir/" /var/www/frontend2/dist/
   sudo chown -R $USER:$USER /var/www/frontend2/dist
+  echo "✅ Frontend dist synced — index.html mtime: $(stat -c %y /var/www/frontend2/dist/index.html 2>/dev/null || stat -f %Sm /var/www/frontend2/dist/index.html 2>/dev/null || echo unknown)"
+  # Purge storefront Settings Redis cache so new theme/designTokens appear immediately
+  # (publicStorefrontController caches 60s, frontend Infinity)
+  if command -v redis-cli >/dev/null 2>&1; then
+    redis-cli --scan --pattern 'storefront_settings:*' 2>/dev/null | xargs -r redis-cli del 2>/dev/null || true
+    echo "✅ Purged storefront_settings Redis cache"
+  fi
 }
 
 # Move frontend files from staging

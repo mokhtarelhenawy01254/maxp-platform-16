@@ -251,7 +251,7 @@ export const useStorefrontSettings = (
     ),
     queryFn: () => fetchStorefrontSettings(previewThemeId, previewSource),
     enabled: options.enabled ?? true,
-    staleTime: Infinity, // Settings change infrequently, keep them until hard refresh or explicit invalidation
+    staleTime: 5 * 60 * 1000, // was Infinity — 5min so store updates appear without hard refresh (deploy purges via version check)
     gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
   });
 
