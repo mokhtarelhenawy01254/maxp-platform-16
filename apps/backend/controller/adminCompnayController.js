@@ -1325,6 +1325,20 @@ const createNewCompany = async (req, res) => {
         const registrationIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || null;
         const registrationUserAgent = req.headers['user-agent'] || null;
 
+        // Fetch platform default sidebar layout
+        let defaultSidebarLayout = 'three-tier';
+        try {
+            const platformDefaultSidebar = await getSharedPrismaClient().systemSettings.findUnique({
+                where: { systemName: 'platform_default_sidebar' },
+            });
+            if (platformDefaultSidebar?.config) {
+                const config = JSON.parse(platformDefaultSidebar.config);
+                if (config.layout) defaultSidebarLayout = config.layout;
+            }
+        } catch (e) {
+            console.warn('Failed to fetch platform default sidebar:', e.message);
+        }
+
         // Create company
         const company = await getSharedPrismaClient().company.create({
             data: {
@@ -1336,7 +1350,7 @@ const createNewCompany = async (req, res) => {
                 currency,
                 isActive: true,
                 // useCentralKeys field removed — key routing is now schema-agnostic
-                sidebarLayout: 'three-tier', // ✅ الوضع الحديث كافتراضي
+                sidebarLayout: defaultSidebarLayout,
                 registration_ip: registrationIp,
                 registration_user_agent: registrationUserAgent,
             }
