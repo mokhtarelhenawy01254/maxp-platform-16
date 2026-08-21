@@ -15,6 +15,9 @@ from src.api.admin.playground import router as playground_router
 from src.api.admin.search import router as search_router
 from src.api.admin.tasks import router as tasks_router
 from src.api.admin.orders import router as orders_router
+from src.api.admin.whatsapp_ai_ignore_list import (
+    router as whatsapp_ai_ignore_list_router,
+)
 
 router = APIRouter()
 router.include_router(agents_router)
@@ -30,3 +33,4 @@ router.include_router(playground_router)
 router.include_router(search_router)
 router.include_router(tasks_router)
 router.include_router(orders_router)
+router.include_router(whatsapp_ai_ignore_list_router)

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   Bell,
+  Bot,
   CheckCircle2,
   Copy,
   Database,
@@ -92,6 +93,7 @@ import {
   WhatsAppSurfaceCard,
 } from "./components/WhatsAppPageShell";
 import LabelContactsDialog from "../../components/whatsapp/LabelContactsDialog";
+import AIAgentSettingsTab from "./components/AIAgentSettingsTab";
 
 type TabId =
   | "sessions"
@@ -99,7 +101,8 @@ type TabId =
   | "quick-replies"
   | "business"
   | "privacy"
-  | "labels";
+  | "labels"
+  | "ai-agent";
 
 type WhatsAppProvider = "BAILEYS" | "META_CLOUD";
 
@@ -535,6 +538,12 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         label: t("whatsappSettings.labels"),
         icon: Tag,
         description: t("whatsappSettings.manageLabels"),
+      },
+      {
+        id: "ai-agent",
+        label: t("whatsappSettings.aiAgent.tabLabel"),
+        icon: Bot,
+        description: t("whatsappSettings.aiAgent.tabDescription"),
       },
 
     ],
@@ -2256,6 +2265,21 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     </WhatsAppSurfaceCard>
   );
 
+  const renderAIAgentTab = () => {
+    if (!companyId) {
+      return (
+        <Alert className="rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
+          <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
+          <AlertTitle>{t("whatsappSettings.aiAgent.tabLabel")}</AlertTitle>
+          <AlertDescription>
+            A company context is required to manage the AI ignore list.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    return <AIAgentSettingsTab companyId={companyId} />;
+  };
+
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case "sessions":
@@ -2270,6 +2294,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         return renderPrivacyTab();
       case "labels":
         return renderLabelsTab();
+      case "ai-agent":
+        return renderAIAgentTab();
       default:
         return null;
     }

@@ -617,6 +617,31 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
             logger.info("whatsapp reply disabled for company", company_id=company_id)
             return
 
+        # 0. AI ignore list (do-not-reply) check
+        #    If the sender is on the company's ignore list, the message still
+        #    arrives in the inbox (handled by the upstream webhook), but the
+        #    AI agent must NOT auto-reply.
+        try:
+            ignored_row = await session.execute(
+                "SELECT 1 FROM ai.whatsapp_ai_ignore_list "
+                "WHERE company_id = :cid AND phone_number = :pn LIMIT 1",
+                {"cid": company_id, "pn": sender_id},
+            )
+            if ignored_row.scalar_one_or_none() is not None:
+                logger.info(
+                    "wa_ai_reply_skipped_ignored",
+                    sender_id=sender_id,
+                    company_id=company_id,
+                )
+                return
+        except Exception:
+            logger.warning(
+                "wa_ai_ignore_check_failed_fallthrough",
+                company_id=company_id,
+                exc_info=True,
+            )
+            # Fail-open: if the lookup errors out, do not silently block all replies.
+
         # 1. Get Page/Phone Token
         page_row = await session.execute(
             "SELECT page_access_token FROM facebook_pages WHERE page_id = :pid AND company_id = :cid",
