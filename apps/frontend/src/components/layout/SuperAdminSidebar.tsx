@@ -69,6 +69,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: t("superAdmin.sidebar.facebookOAuth"), icon: <Facebook className="size-5" />, path: "/super-admin/facebook-oauth" },
     { text: t("superAdmin.sidebar.metaPixel"), icon: <Facebook className="size-5" />, path: "/super-admin/platform-site-meta-pixel" },
     { text: t("superAdmin.sidebar.homepageTemplates"), icon: <Globe className="size-5" />, path: "/super-admin/homepage-templates" },
+    { text: t("superAdmin.sidebar.defaultSidebar"), icon: <Palette className="size-5" />, path: "/super-admin/default-sidebar" },
     { text: t("superAdmin.sidebar.landingPages"), icon: <Globe className="size-5" />, path: "/super-admin/landing-pages" },
     { text: t("superAdmin.sidebar.productDesigns"), icon: <Palette className="size-5" />, path: "/super-admin/product-designs" },
     { text: t("superAdmin.sidebar.staffAccess"), icon: <Briefcase className="size-5" />, path: "/super-admin/staff-access" },

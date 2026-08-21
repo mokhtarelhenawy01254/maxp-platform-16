@@ -6,6 +6,7 @@ const platformSignupCouponController = require('../controller/platformSignupCoup
 const platformSiteMetaPixelController = require('../controller/platformSiteMetaPixelController');
 const platformSpecialtyController = require('../controller/platformSpecialtyController');
 const superAdminSettingsController = require('../controller/superAdminSettingsController');
+const platformDefaultSidebarController = require('../controller/platformDefaultSidebarController');
 const { authenticateToken, requireSuperAdmin } = require('../middleware/superAdminMiddleware');
 const platformValidator = require('../middleware/superAdminPlatformValidation');
 
@@ -39,6 +40,10 @@ router.get('/site-homepage', platformSiteHomepageController.getAdminSettings);
 router.put('/site-homepage', platformSiteHomepageController.updateAdminSettings);
 router.get('/site-meta-pixel', platformSiteMetaPixelController.getAdminSettings);
 router.put('/site-meta-pixel', platformSiteMetaPixelController.updateAdminSettings);
+
+// Platform Default Sidebar Settings
+router.get('/default-sidebar', platformDefaultSidebarController.getAdminSettings);
+router.put('/default-sidebar', platformDefaultSidebarController.updateAdminSettings);
 
 // Platform Signup Coupons
 router.get('/signup-coupons', platformSignupCouponController.listCoupons);

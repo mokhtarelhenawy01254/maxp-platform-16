@@ -1135,6 +1135,9 @@ const PlatformSiteHomepageTemplates = React.lazy(
 const SuperAdminLandingPages = React.lazy(
   () => import("./pages/super-admin/SuperAdminLandingPages"),
 );
+const SuperAdminDefaultSidebar = React.lazy(
+  () => import("./pages/super-admin/SuperAdminDefaultSidebar"),
+);
 const PlatformSignupCoupons = React.lazy(
   () => import("./pages/super-admin/PlatformSignupCoupons"),
 );
@@ -2216,6 +2219,14 @@ const AppContent = () => {
               element={
                 <Layout>
                   <PlatformSiteHomepageTemplates />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/default-sidebar"
+              element={
+                <Layout>
+                  <SuperAdminDefaultSidebar />
                 </Layout>
               }
             />

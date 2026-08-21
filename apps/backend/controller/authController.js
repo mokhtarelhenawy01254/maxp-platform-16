@@ -175,6 +175,31 @@ const register = async (req, res) => {
       email: normalizedEmail
     });
 
+    // Fetch default sidebar settings from platform settings
+    const platformDefaultSidebar = await prisma.systemSettings.findUnique({
+      where: { systemName: "platform_default_sidebar" },
+    });
+
+    let defaultSidebarLayout = "three-tier";
+    let defaultSidebarSections = {};
+
+    if (platformDefaultSidebar?.config) {
+      try {
+        const config = JSON.parse(platformDefaultSidebar.config);
+        defaultSidebarLayout = config.layout || "three-tier";
+        defaultSidebarSections = config.sections || {};
+      } catch (e) {
+        console.warn("Failed to parse platform default sidebar config:", e);
+      }
+    }
+
+    // Build initial company settings with default sidebar
+    const initialSettings = {
+      lastSystemChange: new Date().toISOString(),
+      systemChangeBy: "admin",
+      sidebarSettings: defaultSidebarSections,
+    };
+
     const company = await prisma.company.create({
       data: {
         name: trimmedCompanyName,
@@ -182,13 +207,14 @@ const register = async (req, res) => {
         email: normalizedEmail,
         phone: phone || null,
         isActive: true,
-        sidebarLayout: 'three-tier',
+        sidebarLayout: defaultSidebarLayout,
         timezone: userTimezone,
         businessSpecialty: selectedSpecialty?.id
           ? { connect: { id: selectedSpecialty.id } }
           : undefined,
         registration_ip: registrationIp,
         registration_user_agent: registrationUserAgent,
+        settings: JSON.stringify(initialSettings),
       }
     });
 

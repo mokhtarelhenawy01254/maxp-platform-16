@@ -52,6 +52,7 @@
     "facebookOAuth": "Facebook OAuth Settings",
     "metaPixel": "Meta Pixel",
     "homepageTemplates": "Homepage Templates",
+    "defaultSidebar": "Default Sidebar",
     "productDesigns": "Product Designs",
     "staffAccess": "Staff Access",
     "superAdminUsers": "Super Admin Users",

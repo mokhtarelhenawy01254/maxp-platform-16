@@ -713,6 +713,31 @@ const createNewCompany = async (req, res) => {
 
     // Transaction to create company and optional social profiles
     const transactionResult = await getSharedPrismaClient().$transaction(async (tx) => {
+      // Fetch default sidebar settings from platform settings
+      const platformDefaultSidebar = await tx.systemSettings.findUnique({
+        where: { systemName: "platform_default_sidebar" },
+      });
+
+      let defaultSidebarLayout = "three-tier";
+      let defaultSidebarSections = {};
+
+      if (platformDefaultSidebar?.config) {
+        try {
+          const config = JSON.parse(platformDefaultSidebar.config);
+          defaultSidebarLayout = config.layout || "three-tier";
+          defaultSidebarSections = config.sections || {};
+        } catch (e) {
+          console.warn("Failed to parse platform default sidebar config:", e);
+        }
+      }
+
+      // Build initial company settings with default sidebar
+      const initialSettings = {
+        lastSystemChange: new Date().toISOString(),
+        systemChangeBy: "admin",
+        sidebarSettings: defaultSidebarSections,
+      };
+
       const createdCompany = await tx.company.create({
         data: {
           name,
@@ -723,12 +748,8 @@ const createNewCompany = async (req, res) => {
           address: address || null,
           currency,
           isActive,
-          // useCentralKeys field removed — key routing is now schema-agnostic
-          sidebarLayout: "three-tier", // Modern layout as default
-          settings: JSON.stringify({
-            lastSystemChange: new Date().toISOString(),
-            systemChangeBy: "admin",
-          }),
+          sidebarLayout: defaultSidebarLayout,
+          settings: JSON.stringify(initialSettings),
         },
         include: { _count: { select: { users: true, customers: true, products: true, orders: true, conversations: true } } },
       });
