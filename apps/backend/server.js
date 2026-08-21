@@ -407,6 +407,7 @@ const walletRoutes = require("./routes/walletRoutes");
 const adminWalletRoutes = require("./routes/adminWalletRoutes");
 const platformSubscriptionRoutes = require("./routes/platformSubscriptionRoutes");
 const superAdminPlatformRoutes = require("./routes/superAdminPlatformRoutes");
+const internalDeployRoutes = require("./routes/internalDeployRoutes");
 const publicPlatformRoutes = require("./routes/publicPlatformRoutes");
 const membershipRoutes = require("./routes/membershipRoutes");
 // Marketplace Management Routes
@@ -923,6 +924,7 @@ app.use("/api/v1/proxy", proxyRoutes);
 
 
 // Platform & Super-Admin
+app.use("/api/v1/internal", internalDeployRoutes);
 app.use("/api/v1/super-admin", superAdminRoutes);
 app.use("/api/v1/super-admin/platform", superAdminPlatformRoutes);
 app.use(

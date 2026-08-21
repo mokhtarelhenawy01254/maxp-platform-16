@@ -179,6 +179,12 @@ let _cachedHtml = null;
 let _cachedPath = null;
 let _cachedMtime = null;
 
+function clearPlatformSeoHtmlCache() {
+  _cachedHtml = null;
+  _cachedPath = null;
+  _cachedMtime = null;
+}
+
 const loadIndexHtml = async () => {
   for (const candidate of INDEX_HTML_CANDIDATES) {
     try {
@@ -209,6 +215,8 @@ const loadIndexHtml = async () => {
  * (i.e. Accept: text/html) AND that match a known platform route.
  * All other requests are passed through unchanged.
  */
+exports.clearPlatformSeoHtmlCache = clearPlatformSeoHtmlCache;
+
 exports.handlePlatformSeo = async (req, res, next) => {
   // Only handle HTML-looking GET/HEAD requests.
   if (req.method !== "GET" && req.method !== "HEAD") return next();

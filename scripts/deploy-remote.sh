@@ -561,6 +561,18 @@ if [ -n "$PM2_BIN" ]; then
 
   echo "✅ Backend health check passed on port $ACTIVE_HEALTH_PORT"
 
+  echo "🧹 Purging in-memory HTML caches on the running backend..."
+  for PURGE_SECRET in "$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2-)" "maxp-deploy-internal-2024"; do
+    if [ -n "$PURGE_SECRET" ]; then
+      PURGE_RESP="$(curl -sS --max-time 10 -X POST -H "x-deploy-secret: $PURGE_SECRET" "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/internal/purge-cache" 2>&1 || true)"
+      if printf '%s' "$PURGE_RESP" | grep -q '"ok":true\|"ok": true'; then
+        echo "✅ HTML caches purged successfully"
+        break
+      fi
+    fi
+  done
+  echo "⚠️ Cache purge response: ${PURGE_RESP:-no response}"
+
   echo "🧩 Verifying marketplace full catalog API after reload..."
   curl -fsS --max-time 20 "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/marketplace/apps?page=1&limit=200" > /tmp/marketplace_catalog.json
   node -e 'const fs=require("fs"); const payload=JSON.parse(fs.readFileSync("/tmp/marketplace_catalog.json","utf8")); const data=Array.isArray(payload.data)?payload.data:[]; const total=Number((payload.pagination&&payload.pagination.total)||data.length); const limit=Number((payload.pagination&&payload.pagination.limit)||0); if(limit!==200||data.length===0||data.length!==total){ console.error("❌ Marketplace full catalog API verification failed",{count:data.length,total,limit}); process.exit(1); } console.log("✅ Marketplace full catalog API returned "+data.length+"/"+total+" apps with limit="+limit);'
