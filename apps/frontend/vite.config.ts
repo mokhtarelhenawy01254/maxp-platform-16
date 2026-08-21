@@ -571,15 +571,7 @@ export default defineConfig(({ mode }) => {
         },
       },
       minify: buildMinifier,
-      ...(buildMinifier === 'esbuild'
-        ? {
-            esbuild: {
-              keepNames: true,
-              drop: mode === 'production' ? ['console', 'debugger'] : [],
-              pure: mode === 'production' ? ['console.log', 'console.debug'] : [],
-            },
-          }
-        : buildMinifier === 'terser'
+      ...(buildMinifier === 'terser'
         ? {
             terserOptions: {
               compress: {
