@@ -3316,12 +3316,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         ? embeddedQuantityOffersSettings.decisionMode
         : undefined,
   };
-  const inlinePdpQuickOrder = shouldRenderInlinePdpQuickOrder ? (
+  const inlinePdpQuickOrder = (
     <PdpQuickOrderPanel
       product={inlineQuickOrderProduct}
       sectionSettings={resolvedEmbeddedPdpCheckoutSettings}
+      isOpen={shouldRenderInlinePdpQuickOrder}
     />
-  ) : null;
+  );
   const shouldMergeInlinePdpQuickOrderIntoBuyBox =
     shouldRenderInlinePdpQuickOrder &&
     pdpQuickOrderSurfaceMode === 'merged-buybox';
@@ -3347,12 +3348,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     !inlinePdpQuickOrderAfterDescription
       ? inlinePdpQuickOrder
       : null;
-  const inlineQuantityOffers = shouldRenderInlineQuantityOffers ? (
+  const inlineQuantityOffers = (
     <QuantityOffersSection
       section={embeddedQuantityOffersSectionConfig}
       settings={embeddedQuantityOffersSettings}
+      isOpen={shouldRenderInlineQuantityOffers}
     />
-  ) : null;
+  );
   const externalPurchaseLabel =
     externalProductConfig.label ||
     String(

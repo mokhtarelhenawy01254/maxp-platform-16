@@ -19,12 +19,14 @@ interface PdpQuickOrderPanelProps {
   };
   className?: string;
   sectionSettings?: Record<string, unknown>;
+  isOpen?: boolean;
 }
 
 const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
   product,
   className,
   sectionSettings,
+  isOpen = true,
 }) => {
   const { theme } = useStorefrontTheme();
   const selection = usePdpSelectionStore((state) => state.selection);
@@ -289,6 +291,8 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
       />
     </section>
   );
+
+  if (!isOpen) return null;
 };
 
 export default PdpQuickOrderPanel;

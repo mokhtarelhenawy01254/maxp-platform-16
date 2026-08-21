@@ -29,6 +29,7 @@ interface QuantityOffersSectionProps {
     hideWhenSingleOffer?: boolean;
     [key: string]: unknown;
   };
+  isOpen?: boolean;
 }
 
 const QUANTITY_OFFERS_SECTION_FAMILY = "QuantityOffers";
@@ -91,6 +92,7 @@ const resolveTextSetting = (value: unknown, fallback: string): string =>
 const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
   section,
   settings,
+  isOpen = true,
 }) => {
   const { id } = useParams<{ id: string }>();
   const { product } = useProduct(id);
@@ -186,5 +188,7 @@ const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
     />
   );
 };
+
+if (!isOpen) return null;
 
 export default QuantityOffersSection;
