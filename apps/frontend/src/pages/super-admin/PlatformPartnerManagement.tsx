@@ -104,7 +104,7 @@ const PlatformPartnerManagement = () => {
           <div className="space-y-3">
             <Alert><Info className="size-4" /><AlertDescription>اترك الحقل فارغاً لاستخدام النسبة العامة للمستوى الأول. النسبة تطبّق على كل فاتورة اشتراك جديدة لهذا الشريك فقط.</AlertDescription></Alert>
             <div>
-              <Label>نسبة المستوى الأول (L1) %</Label>
+              <Label>نسبة المستوى الأول (L1) % — نسبة مخصصة لهذا الشريك</Label>
               <div className="flex items-center gap-1 mt-1">
                 <Input type="number" value={newRate} onChange={e => setNewRate(e.target.value)} min={0} max={100} step={0.5} placeholder="مثال: 35" />
                 <span className="text-sm shrink-0">%</span>
