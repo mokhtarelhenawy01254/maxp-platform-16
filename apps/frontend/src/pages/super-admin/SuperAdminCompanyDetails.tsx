@@ -19,6 +19,13 @@ import {
 } from "./company-details";
 import { formatCurrency, getRoleLabel } from "./company-details/helpers";
 import { useCompanyDetails } from "./company-details/useCompanyDetails";
+import { apiClient } from "../../services/apiClient";
+import { toast } from "sonner";
+import { Percent } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "../../components/ui/dialog";
+import { Label } from "../../components/ui/label";
 
 const CURRENCY_OPTIONS = [
   { value: "EGP", label: "جنيه مصري" },
@@ -54,6 +61,39 @@ const SuperAdminCompanyDetails = () => {
     topUpAmountPreview, topUpBonusPreview, handleTopUpWallet,
   } = useCompanyDetails();
   const [activeTab, setActiveTab] = useState("general");
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [partnerCodeInput, setPartnerCodeInput] = useState("");
+  const [linking, setLinking] = useState(false);
+
+  const openLinkDialog = useCallback(() => {
+    setPartnerCodeInput("");
+    setLinkOpen(true);
+  }, []);
+
+  const handleLinkPartner = useCallback(async () => {
+    if (!company?.id) return;
+    if (!partnerCodeInput.trim()) {
+      toast.error("يرجى إدخال كود الوكيل");
+      return;
+    }
+    try {
+      setLinking(true);
+      const res = await apiClient.post(`/platform-partners/admin/companies/${company.id}/link-partner`, {
+        partnerCode: partnerCodeInput.trim(),
+      });
+      if (res.data?.status === "success") {
+        toast.success("تم ربط الشركة بالوكيل بنجاح");
+        setLinkOpen(false);
+        void refreshCompanyWorkspace({ background: true });
+      } else {
+        toast.error(res.data?.message || "تعذر ربط الشركة بالوكيل");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "تعذر ربط الشركة بالوكيل");
+    } finally {
+      setLinking(false);
+    }
+  }, [company?.id, partnerCodeInput, refreshCompanyWorkspace]);
   const handleScrollToActivation = useCallback(() => {
     setActiveTab("activation");
     setTimeout(() => scrollToActivationSection(), 50);
@@ -74,6 +114,9 @@ const SuperAdminCompanyDetails = () => {
                 >
                   {refreshing ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
                   تحديث
+                </Button>
+                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openLinkDialog} disabled={!company}>
+                  <Percent className="size-4" /> اربط بوكيل
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -339,6 +382,37 @@ const SuperAdminCompanyDetails = () => {
           <MiniStat label="القيمة النهائية" value={formatCurrency((review?.wallet?.balance || 0) + topUpAmountPreview + topUpBonusPreview, reviewCurrency)} helper="رصيد تقديري بعد الشحن" valueClassName="text-emerald-700 dark:text-emerald-300" />
         </div>
       </ResponsiveOverlay>
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>اربط الشركة بوكيل</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Alert>
+              <AlertDescription>
+                أدخل كود الوكيل (Partner Code) لربط هذه الشركة به يدوياً. سيظهر العميل ضمن شبكة الوكيل ويحتسب له العمولة على الاشتراكات الجديدة.
+              </AlertDescription>
+            </Alert>
+            <div className="space-y-1.5">
+              <Label>كود الوكيل</Label>
+              <Input
+                value={partnerCodeInput}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setPartnerCodeInput(e.target.value)}
+                placeholder="مثال: SWA-DC918226"
+                className="h-11 rounded-2xl"
+                disabled={linking}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setLinkOpen(false)} disabled={linking}>إلغاء</Button>
+            <Button type="button" onClick={handleLinkPartner} disabled={linking || !partnerCodeInput.trim()}>
+              {linking ? <Loader2 className="size-4 animate-spin" /> : <Percent className="size-4" />}
+              ربط بالوكيل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

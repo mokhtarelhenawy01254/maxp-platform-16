@@ -177,3 +177,29 @@ exports.updateAdminSettings = async (req, res, next) => {
         next(err);
     }
 };
+
+// Link an already-registered Company to a Partner (manual assignment by Super Admin).
+exports.linkCompanyToPartner = async (req, res, next) => {
+    try {
+        const { companyId } = req.params;
+        const { partnerCode } = req.body;
+
+        if (!partnerCode || !partnerCode.trim()) {
+            return res.status(400).json({ status: 'fail', message: 'يرجى إدخال كود الوكيل' });
+        }
+
+        const linked = await platformPartnerService.linkCompanyToPartner(companyId, partnerCode.trim());
+
+        if (!linked) {
+            return res.status(404).json({ status: 'fail', message: 'كود الوكيل غير صحيح أو غير موجود' });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            message: 'تم ربط الشركة بالوكيل بنجاح',
+            data: { linked }
+        });
+    } catch (err) {
+        next(err);
+    }
+};

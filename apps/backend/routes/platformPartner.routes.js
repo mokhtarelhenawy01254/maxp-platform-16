@@ -20,6 +20,7 @@ router.get('/admin/partners', partnerController.getAdminPartners);
 router.get('/admin/payouts', partnerController.getAdminPayouts);
 router.put('/admin/partners/:partnerId/title', partnerController.updateTitle);
 router.put('/admin/partners/:partnerId/commission-rate', partnerController.updateCommissionRate);
+router.post('/admin/companies/:companyId/link-partner', partnerController.linkCompanyToPartner);
 router.put('/admin/payouts/:payoutId', partnerController.processPayout);
 router.get('/admin/settings', partnerController.getAdminSettings);
 router.put('/admin/settings', partnerController.updateAdminSettings);
