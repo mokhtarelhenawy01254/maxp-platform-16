@@ -11131,6 +11131,7 @@
     "agentProfiles": "فريق الايجنت",
     "aiImageGenerator": "مصمم الصور الذكية",
     "aiCatalog": "كتالوج المنتجات (البوت)",
+    "aiIgnoreList": "قائمة عدم الرد",
     "aiAgentSkills": "مهارات الوكلاء",
     "aiAgentTools": "أدوات الوكلاء",
     "aiOperatorSection": "فريق الايجنت",

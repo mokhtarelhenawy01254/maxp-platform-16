@@ -11130,6 +11130,7 @@
     "agentProfiles": "Agent Profiles",
     "aiImageGenerator": "AI Image Generator",
     "aiCatalog": "AI Product Catalog",
+    "aiIgnoreList": "Do-Not-Reply List",
     "aiAgentSkills": "Agent Skills",
     "aiAgentTools": "Agent Tools",
     "aiOperatorSection": "Agent Team",

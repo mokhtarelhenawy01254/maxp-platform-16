@@ -459,6 +459,7 @@ export const getSidebarConfig = (
                 { to: '/admin/faqs', icon: HelpCircle, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardCheck, label: t('sidebar.policies') },
                 { to: '/admin/ai-hub?tab=routing', icon: RefreshCcw, label: t('sidebar.channelRouting') },
+                { to: '/admin/ai-hub?tab=ignoreList', icon: Ban, label: t('sidebar.aiIgnoreList') },
                 { to: '/admin/ai-hub?tab=skills', icon: Palette, label: t('sidebar.aiAgentSkills'), hidden: !isFeatureEnabled('aiToolsEnabled') },
                 { to: '/admin/ai-hub?tab=tools', icon: Wrench, label: t('sidebar.aiAgentTools'), hidden: !isFeatureEnabled('aiToolsEnabled') },
             ]
