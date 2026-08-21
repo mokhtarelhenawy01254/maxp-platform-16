@@ -26,7 +26,7 @@ const LAYOUT_OPTIONS = [
 ];
 
 const SuperAdminDefaultSidebar: React.FC = () => {
-  const { t } = useTranslation("superAdminDefaultSidebar");
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<DefaultSidebarSettings>({
     layout: "three-tier",
     settings: {},
