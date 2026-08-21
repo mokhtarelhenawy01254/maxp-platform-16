@@ -281,7 +281,7 @@ export default defineConfig(({ mode }) => {
     normalizedDisableCompression === 'true';
   const proxyTarget = env['VITE_PROXY_TARGET'] || resolveDefaultProxyTarget();
   const requestedMinifier = env['VITE_BUILD_MINIFY'];
-  const normalizedRequestedMinifier = String(requestedMinifier ?? 'esbuild')
+  const normalizedRequestedMinifier = String(requestedMinifier ?? (mode === 'production' ? 'terser' : 'esbuild'))
     .trim()
     .toLowerCase();
   const buildMinifier =
