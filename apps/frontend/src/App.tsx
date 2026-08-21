@@ -2767,7 +2767,12 @@ const AppContent = () => {
                   path="/apps"
                   element={
                     <Layout>
-                      <div />
+                      <RoleProtectedRoute
+                        allowedRoles={['COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER', 'MODERATOR', 'EMPLOYEE', 'ADMIN', 'HR_MANAGER', 'Team Lead', 'Project Manager', 'Developer', 'Tester', 'Agent', 'AGENT']}
+                        fallback={<Navigate to="/super-admin/dev-dashboard" replace />}
+                      >
+                        <div />
+                      </RoleProtectedRoute>
                     </Layout>
                   }
                 />
@@ -2775,7 +2780,12 @@ const AppContent = () => {
                   path="/apps/:appId"
                   element={
                     <Layout>
-                      <div />
+                      <RoleProtectedRoute
+                        allowedRoles={['COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER', 'MODERATOR', 'EMPLOYEE', 'ADMIN', 'HR_MANAGER', 'Team Lead', 'Project Manager', 'Developer', 'Tester', 'Agent', 'AGENT']}
+                        fallback={<Navigate to="/super-admin/dev-dashboard" replace />}
+                      >
+                        <div />
+                      </RoleProtectedRoute>
                     </Layout>
                   }
                 />
