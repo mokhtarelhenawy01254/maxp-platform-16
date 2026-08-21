@@ -5,7 +5,7 @@ const {
 
 const SYSTEM_NAME = "platform_default_sidebar";
 const DEFAULT_LAYOUT = "three-tier";
-const ALLOWED_LAYOUTS = ["classic", "three-tier", "horizontal", "floating", "minimal"];
+const ALLOWED_LAYOUTS = ["classic", "three-tier", "horizontal", "floating", "minimal", "app-dashboard"];
 
 const DEFAULT_SETTINGS = Object.freeze({
   systemName: SYSTEM_NAME,
