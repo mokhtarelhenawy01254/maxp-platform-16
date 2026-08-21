@@ -241,11 +241,13 @@ void bootstrapApp()
 
 // Service Worker auto-update: notify user when a new version is ready (Production only)
 if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MODE === "production")) {
-  // Unregister any legacy "/sw.js" registration so the renamed worker doesn't
-  // keep controlling the page alongside the new "/sw-v4.js" worker.
+  // Unregister any legacy service worker (e.g. "/sw.js", "/sw-v2.js", "/sw-v3.js",
+  // "/sw-v5.js") so the renamed worker doesn't keep controlling the page
+  // alongside the new "/sw-v4.js" worker. Only the current versioned worker is
+  // kept active.
   navigator.serviceWorker.getRegistrations().then((regs) => {
     regs.forEach((r) => {
-      if (r.active && /\/sw\.js$/.test(r.active.scriptURL) && !/\/sw-v4\.js$/.test(r.active.scriptURL)) {
+      if (r.active && r.active.scriptURL && !/\/sw-v4\.js(?:[?#].*)?$/.test(r.active.scriptURL)) {
         r.unregister();
       }
     });
