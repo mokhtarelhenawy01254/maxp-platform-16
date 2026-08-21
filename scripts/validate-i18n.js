@@ -5,6 +5,28 @@ const LOCALES_DIR = path.join(__dirname, "../apps/frontend/src/locales");
 
 let exitCode = 0;
 
+function collectJsonSectionNames(dir) {
+  // Returns section names as merge-translations.js derives them:
+  // the deepest path component without .json extension, so files like
+  // "admin/aiHub.json" map to section "aiHub" (the same top-level key that
+  // "aiHub.json" produces) and "subscription.json" maps to "subscription".
+  const names = new Set();
+  if (!fs.existsSync(dir)) return names;
+  const walk = (current) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile() && entry.name.endsWith(".json")) {
+        const rel = path.relative(dir, full).replace(/\\/g, "/");
+        const parts = rel.replace(/\.json$/, "").split("/");
+        names.add(parts[parts.length - 1]);
+      }
+    }
+  };
+  walk(dir);
+  return names;
+}
+
 function checkLang(lang) {
   const sectionsDir = path.join(LOCALES_DIR, lang, "sections");
   const translationPath = path.join(LOCALES_DIR, lang, "translation.json");
@@ -18,19 +40,16 @@ function checkLang(lang) {
     return;
   }
 
-  const sectionFiles = fs
-    .readdirSync(sectionsDir)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => path.basename(f, ".json"));
+  const sectionNames = collectJsonSectionNames(sectionsDir);
 
   const translation = JSON.parse(fs.readFileSync(translationPath, "utf8"));
   const translationKeys = Object.keys(translation);
 
-  const missingSections = sectionFiles.filter(
+  const missingSections = [...sectionNames].filter(
     (s) => !translationKeys.includes(s)
   );
   const extraSections = translationKeys.filter(
-    (k) => !sectionFiles.includes(k)
+    (k) => !sectionNames.has(k)
   );
 
   if (missingSections.length > 0) {
@@ -51,7 +70,7 @@ function checkLang(lang) {
   }
 
   console.log(
-    `[${lang}] ✓ ${sectionFiles.length} section files, ${translationKeys.length} top-level keys in translation.json`
+    `[${lang}] ✓ ${sectionNames.size} section files (recursed), ${translationKeys.length} top-level keys in translation.json`
   );
 }
 
