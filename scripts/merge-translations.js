@@ -16,6 +16,32 @@ function getKeys(obj, prefix = '') {
   return keys;
 }
 
+function collectJsonFiles(dir, base) {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...collectJsonFiles(full, base));
+    } else if (entry.isFile() && entry.name.endsWith('.json')) {
+      out.push(path.relative(base, full).replace(/\\/g, '/'));
+    }
+  }
+  return out;
+}
+
+function deepMerge(target, source) {
+  for (const key of Object.keys(source)) {
+    const sv = source[key];
+    const tv = target[key];
+    if (sv && typeof sv === 'object' && !Array.isArray(sv) && tv && typeof tv === 'object' && !Array.isArray(tv)) {
+      deepMerge(tv, sv);
+    } else {
+      target[key] = sv;
+    }
+  }
+}
+
 function mergeFiles(lang) {
   const sectionsDir = path.join(LOCALES_DIR, lang, 'sections');
   if (!fs.existsSync(sectionsDir)) {
@@ -23,14 +49,30 @@ function mergeFiles(lang) {
     return;
   }
 
-  const files = fs.readdirSync(sectionsDir).filter(f => f.endsWith('.json'));
+  const files = collectJsonFiles(sectionsDir, sectionsDir);
   const merged = {};
 
-  files.sort().forEach(file => {
-    const sectionName = path.basename(file, '.json');
+  // Sort by depth (top-level first), then alphabetically so top-level section
+  // files provide the base and nested files like admin/<name>.json deep-merge
+  // their extra keys into the same top-level section (e.g. "aiHub").
+  files.sort((a, b) => {
+    const da = a.split('/').length;
+    const db = b.split('/').length;
+    if (da !== db) return da - db;
+    return a.localeCompare(b);
+  }).forEach(file => {
+    // Treat the deepest path component (without .json) as the section name.
+    // e.g. "admin/aiHub.json" -> "aiHub", "subscription.json" -> "subscription".
+    // Files inside a "admin" subdir merge into the same top-level key as their
+    // filename (e.g. admin/subscription.json -> subscription) to keep keys
+    // grouped under their domain instead of nesting under an extra "admin" key.
+    const withoutExt = file.replace(/\.json$/, '');
+    const parts = withoutExt.split('/');
+    const sectionName = parts[parts.length - 1];
     const filePath = path.join(sectionsDir, file);
     try {
       const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      deepMerge(merged, { [sectionName]: content });
       merged[sectionName] = content;
     } catch (err) {
       console.error(`❌ ERROR in ${lang}/sections/${file}: ${err.message}`);

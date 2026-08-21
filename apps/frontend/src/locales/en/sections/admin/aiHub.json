@@ -18,6 +18,7 @@
     "skills": "Skills",
     "scheduler": "Scheduler",
     "routing": "Channel Routing",
+    "ignoreList": "Do-Not-Reply",
     "test": "Test"
   },
   "test": {
@@ -124,5 +125,39 @@
       "none": "None",
       "notAvailable": "N/A"
     }
+  },
+  "ignoreList": {
+    "title": "AI Do-Not-Reply List",
+    "description": "Phone numbers on this list will reach the inbox, but the AI agent will never auto-reply to them.",
+    "tabLabel": "AI Agent",
+    "tabDescription": "Block AI auto-replies per phone number",
+    "ignoreListTitle": "Do-Not-Reply list",
+    "ignoreListHelp": "Add a phone number (any format) and the AI will skip it. The message still arrives in the inbox and a human can respond.",
+    "statsTitle": "Skip statistics",
+    "totalLabel": "Blocked numbers",
+    "statsToday": "Skipped today",
+    "statsThisWeek": "Skipped this week",
+    "statsAllTime": "Skipped all time",
+    "bulkImport": "Bulk import",
+    "addNumber": "Add number",
+    "empty": "No blocked numbers yet. Add one above to stop the AI from auto-replying.",
+    "confirmRemove": "Remove this number from the AI ignore list?",
+    "remove": "Remove",
+    "phoneNumber": "Phone number",
+    "phonePlaceholder": "e.g. 01012345678 or +20 100 123 4567",
+    "label": "Label (optional)",
+    "labelPlaceholder": "e.g. VIP customer, supplier",
+    "notes": "Notes (optional)",
+    "bulkImportTitle": "Bulk import phone numbers",
+    "bulkImportHelp": "One phone number per line. You can also use comma-separated format.",
+    "bulkImportExample": "01012345678\n+20 100 123 4567\n0020 100 765 4321",
+    "companyRequired": "A company context is required to manage the AI ignore list.",
+    "loadFailed": "Failed to load ignore list",
+    "removeFailed": "Failed to remove entry",
+    "addFailed": "Failed to add number",
+    "bulkFailed": "Bulk import failed",
+    "bulkSuccess": "Imported {count} number(s)",
+    "duplicate": "This number is already on the ignore list",
+    "invalidPhone": "Please enter a valid phone number (digits only, at least 6)"
   }
 }

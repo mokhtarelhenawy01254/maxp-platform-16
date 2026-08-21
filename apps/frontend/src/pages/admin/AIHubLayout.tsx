@@ -11,6 +11,7 @@ const AIAgentSandboxPage = React.lazy(() => import("./ai-agent-sandbox/AIAgentSa
 import ChannelRoutingPage from "./ChannelRoutingPage";
 import AgentSkillsPage from "./AgentSkillsPage";
 import AgentToolsPage from "./AgentToolsPage";
+import AIIgnoreListPage from "./AIIgnoreListPage";
 const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
 const WebChatWidgetPage = React.lazy(() => import("./WebChatWidgetPage"));
 const AgentTrainingPage = React.lazy(() => import("./AgentTrainingPage"));
@@ -22,6 +23,7 @@ const TABS = [
   { key: "skills", labelKey: "aiHub.tabs.skills" },
   { key: "tools", labelKey: "aiHub.tabs.tools" },
   { key: "routing", labelKey: "aiHub.tabs.routing" },
+  { key: "ignoreList", labelKey: "aiHub.tabs.ignoreList" },
   { key: "test", labelKey: "aiHub.tabs.test", superOnly: true },
   { key: "rag", labelKey: "aiHub.tabs.rag", superOnly: true },
 ] as const;
@@ -196,6 +198,11 @@ export default function AIHubLayout() {
           {currentTab === "skills" && <div className="h-full overflow-y-auto"><AgentSkillsPage /></div>}
           {currentTab === "tools" && <div className="h-full overflow-y-auto"><AgentToolsPage /></div>}
           {currentTab === "routing" && <div className="h-full overflow-y-auto"><ChannelRoutingPage /></div>}
+          {currentTab === "ignoreList" && (
+            <div className="h-full overflow-y-auto">
+              <AIIgnoreListPage companyId={isSuper ? selectedCompanyId || undefined : undefined} />
+            </div>
+          )}
           {currentTab === "test" && selectedCompanyId
             ? <div className="h-full overflow-y-auto"><AgentTestTab key={selectedCompanyId} companyId={selectedCompanyId} /></div>
             : currentTab === "test" && <div className="flex h-64 items-center justify-center text-muted-foreground">{t("aiHub.selectCompanyFirst")}</div>
