@@ -1816,6 +1816,69 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     return () => window.clearInterval(intervalId);
   }, [initialElessiSocialProofItems.length, isElessiCareBuybox]);
 
+  // Hooks must stay above the loading/error early returns — conditional hooks
+  // crash the PDP with minified React error #310.
+  const [cashbackPreview, setCashbackPreview] = useState<{
+    cashback: number;
+    currency: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCashbackPreview(null);
+
+    if (!product) {
+      return undefined;
+    }
+
+    const effectivePrice =
+      typeof selectedVariant?.price === 'number' && Number.isFinite(selectedVariant.price)
+        ? selectedVariant.price
+        : product.price;
+    const companyId = storefrontSettings?.company?.id;
+    const categoryId = (product as { category?: { id?: string | number } })?.category?.id;
+    const amount = Number(effectivePrice) * Number(quantity || 1);
+
+    if (!companyId || !Number.isFinite(amount) || amount <= 0) {
+      return undefined;
+    }
+
+    const params = new URLSearchParams({
+      companyId: String(companyId),
+      productId: String(product.id),
+      categoryId: categoryId ? String(categoryId) : '',
+      amount: String(amount),
+    });
+
+    apiClient
+      .get(`/loyalty/cashback-preview?${params.toString()}`)
+      .then((response: any) => {
+        if (cancelled) {
+          return;
+        }
+        const payload = response?.data?.data ?? response?.data ?? {};
+        if (!payload || payload.isDynamic === false) {
+          return;
+        }
+        const cashback = Number(payload.cashback);
+        if (!Number.isFinite(cashback) || cashback <= 0) {
+          return;
+        }
+        setCashbackPreview({
+          cashback,
+          currency: payload.currency || currency,
+        });
+      })
+      .catch(() => {
+        // Fail silently: the badge is hidden when the endpoint is unavailable
+        // or dynamic cashback is disabled.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.id, selectedVariant, quantity, storefrontSettings?.company?.id, currency]);
+
   if (isLoading) {
     return (
       <div className="space-y-8 animate-pulse">
@@ -1882,63 +1945,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const discount = activeComparePrice && activeComparePrice > activePrice
     ? Math.round(((activeComparePrice - activePrice) / activeComparePrice) * 100)
     : null;
-
-  const [cashbackPreview, setCashbackPreview] = useState<{
-    cashback: number;
-    currency: string;
-  } | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setCashbackPreview(null);
-
-    if (!product) {
-      return undefined;
-    }
-
-    const companyId = storefrontSettings?.company?.id;
-    const categoryId = (product as { category?: { id?: string | number } })?.category?.id;
-    const amount = Number(activePrice) * Number(quantity || 1);
-
-    if (!companyId || !Number.isFinite(amount) || amount <= 0) {
-      return undefined;
-    }
-
-    const params = new URLSearchParams({
-      companyId: String(companyId),
-      productId: String(product.id),
-      categoryId: categoryId ? String(categoryId) : '',
-      amount: String(amount),
-    });
-
-    apiClient
-      .get(`/loyalty/cashback-preview?${params.toString()}`)
-      .then((response: any) => {
-        if (cancelled) {
-          return;
-        }
-        const payload = response?.data?.data ?? response?.data ?? {};
-        if (!payload || payload.isDynamic === false) {
-          return;
-        }
-        const cashback = Number(payload.cashback);
-        if (!Number.isFinite(cashback) || cashback <= 0) {
-          return;
-        }
-        setCashbackPreview({
-          cashback,
-          currency: payload.currency || currency,
-        });
-      })
-      .catch(() => {
-        // Fail silently: the badge is hidden when the endpoint is unavailable
-        // or dynamic cashback is disabled.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [product?.id, activePrice, quantity, storefrontSettings?.company?.id, currency]);
 
   const activeStock =
     typeof selectedVariant?.stock === 'number' && Number.isFinite(selectedVariant.stock)

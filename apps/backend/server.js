@@ -640,6 +640,10 @@ app.use("/api/v1/public/marketplace", marketplaceRoutes);
 console.log("✅ [DEBUG] Public Marketplace Routes Loaded");
 
 // Public Product Surfaces
+// Product reviews must mount BEFORE publicProductsRoutes — its catch-all
+// /:id/:presentationSlug route otherwise swallows /products/:id/reviews and
+// /products/:id/back-in-stock with a 404 ("العرض التقديمي غير موجود").
+app.use("/api/v1/public", publicProductReviewRoutes);
 app.use("/api/v1/public/products/feed", require("./routes/productFeedRoutes"));
 app.use(
   "/api/v1/public/products",
@@ -665,7 +669,6 @@ app.use("/api/v1/public/widget", require("./routes/publicWidgetChatRoutes"));
 app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRouter);
 app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettings"));
 app.use("/api/v1/public", publicCouponsRoutes);
-app.use("/api/v1/public", publicProductReviewRoutes);
 app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
 app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
