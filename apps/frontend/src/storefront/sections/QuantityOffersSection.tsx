@@ -94,6 +94,7 @@ const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
   settings,
   isOpen = true,
 }) => {
+  if (!isOpen) return null;
   const { id } = useParams<{ id: string }>();
   const { product } = useProduct(id);
   const { settings: storefrontSettings } = useStorefrontSettings();
@@ -188,7 +189,5 @@ const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
     />
   );
 };
-
-if (!isOpen) return null;
 
 export default QuantityOffersSection;
