@@ -578,6 +578,9 @@ export default defineConfig(({ mode }) => {
                 drop_console: mode === 'production',
                 drop_debugger: mode === 'production',
                 pure_funcs: mode === 'production' ? ['console.log', 'console.debug'] : [],
+                // Preserve displayName and other React-important properties
+                unused: false,
+                dead_code: false,
               },
               mangle: {
                 keep_classnames: true,
