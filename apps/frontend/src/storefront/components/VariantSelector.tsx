@@ -18,6 +18,7 @@ interface VariantSelectorProps {
     attributeImages?: Record<string, unknown> | null;
     attributeColors?: Record<string, unknown> | null;
   } | null;
+  isOpen?: boolean;
 }
 
 interface RgbColor {
@@ -488,7 +489,9 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   density = 'default',
   layout = 'default',
   variantSettings,
+  isOpen = true,
 }) => {
+  if (!isOpen) return null;
   const { theme } = useStorefrontTheme();
   const isZenOrganic = theme.id === 'zen-organic';
   const isKhemetLuxeElessi = theme.id === 'khemet-luxe-eg';
@@ -1069,5 +1072,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
     </div>
   );
 };
+
+VariantSelector.displayName = 'VariantSelector';
 
 export default VariantSelector;

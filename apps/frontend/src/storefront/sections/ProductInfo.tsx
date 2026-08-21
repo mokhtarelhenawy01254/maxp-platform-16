@@ -4296,18 +4296,18 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     attributeImages: variantSettings.attributeImages,
     attributeColors: variantSettings.attributeColors,
   };
-  const elessiVariantSelector =
-    product.productVariants && product.productVariants.length > 0 ? (
-      <div id={hasEmbeddedPdpCheckout ? STOREFRONT_BUYBOX_ID : undefined} className="py-1">
-        <VariantSelector
-          variants={product.productVariants}
-          selectedAttributes={selectedAttributes}
-          onChange={setSelectedAttributes}
-          density="compact"
-          variantSettings={elessiVariantSettings}
-        />
-      </div>
-    ) : null;
+  const elessiVariantSelector = (
+    <div id={hasEmbeddedPdpCheckout ? STOREFRONT_BUYBOX_ID : undefined} className="py-1">
+      <VariantSelector
+        variants={product.productVariants || []}
+        selectedAttributes={selectedAttributes}
+        onChange={setSelectedAttributes}
+        density="compact"
+        variantSettings={elessiVariantSettings}
+        isOpen={product.productVariants && product.productVariants.length > 0}
+      />
+    </div>
+  );
   const elessiSupportAnchorId = 'khemet-pdp-support';
   const productCategoryLabel =
     typeof product.category?.name === 'string' && product.category.name.trim()
