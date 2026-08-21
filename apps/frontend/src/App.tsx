@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect } from "react"; // v2
+import React, { Suspense, useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuthSimple";
 import tokenManager from "./utils/tokenManager";
