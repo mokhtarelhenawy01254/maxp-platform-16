@@ -202,12 +202,16 @@ model Coupon {
   createdBy         String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  allowWithLoyalty  Boolean       @default(true) // allow combining with loyalty wallet/points — السماح بالدمج مع نقاط الولاء
+  affiliateId       String?       // كوبون خصم مرتبط بمسوق (كارت إحالة) — nullable عشان نحافظ على الكوبونات العادية
   couponUsages      CouponUsage[]
   company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  affiliate         Affiliate?    @relation(fields: [affiliateId], references: [id])
 
   @@unique([companyId, code])
   @@index([code])
   @@index([companyId])
+  @@index([affiliateId])
   @@index([isActive])
   @@index([validFrom, validTo])
   @@map("coupons")

@@ -382,22 +382,72 @@ class AffiliateService {
   /**
    * تتبع إحالة
    */
+  /**
+   * يبحث عن المسوق بأي من قنوات الإحالة:
+   * - affiliateCode (اللينك)
+   * - referralPhone (رقم المسوق)
+   * - referralAlias (كود الكارت الثانوي)
+   * - coupon.code (كوبون خصم تابع لمسوق)
+   */
+  async resolveAffiliateByAny({ affiliateCode, phone, couponCode, companyId } = {}) {
+    const prisma = this.prisma;
+    if (!affiliateCode && !phone && !couponCode) return null;
+
+    const orConditions = [];
+    if (affiliateCode) orConditions.push({ affiliateCode });
+    if (phone) orConditions.push({ referralPhone: phone });
+    if (couponCode) {
+      orConditions.push({ referralAlias: couponCode });
+      orConditions.push({ coupons: { some: { code: couponCode } } });
+    }
+
+    const affiliate = await prisma.affiliate.findFirst({
+      where: {
+        status: 'ACTIVE',
+        ...(companyId ? { companyId } : {}),
+        OR: orConditions,
+      },
+      include: couponCode ? { coupons: true } : undefined,
+    });
+
+    if (affiliate && couponCode) {
+      // حدّد الكوبون المطابق عشان نربطه بالإحالة
+      const matched = affiliate.coupons?.find(
+        (c) => c.code === couponCode
+      );
+      affiliate._matchedCouponId = matched ? matched.id : null;
+    }
+    return affiliate;
+  }
+
   async trackReferral(affiliateCode, customerId, metadata = {}) {
     try {
       const prisma = this.prisma;
       const companyId = metadata.companyId || metadata.companyID || null;
-      // البحث عن المسوق
-      const affiliate = await prisma.affiliate.findFirst({
-        where: {
-          affiliateCode,
-          status: 'ACTIVE',
-          ...(companyId ? { companyId } : {})
-        }
+
+      // دعم قنوات إحالة متعددة: الكود، رقم المسوق، أو كوبون الكارت
+      const phone = metadata.phone || null;
+      const couponCode = metadata.couponCode || null;
+
+      // البحث عن المسوق بأي قناة
+      const affiliate = await this.resolveAffiliateByAny({
+        affiliateCode,
+        phone,
+        couponCode,
+        companyId,
       });
 
       if (!affiliate) {
-        throw new Error('كود المسوق غير صحيح أو غير نشط');
+        throw new Error('كود المسوق أو رقمه أو كوبونه غير صحيح أو غير نشط');
       }
+
+      const matchedCouponId = affiliate._matchedCouponId || null;
+      // حدّد قناة الإحالة الفعلية
+      let channel = 'link';
+      if (couponCode) channel = 'coupon';
+      else if (phone) channel = 'phone';
+      // الكود المستخدم للعرض
+      const displayCode = affiliateCode || affiliate.referralAlias || phone || couponCode;
 
       // التحقق من وجود إحالة مؤخرة من نفس العميل/IP لمنع تكرار حساب النقرات
       // (Cooldown: 1 hour)
@@ -423,7 +473,9 @@ class AffiliateService {
         data: {
           affiliateId: affiliate.id,
           customerId,
-          referralCode: affiliateCode,
+          couponId: matchedCouponId,
+          referralChannel: channel,
+          referralCode: displayCode,
           referralUrl: metadata.url,
           ipAddress: metadata.ipAddress,
           userAgent: metadata.userAgent,
@@ -441,7 +493,7 @@ class AffiliateService {
         }
       });
 
-      console.log('✅ [AFFILIATE] Tracked referral:', referral.id);
+      console.log('✅ [AFFILIATE] Tracked referral:', referral.id, '| channel:', channel);
       return referral;
     } catch (error) {
       console.error('❌ [AFFILIATE] Error tracking referral:', error);

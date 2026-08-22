@@ -1475,17 +1475,18 @@ router.post('/', async (req, res) => {
     // Get affiliate code from cookies or query
     if (!isDuplicateOrder) {
       const affiliateCode = req.cookies?.affiliateCode || req.query.ref || req.query.affiliate;
+      // دعم كوبون الكارت كقناة إحالة: لو الأوردر فيه couponCode مرتبط بمسوق
+      const orderCouponCode = req.body?.couponCode || req.query.couponCode || null;
 
-      // Track affiliate referral if code exists
-      if (affiliateCode) {
+      // Track affiliate referral if code OR coupon exists
+      const refInput = affiliateCode || orderCouponCode;
+      if (refInput) {
         try {
           const prisma = getSharedPrismaClient();
-          const affiliate = await prisma.affiliate.findFirst({
-            where: {
-              affiliateCode,
-              companyId: company.id,
-              status: 'ACTIVE'
-            }
+          const affiliate = await affiliateService.resolveAffiliateByAny({
+            affiliateCode,
+            couponCode: orderCouponCode,
+            companyId: company.id,
           });
 
           if (affiliate) {
@@ -1511,6 +1512,7 @@ router.post('/', async (req, res) => {
             // تتبع الإحالة (سيتم تحسين trackReferral لمنع التكرار)
             const referral = await affiliateService.trackReferral(affiliateCode, customer.id, {
               companyId: company.id,
+              couponCode: orderCouponCode,
               url: req.originalUrl,
               ipAddress: req.ip,
               userAgent: req.get('User-Agent'),

@@ -10,9 +10,12 @@ const trackAffiliateReferral = async (req, res, next) => {
     const prisma = getSharedPrismaClient();
 
     // التحقق من وجود كود المسوق في query parameters أو cookies
+    // دعم قنوات متعددة: الكود (ref/affiliate)، رقم المسوق (phone)، كوبون الكارت (coupon)
     const affiliateCode = req.query.ref || req.query.affiliate || req.cookies?.affiliateCode;
+    const referralPhone = req.query.phone || req.query.refphone || null;
+    const referralCoupon = req.query.coupon || req.query.couponCode || null;
 
-    if (affiliateCode) {
+    if (affiliateCode || referralPhone || referralCoupon) {
       // جلب إعدادات الشركة للحصول على مدة الكوكيز
       let cookieDuration = 30; // الافتراضي 30 يوم
 
@@ -20,7 +23,12 @@ const trackAffiliateReferral = async (req, res, next) => {
       const companyId = company?.id || req.companyId || req.user?.companyId || null;
       const scopedAffiliate = await prisma.affiliate.findFirst({
         where: {
-          affiliateCode,
+          OR: [
+            affiliateCode ? { affiliateCode } : undefined,
+            referralPhone ? { referralPhone } : undefined,
+            referralCoupon ? { referralAlias: referralCoupon } : undefined,
+            referralCoupon ? { coupons: { some: { code: referralCoupon } } } : undefined,
+          ].filter(Boolean),
           status: 'ACTIVE',
           ...(companyId ? { companyId } : {})
         },
@@ -41,8 +49,9 @@ const trackAffiliateReferral = async (req, res, next) => {
         }
       }
 
-      // حفظ في الكوكيز
-      res.cookie('affiliateCode', affiliateCode, {
+      // حفظ في الكوكيز (نحفظ أي قناة متاحة)
+      const cookieValue = affiliateCode || referralCoupon || referralPhone;
+      res.cookie('affiliateCode', cookieValue, {
         maxAge: cookieDuration * 24 * 60 * 60 * 1000,
         httpOnly: false,
         sameSite: 'lax'
@@ -52,7 +61,7 @@ const trackAffiliateReferral = async (req, res, next) => {
       if (!req.session) {
         req.session = {};
       }
-      req.session.affiliateCode = affiliateCode;
+      req.session.affiliateCode = cookieValue;
 
       // تتبع الإحالة (حتى لو لم يكن هناك مستخدم مسجل)
       // نستخدم IP و UserAgent كمعرف مؤقت إذا لم يوجد مستخدم
@@ -75,6 +84,8 @@ const trackAffiliateReferral = async (req, res, next) => {
         // تتبع النقرة (trackReferral سيقوم بالتحقق من عدم التكرار)
         await affiliateService.trackReferral(affiliateCode, customerId, {
           companyId,
+          phone: referralPhone,
+          couponCode: referralCoupon,
           url: req.originalUrl,
           ipAddress: req.ip,
           userAgent: req.get('User-Agent'),
