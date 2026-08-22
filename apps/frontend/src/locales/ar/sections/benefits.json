@@ -1,0 +1,11 @@
+{
+  "failed_fetch_81e2": "فشل في جلب تفاصيل الميزة",
+  "failed_fetch_cfae": "فشل في جلب المزايا",
+  "msg_7103": "يرجى اختيار موظف",
+  "success_login_9cb9": "تم تسجيل الموظف في الميزة بنجاح",
+  "name_required_6cb0": "اسم الميزة مطلوب",
+  "success_update_38b1": "تم تحديث الميزة بنجاح",
+  "success_create_3efd": "تم إنشاء الميزة بنجاح",
+  "success_delete_aded": "تم حذف الميزة بنجاح",
+  "failed_delete_29dd": "فشل في حذف الميزة"
+}
