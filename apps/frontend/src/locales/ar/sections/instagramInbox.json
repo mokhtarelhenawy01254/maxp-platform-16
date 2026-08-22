@@ -1,0 +1,17 @@
+{
+  "title": "صندوق Instagram",
+  "conversationCount": "{{count}} محادثة",
+  "noMessages": "لا توجد رسائل Instagram",
+  "searchPlaceholder": "بحث في المحادثات...",
+  "loading": "جاري التحميل...",
+  "loadMore": "تحميل المزيد",
+  "aiOff": "إيقاف الرد الآلي",
+  "aiOn": "تشغيل الرد الآلي",
+  "hideProfile": "إخفاء الملف الشخصي",
+  "showProfile": "إظهار الملف الشخصي",
+  "loadingMessages": "جاري تحميل الرسائل...",
+  "loadOlder": "تحميل رسائل أقدم",
+  "selectConversation": "اختر محادثة",
+  "selectConversationHint": "اختر محادثة من القائمة لعرض رسائل Instagram",
+  "directMessages": "رسائل Instagram المباشرة"
+}

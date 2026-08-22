@@ -1,0 +1,20 @@
+{
+  "title": "TikTok Inbox",
+  "notEnabled": "TikTok messaging is not enabled",
+  "notEnabledHint": "To enable TikTok messaging, connect a TikTok Business account for messages and enable the service from settings.",
+  "goToSettings": "Go to TikTok Settings",
+  "conversationCount": "{{count}} conversations",
+  "noMessages": "No TikTok messages",
+  "searchPlaceholder": "Search conversations...",
+  "loading": "Loading...",
+  "loadMore": "Load more",
+  "aiOff": "Disable auto-reply",
+  "aiOn": "Enable auto-reply",
+  "hideProfile": "Hide profile",
+  "showProfile": "Show profile",
+  "loadingMessages": "Loading messages...",
+  "loadOlder": "Load older messages",
+  "selectConversation": "Select a conversation",
+  "selectConversationHint": "Select a conversation from the list to view TikTok messages",
+  "directMessages": "TikTok Direct Messages"
+}
