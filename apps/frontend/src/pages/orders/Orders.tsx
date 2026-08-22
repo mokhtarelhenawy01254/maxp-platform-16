@@ -49,7 +49,6 @@ import {
   RocketLaunchIcon,
   ChatBubbleLeftRightIcon,
   MagnifyingGlassIcon,
-  PackageSearchIcon,
   Loader2Icon,
 } from "@heroicons/react/24/outline";
 
@@ -1169,7 +1168,7 @@ const OrderCodeSearch: React.FC<{ fieldClassName: string }> = ({ fieldClassName 
     <div className="mb-3 rounded-[22px] border border-slate-200/70 bg-white/90 p-3 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <div className="relative min-w-[200px] flex-1 sm:min-w-0">
-          <PackageSearchIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+          <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             ref={inputRef}
             type="text"
