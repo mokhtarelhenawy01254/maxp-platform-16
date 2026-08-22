@@ -1,0 +1,20 @@
+{
+  "title": "صندوق TikTok",
+  "notEnabled": "محادثات TikTok غير مفعّلة",
+  "notEnabledHint": "لتفعيل محادثات TikTok، اربط حساب TikTok Business للرسائل وافعّل الخدمة من الإعدادات.",
+  "goToSettings": "الانتقال إلى إعدادات TikTok",
+  "conversationCount": "{{count}} محادثة",
+  "noMessages": "لا توجد رسائل TikTok",
+  "searchPlaceholder": "بحث في المحادثات...",
+  "loading": "جاري التحميل...",
+  "loadMore": "تحميل المزيد",
+  "aiOff": "تعطيل الرد التلقائي",
+  "aiOn": "تفعيل الرد التلقائي",
+  "hideProfile": "إخفاء الملف",
+  "showProfile": "إظهار الملف",
+  "loadingMessages": "جاري تحميل الرسائل...",
+  "loadOlder": "تحميل رسائل أقدم",
+  "selectConversation": "اختر محادثة",
+  "selectConversationHint": "اختر محادثة من القائمة لعرض رسائل TikTok",
+  "directMessages": "رسائل TikTok المباشرة"
+}

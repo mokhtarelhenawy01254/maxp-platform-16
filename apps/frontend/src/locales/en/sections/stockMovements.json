@@ -1,0 +1,16 @@
+{
+  "title": "Stock Movements",
+  "description": "Ledger of all product movements in and out of stock",
+  "search": "Search by product, SKU, or reference...",
+  "allTypes": "All movement types",
+  "loading": "Loading...",
+  "empty": "No stock movements",
+  "date": "Date",
+  "product": "Product",
+  "type": "Movement type",
+  "reason": "Reason",
+  "quantity": "Quantity",
+  "reference": "Reference",
+  "notes": "Notes",
+  "loadFailed": "Failed to load movements"
+}

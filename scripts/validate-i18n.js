@@ -23,6 +23,12 @@ function checkLang(lang) {
     .filter((f) => f.endsWith(".json"))
     .map((f) => path.basename(f, ".json"));
 
+  // Case-insensitive lookup so that e.g. "Appointments" matches "appointments.json"
+  // (Windows/CI filesystems and translation.json key casing can diverge).
+  const ciSectionSet = new Set(
+    sectionFiles.map((s) => s.toLowerCase())
+  );
+
   const translation = JSON.parse(fs.readFileSync(translationPath, "utf8"));
   const translationKeys = Object.keys(translation);
 
@@ -30,7 +36,7 @@ function checkLang(lang) {
     (s) => !translationKeys.includes(s)
   );
   const extraSections = translationKeys.filter(
-    (k) => !sectionFiles.includes(k)
+    (k) => !sectionFiles.includes(k) && !ciSectionSet.has(k.toLowerCase())
   );
 
   if (missingSections.length > 0) {
