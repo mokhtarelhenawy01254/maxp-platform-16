@@ -944,7 +944,9 @@ exports.getReturnTypes = async (req, res) => {
 exports.getReturnShippingCompanies = async (req, res) => {
     try {
         const companyId = req.user.effectiveCompanyId || req.user.companyId;
-        const companies = await getPrisma().shippingCompany.findMany({
+        const prisma = getPrisma();
+
+        const companies = await prisma.shippingCompany.findMany({
             where: { companyId },
             include: {
                 returnTypes: {
@@ -953,6 +955,56 @@ exports.getReturnShippingCompanies = async (req, res) => {
             },
             orderBy: { createdAt: 'desc' }
         });
+
+        const company = await prisma.company
+            .findUnique({
+                where: { id: companyId },
+                select: { turboEnabled: true, turboApiKey: true },
+            })
+            .catch(() => null);
+
+        const turboOrders = company
+            ? await prisma.order.count({
+                  where: {
+                      companyId,
+                      OR: [{ turboShipmentId: { not: null } }, { turboTrackingNumber: { not: null } }],
+                  },
+              })
+            : 0;
+
+        const usesTurbo = Boolean(company?.turboEnabled || company?.turboApiKey) || turboOrders > 0;
+
+        if (usesTurbo) {
+            const turbo = await prisma.shippingCompany.upsert({
+                where: { companyId_slug: { companyId, slug: 'turbo' } },
+                update: {
+                    name: 'Turbo',
+                    providerKey: 'TURBO',
+                    integrationMode: 'API',
+                    website: 'https://turbo-eg.com',
+                    isActive: true,
+                },
+                create: {
+                    companyId,
+                    name: 'Turbo',
+                    slug: 'turbo',
+                    providerKey: 'TURBO',
+                    integrationMode: 'API',
+                    website: 'https://turbo-eg.com',
+                    isActive: true,
+                    settings: JSON.stringify({}),
+                },
+                include: {
+                    returnTypes: {
+                        orderBy: { createdAt: 'asc' },
+                    },
+                },
+            });
+
+            const idx = companies.findIndex((c) => c.id === turbo.id);
+            if (idx >= 0) companies[idx] = turbo;
+            else companies.unshift(turbo);
+        }
 
         res.json({ success: true, data: companies });
     } catch (error) {
