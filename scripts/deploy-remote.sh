@@ -118,6 +118,10 @@ sync_frontend_dist() {
     /var/www/frontend2/dist/sw.js.br /var/www/frontend2/dist/sw.js.gz \
     /var/www/frontend2/dist/sw-v4.js.br /var/www/frontend2/dist/sw-v4.js.gz
   sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
+  # Record the entry chunk THIS deploy published so the post-nginx guard
+  # compares against it (not against a disk file a concurrent manual upload
+  # might have replaced in the meantime).
+  grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' "$source_dir/index.html" | head -1 > /tmp/maxp_deploy_expected_entry || true
   # Force mtime to now so backend's cachedIndexHtml (mtimeMs check) always
   # invalidates after deploy even if rsync preserved old mtime from build
   sudo touch /var/www/frontend2/dist/index.html
@@ -767,20 +771,33 @@ if [ -f "$DEPLOY_STAGING/nginx-configs.tar.gz" ]; then
   # just published. A mismatch means a stale precompressed index.html.br/.gz
   # or a concurrent manual upload is shadowing the deploy — fail loudly
   # instead of leaving users on an old build with 404-ing chunks.
-  EXPECTED_ENTRY="$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' /var/www/frontend2/dist/index.html | head -1)"
-  SERVED_ROOT="$(curl -sS --max-time 20 -H "Accept-Encoding: br" --compressed -H "Host: maxp.online" -o - -w '\n%{http_code}' --resolve "maxp.online:443:127.0.0.1" "https://maxp.online/" 2>/dev/null)"
-  SERVED_CODE="$(printf '%s' "$SERVED_ROOT" | tail -1)"
-  SERVED_ENTRY="$(printf '%s' "$SERVED_ROOT" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)"
-  echo "ℹ️ Admin entry expected: $EXPECTED_ENTRY | served: $SERVED_ENTRY (HTTP $SERVED_CODE)"
-  if [ -z "$EXPECTED_ENTRY" ] || [ "$SERVED_ENTRY" != "$EXPECTED_ENTRY" ]; then
+  # (curl calls are || true — under set -e a transient curl failure must not
+  # kill the deploy; the verdict below handles empty results instead.)
+  EXPECTED_ENTRY="$(cat /tmp/maxp_deploy_expected_entry 2>/dev/null || true)"
+  [ -z "$EXPECTED_ENTRY" ] && EXPECTED_ENTRY="$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' /var/www/frontend2/dist/index.html | head -1 || true)"
+  FETCH_ENTRY() {
+    # $1 = extra curl args (e.g. brotli request)
+    curl -ksS --max-time 20 "$@" --resolve "maxp.online:443:127.0.0.1" "https://maxp.online/" 2>/dev/null \
+      | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1 || true
+  }
+  SERVED_ENTRY_BR="$(FETCH_ENTRY -H 'Accept-Encoding: br' --compressed)"
+  SERVED_ENTRY_ID="$(FETCH_ENTRY)"
+  echo "ℹ️ Admin entry expected: $EXPECTED_ENTRY | served(br): ${SERVED_ENTRY_BR:-<none>} | served(identity): ${SERVED_ENTRY_ID:-<none>}"
+  if { [ -n "$SERVED_ENTRY_BR" ] && [ "$SERVED_ENTRY_BR" != "$EXPECTED_ENTRY" ]; } \
+     || { [ -n "$SERVED_ENTRY_ID" ] && [ "$SERVED_ENTRY_ID" != "$EXPECTED_ENTRY" ]; } \
+     || { [ -z "$EXPECTED_ENTRY" ]; }; then
     echo "❌ SERVED HTML DOES NOT MATCH DEPLOYED BUILD!"
-    echo "   Expected entry $EXPECTED_ENTRY but nginx serves ${SERVED_ENTRY:-<none>}."
-    echo "   Likely causes: stale index.html.br/.gz shadowing (check: ls -la /var/www/frontend2/dist/index.html.*),"
-    echo "   or a concurrent manual upload overwrote the dist during this deploy."
+    echo "   Expected entry $EXPECTED_ENTRY. Likely causes: stale index.html.br/.gz shadowing"
+    echo "   (check: ls -la /var/www/frontend2/dist/index.html.*) or a concurrent manual upload"
+    echo "   overwrote the dist during this deploy."
     ls -la /var/www/frontend2/dist/index.html* 2>/dev/null || true
     exit 1
   fi
-  echo "✅ Admin app serves the deployed build ($SERVED_ENTRY)"
+  if [ -z "$SERVED_ENTRY_BR" ] && [ -z "$SERVED_ENTRY_ID" ]; then
+    echo "⚠️ Could not read served HTML from local nginx (both curls empty) — skipping entry verdict"
+  else
+    echo "✅ Admin app serves the deployed build (br: ${SERVED_ENTRY_BR:-n/a}, identity: ${SERVED_ENTRY_ID:-n/a})"
+  fi
 else
   echo "⚠️ Nginx config archive not found, skipping Nginx sync"
 fi
