@@ -1,9 +1,9 @@
 name: Diagnose Stale HTML (temporary)
 
-# READ-ONLY diagnostics — no restarts, no file writes on the server.
-# Purpose: find why https://maxp.online/ serves an index.html (mtime 08:52:54)
-# that no deploy produced, referencing chunks missing from /assets/.
-# Safe to delete after the investigation closes.
+# READ-ONLY forensics — no restarts, no file writes on the server.
+# Round 2: identify WHICH process keeps re-uploading an old build
+# (index-B7ISSXdp.js-era chunks + stale .gz/.br) into /var/www/frontend2/dist
+# seconds after every deploy. Safe to delete after the case closes.
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ env:
 
 jobs:
   diagnose:
-    name: Read-only server inspection
+    name: Read-only server forensics
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -54,7 +54,7 @@ jobs:
           echo "❌ SSH unreachable from this runner after 8 attempts."
           exit 1
 
-      - name: Run read-only diagnostics on server
+      - name: Run read-only forensics on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -64,45 +64,41 @@ jobs:
           command_timeout: 10m
           script: |
             set +e
-            echo "════ [1] frontend2/dist/index.html stat ════"
-            stat -c "%y  %s bytes  %n" /var/www/frontend2/dist/index.html
+            echo "════ [A] nginx gzip_static/brotli_static? ════"
+            nginx -T 2>/dev/null | grep -nE "gzip_static|brotli_static|ngx_brotli" | head -10
             echo
-            echo "════ [2] every index.html under /var/www (top hits) ════"
-            find /var/www -maxdepth 4 -name "index.html" -type f -printf "%TY-%Tm-%Td %TH:%TM:%TS  %p\n" 2>/dev/null | sort -r | head -15
+            echo "════ [B] bash histories mentioning frontend2/dist or phone ════"
+            for h in /root/.bash_history /home/*/.bash_history; do
+              [ -f "$h" ] || continue
+              echo "-- $h:"
+              grep -nE "frontend2/dist|phone|rsync.*frontend|scp.*frontend|dist_backup|dist.bak" "$h" 2>/dev/null | tail -25
+            done
             echo
-            echo "════ [3] does the served entry exist? ════"
-            ls -la /var/www/frontend2/dist/assets/index-B7ISSXdp.js /var/www/frontend2/dist/assets/index-BapDjTKM.js 2>&1
-            echo "vendor-icons chunks on disk:"
-            ls -la /var/www/frontend2/dist/assets/ 2>/dev/null | grep -E "vendor-icons" | head -5
+            echo "════ [C] recent logins ════"
+            last -n 15 2>/dev/null | head -18
             echo
-            echo "════ [4] ACTIVE nginx config: server_name + root + location / ════"
-            nginx -T 2>/dev/null | grep -nE "server_name|root |location / |try_files \\\$uri /index.html|proxy_pass http://127.0.0.1:300" | head -50
+            echo "════ [D] systemd services/timers (non-default) ════"
+            systemctl list-units --type=service --type=timer --no-pager 2>/dev/null | grep -vE "systemd|dbus|getty|cron.service|ssh.service|network|polkit|rsyslog|logrotate|ufw|fail2ban|nginx.service|mysql|unattended|acme|chrony|qemu|cloud" | head -25
             echo
-            echo "════ [5] nginx conf files mentioning maxp.online ════"
-            grep -rln "maxp.online" /etc/nginx/sites-enabled/ /etc/nginx/sites-available/ /etc/nginx/conf.d/ 2>/dev/null
+            echo "════ [E] processes with cwd or open files under frontend2 ════"
+            sudo ls -l /proc/*/cwd 2>/dev/null | grep frontend2 | head -10
+            sudo find /proc/*/fd -lname "*frontend2*" -printf "%p -> %l\n" 2>/dev/null | head -10
             echo
-            echo "════ [6] open_file_cache settings ════"
-            nginx -T 2>/dev/null | grep -n "open_file_cache" | head -5
+            echo "════ [F] who owns the stale artifacts ════"
+            ls -la /var/www/frontend2/dist/index.html* 2>/dev/null
+            ls -la /var/www/frontend2/dist/assets/ 2>/dev/null | grep -E "index-B7|index-Bap|vendor-icons" | head -8
             echo
-            echo "════ [7] fail2ban sshd jail (root cause of deploy SSH timeouts) ════"
-            sudo fail2ban-client status sshd 2>&1 | head -15
+            echo "════ [G] sftp/scp sessions in auth log (last 3h) ════"
+            sudo grep -E "Accepted|session opened" /var/log/auth.log 2>/dev/null | tail -20
             echo
-            echo "════ [8] root + deploy-user crontabs ════"
-            crontab -l 2>&1 | head -20
-            for u in $(ls /home 2>/dev/null); do echo "-- crontab of $u:"; sudo crontab -l -u "$u" 2>&1 | head -10; done
+            echo "════ [H] the backup dirs content (what build is in there) ════"
+            for d in /var/www/frontend2/dist_backup_before_phone_lookup /var/www/frontend2/dist.bak.; do
+              [ -d "$d" ] || continue
+              echo "-- $d:"
+              ls -la "$d" 2>/dev/null | head -8
+              grep -oE "assets/index-[A-Za-z0-9_-]+\.js" "$d/index.html" 2>/dev/null | head -2
+            done
             echo
-            echo "════ [9] old webhook deployer still alive? ════"
-            ls -la /opt/deploy-webhook/ 2>&1 | head -10
-            ss -tlnp 2>/dev/null | grep -E ":9001|:8081" | head -5
-            echo
-            echo "════ [10] pm2 apps ════"
-            pm2 jlist 2>/dev/null | grep -oE '"name":"[^"]+"' | head -15
-            echo
-            echo "════ [11] who wrote /var/www/frontend2/dist recently (audit/atreply) ════"
-            stat -c "inode=%i mtime=%y ctime=%z" /var/www/frontend2/dist/index.html
-            echo "last 30 modified files under frontend2/dist:"
-            find /var/www/frontend2/dist -type f -newermt "2026-08-22 08:45" -printf "%TH:%TM:%TS %p\n" 2>/dev/null | sort | tail -30
-            echo
-            echo "════ [12] nginx access log: recent GET / and cf hits ════"
-            sudo tail -n 3000 /var/log/nginx/access.log 2>/dev/null | grep -E "GET / HTTP" | tail -8
+            echo "════ [I] current live check ════"
+            stat -c "%y %n" /var/www/frontend2/dist/index.html /var/www/frontend2/dist/index.html.gz /var/www/frontend2/dist/index.html.br 2>/dev/null
             echo "DONE ✅"
