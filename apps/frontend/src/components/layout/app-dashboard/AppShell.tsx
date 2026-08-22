@@ -363,8 +363,7 @@ const getFirstVisibleItemPath = (sections: SidebarSection[]): string | null => {
     const item = section.items.find(
       (candidate) =>
         !candidate.hidden &&
-        !candidate.external &&
-        candidate.kind !== "order-search",
+        !candidate.external,
     );
     if (item?.to) {
       return item.to;

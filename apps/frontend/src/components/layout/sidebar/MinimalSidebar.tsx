@@ -14,7 +14,7 @@ import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
-import SidebarOrderSearch from "./SidebarOrderSearch";
+
 
 interface MinimalSidebarProps {
   isCollapsed: boolean;
@@ -206,12 +206,6 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
                           .filter((i) => !i.hidden)
                           .map((item) => (
                             <div key={item.to}>
-                              {item.kind === "order-search" ? (
-                                <SidebarOrderSearch
-                                  mobileMode={mobileMode}
-                                  onNavigate={toggleSidebar}
-                                />
-                              ) : (
                               <NavLink
                                 to={item.to}
                                 icon={item.icon}
@@ -220,7 +214,6 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
                               >
                                 {item.label}
                               </NavLink>
-                              )}
                               {item.children ? (
                                 <div className="business-sidebar-children">
                                   {item.children
@@ -451,7 +444,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
                 <button
                   onClick={() => {
                     const firstItem = section.items.find(
-                      (i) => !i.hidden && i.kind !== "order-search",
+                      (i) => !i.hidden,
                     );
                     if (firstItem) navigate(firstItem.to);
                   }}
@@ -494,16 +487,9 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
             <div className="max-h-80 overflow-y-auto space-y-1">
               {section.items.filter(i => !i.hidden).map((item) => (
                 <div key={item.to} className="space-y-1">
-                  {item.kind === "order-search" ? (
-                    <SidebarOrderSearch
-                      mobileMode={mobileMode}
-                      onNavigate={toggleSidebar}
-                    />
-                  ) : (
                   <NavLink to={item.to} icon={item.icon} external={!!item.external} {...(item.badge ? { badge: item.badge } : {})}>
                     {item.label}
                   </NavLink>
-                  )}
                   {item.children && (
                     <div className="mr-8 mt-0.5 space-y-0.5 border-r border-gray-100 dark:border-gray-700/50 pr-1">
                       {item.children.filter(c => !c.hidden).map((child) => {
