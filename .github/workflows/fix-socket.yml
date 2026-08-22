@@ -17,6 +17,9 @@ jobs:
   fix:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout (needed for local action)
+        uses: actions/checkout@v7
+
       - name: Setup SSH key
         uses: ./.github/actions/setup-ssh
         with:
