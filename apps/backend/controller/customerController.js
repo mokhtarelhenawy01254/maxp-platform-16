@@ -1425,12 +1425,16 @@ const searchCustomers = async (req, res) => {
     const enrichedCustomers = customers.map(c => {
       const lastOrder = c.orders?.[0] || {};
       const { orders, ...rest } = c;
+      let parsedAddress = null;
+      if (lastOrder.customerAddress) {
+        try { parsedAddress = JSON.parse(lastOrder.customerAddress); } catch (e) { parsedAddress = { address: lastOrder.customerAddress }; }
+      }
       return {
         ...rest,
-        address: lastOrder.customerAddress || null,
-        city: lastOrder.city || null,
-        governorate: lastOrder.governorate || null,
-        area: lastOrder.city || null
+        address: parsedAddress?.street || parsedAddress?.address || parsedAddress?.addressLine1 || (typeof lastOrder.customerAddress === 'string' ? lastOrder.customerAddress : null),
+        city: lastOrder.city || parsedAddress?.city || null,
+        governorate: lastOrder.governorate || parsedAddress?.governorate || null,
+        area: parsedAddress?.area || parsedAddress?.city || lastOrder.city || null
       };
     });
 
