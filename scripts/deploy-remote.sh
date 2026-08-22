@@ -109,6 +109,14 @@ sync_frontend_dist() {
   echo "✅ Frontend asset integrity OK ($(grep -oE '(src|href)="[^"]+"' "$source_dir/index.html" 2>/dev/null | grep -cE '(src|href)="/?(assets|js|placeholders)/') referenced assets present)"
 
   # All assets verified — now publish the HTML entrypoint LAST.
+  # ⚠️ Remove precompressed index.html variants FIRST: nginx has
+  # `brotli_static on`/gzip_static semantics, so a stale index.html.br/.gz
+  # (e.g. left by a manual SFTP upload of a locally-compressed build) is
+  # served INSTEAD of the fresh index.html we publish below, and every
+  # browser sees an old build referencing missing chunks (404s) forever.
+  sudo rm -f /var/www/frontend2/dist/index.html.br /var/www/frontend2/dist/index.html.gz \
+    /var/www/frontend2/dist/sw.js.br /var/www/frontend2/dist/sw.js.gz \
+    /var/www/frontend2/dist/sw-v4.js.br /var/www/frontend2/dist/sw-v4.js.gz
   sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
   # Force mtime to now so backend's cachedIndexHtml (mtimeMs check) always
   # invalidates after deploy even if rsync preserved old mtime from build
