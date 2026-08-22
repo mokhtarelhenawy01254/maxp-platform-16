@@ -761,6 +761,26 @@ if [ -f "$DEPLOY_STAGING/nginx-configs.tar.gz" ]; then
     echo "❌ Nginx storefront HTML is missing the canonical link tag"
     exit 1
   fi
+
+  # 🛡️ Admin-app entry verification: whatever nginx serves at maxp.online/
+  # MUST reference the same hashed entry chunk as the index.html this deploy
+  # just published. A mismatch means a stale precompressed index.html.br/.gz
+  # or a concurrent manual upload is shadowing the deploy — fail loudly
+  # instead of leaving users on an old build with 404-ing chunks.
+  EXPECTED_ENTRY="$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' /var/www/frontend2/dist/index.html | head -1)"
+  SERVED_ROOT="$(curl -sS --max-time 20 -H "Accept-Encoding: br" --compressed -H "Host: maxp.online" -o - -w '\n%{http_code}' --resolve "maxp.online:443:127.0.0.1" "https://maxp.online/" 2>/dev/null)"
+  SERVED_CODE="$(printf '%s' "$SERVED_ROOT" | tail -1)"
+  SERVED_ENTRY="$(printf '%s' "$SERVED_ROOT" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)"
+  echo "ℹ️ Admin entry expected: $EXPECTED_ENTRY | served: $SERVED_ENTRY (HTTP $SERVED_CODE)"
+  if [ -z "$EXPECTED_ENTRY" ] || [ "$SERVED_ENTRY" != "$EXPECTED_ENTRY" ]; then
+    echo "❌ SERVED HTML DOES NOT MATCH DEPLOYED BUILD!"
+    echo "   Expected entry $EXPECTED_ENTRY but nginx serves ${SERVED_ENTRY:-<none>}."
+    echo "   Likely causes: stale index.html.br/.gz shadowing (check: ls -la /var/www/frontend2/dist/index.html.*),"
+    echo "   or a concurrent manual upload overwrote the dist during this deploy."
+    ls -la /var/www/frontend2/dist/index.html* 2>/dev/null || true
+    exit 1
+  fi
+  echo "✅ Admin app serves the deployed build ($SERVED_ENTRY)"
 else
   echo "⚠️ Nginx config archive not found, skipping Nginx sync"
 fi
