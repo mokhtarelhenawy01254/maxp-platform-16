@@ -889,6 +889,10 @@ router.post('/', async (req, res) => {
 
       // الطلب المسبق: إذا كان المنتج pre-order وتاريخ التوفر مستقبلي (أو غير محدد)،
       // يُسمح بالطلب حتى لو المخزون صفر — لا يتم رفض فحص المخزون.
+      // كما نسمح بالطلب إذا كان المنتج الأم لا يتتبع المخزون (trackInventory=false)
+      // أو كان pre-order — وهذه الإعدادات تُورَّث لكل المتغيرات (الأبناء).
+      const productAllowsNoStock =
+        product.trackInventory === false || isPreOrderEligible(product);
       const preOrderEligible = isPreOrderEligible(product);
 
       if (product.isDropshipped) {
@@ -927,7 +931,10 @@ router.post('/', async (req, res) => {
           });
         }
 
-        if (variant.trackInventory !== false && variant.stock < item.quantity && !req.headers['x-admin-convert'] && !preOrderEligible) {
+        // السماح بالطلب إذا كان المنتج الأم لا يتتبع المخزون أو كان طلباً مسبقاً
+        // (وراثة الإعدادات للمتغيرات)، أو إذا كان المتغير نفسه لا يتتبع المخزون.
+        const variantTracksStock = variant.trackInventory !== false;
+        if (variantTracksStock && variant.stock < item.quantity && !req.headers['x-admin-convert'] && !productAllowsNoStock) {
           console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
@@ -1036,7 +1043,8 @@ router.post('/', async (req, res) => {
         console.log(`✅ [CREATE-ORDER] Enriched item ${item.productId}: Color=${item.productColor}, Size=${item.productSize}, Image=${image ? 'Yes' : 'No'}`);
       } else {
         // Check main product stock if no variant and tracking is enabled
-        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert'] && !preOrderEligible) {
+        // السماح بالطلب إذا كان المنتج لا يتتبع المخزون (trackInventory=false) أو كان طلباً مسبقاً.
+        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert'] && !productAllowsNoStock) {
           console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
