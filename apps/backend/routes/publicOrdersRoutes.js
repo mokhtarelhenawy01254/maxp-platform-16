@@ -1390,53 +1390,6 @@ router.post('/', async (req, res) => {
     }
 
     const isDuplicateOrder = !!duplicateMatch;
-    if (isDuplicateOrder && duplicateSettings?.action === 'ignore') {
-      // Optionally clear cart for duplicate attempts to avoid repeated submissions
-      if (shouldDeleteCart && cartId) {
-        try {
-          const existingCart = await prisma.guestCart.findUnique({
-            where: { cartId }
-          });
-          if (existingCart) {
-            await prisma.guestCart.delete({ where: { cartId } });
-            console.log('✅ [CREATE-ORDER] Cart deleted for duplicate order:', cartId);
-          }
-        } catch (error) {
-          console.error('❌ [CREATE-ORDER] Error deleting cart for duplicate (non-critical):', error.message);
-        }
-        res.clearCookie('cart_id');
-      }
-
-      try {
-        await trackStorefrontAppUsage({
-          companyId: company.id,
-          slug: 'conversion-suite',
-          feature: 'duplicate_order_ignored',
-          metadata: {
-            duplicateOrderNumber: duplicateMatch.order.orderNumber,
-            total: finalTotal,
-            couponApplied: Boolean(couponCode && discountAmount > 0),
-          },
-        });
-      } catch (trackingError) {
-        console.error('⚠️ [CREATE-ORDER] Failed to track ignored duplicate order:', trackingError.message);
-      }
-
-      return res.json({
-        success: true,
-        duplicate: true,
-        duplicateOf: {
-          id: duplicateMatch.order.id,
-          orderNumber: duplicateMatch.order.orderNumber,
-          type: duplicateMatch.type
-        },
-        message: 'تم تجاهل الطلب المكرر',
-        data: {
-          id: duplicateMatch.order.id,
-          orderNumber: duplicateMatch.order.orderNumber
-        }
-      });
-    }
 
     if (isDuplicateOrder) {
       duplicateInfo = {

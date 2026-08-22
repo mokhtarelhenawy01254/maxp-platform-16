@@ -7,7 +7,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
-type DuplicateOrderAction = "ignore" | "filter";
+type DuplicateOrderAction = "filter";
 
 interface DuplicateOrderSettingsState {
   duplicateOrderAction: DuplicateOrderAction;
@@ -32,15 +32,13 @@ const DuplicateOrderSettings: React.FC = () => {
       const response = await apiClient.get("/order-settings");
       if (response.data.success) {
         setSettings({
-          duplicateOrderAction:
-            response.data.data?.duplicateOrderAction || "filter",
+          duplicateOrderAction: "filter",
           duplicateOrderWindowMinutes:
             response.data.data?.duplicateOrderWindowMinutes ?? 60,
         });
       }
     } catch (error) {
       console.error("Error fetching duplicate order settings:", error);
-      // Error toast is handled by apiClient
     } finally {
       setLoading(false);
     }
@@ -50,7 +48,7 @@ const DuplicateOrderSettings: React.FC = () => {
     try {
       setSaving(true);
       const response = await apiClient.put("/order-settings", {
-        duplicateOrderAction: settings.duplicateOrderAction,
+        duplicateOrderAction: "filter",
         duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes,
       });
       if (response.data.success) {
@@ -85,27 +83,12 @@ const DuplicateOrderSettings: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               التصرف عند اكتشاف طلب مكرر
             </label>
-            <select
-              value={settings.duplicateOrderAction}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  duplicateOrderAction: e.target
-                    .value as DuplicateOrderAction,
-                })
-              }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="filter">
-                فلترة الطلبات المكررة (تسجيلها بحالة طلب مكرر)
-              </option>
-              <option value="ignore">
-                تجاهل الطلب المكرر (عدم إنشاء طلب جديد)
-              </option>
-            </select>
+            <div className="w-full px-4 py-2 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-800 dark:text-blue-200 text-sm">
+              تسجيل تلقائي بحالة "طلب مكرر" — يظهر دائماً في القائمة
+            </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               يتم اكتشاف التكرار عند تطابق الهاتف أو البريد مع نفس إجمالي الطلب
-              خلال الفترة المحددة.
+              خلال الفترة المحددة. لا يمكن تجاهل الطلبات المكررة.
             </p>
           </div>
 

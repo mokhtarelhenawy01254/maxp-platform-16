@@ -1688,6 +1688,7 @@ exports.getReorderPoints = async (req, res) => {
     const search = normalizeString(req.query.search).toLowerCase();
     const categoryId = normalizeString(req.query.categoryId);
     const stockFilter = normalizeString(req.query.stockFilter).toLowerCase();
+    const preOrderRaw = normalizeString(req.query.preOrder).toLowerCase();
     const warehouseId = normalizeString(req.query.warehouseId);
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 25));
@@ -1785,6 +1786,10 @@ exports.getReorderPoints = async (req, res) => {
       else if (stockFilter === 'untracked') rows = rows.filter((row) => row.status === 'untracked');
       else if (stockFilter === 'preorder') rows = rows.filter((row) => row.isPreOrder);
     }
+
+    // فلترة حسب حالة الطلب المسبق (on = مسموح، off = غير مسموح)
+    if (preOrderRaw === 'on') rows = rows.filter((row) => row.isPreOrder);
+    else if (preOrderRaw === 'off') rows = rows.filter((row) => !row.isPreOrder);
 
     const sortAccessors = {
       name: (row) => String(row.name || '').toLowerCase(),

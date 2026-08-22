@@ -12640,6 +12640,55 @@ declare module 'react-i18next' {
       ListItemsEditor: {
         error_error_0ba3: string;
       };
+      productSheet: {
+        title: string;
+        subtitle: string;
+        export: string;
+        refresh: string;
+        totalProducts: string;
+        preOrderCount: string;
+        lowStock: string;
+        outOfStock: string;
+        loadError: string;
+        featureRequired: string;
+        activateHint: string;
+        search: string;
+        all: string;
+        allCategories: string;
+        preOrderAll: string;
+        preOrderOn: string;
+        preOrderOff: string;
+        filterSafe: string;
+        filterLow: string;
+        filterOut: string;
+        filterUntracked: string;
+        empty: string;
+        colProduct: string;
+        colSku: string;
+        colCategory: string;
+        colPrice: string;
+        colTrack: string;
+        colAvailable: string;
+        colReserved: string;
+        colTotal: string;
+        colReorder: string;
+        colStatus: string;
+        colPreOrder: string;
+        colPreOrderDate: string;
+        colDays: string;
+        trackOn: string;
+        trackOff: string;
+        preOrderAllowed: string;
+        preOrderNotAllowed: string;
+        toggleTrack: string;
+        togglePreOrder: string;
+        trackOnMsg: string;
+        trackOffMsg: string;
+        preOrderOnMsg: string;
+        preOrderOffMsg: string;
+        toggleError: string;
+        total: string;
+      };
       BillingOverview: {
         error_fetch_fec6: string;
         msg_23a3: string;
@@ -16140,6 +16189,7 @@ declare module 'react-i18next' {
         shopTemplates: string;
         formsBuilder: string;
         forms: string;
+        productSheet: string;
         storefrontStudio: string;
         storefrontStudioRail: string;
         storeManagementRail: string;
@@ -18041,6 +18091,7 @@ declare module 'react-i18next' {
         openMenu: string;
         closeMenu: string;
         platformName: string;
+        visitStore: string;
       };
       language: {
         current: string;

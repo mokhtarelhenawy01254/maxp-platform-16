@@ -381,14 +381,6 @@ class OrderService {
       }
 
       const isDuplicate = !!duplicateMatch;
-      if (isDuplicate && duplicateSettings?.action === 'ignore') {
-        const existingOrder = await safeQuery(async () => {
-          return await this.getPrisma().order.findUnique({
-            where: { id: duplicateMatch.order.id }
-          });
-        }, 3);
-        return existingOrder ? { ...existingOrder, customer } : existingOrder;
-      }
 
       // إنشاء الطلب بدون items (سنضيفها لاحقاً)
       const orderLimitCheck = await ensureWithinPlanLimit(companyId, 'orders', 1);
@@ -726,7 +718,8 @@ class OrderService {
   async getDuplicateSettings(companyId = null) {
     const settings = await this.getOrderSettings(companyId);
     return {
-      action: settings?.duplicateOrderAction || 'filter',
+      // إزالة "ignore" نهائياً: أي طلب مكرر يُسجَّل دائماً بحالة "طلب مكرر" ويظهر
+      action: 'filter',
       windowMinutes: settings?.duplicateOrderWindowMinutes || 60
     };
   }

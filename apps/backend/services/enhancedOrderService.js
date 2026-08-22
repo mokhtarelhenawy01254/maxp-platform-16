@@ -264,23 +264,6 @@ class EnhancedOrderService {
         });
       }
 
-      if (duplicateMatch && duplicateSettings?.action === 'ignore') {
-        const existingOrder = await this.getPrisma().order.findUnique({
-          where: { id: duplicateMatch.order.id },
-          include: { customer: true, conversation: true, orderItems: true }
-        });
-
-        if (existingOrder) {
-          return {
-            success: true,
-            order: this.transformOrderForResponse(existingOrder),
-            duplicate: true,
-            duplicateOf: duplicateMatch.order.id,
-            message: 'تم تجاهل الطلب المكرر'
-          };
-        }
-      }
-
       if (duplicateMatch) {
         const originalStatus = data.status || 'PENDING';
         data.status = 'DUPLICATE_ORDER';

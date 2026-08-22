@@ -656,6 +656,7 @@ export const getSidebarConfig = (
                     label: t('sidebar.visitStore'),
                     external: true
                 },
+                { to: '/store/product-sheet', icon: Grid3x3, label: t('sidebar.productSheet') },
                 { to: '/settings/custom-domain', icon: Link, label: t('sidebar.customDomain') },
                 { to: '/settings/store?tab=branches', icon: Store, label: t('sidebar.storeSettings') },
                 { to: '/settings/store/product-conversion', icon: Sparkles, label: t('sidebar.conversionTools') },

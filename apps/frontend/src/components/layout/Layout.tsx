@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bars3Icon,
+  BuildingStorefrontIcon,
   ChevronDownIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
@@ -28,6 +29,7 @@ import type { ApiRequestConfig } from "../../services/apiClient";
 import ActiveUsersMonitor from "../ActiveUsersMonitor";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 import PageExplanations from "../common/PageExplanations";
+import { buildStoreUrl } from "../../utils/storeUrl";
 import { useTemplate } from "../../templates/useTemplate";
 import TemplateSlot from "../../templates/TemplateSlot";
 
@@ -113,6 +115,33 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const companySettings = getCompanySettings();
   const hasEcommerce = user?.company?.activeApps?.includes('ecommerce-basic');
   const showSearchInHeader = companySettings.showOrderSearchInHeader !== false && !!hasEcommerce;
+
+  const STORE_APPS = ['store', 'store-basic', 'store-pro', 'conversion-suite', 'ecommerce-basic'];
+  const companyActiveApps: string[] = Array.isArray(user?.company?.activeApps)
+    ? (user?.company?.activeApps as string[])
+    : [];
+  const hasStoreApp = companyActiveApps.some((app) =>
+    STORE_APPS.includes(String(app).toLowerCase()),
+  );
+
+  const storeShortcutUrl = useMemo(() => {
+    if (!hasStoreApp) return null;
+    const slug = user?.company?.slug;
+    const customDomain = user?.company?.customDomain;
+    const companyId = user?.companyId || user?.company?.id;
+    if (slug && slug.trim().length > 0) {
+      return buildStoreUrl(
+        slug,
+        '/shop',
+        customDomain || undefined,
+        companyId || undefined,
+      );
+    }
+    if (customDomain && customDomain.trim().length > 0) {
+      return buildStoreUrl('', '/shop', customDomain);
+    }
+    return '/shop';
+  }, [hasStoreApp, user]);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
   const useSuperAdminShell = shouldUseSuperAdminShell(
@@ -507,6 +536,18 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                   </button>
                 )}
               </div>
+            )}
+            {storeShortcutUrl && (
+              <a
+                href={storeShortcutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="business-icon-button business-store-shortcut"
+                title={t("header.visitStore", "زيارة المتجر")}
+                aria-label={t("header.visitStore", "زيارة المتجر")}
+              >
+                <BuildingStorefrontIcon className="h-5 w-5" />
+              </a>
             )}
             <ThemeToggle />
             <LanguageSwitcher

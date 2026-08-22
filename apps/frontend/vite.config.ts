@@ -596,6 +596,7 @@ export default defineConfig(({ mode }) => {
         external(id) {
           return (
             id.startsWith('node:') ||
+            id === 'tesseract.js' ||
             [
               'fs', 'path', 'buffer', 'child_process', 'stream', 'util', 'url',
               'zlib', 'os', 'crypto', 'net', 'http', 'https', 'events', 'assert',
