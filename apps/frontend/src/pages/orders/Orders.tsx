@@ -1147,6 +1147,13 @@ const Orders: React.FC = () => {
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
   );
+  // Keep a ref to the latest filters so the socket listeners (which only
+  // re-subscribe on [socket, isConnected, page]) can read current filter
+  // state without re-binding the listeners on every filter change.
+  const filtersRef = useRef<OrdersFilters>(filters);
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
   const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
