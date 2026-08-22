@@ -49,7 +49,7 @@ import {
   RocketLaunchIcon,
   ChatBubbleLeftRightIcon,
   MagnifyingGlassIcon,
-  Loader2Icon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 
@@ -1191,7 +1191,7 @@ const OrderCodeSearch: React.FC<{ fieldClassName: string }> = ({ fieldClassName 
           className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
         >
           {loading ? (
-            <Loader2Icon className="h-4 w-4 animate-spin" />
+            <ArrowPathIcon className="h-4 w-4 animate-spin" />
           ) : (
             <MagnifyingGlassIcon className="h-4 w-4" />
           )}
