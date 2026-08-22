@@ -827,6 +827,31 @@ const IncompleteOrders: React.FC = () => {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex flex-col gap-1.5">
+                          {order.failureReason || order.checkoutData?.failureReason ? (
+                            <span
+                              className="inline-flex w-fit max-w-[260px] items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300"
+                              title={order.failureReason || order.checkoutData?.failureReason}
+                            >
+                              <span className="truncate">
+                                {order.failureReason || order.checkoutData?.failureReason}
+                              </span>
+                            </span>
+                          ) : order.abandonReason?.code ? (
+                            <span
+                              className="inline-flex w-fit max-w-[210px] items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                              title={getAbandonReasonLabel(order.abandonReason, t)}
+                            >
+                              <span className="truncate">
+                                {getAbandonReasonLabel(order.abandonReason, t)}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-300 dark:text-gray-600">—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col gap-1.5">
                           <span
                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border w-fit ${
                               order.status === "lost"

@@ -42,6 +42,49 @@ const { calculateDiscount: calcStorePromotionDiscount } = require('../utils/stor
 const customerBlocklistService = require('../services/customerBlocklistService');
 
 /**
+ * recordIncompleteOrder — عند رفض الأوردر بسبب فحص (مخزون/حظر/سلة/إلخ)،
+ * سجّله كـ"غير مكتمل" مع سبب (failureReason) بدل ما يضيع تماماً.
+ * الفحص الأصلي كان يرجع res.status(400) فقط فكان الأوردر مابيتسجلش والإدارة
+ * ماتعرفش إن فيه أوردر ضاع. ده الإصلاح: نحفظ الأوردر في guestCart (نفس الجدول
+ * اللي صفحة "الطلبات غير المكتملة" /ln بتجيبه) مع failureReason جوه checkoutData.
+ * أي خطأ في الحفظ يتسجّل في اللوج بس مش يوقف الـflow (نرجع الـerror للعميل برضه).
+ */
+async function recordIncompleteOrder(prisma, { company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason }) {
+  try {
+    const safeItems = Array.isArray(items) ? items.map((it) => ({
+      productId: it?.productId || null,
+      variantId: it?.variantId || null,
+      quantity: Number(it?.quantity) || 1,
+      name: it?.name || 'منتج',
+      price: Number(it?.price) || 0,
+    })) : [];
+    const checkoutData = {
+      guestName: guestName || 'زائر',
+      guestPhone: guestPhone || '',
+      guestEmail: guestEmail || null,
+      shippingAddress: typeof shippingAddress === 'object' ? shippingAddress : (shippingAddress || {}),
+      failureReason: String(failureReason || '').slice(0, 2000),
+      rejectedAt: new Date().toISOString(),
+    };
+    await prisma.guestCart.create({
+      data: {
+        cartId: `INC-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        items: JSON.stringify(safeItems),
+        total: 0,
+        companyId: company?.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // أسبوع
+        checkoutData: JSON.stringify(checkoutData),
+        checkoutStartedAt: new Date(),
+        checkoutUpdatedAt: new Date(),
+      },
+    });
+    console.log('🛒 [INCOMPLETE-ORDER] Recorded rejected order (guestCart) with reason:', failureReason);
+  } catch (err) {
+    console.error('⚠️ [INCOMPLETE-ORDER] Failed to record rejected order:', err.message);
+  }
+}
+
+/**
  * Public Orders Routes
  * No authentication required - for guest users
  * Company isolation through subdomain middleware
@@ -727,6 +770,10 @@ router.post('/', async (req, res) => {
     });
 
     if (blockEvaluation.blocked) {
+      const reason = blockEvaluation.reason || 'العميل محظور من تقديم الطلبات';
+      await recordIncompleteOrder(prisma, {
+        company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason: reason,
+      });
       return customerBlocklistService.sendBlockedResponse(res, blockEvaluation);
     }
 
@@ -755,10 +802,11 @@ router.post('/', async (req, res) => {
 
       const coercedItems = cart ? coerceCartItemsToArray(cart.items) : [];
       if (!cart || coercedItems.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'السلة فارغة'
+        const reason = 'السلة فارغة';
+        await recordIncompleteOrder(prisma, {
+          company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason: reason,
         });
+        return res.status(400).json({ success: false, error: 'السلة فارغة' });
       }
 
       cartItems = coercedItems;
@@ -788,19 +836,21 @@ router.post('/', async (req, res) => {
     const invalidItem = cartItems.find((item) => !item?.productId);
     if (invalidItem) {
       console.log('❌ [CREATE-ORDER] Invalid cart item (missing productId):', invalidItem);
-      return res.status(400).json({
-        success: false,
-        error: 'بيانات السلة غير صحيحة: يوجد منتج بدون معرف (productId)'
+      const reason = 'بيانات السلة غير صحيحة: يوجد منتج بدون معرف (productId)';
+      await recordIncompleteOrder(prisma, {
+        company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason: reason,
       });
+      return res.status(400).json({ success: false, error: reason });
     }
 
     const invalidQuantityItem = cartItems.find((item) => !item?.quantity || item.quantity < 1);
     if (invalidQuantityItem) {
       console.log('❌ [CREATE-ORDER] Invalid cart item (invalid quantity):', invalidQuantityItem);
-      return res.status(400).json({
-        success: false,
-        error: 'بيانات السلة غير صحيحة: الكمية يجب أن تكون 1 على الأقل'
+      const reason = 'بيانات السلة غير صحيحة: الكمية يجب أن تكون 1 على الأقل';
+      await recordIncompleteOrder(prisma, {
+        company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason: reason,
       });
+      return res.status(400).json({ success: false, error: reason });
     }
 
     const checkoutAffiliateCode = req.cookies?.affiliateCode || req.query.ref || req.query.affiliate;
@@ -838,15 +888,22 @@ router.post('/', async (req, res) => {
 
       if (!product) {
         console.log('❌ [CREATE-ORDER] Product not found:', item.productId);
-        return res.status(400).json({
-          success: false,
-          error: `المنتج غير موجود: ${item.name || 'Unknown'}`
+        const reason = `المنتج غير موجود: ${item.name || 'Unknown'}`;
+        await recordIncompleteOrder(prisma, {
+          company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason: reason,
         });
+        return res.status(400).json({ success: false, error: reason });
       }
 
       // الطلب المسبق: إذا كان المنتج pre-order وتاريخ التوفر مستقبلي (أو غير محدد)،
       // يُسمح بالطلب حتى لو المخزون صفر — لا يتم رفض فحص المخزون.
       const preOrderEligible = isPreOrderEligible(product);
+
+      // السماح بتجاوز فحص المخزون إذا كان المنتج الأم لا يتتبع المخزون
+      // (trackInventory=false) أو كان طلباً مسبقاً — وتُورَّث هذه الإعدادات
+      // لكل المتغيرات (الأبناء) حتى لا يُرفض الطلب بسبب متغير يرث التتبع.
+      const productAllowsNoStock =
+        product.trackInventory === false || isPreOrderEligible(product);
 
       if (product.isDropshipped) {
         const availability = await dropshippingService.checkMerchantAvailability(
@@ -855,10 +912,15 @@ router.post('/', async (req, res) => {
         );
 
         if (!availability.available) {
+          const reason = availability.reason || `المنتج غير متاح للدروب شيبنج: ${item.name || product.name}`;
+          await recordIncompleteOrder(prisma, {
+            company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason: reason,
+          });
           return res.status(409).json({
             success: false,
             code: 'DROPSHIPPING_UNAVAILABLE',
-            error: availability.reason || `المنتج غير متاح للدروب شيبنج: ${item.name || product.name}`,
+            error: reason,
+            failureReason: reason,
             details: {
               productId: product.id,
               productName: item.name || product.name,
@@ -884,12 +946,16 @@ router.post('/', async (req, res) => {
           });
         }
 
-        if (variant.trackInventory !== false && variant.stock < item.quantity && !req.headers['x-admin-convert'] && !preOrderEligible) {
+        // السماح بالطلب إذا كان المنتج الأم لا يتتبع المخزون أو كان طلباً مسبقاً
+        // (وراثة الإعدادات للمتغيرات)، أو إذا كان المتغير نفسه لا يتتبع المخزون.
+        const variantTracksStock = variant.trackInventory !== false;
+        if (variantTracksStock && variant.stock < item.quantity && !req.headers['x-admin-convert'] && !productAllowsNoStock) {
+          const reason = `المخزون غير كافي للاختيار: ${variant.name}. المتوفر: ${variant.stock}`;
           console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
-          return res.status(400).json({
-            success: false,
-            error: `المخزون غير كافي للاختيار: ${variant.name}. المتوفر: ${variant.stock}`
+          await recordIncompleteOrder(prisma, {
+            company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason: reason,
           });
+          return res.status(400).json({ success: false, error: reason, failureReason: reason });
         }
 
         selectedVariant = variant;
@@ -993,12 +1059,14 @@ router.post('/', async (req, res) => {
         console.log(`✅ [CREATE-ORDER] Enriched item ${item.productId}: Color=${item.productColor}, Size=${item.productSize}, Image=${image ? 'Yes' : 'No'}`);
       } else {
         // Check main product stock if no variant and tracking is enabled
-        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert'] && !preOrderEligible) {
+        // السماح بالطلب إذا كان المنتج لا يتتبع المخزون (trackInventory=false) أو كان طلباً مسبقاً.
+        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert'] && !productAllowsNoStock) {
+          const reason = `المخزون غير كافي للمنتج: ${item.name || product.name}. المتوفر: ${product.stock}`;
           console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
-          return res.status(400).json({
-            success: false,
-            error: `المخزون غير كافي للمنتج: ${item.name || product.name}. المتوفر: ${product.stock}`
+          await recordIncompleteOrder(prisma, {
+            company, req, guestName, guestPhone, guestEmail, shippingAddress, items, failureReason: reason,
           });
+          return res.status(400).json({ success: false, error: reason, failureReason: reason });
         }
       }
 
