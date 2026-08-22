@@ -33,6 +33,27 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
+      - name: Wait for SSH connectivity (retry)
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6 7 8; do
+            if ssh -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
+              -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+              "$SERVER_USER@$SERVER_HOST" "echo ok" >/dev/null 2>&1; then
+              echo "✅ SSH reachable (attempt $i)"
+              exit 0
+            fi
+            echo "⚠️ Attempt $i/8 failed, backing off 30s..."
+            sleep 30
+          done
+          echo "❌ SSH unreachable from this runner after 8 attempts."
+          exit 1
+
       - name: Run read-only diagnostics on server
         uses: appleboy/ssh-action@v1.0.3
         with:
