@@ -29,6 +29,7 @@ import { InboxConversation } from "../../../types/inbox.types";
 import { EGYPT_GOVERNORATES } from "../../../constants/egyptGovernorates";
 import { detectUserGovernorate } from "../../../utils/geolocation";
 import { getPrimaryImageUrl } from "../../../utils/imageUrl";
+import { customerService } from "../../../services/customerService";
 
 const overlayStyle: React.CSSProperties = {
   background: "rgba(7, 17, 32, 0.58)",
@@ -552,6 +553,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [notes, setNotes] = useState("");
+  const [searchingCustomer, setSearchingCustomer] = useState(false);
 
   // Shipping State
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
@@ -575,6 +577,42 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       setCustomerName(initialCustomerName || convCustomerName || "");
     }
   }, [isOpen, initialCustomerName, initialCustomerPhone, convCustomerName]);
+
+  // Debounced Phone Search - auto-fill customer data from DB
+  useEffect(() => {
+    if (phone.length < 10) return;
+
+    let cancelled = false;
+    const timeoutId = setTimeout(async () => {
+      try {
+        setSearchingCustomer(true);
+        const results = await customerService.searchCustomers(phone);
+        if (cancelled) return;
+
+        const customer = (results as any[]).find(
+          (c) => c.phone === phone || c.phone?.includes(phone),
+        );
+
+        if (customer) {
+          setCustomerName(
+            [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customerName,
+          );
+          setCity(customer.governorate || customer.city || city);
+          setAddress(customer.address || address);
+          toast.success("تم العثور على العميل! تم ملء البيانات تلقائياً");
+        }
+      } catch (error) {
+        console.error("[QuickOrder] Customer search error:", error);
+      } finally {
+        if (!cancelled) setSearchingCustomer(false);
+      }
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [phone]);
 
   // Auto-detect governorate for quick checkout
   useEffect(() => {
@@ -1296,14 +1334,21 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                       <label className="mb-1 block text-xs" style={mutedStyle}>
                         رقم الهاتف <span style={dangerStyle}>*</span>
                       </label>
-                      <input
-                        type="text"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="business-control-input w-full"
-                        placeholder="01xxxxxxxxx"
-                        dir="ltr"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="business-control-input w-full pr-8"
+                          placeholder="01xxxxxxxxx"
+                          dir="ltr"
+                        />
+                        {searchingCustomer && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
