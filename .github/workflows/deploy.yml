@@ -225,6 +225,14 @@ jobs:
         run: node scripts/check-icon-imports.cjs
         continue-on-error: false
 
+      # 🛡️ يمنع أسماء أيقونات heroicons غير موجودة في النسخة المتسطبة
+      # (Loader2Icon/PackageSearchIcon كسروا build الـ vite على CI مرتين)
+      - name: Check Heroicons Imports
+        if: steps.fe-check.outputs.fe-needed == 'true'
+        working-directory: ./apps/frontend
+        run: node scripts/check-heroicons.cjs
+        continue-on-error: false
+
       - name: Build Frontend
         if: steps.fe-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend

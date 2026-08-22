@@ -118,3 +118,31 @@ integrity gate, cache purges, and backend restart.
 - fail2ban sshd: 21 total banned IPs (confirms the deploy SSH flakiness mechanism).
 - The temporary diagnostics workflow (`.github/workflows/diag-stale-html.yml`) can be
   deleted once the manual-upload conflict is resolved.
+
+---
+
+## Part 4 — Second hardening layer (same day, commits 4c7ca4b2 → 942c87ce)
+
+After the deploy-time purge, three more layers landed:
+
+1. **nginx immunization** (`nginx_configs/maxp.online.conf`): `brotli_static off` inside
+   the admin `location /` (SPA index.html) and both `location = /sw-v4.js` blocks. Even
+   if a stale `.br` lands on disk again, nginx can no longer serve it for these
+   entrypoints. Hashed `/assets/` keep brotli_static benefits in their own location.
+2. **Served-entry guard** (end of `deploy-remote.sh`): after nginx reload, the deploy
+   fetches `https://maxp.online/` locally twice (br + identity) and asserts both serve
+   the exact entry chunk this deploy published (expectation anchored to the staging
+   source at publish time, immune to mid-deploy overwrites). Mismatch → loud failure
+   with `ls index.html*` diagnostics; curl hiccups degrade to a warning, never a
+   false alarm (set -e safe).
+3. **Heroicons build gate** (`apps/frontend/scripts/check-heroicons.cjs` + deploy.yml):
+  invalid `@heroicons/react` imports (e.g. v1-era `Loader2Icon`, lucide-only
+  `PackageSearchIcon`) broke the vite build twice on CI today (~5 min per cycle).
+  The gate scans all 481 files importing heroicons against the installed package's
+  real exports and blocks the deploy in seconds instead.
+
+**Verified live at 10:27 UTC:** guard passed (`expected index-DAwWTQ76.js == served br
+== served identity`), and external checks confirm fresh build served with and without
+compression. The bad-icon build breakage on main (9c09132c→a22ad5eb) was also unblocked
+by fast-forwarding the parallel session's fix (19028b9a) and completing it (942c87ce
+`Loader2Icon` → `ArrowPathIcon`).
