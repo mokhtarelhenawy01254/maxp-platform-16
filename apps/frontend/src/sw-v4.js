@@ -5,36 +5,6 @@ import { ExpirationPlugin } from 'workbox-expiration';
 
 const CACHE_PREFIX = 'maxp-v4';
 
-// Register runtime routes BEFORE the precache so navigations and assets are
-// served network-first. Otherwise the OLD precached index.html would be served
-// cache-first by the service worker, leaving users stuck on a stale build.
-registerRoute(
-  ({ request }) => request.mode === 'navigate',
-  new NetworkFirst({
-    cacheName: `${CACHE_PREFIX}-pages`,
-    networkTimeoutSeconds: 3,
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }),
-    ],
-  }),
-);
-
-// Note: Broad /api/ route caching removed to prevent caching sensitive user/tenant data in SW CacheStorage.
-// API state management is safely handled in-memory by React Query.
-
-registerRoute(
-  ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'font',
-  new NetworkFirst({
-    cacheName: `${CACHE_PREFIX}-assets`,
-    networkTimeoutSeconds: 5,
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 }),
-    ],
-  }),
-);
-
-precacheAndRoute(self.__WB_MANIFEST);
-
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
@@ -42,7 +12,6 @@ self.addEventListener('install', () => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     cleanupOutdatedCaches();
-    // Delete any old caches that don't match our prefix
     const cacheKeys = await caches.keys();
     await Promise.all(
       cacheKeys
@@ -143,3 +112,27 @@ self.addEventListener('notificationclick', (event) => {
     })(),
   );
 });
+
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  new NetworkFirst({
+    cacheName: `${CACHE_PREFIX}-pages`,
+    networkTimeoutSeconds: 3,
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }),
+    ],
+  }),
+);
+
+registerRoute(
+  ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'font',
+  new NetworkFirst({
+    cacheName: `${CACHE_PREFIX}-assets`,
+    networkTimeoutSeconds: 5,
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 }),
+    ],
+  }),
+);
+
+precacheAndRoute(self.__WB_MANIFEST);
