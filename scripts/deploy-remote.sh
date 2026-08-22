@@ -67,20 +67,48 @@ sync_frontend_dist() {
 
   sudo mkdir -p /var/www/frontend2/dist
 
-  # Publish immutable hashed assets before the HTML entrypoint.
-  # This prevents Vite lazy chunks from 404ing while a deploy is in progress.
+  sudo mkdir -p /var/www/frontend2/dist
+
+  # Publish immutable hashed assets FIRST (never index.html yet).
   sudo rsync -a --exclude 'index.html' \
     "$source_dir/" /var/www/frontend2/dist/
   sudo rm -rf /var/www/frontend2/dist/products
+  sudo chown -R $USER:$USER /var/www/frontend2/dist
+
+  # ── INTEGRITY GATE (BEFORE publishing index.html) ──────────────────────
+  # Verify every hashed asset referenced by index.html actually arrived on
+  # disk. If the tarball/transfer was incomplete, we MUST NOT publish the new
+  # index.html (it would point at missing chunks → permanent 404s). Abort
+  # loudly so the deploy fails instead of shipping a broken build.
+  echo "🔎 Verifying frontend asset integrity before publishing index.html..."
+  MISSING_COUNT=0
+  MISSING_LIST=""
+  while IFS= read -r asset_path; do
+    [ -z "$asset_path" ] && continue
+    if [ ! -f "/var/www/frontend2/dist/$asset_path" ]; then
+      MISSING_COUNT=$((MISSING_COUNT + 1))
+      MISSING_LIST="$MISSING_LIST\n  - $asset_path"
+    fi
+  done < <(grep -oE '(src|href)="[^"]+"' "$source_dir/index.html" 2>/dev/null \
+            | sed -E 's/.*="([^"]+)".*/\1/' \
+            | grep -E '^(/?(assets|js|placeholders)/)' \
+            | sed -E 's#^/##')
+
+  if [ "$MISSING_COUNT" -gt 0 ]; then
+    echo "❌ FRONTEND DEPLOY ABORTED: $MISSING_COUNT referenced asset(s) missing on disk:$MISSING_LIST"
+    echo "   The transfer was incomplete (interrupted SCP/rsync). Do NOT publish"
+    echo "   the new index.html — it would point at chunks that never arrived."
+    echo "   Re-run the deploy to transfer a complete, fresh build."
+    exit 1
+  fi
+  echo "✅ Frontend asset integrity OK ($(grep -oE '(src|href)="[^"]+"' "$source_dir/index.html" 2>/dev/null | grep -cE '(src|href)="/?(assets|js|placeholders)/') referenced assets present)"
+
+  # All assets verified — now publish the HTML entrypoint LAST.
   sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
   # Force mtime to now so backend's cachedIndexHtml (mtimeMs check) always
   # invalidates after deploy even if rsync preserved old mtime from build
   sudo touch /var/www/frontend2/dist/index.html
-  # Keep old hashed chunks so cached browsers don't 404 on previous-build
-  # lazy chunks. Old index.html references are gone; old chunks are inert
-  # but harmless on disk and essential for cache-in-flight compatibility.
-  # (The first sync already uploaded new assets + this re-sync is now a no-op
-  # that ensures the chown below covers any leftover files we didn't delete.)
+  # Final rsync pass ensures the chown covers any leftover new files.
   sudo rsync -a --exclude 'index.html' \
     "$source_dir/" /var/www/frontend2/dist/
   sudo chown -R $USER:$USER /var/www/frontend2/dist
