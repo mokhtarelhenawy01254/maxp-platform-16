@@ -3382,10 +3382,13 @@ export async function getAdsConnectionStatus(): Promise<FacebookAdsConnectionSta
 
 /**
  * إنشاء رابط تفويض Meta لإعلانات معزولة (business_management + ads_management).
+ * `adAccountId` اختياري — يتم تضمينه في OAuth state حتى يبقى الحساب نشطًا
+ * بعد العودة من فيسبوك إلى صفحة `/advertising/facebook-ads/connection`.
  */
 export async function getAdsAuthorizationUrl(params: {
   companyId: string;
   returnOrigin?: string;
+  adAccountId?: string | null;
 }): Promise<{ success: boolean; authUrl?: string; message?: string }> {
   try {
     const response = await apiClient.get<{
@@ -3396,6 +3399,7 @@ export async function getAdsAuthorizationUrl(params: {
       params: {
         companyId: params.companyId,
         returnOrigin: params.returnOrigin,
+        adAccountId: params.adAccountId || undefined,
       },
     });
     return response.data;
