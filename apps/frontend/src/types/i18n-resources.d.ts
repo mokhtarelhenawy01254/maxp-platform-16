@@ -10922,6 +10922,8 @@ declare module 'react-i18next' {
         overviewTotalRevenue: string;
         overviewAvgOrderValue: string;
         overviewTodayCount: string;
+        overviewTodayValid: string;
+        overviewTodayInvalid: string;
         overviewTodayRevenue: string;
         overviewPeriodLabel: string;
         overviewOrdersTrendAria: string;

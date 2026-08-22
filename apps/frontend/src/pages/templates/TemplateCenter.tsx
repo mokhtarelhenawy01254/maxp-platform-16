@@ -1372,7 +1372,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
                     <th className="py-3 px-2 text-right font-medium">الحدث</th>
-                    <th className="py-3 px-2 text-right font-medium">يتبعت امتي</th>
+                    <th className="py-3 px-2 text-right font-medium">يتبعت إمتى</th>
                     <th className="py-3 px-2 text-right font-medium">بعد قد ايه</th>
                     <th className="py-3 px-2 text-right font-medium">القناة النشطة</th>
                     <th className="py-3 px-2 text-right font-medium">مفعّل</th>

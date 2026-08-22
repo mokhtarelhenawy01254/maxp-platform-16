@@ -26,6 +26,28 @@ const EVENT_GROUPS: Record<string, string[]> = {
 
 const ALL_EVENTS = Object.values(EVENT_GROUPS).flat();
 
+// ترجمة أسماء الأحداث للعربية — يُستخدم كـ fallback لو الـ API
+// مبردش حقل label (الـ API بيرجّع eventType خام بالإنجليزي)
+const EVENT_LABELS_AR: Record<string, string> = {
+  LOYALTY_POINTS_AWARDED: "منح نقاط الولاء",
+  LOYALTY_TIER_UPGRADED: "ترقية مستوى الولاء",
+  LOYALTY_TIER_DOWNGRADED: "تخفيض مستوى الولاء",
+  LOYALTY_POINTS_EXPIRY_WARNING: "تحذير انتهاء صلاحية النقاط",
+  LOYALTY_POINTS_EXPIRED: "انتهاء صلاحية النقاط",
+  LOYALTY_POINTS_REDEEMED: "استبدال نقاط الولاء",
+  CASHBACK_CREDITED: "إضافة كاش باك",
+  CASHBACK_REVERSED: "استرجاع الكاش باك",
+  CUSTOMER_QUALITY_UPGRADED: "ترقية تصنيف الجودة",
+  CUSTOMER_QUALITY_DOWNGRADED: "تخفيض تصنيف الجودة",
+  AUTO_DISCOUNT_COUPON_GRANTED: "منح كوبون خصم تلقائي",
+  AUTO_DISCOUNT_COUPON_EXPIRING: "اقتراب انتهاء كوبون الخصم",
+  AUTO_DISCOUNT_CASHBACK_CONVERTED: "تحويل الكاش باك إلى كوبون",
+};
+
+function eventLabelAr(eventType: string): string {
+  return EVENT_LABELS_AR[eventType] || eventType.replace(/_/g, " ");
+}
+
 const CUSTOMER_VARIABLES = [
   { var: "{customerName}", desc: "اسم العميل" },
   { var: "{points}", desc: "عدد النقاط المكتسبة/المستبدلة" },
@@ -129,8 +151,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
   metaToLocalDefaultOrder: CUSTOMER_META_ORDER,
   defaultContent: DEFAULT_CONTENT,
   eventLabelResolver: (eventType: string): string => {
-    const cleaned = eventType.replace(/_/g, " ").toLowerCase();
-    return cleaned || eventType;
+    return eventLabelAr(eventType);
   },
 
   loadEvents: async (api: ApiLike): Promise<EventRow[]> => {
@@ -172,7 +193,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
       return {
         id: row.id || row.eventType,
         code: row.eventType,
-        name: row.label || row.eventType,
+        name: row.label || eventLabelAr(row.eventType),
         color: "#6B7280",
         sortOrder: idx,
         statusType: row.category,
