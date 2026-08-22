@@ -1431,7 +1431,10 @@ const updateSingleProduct = async (req, res) => {
       stripMerchantRestrictedProductFields(updateData);
       if (stockManagedByCompanyWarehouse) {
         delete updateData.stock;
-        delete updateData.trackInventory;
+        // NOTE: trackInventory is intentionally preserved so a merchant's
+        // choice to disable stock tracking (or enable pre-order) is honoured.
+        // Removing it forced every product back to trackInventory=true and
+        // broke pre-order / no-stock checkout on the storefront.
       }
     }
 

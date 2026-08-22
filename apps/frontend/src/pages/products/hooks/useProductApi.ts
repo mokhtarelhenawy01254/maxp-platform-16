@@ -201,7 +201,10 @@ export const useProductApi = () => {
 
       if (!canEditStock) {
         delete (productData as any).stock;
-        delete (productData as any).trackInventory;
+        // NOTE: trackInventory is intentionally preserved so the merchant's
+        // choice to disable stock tracking (or enable pre-order) is honoured
+        // on the storefront. Removing it forced every product back to
+        // trackInventory=true and broke pre-order / no-stock checkout.
       }
 
       if (isEditMode && id) {
