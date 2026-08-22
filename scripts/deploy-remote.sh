@@ -38,7 +38,12 @@ if [ ! -x "$PM2_BIN" ]; then
 fi
 
 echo "🧹 Running automatic cleanup to free space..."
-find "$HOME" -maxdepth 1 -name "deploy_staging_*" -not -name "$(basename "$DEPLOY_STAGING")" -exec rm -rf {} + 2>/dev/null || true
+# Age-guarded: deleting ALL other deploy_staging_* dirs here races with any
+# concurrent run whose build job is still SCP-ing tarballs into its own staging
+# dir — the tarball vanishes mid-transfer and that deploy silently skips the
+# frontend/backend sync. Only remove staging dirs older than 6 hours; the build
+# job's staging-setup step already does the daily cleanup.
+find "$HOME" -maxdepth 1 -name "deploy_staging_*" -not -name "$(basename "$DEPLOY_STAGING")" -mmin +360 -exec rm -rf {} + 2>/dev/null || true
 sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak 2>/dev/null || true
 if [ -n "$PM2_BIN" ]; then
   "$PM2_BIN" flush || echo "⚠️ PM2 flush failed"

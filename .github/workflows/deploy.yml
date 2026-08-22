@@ -86,6 +86,8 @@ jobs:
         run: node scripts/check-customer-portal-routing.js
         continue-on-error: false
 
+      # Diff base: github.event.before covers ALL commits in a multi-commit push
+      # (HEAD~1 only sees the last commit, silently skipping the rest).
       - name: Check for Facebook Ads Changes
         id: fb-check
         shell: bash
@@ -94,7 +96,12 @@ jobs:
             echo "fb-changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "fb-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
           if echo "$CHANGED" | grep -qE "apps/backend/(controller/facebookAds|services/facebookAds|utils/.*facebook|tests/controller/facebookAds)"; then
             echo "fb-changed=true" >> "$GITHUB_OUTPUT"
           else
@@ -122,7 +129,12 @@ jobs:
             echo "cat-changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
           if echo "$CHANGED" | grep -qE "apps/backend/catalog/marketplace/|apps/backend/prisma/seeds/"; then
             echo "cat-changed=true" >> "$GITHUB_OUTPUT"
           else
@@ -296,9 +308,21 @@ jobs:
           SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
         run: |
           set -euo pipefail
-          ssh -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
-            -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" \
-            "echo '✅ SSH connection successful' && df -h \$HOME"
+          # Hostinger cloud firewall / fail2ban intermittently drops runner IPs.
+          # Retry so a single dropped SYN doesn't waste the whole finished build.
+          for i in 1 2 3 4 5; do
+            if ssh -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
+              -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+              "$SERVER_USER@$SERVER_HOST" \
+              "echo '✅ SSH connection successful' && df -h \$HOME"; then
+              exit 0
+            fi
+            echo "⚠️ SSH attempt $i/5 failed — retrying in 30s..."
+            sleep 30
+          done
+          echo "❌ SSH unreachable after 5 attempts. Likely fail2ban/cloud-firewall ban of this runner IP."
+          echo "   See apps/backend/docs/infrastructure/github-actions-ssh-firewall-2026-05-25.md"
+          exit 1
 
       - name: Get Runner IP
         run: |
@@ -414,6 +438,42 @@ jobs:
           fi
           echo "✅ Still the latest commit on main. Proceeding with deploy."
           echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      # Hostinger cloud firewall / fail2ban intermittently drops runner IPs —
+      # historically the #1 cause of deploy failures (dial tcp timeout).
+      # Probe with retries BEFORE appleboy so a transient drop doesn't kill the deploy.
+      - name: Wait for SSH connectivity (retry)
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            if ssh -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
+              -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+              "$SERVER_USER@$SERVER_HOST" "echo ok" >/dev/null 2>&1; then
+              echo "✅ SSH reachable (attempt $i)"
+              exit 0
+            fi
+            echo "⚠️ Attempt $i/6 failed, backing off 30s..."
+            sleep 30
+          done
+          echo "❌ SSH unreachable from this runner after 6 attempts over ~3 minutes."
+          echo "   This matches the known fail2ban/Hostinger-firewall IP-ban pattern."
+          exit 1
 
       - name: Run Deployment Script on Server
         if: steps.check-deploy-latest.outputs.proceed == 'true'
