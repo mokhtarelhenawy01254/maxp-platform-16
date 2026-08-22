@@ -5033,7 +5033,7 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/store/product-sheet"
+                  path="/inventory/product-sheet"
                   element={
                     <Layout>
                       <ProductSheet />
