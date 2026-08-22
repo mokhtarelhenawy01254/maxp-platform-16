@@ -3,6 +3,8 @@
  * Ensures stored caches (pages, assets, api) are cleanly wiped on updates or logout.
  */
 
+const CURRENT_SW_PATTERN = /\/sw-v4\.js(?:[?#].*)?$/;
+
 /**
  * Clears all entries in window.caches (CacheStorage API)
  * and unregisters orphaned or obsolete Service Workers if needed.
@@ -31,7 +33,7 @@ export async function clearAllSWCaches(): Promise<boolean> {
     }
   }
 
-  // 2. Unregister legacy workers (/push-sw.js) and notify active/waiting workers
+  // 2. Unregister ALL legacy service workers — keep only the current sw-v4.js
   if ("serviceWorker" in navigator && navigator.serviceWorker) {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
@@ -42,12 +44,13 @@ export async function clearAllSWCaches(): Promise<boolean> {
           reg.installing?.scriptURL ||
           "";
 
-        if (scriptUrl.includes("/push-sw.js")) {
-          console.warn("[SW-Flush] Unregistering legacy push-sw.js worker:", scriptUrl);
+        if (scriptUrl && !CURRENT_SW_PATTERN.test(scriptUrl)) {
+          console.warn("[SW-Flush] Unregistering legacy service worker:", scriptUrl);
           await reg.unregister().catch(() => false);
           continue;
         }
 
+        // For the current SW, tell it to skip waiting if it's in waiting state
         if (reg.waiting) {
           reg.waiting.postMessage("SKIP_WAITING");
         } else if (reg.active) {

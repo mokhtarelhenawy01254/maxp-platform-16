@@ -72,9 +72,9 @@ class Settings(BaseSettings):
         description="Sensitive: OpenRouter API key",
     )
 
-    default_llm_provider: Literal["anthropic", "openai", "google", "deepseek"] = "deepseek"
-    default_model: str = "deepseek-v4-flash"
-    google_gemini_model: str = "gemini-2.5-flash"
+    # NOTE: model/provider selection intentionally has no env fields.
+    # Resolution order (DB only): agent model → company ai_settings →
+    # global_ai_config platform default. See src/services/model_resolver.py.
 
     otlp_endpoint: str | None = Field(
         default=None,

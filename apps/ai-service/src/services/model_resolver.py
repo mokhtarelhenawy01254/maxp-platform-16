@@ -97,4 +97,97 @@ class ModelResolver:
         return await self.resolve(model_name, company_id)
 
 
+async def resolve_db_default_model(company_id: str | None = None) -> str | None:
+    """DB-first default model resolution — no env, no hardcoded model names.
+
+    Order:
+    1. Company preference: ai.ai_settings.modelSettings (keys: model / chatModel / defaultModel)
+    2. Platform explicit: ai.global_ai_config.settings.defaultModel
+    3. Platform derived: first enabled model of the global default_provider
+    4. Platform derived: first enabled model across providers in global provider_priority order
+    """
+    from sqlalchemy import select
+
+    from src.db import session as db_session
+    from src.db.models.provider import AiKey, AiModelConfig, GlobalAiConfig
+
+    if db_session.async_session is None:
+        return None
+
+    async def _first_model_for_provider(provider: str) -> str | None:
+        from sqlalchemy import func
+
+        async with db_session.async_session() as db:
+            stmt = (
+                select(AiModelConfig.model_name)
+                .join(AiKey, AiKey.id == AiModelConfig.key_id)
+                .where(
+                    func.upper(AiKey.provider) == provider.upper(),
+                    AiKey.is_active == True,  # noqa: E712
+                    AiModelConfig.is_enabled == True,  # noqa: E712
+                )
+                .order_by(AiModelConfig.priority, AiModelConfig.created_at)
+                .limit(1)
+            )
+            row = await db.execute(stmt)
+            return row.scalar_one_or_none()
+
+    try:
+        # 1. Company preference
+        if company_id:
+            from src.db.models.ai_setting import AiSetting
+
+            async with db_session.async_session() as db:
+                row = await db.execute(
+                    select(AiSetting.modelSettings).where(AiSetting.company_id == company_id)
+                )
+                raw = row.scalar_one_or_none()
+            if raw:
+                if isinstance(raw, str):
+                    import json as _json
+
+                    try:
+                        raw = _json.loads(raw)
+                    except Exception:
+                        raw = {}
+                for key in ("model", "chatModel", "defaultModel"):
+                    candidate = (raw or {}).get(key)
+                    if candidate and isinstance(candidate, str):
+                        return candidate
+
+        # 2-4. Platform defaults from ai.global_ai_config
+        async with db_session.async_session() as db:
+            row = await db.execute(select(GlobalAiConfig))
+            config = row.scalar_one_or_none()
+        if not config:
+            return None
+
+        raw_settings = config.settings or {}
+        if isinstance(raw_settings, str):
+            import json as _json
+
+            try:
+                raw_settings = _json.loads(raw_settings)
+            except Exception:
+                raw_settings = {}
+        explicit = raw_settings.get("defaultModel")
+        if explicit and isinstance(explicit, str):
+            return explicit
+
+        if config.default_provider:
+            model = await _first_model_for_provider(str(config.default_provider))
+            if model:
+                return model
+
+        for provider in (config.provider_priority or []):
+            model = await _first_model_for_provider(str(provider))
+            if model:
+                return model
+
+        return None
+    except Exception as exc:
+        logger.warning("resolve_db_default_model_failed", company_id=company_id, error=str(exc)[:160])
+        return None
+
+
 resolver = ModelResolver()

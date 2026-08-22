@@ -219,17 +219,19 @@ class TestPromptGeneration:
 class TestDecisionUnification:
     """اختبار توحيد مراكز القرار - Python vs Node.js"""
 
-    def test_settings_ai_service_mode_matches_env(self):
+    def test_settings_have_no_env_model_fields(self):
         """
-        GIVEN: AI_SERVICE_MODE environment variable
+        GIVEN: model selection moved to the database (DB-first resolution)
         WHEN:  settings are loaded
-        THEN:  there should be a matching field (or at least not crash)
+        THEN:  no model/provider default fields should exist in env settings —
+               resolution order is agent model → company ai_settings →
+               global_ai_config (see src/services/model_resolver.py)
         """
         get_settings.cache_clear()
         settings = get_settings()
-        # The Python AI service doesn't have ai_service_mode field -
-        # This is a Node.js concept. Python is always "primary" when running.
-        assert settings.default_llm_provider in ("anthropic", "openai", "google")
+        assert not hasattr(settings, "default_model")
+        assert not hasattr(settings, "default_llm_provider")
+        assert not hasattr(settings, "google_gemini_model")
 
     def test_python_ai_service_has_skills_module(self):
         """

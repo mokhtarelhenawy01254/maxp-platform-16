@@ -918,10 +918,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         key: "birthdayEnabled" as const,
         label: t("whatsappNotifications.marketing.birthday"),
       },
-      {
-        key: "loyaltyEnabled" as const,
-        label: t("whatsappNotifications.marketing.loyalty"),
-      },
     ],
     [t],
   );

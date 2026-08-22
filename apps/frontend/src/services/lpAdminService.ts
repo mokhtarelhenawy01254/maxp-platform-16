@@ -62,7 +62,7 @@ export const lpPublicService = {
     try {
       return await request<LpPage[]>("/api/v1/public/lp-pages");
     } catch (err: any) {
-      if (String(err?.message || "").includes("400")) {
+      if (err?.message?.includes("400") || err?.message?.includes("HTTP 400")) {
         return [];
       }
       throw err;

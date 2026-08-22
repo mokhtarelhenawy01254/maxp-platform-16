@@ -402,14 +402,16 @@ function getModuleSettingKey(eventType) {
     return 'marketingNotificationsEnabled';
   }
 
-  // 🎁 إشعارات الولاء والكاش باك والجودة — تُدار من مفتاح الولاء الخاص
-  // (loyaltyEnabled) بدل الاعتماد على marketingNotificationsEnabled.
+  // أحداث إشعارات العملاء (الولاء/كاش باك/تقسيم/خصم تلقائي) لا تُحجب بمفتاح عام
+  // بل تُتحكم بها فقط عبر جدول customerNotificationSchedule لكل حدث على حدة.
+  // يتم تجاهل مفتاح loyaltyEnabled العام لتجنب الحجب الصامت.
   if (
     eventType.startsWith('LOYALTY_') ||
     eventType.startsWith('CASHBACK_') ||
-    eventType.startsWith('CUSTOMER_QUALITY_')
+    eventType.startsWith('CUSTOMER_QUALITY_') ||
+    eventType.startsWith('AUTO_DISCOUNT_')
   ) {
-    return 'loyaltyEnabled';
+    return null;
   }
 
   if (

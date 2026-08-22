@@ -7,8 +7,10 @@ import {
 } from "./utils/chunkLoadRecovery";
 import { clearAllSWCaches } from "./utils/swCacheFlush";
 
-// Auto-purge legacy SW caches once for all existing clients
-const SW_MIGRATION_VERSION = "maxp_sw_v3_20260729";
+// Auto-purge legacy SW caches once for all existing clients.
+// Bump this version string whenever you change the SW strategy or asset
+// filenames to force every client to drop stale caches on next visit.
+const SW_MIGRATION_VERSION = "maxp_sw_v4_20260822";
 if (typeof window !== "undefined") {
   try {
     if (localStorage.getItem("maxp:sw_migrated") !== SW_MIGRATION_VERSION) {
@@ -234,7 +236,28 @@ void bootstrapApp()
 
 // Service Worker auto-update: notify user when a new version is ready (Production only)
 if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MODE === "production")) {
-  navigator.serviceWorker.register("/sw.js").then((reg) => {
+  // Immediately unregister every legacy SW (sw.js, sw-v2.js, sw-v3.js, etc.)
+  // so the old worker never intercepts requests for the new assets.
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    let needsReload = false;
+    regs.forEach((r) => {
+      const url =
+        r.active?.scriptURL ||
+        r.waiting?.scriptURL ||
+        r.installing?.scriptURL ||
+        "";
+      if (url && !/\/sw-v4\.js(?:[?#].*)?$/.test(url)) {
+        r.unregister();
+        needsReload = true;
+      }
+    });
+    // If we removed an old SW that was still controlling the page,
+    // reload once so the new SW takes over immediately.
+    if (needsReload && navigator.serviceWorker.controller) {
+      window.location.reload();
+    }
+  });
+  navigator.serviceWorker.register("/sw-v4.js").then((reg) => {
     const notify = () => {
       window.__SW_UPDATE_PENDING__ = true;
       window.dispatchEvent(new CustomEvent("sw-update-ready"));
