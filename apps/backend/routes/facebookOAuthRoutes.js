@@ -395,7 +395,7 @@ const buildFacebookOAuthState = ({ companyId, userId, type, returnOrigin, popup 
  * signature is an HMAC-SHA256 over the encoded payload using the app secret.
  * Callbacks reject unsigned or forged states BEFORE exchanging the code.
  */
-const buildAdsOAuthState = ({ companyId, userId, returnOrigin, adAccountId }) => {
+const buildAdsOAuthState = ({ companyId, userId, returnOrigin }) => {
   const payload = {
     cid: companyId,
     uid: userId,
@@ -404,12 +404,6 @@ const buildAdsOAuthState = ({ companyId, userId, returnOrigin, adAccountId }) =>
   };
   if (returnOrigin) {
     payload.returnOrigin = returnOrigin;
-  }
-  if (adAccountId) {
-    // Preserve the active ad account across the OAuth round-trip so the
-    // user lands back on the same /advertising/facebook-ads/connection context
-    // (the backend redirect drops the original ?adAccountId=… param otherwise).
-    payload.aid = String(adAccountId);
   }
 
   const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
@@ -472,7 +466,6 @@ const decodeAdsOAuthState = (state) => {
       type: payload.type || "ads",
       returnOrigin: payload.returnOrigin || payload.returnTo || payload.origin,
       popup: Boolean(payload.popup),
-      adAccountId: payload.aid || payload.adAccountId || null,
     },
   };
 };
@@ -1119,7 +1112,7 @@ router.get(
   async (req, res) => {
     try {
       const { appId } = getFacebookOAuthConfig();
-      const { companyId, popup, adAccountId } = req.query;
+      const { companyId, popup } = req.query;
       const returnOrigin = getRequestedFrontendOrigin(req);
 
       if (!companyId) {
@@ -1143,7 +1136,6 @@ router.get(
         companyId,
         userId: req.user.id,
         returnOrigin,
-        adAccountId: adAccountId ? String(adAccountId) : null,
       });
 
       const authUrl =
@@ -1244,7 +1236,6 @@ const handleAdsOAuthCallback = async ({
   userAccessToken,
   isPopup,
   callbackRedirectBaseUrl,
-  activeAdAccountId,
 }) => {
   const normalizeAdAccountId = (adAccountId) => {
     if (adAccountId === undefined || adAccountId === null) {
@@ -1280,10 +1271,7 @@ const handleAdsOAuthCallback = async ({
         isPopup,
         callbackRedirectBaseUrl,
         "ads",
-        {
-          error: "facebook_user_unavailable",
-          adAccountId: activeAdAccountId || "",
-        },
+        { error: "facebook_user_unavailable" },
       );
     }
 
@@ -1406,11 +1394,6 @@ const handleAdsOAuthCallback = async ({
         sourceId: source.id,
         syncedAdAccounts: adAccounts.length,
         activeAdAccountId: adAccounts[0]?.accountId || "",
-        // Preserve the originally-selected ad account across the round-trip
-        // so the connection page can keep its context after the user comes
-        // back from Facebook (otherwise the page would lose the adAccountId
-        // query param and the React app could crash on the next render).
-        adAccountId: activeAdAccountId || adAccounts[0]?.accountId || "",
       },
     );
   } catch (error) {
@@ -1429,10 +1412,7 @@ const handleAdsOAuthCallback = async ({
       isPopup,
       callbackRedirectBaseUrl,
       "ads",
-      {
-        error: errorMessage,
-        adAccountId: activeAdAccountId || "",
-      },
+      { error: errorMessage },
     );
   }
 };
@@ -1638,7 +1618,6 @@ router.get("/callback", async (req, res) => {
         userAccessToken,
         isPopup,
         callbackRedirectBaseUrl,
-        activeAdAccountId: callbackStateData?.adAccountId || null,
       });
     } else {
       console.log("✅ Saved user access token to company");

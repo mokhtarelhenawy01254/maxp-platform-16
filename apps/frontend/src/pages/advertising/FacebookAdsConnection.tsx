@@ -98,41 +98,6 @@ const formatDateTime = (value?: string | null) => {
   }
 };
 
-// Persist the active ad account across the OAuth round-trip so the user
-// lands back on the same /advertising/facebook-ads/connection context
-// (the backend redirect drops the original ?adAccountId=… param otherwise).
-const AD_ACCOUNT_STORAGE_KEY = "facebookAds.connection.adAccountId";
-
-const readPersistedAdAccountId = (): string | undefined => {
-  if (typeof window === "undefined") return undefined;
-  try {
-    const value = window.sessionStorage.getItem(AD_ACCOUNT_STORAGE_KEY);
-    return value && value.trim() ? value.trim() : undefined;
-  } catch {
-    return undefined;
-  }
-};
-
-const writePersistedAdAccountId = (value?: string | null) => {
-  if (typeof window === "undefined") return;
-  try {
-    if (value && value.trim()) {
-      window.sessionStorage.setItem(AD_ACCOUNT_STORAGE_KEY, value.trim());
-    } else {
-      window.sessionStorage.removeItem(AD_ACCOUNT_STORAGE_KEY);
-    }
-  } catch {
-    // ignore storage failures (private mode, quota, etc.)
-  }
-};
-
-const stripActPrefix = (value?: string | null): string | undefined => {
-  if (!value) return undefined;
-  const trimmed = String(value).trim();
-  if (!trimmed) return undefined;
-  return trimmed.startsWith("act_") ? trimmed.slice(4) : trimmed;
-};
-
 const FacebookAdsConnection: React.FC = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -142,30 +107,7 @@ const FacebookAdsConnection: React.FC = () => {
   const [disconnectingSourceId, setDisconnectingSourceId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Resolve the active ad account from URL → sessionStorage → status (in that
-  // order). Falling back to sessionStorage lets us survive the bare redirect
-  // that comes back from the OAuth callback (no ?adAccountId=… param).
-  const [restoredAdAccountId, setRestoredAdAccountId] = useState<string | undefined>(
-    () => {
-      const fromUrl = stripActPrefix(searchParams.get("adAccountId"));
-      if (fromUrl) {
-        writePersistedAdAccountId(fromUrl);
-        return fromUrl;
-      }
-      return readPersistedAdAccountId();
-    },
-  );
-
-  useEffect(() => {
-    const fromUrl = stripActPrefix(searchParams.get("adAccountId"));
-    if (fromUrl) {
-      writePersistedAdAccountId(fromUrl);
-      setRestoredAdAccountId(fromUrl);
-    }
-  }, [searchParams]);
-
-  const selectedAdAccountId =
-    status?.activeAdAccount?.accountId || restoredAdAccountId;
+  const selectedAdAccountId = status?.activeAdAccount?.accountId || undefined;
   const savedAdAccounts = status?.savedAdAccounts ?? [];
   const connectionSources = status?.connectionSources ?? [];
   const remoteSourcesById = useMemo(
@@ -185,11 +127,6 @@ const FacebookAdsConnection: React.FC = () => {
       setError(null);
       const nextStatus = await facebookAdsService.getAdsConnectionStatus();
       setStatus(nextStatus);
-      const nextActive = nextStatus?.activeAdAccount?.accountId;
-      if (nextActive) {
-        writePersistedAdAccountId(nextActive);
-        setRestoredAdAccountId(nextActive);
-      }
     } catch (loadError: unknown) {
       console.error("Failed to load Facebook Ads connection status:", loadError);
       setError("فشل تحميل حالة ربط الإعلانات");
@@ -206,12 +143,6 @@ const FacebookAdsConnection: React.FC = () => {
     const success = searchParams.get("success");
     const errorCode = searchParams.get("error");
     const syncedAdAccounts = searchParams.get("syncedAdAccounts");
-    const returnedAdAccountId = stripActPrefix(searchParams.get("adAccountId"));
-
-    if (returnedAdAccountId) {
-      writePersistedAdAccountId(returnedAdAccountId);
-      setRestoredAdAccountId(returnedAdAccountId);
-    }
 
     if (success === "ads_connected") {
       toast.success(
@@ -232,7 +163,6 @@ const FacebookAdsConnection: React.FC = () => {
       "error",
       "syncedAdAccounts",
       "activeAdAccountId",
-      "adAccountId",
       "sourceId",
     ].forEach((key) => nextParams.delete(key));
     setSearchParams(nextParams, { replace: true });
@@ -244,26 +174,12 @@ const FacebookAdsConnection: React.FC = () => {
       return;
     }
 
-    // Snapshot the ad account right before redirecting so the backend can
-    // round-trip it back through the OAuth state. Falls back to whatever
-    // we restored from sessionStorage/status so the user can still link an
-    // account even if they landed here without ?adAccountId=… .
-    const adAccountIdForOAuth = stripActPrefix(
-      searchParams.get("adAccountId") ||
-        status?.activeAdAccount?.accountId ||
-        restoredAdAccountId,
-    );
-    if (adAccountIdForOAuth) {
-      writePersistedAdAccountId(adAccountIdForOAuth);
-    }
-
     try {
       setConnecting(true);
       setError(null);
       const response = await facebookAdsService.getAdsAuthorizationUrl({
         companyId: user.companyId,
         returnOrigin: window.location.origin,
-        adAccountId: adAccountIdForOAuth,
       });
 
       if (!response.success || !response.authUrl) {
