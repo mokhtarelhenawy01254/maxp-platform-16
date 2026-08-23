@@ -34,11 +34,20 @@ async function getCompanyAdsAccessToken(companyId) {
     });
 
     // أولوية لـ Ads Access Token، ثم User Access Token
-    return (
+    const companyToken =
       company?.facebookAdsAccessToken ||
       company?.facebookUserAccessToken ||
-      null
-    );
+      null;
+
+    if (companyToken) return companyToken;
+
+    // Fallback: قراءة من ConnectionSource إذا لم يوجد token في Company
+    const source = await getSharedPrismaClient().facebookAdsConnectionSource.findFirst({
+      where: { companyId, status: "connected" },
+      select: { accessToken: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    return source?.accessToken || null;
   } catch (error) {
     console.error("❌ Error getting company access token:", error);
     return null;
