@@ -1546,9 +1546,39 @@ exports.sendTestBirthdayMessage = async (req, res) => {
             .replace(/\{customer_link\}/g, 'https://yourdomain.com/customer/profile?token=demo');
 
 
-        const activeSessions = await WhatsAppNotificationService.getConnectedSessions(companyId);
+        const { channel = 'whatsapp_session' } = req.body;
+
+        if (channel === 'meta_api') {
+            try {
+                const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+                const prisma = getSharedPrismaClient();
+                const metaSession = await safeQuery(() =>
+                    prisma.whatsAppSession.findFirst({
+                        where: { companyId, provider: 'meta' }
+                    })
+                );
+
+                if (!metaSession) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'لم يتم ربط مفاتيح Meta WhatsApp Cloud API (Access Token & Phone Number ID) في إعدادات الشركة بعد.'
+                    });
+                }
+
+                await MetaCloudProvider.sendTextMessage(metaSession, testPhone, formattedMsg);
+                return res.json({ success: true, message: `تم إرسال الرسالة بنجاح عبر Meta WhatsApp Cloud API إلى الرقم ${testPhone}` });
+            } catch (metaErr) {
+                console.error('[CWA] Meta Cloud API Send Error:', metaErr.message);
+                return res.status(400).json({
+                    success: false,
+                    message: 'فشل الإرسال عبر Meta WhatsApp Cloud API: ' + (metaErr.message || 'تأكد من صلاحية Meta Token ورقم الهاتف')
+                });
+            }
+        }
+
+        const activeSessions = await getConnectedSessions(companyId);
         if (!activeSessions || activeSessions.length === 0) {
-            return res.status(400).json({ success: false, message: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¬Ù„Ø³Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ù…ØªØµÙ„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹ Ù„Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠ' });
+            return res.status(400).json({ success: false, message: 'لا توجد جلسات واتساب متصلة حالياً لإرسال الاختيار التجريبي' });
         }
 
         const sessionId = activeSessions[0].sessionId;
