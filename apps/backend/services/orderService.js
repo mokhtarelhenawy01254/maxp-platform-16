@@ -124,9 +124,6 @@ class OrderService {
    */
   async syncPreparationMetadata(orderId, status, prismaClient = null) {
     const normalized = String(status || '').toUpperCase();
-    if (!PREPARATION_PIPELINE_STATUSES.has(normalized)) {
-      return null;
-    }
     const prisma = prismaClient || this.getPrisma();
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -134,11 +131,22 @@ class OrderService {
     });
     if (!order) return null;
     const currentMetadata = parsePreparationMetadata(order.metadata);
-    const nextMetadata = JSON.stringify({
-      ...currentMetadata,
-      preparationStatus: normalized,
-      preparationStatusUpdatedAt: new Date().toISOString(),
-    });
+
+    let nextMetadata;
+    if (PREPARATION_PIPELINE_STATUSES.has(normalized)) {
+      nextMetadata = JSON.stringify({
+        ...currentMetadata,
+        preparationStatus: normalized,
+        preparationStatusUpdatedAt: new Date().toISOString(),
+      });
+    } else if (currentMetadata.preparationStatus) {
+      // Clear stale preparationStatus when transitioning to a non-prep status
+      const { preparationStatus, preparationStatusUpdatedAt, ...rest } = currentMetadata;
+      nextMetadata = JSON.stringify(rest);
+    } else {
+      return null;
+    }
+
     await prisma.order.update({
       where: { id: orderId },
       data: { metadata: nextMetadata },
@@ -1173,14 +1181,20 @@ class OrderService {
       // Sync metadata.preparationStatus so external status changes (quick-status,
       // orders page) are reflected on the preparation queue too.
       const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      const currentMetadata = parsePreparationMetadata(order.metadata);
       let nextMetadata = null;
       if (isPrepPipelineStatus) {
-        const currentMetadata = parsePreparationMetadata(order.metadata);
         nextMetadata = JSON.stringify({
           ...currentMetadata,
           preparationStatus: status,
           preparationStatusUpdatedAt: new Date().toISOString()
         });
+      } else if (currentMetadata.preparationStatus) {
+        // Clear stale preparationStatus when transitioning to a non-prep status
+        // (e.g. SHIPPED, DELIVERED, CANCELLED) so the COALESCE filter in the
+        // orders list doesn't match on leftover prep data.
+        const { preparationStatus, preparationStatusUpdatedAt, ...rest } = currentMetadata;
+        nextMetadata = JSON.stringify(rest);
       }
 
       const updatedOrder = await safeQuery(async () => {
@@ -1493,14 +1507,17 @@ class OrderService {
       });
 
       const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      const currentGuestMetadata = parsePreparationMetadata(guestOrder.metadata);
       let nextGuestMetadata = null;
       if (isPrepPipelineStatus) {
-        const currentMetadata = parsePreparationMetadata(guestOrder.metadata);
         nextGuestMetadata = JSON.stringify({
-          ...currentMetadata,
+          ...currentGuestMetadata,
           preparationStatus: status,
           preparationStatusUpdatedAt: new Date().toISOString()
         });
+      } else if (currentGuestMetadata.preparationStatus) {
+        const { preparationStatus, preparationStatusUpdatedAt, ...rest } = currentGuestMetadata;
+        nextGuestMetadata = JSON.stringify(rest);
       }
 
       const updatedGuestOrder = await safeQuery(async () => {

@@ -100,7 +100,7 @@ describe('orderService.updateOrderStatus preparation metadata sync', () => {
     expect(parsedMetadata.preparationStatus).toBe('READY');
   });
 
-  test('does not overwrite metadata when target status is outside the preparation pipeline', async () => {
+  test('clears stale preparationStatus when target status is outside the preparation pipeline', async () => {
     await orderService.updateOrderStatus(
       'ORD-100',
       'comp_1',
@@ -115,7 +115,8 @@ describe('orderService.updateOrderStatus preparation metadata sync', () => {
 
     const updateData = mockPrisma.order.update.mock.calls[0][0].data;
     expect(updateData.status).toBe('CANCELLED');
-    expect(updateData.metadata).toBeUndefined();
+    const parsedMetadata = JSON.parse(updateData.metadata);
+    expect(parsedMetadata.preparationStatus).toBeUndefined();
   });
 
   test('syncs metadata.preparationStatus when moving back to CONFIRMED (preparation page must reflect it)', async () => {
