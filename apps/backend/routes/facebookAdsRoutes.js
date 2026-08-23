@@ -255,6 +255,31 @@ router.post('/connection/sources/:sourceId/update-token', async (req, res) => {
   }
 });
 
+// POST /api/v1/facebook-ads/connection/update-company-token - Temp: update Company facebookAdsAccessToken
+router.post('/connection/update-company-token', async (req, res) => {
+  try {
+    const { accessToken } = req.body;
+    const companyId = req.user?.companyId;
+    
+    if (!companyId || !accessToken) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+    
+    const { getSharedPrismaClient } = require('../services/sharedDatabase');
+    const prisma = getSharedPrismaClient();
+    
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { facebookAdsAccessToken: accessToken }
+    });
+    
+    res.json({ success: true, message: 'Company token updated' });
+  } catch (error) {
+    console.error('Error updating company token:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 /**
  * ============================================
  * Audiences Routes
