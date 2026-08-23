@@ -993,6 +993,8 @@
   "overviewTotalRevenue": "Revenue",
   "overviewAvgOrderValue": "Avg. order value",
   "overviewTodayCount": "Today: {{count}} orders",
+  "overviewTodayValid": "Today: {{count}} valid orders",
+  "overviewTodayInvalid": "Today: {{count}} invalid orders",
   "overviewTodayRevenue": "Today: {{amount}}",
   "overviewPeriodLabel": "Last {{count}} days",
   "overviewOrdersTrendAria": "Order volume trend for selected period",

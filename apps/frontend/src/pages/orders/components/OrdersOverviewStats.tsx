@@ -17,6 +17,8 @@ interface DailyAnalytic {
   totalVisits?: number;
   conversionRate?: number;
   averageOrderValue?: number;
+  validPurchases?: number;
+  invalidPurchases?: number;
 }
 
 interface OrdersOverviewStatsProps {
@@ -114,12 +116,16 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
     const lastEntry = daily[daily.length - 1];
     const todayOrders = lastEntry ? Number(lastEntry.totalPurchases || 0) : 0;
     const todayRevenue = lastEntry ? Number(lastEntry.totalRevenue || 0) : 0;
+    const todayValid = lastEntry ? Number(lastEntry.validPurchases ?? 0) : 0;
+    const todayInvalid = lastEntry ? Number(lastEntry.invalidPurchases ?? 0) : 0;
     return {
       totalOrders,
       totalRevenue,
       avgOrderValue,
       todayOrders,
       todayRevenue,
+      todayValid,
+      todayInvalid,
       ordersTrend,
       revenueTrend,
     };
@@ -157,6 +163,13 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
     prevOrders > 0
       ? Math.round(((lastOrders - prevOrders) / prevOrders) * 100)
       : 0;
+
+  const lastDailyEntry =
+    daily && daily.length > 0 ? daily[daily.length - 1] : null;
+  const hasTodaySplit =
+    lastDailyEntry != null &&
+    (typeof lastDailyEntry.validPurchases === "number" ||
+      typeof lastDailyEntry.invalidPurchases === "number");
 
   const lastRevenue =
     summary.revenueTrend[summary.revenueTrend.length - 1] || 0;
@@ -231,11 +244,26 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
               <p className="text-lg font-black text-slate-950 dark:text-white">
                 {summary.totalOrders.toLocaleString("ar-EG")}
               </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {t("orders.overviewTodayCount", {
-                  count: summary.todayOrders,
-                })}
-              </p>
+              {hasTodaySplit ? (
+                <div className="mt-0.5 space-y-0.5 text-[11px] leading-4">
+                  <p className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {t("orders.overviewTodayValid", {
+                      count: summary.todayValid,
+                    })}
+                  </p>
+                  <p className="font-semibold text-rose-600 dark:text-rose-400">
+                    {t("orders.overviewTodayInvalid", {
+                      count: summary.todayInvalid,
+                    })}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {t("orders.overviewTodayCount", {
+                    count: summary.todayOrders,
+                  })}
+                </p>
+              )}
             </div>
             <div className="flex flex-col items-end gap-0.5">
               <Sparkline

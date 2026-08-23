@@ -952,6 +952,8 @@
   "overviewTotalRevenue": "الإيرادات",
   "overviewAvgOrderValue": "متوسط قيمة الطلب",
   "overviewTodayCount": "اليوم: {{count}} طلب",
+  "overviewTodayValid": "اليوم: {{count}} طلب صالح",
+  "overviewTodayInvalid": "اليوم: {{count}} طلب غير صالح (محذوف / ملغي)",
   "overviewTodayRevenue": "اليوم: {{amount}}",
   "overviewPeriodLabel": "آخر {{count}} يوم",
   "overviewOrdersTrendAria": "اتجاه عدد الطلبات خلال الفترة المحددة",

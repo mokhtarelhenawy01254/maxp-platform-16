@@ -86,6 +86,19 @@ const buildGuestAnalyticsOrderId = (guestOrder) => {
   return guestOrderId ? `guest-id:${guestOrderId}` : null;
 };
 
+const INVALID_ANALYTICS_ORDER_STATUSES = new Set([
+  'CANCELLED',
+  'CANCELED',
+  'TRASH',
+  'TRASH_ORDER',
+  'DELETED',
+]);
+
+const isInvalidAnalyticsOrderStatus = (status) =>
+  INVALID_ANALYTICS_ORDER_STATUSES.has(
+    String(status || '').trim().toUpperCase(),
+  );
+
 class AnalyticsService {
 
   async getAnalyticsOrderSnapshots(companyId, startDate, endDate) {
@@ -550,7 +563,9 @@ class AnalyticsService {
           totalAddToCarts: 0,
           totalCheckouts: 0,
           totalPurchases: 0,
-          totalRevenue: 0
+          totalRevenue: 0,
+          validPurchases: 0,
+          invalidPurchases: 0
         });
       }
 
@@ -583,12 +598,22 @@ class AnalyticsService {
       const bucket = ensureBucket(order.createdAt);
       bucket.totalPurchases += 1;
       bucket.totalRevenue += parseNumericValue(order.total);
+      if (isInvalidAnalyticsOrderStatus(order.status)) {
+        bucket.invalidPurchases += 1;
+      } else {
+        bucket.validPurchases += 1;
+      }
     }
 
     for (const order of orderSnapshots.supplementalGuestOrders) {
       const bucket = ensureBucket(order.createdAt);
       bucket.totalPurchases += 1;
       bucket.totalRevenue += parseNumericValue(order.finalTotal ?? order.total);
+      if (isInvalidAnalyticsOrderStatus(order.status)) {
+        bucket.invalidPurchases += 1;
+      } else {
+        bucket.validPurchases += 1;
+      }
     }
 
     const buildDailyEntry = (date) => {
@@ -611,6 +636,8 @@ class AnalyticsService {
         totalCheckouts: bucket?.totalCheckouts || 0,
         totalPurchases,
         totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        validPurchases: bucket?.validPurchases || 0,
+        invalidPurchases: bucket?.invalidPurchases || 0,
         conversionRate: parseFloat(conversionRate.toFixed(2)),
         avgOrderValue: parseFloat(avgOrderValue.toFixed(2))
       };
