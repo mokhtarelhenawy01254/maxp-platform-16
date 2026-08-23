@@ -187,7 +187,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
             ...regular,
             id: regular.id || "",
             name: regular.name || "قالب واتساب",
-            content: normalizeToDouble(regular.content || ""),
+            content: regular.content || "",
             isActive: regular.isActive ?? true,
             eventType: row.eventType,
           }
@@ -197,7 +197,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
             ...meta,
             id: meta.id || "",
             name: meta.name || "قالب ميتا",
-            content: normalizeToDouble(meta.content || ""),
+            content: meta.content || "",
             isActive: meta.isActive ?? true,
             eventType: row.eventType,
           }
