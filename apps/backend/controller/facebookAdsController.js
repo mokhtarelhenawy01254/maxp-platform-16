@@ -6513,7 +6513,7 @@ const getAdsConnectionStatus = async (req, res) => {
           checked: true,
           ok: result.success,
           accountsCount,
-          error: result.success ? null : result.error || "FACEBOOK_API_ERROR",
+          error: result.success ? null : (typeof result.error === "string" ? result.error : result.error?.error?.message || result.error?.message || "FACEBOOK_API_ERROR"),
         });
       } catch (checkError) {
         remoteSources.push({
