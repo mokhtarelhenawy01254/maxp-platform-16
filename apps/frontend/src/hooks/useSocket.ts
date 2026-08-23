@@ -83,20 +83,17 @@ const useSocket = (
 
     console.log("🔌 Connecting to Socket.IO server...");
 
-    // Get fresh token for each connection attempt
-    const token = tokenManager.getAccessToken();
-
     const connectionOptions = {
       ...defaultOptions,
-      auth: {
-        token: token,
+      auth: (cb: (data: { token: string | null }) => void) => {
+        const freshToken = tokenManager.getAccessToken();
+        console.log(
+          "🔑 [SOCKET-AUTH] Using token for connection:",
+          freshToken ? "Token present" : "No token",
+        );
+        cb({ token: freshToken });
       },
     };
-
-    console.log(
-      "🔑 [SOCKET-AUTH] Using token for connection:",
-      token ? "Token present" : "No token",
-    );
 
     const newSocket = io(url, connectionOptions);
 

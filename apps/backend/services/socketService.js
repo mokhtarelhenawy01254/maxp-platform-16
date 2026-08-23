@@ -135,8 +135,24 @@ class SocketService {
         }, 3);
 
         if (!userCompany || !userCompany.isActive) {
-          console.warn(`❌ [SOCKET-AUTH] Access revoked for user ${user.email} to company ${activeCompanyId}`);
-          return next(new Error('Access to the requested company has been revoked'));
+          // 🔄 Legacy fallback: match HTTP auth middleware behavior
+          // Allows users with ZERO active userCompany records to access their primary company
+          const activeMembershipCount = await safeQuery(async () => {
+            return await getSharedPrismaClient().userCompany.count({
+              where: {
+                userId: user.id,
+                isActive: true
+              }
+            });
+          }, 3);
+
+          const isLegacyPrimaryAccess = activeMembershipCount === 0 && activeCompanyId === user.companyId;
+
+          if (!isLegacyPrimaryAccess) {
+            console.warn(`❌ [SOCKET-AUTH] Access revoked for user ${user.email} to company ${activeCompanyId}`);
+            return next(new Error('Access to the requested company has been revoked'));
+          }
+          console.log(`✅ [SOCKET-AUTH] Legacy primary company access allowed for user ${user.email}`);
         }
       }
 
