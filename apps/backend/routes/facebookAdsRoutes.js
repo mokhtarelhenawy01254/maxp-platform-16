@@ -232,7 +232,7 @@ router.post('/connection/sources/:sourceId/update-token', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
     
-    const { getSharedPrismaClient } = require('../services/prismaService');
+    const { getSharedPrismaClient } = require('../services/sharedDatabase');
     const prisma = getSharedPrismaClient();
     
     const source = await prisma.facebookAdsConnectionSource.findFirst({
