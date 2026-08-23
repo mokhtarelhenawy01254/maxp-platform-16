@@ -62,6 +62,30 @@ router.use(requireCompany);
 // Track affiliate referrals
 router.use(trackAffiliateReferral);
 
+/**
+ * حفظ خطأ الشيك آوت في سجل السلة غير المكتملة以便 كشف السبب لاحقاً
+ */
+async function saveCheckoutError(cartId, companyId, code, message, details = {}) {
+  if (!cartId) return;
+  try {
+    const prisma = await getSharedPrismaClientAsync();
+    const cart = await prisma.guestCart.findUnique({ where: { cartId } });
+    if (!cart || cart.companyId !== companyId) return;
+    let existing = {};
+    try { existing = JSON.parse(cart.checkoutData || '{}'); } catch (_) {}
+    const updated = {
+      ...existing,
+      _checkoutError: { code, message, details, failedAt: new Date().toISOString() },
+    };
+    await prisma.guestCart.update({
+      where: { cartId },
+      data: { checkoutData: JSON.stringify(updated), checkoutUpdatedAt: new Date() },
+    });
+  } catch (err) {
+    console.warn('⚠️ [SAVE-CHECKOUT-ERROR] Failed to save:', err.message);
+  }
+}
+
 // Multer setup for wallet payment proof screenshots (uploaded by customer at checkout)
 const walletProofStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -749,6 +773,7 @@ router.post('/', async (req, res) => {
     });
 
     if (!guestPhone || !guestName || !shippingAddress) {
+      saveCheckoutError(cartId, company.id, 'missing_required_fields', 'جميع الحقول المطلوبة يجب ملؤها (الاسم، الهاتف، العنوان)');
       return res.status(400).json({
         success: false,
         error: 'جميع الحقول المطلوبة يجب ملؤها (الاسم، الهاتف، العنوان)'
@@ -798,6 +823,7 @@ router.post('/', async (req, res) => {
 
       const coercedItems = cart ? coerceCartItemsToArray(cart.items) : [];
       if (!cart || coercedItems.length === 0) {
+        saveCheckoutError(cartId, company.id, 'empty_cart', 'السلة فارغة');
         return res.status(400).json({
           success: false,
           error: 'السلة فارغة'
@@ -808,6 +834,7 @@ router.post('/', async (req, res) => {
       cartTotal = 0;
       shouldDeleteCart = true;
     } else {
+      saveCheckoutError(cartId, company?.id, 'no_cart_data', 'يجب توفير سلة أو عناصر للطلب');
       return res.status(400).json({
         success: false,
         error: 'يجب توفير سلة أو عناصر للطلب'
@@ -831,6 +858,7 @@ router.post('/', async (req, res) => {
     const invalidItem = cartItems.find((item) => !item?.productId);
     if (invalidItem) {
       console.log('❌ [CREATE-ORDER] Invalid cart item (missing productId):', invalidItem);
+      saveCheckoutError(cartId, company.id, 'invalid_cart_data', 'بيانات السلة غير صحيحة: يوجد منتج بدون معرف');
       return res.status(400).json({
         success: false,
         error: 'بيانات السلة غير صحيحة: يوجد منتج بدون معرف (productId)'
@@ -840,6 +868,7 @@ router.post('/', async (req, res) => {
     const invalidQuantityItem = cartItems.find((item) => !item?.quantity || item.quantity < 1);
     if (invalidQuantityItem) {
       console.log('❌ [CREATE-ORDER] Invalid cart item (invalid quantity):', invalidQuantityItem);
+      saveCheckoutError(cartId, company.id, 'invalid_quantity', 'الكمية يجب أن تكون 1 على الأقل');
       return res.status(400).json({
         success: false,
         error: 'بيانات السلة غير صحيحة: الكمية يجب أن تكون 1 على الأقل'
@@ -881,6 +910,7 @@ router.post('/', async (req, res) => {
 
       if (!product) {
         console.log('❌ [CREATE-ORDER] Product not found:', item.productId);
+        saveCheckoutError(cartId, company.id, 'product_not_found', `المنتج غير موجود: ${item.name || 'Unknown'}`, { productId: item.productId });
         return res.status(400).json({
           success: false,
           error: `المنتج غير موجود: ${item.name || 'Unknown'}`
@@ -902,6 +932,7 @@ router.post('/', async (req, res) => {
         );
 
         if (!availability.available) {
+          saveCheckoutError(cartId, company.id, 'dropshipping_unavailable', availability.reason || `المنتج غير متاح للدروب شيبنج: ${item.name || product.name}`, { productId: product.id, availableStock: availability.availableStock });
           return res.status(409).json({
             success: false,
             code: 'DROPSHIPPING_UNAVAILABLE',
@@ -925,6 +956,7 @@ router.post('/', async (req, res) => {
 
         if (!variant) {
           console.log('❌ [CREATE-ORDER] Variant not found:', item.variantId);
+          saveCheckoutError(cartId, company.id, 'variant_not_found', `الاختيار غير موجود للمنتج: ${item.name || product.name}`, { productId: product.id, variantId: item.variantId });
           return res.status(400).json({
             success: false,
             error: `الاختيار غير موجود للمنتج: ${item.name || product.name}`
@@ -936,6 +968,7 @@ router.post('/', async (req, res) => {
         const variantTracksStock = variant.trackInventory !== false;
         if (variantTracksStock && variant.stock < item.quantity && !req.headers['x-admin-convert'] && !productAllowsNoStock) {
           console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
+          saveCheckoutError(cartId, company.id, 'stock_insufficient', `المخزون غير كافي: ${variant.name}. المتوفر: ${variant.stock}`, { productId: product.id, variantId: item.variantId, requested: item.quantity, available: variant.stock });
           return res.status(400).json({
             success: false,
             error: `المخزون غير كافي للاختيار: ${variant.name}. المتوفر: ${variant.stock}`
@@ -1046,6 +1079,7 @@ router.post('/', async (req, res) => {
         // السماح بالطلب إذا كان المنتج لا يتتبع المخزون (trackInventory=false) أو كان طلباً مسبقاً.
         if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert'] && !productAllowsNoStock) {
           console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
+          saveCheckoutError(cartId, company.id, 'stock_insufficient', `المخزون غير كافي: ${item.name || product.name}. المتوفر: ${product.stock}`, { productId: product.id, requested: item.quantity, available: product.stock });
           return res.status(400).json({
             success: false,
             error: `المخزون غير كافي للمنتج: ${item.name || product.name}. المتوفر: ${product.stock}`
@@ -1149,6 +1183,7 @@ router.post('/', async (req, res) => {
 
     const minimumOrderSettings = await getMinimumOrderSettings(prisma, company.id);
     if (sendMinimumOrderViolation(res, minimumOrderSettings, cartTotal)) {
+      saveCheckoutError(cartId, company.id, 'minimum_order_not_met', 'الحد الأدنى للطلب غير محقق');
       return;
     }
 

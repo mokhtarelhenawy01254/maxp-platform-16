@@ -59,6 +59,25 @@ const getMissingShippingFields = (checkoutData) => {
 const detectAbandonReason = (cart = {}, options = {}) => {
   const checkoutData = parseJsonObject(cart.checkoutData) || {};
 
+  // 0) الخطأ المحفوظ من عملية الشيك آوت — يعطي السبب الأدق مباشرة
+  const savedError = checkoutData._checkoutError;
+  if (savedError && savedError.code) {
+    const codeMap = {
+      stock_insufficient:          'stock_insufficient',
+      product_not_found:           'product_not_found',
+      dropshipping_unavailable:    'dropshipping_unavailable',
+      variant_not_found:           'variant_not_found',
+      minimum_order_not_met:       'minimum_order_not_met',
+      missing_required_fields:     'missing_required_fields',
+      invalid_cart_data:           'invalid_cart_data',
+      invalid_quantity:            'invalid_quantity',
+      empty_cart:                  'empty_cart',
+      no_cart_data:                'no_cart_data',
+    };
+    const mappedCode = codeMap[savedError.code] || savedError.code;
+    return { code: mappedCode, evidence: [savedError.message || ''] };
+  }
+
   const name = firstValue(checkoutData, NAME_KEYS);
   const phone = firstValue(checkoutData, CONTACT_KEYS);
   const email = firstValue(checkoutData, EMAIL_KEYS);

@@ -263,6 +263,16 @@ export const ABANDON_REASON_LABEL_KEYS: Record<string, string> = {
   quick_exit: "orders.incompleteReasonQuickExit",
   lost: "orders.incompleteReasonLost",
   not_submitted: "orders.incompleteReasonNotSubmitted",
+  stock_insufficient: "orders.incompleteReasonStockInsufficient",
+  product_not_found: "orders.incompleteReasonProductNotFound",
+  dropshipping_unavailable: "orders.incompleteReasonDropshippingUnavailable",
+  variant_not_found: "orders.incompleteReasonVariantNotFound",
+  minimum_order_not_met: "orders.incompleteReasonMinimumOrderNotMet",
+  missing_required_fields: "orders.incompleteReasonMissingRequiredFields",
+  invalid_cart_data: "orders.incompleteReasonInvalidCartData",
+  invalid_quantity: "orders.incompleteReasonInvalidQuantity",
+  empty_cart: "orders.incompleteReasonEmptyCart",
+  no_cart_data: "orders.incompleteReasonNoCartData",
 };
 
 export const getAbandonReasonLabel = (
