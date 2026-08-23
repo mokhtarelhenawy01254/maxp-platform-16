@@ -64,6 +64,40 @@ const CUSTOMER_META_ORDER: string[] = [
   "validityDays",
 ];
 
+// خريطة أسماء الأحداث — تُستخدم لعرض التسمية الصحيحة بدل ما بيجي من الـ backend
+// (الـ backend بيرجّع النص مُتَشَوِّه بسبب مشكلة ترميز على السيرفر)
+const EVENT_LABELS: Record<string, string> = {
+  LOYALTY_POINTS_AWARDED: "كسب نقاط ولاء",
+  LOYALTY_TIER_UPGRADED: "الترقية لمستوى أعلى",
+  LOYALTY_TIER_DOWNGRADED: "انخفاض مستوى العميل",
+  LOYALTY_POINTS_EXPIRY_WARNING: "تنبيه قرب انتهاء النقاط",
+  LOYALTY_POINTS_EXPIRED: "انتهاء صلاحية النقاط",
+  LOYALTY_POINTS_REDEEMED: "استبدال النقاط",
+  CASHBACK_CREDITED: "إيداع كاش باك",
+  CASHBACK_REVERSED: "خصم/استرداد كاش باك",
+  CUSTOMER_QUALITY_UPGRADED: "ارتفاع تصنيف الجودة",
+  CUSTOMER_QUALITY_DOWNGRADED: "انخفاض تصنيف الجودة",
+  AUTO_DISCOUNT_COUPON_GRANTED: "منح كوبون الخصم التلقائي",
+  AUTO_DISCOUNT_COUPON_EXPIRING: "تنبيه قرب انتهاء كوبون الخصم",
+  AUTO_DISCOUNT_CASHBACK_CONVERTED: "تحويل الكوبون المنتهي إلى كاش باك",
+};
+
+const EVENT_TRIGGERS: Record<string, string> = {
+  LOYALTY_POINTS_AWARDED: "عند تسليم الطلب",
+  LOYALTY_TIER_UPGRADED: "عند ارتفاع مستوى العميل",
+  LOYALTY_TIER_DOWNGRADED: "عند انخفاض مستوى العميل",
+  LOYALTY_POINTS_EXPIRY_WARNING: "قبل انتهاء صلاحية النقاط",
+  LOYALTY_POINTS_EXPIRED: "عند انتهاء صلاحية النقاط (cron يومي)",
+  LOYALTY_POINTS_REDEEMED: "عند استبدال النقاط",
+  CASHBACK_CREDITED: "عند إيداع الكاش باك (تسليم/دفع)",
+  CASHBACK_REVERSED: "عند خصم الكاش باك (مرتجع/إلغاء)",
+  CUSTOMER_QUALITY_UPGRADED: "عند ارتفاع تصنيف جودة العميل",
+  CUSTOMER_QUALITY_DOWNGRADED: "عند انخفاض تصنيف جودة العميل",
+  AUTO_DISCOUNT_COUPON_GRANTED: "عند تسليم الطلب وإصدار كوبون الخصم",
+  AUTO_DISCOUNT_COUPON_EXPIRING: "قبل انتهاء صلاحية كوبون الخصم",
+  AUTO_DISCOUNT_CASHBACK_CONVERTED: "عند انتهاء صلاحية الكوبون وتحويله إلى كاش باك",
+};
+
 const DEFAULT_CONTENT = `مرحباً {customerName} 👋\n\n{reason}\n\nشكراً لتعاملك معنا! ✨`;
 
 interface ScheduleRow {
@@ -129,8 +163,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
   metaToLocalDefaultOrder: CUSTOMER_META_ORDER,
   defaultContent: DEFAULT_CONTENT,
   eventLabelResolver: (eventType: string): string => {
-    const cleaned = eventType.replace(/_/g, " ").toLowerCase();
-    return cleaned || eventType;
+    return EVENT_LABELS[eventType] || eventType.replace(/_/g, " ").toLowerCase();
   },
 
   loadEvents: async (api: ApiLike): Promise<EventRow[]> => {
@@ -173,7 +206,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
       return {
         id: row.id || row.eventType,
         code: row.eventType,
-        name: row.label || row.eventType,
+        name: EVENT_LABELS[row.eventType] || row.label || row.eventType,
         color: "#6B7280",
         sortOrder: idx,
         statusType: row.category,
@@ -187,7 +220,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
         channel: row.activeChannel,
         delayValue: row.delayValue,
         delayUnit: row.delayUnit,
-        trigger: row.trigger,
+        trigger: EVENT_TRIGGERS[row.eventType] || row.trigger,
       };
     });
 
