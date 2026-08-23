@@ -223,7 +223,7 @@ const FacebookAdsAccountContextPanel: React.FC<
 
         {error && (
           <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">
-            {error}
+            {typeof error === "string" ? error : String(error)}
           </div>
         )}
 
@@ -343,7 +343,7 @@ const FacebookAdsAccountContextPanel: React.FC<
 
       {error && (
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
+          {typeof error === "string" ? error : String(error)}
         </div>
       )}
 
