@@ -1097,7 +1097,13 @@ const updateAnyOrderStatus = async ({
         const workflowConfig = order.company?.orderWorkflowConfig;
         if (workflowConfig?.enabled) {
           const orderWorkflowService = require('../services/orderWorkflowService');
-          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const getMappedRegularOrderStatus = (preparationStatus) => {
+            if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+            if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+            if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+            return 'PROCESSING';
+          };
+          const effectiveStatus = currentMetadata?.preparationStatus ? getMappedRegularOrderStatus(currentMetadata.preparationStatus) : order.status;
           const currentStatusDef = await prisma.orderStatusDefinition.findFirst({
             where: { companyId, code: effectiveStatus },
             select: { id: true },
@@ -2731,7 +2737,19 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // But exclude orders whose order.status is already terminal (e.g.
       // DELIVERED) — their stale metadata.preparationStatus from the prep phase
       // must not pull them back into a prep-stage filter.
-      const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
+      // Map preparationStatus to its regular order.status equivalent (same as getMappedRegularOrderStatus).
+      const effectiveStatusExpr = `
+        CASE
+          WHEN "metadata"::jsonb->>'preparationStatus' IS NOT NULL AND "metadata"::jsonb->>'preparationStatus' <> ''
+          THEN CASE
+            WHEN "metadata"::jsonb->>'preparationStatus' = 'PENDING_PREPARATION' THEN 'CONFIRMED'
+            WHEN "metadata"::jsonb->>'preparationStatus' IN ('STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK') THEN 'STOCK_SHORTAGE'
+            WHEN "metadata"::jsonb->>'preparationStatus' = 'ON_HOLD_PREP' THEN 'ON_HOLD_PREP'
+            ELSE 'PROCESSING'
+          END
+          ELSE "status"::text
+        END
+      `;
       const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
       const statusPlaceholders = customStatusFilter
         .map((_, index) => `$${index + 2}`)
@@ -2997,7 +3015,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         });
       }
 
-      const effectiveStatus = (orderMetadata?.preparationStatus || order.status || 'PENDING').toLowerCase();
+      const getMappedRegularOrderStatus = (preparationStatus) => {
+        if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+        if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+        if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+        return 'PROCESSING';
+      };
+      const effectiveStatus = (orderMetadata?.preparationStatus ? getMappedRegularOrderStatus(orderMetadata.preparationStatus) : order.status || 'PENDING').toLowerCase();
 
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
@@ -3411,7 +3435,13 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
         const workflowConfig = order.company?.orderWorkflowConfig;
         if (workflowConfig?.enabled) {
           const orderWorkflowService = require('../services/orderWorkflowService');
-          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const getMappedRegularOrderStatus = (preparationStatus) => {
+            if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+            if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+            if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+            return 'PROCESSING';
+          };
+          const effectiveStatus = currentMetadata?.preparationStatus ? getMappedRegularOrderStatus(currentMetadata.preparationStatus) : order.status;
           const currentStatusDef = await getSharedPrismaClient().orderStatusDefinition.findFirst({
             where: { companyId, code: effectiveStatus },
             select: { id: true },
@@ -5169,7 +5199,13 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         finalCustomerName = '';
       }
 
-      const detailEffectiveStatus = (orderMetadata?.preparationStatus || order.status || 'PENDING').toLowerCase();
+      const getMappedRegularOrderStatus = (preparationStatus) => {
+        if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+        if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+        if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+        return 'PROCESSING';
+      };
+      const detailEffectiveStatus = (orderMetadata?.preparationStatus ? getMappedRegularOrderStatus(orderMetadata.preparationStatus) : order.status || 'PENDING').toLowerCase();
 
       formattedOrder = {
         id: order.orderNumber,
