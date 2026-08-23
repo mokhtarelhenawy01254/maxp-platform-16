@@ -275,6 +275,19 @@ export const ABANDON_REASON_LABEL_KEYS: Record<string, string> = {
   no_cart_data: "orders.incompleteReasonNoCartData",
 };
 
+export const CHECKOUT_ERROR_REASON_CODES = new Set([
+  "stock_insufficient",
+  "product_not_found",
+  "dropshipping_unavailable",
+  "variant_not_found",
+  "minimum_order_not_met",
+  "missing_required_fields",
+  "invalid_cart_data",
+  "invalid_quantity",
+  "empty_cart",
+  "no_cart_data",
+]);
+
 export const getAbandonReasonLabel = (
   reason: AbandonReason | null | undefined,
   t: TFunction,
@@ -282,9 +295,26 @@ export const getAbandonReasonLabel = (
   if (reason?.code) {
     const key = ABANDON_REASON_LABEL_KEYS[reason.code];
     if (key) {
-      const lostHours = reason.evidence?.[0] ? Number(reason.evidence[0]) : 24;
-      const label = t(key, { count: Number.isFinite(lostHours) ? lostHours : 24 });
-      if (label && label !== key) return label;
+      const evidence = reason.evidence?.[0] || "";
+      // lost: evidence هو عدد الساعات
+      if (reason.code === "lost") {
+        const hours = Number(evidence);
+        const label = t(key, { count: Number.isFinite(hours) ? hours : 24 });
+        if (label && label !== key) return label;
+      }
+      // أسباب أخطاء الشيك آوت: evidence هي رسالة الخطأ الفعلية من الخادم
+      else if (CHECKOUT_ERROR_REASON_CODES.has(reason.code)) {
+        const base = t(key);
+        const isNumeric = Number.isFinite(Number(evidence));
+        if (base && base !== key) {
+          return evidence && !isNumeric ? `${base} — ${evidence}` : base;
+        }
+      }
+      // باقي الأسباب: بدون interpolation
+      else {
+        const label = t(key);
+        if (label && label !== key) return label;
+      }
     }
   }
   return t("orders.incompleteReasonUnknown");

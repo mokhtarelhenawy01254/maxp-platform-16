@@ -81,7 +81,9 @@ const IncompleteReasonCard: React.FC<{
   reason: AbandonReason;
   t: TFunction;
 }> = ({ reason, t }) => {
-  const missingFields = reason.evidence ?? [];
+  // "حقول ناقصة" تظهر فقط مع partial_shipping — evidence فيها أسماء الحقول
+  const missingFields =
+    reason.code === "partial_shipping" ? reason.evidence ?? [] : [];
   return (
     <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-5 shadow-sm dark:border-amber-800/60 dark:bg-amber-900/10">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
