@@ -206,6 +206,10 @@ model Coupon {
   updatedAt         DateTime      @updatedAt
   allowWithLoyalty  Boolean       @default(true) // allow combining with loyalty wallet/points — السماح بالدمج مع نقاط الولاء
   couponUsages      CouponUsage[]
+  // 🛡️ opposite relations required by Prisma 6 (affiliate.prisma references Coupon).
+  // Without these, `prisma generate` fails with P1012 and the deploy breaks.
+  affiliateReferrals AffiliateReferral[]
+  affiliates        Affiliate[]
   company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, code])
