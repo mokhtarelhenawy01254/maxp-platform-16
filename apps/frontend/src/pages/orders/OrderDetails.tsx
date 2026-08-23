@@ -64,7 +64,7 @@ const getLatestCancellationReason = (
 
   if (historyReason) return historyReason;
 
-  if (isCancellationStatus(order.status) && typeof order.notes === "string") {
+  if (isCancellationStatus((order as any).effectiveStatus || order.status) && typeof order.notes === "string") {
     return order.notes.trim();
   }
 
@@ -828,11 +828,12 @@ const OrderDetails: React.FC = () => {
     );
   }
 
+  const effectiveStatus = (order as any).effectiveStatus || order.status || 'PENDING';
   const currentStatusConfig = orderStatuses.find(
-    (s) => s.code === order.status,
+    (s) => s.code === effectiveStatus,
   ) || {
-    code: order.status,
-    name: order.status.replace(/_/g, " "),
+    code: effectiveStatus,
+    name: effectiveStatus.replace(/_/g, " "),
     color: "#6B7280",
   };
 
@@ -862,9 +863,9 @@ const OrderDetails: React.FC = () => {
     ? `${order.assignedByUser.firstName || ""} ${order.assignedByUser.lastName || ""}`.trim()
     : order.assignedBy || "—";
 
-  const isCurrentlyPending = ["PENDING", "PENDING_STOCK", "ON_HOLD_STOCK", "CANCELLED", "TRASH", "WOO_TAGHEZ"].includes(order.status?.toUpperCase() || "");
+  const isCurrentlyPending = ["PENDING", "PENDING_STOCK", "ON_HOLD_STOCK", "CANCELLED", "TRASH", "WOO_TAGHEZ"].includes(effectiveStatus.toUpperCase());
   const confirmationStatusLabel =
-    (!isCurrentlyPending && order.confirmedAt) || order.status === "CONFIRMED" ? t("orderDetails.confirmedStatus") : t("orderDetails.notConfirmedStatus");
+    (!isCurrentlyPending && order.confirmedAt) || effectiveStatus === "CONFIRMED" ? t("orderDetails.confirmedStatus") : t("orderDetails.notConfirmedStatus");
   const assignmentStatusLabel = order.assignedTo ? t("orderDetails.distributed") : t("orderDetails.notDistributed");
 
   console.log("🔍 Order Status Debug:", {
@@ -1057,7 +1058,7 @@ const OrderDetails: React.FC = () => {
             />
           ) : null}
 
-          {isCancellationStatus(order.status) && (
+          {isCancellationStatus(effectiveStatus) && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-5 shadow-sm dark:border-red-900/50 dark:bg-red-950/20">
               <h3 className="text-base font-semibold text-red-900 dark:text-red-100">
                 {t("orderDetails.cancellationReason")}

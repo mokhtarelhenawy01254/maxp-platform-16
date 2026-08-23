@@ -94,6 +94,7 @@ const TURBO_ALIASES: Record<string, string> = {
 
 export interface OrderLike {
   status?: string | null;
+  effectiveStatus?: string | null;
   turboShipmentStatus?: string | null;
   turboTrackingNumber?: string | null;
   turboShipmentId?: string | null;
@@ -124,9 +125,10 @@ function getTurboDef(canonical: string): { label: string; labelKey: string; colo
  * This is the main function for all pages to use.
  */
 export function getOrderStatusDisplay(order: OrderLike): OrderStatusDisplay {
-  const systemDef = getSystemDef(order.status || 'PENDING');
+  const effectiveStatus = order.effectiveStatus || order.status || 'PENDING';
+  const systemDef = getSystemDef(effectiveStatus);
   const primary: StatusDisplayInfo = {
-    code: (order.status || 'PENDING').toUpperCase().trim(),
+    code: effectiveStatus.toUpperCase().trim(),
     label: systemDef.label,
     labelKey: systemDef.labelKey,
     colorClass: systemDef.colorClass,
