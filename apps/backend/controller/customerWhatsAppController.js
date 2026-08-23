@@ -1555,7 +1555,14 @@ exports.sendTestBirthdayMessage = async (req, res) => {
                 const prisma = getSharedPrismaClient();
                 const metaSession = await safeQuery(() =>
                     prisma.whatsAppSession.findFirst({
-                        where: { companyId, provider: 'meta' }
+                        where: {
+                            companyId,
+                            OR: [
+                                { provider: 'meta' },
+                                { metaAccessToken: { not: null } },
+                                { metaPhoneNumberId: { not: null } }
+                            ]
+                        }
                     })
                 );
 
