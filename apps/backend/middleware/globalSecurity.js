@@ -879,7 +879,34 @@ const globalAuthentication = async (req, res, next) => {
 
     // 4. Set User Info
     const userId = decoded.userId || decoded.id;
-    let activeCompanyId = req.headers['x-company-id'] || req.headers['X-Company-Id'] || decoded.companyId;
+
+    // 🛡️ PRODUCTION-FIX (tenant-isolation-2026-08-23):
+    // الـ base companyId دايماً من الـ JWT. كان من قبل بياخد override من
+    // `X-Company-Id` header لكل user، وده كان بيسمح لـ attacker يعمل
+    // cross-tenant attacks (مثل `POST /api/v1/order-status-rules` بـ
+    // `X-Company-Id: <otherCompany>` عشان يعمل rule على شركة تانية).
+    //
+    // الـ impersonation الشرعية للـ SUPER_ADMIN موجودة في `requireCompanyAccess`
+    // middleware (verifyToken.js:458-462) باستخدام URL param — مش header.
+    // service-to-service flow بيستخدم `resolveServiceCompanyId` (L222) مع
+    // `x-service-token` — flow منفصل تماماً عن الـ JWT path.
+    //
+    // بنسمح فقط للـ SUPER_ADMIN بـ override عبر header (مع audit log) عشان
+    // الـ admin tools الموجودة تقدر تشتغل على routes مفيهاش requireCompanyAccess.
+    let activeCompanyId = decoded.companyId;
+    const isSuperAdmin = decoded.role === 'SUPER_ADMIN';
+    const headerCompanyId = req.headers['x-company-id'] || req.headers['X-Company-Id'];
+
+    if (isSuperAdmin && headerCompanyId && headerCompanyId !== decoded.companyId) {
+      activeCompanyId = headerCompanyId;
+      // 🔒 Audit log — كل SUPER_ADMIN impersonation لازم يتسجل للمراجعة.
+      // ده هيظهر في أي log aggregator (CloudWatch, Datadog, Sentry).
+      console.log(
+        `🔐 [ADMIN-IMPERSONATION] ${decoded.email} ` +
+        `(userId=${userId}) impersonating company=${headerCompanyId} ` +
+        `on ${req.method} ${path} at ${new Date().toISOString()}`
+      );
+    }
 
     if (!activeCompanyId && userId) {
       try {
