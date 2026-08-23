@@ -2997,6 +2997,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         });
       }
 
+      const effectiveStatus = (orderMetadata?.preparationStatus || order.status || 'PENDING').toLowerCase();
+
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
         orderNumber: order.orderNumber,
@@ -3010,7 +3012,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         subtotal: order.subtotal,
         tax: order.tax,
         shipping: order.shipping,
-        status: (order.status || 'PENDING').toLowerCase(),
+        status: effectiveStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
         shippingAddress: shippingAddress,
@@ -5167,6 +5169,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         finalCustomerName = '';
       }
 
+      const detailEffectiveStatus = (orderMetadata?.preparationStatus || order.status || 'PENDING').toLowerCase();
+
       formattedOrder = {
         id: order.orderNumber,
         orderNumber: order.orderNumber,
@@ -5183,7 +5187,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         tax: order.tax,
         shipping: order.shipping,
         discount: order.discount,
-        status: (order.status || 'PENDING').toLowerCase(),
+        status: detailEffectiveStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
         shippingAddress: shippingAddress,
