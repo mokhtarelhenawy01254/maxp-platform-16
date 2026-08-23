@@ -1546,9 +1546,10 @@ exports.sendTestBirthdayMessage = async (req, res) => {
             .replace(/\{customer_link\}/g, 'https://yourdomain.com/customer/profile?token=demo');
 
 
-        const { channel = 'whatsapp_session' } = req.body;
+        const { channel = 'auto' } = req.body;
 
-        if (channel === 'meta_api') {
+        // 1. Attempt Meta Cloud API if explicitly requested or auto
+        if (channel === 'meta_api' || channel === 'auto') {
             try {
                 const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
                 const prisma = getSharedPrismaClient();
@@ -1558,21 +1559,15 @@ exports.sendTestBirthdayMessage = async (req, res) => {
                     })
                 );
 
-                if (!metaSession) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'لم يتم ربط مفاتيح Meta WhatsApp Cloud API (Access Token & Phone Number ID) في إعدادات الشركة بعد.'
-                    });
+                if (metaSession) {
+                    await MetaCloudProvider.sendTextMessage(metaSession, testPhone, formattedMsg);
+                    return res.json({ success: true, message: `تم إرسال الرسالة بنجاح عبر Meta WhatsApp Cloud API إلى الرقم ${testPhone}` });
                 }
-
-                await MetaCloudProvider.sendTextMessage(metaSession, testPhone, formattedMsg);
-                return res.json({ success: true, message: `تم إرسال الرسالة بنجاح عبر Meta WhatsApp Cloud API إلى الرقم ${testPhone}` });
             } catch (metaErr) {
-                console.error('[CWA] Meta Cloud API Send Error:', metaErr.message);
-                return res.status(400).json({
-                    success: false,
-                    message: 'فشل الإرسال عبر Meta WhatsApp Cloud API: ' + (metaErr.message || 'تأكد من صلاحية Meta Token ورقم الهاتف')
-                });
+                console.error('[CWA] Meta Cloud API Send Fallback:', metaErr.message);
+                if (channel === 'meta_api') {
+                    console.log('[CWA] Meta API explicit send failed, falling back to connected WhatsApp Session...');
+                }
             }
         }
 
