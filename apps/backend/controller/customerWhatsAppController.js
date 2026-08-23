@@ -1546,7 +1546,7 @@ exports.sendTestBirthdayMessage = async (req, res) => {
             .replace(/\{customer_link\}/g, 'https://yourdomain.com/customer/profile?token=demo');
 
 
-        const activeSessions = await WhatsAppNotificationService.getConnectedSessions(companyId);
+        const activeSessions = await getConnectedSessions(companyId);
         if (!activeSessions || activeSessions.length === 0) {
             return res.status(400).json({ success: false, message: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¬Ù„Ø³Ø§Øª ÙˆØ§ØªØ³Ø§Ø¨ Ù…ØªØµÙ„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹ Ù„Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠ' });
         }
