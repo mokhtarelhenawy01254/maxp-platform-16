@@ -1,4 +1,4 @@
-import { precacheAndRoute } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { NetworkFirst } from 'workbox-strategies';
 import { registerRoute } from 'workbox-routing';
 import { ExpirationPlugin } from 'workbox-expiration';
@@ -8,37 +8,56 @@ precacheAndRoute(self.__WB_MANIFEST);
 registerRoute(
   ({ request }) => request.mode === 'navigate',
   new NetworkFirst({
-    cacheName: 'pages',
+    cacheName: `${CACHE_PREFIX}-pages`,
+    networkTimeoutSeconds: 3,
     plugins: [
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }),
     ],
   }),
 );
 
-registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/'),
-  new NetworkFirst({
-    cacheName: 'api',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 }),
-    ],
-  }),
-);
+// Note: Broad /api/ route caching removed to prevent caching sensitive user/tenant data in SW CacheStorage.
+// API state management is safely handled in-memory by React Query.
 
 registerRoute(
   ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'font',
   new NetworkFirst({
-    cacheName: 'assets',
+    cacheName: `${CACHE_PREFIX}-assets`,
+    networkTimeoutSeconds: 5,
     plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 }),
     ],
   }),
 );
 
-self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+const CACHE_PREFIX = 'maxp-v3';
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    cleanupOutdatedCaches();
+    // Delete any old caches that don't match our prefix
+    const cacheKeys = await caches.keys();
+    await Promise.all(
+      cacheKeys
+        .filter((key) => !key.startsWith(CACHE_PREFIX) && !key.startsWith('workbox'))
+        .map((key) => caches.delete(key))
+    );
+    await self.clients.claim();
+    if (self.registration.navigationPreload) {
+      await self.registration.navigationPreload.enable();
+    }
+  })());
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+    self.clients.claim();
+  }
 });
 
 self.addEventListener('push', (event) => {

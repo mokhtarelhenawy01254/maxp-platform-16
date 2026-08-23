@@ -1389,13 +1389,38 @@ const searchCustomers = async (req, res) => {
         ]
       },
       take: 10,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        orders: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            customerAddress: true,
+            city: true,
+            governorate: true,
+            customerName: true,
+            customerPhone: true
+          }
+        }
+      }
+    });
+
+    const enrichedCustomers = customers.map(c => {
+      const lastOrder = c.orders?.[0] || {};
+      const { orders, ...rest } = c;
+      return {
+        ...rest,
+        address: lastOrder.customerAddress || null,
+        city: lastOrder.city || null,
+        governorate: lastOrder.governorate || null,
+        area: lastOrder.city || null
+      };
     });
 
     res.json({
       success: true,
-      data: customers,
-      message: `تم العثور على ${customers.length} عميل`
+      data: enrichedCustomers,
+      message: `تم العثور على ${enrichedCustomers.length} عميل`
     });
   } catch (error) {
     console.error('❌ Error searching customers:', error);

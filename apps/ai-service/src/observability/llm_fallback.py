@@ -48,8 +48,16 @@ class LLMFallbackProvider:
                 build_provider_client_async,
             )
 
-            # ponytail: settings.default_model fallback, model_manager lookup if per-company routing needed
-            resolved_model = model or settings.default_model
+            # DB-first resolution: agent model (caller) → company model → platform default.
+            # No env fallback — model selection lives in the database only.
+            resolved_model = model
+            if not resolved_model:
+                from src.services.model_resolver import resolve_db_default_model
+
+                resolved_model = await resolve_db_default_model(company_id)
+            if not resolved_model:
+                self._log.error("no_model_configured_in_db", company_id=company_id)
+                return None
             if provider:
                 client = await build_provider_client_async(
                     provider,

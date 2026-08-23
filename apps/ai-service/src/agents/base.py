@@ -388,6 +388,19 @@ class BaseAgent:
         instructions = self._get_system_prompt()
         tools = self._resolve_tools()
 
+        # DB-first model resolution: an agent without an explicit model falls back
+        # to the company model, then the platform default — never env.
+        if not self.model:
+            try:
+                from src.services.model_resolver import resolve_db_default_model
+
+                db_model = await resolve_db_default_model(self.company_id)
+                if db_model:
+                    self.model = db_model
+                    self._last_model_selection = {"model": db_model, "source": "db_default"}
+            except Exception as exc:
+                logger.warning("db_default_model_resolution_failed", agent_id=self.id, error=str(exc)[:160])
+
         # Step 1: Try primary model
         client = await self._try_build_client(
             provider=self.config.provider,

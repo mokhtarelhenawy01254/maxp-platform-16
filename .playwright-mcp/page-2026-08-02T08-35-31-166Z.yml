@@ -1,0 +1,26 @@
+- generic [ref=f15e7]:
+  - generic [ref=f15e10]:
+    - generic [ref=f15e12]:
+      - generic [ref=f15e13]: auth.businessOs
+      - heading "نحن نؤمّن بياناتك" [level=1] [ref=f15e57]
+      - paragraph [ref=f15e15]: تشفير عالي المستوى وأمان فائق لضمان سلامة بيانات شركتك في كل مرة تسجل فيها الدخول.
+      - generic [ref=f15e16]:
+        - generic [ref=f15e17]:
+          - generic [ref=f15e18]: auth.visualStart
+          - generic [ref=f15e19]: auth.visualImmediately
+        - generic [ref=f15e20]:
+          - generic [ref=f15e21]: auth.visualWithout
+          - generic [ref=f15e22]: auth.visualTrialPeriod
+    - generic [ref=f15e24]:
+      - link "MAX-P auth.brandName" [ref=f15e25] [cursor=pointer]:
+        - /url: /
+        - img "MAX-P" [ref=f15e26]
+        - generic [ref=f15e27]: auth.brandName
+      - generic [ref=f15e28]:
+        - generic [ref=f15e29]: auth.sessionCheck
+        - heading "جاري التحقق من الجلسة" [level=2] [ref=f15e58]
+        - paragraph [ref=f15e31]: نراجع حالة الحساب ونجهّز مساحة العمل المناسبة لك.
+      - generic [ref=f15e59]:
+        - generic [ref=f15e60]: Loading...
+        - paragraph [ref=f15e66]: ثوانٍ قليلة ويتم توجيهك تلقائيًا.
+  - region "Notifications alt+T"

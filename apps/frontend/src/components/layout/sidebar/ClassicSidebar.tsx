@@ -14,6 +14,7 @@ import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
+import SidebarOrderSearch from "./SidebarOrderSearch";
 
 
 interface ClassicSidebarProps {
@@ -226,6 +227,12 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                           .filter((i) => !i.hidden)
                           .map((item) => (
                             <div key={item.to}>
+                              {item.kind === "order-search" ? (
+                                <SidebarOrderSearch
+                                  mobileMode={mobileMode}
+                                  onNavigate={toggleSidebar}
+                                />
+                              ) : (
                               <NavLink
                                 to={item.to}
                                 icon={item.icon}
@@ -238,6 +245,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                               >
                                 {item.label}
                               </NavLink>
+                              )}
                               {item.children ? (
                                 <div className="business-sidebar-children">
                                   {item.children
@@ -445,6 +453,13 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                       .filter((i) => !i.hidden)
                       .map((item) => (
                         <div key={item.to} className="space-y-1">
+                          {item.kind === "order-search" ? (
+                            <SidebarOrderSearch
+                              collapsed={isCollapsed}
+                              mobileMode={mobileMode}
+                              onNavigate={toggleSidebar}
+                            />
+                          ) : (
                           <NavLink
                             to={item.to}
                             icon={item.icon}
@@ -456,6 +471,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                           >
                             {item.label}
                           </NavLink>
+                          )}
                           {!isCollapsed && item.children ? (
                             <div className="mr-9 mt-1 space-y-1 border-r-2 border-gray-100 dark:border-gray-700/50 pr-2">
                               {item.children

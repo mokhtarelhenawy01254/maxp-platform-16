@@ -1,0 +1,162 @@
+- generic [ref=f31e4]:
+  - banner [ref=f31e5]:
+    - generic [ref=f31e6] [cursor=pointer]:
+      - img "Twilio logo" [ref=f31e7]
+      - heading "Help Center" [level=1] [ref=f31e8]
+    - generic [ref=f31e9]:
+      - button "Ask AI" [ref=f31e10] [cursor=pointer]
+      - button "Open System Status view System status" [ref=f31e18] [cursor=pointer]:
+        - generic [ref=f31e19]:
+          - img "Open System Status view" [ref=f31e21]
+          - generic [ref=f31e23]: System status
+      - button "Sign up" [ref=f31e24] [cursor=pointer]
+      - button "Login" [ref=f31e27] [cursor=pointer]
+  - generic [ref=f31e32]:
+    - generic [ref=f31e34]:
+      - heading "How can we help you?" [level=2] [ref=f31e35]
+      - generic [ref=f31e39]:
+        - combobox [ref=f31e40]:
+          - textbox [ref=f31e41]
+          - listbox
+        - button [ref=f31e43] [cursor=pointer]:
+          - img "Search input icon" [ref=f31e46]
+    - main [ref=f31e49]:
+      - article [ref=f31e50]:
+        - heading "Understanding How Billing Works for Different Twilio Products" [level=2] [ref=f31e51]
+        - generic [ref=f31e52]:
+          - heading "Overview" [level=2] [ref=f31e53]
+          - paragraph [ref=f31e54]: Billing for different Twilio products and services doesn’t all work the same. This may cause confusion about your balance or our charging processes. This guide explains how Twilio account balances and billing works.
+          - paragraph [ref=f31e55]
+          - heading "Environment" [level=2] [ref=f31e56]
+          - paragraph [ref=f31e57]: legacy Twilio Console
+          - paragraph [ref=f31e58]
+          - heading "What You Need To Know" [level=2] [ref=f31e59]
+          - heading [level=4] [ref=f31e60]:
+            - strong [ref=f31e61]: Account balance
+            - link "🔗" [ref=f31e62] [cursor=pointer]:
+              - /url: "#h_01FHXS7HGVEAD8GRJVHWEAA05F"
+          - paragraph [ref=f31e63]:
+            - text: By default, all Twilio monthly recurring charges (MRCs - phone numbers, Interconnect, support plans, etc.) and account usage is billed to your Twilio account balance. We often refer to this payment method as a "Pay-as-you-go account". When you pay for an initial project balance and
+            - link "upgrade your account" [ref=f31e64] [cursor=pointer]:
+              - /url: /articles/223183208-Upgrading-to-a-paid-Twilio-Account
+            - text: ", we'll begin to deduct your MRCs and regular usage fees from this balance."
+          - paragraph [ref=f31e65]: We’ll notify you by email when your balance hits $5.00, and then again when your balance reaches $0. If your balance reaches $0, your project will be suspended. If a call is in progress at this time, it can complete naturally, and will result in a negative account balance.
+          - paragraph [ref=f31e66]:
+            - text: "Once an account is in a zero or negative balance state, you will be unable to use it for calls, messages, Interconnect, etc. Any payment made against a suspended account will first be applied against any delayed usage or MRCs incurred while the account was in a pending state. If payment made is not enough to cover those charges the account will continue to stay suspended. For more information, please refer to:"
+            - link "What happens if my Twilio balance reaches zero?" [ref=f31e67] [cursor=pointer]:
+              - /url: /articles/223183248-What-happens-if-my-Twilio-balance-reaches-zero-
+          - heading [level=4] [ref=f31e68]:
+            - strong [ref=f31e69]: Delayed billing
+            - link "🔗" [ref=f31e70] [cursor=pointer]:
+              - /url: "#h_01FHXS7QMAPDGSSZ4G4ECBQC3B"
+          - paragraph [ref=f31e71]: Due to the complexity of our billing and processing systems, there may be delays to charges against your account. While usually minor, these delays could cause discrepancies if attempting to reconcile real-time data.
+          - paragraph [ref=f31e72]: For instance, when it comes to sending out sms, a suspension does not prevent already sent sms from processing. So there will be times where your balance will go negative after sending out sms when your balance is low. This is because we cannot anticipate the number of messages you plan on sending. When you send a messaging campaign it’s like you are throwing all of those messages in the air at once and we won’t know how much of a balance you’ve incurred until after they have all landed. This means that sometimes your balance will run out before they all hit the floor and that is why sometimes you will incur a negative balance (delayed billing). Sometimes messages or calls are queued or not processed in real time. The messages will be sent and charged later which is accrued as the pending balance in the account. Basically, the API request to send out messages was done before suspension and Twilio does not stop messages to prevent any interruptions to our users.
+          - paragraph [ref=f31e73]: Delayed billing usage is also possible when reinstating an account from suspension. If an account reaches $0 balance before all usage (including MRCs) is processed against the account balance, the unpaid usage will remain on the account as a negative balance until payment is added to the account. While your account is suspended, any recurring charges like phone numbers will be added to your pending balance and it will be moved to your account balance as soon as the payment is made. These charges will accrue over time the longer the account is suspended and to prevent them, you must release all phone numbers from the account. When reinstating a zero balance account, we recommend increasing your normal refill amount to compensate for the delayed usage incurred while the account was suspended, and monitoring your balance closely for a short period of time to prevent delayed billing from suspending your account again.
+          - heading [level=4] [ref=f31e74]:
+            - strong [ref=f31e75]: Refill your Twilio balance
+            - link "🔗" [ref=f31e76] [cursor=pointer]:
+              - /url: "#h_01FHXS7WTEBKV5YMNZ55EJGWKJ"
+          - paragraph [ref=f31e77]:
+            - text: Project balance refill options can be found on the
+            - strong [ref=f31e78]: Billing Overview
+            - text: page in
+            - link "Twilio Console" [ref=f31e79] [cursor=pointer]:
+              - /url: https://console.twilio.com/us1/billing/manage-billing/billing-overview
+            - text: . Here, you can manually request a payment to refill your balance, or tell us to auto recharge the project and refill your balance when it hits a specific threshold.
+          - paragraph [ref=f31e80]: "For steps on how to refill your balance or setup an automatic payment recharge, please see the following resources:"
+          - list [ref=f31e81]:
+            - listitem [ref=f31e82]:
+              - link "Manually Add Funds and Refill your Twilio Project Balance" [ref=f31e83] [cursor=pointer]:
+                - /url: /articles/360015760053-Manually-Add-Funds-and-Refill-your-Twilio-Project-Balance
+            - listitem [ref=f31e84]:
+              - link "How do I set an automatic payment recharge trigger?" [ref=f31e85] [cursor=pointer]:
+                - /url: /articles/223135607-How-do-I-set-an-automatic-payment-recharge-trigger-
+          - heading [level=4] [ref=f31e86]:
+            - strong [ref=f31e87]: Taxes
+            - link "🔗" [ref=f31e88] [cursor=pointer]:
+              - /url: "#h_01FHXS81YVDTMJFNH0JQA26M33"
+          - paragraph [ref=f31e89]:
+            - text: Twilio is required to collect taxes from customers in a number of jurisdictions around the world. Taxes for the prior month’s usage are collected early in the following month (e.g. May’s taxes are charged to your account in early June). For full details, see
+            - link "When Does Twilio Charge Taxes" [ref=f31e90] [cursor=pointer]:
+              - /url: /articles/360036049294-When-Does-Twilio-Charge-Taxes-
+            - text: .
+          - heading [level=4] [ref=f31e91]:
+            - strong [ref=f31e92]: Payment receipts and invoices
+            - link "🔗" [ref=f31e93] [cursor=pointer]:
+              - /url: "#h_01FHXS878KKJGA4KCATNNSVNYV"
+          - paragraph [ref=f31e94]:
+            - text: A receipt is emailed to the appropriate users on your account each time you make a payment. You can view and download previous payment receipts from the
+            - link "Payments page in Twilio Console" [ref=f31e95] [cursor=pointer]:
+              - /url: https://console.twilio.com/us1/billing/manage-billing/statements?tab=payments
+            - text: .
+          - paragraph [ref=f31e96]:
+            - text: Additionally, both pay-as-you-go and invoiced accounts will receive a monthly invoice. For pay-as-you-go accounts, this invoice is for monthly supplemental accounting purposes only. It does not align with payment receipts, and will have no balance due as charges are automatically deducted from the account balance at the time services are used. You can view your Statements and Payments
+            - link "here" [ref=f31e97] [cursor=pointer]:
+              - /url: https://console.twilio.com/us1/billing/manage-billing/statements
+            - text: . Invoiced accounts can find their Invoices & Payments
+            - link "here" [ref=f31e98] [cursor=pointer]:
+              - /url: https://console.twilio.com/us1/billing/manage-billing/statements
+            - text: .
+          - paragraph [ref=f31e99]: "For more details, please see the following resources:"
+          - list [ref=f31e100]:
+            - listitem [ref=f31e101]:
+              - link "How can I get a receipt for my payments?" [ref=f31e102] [cursor=pointer]:
+                - /url: /articles/223183348-How-can-I-get-a-receipt-for-my-payments-
+            - listitem [ref=f31e103]:
+              - link "When and Where Can I Find my Invoice?" [ref=f31e104] [cursor=pointer]:
+                - /url: /articles/360036601993-When-and-Where-Can-I-Find-my-Invoice-
+            - listitem [ref=f31e105]:
+              - link "Check your Project Balance" [ref=f31e106] [cursor=pointer]:
+                - /url: /articles/360025294494-Check-Your-Twilio-Project-Balance
+            - listitem [ref=f31e107]:
+              - link "How Does Twilio's Pricing Work?" [ref=f31e108] [cursor=pointer]:
+                - /url: /articles/223183228-How-Does-Twilio-s-Pricing-Work-
+            - listitem [ref=f31e109]:
+              - link "How much does a phone number cost?" [ref=f31e110] [cursor=pointer]:
+                - /url: /articles/223182908-How-much-does-a-phone-number-cost-
+            - listitem [ref=f31e111]:
+              - link "What happens if my Twilio balance reaches zero?" [ref=f31e112] [cursor=pointer]:
+                - /url: /articles/223183248-What-happens-if-my-Twilio-balance-reaches-zero-
+        - generic [ref=f31e115]:
+          - generic [ref=f31e116]: (information)
+          - generic [ref=f31e122]:
+            - heading "Still can't find what you need?" [level=3] [ref=f31e124]
+            - button "Chat with our Help Center Assistant" [ref=f31e126] [cursor=pointer]
+  - contentinfo [ref=f31e128]:
+    - generic [ref=f31e129]:
+      - img "Twilio logo" [ref=f31e130]
+      - navigation "Footer" [ref=f31e131]:
+        - generic [ref=f31e132]:
+          - link "Legal" [ref=f31e133] [cursor=pointer]:
+            - /url: https://www.twilio.com/legal/tos
+          - separator [ref=f31e134]
+        - generic [ref=f31e135]:
+          - link "Privacy" [ref=f31e136] [cursor=pointer]:
+            - /url: https://www.twilio.com/legal/privacy
+          - separator [ref=f31e137]
+        - generic [ref=f31e138]:
+          - link "Twilio.org" [ref=f31e139] [cursor=pointer]:
+            - /url: https://www.twilio.org
+          - separator [ref=f31e140]
+        - generic [ref=f31e141]:
+          - link "Press & Media" [ref=f31e142] [cursor=pointer]:
+            - /url: https://www.twilio.com/press
+          - separator [ref=f31e143]
+        - generic [ref=f31e144]:
+          - link "Signal" [ref=f31e145] [cursor=pointer]:
+            - /url: https://signal.twilio.com
+          - separator [ref=f31e146]
+        - generic [ref=f31e147]:
+          - link "Investors" [ref=f31e148] [cursor=pointer]:
+            - /url: https://investors.twilio.com/overview/default.aspx
+          - separator [ref=f31e149]
+        - link "Jobs" [ref=f31e151] [cursor=pointer]:
+          - /url: https://www.twilio.com/company/jobs
+    - paragraph [ref=f31e153]:
+      - text: Copyright © 2026 Twilio Inc. All Rights Reserved. This site is protected by reCAPTCHA and the Google
+      - link "Privacy Policy" [ref=f31e154] [cursor=pointer]:
+        - /url: https://policies.google.com/privacy
+      - text: and
+      - link "Terms of Service" [ref=f31e155] [cursor=pointer]:
+        - /url: https://policies.google.com/terms
+      - text: apply.

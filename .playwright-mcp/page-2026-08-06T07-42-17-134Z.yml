@@ -1,0 +1,136 @@
+- generic [ref=f1e7]:
+  - generic [ref=f1e57]:
+    - generic:
+      - dialog "sidebar.navigation":
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - link "E El Nouby الرئيسية":
+                  - /url: /company-dashboard
+                  - generic: E
+                  - generic:
+                    - heading "El Nouby" [level=2]
+                    - paragraph: الرئيسية
+              - button "sidebar.close"
+            - generic:
+              - generic: البحث داخل القائمة
+              - textbox "البحث داخل القائمة":
+                - /placeholder: البحث
+            - generic:
+              - generic:
+                - button "الرئيسية 1" [expanded]:
+                  - generic:
+                    - generic:
+                      - strong: الرئيسية
+                      - generic: "1"
+                - generic:
+                  - generic:
+                    - link "لوحة التحكم":
+                      - /url: /company-dashboard
+              - generic:
+                - button "حسابي 2":
+                  - generic:
+                    - generic:
+                      - strong: حسابي
+                      - generic: "2"
+              - generic:
+                - button "إدارة شركاتي 5":
+                  - generic:
+                    - generic:
+                      - strong: إدارة شركاتي
+                      - generic: "5"
+              - generic:
+                - button "متجر التطبيقات 5":
+                  - generic:
+                    - generic:
+                      - strong: متجر التطبيقات
+                      - generic: "5"
+              - generic:
+                - button "الإعدادات 5":
+                  - generic:
+                    - generic:
+                      - strong: الإعدادات
+                      - generic: "5"
+              - generic:
+                - generic:
+                  - generic: EN
+                  - generic:
+                    - generic: El
+                    - generic: OWNER
+                - generic:
+                  - link "الملف الشخصي":
+                    - /url: /profile
+                  - link "الإعدادات":
+                    - /url: /settings
+                  - button "تسجيل الخروج"
+    - generic [ref=f1e58]:
+      - banner [ref=f1e59]:
+        - generic [ref=f1e60]:
+          - generic [ref=f1e62]:
+            - button "فتح القائمة" [ref=f1e63] [cursor=pointer]
+            - button "الملف الشخصي EN" [ref=f1e68]:
+              - generic [ref=f1e69]: EN
+          - generic [ref=f1e71]:
+            - button "تبديل للوضع الليلي" [ref=f1e72] [cursor=pointer]
+            - button "Change language" [ref=f1e74] [cursor=pointer]:
+              - generic [ref=f1e75]: ar
+            - button "الإشعارات" [ref=f1e77] [cursor=pointer]
+            - link "header.whatsapp" [ref=f1e80] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+      - main [ref=f1e83]:
+        - generic [ref=f1e85]:
+          - generic [ref=f1e86]:
+            - heading "لوحة التطبيقات" [level=1] [ref=f1e87]
+            - paragraph [ref=f1e88]: اختر تطبيقاً للبدء
+          - generic [ref=f1e90]:
+            - generic [ref=f1e91]: البحث في التطبيقات
+            - textbox "البحث في التطبيقات" [ref=f1e94]:
+              - /placeholder: ابحث عن تطبيق…
+            - button "⌘ K" [ref=f1e95] [cursor=pointer]:
+              - generic [ref=f1e96]: ⌘
+              - text: K
+          - navigation "تصفية التطبيقات" [ref=f1e97]:
+            - button "الكل" [pressed] [ref=f1e98]
+            - button "رئيسي" [ref=f1e99]
+            - button "إعدادات" [ref=f1e100]
+            - button "نظام" [ref=f1e101]
+          - paragraph [ref=f1e103]: 5 لوحة التطبيقات
+          - generic [ref=f1e104]: 5 لوحة التطبيقات
+          - generic [ref=f1e105]:
+            - article [ref=f1e107]:
+              - link "الرئيسية" [ref=f1e108] [cursor=pointer]:
+                - /url: /apps/main
+                - generic [ref=f1e113]:
+                  - heading "الرئيسية" [level=3] [ref=f1e114]
+                  - paragraph [ref=f1e115]: لوحة تحكم الشركة وروابط سريعة
+              - button "إضافة للمفضلة" [ref=f1e116]
+            - article [ref=f1e120]:
+              - link "حسابي" [ref=f1e121] [cursor=pointer]:
+                - /url: /apps/my-account
+                - generic [ref=f1e128]:
+                  - heading "حسابي" [level=3] [ref=f1e129]
+                  - paragraph [ref=f1e130]: حسابي الشخصي والحضور
+              - button "إضافة للمفضلة" [ref=f1e131]
+            - article [ref=f1e135]:
+              - link "إدارة شركاتي" [ref=f1e136] [cursor=pointer]:
+                - /url: /apps/company
+                - generic [ref=f1e142]:
+                  - heading "إدارة شركاتي" [level=3] [ref=f1e143]
+                  - paragraph [ref=f1e144]: إدارة الشركة والأدوار
+              - button "إضافة للمفضلة" [ref=f1e145]
+            - article [ref=f1e149]:
+              - link "متجر التطبيقات" [ref=f1e150] [cursor=pointer]:
+                - /url: /apps/marketplace
+                - generic [ref=f1e156]:
+                  - heading "متجر التطبيقات" [level=3] [ref=f1e157]
+                  - paragraph [ref=f1e158]: متجر التطبيقات والقوالب
+              - button "إضافة للمفضلة" [ref=f1e159]
+            - article [ref=f1e163]:
+              - link "الإعدادات" [ref=f1e164] [cursor=pointer]:
+                - /url: /apps/settings
+                - generic [ref=f1e170]:
+                  - heading "الإعدادات" [level=3] [ref=f1e171]
+                  - paragraph [ref=f1e172]: إعدادات النظام
+              - button "إضافة للمفضلة" [ref=f1e173]
+  - region "Notifications alt+T"

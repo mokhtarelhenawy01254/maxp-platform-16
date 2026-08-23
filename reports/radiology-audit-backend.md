@@ -1,11 +1,11 @@
-﻿# Radiology Module ΓÇö Backend Deep Code Review
+# Radiology Module — Backend Deep Code Review
 
 **Scope**: `apps/backend/controller/radiology*` (13 controllers), `apps/backend/routes/radiology*` (7 route files), `apps/backend/services/radiology*` (2 services), `apps/backend/utils/dicomUtil.js`, `apps/backend/utils/dateUtils.js`, `apps/backend/prisma/schema/radiology.prisma`, and 9 test files in `apps/backend/tests/controller/radiology*.test.js`.
 
 **Audit goal**: Logic / race conditions, performance, schema gaps, security & authorization, test coverage.
 
 **Conventions**:
-- **Severity**: **P0** (data loss / money leak / security boundary breach ΓÇö fix immediately), **P1** (correctness or significant risk under realistic concurrency / load), **P2** (cleanup, hygiene, small risk).
+- **Severity**: **P0** (data loss / money leak / security boundary breach — fix immediately), **P1** (correctness or significant risk under realistic concurrency / load), **P2** (cleanup, hygiene, small risk).
 - All file references use `file_path:line_number`. All paths are absolute.
 
 ---
@@ -15,12 +15,12 @@
 | Area | Verdict |
 |---|---|
 | Money / payment flows | Several P0/P1 risks: TOCTOU between remaining-balance check and create; refund can produce a `paidAmount` that exceeds the original; insurance invoice updates `paidAmount`/`remainingAmount` non-atomically. Float (`Float`) is used for every monetary field instead of `Decimal`. |
-| Status transitions | Inconsistent: `validateRadiologyStudyTransition` exists and is wired into `updateStudy` and the report chain, but `RadiologyAppointment` has no transition validator at all ΓÇö direct, unvalidated writes to `SCHEDULED|CHECKED_IN|DONE|CANCELLED` from any client. |
+| Status transitions | Inconsistent: `validateRadiologyStudyTransition` exists and is wired into `updateStudy` and the report chain, but `RadiologyAppointment` has no transition validator at all — direct, unvalidated writes to `SCHEDULED|CHECKED_IN|DONE|CANCELLED` from any client. |
 | DICOM bytes in Postgres | `Bytes` column is written + read on every upload / download. No streaming, no compression, no CDN/Storage. Multi-slice uploads are written serially inside a single request with no transaction. |
 | Schema vs code | The `RadiologyExamAddition` model is a separate table but **all** call sites use `RadiologyExamType` filtered by `isAddition=true`. Two ways to do the same thing, only one of which is wired up. `RadiologyStudy.tagIds` is in the schema but **never written or read by any controller**. The `RadiologyAppointment.branchId` field is written but never queried / filtered. |
-| Authorization | `MANAGER_ROLES` is required on most mutating endpoints, but `createStudy`, `updateStudy`, `createAppointment` and several others correctly require it. There are NO `MANAGER_ROLES` gaps on mutating routes in this audit. However, the label/PDF endpoints (`GET /studies/:id/label`, `GET /studies/:id/report/pdf`, `GET /studies/:id/report`, `GET /studies/:id/images/:imageId`) do not gate by role, and any authenticated user of the company can read them. **Additionally, `GET /financial-summary` is not MANAGER-gated** ΓÇö a cashier can read total revenue. |
+| Authorization | `MANAGER_ROLES` is required on most mutating endpoints, but `createStudy`, `updateStudy`, `createAppointment` and several others correctly require it. There are NO `MANAGER_ROLES` gaps on mutating routes in this audit. However, the label/PDF endpoints (`GET /studies/:id/label`, `GET /studies/:id/report/pdf`, `GET /studies/:id/report`, `GET /studies/:id/images/:imageId`) do not gate by role, and any authenticated user of the company can read them. **Additionally, `GET /financial-summary` is not MANAGER-gated** — a cashier can read total revenue. |
 | Test coverage | High for the main `radiologyController` (study lifecycle, report, DICOM). Zero tests for: `getStudyImageFile` (DICOM stream) only streaming; `financialSummary` insurance branch sums; `setEntityPrice` upsert; `listEntityPrices`, `listEntityPricesSummary`; `createLedgerEntry`, `listLedger` happy path; appointment update / delete; the `branchId` filter; `Rology` submission status transitions; the `attachToActiveShift` failure mode. |
-| Delete cascade | There is no API route to delete a `RadiologyStudy`. `prisma.radiologyStudy.delete` is never called from any controller. `RadiologyStudyPayment` rows therefore have no UI to clean them. DICOM image rows likewise have no bulk delete endpoint ΓÇö only single `deleteStudyImage`. |
+| Delete cascade | There is no API route to delete a `RadiologyStudy`. `prisma.radiologyStudy.delete` is never called from any controller. `RadiologyStudyPayment` rows therefore have no UI to clean them. DICOM image rows likewise have no bulk delete endpoint — only single `deleteStudyImage`. |
 
 ---
 
@@ -34,30 +34,30 @@
 // L69
 const paidSoFar = (await prisma.radiologyStudyPayment.aggregate({ where: { studyId: id }, _sum: { amount: true } }))._sum?.amount || 0;
 if (paidSoFar + amt > total) {                              // L70
-  return res.status(400).json({ success: false, error: `╪º┘ä┘à╪¿┘ä╪║ ┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä┘à╪¬╪¿┘é┘è ...` });
+  return res.status(400).json({ success: false, error: `المبلغ يتجاوز المتبقي ...` });
 }
 const payment = await prisma.radiologyStudyPayment.create({ // L75
   data: { ..., amount: amt, ... },
 });
 ```
 
-Two concurrent POSTs each see `paidSoFar = 0`, each pass the check, each create a payment of `total`, and the study's `paidAmount` becomes `2 ├ù total`. The subsequent `recomputePaid` (L87) reduces `paymentStatus` to "PAID" but does not block the over-payment.
+Two concurrent POSTs each see `paidSoFar = 0`, each pass the check, each create a payment of `total`, and the study's `paidAmount` becomes `2 × total`. The subsequent `recomputePaid` (L87) reduces `paymentStatus` to "PAID" but does not block the over-payment.
 
-This is also true for `recordPayment` (insurance invoice) at `H:/maxp-platform/apps/backend/controller/radiologyInsuranceController.js:265-292` ΓÇö the `invoice.paidAmount + amount > invoice.totalAmount` check at L268 is read-then-write non-atomically.
+This is also true for `recordPayment` (insurance invoice) at `H:/maxp-platform/apps/backend/controller/radiologyInsuranceController.js:265-292` — the `invoice.paidAmount + amount > invoice.totalAmount` check at L268 is read-then-write non-atomically.
 
 **Fix**: Wrap the read + write in a `prisma.$transaction` with `SERIALIZABLE` (or `SELECT ... FOR UPDATE` via `$queryRaw`).
 
 ```js
 const updated = await prisma.$transaction(async (tx) => {
   const study = await tx.radiologyStudy.findFirst({ where: { id, companyId } });
-  if (!study) throw new HttpError(404, '╪º┘ä╪»╪▒╪º╪│╪⌐ ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪»╪⌐');
+  if (!study) throw new HttpError(404, 'الدراسة غير موجودة');
   const { _sum } = await tx.radiologyStudyPayment.aggregate({
     where: { studyId: id },
     _sum: { amount: true },
   });
   const paidSoFar = _sum?.amount || 0;
   if (paidSoFar + amt > (study.priceSnapshot || 0) + (study.additionAmount || 0)) {
-    throw new HttpError(400, `╪º┘ä┘à╪¿┘ä╪║ ┘è╪¬╪¼╪º┘ê╪▓ ╪º┘ä┘à╪¬╪¿┘é┘è (...)`);
+    throw new HttpError(400, `المبلغ يتجاوز المتبقي (...)`);
   }
   const payment = await tx.radiologyStudyPayment.create({ data: { ... } });
   const status = paymentStatusFor((study.priceSnapshot || 0) + (study.additionAmount || 0), paidSoFar + amt);
@@ -97,7 +97,7 @@ The retry loop only handles the case `attempt < 3` (i.e. attempts 0,1,2,3). On t
 **Fix**: Bump the retry budget and return 503 on exhaustion:
 ```js
 for (let attempt = 0; attempt < 8; attempt++) { ... }
-if (!study) return res.status(503).json({ success: false, error: '┘ü╪┤┘ä ╪¬┘ê┘ä┘è╪» ╪▒┘é┘à ╪»╪▒╪º╪│╪⌐ ┘ü╪▒┘è╪»╪î ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë' });
+if (!study) return res.status(503).json({ success: false, error: 'فشل توليد رقم دراسة فريد، حاول مرة أخرى' });
 ```
 
 ### 1.5 [P1] No validation of appointment status transitions
@@ -124,7 +124,7 @@ No `validateTransition(APPOINTMENT_STATUSES, from, to, ...)` check. Compare to t
 // L378 (first appearance)
 priceSnapshot: examType ? examType.price : 0,
 // ...
-// L389 (second appearance ΓÇö overrides the first)
+// L389 (second appearance — overrides the first)
 priceSnapshot,
 ```
 
@@ -134,7 +134,7 @@ Benign because the second overrides the first, but the L378 line should be remov
 
 **File**: `H:/maxp-platform/apps/backend/controller/radiologyInsuranceController.js:66-124`
 
-`assignStudyInsurance` updates the `priceSnapshot` on the study in place. If the operator creates an invoice before re-assigning, then re-assigns, then tries to add the same study to a NEW invoice, the second invoice sees the new `priceSnapshot` ΓÇö inconsistent with the first. Accounting risk.
+`assignStudyInsurance` updates the `priceSnapshot` on the study in place. If the operator creates an invoice before re-assigning, then re-assigns, then tries to add the same study to a NEW invoice, the second invoice sees the new `priceSnapshot` — inconsistent with the first. Accounting risk.
 
 **Fix**: Forbid re-assignment while an `OPEN` invoice references the study.
 
@@ -183,7 +183,7 @@ Findings:
 1. **No transaction for multi-slice uploads.** 200 slices = 200 round trips; multer is buffered so all bytes live in RAM.
 2. **No streaming on download.** A 50 MB DICOM file becomes a 50 MB JS buffer + 50 MB HTTP body. With `files: 200` upload limit, up to 10 GB can be uploaded per study.
 3. **No `@index([studyId])`** explicitly. Prisma's default relation behavior creates one, but documenting is good.
-4. **No compression.** DICOM compresses well (10├ù with JPEG-LS).
+4. **No compression.** DICOM compresses well (10× with JPEG-LS).
 
 **Fix**:
 1. Move to object storage (S3/MinIO) and store URLs in Postgres.
@@ -213,7 +213,7 @@ const examTypes = await prisma.radiologyExamType.findMany({ where: { companyId }
 
 Loads every exam type in the company. With 200 types and 5,000 studies, you load 200 rows when the studies only reference e.g. 8. **Fix**: After the studies query, compute referenced `examTypeId`s and `findMany({ where: { id: { in: referencedIds } } })`.
 
-### 2.5 [P0] No `onDelete: Cascade` on `RadiologyStudyImage.study` ΓÇö orphaned rows on study delete
+### 2.5 [P0] No `onDelete: Cascade` on `RadiologyStudyImage.study` — orphaned rows on study delete
 
 **File**: `H:/maxp-platform/apps/backend/prisma/schema/radiology.prisma:73`
 
@@ -274,10 +274,10 @@ Either the FE is expected to send `tagIds` and the BE drops it (silent data loss
 
 **Files**:
 - Schema: `H:/maxp-platform/apps/backend/prisma/schema/radiology.prisma:194-202` defines `RadiologyExamAddition`.
-- Schema comment on L34: `// array of RadiologyExamAddition ids` ΓÇö but the actual ids stored are `RadiologyExamType` ids.
+- Schema comment on L34: `// array of RadiologyExamAddition ids` — but the actual ids stored are `RadiologyExamType` ids.
 - `createStudy` queries `radiologyExamType.findMany({ where: { ..., isAddition: true } })` at `H:/maxp-platform/apps/backend/controller/radiologyController.js:327-333`.
 - `createAppointment` does the same at `H:/maxp-platform/apps/backend/controller/radiologyAppointmentsController.js:75-82`.
-- `radiologyExamAdditionsController.js` operates on the `RadiologyExamAddition` model exclusively ΓÇö that model is **never** referenced by any other controller or test.
+- `radiologyExamAdditionsController.js` operates on the `RadiologyExamAddition` model exclusively — that model is **never** referenced by any other controller or test.
 
 Result: there are two ways to define "an addition". Operators using `/exam-additions` CRUD create rows that never appear in any study. **Fix**: pick one model. Either drop `RadiologyExamAddition` (already half-done) or drop `isAddition` and migrate.
 
@@ -387,7 +387,7 @@ A malicious actor can upload any file (e.g. an executable renamed `evil.dcm`). `
 
 **File**: `H:/maxp-platform/apps/backend/routes/radiologyRoutes.js:11`
 
-`files: 200, fileSize: 50MB` and `memoryStorage()` ΓåÆ 10 GB held in RAM. **Fix**: lower cap, or use `diskStorage` + streaming to object storage.
+`files: 200, fileSize: 50MB` and `memoryStorage()` → 10 GB held in RAM. **Fix**: lower cap, or use `diskStorage` + streaming to object storage.
 
 ### 4.6 [P2] `previewQuote` does not verify `priceListId` belongs to the company
 
@@ -397,7 +397,7 @@ A user could pass `priceListId: 'pl-from-other-tenant'` and get prices from anot
 
 ### 4.7 [P2] `notes` / `referralDoctor` are written without sanitization
 
-**File**: `H:/maxp-platform/apps/backend/controller/radiologyController.js:383, 500`. Stored as plain text ΓÇö not an injection risk via parameterized queries, but if rendered as HTML in FE, XSS is possible. Document for FE.
+**File**: `H:/maxp-platform/apps/backend/controller/radiologyController.js:383, 500`. Stored as plain text — not an injection risk via parameterized queries, but if rendered as HTML in FE, XSS is possible. Document for FE.
 
 ---
 
@@ -421,16 +421,16 @@ A user could pass `priceListId: 'pl-from-other-tenant'` and get prices from anot
 
 ### 5.1 [P1] Critical untested paths
 
-- `getStudyPayment` (`H:/maxp-platform/apps/backend/controller/radiologyPaymentsController.js:15-44`) ΓÇö no test.
-- `setEntityPrice` create branch (`H:/maxp-platform/apps/backend/controller/radiologyInsuranceController.js:414-444`) ΓÇö no test.
-- `createLedgerEntry` (`H:/maxp-platform/apps/backend/controller/radiologyInsuranceController.js:303-334`) ΓÇö no test.
-- `updateAppointment` happy path (`H:/maxp-platform/apps/backend/controller/radiologyAppointmentsController.js:129-191`) ΓÇö no test.
-- `deleteAppointment` happy path (`H:/maxp-platform/apps/backend/controller/radiologyAppointmentsController.js:193-209`) ΓÇö no test.
-- `listAppointments` with date filter ΓÇö no test.
-- `listContracts` with `search` filter ΓÇö no test.
+- `getStudyPayment` (`H:/maxp-platform/apps/backend/controller/radiologyPaymentsController.js:15-44`) — no test.
+- `setEntityPrice` create branch (`H:/maxp-platform/apps/backend/controller/radiologyInsuranceController.js:414-444`) — no test.
+- `createLedgerEntry` (`H:/maxp-platform/apps/backend/controller/radiologyInsuranceController.js:303-334`) — no test.
+- `updateAppointment` happy path (`H:/maxp-platform/apps/backend/controller/radiologyAppointmentsController.js:129-191`) — no test.
+- `deleteAppointment` happy path (`H:/maxp-platform/apps/backend/controller/radiologyAppointmentsController.js:193-209`) — no test.
+- `listAppointments` with date filter — no test.
+- `listContracts` with `search` filter — no test.
 - `tagIds` (schema field exists, no test, no controller that handles it).
-- `branchId` filter on `listAppointments` ΓÇö no test.
-- The 4th-collision path in `createStudy` studyNumber retry (1.4) ΓÇö no test.
+- `branchId` filter on `listAppointments` — no test.
+- The 4th-collision path in `createStudy` studyNumber retry (1.4) — no test.
 
 ### 5.2 [P2] Test isolation issue
 
@@ -444,7 +444,7 @@ A user could pass `priceListId: 'pl-from-other-tenant'` and get prices from anot
 - DICOM PDF/label rendering is synchronous in the request handler (`H:/maxp-platform/apps/backend/services/radiologyPdfService.js:16-86`, `H:/maxp-platform/apps/backend/services/radiologyLabelService.js:50-80`). 50 concurrent label requests block the event loop. Queue in a background worker.
 - `getStartOfDayInTimezone` in `dateUtils.js:56-72` uses a `toLocaleString` trick. Correct but convoluted.
 - `physicianCommissions` returns all-time commissions when no date filter is provided.
-- `RadiologyShift.cashierName` is a free-text field ΓÇö no link to `User`.
+- `RadiologyShift.cashierName` is a free-text field — no link to `User`.
 
 ---
 
@@ -456,84 +456,84 @@ A user could pass `priceListId: 'pl-from-other-tenant'` and get prices from anot
 
 ---
 
-## Appendix A ΓÇö Route index
+## Appendix A — Route index
 
 | Route | File:Line | Manager? | IDOR? |
 |---|---|---|---|
-| `GET /api/v1/radiology/exam-types` | `radiologyRoutes.js:26` | No | Γ£ô |
-| `POST /api/v1/radiology/exam-types` | `radiologyRoutes.js:27` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/exam-types/:id` | `radiologyRoutes.js:28` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/exam-types/:id` | `radiologyRoutes.js:29` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/studies` | `radiologyRoutes.js:32` | No | Γ£ô |
-| `POST /api/v1/radiology/studies` | `radiologyRoutes.js:33` | No | Γ£ô |
-| `POST /api/v1/radiology/studies/:id/duplicate` | `radiologyRoutes.js:34` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/studies/:id/report` | `radiologyRoutes.js:35` | No | Γ£ô |
-| `PUT /api/v1/radiology/studies/:id/report` | `radiologyRoutes.js:36` | No | Γ£ô |
-| `PUT /api/v1/radiology/studies/:id/report/:kind` | `radiologyRoutes.js:37` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/studies/:id/report/pdf` | `radiologyRoutes.js:38` | No | Γ£ô |
-| `PUT /api/v1/radiology/studies/:id/deliver` | `radiologyRoutes.js:39` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/studies/:id` | `radiologyRoutes.js:40` | No | Γ£ô |
-| `PUT /api/v1/radiology/studies/:id` | `radiologyRoutes.js:41` | No | Γ£ô |
-| `GET /api/v1/radiology/contracts` | `radiologyRoutes.js:44` | No | Γ£ô |
-| `POST /api/v1/radiology/contracts` | `radiologyRoutes.js:45` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/contracts/:id` | `radiologyRoutes.js:46` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/contracts/:id` | `radiologyRoutes.js:47` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/report-templates` | `radiologyRoutes.js:50` | No | Γ£ô |
-| `POST /api/v1/radiology/report-templates` | `radiologyRoutes.js:51` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/report-templates/:id` | `radiologyRoutes.js:52` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/report-templates/:id` | `radiologyRoutes.js:53` | **Yes** | Γ£ô |
-| `POST /api/v1/radiology/studies/:id/images` | `radiologyRoutes.js:56` | No | Γ£ô |
-| `GET /api/v1/radiology/studies/:id/images/:imageId` | `radiologyRoutes.js:57` | No | Γ£ô |
-| `GET /api/v1/radiology/studies/:id/images/:imageId/file` | `radiologyRoutes.js:58` | No | Γ£ô |
-| `DELETE /api/v1/radiology/studies/:id/images/:imageId` | `radiologyRoutes.js:59` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/studies/:id/insurance` | `radiologyInsuranceRoutes.js:11` | **Yes** | Γ£ô |
-| `POST /api/v1/radiology/insurance-invoices` | `radiologyInsuranceRoutes.js:14` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/insurance-invoices` | `radiologyInsuranceRoutes.js:15` | No | Γ£ô |
-| `GET /api/v1/radiology/insurance-invoices/:id` | `radiologyInsuranceRoutes.js:16` | No | Γ£ô |
-| `POST /api/v1/radiology/insurance-invoices/:id/payment` | `radiologyInsuranceRoutes.js:17` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/insurance-ledger` | `radiologyInsuranceRoutes.js:20` | No | Γ£ô |
-| `POST /api/v1/radiology/insurance-ledger` | `radiologyInsuranceRoutes.js:21` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/insurance-summary` | `radiologyInsuranceRoutes.js:22` | No | Γ£ô |
-| `GET /api/v1/radiology/entity-prices` | `radiologyInsuranceRoutes.js:25` | No | Γ£ô |
-| `POST /api/v1/radiology/entity-prices` | `radiologyInsuranceRoutes.js:26` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/entity-prices/summary` | `radiologyInsuranceRoutes.js:27` | No | Γ£ô |
-| `GET /api/v1/radiology/studies/:id/label` | `radiologyLabelsRoutes.js:8` | No | Γ£ô |
+| `GET /api/v1/radiology/exam-types` | `radiologyRoutes.js:26` | No | ✓ |
+| `POST /api/v1/radiology/exam-types` | `radiologyRoutes.js:27` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/exam-types/:id` | `radiologyRoutes.js:28` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/exam-types/:id` | `radiologyRoutes.js:29` | **Yes** | ✓ |
+| `GET /api/v1/radiology/studies` | `radiologyRoutes.js:32` | No | ✓ |
+| `POST /api/v1/radiology/studies` | `radiologyRoutes.js:33` | No | ✓ |
+| `POST /api/v1/radiology/studies/:id/duplicate` | `radiologyRoutes.js:34` | **Yes** | ✓ |
+| `GET /api/v1/radiology/studies/:id/report` | `radiologyRoutes.js:35` | No | ✓ |
+| `PUT /api/v1/radiology/studies/:id/report` | `radiologyRoutes.js:36` | No | ✓ |
+| `PUT /api/v1/radiology/studies/:id/report/:kind` | `radiologyRoutes.js:37` | **Yes** | ✓ |
+| `GET /api/v1/radiology/studies/:id/report/pdf` | `radiologyRoutes.js:38` | No | ✓ |
+| `PUT /api/v1/radiology/studies/:id/deliver` | `radiologyRoutes.js:39` | **Yes** | ✓ |
+| `GET /api/v1/radiology/studies/:id` | `radiologyRoutes.js:40` | No | ✓ |
+| `PUT /api/v1/radiology/studies/:id` | `radiologyRoutes.js:41` | No | ✓ |
+| `GET /api/v1/radiology/contracts` | `radiologyRoutes.js:44` | No | ✓ |
+| `POST /api/v1/radiology/contracts` | `radiologyRoutes.js:45` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/contracts/:id` | `radiologyRoutes.js:46` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/contracts/:id` | `radiologyRoutes.js:47` | **Yes** | ✓ |
+| `GET /api/v1/radiology/report-templates` | `radiologyRoutes.js:50` | No | ✓ |
+| `POST /api/v1/radiology/report-templates` | `radiologyRoutes.js:51` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/report-templates/:id` | `radiologyRoutes.js:52` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/report-templates/:id` | `radiologyRoutes.js:53` | **Yes** | ✓ |
+| `POST /api/v1/radiology/studies/:id/images` | `radiologyRoutes.js:56` | No | ✓ |
+| `GET /api/v1/radiology/studies/:id/images/:imageId` | `radiologyRoutes.js:57` | No | ✓ |
+| `GET /api/v1/radiology/studies/:id/images/:imageId/file` | `radiologyRoutes.js:58` | No | ✓ |
+| `DELETE /api/v1/radiology/studies/:id/images/:imageId` | `radiologyRoutes.js:59` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/studies/:id/insurance` | `radiologyInsuranceRoutes.js:11` | **Yes** | ✓ |
+| `POST /api/v1/radiology/insurance-invoices` | `radiologyInsuranceRoutes.js:14` | **Yes** | ✓ |
+| `GET /api/v1/radiology/insurance-invoices` | `radiologyInsuranceRoutes.js:15` | No | ✓ |
+| `GET /api/v1/radiology/insurance-invoices/:id` | `radiologyInsuranceRoutes.js:16` | No | ✓ |
+| `POST /api/v1/radiology/insurance-invoices/:id/payment` | `radiologyInsuranceRoutes.js:17` | **Yes** | ✓ |
+| `GET /api/v1/radiology/insurance-ledger` | `radiologyInsuranceRoutes.js:20` | No | ✓ |
+| `POST /api/v1/radiology/insurance-ledger` | `radiologyInsuranceRoutes.js:21` | **Yes** | ✓ |
+| `GET /api/v1/radiology/insurance-summary` | `radiologyInsuranceRoutes.js:22` | No | ✓ |
+| `GET /api/v1/radiology/entity-prices` | `radiologyInsuranceRoutes.js:25` | No | ✓ |
+| `POST /api/v1/radiology/entity-prices` | `radiologyInsuranceRoutes.js:26` | **Yes** | ✓ |
+| `GET /api/v1/radiology/entity-prices/summary` | `radiologyInsuranceRoutes.js:27` | No | ✓ |
+| `GET /api/v1/radiology/studies/:id/label` | `radiologyLabelsRoutes.js:8` | No | ✓ |
 | `POST /api/v1/radiology/quotes/preview` | `radiologyQuoteRoutes.js:8` | No | partial (4.6) |
-| `GET /api/v1/radiology/radiologists` | `radiologyRadiologistsRoutes.js:10` | No | Γ£ô |
-| `POST /api/v1/radiology/radiologists` | `radiologyRadiologistsRoutes.js:11` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/radiologists/:id` | `radiologyRadiologistsRoutes.js:12` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/radiologists/:id` | `radiologyRadiologistsRoutes.js:13` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/studies/:id/radiologist` | `radiologyRadiologistsRoutes.js:15` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/studies/:id/report/roles` | `radiologyReportRolesRoutes.js:10` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/studies/:id/report/roles/:role` | `radiologyReportRolesRoutes.js:11` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/exam-tags` | `radiologyTagsRoutes.js:10` | No | Γ£ô |
-| `POST /api/v1/radiology/exam-tags` | `radiologyTagsRoutes.js:11` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/exam-tags/:id` | `radiologyTagsRoutes.js:12` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/exam-tags/:id` | `radiologyTagsRoutes.js:13` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/modalities` | `radiologyTagsRoutes.js:15` | No | Γ£ô |
-| `GET /api/v1/radiology/shifts` | `radiologyAdminRoutes.js:16` | No | Γ£ô |
-| `GET /api/v1/radiology/shifts/active` | `radiologyAdminRoutes.js:17` | No | Γ£ô |
-| `POST /api/v1/radiology/shifts` | `radiologyAdminRoutes.js:18` | **Yes** | Γ£ô |
-| `POST /api/v1/radiology/shifts/:id/close` | `radiologyAdminRoutes.js:19` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/studies/:id/payment` | `radiologyAdminRoutes.js:22` | No | Γ£ô |
-| `POST /api/v1/radiology/studies/:id/payment` | `radiologyAdminRoutes.js:23` | **Yes** | Γ£ô |
-| `POST /api/v1/radiology/studies/:id/payment/refund` | `radiologyAdminRoutes.js:24` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/financial-summary` | `radiologyAdminRoutes.js:27` | **No** (4.1) | Γ£ô |
-| `GET /api/v1/radiology/appointments` | `radiologyAdminRoutes.js:30` | No | Γ£ô |
-| `POST /api/v1/radiology/appointments` | `radiologyAdminRoutes.js:31` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/appointments/:id` | `radiologyAdminRoutes.js:32` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/appointments/:id` | `radiologyAdminRoutes.js:33` | **Yes** | Γ£ô |
-| `POST /api/v1/radiology/appointments/:id/convert` | `radiologyAdminRoutes.js:34` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/referring-physicians` | `radiologyAdminRoutes.js:37` | No | Γ£ô |
-| `POST /api/v1/radiology/referring-physicians` | `radiologyAdminRoutes.js:38` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/referring-physicians/:id` | `radiologyAdminRoutes.js:39` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/referring-physicians/:id` | `radiologyAdminRoutes.js:40` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/referring-physicians/commissions` | `radiologyAdminRoutes.js:41` | No | Γ£ô |
-| `GET /api/v1/radiology/exam-additions` | `radiologyAdminRoutes.js:44` | No | Γ£ô |
-| `POST /api/v1/radiology/exam-additions` | `radiologyAdminRoutes.js:45` | **Yes** | Γ£ô |
-| `PUT /api/v1/radiology/exam-additions/:id` | `radiologyAdminRoutes.js:46` | **Yes** | Γ£ô |
-| `DELETE /api/v1/radiology/exam-additions/:id` | `radiologyAdminRoutes.js:47` | **Yes** | Γ£ô |
-| `GET /api/v1/radiology/statistics` | `radiologyAdminRoutes.js:50` | No | Γ£ô |
+| `GET /api/v1/radiology/radiologists` | `radiologyRadiologistsRoutes.js:10` | No | ✓ |
+| `POST /api/v1/radiology/radiologists` | `radiologyRadiologistsRoutes.js:11` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/radiologists/:id` | `radiologyRadiologistsRoutes.js:12` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/radiologists/:id` | `radiologyRadiologistsRoutes.js:13` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/studies/:id/radiologist` | `radiologyRadiologistsRoutes.js:15` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/studies/:id/report/roles` | `radiologyReportRolesRoutes.js:10` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/studies/:id/report/roles/:role` | `radiologyReportRolesRoutes.js:11` | **Yes** | ✓ |
+| `GET /api/v1/radiology/exam-tags` | `radiologyTagsRoutes.js:10` | No | ✓ |
+| `POST /api/v1/radiology/exam-tags` | `radiologyTagsRoutes.js:11` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/exam-tags/:id` | `radiologyTagsRoutes.js:12` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/exam-tags/:id` | `radiologyTagsRoutes.js:13` | **Yes** | ✓ |
+| `GET /api/v1/radiology/modalities` | `radiologyTagsRoutes.js:15` | No | ✓ |
+| `GET /api/v1/radiology/shifts` | `radiologyAdminRoutes.js:16` | No | ✓ |
+| `GET /api/v1/radiology/shifts/active` | `radiologyAdminRoutes.js:17` | No | ✓ |
+| `POST /api/v1/radiology/shifts` | `radiologyAdminRoutes.js:18` | **Yes** | ✓ |
+| `POST /api/v1/radiology/shifts/:id/close` | `radiologyAdminRoutes.js:19` | **Yes** | ✓ |
+| `GET /api/v1/radiology/studies/:id/payment` | `radiologyAdminRoutes.js:22` | No | ✓ |
+| `POST /api/v1/radiology/studies/:id/payment` | `radiologyAdminRoutes.js:23` | **Yes** | ✓ |
+| `POST /api/v1/radiology/studies/:id/payment/refund` | `radiologyAdminRoutes.js:24` | **Yes** | ✓ |
+| `GET /api/v1/radiology/financial-summary` | `radiologyAdminRoutes.js:27` | **No** (4.1) | ✓ |
+| `GET /api/v1/radiology/appointments` | `radiologyAdminRoutes.js:30` | No | ✓ |
+| `POST /api/v1/radiology/appointments` | `radiologyAdminRoutes.js:31` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/appointments/:id` | `radiologyAdminRoutes.js:32` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/appointments/:id` | `radiologyAdminRoutes.js:33` | **Yes** | ✓ |
+| `POST /api/v1/radiology/appointments/:id/convert` | `radiologyAdminRoutes.js:34` | **Yes** | ✓ |
+| `GET /api/v1/radiology/referring-physicians` | `radiologyAdminRoutes.js:37` | No | ✓ |
+| `POST /api/v1/radiology/referring-physicians` | `radiologyAdminRoutes.js:38` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/referring-physicians/:id` | `radiologyAdminRoutes.js:39` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/referring-physicians/:id` | `radiologyAdminRoutes.js:40` | **Yes** | ✓ |
+| `GET /api/v1/radiology/referring-physicians/commissions` | `radiologyAdminRoutes.js:41` | No | ✓ |
+| `GET /api/v1/radiology/exam-additions` | `radiologyAdminRoutes.js:44` | No | ✓ |
+| `POST /api/v1/radiology/exam-additions` | `radiologyAdminRoutes.js:45` | **Yes** | ✓ |
+| `PUT /api/v1/radiology/exam-additions/:id` | `radiologyAdminRoutes.js:46` | **Yes** | ✓ |
+| `DELETE /api/v1/radiology/exam-additions/:id` | `radiologyAdminRoutes.js:47` | **Yes** | ✓ |
+| `GET /api/v1/radiology/statistics` | `radiologyAdminRoutes.js:50` | No | ✓ |
 
 ---
 

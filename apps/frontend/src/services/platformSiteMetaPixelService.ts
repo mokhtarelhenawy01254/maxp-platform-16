@@ -125,16 +125,28 @@ export const platformSiteMetaPixelService = {
   },
 
   async getPublicSettings(): Promise<PlatformSiteMetaPixelPublicSettings> {
-    const response = await apiClient.get("/public/platform/meta-pixel", {
-      _skipErrorToast: true,
-    });
+    try {
+      const response = await apiClient.get("/public/platform/meta-pixel", {
+        _skipErrorToast: true,
+      });
 
-    return normalizePublicSettings(
-      unwrapData<PlatformSiteMetaPixelPublicSettings>(
-        response.data,
-        DEFAULT_PLATFORM_SITE_META_PIXEL_PUBLIC_SETTINGS,
-      ),
-    );
+      return normalizePublicSettings(
+        unwrapData<PlatformSiteMetaPixelPublicSettings>(
+          response.data,
+          DEFAULT_PLATFORM_SITE_META_PIXEL_PUBLIC_SETTINGS,
+        ),
+      );
+    } catch (err: any) {
+      // The public meta-pixel endpoint can 400 when there is no
+      // company/subdomain context (e.g. on the main domain). Fall back to
+      // defaults silently instead of surfacing a console error on every load.
+      if (String(err?.response?.status || err?.message || "").includes("400")) {
+        return normalizePublicSettings(
+          DEFAULT_PLATFORM_SITE_META_PIXEL_PUBLIC_SETTINGS,
+        );
+      }
+      throw err;
+    }
   },
 };
 

@@ -329,6 +329,42 @@
 
   <script src="/js/storefront-detection.js"></script>
 
+  <!--
+    CRITICAL: Aggressive SW + cache cleanup on every page load.
+    This runs BEFORE React or any module scripts. It unregisters every
+    service worker that is NOT sw-v4.js and wipes all CacheStorage entries,
+    eliminating stale cached HTML/chunks that cause infinite reload loops
+    after deployments.
+  -->
+  <script>
+    (function () {
+      var CURRENT_SW = /\/sw-v4\.js(?:[?#].*)?$/;
+      try {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            regs.forEach(function (reg) {
+              var url =
+                (reg.active && reg.active.scriptURL) ||
+                (reg.waiting && reg.waiting.scriptURL) ||
+                (reg.installing && reg.installing.scriptURL) ||
+                '';
+              if (url && !CURRENT_SW.test(url)) {
+                reg.unregister();
+              }
+            });
+          });
+        }
+      } catch (_) {}
+      try {
+        if ('caches' in window) {
+          caches.keys().then(function (keys) {
+            keys.forEach(function (k) { caches.delete(k); });
+          });
+        }
+      } catch (_) {}
+    })();
+  </script>
+
   <!-- React app root -->
   <div id="root"></div>
 

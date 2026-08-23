@@ -1,0 +1,6 @@
+- generic [active] [ref=f14e1]:
+  - generic [ref=f14e2]:
+    - banner [ref=f14e3]
+    - main [ref=f14e12]
+  - generic [ref=f14e33]:
+    - region "Notifications alt+T"

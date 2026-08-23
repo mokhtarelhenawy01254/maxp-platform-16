@@ -1,0 +1,284 @@
+- generic [active] [ref=f37e1]:
+  - link "Skip to content" [ref=f37e2] [cursor=pointer]:
+    - /url: "#wp--skip-link--target"
+  - generic [ref=f37e3]:
+    - banner [ref=f37e4]:
+      - figure [ref=f37e7]:
+        - img "Meta" [ref=f37e8]
+      - banner [ref=f37e9]:
+        - generic [ref=f37e11]:
+          - link [ref=f37e13] [cursor=pointer]:
+            - /url: https://whatsappbusiness.com/
+            - img "WhatsApp for Business" [ref=f37e14]
+          - navigation [ref=f37e19]:
+            - text: Menu
+            - button "Toggle Mobile Navigation" [ref=f37e21] [cursor=pointer]
+    - main [ref=f37e26]:
+      - generic [ref=f37e27]:
+        - generic [ref=f37e29]:
+          - generic [ref=f37e31]:
+            - generic [ref=f37e32]:
+              - heading "Business Platform Pricing" [level=1] [ref=f37e33]
+              - heading "Simple and transparent pricing" [level=2] [ref=f37e34]
+            - paragraph [ref=f37e35]: Drive your business goals for growth and customer engagement knowing pricing on WhatsApp is consistent with industry-standard pricing for messaging.
+            - generic [ref=f37e36]:
+              - link "Learn more" [ref=f37e38] [cursor=pointer]:
+                - /url: /learn-more
+              - link "Find a partner" [ref=f37e40] [cursor=pointer]:
+                - /url: https://business.facebook.com/messaging/partner-showcase/?ref=WAB_PLATFORM_PRICING#
+          - figure [ref=f37e41]:
+            - img "Person in a store holding an iPad" [ref=f37e42]
+        - generic [ref=f37e44]:
+          - heading [level=2] [ref=f37e45]:
+            - text: The simplicity you need to
+            - mark [ref=f37e46]: connect at scale
+            - text: ","
+            - mark [ref=f37e47]: create better customer experiences
+            - text: and
+            - mark [ref=f37e48]: better engage with your audience
+            - text: .
+          - generic [ref=f37e49]:
+            - figure [ref=f37e50]:
+              - img "Person holding a mug looking at a laptop" [ref=f37e51]
+            - generic [ref=f37e52]:
+              - heading "Businesses using our platform are charged on a per-message basis for each message we deliver to users" [level=2] [ref=f37e53]
+              - list [ref=f37e54]:
+                - listitem [ref=f37e55]:
+                  - text: We charge when a message is
+                  - strong [ref=f37e56]: delivered
+                  - text: (not sent).
+                - listitem [ref=f37e57]:
+                  - text: We charge based on
+                  - strong [ref=f37e58]: who the message is sent to
+                  - text: and the
+                  - strong [ref=f37e59]: category of the message
+                  - text: .
+                  - list [ref=f37e60]:
+                    - listitem [ref=f37e61]: "There are four message categories on the WhatsApp Business Platform: marketing, utility, authentication, and service."
+                - listitem [ref=f37e62]:
+                  - text: Our rates
+                  - strong [ref=f37e63]: vary by market – category pair
+                  - text: ", and we"
+                  - link [ref=f37e64] [cursor=pointer]:
+                    - /url: "#rates"
+                    - strong [ref=f37e65]: publish our rates for transparency
+                  - text: .
+        - generic [ref=f37e66]:
+          - heading [level=2] [ref=f37e67]:
+            - text: We provide several ways for businesses to
+            - mark [ref=f37e68]: get value
+          - generic [ref=f37e69]:
+            - generic [ref=f37e70]:
+              - figure [ref=f37e71]:
+                - img "Green icon of person outline with a heart" [ref=f37e72]
+              - generic [ref=f37e73]:
+                - heading "Be there for your customers" [level=3] [ref=f37e74]
+                - paragraph [ref=f37e75]:
+                  - emphasis [ref=f37e76]: with service and utility messages
+              - paragraph [ref=f37e77]:
+                - text: Helping your customers is always a priority. That’s why we
+                - strong [ref=f37e78]: do not charge
+                - text: for service messages, or for utility messages businesses send in response to users.
+            - generic [ref=f37e79]:
+              - figure [ref=f37e80]:
+                - img "Green icon of a rocket ship" [ref=f37e81]
+              - generic [ref=f37e82]:
+                - heading "Get rewarded as you grow" [level=3] [ref=f37e83]
+                - paragraph [ref=f37e84]:
+                  - emphasis [ref=f37e85]: with utility and authentication messages
+              - paragraph [ref=f37e86]:
+                - text: As businesses send more messages on WhatsApp, they can
+                - strong [ref=f37e87]: unlock more attractive pricing
+                - text: via our volume tiers.
+            - generic [ref=f37e88]:
+              - figure [ref=f37e89]:
+                - img "Green icon of an ad or webpage" [ref=f37e90]
+              - generic [ref=f37e91]:
+                - heading "Leverage free entry points" [level=3] [ref=f37e92]
+                - paragraph [ref=f37e93]:
+                  - emphasis [ref=f37e94]: across all message categories
+              - paragraph [ref=f37e95]:
+                - text: When customers send you a message from an
+                - strong [ref=f37e96]:
+                  - link "Ad that clicks to WhatsApp" [ref=f37e97] [cursor=pointer]:
+                    - /url: /products/ads-that-click-to-whatsapp
+                - text: or
+                - strong [ref=f37e98]:
+                  - link "Facebook Page call-to-action button" [ref=f37e99] [cursor=pointer]:
+                    - /url: https://www.facebook.com/business/help/766428573472938
+                - text: ", for the following 3 days (72 hours), all of your messages are not charged."
+        - heading [level=2] [ref=f37e101]:
+          - text: Per-message pricing empowers you to
+          - mark [ref=f37e102]: create better customer experiences
+          - text: and better engage with your audience.
+        - generic [ref=f37e103]:
+          - figure [ref=f37e106]:
+            - 'img "The four conversation categories: Marketing, Utility, Authentication, and Service" [ref=f37e107]'
+          - generic [ref=f37e108]:
+            - heading "Explore each message category to understand how they can be used across your customers’ journey." [level=2] [ref=f37e109]
+            - generic [ref=f37e110]:
+              - generic [ref=f37e111]:
+                - button "Marketing" [ref=f37e112] [cursor=pointer]
+                - paragraph [ref=f37e117]: Marketing messages can help businesses achieve a wide range of goals across the funnel, from generating awareness to driving sales to retargeting customers. These messages can include offers and promos, related product suggestions, abandoned cart reminders, and more.
+                - link [ref=f37e119] [cursor=pointer]:
+                  - /url: /products/conversation-categories/marketing
+                  - text: Learn more
+              - generic [ref=f37e120]:
+                - button "Utility" [ref=f37e121] [cursor=pointer]
+                - paragraph [ref=f37e126]: Utility messages are typically triggered by a user action, like placing an order or submitting a payment. These messages are not promotional, and are either specific to or requested by a user (like a package delivery update) or critical to a user (like a tornado warning).
+                - link [ref=f37e128] [cursor=pointer]:
+                  - /url: /products/conversation-categories/utility
+                  - text: Learn more
+              - generic [ref=f37e129]:
+                - button "Authentication" [ref=f37e130] [cursor=pointer]
+                - paragraph [ref=f37e135]: Authentication messages enable businesses to use one-time passwords (OTPs) for identity verification, potentially at multiple stages of the user journey. Ensure successful login or transactions with OTPs on WhatsApp.
+                - link [ref=f37e137] [cursor=pointer]:
+                  - /url: /products/conversation-categories/authentication
+                  - text: Learn more
+              - generic [ref=f37e138]:
+                - button "Service" [ref=f37e139] [cursor=pointer]
+                - paragraph [ref=f37e144]: These messages enable businesses to manage incoming customer inquiries, whether that is via an agent or a conversational AI-powered bot. When users message a business, this opens a 24-hour customer service window during which businesses can respond with service messages, at no charge. This window resets with each user message.
+                - link [ref=f37e146] [cursor=pointer]:
+                  - /url: /products/conversation-categories/service
+                  - text: Learn more
+        - generic [ref=f37e148]:
+          - generic [ref=f37e149]:
+            - generic [ref=f37e150]:
+              - heading "Message rates" [level=2] [ref=f37e151]
+              - paragraph [ref=f37e152]: Select the market, currency and message category to understand what we charge.
+            - generic [ref=f37e153]:
+              - generic [ref=f37e154]:
+                - paragraph [ref=f37e155]: Market
+                - button "Select a Market" [ref=f37e156] [cursor=pointer]
+              - generic [ref=f37e157]:
+                - paragraph [ref=f37e158]: Currency
+                - combobox [ref=f37e160] [cursor=pointer]:
+                  - option "Select a Currency" [selected]
+                  - option "Argentine Peso (ARS)"
+                  - option "Australian Dollar (AUD)"
+                  - option "Brazilian Real (BRL)"
+                  - option "British Pound (GBP)"
+                  - option "Chilean Peso (CLP)"
+                  - option "Colombian Peso (COP)"
+                  - option "Euro (EUR)"
+                  - option "Indian Rupee (INR)"
+                  - option "Indonesian Rupiah (IDR)"
+                  - option "Malaysian Ringgit (MYR)"
+                  - option "Mexican Peso (MXN)"
+                  - option "Peruvian Nuevo Sol (PEN)"
+                  - option "Saudi Arabian Riyal (SAR)"
+                  - option "Singapore Dollar (SGD)"
+                  - option "UAE Dirham (AED)"
+                  - option "US Dollars (USD)"
+              - generic [ref=f37e161]:
+                - paragraph [ref=f37e162]: Message category
+                - radiogroup "Message category" [ref=f37e163]:
+                  - generic [ref=f37e164] [cursor=pointer]:
+                    - radio "Authentication" [checked] [ref=f37e165]
+                    - generic [ref=f37e166]: Authentication
+                  - generic [ref=f37e167] [cursor=pointer]:
+                    - radio "Marketing" [ref=f37e168]
+                    - generic [ref=f37e169]: Marketing
+                  - generic [ref=f37e170] [cursor=pointer]:
+                    - radio "Utility" [ref=f37e171]
+                    - generic [ref=f37e172]: Utility
+                  - generic [ref=f37e173] [cursor=pointer]:
+                    - radio "Service" [ref=f37e174]
+                    - generic [ref=f37e175]: Service
+          - generic [ref=f37e176]:
+            - paragraph [ref=f37e177]: "Message rate:"
+            - status "Message rate:" [ref=f37e178]: $0.0000
+        - generic [ref=f37e180]:
+          - generic [ref=f37e181]:
+            - heading "Make the most of every opportunity" [level=2] [ref=f37e182]
+            - paragraph [ref=f37e183]: Understand more about what and how we charge.
+          - generic [ref=f37e184]:
+            - link "View rate cards and volume tiers by currency" [ref=f37e186] [cursor=pointer]:
+              - /url: https://developers.facebook.com/docs/whatsapp/pricing#rate-cards
+            - link "Find countries where regional rates apply" [ref=f37e188] [cursor=pointer]:
+              - /url: https://developers.facebook.com/docs/whatsapp/pricing#country-calling-codes
+            - link "Understand our message category guidelines" [ref=f37e190] [cursor=pointer]:
+              - /url: https://developers.facebook.com/docs/whatsapp/updates-to-pricing/new-template-guidelines#template-category-guidelines
+        - generic [ref=f37e192]:
+          - heading "Accelerate your business" [level=2] [ref=f37e193]
+          - paragraph [ref=f37e194]: Find out more about how WhatsApp Business Platform offers personal customer experiences so you can drive results and build long-term relationships with your customers.
+          - link "Contact sales" [ref=f37e197] [cursor=pointer]:
+            - /url: /learn-more
+    - contentinfo [ref=f37e198]:
+      - generic [ref=f37e200]:
+        - generic [ref=f37e201]:
+          - generic [ref=f37e202]:
+            - link [ref=f37e204] [cursor=pointer]:
+              - /url: https://whatsappbusiness.com/
+              - img "WhatsApp for Business" [ref=f37e205]
+            - list [ref=f37e210]:
+              - listitem [ref=f37e211]:
+                - link "LinkedIn" [ref=f37e212] [cursor=pointer]:
+                  - /url: https://www.linkedin.com/showcase/whatsapp-business
+              - listitem [ref=f37e216]:
+                - link "Facebook" [ref=f37e217] [cursor=pointer]:
+                  - /url: https://www.facebook.com/WhatsAppBiz
+              - listitem [ref=f37e221]:
+                - link "Instagram" [ref=f37e222] [cursor=pointer]:
+                  - /url: https://www.instagram.com/whatsappforbusiness
+          - generic [ref=f37e226]:
+            - heading "Privacy" [level=6] [ref=f37e227]
+            - navigation "Footer Privacy" [ref=f37e228]:
+              - list [ref=f37e229]:
+                - listitem [ref=f37e230]:
+                  - link "Trust & Safety" [ref=f37e231] [cursor=pointer]:
+                    - /url: https://whatsappbusiness.com/trust-and-safety/
+                - listitem [ref=f37e232]:
+                  - link "Data Policy" [ref=f37e233] [cursor=pointer]:
+                    - /url: https://www.facebook.com/policy.php
+                - listitem [ref=f37e234]:
+                  - link "Privacy Protections" [ref=f37e235] [cursor=pointer]:
+                    - /url: https://whatsappbusiness.com/privacy-protections/
+                - listitem [ref=f37e236]:
+                  - link "Terms and Conditions" [ref=f37e237] [cursor=pointer]:
+                    - /url: https://whatsappbusiness.com/terms-and-conditions/
+                - listitem [ref=f37e238]:
+                  - link "Business Messaging Policy" [ref=f37e239] [cursor=pointer]:
+                    - /url: https://whatsappbusiness.com/policy/
+                - listitem [ref=f37e240]:
+                  - link "Terms and Privacy Policy" [ref=f37e241] [cursor=pointer]:
+                    - /url: https://www.whatsapp.com/legal
+                - listitem [ref=f37e242]:
+                  - link "Cookie settings" [ref=f37e243] [cursor=pointer]:
+                    - /url: https://www.facebook.com/policies/cookies
+          - generic [ref=f37e244]:
+            - heading "Resources" [level=6] [ref=f37e245]
+            - navigation "Footer Resources" [ref=f37e246]:
+              - list [ref=f37e247]:
+                - listitem [ref=f37e248]:
+                  - link "Blog" [ref=f37e249] [cursor=pointer]:
+                    - /url: /blog/
+                - listitem [ref=f37e250]:
+                  - link "FAQ" [ref=f37e251] [cursor=pointer]:
+                    - /url: /resources/faq/
+                - listitem [ref=f37e252]:
+                  - link "Help Center" [ref=f37e253] [cursor=pointer]:
+                    - /url: https://faq.whatsapp.com/
+                - listitem [ref=f37e254]:
+                  - link "Success Stories" [ref=f37e255] [cursor=pointer]:
+                    - /url: https://whatsappbusiness.com/resources/success-stories/
+                - listitem [ref=f37e256]:
+                  - link "Resource Library" [ref=f37e257] [cursor=pointer]:
+                    - /url: https://whatsappbusiness.com/resources/resource-library/
+                - listitem [ref=f37e258]:
+                  - link "Compliance Center" [ref=f37e259] [cursor=pointer]:
+                    - /url: https://www.facebook.com/business/business-messaging/compliance
+                - listitem [ref=f37e260]:
+                  - link "Ads in Status and Channels" [ref=f37e261] [cursor=pointer]:
+                    - /url: https://whatsappbusiness.com/whatsapp-ads/
+        - generic [ref=f37e262]:
+          - generic [ref=f37e263]: © 2026 WhatsApp Business
+          - generic [ref=f37e264]:
+            - navigation "Footer Legal / Language"
+            - button "EN" [ref=f37e266] [cursor=pointer]
+  - generic [ref=f37e274]:
+    - paragraph [ref=f37e275]:
+      - text: "To help personalize content, tailor and measure ads, and provide a safer experience, we use cookies. By clicking or navigating the site, you agree to allow our collection of information on and off Meta through cookies. Learn more, including about available controls:"
+      - link "Cookie Policy" [ref=f37e276] [cursor=pointer]:
+        - /url: https://www.facebook.com/policies/cookies
+    - button "I Agree" [ref=f37e278]

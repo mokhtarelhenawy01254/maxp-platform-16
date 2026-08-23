@@ -1764,3 +1764,64 @@ exports.getBirthdayAnalyticsReports = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø£Ø¹ÙŠØ§Ø¯ Ø§Ù„Ù…ÙŠÙ„Ø§Ø¯' });
     }
 };
+
+/**
+ * 🎉 جدولة حملة مناسبة (أوتوماتيك) — بتتبعت لوحدها في الموعد المحدد
+ * POST /api/v1/customers/whatsapp-notify/occasions/schedule
+ */
+exports.scheduleOccasionCampaign = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { name, message, scheduledAt, targetAudience } = req.body || {};
+
+        if (!message || !String(message).trim()) {
+            return res.status(400).json({ success: false, message: 'الرسالة مطلوبة' });
+        }
+        if (!scheduledAt) {
+            return res.status(400).json({ success: false, message: 'تاريخ الإرسال مطلوب' });
+        }
+
+        const prisma = getSharedPrismaClient();
+        const record = await prisma.broadcastCampaign.create({
+            data: {
+                companyId,
+                name: name || 'حملة مناسبة',
+                message: String(message).trim(),
+                channel: 'whatsapp',
+                targetAudience: targetAudience || 'all',
+                scheduledAt: new Date(scheduledAt),
+                status: 'scheduled',
+                creatorId: req.user?.id || null
+            }
+        });
+
+        return res.json({
+            success: true,
+            data: record,
+            message: 'تمت جدولة الحملة — هتتبعت تلقائياً في الموعد المحدد'
+        });
+    } catch (error) {
+        console.error('[CWA] scheduleOccasionCampaign error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جدولة الحملة' });
+    }
+};
+
+/**
+ * 📋 قائمة حملات المناسبات المجدولة
+ * GET /api/v1/customers/whatsapp-notify/occasions/scheduled
+ */
+exports.getScheduledOccasionCampaigns = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const prisma = getSharedPrismaClient();
+        const campaigns = await prisma.broadcastCampaign.findMany({
+            where: { companyId, channel: 'whatsapp', status: 'scheduled' },
+            orderBy: { scheduledAt: 'asc' },
+            take: 100
+        });
+        return res.json({ success: true, data: campaigns });
+    } catch (error) {
+        console.error('[CWA] getScheduledOccasionCampaigns error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جلب الحملات المجدولة' });
+    }
+};
