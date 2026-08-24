@@ -2909,18 +2909,46 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const normalizeOrderKey = (value) => String(value || '').trim().toLowerCase();
 
+    // Guest rows keyed by number + shared effective-status rule (handler scope
+    // so both the totals block and the response formatter use one definition):
+    // own metadata.preparationStatus (mapped) → regular twin's prep/status →
+    // stale guest_orders.status column.
+    const guestsByNumber = new Map();
+    const prepFromMeta = (m) => {
+      try {
+        const p = typeof m === 'string' ? JSON.parse(m) : m;
+        return p?.preparationStatus || null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const effectiveCodeForGuest = (numKey) => {
+      const g = guestsByNumber.get(numKey);
+      const t = regularTwinsByNumber.get(numKey);
+      const prep = t ? prepFromMeta(t.metadata) : prepFromMeta(g?.metadata);
+      if (prep) return String(getMappedRegularOrderStatus(prep)).toUpperCase();
+      return String((t ? t.status : g?.status) || '').toUpperCase();
+    };
+
     if (totalGuest > 0) {
       const filteredGuestOrderNumberRows = await getSharedPrismaClient().guestOrder.findMany({
         where: guestWhereClause,
         distinct: ['orderNumber'],
         select: {
-          orderNumber: true
+          orderNumber: true,
+          status: true,
+          metadata: true
         }
       });
 
       const filteredGuestOrderNumbers = filteredGuestOrderNumberRows
         .map((order) => (typeof order.orderNumber === 'string' ? order.orderNumber.trim() : ''))
         .filter(Boolean);
+
+      // Guest rows keyed by number — used by the shared effective-status rule.
+      for (const g of filteredGuestOrderNumberRows) {
+        guestsByNumber.set(normalizeOrderKey(g.orderNumber), g);
+      }
 
       if (filteredGuestOrderNumbers.length > 0) {
         const matchingRegularOrderNumbers = await getSharedPrismaClient().order.findMany({
@@ -2947,37 +2975,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         );
 
         // Global reconciliation: compute how MANY matching guest numbers
-        // survive the twin-status rule (no twin → survives; twin exists →
-        // survives only if its effective status matches the requested
-        // statuses). This replaces blind count subtraction so pagination
-        // reflects reality even when shadowed/reconciled sets overlap.
+        // survive the shared effective-status rule (own prep → twin prep/status
+        // → stale guest status). Survivors must match the requested filter.
         let survivorGuestNumbers = 0;
-        const globalTwinsByNumber = new Map(
-          matchingRegularOrderNumbers.map((t) => [normalizeOrderKey(t.orderNumber), t])
-        );
         if (hasActiveStatusFilter) {
           for (const num of filteredGuestOrderNumbers) {
-            const twin = globalTwinsByNumber.get(normalizeOrderKey(num));
-            if (!twin) {
-              survivorGuestNumbers += 1;
-              continue;
-            }
-            let twinPrep = null;
-            if (twin.metadata) {
-              try {
-                const pm =
-                  typeof twin.metadata === 'string'
-                    ? JSON.parse(twin.metadata)
-                    : twin.metadata;
-                twinPrep = pm?.preparationStatus || null;
-              } catch (e) {
-                twinPrep = null;
-              }
-            }
-            const twinEffective = String(
-              twinPrep || twin.status || '',
-            ).toUpperCase();
-            if (activeStatusFilterUpper.includes(twinEffective)) {
+            const eff = effectiveCodeForGuest(normalizeOrderKey(num));
+            if (activeStatusFilterUpper.includes(eff)) {
               survivorGuestNumbers += 1;
             } else {
               reconciledGuestsRemovedGlobal += 1;
@@ -3193,27 +3197,11 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         }
       }
 
-      // Twin-aware display status: prefer the regular counterpart's
-      // effective status (preparationStatus || status) over the stale
-      // guest_orders.status column.
+      // Unified effective status (own prep → twin prep/status → guest col),
+      // mapped to regular codes — identical rule used for filtering/totals.
       const twinKey = String(order.orderNumber || '').trim().toLowerCase();
-      const twinRegular = regularTwinsByNumber.get(twinKey);
-      let twinPrepStatus = null;
-      if (twinRegular?.metadata) {
-        try {
-          const twinMetaParsed =
-            typeof twinRegular.metadata === 'string'
-              ? JSON.parse(twinRegular.metadata)
-              : twinRegular.metadata;
-          twinPrepStatus = twinMetaParsed?.preparationStatus || null;
-        } catch (e) {
-          twinPrepStatus = null;
-        }
-      }
       const guestDisplayStatus = String(
-        twinRegular
-          ? twinPrepStatus || twinRegular.status || order.status || 'PENDING'
-          : order.status || 'PENDING',
+        effectiveCodeForGuest(twinKey) || order.status || 'PENDING',
       ).toLowerCase();
 
       return applyOrderDetailFeatureAccess({
@@ -3259,14 +3247,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const filteredGuestOrders = formattedGuestOrders.filter((order) => {
       const key = normalizeOrderKey(order.orderNumber);
       if (regularOrderNumberSet.has(key)) return false;
-      // Twin-status filter reconciliation: when a status filter is active and
-      // this guest has a regular counterpart, the displayed (twin-aware)
-      // status must actually match the requested statuses — otherwise the
-      // stale guest row leaks into filters it no longer belongs to.
+      // Unified reconciliation: with an active status filter, a guest row
+      // survives only if its shared effective status (own prep → twin →
+      // stale column) actually matches the requested statuses — otherwise
+      // stale rows leak into filters they no longer belong to.
       if (
         hasActiveStatusFilter &&
-        regularTwinsByNumber.has(key) &&
-        !activeStatusFilterUpper.includes(String(order.status || '').toUpperCase())
+        !activeStatusFilterUpper.includes(effectiveCodeForGuest(key))
       ) {
         reconciledGuestsRemoved += 1;
         return false;
@@ -3339,7 +3326,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       },
       meta: {
         showIncompleteCartsInOrders: Boolean(showIncompleteCarts),
-        guestReconciliationV3: true,
+        guestReconciliationV4: true,
         reconciledGuestsRemoved: reconciledGuestsRemovedGlobal
       }
     });
