@@ -2,14 +2,11 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
-  ShoppingBagIcon,
-  BriefcaseIcon,
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
   EyeIcon,
   FunnelIcon,
   ExclamationTriangleIcon,
-  ArrowPathIcon,
   ArrowLeftIcon,
   BoltIcon,
 } from "@heroicons/react/24/outline";
@@ -26,15 +23,7 @@ import type {
 
 interface OrdersToolbarProps {
   filters: OrdersFilters;
-  loading: boolean;
-  totalOrders: number;
-  activeFilterCount: number;
   advancedFilterCount: number;
-  isMerchant: boolean;
-  hasAgentWorkspace: boolean;
-  ordersCount: number;
-  page: number;
-  limit: number;
   ordersLoadError: string | null;
   showAdvancedFilters: boolean;
   fieldClassName: string;
@@ -47,30 +36,18 @@ interface OrdersToolbarProps {
   showMerchantOperationFilters: boolean;
   showAffiliateOperationFilter: boolean;
   hasCustomDateFilters: boolean;
-  lastUpdatedAt: Date | null;
-  isConnected: boolean;
   getAffiliateDisplayName: (affiliate: AffiliateFilterOption) => string;
   onFilterChange: (key: keyof OrdersFilters, value: OrdersFilters[keyof OrdersFilters]) => void;
   onApplyFilters: (next: Partial<OrdersFilters>) => void;
   onClearAdvancedFilters: () => void;
   onToggleAdvancedFilters: () => void;
   onSetQuickDate: (range: string) => void;
-  onOpenWorkspace: () => void;
   onRetry: () => void;
-  onRefresh: () => void;
 }
 
 export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   filters,
-  loading,
-  totalOrders,
-  activeFilterCount,
   advancedFilterCount,
-  isMerchant,
-  hasAgentWorkspace,
-  ordersCount,
-  page,
-  limit,
   ordersLoadError,
   showAdvancedFilters,
   fieldClassName,
@@ -83,17 +60,13 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   showMerchantOperationFilters,
   showAffiliateOperationFilter,
   hasCustomDateFilters,
-  lastUpdatedAt,
-  isConnected,
   getAffiliateDisplayName,
   onFilterChange,
   onApplyFilters,
   onClearAdvancedFilters,
   onToggleAdvancedFilters,
   onSetQuickDate,
-  onOpenWorkspace,
   onRetry,
-  onRefresh,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -235,97 +208,6 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
 
   return (
     <div className="mb-3 space-y-2.5">
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/80 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
-              <ShoppingBagIcon className="h-4 w-4" />
-              {isMerchant ? t("orders.myOrders") : t("orders.title")}
-            </span>
-            {!loading && (
-              <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300">
-                {t("orders.totalOrdersCount", { count: totalOrders })}
-              </span>
-            )}
-            {activeFilterCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
-                <FunnelIcon className="h-3.5 w-3.5" />
-                {t("orders.activeFiltersCount", { count: activeFilterCount })}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          <div className="flex w-full gap-1.5 sm:w-auto sm:gap-2">
-            <button
-              onClick={() => onFilterChange("status", [])}
-              className={`relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center rounded-[16px] px-2 sm:px-4 py-2 text-sm font-semibold transition ${!filters.status || filters.status.length === 0
-                ? "bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300"
-                : "border border-slate-200/70 bg-white/70 text-slate-500 hover:text-slate-800 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-slate-100"
-                }`}
-            >
-              {t("orders.allOrders")}
-            </button>
-            {hasAgentWorkspace && (
-              <button
-                onClick={onOpenWorkspace}
-                title={t('orders.workspaceSubtitle')}
-                className="relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center gap-1.5 rounded-[16px] bg-blue-600 px-2 sm:px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-              >
-                <BriefcaseIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
-                <span className="sm:hidden">{t('orders.myWorkspace')}</span>
-              </button>
-            )}
-
-            {!loading && (
-              <div className="hidden items-center gap-2 rounded-full border border-slate-200/70 bg-white/75 px-3 py-2 text-xs font-medium text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 lg:inline-flex">
-                <span>{t("orders.showing")}</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {ordersCount > 0
-                    ? `${(page - 1) * limit + 1}-${Math.min(page * limit, totalOrders)}`
-                    : "0"}
-                </span>
-                <span>{t("orders.of")} {totalOrders}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Refresh + live indicator */}
-          <div className="flex items-center gap-1.5">
-            <span
-              title={isConnected ? String(t("orders.liveUpdates")) : String(t("orders.offlineUpdates"))}
-              className={`hidden h-2 w-2 rounded-full sm:inline-block ${isConnected
-                ? "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]"
-                : "bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.2)]"
-                }`}
-            />
-            {lastUpdatedAt && (
-              <span className="hidden text-[11px] font-medium text-slate-400 dark:text-slate-500 md:inline">
-                {t("orders.lastUpdatedAt", {
-                  time: lastUpdatedAt.toLocaleTimeString("ar-EG", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  }),
-                })}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={onRefresh}
-              title={String(t("orders.refreshOrders"))}
-              aria-label={String(t("orders.refreshOrders"))}
-              disabled={loading}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-600 transition hover:bg-slate-50 hover:text-blue-600 disabled:opacity-60 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Compact Filters Section */}
       <div className="rounded-[22px] border border-slate-200/70 bg-white/90 p-2 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
         <div className="flex flex-col gap-3">

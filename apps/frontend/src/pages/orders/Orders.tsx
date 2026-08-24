@@ -23,7 +23,7 @@ import { OrdersMobileList } from "./components/OrdersMobileList";
 import { OrdersToolbar } from "./components/OrdersToolbar";
 import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
-import { OrdersOverviewStats } from "./components/OrdersOverviewStats";
+
 import { OrdersPagination } from "./components/OrdersPagination";
 import { BulkActionBar } from "./components/BulkActionBar";
 import { CommandPalette } from "../../components/common/CommandPalette";
@@ -2683,19 +2683,9 @@ const Orders: React.FC = () => {
       <div className="w-full max-w-none">
         <HeldOrdersBanner />
 
-        <OrdersOverviewStats />
-
         <OrdersToolbar
         filters={filters}
-        loading={loading}
-        totalOrders={totalOrders}
-        activeFilterCount={activeFilterCount}
         advancedFilterCount={advancedFilterCount}
-        isMerchant={isMerchant}
-        hasAgentWorkspace={hasAgentWorkspace}
-        ordersCount={orders.length}
-        page={page}
-        limit={limit}
         ordersLoadError={ordersLoadError}
         showAdvancedFilters={showAdvancedFilters}
         fieldClassName={fieldClassName}
@@ -2714,11 +2704,7 @@ const Orders: React.FC = () => {
         onClearAdvancedFilters={clearAdvancedFilters}
         onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
         onSetQuickDate={setQuickDate}
-        onOpenWorkspace={() => navigate("/orders/workspace")}
         onRetry={fetchOrders}
-        onRefresh={fetchOrders}
-        lastUpdatedAt={lastUpdatedAt}
-        isConnected={isConnected}
       />
 
       <OrdersStatsBar
