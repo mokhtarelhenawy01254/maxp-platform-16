@@ -90,44 +90,64 @@ function resolveOrderPrimaryImage(order) {
  */
 async function findNotificationTemplateForEvent(companyId, eventType, sessionProvider, prisma) {
   const isMetaSession = String(sessionProvider || '').toUpperCase() === 'META_CLOUD';
+  // 🚨 PRODUCTION-FIX (deterministic-template-selection-2026-08-23):
+  // الشركات عندها سجلات قوالب مكررة لنفس الحدث (بعضها مربوط بقالب ميتا معتمد
+  // وبعضها نص عادي) وكلها isActive بلا isDefault — orderBy على isDefault وحده
+  // يعطي ترتيباً غير حاسم في Postgres فتتغير القوالب المختارة بين إرسال وآخر
+  // (= العميل مرة يستلم قالب ميتا ومرة نص حر يفشل خارج نافذة 24 ساعة).
+  // الحل: فلتر metaTemplateStatus='APPROVED' في الاستعلام + ترتيب حاسم
+  // (isDefault → updatedAt → createdAt).
+  const DETERMINISTIC_ORDER = [
+    { isDefault: 'desc' },
+    { updatedAt: 'desc' },
+    { createdAt: 'desc' }
+  ];
+  const isApprovedLink = (t) =>
+    Boolean(t?.metaTemplateName) && String(t?.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
 
   if (isMetaSession) {
     // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
-    const metaTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
-      where: { companyId, eventType, isActive: true, channel: 'META_CLOUD' },
-      orderBy: { isDefault: 'desc' }
-    });
-    if (metaTemplate && metaTemplate.metaTemplateName && String(metaTemplate.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
-      return metaTemplate;
-    }
+    // 🚨 (meta-template-empty-name): استبعاد السجلات ذات metaTemplateName فارغ مباشرةً،
+    // وفلتر APPROVED في الاستعلام حتى لا يظلّل سجل غير معتمد على سجل معتمد أقدم.
+    const metaTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+      where: {
+        companyId,
+        eventType,
+        isActive: true,
+        channel: 'META_CLOUD',
+        metaTemplateName: { not: null },
+        metaTemplateStatus: { equals: 'APPROVED', mode: 'insensitive' }
+      },
+      orderBy: DETERMINISTIC_ORDER
+    }));
+    if (isApprovedLink(metaTemplate)) return metaTemplate;
 
     // 2) توافق قديم (legacy): سجل عادي (channel AUTO/غير محدد) عليه ربط ميتا معتمد.
     //    لازم يتفّضل على القالب العادي الصريح — وإلا هيتبعت نص حر بدل قالب ميتا.
-    const legacyMeta = await prisma.whatsAppNotificationTemplate.findFirst({
+    const legacyMeta = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
       where: {
         companyId,
         eventType,
         isActive: true,
         channel: { not: 'META_CLOUD' },
         metaTemplateName: { not: null },
+        metaTemplateStatus: { equals: 'APPROVED', mode: 'insensitive' }
       },
-      orderBy: { isDefault: 'desc' }
-    });
-    if (legacyMeta && legacyMeta.metaTemplateName && String(legacyMeta.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
-      return legacyMeta;
-    }
+      orderBy: DETERMINISTIC_ORDER
+    }));
+    if (isApprovedLink(legacyMeta)) return legacyMeta;
   }
 
-  const regularTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
+  const regularTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
     where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
-    orderBy: { isDefault: 'desc' }
-  });
+    orderBy: DETERMINISTIC_ORDER
+  }));
   if (regularTemplate) return regularTemplate;
 
-  return prisma.whatsAppNotificationTemplate.findFirst({
+  return safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
     where: { companyId, eventType, isActive: true },
-    orderBy: { isDefault: 'desc' }
-  });
+    orderBy: DETERMINISTIC_ORDER
+  }));
 }
 
 /**
