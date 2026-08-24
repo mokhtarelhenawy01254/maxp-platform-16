@@ -342,8 +342,10 @@ async def chat_merchant(
         )
     except Exception as e:
         logger.error("merchant chat failed", error=str(e), thread_id=thread_id)
+        # Silent Escalation: never expose AI errors to merchants either.
         return ChatResponse(
-            status="error",
+            status="escalated",
             thread_id=thread_id,
-            reply=t("error.chat.merchant", locale="ar"),
+            reply=None,
+            escalation={"reason": f"merchant_unhandled_exception: {str(e)}"},
         )
