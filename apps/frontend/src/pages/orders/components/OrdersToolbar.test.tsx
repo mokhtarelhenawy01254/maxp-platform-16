@@ -70,7 +70,7 @@ describe("OrdersToolbar", () => {
     );
 
     expect(
-      screen.getByPlaceholderText("orders.searchPlaceholder"),
+      screen.getByPlaceholderText("orders.searchPlaceholderUnified"),
     ).toBeInTheDocument();
     expect(screen.getByText("orders.filters")).toBeInTheDocument();
   });

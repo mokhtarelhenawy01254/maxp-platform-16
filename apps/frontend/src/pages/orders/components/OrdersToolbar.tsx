@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   ShoppingBagIcon,
   BriefcaseIcon,
@@ -9,6 +10,8 @@ import {
   FunnelIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
+  ArrowLeftIcon,
+  BoltIcon,
 } from "@heroicons/react/24/outline";
 import { CommandPalette } from "../../../components/common/CommandPalette";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
@@ -90,6 +93,54 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   onRefresh,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  // Smart order-code detection: when the typed value looks like an order
+  // code (ORD-… or a long numeric code), offer one-press navigation to the
+  // order details instead of filtering the list.
+  const trimmedSearch = filters.search.trim();
+  const looksLikeOrderCode =
+    /^ORD-/i.test(trimmedSearch) || /^\d{6,}$/.test(trimmedSearch);
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && looksLikeOrderCode) {
+      e.preventDefault();
+      navigate(`/orders/${trimmedSearch}`);
+    }
+  };
+
+  // Quick views: one-press presets for the highest-frequency filter combos.
+  const quickViews = useMemo(
+    () => [
+      {
+        key: "today",
+        label: t("orders.today"),
+        isActive: (f: OrdersFilters) => f.timeRange === "today",
+        apply: () => onSetQuickDate("today"),
+      },
+      {
+        key: "pending",
+        label: t("orders.pending"),
+        isActive: (f: OrdersFilters) =>
+          f.status.length === 1 && f.status[0]?.toUpperCase() === "PENDING",
+        apply: () => onFilterChange("status", ["PENDING"]),
+      },
+      {
+        key: "processing",
+        label: t("orders.processing"),
+        isActive: (f: OrdersFilters) =>
+          f.status.length === 1 && f.status[0]?.toUpperCase() === "PROCESSING",
+        apply: () => onFilterChange("status", ["PROCESSING"]),
+      },
+      {
+        key: "cancelled",
+        label: t("orders.cancelled"),
+        isActive: (f: OrdersFilters) =>
+          f.status.length === 1 && f.status[0]?.toUpperCase() === "CANCELLED",
+        apply: () => onFilterChange("status", ["CANCELLED"]),
+      },
+    ],
+    [t, onSetQuickDate, onFilterChange],
+  );
 
   const statusOptions = useMemo<MultiSelectOption[]>(
     () => [
@@ -194,7 +245,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               </span>
             )}
             {activeFilterCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200/70 bg-fuchsia-50/80 px-3 py-1 text-xs font-medium text-fuchsia-700 dark:border-fuchsia-500/20 dark:bg-fuchsia-500/10 dark:text-fuchsia-200">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
                 <FunnelIcon className="h-3.5 w-3.5" />
                 {t("orders.activeFiltersCount", { count: activeFilterCount })}
               </span>
@@ -217,7 +268,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               <button
                 onClick={onOpenWorkspace}
                 title={t('orders.workspaceSubtitle')}
-                className="relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center gap-1.5 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-2 sm:px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
+                className="relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center gap-1.5 rounded-[16px] bg-blue-600 px-2 sm:px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 <BriefcaseIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
@@ -275,6 +326,30 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
       {/* Compact Filters Section */}
       <div className="rounded-[22px] border border-slate-200/70 bg-white/90 p-2 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
         <div className="flex flex-col gap-3">
+          {/* Quick views: one-press presets for the highest-frequency filters */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="hidden items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 sm:inline-flex">
+              <BoltIcon className="h-3.5 w-3.5" />
+              {t("orders.quickViews")}
+            </span>
+            {quickViews.map((view) => {
+              const active = view.isActive(filters);
+              return (
+                <button
+                  key={view.key}
+                  type="button"
+                  onClick={view.apply}
+                  className={`inline-flex min-h-[32px] items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition ${active
+                    ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                    : "border-slate-200/80 bg-white/80 text-slate-600 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
+                    }`}
+                >
+                  {view.label}
+                </button>
+              );
+            })}
+          </div>
+
           {ordersLoadError && (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-red-200/80 bg-red-50/80 px-3 py-1.5 text-[11px] text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
               <div className="flex min-w-0 items-center gap-2">
@@ -295,12 +370,28 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
-                aria-label={String(t("orders.searchPlaceholder"))}
-                placeholder={t("orders.searchPlaceholder")}
+                aria-label={String(t("orders.searchPlaceholderUnified"))}
+                placeholder={t("orders.searchPlaceholderUnified")}
                 value={filters.search}
                 onChange={(e) => onFilterChange("search", e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 className={`${fieldClassName} pr-10`}
               />
+              {looksLikeOrderCode && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/orders/${trimmedSearch}`)}
+                  className="absolute right-0 top-full z-20 mt-1.5 flex w-full min-w-[240px] items-center justify-between gap-2 rounded-xl border border-blue-200/80 bg-white px-3 py-2 text-sm shadow-lg shadow-slate-900/5 transition hover:bg-blue-50/70 dark:border-blue-500/30 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                >
+                  <span className="flex items-center gap-2 font-semibold text-blue-600 dark:text-blue-300">
+                    <ArrowLeftIcon className="h-4 w-4" />
+                    {t("orders.openOrderHint")}: {trimmedSearch}
+                  </span>
+                  <kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                    ↵
+                  </kbd>
+                </button>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
@@ -309,7 +400,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 type="button"
                 onClick={onToggleAdvancedFilters}
                 className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${showAdvancedFilters
-                  ? "border-fuchsia-300/80 bg-fuchsia-50/90 text-fuchsia-700 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/10 dark:text-fuchsia-200"
+                  ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/20"
                   : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
                   }`}
               >
@@ -318,7 +409,10 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                   {showAdvancedFilters ? t("orders.hideFilters") : t("orders.filters")}
                 </span>
                 {advancedFilterCount > 0 && (
-                  <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[11px] font-bold text-fuchsia-700 dark:bg-slate-900/80 dark:text-fuchsia-200">
+                  <span className={`inline-flex min-w-[22px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold ${showAdvancedFilters
+                    ? "bg-white/90 text-blue-700 dark:bg-slate-900/80 dark:text-blue-200"
+                    : "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
+                    }`}>
                     {advancedFilterCount}
                   </span>
                 )}

@@ -5,11 +5,10 @@ import i18n from "../../i18n";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import useSocket from "../../hooks/useSocket";
-import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { format, subDays } from "date-fns";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
-import { summarizeOrderDocumentItems } from "../../utils/orderDocumentQuantityOffers";
 import { getOrderStatusDisplay, getStatusDisplay } from "../../utils/statusRegistry";
 import {
   AFFILIATE_OPERATION_APP_SLUGS,
@@ -39,17 +38,9 @@ const InvoiceModal = React.lazy(
 );
 
 import {
-  ShoppingBagIcon,
-  EyeIcon,
-  CheckCircleIcon,
-  PrinterIcon,
   InformationCircleIcon,
   StarIcon,
   ExclamationTriangleIcon,
-  RocketLaunchIcon,
-  ChatBubbleLeftRightIcon,
-  MagnifyingGlassIcon,
-  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 
@@ -1092,165 +1083,6 @@ const HeldOrdersBanner: React.FC = () => {
   );
 };
 
-interface OrderCodeSearchResult {
-  id: string;
-  orderNumber: string;
-  customerName?: string;
-  customerPhone?: string;
-  status?: string;
-  total?: number;
-  currency?: string;
-}
-
-const OrderCodeSearch: React.FC<{ fieldClassName: string }> = ({ fieldClassName }) => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<OrderCodeSearchResult | null>(null);
-  const [error, setError] = useState("");
-  const [notFound, setNotFound] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const reset = useCallback(() => {
-    setResult(null);
-    setError("");
-    setNotFound(false);
-  }, []);
-
-  const handleSearch = useCallback(async () => {
-    const query = code.trim();
-    if (!query) return;
-
-    setLoading(true);
-    setError("");
-    setNotFound(false);
-    setResult(null);
-
-    try {
-      const response = await apiClient.get<{
-        success?: boolean;
-        data?: OrderCodeSearchResult;
-      }>(`/orders-enhanced/${encodeURIComponent(query)}`);
-      const body = response.data;
-      if (body?.success && body?.data) {
-        setResult({
-          id: body.data.id,
-          orderNumber: body.data.orderNumber || query,
-          customerName: body.data.customerName || t("sidebar.orderCustomerUnknown"),
-          customerPhone: body.data.customerPhone || "",
-          status: body.data.status || "PENDING",
-          total: typeof body.data.total === "number" ? body.data.total : parseFloat(String(body.data.total)) || 0,
-          currency: body.data.currency || "EGP",
-        });
-      } else {
-        setNotFound(true);
-      }
-    } catch (err) {
-      const axiosError = err as {
-        response?: { status?: number; data?: { message?: string } };
-      };
-      if (axiosError.response?.status === 404) {
-        setNotFound(true);
-      } else if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
-        setError(t("sidebar.orderSearchSessionError"));
-      } else {
-        setError(t("sidebar.orderSearchError"));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [code, t]);
-
-  const statusDisplay = result?.status ? getOrderStatusDisplay(result.status) : null;
-
-  return (
-    <div className="mb-3 rounded-[22px] border border-slate-200/70 bg-white/90 p-3 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:min-w-0">
-          <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value);
-              if (result || notFound || error) reset();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSearch();
-            }}
-            placeholder={t("sidebar.orderSearchPlaceholder")}
-            className={`${fieldClassName} pr-10`}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={handleSearch}
-          disabled={loading || !code.trim()}
-          className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-        >
-          {loading ? (
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <MagnifyingGlassIcon className="h-4 w-4" />
-          )}
-          {t("sidebar.orderSearchAction")}
-        </button>
-      </div>
-
-      {error && (
-        <div className="mt-2 rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-          {error}
-        </div>
-      )}
-
-      {notFound && (
-        <div className="mt-2 rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-          {t("sidebar.orderSearchNotFound", { code })}
-        </div>
-      )}
-
-      {result && (
-        <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-700/70 dark:bg-slate-800/50">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
-              #{result.orderNumber}
-            </span>
-            {statusDisplay && (
-              <span
-                className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                style={{ backgroundColor: statusDisplay.bgColor, color: statusDisplay.textColor }}
-              >
-                {statusDisplay.label}
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            {result.customerName}
-          </span>
-          {result.customerPhone && (
-            <span className="text-xs text-slate-500 dark:text-slate-400" dir="ltr">
-              {result.customerPhone}
-            </span>
-          )}
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-            {result.total?.toLocaleString()} {result.currency}
-          </span>
-          <button
-            type="button"
-            onClick={() => navigate(`/orders/${result.id}`)}
-            className="ml-auto inline-flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-          >
-            <EyeIcon className="h-3.5 w-3.5" />
-            {t("orders.viewDetails")}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const ordersRef = useRef(orders);
@@ -1307,6 +1139,18 @@ const Orders: React.FC = () => {
 
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
+  );
+  // Debounced search: the input updates filters.search instantly (responsive
+  // typing) while list fetches wait for a 300ms pause — one request per query
+  // instead of one per keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(filters.search), 300);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+  const effectiveFilters = useMemo<OrdersFilters>(
+    () => ({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch],
   );
   // Keep a ref to the latest filters so the socket listeners (which only
   // re-subscribe on [socket, isConnected, page]) can read current filter
@@ -1532,11 +1376,8 @@ const Orders: React.FC = () => {
     filters.timeRange === "custom" || filters.startDate || filters.endDate,
   );
 
-  useEffect(() => {
-    if (advancedFilterCount > 0 || hasCustomDateFilters || ordersLoadError) {
-      setShowAdvancedFilters(true);
-    }
-  }, [advancedFilterCount, hasCustomDateFilters, ordersLoadError]);
+  // Active advanced filters are surfaced via FilterChips while the panel stays
+  // collapsed — no auto-open. Users expand deliberately with the فلاتر toggle.
 
   // Socket.IO Integration
   const { socket, isConnected } = useSocket();
@@ -1792,7 +1633,9 @@ const Orders: React.FC = () => {
 
   useEffect(() => {
     void fetchOrdersRef.current();
-  }, [page, limit, filters]);
+    // effectiveFilters (debounced search) — not raw filters — so typing fires
+    // one request per paused query instead of one per keystroke.
+  }, [page, limit, effectiveFilters]);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -2819,8 +2662,6 @@ const Orders: React.FC = () => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.96)_0%,_rgba(241,245,249,0.94)_100%)] px-2 py-2 dark:bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.2),_transparent_34%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(15,23,42,0.98)_100%)] sm:px-4 sm:py-3 lg:px-3">
       <div className="w-full max-w-none">
         <HeldOrdersBanner />
-
-        <OrderCodeSearch fieldClassName={fieldClassName} />
 
         <OrdersOverviewStats />
 
