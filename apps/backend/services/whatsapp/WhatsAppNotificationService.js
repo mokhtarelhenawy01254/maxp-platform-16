@@ -1037,7 +1037,7 @@ async function sendNotification(options) {
 
     if (!sessionId) {
       console.log(`⚠️ [WHATSAPP-DEBUG] No session available for company ${companyId}`);
-      return { success: false, reason: 'no_session' };
+      return { success: false, reason: 'no_session', error: 'لا توجد جلسة واتساب متصلة للشركة — يرجى ربط حساب واتساب (Meta Cloud أو Baileys) من إعدادات الشركة أولاً' };
     }
 
     // 🆕 تحديد نوع الجلسة (META_CLOUD vs BAILEYS) من قاعدة البيانات.
