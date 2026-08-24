@@ -1404,14 +1404,20 @@ class OrderService {
             // DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback isFallback.
             // 🛡️ PRODUCTION-FIX (custom-status-enum): نستخدم الكود الأصلي (originalRequestedStatus)
             // — مش الـ stored enum — عشان قالب الحالة المخصصة (مثل DELAYED-WITH-CAPTAIN) يشتغل.
-            const notificationStatus = normalizeWhatsAppOrderStatus(originalRequestedStatus) || originalRequestedStatus;
+            // 🛡️ PRODUCTION-FIX (prep-stage-alias): من غير normalizeWhatsAppOrderStatus هنا —
+            // التحويل PACKAGED→PACKED كان بيكسر لقط قالب التاجر المسجّل باسم PACKAGED
+            // (وPREPARING→PICKING مقابل PREPARING) فكانت الرسالة بتتخطّى بصمت no_template.
+            // الـ persistence بيتظبط جوّه الخدمة عبر getPersistedNotificationEventType.
+            const notificationStatus = originalRequestedStatus
+              || normalizeWhatsAppOrderStatus(originalRequestedStatus)
+              || status;
 
             // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
             // 🛡️ PRODUCTION-FIX (custom-status-enum-dedup): الـ dedup لازم يستخدم نفس القيمة اللي
             // هتتخزن فعلاً في whatsAppNotificationLog.eventType — للحالات المخصصة دي `mapsToSystem`
             // (مثل ON_HOLD) مش الكود المخصص — وإلا الرسالة المكررة متتعرفش (قد تسبب سبام للعميل).
             const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
-            const persistedEventForDedup = getPersistedNotificationEventType(storedStatus || notificationStatus);
+            const persistedEventForDedup = getPersistedNotificationEventType(notificationStatus);
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
               companyId: order.companyId,
               orderId: order.id,
@@ -1620,17 +1626,20 @@ class OrderService {
               return;
             }
 
-            const notificationStatus = normalizeWhatsAppOrderStatus(status) || status;
+            // 🛡️ PRODUCTION-FIX (prep-stage-alias): الكود الأصلي من غير تحويل — نفس منطق
+            // المسار العادي فوق؛ القوالب مسجّلة بالكود الأصلي (PACKAGED/PREPARING).
+            const notificationStatus = status;
 
             // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
             // لا تحجب الحالات غير المرسومة — دع sendOrderStatusNotification يقرر
             // (DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback).
             const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+            const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
             // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
               companyId,
               recipientPhone: notificationOrder.customerPhone,
-              eventType: notificationStatus,
+              eventType: getPersistedNotificationEventType(notificationStatus),
             });
 
             if (recentNotification) {
