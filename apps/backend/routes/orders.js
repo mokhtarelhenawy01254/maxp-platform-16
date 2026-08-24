@@ -2903,6 +2903,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // status no longer matches the requested status filter (see reconciliation
     // note below). Computed over ALL matching guests so pagination stays right.
     let reconciledGuestsRemovedGlobal = 0;
+    // Distinct matching-guest numbers that SURVIVE twin reconciliation — used
+    // as the authoritative guest side of totals when a status filter is active.
+    let reconciledSurvivorGuestCount = 0;
 
     const normalizeOrderKey = (value) => String(value || '').trim().toLowerCase();
 
@@ -2943,17 +2946,22 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           filteredGuestOrderNumbers.filter((n) => regularNormalizedKeys.has(normalizeOrderKey(n)))
         );
 
-        // Global reconciliation count: for every matching guest that has a
-        // regular twin, evaluate the twin's effective status against the
-        // requested filter. Twins that no longer match must be excluded from
-        // totals (their output-side removal happens in filteredGuestOrders).
+        // Global reconciliation: compute how MANY matching guest numbers
+        // survive the twin-status rule (no twin → survives; twin exists →
+        // survives only if its effective status matches the requested
+        // statuses). This replaces blind count subtraction so pagination
+        // reflects reality even when shadowed/reconciled sets overlap.
+        let survivorGuestNumbers = 0;
+        const globalTwinsByNumber = new Map(
+          matchingRegularOrderNumbers.map((t) => [normalizeOrderKey(t.orderNumber), t])
+        );
         if (hasActiveStatusFilter) {
-          const globalTwinsByNumber = new Map(
-            matchingRegularOrderNumbers.map((t) => [normalizeOrderKey(t.orderNumber), t])
-          );
           for (const num of filteredGuestOrderNumbers) {
             const twin = globalTwinsByNumber.get(normalizeOrderKey(num));
-            if (!twin) continue;
+            if (!twin) {
+              survivorGuestNumbers += 1;
+              continue;
+            }
             let twinPrep = null;
             if (twin.metadata) {
               try {
@@ -2969,11 +2977,16 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             const twinEffective = String(
               twinPrep || twin.status || '',
             ).toUpperCase();
-            if (!activeStatusFilterUpper.includes(twinEffective)) {
+            if (activeStatusFilterUpper.includes(twinEffective)) {
+              survivorGuestNumbers += 1;
+            } else {
               reconciledGuestsRemovedGlobal += 1;
             }
           }
+        } else {
+          survivorGuestNumbers = filteredGuestOrderNumbers.length;
         }
+        reconciledSurvivorGuestCount = survivorGuestNumbers;
 
         if (shadowedGuestOrderNumberSet.size > 0) {
           shadowedGuestTotal = await getSharedPrismaClient().guestOrder.count({
@@ -3303,7 +3316,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       paginatedOrders.push(order);
     }
 
-    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal - reconciledGuestsRemovedGlobal + (cartQueryWhere ? totalIncomplete : 0), 0);
+    // When a status filter is active, guest totals come from twin
+    // reconciliation (distinct surviving numbers) instead of raw row counts —
+    // stale guest twins would otherwise inflate/deflate pagination.
+    const totalOrders = Math.max(
+      hasActiveStatusFilter
+        ? totalRegular + reconciledSurvivorGuestCount + (cartQueryWhere ? totalIncomplete : 0)
+        : totalRegular + totalGuest - shadowedGuestTotal + (cartQueryWhere ? totalIncomplete : 0),
+      0,
+    );
 
     console.log(`📊 [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
 
@@ -3318,7 +3339,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       },
       meta: {
         showIncompleteCartsInOrders: Boolean(showIncompleteCarts),
-        guestReconciliationV2: true,
+        guestReconciliationV3: true,
         reconciledGuestsRemoved: reconciledGuestsRemovedGlobal
       }
     });
