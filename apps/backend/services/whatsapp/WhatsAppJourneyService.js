@@ -262,8 +262,10 @@ class WhatsAppJourneyService {
                 recipientPhone: phone,
                 recipientName: `${journey.customer.firstName || ''} ${journey.customer.lastName || ''}`.trim(),
                 recipientType: 'CUSTOMER',
-                category: 'MARKETING',
-                eventType: isCategoryTrigger ? 'CATEGORY_FOLLOWUP' : 'POST_DELIVERY_FOLLOWUP',
+                category: 'OCCASION',
+                // NOTE: مؤقتاً نستخدم قالب المناسبة المعتمد CUSTOMER_OCCASION_msvsy2ut
+                // حتى يُنشأ قالب مخصص (POST_DELIVERY_FOLLOWUP / CATEGORY_FOLLOWUP) ومعتمد على Meta.
+                eventType: 'CUSTOMER_OCCASION_msvsy2ut',
                 contentOverride: step.content,
                 variables: {
                     firstName: journey.customer.firstName || '',

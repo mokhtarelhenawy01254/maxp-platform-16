@@ -203,8 +203,8 @@ async function processDueOccasions() {
               recipientPhone: phone,
               recipientName: name,
               recipientType: 'CUSTOMER',
-              category: 'MARKETING',
-              eventType: 'OCCASION_CAMPAIGN',
+              category: 'OCCASION',
+              eventType: 'CUSTOMER_OCCASION_msvsy2ut',
               contentOverride: message,
               variables: {
                 customerName: name,
