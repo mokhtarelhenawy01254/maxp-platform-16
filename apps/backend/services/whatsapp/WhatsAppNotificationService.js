@@ -956,8 +956,11 @@ async function sendNotification(options) {
     channel = null,
     // 🛡️ PRODUCTION-FIX (custom-status-enum): قيمة enum صالحة تُخزّن في whatsAppNotificationLog
     // للحالات المخصصة (مثل mapsToSystem بتاعها) — لأن eventType في السجل enum مقفول.
-    persistedEventType = null
+    persistedEventType = null,
+    // 🛡️ PRODUCTION-FIX (guest-order-fk): الضيوف ملهمش صف في orders — اللوج بـ orderId=null
+    isGuestOrder = false
   } = options;
+  const safeOrderId = isGuestOrder ? null : orderId;
 
   const prisma = getSharedPrismaClient();
 
@@ -1273,7 +1276,7 @@ async function sendNotification(options) {
           category: persistedCategory,
           eventType: persistedEventType,
           content,
-          orderId: order?.isGuestOrder ? null : orderId,
+          orderId: safeOrderId,
           customerId,
           productId,
           employeeId,
@@ -1282,7 +1285,7 @@ async function sendNotification(options) {
         }
       }));
     } catch (logCreateError) {
-      console.warn(`[WHATSAPP-DEBUG] Log create failed (${logCreateError.message}) — retrying raw SQL${order?.isGuestOrder ? ' (guest, orderId=null)' : ''}...`);
+      console.warn(`[WHATSAPP-DEBUG] Log create failed (${logCreateError.message}) — retrying raw SQL${isGuestOrder ? ' (guest, orderId=null)' : ''}...`);
       try {
         const result = await prisma.$queryRaw`
           INSERT INTO "whatsapp_notification_logs" (
@@ -1295,7 +1298,7 @@ async function sendNotification(options) {
             CAST(${persistedRecipientType} AS "whatsapp_notification_logs_recipientType"),
             CAST(${persistedCategory} AS "whatsapp_notification_logs_category"),
             CAST(${persistedEventType} AS "whatsapp_notification_logs_eventType"), ${content},
-            ${order?.isGuestOrder ? null : orderId}, ${customerId}, 'PENDING', NOW(), NOW()
+            ${safeOrderId}, ${customerId}, 'PENDING', NOW(), NOW()
           ) RETURNING *;
         `;
         notificationLog = result[0];
@@ -2292,6 +2295,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
       },
       orderId: trackedOrderId,
       customerId: order.customerId,
+      isGuestOrder: order?.isGuestOrder === true,
       priority: 2
     });
 
