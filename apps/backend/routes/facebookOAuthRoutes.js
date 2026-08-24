@@ -637,8 +637,9 @@ const FACEBOOK_PIXEL_SCOPES =
   "business_management,ads_management,ads_read";
 
 // Facebook OAuth Scopes - Isolated Ads connection
+// pages_show_list + pages_manage_ads مطلوبة لإنشاء Ad Creative يشير للصفحة
 const FACEBOOK_ADS_SCOPES =
-  "business_management,ads_management,ads_read";
+  "business_management,ads_management,ads_read,pages_show_list,pages_read_engagement,pages_manage_ads";
 
 router.get(
   "/config",
