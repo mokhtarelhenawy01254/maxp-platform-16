@@ -16,6 +16,7 @@ import {
 import { CommandPalette } from "../../../components/common/CommandPalette";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
 import { FilterChips } from "./FilterChips";
+import { SavedViews } from "./SavedViews";
 import type {
   OrdersFilters,
   OrderStatusDefinition,
@@ -50,6 +51,7 @@ interface OrdersToolbarProps {
   isConnected: boolean;
   getAffiliateDisplayName: (affiliate: AffiliateFilterOption) => string;
   onFilterChange: (key: keyof OrdersFilters, value: OrdersFilters[keyof OrdersFilters]) => void;
+  onApplyFilters: (next: Partial<OrdersFilters>) => void;
   onClearAdvancedFilters: () => void;
   onToggleAdvancedFilters: () => void;
   onSetQuickDate: (range: string) => void;
@@ -85,6 +87,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   isConnected,
   getAffiliateDisplayName,
   onFilterChange,
+  onApplyFilters,
   onClearAdvancedFilters,
   onToggleAdvancedFilters,
   onSetQuickDate,
@@ -348,6 +351,8 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 </button>
               );
             })}
+            <span className="mx-0.5 hidden h-5 w-px bg-slate-200 dark:bg-slate-700 sm:inline-block" />
+            <SavedViews filters={filters} onApplyFilters={onApplyFilters} />
           </div>
 
           {ordersLoadError && (

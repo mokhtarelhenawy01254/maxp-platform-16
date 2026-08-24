@@ -2002,6 +2002,13 @@ const Orders: React.FC = () => {
     setPage(1);
   };
 
+  // Apply a saved view: merge the saved filter subset into the current state
+  // (keeping any keys the saved view doesn't specify) and reset to page 1.
+  const applySavedFilters = (saved: Partial<OrdersFilters>) => {
+    setFilters((prev) => ({ ...prev, ...saved }));
+    setPage(1);
+  };
+
   const clearAllFilters = () => {
     clearAdvancedFilters();
     setFilters((prev) => ({ ...prev, search: "", onlyUnseen: false }));
@@ -2690,6 +2697,7 @@ const Orders: React.FC = () => {
         hasCustomDateFilters={hasCustomDateFilters}
         getAffiliateDisplayName={getAffiliateDisplayName}
         onFilterChange={handleFilterChange}
+        onApplyFilters={applySavedFilters}
         onClearAdvancedFilters={clearAdvancedFilters}
         onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
         onSetQuickDate={setQuickDate}
