@@ -33,8 +33,12 @@ let _knownStatusCodesPromise = null;
 const loadKnownStatusCodes = async () => {
   try {
     const prisma = getSharedPrismaClient();
+    // 🛡️ PRODUCTION-FIX (custom-filter-shipping): حمّل كل الأكواد النشطة من كل
+    // الأنواع (order/preparation/shipping/payment) — كان بياخد order+preparation بس،
+    // فحالة مخصصة نوعها shipping (مثل DELAYED-WITH-CAPTAIN عند Swan) كانت بتقع في
+    // "ignored" والفلتر بيتساقط بصمت والليست بترجع كل الطلبات (82 ألف).
     const statuses = await prisma.orderStatusConfig.findMany({
-      where: { isActive: true, statusType: { in: ['order', 'preparation'] } },
+      where: { isActive: true },
       select: { code: true }
     });
     const dbCodes = new Set(statuses.map(s => s.code.toUpperCase()));
