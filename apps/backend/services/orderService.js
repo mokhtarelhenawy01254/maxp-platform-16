@@ -1049,7 +1049,9 @@ class OrderService {
       if (!order) throw createOrderStatusError("الطلب غير موجود", 404);
 
       const currentStatus = normalizeOrderStatusCode(order.status);
-      if (currentStatus === status) {
+      // 🛡️ PRODUCTION-FIX (custom-status-noop): لو عليه كود مخصص، نفس الحالة النظامية
+      // المطلوبة صراحةً مش no-op — التاجر عايز يرجّع للحالة النظامية ويشيل الكود المخصص.
+      if (currentStatus === status && !order.customStatusCode) {
         return order;
       }
 
@@ -1093,13 +1095,26 @@ class OrderService {
       // - storedStatus = القيمة الصالحة اللي تتخزّن فعلاً على order.status.
       // - originalRequestedStatus = الكود اللي المستخدم طلبه (مخصص أو نظامي) — نستخدمه
       //   في statusHistory + إشعار WhatsApp (قالب الحالة المخصصة).
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن دلوقتي في
+      // order.customStatusCode جنب الـ enum — عشان العرض والفلتر والإحصائيات يشوفوه.
       // لو الحالة مش enum ومالهاش mapsToSystem صالح → نرفض بخطأ عربي واضح بدل 500 Prisma.
-      const { resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
-      const { stored: storedStatus, notify: originalRequestedStatus } = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
+      const { resolveOrderStatusForStorage, isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
+      let { stored: storedStatus, notify: originalRequestedStatus } = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
       if (!storedStatus) {
         throw createOrderStatusError(`الحالة "${status}" غير صالحة ولا يمكن تطبيقها على الطلب`, 400);
       }
-      if (currentStatus === storedStatus) {
+      // 🛡️ PRODUCTION-FIX (custom-status-noop): الـ no-op لازم يقارن "الحالة الفعلية"
+      // (customStatusCode لو موجود) — مش الـ enum بس. قبل الإصلاح ده، تطبيق حالة مخصصة
+      // على طلب قاعد بالفعل في قيمة mapsToSystem كان بيرجع مبكرًا: من غير تاريخ ولا
+      // إشعار ولا تحديث للكود المخصص (تحديث صامت لا يعمل شيء).
+      const requestedIsCustom = originalRequestedStatus !== storedStatus;
+      const currentCustomCode = order.customStatusCode
+        ? normalizeOrderStatusCode(order.customStatusCode)
+        : null;
+      const isEffectiveNoOp = requestedIsCustom
+        ? currentCustomCode === originalRequestedStatus
+        : !currentCustomCode && currentStatus === storedStatus;
+      if (isEffectiveNoOp) {
         return order;
       }
       status = storedStatus;
@@ -1143,6 +1158,18 @@ class OrderService {
           workflowAuditLog = workflowResult.auditLog || null;
           if (workflowResult.nextStatusCode) {
             status = workflowResult.nextStatusCode;
+            // 🛡️ PRODUCTION-FIX (custom-status-enum): الـ workflow بيرجّع أكواد من
+            // orderStatusDefinition — ممكن تكون أكواد مخصصة. من غير إعادة الحل دي
+            // الكود المخصص بيوصל لـ prisma.order.update فيكسر الـ enum.
+            if (!isValidOrderStatusEnum(status)) {
+              const reResolved = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
+              if (reResolved.stored) {
+                originalRequestedStatus = reResolved.notify;
+                status = reResolved.stored;
+              } else {
+                status = storedStatus;
+              }
+            }
           }
         }
 
@@ -1203,6 +1230,9 @@ class OrderService {
           where: { id: order.id },
           data: {
             status: status,
+            // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن جنب الـ enum،
+            // وبيتمسح لما التاجر يرجّع لحالة نظامية مباشرة (مش مخصصة).
+            customStatusCode: requestedIsCustom ? originalRequestedStatus : null,
             notes: notes || undefined,
             ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,

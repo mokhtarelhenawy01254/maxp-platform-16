@@ -2036,7 +2036,7 @@ class EnhancedOrderService {
         totalRevenue,
         avgConfidence,
         extractionMethods,
-        statusDistribution,
+        statusRows,
         topCities
       ] = await Promise.all([
         // إجمالي الطلبات
@@ -2061,11 +2061,12 @@ class EnhancedOrderService {
           _count: true
         }),
 
-        // توزيع الحالات
-        this.getPrisma().order.groupBy({
-          by: ['status'],
+        // 🛡️ PRODUCTION-FIX (custom-status-persist): توزيع الحالات بالحالة الفعلية
+        // (كود مخصص ← تجهيز محوّلة ← enum) — بدل groupBy على الـ enum بس اللي كان
+        // بيخفي الحالات المخصصة من صفحة إحصائيات الطلبات.
+        this.getPrisma().order.findMany({
           where,
-          _count: true
+          select: { status: true, customStatusCode: true, metadata: true }
         }),
 
         // أهم المدن
@@ -2077,6 +2078,15 @@ class EnhancedOrderService {
           take: 10
         })
       ]);
+
+      const { computeEffectiveOrderStatus } = require('../utils/orderEffectiveStatus');
+      const statusDistribution = Object.entries(
+        statusRows.reduce((acc, row) => {
+          const key = computeEffectiveOrderStatus(row);
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }, {})
+      ).map(([status, count]) => ({ status, _count: count }));
 
       // Recent orders (last 10)
       const recentOrders = await this.getPrisma().order.findMany({

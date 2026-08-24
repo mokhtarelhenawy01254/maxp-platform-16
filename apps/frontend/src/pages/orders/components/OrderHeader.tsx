@@ -163,7 +163,12 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                   >
                     <span>
                       {(() => {
+                        // 🛡️ (custom-status-persist): الحالات المخصصة — الاسم المعرّف
+                        // من إعداد الشركة بدل الكود الخام من fallback الـ registry.
                         const display = getOrderStatusDisplay(order);
+                        if (!display.primary.labelKey && currentStatusConfig?.name) {
+                          return currentStatusConfig.name;
+                        }
                         return t(display.primary.labelKey) || display.primary.label;
                       })()}
                     </span>

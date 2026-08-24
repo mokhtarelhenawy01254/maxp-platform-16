@@ -11,13 +11,13 @@ const {
   TURBO_STATUS_ALIASES,
   parseStatusFilter
 } = require('../utils/orderStatusFilter');
+const { EFFECTIVE_ORDER_STATUS_SQL } = require('../utils/orderEffectiveStatus');
 
 const simpleOrderService = require('../services/simpleOrderService');
 const orderService = require('../services/orderService');
 const orderDetailsUpdateService = require('../services/orderDetailsUpdateService');
 const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { VALID_ORDER_STATUSES } = require('../utils/constants');
 const preparationQueueService = require('../services/preparationQueueService');
 const {
   extractAttributionFromCheckoutData
@@ -1143,6 +1143,9 @@ const updateAnyOrderStatus = async ({
         where: { id: order.id },
         data: {
           status: mappedStatus,
+          // 🛡️ PRODUCTION-FIX (custom-status-persist): حالات التجهيز حالات نظامية —
+          // أمسح أي كود مخصص قديم عشان "الحالة الفعلية" تبقى مرحلة التجهيز.
+          customStatusCode: null,
           notes: notes || undefined,
           metadata: JSON.stringify(nextMetadata),
           statusHistory: {
@@ -1156,6 +1159,15 @@ const updateAnyOrderStatus = async ({
           },
           updatedAt: new Date()
         }
+      });
+
+      // 🛡️ PRODUCTION-FIX (prep-stage-notify): إشعار الواتساب كان بيتخطى في مسار الـ bulk
+      setImmediate(() => {
+        preparationQueueService.notifyPreparationStageChange({
+          companyId,
+          orderPayload: { ...order, ...updatedOrder },
+          status: normalizedStatus
+        });
       });
 
       return { orderType: 'regular', order: updatedOrder };
@@ -1196,6 +1208,30 @@ const updateAnyOrderStatus = async ({
           },
           updatedAt: new Date()
         }
+      });
+
+      // 🛡️ PRODUCTION-FIX (prep-stage-notify): إشعار الواتساب لطلبات الضيوف في مسار الـ bulk
+      setImmediate(() => {
+        let guestItems = [];
+        try {
+          guestItems = typeof updatedGuestOrder.items === 'string'
+            ? JSON.parse(updatedGuestOrder.items)
+            : (updatedGuestOrder.items || []);
+        } catch (_itemsError) {
+          guestItems = [];
+        }
+        preparationQueueService.notifyPreparationStageChange({
+          companyId,
+          orderPayload: {
+            ...updatedGuestOrder,
+            isGuestOrder: true,
+            customerPhone: updatedGuestOrder.guestPhone,
+            customerName: updatedGuestOrder.guestName,
+            items: guestItems,
+            currency: 'EGP'
+          },
+          status: normalizedStatus
+        });
       });
 
       return { orderType: 'guest', order: updatedGuestOrder };
@@ -2436,10 +2472,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         // COALESCE(preparationStatus, status) matching), then merged into the OR.
         whereClause._customStatusFilter = customStatuses;
       }
-      if (statusOrBranches.length === 1) {
-        Object.assign(whereClause, statusOrBranches[0]);
-      } else if (statusOrBranches.length > 1) {
-        whereClause.OR = statusOrBranches;
+      // 🛡️ PRODUCTION-FIX (status-filter-and): فروع الحالة بتتخزن مؤقتًا لحد ما
+      // الفلتر المخصص يتحلّ (raw SQL) — وبعدين تتدمج كـ AND group مستقلة. قبل كده
+      // كان البحث بيعمل Object.assign على OR فكان بيمسح فروع الحالة نهائيًا، والفلتر
+      // المخصص كان بيتدمج جوّاه بـ OR بدل ما يقاطع باقي الفلاتر.
+      if (statusOrBranches.length > 0) {
+        whereClause._statusOrBranches = statusOrBranches;
       }
 
       // Guest orders carry statuses on a separate table — mirror the OR across
@@ -2726,7 +2764,6 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // so we fetch IDs via raw SQL first, then use typed Prisma queries.
     const customStatusFilter = whereClause._customStatusFilter;
     let customStatusOrderIds = null;
-    let customStatusTotal = 0;
 
     if (Array.isArray(customStatusFilter) && customStatusFilter.length > 0) {
       delete whereClause._customStatusFilter;
@@ -2734,53 +2771,55 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Prep statuses are stored under their mapped order.status while the real
       // stage lives in metadata.preparationStatus — match both so filtering by
       // e.g. PREPARING also finds orders persisted as PROCESSING.
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): الحالة الفعلية بقت بتتخزن في
+      // customStatusCode — الأولوية ليها، وبعدين مرحلة التجهيز، وبعدين الـ enum.
       // But exclude orders whose order.status is already terminal (e.g.
       // DELIVERED) — their stale metadata.preparationStatus from the prep phase
       // must not pull them back into a prep-stage filter.
       // Map preparationStatus to its regular order.status equivalent (same as getMappedRegularOrderStatus).
-      const effectiveStatusExpr = `
-        CASE
-          WHEN "metadata"::jsonb->>'preparationStatus' IS NOT NULL AND "metadata"::jsonb->>'preparationStatus' <> ''
-          THEN CASE
-            WHEN "metadata"::jsonb->>'preparationStatus' = 'PENDING_PREPARATION' THEN 'CONFIRMED'
-            WHEN "metadata"::jsonb->>'preparationStatus' IN ('STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK') THEN 'STOCK_SHORTAGE'
-            WHEN "metadata"::jsonb->>'preparationStatus' = 'ON_HOLD_PREP' THEN 'ON_HOLD_PREP'
-            ELSE 'PROCESSING'
-          END
-          ELSE "status"::text
-        END
-      `;
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): التعبير مستورد من utils/orderEffectiveStatus
+      // عشان يفضل متطابق مع الإحصائيات وأي استخدام تاني للحالة الفعلية.
+      const effectiveStatusExpr = EFFECTIVE_ORDER_STATUS_SQL;
       const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
       const statusPlaceholders = customStatusFilter
         .map((_, index) => `$${index + 2}`)
         .join(', ');
       const matchExpr = `(UPPER(${effectiveStatusExpr}) IN (${statusPlaceholders}) AND NOT (${statusIsTerminalExpr}))`;
-      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
+      // 🛡️ PRODUCTION-FIX (custom-filter-count): مفيش حاجة محتاجة count خام هنا —
+      // العدّ النهائي بيتم بـ order.count على whereClause الكاملة (أدق مع كل الفلاتر).
       let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
       const params = [companyId, ...customStatusFilter];
       if (whereClause.createdAt?.gte) {
-        countSql += ` AND "createdAt" >= $3`;
         fetchSql += ` AND "createdAt" >= $3`;
         params.push(whereClause.createdAt.gte);
       }
       if (whereClause.createdAt?.lte) {
         const n = params.length + 1;
-        countSql += ` AND "createdAt" <= $${n}`;
         fetchSql += ` AND "createdAt" <= $${n}`;
         params.push(whereClause.createdAt.lte);
       }
-      const [countRow] = await prisma.$queryRawUnsafe(countSql, ...params);
-      customStatusTotal = Number(countRow?.cnt || 0);
       fetchSql += ` ORDER BY "createdAt" DESC LIMIT ${Number(fetchLimit) || 20}`;
       const rows = await prisma.$queryRawUnsafe(fetchSql, ...params);
       customStatusOrderIds = rows.map(r => r.id);
+    }
 
-      if (Array.isArray(whereClause.OR)) {
-        // The custom-status branch participates in the status OR (e.g. when the
-        // user also selected plain enum / turbo statuses).
-        whereClause.OR.push({ id: { in: customStatusOrderIds } });
-      } else {
-        whereClause.id = { in: customStatusOrderIds };
+    // ── Materialize status branches (enum / turbo / custom) as one AND group ──
+    // 🛡️ PRODUCTION-FIX (status-filter-and): دمج نهائي لفروع الحالة بعد حلّ الفلتر
+    // المخصص — OR بين فروع الحالة نفسها، وAND مع باقي الفلاتر (بحث/دفع/تواريخ).
+    const statusOrBranches = whereClause._statusOrBranches;
+    delete whereClause._statusOrBranches;
+    if (customStatusOrderIds !== null || Array.isArray(statusOrBranches)) {
+      const branches = [...(Array.isArray(statusOrBranches) ? statusOrBranches : [])];
+      if (customStatusOrderIds !== null) {
+        branches.push({ id: { in: customStatusOrderIds } });
+      }
+      if (branches.length === 1) {
+        Object.assign(whereClause, branches[0]);
+      } else if (branches.length > 1) {
+        whereClause.AND = [
+          ...(Array.isArray(whereClause.AND) ? whereClause.AND : []),
+          { OR: branches }
+        ];
       }
     }
 
@@ -2845,9 +2884,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
       }),
       // Count Total Regular (for pagination metadata)
-      customStatusFilter && !Array.isArray(whereClause.OR) && !whereClause.status && !whereClause.turboShipmentStatus
-        ? customStatusTotal
-        : getSharedPrismaClient().order.count({ where: whereClause }),
+      // 🛡️ PRODUCTION-FIX (custom-filter-count): بعد دمج الفلتر المخصص في whereClause
+      // (id.in) الـ count العادي بقا صحيح دايمًا ومع كل الفلاتر — قبل كده كان بيتجاهل
+      // بحث/دفع/تعيين فكان عدّاد الباجينيشن بيكبر غلط.
+      getSharedPrismaClient().order.count({ where: whereClause }),
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);
@@ -2871,7 +2911,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           companyId,
           orderNumber: { in: guestTwinNumbers, mode: 'insensitive' },
         },
-        select: { orderNumber: true, status: true, metadata: true },
+        select: { orderNumber: true, status: true, customStatusCode: true, metadata: true },
       });
       for (const t of twinRows) {
         regularTwinsByNumber.set(String(t.orderNumber).trim().toLowerCase(), t);
@@ -2925,6 +2965,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const effectiveCodeForGuest = (numKey) => {
       const g = guestsByNumber.get(numKey);
       const t = regularTwinsByNumber.get(numKey);
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): كود الحالة المخصصة للتوأم العادي
+      // (لو موجود) له الأولوية — قبل كده كان بيضيع فكان الضيف الشبح بيعرض حالة قديمة.
+      if (t?.customStatusCode) return String(t.customStatusCode).toUpperCase();
       const prep = t ? prepFromMeta(t.metadata) : prepFromMeta(g?.metadata);
       if (prep) return String(getMappedRegularOrderStatus(prep)).toUpperCase();
       return String((t ? t.status : g?.status) || '').toUpperCase();
@@ -2961,6 +3004,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           select: {
             orderNumber: true,
             status: true,
+            customStatusCode: true,
             metadata: true
           }
         });
@@ -3105,7 +3149,16 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
         return 'PROCESSING';
       };
-      const effectiveStatus = (orderMetadata?.preparationStatus ? getMappedRegularOrderStatus(orderMetadata.preparationStatus) : order.status || 'PENDING').toLowerCase();
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): الحالة الفعلية = الكود المخصص لو
+      // موجود، وإلا مرحلة التجهيز، وإلا الـ enum. قبل كده الكود المخصص كان بيضيع
+      // والتفاصيل بترجع الحالة النظامية الماب عليها فكانت شكلها "مش متطبقة".
+      const effectiveStatus = (
+        order.customStatusCode
+          ? order.customStatusCode
+          : orderMetadata?.preparationStatus
+            ? getMappedRegularOrderStatus(orderMetadata.preparationStatus)
+            : order.status || 'PENDING'
+      ).toLowerCase();
 
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
@@ -3614,6 +3667,9 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           where: { id: order.id },
           data: {
             status: mappedStatus,
+            // 🛡️ PRODUCTION-FIX (custom-status-persist): حالات التجهيز حالات نظامية —
+            // أمسح أي كود مخصص قديم عشان "الحالة الفعلية" تبقى مرحلة التجهيز.
+            customStatusCode: null,
             notes: statusNotes || undefined,
             metadata: JSON.stringify(nextMetadata),
             statusHistory: {
@@ -3627,6 +3683,17 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
             },
             updatedAt: new Date()
           }
+        });
+
+        // 🛡️ PRODUCTION-FIX (prep-stage-notify): نفس إصلاح preparationQueueService —
+        // الفرع ده كان بيحدّث الحالة ويكتب History من غير أي رسالة واتساب للعميل،
+        // رغم إن نفس الحالة من صفحة التجهيز بتبعت إشعار. fire-and-forget زي المسار التاني.
+        setImmediate(() => {
+          preparationQueueService.notifyPreparationStageChange({
+            companyId,
+            orderPayload: { ...order, ...updatedRegularOrder },
+            status: statusUpper
+          });
         });
 
         // 🧾 Auto Invoice Generation (background)
@@ -5319,7 +5386,15 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
         return 'PROCESSING';
       };
-      const detailEffectiveStatus = (orderMetadata?.preparationStatus ? getMappedRegularOrderStatus(orderMetadata.preparationStatus) : order.status || 'PENDING').toLowerCase();
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): نفس أولوية الليست — الكود المخصص
+      // له الأولوية، وإلا مرحلة التجهيز، وإلا الـ enum.
+      const detailEffectiveStatus = (
+        order.customStatusCode
+          ? order.customStatusCode
+          : orderMetadata?.preparationStatus
+            ? getMappedRegularOrderStatus(orderMetadata.preparationStatus)
+            : order.status || 'PENDING'
+      ).toLowerCase();
 
       formattedOrder = {
         id: order.orderNumber,
@@ -5530,10 +5605,15 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const validStatuses = new Set(VALID_ORDER_STATUSES);
+    // 🛡️ PRODUCTION-FIX (status-validation-unify): التحقق كان بيبني على VALID_ORDER_STATUSES
+    // (فيه أكواد وهمية وناقصه PENDING_CANCELLATION) + orderStatusDefinition (جدول الـ workflow)
+    // — فالحالات المخصصة اللي sync بتاعها للـ workflow فشل كانت بتترفض هنا بينما المسار
+    // الرئيسي بيقبلها. اتوحّد على نفس مصدر الحقيقة: enum + orderStatusConfig النشطة.
+    const { VALID_ORDER_STATUS_ENUM } = require('../utils/orderStatusEnum');
+    const validStatuses = new Set(VALID_ORDER_STATUS_ENUM);
     try {
-      const customStatuses = await getSharedPrismaClient().orderStatusDefinition.findMany({
-        where: { companyId },
+      const customStatuses = await getSharedPrismaClient().orderStatusConfig.findMany({
+        where: { companyId, isActive: true },
         select: { code: true }
       });
       customStatuses.forEach(s => validStatuses.add(s.code.toUpperCase()));
@@ -5731,7 +5811,6 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     try {
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { VALID_ORDER_STATUSES } = require('../utils/constants');
       const affiliate = await getSharedPrismaClient().affiliate.findUnique({
         where: { userId: req.user.id }
       });

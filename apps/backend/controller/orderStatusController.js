@@ -867,12 +867,15 @@ const getStatusStats = async (req, res) => {
       _count: true
     });
 
-    // عدد الطلبات لكل حالة
-    const ordersByStatus = await getSharedPrismaClient().order.groupBy({
-      by: ['status'],
-      where: { companyId },
-      _count: true
-    });
+    // 🛡️ PRODUCTION-FIX (custom-status-persist): عدد الطلبات لكل "حالة فعلية"
+    // (كود مخصص ← مرحلة تجهيز محوّلة ← enum) — نفس أولوية صفحة الطلبات، بدل
+    // groupBy على الـ enum بس اللي كان بيخفي الحالات المخصصة نهائيًا.
+    const { getEffectiveOrderStatusCounts } = require('../utils/orderEffectiveStatus');
+    const effectiveCounts = await getEffectiveOrderStatusCounts(getSharedPrismaClient(), companyId);
+    const ordersByStatus = Object.entries(effectiveCounts).map(([status, count]) => ({
+      status,
+      _count: count
+    }));
 
     res.json({
       success: true,

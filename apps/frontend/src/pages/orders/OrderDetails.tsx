@@ -802,6 +802,19 @@ const OrderDetails: React.FC = () => {
     await calculateShipping(gov, city);
   };
 
+  // 🛡️ (custom-status-persist): خريطة UPPER(code) → الاسم المعرّف لسجل النشاط
+  // (فوق الـ early returns إلزاميًا — hooks شرطية بتعمل React #310)
+  const statusNameMap = useMemo(
+    () =>
+      Object.fromEntries(
+        orderStatuses.map((s) => [
+          String(s.code || "").trim().toUpperCase(),
+          s.name,
+        ]),
+      ),
+    [orderStatuses],
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1155,6 +1168,7 @@ const OrderDetails: React.FC = () => {
             deletingNote={deletingNote}
             canAddNote={!isMerchant}
             currentUserId={user?.id}
+            statusNameMap={statusNameMap}
           />
 
           {/* Scheduled Order Info */}

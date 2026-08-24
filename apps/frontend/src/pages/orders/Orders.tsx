@@ -2318,9 +2318,22 @@ const Orders: React.FC = () => {
   const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
     const display = getOrderStatusDisplay(order);
     const customStyle = getStatusBadgeStyle(order.status || "");
+    // 🛡️ (custom-status-persist): الحالات المخصصة — الباك-إند بيرجّع الكود المخصص
+    // والـ registry مش بيعرفه، فكان بيقع على fallback بيعرض الكود الإنجليزي الخام.
+    // لو الحالة مخصّصة عند الشركة، نعرض اسمها المعرّف (العربي) من إعداداتها.
+    const configuredStatus = orderStatusMap.get(
+      normalizeStatusCode(order.status || ""),
+    );
+    const registryText = display.primary.labelKey
+      ? translate(display.primary.labelKey) || display.primary.label
+      : display.primary.label;
+    const text =
+      !display.primary.labelKey && configuredStatus?.name
+        ? configuredStatus.name
+        : registryText;
 
     return {
-      text: translate(display.primary.labelKey) || display.primary.label,
+      text,
       labelKey: display.primary.labelKey,
       className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${display.primary.colorClass}`,
       style: customStyle,
