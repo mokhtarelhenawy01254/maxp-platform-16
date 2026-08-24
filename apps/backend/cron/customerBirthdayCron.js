@@ -73,8 +73,10 @@ function startCustomerBirthdayScheduler() {
               recipientPhone: phone,
               recipientName: name,
               recipientType: 'CUSTOMER',
-              category: 'MARKETING',
-              eventType: 'BIRTHDAY_WISH',
+              // NOTE: مؤقتاً نستخدم قالب المناسبة المعتمد CUSTOMER_OCCASION_msvsy2ut
+              // حتى يُنشأ قالب BIRTHDAY_WISH مخصص ومعتمد على Meta.
+              category: 'OCCASION',
+              eventType: 'CUSTOMER_OCCASION_msvsy2ut',
               variables: { customerName: name, firstName: customer.firstName || '', discount: '', couponCode: '' },
               customerId: customer.id,
               priority: 3
