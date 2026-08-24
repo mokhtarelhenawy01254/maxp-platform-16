@@ -2852,6 +2852,35 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);
 
+    // ── Guest↔Regular reconciliation ─────────────────────────────────────
+    // A converted/confirmed guest keeps its guest_orders row with a STALE
+    // status (usually PENDING). Once a regular order exists with the same
+    // number, the regular row owns the lifecycle: display ITS effective
+    // status, and drop the twin from status-filtered results when it no
+    // longer matches — otherwise stale PENDING twins pollute filters like
+    // ?status=pending with orders whose real status is CANCELLED/PACKAGED.
+    const guestTwinNumbers = [
+      ...new Set(
+        guestOrders.map((g) => String(g.orderNumber || '').trim()).filter(Boolean)
+      ),
+    ];
+    const regularTwinsByNumber = new Map();
+    if (guestTwinNumbers.length > 0) {
+      const twinRows = await getSharedPrismaClient().order.findMany({
+        where: {
+          companyId,
+          orderNumber: { in: guestTwinNumbers, mode: 'insensitive' },
+        },
+        select: { orderNumber: true, status: true, metadata: true },
+      });
+      for (const t of twinRows) {
+        regularTwinsByNumber.set(String(t.orderNumber).trim().toLowerCase(), t);
+      }
+    }
+    const activeStatusFilterUpper = [...plainEnumStatuses, ...customStatuses];
+    const hasActiveStatusFilter = activeStatusFilterUpper.length > 0;
+    let reconciledGuestsRemoved = 0;
+
     // ── السلال غير المكتملة (guestCart) ─────────────────────────────
     let formattedIncompleteCarts = [];
     let totalIncomplete = 0;
@@ -3113,6 +3142,29 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         }
       }
 
+      // Twin-aware display status: prefer the regular counterpart's
+      // effective status (preparationStatus || status) over the stale
+      // guest_orders.status column.
+      const twinKey = String(order.orderNumber || '').trim().toLowerCase();
+      const twinRegular = regularTwinsByNumber.get(twinKey);
+      let twinPrepStatus = null;
+      if (twinRegular?.metadata) {
+        try {
+          const twinMetaParsed =
+            typeof twinRegular.metadata === 'string'
+              ? JSON.parse(twinRegular.metadata)
+              : twinRegular.metadata;
+          twinPrepStatus = twinMetaParsed?.preparationStatus || null;
+        } catch (e) {
+          twinPrepStatus = null;
+        }
+      }
+      const guestDisplayStatus = String(
+        twinRegular
+          ? twinPrepStatus || twinRegular.status || order.status || 'PENDING'
+          : order.status || 'PENDING',
+      ).toLowerCase();
+
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
         orderNumber: order.orderNumber,
@@ -3123,7 +3175,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         subtotal: guestAmounts.subtotal,
         tax: 0,
         shipping: guestAmounts.shipping,
-        status: order.status?.toLowerCase() || 'pending',
+        status: guestDisplayStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, metadata),
         paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
         shippingAddress: shippingAddress,
@@ -3153,9 +3205,23 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       ...formattedRegularOrders.map((order) => normalizeOrderKey(order.orderNumber)),
       ...shadowedGuestOrderNumberSet
     ]);
-    const filteredGuestOrders = formattedGuestOrders.filter(
-      (order) => !regularOrderNumberSet.has(normalizeOrderKey(order.orderNumber))
-    );
+    const filteredGuestOrders = formattedGuestOrders.filter((order) => {
+      const key = normalizeOrderKey(order.orderNumber);
+      if (regularOrderNumberSet.has(key)) return false;
+      // Twin-status filter reconciliation: when a status filter is active and
+      // this guest has a regular counterpart, the displayed (twin-aware)
+      // status must actually match the requested statuses — otherwise the
+      // stale guest row leaks into filters it no longer belongs to.
+      if (
+        hasActiveStatusFilter &&
+        regularTwinsByNumber.has(key) &&
+        !activeStatusFilterUpper.includes(String(order.status || '').toUpperCase())
+      ) {
+        reconciledGuestsRemoved += 1;
+        return false;
+      }
+      return true;
+    });
 
     if (filteredGuestOrders.length !== formattedGuestOrders.length) {
       console.log('🧹 [ORDERS] Deduped guest orders:', {
@@ -3199,7 +3265,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       paginatedOrders.push(order);
     }
 
-    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal + (cartQueryWhere ? totalIncomplete : 0), 0);
+    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal - reconciledGuestsRemoved + (cartQueryWhere ? totalIncomplete : 0), 0);
 
     console.log(`📊 [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
 
@@ -3213,7 +3279,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         pages: Math.ceil(totalOrders / limit)
       },
       meta: {
-        showIncompleteCartsInOrders: Boolean(showIncompleteCarts)
+        showIncompleteCartsInOrders: Boolean(showIncompleteCarts),
+        guestReconciliationApplied: true,
+        reconciledGuestsRemoved
       }
     });
 
