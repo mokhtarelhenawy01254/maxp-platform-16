@@ -70,6 +70,15 @@ function buildMetaBodyParams(variablesOrder, localContent, values = {}) {
     orderedVars = localNames.map((name, idx) => ({ position: idx + 1, name }));
   }
 
+  // 🚨 PRODUCTION-FIX (131008-string-vars-2026-08-24):
+  // بعض صفوف القوالب في الداتابيز مخزنة variables كنصوص عادية
+  // ["orderNumber","total"] بدل [{position,name}] — قراءة v.name كانت
+  // بترجع undefined وكل الباراميترات بتتبعت فاضية → ميتا ترفض بـ
+  // "(#131008) Required parameter is missing". نوحّد الصيغتين هنا.
+  orderedVars = orderedVars.map((v, idx) =>
+    typeof v === 'string' ? { position: idx + 1, name: v } : v
+  );
+
   // 🚨 PRODUCTION-FIX (132018-regression-2026-08-23):
   // ميتا ترفض معاملات الـ body اللي فيها أسطر جديدة (\n) بـ
   // "(#132018) There's an issue with the parameters in your template".
