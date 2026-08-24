@@ -2899,6 +2899,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     let shadowedGuestOrderNumberSet = new Set();
     let shadowedGuestTotal = 0;
+    // Global count of stale guest twins whose regular counterpart's effective
+    // status no longer matches the requested status filter (see reconciliation
+    // note below). Computed over ALL matching guests so pagination stays right.
+    let reconciledGuestsRemovedGlobal = 0;
 
     const normalizeOrderKey = (value) => String(value || '').trim().toLowerCase();
 
@@ -2924,7 +2928,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           },
           distinct: ['orderNumber'],
           select: {
-            orderNumber: true
+            orderNumber: true,
+            status: true,
+            metadata: true
           }
         });
 
@@ -2936,6 +2942,38 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         shadowedGuestOrderNumberSet = new Set(
           filteredGuestOrderNumbers.filter((n) => regularNormalizedKeys.has(normalizeOrderKey(n)))
         );
+
+        // Global reconciliation count: for every matching guest that has a
+        // regular twin, evaluate the twin's effective status against the
+        // requested filter. Twins that no longer match must be excluded from
+        // totals (their output-side removal happens in filteredGuestOrders).
+        if (hasActiveStatusFilter) {
+          const globalTwinsByNumber = new Map(
+            matchingRegularOrderNumbers.map((t) => [normalizeOrderKey(t.orderNumber), t])
+          );
+          for (const num of filteredGuestOrderNumbers) {
+            const twin = globalTwinsByNumber.get(normalizeOrderKey(num));
+            if (!twin) continue;
+            let twinPrep = null;
+            if (twin.metadata) {
+              try {
+                const pm =
+                  typeof twin.metadata === 'string'
+                    ? JSON.parse(twin.metadata)
+                    : twin.metadata;
+                twinPrep = pm?.preparationStatus || null;
+              } catch (e) {
+                twinPrep = null;
+              }
+            }
+            const twinEffective = String(
+              twinPrep || twin.status || '',
+            ).toUpperCase();
+            if (!activeStatusFilterUpper.includes(twinEffective)) {
+              reconciledGuestsRemovedGlobal += 1;
+            }
+          }
+        }
 
         if (shadowedGuestOrderNumberSet.size > 0) {
           shadowedGuestTotal = await getSharedPrismaClient().guestOrder.count({
@@ -3265,7 +3303,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       paginatedOrders.push(order);
     }
 
-    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal - reconciledGuestsRemoved + (cartQueryWhere ? totalIncomplete : 0), 0);
+    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal - reconciledGuestsRemovedGlobal + (cartQueryWhere ? totalIncomplete : 0), 0);
 
     console.log(`📊 [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
 
@@ -3280,8 +3318,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       },
       meta: {
         showIncompleteCartsInOrders: Boolean(showIncompleteCarts),
-        guestReconciliationApplied: true,
-        reconciledGuestsRemoved
+        guestReconciliationV2: true,
+        reconciledGuestsRemoved: reconciledGuestsRemovedGlobal
       }
     });
 
