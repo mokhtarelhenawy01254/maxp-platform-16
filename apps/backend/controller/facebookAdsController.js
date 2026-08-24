@@ -9,6 +9,7 @@ const facebookAdsDecisionService = require("../services/facebookAdsDecisionServi
 const { FacebookAdLibraryService } = require("../services/facebookAdLibraryService");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const crypto = require("crypto");
+const axios = require("axios");
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 const PRODUCT_LAUNCH_ALLOWED_HOSTS = [
@@ -1360,7 +1361,32 @@ async function validateFullAdAssetReadiness({ companyId, pageId, pixelId, adAcco
       const pageService = new FacebookAdsService(pageAccessToken, adAccount.accountId);
       const pagesResult = await pageService.getFacebookPages();
       const pages = Array.isArray(pagesResult?.data) ? pagesResult.data : [];
-      const selectedPage = pages.find((page) => String(page.id) === String(pageId));
+      let selectedPage = pages.find((page) => String(page.id) === String(pageId));
+
+      // Page Token لا يستطيع تعداد الحسابات عبر /me/accounts — يرجع قائمة فارغة دائماً.
+      // نتحقق من الصفحة مباشرة عبر /me عند استخدام توكن الصفحة المخزن.
+      if (!selectedPage && storedPage.pageAccessToken) {
+        try {
+          const meResponse = await axios.get(
+            `${process.env.FACEBOOK_GRAPH_API_BASE_URL || "https://graph.facebook.com/v22.0"}/me`,
+            {
+              params: {
+                access_token: storedPage.pageAccessToken,
+                fields: "id,name",
+              },
+            },
+          );
+          if (String(meResponse.data?.id) === String(pageId)) {
+            selectedPage = meResponse.data;
+          }
+        } catch (meError) {
+          console.error(
+            "⚠️ [FULL-AD] Page token /me verification failed:",
+            meError.response?.data?.error?.message || meError.message,
+          );
+        }
+      }
+
       if (!selectedPage) {
         return {
           success: false,
