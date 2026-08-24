@@ -546,6 +546,14 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
   }, [config, t]);
 
+  // 🔧 auto-select first event so the test sender isn't sent with an empty eventType
+  useEffect(() => {
+    if (!testEvent && statuses.length > 0) {
+      const first = statuses[0];
+      if (first?.code) setTestEvent(first.code);
+    }
+  }, [statuses, testEvent]);
+
   const fetchSettings = useCallback(async () => {
     if (!config.features.enableSettings) return;
     setSettingsLoading(true);
