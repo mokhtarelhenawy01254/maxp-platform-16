@@ -243,6 +243,8 @@ const updatePreparationOrderStatus = async ({
         companyId,
         orderPayload: {
           ...updatedGuestOrder,
+          // 🛡️ PRODUCTION-FIX (guest-order-fk): orderId=null في اللوج (guest-order-fk)
+          isGuestOrder: true,
           customerPhone: updatedGuestOrder.guestPhone,
           customerName: updatedGuestOrder.guestName,
           items: guestItems,

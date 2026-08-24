@@ -1616,6 +1616,9 @@ class OrderService {
 
             const notificationOrder = {
               ...updatedGuestOrder,
+              // 🛡️ PRODUCTION-FIX (guest-order-fk): علّمة كضيف عشان اللوج يتخزن
+              // بـ orderId=null — الضيوف ملهمش صف في orders وكان الـ FK بيقتل الإرسال
+              isGuestOrder: true,
               customerPhone: updatedGuestOrder.guestPhone,
               customerName: updatedGuestOrder.guestName,
               items: guestItems,

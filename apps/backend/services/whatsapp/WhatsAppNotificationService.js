@@ -1256,7 +1256,11 @@ async function sendNotification(options) {
     }
 
     // 7. إنشاء سجل الإشعار
-    let notificationLog;
+    // 🛡️ PRODUCTION-FIX (guest-order-fk): أوردرات الضيوف معندهاش صف في جدول orders،
+    // فكانت كتابة اللوج بتفشل Foreign Key والفشل ده كان بيقتل الإرسال نفسه
+    // (الرسالة جاهزة ومش بتتبعت!). اللوج دلوقتي non-fatal: أي فشل فيه مستمر
+    // نكمل الإرسال — ومسار الضيوف بيتخزن بـ orderId=null أصلاً.
+    let notificationLog = null;
     try {
       notificationLog = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.create({
         data: {
@@ -1269,7 +1273,7 @@ async function sendNotification(options) {
           category: persistedCategory,
           eventType: persistedEventType,
           content,
-          orderId,
+          orderId: order?.isGuestOrder ? null : orderId,
           customerId,
           productId,
           employeeId,
@@ -1277,25 +1281,30 @@ async function sendNotification(options) {
           status: 'PENDING'
         }
       }));
-    } catch (enumError) {
-      // Workaround for enum issues - use raw SQL
-      console.log(`[WHATSAPP-DEBUG] Enum error, trying raw SQL...`);
-      const result = await prisma.$queryRaw`
-        INSERT INTO "whatsapp_notification_logs" (
-          id, "companyId", "templateId", "sessionId", "recipientPhone", "recipientName",
-          "recipientType", category, "eventType", content, "orderId", "customerId",
-          status, "createdAt", "updatedAt"
-        ) VALUES (
-          gen_random_uuid(), ${companyId}, ${templateId || null}, ${sessionId},
-          ${formattedPhone}, ${recipientName},
-          CAST(${persistedRecipientType} AS "whatsapp_notification_logs_recipientType"),
-          CAST(${persistedCategory} AS "whatsapp_notification_logs_category"),
-          CAST(${persistedEventType} AS "whatsapp_notification_logs_eventType"), ${content},
-          ${orderId}, ${customerId}, 'PENDING', NOW(), NOW()
-        ) RETURNING *;
-      `;
-      notificationLog = result[0];
-      console.log(`[WHATSAPP-DEBUG] Created log via raw SQL: ${notificationLog.id}`);
+    } catch (logCreateError) {
+      console.warn(`[WHATSAPP-DEBUG] Log create failed (${logCreateError.message}) — retrying raw SQL${order?.isGuestOrder ? ' (guest, orderId=null)' : ''}...`);
+      try {
+        const result = await prisma.$queryRaw`
+          INSERT INTO "whatsapp_notification_logs" (
+            id, "companyId", "templateId", "sessionId", "recipientPhone", "recipientName",
+            "recipientType", category, "eventType", content, "orderId", "customerId",
+            status, "createdAt", "updatedAt"
+          ) VALUES (
+            gen_random_uuid(), ${companyId}, ${templateId || null}, ${sessionId},
+            ${formattedPhone}, ${recipientName},
+            CAST(${persistedRecipientType} AS "whatsapp_notification_logs_recipientType"),
+            CAST(${persistedCategory} AS "whatsapp_notification_logs_category"),
+            CAST(${persistedEventType} AS "whatsapp_notification_logs_eventType"), ${content},
+            ${order?.isGuestOrder ? null : orderId}, ${customerId}, 'PENDING', NOW(), NOW()
+          ) RETURNING *;
+        `;
+        notificationLog = result[0];
+        console.log(`[WHATSAPP-DEBUG] Created log via raw SQL: ${notificationLog.id}`);
+      } catch (rawLogError) {
+        // اللوج مش أهم من الرسالة — نكمل الإرسال من غيره
+        console.warn(`[WHATSAPP-DEBUG] Notification log skipped (non-fatal):`, rawLogError.message);
+        notificationLog = null;
+      }
     }
 
     // 8. إرسال الرسالة
@@ -1720,16 +1729,18 @@ async function sendNotification(options) {
         throw new Error('Both Meta and Baileys send failed');
       }
 
-      // تحديث السجل
-      await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
-        where: { id: notificationLog.id },
-        data: {
-          status: 'SENT',
-          messageType: usedMessageType || result?.messageType || 'TEXT',
-          sentAt: new Date(),
-          whatsappMessageId: result?.messageId || result?.key?.id || null
-        }
-      }));
+      // تحديث السجل (لو اتكتب أصلاً — guest-order-fk: ممكن يكون null بشكل مقصود)
+      if (notificationLog) {
+        await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
+          where: { id: notificationLog.id },
+          data: {
+            status: 'SENT',
+            messageType: usedMessageType || result?.messageType || 'TEXT',
+            sentAt: new Date(),
+            whatsappMessageId: result?.messageId || result?.key?.id || null
+          }
+        }));
+      }
 
       console.log(`✅ [WHATSAPP-DEBUG] Notification SENT successfully: ${eventType} to ${formattedPhone}`);
 
@@ -1748,22 +1759,24 @@ async function sendNotification(options) {
         });
       }
 
-      return { success: true, notificationId: notificationLog.id };
+      return { success: true, notificationId: notificationLog?.id || null };
 
     } catch (sendError) {
       console.error(`❌ [WHATSAPP-DEBUG] Failed to send message:`, sendError.message);
       console.error(`❌ [WHATSAPP-DEBUG] Error stack:`, sendError.stack);
 
-      // تحديث السجل بالخطأ
-      await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
-        where: { id: notificationLog.id },
-        data: {
-          status: 'FAILED',
-          failedAt: new Date(),
-          failureReason: sendError.code ? `[${sendError.code}] ${sendError.message}` : sendError.message,
-          errorCode: sendError.code ? String(sendError.code) : null,
-        }
-      }));
+      // تحديث السجل بالخطأ (لو موجود — guest-order-fk)
+      if (notificationLog) {
+        await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
+          where: { id: notificationLog.id },
+          data: {
+            status: 'FAILED',
+            failedAt: new Date(),
+            failureReason: sendError.code ? `[${sendError.code}] ${sendError.message}` : sendError.message,
+            errorCode: sendError.code ? String(sendError.code) : null,
+          }
+        }));
+      }
 
       // 🚨 PRODUCTION-FIX (notifications-fix-plan §4.1):
       // إعادة محاولة واحدة عبر الطابور للأخطاء العابرة (retryable=true من Meta Cloud).
