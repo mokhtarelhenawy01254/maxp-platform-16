@@ -8,6 +8,7 @@ const FacebookAdsService = require("../services/facebookAdsService");
 const facebookAdsDecisionService = require("../services/facebookAdsDecisionService");
 const { FacebookAdLibraryService } = require("../services/facebookAdLibraryService");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
+const { validateFacebookPageAccessToken } = require("../utils/facebookPageTokenUtils");
 const crypto = require("crypto");
 const axios = require("axios");
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
@@ -1364,30 +1365,33 @@ async function validateFullAdAssetReadiness({ companyId, pageId, pixelId, adAcco
       let selectedPage = pages.find((page) => String(page.id) === String(pageId));
 
       // Page Token لا يستطيع تعداد الحسابات عبر /me/accounts — يرجع قائمة فارغة دائماً.
-      // نتحقق من الصفحة مباشرة عبر /me عند استخدام توكن الصفحة المخزن.
+      // نتحقق من الصفحة مباشرة عبر /me باستخدام توكن الصفحة المخزن.
       if (!selectedPage && storedPage.pageAccessToken) {
         try {
-          const meResponse = await axios.get(
-            `${process.env.FACEBOOK_GRAPH_API_BASE_URL || "https://graph.facebook.com/v22.0"}/me`,
-            {
-              params: {
-                access_token: storedPage.pageAccessToken,
-                fields: "id,name",
-              },
-            },
-          );
-          if (String(meResponse.data?.id) === String(pageId)) {
-            selectedPage = meResponse.data;
+          const tokenCheck = await validateFacebookPageAccessToken({
+            pageId: String(pageId),
+            pageAccessToken: storedPage.pageAccessToken,
+          });
+          if (tokenCheck.isValid) {
+            selectedPage = tokenCheck.page;
+          } else {
+            console.warn(
+              "⚠️ [FULL-AD] Stored page token check failed:",
+              tokenCheck.reason,
+              tokenCheck.error?.message || "",
+            );
           }
         } catch (meError) {
           console.error(
-            "⚠️ [FULL-AD] Page token /me verification failed:",
+            "⚠️ [FULL-AD] Page token verification error:",
             meError.response?.data?.error?.message || meError.message,
           );
         }
       }
 
-      if (!selectedPage) {
+      // الصفحة متصلة في MaxP ولها توكن صفحة تم التحقق منه عند الربط — نثق بالسجل المحلي
+      // بدل منع النشر بسبب فشل فحص مباشر (شبكة/صلاحيات قراءة إضافية غير ضرورية للنشر).
+      if (!selectedPage && !storedPage.pageAccessToken) {
         return {
           success: false,
           errorCode: "FACEBOOK_PAGE_NOT_ACCESSIBLE",
