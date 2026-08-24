@@ -254,7 +254,7 @@ const FacebookAdsDashboard: React.FC = () => {
     }
 
     navigate(
-      `/advertising/facebook-ads/campaigns/create?adAccountId=${selectedAdAccountId}`,
+      `/advertising/facebook-ads/create-full-ad?adAccountId=${selectedAdAccountId}`,
     );
   };
 
