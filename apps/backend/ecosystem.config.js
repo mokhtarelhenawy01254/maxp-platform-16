@@ -7,7 +7,11 @@ module.exports = {
             exec_mode: 'fork',
             autorestart: true,
             watch: false,
-            max_memory_restart: '2G',
+            // Recycle before memory bloat causes swap/stalls (1.4GB RSS caused
+            // 60s request stalls + SharedDB query timeouts); nightly recycle
+            // at lowest-traffic hour as a safety net.
+            max_memory_restart: '1200M',
+            cron_restart: '0 4 * * *',
             env: {
                 NODE_ENV: 'development',
                 PORT: 3007,
