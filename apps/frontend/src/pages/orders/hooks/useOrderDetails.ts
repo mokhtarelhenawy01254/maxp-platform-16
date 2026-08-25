@@ -178,22 +178,13 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         const apiStatuses = response.data.data || [];
         console.log("📊 Loaded statuses from API:", apiStatuses);
 
-        // دمج الحالات من API مع الحالات الافتراضية
-        const statusMap = new Map();
-
-        // أضف الحالات الافتراضية أولاً
-        fallbackStatuses.forEach((status: any) => {
-          statusMap.set(status.code, status);
-        });
-
-        // اكتب فوقها بالحالات من API
-        apiStatuses.forEach((status: any) => {
-          statusMap.set(status.code, status);
-        });
-
-        const mergedStatuses = Array.from(statusMap.values());
-        console.log("📊 Merged statuses:", mergedStatuses.length, "statuses");
-        setOrderStatuses(mergedStatuses);
+        // 🛡️ (deleted-status-dropdowns): رد الـ API هو مصدر الحقيقة — الدمج مع
+        // fallbackStatuses كان بيرجّع حالات التاجر حذفها + حالات تربو وهمية
+        // مخلوطة (turbo_saved/delayed...) مش قابلة للتطبيق كحالة طلب أصلًا.
+        // الـ fallback rescue فقط لو الرد فاضي.
+        setOrderStatuses(
+          apiStatuses.length > 0 ? apiStatuses : fallbackStatuses,
+        );
       }
     } catch (error) {
       console.error("Error fetching order statuses:", error);
