@@ -74,16 +74,18 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   const [isOverride, setIsOverride] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  // 🛡️ (mojibake-fallback): القايمة دي كانت متخزنة bytes مكسورة (Ù‚ÙŠØ¯...) فلو
+  // الـ API فشل كان الدروبداون بيعرض رموز. rescue نظيف بنفس الحالات الأساسية.
   const fallbackStatuses: StatusOption[] = [
-    { code: "PENDING", name: "Ù‚ÙŠØ¯ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø±" },
-    { code: "CONFIRMED", name: "Ù…Ø¤ÙƒØ¯" },
-    { code: "ON_HOLD", name: "Ù…Ø¹Ù„Ù‚" },
-    { code: "PROCESSING", name: "Ù‚ÙŠØ¯ Ø§Ù„ØªØ¬Ù‡ÙŠØ²" },
-    { code: "SHIPPED", name: "ØªÙ… Ø§Ù„Ø´Ø­Ù†" },
-    { code: "DELIVERED", name: "ØªÙ… Ø§Ù„ØªØ³Ù„ÙŠÙ…" },
-    { code: "CANCELLED", name: "Ù…Ù„ØºÙŠ" },
-    { code: "REFUNDED", name: "Ù…Ø³ØªØ±Ø¯" },
-    { code: "PARTIALLY_REFUNDED", name: "Ù…Ø³ØªØ±Ø¯ Ø¬Ø²Ø¦ÙŠØ§Ù‹" },
+    { code: "PENDING", name: "قيد الانتظار" },
+    { code: "CONFIRMED", name: "مؤكد" },
+    { code: "ON_HOLD", name: "معلق" },
+    { code: "PROCESSING", name: "قيد التجهيز" },
+    { code: "SHIPPED", name: "تم الشحن" },
+    { code: "DELIVERED", name: "تم التسليم" },
+    { code: "CANCELLED", name: "ملغي" },
+    { code: "REFUNDED", name: "مسترد" },
+    { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً" },
   ];
 
   const normalizeItems = (rawItems: any): any[] => {

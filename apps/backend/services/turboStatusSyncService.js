@@ -372,17 +372,29 @@ async function syncTurboStatusToOrder({
   // 🛡️ PRODUCTION-FIX (custom-status-enum): حالة التعيين ممكن تكون حالة مخصصة مش في الـ enum
   // (مثال حقيقي: تعيين swan `delayed → DELAYED-WITH-CAPTAIN`). بنحلّها عبر mapsToSystem:
   // نخزّن القيمة الصالحة في order.status، ونحتفظ بالكود المخصص (orderStatus) للإشعار.
+  // 🛡️ PRODUCTION-FIX (turbo-custom-gate): بوابة statusChanged كانت بتقارن الـ enum بس —
+  // لو الطلب واقف بالفعل في قيمة الـ mapping (SHIPPED) والمابينج لحالة مخصصة
+  // (WITH_THE_CAPTAIN)، كانت البوابة false والمسار كله بيتخطى: الحالة المخصصة
+  // عمرها ما تتطبق من التربو. القياس بقى على "الحالة الفعلية" (الكود المخصص).
   let storedOrderStatus = null;
   let statusChanged = false;
+  let turboRequestedCustom = null;
   if (orderStatus) {
     const resolved = await resolveOrderStatusForStorage(prisma, companyId, orderStatus);
     storedOrderStatus = resolved.stored;
     if (storedOrderStatus) {
       updateData.status = storedOrderStatus;
+      turboRequestedCustom = resolved.notify !== storedOrderStatus ? resolved.notify : null;
     } else {
       console.warn(`⚠️ [TURBO-SYNC] Skipping un-storable OrderStatus "${orderStatus}" for ${existingOrder.orderNumber} (not in enum and no valid mapsToSystem) — turbo fields updated, order status unchanged.`);
     }
-    statusChanged = Boolean(storedOrderStatus) && storedOrderStatus !== existingOrder.status;
+    const currentCustomCode = existingOrder.customStatusCode
+      ? String(existingOrder.customStatusCode).toUpperCase()
+      : null;
+    statusChanged = Boolean(storedOrderStatus) && (
+      storedOrderStatus !== existingOrder.status ||
+      (turboRequestedCustom && currentCustomCode !== turboRequestedCustom)
+    );
   }
 
   if (paymentStatus) {
@@ -412,9 +424,14 @@ async function syncTurboStatusToOrder({
         true,
         { skipCallAttemptGuard: true, skipTransitionValidation: true }
       );
-      console.log(`✅ [TURBO-SYNC] Order ${existingOrder.orderNumber} status -> ${storedOrderStatus} (custom "${orderStatus}") via orderService (notification + history).`);
+      // 🛡️ PRODUCTION-FIX (turbo-custom-wipe): المسار الموحد كتب status +
+      // customStatusCode بالفعل — لو سيبنا updateData.status هنا، التحديث المباشر
+      // الجاي كان بيمسح الكود المخصص اللي لسه اتكتب. نشيل status من ال payload.
+      delete updateData.status;
+      console.log(`✅ [TURBO-SYNC] Order ${existingOrder.orderNumber} status -> ${storedOrderStatus} (custom "${turboRequestedCustom || orderStatus}") via orderService (notification + history).`);
     } catch (statusErr) {
       console.warn(`⚠️ [TURBO-SYNC] Status update via orderService failed for ${existingOrder.orderNumber}:`, statusErr.message);
+      // fallback: التحديث المباشر هياخد updateData.status + يمسح الكود المخصص القديم
     }
   }
 

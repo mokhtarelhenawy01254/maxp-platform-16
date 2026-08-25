@@ -1395,16 +1395,24 @@ const Orders: React.FC = () => {
           return;
         }
 
-        const mergedOrderStatuses = new Map(
-          DEFAULT_ORDER_STATUSES.map((status) => [status.code, status]),
-        );
-        const mergedPaymentStatuses = new Map(
-          DEFAULT_PAYMENT_STATUSES.map((status) => [status.code, status]),
-        );
-
         const fetchedStatuses = Array.isArray(response.data.data)
           ? (response.data.data as Array<Partial<OrderStatusDefinition> & { statusType?: string }>)
           : [];
+
+        // 🛡️ (deleted-status-dropdowns): رد الـ API هو مصدر الحقيقة — الحالات
+        // الافتراضية المدمجة كانت بترجّع حالات التاجر حذفها من إدارة الحالات.
+        // الـ defaults دلوقتي rescue فقط لو الرد فاضي (فشل/شركة جديدة).
+        const useDefaults = fetchedStatuses.length === 0;
+        const mergedOrderStatuses = new Map(
+          useDefaults
+            ? DEFAULT_ORDER_STATUSES.map((status) => [status.code, status])
+            : [],
+        );
+        const mergedPaymentStatuses = new Map(
+          useDefaults
+            ? DEFAULT_PAYMENT_STATUSES.map((status) => [status.code, status])
+            : [],
+        );
 
         fetchedStatuses.forEach((status) => {
           const normalizedCode = normalizeStatusCode(status?.code);
