@@ -135,4 +135,21 @@ registerRoute(
   }),
 );
 
-precacheAndRoute(self.__WB_MANIFEST);
+// Precaching must NEVER abort the install because a single entry fails to
+// cache (e.g. an old precache manifest still listing index.html that returns
+// 401 on tenant subdomains → bad-precaching-response). If install aborts, the
+// stale SW keeps serving the old cached shell forever and the PWA never
+// updates. `cacheWillUpdate` returning null for an unsafe response makes
+// precacheAndRoute skip that entry instead of throwing.
+precacheAndRoute(self.__WB_MANIFEST, {
+  plugins: [
+    {
+      cacheWillUpdate: async ({ response }) => {
+        if (!response || response.status === 401 || response.status >= 400) {
+          return null;
+        }
+        return response;
+      },
+    },
+  ],
+});

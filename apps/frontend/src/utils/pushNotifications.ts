@@ -266,6 +266,7 @@ export const registerPushServiceWorker =
 
     const registration = await navigator.serviceWorker.register("/sw-v4.js", {
       scope: "/",
+      updateViaCache: "none",
     });
 
     return navigator.serviceWorker.ready.then(() => registration);

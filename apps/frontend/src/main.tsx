@@ -252,7 +252,7 @@ if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MOD
       }
     });
   });
-  navigator.serviceWorker.register("/sw-v4.js").then((reg) => {
+  navigator.serviceWorker.register("/sw-v4.js", { updateViaCache: "none" }).then((reg) => {
     const notify = () => {
       window.__SW_UPDATE_PENDING__ = true;
       window.dispatchEvent(new CustomEvent("sw-update-ready"));
