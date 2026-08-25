@@ -91,6 +91,8 @@ const notifyPreparationStageChange = async ({ companyId, orderPayload, status })
       orderId: orderPayload.id,
       recipientPhone: orderPayload.customerPhone,
       eventType: getPersistedNotificationEventType(status),
+      // 🛡️ (custom-status-dedup-identity): هوية الحالة الأصلية — نفس إصلاح orderService
+      rawEventType: status,
     });
     if (recentNotification) return;
 

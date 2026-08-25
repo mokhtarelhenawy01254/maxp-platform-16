@@ -1470,15 +1470,16 @@ class OrderService {
               || status;
 
             // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
-            // 🛡️ PRODUCTION-FIX (custom-status-enum-dedup): الـ dedup لازم يستخدم نفس القيمة اللي
-            // هتتخزن فعلاً في whatsAppNotificationLog.eventType — للحالات المخصصة دي `mapsToSystem`
-            // (مثل ON_HOLD) مش الكود المخصص — وإلا الرسالة المكررة متتعرفش (قد تسبب سبام للعميل).
+            // 🛡️ PRODUCTION-FIX (custom-status-dedup-identity): بنمرّر الكود الأصلي
+            // (rawEventType) — التطابق بقى على هوية الحالة المخصصة نفسها، مش قيمة
+            // mapsToSystem المشتركة اللي كانت بتبلع رسالة حالتين مختلفتين خلال 10 ثوانٍ.
             const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
             const persistedEventForDedup = getPersistedNotificationEventType(notificationStatus);
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
               companyId: order.companyId,
               orderId: order.id,
               eventType: persistedEventForDedup,
+              rawEventType: notificationStatus,
             });
 
             if (recentNotification) {

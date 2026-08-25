@@ -258,8 +258,13 @@ function formatNotificationDate(value) {
  * - للطلبات الضيوف (بدون orderId): المفتاح = recipientPhone + eventType.
  * - يُطبَّع الـ eventType عبر getPersistedNotificationEventType حتى يطابق ما
  *   يُخزَّن فعلاً في whatsAppNotificationLog (لا contains — تطابق تام).
+ * 🛡️ PRODUCTION-FIX (custom-status-dedup-identity): لو البايع مرّر rawEventType
+ * (كود الحالة المخصصة الأصلي)، التطابق بيبقى على هوية الحالة دي — مش قيمة
+ * mapsToSystem المشتركة. قبل كده حالتان مخصصتان مختلفتان على نفس الـ mapping
+ * خلال 10 ثوانٍ لنفس الطلب كانت الثانية بتتبلع بصمت. الصفوف القديمة
+ * (rawEventType=null) بتتطابق احتياطيًا زي قبل كده.
  */
-async function isDuplicateNotification({ companyId, orderId, recipientPhone, eventType, windowMs = 10000 }) {
+async function isDuplicateNotification({ companyId, orderId, recipientPhone, eventType, rawEventType = null, windowMs = 10000 }) {
   const prisma = getSharedPrismaClient();
   const persistedEventType = getPersistedNotificationEventType(eventType);
   const where = {
@@ -267,6 +272,9 @@ async function isDuplicateNotification({ companyId, orderId, recipientPhone, eve
     eventType: persistedEventType,
     createdAt: { gte: new Date(Date.now() - windowMs) },
   };
+  if (rawEventType) {
+    where.OR = [{ rawEventType: String(rawEventType).toUpperCase() }, { rawEventType: null }];
+  }
   if (orderId) {
     where.orderId = orderId;
   } else if (recipientPhone) {
@@ -995,6 +1003,13 @@ async function sendNotification(options) {
     // 🛡️ PRODUCTION-FIX (custom-status-enum): قيمة enum صالحة تُخزّن في whatsAppNotificationLog
     // للحالات المخصصة (مثل mapsToSystem بتاعها) — لأن eventType في السجل enum مقفول.
     persistedEventType = null,
+    // 🛡️ (custom-status-identity): الكود الأصلي للحدث قبل التحويل — هوية dedup
+    // دقيقة للحالات المخصصة (بدل mapsToSystem اللي بيلوع رسالة حالتين مختلفتين)
+    // ونسبة الإرسال في التقارير للحالة الصح.
+    rawEventType = null,
+    // 🛡️ (custom-status-meta-fallback): حدث قالب بديل (الحالة النظامية الماب عليها)
+    // يستخدم لو قالب الحالة المخصصة لسه غير معتمد عند ميتا وجلسة الشركة META_CLOUD.
+    metaFallbackEvent = null,
     // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): استراتيجية تسليم الرسالة
     // (company / platform-only / platform-fallback) — تحدد هل نبعت من شركة الطلب
     // ولا من الشركة الأم اللي عندها جلسة Meta متصلة.
@@ -1254,6 +1269,39 @@ async function sendNotification(options) {
           return { success: false, reason: 'no_template' };
         }
         templateId = template.id || null;
+
+        // 🛡️ PRODUCTION-FIX (custom-status-meta-fallback): على جلسات META_CLOUD، لو
+        // القالب المختار للحدث (حالة مخصصة) لسه بدون ربط ميتا معتمد (جديد/PENDING —
+        // محتوى قوالب ميتا المقفولة مايتعدلش)، النص الحر بيترفض خارج نافذة الـ 24
+        // ساعة (131047) = فشل صامت. نرجّع لقالب الحالة النظامية الماب عليها (المعتمد
+        // غالبًا) — الأقرب دلاليًا — ونكمل كإرسال قالب ميتا طبيعي.
+        if (
+          sessionProvider === 'META_CLOUD' &&
+          metaFallbackEvent &&
+          metaFallbackEvent !== eventType &&
+          !(template?.metaTemplateName && String(template?.metaTemplateStatus || '').toUpperCase() === 'APPROVED')
+        ) {
+          try {
+            const mappedTemplate = await safeQuery(() => findNotificationTemplateForEvent(
+              deliveryCompanyId,
+              metaFallbackEvent,
+              sessionProvider,
+              getSharedPrismaClient()
+            ));
+            if (
+              mappedTemplate?.metaTemplateName &&
+              String(mappedTemplate?.metaTemplateStatus || '').toUpperCase() === 'APPROVED'
+            ) {
+              console.log(
+                `☁️ [WHATSAPP-META-FALLBACK] قالب "${eventType}" غير معتمد بعد — استخدام قالب "${metaFallbackEvent}" المعتمد (الأقرب دلاليًا).`
+              );
+              template = mappedTemplate;
+              templateId = template.id || null;
+            }
+          } catch (fallbackErr) {
+            console.warn(`⚠️ [WHATSAPP-META-FALLBACK] فشل البحث عن قالب بديل (${metaFallbackEvent}):`, fallbackErr.message);
+          }
+        }
       }
     }
 
@@ -1328,6 +1376,8 @@ async function sendNotification(options) {
           recipientType: persistedRecipientType,
           category: persistedCategory,
           eventType: persistedEventType,
+          // 🛡️ (custom-status-identity): الكود الأصلي — هوية الحالة المخصصة
+          rawEventType: rawEventType || null,
           content,
           orderId: safeOrderId,
           customerId,
@@ -1343,14 +1393,15 @@ async function sendNotification(options) {
         const result = await prisma.$queryRaw`
           INSERT INTO "whatsapp_notification_logs" (
             id, "companyId", "templateId", "sessionId", "recipientPhone", "recipientName",
-            "recipientType", category, "eventType", content, "orderId", "customerId",
+            "recipientType", category, "eventType", "rawEventType", content, "orderId", "customerId",
             status, "createdAt", "updatedAt"
           ) VALUES (
             gen_random_uuid(), ${companyId}, ${templateId || null}, ${sessionId},
             ${formattedPhone}, ${recipientName},
             CAST(${persistedRecipientType} AS "whatsapp_notification_logs_recipientType"),
             CAST(${persistedCategory} AS "whatsapp_notification_logs_category"),
-            CAST(${persistedEventType} AS "whatsapp_notification_logs_eventType"), ${content},
+            CAST(${persistedEventType} AS "whatsapp_notification_logs_eventType"),
+            ${rawEventType || null}, ${content},
             ${safeOrderId}, ${customerId}, 'PENDING', NOW(), NOW()
           ) RETURNING *;
         `;
@@ -2247,7 +2298,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     // notifyCustomer=false) — التناقض ده كان بيولّد محاولات إرسال فاشلة 131047.
     try {
       const dbNotify = await prisma.orderStatusConfig.findFirst({
-        where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping'] }, isActive: true },
+        where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping', 'preparation', 'payment'] }, isActive: true },
         select: { notifyCustomer: true }
       });
       if (dbNotify && dbNotify.notifyCustomer === false) {
@@ -2259,9 +2310,12 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     }
   } else {
     // التحقق من الحالات المخصصة في قاعدة البيانات
-    // (statusType ممكن يكون order أو shipping — الحالات المخصصة بتاعة التاجر زي DELAYED-WITH-CAPTAIN)
+    // 🛡️ PRODUCTION-FIX (custom-status-all-types): الحالات المخصصة بتاعة التاجر بتتسمّى
+    // من صفحة الحالات بأي نوع (order/shipping/preparation/payment) — الفلترة على
+    // order+shipping بس كانت بتسيب حالات preparation/payment تقع في الـ fallback
+    // (مفعّل قسرًا متجاهلًا notifyCustomer وبدون الاسم العربي في {{status}}).
     const dbStatus = await prisma.orderStatusConfig.findFirst({
-      where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping'] }, isActive: true }
+      where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping', 'preparation', 'payment'] }, isActive: true }
     });
 
     if (dbStatus) {
@@ -2272,7 +2326,11 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
         statusName: dbStatus.name,
         // 🛡️ PRODUCTION-FIX (custom-status-enum): نخزّن في السجل قيمة enum صالحة —
         // نستخدم mapsToSystem بتاعة الحالة المخصصة (مثل ON_HOLD) إن وجدت.
-        persistedEventType: getPersistedNotificationEventType(dbStatus.mapsToSystem || dbStatus.code)
+        persistedEventType: getPersistedNotificationEventType(dbStatus.mapsToSystem || dbStatus.code),
+        // 🛡️ PRODUCTION-FIX (custom-status-meta-fallback): لو قالب الحالة المخصصة
+        // لسه غير معتمد عند ميتا، نرجع لقالب الحالة النظامية الماب عليها (الأقرب
+        // دلاليًا) بدل النص الحر اللي بيفشل 131047 خارج نافذة الـ 24 ساعة.
+        metaFallbackEvent: dbStatus.mapsToSystem || null
       };
     } else {
       // 🚀 [FALLBACK] If not in map or DB, allow the notification but let sendNotification decide
@@ -2348,6 +2406,10 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
       eventType: statusConfig.event,
       fallbackEventType: newStatus,
       persistedEventType: statusConfig.persistedEventType || null,
+      // 🛡️ (custom-status-identity): الكود الأصلي — هوية dedup دقيقة + نسبة للتقارير
+      rawEventType: newStatus,
+      // 🛡️ (custom-status-meta-fallback): قالب الحالة النظامية الماب عليها كخطة بديلة
+      metaFallbackEvent: statusConfig.metaFallbackEvent || null,
       variables: {
         customerName: order.customerName || order.customer?.firstName || 'عميلنا العزيز',
         customerPhone: phone,

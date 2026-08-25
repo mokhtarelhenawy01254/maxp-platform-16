@@ -136,7 +136,10 @@ export const orderScopeConfig: TemplateScopeConfig = {
     enableHeaderProductImage: true,
     enableMetaSwitch: true,
     enableMetaMultiBind: true,
-    enableTestSender: false,
+    // 🛡️ (custom-status-test-sender): فعّلنا زر التجربة — التاجر يقدر يجرّب قالب أي
+    // حالة (خصيصًا المخصصة) برقم موبايل قبل الاعتماد عليه في الإنتاج، بدل ما
+    // أول اختبار حقيقي يكون على عميل فعلي.
+    enableTestSender: true,
     enableSchedule: false,
     enableReports: true,
     enableSettings: true,

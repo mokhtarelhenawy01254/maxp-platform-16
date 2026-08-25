@@ -962,6 +962,8 @@ model WhatsAppNotificationLog {
   recipientType                   WhatsAppNotificationLogsRecipientType @default(CUSTOMER)
   category                        WhatsAppNotificationLogsCategory
   eventType                       WhatsAppNotificationLogsEventType
+  /// rawEventType - original custom status code before enum mapping (dedup identity + report attribution)
+  rawEventType                    String?
   content                         String
   orderId                         String?
   customerId                      String?
