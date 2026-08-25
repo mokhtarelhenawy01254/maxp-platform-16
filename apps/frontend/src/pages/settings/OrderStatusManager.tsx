@@ -25,6 +25,7 @@ import {
   Lock,
   Unlock,
   ShieldAlert,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import i18n from "../../i18n";
@@ -528,6 +529,17 @@ const OrderStatusManager: React.FC = () => {
                           </option>
                         ))}
                       </select>
+                      {/* 🛡️ (custom-status-no-mapping): نفس تحذير نافذة الإنشاء */}
+                      {editingStatus.code?.trim() &&
+                        !SYSTEM_STATUSES.includes(
+                          editingStatus.code.trim().toUpperCase(),
+                        ) &&
+                        !editingStatus.mapsToSystem && (
+                          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                            ⚠️ حالة مخصصة بدون ربط بحالة نظام لا يمكن تطبيقها على أي
+                            طلب — اختر ربطًا.
+                          </p>
+                        )}
                     </div>
                   </div>
 
@@ -647,6 +659,20 @@ const OrderStatusManager: React.FC = () => {
                           {status.mapsToSystem}
                         </span>
                       )}
+                      {/* 🛡️ (custom-status-no-mapping): شارة تحذير لحالة مخصصة ميتة */}
+                      {!status.mapsToSystem &&
+                        status.code?.trim() &&
+                        !SYSTEM_STATUSES.includes(
+                          status.code.trim().toUpperCase(),
+                        ) && (
+                          <span
+                            className="flex items-center gap-1 text-amber-600 dark:text-amber-400"
+                            title="حالة مخصصة بدون ربط بحالة نظام — لا يمكن تطبيقها على أي طلب. عدّلها وأضف ربطًا."
+                          >
+                            <AlertTriangle className="w-3 h-3" />
+                            بدون ربط
+                          </span>
+                        )}
                       {status.wooCommerceStatus && (
                         <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
                           <ShoppingCart className="w-3 h-3" />
@@ -891,6 +917,18 @@ const OrderStatusManager: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                  {/* 🛡️ (custom-status-no-mapping): حالة مخصصة بدون ربط مش هتتخزن أبدًا
+                      على طلب (الـ enum مقفول) — كان التاجر بيكتشف ده بـ 400 غامض */}
+                  {newStatus.code?.trim() &&
+                    !SYSTEM_STATUSES.includes(
+                      newStatus.code.trim().toUpperCase(),
+                    ) &&
+                    !newStatus.mapsToSystem && (
+                      <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                        ⚠️ حالة مخصصة بدون ربط بحالة نظام لا يمكن تطبيقها على أي طلب —
+                        اختر ربطًا (مثل: قيد الانتظار / قيد التنفيذ / تم الشحن).
+                      </p>
+                    )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

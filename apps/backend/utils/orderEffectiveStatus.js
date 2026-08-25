@@ -11,19 +11,25 @@
  */
 
 // تعبير SQL للحالة الفعلية — يستخدم ضد جدول "orders" (بأسماء الأعمدة المقتبسة).
-const EFFECTIVE_ORDER_STATUS_SQL = `
+// 🛡️ (analytics-unify): بيقبل alias للجدول (مثل 'o') عشان استعلامات JOIN التحليلات.
+const effectiveOrderStatusSql = (alias = '') => {
+  const p = alias ? `${alias}.` : '';
+  return `
   CASE
-    WHEN "customStatusCode" IS NOT NULL AND "customStatusCode" <> '' THEN UPPER("customStatusCode")
-    WHEN "metadata"::jsonb->>'preparationStatus' IS NOT NULL AND "metadata"::jsonb->>'preparationStatus' <> ''
+    WHEN ${p}"customStatusCode" IS NOT NULL AND ${p}"customStatusCode" <> '' THEN UPPER(${p}"customStatusCode")
+    WHEN ${p}"metadata"::jsonb->>'preparationStatus' IS NOT NULL AND ${p}"metadata"::jsonb->>'preparationStatus' <> ''
     THEN CASE
-      WHEN "metadata"::jsonb->>'preparationStatus' = 'PENDING_PREPARATION' THEN 'CONFIRMED'
-      WHEN "metadata"::jsonb->>'preparationStatus' IN ('STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK') THEN 'STOCK_SHORTAGE'
-      WHEN "metadata"::jsonb->>'preparationStatus' = 'ON_HOLD_PREP' THEN 'ON_HOLD_PREP'
+      WHEN ${p}"metadata"::jsonb->>'preparationStatus' = 'PENDING_PREPARATION' THEN 'CONFIRMED'
+      WHEN ${p}"metadata"::jsonb->>'preparationStatus' IN ('STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK') THEN 'STOCK_SHORTAGE'
+      WHEN ${p}"metadata"::jsonb->>'preparationStatus' = 'ON_HOLD_PREP' THEN 'ON_HOLD_PREP'
       ELSE 'PROCESSING'
     END
-    ELSE "status"::text
+    ELSE ${p}"status"::text
   END
 `;
+};
+
+const EFFECTIVE_ORDER_STATUS_SQL = effectiveOrderStatusSql();
 
 // نفس المنطق في JS (للاستخدام على صفوف محمّلة بالفعل — بلا SQL).
 const getMappedRegularOrderStatus = (preparationStatus) => {
@@ -71,6 +77,7 @@ async function getEffectiveOrderStatusCounts(prisma, companyId, extraWhereSql = 
 
 module.exports = {
   EFFECTIVE_ORDER_STATUS_SQL,
+  effectiveOrderStatusSql,
   getMappedRegularOrderStatus,
   computeEffectiveOrderStatus,
   getEffectiveOrderStatusCounts,
