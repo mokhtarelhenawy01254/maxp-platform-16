@@ -1175,9 +1175,6 @@ const DevTasksList = React.lazy(
 const DevKanbanBoard = React.lazy(
   () => import("./pages/super-admin/DevKanbanBoard"),
 );
-const SuperAdminDownloads = React.lazy(
-  () => import("./pages/super-admin/SuperAdminDownloads"),
-);
 const DevTaskForm = React.lazy(() => import("./pages/super-admin/DevTaskForm"));
 const DevTaskDetails = React.lazy(
   () => import("./pages/super-admin/DevTaskDetails"),
@@ -2474,14 +2471,6 @@ const AppContent = () => {
               element={
                 <Layout>
                   <DevKanbanBoard />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/downloads"
-              element={
-                <Layout>
-                  <SuperAdminDownloads />
                 </Layout>
               }
             />

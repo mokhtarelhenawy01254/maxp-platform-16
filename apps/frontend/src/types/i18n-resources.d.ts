@@ -8200,12 +8200,15 @@ declare module 'react-i18next' {
         skippedPageBoundToOther: string;
         skippedPagesNote: string;
         skippedPagesAcknowledge: string;
+        forceDisconnect: string;
+        forceDisconnecting: string;
+        forceDisconnectSuccess: string;
+        forceDisconnectError: string;
         resolveSuccess: string;
         resolveError: string;
         accountsCount: string;
         accountGroupTitle: string;
         unknownAccount: string;
-        accountsLinked: string;
       };
       facebookPostCreator: {
         pageTitle: string;
@@ -14092,6 +14095,10 @@ declare module 'react-i18next' {
         overviewP365: string;
         overviewCustom: string;
         overviewTo: string;
+        overviewFrom: string;
+        overviewValidRate: string;
+        overviewValidTrendAria: string;
+        overviewVsPrevPeriod: string;
         statusSearch: string;
         statusSelectAll: string;
         statusNoResults: string;
@@ -17539,7 +17546,6 @@ declare module 'react-i18next' {
           escalations: string;
           taskSettings: string;
           taskApiKeys: string;
-          desktopApp: string;
           companyActivity: string;
           aiConsumption: string;
           aiKeyManager: string;

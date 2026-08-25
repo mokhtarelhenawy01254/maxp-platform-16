@@ -105,7 +105,6 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: t("superAdmin.sidebar.escalations"), icon: <Clock className="size-5" />, path: "/super-admin/dev/escalations" },
     { text: t("superAdmin.sidebar.taskSettings"), icon: <Settings className="size-5" />, path: "/super-admin/dev-settings" },
     { text: t("superAdmin.sidebar.taskApiKeys"), icon: <Key className="size-5" />, path: "/super-admin/dev-task-integrations" },
-    { text: t("superAdmin.sidebar.desktopApp"), icon: <Download className="size-5" />, path: "/super-admin/downloads" },
   ]},
 ];
 
