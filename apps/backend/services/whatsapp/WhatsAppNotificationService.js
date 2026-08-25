@@ -959,9 +959,8 @@ async function ensureNotificationSettings(companyId) {
  * إرسال إشعار
  */
 async function sendNotification(options) {
-  const {
+  let {
     companyId,
-    deliveryCompanyId = companyId,
     recipientPhone,
     recipientName,
     recipientType = 'CUSTOMER',
@@ -990,6 +989,9 @@ async function sendNotification(options) {
     // 🛡️ PRODUCTION-FIX (guest-order-fk): الضيوف ملهمش صف في orders — اللوج بـ orderId=null
     isGuestOrder = false
   } = options;
+  // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): deliveryCompanyId قابل للتعديل
+  // عشان نقدر نعيد تعيينه من resolveDeliveryCompanyId حسب الاستراتيجية.
+  let deliveryCompanyId = companyId;
   const safeOrderId = isGuestOrder ? null : orderId;
 
   const prisma = getSharedPrismaClient();
