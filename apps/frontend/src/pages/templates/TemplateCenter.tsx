@@ -1299,13 +1299,6 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     });
   }, []);
 
-  const selectedMetaBody = useMemo(() => {
-    if (!templateForm.metaTemplateName) return "";
-    const mt = availableMetaTemplates.find((m) => m.name === templateForm.metaTemplateName);
-    const body = (mt?.components || []).find((c) => c.type === "BODY");
-    return body?.text || "";
-  }, [templateForm.metaTemplateName, availableMetaTemplates]);
-
   const metaBindingChanged = dialogSlot === "meta" && templateForm.metaTemplateName !== originalMetaTemplateName;
   const buttonsSignature = (btns: TemplateButton[]): string =>
     JSON.stringify(
@@ -2002,72 +1995,20 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     ? `الربط الحالي: ${originalMetaTemplateName} — اختار قالب تاني عشان تغيّره (مش بيغيّر محتوى الرسالة).`
                     : "اختار قالب معتمد وربطه بالحالة — الرسالة اللي هتتبعت هي نص قالب ميتا نفسه."}
                 </p>
-                {metaSessions.length > 0 ? (
-                  <>
-                    <select
-                      value={selectedMetaSession}
-                      onChange={(e) => { setSelectedMetaSession(e.target.value); }}
-                      aria-label="جلسة ميتا للربط"
-                      className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    >
-                      {metaSessions.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} {s.metaDisplayPhoneNumber ? `(${s.metaDisplayPhoneNumber})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                    {loadingMetaTemplates ? (
-                      <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
-                    ) : availableMetaTemplates.length > 0 ? (
-                      <select
-                        value={templateForm.metaTemplateName}
-                        onChange={(e) => setTemplateForm((p) => ({ ...p, metaTemplateName: e.target.value }))}
-                        aria-label="قالب ميتا المعتمد"
-                        className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      >
-                        <option value="">اختر قالب...</option>
-                        {availableMetaTemplates.map((mt) => {
-                          const boundEvents = mt.boundToEventTypes?.length
-                            ? mt.boundToEventTypes.join("، ")
-                            : (mt.boundToEventType || "");
-                          return (
-                            <option key={mt.name} value={mt.name}>
-                              {mt.name} {mt.category ? `(${mt.category})` : ""}
-                              {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    ) : (
-                      <p className="text-xs text-slate-400">
-                        لا توجد قوالب ميتا معتمدة — اعمل قالب جديد من «انشاء قالب» في الكارت.
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>
-                )}
+                <MetaTemplateSelect
+                  metaSessions={metaSessions}
+                  selectedMetaSession={selectedMetaSession}
+                  onSessionChange={(v) => setSelectedMetaSession(v)}
+                  availableMetaTemplates={availableMetaTemplates}
+                  loadingMetaTemplates={loadingMetaTemplates}
+                  selectedMetaTemplateName={templateForm.metaTemplateName}
+                  onSelectTemplate={(name) => setTemplateForm((p) => ({ ...p, metaTemplateName: name }))}
+                  showMapping={false}
+                  localContent={templateForm.content}
+                  sampleVariables={sampleVariables}
+                  variableDescriptions={variableDescriptions}
+                />
               </div>
-
-              {selectedMetaBody && (
-                <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
-                  <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-blue-500 dark:text-blue-400">
-                    <GlobeAltIcon className="h-3 w-3" />
-                    الرسالة اللي هتتبعت للعميل (نص قالب ميتا)
-                  </p>
-                  <div
-                    dir="auto"
-                    className="rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
-                  >
-                    <p className="whitespace-pre-wrap break-words">
-                      {resolveMetaBodyPreview(selectedMetaBody, templateForm.content, sampleVariables)}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                    المتغيرات بتتقري تلقائياً من الطلب — النص ده هو اللي هيوصلك للعميل بالظبط.
-                  </p>
-                </div>
-              )}
 
               {metaVariableMismatch && (
                 <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-[11px] leading-relaxed text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300" role="alert">
@@ -2175,156 +2116,51 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                       ? "اختار قالب مختلف عشان تغيّر الربط — التغيير يتسجّل لما تضغط حفظ."
                       : "اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده."}
                   </p>
-                  {metaSessions.length > 0 ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={createMetaTemplate}
-                        disabled={!!publishingId || saving}
-                        className="flex w-full items-center justify-center gap-1 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100 disabled:opacity-50 dark:border-blue-700/40 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40"
-                      >
-                        {publishingId ? (
-                          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        ) : (
-                          <PlusIcon className="h-3.5 w-3.5" />
-                        )}
-                        إنشاء قالب ميتا جديد
-                      </button>
-                      <select
-                        value={selectedMetaSession}
-                        onChange={(e) => { setSelectedMetaSession(e.target.value); }}
-                        aria-label="جلسة ميتا للربط"
-                        className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      >
-                        {metaSessions.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} {s.metaDisplayPhoneNumber ? `(${s.metaDisplayPhoneNumber})` : ""}
-                          </option>
-                        ))}
-                      </select>
-                      {loadingMetaTemplates ? (
-                        <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
-                      ) : availableMetaTemplates.length > 0 ? (
-                        <>
-                          <select
-                            value={templateForm.metaTemplateName}
-                            onChange={(e) => handleMetaTemplateSelect(e.target.value)}
-                            aria-label="قالب ميتا المعتمد"
-                            className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                          >
-                            <option value="">اختر قالب...</option>
-                            {availableMetaTemplates
-                              .filter((mt) =>
-                                config.features.enableMetaMultiBind
-                                  ? true
-                                  : !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedTemplate?.id
-                              )
-                              .map((mt) => {
-                                const boundEvents = mt.boundToEventTypes?.length
-                                  ? mt.boundToEventTypes.join("، ")
-                                  : (mt.boundToEventType || "");
-                                return (
-                                  <option key={mt.name} value={mt.name}>
-                                    {mt.name} {mt.category ? `(${mt.category})` : ""}
-                                    {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
-                                  </option>
-                                );
-                              })}
-                          </select>
+                  <MetaTemplateSelect
+                    metaSessions={metaSessions}
+                    selectedMetaSession={selectedMetaSession}
+                    onSessionChange={(v) => setSelectedMetaSession(v)}
+                    availableMetaTemplates={availableMetaTemplates}
+                    loadingMetaTemplates={loadingMetaTemplates}
+                    selectedMetaTemplateName={templateForm.metaTemplateName}
+                    onSelectTemplate={handleMetaTemplateSelect}
+                    onCreateTemplate={createMetaTemplate}
+                    createDisabled={!!publishingId || saving}
+                    enableMultiBind={config.features.enableMetaMultiBind}
+                    selectedTemplateId={selectedTemplate?.id}
+                    showMapping
+                    localContent={templateForm.content}
+                    sampleVariables={sampleVariables}
+                    variableDescriptions={variableDescriptions}
+                  />
 
-                          {selectedMetaBody && (
-                            <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
-                              <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-blue-500 dark:text-blue-400">
-                                <GlobeAltIcon className="h-3 w-3" />
-                                الرسالة اللي هتتبعت للعميل (نص قالب ميتا)
-                              </p>
-                              <div
-                                dir="auto"
-                                className="rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
-                              >
-                                <p className="whitespace-pre-wrap break-words">
-                                  {resolveMetaBodyPreview(selectedMetaBody, templateForm.content, sampleVariables)}
-                                </p>
-                              </div>
-                              <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                                المتغيرات بتتقري تلقائيًا من الطلب — النص ده هو اللي هيوصلك للعميل بالظبط.
-                              </p>
-                            </div>
-                          )}
+                  {(() => {
+                    const selectedMt = availableMetaTemplates.find((mt) => mt.name === templateForm.metaTemplateName);
+                    const otherBoundEvents = (selectedMt?.boundToEventTypes || [])
+                      .filter((ev) => ev !== selectedTemplate?.eventType);
+                    if (!selectedMt || otherBoundEvents.length === 0) return null;
+                    return (
+                      <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
+                        ℹ️ القالب ده مربوط حالياً بكمان: {otherBoundEvents.join("، ")} — نفس الرسالة هتتبعت ليهم. لو عايز رسالة مختلفة لحالة، اعمل قالب ميتا جديد.
+                      </div>
+                    );
+                  })()}
 
-                          {(() => {
-                            const selectedMt = availableMetaTemplates.find((mt) => mt.name === templateForm.metaTemplateName);
-                            const otherBoundEvents = (selectedMt?.boundToEventTypes || [])
-                              .filter((ev) => ev !== selectedTemplate?.eventType);
-                            if (!selectedMt || otherBoundEvents.length === 0) return null;
-                            return (
-                              <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
-                                ℹ️ القالب ده مربوط حالياً بكمان: {otherBoundEvents.join("، ")} — نفس الرسالة هتتبعت ليهم. لو عايز رسالة مختلفة لحالة، اعمل قالب ميتا جديد.
-                              </div>
-                            );
-                          })()}
-
-                          {/* Variable mapping {{1}} → customerName — بصري وواضح */}
-                          {selectedMetaBody && (() => {
-                            const localVars = extractLocalVariableOrder(templateForm.content);
-                            const metaNums = [...selectedMetaBody.matchAll(/\{\{(\d+)\}\}/g)].map((m) => m[1]);
-                            if (localVars.length === 0 || metaNums.length === 0) return null;
-                            const pairs = metaNums.map((n, i) => ({
-                              meta: `{{${n}}}`,
-                              local: localVars[i] ? `{{${localVars[i]}}}` : "—",
-                              desc: localVars[i] ? (variableDescriptions[localVars[i]] || "") : "غير متوفر",
-                              matched: !!localVars[i],
-                            }));
-                            return (
-                              <div className="mt-2 rounded-lg border border-slate-200 p-2 dark:border-slate-700">
-                                <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                                  تطابق المتغيرات
-                                </p>
-                                <div className="space-y-1">
-                                  {pairs.map((pr) => (
-                                    <div key={pr.meta} className="flex items-center gap-2 text-[11px]">
-                                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{pr.meta}</span>
-                                      <span className="text-slate-400">←</span>
-                                      <span className={`rounded px-1.5 py-0.5 font-mono ${pr.matched ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"}`}>
-                                        {pr.local}
-                                      </span>
-                                      {pr.desc && <span className="text-slate-500 dark:text-slate-400">{pr.desc}</span>}
-                                      {!pr.matched && <span className="text-red-500">⚠️ متغير ناقص في النص المحلي</span>}
-                                    </div>
-                                  ))}
-                                </div>
-                                <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
-                                  ميتا بترقّم المتغيرات بترتيب ظهورها؛ تأكد إن كل رقم ميتا ليه متغير محلي مطابق.
-                                </p>
-                              </div>
-                            );
-                          })()}
-
-                          {selectedTemplate?.metaTemplateName && !metaBindingChanged && (
-                            <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
-                              الربط الحالي: {selectedTemplate.metaTemplateName}
-                              {selectedTemplate.metaTemplateStatus ? ` (${selectedTemplate.metaTemplateStatus})` : ""}
-                            </div>
-                          )}
-                          {metaBindingChanged && (
-                            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
-                              التبديل: من «{originalMetaTemplateName}» إلى «{templateForm.metaTemplateName}» — اضغط «حفظ وربط بقالب ميتا» للتأكيد.
-                            </div>
-                          )}
-                          {metaAutoFilled && (
-                            <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300">
-                              ✅ اتبنى المحتوى المحلي تلقائياً من قالب ميتا المختار — راجع المتغيرات فوق وعدّل لو محتاج.
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <p className="text-xs text-slate-400">
-                          لا توجد قوالب ميتا معتمدة — اضغط «إنشاء قالب ميتا جديد» عشان تنشر قالب جديد على ميتا للمراجعة.
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>
+                  {selectedTemplate?.metaTemplateName && !metaBindingChanged && (
+                    <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
+                      الربط الحالي: {selectedTemplate.metaTemplateName}
+                      {selectedTemplate.metaTemplateStatus ? ` (${selectedTemplate.metaTemplateStatus})` : ""}
+                    </div>
+                  )}
+                  {metaBindingChanged && (
+                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+                      التبديل: من «{originalMetaTemplateName}» إلى «{templateForm.metaTemplateName}» — اضغط «حفظ وربط بقالب ميتا» للتأكيد.
+                    </div>
+                  )}
+                  {metaAutoFilled && (
+                    <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+                      ✅ اتبنى المحتوى المحلي تلقائياً من قالب ميتا المختار — راجع المتغيرات فوق وعدّل لو محتاج.
+                    </div>
                   )}
                 </div>
               )}
@@ -2739,6 +2575,173 @@ interface StatusRowProps {
   onOpenSwitch: (status: StatusWithTemplate) => void;
   onUnbindMeta: (status: StatusWithTemplate) => void;
   sampleVariables?: Record<string, string>;
+}
+
+/**
+ * مكوّن مشترك لاختيار/ربط قالب ميتا المعتمد — بيُستخدم في وضع «تغيير القالب» (switch)
+ * و في قسم الميتا عند إنشاء/تعديل القالب. بيلغي التكرار بين الاتنين.
+ */
+function MetaTemplateSelect({
+  metaSessions,
+  selectedMetaSession,
+  onSessionChange,
+  availableMetaTemplates,
+  loadingMetaTemplates,
+  selectedMetaTemplateName,
+  onSelectTemplate,
+  onCreateTemplate,
+  createDisabled,
+  enableMultiBind,
+  selectedTemplateId,
+  showMapping,
+  localContent,
+  sampleVariables,
+  variableDescriptions,
+}: {
+  metaSessions: { id: string; name: string; metaDisplayPhoneNumber?: string }[];
+  selectedMetaSession: string;
+  onSessionChange: (id: string) => void;
+  availableMetaTemplates: MetaAvailableTemplate[];
+  loadingMetaTemplates: boolean;
+  selectedMetaTemplateName: string;
+  onSelectTemplate: (name: string) => void;
+  onCreateTemplate?: () => void;
+  createDisabled?: boolean;
+  enableMultiBind?: boolean;
+  selectedTemplateId?: string | null;
+  showMapping: boolean;
+  localContent: string;
+  sampleVariables: Record<string, string>;
+  variableDescriptions: Record<string, string>;
+}) {
+  const selected = availableMetaTemplates.find((m) => m.name === selectedMetaTemplateName);
+  const metaBody = (selected?.components || []).find((c) => c.type === "BODY")?.text || "";
+
+  if (metaSessions.length === 0) {
+    return <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>;
+  }
+
+  return (
+    <>
+      {onCreateTemplate && (
+        <button
+          type="button"
+          onClick={onCreateTemplate}
+          disabled={createDisabled}
+          className="flex w-full items-center justify-center gap-1 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100 disabled:opacity-50 dark:border-blue-700/40 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40"
+        >
+          {createDisabled ? (
+            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <PlusIcon className="h-3.5 w-3.5" />
+          )}
+          إنشاء قالب ميتا جديد
+        </button>
+      )}
+      <select
+        value={selectedMetaSession}
+        onChange={(e) => onSessionChange(e.target.value)}
+        aria-label="جلسة ميتا للربط"
+        className="mb-2 mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+      >
+        {metaSessions.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name} {s.metaDisplayPhoneNumber ? `(${s.metaDisplayPhoneNumber})` : ""}
+          </option>
+        ))}
+      </select>
+      {loadingMetaTemplates ? (
+        <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
+      ) : availableMetaTemplates.length > 0 ? (
+        <>
+          <select
+            value={selectedMetaTemplateName}
+            onChange={(e) => onSelectTemplate(e.target.value)}
+            aria-label="قالب ميتا المعتمد"
+            className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          >
+            <option value="">اختر قالب...</option>
+            {availableMetaTemplates
+              .filter((mt) =>
+                enableMultiBind
+                  ? true
+                  : !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedTemplateId,
+              )
+              .map((mt) => {
+                const boundEvents = mt.boundToEventTypes?.length
+                  ? mt.boundToEventTypes.join("، ")
+                  : (mt.boundToEventType || "");
+                return (
+                  <option key={mt.name} value={mt.name}>
+                    {mt.name} {mt.category ? `(${mt.category})` : ""}
+                    {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
+                  </option>
+                );
+              })}
+          </select>
+
+          {metaBody && (
+            <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
+              <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-blue-500 dark:text-blue-400">
+                <GlobeAltIcon className="h-3 w-3" />
+                الرسالة اللي هتتبعت للعميل (نص قالب ميتا)
+              </p>
+              <div
+                dir="auto"
+                className="rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
+              >
+                <p className="whitespace-pre-wrap break-words">
+                  {resolveMetaBodyPreview(metaBody, localContent, sampleVariables)}
+                </p>
+              </div>
+              <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                المتغيرات بتتقري تلقائياً من الطلب — النص ده هو اللي هيوصلك للعميل بالظبط.
+              </p>
+            </div>
+          )}
+
+          {showMapping && metaBody && (() => {
+            const localVars = extractLocalVariableOrder(localContent);
+            const metaNums = [...metaBody.matchAll(/\{\{(\d+)\}\}/g)].map((m) => m[1]);
+            if (localVars.length === 0 || metaNums.length === 0) return null;
+            const pairs = metaNums.map((n, i) => ({
+              meta: `{{${n}}}`,
+              local: localVars[i] ? `{{${localVars[i]}}}` : "—",
+              desc: localVars[i] ? (variableDescriptions[localVars[i]] || "") : "غير متوفر",
+              matched: !!localVars[i],
+            }));
+            return (
+              <div className="mt-2 rounded-lg border border-slate-200 p-2 dark:border-slate-700">
+                <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  تطابق المتغيرات
+                </p>
+                <div className="space-y-1">
+                  {pairs.map((pr) => (
+                    <div key={pr.meta} className="flex items-center gap-2 text-[11px]">
+                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{pr.meta}</span>
+                      <span className="text-slate-400">←</span>
+                      <span className={`rounded px-1.5 py-0.5 font-mono ${pr.matched ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"}`}>
+                        {pr.local}
+                      </span>
+                      {pr.desc && <span className="text-slate-500 dark:text-slate-400">{pr.desc}</span>}
+                      {!pr.matched && <span className="text-red-500">⚠️ متغير ناقص في النص المحلي</span>}
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
+                  ميتا بترقّم المتغيرات بترتيب ظهورها؛ تأكد إن كل رقم ميتا ليه متغير محلي مطابق.
+                </p>
+              </div>
+            );
+          })()}
+        </>
+      ) : (
+        <p className="text-xs text-slate-400">
+          لا توجد قوالب ميتا معتمدة — اضغط «إنشاء قالب ميتا جديد» عشان تنشر قالب جديد على ميتا للمراجعة.
+        </p>
+      )}
+    </>
+  );
 }
 
 function StatusRow({
