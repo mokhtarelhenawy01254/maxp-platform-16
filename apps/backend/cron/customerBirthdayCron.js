@@ -70,6 +70,7 @@ function startCustomerBirthdayScheduler() {
             const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
             const result = await WhatsAppNotificationService.sendNotification({
               companyId: company.id,
+              deliveryStrategy: 'platform-fallback',
               recipientPhone: phone,
               recipientName: name,
               recipientType: 'CUSTOMER',

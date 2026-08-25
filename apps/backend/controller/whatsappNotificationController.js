@@ -897,8 +897,10 @@ async function sendTestNotification(req, res) {
       recipientType = 'ADMIN';
       recipientName = 'اختبار الاشتراك';
       deliveryStrategy = 'platform-only';
-    } else if (eventType === 'NEWSLETTER_SUBSCRIBED') {
-      recipientName = 'اختبار النشرة';
+    } else if (eventType.startsWith('CUSTOMER_OCCASION') || eventType === 'OCCASION_CAMPAIGN' || eventType === 'BIRTHDAY_WISH' || eventType.startsWith('POST_DELIVERY') || eventType.startsWith('CATEGORY_FOLLOWUP')) {
+      // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): السلاسل/المناسبات/عيد الميلاد
+      // ممكن تتعمل من شركة فرعية مفيش ليها جلسة Meta — نستخدم platform-fallback
+      // عشان نبعت من الشركة الأم (اللي عندها META_CLOUD متصل، زي Swan).
       deliveryStrategy = 'platform-fallback';
     }
 

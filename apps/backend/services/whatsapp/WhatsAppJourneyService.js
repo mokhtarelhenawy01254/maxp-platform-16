@@ -259,6 +259,7 @@ class WhatsAppJourneyService {
             // إرسال الرسالة باستخدام contentOverride
             const result = await WhatsAppNotificationService.sendNotification({
                 companyId: journey.companyId,
+                deliveryStrategy: 'platform-fallback',
                 recipientPhone: phone,
                 recipientName: `${journey.customer.firstName || ''} ${journey.customer.lastName || ''}`.trim(),
                 recipientType: 'CUSTOMER',
