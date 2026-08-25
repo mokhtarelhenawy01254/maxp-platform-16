@@ -983,6 +983,10 @@ async function sendNotification(options) {
     // 🛡️ PRODUCTION-FIX (custom-status-enum): قيمة enum صالحة تُخزّن في whatsAppNotificationLog
     // للحالات المخصصة (مثل mapsToSystem بتاعها) — لأن eventType في السجل enum مقفول.
     persistedEventType = null,
+    // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): استراتيجية تسليم الرسالة
+    // (company / platform-only / platform-fallback) — تحدد هل نبعت من شركة الطلب
+    // ولا من الشركة الأم اللي عندها جلسة Meta متصلة.
+    deliveryStrategy = 'company',
     // 🛡️ PRODUCTION-FIX (guest-order-fk): الضيوف ملهمش صف في orders — اللوج بـ orderId=null
     isGuestOrder = false
   } = options;
