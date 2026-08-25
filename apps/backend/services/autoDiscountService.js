@@ -350,6 +350,12 @@ async function convertExpiredVouchers() {
             select: { id: true, phone: true, firstName: true, lastName: true }
           });
           if (customer) {
+            let walletBalance = '0.00';
+            try {
+              const WalletService = require('./walletService');
+              const bal = await WalletService.getWalletBalance(customer.id);
+              walletBalance = String(Number(bal || 0).toFixed(2));
+            } catch (_) { /* ignore — fallback to 0.00 */ }
             await sendCustomerNotification({
               companyId: v.companyId,
               eventType: 'AUTO_DISCOUNT_CASHBACK_CONVERTED',
@@ -364,6 +370,8 @@ async function convertExpiredVouchers() {
               variables: {
                 voucherAmount: String(Number(v.amount).toFixed(2)),
                 cashAmount: String(Number(v.amount).toFixed(2)),
+                currency: 'ج.م',
+                balance: walletBalance,
                 orderNumber: v.orderNumber || ''
               }
             });
