@@ -106,7 +106,7 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
     Boolean(t?.metaTemplateName) && String(t?.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
 
   if (isMetaSession) {
-    // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
+    // 1) سجل META_CLOUD أو AUTO مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
     // 🚨 (meta-template-empty-name): استبعاد السجلات ذات metaTemplateName فارغ مباشرةً،
     // وفلتر APPROVED في الاستعلام حتى لا يظلّل سجل غير معتمد على سجل معتمد أقدم.
     const metaTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
@@ -114,7 +114,7 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
         companyId,
         eventType,
         isActive: true,
-        channel: 'META_CLOUD',
+        channel: { in: ['META_CLOUD', 'AUTO'] },
         metaTemplateName: { not: null },
         metaTemplateStatus: { equals: 'APPROVED', mode: 'insensitive' }
       },
@@ -122,7 +122,7 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
     }));
     if (isApprovedLink(metaTemplate)) return metaTemplate;
 
-    // 2) توافق قديم (legacy): سجل عادي (channel AUTO/غير محدد) عليه ربط ميتا معتمد.
+    // 2) توافق قديم (legacy): أي سجل (أي channel) عليه ربط ميتا معتمد.
     //    لازم يتفّضل على القالب العادي الصريح — وإلا هيتبعت نص حر بدل قالب ميتا.
     const legacyMeta = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
       where: {
@@ -1179,7 +1179,7 @@ async function sendNotification(options) {
         // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
         if (fallbackEventType && fallbackEventType !== eventType) {
           template = await safeQuery(() => findNotificationTemplateForEvent(
-            companyId,
+            deliveryCompanyId,
             fallbackEventType,
             sessionProvider,
             getSharedPrismaClient()
@@ -1188,7 +1188,7 @@ async function sendNotification(options) {
 
         if (!template) {
           template = await safeQuery(() => findNotificationTemplateForEvent(
-            companyId,
+            deliveryCompanyId,
             eventType,
             sessionProvider,
             getSharedPrismaClient()
