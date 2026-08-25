@@ -940,7 +940,10 @@ async function sendTestNotification(req, res) {
         error: result.reason,
         errorCode: result.errorCode || null,
         retryable: result.retryable || false,
-        message: getErrorMessage(result.reason, result.retryable),
+        // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-25): نفضل الـ message المخصص
+        // من الـ service (زي "قالب ميتا ... لازم يكون APPROVED") لو موجود، وإلا
+        // نستخدم الـ generic mapper.
+        message: result.message || getErrorMessage(result.reason, result.retryable),
         details: result.error
       });
     }

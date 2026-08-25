@@ -1432,12 +1432,27 @@ async function sendNotification(options) {
       // ☁️ [META-CLOUD] إرسال عبر قالب ميتا المعتمد (Approved Template) بدلاً من free text
       // ميتا Cloud API ترفض الرسائل النصية الحرة خارج نافذة 24 ساعة، لذلك نستخدم
       // القالب المعتمد (metaTemplateName مع APPROVED) عندما تكون الجلسة META_CLOUD.
+      // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-25): القالب لازم يكون APPROVED فعلاً
+      // من ميتا — لو PENDING (مش معتمد) نرفض الإرسال ونرجع خطأ واضح بدل ما ننزل
+      // لمسار النص الحر (اللي ميتا بترفضه بـ 132018). قرار المستخدم: مفيش إرسال
+      // إلا بقالب معتمد.
       const metaTemplateName = safeTemplate?.metaTemplateName || null;
       const metaTemplateStatus = safeTemplate?.metaTemplateStatus || null;
       const canSendViaMetaTemplate =
         sessionProvider === 'META_CLOUD' &&
         metaTemplateName &&
         String(metaTemplateStatus).toUpperCase() === 'APPROVED';
+
+      // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-25): لو الجلسة META_CLOUD بس القالب
+      // مش معتمد (PENDING أو مفيش metaTemplateName) — نرفض الإرسال صراحةً بدل ما ننزل
+      // لمسار النص الحر (اللي ميتا بترفضه بـ 132018). المستخدم لازم يعتمد القالب من ميتا.
+      if (sessionProvider === 'META_CLOUD' && !canSendViaMetaTemplate) {
+        const reason = metaTemplateName
+          ? `قالب ميتا "${metaTemplateName}" حالته ${metaTemplateStatus || 'غير معروف'} — لازم يكون APPROVED من ميتا قبل الإرسال`
+          : `لا يوجد قالب ميتا معتمد (metaTemplateName) مربوط بالحدث "${eventType}"`;
+        console.warn(`⚠️ [META-CLOUD] ${reason} — تم الرفض (مفيش إرسال نص حر).`);
+        return { success: false, reason: 'meta_template_not_approved', message: reason };
+      }
 
       if (canSendViaMetaTemplate) {
         try {
