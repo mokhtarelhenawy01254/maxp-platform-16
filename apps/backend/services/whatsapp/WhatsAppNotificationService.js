@@ -798,6 +798,32 @@ async function resolvePlatformSenderCompanyId() {
     );
   }
 
+  // 🚨 PRODUCTION-FIX (platform-sender-fallback-2026-08-24):
+  // لو ملقيناش platform sender بـ ID/slug ثابت، ندور على أول شركة عندها
+  // جلسة META_CLOUD متصلة فعلاً (لأن الإرسال عبر Meta Cloud محتاج جلسة شغالة).
+  // ده بيصلح حالة الشركات الفرعية اللي مفيش ليها جلسة — تبعت من الشركة الأم.
+  if (!company) {
+    const metaSession = await safeQuery(() =>
+      prisma.whatsAppSession.findFirst({
+        where: {
+          provider: 'META_CLOUD',
+          status: 'CONNECTED'
+        },
+        select: { companyId: true },
+        orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' } ]
+      })
+    );
+    if (metaSession?.companyId) {
+      const metaCompany = await safeQuery(() =>
+        prisma.company.findFirst({
+          where: { id: metaSession.companyId, isActive: true },
+          select: { id: true }
+        })
+      );
+      company = metaCompany;
+    }
+  }
+
   platformSenderCompanyCache = {
     value: company?.id || null,
     expiresAt: now + 5 * 60 * 1000
