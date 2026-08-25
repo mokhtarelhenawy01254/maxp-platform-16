@@ -503,6 +503,49 @@ async function getLoyaltyActivatedAt(companyId, settings) {
  * - 'PRE_ACTIVATION': كل أوردراته المسلّمة اتطلبت قبل تفعيل نظام الولاء (مش بيطبق عليه)
  * - null: مش له حالة (مفيش أوردرات / استخدم الخصم)
  */
+/**
+ * Get customer ids matching an auto-discount status filter.
+ * - 'AVAILABLE': customer has an active, unexpired discount voucher
+ * - 'PRE_ACTIVATION': customer had delivered orders before activation but none after
+ * Returns [] when the auto-discount system is not enabled.
+ */
+async function getCustomerIdsByAutoDiscountStatus(companyId, status) {
+  const prisma = getSharedPrismaClient();
+  if (!status) return [];
+  const settings = await getSettings(companyId);
+  if (settings.autoDiscountEnabled !== true || settings.enabled === false) return [];
+
+  if (status === 'AVAILABLE') {
+    const vouchers = await prisma.customerLoyaltyVoucher.findMany({
+      where: { companyId, status: 'ACTIVE', expiresAt: { gt: new Date() }, customerId: { not: null } },
+      select: { customerId: true },
+      distinct: ['customerId']
+    });
+    return vouchers.map(v => v.customerId);
+  }
+
+  if (status === 'PRE_ACTIVATION') {
+    const activatedAt = await getLoyaltyActivatedAt(companyId, settings);
+    if (!activatedAt) return [];
+    const [preOrders, postOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: { companyId, status: 'DELIVERED', createdAt: { lt: activatedAt } },
+        select: { customerId: true },
+        distinct: ['customerId']
+      }),
+      prisma.order.findMany({
+        where: { companyId, status: 'DELIVERED', createdAt: { gte: activatedAt } },
+        select: { customerId: true },
+        distinct: ['customerId']
+      })
+    ]);
+    const postIds = new Set(postOrders.map(o => o.customerId).filter(Boolean));
+    return preOrders.map(o => o.customerId).filter(id => id && !postIds.has(id));
+  }
+
+  return [];
+}
+
 async function getCustomerAutoDiscountStatus({ companyId, customerId, settings }) {
   const prisma = getSharedPrismaClient();
   const cfg = settings || await getSettings(companyId);
@@ -750,6 +793,7 @@ module.exports = {
   getLoyaltyActivatedAt,
   getCustomerAutoDiscountStatus,
   getCustomerAutoDiscountSummary,
+  getCustomerIdsByAutoDiscountStatus,
   mapVoucherToPublic,
   enrichCustomersWithAutoDiscountStatus,
   backfillMissingVouchers,

@@ -22,6 +22,8 @@ import {
   CheckCircleIcon,
   StarIcon,
   BanknotesIcon,
+  ClockIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -35,6 +37,8 @@ import {
   CustomerBlockReasonCode,
   CustomerBlockRule,
 } from "../../services/customerBlocklistService";
+import CustomerLoyaltyTab from "./CustomerLoyaltyTab";
+import CustomerJourneyTab from "./CustomerJourneyTab";
 
 interface CustomerDetailsData {
   customer: {
@@ -129,7 +133,7 @@ const CustomerDetails: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "info" | "orders" | "conversations" | "notes" | "activity"
+    "info" | "orders" | "conversations" | "notes" | "activity" | "loyalty" | "journey"
   >("info");
   const [newNote, setNewNote] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -680,6 +684,9 @@ const CustomerDetails: React.FC = () => {
                 icon: ChatBubbleLeftRightIcon,
               },
               { key: "notes", label: t("customers.tabs.notes"), icon: DocumentTextIcon },
+              { key: "activity", label: t("customers.tabs.activity", "النشاط"), icon: ClockIcon },
+              { key: "loyalty", label: t("customers.tabs.loyalty", "الولاء والنقاط"), icon: StarIcon },
+              { key: "journey", label: t("customers.tabs.journey", "رحلة العميل"), icon: SparklesIcon },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -992,6 +999,78 @@ const CustomerDetails: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* Activity Tab */}
+          {activeTab === "activity" && (
+            <div>
+              {data.activities && data.activities.length > 0 ? (
+                <ol className="relative space-y-6 border-r-2 border-gray-200 dark:border-gray-700 pr-6">
+                  {data.activities.map((act, index) => (
+                    <li key={act.id || index} className="relative">
+                      <span
+                        className={`absolute -right-[31px] top-1 h-4 w-4 rounded-full ring-4 ring-white dark:ring-gray-800 ${
+                          act.type === "order"
+                            ? "bg-indigo-500"
+                            : act.type === "conversation"
+                              ? "bg-green-500"
+                              : "bg-yellow-500"
+                        }`}
+                      />
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          {act.type === "order" ? (
+                            <ShoppingBagIcon className="h-4 w-4 text-indigo-500" />
+                          ) : act.type === "conversation" ? (
+                            <ChatBubbleLeftRightIcon className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <DocumentTextIcon className="h-4 w-4 text-yellow-500" />
+                          )}
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {act.title}
+                          </span>
+                          {act.status && (
+                            <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                              {act.status}
+                            </span>
+                          )}
+                          {typeof act.value === "number" && (
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                              {formatCurrency(act.value)}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-400">
+                          {formatDate(act.timestamp)}
+                        </span>
+                      </div>
+                      {act.content && (
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                          {act.content}
+                          {act.author ? ` — ${act.author}` : ""}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-center text-gray-500 py-8">
+                  {t("customers.noActivity", "لا يوجد نشاط لهذا العميل")}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Loyalty Tab */}
+          {activeTab === "loyalty" && (
+            <CustomerLoyaltyTab
+              customerId={customer.id}
+              loyaltyRecords={data.loyalty}
+              isAdmin={isAdmin}
+            />
+          )}
+
+          {/* Journey Tab */}
+          {activeTab === "journey" && <CustomerJourneyTab customerId={customer.id} />}
         </div>
       </div>
 

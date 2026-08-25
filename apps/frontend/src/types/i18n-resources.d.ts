@@ -10468,6 +10468,8 @@ declare module 'react-i18next' {
           info: string;
           notes: string;
           activity: string;
+          loyalty: string;
+          journey: string;
         };
         contactInfo: string;
         tagsLabel: string;
@@ -10483,6 +10485,7 @@ declare module 'react-i18next' {
         notesPlaceholder: string;
         noNotes: string;
         noActivities: string;
+        noActivity: string;
         deleteConfirmTitle: string;
         import: {
           title: string;
