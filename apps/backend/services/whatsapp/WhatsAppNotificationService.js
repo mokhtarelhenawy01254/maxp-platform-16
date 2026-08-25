@@ -1026,6 +1026,14 @@ async function sendNotification(options) {
     let sessionId = null;
     let senderSettings = settings;
 
+    // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): نحلّ resolvedDeliveryCompanyId
+    // من الاستراتيجية — عشان الشركات الفرعية (اللي مفيش ليها جلسة) تبعت عبر
+    // الشركة الأم اللي عندها META_CLOUD متصل (زي Swan).
+    const resolvedDeliveryCompanyId = await resolveDeliveryCompanyId(companyId, deliveryStrategy);
+    if (resolvedDeliveryCompanyId && resolvedDeliveryCompanyId !== deliveryCompanyId) {
+      deliveryCompanyId = resolvedDeliveryCompanyId;
+    }
+
     if (deliveryCompanyId && deliveryCompanyId !== companyId) {
       senderSettings = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationSettings.findUnique({
         where: { companyId: deliveryCompanyId }
