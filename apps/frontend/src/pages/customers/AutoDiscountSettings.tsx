@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { Loader2, Zap, CheckCircle, Settings2 } from "lucide-react";
+import AutoDiscountAnalytics from "./AutoDiscountAnalytics";
 
 interface AutoDiscountSettingsProps {
   onSaved?: (data?: any) => void;
@@ -156,6 +157,8 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
         <div className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
       ) : (
         <>
+          {isActivated && <AutoDiscountAnalytics />}
+
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-4">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <input type="checkbox" checked={isActivated} onChange={(e) => saveActivation(e.target.checked)} className="h-4 w-4 accent-amber-500" />

@@ -717,6 +717,7 @@ export const getSidebarConfig = (
                 { to: '/customers/birthday-whatsapp-notify', icon: Gift, label: t('sidebar.customersBirthday') },
                 { to: '/whatsapp/customer-journey', icon: Sparkles, label: t('sidebar.whatsappJourney') },
                 ...(user?.role === 'CUSTOMER' ? [{ to: '/wallet', icon: Wallet, label: t('sidebar.wallet') }] : []),
+                { to: '/customers/loyalty-programs', icon: FolderTree, label: t('sidebar.loyaltyPrograms') },
                 { to: '/customers/loyalty-members', icon: Users, label: t('sidebar.loyaltyMembers') },
                 { to: '/customers/loyalty-analytics', icon: BarChart3, label: t('sidebar.loyaltyAnalytics') },
                 { to: '/customers/settings', icon: Settings2, label: t('sidebar.customerLoyaltySettings') },

@@ -85,6 +85,7 @@ interface CustomerFilters {
   sortOrder?: "asc" | "desc";
   hasOrders?: boolean;
   tag?: string;
+  autoDiscountStatus?: "AVAILABLE" | "PRE_ACTIVATION";
 }
 
 class CustomerService {
@@ -166,24 +167,6 @@ class CustomerService {
     return response.data.data;
   }
 
-
-  /**
-   * Get customer interactions
-   */
-  async getCustomerInteractions(
-    id: string,
-    page = 1,
-    limit = 20,
-  ): Promise<{
-    conversations: any[];
-    orders: any[];
-    notes: CustomerNote[];
-  }> {
-    const response = await apiClient.get(
-      `/customers/${id}/interactions?page=${page}&limit=${limit}`,
-    );
-    return response.data.data;
-  }
 
   /**
    * Add customer note

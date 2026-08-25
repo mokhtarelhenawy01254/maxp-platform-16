@@ -10474,7 +10474,9 @@
     "tabs": {
       "info": "Information",
       "notes": "Notes",
-      "activity": "Activity"
+      "activity": "Activity",
+      "loyalty": "Loyalty & Points",
+      "journey": "Customer Journey"
     },
     "contactInfo": "Contact Info",
     "tagsLabel": "Tags",
@@ -10490,6 +10492,7 @@
     "notesPlaceholder": "Type your note here...",
     "noNotes": "No prior notes",
     "noActivities": "No activity history",
+    "noActivity": "No activity for this customer",
     "deleteConfirmTitle": "Confirm Deletion",
     "import": {
       "title": "Import Customers",

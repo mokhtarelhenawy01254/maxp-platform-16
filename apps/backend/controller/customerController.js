@@ -95,6 +95,20 @@ const getAllCustomer = async (req, res) => {
       where.tags = { contains: `"${tagFilter}"` };
     }
 
+    // Filter by auto-discount status: AVAILABLE / PRE_ACTIVATION
+    const autoDiscountFilter = req.query.autoDiscountStatus;
+    if (autoDiscountFilter) {
+      const matchedIds = await autoDiscountService
+        .getCustomerIdsByAutoDiscountStatus(companyId, autoDiscountFilter)
+        .catch(() => []);
+      // If the auto-discount system is inactive, no customer matches the filter
+      if (matchedIds.length === 0) {
+        where.id = { in: [] };
+      } else {
+        where.id = { in: matchedIds };
+      }
+    }
+
     // تنفيذ الاستعلام مع الترقيم
     const [customers, total] = await Promise.all([
       getSharedPrismaClient().customer.findMany({

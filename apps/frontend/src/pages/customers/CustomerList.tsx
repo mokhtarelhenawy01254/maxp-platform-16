@@ -38,6 +38,12 @@ const CustomerList: React.FC = () => {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showOnlyWithOrders, setShowOnlyWithOrders] = useState(false);
+  const [autoDiscountFilter, setAutoDiscountFilter] = useState<
+    "" | "AVAILABLE" | "PRE_ACTIVATION"
+  >("");
+  const [availableDiscountCount, setAvailableDiscountCount] = useState<
+    number | null
+  >(null);
   const [filters, setFilters] = useState<CustomerFilters>(() => {
     const statusFromUrl = searchParams.get("status");
     return {
@@ -81,6 +87,32 @@ const CustomerList: React.FC = () => {
     setShowOnlyWithOrders(newVal);
     setFilters((prev) => ({ ...prev, page: 1, hasOrders: newVal ? true : undefined }));
   };
+
+  // Auto-discount status filter
+  const handleAutoDiscountFilter = (value: "" | "AVAILABLE" | "PRE_ACTIVATION") => {
+    setAutoDiscountFilter(value);
+    setFilters((prev) => ({
+      ...prev,
+      page: 1,
+      autoDiscountStatus: value || undefined,
+    }));
+  };
+
+  // Total customers with an active auto-discount coupon (badge in header)
+  useEffect(() => {
+    let cancelled = false;
+    customerService
+      .getCustomers({ page: 1, limit: 1, autoDiscountStatus: "AVAILABLE" })
+      .then((res) => {
+        if (!cancelled) setAvailableDiscountCount(res.pagination?.total ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setAvailableDiscountCount(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Selection handlers
   const toggleSelectAll = () => {
@@ -281,6 +313,11 @@ const CustomerList: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400">
               {t("customers.pageSubtitle")}
             </p>
+            {availableDiscountCount !== null && availableDiscountCount > 0 && (
+              <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                🎟️ {availableDiscountCount} عميل عنده كوبون خصم متاح
+              </span>
+            )}
           </div>
           {isAdmin && (
             <div className="flex space-x-3 space-x-reverse">
@@ -345,6 +382,21 @@ const CustomerList: React.FC = () => {
                 ? t("customers.withOrdersOnly")
                 : t("customers.showAllCustomers")}
             </button>
+
+            {/* 🎟️ Auto-Discount Status Filter */}
+            <select
+              value={autoDiscountFilter}
+              onChange={(e) =>
+                handleAutoDiscountFilter(
+                  e.target.value as "" | "AVAILABLE" | "PRE_ACTIVATION",
+                )
+              }
+              className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">كل الخصومات</option>
+              <option value="AVAILABLE">خصم متاح</option>
+              <option value="PRE_ACTIVATION">قبل تفعيل النظام</option>
+            </select>
 
             {/* 🏷️ Tag Filter */}
             {availableTags.length > 0 && (
