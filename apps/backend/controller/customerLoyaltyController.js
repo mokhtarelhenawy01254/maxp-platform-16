@@ -1098,7 +1098,7 @@ async function getSystemAnalytics(req, res) {
       const [activeVouchers, usedVouchers, convertedVouchers, expiredVouchers, totalDeliveredOrders] =
         await Promise.all([
           prisma.customerLoyaltyVoucher.count({
-            where: { companyId, status: 'ACTIVE' }
+            where: { companyId, status: 'ACTIVE', expiresAt: { gt: new Date() } }
           }),
           prisma.customerLoyaltyVoucher.count({
             where: { companyId, status: 'USED' }
@@ -1141,11 +1141,14 @@ async function getSystemAnalytics(req, res) {
 
       let preActivationCustomers = 0;
       if (activatedAt && deliveredCustomerIds.length > 0) {
-        const preActivationIds = deliveredOrders
-          .filter((o) => new Date(o.createdAt) < activatedAt)
-          .map((c) => c.customerId);
+        const preActivationUnique = new Set(
+          deliveredOrders
+            .filter((o) => new Date(o.createdAt) < activatedAt)
+            .map((c) => c.customerId)
+            .filter(Boolean)
+        );
         const withVoucherIds = new Set(customersWithVouchers.map((c) => c.customerId));
-        preActivationCustomers = preActivationIds.filter((id) => !withVoucherIds.has(id)).length;
+        preActivationCustomers = [...preActivationUnique].filter((id) => !withVoucherIds.has(id)).length;
       }
 
       data = {
