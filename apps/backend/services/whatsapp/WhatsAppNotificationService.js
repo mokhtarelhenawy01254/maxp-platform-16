@@ -805,24 +805,35 @@ async function resolvePlatformSenderCompanyId() {
   // جلسة META_CLOUD متصلة فعلاً (لأن الإرسال عبر Meta Cloud محتاج جلسة شغالة).
   // ده بيصلح حالة الشركات الفرعية اللي مفيش ليها جلسة — تبعت من الشركة الأم.
   if (!company) {
-    const metaSession = await safeQuery(() =>
-      prisma.whatsAppSession.findFirst({
-        where: {
-          provider: 'META_CLOUD',
-          status: 'CONNECTED'
-        },
-        select: { companyId: true },
-        orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' } ]
-      })
+    // 🚨 PRODUCTION-FIX (platform-sender-fallback-2026-08-24):
+    // ندور على شركة عندها جلسة META_CLOUD متصلة AND عندها القالب المعتمد
+    // للمناسبات (CUSTOMER_OCCASION_msvsy2ut) — لأن القالب مسجّل لشركة أم محددة (Swan)
+    // مش أي شركة عندها جلسة. لو ملقيناش، نرجع أول شركة عندها جلسة متصلة.
+    const metaCompany = await safeQuery(() =>
+      prisma.$queryRaw`
+        SELECT s."companyId" FROM whatsapp_sessions s
+        JOIN whatsapp_notification_templates t ON t."companyId" = s."companyId"
+        WHERE s.provider = 'META_CLOUD' AND s.status = 'CONNECTED'
+          AND t."eventType" = 'CUSTOMER_OCCASION_msvsy2ut'
+          AND t."metaTemplateStatus" = 'APPROVED' AND t."isActive" = true
+        LIMIT 1`
     );
-    if (metaSession?.companyId) {
-      const metaCompany = await safeQuery(() =>
-        prisma.company.findFirst({
-          where: { id: metaSession.companyId, isActive: true },
-          select: { id: true }
+    let chosenId = metaCompany?.[0]?.companyId;
+    if (!chosenId) {
+      const metaSession = await safeQuery(() =>
+        prisma.whatsAppSession.findFirst({
+          where: { provider: 'META_CLOUD', status: 'CONNECTED' },
+          select: { companyId: true },
+          orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' } ]
         })
       );
-      company = metaCompany;
+      chosenId = metaSession?.companyId;
+    }
+    if (chosenId) {
+      const metaCompany2 = await safeQuery(() =>
+        prisma.company.findFirst({ where: { id: chosenId, isActive: true }, select: { id: true } })
+      );
+      company = metaCompany2;
     }
   }
 
