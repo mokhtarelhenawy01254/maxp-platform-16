@@ -52,6 +52,24 @@ const PREPARATION_PIPELINE_STATUSES = new Set([
   'ON_HOLD_PREP'
 ]);
 
+// 🛡️ PRODUCTION-FIX (stale-prep-hijack): المراحل الحقيقية لطابور التجهيز فقط —
+// اللي يُسمح بكتابتها في metadata.preparationStatus. الحالات النظامية العادية
+// (PENDING/CONFIRMED/SCHEDULED/PROCESSING) خارجها عمدًا: التغيير ليها لازم يمسح
+// أي مرحلة تجهيز قديمة بدل ما يكتبها ويخطف العرض (كانت بتترجم PROCESSING دايمًا).
+const PREP_METADATA_STATUSES = new Set([
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'PACKED',
+  'READY',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK',
+  'ON_HOLD_PREP'
+]);
+
 const parsePreparationMetadata = (rawValue) => {
   if (!rawValue) return {};
   if (typeof rawValue === 'object' && !Array.isArray(rawValue)) return rawValue;
@@ -133,7 +151,7 @@ class OrderService {
     const currentMetadata = parsePreparationMetadata(order.metadata);
 
     let nextMetadata;
-    if (PREPARATION_PIPELINE_STATUSES.has(normalized)) {
+    if (PREP_METADATA_STATUSES.has(normalized)) {
       nextMetadata = JSON.stringify({
         ...currentMetadata,
         preparationStatus: normalized,
@@ -1108,6 +1126,8 @@ class OrderService {
       // على طلب قاعد بالفعل في قيمة mapsToSystem كان بيرجع مبكرًا: من غير تاريخ ولا
       // إشعار ولا تحديث للكود المخصص (تحديث صامت لا يعمل شيء).
       const requestedIsCustom = originalRequestedStatus !== storedStatus;
+      // (mutable — بيتعاد حسابه لو الـ workflow غيّر الحالة لكود مخصص مختلف)
+      let isRequestedCustom = requestedIsCustom;
       const currentCustomCode = order.customStatusCode
         ? normalizeOrderStatusCode(order.customStatusCode)
         : null;
@@ -1166,8 +1186,10 @@ class OrderService {
               if (reResolved.stored) {
                 originalRequestedStatus = reResolved.notify;
                 status = reResolved.stored;
+                isRequestedCustom = originalRequestedStatus !== status;
               } else {
                 status = storedStatus;
+                isRequestedCustom = requestedIsCustom;
               }
             }
           }
@@ -1207,7 +1229,12 @@ class OrderService {
       // 🔄 [ORDER-SERVICE-UPDATE] Update the order
       // Sync metadata.preparationStatus so external status changes (quick-status,
       // orders page) are reflected on the preparation queue too.
-      const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      // 🛡️ PRODUCTION-FIX (stale-prep-hijack): المراحل الحقيقية للتجهيز بس اللي
+      // تتكتب في metadata.preparationStatus — كان PREPARATION_PIPELINE_STATUSES
+      // شايل PENDING/CONFIRMED/SCHEDULED/PROCESSING (حالات نظامية عادية) فتغيير
+      // الحالة لـ CONFIRMED من التفاصيل كان بيكتب preparationStatus=CONFIRMED
+      // والعرض بيرجّعها PROCESSING للأبد — "بغيّر الحالة ومش بتتغير".
+      const isPrepPipelineStatus = PREP_METADATA_STATUSES.has(status);
       const currentMetadata = parsePreparationMetadata(order.metadata);
       let nextMetadata = null;
       if (isPrepPipelineStatus) {
@@ -1232,7 +1259,7 @@ class OrderService {
             status: status,
             // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن جنب الـ enum،
             // وبيتمسح لما التاجر يرجّع لحالة نظامية مباشرة (مش مخصصة).
-            customStatusCode: requestedIsCustom ? originalRequestedStatus : null,
+            customStatusCode: isRequestedCustom ? originalRequestedStatus : null,
             notes: notes || undefined,
             ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,
@@ -1542,7 +1569,9 @@ class OrderService {
         skipValidation: skipTransitionValidation
       });
 
-      const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      // 🛡️ PRODUCTION-FIX (stale-prep-hijack): نفس إصلاح الطلبات العادية — المراحل
+      // الحقيقية بس، والحالات النظامية تمسح أي مرحلة قديمة.
+      const isPrepPipelineStatus = PREP_METADATA_STATUSES.has(status);
       const currentGuestMetadata = parsePreparationMetadata(guestOrder.metadata);
       let nextGuestMetadata = null;
       if (isPrepPipelineStatus) {

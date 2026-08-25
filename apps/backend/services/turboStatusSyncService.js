@@ -420,7 +420,15 @@ async function syncTurboStatusToOrder({
 
   await safeQuery(() => prisma.order.update({
     where: { id: existingOrder.id },
-    data: updateData
+    data: {
+      ...updateData,
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): المسار الاحتياطي المباشر لما
+      // يغيّر status (بعد فشل مسار orderService) لازم يمسح أي كود مخصص قديم —
+      // وإلا الطلب هيفضل يعرض الحالة المخصصة الميتة بعد ما الحالة الفعلية اتغيرت.
+      ...(updateData.status && updateData.status !== existingOrder.status
+        ? { customStatusCode: null }
+        : {}),
+    }
   }), 3);
 
   console.log(`✅ [TURBO-SYNC] Updated Order ${existingOrder.orderNumber}: turboStatus="${canonicalTurboStatus}", status="${updateData.status || existingOrder.status}", paymentStatus="${updateData.paymentStatus || existingOrder.paymentStatus}"`);

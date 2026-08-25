@@ -119,7 +119,10 @@ describe('orderService.updateOrderStatus preparation metadata sync', () => {
     expect(parsedMetadata.preparationStatus).toBeUndefined();
   });
 
-  test('syncs metadata.preparationStatus when moving back to CONFIRMED (preparation page must reflect it)', async () => {
+  test('PRODUCTION-FIX (stale-prep-hijack): moving to CONFIRMED CLEARS preparationStatus — plain business statuses are not prep stages', async () => {
+    // السلوك القديم كان بيكتب preparationStatus=CONFIRMED والعرض بيرجّعها PROCESSING
+    // للأبد ("بغيّر الحالة من التفاصيل ومش بتتغير"). CONFIRMED حالة نظامية عادية —
+    // لازم تمسح أي مرحلة تجهيز قديمة والطلب يظهر CONFIRMED.
     const orderInPreparing = {
       ...baseOrder,
       status: 'PREPARING',
@@ -142,6 +145,32 @@ describe('orderService.updateOrderStatus preparation metadata sync', () => {
     const updateData = mockPrisma.order.update.mock.calls[0][0].data;
     expect(updateData.status).toBe('CONFIRMED');
     const parsedMetadata = JSON.parse(updateData.metadata);
-    expect(parsedMetadata.preparationStatus).toBe('CONFIRMED');
+    expect(parsedMetadata.preparationStatus).toBeUndefined();
+  });
+
+  test('PRODUCTION-FIX (stale-prep-hijack): junk preparationStatus=PENDING gets cleared on any plain-status change (live case ORD-225303-802)', async () => {
+    const orderWithJunkPrep = {
+      ...baseOrder,
+      status: 'PENDING',
+      metadata: JSON.stringify({ preparationStatus: 'PENDING' }),
+    };
+    mockPrisma.order.findFirst.mockResolvedValue(orderWithJunkPrep);
+
+    await orderService.updateOrderStatus(
+      'ORD-100',
+      'comp_1',
+      'CONFIRMED',
+      null,
+      'user_1',
+      'Tester',
+      orderWithJunkPrep,
+      false,
+      { skipCallAttemptGuard: true, skipTransitionValidation: true }
+    );
+
+    const updateData = mockPrisma.order.update.mock.calls[0][0].data;
+    expect(updateData.status).toBe('CONFIRMED');
+    const parsedMetadata = JSON.parse(updateData.metadata);
+    expect(parsedMetadata.preparationStatus).toBeUndefined();
   });
 });

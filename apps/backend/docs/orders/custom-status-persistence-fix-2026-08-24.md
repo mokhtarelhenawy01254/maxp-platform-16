@@ -62,3 +62,21 @@ Idempotent — بيمسك `customStatusCode IS NULL` بس.
 - الواتساب المتقدم لسه (مرحلة تالية): ربط الحالات المخصصة بقالب Meta approved
   لشركات META_CLOUD، توسيع lookup لكل statusTypes، dedup collision.
 - `analyticsController` لسه بيرفض الحالات المخصصة في التقارير التحليلية.
+
+## جولة التحصين 2026-08-25 (بعد بلاغ لايف: "بغيّر الحالة من التفاصيل ومش بتتغير")
+
+- **stale-prep-hijack (سبب البلاغ)**: `PREPARATION_PIPELINE_STATUSES` كان شايل
+  PENDING/CONFIRMED/SCHEDULED/PROCESSING فتغيير الحالة ليهم من التفاصيل كان بيكتبها
+  في `metadata.preparationStatus` والعرض بيرجمها PROCESSING للأبد. الإصلاح:
+  `PREP_METADATA_STATUSES` (المراحل الحقيقية بس) للكتابة، والحالات النظامية تمسح
+  أي مرحلة قديمة. نُظّفت 30 طلبًا ملوثًا في الإنتاج (منهم ORD-225303-802) —
+  1,109 طلب بمراحل سليمة لم تُمس.
+- **الكُتّاب المباشرون الأربعة** كانوا هيسیبون كودًا مخصصًا ميتًا معلقًا بعد تغيير
+  الحالة: fallback تربو، سينك ووكومرس، ومسارا الـ workflow (validateStatusChange
+  + handleApproval) — كلهم دلوقتي يمسحون/يحلّون الكود المخصص صح.
+- **workflow handleApproval**: `findUnique({id, companyId})` غير صالح (تركيبة غير
+  unique) → كل الموافقات كانت بتفشل 500. اتحوّل findFirst.
+- **فلتر الحالات النهائية**: كود مخصص محفوظ صراحةً من التاجر بقى يعدي من حاجز
+  الحالات النهائية (WITH_THE_CAPTAIN→SHIPPED كانت بتختفي من الفلتر).
+- `requestedIsCustom` بيتعاد حسابه بعد override الـ workflow.
+- اختبارات: preparationSync اتحدثت للسلوك الجديد + حالة انحدار للبلاغ اللايف.

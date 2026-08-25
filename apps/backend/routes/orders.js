@@ -2788,7 +2788,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       const statusPlaceholders = customStatusFilter
         .map((_, index) => `$${index + 2}`)
         .join(', ');
-      const matchExpr = `(UPPER(${effectiveStatusExpr}) IN (${statusPlaceholders}) AND NOT (${statusIsTerminalExpr}))`;
+      // 🛡️ PRODUCTION-FIX (custom-status-terminal): كود مخصص **محفوظ** على الطلب
+      // (وضعه التاجر صراحةً) لازم يطابق الفلتر حتى لو الـ enum النهائي terminal —
+      // الحاجز النهائي مصمم لاستثناء بيانات التجهيز القديمة، مش لإخفاء حالة التاجر
+      // (مثال حقيقي: WITH_THE_CAPTAIN ماب على SHIPPED — كانت بتختفي من الفلتر).
+      const matchExpr = `(
+        ("customStatusCode" IS NOT NULL AND "customStatusCode" <> '' AND UPPER("customStatusCode") IN (${statusPlaceholders}))
+        OR
+        (UPPER(${effectiveStatusExpr}) IN (${statusPlaceholders}) AND NOT (${statusIsTerminalExpr}))
+      )`;
       // 🛡️ PRODUCTION-FIX (custom-filter-count): مفيش حاجة محتاجة count خام هنا —
       // العدّ النهائي بيتم بـ order.count على whereClause الكاملة (أدق مع كل الفلاتر).
       let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
