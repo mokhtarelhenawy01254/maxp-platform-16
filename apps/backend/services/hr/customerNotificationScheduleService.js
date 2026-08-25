@@ -411,7 +411,12 @@ async function sendCustomerNotification({ companyId, eventType, customer, variab
       orderId,
       customerId: customerId || customer?.id || null,
       priority: 3,
-      channel: activeChannel === 'AUTO' ? null : activeChannel
+      channel: activeChannel === 'AUTO' ? null : activeChannel,
+      // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): كل إشعارات العملاء
+      // (خصم تلقائي/كاش باك/ولاء/تقسيم) ممكن تتعمل من شركة فرعية مفيش ليها جلسة
+      // Meta — نستخدم platform-fallback عشان نبعت من الشركة الأم (اللي عندها
+      // META_CLOUD متصل، زي Swan).
+      deliveryStrategy: 'platform-fallback'
     };
     if (template) options.preferredTemplateId = template.id;
 

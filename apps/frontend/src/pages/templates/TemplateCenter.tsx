@@ -577,13 +577,18 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
   }, [config, t]);
 
-  // 🔧 auto-select first event so the test sender isn't sent with an empty eventType
+  // 🔧 auto-select first event from the CURRENT tab so the test sender isn't
+  // sent with an empty eventType (fixes "بيانات الطلب ناقصة" when switching tabs)
   useEffect(() => {
-    if (!testEvent && statuses.length > 0) {
-      const first = statuses[0];
+    const activeTabDef = config.tabs.find((tb) => tb.key === activeTab);
+    const tabStatuses = activeTabDef?.kind === 'list' && activeTabDef.filter
+      ? statuses.filter((s) => activeTabDef.filter!(s as EventRow))
+      : statuses;
+    if (!testEvent && tabStatuses.length > 0) {
+      const first = tabStatuses[0];
       if (first?.code) setTestEvent(first.code);
     }
-  }, [statuses, testEvent]);
+  }, [statuses, testEvent, activeTab, config]);
 
   const fetchSettings = useCallback(async () => {
     if (!config.features.enableSettings) return;
