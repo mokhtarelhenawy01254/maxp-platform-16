@@ -209,7 +209,7 @@ async function processDueOccasions() {
               variables: {
                 customerName: name,
                 firstName: customer.firstName || '',
-                occasionName: occ.name,
+                reason: occ.name,
               },
               priority: 2,
             });

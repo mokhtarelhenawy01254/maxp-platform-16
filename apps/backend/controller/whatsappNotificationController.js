@@ -834,6 +834,7 @@ async function sendTestNotification(req, res) {
 
     const testVariables = {
       customerName: 'روان حسين',
+      reason: 'مناسبة سعيدة',
       customerPhone: '01281914482',
       email: 'rowan@example.com',
       companyName: 'شركة تجريبية',
