@@ -476,7 +476,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const [showInternal, setShowInternal] = useState(false);
   const [activeChip, setActiveChip] = useState<FilterChip>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortMode, setSortMode] = useState<SortMode>("statusType");
+  const [sortMode, setSortMode] = useState<SortMode>(
+    config.features.sortModes.includes("alphabetical") ? "alphabetical" : "statusType",
+  );
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [expandedPreviews, setExpandedPreviews] = useState<Set<string>>(new Set());
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -515,15 +517,44 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
   };
 
+  // حفظ تلقائي لتفعيل/إيقاف الإشعار من جدول الجدولة — بدون ما المستخدم يضطر يضغط «حفظ»
+  // (التعديل على القناة/التأخير لسه بيحتاج زر «حفظ» صريح).
+  const toggleScheduleNotify = async (row: EventRow, next: boolean) => {
+    if (savingSchedule || !config.saveSchedule) return;
+    setSavingSchedule(row.code);
+    const prevStatuses = statuses;
+    setStatuses((p) => p.map((s) => (s.id === row.id ? { ...s, notifyCustomer: next } : s)));
+    try {
+      await config.saveSchedule(apiClient, row, {
+        enabled: next,
+        activeChannel: row.channel || "AUTO",
+        delayValue: row.delayValue ?? 0,
+        delayUnit: row.delayUnit || "HOURS",
+      });
+      toast.success(next ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة") : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة"));
+    } catch (e: any) {
+      setStatuses(prevStatuses);
+      toast.error(e?.response?.data?.error || "فشل الحفظ");
+    } finally {
+      setSavingSchedule("");
+    }
+  };
+
   const sendTest = async () => {
     if (!config.testSend) return;
-    if (!testPhone.trim() || !testEvent) {
+    const phone = testPhone.trim().replace(/[\s-]/g, "");
+    if (!phone || !testEvent) {
       toast.error("أدخل رقم الهاتف واختر الحدث");
+      return;
+    }
+    // تحقق خفيف من صيغة الرقم — يسمح بأرقام محلية أو دولية (مع +) بطول معقول
+    if (!/^\+?\d{8,15}$/.test(phone)) {
+      toast.error("صيغة رقم الهاتف غير صالحة — تأكد إن الرقم مكوّن من 8 إلى 15 رقمًا");
       return;
     }
     setTesting(true);
     try {
-      const res = await config.testSend(apiClient, testPhone.trim(), testEvent);
+      const res = await config.testSend(apiClient, phone, testEvent);
       if (res?.success) toast.success("تم إرسال الإشعار التجريبي");
       else toast.error(res?.message || res?.error || "فشل الإرسال");
     } catch (e: any) {
@@ -605,6 +636,27 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
   }, [dialogOpen, fetchDeliveryPreview]);
 
+  // فتح شاشة إنشاء مناسبة جديدة — بديل عن "الكارت الثابت" اللي كان ظاهر في تبويب المناسبات
+  const openNewOccasion = () => {
+    const newStatus: StatusWithTemplate = {
+      id: "__new_occasion__",
+      code: `CUSTOMER_OCCASION_${Date.now().toString(36)}`,
+      name: "مناسبة جديدة",
+      color: "#8B5CF6",
+      sortOrder: 100000,
+      statusType: "occasion",
+      notifyCustomer: true,
+      isSystemStatus: false,
+      template: null,
+      metaTemplate: null,
+      hasTemplate: false,
+      hasMetaTemplate: false,
+      isNonNotifiable: false,
+      category: "OCCASION",
+    };
+    openCreateDialog(newStatus, "regular");
+  };
+
   const openCreateDialog = (status: StatusWithTemplate, slot: TemplateSlot) => {
     setSelectedStatus(status);
     setSelectedTemplate(null);
@@ -618,10 +670,12 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       isActive: true,
       hasButtons: config.features.enableButtons,
       buttons: config.features.enableButtons
-        ? [
-            { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED", type: "QUICK_REPLY" },
-            { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED", type: "QUICK_REPLY" }
-          ]
+        ? (config.defaultCreateButtons
+          ? config.defaultCreateButtons.map((b) => ({ ...b }))
+          : [
+              { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED", type: "QUICK_REPLY" },
+              { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED", type: "QUICK_REPLY" },
+            ])
         : [],
       sendMode: slot === "meta" ? "bind_meta" : "direct",
       metaTemplateName: "",
@@ -1221,12 +1275,15 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const { groupedStatuses, groupKeys } = useMemo(() => {
     const groups = new Map<string, StatusWithTemplate[]>();
     for (const s of filteredByChipAndSearch) {
-      const key = s.template?.content?.trim() || s.metaTemplate?.content?.trim() || "__no-template__";
+      const key =
+        config.features.groupMode === "identity"
+          ? s.code
+          : s.template?.content?.trim() || s.metaTemplate?.content?.trim() || "__no-template__";
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(s);
     }
     return { groupedStatuses: groups, groupKeys: Array.from(groups.keys()) };
-  }, [filteredByChipAndSearch]);
+  }, [filteredByChipAndSearch, config.features.groupMode]);
 
   const togglePreview = useCallback((id: string) => {
     setExpandedPreviews((prev) => {
@@ -1484,13 +1541,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                               if (isEditing) {
                                 setEditingSchedule((d) => d ? { ...d, enabled: v } : d);
                               } else {
-                                setEditingSchedule({
-                                  row,
-                                  enabled: v,
-                                  activeChannel: row.channel || "AUTO",
-                                  delayValue: row.delayValue ?? 0,
-                                  delayUnit: row.delayUnit || "HOURS",
-                                });
+                                // تفعيل/إيقاف مباشر — لا يحتاج زر «حفظ»
+                                toggleScheduleNotify(row, v);
                               }
                             }}
                           />
@@ -1811,6 +1863,16 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
             </label>
             )}
           </div>
+
+          {activeTab === "occasions" && (
+            <button
+              onClick={openNewOccasion}
+              className="mb-4 flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
+            >
+              <PlusIcon className="h-4 w-4" />
+              إضافة مناسبة جديدة
+            </button>
+          )}
 
           {loading ? (
             <div data-testid="status-skeleton" className="space-y-2" aria-busy="true" aria-live="polite">
@@ -2336,7 +2398,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     >
                       <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                         <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showLocalRef ? "rotate-180" : ""}`} />
-                        {selectedTemplate?.metaTemplateName ? "محتوى الرسالة" : "المرجع المحلي (لتطابق المتغيرات)"}
+                        {selectedTemplate?.metaTemplateName ? "محتوى الرسالة" : (dialogSlot === "meta" ? "محتوى الرسالة (هي اللي هتتبعت)" : "محتوى الرسالة")}
                       </span>
                       <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
                         {showLocalRef ? "إخفاء" : "عرض"}
@@ -2348,7 +2410,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                       </p>
                     ) : (
                       <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                        القالب المحلي ده مش اللي هيتتبعت — بيستخدم بس عشان نربط متغيرات الطلب بأرقام قالب ميتا ({"{{1}}"} ← {"{{customerName}}"}) .
+                        النص ده هو الرسالة اللي هتُنشر على ميتا وتتبعت للعميل — عدّل عليه وبعدين اضغط «إنشاء قالب ميتا جديد».
                       </p>
                     )}
                   </div>
@@ -2372,7 +2434,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   </div>
                 )}
 
-                {dialogSlot !== "meta" || showLocalRef ? (
+                {dialogSlot !== "meta" || showLocalRef || !selectedTemplate?.metaTemplateName ? (
                 <>
                 <div className={dialogSlot === "meta" ? "mt-3 grid gap-3 lg:grid-cols-2" : "grid gap-3 lg:grid-cols-2"}>
                   <textarea
@@ -2599,16 +2661,16 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               )}
               {!(dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged) && (
               <button
-                onClick={handleSave}
-                disabled={saving || resubmittingMeta || !!bindingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim())}
+                onClick={dialogSlot === "meta" && !templateForm.metaTemplateName ? createMetaTemplate : handleSave}
+                disabled={saving || resubmittingMeta || !!bindingId || !!publishingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim())}
                 title={metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
-                  dialogSlot === "meta" && metaBindingChanged
+                  dialogSlot === "meta" && (metaBindingChanged || !templateForm.metaTemplateName)
                     ? "bg-blue-600 hover:bg-blue-700"
                     : "bg-indigo-600 hover:bg-indigo-700"
                 }`}
               >
-                {saving || bindingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
+                {saving || bindingId || publishingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
                 {dialogSlot === "meta"
                   ? metaBindingChanged
                     ? "حفظ وربط بقالب ميتا"
@@ -2616,7 +2678,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                       ? "حفظ"
                       : templateForm.metaTemplateName
                         ? "حفظ وربط بقالب ميتا"
-                        : "حفظ قالب ميتا"
+                        : "إنشاء قالب ميتا جديد"
                   : "حفظ"}
               </button>
               )}

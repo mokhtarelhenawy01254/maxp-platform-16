@@ -162,6 +162,9 @@ export const customerScopeConfig: TemplateScopeConfig = {
   },
   metaToLocalDefaultOrder: CUSTOMER_META_ORDER,
   defaultContent: DEFAULT_CONTENT,
+  defaultCreateButtons: [
+    { id: "store", text: "صفحتي على المتجر", action: "LINK", type: "LINK" },
+  ],
   eventLabelResolver: (eventType: string): string => {
     return EVENT_LABELS[eventType] || eventType.replace(/_/g, " ").toLowerCase();
   },
@@ -277,26 +280,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
       };
     });
 
-    // صف افتراضي لإنشاء قالب مناسبة جديد من داخل التبويب
-    // الكود فريد لكل جلب عشان كل مناسبة جديدة تاخد eventType خاص بيها
-    const newOccasionRow: EventRow = {
-      id: "__new_occasion__",
-      code: `CUSTOMER_OCCASION_${Date.now().toString(36)}`,
-      name: "مناسبة جديدة",
-      color: "#8B5CF6",
-      sortOrder: 100000,
-      statusType: "occasion",
-      notifyCustomer: true,
-      isSystemStatus: false,
-      template: null,
-      metaTemplate: null,
-      hasTemplate: false,
-      hasMetaTemplate: false,
-      isNonNotifiable: false,
-      category: "OCCASION",
-    };
-
-    return [...scheduleRows, ...occasionRows, newOccasionRow];
+    return [...scheduleRows, ...occasionRows];
   },
 
   toggleNotify: async (api: ApiLike, row: EventRow): Promise<void> => {
@@ -359,6 +343,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
     enableInternalToggle: false,
     sortModes: ["alphabetical", "recent"],
     categoryMode: "manual",
+    groupMode: "identity",
     dialogCategoryOptions: [
       { value: "CUSTOMER", label: "UTILITY (مُوصى به للولاء)" },
       { value: "SYSTEM", label: "UTILITY (نظامي)" },

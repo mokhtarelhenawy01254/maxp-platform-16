@@ -180,6 +180,9 @@ export interface TemplateScopeConfig {
   defaultContent: string;
   eventLabelResolver: (eventType: string) => string;
 
+  /** أزرار افتراضية عند إنشاء قالب جديد — لو اتحددت بتبدّل أزرار تأكيد/إلغاء الأوردر العامة */
+  defaultCreateButtons?: ReadonlyArray<{ id: string; text: string; action: string; type?: "QUICK_REPLY" | "LINK" }>;
+
   /** تبويبات الصفحة بالترتيب */
   tabs: TabDef[];
 
@@ -197,6 +200,8 @@ export interface TemplateScopeConfig {
     sortModes: Array<"statusType" | "alphabetical" | "recent">;
     dialogCategoryOptions?: { value: string; label: string }[];
     categoryMode: "auto" | "manual";
+    /** طريقة تجميع البطاقات: "content" (حسب نص الرسالة) أو "identity" (كل حدث بطاقة مستقلة) */
+    groupMode?: "content" | "identity";
   };
 
   /** لتحديد فئة القالب تلقائياً (وضع auto) */
