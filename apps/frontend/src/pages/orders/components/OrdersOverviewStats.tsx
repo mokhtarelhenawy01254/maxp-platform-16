@@ -4,6 +4,7 @@ import {
   ShoppingCartIcon,
   BanknotesIcon,
   ChartBarIcon,
+  CheckBadgeIcon,
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { Sparkline } from "../../../components/common/Sparkline";
@@ -21,11 +22,6 @@ interface DailyAnalytic {
   invalidPurchases?: number;
 }
 
-interface OrdersOverviewStatsProps {
-  /** Optional callback so the parent can scroll-to or focus the section. */
-  onLoaded?: (loaded: boolean) => void;
-}
-
 const PRESET_PERIODS = [
   { value: "7", labelKey: "overviewP7" },
   { value: "14", labelKey: "overviewP14" },
@@ -35,30 +31,79 @@ const PRESET_PERIODS = [
   { value: "custom", labelKey: "overviewCustom" },
 ];
 
+const PERIOD_STORAGE_KEY = "orders-overview-period";
+
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const daysAgo = (n: number) => {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return d.toISOString().slice(0, 10);
 };
+const addDays = (dateStr: string, n: number) => {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+};
 
-/**
- * Slim overview strip that shows order volume & revenue for a selectable
- * period with inline sparklines. Lives at the top of `/orders` to give the
- * operator an at-a-glance trend before they dive into the table.
- *
- * Renders nothing on error — the orders table below stays the source of truth.
- */
+const sumBy = (rows: DailyAnalytic[], pick: (r: DailyAnalytic) => number) =>
+  rows.reduce((sum, r) => sum + pick(r), 0);
+
+const pctDelta = (current: number, previous: number): number | null => {
+  if (previous <= 0) return null;
+  return Math.round(((current - previous) / previous) * 100);
+};
+
+const DeltaPill: React.FC<{ delta: number | null; title: string }> = ({
+  delta,
+  title,
+}) => {
+  if (delta === null || delta === 0) return null;
+  const up = delta > 0;
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+        up
+          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+          : "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400"
+      }`}
+    >
+      {up ? "▲" : "▼"} {Math.abs(delta)}%
+    </span>
+  );
+};
+
+interface OrdersOverviewStatsProps {
+  onLoaded?: (loaded: boolean) => void;
+}
+
 export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
   onLoaded,
 }) => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const [daily, setDaily] = useState<DailyAnalytic[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("14");
-  const [customStart, setCustomStart] = useState(() => daysAgo(14));
+  const [failed, setFailed] = useState(false);
+  const [period, setPeriod] = useState(() => {
+    try {
+      const saved = localStorage.getItem(PERIOD_STORAGE_KEY);
+      return saved && PRESET_PERIODS.some((p) => p.value === saved)
+        ? saved
+        : "14";
+    } catch {
+      return "14";
+    }
+  });
+  const [customStart, setCustomStart] = useState(() => daysAgo(13));
   const [customEnd, setCustomEnd] = useState(() => todayStr());
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PERIOD_STORAGE_KEY, period);
+    } catch {
+      /* ignore */
+    }
+  }, [period]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -67,16 +112,33 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
     (async () => {
       try {
         setDaily(null);
-        setError(null);
-        const isCustom = period === "custom";
-        const p = isCustom ? "365" : period;
-        const sd = isCustom ? customStart : undefined;
-        const ed = isCustom ? customEnd : undefined;
+        setFailed(false);
+
+        let fetchStart: string;
+        let fetchEnd: string;
+        let windowDays: number;
+
+        if (period === "custom") {
+          const start = customStart <= customEnd ? customStart : customEnd;
+          const end = customStart <= customEnd ? customEnd : customStart;
+          windowDays = Math.max(
+            1,
+            Math.round(
+              (new Date(end).getTime() - new Date(start).getTime()) / 86400000,
+            ) + 1,
+          );
+          fetchStart = addDays(start, -(windowDays - 1));
+          fetchEnd = end;
+        } else {
+          windowDays = parseInt(period, 10);
+          fetchStart = daysAgo(windowDays * 2 - 1);
+          fetchEnd = todayStr();
+        }
 
         const response = await analyticsService.getDailyAnalytics(
-          p,
-          sd,
-          ed,
+          "custom",
+          fetchStart,
+          fetchEnd,
           controller.signal,
         );
         if (cancelled) return;
@@ -84,13 +146,11 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
           setDaily(response.data as DailyAnalytic[]);
           onLoaded?.(true);
         } else {
-          setError("no-data");
+          setFailed(true);
         }
       } catch (err: any) {
         if (err?.name === "CanceledError" || err?.name === "AbortError") return;
-        if (!cancelled) {
-          setError(err?.message || "unknown");
-        }
+        if (!cancelled) setFailed(true);
       }
     })();
 
@@ -102,36 +162,69 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
 
   const summary = useMemo(() => {
     if (!daily || daily.length === 0) return null;
-    const totalOrders = daily.reduce(
-      (sum, entry) => sum + Number(entry.totalPurchases || 0),
-      0,
+
+    const windowDays =
+      period === "custom"
+        ? Math.max(
+            1,
+            Math.round(
+              (new Date(customEnd).getTime() -
+                new Date(customStart).getTime()) /
+                86400000,
+            ) + 1,
+          )
+        : parseInt(period, 10);
+
+    const currentRows = daily.slice(-windowDays);
+    const previousRows = daily.slice(0, Math.max(0, daily.length - windowDays));
+
+    const curOrders = sumBy(currentRows, (r) => Number(r.totalPurchases || 0));
+    const prevOrders = sumBy(previousRows, (r) =>
+      Number(r.totalPurchases || 0),
     );
-    const totalRevenue = daily.reduce(
-      (sum, entry) => sum + Number(entry.totalRevenue || 0),
-      0,
+    const curRevenue = sumBy(currentRows, (r) => Number(r.totalRevenue || 0));
+    const prevRevenue = sumBy(previousRows, (r) =>
+      Number(r.totalRevenue || 0),
     );
-    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const ordersTrend = daily.map((entry) => Number(entry.totalPurchases || 0));
-    const revenueTrend = daily.map((entry) => Number(entry.totalRevenue || 0));
-    const lastEntry = daily[daily.length - 1];
-    const todayOrders = lastEntry ? Number(lastEntry.totalPurchases || 0) : 0;
-    const todayRevenue = lastEntry ? Number(lastEntry.totalRevenue || 0) : 0;
-    const todayValid = lastEntry ? Number(lastEntry.validPurchases ?? 0) : 0;
-    const todayInvalid = lastEntry
-      ? Number(lastEntry.invalidPurchases ?? 0)
-      : 0;
+    const curValid = sumBy(currentRows, (r) => Number(r.validPurchases ?? 0));
+    const hasValidSplit = currentRows.some(
+      (r) =>
+        typeof r.validPurchases === "number" ||
+        typeof r.invalidPurchases === "number",
+    );
+    const validRate = curOrders > 0 ? Math.round((curValid / curOrders) * 100) : 0;
+    const prevValidRate =
+      prevOrders > 0
+        ? Math.round(
+            (sumBy(previousRows, (r) => Number(r.validPurchases ?? 0)) /
+              prevOrders) *
+              100,
+          )
+        : null;
+
+    const curAov = curOrders > 0 ? curRevenue / curOrders : 0;
+    const prevAov =
+      prevOrders > 0 ? prevRevenue / prevOrders : 0;
+
     return {
-      totalOrders,
-      totalRevenue,
-      avgOrderValue,
-      todayOrders,
-      todayRevenue,
-      todayValid,
-      todayInvalid,
-      ordersTrend,
-      revenueTrend,
+      curOrders,
+      curRevenue,
+      curAov,
+      validRate,
+      hasValidSplit,
+      ordersTrend: currentRows.map((r) => Number(r.totalPurchases || 0)),
+      revenueTrend: currentRows.map((r) => Number(r.totalRevenue || 0)),
+      aovTrend: currentRows.map((r) => {
+        const o = Number(r.totalPurchases || 0);
+        return o > 0 ? Number(r.totalRevenue || 0) / o : 0;
+      }),
+      ordersDelta: pctDelta(curOrders, prevOrders),
+      revenueDelta: pctDelta(curRevenue, prevRevenue),
+      aovDelta: pctDelta(curAov, prevAov),
+      validRateDelta:
+        prevValidRate !== null ? validRate - prevValidRate : null,
     };
-  }, [daily]);
+  }, [daily, period, customStart, customEnd]);
 
   const periodLabel = useMemo(
     () =>
@@ -141,225 +234,178 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
     [period, t],
   );
 
-  if (error && !summary) return null;
+  const changePeriod = (value: string) => {
+    setPeriod(value);
+    if (value === "custom") {
+      setCustomStart((s) => s ?? daysAgo(13));
+      setCustomEnd((e) => e ?? todayStr());
+    }
+  };
+
+  if (failed && !summary) return null;
+
   if (!summary) {
     return (
       <section
         aria-hidden="true"
-        className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+        className="mb-3 rounded-2xl border border-slate-200/60 bg-white/60 p-3 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/60"
       >
-        {[0, 1, 2].map((idx) => (
-          <div
-            key={idx}
-            className="skeleton-shimmer h-[88px] rounded-2xl border border-slate-200/60 bg-white/60 dark:border-slate-700/60 dark:bg-slate-900/60"
-          />
-        ))}
+        <div className="skeleton-shimmer h-[56px] rounded-xl" />
       </section>
     );
   }
 
-  const lastOrders = summary.ordersTrend[summary.ordersTrend.length - 1] || 0;
-  const prevOrders =
-    summary.ordersTrend[summary.ordersTrend.length - 2] || lastOrders;
-  const ordersDelta =
-    prevOrders > 0
-      ? Math.round(((lastOrders - prevOrders) / prevOrders) * 100)
-      : 0;
-
-  const lastDailyEntry =
-    daily && daily.length > 0 ? daily[daily.length - 1] : null;
-  const hasTodaySplit =
-    lastDailyEntry != null &&
-    (typeof lastDailyEntry.validPurchases === "number" ||
-      typeof lastDailyEntry.invalidPurchases === "number");
-
-  const lastRevenue =
-    summary.revenueTrend[summary.revenueTrend.length - 1] || 0;
-  const prevRevenue =
-    summary.revenueTrend[summary.revenueTrend.length - 2] || lastRevenue;
-  const revenueDelta =
-    prevRevenue > 0
-      ? Math.round(((lastRevenue - prevRevenue) / prevRevenue) * 100)
-      : 0;
-
   const segmentedBtn = (active: boolean) =>
-    `min-h-[30px] rounded-lg px-3 text-xs font-bold transition-all ${
+    `min-h-[28px] whitespace-nowrap rounded-lg px-2.5 text-[11px] font-bold transition-all ${
       active
         ? "bg-blue-600 text-white shadow-sm"
         : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
     }`;
 
   const dateInputClass =
-    "rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
+    "rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-700 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
+
+  const vsPrevTitle = t("orders.overviewVsPrevPeriod");
+
+  const kpis: Array<{
+    key: string;
+    label: string;
+    value: string;
+    delta: number | null;
+    deltaIsPoints?: boolean;
+    icon: React.ReactNode;
+    spark?: number[];
+    tone: "primary" | "success" | "muted" | "info";
+    aria: string;
+  }> = [
+    {
+      key: "orders",
+      label: t("orders.overviewTotalOrders"),
+      value: summary.curOrders.toLocaleString("ar-EG"),
+      delta: summary.ordersDelta,
+      icon: <ShoppingCartIcon className="h-4 w-4" />,
+      spark: summary.ordersTrend,
+      tone: "info",
+      aria: t("orders.overviewOrdersTrendAria"),
+    },
+    {
+      key: "revenue",
+      label: t("orders.overviewTotalRevenue"),
+      value: formatPrice(summary.curRevenue),
+      delta: summary.revenueDelta,
+      icon: <BanknotesIcon className="h-4 w-4" />,
+      spark: summary.revenueTrend,
+      tone: "success",
+      aria: t("orders.overviewRevenueTrendAria"),
+    },
+    {
+      key: "aov",
+      label: t("orders.overviewAvgOrderValue"),
+      value: formatPrice(summary.curAov),
+      delta: summary.aovDelta,
+      icon: <ChartBarIcon className="h-4 w-4" />,
+      spark: summary.aovTrend,
+      tone: "muted",
+      aria: t("orders.overviewAovTrendAria"),
+    },
+  ];
+
+  if (summary.hasValidSplit) {
+    kpis.push({
+      key: "valid",
+      label: t("orders.overviewValidRate"),
+      value: `${summary.validRate}%`,
+      delta: summary.validRateDelta,
+      deltaIsPoints: true,
+      icon: <CheckBadgeIcon className="h-4 w-4" />,
+      tone: "primary",
+      aria: t("orders.overviewValidTrendAria"),
+    });
+  }
 
   return (
     <section aria-label={t("orders.overviewAriaLabel")} className="mb-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-          {t("orders.overviewTitle")}
-        </p>
-        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200/70 bg-white/85 p-1 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
-          {PRESET_PERIODS.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              onClick={() => setPeriod(p.value)}
-              className={segmentedBtn(period === p.value)}
-            >
-              {t(`orders.${p.labelKey}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {period === "custom" && (
-        <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/70 bg-white/85 p-2 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
-          <CalendarDaysIcon className="h-4 w-4 text-slate-400" />
-          <input
-            type="date"
-            value={customStart}
-            max={customEnd}
-            onChange={(e) => setCustomStart(e.target.value)}
-            className={dateInputClass}
-          />
-          <span className="text-xs text-slate-400">{t("orders.overviewTo")}</span>
-          <input
-            type="date"
-            value={customEnd}
-            min={customStart}
-            onChange={(e) => setCustomEnd(e.target.value)}
-            className={dateInputClass}
-          />
-        </div>
-      )}
-
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200/70 bg-white/85 p-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t("orders.overviewTotalOrders")}
-            </p>
-            <ShoppingCartIcon className="h-4 w-4 text-slate-400" />
-          </div>
-          <div className="mt-1 flex items-end justify-between gap-2">
-            <div>
-              <p className="text-lg font-black text-slate-950 dark:text-white">
-                {summary.totalOrders.toLocaleString("ar-EG")}
-              </p>
-              {hasTodaySplit ? (
-                <div className="mt-0.5 space-y-0.5 text-[11px] leading-4">
-                  <p className="font-semibold text-emerald-600 dark:text-emerald-400">
-                    {t("orders.overviewTodayValid", {
-                      count: summary.todayValid,
-                    })}
+      <div className="rounded-2xl border border-slate-200/70 bg-white/85 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
+        <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
+          <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
+            {kpis.map((kpi) => (
+              <div key={kpi.key} className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  {kpi.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    {kpi.label}
                   </p>
-                  <p className="font-semibold text-rose-600 dark:text-rose-400">
-                    {t("orders.overviewTodayInvalid", {
-                      count: summary.todayInvalid,
-                    })}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-base font-black leading-tight text-slate-950 dark:text-white">
+                      {kpi.value}
+                    </p>
+                    <DeltaPill
+                      delta={kpi.delta}
+                      title={
+                        kpi.deltaIsPoints ? vsPrevTitle : `${vsPrevTitle} (${periodLabel})`
+                      }
+                    />
+                  </div>
                 </div>
-              ) : (
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {t("orders.overviewTodayCount", {
-                    count: summary.todayOrders,
-                  })}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-col items-end gap-0.5">
-              <Sparkline
-                data={summary.ordersTrend}
-                width={84}
-                height={28}
-                tone="info"
-                filled
-                ariaLabel={t("orders.overviewOrdersTrendAria")}
-              />
-              {ordersDelta !== 0 ? (
-                <span
-                  className={`text-[10px] font-bold ${
-                    ordersDelta > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-rose-600 dark:text-rose-400"
-                  }`}
-                >
-                  {ordersDelta > 0 ? "▲" : "▼"} {Math.abs(ordersDelta)}%
-                </span>
-              ) : null}
-            </div>
+                {kpi.spark && kpi.spark.length > 1 && (
+                  <Sparkline
+                    data={kpi.spark}
+                    width={56}
+                    height={24}
+                    tone={kpi.tone}
+                    filled
+                    ariaLabel={kpi.aria}
+                  />
+                )}
+              </div>
+            ))}
           </div>
-        </div>
 
-        <div className="rounded-2xl border border-slate-200/70 bg-white/85 p-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t("orders.overviewTotalRevenue")}
-            </p>
-            <BanknotesIcon className="h-4 w-4 text-slate-400" />
-          </div>
-          <div className="mt-1 flex items-end justify-between gap-2">
-            <div>
-              <p className="text-lg font-black text-slate-950 dark:text-white">
-                {formatPrice(summary.totalRevenue)}
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {t("orders.overviewTodayRevenue", {
-                  amount: formatPrice(summary.todayRevenue),
-                })}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-0.5">
-              <Sparkline
-                data={summary.revenueTrend}
-                width={84}
-                height={28}
-                tone="success"
-                filled
-                ariaLabel={t("orders.overviewRevenueTrendAria")}
-              />
-              {revenueDelta !== 0 ? (
-                <span
-                  className={`text-[10px] font-bold ${
-                    revenueDelta > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-rose-600 dark:text-rose-400"
-                  }`}
-                >
-                  {revenueDelta > 0 ? "▲" : "▼"} {Math.abs(revenueDelta)}%
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-2.5 lg:border-t-0 lg:border-r lg:pt-0 lg:pr-3 dark:border-slate-700/70">
+            {period === "custom" && (
+              <div className="flex items-center gap-1.5">
+                <CalendarDaysIcon className="h-3.5 w-3.5 text-slate-400" />
+                <input
+                  type="date"
+                  value={customStart}
+                  max={customEnd}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className={dateInputClass}
+                  aria-label={t("orders.overviewFrom")}
+                />
+                <span className="text-[11px] text-slate-400">
+                  {t("orders.overviewTo")}
                 </span>
-              ) : null}
+                <input
+                  type="date"
+                  value={customEnd}
+                  min={customStart}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className={dateInputClass}
+                  aria-label={t("orders.overviewTo")}
+                />
+              </div>
+            )}
+            <div
+              className="flex flex-wrap items-center gap-0.5 rounded-xl border border-slate-200/70 bg-slate-50/80 p-0.5 dark:border-slate-700/70 dark:bg-slate-800/60"
+              role="tablist"
+              aria-label={periodLabel}
+            >
+              {PRESET_PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={period === p.value}
+                  onClick={() => changePeriod(p.value)}
+                  className={segmentedBtn(period === p.value)}
+                >
+                  {t(`orders.${p.labelKey}`)}
+                </button>
+              ))}
             </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/70 bg-white/85 p-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t("orders.overviewAvgOrderValue")}
-            </p>
-            <ChartBarIcon className="h-4 w-4 text-slate-400" />
-          </div>
-          <div className="mt-1 flex items-end justify-between gap-2">
-            <div>
-              <p className="text-lg font-black text-slate-950 dark:text-white">
-                {formatPrice(summary.avgOrderValue)}
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {periodLabel}
-              </p>
-            </div>
-            <Sparkline
-              data={summary.ordersTrend.map((orders, idx) => {
-                const revenue = summary.revenueTrend[idx] || 0;
-                return orders > 0 ? revenue / orders : 0;
-              })}
-              width={84}
-              height={28}
-              tone="muted"
-              filled
-              ariaLabel={t("orders.overviewAovTrendAria")}
-            />
           </div>
         </div>
       </div>
