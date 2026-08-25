@@ -1065,7 +1065,7 @@ model WhatsAppNotificationSettings {
   promotionalEnabled            Boolean  @default(false)
   couponEnabled                 Boolean  @default(false)
   birthdayEnabled               Boolean  @default(false)
-  loyaltyEnabled                Boolean  @default(false)
+  loyaltyEnabled                Boolean  @default(true)
   companyLifecycleNotificationsEnabled Boolean @default(true)
   newSignupWelcomeEnabled       Boolean  @default(true)
   newSignupAdminAlertEnabled    Boolean  @default(true)
