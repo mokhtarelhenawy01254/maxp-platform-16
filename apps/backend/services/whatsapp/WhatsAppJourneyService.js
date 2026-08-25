@@ -271,6 +271,7 @@ class WhatsAppJourneyService {
                     firstName: journey.customer.firstName || '',
                     lastName: journey.customer.lastName || '',
                     customerName: journey.customer.firstName,
+                    reason: 'متابعة طلبك',
                     orderNumber: journey.order?.orderNumber || '',
                     totalPrice: journey.order?.total?.toString() || '0'
                 },
