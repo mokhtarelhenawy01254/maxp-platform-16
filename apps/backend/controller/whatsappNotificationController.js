@@ -913,6 +913,15 @@ async function sendTestNotification(req, res) {
       deliveryStrategy,
     );
 
+    // 🔍 DIAG (2026-08-26): اطبع المعطيات قبل الإرسال عشان نعرف ليه بيرفض
+    console.log('🔍 [TEST-NOTIFICATION] DIAG:', {
+      companyId,
+      deliveryCompanyId,
+      eventType,
+      deliveryStrategy,
+      hasDefaultSession: !!settings?.defaultSessionId
+    });
+
     const result = await WhatsAppNotificationService.sendNotification({
       companyId,
       deliveryCompanyId,
