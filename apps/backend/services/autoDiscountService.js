@@ -523,14 +523,14 @@ async function getCustomerIdsByAutoDiscountStatus(companyId, status) {
   const settings = await getSettings(companyId);
   if (settings.autoDiscountEnabled !== true || settings.enabled === false) return [];
 
-  if (status === 'AVAILABLE') {
-    const vouchers = await prisma.customerLoyaltyVoucher.findMany({
-      where: { companyId, status: 'ACTIVE', expiresAt: { gt: new Date() }, customerId: { not: null } },
-      select: { customerId: true },
-      distinct: ['customerId']
-    });
-    return vouchers.map(v => v.customerId);
-  }
+if (status === 'AVAILABLE') {
+      const vouchers = await prisma.customerLoyaltyVoucher.findMany({
+        where: { companyId, status: 'ACTIVE', expiresAt: { gt: new Date() } },
+        select: { customerId: true },
+        distinct: ['customerId']
+      });
+      return vouchers.map((v) => v.customerId).filter(Boolean);
+    }
 
   if (status === 'PRE_ACTIVATION') {
     const activatedAt = await getLoyaltyActivatedAt(companyId, settings);

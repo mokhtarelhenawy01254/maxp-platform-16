@@ -100,7 +100,10 @@ const getAllCustomer = async (req, res) => {
     if (autoDiscountFilter) {
       const matchedIds = await autoDiscountService
         .getCustomerIdsByAutoDiscountStatus(companyId, autoDiscountFilter)
-        .catch(() => []);
+        .catch((e) => {
+          console.error('❌ [AUTO-DISCOUNT] Filter failed:', e?.message || e);
+          return [];
+        });
       // If the auto-discount system is inactive, no customer matches the filter
       if (matchedIds.length === 0) {
         where.id = { in: [] };
