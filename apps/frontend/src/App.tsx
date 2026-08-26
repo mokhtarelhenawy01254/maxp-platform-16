@@ -1507,6 +1507,9 @@ const LoyaltyMembers = React.lazy(
 const LoyaltyAnalytics = React.lazy(
   () => import("./pages/customers/LoyaltyAnalytics"),
 );
+const LoyaltySystemMap = React.lazy(
+  () => import("./pages/customers/LoyaltySystemMap"),
+);
 const CustomerPointsCenter = React.lazy(
   () => import("./pages/customers/CustomerPointsCenter"),
 );
@@ -6566,6 +6569,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <LoyaltyAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/loyalty-system-map"
+                  element={
+                    <Layout>
+                      <LoyaltySystemMap />
                     </Layout>
                   }
                 />
