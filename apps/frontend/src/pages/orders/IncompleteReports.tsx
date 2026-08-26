@@ -46,6 +46,7 @@ interface ReportData {
     responseRate: number;
   }>;
   trend: Array<{ date: string; conversions: number; value: number }>;
+  orderSources: Array<{ source: string; count: number; value: number }>;
   recent: Array<{
     cartId: string;
     orderNumber: string | null;
@@ -155,6 +156,20 @@ const IncompleteReports: React.FC = () => {
   };
 
   const BackIcon = isRTL ? ArrowRightIcon : ArrowLeftIcon;
+
+  const sourceMeta: Record<string, { label: string; color: string }> = {
+    storefront: { label: t("orders.sourceStorefront"), color: "bg-blue-500" },
+    ai_conversation: { label: t("orders.sourceAutoConversation"), color: "bg-purple-500" },
+    internal_push: { label: t("orders.sourceInternalPush"), color: "bg-amber-500" },
+    manual: { label: t("orders.sourceManual"), color: "bg-emerald-500" },
+    woocommerce: { label: t("orders.sourceWooCommerce"), color: "bg-teal-500" },
+    api: { label: t("orders.sourceAPI"), color: "bg-pink-500" },
+    import: { label: t("orders.sourceImport"), color: "bg-indigo-500" },
+  };
+  const unknownSourceMeta = { label: t("orders.sourceUnknown"), color: "bg-gray-400" };
+  const totalOrderSources = data
+    ? data.orderSources.reduce((sum, s) => sum + s.count, 0)
+    : 0;
 
   const recoveryCards: StatCard[] = data
     ? [
@@ -385,6 +400,57 @@ const IncompleteReports: React.FC = () => {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+              {t("orders.incompleteOrderSources")}
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+              {t("orders.incompleteOrderSourcesHint")}
+            </p>
+            {data.orderSources.length ? (
+              <div>
+                <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700" dir="ltr">
+                  {data.orderSources.map((s) => {
+                    if (s.count <= 0 || totalOrderSources <= 0) return null;
+                    const meta = sourceMeta[s.source] || unknownSourceMeta;
+                    return (
+                      <div
+                        key={s.source}
+                        className={`h-full ${meta.color}`}
+                        style={{ width: `${(s.count / totalOrderSources) * 100}%` }}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="mt-4 space-y-2">
+                  {data.orderSources.map((s) => {
+                    const meta = sourceMeta[s.source] || unknownSourceMeta;
+                    return (
+                      <div key={s.source} className="flex items-center justify-between gap-3 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${meta.color}`} />
+                          <span className="text-gray-700 dark:text-gray-200 truncate">{meta.label}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {s.count.toLocaleString()}
+                          </span>
+                          <span className="text-gray-500 dark:text-gray-400 w-24 text-end">
+                            {formatPrice(s.value)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
+                {t("orders.incompleteNoConversions")}
+              </p>
+            )}
           </section>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

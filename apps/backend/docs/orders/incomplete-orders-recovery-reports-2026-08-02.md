@@ -228,3 +228,39 @@ now `converted / (total + converted)` — remaining carts plus window conversion
   (`orders.incompleteSelectCustomDates`, ar/en) instead of silently fetching the
   last 30 days; picking "custom" prefills the last-30-days range.
 - `periodDays` typed as `number | null`.
+
+## Natural-conversion completeness & source context (2026-08-26, round 2)
+
+### Why recovery numbers look "too small"
+
+Diagnosed with live data: for a typical merchant, most orders are
+`ai_conversation` (WhatsApp/AI) and never create a `GuestCart`, so they are
+outside the incomplete-cart recovery scope. The report only counts logged
+`CartConversionLog` rows (feature started 2026-08-02), so numbers are far below
+total order counts — by design, not a query bug.
+
+### Fix 1 — close the natural-log race
+
+The storefront `checkout-draft` save is debounced (1.2s) and stores the cart id
+in localStorage; `createOrder` sends it via the `x-cart-id` header. If a customer
+submitted before the draft finished, the order went out without the cart id →
+the cart was never deleted and no `natural` conversion log was written.
+
+- `routes/publicOrdersRoutes.js` — create-order route now also accepts
+  `req.body?.cartId` (was header/cookie only).
+- `storefront/hooks/useCheckout.ts` — `placeOrder` awaits `ensureCheckoutCart()`
+  (force-saves a draft and returns the cart id) and injects `cartId` into the
+  order payload via `buildCheckoutOrderPayload(..., cartId)`. `getCartId` is now
+  exported from `storefrontApi.ts`. Quick-order forms are untouched (they don't
+  pass cartId, so no stale-cart side effects).
+
+### Fix 2 — order-source context card
+
+- `routes/orders.js` — reports response adds `orderSources`
+  (`groupBy sourceType` over the window with count + value).
+- `IncompleteReports.tsx` — new "Order sources" section (stacked bar + rows)
+  showing storefront / ai_conversation / internal_push / manual split, so the
+  merchant sees why recovery is lower than total orders.
+- Fixed pre-existing raw-key bug: the total-value pipeline card used
+  `orders.totalValue` which never existed in the locale files (rendered the raw
+  key); added the key in ar/en (`القيمة الإجمالية` / `Total value`).

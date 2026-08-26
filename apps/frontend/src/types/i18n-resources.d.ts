@@ -12539,6 +12539,7 @@ declare module 'react-i18next' {
         phone: string;
         total: string;
         totalValues: string;
+        totalValue: string;
         status: string;
         date: string;
         actions: string;
@@ -13146,6 +13147,7 @@ declare module 'react-i18next' {
         sourceAPI: string;
         sourceImport: string;
         sourceUnknown: string;
+        sourceInternalPush: string;
         today: string;
         yesterday: string;
         last7Days: string;
@@ -13361,6 +13363,8 @@ declare module 'react-i18next' {
         incompletePeriodLabel: string;
         incompleteCustomPeriod: string;
         incompleteSelectCustomDates: string;
+        incompleteOrderSources: string;
+        incompleteOrderSourcesHint: string;
         incompleteToday: string;
         incompleteYesterday: string;
         incompleteFrom: string;

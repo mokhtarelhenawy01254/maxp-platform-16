@@ -1730,7 +1730,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     }
     const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
 
-    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow] = await Promise.all([
+    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow, orderSourceAgg] = await Promise.all([
       prisma.guestCart.aggregate({
         where: { companyId },
         _count: { _all: true },
@@ -1772,6 +1772,12 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           result: true,
           createdAt: true
         }
+      }),
+      prisma.order.groupBy({
+        where: { companyId, createdAt: timeRange },
+        by: ['sourceType'],
+        _count: { _all: true },
+        _sum: { total: true }
       })
     ]);
 
@@ -1867,6 +1873,11 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         },
         team,
         trend,
+        orderSources: orderSourceAgg.map((s) => ({
+          source: s.sourceType || 'unknown',
+          count: s._count._all || 0,
+          value: Number(s._sum.total || 0),
+        })).sort((a, b) => b.count - a.count),
         recent: convWindow.slice(0, 20).map((c) => ({
           cartId: c.cartId,
           orderNumber: c.orderNumber,

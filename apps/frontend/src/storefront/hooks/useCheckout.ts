@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { buildCartItemId, CartItem, useCartStore } from '../store/useCartStore';
 import { useCheckoutStore } from '../store/useCheckoutStore';
-import { storefrontApi, getCompanyId } from '../../utils/storefrontApi';
+import { storefrontApi, getCompanyId, getCartId } from '../../utils/storefrontApi';
 import { useMinimumOrderSettings } from './useMinimumOrderSettings';
 import {
   getOrderAttributionPayload,
@@ -125,6 +125,7 @@ export const buildCheckoutOrderPayload = (
   subtotal: number,
   companyId?: string | null,
   pixelEventId?: string | null,
+  cartId?: string | null,
 ) => {
   const resolvedSubtotal = toCheckoutAmount(data.subtotal, subtotal);
   const resolvedShippingCost = toCheckoutAmount(data.shippingCost, 0);
@@ -137,6 +138,7 @@ export const buildCheckoutOrderPayload = (
   return {
     ...(companyId ? { companyId } : {}),
     ...(pixelEventId ? { pixelEventId } : {}),
+    ...(cartId ? { cartId } : {}),
     ...(attribution ? { attribution } : {}),
     guestName: data.customerName,
     guestEmail: data.email,
@@ -203,13 +205,49 @@ export const useCheckout = () => {
       return;
     }
 
+    // ربط السلة بالأوردر مهما كان توقيت الـ debounce الخاص بـ checkout-draft:
+    // لو مفيش cartId محفوظ لسه، نعمل حفظ فوري للسلة ونستنى الـ cartId
+    // قبل إرسال الأوردر حتى تُحذف السلة ويُسجَّل التحويل الطبيعي.
+    const ensureCheckoutCart = async (): Promise<string | null> => {
+      const existing = getCartId();
+      if (existing) return existing;
+      try {
+        await storefrontApi.saveCheckoutDraft({
+          customerName: data.customerName,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          city: data.city,
+          governorate: data.governorate,
+          notes: data.notes,
+          paymentMethod: data.paymentMethod,
+          couponCode: data.couponCode || undefined,
+          shippingCost: data.shippingCost,
+          subtotal: data.subtotal,
+          total: data.total,
+          items: items.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId || undefined,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            attributes: item.attributes || {},
+          })),
+        });
+      } catch {
+        // الفشل هنا مش مميت — الأوردر يكمل عادي، المرة الجاية السلة هتتربط
+      }
+      return getCartId();
+    };
+
     try {
       setIsSubmitting(true);
       const pixelEventId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Kashier card payment flow
       if (data.paymentMethod === 'card') {
-        const payload = buildCheckoutOrderPayload(data, items, subtotal, companyId, pixelEventId);
+        const cartId = await ensureCheckoutCart();
+        const payload = buildCheckoutOrderPayload(data, items, subtotal, companyId, pixelEventId, cartId);
         const response = await storefrontApi.kashierCheckout(payload);
 
         if (response.success && response.data?.sessionUrl) {
@@ -242,12 +280,14 @@ export const useCheckout = () => {
       }
 
       // COD / Wallet flow (existing)
+      const cartId = await ensureCheckoutCart();
       const payload = buildCheckoutOrderPayload(
         data,
         items,
         subtotal,
         companyId,
         pixelEventId,
+        cartId,
       );
 
       const response = (await storefrontApi.createOrder(payload)) as CheckoutApiResponse;
