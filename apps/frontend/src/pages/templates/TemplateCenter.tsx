@@ -531,7 +531,18 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         delayValue: row.delayValue ?? 0,
         delayUnit: row.delayUnit || "HOURS",
       });
-      toast.success(next ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة") : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة"));
+      // زر «تراجع» يفتح نافذة قصيرة لعكس التبديل لو كان بالغلط
+      toast.success(
+        next ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة") : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة"),
+        {
+          action: {
+            label: "تراجع",
+            onClick: () => {
+              toggleScheduleNotify(row, !next);
+            },
+          },
+        },
+      );
     } catch (e: any) {
       setStatuses(prevStatuses);
       toast.error(e?.response?.data?.error || "فشل الحفظ");
@@ -2127,6 +2138,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     onCreateTemplate={createMetaTemplate}
                     createDisabled={!!publishingId || saving}
                     enableMultiBind={config.features.enableMetaMultiBind}
+                    excludeOtherBound={!config.features.enableMetaMultiBind}
                     selectedTemplateId={selectedTemplate?.id}
                     showMapping
                     localContent={templateForm.content}
@@ -2592,6 +2604,7 @@ function MetaTemplateSelect({
   onCreateTemplate,
   createDisabled,
   enableMultiBind,
+  excludeOtherBound,
   selectedTemplateId,
   showMapping,
   localContent,
@@ -2608,6 +2621,8 @@ function MetaTemplateSelect({
   onCreateTemplate?: () => void;
   createDisabled?: boolean;
   enableMultiBind?: boolean;
+  /** يخفي القوالب المربوطة بقوالب محلية تانية (وضع تعديل ميتا) — switch بيعرض الكل */
+  excludeOtherBound?: boolean;
   selectedTemplateId?: string | null;
   showMapping: boolean;
   localContent: string;
@@ -2662,11 +2677,10 @@ function MetaTemplateSelect({
           >
             <option value="">اختر قالب...</option>
             {availableMetaTemplates
-              .filter((mt) =>
-                enableMultiBind
-                  ? true
-                  : !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedTemplateId,
-              )
+              .filter((mt) => {
+                if (enableMultiBind || !excludeOtherBound) return true;
+                return !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedTemplateId;
+              })
               .map((mt) => {
                 const boundEvents = mt.boundToEventTypes?.length
                   ? mt.boundToEventTypes.join("، ")
