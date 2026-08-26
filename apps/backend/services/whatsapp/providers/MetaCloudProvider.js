@@ -91,15 +91,30 @@ async function listTemplates(sessionId) {
     throw new Error('Missing Meta WABA ID for session');
   }
 
-  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates`;
-  const response = await apiCall(() => axios.get(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    },
-    timeout: 30000
-  }));
+  // 🔧 FIX (2026-08-26): ميتا بترجع 25 قالب بس في الصفحة الواحدة (default limit)
+  // — لازم نعمل pagination بالكامل عشان قوالب الأوردرز متضيعش لو WABA فيه قوالب كتير
+  const baseUrl = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates`;
+  const allTemplates = [];
+  let afterCursor = null;
 
-  return response.data?.data || [];
+  do {
+    const url = `${baseUrl}?limit=200${afterCursor ? `&after=${encodeURIComponent(afterCursor)}` : ''}`;
+    const response = await apiCall(() => axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      timeout: 30000
+    }));
+
+    const pageData = response.data?.data || [];
+    allTemplates.push(...pageData);
+    afterCursor = response.data?.paging?.cursors?.after || null;
+
+    // حماية من اللوب اللانهائي
+    if (!pageData.length) break;
+  } while (afterCursor);
+
+  return allTemplates;
 }
 
 async function sendText(sessionId, to, text, options = {}) {
