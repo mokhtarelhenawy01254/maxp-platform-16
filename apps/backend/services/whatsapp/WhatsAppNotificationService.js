@@ -1427,7 +1427,11 @@ async function sendNotification(options) {
       // لما كان فيه قالب معتمد APPROVED متاح وفشل. خارج نافذة 24 ساعة،
       // free-form (interactive/text) مرفوض من ميتا حتماً — النزول له = فشل مضمون
       // يكتب failureReason مضلل (131047) بدل السبب الحقيقي لفشل القالب.
-      let blockFreeTextMetaFallback = false;
+      // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-26, خطأ 1): لو الجلسة META_CLOUD
+      // ممنوع تماماً ننزل لأي مسار نص حر (sendText/sendButtons/sendList) — سواء فشل
+      // القالب المعتمد أو القالب أصلاً PENDING/مش معتمد. نبلوك الـ free-text دائماً
+      // لما sessionProvider=META_CLOUD عشان ميتا ما ترفضش برسالة مضللة.
+      let blockFreeTextMetaFallback = sessionProvider === 'META_CLOUD';
       let lastMetaTemplateError = null;
 
       // 🔗 زر "صفحة العميل": لو القالب فيه زرار LINK، نبني رابط سري لفتح بوابة العميل
@@ -1502,6 +1506,12 @@ async function sendNotification(options) {
           ? `قالب ميتا "${metaTemplateName}" حالته ${metaTemplateStatus || 'غير معروف'} — لازم يكون APPROVED من ميتا قبل الإرسال`
           : `لا يوجد قالب ميتا معتمد (metaTemplateName) مربوط بالحدث "${eventType}"`;
         console.warn(`⚠️ [META-CLOUD] ${reason} — تم الرفض (مفيش إرسال نص حر).`);
+        // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-26, خطأ 2): لو فيه contentOverride
+        // (نص حر من Journey/LeadFollowUp) والجلسة META_CLOUD — نرفض صراحةً بدل ما نحاول
+        // نبعته كـ free-text (ميتا بتترفضه بـ 132018). نفس الرفض meta_template_not_approved.
+        if (options.contentOverride) {
+          console.warn(`⚠️ [META-CLOUD] contentOverride present but no APPROVED template — rejecting free-text.`);
+        }
         return { success: false, reason: 'meta_template_not_approved', message: reason };
       }
 
