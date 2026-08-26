@@ -137,6 +137,35 @@ const extractSubdomainMiddleware = async (req, res, next) => {
         }
       }
 
+      // 2.5️⃣ دعم الـ bare slug المرسل عبر الهيدرز (بدون نقاط)
+      // الفرونت بيبعت X-Subdomain / X-Company-Slug بقيمة الـ slug فقط
+      // (مثال: "mlabs-kajwal") وهو مينفعش يتُفسّر كـ hostname، فلازم
+      // نبحث به مباشرة كسلاگ
+      if (!company) {
+        const bareSlugCandidates = [
+          hostname,
+          req.headers['x-company-slug'],
+          req.headers['x-company-subdomain'],
+        ]
+          .map((value) => normalizeHostname(value))
+          .filter(
+            (value) =>
+              value &&
+              !value.includes('.') &&
+              !isLocalHostname(value) &&
+              !value.startsWith('www.')
+          );
+
+        for (const slugCandidate of [...new Set(bareSlugCandidates)]) {
+          company = await (await getPrisma()).company.findUnique({
+            where: { slug: slugCandidate },
+            select: COMPANY_SELECT,
+          });
+
+          if (company) break;
+        }
+      }
+
       if (company && !company.isActive) {
         return res.status(403).json({
           success: false,
