@@ -305,6 +305,21 @@ const securityHeaders = (req, res, next) => {
   res.setHeader('X-Powered-By', 'Secure-API');
 
   // Content Security Policy
+
+  // ⚠️ Inline script hashes من apps/frontend/index.html.
+  // أي تعديل على السكربتات الـ inline جوه index.html يغيّر الـ hash
+  // ويمنع تنفيذها — أعد حسابه بـ:
+  //   node -e "const c=require('crypto');const fs=require('fs');\
+  //   const s=fs.readFileSync('apps/frontend/index.html','utf8');\
+  //   [...s.matchAll(/<script>([\s\S]*?)<\/script>/g)].forEach(m=>\
+  //   console.log(c.createHash('sha256').update(m[1]).digest('base64')))"
+  // 1) SW cleanup script (unregister non-sw-v4 workers + wipe caches)
+  // 2) Legacy cache-bust script
+  const INLINE_SCRIPT_HASHES = [
+    "'sha256-m/WhJzqWXWLcIZXvJjjG7sSATMoO3wXPIerAcbnZoMM='",
+    "'sha256-mmS9HhnyD6ltKC5u9zc0Y/jTrAHsA7eDDJ018bmfJCk='",
+  ];
+
   const contentSecurityPolicy = [
     "default-src 'self'",
     "base-uri 'self'",
@@ -320,7 +335,7 @@ const securityHeaders = (req, res, next) => {
       'https://www.googletagmanager.com',
       'https://www.google-analytics.com',
       'https://analytics.tiktok.com',
-      "'sha256-mmS9HhnyD6ltKC5u9zc0Y/jTrAHsA7eDDJ018bmfJCk='",
+      ...INLINE_SCRIPT_HASHES,
     ].join(' '),
     [
       "script-src-elem 'self'",
@@ -331,7 +346,7 @@ const securityHeaders = (req, res, next) => {
       'https://www.googletagmanager.com',
       'https://www.google-analytics.com',
       'https://analytics.tiktok.com',
-      "'sha256-mmS9HhnyD6ltKC5u9zc0Y/jTrAHsA7eDDJ018bmfJCk='",
+      ...INLINE_SCRIPT_HASHES,
     ].join(' '),
     "img-src 'self' data: blob: https:",
     "connect-src 'self' https: ws: wss:",
