@@ -208,7 +208,9 @@ a custom range). The reports page offers presets (7/14/30/90/365 days) plus a
 `YYYY-MM-DD`, rejects rolled-over dates like `2026-02-30`) instead of UTC —
 previously "today"/custom ranges started at local 03:00 and dropped early-morning
 conversions. The custom-range end-of-day is built from date components (not a
-fixed +24h) so DST shift days stay exact. Trend day bucketing uses a local-day
+fixed +24h) so DST shift days stay exact — **and must stay a `Date` object**
+(`new Date(nextDay.getTime() - 1)`); passing the raw `getTime()` number makes
+Prisma throw `Argument lte: provided Int`. Trend day bucketing uses a local-day
 key (`localDayKey`) instead of `toISOString()`, so late-evening conversions no
 longer land on the next calendar day.
 

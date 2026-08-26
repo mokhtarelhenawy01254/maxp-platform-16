@@ -1723,11 +1723,9 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       if (parsedTo) {
         // يشمل اليوم كاملاً حتى آخر لحظة — بالمكونات المحلية مش +24h ثابتة
         // حتى لا ينزاح الحد عند أيام تغيير التوقيت الصيفي
-        toDate = new Date(
-          parsedTo.getFullYear(),
-          parsedTo.getMonth(),
-          parsedTo.getDate() + 1
-        ).getTime() - 1;
+        // لازم الناتج يفضل Date object (مش getTime رقمي) لأن Prisma يرفض Int في lte
+        const nextDay = new Date(parsedTo.getFullYear(), parsedTo.getMonth(), parsedTo.getDate() + 1);
+        toDate = new Date(nextDay.getTime() - 1);
       }
     }
     const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
