@@ -69,6 +69,10 @@ async function postMessage(session, payload) {
   }));
 
   const messageId = response.data?.messages?.[0]?.id || response.data?.message_id || null;
+  if (!messageId) {
+    // 🔍 DIAG (2026-08-26): ميتا رجعت رد من غير messageId — اطبع الـ body كامل
+    console.error('❌ [META-CLOUD] postMessage returned no messageId. Full response:', JSON.stringify(response.data));
+  }
   return {
     messageId,
     raw: response.data
