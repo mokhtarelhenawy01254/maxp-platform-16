@@ -1,7 +1,6 @@
 // rebuild-v2
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { resolve, dirname } from 'path';
@@ -352,69 +351,6 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
-      VitePWA({
-        strategies: 'injectManifest',
-        srcDir: 'src',
-        filename: 'sw-v4.js',
-        includeAssets: ['favicon.ico'],
-        manifest: {
-          name: 'MaxP - منصة إدارة التواصل والتجارة الإلكترونية',
-          short_name: 'MaxP',
-          description: 'منصة متكاملة لإدارة التواصل والتجارة الإلكترونية للشركات',
-          theme_color: '#3B82F6',
-          background_color: '#f9fafb',
-          display: 'standalone',
-          display_override: ['window-controls-overlay', 'standalone'],
-          scope: '/',
-          start_url: '/',
-          orientation: 'portrait-primary',
-          lang: 'ar',
-          dir: 'rtl',
-          id: 'com.maxp.platform',
-          categories: ['business', 'communication', 'ecommerce'],
-          shortcuts: [
-            {
-              name: 'المحادثات',
-              short_name: 'محادثات',
-              url: '/conversations',
-              icons: [{ src: '/icons/shortcut-conversations.svg', sizes: '96x96' }],
-            },
-            {
-              name: 'الطلبات',
-              short_name: 'طلبات',
-              url: '/orders',
-              icons: [{ src: '/icons/shortcut-orders.svg', sizes: '96x96' }],
-            },
-            {
-              name: 'المنتجات',
-              short_name: 'منتجات',
-              url: '/products',
-              icons: [{ src: '/icons/shortcut-products.svg', sizes: '96x96' }],
-            },
-          ],
-          icons: [
-            { src: '/icons/icon-72x72.svg', sizes: '72x72', type: 'image/svg+xml' },
-            { src: '/icons/icon-96x96.svg', sizes: '96x96', type: 'image/svg+xml' },
-            { src: '/icons/icon-128x128.svg', sizes: '128x128', type: 'image/svg+xml' },
-            { src: '/icons/icon-144x144.svg', sizes: '144x144', type: 'image/svg+xml' },
-            { src: '/icons/icon-152x152.svg', sizes: '152x152', type: 'image/svg+xml' },
-            { src: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
-            { src: '/icons/icon-384x384.svg', sizes: '384x384', type: 'image/svg+xml' },
-            { src: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
-            { src: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
-          ],
-        },
-        injectManifest: {
-          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-          // index.html is served dynamically by the backend per-company (SEO
-          // shell for tenant storefronts like swan.maxp.online). Precaching it
-          // fails with a 401 on subdomains (the backend only treats extensionless
-          // paths as public storefront shells), which aborts the SW install.
-          // Navigations are already handled by the NetworkFirst route in sw-v4.js.
-          // manifest.webmanifest also returns 401 on tenant subdomains.
-          globIgnores: ['**/tesseract/**', '**/index.html', '**/manifest.webmanifest'],
-        },
-      }),
       !disableCompression &&
         viteCompression({
           algorithm: 'gzip',

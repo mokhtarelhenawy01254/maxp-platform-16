@@ -1,9 +1,12 @@
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
-import { NetworkFirst } from 'workbox-strategies';
-import { registerRoute } from 'workbox-routing';
-import { ExpirationPlugin } from 'workbox-expiration';
-
-const CACHE_PREFIX = 'maxp-v4';
+/* MaxP push-notification service worker.
+ *
+ * NOT a PWA installer and NOT a cache worker:
+ * - No precache, no fetch interception, no CacheStorage writes -> no cache
+ *   timestamps, no IDB transactions, no "Cache.put() network error" noise.
+ * - The web app manifest is gone, so browsers no longer offer "install app".
+ * - This worker exists only to receive web push notifications and route
+ *   notification clicks back to the right tab.
+ */
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -11,17 +14,17 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    cleanupOutdatedCaches();
-    const cacheKeys = await caches.keys();
-    await Promise.all(
-      cacheKeys
-        .filter((key) => !key.startsWith(CACHE_PREFIX) && !key.startsWith('workbox'))
-        .map((key) => caches.delete(key))
-    );
-    await self.clients.claim();
-    if (self.registration.navigationPreload) {
-      await self.registration.navigationPreload.enable();
+    // Purge every cache left behind by the old caching worker so no stale
+    // shell/chunks are ever served again and old cache errors disappear.
+    // Never let a CacheStorage failure (private mode, storage disabled) block
+    // activation, or the push subscription would stop working.
+    try {
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    } catch (error) {
+      // Non-fatal: activation must still succeed.
     }
+    await self.clients.claim();
   })());
 });
 
@@ -100,6 +103,7 @@ self.addEventListener('notificationclick', (event) => {
             try {
               await client.navigate(targetUrl);
             } catch (error) {
+              // Ignore navigation failures and keep the focused client.
             }
           }
           return;
@@ -111,45 +115,4 @@ self.addEventListener('notificationclick', (event) => {
       }
     })(),
   );
-});
-
-registerRoute(
-  ({ request }) => request.mode === 'navigate',
-  new NetworkFirst({
-    cacheName: `${CACHE_PREFIX}-pages`,
-    networkTimeoutSeconds: 3,
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }),
-    ],
-  }),
-);
-
-registerRoute(
-  ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'font',
-  new NetworkFirst({
-    cacheName: `${CACHE_PREFIX}-assets`,
-    networkTimeoutSeconds: 5,
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 }),
-    ],
-  }),
-);
-
-// Precaching must NEVER abort the install because a single entry fails to
-// cache (e.g. an old precache manifest still listing index.html that returns
-// 401 on tenant subdomains → bad-precaching-response). If install aborts, the
-// stale SW keeps serving the old cached shell forever and the PWA never
-// updates. `cacheWillUpdate` returning null for an unsafe response makes
-// precacheAndRoute skip that entry instead of throwing.
-precacheAndRoute(self.__WB_MANIFEST, {
-  plugins: [
-    {
-      cacheWillUpdate: async ({ response }) => {
-        if (!response || response.status === 401 || response.status >= 400) {
-          return null;
-        }
-        return response;
-      },
-    },
-  ],
 });
