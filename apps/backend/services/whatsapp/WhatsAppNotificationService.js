@@ -1499,7 +1499,7 @@ async function sendNotification(options) {
         String(metaTemplateStatus).toUpperCase() === 'APPROVED';
 
       // 🔍 DIAG (2026-08-26): اطبع المعطيات قبل تحديد مسار الإرسال
-      console.error(`🔍 [META-SEND] DIAG sessionProvider=${sessionProvider} metaTemplateName=${metaTemplateName} status=${metaTemplateStatus} canSendViaMetaTemplate=${canSendViaMetaTemplate} eventType=${eventType} deliveryCompanyId=${deliveryCompanyId}`);
+      console.log(`🔍 [META-SEND] DIAG sessionProvider=${sessionProvider} metaTemplateName=${metaTemplateName} status=${metaTemplateStatus} canSendViaMetaTemplate=${canSendViaMetaTemplate} eventType=${eventType} deliveryCompanyId=${deliveryCompanyId}`);
 
       // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-25): لو الجلسة META_CLOUD بس القالب
       // مش معتمد (PENDING أو مفيش metaTemplateName) — نرفض الإرسال صراحةً بدل ما ننزل
