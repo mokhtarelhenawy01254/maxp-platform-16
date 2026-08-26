@@ -13360,6 +13360,7 @@ declare module 'react-i18next' {
         incompleteReports: string;
         incompletePeriodLabel: string;
         incompleteCustomPeriod: string;
+        incompleteSelectCustomDates: string;
         incompleteToday: string;
         incompleteYesterday: string;
         incompleteFrom: string;

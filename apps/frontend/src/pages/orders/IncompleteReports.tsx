@@ -18,7 +18,7 @@ import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 
 interface ReportData {
-  periodDays: number;
+  periodDays: number | null;
   pipeline: {
     total: number;
     active: number;
@@ -99,16 +99,22 @@ const IncompleteReports: React.FC = () => {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setHint(null);
       const params: Record<string, string> = {};
       if (period === "custom") {
-        if (customFrom) params["from"] = customFrom;
-        if (customTo) params["to"] = customTo;
+        if (!customFrom || !customTo) {
+          setHint(t("orders.incompleteSelectCustomDates"));
+          return;
+        }
+        params["from"] = customFrom;
+        params["to"] = customTo;
       } else {
         const range = getCalendarRange(period);
         if (range) {
@@ -224,7 +230,15 @@ const IncompleteReports: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <select
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (next === "custom") {
+                // تعبئة مبدئية (آخر 30 يوم) حتى لا تُجلب بيانات غير متوقعة بصمت
+                setCustomFrom((prev) => prev || toDateInput(new Date(Date.now() - 29 * 86400000)));
+                setCustomTo((prev) => prev || toDateInput(new Date()));
+              }
+              setPeriod(next);
+            }}
             className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
             aria-label={t("orders.incompletePeriodLabel") as string}
           >
@@ -284,6 +298,12 @@ const IncompleteReports: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {hint && !error && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
+          {hint}
+        </div>
+      )}
 
       {loading && !data ? (
         <div className="flex items-center justify-center min-h-[300px]">
@@ -378,15 +398,33 @@ const IncompleteReports: React.FC = () => {
                     <BarChart data={data.trend} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#8884d8" opacity={0.15} />
                       <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                      <Tooltip />
+                      {/* محور منفصل للعدد ومحور للقيمة — بدون هذا تصبح أعمدة التحويلات غير مرئية بجانب القيم المالية */}
+                      <YAxis yAxisId="count" tick={{ fontSize: 11 }} allowDecimals={false} />
+                      <YAxis
+                        yAxisId="value"
+                        orientation="right"
+                        tick={{ fontSize: 11 }}
+                        allowDecimals={false}
+                        tickFormatter={(v: number) =>
+                          v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v)
+                        }
+                      />
+                      <Tooltip
+                        formatter={(value, name) =>
+                          name === (t("orders.incompleteValue") as string)
+                            ? formatPrice(Number(value))
+                            : String(value)
+                        }
+                      />
                       <Bar
+                        yAxisId="count"
                         dataKey="conversions"
                         name={t("orders.incompleteTeamConversions") as string}
                         fill="#3b82f6"
                         radius={[4, 4, 0, 0]}
                       />
                       <Bar
+                        yAxisId="value"
                         dataKey="value"
                         name={t("orders.incompleteValue") as string}
                         fill="#10b981"

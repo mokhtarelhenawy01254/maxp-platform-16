@@ -13367,6 +13367,7 @@
     "incompleteReports": "Reports",
     "incompletePeriodLabel": "Period",
     "incompleteCustomPeriod": "Custom period",
+    "incompleteSelectCustomDates": "Select start and end dates to display the custom period",
     "incompleteToday": "Today",
     "incompleteYesterday": "Yesterday",
     "incompleteFrom": "From",

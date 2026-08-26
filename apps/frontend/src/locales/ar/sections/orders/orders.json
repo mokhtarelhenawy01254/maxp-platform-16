@@ -265,6 +265,7 @@
   "incompleteReports": "التقارير",
   "incompletePeriodLabel": "الفترة الزمنية",
   "incompleteCustomPeriod": "فترة مخصصة",
+  "incompleteSelectCustomDates": "اختار تاريخ البداية والنهاية لعرض الفترة المخصصة",
   "incompleteToday": "اليوم",
   "incompleteYesterday": "أمس",
   "incompleteFrom": "من",

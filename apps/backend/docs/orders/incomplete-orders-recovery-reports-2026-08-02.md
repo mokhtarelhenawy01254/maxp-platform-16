@@ -199,3 +199,30 @@ endpoint). The recovery report now breaks down `recovery.byTeam` vs `recovery.na
 The response includes `from` / `to` (resolved timestamps) and `periodDays` (null for
 a custom range). The reports page offers presets (7/14/30/90/365 days) plus a
 "custom period" option with from/to date pickers.
+
+## Report accuracy fixes (2026-08-26)
+
+### 1. Timezone-correct period parsing
+
+`from` / `to` are now parsed as **local** dates (`parseLocalDate`, strict
+`YYYY-MM-DD`, rejects rolled-over dates like `2026-02-30`) instead of UTC —
+previously "today"/custom ranges started at local 03:00 and dropped early-morning
+conversions. The custom-range end-of-day is built from date components (not a
+fixed +24h) so DST shift days stay exact. Trend day bucketing uses a local-day
+key (`localDayKey`) instead of `toISOString()`, so late-evening conversions no
+longer land on the next calendar day.
+
+### 2. Correct recovery-rate denominator
+
+`recoveryRate` was `converted / pipeline.total`, but carts are deleted after
+conversion, shrinking the denominator over time (rate could exceed 100%). It is
+now `converted / (total + converted)` — remaining carts plus window conversions.
+
+### 3. Frontend
+
+- Conversion-trend chart uses **two Y axes** (count left, value right, k-formatted)
+  so conversion bars are visible next to monetary values; Tooltip formats value as price.
+- Selecting "custom period" without both dates shows an inline hint
+  (`orders.incompleteSelectCustomDates`, ar/en) instead of silently fetching the
+  last 30 days; picking "custom" prefills the last-30-days range.
+- `periodDays` typed as `number | null`.
