@@ -1623,7 +1623,16 @@ async function sendNotification(options) {
             }
           } else {
             // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
+            // 🔍 DIAG (2026-08-26): اطبع تفاصيل خطأ ميتا الكاملة عشان نعرف السبب الحقيقي
             console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
+            console.error(`❌ [META-CLOUD] metaError details =>`, JSON.stringify({
+              code: metaError?.code,
+              reason: metaError?.reason,
+              apiMessage: metaError?.apiMessage,
+              details: metaError?.details,
+              httpStatus: metaError?.httpStatus,
+              raw: metaError?.originalError?.response?.data || metaError?.originalError?.message
+            }));
             lastMetaTemplateError = metaError;
 
             // 🆕 PRODUCTION-FIX (notifications-fix-plan §5.3 — Meta → Baileys fallback):
