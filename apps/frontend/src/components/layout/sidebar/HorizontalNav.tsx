@@ -6,7 +6,6 @@ import { useAuth } from "../../../hooks/useAuthSimple";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 import { useSidebarNavLink } from "./useSidebarNavLink";
-import SidebarOrderSearch from "./SidebarOrderSearch";
 
 
 interface HorizontalNavProps {
@@ -177,9 +176,6 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
                         .filter((item) => !item.hidden)
                         .map((item) => (
                           <div key={item.to} className="space-y-1">
-                            {item.kind === "order-search" ? (
-                              <SidebarOrderSearch />
-                            ) : (
                             <NavLink
                               to={item.to}
                               icon={item.icon}
@@ -188,7 +184,6 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
                             >
                               {item.label}
                             </NavLink>
-                            )}
 
                             {item.children ? (
                               <div className="business-horizontal-children">
