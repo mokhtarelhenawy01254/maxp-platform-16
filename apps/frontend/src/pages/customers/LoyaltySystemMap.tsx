@@ -6,8 +6,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
+import { toast } from "sonner";
 import {
   Users,
   Megaphone,
@@ -38,7 +39,21 @@ import {
   Coins,
   Info,
   BadgePercent,
+  Eye,
+  Download,
+  Zap,
+  ExternalLink,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 
 type NodeStatus = "active" | "inactive" | "warning" | "unknown";
 
@@ -91,6 +106,22 @@ interface ReEngagementLine {
   message: string;
   source: RoutingInfo;
   status: "scheduled" | "sent" | "failed" | "inactive" | "unknown";
+  count: number | null;
+  enabled: boolean;
+  settingsKey?: "occasion" | "inactive" | "points";
+}
+
+interface CustomerRow {
+  name: string;
+  phone: string;
+  extra: string;
+}
+
+interface CustomerListState {
+  id: string;
+  title: string;
+  loading: boolean;
+  rows: CustomerRow[];
 }
 
 const STAGES: StageDef[] = [
@@ -203,6 +234,12 @@ function fmt(n: number | undefined | null): string {
   return Number(n || 0).toLocaleString("en-US");
 }
 
+function normalizeDigits(s: string): string {
+  return String(s || "")
+    .replace(/[\u0660-\u0669]/g, (d) => String("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669".indexOf(d)))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String("\u06F0\u06F1\u06F2\u06F3\u06F4\u06F5\u06F6\u06F7\u06F8\u06F9".indexOf(d)));
+}
+
 function firstLine(text?: string | null, max = 120): string {
   if (!text) return "";
   const single = String(text).split("\n")[0] || "";
@@ -249,6 +286,16 @@ const LoyaltySystemMap: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [edges, setEdges] = useState<DrawnEdge[]>([]);
 
+  const [pendingToggle, setPendingToggle] = useState<ReEngagementLine | null>(null);
+  const [savingToggle, setSavingToggle] = useState(false);
+  const [thresholdDraft, setThresholdDraft] = useState<number>(30);
+  const [customerList, setCustomerList] = useState<CustomerListState | null>(null);
+  const [backfillConfirm, setBackfillConfirm] = useState(false);
+  const [backfillBusy, setBackfillBusy] = useState(false);
+  const [channelDialog, setChannelDialog] = useState(false);
+  const [channelDraft, setChannelDraft] = useState<string>("");
+
+  const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement | null>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -320,6 +367,40 @@ const LoyaltySystemMap: React.FC = () => {
         firstEnabledFlowSteps = (stepsRes as any)?.data?.data || [];
       }
 
+      const reSettingsRes = await apiClient
+        .get("/hr/customer-loyalty/re-engagement/settings")
+        .catch(() => ({ data: { data: null } }));
+      const reSettings = (reSettingsRes as any)?.data?.data || {
+        inactiveDays: 30,
+        loops: { occasion: false, inactive: false, points: false },
+      };
+      const inactiveDays = Number(reSettings.inactiveDays || 30);
+
+      const [countsRes, birthdayCountRes] = await Promise.allSettled([
+        apiClient.get(
+          `/hr/customer-loyalty/re-engagement/counts?inactiveDays=${inactiveDays}`,
+        ),
+        apiClient.get("/customers/whatsapp-notify/birthday-automation/upcoming?days=30"),
+      ]);
+      const counts = {
+        inactive:
+          countsRes.status === "fulfilled"
+            ? (countsRes.value as any)?.data?.data?.inactive ?? null
+            : null,
+        points:
+          countsRes.status === "fulfilled"
+            ? (countsRes.value as any)?.data?.data?.points ?? null
+            : null,
+        occasion:
+          countsRes.status === "fulfilled"
+            ? (countsRes.value as any)?.data?.data?.occasion ?? null
+            : null,
+        birthday:
+          birthdayCountRes.status === "fulfilled"
+            ? (birthdayCountRes.value as any)?.data?.total ?? null
+            : null,
+      };
+
       setData({
         programs,
         wallet,
@@ -337,7 +418,10 @@ const LoyaltySystemMap: React.FC = () => {
         customerLists: allLists,
         loyaltyRecordsTotal,
         customerCounts,
+        reSettings,
+        counts,
       });
+      setThresholdDraft(Number(reSettings.inactiveDays || 30));
       setLastUpdated(new Date().toLocaleString("ar-EG"));
     } catch (error) {
       console.error("Error loading loyalty system map:", error);
@@ -512,8 +596,8 @@ const LoyaltySystemMap: React.FC = () => {
         icon: Calendar,
         status: occasions.length ? ("active" as NodeStatus) : ("inactive" as NodeStatus),
         summary: occasions.length
-          ? `${occasions.length} مناسبة مجدولة`
-          : "لا توجد مناسبات مجدولة",
+          ? `${occasions.length} مناسبة (${occasions.filter((o: any) => String(o.status || "").toUpperCase() === "SCHEDULED").length} مجدولة · ${occasions.filter((o: any) => String(o.status || "").toUpperCase() === "SENT").length} مرسلة)`
+          : "لا توجد مناسبات بعد",
       },
       {
         id: "birthdays",
@@ -637,8 +721,11 @@ const LoyaltySystemMap: React.FC = () => {
       firstEnabledFlowSteps = [],
       programs = [],
       journeys = [],
+      reSettings = null,
+      counts = {},
     } = data as any;
 
+    const loops = reSettings?.loops || {};
     const nextOccasion = occasions[0] || null;
     const defaultRoute = routing;
     const activeJourneys = journeys.filter(
@@ -670,6 +757,9 @@ const LoyaltySystemMap: React.FC = () => {
           : hasScheduledOccasion || occasions.length
             ? ("scheduled" as const)
             : ("inactive" as const),
+        count: counts.occasion ?? null,
+        enabled: loops.occasion === true,
+        settingsKey: "occasion" as const,
       },
       {
         id: "birthday",
@@ -683,6 +773,8 @@ const LoyaltySystemMap: React.FC = () => {
         status: birthdaySettings?.isEnabled === true
           ? ("scheduled" as const)
           : ("inactive" as const),
+        count: counts.birthday ?? null,
+        enabled: birthdaySettings?.isEnabled === true,
       },
       {
         id: "postPurchase",
@@ -698,6 +790,9 @@ const LoyaltySystemMap: React.FC = () => {
         status: enabledFlows.length || activeJourneys.length
           ? ("scheduled" as const)
           : ("inactive" as const),
+        count: counts.inactive ?? null,
+        enabled: loops.inactive === true,
+        settingsKey: "inactive" as const,
       },
       {
         id: "points",
@@ -710,6 +805,9 @@ const LoyaltySystemMap: React.FC = () => {
         status: programs.some((p: any) => p.status === "ACTIVE")
           ? ("scheduled" as const)
           : ("inactive" as const),
+        count: counts.points ?? null,
+        enabled: loops.points === true,
+        settingsKey: "points" as const,
       },
     ];
   }, [data, routing, birthdaySource]);
@@ -721,7 +819,7 @@ const LoyaltySystemMap: React.FC = () => {
       return (
         <span
           className={`${base} bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300`}
-          title={r.desc}
+          title={normalizeDigits(r.desc)}
         >
           <Cloud className="h-3 w-3" />
           Meta Cloud API
@@ -732,7 +830,7 @@ const LoyaltySystemMap: React.FC = () => {
       return (
         <span
           className={`${base} bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300`}
-          title={r.desc}
+          title={normalizeDigits(r.desc)}
         >
           <Smartphone className="h-3 w-3" />
           واتساب عادي
@@ -742,7 +840,7 @@ const LoyaltySystemMap: React.FC = () => {
     return (
       <span
         className={`${base} bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300`}
-        title={r.desc}
+        title={normalizeDigits(r.desc)}
       >
         <HelpCircle className="h-3 w-3" />
         غير محدد
@@ -774,6 +872,192 @@ const LoyaltySystemMap: React.FC = () => {
       </span>
     );
   };
+
+  const saveLoopToggle = useCallback(
+    async (id: string, enabled: boolean) => {
+      setSavingToggle(true);
+      try {
+        if (id === "birthday") {
+          const bd = (data as any)?.birthdaySettings || {};
+          await apiClient.post("/customers/whatsapp-notify/birthday-automation/settings", {
+            isEnabled: enabled,
+            dailySendTime: bd.dailySendTime || "12:00",
+            channel: bd.channel || "whatsapp_session",
+            messageTemplate: bd.messageTemplate || "",
+            couponCode: bd.couponCode || "",
+            metaTemplateName: bd.metaTemplateName || "birthday_greeting_v1",
+          });
+        } else {
+          const line = reEngagementLines.find((l) => l.id === id);
+          if (!line?.settingsKey) return;
+          await apiClient.put("/hr/customer-loyalty/re-engagement/settings", {
+            loops: { [line.settingsKey]: enabled },
+          });
+        }
+        toast.success(enabled ? "تم تفعيل الحلقة بنجاح" : "تم إيقاف الحلقة");
+        setPendingToggle(null);
+        await load();
+      } catch (e) {
+        console.error("Error toggling loop:", e);
+        toast.error("فشل حفظ الإعدادات");
+      } finally {
+        setSavingToggle(false);
+      }
+    },
+    [data, reEngagementLines, load],
+  );
+
+  const handleToggle = (line: ReEngagementLine) => {
+    if (line.enabled) {
+      void saveLoopToggle(line.id, false);
+    } else {
+      setPendingToggle(line);
+    }
+  };
+
+  const saveThreshold = useCallback(async () => {
+    const days = Math.max(1, Math.min(365, thresholdDraft || 30));
+    try {
+      await apiClient.put("/hr/customer-loyalty/re-engagement/settings", {
+        inactiveDays: days,
+      });
+      toast.success(`تم حفظ حد السكوت: ${days} يوم`);
+      await load();
+    } catch (e) {
+      console.error("Error saving threshold:", e);
+      toast.error("فشل حفظ حد السكوت");
+    }
+  }, [thresholdDraft, load]);
+
+  const viewCustomers = useCallback(async (id: string) => {
+    if (id === "occasion") {
+      navigate("/customers/occasions-notify");
+      return;
+    }
+    const titles: Record<string, string> = {
+      birthday: "عملاء عيد الميلاد القادم (30 يوم)",
+      postPurchase: `عملاء ساكتين (${(data as any)?.reSettings?.inactiveDays || 30} يوم بلا شراء)`,
+      points: "أعضاء ولاء برصيد نقاط",
+    };
+    setCustomerList({ id, title: titles[id] || "العملاء", loading: true, rows: [] });
+    try {
+      let rows: CustomerRow[] = [];
+      if (id === "birthday") {
+        const res = await apiClient.get("/customers/whatsapp-notify/birthday-automation/upcoming?days=30");
+        rows = ((res.data as any)?.data || []).map((c: any) => ({
+          name: c.name || "—",
+          phone: c.phone || "",
+          extra: c.formattedNextDate || "",
+        }));
+      } else if (id === "postPurchase") {
+        const days = (data as any)?.reSettings?.inactiveDays || 30;
+        const res = await apiClient.get(
+          `/hr/customer-loyalty/re-engagement/customers?type=inactive&inactiveDays=${days}&limit=50`,
+        );
+        rows = ((res.data as any)?.data || []).map((c: any) => ({
+          name: c.name || "—",
+          phone: c.phone || "",
+          extra: c.extra || "",
+        }));
+      } else if (id === "points") {
+        const res = await apiClient.get(
+          "/hr/customer-loyalty/re-engagement/customers?type=points&limit=50",
+        );
+        rows = ((res.data as any)?.data || []).map((c: any) => ({
+          name: c.name || "—",
+          phone: c.phone || "",
+          extra: c.extra || "",
+        }));
+      }
+      setCustomerList({ id, title: titles[id] || "العملاء", loading: false, rows });
+    } catch (e) {
+      console.error("Error loading customers:", e);
+      setCustomerList((prev) => (prev ? { ...prev, loading: false, rows: [] } : prev));
+      toast.error("فشل جلب العملاء");
+    }
+  }, [navigate, data]);
+
+  const runBackfill = useCallback(async () => {
+    setBackfillBusy(true);
+    try {
+      const res = await apiClient.post("/hr/customer-loyalty/vouchers/backfill");
+      toast.success((res.data as any)?.message || "تم إصدار الكوبونات الناقصة");
+      setBackfillConfirm(false);
+      await load();
+    } catch (e) {
+      console.error("Error backfilling vouchers:", e);
+      toast.error("فشل إصدار الكوبونات");
+    } finally {
+      setBackfillBusy(false);
+    }
+  }, [load]);
+
+  const openChannelDialog = () => {
+    setChannelDraft((data as any)?.birthdaySettings?.channel || "whatsapp_session");
+    setChannelDialog(true);
+  };
+
+  const saveChannel = useCallback(async () => {
+    const bd = (data as any)?.birthdaySettings || {};
+    try {
+      await apiClient.post("/customers/whatsapp-notify/birthday-automation/settings", {
+        isEnabled: bd.isEnabled !== false,
+        dailySendTime: bd.dailySendTime || "12:00",
+        channel: channelDraft,
+        messageTemplate: bd.messageTemplate || "",
+        couponCode: bd.couponCode || "",
+        metaTemplateName: bd.metaTemplateName || "birthday_greeting_v1",
+      });
+      toast.success("تم تحديث قناة عيد الميلاد");
+      setChannelDialog(false);
+      await load();
+    } catch (e) {
+      console.error("Error saving channel:", e);
+      toast.error("فشل تحديث القناة");
+    }
+  }, [data, channelDraft, load]);
+
+  const exportCsv = useCallback(() => {
+    const d = (data as any) || {};
+    const programs = d.programs || [];
+    const totalCustomers = programs.reduce((s: number, p: any) => s + Number(p.customersCount || 0), 0);
+    const totalIssued = programs.reduce((s: number, p: any) => s + Number(p.totalPointsIssued || 0), 0);
+    const totalRedeemed = programs.reduce((s: number, p: any) => s + Number(p.totalPointsRedeemed || 0), 0);
+    const totalCashback = Number(d.wallet?.totalCashback || 0);
+    const avgPoints = totalCustomers > 0 ? Math.round((totalIssued - totalRedeemed) / totalCustomers) : 0;
+    const redemptionRate = totalIssued > 0 ? Math.round((totalRedeemed / totalIssued) * 100) : 0;
+    const statusText = (s: string) =>
+      s === "scheduled" ? "مجدولة" : s === "sent" ? "اتبعتت" : s === "failed" ? "فشلت" : s === "inactive" ? "غير مفعّلة" : "غير محدد";
+
+    const lines: string[][] = [];
+    lines.push(["العنصر", "القيمة"]);
+    lines.push(["العملاء المشتركين", fmt(totalCustomers)]);
+    lines.push(["متوسط النقاط للعميل", fmt(avgPoints)]);
+    lines.push(["نسبة الاستبدال", `${redemptionRate}%`]);
+    lines.push(["إجمالي الكاش باك", `${fmt(totalCashback)} ج.م`]);
+    lines.push(["", ""]);
+    lines.push(["أداة", "الحالة", "ملخص"]);
+    nodes.forEach((n) => lines.push([n.label, STATUS_META[n.status].label, n.summary]));
+    lines.push(["", ""]);
+    lines.push(["حلقة إعادة استهداف", "المستهدفون", "الحالة"]);
+    reEngagementLines.forEach((l) =>
+      lines.push([
+        l.trigger,
+        l.count === null ? "غير محدد" : String(l.count),
+        statusText(l.status),
+      ]),
+    );
+    const csv = lines
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "loyalty-system-map.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [nodes, reEngagementLines, data]);
 
   if (loading) {
     return (
@@ -849,6 +1133,7 @@ const LoyaltySystemMap: React.FC = () => {
       tool: "عيد ميلاد العملاء",
       route: "/customers/birthday-whatsapp-notify",
       source: birthdaySource,
+      editable: true,
     },
     {
       tool: "سلاسل ما بعد الاستلام",
@@ -906,6 +1191,13 @@ const LoyaltySystemMap: React.FC = () => {
               آخر تحديث {lastUpdated}
             </span>
           )}
+          <button
+            onClick={exportCsv}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            <Download className="h-4 w-4" />
+            تصدير CSV
+          </button>
           <button
             onClick={load}
             disabled={loading}
@@ -1148,15 +1440,38 @@ const LoyaltySystemMap: React.FC = () => {
                   {fmt(item.value)}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
+                {item.label === "أوردرات مستنية كوبون" && (
+                  <button
+                    onClick={() => navigate("/customers/auto-discount")}
+                    className="mt-2 inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-[10px] font-semibold text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  >
+                    <Eye className="h-3 w-3" />
+                    مراجعة
+                  </button>
+                )}
               </div>
             ))}
           </div>
           {Number(systemAnalytics.preActivationCustomers || 0) > 0 && (
-            <p className="mt-3 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              {fmt(systemAnalytics.preActivationCustomers)} عميل عندهم أوردرات اتسلمت قبل
-              تفعيل النظام — مش بياخدوا كوبون خصم تلقائي.
-            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-100/40 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+              <p className="flex flex-1 items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {fmt(systemAnalytics.preActivationCustomers)} عميل عندهم أوردرات اتسلمت قبل
+                تفعيل النظام — مش بياخدوا كوبون خصم تلقائي.
+              </p>
+              <button
+                onClick={() => setBackfillConfirm(true)}
+                disabled={backfillBusy}
+                className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {backfillBusy ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Zap className="h-3.5 w-3.5" />
+                )}
+                إصدار الكوبونات الناقصة
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -1192,8 +1507,8 @@ const LoyaltySystemMap: React.FC = () => {
             <p className="text-sm font-bold text-gray-900 dark:text-white">
               المصدر الافتراضي للإرسال: {routing.label}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {routing.desc || "لا توجد بيانات"}
+            <p className="text-xs text-gray-500 dark:text-gray-400" dir="ltr">
+              {normalizeDigits(routing.desc) || "لا توجد بيانات"}
             </p>
           </div>
           {routing.key === "unknown" && (
@@ -1225,12 +1540,33 @@ const LoyaltySystemMap: React.FC = () => {
                       {row.tool}
                     </Link>
                   </td>
-                  <td className="py-2.5">{sourceBadge(row.source)}</td>
+                  <td className="py-2.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {sourceBadge(row.source)}
+                      {(row as any).editable && (
+                        <button
+                          onClick={openChannelDialog}
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-0.5 text-[10px] font-semibold text-gray-500 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          تعديل
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+          <Info className="h-3.5 w-3.5" />
+          المصدر الافتراضي بيتحدد من جلسة الواتساب المتصلة — عدّله من
+          <Link to="/whatsapp/settings" className="ms-1 font-medium text-purple-600 hover:underline dark:text-purple-400">
+            إعدادات واتساب
+          </Link>
+          . قناة عيد الميلاد لها إعداد خاص قابل للتعديل من هنا.
+        </p>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -1257,7 +1593,56 @@ const LoyaltySystemMap: React.FC = () => {
                   {line.trigger}
                 </p>
                 <span className="ms-auto">{statusBadge(line.status)}</span>
+                <Switch
+                  checked={line.enabled}
+                  disabled={savingToggle}
+                  onCheckedChange={() => handleToggle(line)}
+                  aria-label={`تفعيل حلقة ${line.tool}`}
+                />
               </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-900/40">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-gray-400" />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    العملاء المطابقين:
+                  </span>
+                  <span className="font-bold text-gray-900 dark:text-white">
+                    {line.count === null ? "غير محدد" : fmt(line.count)}
+                  </span>
+                </div>
+                {line.id === "postPurchase" && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      حد السكوت (يوم):
+                    </span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={thresholdDraft}
+                      onChange={(e) =>
+                        setThresholdDraft(Math.max(1, Math.min(365, Number(e.target.value) || 30)))
+                      }
+                      className="h-7 w-20 px-2 text-xs"
+                    />
+                    <button
+                      onClick={saveThreshold}
+                      className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                    >
+                      حفظ
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={() => viewCustomers(line.id)}
+                  className="ms-auto inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-[10px] font-semibold text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  <Eye className="h-3 w-3" />
+                  شوف العملاء
+                </button>
+              </div>
+
               <div className="mt-3 grid gap-3 md:grid-cols-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase text-gray-400">
@@ -1283,13 +1668,184 @@ const LoyaltySystemMap: React.FC = () => {
                     بتتبعت منين
                   </p>
                   <div className="mt-1">{sourceBadge(line.source)}</div>
-                  <p className="mt-1 text-[10px] text-gray-400">{line.source.desc}</p>
+                  <p className="mt-1 text-[10px] text-gray-400" dir="ltr">
+                    {normalizeDigits(line.source.desc)}
+                  </p>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      <Dialog open={!!pendingToggle} onOpenChange={(o) => !o && setPendingToggle(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تفعيل حلقة إعادة استهداف</DialogTitle>
+            <DialogDescription>
+              مراجعة الرسالة وعدد المستهدفين قبل تفعيل الحلقة.
+            </DialogDescription>
+          </DialogHeader>
+          {pendingToggle && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                <p className="text-[10px] font-semibold uppercase text-gray-400">
+                  الشرط
+                </p>
+                <p className="mt-1 font-medium text-gray-900 dark:text-gray-100">
+                  {pendingToggle.trigger}
+                </p>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                <p className="text-[10px] font-semibold uppercase text-gray-400">
+                  الرسالة (قالب)
+                </p>
+                <p className="mt-1 text-gray-700 dark:text-gray-300">
+                  {pendingToggle.message}
+                </p>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                <p className="text-[10px] font-semibold uppercase text-gray-400">
+                  المستهدفون دلوقتي
+                </p>
+                <p className="mt-1 font-bold text-gray-900 dark:text-gray-100">
+                  {pendingToggle.count === null ? "غير محدد" : fmt(pendingToggle.count)}
+                </p>
+              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                التفعيل بيخلّي الحلقة «مجدولة» — الرسالة هتتبعت من أداة {pendingToggle.tool}.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <button
+              onClick={() => setPendingToggle(null)}
+              disabled={savingToggle}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              إلغاء
+            </button>
+            <button
+              onClick={() => pendingToggle && void saveLoopToggle(pendingToggle.id, true)}
+              disabled={savingToggle}
+              className="inline-flex items-center gap-1 rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white hover:bg-fuchsia-700 disabled:opacity-50"
+            >
+              {savingToggle && <Loader2 className="h-4 w-4 animate-spin" />}
+              تفعيل
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!customerList} onOpenChange={(o) => !o && setCustomerList(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{customerList?.title || "العملاء"}</DialogTitle>
+            <DialogDescription>
+              {customerList?.loading
+                ? "جاري جلب العملاء..."
+                : `${fmt(customerList?.rows.length || 0)} عميل معروض من القائمة المطابقة`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-y-auto">
+            {customerList?.loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+              </div>
+            ) : customerList?.rows.length ? (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {customerList.rows.map((row, i) => (
+                  <div key={`${row.name}-${i}`} className="flex items-center justify-between gap-2 py-2 text-sm">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{row.name}</p>
+                      <p className="text-xs text-gray-400" dir="ltr">{row.phone}</p>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{row.extra}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-gray-400">لا يوجد عملاء مطابقين حالياً</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={backfillConfirm} onOpenChange={(o) => !o && setBackfillConfirm(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إصدار الكوبونات الناقصة</DialogTitle>
+            <DialogDescription>
+              هتتعمل معالجة Backfill: إصدار كوبون خصم تلقائي للأوردرات المسلّمة اللي اتسلمت قبل
+              تفعيل النظام ومأخدتش كوبون ({fmt(systemAnalytics?.preActivationCustomers ?? 0)} عميل).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+            هذه عملية فعلية على بيانات الشركة — تأكد قبل التنفيذ.
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setBackfillConfirm(false)}
+              disabled={backfillBusy}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              إلغاء
+            </button>
+            <button
+              onClick={() => void runBackfill()}
+              disabled={backfillBusy}
+              className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+            >
+              {backfillBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+              {backfillBusy ? "جاري الإصدار..." : "نعم، أصدر الكوبونات"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={channelDialog} onOpenChange={(o) => !o && setChannelDialog(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>قناة عيد ميلاد العملاء</DialogTitle>
+            <DialogDescription>
+              حدد مصدر إرسال رسائل عيد الميلاد التلقائية.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { value: "whatsapp_session", label: "واتساب عادي (Baileys)", icon: Smartphone },
+              { value: "meta_api", label: "Meta Cloud API", icon: Cloud },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setChannelDraft(opt.value)}
+                className={`flex items-center gap-2 rounded-lg border-2 p-3 text-sm font-medium ${
+                  channelDraft === opt.value
+                    ? "border-fuchsia-500 bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-900/20 dark:text-fuchsia-300"
+                    : "border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                }`}
+              >
+                <opt.icon className="h-4 w-4" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setChannelDialog(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              إلغاء
+            </button>
+            <button
+              onClick={() => void saveChannel()}
+              className="rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white hover:bg-fuchsia-700"
+            >
+              حفظ القناة
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
