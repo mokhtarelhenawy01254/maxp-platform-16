@@ -832,8 +832,25 @@ async function sendTestNotification(req, res) {
       });
     }
 
+    // 🛡️ PRODUCTION-FIX (2026-08-27): customerName في الـ test كان ثابت ('روان حسين')
+    // فيبان في كل الرسايل التجريبية كأنه اسم العميل. نجيب الاسم الحقيقي من
+    // رقم التليفون لو موجود في الـ DB، وإلا نستخدم اسم محايد للاختبار.
+    let testCustomerName = 'عميل اختباري';
+    try {
+      const formattedTestPhone = (phone || '').replace(/\D/g, '');
+      if (formattedTestPhone) {
+        const cust = await safeQuery(() => getSharedPrismaClient().customer.findFirst({
+          where: { phone: formattedTestPhone, companyId },
+          select: { firstName: true, lastName: true }
+        }));
+        if (cust?.firstName) {
+          testCustomerName = `${cust.firstName} ${cust.lastName || ''}`.trim();
+        }
+      }
+    } catch { /* غير حرج — نقع على الاسم المحايد */ }
+
     const testVariables = {
-      customerName: 'روان حسين',
+      customerName: testCustomerName,
       reason: 'مناسبة سعيدة',
       customerPhone: '01281914482',
       email: 'rowan@example.com',
