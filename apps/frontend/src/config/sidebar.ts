@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, Radio, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, Radio, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -355,7 +355,7 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
                 { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
-                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements', 'حركات المخزون') },
+                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements') },
                     { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
                     { to: '/shipping-companies', icon: Truck, label: t('sidebar.shippingCompanies') },
                 ],
@@ -627,7 +627,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
                 { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss') },
                 { to: '/analytics/orders/status-analysis', icon: BarChart3, label: t('sidebar.statusAnalysis') },
-                { to: '/analytics/orders/status-movement', icon: GitBranch, label: t('sidebar.orderMovement', 'حركة الحالات') },
+                { to: '/analytics/orders/status-movement', icon: GitBranch, label: t('sidebar.orderMovement') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic', 'orders-analytics'])
@@ -720,6 +720,7 @@ export const getSidebarConfig = (
                 { to: '/customers/loyalty-programs', icon: FolderTree, label: t('sidebar.loyaltyPrograms') },
                 { to: '/customers/loyalty-members', icon: Users, label: t('sidebar.loyaltyMembers') },
                 { to: '/customers/loyalty-analytics', icon: BarChart3, label: t('sidebar.loyaltyAnalytics') },
+                { to: '/customers/loyalty-system-map', icon: Network, label: t('sidebar.loyaltySystemMap') },
                 { to: '/customers/settings', icon: Settings2, label: t('sidebar.customerLoyaltySettings') },
                 { to: '/customers/segments', icon: Filter, label: t('sidebar.customerSegments') },
                 { to: '/customers/lists', icon: ListChecks, label: t('sidebar.customerLists') },

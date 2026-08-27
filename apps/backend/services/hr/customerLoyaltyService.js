@@ -454,6 +454,9 @@ class CustomerLoyaltyService {
         ...(filters.customerId && { customerId: filters.customerId }),
         ...(filters.programId && { programId: filters.programId }),
         ...(filters.status && { status: filters.status }),
+        ...(Number.isFinite(Number(filters.minPoints))
+          ? { currentPoints: { gte: Number(filters.minPoints) } }
+          : {}),
         ...(filters.search && {
           customer: {
             OR: [

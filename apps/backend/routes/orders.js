@@ -1688,13 +1688,30 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     };
 
     // فترة زمنية: إما days (آخر N يوم) أو from/to مخصص
+    // ملاحظة: نحلل YYYY-MM-DD كتاريخ محلي (مش UTC) حتى لا تضيع ساعات الصباح
+    const parseLocalDate = (s) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (!m) return null;
+      const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      // ارفض التواريخ اللي JS سحبها (مثل 2026-02-30 -> 2026-03-02)
+      if (Number.isNaN(d.getTime()) || d.getDate() !== Number(m[3])) return null;
+      return d;
+    };
+    // مفتاح اليوم حسب التوقيت المحلي (مش UTC) لتجميع الترند على تقويم التاجر
+    const localDayKey = (d) => {
+      const dt = new Date(d);
+      const y = dt.getFullYear();
+      const mo = String(dt.getMonth() + 1).padStart(2, '0');
+      const da = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${mo}-${da}`;
+    };
     const fromRaw = (req.query.from || '').toString();
     const toRaw = (req.query.to || '').toString();
     let since;
     let toDate = null;
     if (fromRaw) {
-      since = new Date(fromRaw);
-      if (Number.isNaN(since.getTime())) {
+      since = parseLocalDate(fromRaw);
+      if (!since) {
         since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
     } else {
@@ -1702,15 +1719,18 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
     }
     if (toRaw) {
-      const parsedTo = new Date(toRaw);
-      if (!Number.isNaN(parsedTo.getTime())) {
-        // يشمل اليوم كاملاً حتى آخر لحظة
-        toDate = new Date(parsedTo.getTime() + 24 * 60 * 60 * 1000 - 1);
+      const parsedTo = parseLocalDate(toRaw);
+      if (parsedTo) {
+        // يشمل اليوم كاملاً حتى آخر لحظة — بالمكونات المحلية مش +24h ثابتة
+        // حتى لا ينزاح الحد عند أيام تغيير التوقيت الصيفي
+        // لازم الناتج يفضل Date object (مش getTime رقمي) لأن Prisma يرفض Int في lte
+        const nextDay = new Date(parsedTo.getFullYear(), parsedTo.getMonth(), parsedTo.getDate() + 1);
+        toDate = new Date(nextDay.getTime() - 1);
       }
     }
     const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
 
-    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow] = await Promise.all([
+    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow, orderSourceAgg] = await Promise.all([
       prisma.guestCart.aggregate({
         where: { companyId },
         _count: { _all: true },
@@ -1752,6 +1772,12 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           result: true,
           createdAt: true
         }
+      }),
+      prisma.order.groupBy({
+        where: { companyId, createdAt: timeRange },
+        by: ['sourceType'],
+        _count: { _all: true },
+        _sum: { total: true }
       })
     ]);
 
@@ -1760,11 +1786,14 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     const convertedValue = convWindow.reduce((s, c) => s + Number(c.cartValue || 0), 0);
     const naturalConverted = convWindow.filter((c) => !c.employeeId && c.channel === 'natural').length;
     const byTeamConverted = converted - naturalConverted;
+    // قاعدة القمع: السلات المتبقية حالياً + اللي اتحولت (اتحذفت) خلال الفترة.
+    // pipeline.total لوحده مضلل لأن السلة بتحذف بعد التحويل فيقل المقام ويعدّي المعدل 100%.
+    const recoveryFunnelBase = total + converted;
 
     // trend by day (JS aggregation over the window rows)
     const dayMap = new Map();
     convWindow.forEach((c) => {
-      const day = c.convertedAt ? new Date(c.convertedAt).toISOString().slice(0, 10) : 'unknown';
+      const day = c.convertedAt ? localDayKey(c.convertedAt) : 'unknown';
       const entry = dayMap.get(day) || { date: day, conversions: 0, value: 0 };
       entry.conversions += 1;
       entry.value += Number(c.cartValue || 0);
@@ -1838,12 +1867,17 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           converted,
           convertedValue,
           avgConvertedValue: converted ? convertedValue / converted : 0,
-          recoveryRate: total ? (converted / total) * 100 : 0,
+          recoveryRate: recoveryFunnelBase ? (converted / recoveryFunnelBase) * 100 : 0,
           byTeam: byTeamConverted,
           natural: naturalConverted,
         },
         team,
         trend,
+        orderSources: orderSourceAgg.map((s) => ({
+          source: s.sourceType || 'unknown',
+          count: s._count._all || 0,
+          value: Number(s._sum.total || 0),
+        })).sort((a, b) => b.count - a.count),
         recent: convWindow.slice(0, 20).map((c) => ({
           cartId: c.cartId,
           orderNumber: c.orderNumber,

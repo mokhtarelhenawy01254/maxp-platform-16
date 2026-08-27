@@ -67,8 +67,7 @@
 - `frontend/src/utils/browserNotifications.ts`
 - `frontend/src/utils/notificationSettings.ts`
 - `frontend/src/utils/pushNotifications.ts`
-- `frontend/src/sw.js`
-- `frontend/public/push-sw.js` (legacy fallback)
+- `frontend/public/sw-v4.js` (push-notification-only service worker, no caching)
 - `backend/routes/notificationRoutes.js`
 - `backend/services/browserPushService.js`
 - `backend/services/notificationPreferencesService.js`

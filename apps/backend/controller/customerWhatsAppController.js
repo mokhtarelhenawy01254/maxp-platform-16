@@ -71,6 +71,23 @@ function pad2(n) {
     return String(n).padStart(2, '0');
 }
 
+/**
+ * يصحّح النصوص المخزنة بترميز مزدوج (double UTF-8) — مثل القوالب القديمة.
+ * يعيد النص الأصلي لو كانت الفكّة نظيفة، وإلا يبقي النص كما هو.
+ */
+function fixMojibake(str) {
+    if (!str || typeof str !== 'string') return str;
+    if (!/[^\u0000-\u007F]/.test(str)) return str;
+    try {
+        const decoded = Buffer.from(str, 'latin1').toString('utf8');
+        if (decoded.includes('\uFFFD')) return str;
+        if (!/[^\u0000-\u007F]/.test(decoded)) return str;
+        return decoded;
+    } catch (e) {
+        return str;
+    }
+}
+
 function normalizeYear(year) {
     const y = Number(year);
     if (!Number.isFinite(y)) return null;
@@ -1337,12 +1354,15 @@ exports.getBirthdayAutomationSettings = async (req, res) => {
                 isEnabled: true,
                 dailySendTime: '12:00',
                 channel: 'whatsapp_session', // 'meta_api' or 'whatsapp_session'
-                messageTemplate: 'ðŸŽ‰ ÙƒÙ„ Ø³Ù†Ø© ÙˆØ£Ù†Øª Ø·ÙŠØ¨ ÙŠØ§ {first_name}! ðŸŽ‚\n\nØ¨Ù…Ù†Ø§Ø³Ø¨Ø© Ø¹ÙŠØ¯ Ù…ÙŠÙ„Ø§Ø¯ÙƒØŒ ÙŠØ³Ø¹Ø¯Ù†Ø§ Ù†Ù‚Ø¯Ù… Ù„Ùƒ Ù‡Ø¯ÙŠØ© Ø®Ø§ØµØ© ÙˆØ®ØµÙ… Ù…Ù…ÙŠØ² Ù…Ù† Ù…ØªØ¬Ø±Ù†Ø§.\nØ§Ø³ØªØ®Ø¯Ù… ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ…: {coupon_code}\n\nØ§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø±Ø§Ø¨Ø· Ø§Ù„ØªØ§Ù„ÙŠ Ù„Ù„Ø¯Ø®ÙˆÙ„ Ù„ØµÙØ­ØªÙƒ ÙˆØ§Ø³ØªÙ„Ø§Ù… Ù‡Ø¯ÙŠØªÙƒ ÙÙˆØ±Ø§Ù‹:\nðŸ”— {customer_link}\n\nÙ†ØªÙ…Ù†Ù‰ Ù„Ùƒ Ø³Ù†Ø© Ø³Ø¹ÙŠØ¯Ø© Ù…Ù„ÙŠØ¦Ø© Ø¨Ø§Ù„Ù†Ø¬Ø§Ø­! â¤ï¸',
+                messageTemplate: '🎉 كل سنة وأنت طيب يا {first_name}! 🎂\n\nبمناسبة عيد ميلادك، يسعدنا أن نقدم لك هدية خاصة وخصم مميز من متجرنا.\nاستخدم كود الخصم: {coupon_code}\n\nاضغط على الرابط التالي للدخول لصفحتك واستلام هديتك فوراً:\n🔗 {customer_link}\n\nنتمنى لك سنة سعيدة مليئة بالنجاح! ❤️',
                 couponCode: 'HBD10',
                 metaTemplateName: 'birthday_greeting_v1'
             };
         }
 
+        if (settings && typeof settings.messageTemplate === 'string') {
+            settings.messageTemplate = fixMojibake(settings.messageTemplate);
+        }
 
         return res.json({ success: true, data: settings });
     } catch (error) {
@@ -1364,7 +1384,7 @@ exports.saveBirthdayAutomationSettings = async (req, res) => {
             isEnabled: Boolean(isEnabled),
             dailySendTime: dailySendTime || '12:00',
             channel: channel || 'whatsapp_session',
-            messageTemplate: messageTemplate || '',
+            messageTemplate: fixMojibake(messageTemplate || ''),
             couponCode: couponCode || '',
             metaTemplateName: metaTemplateName || 'birthday_greeting_v1',
             updatedAt: new Date().toISOString()
@@ -1402,7 +1422,7 @@ exports.getTodayBirthdayTrack = async (req, res) => {
 
         const customers = await safeQuery(() =>
             prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
+                where: { companyId },
                 select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true }
             })
         );
@@ -1447,7 +1467,7 @@ exports.getUpcomingBirthdaysTrack = async (req, res) => {
 
         const customers = await safeQuery(() =>
             prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
+                where: { companyId },
                 select: { id: true, firstName: true, lastName: true, phone: true, metadata: true }
             })
         );
@@ -1457,7 +1477,12 @@ exports.getUpcomingBirthdaysTrack = async (req, res) => {
 
         const upcoming = [];
         for (const customer of customers) {
-            const dateParts = extractBirthdayParts(customer);
+            let dateParts = null;
+            try {
+                dateParts = extractBirthdayParts(customer);
+            } catch (e) {
+                continue;
+            }
             if (!dateParts) continue;
 
             const nextBday = new Date(today.getFullYear(), dateParts.month - 1, dateParts.day);
@@ -1499,7 +1524,7 @@ exports.getMissingBirthdaysTrack = async (req, res) => {
 
         const customers = await safeQuery(() =>
             prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
+                where: { companyId },
                 select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true },
                 take: 100
             })

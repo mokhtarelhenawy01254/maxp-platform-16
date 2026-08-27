@@ -1751,10 +1751,14 @@ async function sendNotification(options) {
         ];
       }
 
-      if (blockFreeTextMetaFallback) {
+      if (blockFreeTextMetaFallback && !result) {
         // 🚨 PRODUCTION-FIX: القالب المعتمد APPROVED فشل ولا يوجد Baileys بديل.
         // ممنوع تجربة free-text عبر META_CLOUD خارج نافذة 24 ساعة — ميتا سترفض حتماً.
         // نرمي خطأ يحمل السبب الحقيقي لفشل القالب (بدل 131047 مضلل من buttons).
+        // 🚨 PRODUCTION-FIX (2026-08-27): الـ guard لازم يتضمن `&& !result` — كان
+        // blockFreeTextMetaFallback = sessionProvider === 'META_CLOUD' بيبدأ true
+        // لأي جلسة ميتا، فحتى الإرسال الناجح بالقالب المعتمد كان بيمر على هنا ويُرمى
+        // "Approved Meta template failed" كذباً → التقارير بتعرض فشل رغم وصول الرسالة.
         throw new Error(
           `Approved Meta template failed and free-text is blocked outside 24h window` +
           (lastMetaTemplateError ? ` (${lastMetaTemplateError.code || ''} ${lastMetaTemplateError.message || ''})` : '')

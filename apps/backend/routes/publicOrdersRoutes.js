@@ -731,7 +731,7 @@ router.post('/', async (req, res) => {
     console.log('📝 [CREATE-ORDER] Body:', JSON.stringify(req.body, null, 2));
 
     const { company } = req;
-    const cartId = req.headers['x-cart-id'] || req.cookies?.cart_id;
+    const cartId = req.headers['x-cart-id'] || req.cookies?.cart_id || req.body?.cartId;
 
     console.log('🏢 [CREATE-ORDER] Company:', company?.id);
     console.log('🛒 [CREATE-ORDER] Cart ID:', cartId);

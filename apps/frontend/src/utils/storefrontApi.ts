@@ -103,7 +103,7 @@ const createStorefrontError = (
   return error;
 };
 
-const getCartId = (): string | null =>
+export const getCartId = (): string | null =>
   getStoredValue("cart_session_id") ||
   getStoredValue("cart_id");
 

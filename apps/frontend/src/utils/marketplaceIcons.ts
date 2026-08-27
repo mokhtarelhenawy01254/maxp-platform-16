@@ -98,7 +98,6 @@ export const appIconsBySlug: Record<string, React.ElementType> = {
   "facebook-catalog-shop": ShoppingBag,
   "invoicing-pro": FileSpreadsheet,
   "wallet-system": Wallet,
-  "pos-pro": Monitor,
   "coupons-pro": Percent,
   "woocommerce-pro": ShoppingBag,
   "multi-warehouse-pro": PackageOpen,
