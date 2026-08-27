@@ -204,7 +204,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                   >
                     <button
                       type="button"
-                      className="business-sidebar-mobile-group-trigger"
+                      className={`business-sidebar-mobile-group-trigger ${hasActiveItem ? "bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-900/30" : "bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50"} `}
                       aria-expanded={isExpanded}
                       onClick={() => toggleSection(section.id)}
                     >
@@ -212,22 +212,22 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                         <span className="business-sidebar-mobile-group-icon">
                           {React.isValidElement(section.icon) &&
                             React.cloneElement(section.icon as React.ReactElement, {
-                              className: "h-4 w-4",
+                              className: "h-5 w-5",
                             })}
                         </span>
                         <span className="business-sidebar-mobile-group-text">
-                          <strong>{section.title}</strong>
-                          <small>{section.items.filter((i) => !i.hidden).length}</small>
+                          <strong className="text-sm font-semibold text-gray-900 dark:text-white">{section.title}</strong>
+                          <small className="text-xs text-gray-500 dark:text-gray-400 ml-2">{section.items.filter((i) => !i.hidden).length}</small>
                         </span>
                       </span>
-                      <ChevronRightIcon className="business-sidebar-mobile-group-chevron h-4 w-4" />
+                      <ChevronRightIcon className="business-sidebar-mobile-group-chevron h-5 w-5 text-gray-400" />
                     </button>
                     {isExpanded ? (
-                      <div className="business-sidebar-mobile-group-items">
+                      <div className="business-sidebar-mobile-group-items mt-2 space-y-1">
                           {section.items
                           .filter((i) => !i.hidden)
                           .map((item) => (
-                            <div key={item.to}>
+                            <div key={item.to} className="space-y-1">
                               <NavLink
                                 to={item.to}
                                 icon={item.icon}
@@ -241,17 +241,18 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                                 {item.label}
                               </NavLink>
                               {item.children ? (
-                                <div className="business-sidebar-children">
+                                <div className="ms-8 mt-1.5 space-y-0.5 pl-3 border-s border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/30 rounded-r-lg">
                                   {item.children
                                     .filter((c) => !c.hidden)
                                     .map((child) => (
                                       <Link
                                         key={child.to}
                                         to={child.to}
-                                        className="business-sidebar-child-link"
-                                        data-active={isSidebarPathActive(currentPath, child.to)}
                                         onMouseEnter={() => prefetch(child.to)}
-                                        onClick={() => toggleSidebar()}
+                                        className={`block px-2.5 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${isSidebarPathActive(currentPath, child.to)
+                                          ? "text-primary-600 bg-primary-50 dark:bg-primary-900/20"
+                                          : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                                        } `}
                                       >
                                         {child.label}
                                       </Link>
@@ -418,34 +419,34 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                 <button
                   onClick={() => toggleSection(section.id)}
                   aria-expanded={isCollapsed ? true : isSearching ? true : !isSectionCollapsed}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group ${hasActiveItem && !isCollapsed
-                      ? "bg-primary-50 dark:bg-primary-900/20"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 group ${hasActiveItem && !isCollapsed
+                      ? "bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-900/30"
+                      : "bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50"
                     } `}
                   title={isCollapsed ? section.title : undefined}
                 >
                   <div className="flex items-center">
-                    <span className="text-xl me-2">
+                    <span className="text-lg me-3 flex-shrink-0">
                       {React.isValidElement(section.icon) &&
                         React.cloneElement(section.icon as React.ReactElement, {
-                          className: "h-5 w-5",
+                          className: "h-6 w-6",
                         })}
                     </span>
                     {!isCollapsed && (
-                      <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                         {section.title}
                       </h3>
                     )}
                   </div>
                   {!isCollapsed && (
                     <ChevronRightIcon
-                      className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isSectionCollapsed ? "" : "rotate-90"
+                      className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isSectionCollapsed ? "" : "rotate-90"
                         } `}
                     />
                   )}
                 </button>
                 {(!isSectionCollapsed || isCollapsed || isSearching) && (
-                  <div className={`mt-1 space-y-1 ${isCollapsed ? "mt-2" : ""} `}>
+                  <div className="mt-2 space-y-1">
                     {section.items
                       .filter((i) => !i.hidden)
                       .map((item) => (
@@ -462,7 +463,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                             {item.label}
                           </NavLink>
                           {!isCollapsed && item.children ? (
-                            <div className="ms-9 mt-1 space-y-1 border-s-2 border-gray-100 dark:border-gray-700/50 ps-2">
+                            <div className="ms-10 mt-1.5 space-y-0.5 pl-3 border-s border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/30 rounded-r-lg">
                               {item.children
                                 .filter((c) => !c.hidden)
                                 .map((child) => {
@@ -472,9 +473,9 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                                       key={child.to}
                                       to={child.to}
                                       onMouseEnter={() => prefetch(child.to)}
-                                      className={`block px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${isChildActive
+                                      className={`block px-2.5 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${isChildActive
                                           ? "text-primary-600 bg-primary-50 dark:bg-primary-900/20"
-                                          : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                          : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
                                         } `}
                                     >
                                       {child.label}
