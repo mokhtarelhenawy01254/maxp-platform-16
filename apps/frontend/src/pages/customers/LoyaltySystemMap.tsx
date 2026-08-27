@@ -64,13 +64,6 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type NodeStatus = "active" | "inactive" | "warning" | "unknown";
 
@@ -1546,21 +1539,32 @@ const LoyaltySystemMap: React.FC = () => {
               آخر تحديث {lastUpdated}
             </span>
           )}
-          <Select
-            value={dateRange}
-            onValueChange={(v) => setDateRange(v as DateRangeKey)}
-            disabled={!hasTemporalData}
+          <div
+            className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-0.5 dark:border-gray-600 dark:bg-gray-800"
+            title={!hasTemporalData ? "لا توجد بيانات تاريخية بعد" : undefined}
           >
-            <SelectTrigger className="h-9 w-36 text-xs">
-              <SelectValue placeholder="الفترة الزمنية" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الفترات</SelectItem>
-              <SelectItem value="30d">آخر 30 يوم</SelectItem>
-              <SelectItem value="7d">آخر 7 أيام</SelectItem>
-              <SelectItem value="today">اليوم</SelectItem>
-            </SelectContent>
-          </Select>
+            {(
+              [
+                ["all", "كل الفترات"],
+                ["30d", "30 يوم"],
+                ["7d", "7 أيام"],
+                ["today", "اليوم"],
+              ] as [DateRangeKey, string][]
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setDateRange(key)}
+                disabled={!hasTemporalData}
+                className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                  dateRange === key
+                    ? "bg-fuchsia-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <button
             onClick={exportCsv}
             className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
