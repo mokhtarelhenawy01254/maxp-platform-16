@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { SidebarSection } from "../../../types/layout";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { buildStoreUrl } from "../../../utils/storeUrl";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
+import { useSidebarNavLink } from "./useSidebarNavLink";
 import SidebarOrderSearch from "./SidebarOrderSearch";
 
 
@@ -58,27 +58,17 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
     external?: boolean;
     badge?: string;
   }> = ({ to, icon, children, external, badge }) => {
-    const isActive = !external && isSidebarPathActive(currentPath, to);
-    const prefetch = useRoutePrefetch();
+    const { isActive, href, prefetch } = useSidebarNavLink({
+      to,
+      external,
+      currentPath,
+      user,
+    });
 
     if (external) {
-      const slug = user?.company?.slug;
-      const companyId = user?.companyId || user?.company?.id;
-      const customDomain = user?.company?.customDomain;
-      let shopUrl = to;
-
-      if (slug && slug.trim().length > 0) {
-        shopUrl = buildStoreUrl(
-          slug,
-          to,
-          customDomain || undefined,
-          companyId || undefined,
-        );
-      }
-
       return (
         <a
-          href={shopUrl}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="business-horizontal-link"
@@ -103,6 +93,7 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
     return (
       <Link
         to={to}
+        aria-current={isActive ? "page" : undefined}
         className="business-horizontal-link"
         data-active={isActive}
         onMouseEnter={() => prefetch(to)}

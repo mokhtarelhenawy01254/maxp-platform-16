@@ -1,4 +1,4 @@
-import React, { useEffect, useId } from "react";
+import React, { useEffect, useId, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Bars3Icon,
@@ -8,12 +8,11 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { SidebarSection } from "../../../types/layout";
-import { buildStoreUrl } from "../../../utils/storeUrl";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
+import { useSidebarNavLink } from "./useSidebarNavLink";
 import SidebarOrderSearch from "./SidebarOrderSearch";
 
 
@@ -53,34 +52,24 @@ const NavLink: React.FC<NavLinkProps> = ({
   user,
   onClick,
 }) => {
-  const isActive = !external && isSidebarPathActive(currentPath, to);
-  const prefetch = useRoutePrefetch();
+  const { isActive, href, prefetch } = useSidebarNavLink({
+    to,
+    external,
+    currentPath,
+    user,
+  });
 
   if (external) {
-    const slug = user?.company?.slug;
-    const companyId = user?.companyId || user?.company?.id;
-    const customDomain = user?.company?.customDomain;
-    let shopUrl = to;
-
-    if (slug && slug.trim().length > 0) {
-      shopUrl = buildStoreUrl(
-        slug,
-        to,
-        customDomain || undefined,
-        companyId || undefined,
-      );
-    }
-
     return (
       <a
-        href={shopUrl}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
         title={isCollapsed ? (children as string) : undefined}
         onClick={onClick}
       >
-        <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors mr-3">
+        <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors me-3">
           {React.isValidElement(icon) &&
             React.cloneElement(icon as React.ReactElement, {
               className: "h-5 w-5",
@@ -103,9 +92,10 @@ const NavLink: React.FC<NavLinkProps> = ({
   return (
     <Link
       to={to}
+      aria-current={isActive ? "page" : undefined}
       className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${
         isActive
-          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+          ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md"
           : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
       } `}
       title={isCollapsed ? (children as string) : undefined}
@@ -117,7 +107,7 @@ const NavLink: React.FC<NavLinkProps> = ({
           isActive
             ? "text-white"
             : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
-        } transition-colors ${isCollapsed ? "mr-0" : "mr-3"} `}
+        } transition-colors ${isCollapsed ? "me-0" : "me-3"} `}
       >
         {React.isValidElement(icon) &&
           React.cloneElement(icon as React.ReactElement, {
@@ -147,6 +137,18 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
   const navigate = useNavigate();
   const searchInputId = useId();
   const prefetch = useRoutePrefetch();
+
+  const activeSectionIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const section of sections) {
+      if (
+        section.items.some((item) => isSidebarPathActive(currentPath, item.to))
+      ) {
+        set.add(section.id);
+      }
+    }
+    return set;
+  }, [sections, currentPath]);
 
 
 
@@ -187,9 +189,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
             {sections
               .filter((s) => !s.hidden)
               .map((section) => {
-                const hasActiveItem = section.items.some(
-                  (item) => isSidebarPathActive(currentPath, item.to),
-                );
+                const hasActiveItem = activeSectionIds.has(section.id);
                 const isExpanded = collapsedSections[section.id] !== undefined
                   ? !collapsedSections[section.id]
                   : hasActiveItem;
@@ -325,7 +325,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
   return (
     <div
       className={`${isCollapsed ? "w-20" : "w-72"
-        } h-full bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-hidden transition-all duration-300 ease-in-out border-l border-gray-200 dark:border-gray-700`}
+        } h-full bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-hidden transition-all duration-300 ease-in-out border-s border-gray-200 dark:border-gray-700`}
     >
       {/* Header */}
       <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
@@ -335,10 +335,10 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
               <CompanyLogo
                 src={user?.company?.logo}
                 alt={user?.company?.name}
-                className="h-12 w-12 rounded-xl object-cover mr-3 shadow-lg border-2 border-gray-200 dark:border-gray-600"
+                className="h-12 w-12 rounded-xl object-cover me-3 shadow-lg border-2 border-gray-200 dark:border-gray-600"
                 companyName={user?.company?.name}
               >
-                <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl mr-3 shadow-lg flex items-center justify-center">
+                <div className="h-12 w-12 bg-gradient-to-r from-primary-500 to-violet-600 rounded-xl me-3 shadow-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">
                     {user?.company?.name?.charAt(0) || "M"}
                   </span>
@@ -356,6 +356,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
           )}
           <button
             onClick={toggleSidebar}
+            aria-label={isCollapsed ? t("sidebar.expand") : t("sidebar.collapse")}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title={isCollapsed ? t("sidebar.expand") : t("sidebar.collapse")}
           >
@@ -375,7 +376,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
               companyName={user?.company?.name}
             >
               <div
-                className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg flex items-center justify-center"
+                className="h-10 w-10 bg-gradient-to-r from-primary-500 to-violet-600 rounded-xl shadow-lg flex items-center justify-center"
                 title={user?.company?.name}
               >
                 <span className="text-white font-bold text-lg">
@@ -388,20 +389,22 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
       </div>
       {!isCollapsed && (
         <div className="px-4 mt-2 relative">
-          <MagnifyingGlassIcon className="absolute right-7 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <MagnifyingGlassIcon className="absolute end-7 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             id={searchInputId}
             name="sidebarSearch"
             type="text"
+            aria-label={t("sidebar.search")}
             placeholder={t("sidebar.search")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pr-10 pl-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pe-10 ps-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute left-6 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+              aria-label={t("sidebar.clearSearch")}
+              className="absolute start-6 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
             >
               <XMarkIcon className="h-3 w-3 text-gray-400" />
             </button>
@@ -414,21 +417,20 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
           .filter((s) => !s.hidden)
           .map((section) => {
             const isSectionCollapsed = collapsedSections[section.id];
-            const hasActiveItem = section.items.some(
-              (item) => isSidebarPathActive(currentPath, item.to),
-            );
+            const hasActiveItem = activeSectionIds.has(section.id);
             return (
               <div key={section.id} className="mb-4">
                 <button
                   onClick={() => toggleSection(section.id)}
+                  aria-expanded={isCollapsed ? true : !isSectionCollapsed}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group ${hasActiveItem && !isCollapsed
-                      ? "bg-blue-50 dark:bg-blue-900/20"
+                      ? "bg-primary-50 dark:bg-primary-900/20"
                       : "hover:bg-gray-100 dark:hover:bg-gray-700/50"
                     } `}
                   title={isCollapsed ? section.title : undefined}
                 >
                   <div className="flex items-center">
-                    <span className="text-xl mr-2">
+                    <span className="text-xl me-2">
                       {React.isValidElement(section.icon) &&
                         React.cloneElement(section.icon as React.ReactElement, {
                           className: "h-5 w-5",
@@ -473,7 +475,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                           </NavLink>
                           )}
                           {!isCollapsed && item.children ? (
-                            <div className="mr-9 mt-1 space-y-1 border-r-2 border-gray-100 dark:border-gray-700/50 pr-2">
+                            <div className="ms-9 mt-1 space-y-1 border-s-2 border-gray-100 dark:border-gray-700/50 ps-2">
                               {item.children
                                 .filter((c) => !c.hidden)
                                 .map((child) => {
@@ -484,7 +486,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                                       to={child.to}
                                       onMouseEnter={() => prefetch(child.to)}
                                       className={`block px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${isChildActive
-                                          ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                                          ? "text-primary-600 bg-primary-50 dark:bg-primary-900/20"
                                           : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                         } `}
                                     >

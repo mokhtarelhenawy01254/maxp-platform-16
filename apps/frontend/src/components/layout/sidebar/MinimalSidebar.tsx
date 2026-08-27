@@ -8,12 +8,11 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { SidebarSection } from "../../../types/layout";
-import { buildStoreUrl } from "../../../utils/storeUrl";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
+import { useSidebarNavLink } from "./useSidebarNavLink";
 
 
 interface MinimalSidebarProps {
@@ -63,26 +62,17 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
     external?: boolean;
     badge?: string;
   }> = ({ to, icon, children, external, badge }) => {
-    const isActive = !external && isSidebarPathActive(currentPath, to);
+    const { isActive, href, prefetch } = useSidebarNavLink({
+      to,
+      external,
+      currentPath,
+      user,
+    });
 
     if (external) {
-      const slug = user?.company?.slug;
-      const companyId = user?.companyId || user?.company?.id;
-      const customDomain = user?.company?.customDomain;
-      let shopUrl = to;
-
-      if (slug && slug.trim().length > 0) {
-        shopUrl = buildStoreUrl(
-          slug,
-          to,
-          customDomain || undefined,
-          companyId || undefined,
-        );
-      }
-
       return (
         <a
-          href={shopUrl}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center px-3 py-2 rounded-md transition-all duration-200 group text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -104,6 +94,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
     return (
       <Link
         to={to}
+        aria-current={isActive ? "page" : undefined}
         className={`flex items-center px-3 py-2 rounded-md transition-all duration-200 group ${isActive
             ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
             : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"

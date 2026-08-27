@@ -355,7 +355,7 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
                 { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
-                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements', 'حركات المخزون') },
+                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements') },
                     { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
                     { to: '/shipping-companies', icon: Truck, label: t('sidebar.shippingCompanies') },
                 ],
@@ -556,6 +556,7 @@ export const getSidebarConfig = (
             title: t('sidebar.ordersSection'),
             icon: Archive,
             items: [
+                { to: '/orders/search-by-code', icon: Search, label: t('sidebar.orderSearchByCode'), kind: 'order-search', requiredPermissions: ['orders.view'] },
                 { to: '/orders', icon: Archive, label: t('sidebar.orders'), requiredPermissions: ['orders.view'] },
                 { to: '/orders/workspace', icon: CircleUser, label: t('sidebar.agentWorkspace'), requiredPermissions: ['orders.workspace.view'], hidden: !isAppActive('agent-workspace') },
                 { to: '/orders/preparation', icon: FlaskConical, label: t('sidebar.orderPreparation'), requiredPermissions: ['orders.preparation.view'] },
@@ -627,7 +628,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
                 { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss') },
                 { to: '/analytics/orders/status-analysis', icon: BarChart3, label: t('sidebar.statusAnalysis') },
-                { to: '/analytics/orders/status-movement', icon: GitBranch, label: t('sidebar.orderMovement', 'حركة الحالات') },
+                { to: '/analytics/orders/status-movement', icon: GitBranch, label: t('sidebar.orderMovement') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic', 'orders-analytics'])

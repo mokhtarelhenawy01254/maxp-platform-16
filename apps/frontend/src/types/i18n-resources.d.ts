@@ -12539,7 +12539,6 @@ declare module 'react-i18next' {
         phone: string;
         total: string;
         totalValues: string;
-        totalValue: string;
         status: string;
         date: string;
         actions: string;
@@ -13121,6 +13120,7 @@ declare module 'react-i18next' {
         deleting: string;
         totalOrders: string;
         totalRevenue: string;
+        totalValue: string;
         averageOrderValue: string;
         ordersFromConversations: string;
         outOfTotal: string;
@@ -13147,7 +13147,6 @@ declare module 'react-i18next' {
         sourceAPI: string;
         sourceImport: string;
         sourceUnknown: string;
-        sourceInternalPush: string;
         today: string;
         yesterday: string;
         last7Days: string;
@@ -13365,6 +13364,7 @@ declare module 'react-i18next' {
         incompleteSelectCustomDates: string;
         incompleteOrderSources: string;
         incompleteOrderSourcesHint: string;
+        sourceInternalPush: string;
         incompleteToday: string;
         incompleteYesterday: string;
         incompleteFrom: string;
@@ -16115,6 +16115,7 @@ declare module 'react-i18next' {
         linkCopied: string;
         logout: string;
         loyaltyAnalytics: string;
+        loyaltySystemMap: string;
         loyaltyMembers: string;
         loyaltyPrograms: string;
         loyaltyTiers: string;
@@ -16308,7 +16309,6 @@ declare module 'react-i18next' {
         returnPreview: string;
         returnReviews: string;
         returnSettings: string;
-        cancellationSettings: string;
         revenueAnalytics: string;
         rewards: {
           title: string;
@@ -16397,6 +16397,9 @@ declare module 'react-i18next' {
         searchInMenu: string;
         clearSearch: string;
         collapse: string;
+        expand: string;
+        navigation: string;
+        close: string;
         company: string;
         dashboardRail: string;
         facebookSectionRail: string;
@@ -16517,25 +16520,18 @@ declare module 'react-i18next' {
         pageTemplates: string;
         shopStudio: string;
         shopTemplates: string;
-        formsBuilder: string;
-        forms: string;
+        cancellationSettings: string;
         storefrontStudio: string;
-        storefrontStudioRail: string;
-        storeManagementRail: string;
         storefrontSection: string;
         storeShipping: string;
         storeThemeDesign: string;
+        storefrontStudioRail: string;
+        storeManagementRail: string;
         turboRecords: string;
         turboCaptains: string;
-        wholesale: string;
         serviceRequests: string;
         serviceManagement: string;
         serviceOrders: string;
-        wholesaleRail: string;
-        wholesaleCustomers: string;
-        priceLists: string;
-        customerStatements: string;
-        debtTracking: string;
         roleSuperAdmin: string;
         roleCompanyAdmin: string;
         roleOwner: string;
@@ -16615,6 +16611,12 @@ declare module 'react-i18next' {
         affiliateProductVisibility: string;
         relatedCompanies: string;
         storeThemePricing: string;
+        wholesale: string;
+        wholesaleRail: string;
+        wholesaleCustomers: string;
+        priceLists: string;
+        customerStatements: string;
+        debtTracking: string;
         homepageTemplates: string;
         orderAutomation: string;
         codDeposit: string;

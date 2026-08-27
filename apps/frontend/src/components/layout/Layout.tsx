@@ -19,6 +19,7 @@ import { BUSINESS_THEME_ID } from "../../config/themes";
 import { SidebarLayoutType } from "../../types/layout";
 import SidebarLayoutFactory from "./sidebar/SidebarLayoutFactory";
 import ThreeTierSidebar from "./sidebar/ThreeTierSidebar";
+import { useSidebarBadges } from "./sidebar/useSidebarBadges";
 import { shouldUseSuperAdminShell } from "./layoutMode";
 import CompanySwitcher from "../common/CompanySwitcher";
 import LanguageSwitcher from "../common/LanguageSwitcher";
@@ -280,6 +281,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     });
   }, []);
 
+  const sidebarBadges = useSidebarBadges();
+
   const menuSections = useMemo(() => {
     if (!isI18nReady || useSuperAdminShell) {
       return [];
@@ -293,9 +296,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
       items: section.items.map((item) => ({
         ...item,
         icon: renderSidebarIcon(item.icon),
+        badge: item.to === "/orders" ? sidebarBadges.newOrders : item.badge,
       })),
     }));
-  }, [isI18nReady, renderSidebarIcon, t, useSuperAdminShell, user, sidebarSettings, userSettings]);
+  }, [isI18nReady, renderSidebarIcon, t, useSuperAdminShell, user, sidebarSettings, userSettings, sidebarBadges]);
 
   const filteredSections = useMemo(() => {
     if (!searchQuery.trim()) return menuSections;

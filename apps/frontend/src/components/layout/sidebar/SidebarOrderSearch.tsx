@@ -24,9 +24,21 @@ interface OrderSearchResult {
   conversationId?: string | null;
 }
 
+interface OrderSearchApiData {
+  id: string;
+  orderNumber?: string;
+  customer?: { name?: string; phone?: string } | null;
+  customerName?: string;
+  customerPhone?: string;
+  status?: string;
+  total?: number | string;
+  currency?: string;
+  conversationId?: string | null;
+}
+
 interface OrderSearchResponse {
   success?: boolean;
-  data?: OrderSearchResult;
+  data?: OrderSearchApiData;
 }
 
 interface SidebarOrderSearchProps {
@@ -110,7 +122,7 @@ const SidebarOrderSearch: React.FC<SidebarOrderSearchProps> = ({
           total:
             typeof body.data.total === "number"
               ? body.data.total
-              : parseFloat(body.data.total) || 0,
+              : parseFloat(body.data.total || "") || 0,
           currency: body.data.currency || "EGP",
           conversationId: body.data.conversationId || null,
         });
