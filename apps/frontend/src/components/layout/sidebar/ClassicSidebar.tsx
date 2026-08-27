@@ -190,9 +190,11 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
               .filter((s) => !s.hidden)
               .map((section) => {
                 const hasActiveItem = activeSectionIds.has(section.id);
-                const isExpanded = collapsedSections[section.id] !== undefined
-                  ? !collapsedSections[section.id]
-                  : hasActiveItem;
+                const isExpanded = searchQuery.trim().length > 0
+                  ? true
+                  : collapsedSections[section.id] !== undefined
+                    ? !collapsedSections[section.id]
+                    : false;
 
                 return (
                   <section
@@ -416,13 +418,14 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
         {sections
           .filter((s) => !s.hidden)
           .map((section) => {
-            const isSectionCollapsed = collapsedSections[section.id];
+            const isSearching = searchQuery.trim().length > 0;
+            const isSectionCollapsed = collapsedSections[section.id] !== false;
             const hasActiveItem = activeSectionIds.has(section.id);
             return (
               <div key={section.id} className="mb-4">
                 <button
                   onClick={() => toggleSection(section.id)}
-                  aria-expanded={isCollapsed ? true : !isSectionCollapsed}
+                  aria-expanded={isCollapsed ? true : isSearching ? true : !isSectionCollapsed}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group ${hasActiveItem && !isCollapsed
                       ? "bg-primary-50 dark:bg-primary-900/20"
                       : "hover:bg-gray-100 dark:hover:bg-gray-700/50"
@@ -449,7 +452,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                     />
                   )}
                 </button>
-                {(!isSectionCollapsed || isCollapsed) && (
+                {(!isSectionCollapsed || isCollapsed || isSearching) && (
                   <div className={`mt-1 space-y-1 ${isCollapsed ? "mt-2" : ""} `}>
                     {section.items
                       .filter((i) => !i.hidden)

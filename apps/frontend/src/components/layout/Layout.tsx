@@ -248,7 +248,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
   const toggleSection = (sectionId: string) => {
     setCollapsedSections((prev) => {
-      const nextState = { ...prev, [sectionId]: !prev[sectionId] };
+      const nextState = {
+        ...prev,
+        [sectionId]: prev[sectionId] === false ? true : false,
+      };
       localStorage.setItem(
         "sidebar-collapsed-sections",
         JSON.stringify(nextState),
