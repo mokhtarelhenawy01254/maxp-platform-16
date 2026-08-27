@@ -4,13 +4,13 @@ import { MegaphoneIcon } from "@heroicons/react/24/outline";
 interface WhatsappTabProps {
   whatsappNotify: {
     enabled: boolean;
-    audience: "all" | "withOrders" | "new" | "active";
+    audience: "all" | "withOrders" | "newCustomers" | "activeCustomers";
     templateName: string;
     customMessage: string;
   };
   setWhatsappNotify: React.Dispatch<React.SetStateAction<{
     enabled: boolean;
-    audience: "all" | "withOrders" | "new" | "active";
+    audience: "all" | "withOrders" | "newCustomers" | "activeCustomers";
     templateName: string;
     customMessage: string;
   }>>;
@@ -52,16 +52,16 @@ export const WhatsappTab: React.FC<WhatsappTabProps> = ({
             <div className="space-y-4">
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">لمن تريد الإرسال؟</label>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {[
+                {([
                   { id: 'all', label: 'كل العملاء', icon: '👥' },
                   { id: 'withOrders', label: 'أصحاب الطلبات', icon: '🛒' },
-                  { id: 'new', label: 'العملاء الجدد', icon: '🆕' },
-                  { id: 'active', label: 'النشطون', icon: '🔥' }
-                ].map((item) => (
+                  { id: 'newCustomers', label: 'العملاء الجدد', icon: '🆕' },
+                  { id: 'activeCustomers', label: 'النشطون', icon: '🔥' }
+                ] as const).map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => setWhatsappNotify({ ...whatsappNotify, audience: item.id as any })}
+                    onClick={() => setWhatsappNotify({ ...whatsappNotify, audience: item.id })}
                     className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${whatsappNotify.audience === item.id
                       ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
                       : 'border-gray-100 dark:border-gray-700 hover:border-indigo-300'

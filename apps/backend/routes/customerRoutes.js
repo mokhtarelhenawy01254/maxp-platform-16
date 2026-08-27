@@ -48,6 +48,10 @@ router.delete('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateT
 // Campaign history (from DB)
 router.get('/whatsapp-notify/campaigns/history', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCampaignHistory);
 
+// 🚀 إعدادات الإرسال التلقائي للمنتج الجديد (عروض المنتجات — واتساب فقط)
+router.get('/whatsapp-notify/auto-send-settings', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getProductAutoSendSettings);
+router.put('/whatsapp-notify/auto-send-settings', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.saveProductAutoSendSettings);
+
 // 🎉 جدولة حملات المناسبات (أوتوماتيك)
 router.post('/whatsapp-notify/occasions/schedule', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.scheduleOccasionCampaign);
 router.get('/whatsapp-notify/occasions/scheduled', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getScheduledOccasionCampaigns);

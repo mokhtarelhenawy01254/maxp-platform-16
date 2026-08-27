@@ -1494,7 +1494,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   </tr>
                 </thead>
                 <tbody>
-                  {statuses.filter((row) => row.category !== "OCCASION").map((row) => {
+                  {statuses.filter((row) => row.category !== "OCCASION" && row.category !== "PRODUCTS").map((row) => {
                     const isEditing = editingSchedule?.row.code === row.code;
                     return (
                       <tr key={row.code} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
@@ -3387,7 +3387,7 @@ function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[];
   const enabledWithoutSends = useMemo(() => {
     if (!data) return [];
     const reported = new Set(data.byStatus.map((r) => r.eventType));
-    return statuses.filter((s) => s.category !== "OCCASION" && s.notifyCustomer && !s.isNonNotifiable && !reported.has(persistedEventTypeForCode(s.code)));
+    return statuses.filter((s) => s.category !== "OCCASION" && s.category !== "PRODUCTS" && s.notifyCustomer && !s.isNonNotifiable && !reported.has(persistedEventTypeForCode(s.code)));
   }, [data, statuses]);
 
   const summary = data?.summary;

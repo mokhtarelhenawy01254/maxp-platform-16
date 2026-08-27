@@ -725,6 +725,7 @@ export const getSidebarConfig = (
                 { to: '/customers/segments', icon: Filter, label: t('sidebar.customerSegments') },
                 { to: '/customers/lists', icon: ListChecks, label: t('sidebar.customerLists') },
                 { to: '/customers/points-center', icon: Trophy, label: t('sidebar.customerPointsCenter') },
+                { to: '/customers/product-offers', icon: BadgePercent, label: t('sidebar.productOffers') },
                 { to: '/customers/customer-notifications', icon: Bell, label: t('sidebar.customerNotifications') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان CRM غير مفعل

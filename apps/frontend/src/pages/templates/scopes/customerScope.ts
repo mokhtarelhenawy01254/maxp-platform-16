@@ -22,6 +22,13 @@ const EVENT_GROUPS: Record<string, string[]> = {
     "AUTO_DISCOUNT_COUPON_EXPIRING",
     "AUTO_DISCOUNT_CASHBACK_CONVERTED",
   ],
+  products: [
+    "NEW_PRODUCT",
+    "PROMOTIONAL",
+    "BACK_IN_STOCK",
+    "PRICE_DROP",
+    "LOW_STOCK_ALERT",
+  ],
 };
 
 const ALL_EVENTS = Object.values(EVENT_GROUPS).flat();
@@ -43,6 +50,8 @@ const CUSTOMER_VARIABLES = [
   { var: "{discountPercent}", desc: "نسبة خصم كوبون الخصم التلقائي" },
   { var: "{voucherAmount}", desc: "قيمة كوبون الخصم بالعملة" },
   { var: "{validityDays}", desc: "عدد أيام صلاحية كوبون الخصم" },
+  { var: "{productName}", desc: "اسم المنتج (لإشعارات المنتجات/العروض)" },
+  { var: "{price}", desc: "سعر المنتج (لإشعارات المنتجات/العروض)" },
 ];
 
 const CUSTOMER_META_ORDER: string[] = [
@@ -62,6 +71,8 @@ const CUSTOMER_META_ORDER: string[] = [
   "discountPercent",
   "voucherAmount",
   "validityDays",
+  "productName",
+  "price",
 ];
 
 // خريطة أسماء الأحداث — تُستخدم لعرض التسمية الصحيحة بدل ما بيجي من الـ backend
@@ -80,6 +91,11 @@ const EVENT_LABELS: Record<string, string> = {
   AUTO_DISCOUNT_COUPON_GRANTED: "منح كوبون الخصم التلقائي",
   AUTO_DISCOUNT_COUPON_EXPIRING: "تنبيه قرب انتهاء كوبون الخصم",
   AUTO_DISCOUNT_CASHBACK_CONVERTED: "تحويل الكوبون المنتهي إلى كاش باك",
+  NEW_PRODUCT: "منتج جديد",
+  PROMOTIONAL: "عرض ترويجي",
+  BACK_IN_STOCK: "عودة المنتج للتوفر",
+  PRICE_DROP: "انخفاض السعر",
+  LOW_STOCK_ALERT: "تنبيه نقص المخزون",
 };
 
 const EVENT_TRIGGERS: Record<string, string> = {
@@ -96,6 +112,11 @@ const EVENT_TRIGGERS: Record<string, string> = {
   AUTO_DISCOUNT_COUPON_GRANTED: "عند تسليم الطلب وإصدار كوبون الخصم",
   AUTO_DISCOUNT_COUPON_EXPIRING: "قبل انتهاء صلاحية كوبون الخصم",
   AUTO_DISCOUNT_CASHBACK_CONVERTED: "عند انتهاء صلاحية الكوبون وتحويله إلى كاش باك",
+  NEW_PRODUCT: "عند إضافة منتج جديد (حملة تلقائية/يدوية)",
+  PROMOTIONAL: "حملة ترويجية يدوية",
+  BACK_IN_STOCK: "عند عودة منتج متوفر بعد نفاد المخزون",
+  PRICE_DROP: "عند انخفاض سعر منتج",
+  LOW_STOCK_ALERT: "عند انخفاض المخزون لحد التنبيه",
 };
 
 const DEFAULT_CONTENT = `مرحباً {customerName} 👋\n\n{reason}\n\nشكراً لتعاملك معنا! ✨`;
@@ -177,8 +198,12 @@ export const customerScopeConfig: TemplateScopeConfig = {
 
     const rows: ScheduleRow[] = scheduleRes.data?.data || [];
     const all: Array<TemplateItem & { category?: string }> = templatesRes.data?.templates || [];
+    // استثناء قوالب OCCASION/PRODUCTS من صفوف الجدولة — ليهم تجميع خاص تحت.
     const scheduleTemplates = all.filter(
-      (t) => !!t.eventType && ALL_EVENTS.includes(t.eventType),
+      (t) =>
+        !!t.eventType &&
+        ALL_EVENTS.includes(t.eventType) &&
+        !["OCCASION", "PRODUCTS"].includes(String(t.category || "").toUpperCase()),
     );
 
     const scheduleRows = rows.map((row, idx): EventRow => {
@@ -280,11 +305,65 @@ export const customerScopeConfig: TemplateScopeConfig = {
       };
     });
 
-    return [...scheduleRows, ...occasionRows];
+    // 📦 قوالب المنتجات والعروض (category = PRODUCTS) — مجموعة حسب eventType
+    // (منتج جديد / عرض ترويجي / عودة للتوفر / انخفاض السعر / تنبيه مخزون)
+    const productTemplates = all.filter((t) => String(t.category || "").toUpperCase() === "PRODUCTS");
+    const productGroups = new Map<string, TemplateItem[]>();
+    for (const t of productTemplates) {
+      const key = t.eventType || "NEW_PRODUCT";
+      const arr = productGroups.get(key) || [];
+      arr.push(t);
+      productGroups.set(key, arr);
+    }
+
+    const productRows: EventRow[] = Array.from(productGroups.entries()).map(([eventType, list], idx): EventRow => {
+      const regular = slotTemplate(list, "BAILEYS");
+      const meta = slotTemplate(list, "META_CLOUD");
+      const regularTemplate: Template | null = regular
+        ? {
+            ...regular,
+            id: regular.id || "",
+            name: regular.name || "قالب منتج",
+            content: normalizeToDouble(regular.content || ""),
+            isActive: regular.isActive ?? true,
+            eventType,
+          }
+        : null;
+      const metaTemplate: Template | null = meta
+        ? {
+            ...meta,
+            id: meta.id || "",
+            name: meta.name || "قالب واتساب بيزنس",
+            content: normalizeToDouble(meta.content || ""),
+            isActive: meta.isActive ?? true,
+            eventType,
+          }
+        : null;
+
+      return {
+        id: regular?.id || meta?.id || eventType,
+        code: eventType,
+        name: EVENT_LABELS[eventType] || regular?.name || meta?.name || "قالب منتج",
+        color: "#0EA5E9",
+        sortOrder: 2000 + idx,
+        statusType: "products",
+        notifyCustomer: regular?.isActive ?? meta?.isActive ?? true,
+        isSystemStatus: false,
+        template: regularTemplate,
+        metaTemplate,
+        hasTemplate: !!regularTemplate,
+        hasMetaTemplate: !!metaTemplate,
+        isNonNotifiable: false,
+        category: "PRODUCTS",
+        trigger: EVENT_TRIGGERS[eventType] || "",
+      };
+    });
+
+    return [...scheduleRows, ...occasionRows, ...productRows];
   },
 
   toggleNotify: async (api: ApiLike, row: EventRow): Promise<void> => {
-    if (row.category === "OCCASION") {
+    if (row.category === "OCCASION" || row.category === "PRODUCTS") {
       const target = row.template?.id ? row.template : (row.metaTemplate?.id ? row.metaTemplate : null);
       if (target?.id) {
         await api.put(`/whatsapp-notifications/templates/${target.id}`, {
@@ -323,6 +402,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
   tabs: [
     { key: "schedule", label: "جدول الإشعارات", kind: "schedule", isSpecial: true },
     { key: "occasions", label: "قوالب مناسبات العملاء", kind: "list", filter: (r) => r.category === "OCCASION", count: (rows) => rows.filter((r) => r.category === "OCCASION").length },
+    { key: "products", label: "قوالب المنتجات والعروض", kind: "list", filter: (r) => r.category === "PRODUCTS", count: (rows) => rows.filter((r) => r.category === "PRODUCTS").length },
     { key: "loyalty", label: "قوالب الولاء", kind: "list", filter: (r) => EVENT_GROUPS["loyalty"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["loyalty"]!.includes(r.code)).length },
     { key: "cashback", label: "قوالب الكاش باك", kind: "list", filter: (r) => EVENT_GROUPS["cashback"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cashback"]!.includes(r.code)).length },
     { key: "quality", label: "قوالب التقسيم", kind: "list", filter: (r) => EVENT_GROUPS["quality"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["quality"]!.includes(r.code)).length },
@@ -350,6 +430,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
       { value: "MARKETING", label: "MARKETING (ترويجي)" },
       { value: "GENERAL", label: "UTILITY (عام)" },
       { value: "OCCASION", label: "OCCASION (مناسبات)" },
+      { value: "PRODUCTS", label: "PRODUCTS (منتجات وعروض)" },
     ],
   },
 

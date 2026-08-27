@@ -30,6 +30,7 @@ const { validateStock } = require('../utils/stockValidation');
 const { MAX_PRODUCT_STOCK } = require('../utils/stockValidation');
 const ragKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+const productOfferService = require('../services/whatsapp/productOfferService');
 const {
   PRODUCT_WORKFLOW_STATUSES,
   resolveProductWorkflow,
@@ -2291,6 +2292,21 @@ const createProduct = async (req, res) => {
     await refreshProductRetrievalArtifacts(product.id, companyId);
 
     refreshProductVectorKnowledge(product, companyId);
+
+    // 🚀 إرسال تلقائي لمنتج جديد عبر الواتساب (عروض المنتجات) — لو الإعداد مفعّل.
+    // fire-and-forget: مش بننتظرها عشان ما تؤخرش استجابة إنشاء المنتج.
+    try {
+        const productForOffer = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+        };
+        productOfferService.autoSendNewProduct({ companyId, product: productForOffer })
+            .catch((err) => console.error('[PRODUCT-CREATE] auto-send error:', err.message));
+    } catch (err) {
+        console.error('[PRODUCT-CREATE] auto-send trigger error:', err.message);
+    }
 
     res.json({
       success: true,

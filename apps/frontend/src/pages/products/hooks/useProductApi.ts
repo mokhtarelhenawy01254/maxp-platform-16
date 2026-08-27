@@ -247,8 +247,8 @@ export const useProductApi = () => {
             try {
               await apiClient.post('/customers/whatsapp-notify/smart-send', {
                 audience: whatsappNotify.audience,
-                templateName: whatsappNotify.templateName,
-                customMessage: whatsappNotify.customMessage,
+                message: whatsappNotify.customMessage,
+                eventType: 'NEW_PRODUCT',
                 productId: id
               });
             } catch (err) {
@@ -286,8 +286,8 @@ export const useProductApi = () => {
             try {
               await apiClient.post('/customers/whatsapp-notify/smart-send', {
                 audience: whatsappNotify.audience,
-                templateName: whatsappNotify.templateName,
-                customMessage: whatsappNotify.customMessage,
+                message: whatsappNotify.customMessage,
+                eventType: 'NEW_PRODUCT',
                 productId: productId
               });
             } catch (err) {

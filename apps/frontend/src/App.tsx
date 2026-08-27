@@ -54,6 +54,7 @@ const CustomerPortalView = React.lazy(() => import("./pages/customers/CustomerPo
 const CustomerWhatsAppNotify = React.lazy(
   () => import("./pages/customers/CustomerWhatsAppNotify"),
 );
+const ProductOffers = React.lazy(() => import("./pages/customers/ProductOffers"));
 const CustomerBirthdayWhatsAppNotify = React.lazy(
   () => import("./pages/customers/CustomerBirthdayWhatsAppNotify"),
 );
@@ -1584,6 +1585,7 @@ if (typeof window !== "undefined") {
   p["/customers/settings"] = () => import("./pages/customers/CustomerLoyaltySettings");
   p["/customers/lists"] = () => import("./pages/customers/CustomerLists");
   p["/customers/customer-notifications"] = () => import("./pages/customers/CustomerNotifications");
+  p["/customers/product-offers"] = () => import("./pages/customers/ProductOffers");
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
@@ -2928,6 +2930,16 @@ const AppContent = () => {
                     <PermissionProtectedRoute requiredPermissions={['customers.view']}>
                       <Layout>
                         <CustomerWhatsAppNotify />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/customers/product-offers"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <ProductOffers />
                       </Layout>
                     </PermissionProtectedRoute>
                   }
