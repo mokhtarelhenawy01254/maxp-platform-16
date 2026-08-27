@@ -1760,8 +1760,9 @@ async function sendNotification(options) {
         // لأي جلسة ميتا، فحتى الإرسال الناجح بالقالب المعتمد كان بيمر على هنا ويُرمى
         // "Approved Meta template failed" كذباً → التقارير بتعرض فشل رغم وصول الرسالة.
         throw new Error(
-          `Approved Meta template failed and free-text is blocked outside 24h window` +
-          (lastMetaTemplateError ? ` (${lastMetaTemplateError.code || ''} ${lastMetaTemplateError.message || ''})` : '')
+          `تعذر إرسال قالب ميتا المعتمد "${metaTemplateName || ''}" (ميتا رفضت أو الرقم خارج نافذة 24 ساعة / الـ template محتاج اعتماد أعلى). ` +
+          `النص الحر ممنوع عبر Meta Cloud خارج نافذة 24 ساعة. السبب من ميتا: ` +
+          (lastMetaTemplateError ? `${lastMetaTemplateError.code || ''} ${lastMetaTemplateError.message || ''}` : 'غير محدد')
         );
       }
 
