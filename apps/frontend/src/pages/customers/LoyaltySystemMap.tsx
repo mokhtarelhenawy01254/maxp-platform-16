@@ -43,6 +43,8 @@ import {
   Download,
   Zap,
   ExternalLink,
+  FileImage,
+  History,
 } from "lucide-react";
 import {
   Dialog,
@@ -52,8 +54,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type NodeStatus = "active" | "inactive" | "warning" | "unknown";
 
@@ -122,6 +139,30 @@ interface CustomerListState {
   title: string;
   loading: boolean;
   rows: CustomerRow[];
+}
+
+type DateRangeKey = "today" | "7d" | "30d" | "all";
+
+interface TimelineEvent {
+  label: string;
+  date?: string;
+  route?: string;
+}
+
+interface TimelineStage {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  dateLabel: string;
+  date: string | null;
+  note?: string;
+  events: TimelineEvent[];
+}
+
+interface NodeDetail {
+  count: string;
+  lastActivity: string;
+  route: string;
 }
 
 const STAGES: StageDef[] = [
@@ -240,6 +281,13 @@ function normalizeDigits(s: string): string {
     .replace(/[\u06F0-\u06F9]/g, (d) => String("\u06F0\u06F1\u06F2\u06F3\u06F4\u06F5\u06F6\u06F7\u06F8\u06F9".indexOf(d)));
 }
 
+function fmtDate(v?: string | null): string {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("ar-EG", { day: "numeric", month: "short", year: "numeric" });
+}
+
 function firstLine(text?: string | null, max = 120): string {
   if (!text) return "";
   const single = String(text).split("\n")[0] || "";
@@ -294,6 +342,10 @@ const LoyaltySystemMap: React.FC = () => {
   const [backfillBusy, setBackfillBusy] = useState(false);
   const [channelDialog, setChannelDialog] = useState(false);
   const [channelDraft, setChannelDraft] = useState<string>("");
+  const [selectedNode, setSelectedNode] = useState<MapNode | null>(null);
+  const [dateRange, setDateRange] = useState<DateRangeKey>("all");
+  const [timelineLog, setTimelineLog] = useState<TimelineStage | null>(null);
+  const [svgBusy, setSvgBusy] = useState(false);
 
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -376,11 +428,13 @@ const LoyaltySystemMap: React.FC = () => {
       };
       const inactiveDays = Number(reSettings.inactiveDays || 30);
 
-      const [countsRes, birthdayCountRes] = await Promise.allSettled([
+      const [countsRes, birthdayCountRes, oldestCustRes, newestCustRes] = await Promise.allSettled([
         apiClient.get(
           `/hr/customer-loyalty/re-engagement/counts?inactiveDays=${inactiveDays}`,
         ),
         apiClient.get("/customers/whatsapp-notify/birthday-automation/upcoming?days=30"),
+        apiClient.get("/customers?limit=1&sortBy=createdAt&sortOrder=asc"),
+        apiClient.get("/customers?limit=1&sortBy=createdAt&sortOrder=desc"),
       ]);
       const counts = {
         inactive:
@@ -400,6 +454,18 @@ const LoyaltySystemMap: React.FC = () => {
             ? (birthdayCountRes.value as any)?.data?.total ?? null
             : null,
       };
+      const upcomingBirthdays =
+        birthdayCountRes.status === "fulfilled"
+          ? (birthdayCountRes.value as any)?.data?.data || []
+          : [];
+      const oldestCustomerDate =
+        oldestCustRes.status === "fulfilled"
+          ? (oldestCustRes.value as any)?.data?.data?.[0]?.createdAt ?? null
+          : null;
+      const newestCustomerDate =
+        newestCustRes.status === "fulfilled"
+          ? (newestCustRes.value as any)?.data?.data?.[0]?.createdAt ?? null
+          : null;
 
       setData({
         programs,
@@ -420,6 +486,9 @@ const LoyaltySystemMap: React.FC = () => {
         customerCounts,
         reSettings,
         counts,
+        upcomingBirthdays,
+        oldestCustomerDate,
+        newestCustomerDate,
       });
       setThresholdDraft(Number(reSettings.inactiveDays || 30));
       setLastUpdated(new Date().toLocaleString("ar-EG"));
@@ -435,6 +504,41 @@ const LoyaltySystemMap: React.FC = () => {
     load();
   }, [load]);
 
+  const inRange = useCallback(
+    (v?: string | null): boolean => {
+      if (!v) return false;
+      if (dateRange === "all") return true;
+      const d = new Date(v).getTime();
+      if (Number.isNaN(d)) return false;
+      const now = Date.now();
+      const days = dateRange === "today" ? 1 : dateRange === "7d" ? 7 : 30;
+      return d >= now - days * 86400000;
+    },
+    [dateRange],
+  );
+
+  const filteredActivity = useMemo(() => {
+    if (!data) return null;
+    const d = data as any;
+    const campaigns = (d.campaigns || []).filter((c: any) => inRange(c.createdAt));
+    const occasions = (d.occasions || []).filter((o: any) => inRange(o.scheduledAt));
+    const journeys = (d.journeys || []).filter((j: any) => inRange(j.createdAt));
+    return { campaigns, occasions, journeys };
+  }, [data, inRange]);
+
+  const hasTemporalData = useMemo(() => {
+    if (!data) return false;
+    const d = data as any;
+    return Boolean(
+      (d.campaigns || []).length ||
+        (d.occasions || []).length ||
+        (d.journeys || []).length ||
+        (d.programs || []).length ||
+        d.oldestCustomerDate ||
+        (d.upcomingBirthdays || []).length,
+    );
+  }, [data]);
+
   const nodes = useMemo<MapNode[]>(() => {
     if (!data) return [];
     const {
@@ -443,15 +547,16 @@ const LoyaltySystemMap: React.FC = () => {
       loyaltyConfig = null,
       flows = [],
       enabledFlows = [],
-      campaigns = [],
-      journeys = [],
       birthdaySettings = null,
-      occasions = [],
       leadCategories = [],
       customerLists = [],
       loyaltyRecordsTotal = 0,
       customerCounts = {},
     } = data as any;
+
+    const campaigns = filteredActivity?.campaigns || [];
+    const occasions = filteredActivity?.occasions || [];
+    const journeys = filteredActivity?.journeys || [];
 
     const activeJourneys = journeys.filter(
       (j: any) => String(j.status || "").toUpperCase() === "ACTIVE",
@@ -621,7 +726,7 @@ const LoyaltySystemMap: React.FC = () => {
         summary: "قوالب إشعارات مخصصة للعملاء",
       },
     ];
-  }, [data]);
+  }, [data, filteredActivity]);
 
   const nodeById = useMemo(() => {
     const m: Record<string, MapNode> = {};
@@ -630,6 +735,194 @@ const LoyaltySystemMap: React.FC = () => {
     });
     return m;
   }, [nodes]);
+
+  const nodeDetails = useMemo<Record<string, NodeDetail>>(() => {
+    if (!data) return {};
+    const d = data as any;
+    const programs = d.programs || [];
+    const journeys = d.journeys || [];
+    const campaigns = d.campaigns || [];
+    const occasions = d.occasions || [];
+    const customerLists = d.customerLists || [];
+    const leadCategories = d.leadCategories || [];
+    const cc = d.customerCounts || {};
+    const totalCustomers = programs.reduce((s: number, p: any) => s + Number(p.customersCount || 0), 0);
+    const activePrograms = programs.filter((p: any) => p.status === "ACTIVE");
+    const customLists = (customerLists || []).filter((l: any) => !l.isDefault);
+
+    const latestOf = (arr: any[], key: string): string | null => {
+      const withDate = arr
+        .map((x) => x?.[key])
+        .filter((x) => x)
+        .sort((a: any, b: any) => new Date(b).getTime() - new Date(a).getTime());
+      return withDate[0] || null;
+    };
+
+    return {
+      customers: {
+        route: "/customers",
+        count: `${fmt(cc.ACTIVE || 0)} نشط`,
+        lastActivity: cc.LEAD ? `${fmt(cc.LEAD)} محتمل · ${fmt(cc.INACTIVE || 0)} غير نشط` : "غير محدد",
+      },
+      postPurchase: {
+        route: "/whatsapp/customer-journey",
+        count: `${journeys.length} رحلة`,
+        lastActivity: fmtDate(latestOf(journeys, "nextSendAt")) || "غير محدد",
+      },
+      loyaltyPrograms: {
+        route: "/customers/loyalty-programs",
+        count: `${activePrograms.length} برنامج نشط`,
+        lastActivity:
+          programs.length && programs[programs.length - 1]?.createdAt
+            ? fmtDate(programs[programs.length - 1].createdAt)
+            : "غير محدد",
+      },
+      loyaltyMembers: {
+        route: "/customers/loyalty-members",
+        count: `${fmt(totalCustomers)} عضو`,
+        lastActivity: "غير محدد",
+      },
+      pointsCenter: {
+        route: "/customers/points-center",
+        count: `${fmt(programs.reduce((s: number, p: any) => s + Number(p.totalPointsIssued || 0), 0))} نقطة مصدرة`,
+        lastActivity: "غير محدد",
+      },
+      analytics: {
+        route: "/customers/loyalty-analytics",
+        count: `${fmt(totalCustomers)} مشترك`,
+        lastActivity: "إجماليات تراكمية",
+      },
+      settings: {
+        route: "/customers/settings",
+        count: "تكوين النظام",
+        lastActivity: "غير محدد",
+      },
+      segmentation: {
+        route: "/customers/segments",
+        count: `${leadCategories.length} تصنيف`,
+        lastActivity: "غير محدد",
+      },
+      customerLists: {
+        route: "/customers/lists",
+        count: `${customLists.length} قائمة`,
+        lastActivity:
+          customLists.length && customLists[0]?.updatedAt
+            ? fmtDate(customLists[0].updatedAt)
+            : "غير محدد",
+      },
+      whatsappNotify: {
+        route: "/customers/whatsapp-notify",
+        count: `${campaigns.length} حملة`,
+        lastActivity: fmtDate(latestOf(campaigns, "sentAt") || latestOf(campaigns, "createdAt")) || "غير محدد",
+      },
+      occasions: {
+        route: "/customers/occasions-notify",
+        count: `${occasions.length} مناسبة`,
+        lastActivity:
+          fmtDate(latestOf(occasions, "lastSentAt")) ||
+          fmtDate(occasions.length ? occasions[0].scheduledAt : null) ||
+          "غير محدد",
+      },
+      birthdays: {
+        route: "/customers/birthday-whatsapp-notify",
+        count: "أتمتة يومية",
+        lastActivity:
+          (d as any).birthdaySettings?.updatedAt
+            ? fmtDate((d as any).birthdaySettings.updatedAt)
+            : "غير محدد",
+      },
+      customerNotifications: {
+        route: "/customers/customer-notifications",
+        count: "قوالب إشعارات",
+        lastActivity: "غير محدد",
+      },
+    };
+  }, [data]);
+
+  const timelineStages = useMemo<TimelineStage[]>(() => {
+    if (!data) return [];
+    const d = data as any;
+    const programs = d.programs || [];
+    const campaigns = d.campaigns || [];
+    const occasions = d.occasions || [];
+    const journeys = d.journeys || [];
+    const upcoming = d.upcomingBirthdays || [];
+    const totalIssued = programs.reduce((s: number, p: any) => s + Number(p.totalPointsIssued || 0), 0);
+    const totalRedeemed = programs.reduce((s: number, p: any) => s + Number(p.totalPointsRedeemed || 0), 0);
+    const totalCashback = Number(d.wallet?.totalCashback || 0);
+    const oldestProgram = programs[programs.length - 1];
+    const latestActivity = [
+      ...campaigns.map((c: any) => c.sentAt || c.createdAt),
+      ...occasions.map((o: any) => o.lastSentAt || o.scheduledAt),
+      ...journeys.map((j: any) => j.lastSentAt || j.nextSendAt),
+    ]
+      .filter(Boolean)
+      .sort((a: any, b: any) => new Date(b).getTime() - new Date(a).getTime())[0];
+
+    return [
+      {
+        id: "entry",
+        label: "الاشتراك والطلب",
+        icon: ShoppingBag,
+        dateLabel: "أقدم عميل",
+        date: fmtDate(d.oldestCustomerDate) || null,
+        note: d.oldestCustomerDate
+          ? `أحدث عميل: ${fmtDate(d.newestCustomerDate) || "غير محدد"}`
+          : "لا توجد بيانات تاريخية للعملاء",
+        events: [
+          { label: "أقدم عميل", date: fmtDate(d.oldestCustomerDate) },
+          { label: "أحدث عميل", date: fmtDate(d.newestCustomerDate) },
+        ],
+      },
+      {
+        id: "collect",
+        label: "جمع النقاط والولاء",
+        icon: Coins,
+        dateLabel: "أول برنامج ولاء",
+        date: oldestProgram?.createdAt ? fmtDate(oldestProgram.createdAt) : null,
+        note: oldestProgram?.createdAt ? undefined : "لا توجد برامج ولاء بعد",
+        events: [
+          { label: "أول برنامج ولاء", date: oldestProgram?.createdAt ? fmtDate(oldestProgram.createdAt) : undefined },
+          { label: `${fmt(totalIssued)} نقطة مصدرة` },
+          { label: `${fmt(totalRedeemed)} نقطة مستبدلة` },
+        ],
+      },
+      {
+        id: "redeem",
+        label: "الاستبدال والكاش باك",
+        icon: Award,
+        dateLabel: "آخر استبدال",
+        date: null,
+        note: "لا يوجد سجل استبدال بتواريخ في الداتا المتاحة",
+        events: [
+          { label: `إجمالي الكاش باك ${fmt(totalCashback)} ج.م` },
+          { label: "لا يوجد سجل استبدال بتاريخ" },
+        ],
+      },
+      {
+        id: "reengage",
+        label: "إعادة الاستهداف",
+        icon: Target,
+        dateLabel: "آخر نشاط إعادة استهداف",
+        date: fmtDate(latestActivity) || null,
+        note: latestActivity ? undefined : "لا توجد أنشطة إعادة استهداف مسجلة",
+        events: [
+          ...campaigns.slice(0, 5).map((c: any) => ({
+            label: c.name || "حملة",
+            date: fmtDate(c.sentAt || c.createdAt),
+          })),
+          ...occasions.slice(0, 3).map((o: any) => ({
+            label: `مناسبة: ${o.name || ""}`,
+            date: fmtDate(o.scheduledAt),
+          })),
+          ...upcoming.slice(0, 3).map((b: any) => ({
+            label: `عيد ميلاد: ${b.name || ""}`,
+            date: b.formattedNextDate,
+          })),
+        ],
+      },
+    ];
+  }, [data]);
 
   const measureEdges = useCallback(() => {
     const container = mapRef.current;
@@ -1059,6 +1352,68 @@ const LoyaltySystemMap: React.FC = () => {
     URL.revokeObjectURL(url);
   }, [nodes, reEngagementLines, data]);
 
+  const exportSvg = useCallback(() => {
+    const container = mapRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const W = Math.max(container.scrollWidth, Math.ceil(rect.width));
+    const H = Math.max(container.scrollHeight, Math.ceil(rect.height));
+    const esc = (s: string) =>
+      String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const borderColor: Record<NodeStatus, string> = {
+      active: "#10b981",
+      inactive: "#cbd5e1",
+      warning: "#f59e0b",
+      unknown: "#93c5fd",
+    };
+
+    const parts: string[] = [];
+    parts.push(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Tahoma,Arial,sans-serif"><defs><marker id="arS" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#94a3b8"/></marker><marker id="arA" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#f59e0b"/></marker></defs><rect width="100%" height="100%" fill="#ffffff"/>`,
+    );
+    for (const e of edges) {
+      parts.push(
+        `<path d="${e.d}" fill="none" stroke="${e.color}" stroke-width="1.5"${
+          e.loop ? ' stroke-dasharray="5 4"' : ""
+        } opacity="0.65" marker-end="${e.loop ? "url(#arA)" : "url(#arS)"}"/>`,
+      );
+      parts.push(
+        `<text x="${e.lx}" y="${e.ly - 4}" text-anchor="middle" font-size="10" fill="#64748b">${esc(e.label)}</text>`,
+      );
+    }
+    const ids = Object.keys(nodeById);
+    for (const id of ids) {
+      const el = nodeRefs.current[id];
+      const n = nodeById[id];
+      if (!el || !n) continue;
+      const r = el.getBoundingClientRect();
+      const x = r.left - rect.left;
+      const y = r.top - rect.top;
+      const w = r.width;
+      const h = r.height;
+      parts.push(
+        `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#ffffff" stroke="${borderColor[n.status]}" stroke-width="2"/>`,
+      );
+      parts.push(
+        `<text x="${x + w / 2}" y="${y + 24}" text-anchor="middle" font-size="13" font-weight="bold" fill="#111827">${esc(n.label)}</text>`,
+      );
+      const summary = n.summary.length > 48 ? n.summary.slice(0, 48) + "…" : n.summary;
+      parts.push(
+        `<text x="${x + w / 2}" y="${y + 42}" text-anchor="middle" font-size="9" fill="#6b7280">${esc(summary)}</text>`,
+      );
+    }
+    parts.push("</svg>");
+
+    const blob = new Blob([parts.join("")], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "loyalty-system-map.svg";
+    a.click();
+    URL.revokeObjectURL(url);
+    setSvgBusy(false);
+  }, [edges, nodeById]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -1185,18 +1540,44 @@ const LoyaltySystemMap: React.FC = () => {
             خريطة أدوات قسم العملاء، تدفقها الزمني، توجيه الرسائل، وحلقات إعادة الاستهداف
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {lastUpdated && (
             <span className="text-xs text-gray-400" title={lastUpdated}>
               آخر تحديث {lastUpdated}
             </span>
           )}
+          <Select
+            value={dateRange}
+            onValueChange={(v) => setDateRange(v as DateRangeKey)}
+            disabled={!hasTemporalData}
+          >
+            <SelectTrigger className="h-9 w-36 text-xs">
+              <SelectValue placeholder="الفترة الزمنية" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل الفترات</SelectItem>
+              <SelectItem value="30d">آخر 30 يوم</SelectItem>
+              <SelectItem value="7d">آخر 7 أيام</SelectItem>
+              <SelectItem value="today">اليوم</SelectItem>
+            </SelectContent>
+          </Select>
           <button
             onClick={exportCsv}
             className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
           >
             <Download className="h-4 w-4" />
-            تصدير CSV
+            CSV
+          </button>
+          <button
+            onClick={() => {
+              setSvgBusy(true);
+              setTimeout(exportSvg, 0);
+            }}
+            disabled={svgBusy}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            <FileImage className="h-4 w-4" />
+            SVG
           </button>
           <button
             onClick={load}
@@ -1212,6 +1593,20 @@ const LoyaltySystemMap: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {!hasTemporalData ? (
+        <p className="flex items-center gap-1.5 text-xs text-gray-400">
+          <Info className="h-3.5 w-3.5" />
+          لا توجد بيانات تاريخية بعد — الفلتر الزمني بيتفعل لما تبقى فيه حملات/مناسبات/رحلات/برامج مسجلة.
+        </p>
+      ) : dateRange !== "all" ? (
+        <p className="flex items-center gap-1.5 text-xs text-gray-400">
+          <Info className="h-3.5 w-3.5" />
+          الفلتر بينطبق على الأنشطة التاريخية (الحملات/المناسبات/الرحلات) في الخريطة —
+          إجماليات الولاء (المشتركين/النقاط/الكاش باك) تراكمية وملها بُعد تاريخي في
+          بيانات التحليلات.
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {kpiCards.map((k) => (
@@ -1319,11 +1714,29 @@ const LoyaltySystemMap: React.FC = () => {
               ))}
             </svg>
             <div className="relative z-10 grid grid-cols-4 gap-x-5">
-              {STAGES.map((stage) => (
+              {STAGES.map((stage) => {
+              const tl = timelineStages.find((t) => t.id === stage.id);
+              return (
                 <div key={stage.id} className="space-y-3">
-                  <div className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-2 py-1.5 text-[11px] font-bold text-gray-500 dark:border-gray-600 dark:text-gray-400">
-                    <stage.icon className="h-3.5 w-3.5" />
-                    {stage.label}
+                  <div className="rounded-lg border border-dashed border-gray-300 px-2 py-1.5 dark:border-gray-600">
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                      <stage.icon className="h-3.5 w-3.5" />
+                      {stage.label}
+                    </div>
+                    {tl && (
+                      <div className="mt-1 flex items-center justify-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
+                        <span className="truncate">
+                          {tl.date ? `${tl.dateLabel}: ${tl.date}` : tl.note || "غير محدد"}
+                        </span>
+                        <button
+                          onClick={() => setTimelineLog(tl)}
+                          title="سجل الأحداث"
+                          className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                        >
+                          <History className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {stage.nodeIds.map((id) => {
                     const node = nodeById[id];
@@ -1335,9 +1748,18 @@ const LoyaltySystemMap: React.FC = () => {
                         ref={(el) => {
                           nodeRefs.current[node.id] = el;
                         }}
-                        className={`h-[132px] rounded-xl border-2 ${sm.border} bg-white p-3 transition-shadow hover:shadow-md dark:bg-gray-800`}
+                        className={`h-[132px] cursor-pointer rounded-xl border-2 ${sm.border} bg-white p-3 transition-shadow hover:shadow-md dark:bg-gray-800`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedNode(node)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedNode(node);
+                          }
+                        }}
                       >
-                        <Link to={node.route} className="flex h-full flex-col">
+                        <div className="flex h-full flex-col">
                           <div className="flex items-center justify-between">
                             <div
                               className={`flex h-9 w-9 items-center justify-center rounded-lg ${sm.iconBg}`}
@@ -1369,12 +1791,13 @@ const LoyaltySystemMap: React.FC = () => {
                               ))}
                             </div>
                           ) : null}
-                        </Link>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-              ))}
+              );
+            })}
             </div>
           </div>
         </div>
@@ -1844,6 +2267,122 @@ const LoyaltySystemMap: React.FC = () => {
               حفظ القناة
             </button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Sheet open={!!selectedNode} onOpenChange={(o) => !o && setSelectedNode(null)}>
+        <SheetContent side="right">
+          {selectedNode && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${STATUS_META[selectedNode.status].iconBg}`}
+                  >
+                    <selectedNode.icon className={`h-4 w-4 ${STATUS_META[selectedNode.status].iconFg}`} />
+                  </span>
+                  {selectedNode.label}
+                </SheetTitle>
+                <SheetDescription>{selectedNode.summary}</SheetDescription>
+              </SheetHeader>
+
+              <div className="space-y-3 p-4">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_META[selectedNode.status].badge}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${STATUS_META[selectedNode.status].dot}`} />
+                    {STATUS_META[selectedNode.status].label}
+                  </span>
+                </div>
+
+                {nodeDetails[selectedNode.id] && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                      <p className="text-[10px] font-semibold uppercase text-gray-400">
+                        العملاء / الحجم
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {nodeDetails[selectedNode.id].count}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                      <p className="text-[10px] font-semibold uppercase text-gray-400">
+                        آخر نشاط
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {nodeDetails[selectedNode.id].lastActivity}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedNode.chips && selectedNode.chips.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedNode.chips.map((c) => (
+                      <span
+                        key={c}
+                        className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <SheetFooter>
+                <button
+                  onClick={() => {
+                    const detail = nodeDetails[selectedNode.id];
+                    navigate(detail?.route || selectedNode.route);
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white hover:bg-fuchsia-700"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  افتح الأداة
+                </button>
+              </SheetFooter>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={!!timelineLog} onOpenChange={(o) => !o && setTimelineLog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-4 w-4 text-fuchsia-500" />
+              سجل أحداث — {timelineLog?.label || ""}
+            </DialogTitle>
+            <DialogDescription>
+              الأحداث المسجلة في هذه المرحلة من الداتا المتاحة.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[50vh] space-y-2 overflow-y-auto">
+            {timelineLog?.events.length ? (
+              timelineLog.events.map((ev, i) => (
+                <div
+                  key={`${ev.label}-${i}`}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm dark:bg-gray-900/40"
+                >
+                  <span className="font-medium text-gray-800 dark:text-gray-200">{ev.label}</span>
+                  {ev.date ? (
+                    <span className="text-xs text-gray-500" dir="ltr">{ev.date}</span>
+                  ) : (
+                    <span className="text-xs text-gray-400">—</span>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="py-8 text-center text-sm text-gray-400">
+                لا توجد أحداث مسجلة في هذه المرحلة
+              </p>
+            )}
+          </div>
+          {timelineLog?.note && (
+            <p className="text-xs text-gray-400">{timelineLog.note}</p>
+          )}
         </DialogContent>
       </Dialog>
     </div>
