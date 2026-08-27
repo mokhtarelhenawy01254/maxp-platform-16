@@ -1422,7 +1422,7 @@ exports.getTodayBirthdayTrack = async (req, res) => {
 
         const customers = await safeQuery(() =>
             prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
+                where: { companyId },
                 select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true }
             })
         );
@@ -1467,7 +1467,7 @@ exports.getUpcomingBirthdaysTrack = async (req, res) => {
 
         const customers = await safeQuery(() =>
             prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
+                where: { companyId },
                 select: { id: true, firstName: true, lastName: true, phone: true, metadata: true }
             })
         );
@@ -1477,7 +1477,12 @@ exports.getUpcomingBirthdaysTrack = async (req, res) => {
 
         const upcoming = [];
         for (const customer of customers) {
-            const dateParts = extractBirthdayParts(customer);
+            let dateParts = null;
+            try {
+                dateParts = extractBirthdayParts(customer);
+            } catch (e) {
+                continue;
+            }
             if (!dateParts) continue;
 
             const nextBday = new Date(today.getFullYear(), dateParts.month - 1, dateParts.day);
@@ -1519,7 +1524,7 @@ exports.getMissingBirthdaysTrack = async (req, res) => {
 
         const customers = await safeQuery(() =>
             prisma.customer.findMany({
-                where: { companyId, isDeleted: { not: true } },
+                where: { companyId },
                 select: { id: true, firstName: true, lastName: true, phone: true, email: true, metadata: true, createdAt: true },
                 take: 100
             })

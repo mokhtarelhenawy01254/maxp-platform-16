@@ -1442,28 +1442,33 @@ async function getReEngagementCounts(req, res) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - inactiveDays);
 
-    const [inactive, points, occasions] = await Promise.all([
-      prisma.customer.count({
-        where: {
-          companyId,
-          isDeleted: { not: true },
-          orders: {
-            some: { createdAt: { lt: cutoffDate } },
-            none: { createdAt: { gte: cutoffDate } }
-          }
-        }
-      }),
+    const [inactiveRows, points, occasions] = await Promise.all([
+      prisma.$queryRaw`
+        SELECT COUNT(*)::int AS "count"
+        FROM (
+          SELECT o."customerId"
+          FROM "orders" o
+          WHERE o."companyId" = ${companyId}
+            AND o."customerId" IS NOT NULL
+          GROUP BY o."customerId"
+          HAVING MAX(o."createdAt") < ${cutoffDate}
+        ) sub
+      `,
       prisma.customerLoyaltyRecord.count({
         where: { companyId, status: 'ACTIVE', currentPoints: { gt: 0 } }
       }),
       prisma.occasion.findMany({
-        where: { companyId, status: { not: 'CANCELLED' } },
-        select: { customerListIds: true }
+        where: { companyId },
+        select: { customerListIds: true, status: true }
       })
     ]);
+    const inactive = Number(inactiveRows?.[0]?.count || 0);
 
+    const activeOccasions = (occasions || []).filter(
+      (occ) => String(occ.status || '').toUpperCase() !== 'CANCELLED'
+    );
     const listIds = new Set();
-    for (const occ of occasions || []) {
+    for (const occ of activeOccasions) {
       try {
         (JSON.parse(occ.customerListIds || '[]') || []).forEach((id) => id && listIds.add(id));
       } catch (e) { /* ignore malformed */ }
@@ -1506,7 +1511,7 @@ async function getReEngagementCustomers(req, res) {
         SELECT c.id, c."firstName", c."lastName", c.phone, MAX(o."createdAt") AS "lastOrderDate"
         FROM "customers" c
         JOIN "orders" o ON o."customerId" = c.id
-        WHERE o."companyId" = ${companyId} AND c."isDeleted" = false
+        WHERE o."companyId" = ${companyId}
         GROUP BY c.id, c."firstName", c."lastName", c.phone
         HAVING MAX(o."createdAt") < ${cutoff}
         ORDER BY MAX(o."createdAt") ASC
