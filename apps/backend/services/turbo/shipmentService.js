@@ -100,6 +100,7 @@ class ShipmentService {
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
       let rawPhoneDigits = String(customerPhone || addressFields.parsedAddress?.phone || '').replace(/\D/g, '');
       let validPhone = rawPhoneDigits;
+      if (validPhone.startsWith('00')) validPhone = validPhone.slice(2);
       if (validPhone.startsWith('20') && validPhone.length === 12) validPhone = validPhone.slice(2);
       if (validPhone.startsWith('1') && validPhone.length === 10) validPhone = '0' + validPhone;
       if (!validPhone || !validPhone.startsWith('01') || validPhone.length !== 11) {
