@@ -1441,8 +1441,23 @@ async function getReEngagementCounts(req, res) {
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - inactiveDays);
+    const bucket7 = new Date(cutoffDate);
+    bucket7.setDate(bucket7.getDate() - 7);
+    const bucket14 = new Date(bucket7);
+    bucket14.setDate(bucket14.getDate() - 7);
+    const daysAgo30 = new Date();
+    daysAgo30.setDate(daysAgo30.getDate() - 30);
+    const daysAgo60 = new Date();
+    daysAgo60.setDate(daysAgo60.getDate() - 60);
 
-    const [inactiveRows, points, occasions] = await Promise.all([
+    const [
+      inactiveRows,
+      points,
+      occasions,
+      inactiveBuckets,
+      pointsLast30,
+      pointsPrev30
+    ] = await Promise.all([
       prisma.$queryRaw`
         SELECT COUNT(*)::int AS "count"
         FROM (
@@ -1460,9 +1475,32 @@ async function getReEngagementCounts(req, res) {
       prisma.occasion.findMany({
         where: { companyId },
         select: { customerListIds: true, status: true }
+      }),
+      prisma.$queryRaw`
+        SELECT
+          COUNT(*) FILTER (WHERE "lastOrder" >= ${bucket7} AND "lastOrder" < ${cutoffDate})::int AS "last7d",
+          COUNT(*) FILTER (WHERE "lastOrder" >= ${bucket14} AND "lastOrder" < ${bucket7})::int AS "prev7d"
+        FROM (
+          SELECT MAX(o."createdAt") AS "lastOrder"
+          FROM "orders" o
+          WHERE o."companyId" = ${companyId}
+            AND o."customerId" IS NOT NULL
+          GROUP BY o."customerId"
+        ) sub
+      `,
+      prisma.customerLoyaltyRecord.count({
+        where: { companyId, status: 'ACTIVE', lastPointsEarned: { gte: daysAgo30 } }
+      }),
+      prisma.customerLoyaltyRecord.count({
+        where: { companyId, status: 'ACTIVE', lastPointsEarned: { gte: daysAgo60, lt: daysAgo30 } }
       })
     ]);
     const inactive = Number(inactiveRows?.[0]?.count || 0);
+    const inactiveTrend = {
+      last7d: Number(inactiveBuckets?.[0]?.last7d || 0),
+      prev7d: Number(inactiveBuckets?.[0]?.prev7d || 0)
+    };
+    const pointsTrend = { last30d: pointsLast30, prev30d: pointsPrev30 };
 
     const activeOccasions = (occasions || []).filter(
       (occ) => String(occ.status || '').toUpperCase() !== 'CANCELLED'
@@ -1482,10 +1520,22 @@ async function getReEngagementCounts(req, res) {
       occasion = (lists || []).reduce((s, l) => s + (Number(l.count) || 0), 0);
     }
 
-    res.json({ success: true, data: { inactive, points, occasion } });
+    res.json({
+      success: true,
+      data: { inactive, points, occasion, inactiveTrend, pointsTrend }
+    });
   } catch (error) {
     console.error('❌ Error getting re-engagement counts:', error);
-    res.json({ success: true, data: { inactive: null, points: null, occasion: null } });
+    res.json({
+      success: true,
+      data: {
+        inactive: null,
+        points: null,
+        occasion: null,
+        inactiveTrend: null,
+        pointsTrend: null
+      }
+    });
   }
 }
 

@@ -45,6 +45,7 @@ import {
   ExternalLink,
   FileImage,
   History,
+  TrendingDown,
 } from "lucide-react";
 import {
   Dialog,
@@ -119,6 +120,7 @@ interface ReEngagementLine {
   count: number | null;
   enabled: boolean;
   settingsKey?: "occasion" | "inactive" | "points";
+  trend?: { up: boolean; text: string; goodWhenUp: boolean };
 }
 
 interface CustomerRow {
@@ -445,6 +447,14 @@ const LoyaltySystemMap: React.FC = () => {
         birthday:
           birthdayCountRes.status === "fulfilled"
             ? (birthdayCountRes.value as any)?.data?.total ?? null
+            : null,
+        inactiveTrend:
+          countsRes.status === "fulfilled"
+            ? (countsRes.value as any)?.data?.data?.inactiveTrend ?? null
+            : null,
+        pointsTrend:
+          countsRes.status === "fulfilled"
+            ? (countsRes.value as any)?.data?.data?.pointsTrend ?? null
             : null,
       };
       const upcomingBirthdays =
@@ -1028,6 +1038,23 @@ const LoyaltySystemMap: React.FC = () => {
       (s: any) => s && typeof s.content === "string" && s.content.trim(),
     );
 
+    const it = counts.inactiveTrend;
+    const pt = counts.pointsTrend;
+    const inactiveTrend = it
+      ? {
+          up: it.last7d > it.prev7d,
+          text: `اتسكتوا آخر 7 أيام: ${fmt(it.last7d)} (قبلها: ${fmt(it.prev7d)})`,
+          goodWhenUp: false,
+        }
+      : undefined;
+    const pointsTrend = pt
+      ? {
+          up: pt.last30d > pt.prev30d,
+          text: `كسبوا نقاط آخر 30 يوم: ${fmt(pt.last30d)} (قبلها: ${fmt(pt.prev30d)})`,
+          goodWhenUp: true,
+        }
+      : undefined;
+
     return [
       {
         id: "occasion",
@@ -1079,6 +1106,7 @@ const LoyaltySystemMap: React.FC = () => {
         count: counts.inactive ?? null,
         enabled: loops.inactive === true,
         settingsKey: "inactive" as const,
+        trend: inactiveTrend,
       },
       {
         id: "points",
@@ -1094,6 +1122,7 @@ const LoyaltySystemMap: React.FC = () => {
         count: counts.points ?? null,
         enabled: loops.points === true,
         settingsKey: "points" as const,
+        trend: pointsTrend,
       },
     ];
   }, [data, routing, birthdaySource]);
@@ -2038,6 +2067,23 @@ const LoyaltySystemMap: React.FC = () => {
                     {line.count === null ? "غير محدد" : fmt(line.count)}
                   </span>
                 </div>
+                {line.trend && (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      line.trend.up === line.trend.goodWhenUp
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                    }`}
+                    title={line.trend.text}
+                  >
+                    {line.trend.up ? (
+                      <TrendingUp className="h-3 w-3" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3" />
+                    )}
+                    {line.trend.text}
+                  </span>
+                )}
                 {line.id === "postPurchase" && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500 dark:text-gray-400">
