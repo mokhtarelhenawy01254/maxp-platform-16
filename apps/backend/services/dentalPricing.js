@@ -67,6 +67,8 @@ const resolveDoctorWorkTypePrice = async (prisma, companyId, doctorId, workType)
   const map = await readSetting(prisma, companyId, 'doctorPricing');
   const doctorMap = map && typeof map === 'object' ? map[doctorId] : null;
   const over = doctorMap && typeof doctorMap === 'object' ? doctorMap[workType.id] : null;
+  // لا يوجد تسعير مخصص => السعر الافتراضي (Number(null)=0 كان يخفي الأسعار كلها)
+  if (over === null || over === undefined || over === '') return basePrice;
   const p = Number(over);
   return Number.isFinite(p) && p >= 0 ? round2(p) : basePrice;
 };
