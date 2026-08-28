@@ -719,6 +719,9 @@ app.use("/uploads", async (req, res, next) => {
       optimizedVariant?.cacheControl || "public, max-age=2592000, immutable";
 
     res.setHeader("Cache-Control", cacheControl);
+    if (optimizedVariant?.contentType) {
+      res.setHeader("Content-Type", optimizedVariant.contentType);
+    }
     return res.sendFile(fileToSend, (error) => {
       if (error) {
         next(error);

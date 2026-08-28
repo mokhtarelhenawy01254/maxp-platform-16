@@ -148,9 +148,13 @@ const resolveOptimizedUploadVariant = async ({
     await writeOptimizedVariant(sourceFilePath, variantFilePath, options);
   }
 
+  const contentType =
+    options.format === 'avif' ? 'image/avif' : 'image/webp';
+
   return {
     filePath: variantFilePath,
     cacheControl: 'public, max-age=31536000, immutable',
+    contentType,
   };
 };
 

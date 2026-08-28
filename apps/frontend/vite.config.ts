@@ -87,8 +87,10 @@ const filterStorefrontDeferredPreloads = (deps: string[]): string[] =>
 // Route chunks that are statically imported by the admin entry/App chunk and
 // therefore MUST execute during startup. All other route chunks are loaded
 // lazily on navigation, so we do not preload them (saves bandwidth + parse).
+// 2026-08 perf patch 2: dashboard/inbox removed from startup — they are lazy
+// for storefront visitors and save ~530KB initial preload (414KB inbox + 115KB dashboard).
 const ADMIN_STARTUP_ROUTE_CHUNK_PATTERN =
-  /^route-(?:storefront|dashboard|auth|inbox|super-admin|public)-/;
+  /^route-(?:storefront|auth|public)-/;
 
 const filterLazyRoutePreloads = (deps: string[]): string[] =>
   deps.filter((dep) => {
@@ -513,10 +515,10 @@ export default defineConfig(({ mode }) => {
       },
       modulePreload: {
         resolveDependencies(filename, deps) {
-          const storefrontFiltered = shouldFilterStorefrontPreloads(filename, deps)
-            ? filterStorefrontDeferredPreloads(deps)
-            : deps;
-          return filterLazyRoutePreloads(storefrontFiltered);
+          // 2026-08 perf patch 2: always defer heavy vendor chunks from initial
+          // preload (saves ~1.6MB for storefront visitors). Admin will lazy-load
+          // them on first navigation to dashboard/inbox if needed.
+          return filterLazyRoutePreloads(filterStorefrontDeferredPreloads(deps));
         },
       },
       minify: buildMinifier,
