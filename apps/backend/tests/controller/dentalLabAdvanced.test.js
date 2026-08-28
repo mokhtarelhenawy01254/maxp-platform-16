@@ -251,7 +251,7 @@ describe('dentalLabController advanced features', () => {
         data: { status: 'DESIGN', orderStatus: 'IN_PROGRESS' },
       });
       expect(prisma.dentalCaseStage.updateMany).toHaveBeenCalledWith({
-        where: { caseId: 'case-1' },
+        where: { caseId: 'case-1', sortOrder: { gte: 1 } },
         data: { status: 'PENDING', startedAt: null, completedAt: null, assigneeId: null, assigneeName: null },
       });
       expect(prisma.dentalCaseAssignment.deleteMany).toHaveBeenCalledWith({ where: { caseId: 'case-1' } });

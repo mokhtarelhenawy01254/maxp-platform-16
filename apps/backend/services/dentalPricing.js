@@ -1,5 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
-const { parseSettingValue } = require('../utils/dentalLabHelpers');
+const { parseSettingValue, parseDate } = require('../utils/dentalLabHelpers');
 
 const round2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 
@@ -26,10 +26,15 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
   const db = prisma || getSharedPrismaClient();
   const where = { companyId, status: 'DONE', assigneeId: { not: null } };
   if (technicianId) where.assigneeId = technicianId;
-  if (from || to) {
+  const fromDate = parseDate(from);
+  const toDate = parseDate(to);
+  if (fromDate || toDate) {
     where.completedAt = {};
-    if (from) where.completedAt.gte = new Date(from);
-    if (to) where.completedAt.lte = new Date(to);
+    if (fromDate) where.completedAt.gte = fromDate;
+    if (toDate) {
+      const { getEndOfDayInTimezone } = require('../utils/dateUtils');
+      where.completedAt.lte = getEndOfDayInTimezone(toDate);
+    }
   }
   const stages = await db.dentalCaseStage.findMany({ where, select: { assigneeId: true } });
   const defaults = await getTechnicianWageDefaults(db, companyId);

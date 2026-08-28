@@ -1900,8 +1900,11 @@ const flagRefabrication = async (req, res) => {
       });
 
       if (Array.isArray(dentalCase.stages) && dentalCase.stages.length) {
+        const fromStage = stageForStatus(dentalCase.stages, stageFrom);
+        const fromOrder = fromStage ? Number(fromStage.sortOrder) : CASE_STATUS_CHAIN.indexOf(stageFrom);
+        const whereStage = Number.isFinite(fromOrder) && fromOrder >= 0 ? { caseId: id, sortOrder: { gte: fromOrder } } : { caseId: id };
         await tx.dentalCaseStage.updateMany({
-          where: { caseId: id },
+          where: whereStage,
           data: { status: 'PENDING', startedAt: null, completedAt: null, assigneeId: null, assigneeName: null },
         });
       }
@@ -2534,6 +2537,14 @@ const setDoctorPricing = async (req, res) => {
     for (const [workTypeId, price] of Object.entries(map)) {
       const p = Number(price);
       if (Number.isFinite(p) && p >= 0) clean[workTypeId] = round2(p);
+    }
+    const workTypeIds = Object.keys(clean);
+    if (workTypeIds.length) {
+      const existingTypes = await prisma.dentalWorkType.findMany({ where: { companyId, id: { in: workTypeIds } }, select: { id: true } });
+      const existingIds = new Set(existingTypes.map((e) => e.id));
+      for (const wid of workTypeIds) {
+        if (!existingIds.has(wid)) return res.status(400).json({ success: false, error: `نوع الشغل غير موجود: ${wid}` });
+      }
     }
     await prisma.dentalSetting.upsert({
       where: { companyId_key: { companyId, key: 'doctorPricing' } },
