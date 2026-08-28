@@ -16,12 +16,13 @@ router.get('/files/:name', async (req, res) => {
     const name = path.basename(String(req.params.name || ''));
     if (!name) return res.status(400).json({ success: false, error: 'اسم الملف مطلوب' });
     const prisma = getSharedPrismaClient();
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.dentist?.companyId;
+    if (!companyId) return res.status(401).json({ success: false, error: 'غير مصرح' });
     const attachment = await prisma.dentalCaseAttachment.findFirst({
-      where: { storedPath: name, kind: { not: 'DESIGN_REVIEW' }, ...(companyId ? { companyId } : {}) },
+      where: { storedPath: name, kind: { not: 'DESIGN_REVIEW' }, companyId },
       select: { id: true, storedPath: true, fileName: true, mimeType: true, companyId: true },
     });
-    if (!attachment || (companyId && attachment.companyId !== companyId)) {
+    if (!attachment || attachment.companyId !== companyId) {
       return res.status(404).json({ success: false, error: 'الملف غير موجود' });
     }
     const filePath = path.join(dentalLabDir, name);
@@ -44,12 +45,13 @@ router.get('/design-review/:name', async (req, res) => {
     const name = path.basename(String(req.params.name || ''));
     if (!name) return res.status(400).json({ success: false, error: 'اسم الملف مطلوب' });
     const prisma = getSharedPrismaClient();
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.dentist?.companyId;
+    if (!companyId) return res.status(401).json({ success: false, error: 'غير مصرح' });
     const attachment = await prisma.dentalCaseAttachment.findFirst({
-      where: { storedPath: name, kind: 'DESIGN_REVIEW', ...(companyId ? { companyId } : {}) },
+      where: { storedPath: name, kind: 'DESIGN_REVIEW', companyId },
       select: { id: true, storedPath: true, fileName: true, companyId: true },
     });
-    if (!attachment || (companyId && attachment.companyId !== companyId)) {
+    if (!attachment || attachment.companyId !== companyId) {
       return res.status(404).json({ success: false, error: 'الملف غير موجود' });
     }
     const filePath = path.join(dentalLabDir, name);
@@ -69,8 +71,8 @@ router.get('/design-review/:name', async (req, res) => {
 
 // Doctors
 router.get('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.listDoctors);
-router.post('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.createDoctor);
-router.put('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.updateDoctor);
+router.post('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.createDoctor);
+router.put('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateDoctor);
 router.delete('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.deleteDoctor);
 
 // Work types
@@ -81,8 +83,8 @@ router.delete('/work-types/:id', verifyToken.authenticateToken, dentalRoleGuard(
 
 // Technicians
 router.get('/technicians', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.listTechnicians);
-router.post('/technicians', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.createTechnician);
-router.put('/technicians/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.updateTechnician);
+router.post('/technicians', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.createTechnician);
+router.put('/technicians/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateTechnician);
 router.delete('/technicians/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.deleteTechnician);
 
 // Cases

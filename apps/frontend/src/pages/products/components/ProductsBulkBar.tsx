@@ -5,6 +5,7 @@ import {
   EyeSlashIcon,
   EyeIcon,
   ArrowPathIcon,
+  CubeIcon,
 } from "@heroicons/react/24/outline";
 
 interface ProductsBulkBarProps {
@@ -14,6 +15,8 @@ interface ProductsBulkBarProps {
   onHide: () => void;
   onUnhide: () => void;
   onConvertToPresentations: () => void;
+  onEnableTrack?: () => void;
+  onDisableTrack?: () => void;
 }
 
 const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
@@ -23,6 +26,8 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
   onHide,
   onUnhide,
   onConvertToPresentations,
+  onEnableTrack,
+  onDisableTrack,
 }) => {
   if (selectedCount === 0) return null;
 
@@ -38,6 +43,22 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
         >
           <ArrowPathIcon className="h-4 w-4 ml-1" />
           حوّل إلى عروض تقديمية
+        </button>
+        <button
+          onClick={onEnableTrack}
+          className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+          title="تفعيل تتبع المخزون للمنتجات والمتغيرات"
+        >
+          <CubeIcon className="h-4 w-4 ml-1" />
+          تفعيل التتبع
+        </button>
+        <button
+          onClick={onDisableTrack}
+          className="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg text-sm font-semibold hover:bg-gray-600 transition-colors shadow-sm"
+          title="إيقاف تتبع المخزون"
+        >
+          <CubeIcon className="h-4 w-4 ml-1 opacity-60" />
+          إيقاف التتبع
         </button>
         <button
           onClick={onHide}

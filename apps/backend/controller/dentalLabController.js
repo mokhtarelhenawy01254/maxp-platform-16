@@ -191,9 +191,9 @@ const listDoctors = async (req, res) => {
       prisma.dentalLabDoctor.count({ where }),
     ]);
 
-    // دفتر الذمم: حساب كل طبيب (عميل) — الفواتير غير الملغاة + الحالات النشطة
+    // دفتر الذمم: حساب كل طبيب (عميل) — الفواتير غير الملغاة + الحالات النشطة - الائتمانات
     const ids = items.map((d) => d.id);
-    const [invAgg, caseAgg] = await Promise.all([
+    const [invAgg, caseAgg, creditAgg] = await Promise.all([
       prisma.dentalInvoice.groupBy({
         by: ['doctorId'],
         where: { companyId, doctorId: { in: ids }, status: { not: 'VOID' } },
@@ -204,9 +204,15 @@ const listDoctors = async (req, res) => {
         where: { companyId, doctorId: { in: ids }, status: { notIn: ['DELIVERED', 'CLOSED'] } },
         _count: { _all: true },
       }),
+      prisma.dentalCreditNote.groupBy({
+        by: ['doctorId'],
+        where: { companyId, doctorId: { in: ids } },
+        _sum: { amount: true },
+      }),
     ]);
     const invByDoctor = new Map(invAgg.map((r) => [r.doctorId, r._sum]));
     const casesByDoctor = new Map(caseAgg.map((r) => [r.doctorId, r._count._all || 0]));
+    const creditByDoctor = new Map(creditAgg.map((r) => [r.doctorId, Number(r._sum.amount) || 0]));
     const overdueRows = await prisma.dentalLabCase.findMany({
       where: { companyId, doctorId: { in: ids }, dueDate: { lt: new Date() }, status: { notIn: ['DELIVERED', 'CLOSED'] } },
       select: { doctorId: true },
@@ -216,7 +222,8 @@ const listDoctors = async (req, res) => {
 
     const enriched = items.map((d) => {
       const sums = invByDoctor.get(d.id) || {};
-      const outstanding = round2(Number(sums.remaining) || 0);
+      const credit = creditByDoctor.get(d.id) || 0;
+      const outstanding = round2(Math.max(0, (Number(sums.remaining) || 0) - credit));
       const creditLimit = Number(d.creditLimit) || 0;
       return {
         ...d,
@@ -2075,7 +2082,11 @@ const getDoctorStatement = async (req, res) => {
       if (docRow) doctor = { id: docRow.id, name: docRow.name };
     }
 
-    const [cases, invoices, invoiceAgg] = await Promise.all([
+    const creditWhere = { companyId };
+    if (doctorId) creditWhere.doctorId = doctorId;
+    if (fromDate) creditWhere.createdAt = { ...(creditWhere.createdAt || {}), gte: fromDate };
+    if (toDate) creditWhere.createdAt = { ...(creditWhere.createdAt || {}), lte: toDate };
+    const [cases, invoices, invoiceAgg, creditAgg] = await Promise.all([
       prisma.dentalLabCase.findMany({ where: caseWhere, orderBy: { createdAt: 'desc' } }),
       prisma.dentalInvoice.findMany({
         where: invoiceWhere,
@@ -2087,12 +2098,14 @@ const getDoctorStatement = async (req, res) => {
         _sum: { total: true, paid: true, remaining: true },
         _count: { _all: true },
       }),
+      prisma.dentalCreditNote.aggregate({ where: creditWhere, _sum: { amount: true } }),
     ]);
 
     if (!doctor && invoices && invoices.length) {
       doctor = { id: null, name: invoices[0].doctorName || null };
     }
 
+    const creditTotal = round2((creditAgg && creditAgg._sum && creditAgg._sum.amount) || 0);
     res.json({
       success: true,
       data: {
@@ -2104,7 +2117,8 @@ const getDoctorStatement = async (req, res) => {
           invoicesCount: (invoiceAgg && invoiceAgg._count && invoiceAgg._count._all) || 0,
           invoiced: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.total) || 0),
           paid: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.paid) || 0),
-          remaining: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.remaining) || 0),
+          remaining: round2(Math.max(0, ((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.remaining) || 0) - creditTotal)),
+          creditTotal,
         },
       },
     });
@@ -2382,10 +2396,14 @@ const getAgingReport = async (req, res) => {
     if (!companyId) return;
     const prisma = getSharedPrismaClient();
     const now = new Date();
-    const invoices = await prisma.dentalInvoice.findMany({
-      where: { companyId, status: { not: 'VOID' } },
-      select: { id: true, invoiceNumber: true, doctorName: true, total: true, paid: true, remaining: true, dueDate: true, status: true },
-    });
+    const [invoices, creditAgg] = await Promise.all([
+      prisma.dentalInvoice.findMany({
+        where: { companyId, status: { not: 'VOID' } },
+        select: { id: true, invoiceNumber: true, doctorName: true, total: true, paid: true, remaining: true, dueDate: true, status: true },
+      }),
+      prisma.dentalCreditNote.aggregate({ where: { companyId }, _sum: { amount: true } }),
+    ]);
+    const creditTotal = round2((creditAgg && creditAgg._sum && creditAgg._sum.amount) || 0);
     const buckets = [
       { label: 'current', min: -Infinity, max: 0, total: 0, invoices: 0 },
       { label: '0_30', min: 0, max: 30, total: 0, invoices: 0 },
@@ -2410,7 +2428,8 @@ const getAgingReport = async (req, res) => {
       }
     }
     for (const b of buckets) b.total = round2(b.total);
-    res.json({ success: true, data: { buckets, totalOutstanding: round2(buckets.reduce((s, b) => s + b.total, 0)) } });
+    const grossOutstanding = round2(buckets.reduce((s, b) => s + b.total, 0));
+    res.json({ success: true, data: { buckets, totalOutstanding: round2(Math.max(0, grossOutstanding - creditTotal)), creditTotal, grossOutstanding } });
   } catch (error) {
     console.error('Error fetching dental aging report:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب تقرير الأعمار' });

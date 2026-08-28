@@ -32,6 +32,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: apps/backend/package-lock.json
       - run: npm ci
       - name: Syntax check dental files
         run: |
@@ -53,6 +54,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: apps/frontend/package-lock.json
       - run: npm ci
       - run: npm run i18n:merge
       - run: npm run i18n:types
