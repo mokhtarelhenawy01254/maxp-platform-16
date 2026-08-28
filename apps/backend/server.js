@@ -695,8 +695,31 @@ app.use("/api/v1/product-landings", productLandingPagesRoutes);
 app.use("/api/v1/external/dev-tasks", devTaskExternalRoutes);
 
 // Static User Content Surface
+// 2026-08 security: sensitive upload folders (HR, payments, affiliate, dental-lab,
+// tasks, support) are gated behind the logged-in refreshToken cookie and never
+// cached. Public-but-shareable folders (conversations/whatsapp/companies) are
+// served no-store so Cloudflare never retains a copy of possibly private media.
+const PRIVATE_UPLOAD_PREFIXES = [
+  '/hr/',
+  '/payment-receipts/',
+  '/affiliate-documents/',
+  '/affiliate-payouts/',
+  '/dental-lab/',
+  '/tasks/',
+  '/dev-tasks/',
+  '/support/',
+];
+const NO_CACHE_UPLOAD_PREFIXES = ['/conversations/', '/whatsapp/', '/companies/'];
+
 app.use("/uploads", async (req, res, next) => {
   try {
+    const uploadPathname = req.path;
+    const isPrivateUpload =
+      PRIVATE_UPLOAD_PREFIXES.some((prefix) => uploadPathname.startsWith(prefix));
+    const isNoCacheUpload =
+      isPrivateUpload ||
+      NO_CACHE_UPLOAD_PREFIXES.some((prefix) => uploadPathname.startsWith(prefix));
+
     const { resolveOptimizedUploadVariant } = require("./utils/uploadImageOptimizer");
     const resolvedUploadFile = resolveUploadRequestFile(req.path);
 
@@ -706,6 +729,27 @@ app.use("/uploads", async (req, res, next) => {
         error: "Asset Not Found",
         message: "الملف المطلوب غير موجود",
         path: `/uploads${req.path}`,
+      });
+    }
+
+    // Private folders: require a logged-in dashboard session (refreshToken cookie).
+    // 404 (not 403) to avoid revealing that the file exists.
+    if (isPrivateUpload && !req.cookies?.refreshToken) {
+      return res.status(404).json({
+        success: false,
+        error: "Asset Not Found",
+        message: "الملف المطلوب غير موجود",
+        path: `/uploads${req.path}`,
+      });
+    }
+
+    // Private / shareable folders must never be cached by Cloudflare or the browser.
+    if (isNoCacheUpload) {
+      res.setHeader("Cache-Control", "private, no-store");
+      return res.sendFile(resolvedUploadFile, (error) => {
+        if (error) {
+          next(error);
+        }
       });
     }
 
