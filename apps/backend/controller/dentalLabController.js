@@ -816,6 +816,17 @@ const updateCase = async (req, res) => {
     const existing = await prisma.dentalLabCase.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
+    // RECEPTION لا يعدل الحقول المالية
+    const financialFields = ['priceSnapshot', 'discount', 'paid', 'doctorId', 'workTypeId', 'workTypeName'];
+    const hasFinancialChange = financialFields.some((f) => f in body);
+    if (hasFinancialChange) {
+      const teamRolesUpd = await require('../services/dentalRoles').loadTeamRoles(companyId);
+      const roleUpd = resolveDentalRole(req.user, teamRolesUpd);
+      if (roleUpd === 'RECEPTION') {
+        return res.status(403).json({ success: false, error: 'غير مصرح بتعديل الحقول المالية' });
+      }
+    }
+
     const data = {};
     for (const field of CASE_UPDATE_FIELDS) {
       if (field in body) data[field] = body[field];

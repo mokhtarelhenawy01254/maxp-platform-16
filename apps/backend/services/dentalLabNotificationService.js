@@ -399,7 +399,7 @@ async function runDunningCheck(companyId) {
     const newlySent = [];
     for (const inv of invoices || []) {
       const remaining = Number(inv.remaining) || 0;
-      const overdue = !inv.dueDate || new Date(inv.dueDate) < cutoff;
+      const overdue = inv.dueDate && new Date(inv.dueDate) < cutoff;
       if (remaining <= 0 || !overdue) { skipped++; continue; }
       if (sentSet.has(inv.id)) { skipped++; continue; }
       const phone = inv.doctor && inv.doctor.phone;

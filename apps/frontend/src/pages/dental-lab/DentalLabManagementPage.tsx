@@ -19,15 +19,19 @@ export default function DentalLabManagementPage() {
   const { t } = useTranslation();
   const { "*": path } = useParams();
   const [techPortal, setTechPortal] = useState<boolean | null>(null);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     fetchMyInfo()
       .then((info) => {
-        if (mounted) setTechPortal(info.dentalRole === "TECHNICIAN");
+        if (mounted) {
+          setTechPortal(info.dentalRole === "TECHNICIAN");
+          setFetchError(false);
+        }
       })
       .catch(() => {
-        if (mounted) setTechPortal(false);
+        if (mounted) setFetchError(true);
       });
     return () => {
       mounted = false;
@@ -44,6 +48,17 @@ export default function DentalLabManagementPage() {
 
   const urlTab = (path || "").split("/")[0] || "";
   const activeTab = (TABS.some(t => t.id === urlTab) ? urlTab : "dashboard") as TabId;
+
+  if (fetchError) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <p className="text-sm text-red-500">{t("dentalLab.common.noData")}</p>
+          <button onClick={() => { setFetchError(false); setTechPortal(null); fetchMyInfo().then(i=>setTechPortal(i.dentalRole==="TECHNICIAN")).catch(()=>setFetchError(true)); }} className="px-4 py-2 border rounded-lg text-sm">{t("dentalLab.common.refresh")}</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">

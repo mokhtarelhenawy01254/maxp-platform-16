@@ -76,6 +76,13 @@ const createPrisma = (overrides = {}) => {
       aggregate: jest.fn(),
       groupBy: jest.fn(),
     },
+    dentalCreditNote: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+      create: jest.fn(),
+      aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      groupBy: jest.fn().mockResolvedValue([]),
+    },
     dentalPayment: {
       findMany: jest.fn(),
       create: jest.fn(),

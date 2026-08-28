@@ -1,0 +1,30 @@
+model Article {
+  id             String    @id @default(cuid())
+  companyId      String
+  title          String
+  slug           String
+  excerpt        String?   @db.Text
+  content        String?   @db.Text
+  heroImage      String?
+  authorName     String?   @default("Jake Morrison")
+  authorTitle    String?   @default("8 years barber chair — product reviewer")
+  category       String?   @default("Guides")
+  tags           String?
+  isPublished    Boolean   @default(false)
+  publishedAt    DateTime?
+  views          Int       @default(0)
+  seoTitle       String?
+  seoDescription String?   @db.Text
+  amazonProducts String?   @db.Text
+  faqItems       String?   @db.Text
+  tocItems       String?   @db.Text
+  sources        String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, slug])
+  @@index([companyId, isPublished])
+  @@index([slug])
+  @@map("articles")
+}

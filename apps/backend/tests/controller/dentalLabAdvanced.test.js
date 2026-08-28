@@ -73,6 +73,8 @@ dentalRefabrication: {
       findMany: jest.fn(),
       count: jest.fn(),
       create: jest.fn(),
+      aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      groupBy: jest.fn().mockResolvedValue([]),
     },
     dentalCaseStatusHistory: {
       findMany: jest.fn(),
@@ -527,7 +529,7 @@ describe('dentalLabController advanced features', () => {
       expect(res.payload.data.cases).toHaveLength(1);
       expect(res.payload.data.invoices).toHaveLength(1);
       expect(res.payload.data.invoices[0].payments).toHaveLength(1);
-      expect(res.payload.data.totals).toEqual({ cases: 1, invoicesCount: 1, invoiced: 200, paid: 50, remaining: 150 });
+      expect(res.payload.data.totals).toEqual({ cases: 1, invoicesCount: 1, invoiced: 200, paid: 50, remaining: 150, creditTotal: 0 });
       const invoiceWhere = prisma.dentalInvoice.aggregate.mock.calls[0][0].where;
       expect(invoiceWhere).toMatchObject({ companyId: 'company-1', doctorId: 'doc-1', status: { not: 'VOID' } });
     });
