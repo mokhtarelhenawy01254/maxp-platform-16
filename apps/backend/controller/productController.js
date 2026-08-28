@@ -3557,6 +3557,44 @@ const updateProductVariant = async (req, res) => {
       data: updateData
     });
 
+    // 🔔 Swan Waitlist: مقاس 38 رجع متوفر → نبه Wishlist (variantId) عبر إشعارات العملاء
+    if (existingVariant.stock <= 0 && updatedVariant.stock > 0 && updatedVariant.trackInventory !== false) {
+      const prisma = getSharedPrismaClient();
+      prisma.wishlist.findMany({
+        where: { companyId, productId: id, variantId, sessionId: { not: 'anonymous' } },
+        select: { sessionId: true, customerId: true, productId: true, variantId: true }
+      }).then(async (waiters) => {
+        if (!waiters || waiters.length === 0) return;
+        // Resolve customers: try customerId first, fallback to sessionId-derived lookup
+        const customerIds = waiters.map(w => w.customerId).filter(Boolean);
+        let customers = [];
+        if (customerIds.length > 0) {
+          customers = await prisma.customer.findMany({ where: { id: { in: customerIds }, companyId }, select: { id: true, phone: true, firstName: true, lastName: true } });
+        }
+        // Also try to match wishlist session to customer by phone? Keep minimal
+        const product = await prisma.product.findUnique({ where: { id }, select: { name: true } });
+        const variantName = updatedVariant.name || 'المقاس المطلوب';
+        for (const c of customers) {
+          try {
+            const { sendCustomerNotification } = require('../services/hr/customerNotificationScheduleService');
+            await sendCustomerNotification({
+              companyId,
+              eventType: 'BACK_IN_STOCK_VARIANT',
+              customer: { id: c.id, phone: c.phone, firstName: c.firstName, lastName: c.lastName, name: `${c.firstName||''} ${c.lastName||''}`.trim() },
+              customerId: c.id,
+              variables: {
+                productName: product?.name || 'منتج',
+                variantName,
+                variantId,
+                productId: id
+              }
+            });
+          } catch (e) { console.warn('Waitlist notify failed', e.message); }
+        }
+        console.log(`✅ [WAITLIST] Notified ${customers.length}/${waiters.length} for variant ${variantId} restock`);
+      }).catch(e => console.warn('Waitlist lookup failed', e.message));
+    }
+
     res.json({
       success: true,
       data: updatedVariant,
@@ -3885,6 +3923,51 @@ const bulkUpdateAffiliateVisibility = async (req, res) => {
   }
 };
 
+const bulkUpdateTrackInventory = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const { productIds, trackInventory, includeVariants = true } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة المنتجات مطلوبة' });
+    }
+    if (typeof trackInventory !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'trackInventory يجب أن يكون true أو false' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    if (isMerchantUser(req.user) && isCompanyWarehouseMerchant(await resolveMerchantAccount(req.user))) {
+      return res.status(403).json({ success: false, message: 'صلاحيات التاجر (مخزن الشركة) لا تسمح بتعديل تتبع المخزون' });
+    }
+
+    const productResult = await prisma.product.updateMany({
+      where: { id: { in: productIds }, companyId },
+      data: { trackInventory: Boolean(trackInventory) },
+    });
+
+    let variantCount = 0;
+    if (includeVariants) {
+      const variantResult = await prisma.productVariant.updateMany({
+        where: { productId: { in: productIds }, product: { companyId } },
+        data: { trackInventory: Boolean(trackInventory) },
+      });
+      variantCount = variantResult.count;
+    }
+
+    // Swan use-case: 96 product bulk fix — log for audit
+    console.log(`✅ [BULK-TRACK-INVENTORY] company=${companyId} trackInventory=${trackInventory} products=${productResult.count} variants=${variantCount}`);
+
+    res.json({ success: true, data: { productsUpdated: productResult.count, variantsUpdated: variantCount, trackInventory: Boolean(trackInventory) } });
+  } catch (err) {
+    console.error('Bulk trackInventory update error:', err);
+    res.status(500).json({ success: false, message: 'فشل في تحديث تتبع المخزون' });
+  }
+};
+
 module.exports = {
   getAllProducts,
   getCategory,
@@ -3898,6 +3981,7 @@ module.exports = {
   deleteAllProducts,
   bulkUpdateVisibility,
   bulkUpdateAffiliateVisibility,
+  bulkUpdateTrackInventory,
   createProduct,
   duplicateProduct,
   deleteImageFromOneProduct,

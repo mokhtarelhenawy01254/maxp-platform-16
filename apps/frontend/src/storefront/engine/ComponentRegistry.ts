@@ -39,6 +39,16 @@ const InfoContentSection = React.lazy(() => import('../sections/InfoContentSecti
 const JournalStrip = React.lazy(() => import('../sections/JournalStrip'));
 const ShoeFitFinder = React.lazy(() => import('../sections/ShoeFitFinder'));
 const TikTokFeedSection = React.lazy(() => import('../sections/TikTokFeedSection'));
+const AffiliateDisclosure = React.lazy(() => import('../sections/AffiliateDisclosure'));
+const AffiliateTopPicks = React.lazy(() => import('../sections/AffiliateTopPicks'));
+const ArticleGrid = React.lazy(() => import('../sections/ArticleGrid'));
+const AffiliateQuiz = React.lazy(() => import('../sections/AffiliateQuiz'));
+const AffiliateFaq = React.lazy(() => import('../sections/AffiliateFaq'));
+const AffiliateToc = React.lazy(() => import('../sections/AffiliateToc'));
+const AffiliateProTip = React.lazy(() => import('../sections/AffiliateProTip'));
+const AffiliateSources = React.lazy(() => import('../sections/AffiliateSources'));
+const AffiliateBreadcrumbs = React.lazy(() => import('../sections/AffiliateBreadcrumbs'));
+const AffiliateArticleSeo = React.lazy(() => import('../sections/AffiliateArticleSeo'));
 
 const baseComponentRegistry: Record<
   string,
@@ -80,6 +90,16 @@ const baseComponentRegistry: Record<
   'info-content': InfoContentSection,
   'member-registration': MemberRegistration,
   'tiktok-feed': TikTokFeedSection,
+  'affiliate-disclosure': AffiliateDisclosure,
+  'affiliate-top-picks': AffiliateTopPicks,
+  'article-grid': ArticleGrid,
+  'affiliate-quiz': AffiliateQuiz,
+  'affiliate-faq': AffiliateFaq,
+  'affiliate-toc': AffiliateToc,
+  'affiliate-pro-tip': AffiliateProTip,
+  'affiliate-sources': AffiliateSources,
+  'affiliate-breadcrumbs': AffiliateBreadcrumbs,
+  'affiliate-article-seo': AffiliateArticleSeo,
 };
 
 /**

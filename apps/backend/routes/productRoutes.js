@@ -57,6 +57,7 @@ router.post('/', verifyToken.authenticateToken, requireDbPermission('products.cr
 router.delete('/bulk/delete', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteAllProducts);
 router.patch('/bulk/visibility', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateVisibility);
 router.patch('/bulk/affiliate-visibility', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateAffiliateVisibility);
+router.patch('/bulk/track-inventory', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateTrackInventory);
 router.get('/categories', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getCategory);
 router.post('/categories', verifyToken.authenticateToken, requireDbPermission('products.create'), upload.single('image'), productController.createNewCategory);
 router.put('/categories/:id', verifyToken.authenticateToken, requireDbPermission('products.edit'), upload.single('image'), productController.updateCategory);

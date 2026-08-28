@@ -1,0 +1,663 @@
+import { apiClient } from "@/services/api";
+import { config } from "@/config";
+import type { AxiosResponse } from "axios";
+import { LayoutDashboard, ListChecks, Users, CreditCard, Settings, Wrench, Bell, BarChart3 } from "lucide-react";
+
+export type TabId =
+  | "dashboard" | "cases" | "doctors" | "work-types" | "technicians" | "invoices" | "settings" | "notifications" | "reports";
+
+export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: "dashboard", label: "dentalLab.tabs.dashboard", icon: LayoutDashboard },
+  { id: "cases", label: "dentalLab.tabs.cases", icon: ListChecks },
+  { id: "doctors", label: "dentalLab.tabs.doctors", icon: Users },
+  { id: "work-types", label: "dentalLab.tabs.work-types", icon: Wrench },
+  { id: "technicians", label: "dentalLab.tabs.technicians", icon: Users },
+  { id: "invoices", label: "dentalLab.tabs.invoices", icon: CreditCard },
+  { id: "settings", label: "dentalLab.tabs.settings", icon: Settings },
+  { id: "notifications", label: "dentalLab.notifications.title", icon: Bell },
+  { id: "reports", label: "dentalLab.reports.title", icon: BarChart3 },
+];
+
+export type DentalCaseStatus = "RECEIVED" | "DESIGN" | "MANUFACTURING" | "QC" | "READY" | "DELIVERED" | "CLOSED";
+export type DentalCasePriority = "NORMAL" | "URGENT" | "STAT";
+export type DentalPaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
+export type DentalTechnicianRole = "RECEPTION" | "CAD" | "TECHNICIAN" | "QC";
+
+export interface DentalLabDoctor {
+  id: string;
+  name: string;
+  phone?: string;
+  clinicName?: string;
+  governorate?: string;
+  portalPin?: string;
+  creditLimit?: number;
+  notes?: string;
+  isActive: boolean;
+  createdAt?: string;
+  totalBilled?: number;
+  totalPaid?: number;
+  outstanding?: number;
+  activeCases?: number;
+  overdueCases?: number;
+  creditExceeded?: boolean;
+}
+
+export interface DentalWorkType {
+  id: string;
+  name: string;
+  category?: string;
+  price: number;
+  leadTimeDays?: number;
+  isActive: boolean;
+  sortOrder?: number;
+  createdAt?: string;
+}
+
+export interface DentalTechnician {
+  id: string;
+  name: string;
+  phone?: string;
+  role: DentalTechnicianRole;
+  userId?: string;
+  wagePerStage?: number;
+  isActive: boolean;
+  createdAt?: string;
+  completedStages?: number;
+  totalEarnings?: number;
+}
+
+export interface DentalCaseStage {
+  id: string;
+  caseId?: string;
+  name: string;
+  status: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  startedAt?: string;
+  completedAt?: string;
+  sortOrder?: number;
+  notes?: string;
+}
+
+export interface DentalCaseAssignment {
+  id: string;
+  caseId?: string;
+  technicianId: string;
+  role: DentalTechnicianRole;
+  technician?: { id: string; name: string; role?: string };
+  assignedAt?: string;
+}
+
+export interface DentalCaseAttachment {
+  id: string;
+  caseId?: string;
+  fileName: string;
+  storedName?: string;
+  mimeType?: string;
+  kind?: string;
+  size?: number;
+  uploadedBy?: string;
+  createdAt?: string;
+}
+
+export interface DentalPayment {
+  id: string;
+  invoiceId?: string;
+  amount: number;
+  method?: string;
+  note?: string;
+  paidBy?: string;
+  createdAt?: string;
+}
+
+export interface DentalInvoice {
+  id: string;
+  invoiceNumber?: string;
+  caseId?: string;
+  caseNumber?: string;
+  doctorId?: string;
+  doctorName?: string;
+  patientName?: string;
+  total: number;
+  paid: number;
+  remaining: number;
+  paymentStatus: DentalPaymentStatus;
+  status?: string;
+  createdAt?: string;
+  payments?: DentalPayment[];
+}
+
+export interface DentalCustomFieldDef {
+  id: string;
+  name: string;
+  key?: string;
+  fieldType?: string;
+  isActive: boolean;
+  sortOrder?: number;
+}
+
+export interface DentalCaseCustomValue {
+  id: string;
+  fieldId?: string;
+  field?: { id: string; name: string; fieldType?: string };
+  value?: string;
+}
+
+export interface DentalCaseHistoryEntry {
+  id: string;
+  caseId?: string;
+  fromStatus?: string;
+  toStatus?: string;
+  changedBy?: string;
+  userName?: string;
+  reason?: string;
+  createdAt?: string;
+}
+
+export interface DentalQualityCheck {
+  id: string;
+  caseId?: string;
+  checkedBy?: string;
+  checkedByName?: string;
+  passed: boolean;
+  notes?: string;
+  checkedAt?: string;
+}
+
+export interface DentalRefabrication {
+  id: string;
+  caseId?: string;
+  reason?: string;
+  stageFrom?: string;
+  requestedBy?: string;
+  requestedByName?: string;
+  resolved: boolean;
+  resolvedBy?: string;
+  resolvedNote?: string;
+  resolvedAt?: string;
+  createdAt?: string;
+}
+
+export type DentalTeamRole = "OWNER" | "MANAGER" | "RECEPTION" | "TECHNICIAN" | "ACCOUNTANT";
+export type RefabricationStage = "DESIGN" | "MANUFACTURING" | "QC" | "RECEIVED";
+
+export interface TeamMember {
+  userId: string;
+  email?: string;
+  name?: string;
+  platformRole?: string;
+  dentalRole?: string;
+  isOwnerFlag?: boolean;
+}
+
+export interface DoctorStatementCase {
+  caseNumber?: string;
+  patientName?: string;
+  workTypeName?: string;
+  status?: string;
+  total?: number;
+  paid?: number;
+  remaining?: number;
+  createdAt?: string;
+  dueDate?: string;
+}
+
+export interface DoctorStatement {
+  doctor?: { id?: string; name?: string };
+  cases?: DoctorStatementCase[];
+  invoices?: DentalInvoice[];
+  totals?: { cases?: number; invoicesCount?: number; invoiced?: number; paid?: number; remaining?: number };
+}
+
+export interface TechnicianProductivity {
+  technicianId?: string;
+  name?: string;
+  assignedCases?: number;
+  completedStages?: number;
+  avgDaysPerStage?: number;
+}
+
+export interface WorkTypeRevenue {
+  workType?: string;
+  cases?: number;
+  total?: number;
+  paid?: number;
+  remaining?: number;
+}
+
+export interface OverdueReportRow {
+  caseNumber?: string;
+  doctorName?: string;
+  patientName?: string;
+  workTypeName?: string;
+  dueDate?: string;
+  daysOverdue?: number;
+  remaining?: number;
+}
+
+export interface DentalLabCase {
+  id: string;
+  caseNumber?: string;
+  doctorId?: string;
+  doctorName?: string;
+  doctor?: { id: string; name: string; clinicName?: string };
+  patientName: string;
+  patientPhone?: string;
+  workTypeId?: string;
+  workTypeName?: string;
+  teeth?: string;
+  shade?: string;
+  material?: string;
+  priceSnapshot?: number;
+  discount?: number;
+  total?: number;
+  paid?: number;
+  remaining?: number;
+  paymentStatus?: DentalPaymentStatus;
+  dueDate?: string;
+  priority: DentalCasePriority;
+  source?: string;
+  notes?: string;
+  status: DentalCaseStatus;
+  createdAt?: string;
+  updatedAt?: string;
+  stages?: DentalCaseStage[];
+  assignments?: DentalCaseAssignment[];
+  attachments?: DentalCaseAttachment[];
+  invoices?: DentalInvoice[];
+  customValues?: DentalCaseCustomValue[];
+  history?: DentalCaseHistoryEntry[];
+  qualityChecks?: DentalQualityCheck[];
+  refabrications?: DentalRefabrication[];
+}
+
+export interface DentalLabCaseDetail extends DentalLabCase {
+  stages: DentalCaseStage[];
+  assignments: DentalCaseAssignment[];
+  attachments: DentalCaseAttachment[];
+  invoices: DentalInvoice[];
+  customValues: DentalCaseCustomValue[];
+  history: DentalCaseHistoryEntry[];
+  qualityChecks: DentalQualityCheck[];
+  refabrications: DentalRefabrication[];
+  creditNotes: CreditNote[];
+}
+
+export type DentalInvoiceMode = "AUTO_ON_RECEIPT" | "AUTO_ON_DELIVERY" | "MANUAL";
+
+export interface BillingPolicy {
+  invoiceMode?: DentalInvoiceMode;
+  requireInvoiceBeforeDelivery?: boolean;
+  requireFullPaymentBeforeDelivery?: boolean;
+  enforceCreditLimit?: boolean;
+}
+
+export interface MyInfo {
+  dentalRole?: string;
+  technicianId?: string;
+  technician?: { id: string; name: string; role: string; wagePerStage?: number };
+}
+
+export interface MyCase {
+  id: string;
+  caseNumber?: string;
+  patientName?: string;
+  patientPhone?: string;
+  workTypeName?: string;
+  teeth?: string;
+  shade?: string;
+  material?: string;
+  status?: string;
+  priority?: string;
+  dueDate?: string;
+  notes?: string;
+  createdAt?: string;
+  myStage?: { id: string; name: string; status: string; assigneeName?: string; startedAt?: string };
+}
+
+export interface MyWage {
+  technician?: { id: string; name: string; role: string };
+  rate?: number;
+  completedStages?: number;
+  totalWage?: number;
+  thisMonthStages?: number;
+  thisMonthWage?: number;
+}
+
+export interface AgingBucket {
+  label: string;
+  total: number;
+  invoices: number;
+}
+
+export interface CreditNote {
+  id: string;
+  caseId?: string;
+  doctorName?: string;
+  amount?: number;
+  reason?: string;
+  createdByName?: string;
+  createdAt?: string;
+}
+
+export interface DentalLabSettings {
+  workOrderHeader?: { labName?: string; address?: string; phone?: string };
+  stageTemplates?: Record<string, string[]>;
+  whatsappTemplates?: { ready?: string; received?: string; overdue?: string };
+  customFields?: DentalCustomFieldDef[];
+  billingPolicy?: BillingPolicy;
+  wages?: { defaultPerStage?: number };
+  doctorPricing?: Record<string, Record<string, number>>;
+  notifications?: { dunningEnabled?: boolean; dunningAgingDays?: number; dunningIntervalHours?: number };
+}
+
+export interface DashboardData {
+  byStatus?: Record<string, number>;
+  todayReceived?: number;
+  readyCount?: number;
+  overdueCount?: number;
+  revenue?: number;
+  outstanding?: number;
+  topDoctors?: { doctorId?: string; doctorName?: string; count?: number; revenue?: number }[];
+  topDebtors?: { doctorId?: string; doctorName?: string; outstanding?: number }[];
+}
+
+export interface CasesListResult {
+  data: DentalLabCase[];
+  total: number;
+}
+
+export const CASE_STATUSES: { id: DentalCaseStatus; label: string; color: string; barColor: string; dotColor: string }[] = [
+  { id: "RECEIVED", label: "مستلم", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300", barColor: "#9ca3af", dotColor: "bg-gray-400" },
+  { id: "DESIGN", label: "تصميم", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", barColor: "#3b82f6", dotColor: "bg-blue-500" },
+  { id: "MANUFACTURING", label: "تصنيع", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300", barColor: "#6366f1", dotColor: "bg-indigo-500" },
+  { id: "QC", label: "مراقبة الجودة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", barColor: "#eab308", dotColor: "bg-yellow-500" },
+  { id: "READY", label: "جاهز للتسليم", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300", barColor: "#22c55e", dotColor: "bg-green-500" },
+  { id: "DELIVERED", label: "تم التسليم", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300", barColor: "#14b8a6", dotColor: "bg-teal-500" },
+  { id: "CLOSED", label: "مغلق", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300", barColor: "#6b7280", dotColor: "bg-gray-500" },
+];
+
+export const CASE_STATUS_MAP: Record<string, { label: string; color: string }> = CASE_STATUSES.reduce(
+  (acc, s) => { acc[s.id] = { label: s.label, color: s.color }; return acc; },
+  {} as Record<string, { label: string; color: string }>,
+);
+
+export const CASE_STATUS_FLOW: DentalCaseStatus[] = ["RECEIVED", "DESIGN", "MANUFACTURING", "QC", "READY", "DELIVERED", "CLOSED"];
+
+export const nextStatusOf = (status: string): DentalCaseStatus | null => {
+  const idx = CASE_STATUS_FLOW.indexOf(status as DentalCaseStatus);
+  if (idx < 0) return null;
+  return CASE_STATUS_FLOW[idx + 1] ?? null;
+};
+
+export const PRIORITY_CONFIG: Record<DentalCasePriority, { label: string; color: string }> = {
+  NORMAL: { label: "عادي", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  URGENT: { label: "عاجل", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  STAT: { label: "استعجالي", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+};
+
+export const ROLE_CONFIG: Record<DentalTechnicianRole, { label: string; color: string }> = {
+  RECEPTION: { label: "استقبال", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  CAD: { label: "تصميم CAD", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  TECHNICIAN: { label: "فني", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  QC: { label: "مراقبة جودة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+};
+
+export const PAYMENT_STATUS_MAP: Record<DentalPaymentStatus, { label: string; color: string }> = {
+  UNPAID: { label: "غير مدفوعة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  PARTIAL: { label: "مدفوعة جزئياً", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  PAID: { label: "مدفوعة", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+};
+
+export const INVOICE_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  OPEN: { label: "غير مدفوعة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  PARTIAL: { label: "جزئية", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  PAID: { label: "مدفوعة", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  VOID: { label: "ملغاة", color: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
+};
+
+export const STAGE_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "بانتظار", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  IN_PROGRESS: { label: "جارٍ العمل", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  COMPLETED: { label: "مكتمل", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  SKIPPED: { label: "مُتجاوز", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
+};
+
+export const WORK_TYPE_CATEGORIES = ["CROWN", "BRIDGE", "REMOVABLE", "ORTHODONTICS", "IMPLANT", "VENEERS", "OTHER"];
+
+const asRecord = (v: unknown): Record<string, unknown> | null => (v && typeof v === "object" ? (v as Record<string, unknown>) : null);
+
+const unwrapEnvelope = <T>(res: AxiosResponse): T => {
+  const body = res.data as { success?: boolean; data?: T; error?: unknown; message?: string };
+  if (body && typeof body === "object") {
+    if (body.success === false) {
+      const err = body.error;
+      const msg = typeof err === "string" ? err : err && typeof err === "object" ? (err as { message?: string }).message : undefined;
+      throw new Error(msg || body.message || "فشل العملية");
+    }
+    if ("data" in body) return body.data as T;
+  }
+  return res.data as T;
+};
+
+const unwrapListEnvelope = <T>(res: AxiosResponse): T[] => {
+  const body = asRecord(res.data) ?? {};
+  if (body["success"] === false) {
+    unwrapEnvelope<T[]>(res);
+  }
+  const raw = body["data"];
+  if (Array.isArray(raw)) return raw as T[];
+  const inner = asRecord(raw);
+  if (inner) {
+    if (Array.isArray(inner["data"])) return inner["data"] as T[];
+    if (Array.isArray(inner["items"])) return inner["items"] as T[];
+    const rows = asRecord(inner["rows"]);
+    if (rows && Array.isArray(rows["data"])) return rows["data"] as T[];
+  }
+  return [] as T[];
+};
+
+export const fetchDoctors = async (): Promise<DentalLabDoctor[]> => unwrapListEnvelope<DentalLabDoctor>(await apiClient.get("/dental-lab/doctors"));
+export const createDoctor = async (body: Partial<DentalLabDoctor>): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.post("/dental-lab/doctors", body));
+export const updateDoctor = async (id: string, body: Partial<DentalLabDoctor>): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.put(`/dental-lab/doctors/${id}`, body));
+export const deleteDoctor = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/doctors/${id}`); };
+
+export const fetchWorkTypes = async (): Promise<DentalWorkType[]> => unwrapListEnvelope<DentalWorkType>(await apiClient.get("/dental-lab/work-types"));
+export const createWorkType = async (body: Partial<DentalWorkType>): Promise<DentalWorkType> => unwrapEnvelope<DentalWorkType>(await apiClient.post("/dental-lab/work-types", body));
+export const updateWorkType = async (id: string, body: Partial<DentalWorkType>): Promise<DentalWorkType> => unwrapEnvelope<DentalWorkType>(await apiClient.put(`/dental-lab/work-types/${id}`, body));
+export const deleteWorkType = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/work-types/${id}`); };
+
+export const fetchTechnicians = async (): Promise<{ items: DentalTechnician[]; wageDefaults?: { defaultPerStage?: number } }> =>
+  unwrapEnvelope<{ items: DentalTechnician[]; wageDefaults?: { defaultPerStage?: number } }>(await apiClient.get("/dental-lab/technicians"));
+export const createTechnician = async (body: Partial<DentalTechnician>): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.post("/dental-lab/technicians", body));
+export const updateTechnician = async (id: string, body: Partial<DentalTechnician>): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.put(`/dental-lab/technicians/${id}`, body));
+export const deleteTechnician = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/technicians/${id}`); };
+
+export const fetchCases = async (params?: { status?: string; doctorId?: string; search?: string; page?: number; limit?: number }): Promise<CasesListResult> => {
+  const res = await apiClient.get("/dental-lab/cases", { params });
+  const body = asRecord(res.data) ?? {};
+  let data: DentalLabCase[] = [];
+  let total = 0;
+  const rawData = body["data"];
+  if (Array.isArray(rawData)) {
+    data = rawData as DentalLabCase[];
+    total = Number(body["total"] ?? data.length) || data.length;
+  } else {
+    const inner = asRecord(rawData);
+    if (inner && Array.isArray(inner["data"])) {
+      data = inner["data"] as DentalLabCase[];
+      total = Number(inner["total"] ?? body["total"] ?? data.length) || data.length;
+    } else if (inner && Array.isArray(inner["items"])) {
+      data = inner["items"] as DentalLabCase[];
+      total = Number(inner["total"] ?? body["total"] ?? data.length) || data.length;
+    }
+  }
+  return { data, total };
+};
+
+export const fetchCaseDetail = async (id: string): Promise<DentalLabCaseDetail> => {
+  const detail = await unwrapEnvelope<DentalLabCase>(await apiClient.get(`/dental-lab/cases/${id}`));
+  return {
+    ...detail,
+    stages: detail.stages ?? [],
+    assignments: detail.assignments ?? [],
+    attachments: detail.attachments ?? [],
+    invoices: detail.invoices ?? [],
+    customValues: detail.customValues ?? [],
+    history: detail.history ?? [],
+    qualityChecks: detail.qualityChecks ?? [],
+    refabrications: detail.refabrications ?? [],
+  } as DentalLabCaseDetail;
+};
+
+export const createCase = async (body: Partial<DentalLabCase>): Promise<DentalLabCase> => unwrapEnvelope<DentalLabCase>(await apiClient.post("/dental-lab/cases", body));
+export const updateCase = async (id: string, body: Partial<DentalLabCase>): Promise<DentalLabCase> => unwrapEnvelope<DentalLabCase>(await apiClient.put(`/dental-lab/cases/${id}`, body));
+
+export const advanceCase = async (id: string, body: { to?: string; status?: string; reason?: string; assigneeId?: string }): Promise<DentalLabCase> =>
+  unwrapEnvelope<DentalLabCase>(await apiClient.post(`/dental-lab/cases/${id}/advance`, body));
+
+export const assignCase = async (id: string, body: { technicianId: string; role: DentalTechnicianRole }): Promise<DentalLabCase> =>
+  unwrapEnvelope<DentalLabCase>(await apiClient.post(`/dental-lab/cases/${id}/assign`, body));
+
+export const uploadCaseAttachment = async (caseId: string, file: File, kind?: string): Promise<DentalCaseAttachment> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (kind) formData.append("kind", kind);
+  return unwrapEnvelope<DentalCaseAttachment>(await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }));
+};
+
+export const deleteCaseAttachment = async (caseId: string, attachmentId: string): Promise<void> => {
+  await apiClient.delete(`/dental-lab/cases/${caseId}/attachments/${attachmentId}`);
+};
+
+export interface ScanParseResult {
+  patientName?: string | null;
+  teeth?: string | null;
+  shade?: string | null;
+  material?: string | null;
+  workTypeHint?: string | null;
+  notes?: string | null;
+}
+
+export const parseScan = async (file: File): Promise<ScanParseResult> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await apiClient.post("/dental-lab/scan-parse", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  const body = res.data as { success?: boolean; data?: ScanParseResult; error?: string; message?: string };
+  if (body?.success === false) {
+    const msg = typeof body.error === "string" ? body.error : body.message || "فشل تحليل الصورة";
+    if (msg === "AI_NOT_CONFIGURED") {
+      throw new Error("مفتاح الذكاء الاصطناعي غير مضبوط في قاعدة البيانات");
+    }
+    throw new Error(msg);
+  }
+  return (body?.data ?? {}) as ScanParseResult;
+};
+
+export const fetchInvoices = async (): Promise<DentalInvoice[]> => unwrapListEnvelope<DentalInvoice>(await apiClient.get("/dental-lab/invoices"));
+export const createInvoice = async (body: Partial<DentalInvoice>): Promise<DentalInvoice> => unwrapEnvelope<DentalInvoice>(await apiClient.post("/dental-lab/invoices", body));
+export const addInvoicePayment = async (invoiceId: string, body: { amount: number; method?: string; note?: string }): Promise<DentalPayment> =>
+  unwrapEnvelope<DentalPayment>(await apiClient.post(`/dental-lab/invoices/${invoiceId}/payments`, body));
+
+export const fetchDashboard = async (): Promise<DashboardData> => unwrapEnvelope<DashboardData>(await apiClient.get("/dental-lab/dashboard"));
+
+export const fetchMyInfo = async (): Promise<MyInfo> => unwrapEnvelope<MyInfo>(await apiClient.get("/dental-lab/me"));
+export const fetchMyCases = async (): Promise<{ items: MyCase[]; technician?: { id: string; name: string } | null }> =>
+  unwrapEnvelope<{ items: MyCase[]; technician?: { id: string; name: string } | null }>(await apiClient.get("/dental-lab/my-cases"));
+export const fetchMyWage = async (): Promise<MyWage> => unwrapEnvelope<MyWage>(await apiClient.get("/dental-lab/my-wage"));
+
+export const fetchAgingReport = async (): Promise<{ buckets: AgingBucket[]; totalOutstanding?: number }> =>
+  unwrapEnvelope<{ buckets: AgingBucket[]; totalOutstanding?: number }>(await apiClient.get("/dental-lab/reports/aging"));
+
+export const fetchCreditNotes = async (): Promise<CreditNote[]> =>
+  unwrapListEnvelope<CreditNote>(await apiClient.get("/dental-lab/credit-notes"));
+
+export const fetchInvoicePdf = async (id: string): Promise<Blob> => {
+  const res = await apiClient.get(`/dental-lab/invoices/${id}/pdf`, { responseType: "blob" });
+  return res.data as Blob;
+};
+
+export const fetchInvoicePaymentLink = async (id: string): Promise<{ configured: boolean; message?: string; checkoutUrl?: string | null }> =>
+  unwrapEnvelope<{ configured: boolean; message?: string; checkoutUrl?: string | null }>(await apiClient.get(`/dental-lab/invoices/${id}/payment-link`));
+
+export const fetchDoctorPricing = async (doctorId: string): Promise<Record<string, number>> =>
+  unwrapEnvelope<Record<string, number>>(await apiClient.get(`/dental-lab/doctors/${doctorId}/pricing`));
+
+export const saveDoctorPricing = async (doctorId: string, prices: Record<string, number>): Promise<Record<string, number>> =>
+  unwrapEnvelope<Record<string, number>>(await apiClient.put(`/dental-lab/doctors/${doctorId}/pricing`, { prices }));
+
+export const fetchWorkOrderPdf = async (id: string): Promise<Blob> => {
+  const res = await apiClient.get(`/dental-lab/cases/${id}/work-order`, { responseType: "blob" });
+  return res.data as Blob;
+};
+
+export const recordQualityCheck = async (id: string, body: { passed: boolean; notes?: string }): Promise<DentalQualityCheck> =>
+  unwrapEnvelope<DentalQualityCheck>(await apiClient.post(`/dental-lab/cases/${id}/quality-check`, body));
+
+export const listQualityChecks = async (id: string): Promise<DentalQualityCheck[]> =>
+  unwrapListEnvelope<DentalQualityCheck>(await apiClient.get(`/dental-lab/cases/${id}/quality-checks`));
+
+export const flagRefabrication = async (id: string, body: { reason: string; stageFrom?: RefabricationStage }): Promise<DentalRefabrication> =>
+  unwrapEnvelope<DentalRefabrication>(await apiClient.post(`/dental-lab/cases/${id}/refabrication`, body));
+
+export const resolveRefabrication = async (id: string, refabId: string, body: { note?: string }): Promise<DentalRefabrication> =>
+  unwrapEnvelope<DentalRefabrication>(await apiClient.post(`/dental-lab/cases/${id}/refabrications/${refabId}/resolve`, body));
+
+export const fetchTeam = async (): Promise<TeamMember[]> => unwrapListEnvelope<TeamMember>(await apiClient.get("/dental-lab/team"));
+
+export const setTeamRole = async (userId: string, role: DentalTeamRole): Promise<TeamMember[]> =>
+  unwrapListEnvelope<TeamMember>(await apiClient.put(`/dental-lab/team/${userId}/role`, { role }));
+
+export const fetchDoctorStatement = async (params?: { doctorId?: string; from?: string; to?: string }): Promise<DoctorStatement> =>
+  unwrapEnvelope<DoctorStatement>(await apiClient.get("/dental-lab/reports/doctor-statement", { params }));
+
+export const fetchTechnicianProductivity = async (params?: { from?: string; to?: string }): Promise<TechnicianProductivity[]> =>
+  unwrapEnvelope<TechnicianProductivity[]>(await apiClient.get("/dental-lab/reports/technician-productivity", { params }));
+
+export const fetchWorkTypeRevenue = async (params?: { from?: string; to?: string }): Promise<WorkTypeRevenue[]> =>
+  unwrapEnvelope<WorkTypeRevenue[]>(await apiClient.get("/dental-lab/reports/work-type-revenue", { params }));
+
+export const fetchOverdueReport = async (): Promise<OverdueReportRow[]> =>
+  unwrapEnvelope<OverdueReportRow[]>(await apiClient.get("/dental-lab/reports/overdue"));
+
+export const fetchSettings = async (): Promise<DentalLabSettings> => {
+  try {
+    return await unwrapEnvelope<DentalLabSettings>(await apiClient.get("/dental-lab/settings"));
+  } catch {
+    return { workOrderHeader: {}, stageTemplates: {}, whatsappTemplates: {}, customFields: [] };
+  }
+};
+export const saveSettings = async (body: DentalLabSettings): Promise<DentalLabSettings> => unwrapEnvelope<DentalLabSettings>(await apiClient.put("/dental-lab/settings", body));
+
+export const fetchCustomFields = async (): Promise<DentalCustomFieldDef[]> => unwrapListEnvelope<DentalCustomFieldDef>(await apiClient.get("/dental-lab/custom-fields"));
+export const createCustomField = async (body: Partial<DentalCustomFieldDef>): Promise<DentalCustomFieldDef> => unwrapEnvelope<DentalCustomFieldDef>(await apiClient.post("/dental-lab/custom-fields", body));
+export const updateCustomField = async (id: string, body: Partial<DentalCustomFieldDef>): Promise<DentalCustomFieldDef> => unwrapEnvelope<DentalCustomFieldDef>(await apiClient.put(`/dental-lab/custom-fields/${id}`, body));
+export const deleteCustomField = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/custom-fields/${id}`); };
+
+export const caseFileUrl = (storedName?: string): string => {
+  if (!storedName) return "";
+  const base = config.apiUrl.replace(/\/$/, "");
+  return `${base}/dental-lab/files/${encodeURIComponent(storedName)}`;
+};
+
+export const fetchCaseFileBlob = async (storedName?: string): Promise<Blob> => {
+  if (!storedName) throw new Error("لا يوجد ملف");
+  const res = await apiClient.get(`/dental-lab/files/${encodeURIComponent(storedName)}`, { responseType: "blob" });
+  return res.data as Blob;
+};
+
+export const fmtMoney = (n?: number): string => (typeof n === "number" && Number.isFinite(n) ? n.toLocaleString("ar-EG", { maximumFractionDigits: 2 }) : "0");
+
+export const fmtDate = (iso?: string): string => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "—");
+
+export const fmtDateTime = (iso?: string): string => (iso ? new Date(iso).toLocaleString("ar-EG") : "—");
+
+/** i18next strict typing only accepts literal keys; this helper allows dynamic keys (e.g. from TABS arrays). */
+export const tKey = (t: (key: never) => unknown, key: string): string => String(t(key as never));
+
+export const MODAL_CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4";
+export const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";

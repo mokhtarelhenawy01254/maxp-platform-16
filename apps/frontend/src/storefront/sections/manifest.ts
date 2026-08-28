@@ -2960,6 +2960,95 @@ export const STOREFRONT_SECTION_MANIFEST = {
     pages: ["shop"],
     legacy: true,
   },
+  "affiliate-disclosure": {
+    label: "Affiliate Disclosure Bar",
+    component: "affiliate-disclosure",
+    fields: [
+      { key: "text", label: "Disclosure text", type: "textarea", placeholder: "Affiliate disclosure text" },
+      { key: "linkText", label: "Link text", type: "text", placeholder: "Full disclosure here." },
+      { key: "linkHref", label: "Link href", type: "url", placeholder: "/affiliate-disclaimer" },
+    ],
+  },
+  "affiliate-top-picks": {
+    label: "Affiliate Top Picks (Amazon)",
+    component: "affiliate-top-picks",
+    fields: [
+      { key: "title", label: "Section title", type: "text", placeholder: "Our Top Picks" },
+      { key: "subtitle", label: "Subtitle", type: "textarea", placeholder: "Affiliate disclosure subtitle" },
+      { key: "products", label: "Products (textarea)", type: "textarea", placeholder: "title|price|image|href|badge per line", helperText: "Each line: title|price|image|href|badge" },
+    ],
+  },
+  "article-grid": {
+    label: "Article Grid (Blog)",
+    component: "article-grid",
+    fields: [
+      { key: "title", label: "Title", type: "text", placeholder: "Latest Reviews" },
+      { key: "subtitle", label: "Subtitle", type: "textarea" },
+      { key: "limit", label: "Limit", type: "number", placeholder: "6" },
+    ],
+  },
+  "affiliate-quiz": {
+    label: "Affiliate Quiz Picker",
+    component: "affiliate-quiz",
+    fields: [
+      { key: "title", label: "Quiz title", type: "text", placeholder: "Find Your Perfect Beard Trimmer" },
+      { key: "subtitle", label: "Subtitle", type: "textarea" },
+      { key: "ctaText", label: "CTA text", type: "text", placeholder: "Start Quiz" },
+    ],
+  },
+  "affiliate-faq": {
+    label: "Affiliate FAQ (with FAQPage schema)",
+    component: "affiliate-faq",
+    fields: [
+      { key: "title", label: "Title", type: "text", placeholder: "Frequently Asked Questions" },
+      { key: "faqs", label: "FAQs", type: "textarea", placeholder: "Question|Answer per line" },
+    ],
+  },
+  "affiliate-toc": {
+    label: "Table of Contents",
+    component: "affiliate-toc",
+    fields: [
+      { key: "title", label: "Title", type: "text", placeholder: "Table of Contents" },
+      { key: "items", label: "Items", type: "textarea", placeholder: "One item per line" },
+    ],
+  },
+  "affiliate-pro-tip": {
+    label: "Pro Tip Box",
+    component: "affiliate-pro-tip",
+    fields: [
+      { key: "title", label: "Title", type: "text", placeholder: "Pro Tip" },
+      { key: "text", label: "Text", type: "textarea", placeholder: "Tip text" },
+      { key: "icon", label: "Icon", type: "text", placeholder: "💡" },
+    ],
+  },
+  "affiliate-sources": {
+    label: "Sources & Author",
+    component: "affiliate-sources",
+    fields: [
+      { key: "title", label: "Title", type: "text", placeholder: "Sources & References" },
+      { key: "items", label: "Sources", type: "textarea", placeholder: "Label|href per line" },
+      { key: "updatedAt", label: "Updated date", type: "text", placeholder: "August 11, 2026" },
+      { key: "authorName", label: "Author name", type: "text", placeholder: "Jake Morrison" },
+    ],
+  },
+  "affiliate-breadcrumbs": {
+    label: "Breadcrumbs (with BreadcrumbList schema)",
+    component: "affiliate-breadcrumbs",
+    fields: [
+      { key: "items", label: "Breadcrumbs", type: "textarea", placeholder: "Home|Guides|Article title" },
+    ],
+  },
+  "affiliate-article-seo": {
+    label: "Article SEO (Article + WebSite schema)",
+    component: "affiliate-article-seo",
+    fields: [
+      { key: "headline", label: "Headline", type: "text", placeholder: "Article headline" },
+      { key: "description", label: "Description", type: "textarea", placeholder: "Meta description" },
+      { key: "image", label: "Hero image URL", type: "url", placeholder: "https://..." },
+      { key: "datePublished", label: "Date published", type: "text", placeholder: "2026-08-11" },
+      { key: "authorName", label: "Author name", type: "text", placeholder: "Jake Morrison" },
+    ],
+  },
 } as const satisfies Record<string, StorefrontSectionManifestEntry>;
 
 export type StorefrontSectionId = keyof typeof STOREFRONT_SECTION_MANIFEST;

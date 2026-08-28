@@ -3433,6 +3433,49 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     );
   };
 
+  // Amazon Affiliate buy CTA — renders when the PDP product is a source='amazon' product
+  // (exposed by the backend as isAmazonProduct + amazonBuyUrl). Pure render, no hooks.
+  const renderAmazonBuyCta = (layout: 'inline' | 'card' = 'card') => {
+    const amazonRecord = (product ?? {}) as unknown as Record<string, unknown>;
+    const isAmazonProduct = amazonRecord['isAmazonProduct'] === true;
+    const amazonBuyUrl = typeof amazonRecord['amazonBuyUrl'] === 'string' ? String(amazonRecord['amazonBuyUrl']) : null;
+    if (!isAmazonProduct || !amazonBuyUrl) return null;
+
+    const label = prefersArabicCopy ? 'اشتري من أمازون' : 'Buy on Amazon';
+    const disclosure = prefersArabicCopy
+      ? 'يتم الدفع والشحن والضمان عن طريق أمازون مباشرة.'
+      : 'Checkout, shipping and support are handled directly by Amazon.';
+
+    if (layout === 'inline') {
+      return (
+        <a
+          href={amazonBuyUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+        >
+          <span>{label}</span>
+          <ExternalLink size={16} />
+        </a>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-2 rounded-[1.2rem] border border-border bg-secondary/35 p-4">
+        <a
+          href={amazonBuyUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black uppercase tracking-widest text-primary-foreground transition hover:opacity-90 active:scale-[0.98]"
+        >
+          <span>{label}</span>
+          <ExternalLink size={16} />
+        </a>
+        <p className="text-center text-[11px] leading-4 text-muted-foreground">{disclosure}</p>
+      </div>
+    );
+  };
+
   const shippingTriggerButton = (
     <button
       type="button"
@@ -4088,6 +4131,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         </div>
       ) : shouldRenderPrimaryBuyBox ? (
         <div className="flex flex-col gap-3">
+          {renderAmazonBuyCta('card')}
           <div className="flex items-center gap-3">
             <QuantitySelector value={quantity} onChange={setQuantity} />
             <button
@@ -4235,6 +4279,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     </div>
   ) : shouldRenderPrimaryBuyBox ? (
     <div ref={buyActionsRef} className="flex flex-col gap-3">
+      {renderAmazonBuyCta('card')}
       <div className="flex items-center gap-3">
         <QuantitySelector value={quantity} onChange={setQuantity} />
         <button

@@ -1,0 +1,62 @@
+name: dental-lab-ci
+
+on:
+  pull_request:
+    paths:
+      - 'apps/backend/controller/dentalLab*.js'
+      - 'apps/backend/routes/dentalLab*.js'
+      - 'apps/backend/services/dental*.js'
+      - 'apps/backend/tests/controller/dentalLab*.test.js'
+      - 'apps/frontend/src/pages/dental-lab/**'
+      - 'apps/frontend/src/pages/dental-doctor/**'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/backend/controller/dentalLab*.js'
+      - 'apps/backend/routes/dentalLab*.js'
+      - 'apps/backend/services/dental*.js'
+      - 'apps/backend/tests/controller/dentalLab*.test.js'
+      - 'apps/frontend/src/pages/dental-lab/**'
+      - 'apps/frontend/src/pages/dental-doctor/**'
+
+jobs:
+  backend:
+    name: Backend syntax + dental tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Syntax check dental files
+        run: |
+          for f in controller/dentalLabController.js controller/dentalLabPortalController.js routes/dentalLabRoutes.js routes/dentalLabPortalRoutes.js services/dentalPricing.js services/dentalBillingPolicy.js services/dentalRoles.js services/dentalWorkOrderService.js services/dentalLabNotificationService.js; do
+            node --check "$f" || exit 1
+          done
+      - name: Dental test suites
+        run: node node_modules/jest/bin/jest.js tests/controller/dentalLab --runInBand --testTimeout=30000 --forceExit
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run i18n:merge
+      - run: npm run i18n:types
+      - name: Build
+        run: npm run build
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"

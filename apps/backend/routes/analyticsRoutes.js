@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const analyticsController = require('../controller/analyticsController');
+const retentionAnalyticsController = require('../controller/retentionAnalyticsController');
 const { authenticateToken } = require('../utils/verifyToken');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
@@ -102,6 +103,10 @@ router.get('/status-summary/orders', authenticateToken, cacheMiddleware(60000), 
 
 // تفاصيل القطع حسب الحالة (drill-down)
 router.get('/status-summary/items', authenticateToken, cacheMiddleware(60000), analyticsController.getStatusSummaryItems);
+
+// Retention Analytics — RPR / Cohort / RFM (Swan P0)
+router.get('/retention', authenticateToken, cacheMiddleware(60000), retentionAnalyticsController.getRetentionAnalytics);
+router.get('/overview', authenticateToken, cacheMiddleware(60000), retentionAnalyticsController.getRetentionAnalytics); // alias fixes 404
 
 // ==================== Public Routes (للتتبع من Storefront) ====================
 

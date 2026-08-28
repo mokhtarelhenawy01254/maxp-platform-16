@@ -197,6 +197,8 @@ export interface TemplateScopeConfig {
     enableSettings: boolean;
     enableFilterChips: boolean;
     enableInternalToggle: boolean;
+    /** إجراءات الزر السريع (عند الضغط) — لو اتحددت بتبدّل إجراءات تأكيد/إلغاء الأوردر العامة */
+    quickReplyActions?: ReadonlyArray<{ value: string; label: string }>;
     sortModes: Array<"statusType" | "alphabetical" | "recent">;
     dialogCategoryOptions?: { value: string; label: string }[];
     categoryMode: "auto" | "manual";

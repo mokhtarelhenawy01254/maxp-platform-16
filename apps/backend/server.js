@@ -223,6 +223,8 @@ const bookingInsuranceCompaniesRoutes = require("./routes/bookingInsuranceCompan
 const bookingInsuranceMemberTypesRoutes = require("./routes/bookingInsuranceMemberTypesRoutes");
 const bookingPatientDocumentsRoutes = require("./routes/bookingPatientDocumentsRoutes");
 const labTestsRoutes = require("./routes/labTestsRoutes");
+const dentalLabRoutes = require("./routes/dentalLabRoutes");
+const dentalLabPortalRoutes = require("./routes/dentalLabPortalRoutes");
 const labOrdersRoutes = require("./routes/labOrdersRoutes");
 const labCulturesRoutes = require("./routes/labCulturesRoutes");
 const labContractsRoutes = require("./routes/labContractsRoutes");
@@ -866,6 +868,8 @@ app.use("/api/v1/booking/insurance-companies", bookingInsuranceCompaniesRoutes);
 app.use("/api/v1/booking/insurance-member-types", bookingInsuranceMemberTypesRoutes);
 app.use("/api/v1/booking/patient-documents", bookingPatientDocumentsRoutes);
 app.use("/api/v1/lab/tests", labTestsRoutes);
+app.use("/api/v1/dental-lab", dentalLabRoutes);
+app.use("/api/v1/dental-lab/portal", dentalLabPortalRoutes);
 app.use("/api/v1/lab/orders", labOrdersRoutes);
 app.use("/api/v1/lab/cultures", labCulturesRoutes);
 app.use("/api/v1/lab/contracts", labContractsRoutes);
@@ -1033,6 +1037,18 @@ try {
 } catch (error) {
   console.error(
     "❌ [BILLING-CRON] Failed to start Billing Cron Service:",
+    error,
+  );
+}
+
+// Start Amazon Affiliate auto-sync scheduler (price/stock sync for enabled companies)
+try {
+  const amazonAffiliateAutoSyncScheduler = require("./services/amazonAffiliateAutoSyncScheduler");
+  amazonAffiliateAutoSyncScheduler.getAmazonAffiliateAutoSyncScheduler().start();
+  console.log("✅ [AMAZON-AFFILIATE-SCHEDULER] Auto sync scheduler started");
+} catch (error) {
+  console.error(
+    "❌ [AMAZON-AFFILIATE-SCHEDULER] Failed to start Auto sync scheduler:",
     error,
   );
 }
@@ -1394,6 +1410,9 @@ app.use("/api/v1/tiktok/auth", require("./routes/tiktokAuthRoutes"));
 app.use("/api/v1/tiktok/display", require("./routes/tiktokDisplayRoutes"));
 app.use("/api/v1/tiktok/events", require("./routes/tiktokEventsRoutes"));
 app.use("/api/v1/tiktok/messaging", require("./routes/tiktokMessagingRoutes"));
+
+// Amazon Affiliate (Amazon Associates product import / buy-on-Amazon)
+app.use("/api/v1/amazon-affiliate", require("./routes/amazonAffiliateRoutes"));
 
 // 404 Handler - Must return JSON, not HTML
 app.use((req, res, next) => {

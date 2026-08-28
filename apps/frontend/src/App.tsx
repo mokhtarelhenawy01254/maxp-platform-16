@@ -167,6 +167,15 @@ const ProductNewFinal = React.lazy(
 const AffiliateSystemSettings = React.lazy(
   () => import("./pages/affiliates/AffiliateSystemSettings"),
 );
+const AmazonAffiliateSettings = React.lazy(
+  () => import("./pages/amazon-affiliate/AmazonAffiliateSettings"),
+);
+const AmazonAffiliateImport = React.lazy(
+  () => import("./pages/amazon-affiliate/AmazonImport"),
+);
+const AmazonAffiliateProducts = React.lazy(
+  () => import("./pages/amazon-affiliate/AmazonProducts"),
+);
 const AffiliatesManagement = React.lazy(
   () => import("./pages/affiliates/AffiliatesManagement"),
 );
@@ -997,6 +1006,15 @@ const LabManagementPage = React.lazy(
 );
 const RadiologyManagementPage = React.lazy(
   () => import("./pages/radiology/RadiologyManagementPage"),
+);
+const DentalLabManagementPage = React.lazy(
+  () => import("./pages/dental-lab/DentalLabManagementPage"),
+);
+const DentalCaseDetailPage = React.lazy(
+  () => import("./pages/dental-lab/DentalCaseDetailPage"),
+);
+const DentalPortalRoutes = React.lazy(
+  () => import("./pages/dental-doctor/dentalPortalRoutes"),
 );
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
@@ -4111,6 +4129,32 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                {/* Amazon Affiliate Routes */}
+                <Route
+                  path="/amazon-affiliate/settings"
+                  element={
+                    <Layout>
+                      <AmazonAffiliateSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/amazon-affiliate/import"
+                  element={
+                    <Layout>
+                      <AmazonAffiliateImport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/amazon-affiliate/products"
+                  element={
+                    <Layout>
+                      <AmazonAffiliateProducts />
+                    </Layout>
+                  }
+                />
+
                 {/* Affiliate Routes */}
                 <Route
                   path="/affiliates/management/:id"
@@ -7228,6 +7272,23 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                <Route
+                  path="/dental-lab/cases/:id"
+                  element={
+                    <Layout fullWidth>
+                      <DentalCaseDetailPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/dental-lab/*"
+                  element={
+                    <Layout fullWidth>
+                      <DentalLabManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route path="/dental-portal/*" element={<DentalPortalRoutes />} />
                 <Route
                   path="/admin/education/funnel"
                   element={

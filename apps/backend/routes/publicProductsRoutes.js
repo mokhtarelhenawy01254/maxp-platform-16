@@ -14,6 +14,7 @@ const {
 const {
   findConvertedPresentationBySlug,
 } = require('../utils/presentationConversion');
+const { buildAffiliateUrl } = require('../services/amazonAffiliateService');
 
 const router = express.Router();
 const ALLOWED_SORT_FIELDS = new Set(['createdAt', 'updatedAt', 'name', 'price']);
@@ -872,6 +873,11 @@ function formatProductResponse(product, options = {}) {
     variants,
     productVariants: variants,
   };
+
+  if (product.amazonBuyUrl) {
+    response.isAmazonProduct = true;
+    response.amazonBuyUrl = product.amazonBuyUrl;
+  }
 
   if (!isSummary) {
     response.metadata = product.metadata;
@@ -1907,9 +1913,24 @@ router.get('/:id', async (req, res) => {
       productId: product.id,
     });
     const affiliatePricing = await resolveAffiliateProductPricing(prisma, req, product.id);
+    const amazonLink = await prisma.amazonAffiliateProduct.findFirst({
+      where: { productId: product.id },
+    });
+    let amazonBuyUrl = null;
+    if (amazonLink) {
+      const amazonSettings = await prisma.amazonAffiliateSettings.findUnique({
+        where: { companyId: req.companyId },
+      });
+      amazonBuyUrl = buildAffiliateUrl({
+        asin: amazonLink.asin,
+        associateTag: amazonSettings?.associateTag,
+        marketplace: amazonLink.marketplace,
+      });
+    }
     const formattedProduct = formatProductResponse({
       ...product,
       ...demandSignals,
+      amazonBuyUrl,
     });
 
     res.json({

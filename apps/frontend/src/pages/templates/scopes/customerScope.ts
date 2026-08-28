@@ -403,10 +403,9 @@ export const customerScopeConfig: TemplateScopeConfig = {
     { key: "schedule", label: "جدول الإشعارات", kind: "schedule", isSpecial: true },
     { key: "occasions", label: "قوالب مناسبات العملاء", kind: "list", filter: (r) => r.category === "OCCASION", count: (rows) => rows.filter((r) => r.category === "OCCASION").length },
     { key: "products", label: "قوالب المنتجات والعروض", kind: "list", filter: (r) => r.category === "PRODUCTS", count: (rows) => rows.filter((r) => r.category === "PRODUCTS").length },
-    { key: "loyalty", label: "قوالب الولاء", kind: "list", filter: (r) => EVENT_GROUPS["loyalty"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["loyalty"]!.includes(r.code)).length },
-    { key: "cashback", label: "قوالب الكاش باك", kind: "list", filter: (r) => EVENT_GROUPS["cashback"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cashback"]!.includes(r.code)).length },
-    { key: "quality", label: "قوالب التقسيم", kind: "list", filter: (r) => EVENT_GROUPS["quality"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["quality"]!.includes(r.code)).length },
-    { key: "autoDiscount", label: "قوالب الخصم التلقائي", kind: "list", filter: (r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code)).length },
+    // ملاحظة: تبويبات الولاء/الكاش باك/التقسيم/الخصم التلقائي كانت بتكرّر نفس أحداث «جدول الإشعارات»
+    // (نفس الأحداث بالظبط) — فاتحناها عشان نمنع التشتت، والجدول هو المصدر الوحيد للتهيئة
+    // (تفعيل/قناة/تأخير) والتعديل، والمناسبات/المنتجات ليها تبويبات مستقلة لأنها مش في الجدول.
     { key: "reports", label: "تقارير الرسائل", kind: "reports", isSpecial: true },
   ],
 
@@ -421,6 +420,12 @@ export const customerScopeConfig: TemplateScopeConfig = {
     enableSettings: false,
     enableFilterChips: false,
     enableInternalToggle: false,
+    // إجراءات سريعة مناسبة لإشعارات العملاء (مش انتقال حالة طلب)
+    quickReplyActions: [
+      { value: "OPEN_STORE", label: "فتح صفحة المتجر" },
+      { value: "VIEW_POINTS", label: "عرض نقاط الولاء" },
+      { value: "VIEW_WALLET", label: "عرض المحفظة" },
+    ],
     sortModes: ["alphabetical", "recent"],
     categoryMode: "manual",
     groupMode: "identity",

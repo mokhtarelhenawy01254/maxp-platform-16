@@ -46,6 +46,7 @@ import baladiMarketEgData from "./baladi-market-eg.json";
 import nileEleganceEgData from "./nile-elegance-eg.json";
 import primeButcherLuxeData from "./prime-butcher-luxe.json";
 import butcherShopEgData from "./butcher-shop-eg.json";
+import mensGroomingProData from "./mens-grooming-pro.json";
 import { ELESSI_PACK_THEME_PRESETS } from "./elessiPack";
 import {
   StorefrontPageConfig,
@@ -701,6 +702,7 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "nile-elegance-eg": asStorefrontTheme(nileEleganceEgData),
   "prime-butcher-luxe": asStorefrontTheme(primeButcherLuxeData),
   "butcher-shop-eg": asStorefrontTheme(butcherShopEgData),
+  "mens-grooming-pro": asStorefrontTheme(mensGroomingProData),
   ...ELESSI_PACK_THEME_PRESETS,
 };
 

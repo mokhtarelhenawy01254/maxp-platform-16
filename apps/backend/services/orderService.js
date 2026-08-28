@@ -1441,6 +1441,14 @@ class OrderService {
               console.error(`❌ [LOYALTY-BG-ERROR] Failed for ${orderNumber}:`, error.message);
             });
 
+            // 🎁 Milestone / Gift Engine: هدية الطلب 2 + Milestone 3 + Anniversary
+            try {
+              const milestoneService = require('./milestoneService');
+              await milestoneService.handleOrderMilestones({ orderId: order.id, companyId: order.companyId, customerId: order.customerId }).catch(err => {
+                console.warn(`⚠️ [MILESTONE] Failed for ${orderNumber}:`, err.message);
+              });
+            } catch (mErr) { console.warn('Milestone require failed', mErr.message); }
+
             // 🚀 تسجيل العميل في سلسلة ما بعد الاستلام (بعد أسبوع/أسبوعين/تالت...) عند التسليم الفعلي
             try {
               const WhatsAppJourneyService = require('./whatsapp/WhatsAppJourneyService');

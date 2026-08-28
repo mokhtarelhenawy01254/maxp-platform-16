@@ -1,0 +1,631 @@
+﻿import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import {
+  BarChart as ReBarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
+import {
+  AlertTriangle, ArrowDownLeft, ArrowUpRight, CalendarRange, FileText, Coins,
+  Inbox, Loader2, RefreshCw, TrendingUp, Users, Wallet,
+} from "lucide-react";
+import {
+  fetchDashboard, fetchDoctors, fetchDoctorStatement, fetchTechnicianProductivity,
+  fetchWorkTypeRevenue, fetchOverdueReport, fetchAgingReport,
+  DentalLabDoctor, DoctorStatement, TechnicianProductivity, WorkTypeRevenue, OverdueReportRow, AgingBucket,
+  fmtMoney, fmtDate, tKey,
+} from "./shared";
+
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const monthStartISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+};
+
+type ReportView = "statement" | "productivity" | "revenue" | "overdue" | "aging";
+
+const inputCls = "w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100";
+const dateCls = "border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 max-w-[160px]";
+
+const chartText = { fontSize: 11, fill: "#6b7280" };
+
+function Skeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="space-y-2 py-2">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="h-10 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+        <FileText className="w-5 h-5 text-gray-400" />
+      </div>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+    </div>
+  );
+}
+
+const tableWrap = "overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl";
+const thCls = "text-right py-2.5 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/60";
+const tdCls = "py-2.5 px-3 text-sm";
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ÙƒØ´Ù Ø­Ø³Ø§Ø¨ Ø¯ÙƒØªÙˆØ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+function StatementView() {
+  const { t } = useTranslation();
+  const [doctors, setDoctors] = useState<DentalLabDoctor[]>([]);
+  const [doctorId, setDoctorId] = useState("");
+  const [from, setFrom] = useState(monthStartISO());
+  const [to, setTo] = useState(todayISO());
+  const [data, setData] = useState<DoctorStatement | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchDoctors().then(setDoctors).catch(() => setDoctors([]));
+  }, []);
+
+  const load = async () => {
+    if (!doctorId) { toast.error(t("dentalLab.reports.selectDoctorFirst")); return; }
+    setLoading(true);
+    try {
+      setData(await fetchDoctorStatement({ doctorId, from, to }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totals = data?.totals;
+  const cases = data?.cases ?? [];
+  const invoices = data?.invoices ?? [];
+
+  const kpi = [
+    { label: t("dentalLab.reports.cases"), value: String(totals?.cases ?? "â€”"), tone: "text-gray-900 dark:text-white" },
+    { label: t("dentalLab.reports.invoices"), value: String(totals?.invoicesCount ?? "â€”"), tone: "text-gray-900 dark:text-white" },
+    { label: t("dentalLab.common.paid"), value: totals ? fmtMoney(totals.paid) : "â€”", tone: "text-emerald-600 dark:text-emerald-400" },
+    { label: t("dentalLab.common.remaining"), value: totals ? fmtMoney(totals.remaining) : "â€”", tone: "text-rose-600 dark:text-rose-400" },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[200px]">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t("dentalLab.reports.doctor")}</label>
+          <select className={inputCls} value={doctorId} onChange={e => setDoctorId(e.target.value)}>
+            <option value="">{t("dentalLab.reports.allDoctors")}</option>
+            {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t("dentalLab.reports.from")}</label>
+          <input className={dateCls} type="date" value={from} onChange={e => setFrom(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t("dentalLab.reports.to")}</label>
+          <input className={dateCls} type="date" value={to} onChange={e => setTo(e.target.value)} />
+        </div>
+        <button
+          onClick={load}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+          {t("dentalLab.reports.run")}
+        </button>
+        {data?.doctor?.name ? (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm">
+            <Coins className="w-4 h-4 text-gray-400" />
+            <span className="text-gray-500 dark:text-gray-400">{t("dentalLab.reports.doctorName")}:</span>
+            <span className="font-semibold">{data.doctor.name}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {data ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {kpi.map(k => (
+              <div key={k.label} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 px-4 py-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
+                <p className={`text-xl font-bold mt-0.5 ${k.tone}`}>{k.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">{t("dentalLab.reports.cases")}</h4>
+            {cases.length === 0 ? (
+              <EmptyState message={t("dentalLab.common.noData")} />
+            ) : (
+              <div className={tableWrap}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className={thCls}>{t("dentalLab.cases.caseNumber")}</th>
+                      <th className={thCls}>{t("dentalLab.cases.patient")}</th>
+                      <th className={thCls}>{t("dentalLab.cases.workType")}</th>
+                      <th className={thCls}>{t("dentalLab.cases.dueDate")}</th>
+                      <th className={thCls}>{t("dentalLab.common.total")}</th>
+                      <th className={thCls}>{t("dentalLab.common.paid")}</th>
+                      <th className={thCls}>{t("dentalLab.common.remaining")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cases.map((cs, i) => (
+                      <tr key={cs.caseNumber ?? i} className="border-b dark:border-gray-700 last:border-b-0">
+                        <td className={tdCls} dir="ltr">{cs.caseNumber || "â€”"}</td>
+                        <td className={tdCls}>{cs.patientName || "â€”"}</td>
+                        <td className={tdCls}>{cs.workTypeName || "â€”"}</td>
+                        <td className={tdCls}>{fmtDate(cs.dueDate)}</td>
+                        <td className={tdCls}>{fmtMoney(cs.total)}</td>
+                        <td className={tdCls}>{fmtMoney(cs.paid)}</td>
+                        <td className={`${tdCls} text-rose-600 dark:text-rose-400`}>{fmtMoney(cs.remaining)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">{t("dentalLab.reports.invoices")}</h4>
+            {invoices.length === 0 ? (
+              <EmptyState message={t("dentalLab.common.noData")} />
+            ) : (
+              <div className={tableWrap}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className={thCls}>{t("dentalLab.detail.invoiceNumber")}</th>
+                      <th className={thCls}>{t("dentalLab.cases.patient")}</th>
+                      <th className={thCls}>{t("dentalLab.common.total")}</th>
+                      <th className={thCls}>{t("dentalLab.common.paid")}</th>
+                      <th className={thCls}>{t("dentalLab.common.remaining")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map(inv => (
+                      <tr key={inv.id} className="border-b dark:border-gray-700 last:border-b-0">
+                        <td className={tdCls} dir="ltr">{inv.invoiceNumber || inv.id.slice(0, 8)}</td>
+                        <td className={tdCls}>{inv.patientName || "â€”"}</td>
+                        <td className={tdCls}>{fmtMoney(inv.total)}</td>
+                        <td className={tdCls}>{fmtMoney(inv.paid)}</td>
+                        <td className={`${tdCls} text-rose-600 dark:text-rose-400`}>{fmtMoney(inv.remaining)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <EmptyState message={t("dentalLab.reports.runToSee")} />
+      )}
+    </div>
+  );
+}
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Ø¥Ù†ØªØ§Ø¬ÙŠØ© Ø§Ù„ÙÙ†ÙŠÙŠÙ† â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+function ProductivityView() {
+  const { t } = useTranslation();
+  const [rows, setRows] = useState<TechnicianProductivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [from, setFrom] = useState(monthStartISO());
+  const [to, setTo] = useState(todayISO());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await fetchTechnicianProductivity({ from, to }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setLoading(false);
+    }
+  }, [from, to, t]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const chartData = useMemo(
+    () => rows.map(r => ({ name: r.name || "â€”", stages: r.completedStages ?? 0 })),
+    [rows],
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t("dentalLab.reports.from")}</label>
+          <input className={dateCls} type="date" value={from} onChange={e => setFrom(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t("dentalLab.reports.to")}</label>
+          <input className={dateCls} type="date" value={to} onChange={e => setTo(e.target.value)} />
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
+        </button>
+      </div>
+
+      {loading ? (
+        <Skeleton />
+      ) : rows.length === 0 ? (
+        <EmptyState message={t("dentalLab.common.noData")} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          <div className="lg:col-span-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t("dentalLab.reports.completedStagesChart")}</h4>
+            <ResponsiveContainer width="100%" height={220}>
+              <ReBarChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" opacity={0.08} />
+                <XAxis dataKey="name" tick={chartText} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={chartText} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(v) => [String(v), String(t("dentalLab.reports.completedStages"))]} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                <Bar dataKey="stages" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={22} />
+              </ReBarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="lg:col-span-3">
+            <div className={tableWrap}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className={thCls}>{t("dentalLab.technicians.title")}</th>
+                    <th className={thCls}>{t("dentalLab.reports.assignedCases")}</th>
+                    <th className={thCls}>{t("dentalLab.reports.completedStages")}</th>
+                    <th className={thCls}>{t("dentalLab.reports.avgDaysPerStage")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(r => (
+                    <tr key={r.technicianId ?? r.name ?? "â€”"} className="border-b dark:border-gray-700 last:border-b-0">
+                      <td className={`${tdCls} font-medium`}>{r.name || "â€”"}</td>
+                      <td className={tdCls}>{r.assignedCases ?? 0}</td>
+                      <td className={`${tdCls} font-semibold text-amber-600 dark:text-amber-400`}>{r.completedStages ?? 0}</td>
+                      <td className={tdCls}>{r.avgDaysPerStage != null ? Number(r.avgDaysPerStage).toFixed(1) : "â€”"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Ø¥ÙŠØ±Ø§Ø¯Ø§Øª Ø£Ù†ÙˆØ§Ø¹ Ø§Ù„Ø´ØºÙ„ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+function RevenueView() {
+  const { t } = useTranslation();
+  const [rows, setRows] = useState<WorkTypeRevenue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [from, setFrom] = useState(monthStartISO());
+  const [to, setTo] = useState(todayISO());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await fetchWorkTypeRevenue({ from, to }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setLoading(false);
+    }
+  }, [from, to, t]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const chartData = useMemo(
+    () => rows.map(r => ({ name: r.workType || "â€”", paid: r.paid ?? 0, remaining: r.remaining ?? 0 })),
+    [rows],
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t("dentalLab.reports.from")}</label>
+          <input className={dateCls} type="date" value={from} onChange={e => setFrom(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t("dentalLab.reports.to")}</label>
+          <input className={dateCls} type="date" value={to} onChange={e => setTo(e.target.value)} />
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
+        </button>
+      </div>
+
+      {loading ? (
+        <Skeleton />
+      ) : rows.length === 0 ? (
+        <EmptyState message={t("dentalLab.common.noData")} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          <div className="lg:col-span-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t("dentalLab.reports.revenueByTypeChart")}</h4>
+            <ResponsiveContainer width="100%" height={Math.max(220, chartData.length * 44)}>
+              <ReBarChart data={chartData} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" opacity={0.08} />
+                <XAxis type="number" tickFormatter={(v) => Number(v).toLocaleString("en-US")} tick={chartText} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" width={110} tick={chartText} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                <Bar dataKey="paid" name={String(t("dentalLab.common.paid"))} fill="#10b981" radius={[0, 6, 6, 0]} barSize={16} />
+              </ReBarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="lg:col-span-3">
+            <div className={tableWrap}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className={thCls}>{t("dentalLab.reports.workType")}</th>
+                    <th className={thCls}>{t("dentalLab.reports.cases")}</th>
+                    <th className={thCls}>{t("dentalLab.common.total")}</th>
+                    <th className={thCls}>{t("dentalLab.common.paid")}</th>
+                    <th className={thCls}>{t("dentalLab.common.remaining")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(r => (
+                    <tr key={r.workType ?? "â€”"} className="border-b dark:border-gray-700 last:border-b-0">
+                      <td className={`${tdCls} font-medium`}>{r.workType || "â€”"}</td>
+                      <td className={tdCls}>{r.cases ?? 0}</td>
+                      <td className={tdCls}>{fmtMoney(r.total)}</td>
+                      <td className={`${tdCls} text-emerald-600 dark:text-emerald-400`}>{fmtMoney(r.paid)}</td>
+                      <td className={`${tdCls} text-rose-600 dark:text-rose-400`}>{fmtMoney(r.remaining)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Ø§Ù„Ø­Ø§Ù„Ø§Øª Ø§Ù„Ù…ØªØ£Ø®Ø±Ø© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+function OverdueView() {
+  const { t } = useTranslation();
+  const [rows, setRows] = useState<OverdueReportRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await fetchOverdueReport());
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
+        <AlertTriangle className="w-4 h-4" />
+        <span>{t("dentalLab.reports.overdueHint")}</span>
+      </div>
+      <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+        <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
+      </button>
+
+      {loading ? (
+        <Skeleton />
+      ) : rows.length === 0 ? (
+        <EmptyState message={t("dentalLab.reports.noOverdue")} />
+      ) : (
+        <div className={tableWrap}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className={thCls}>{t("dentalLab.cases.caseNumber")}</th>
+                <th className={thCls}>{t("dentalLab.reports.doctorName")}</th>
+                <th className={thCls}>{t("dentalLab.cases.patient")}</th>
+                <th className={thCls}>{t("dentalLab.cases.workType")}</th>
+                <th className={thCls}>{t("dentalLab.cases.dueDate")}</th>
+                <th className={thCls}>{t("dentalLab.reports.daysOverdue")}</th>
+                <th className={thCls}>{t("dentalLab.common.remaining")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={r.caseNumber ?? i} className="border-b dark:border-gray-700 last:border-b-0">
+                  <td className={tdCls} dir="ltr">{r.caseNumber || "â€”"}</td>
+                  <td className={tdCls}>{r.doctorName || "â€”"}</td>
+                  <td className={tdCls}>{r.patientName || "â€”"}</td>
+                  <td className={tdCls}>{r.workTypeName || "â€”"}</td>
+                  <td className={tdCls}>{fmtDate(r.dueDate)}</td>
+                  <td className={tdCls}>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                      {r.daysOverdue ?? 0} {t("dentalLab.reports.dayUnit")}
+                    </span>
+                  </td>
+                  <td className={`${tdCls} text-rose-600 dark:text-rose-400`}>{fmtMoney(r.remaining)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgingView() {
+  const { t } = useTranslation();
+  const [buckets, setBuckets] = useState<AgingBucket[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchAgingReport();
+      setBuckets(data.buckets || []);
+      setTotal(data.totalOutstanding ?? 0);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const bucketLabel = (label: string) => tKey(t, `dentalLab.reports.aging.${label}`);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <Wallet className="w-4 h-4" />
+          <span>{t("dentalLab.reports.aging.hint")}</span>
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
+        </button>
+      </div>
+
+      {loading ? (
+        <Skeleton />
+      ) : (
+        <>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 flex items-center justify-between">
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("dentalLab.reports.aging.totalOutstanding")}</p>
+            <p className="text-xl font-bold text-rose-600 dark:text-rose-400">{fmtMoney(total)} {t("dentalLab.common.egp")}</p>
+          </div>
+          <div className={tableWrap}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className={thCls}>{t("dentalLab.reports.aging.title")}</th>
+                  <th className={thCls}>{t("dentalLab.reports.invoices")}</th>
+                  <th className={thCls}>{t("dentalLab.common.remaining")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(buckets || []).map((b, i) => (
+                  <tr key={b.label} className="border-b dark:border-gray-700 last:border-b-0">
+                    <td className={tdCls}>
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full ${i === 0 ? "bg-emerald-400" : i <= 2 ? "bg-amber-400" : "bg-rose-500"}`} />
+                        {bucketLabel(b.label)}
+                      </div>
+                    </td>
+                    <td className={tdCls}>{b.invoices ?? 0}</td>
+                    <td className={`${tdCls} font-semibold ${i === 0 ? "text-gray-700 dark:text-gray-200" : "text-rose-600 dark:text-rose-400"}`}>
+                      {fmtMoney(b.total)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+const VIEWS: { id: ReportView; labelKey: string; icon: ReactNode }[] = [
+  { id: "statement", labelKey: "dentalLab.reports.statementTab", icon: <FileText className="w-4 h-4" /> },
+  { id: "productivity", labelKey: "dentalLab.reports.productivityTab", icon: <Users className="w-4 h-4" /> },
+  { id: "aging", labelKey: "dentalLab.reports.aging.title", icon: <Wallet className="w-4 h-4" /> },
+  { id: "overdue", labelKey: "dentalLab.reports.overdueTab", icon: <AlertTriangle className="w-4 h-4" /> },
+  { id: "revenue", labelKey: "dentalLab.reports.revenueTab", icon: <TrendingUp className="w-4 h-4" /> },
+];
+
+export default function DentalLabReportsTab() {
+  const { t } = useTranslation();
+  const [view, setView] = useState<ReportView>("statement");
+  const [kpi, setKpi] = useState<{ todayReceived: number; overdueCount: number; revenue: number; outstanding: number } | null>(null);
+
+  useEffect(() => {
+    fetchDashboard()
+      .then(d => setKpi({ todayReceived: d.todayReceived ?? 0, overdueCount: d.overdueCount ?? 0, revenue: d.revenue ?? 0, outstanding: d.outstanding ?? 0 }))
+      .catch(() => setKpi(null));
+  }, []);
+
+  const kpiCards = [
+    { label: t("dentalLab.dashboard.revenue"), value: kpi ? fmtMoney(kpi.revenue) : "â€”", icon: <ArrowUpRight className="w-4 h-4" />, tone: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+    { label: t("dentalLab.dashboard.outstanding"), value: kpi ? fmtMoney(kpi.outstanding) : "â€”", icon: <ArrowDownLeft className="w-4 h-4" />, tone: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20" },
+    { label: t("dentalLab.dashboard.todayReceived"), value: String(kpi?.todayReceived ?? "â€”"), icon: <Inbox className="w-4 h-4" />, tone: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
+    { label: t("dentalLab.dashboard.overdueCount"), value: String(kpi?.overdueCount ?? "â€”"), icon: <AlertTriangle className="w-4 h-4" />, tone: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t("dentalLab.reports.title")}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("dentalLab.reports.subtitle")}</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <CalendarRange className="w-4 h-4" />
+          {t("dentalLab.reports.periodHint")}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {kpiCards.map(k => (
+          <div key={k.label} className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 px-4 py-3">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${k.bg} ${k.tone}`}>{k.icon}</div>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{k.label}</p>
+              <p className={`text-lg font-bold truncate ${k.tone}`}>{k.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="inline-flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 gap-1 flex-wrap">
+        {VIEWS.map(v => (
+          <button
+            key={v.id}
+            onClick={() => setView(v.id)}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+              view === v.id
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            {v.icon}
+            {t(v.labelKey)}
+          </button>
+        ))}
+      </div>
+
+      <div>
+        {view === "statement" && <StatementView />}
+        {view === "productivity" && <ProductivityView />}
+        {view === "revenue" && <RevenueView />}
+        {view === "overdue" && <OverdueView />}
+  {view === "aging" && <AgingView />}
+      </div>
+    </div>
+  );
+}
