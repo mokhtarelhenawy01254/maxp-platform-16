@@ -412,7 +412,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
   features: {
     enableButtons: true,
     enableHeaderProductImage: false,
-    enableMetaSwitch: false,
+    enableMetaSwitch: true,
     enableMetaMultiBind: false,
     enableTestSender: true,
     enableSchedule: true,
