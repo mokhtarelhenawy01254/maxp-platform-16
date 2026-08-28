@@ -18,7 +18,7 @@ const OPTIMIZABLE_EXTENSIONS = new Set([
   '.avif',
 ]);
 
-const SUPPORTED_FORMATS = new Set(['webp']);
+const SUPPORTED_FORMATS = new Set(['webp', 'avif']);
 
 const clampInteger = (value, min, max) => {
   if (value === undefined || value === null || value === '') {
@@ -99,6 +99,13 @@ const writeOptimizedVariant = async (sourceFilePath, variantFilePath, options) =
       });
 
     switch (options.format) {
+      case 'avif':
+        pipeline.avif({
+          quality: Math.min(options.quality, 62),
+          effort: 4,
+          chromaSubsampling: '4:2:0',
+        });
+        break;
       case 'webp':
       default:
         pipeline.webp({

@@ -20,7 +20,7 @@ type ProductLike = Partial<Product> & {
 interface OptimizedStorefrontImageOptions {
   width?: number;
   quality?: number;
-  format?: 'webp';
+  format?: 'webp' | 'avif';
 }
 
 interface ResponsiveStorefrontImageOptions extends OptimizedStorefrontImageOptions {

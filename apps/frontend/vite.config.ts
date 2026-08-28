@@ -35,6 +35,14 @@ const STOREFRONT_DEFERRED_PRELOAD_CHUNKS = [
   /(?:^|\/)vendor-toast-/,
   /(?:^|\/)vendor-datepicker-/,
   /(?:^|\/)vendor-date-utils-/,
+  /(?:^|\/)vendor-viz-interactive-/,
+  /(?:^|\/)vendor-builder-/,
+  /(?:^|\/)vendor-export-/,
+  /(?:^|\/)vendor-core-runtime-/,
+  /(?:^|\/)route-dashboard-/,
+  /(?:^|\/)route-inbox-/,
+  /(?:^|\/)route-orders-/,
+  /(?:^|\/)route-analytics-/,
   /(?:^|\/)CartDrawer-/,
   /(?:^|\/)CartUpsellHost-/,
   /(?:^|\/)GlobalConversionHost-/,
@@ -170,7 +178,12 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
   if (
     normalizedId.includes('/jspdf/') ||
     normalizedId.includes('/jspdf-autotable/') ||
-    normalizedId.includes('/xlsx/') ||
+    normalizedId.includes('/xlsx/')
+  ) {
+    return 'vendor-export';
+  }
+
+  if (
     packageName === 'i18next' ||
     packageName === 'react-i18next' ||
     packageName === 'i18next-browser-languagedetector'
