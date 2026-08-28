@@ -635,6 +635,17 @@ export default defineConfig(({ mode }) => {
               return 'app-bootstrap-core';
             }
 
+            // Chart wrappers import recharts (vendor-viz, 195KB brotli) but
+            // are only used by analytics pages. Leaving them matched by the
+            // ui-primitives pattern below made EVERY page — storefront
+            // visitors included — download the charting library at boot.
+            if (
+              normalizedId.includes('/src/components/ui/chart.tsx') ||
+              normalizedId.includes('/src/components/ui/DeferredResponsiveContainer.tsx')
+            ) {
+              return undefined;
+            }
+
             if (APP_UI_PRIMITIVES_MODULE_PATTERN.test(normalizedId)) {
               return 'app-ui-primitives';
             }
