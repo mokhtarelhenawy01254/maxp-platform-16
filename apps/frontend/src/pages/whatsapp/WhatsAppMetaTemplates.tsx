@@ -31,7 +31,7 @@ import {
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -669,7 +669,7 @@ const WhatsAppMetaTemplates: React.FC<{
             <Button
               onClick={() => { setCreateStep(1); setCreateOpen(true); }}
               aria-label="إنشاء قالب جديد"
-              className="h-11 rounded-full px-5 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md"
+              className="h-11 rounded-full bg-gradient-to-l from-[color:var(--color-primary)] to-[color:var(--color-primary)]/85 px-5 text-sm font-semibold text-white shadow-md shadow-[color:var(--color-primary)]/25 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95"
             >
               <Plus className="size-4" /> قالب جديد
             </Button>
@@ -701,7 +701,7 @@ const WhatsAppMetaTemplates: React.FC<{
           <AlertDescription className="text-xs leading-relaxed">
             {statusCounts.rejected > 0
               ? "افتح القالب لقراءة سبب الرفض، عدّل المحتوى، ثم أعد إرساله للمراجعة."
-              : "عادةً تتم الموافقة خلال بضع دقائق إلى 24 ساعة. اضغط تحديث للتحقق من الحالة."}
+              : "عادةً تتم الموافقة خلال بضع دقائق إلى 24 ساعة."}
             {statusCounts.approved > 0 ? (
               <>
                 {" · "}
@@ -711,11 +711,23 @@ const WhatsAppMetaTemplates: React.FC<{
               </>
             ) : null}
           </AlertDescription>
+          <AlertAction>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchTemplates}
+              disabled={loading}
+              className="h-8 rounded-full"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+              تحقق الآن
+            </Button>
+          </AlertAction>
         </Alert>
       ) : null}
 
       <WhatsAppSurfaceCard
-        title="قوالب Meta API"
+        title={statusCounts.total > 0 ? `${statusCounts.total} قالب` : "قوالب Meta API"}
         description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم"
         action={
           <div className="flex items-center gap-2">
@@ -804,10 +816,10 @@ const WhatsAppMetaTemplates: React.FC<{
             </TableHeader>
             <TableBody>
               {Object.entries(groupedTemplates).map(([groupName, groupTemplates]) => {
-                // Default to expanded (matches previous behaviour) so the new
-                // WhatsApp-style preview is visible immediately. The user can
-                // collapse to reduce noise on screens with many templates.
-                const expanded = expandedGroups[groupName] !== false;
+                // Default to collapsed so the page doesn't drown in previews
+                // when there are many templates. The user can expand a row
+                // to inspect the WhatsApp-bubble preview.
+                const expanded = expandedGroups[groupName] === true;
                 const uniqueStatuses = [...new Set(groupTemplates.map(t => t.status))];
                 const bestStatus = uniqueStatuses.includes("APPROVED") ? "APPROVED" : (uniqueStatuses[0] ?? "PENDING");
                 const StatusIcon = statusIcon[bestStatus] || AlertTriangle;
@@ -1006,7 +1018,18 @@ const WhatsAppMetaTemplates: React.FC<{
                               ) : null}
                               {bodyComp?.text ? (
                                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#111b21] dark:text-white">
-                                  {bodyComp.text}
+                                  {bodyComp.text.split(/(\{\{\d+\}\})/g).map((part, idx) =>
+                                    /^\{\{\d+\}\}$/.test(part) ? (
+                                      <span
+                                        key={idx}
+                                        className="mx-0.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                                      >
+                                        {part}
+                                      </span>
+                                    ) : (
+                                      <span key={idx}>{part}</span>
+                                    ),
+                                  )}
                                 </p>
                               ) : null}
                               {footerComp?.text ? (
