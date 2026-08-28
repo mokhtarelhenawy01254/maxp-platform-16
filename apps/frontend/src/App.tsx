@@ -1713,6 +1713,7 @@ const AppContent = () => {
     currentPath.startsWith("/company-links/") ||
     currentPath.startsWith("/auth/") ||
     currentPath.startsWith("/register/") ||
+    currentPath.startsWith("/dental-portal") ||
     currentPath.startsWith("/affiliate-register") ||
     currentPath.startsWith("/payment/") ||
     currentPath.startsWith("/checkout/") ||
@@ -7404,6 +7405,7 @@ const AppContent = () => {
                   element={<Navigate to="/auth/login" replace />}
                 />
                 <Route path="/" element={<PlatformLandingPage />} />
+                <Route path="/dental-portal/*" element={<DentalPortalRoutes />} />
                 <Route path="/bot-widget/:companyId" element={<BotWidgetPage />} />
                 <Route
                   path="/store-settings"
